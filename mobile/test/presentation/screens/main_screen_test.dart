@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobile/presentation/pages/home_page.dart';
 import 'package:mobile/presentation/screens/main_screen.dart';
 import '../../test_helper.dart';
 
@@ -62,8 +63,8 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // 홈 화면 AppBar 텍스트 확인
-      expect(find.text('오뚜기 파워세일즈'), findsOneWidget);
+      // 홈 화면이 표시되는지 확인 (HomePage 위젯 존재)
+      expect(find.byType(HomePage), findsOneWidget);
     });
 
     testWidgets('탭을 클릭하면 해당 화면으로 전환된다', (WidgetTester tester) async {
@@ -109,8 +110,8 @@ void main() {
       await tester.tap(find.text('홈'));
       await tester.pumpAndSettle();
 
-      // 홈 화면 확인
-      expect(find.text('오뚜기 파워세일즈'), findsOneWidget);
+      // 홈 화면 확인 (HomePage 위젯 존재)
+      expect(find.byType(HomePage), findsOneWidget);
     });
 
     testWidgets('IndexedStack을 사용하여 화면 상태를 유지한다', (WidgetTester tester) async {
