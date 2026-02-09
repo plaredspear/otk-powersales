@@ -2,38 +2,41 @@ import 'package:flutter/material.dart';
 
 /// 오뚜기 파워세일즈 앱 색상 팔레트
 ///
-/// PPTX 스크린샷 기반으로 추출한 색상 체계.
-/// 디자인 가이드: apps/mobile/docs/DESIGN_GUIDE.md
+/// 오뚜기 공식 CI 컬러 시스템 기반 색상 체계.
+/// CI 출처: https://www.otoki.com/about/ci
 abstract final class AppColors {
-  // ─── Brand ───────────────────────────────────────────────
-  /// 오뚜기 브랜드 레드 - 로고, 브랜드 아이덴티티
-  static const Color brandRed = Color(0xFFE31837);
+  // ─── Brand (OTOKI CI 공식 컬러) ─────────────────────────
+  /// OTOKI YELLOW - PANTONE 108, CMYK 0/0/100/0, RGB 255/243/0
+  static const Color otokiYellow = Color(0xFFFFF300);
 
-  /// 오뚜기 브랜드 옐로 - 로고 배경
-  static const Color brandYellow = Color(0xFFFFD600);
+  /// OTOKI RED - PANTONE 186, CMYK 0/100/80/5, RGB 211/35/58
+  static const Color otokiRed = Color(0xFFD3233A);
+
+  /// OTOKI BLUE - PANTONE 2747, CMYK 100/79/0/9, RGB 10/48/158
+  static const Color otokiBlue = Color(0xFF0A309E);
 
   // ─── Primary (Yellow) ────────────────────────────────────
   /// 주요 액션 버튼: 등록, 검색, 조회
-  static const Color primary = Color(0xFFFFD600);
+  static const Color primary = Color(0xFFFFF300);
 
   /// Primary pressed 상태
-  static const Color primaryDark = Color(0xFFC7A500);
+  static const Color primaryDark = Color(0xFFD6CC00);
 
   /// 배지, 하이라이트 배경
-  static const Color primaryLight = Color(0xFFFFF176);
+  static const Color primaryLight = Color(0xFFFFF87A);
 
   /// Primary 버튼 위 텍스트 (검정)
   static const Color onPrimary = Color(0xFF212121);
 
   // ─── Secondary (Blue) ────────────────────────────────────
   /// 탭 인디케이터, 날짜 네비게이션, 링크
-  static const Color secondary = Color(0xFF1565C0);
+  static const Color secondary = Color(0xFF0A309E);
 
   /// Secondary pressed 상태
-  static const Color secondaryDark = Color(0xFF003C8F);
+  static const Color secondaryDark = Color(0xFF071F6A);
 
   /// 배경 하이라이트
-  static const Color secondaryLight = Color(0xFF5E92F3);
+  static const Color secondaryLight = Color(0xFF3A5EC8);
 
   /// Secondary 위 텍스트 (흰색)
   static const Color onSecondary = Color(0xFFFFFFFF);

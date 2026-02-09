@@ -90,42 +90,55 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color(0xFFEFEFEF),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: AppSpacing.screenHorizontal,
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 80),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight,
+                ),
+                child: Container(
+                  width: double.infinity,
+                  color: AppColors.white,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 32),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // 앱 로고 + 타이틀
+                        _buildLogo(),
+                        const SizedBox(height: 32),
 
-                // 앱 로고 텍스트
-                _buildLogo(),
-                const SizedBox(height: 48),
+                        // 아이디(사번) 입력
+                        _buildEmployeeIdField(),
+                        const SizedBox(height: 12),
 
-                // 아이디(사번) 입력
-                _buildEmployeeIdField(),
-                const SizedBox(height: AppSpacing.lg),
+                        // 비밀번호 입력
+                        _buildPasswordField(),
+                        const SizedBox(height: 16),
 
-                // 비밀번호 입력
-                _buildPasswordField(),
-                const SizedBox(height: AppSpacing.md),
+                        // 체크박스 영역 (가로 배치)
+                        _buildCheckboxArea(),
+                        const SizedBox(height: 20),
 
-                // 체크박스 영역
-                _buildCheckboxArea(),
-                const SizedBox(height: AppSpacing.xxl),
+                        // 로그인 버튼
+                        _buildLoginButton(authState.isLoading),
+                        const SizedBox(height: 36),
 
-                // 로그인 버튼
-                _buildLoginButton(authState.isLoading),
-                const SizedBox(height: 48),
-
-                // 저작권 문구
-                _buildCopyright(),
-              ],
-            ),
-          ),
+                        // 저작권 문구
+                        _buildCopyright(),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -135,31 +148,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget _buildLogo() {
     return Column(
       children: [
-        // 오뚜기 로고 색상 표현
-        Container(
-          width: 64,
-          height: 64,
-          decoration: BoxDecoration(
-            color: AppColors.brandYellow,
-            borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-          ),
-          child: const Center(
-            child: Text(
-              'O',
-              style: TextStyle(
-                fontSize: 36,
-                fontWeight: FontWeight.w900,
-                color: AppColors.brandRed,
+        // 로고 플레이스홀더 (브랜드 로고 비워둠)
+        const SizedBox(height: 16),
+        RichText(
+          textAlign: TextAlign.center,
+          text: TextSpan(
+            children: [
+              TextSpan(
+                text: '오뚜기 ',
+                style: AppTypography.headlineLarge.copyWith(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
               ),
-            ),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        Text(
-          '오뚜기 파워세일즈',
-          style: AppTypography.headlineLarge.copyWith(
-            fontSize: 24,
-            color: AppColors.textPrimary,
+              TextSpan(
+                text: '파워세일즈',
+                style: AppTypography.headlineLarge.copyWith(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.otokiRed,
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -176,26 +187,34 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         LengthLimitingTextInputFormatter(8),
       ],
       decoration: InputDecoration(
-        labelText: '아이디(사번)',
-        hintText: '8자리 사번을 입력해주세요',
-        prefixIcon: const Icon(Icons.person_outline),
+        hintText: '아이디 입력 (사번)',
+        hintStyle: AppTypography.bodyMedium.copyWith(
+          color: AppColors.textTertiary,
+          fontSize: 15,
+        ),
         filled: true,
-        fillColor: AppColors.surfaceVariant,
+        fillColor: AppColors.white,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
-          borderRadius: AppSpacing.inputBorderRadius,
-          borderSide: BorderSide.none,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+          borderSide: const BorderSide(color: Color(0xFFD0D0D0)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+          borderSide: const BorderSide(color: Color(0xFFD0D0D0)),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: AppSpacing.inputBorderRadius,
-          borderSide: const BorderSide(color: AppColors.secondary, width: 2),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+          borderSide: const BorderSide(color: Color(0xFFAAAAAA), width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: AppSpacing.inputBorderRadius,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
           borderSide: const BorderSide(color: AppColors.error),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: AppSpacing.inputBorderRadius,
-          borderSide: const BorderSide(color: AppColors.error, width: 2),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+          borderSide: const BorderSide(color: AppColors.error, width: 1.5),
         ),
       ),
       textInputAction: TextInputAction.next,
@@ -218,26 +237,34 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       focusNode: _passwordFocusNode,
       obscureText: true,
       decoration: InputDecoration(
-        labelText: '비밀번호',
-        hintText: '비밀번호를 입력해주세요',
-        prefixIcon: const Icon(Icons.lock_outline),
+        hintText: '비밀번호 입력',
+        hintStyle: AppTypography.bodyMedium.copyWith(
+          color: AppColors.textTertiary,
+          fontSize: 15,
+        ),
         filled: true,
-        fillColor: AppColors.surfaceVariant,
+        fillColor: AppColors.white,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
-          borderRadius: AppSpacing.inputBorderRadius,
-          borderSide: BorderSide.none,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+          borderSide: const BorderSide(color: Color(0xFFD0D0D0)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+          borderSide: const BorderSide(color: Color(0xFFD0D0D0)),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: AppSpacing.inputBorderRadius,
-          borderSide: const BorderSide(color: AppColors.secondary, width: 2),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+          borderSide: const BorderSide(color: Color(0xFFAAAAAA), width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: AppSpacing.inputBorderRadius,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
           borderSide: const BorderSide(color: AppColors.error),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: AppSpacing.inputBorderRadius,
-          borderSide: const BorderSide(color: AppColors.error, width: 2),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+          borderSide: const BorderSide(color: AppColors.error, width: 1.5),
         ),
       ),
       textInputAction: TextInputAction.done,
@@ -251,70 +278,74 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
-  /// 체크박스 영역
+  /// 체크박스 영역 (가로 배치)
   Widget _buildCheckboxArea() {
-    return Column(
+    return Row(
       children: [
         // 아이디 기억하기
-        Row(
-          children: [
-            SizedBox(
-              height: 24,
-              width: 24,
-              child: Checkbox(
-                value: _rememberEmployeeId,
-                onChanged: (value) {
-                  setState(() {
-                    _rememberEmployeeId = value ?? false;
-                  });
-                },
-                activeColor: AppColors.secondary,
-              ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            GestureDetector(
-              onTap: () {
-                setState(() {
-                  _rememberEmployeeId = !_rememberEmployeeId;
-                });
-              },
-              child: Text(
-                '아이디 기억하기',
-                style: AppTypography.bodyMedium,
-              ),
-            ),
-          ],
+        SizedBox(
+          height: 20,
+          width: 20,
+          child: Checkbox(
+            value: _rememberEmployeeId,
+            onChanged: (value) {
+              setState(() {
+                _rememberEmployeeId = value ?? false;
+              });
+            },
+            activeColor: AppColors.secondary,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            visualDensity: VisualDensity.compact,
+            side: const BorderSide(color: Color(0xFFBBBBBB), width: 1.5),
+          ),
         ),
-        const SizedBox(height: AppSpacing.sm),
+        const SizedBox(width: 6),
+        GestureDetector(
+          onTap: () {
+            setState(() {
+              _rememberEmployeeId = !_rememberEmployeeId;
+            });
+          },
+          child: Text(
+            '아이디 기억하기',
+            style: AppTypography.bodyMedium.copyWith(
+              fontSize: 13,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ),
+        const SizedBox(width: 24),
         // 자동 로그인
-        Row(
-          children: [
-            SizedBox(
-              height: 24,
-              width: 24,
-              child: Checkbox(
-                value: _autoLogin,
-                onChanged: (value) {
-                  setState(() {
-                    _autoLogin = value ?? false;
-                  });
-                },
-                activeColor: AppColors.secondary,
-              ),
+        SizedBox(
+          height: 20,
+          width: 20,
+          child: Checkbox(
+            value: _autoLogin,
+            onChanged: (value) {
+              setState(() {
+                _autoLogin = value ?? false;
+              });
+            },
+            activeColor: AppColors.secondary,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            visualDensity: VisualDensity.compact,
+            side: const BorderSide(color: Color(0xFFBBBBBB), width: 1.5),
+          ),
+        ),
+        const SizedBox(width: 6),
+        GestureDetector(
+          onTap: () {
+            setState(() {
+              _autoLogin = !_autoLogin;
+            });
+          },
+          child: Text(
+            '자동로그인',
+            style: AppTypography.bodyMedium.copyWith(
+              fontSize: 13,
+              color: AppColors.textSecondary,
             ),
-            const SizedBox(width: AppSpacing.sm),
-            GestureDetector(
-              onTap: () {
-                setState(() {
-                  _autoLogin = !_autoLogin;
-                });
-              },
-              child: Text(
-                '자동 로그인',
-                style: AppTypography.bodyMedium,
-              ),
-            ),
-          ],
+          ),
         ),
       ],
     );
@@ -323,15 +354,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   /// 로그인 버튼
   Widget _buildLoginButton(bool isLoading) {
     return SizedBox(
-      height: AppSpacing.buttonHeight,
+      height: 50,
       child: ElevatedButton(
         onPressed: isLoading ? null : _handleLogin,
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.onPrimary,
-          disabledBackgroundColor: AppColors.primaryLight,
+          backgroundColor: AppColors.otokiBlue,
+          foregroundColor: AppColors.white,
+          disabledBackgroundColor: const Color(0xFF3A4A6A),
           shape: RoundedRectangleBorder(
-            borderRadius: AppSpacing.buttonBorderRadius,
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
           ),
           elevation: 0,
         ),
@@ -341,7 +372,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 height: 24,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: AppColors.onPrimary,
+                  color: AppColors.white,
                 ),
               )
             : Text(
@@ -349,6 +380,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 style: AppTypography.labelLarge.copyWith(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
+                  color: AppColors.white,
                 ),
               ),
       ),
@@ -358,10 +390,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   /// 저작권 문구
   Widget _buildCopyright() {
     return Text(
-      'Copyright (C) ottogi.co.Ltd All Rights Reserved.',
+      'Copyright ⓒ ottogi co,Ltd All Rights Reserved.',
       textAlign: TextAlign.center,
       style: AppTypography.bodySmall.copyWith(
         color: AppColors.textTertiary,
+        fontSize: 12,
       ),
     );
   }

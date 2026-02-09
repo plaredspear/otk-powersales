@@ -55,7 +55,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       title: Text(
         '오뚜기 파워세일즈',
         style: AppTypography.headlineLarge.copyWith(
-          color: AppColors.brandRed,
+          color: AppColors.otokiRed,
         ),
       ),
       centerTitle: false,
