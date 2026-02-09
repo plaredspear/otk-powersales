@@ -24,7 +24,8 @@ void main() {
       // BottomNavigationBar 확인
       expect(find.byType(BottomNavigationBar), findsOneWidget);
 
-      // 4개 탭 확인
+      // 5개 탭 확인
+      expect(find.text('홈'), findsOneWidget);
       expect(find.text('POS 매출'), findsOneWidget);
       expect(find.text('전산매출'), findsOneWidget);
       expect(find.text('물류매출'), findsOneWidget);
@@ -42,14 +43,15 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // 각 탭의 아이콘 확인
+      // 각 탭의 아이콘 확인 (홈 탭은 활성 상태이므로 activeIcon인 Icons.home이 표시됨)
+      expect(find.byIcon(Icons.home), findsOneWidget);
       expect(find.byIcon(Icons.point_of_sale), findsOneWidget);
       expect(find.byIcon(Icons.computer), findsOneWidget);
       expect(find.byIcon(Icons.local_shipping), findsOneWidget);
       expect(find.byIcon(Icons.trending_up), findsOneWidget);
     });
 
-    testWidgets('초기 화면은 POS 매출 조회 화면이다', (WidgetTester tester) async {
+    testWidgets('초기 화면은 홈 화면이다', (WidgetTester tester) async {
       await tester.pumpWidget(
         const ProviderScope(
           child: MaterialApp(
@@ -60,8 +62,8 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // POS 매출 조회 AppBar 텍스트 확인
-      expect(find.text('POS 매출 조회'), findsOneWidget);
+      // 홈 화면 AppBar 텍스트 확인
+      expect(find.text('오뚜기 파워세일즈'), findsOneWidget);
     });
 
     testWidgets('탭을 클릭하면 해당 화면으로 전환된다', (WidgetTester tester) async {
@@ -74,6 +76,13 @@ void main() {
       );
 
       await tester.pumpAndSettle();
+
+      // POS 매출 탭 클릭
+      await tester.tap(find.text('POS 매출'));
+      await tester.pumpAndSettle();
+
+      // POS 매출 조회 화면 확인
+      expect(find.text('POS 매출 조회'), findsOneWidget);
 
       // 전산매출 탭 클릭
       await tester.tap(find.text('전산매출'));
@@ -96,12 +105,12 @@ void main() {
       // 목표/진도율 화면 확인 (실제 구현된 화면)
       expect(find.text('목표/진도율'), findsNWidgets(2)); // 탭 + AppBar
 
-      // POS 매출 탭으로 다시 돌아가기
-      await tester.tap(find.text('POS 매출'));
+      // 홈 탭으로 다시 돌아가기
+      await tester.tap(find.text('홈'));
       await tester.pumpAndSettle();
 
-      // POS 매출 조회 화면 확인
-      expect(find.text('POS 매출 조회'), findsOneWidget);
+      // 홈 화면 확인
+      expect(find.text('오뚜기 파워세일즈'), findsOneWidget);
     });
 
     testWidgets('IndexedStack을 사용하여 화면 상태를 유지한다', (WidgetTester tester) async {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../pages/home_page.dart';
 import 'pos_sales_screen.dart';
 import 'electronic_sales_screen.dart';
 import 'logistics_sales_screen.dart';
@@ -7,7 +8,8 @@ import 'target_dashboard_screen.dart';
 
 /// 메인 화면
 ///
-/// BottomNavigationBar를 사용하여 4개 주요 기능 화면을 전환합니다.
+/// BottomNavigationBar를 사용하여 5개 주요 기능 화면을 전환합니다.
+/// - 홈
 /// - POS 매출 조회
 /// - 전산매출 조회
 /// - 물류매출 조회
@@ -24,6 +26,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
   // 각 탭의 화면 목록
   static final List<Widget> _screens = [
+    const HomePage(), // 홈
     const PosSalesScreen(), // POS 매출 조회
     const ElectronicSalesScreen(), // 전산매출 조회
     const LogisticsSalesScreen(), // 물류매출 조회
@@ -32,6 +35,12 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
   // BottomNavigationBar 아이템 목록
   static const List<BottomNavigationBarItem> _navItems = [
+    BottomNavigationBarItem(
+      icon: Icon(Icons.home_outlined),
+      activeIcon: Icon(Icons.home),
+      label: '홈',
+      tooltip: '홈',
+    ),
     BottomNavigationBarItem(
       icon: Icon(Icons.point_of_sale),
       label: 'POS 매출',

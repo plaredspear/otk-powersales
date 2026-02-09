@@ -12,11 +12,17 @@ void main() {
   });
 
   group('AppRouter', () {
-    testWidgets('초기 라우트가 메인 화면이다', (WidgetTester tester) async {
+    test('초기 라우트가 로그인 경로이다', () {
+      expect(AppRouter.initialRoute, AppRouter.login);
+      expect(AppRouter.initialRoute, '/login');
+    });
+
+    testWidgets('메인 라우트로 이동하면 MainScreen이 표시된다',
+        (WidgetTester tester) async {
       await tester.pumpWidget(
         ProviderScope(
           child: MaterialApp(
-            initialRoute: AppRouter.initialRoute,
+            initialRoute: AppRouter.main,
             routes: AppRouter.routes,
           ),
         ),
@@ -50,7 +56,8 @@ void main() {
       expect(find.byType(PosSalesScreen), findsWidgets);
     });
 
-    testWidgets('onUnknownRoute 핸들러가 정의되어 있다', (WidgetTester tester) async {
+    testWidgets('onUnknownRoute 핸들러가 정의되어 있다',
+        (WidgetTester tester) async {
       // onUnknownRoute 핸들러가 null이 아님을 확인
       expect(AppRouter.onUnknownRoute, isNotNull);
 
@@ -62,8 +69,9 @@ void main() {
       expect(route, isA<MaterialPageRoute>());
     });
 
-
     test('라우트 이름 상수가 정의되어 있다', () {
+      expect(AppRouter.login, '/login');
+      expect(AppRouter.changePassword, '/change-password');
       expect(AppRouter.main, '/');
       expect(AppRouter.posSales, '/pos-sales');
     });
@@ -71,13 +79,13 @@ void main() {
     test('라우트 맵이 올바르게 정의되어 있다', () {
       final routes = AppRouter.routes;
 
+      expect(routes.containsKey(AppRouter.login), true);
+      expect(routes.containsKey(AppRouter.changePassword), true);
       expect(routes.containsKey(AppRouter.main), true);
       expect(routes.containsKey(AppRouter.posSales), true);
-      expect(routes.length, 2);
+      expect(routes.length, 4);
     });
 
-    test('초기 라우트가 메인이다', () {
-      expect(AppRouter.initialRoute, AppRouter.main);
-    });
+    // 초기 라우트 테스트는 상단에서 이미 검증됨
   });
 }

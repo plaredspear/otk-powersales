@@ -73,8 +73,8 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   /// 본문 영역
   Widget _buildBody(HomeState state) {
-    // 초기 로딩 (데이터 없음 + 로딩 중)
-    if (state.isLoading && state.homeData == null) {
+    // 초기 상태 또는 로딩 중 (데이터 없음)
+    if (state.homeData == null && !state.isError) {
       return const LoadingIndicator(
         message: '홈 데이터를 불러오는 중...',
       );

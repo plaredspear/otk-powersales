@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'presentation/screens/change_password_screen.dart';
+import 'presentation/screens/login_screen.dart';
 import 'presentation/screens/main_screen.dart';
 import 'presentation/screens/pos_sales_screen.dart';
 
@@ -7,17 +9,21 @@ import 'presentation/screens/pos_sales_screen.dart';
 /// 앱 전체의 라우팅을 관리합니다.
 class AppRouter {
   /// 라우트 이름 상수
+  static const String login = '/login';
+  static const String changePassword = '/change-password';
   static const String main = '/';
   static const String posSales = '/pos-sales';
 
   /// 라우트 맵
   static Map<String, WidgetBuilder> get routes => {
+        login: (context) => const LoginScreen(),
+        changePassword: (context) => const ChangePasswordScreen(),
         main: (context) => const MainScreen(),
         posSales: (context) => const PosSalesScreen(),
       };
 
-  /// 초기 라우트
-  static String get initialRoute => main;
+  /// 초기 라우트 - 로그인 화면에서 시작
+  static String get initialRoute => login;
 
   /// 알 수 없는 라우트 처리
   static Route<dynamic>? onUnknownRoute(RouteSettings settings) {
