@@ -44,30 +44,8 @@ class _HomePageState extends ConsumerState<HomePage> {
     final state = ref.watch(homeProvider);
 
     return Scaffold(
-      appBar: _buildAppBar(),
+      backgroundColor: AppColors.background,
       body: _buildBody(state),
-    );
-  }
-
-  /// AppBar (로고 + 햄버거 메뉴)
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      title: Text(
-        '오뚜기 파워세일즈',
-        style: AppTypography.headlineLarge.copyWith(
-          color: AppColors.otokiRed,
-        ),
-      ),
-      centerTitle: false,
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: () {
-            // TODO: 전체 메뉴 Drawer 열기 (후속 작업)
-          },
-          tooltip: '전체 메뉴',
-        ),
-      ],
     );
   }
 
@@ -106,13 +84,16 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget _buildContent(HomeState state) {
     final homeData = state.homeData!;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // #1 일정 영역
-          Padding(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // #0 노란 배경 헤더 (AppBar + 빨간 라인 + 노란 확장)
+        _buildYellowHeader(),
+
+        // #1 스케줄 카드 (노란 영역과 약 30% 중첩 → 음수 margin)
+        Transform.translate(
+          offset: const Offset(0, -40),
+          child: Padding(
             padding: AppSpacing.screenHorizontal,
             child: ScheduleCard(
               schedules: homeData.todaySchedules,
@@ -125,64 +106,111 @@ class _HomePageState extends ConsumerState<HomePage> {
               },
             ),
           ),
-          const SizedBox(height: AppSpacing.lg),
+        ),
 
-          // #2 유통기한 알림
-          Padding(
-            padding: AppSpacing.screenHorizontal,
-            child: ExpiryAlertCard(
-              expiryAlert: homeData.expiryAlert,
-              onTap: () {
-                // TODO: 유통기한 관리 화면으로 이동 (후속 작업)
-              },
-            ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
+        // 중첩 offset 만큼 간격 보정
+        const SizedBox(height: 0),
 
-          // #3 공지 영역 (가로 스크롤)
-          _buildSectionHeader('공지사항'),
-          const SizedBox(height: AppSpacing.sm),
-          NoticeCarousel(
-            notices: homeData.notices,
-            onNoticeTap: (notice) {
-              // TODO: 공지 상세 화면으로 이동 (후속 작업)
+        // #2 유통기한 알림
+        Padding(
+          padding: AppSpacing.screenHorizontal,
+          child: ExpiryAlertCard(
+            expiryAlert: homeData.expiryAlert,
+            onTap: () {
+              // TODO: 유통기한 관리 화면으로 이동 (후속 작업)
             },
           ),
-          const SizedBox(height: AppSpacing.xl),
+        ),
+        const SizedBox(height: AppSpacing.lg),
 
-          // #4 제품 검색 바
-          Padding(
-            padding: AppSpacing.screenHorizontal,
-            child: ProductSearchBar(
-              onTap: () {
-                // TODO: 제품 검색 화면으로 이동 (후속 작업)
-              },
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xl),
+        // #3 공지 영역 (가로 스크롤)
+        NoticeCarousel(
+          notices: homeData.notices,
+          onNoticeTap: (notice) {
+            // TODO: 공지 상세 화면으로 이동 (후속 작업)
+          },
+        ),
+        const SizedBox(height: AppSpacing.xl),
 
-          // #5 빠른 메뉴
-          Padding(
-            padding: AppSpacing.screenHorizontal,
-            child: QuickMenuGrid(
-              onMenuTap: (item) {
-                // TODO: 해당 기능 화면으로 이동 (후속 작업)
-              },
-            ),
+        // #4 제품 검색 바
+        Padding(
+          padding: AppSpacing.screenHorizontal,
+          child: ProductSearchBar(
+            onTap: () {
+              // TODO: 제품 검색 화면으로 이동 (후속 작업)
+            },
           ),
-          const SizedBox(height: AppSpacing.xxxl),
-        ],
-      ),
+        ),
+        const SizedBox(height: AppSpacing.xl),
+
+        // #5 빠른 메뉴
+        Padding(
+          padding: AppSpacing.screenHorizontal,
+          child: QuickMenuGrid(
+            onMenuTap: (item) {
+              // TODO: 해당 기능 화면으로 이동 (후속 작업)
+            },
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xxxl),
+      ],
     );
   }
 
-  /// 섹션 헤더
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: AppSpacing.screenHorizontal,
-      child: Text(
-        title,
-        style: AppTypography.headlineSmall,
+  /// 노란 배경 헤더 영역 (SafeArea + AppBar + 빨간 라인 + 확장)
+  Widget _buildYellowHeader() {
+    final topPadding = MediaQuery.of(context).padding.top;
+
+    return Container(
+      color: AppColors.otokiYellow,
+      child: Column(
+        children: [
+          // SafeArea 상단 여백
+          SizedBox(height: topPadding),
+          // AppBar 영역
+          SizedBox(
+            height: AppSpacing.appBarHeight,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: '오뚜기 ',
+                          style: AppTypography.headlineLarge.copyWith(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        TextSpan(
+                          text: '파워세일즈',
+                          style: AppTypography.headlineLarge.copyWith(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.otokiRed,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.menu, color: AppColors.textPrimary),
+                    onPressed: () {
+                      // TODO: 전체 메뉴 Drawer 열기 (후속 작업)
+                    },
+                    tooltip: '전체 메뉴',
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // 노란 확장 영역 (스케줄 카드가 위에서 겹치는 영역)
+          const SizedBox(height: 24),
+        ],
       ),
     );
   }

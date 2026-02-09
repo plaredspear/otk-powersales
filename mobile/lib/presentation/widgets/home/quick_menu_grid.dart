@@ -50,7 +50,7 @@ class QuickMenuGrid extends StatelessWidget {
       crossAxisCount: 3,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: AppSpacing.md,
+      mainAxisSpacing: AppSpacing.lg,
       crossAxisSpacing: AppSpacing.md,
       childAspectRatio: 1.1,
       children: defaultMenuItems.map((item) {
@@ -64,28 +64,23 @@ class QuickMenuGrid extends StatelessWidget {
     return InkWell(
       onTap: onMenuTap != null ? () => onMenuTap!(item) : null,
       borderRadius: AppSpacing.cardBorderRadius,
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.card,
-          borderRadius: AppSpacing.cardBorderRadius,
-          boxShadow: AppSpacing.cardShadow,
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              item.icon,
-              size: AppSpacing.iconSizeMenu,
-              color: AppColors.secondary,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            item.icon,
+            size: AppSpacing.iconSizeMenu,
+            color: AppColors.otokiYellow,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            item.label,
+            style: AppTypography.labelMedium.copyWith(
+              color: AppColors.textPrimary,
             ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              item.label,
-              style: AppTypography.labelMedium,
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }

@@ -34,65 +34,62 @@ class ExpiryAlertCard extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: AppSpacing.cardBorderRadius,
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.card,
-          borderRadius: AppSpacing.cardBorderRadius,
-          boxShadow: AppSpacing.cardShadow,
-          border: Border.all(
-            color: AppColors.warning.withOpacity(0.3),
-            width: 1,
-          ),
-        ),
-        child: Padding(
-          padding: AppSpacing.cardPadding,
-          child: Row(
-            children: [
-              // 경고 아이콘
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.sm),
-                decoration: BoxDecoration(
-                  color: AppColors.warning.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.warning_amber_rounded,
-                  color: AppColors.warning,
-                  size: AppSpacing.iconSize,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.md),
-
-              // 알림 내용
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${alert.branchName}, ${alert.employeeName}(${alert.employeeId})',
-                      style: AppTypography.bodyMedium,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: AppSpacing.xxs),
-                    Text(
-                      '유통기한 임박제품 : ${alert.expiryCount}건',
-                      style: AppTypography.bodyMedium.copyWith(
-                        color: AppColors.warning,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // 화살표
-              const Icon(
-                Icons.chevron_right,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+        child: Row(
+          children: [
+            // 프로필 아바타
+            const CircleAvatar(
+              radius: 24,
+              backgroundColor: AppColors.surfaceVariant,
+              child: Icon(
+                Icons.person,
+                size: 28,
                 color: AppColors.textTertiary,
-                size: AppSpacing.iconSize,
               ),
-            ],
-          ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+
+            // 지점/이름 + 유통기한 알림
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${alert.branchName}, ${alert.employeeName}(${alert.employeeId})',
+                    style: AppTypography.bodyMedium.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: AppSpacing.xxs),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.notifications_outlined,
+                        size: 16,
+                        color: AppColors.textSecondary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '유통기한 임박제품 : ',
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      Text(
+                        '${alert.expiryCount}건',
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.otokiBlue,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

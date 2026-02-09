@@ -36,7 +36,7 @@ class ScheduleCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.card,
         borderRadius: AppSpacing.cardBorderRadius,
-        boxShadow: AppSpacing.cardShadow,
+        border: Border.all(color: AppColors.border, width: 1),
       ),
       child: Padding(
         padding: AppSpacing.cardPadding,
@@ -46,7 +46,10 @@ class ScheduleCard extends StatelessWidget {
             // 날짜 헤더
             Text(
               _formatDate(currentDate),
-              style: AppTypography.headlineSmall,
+              style: AppTypography.headlineLarge.copyWith(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+              ),
             ),
             const SizedBox(height: AppSpacing.md),
 
@@ -65,33 +68,35 @@ class ScheduleCard extends StatelessWidget {
   Widget _buildEmptySchedule() {
     return Column(
       children: [
-        const SizedBox(height: AppSpacing.sm),
-        Center(
-          child: Text(
-            '오늘 등록된 스케줄이 없습니다.',
-            style: AppTypography.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          '오늘 등록된 스케줄이 없습니다.',
+          style: AppTypography.bodyMedium.copyWith(
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        SizedBox(
+          width: double.infinity,
+          height: AppSpacing.buttonHeightSmall,
+          child: OutlinedButton(
+            onPressed: onRegisterTap,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.textTertiary,
+              side: const BorderSide(color: AppColors.divider),
+              shape: RoundedRectangleBorder(
+                borderRadius: AppSpacing.buttonBorderRadius,
+              ),
+            ),
+            child: Text(
+              '등록',
+              style: AppTypography.bodyMedium.copyWith(
+                color: AppColors.textTertiary,
+              ),
             ),
           ),
         ),
         const SizedBox(height: AppSpacing.lg),
-        Center(
-          child: SizedBox(
-            height: AppSpacing.buttonHeightSmall,
-            child: ElevatedButton(
-              onPressed: onRegisterTap,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.onPrimary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: AppSpacing.buttonBorderRadius,
-                ),
-              ),
-              child: const Text('등록'),
-            ),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
       ],
     );
   }
@@ -162,13 +167,15 @@ class ScheduleCard extends StatelessWidget {
     );
   }
 
-  /// 날짜 문자열을 "M월 dd일 (요일)" 형식으로 변환
+  /// 날짜 문자열을 "MM월 dd일 (요일)" 형식으로 변환
   String _formatDate(String dateStr) {
     try {
       final date = DateTime.parse(dateStr);
       const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
       final weekday = weekdays[date.weekday - 1];
-      return '${date.month}월 ${date.day}일 ($weekday)';
+      final month = date.month.toString().padLeft(2, '0');
+      final day = date.day.toString().padLeft(2, '0');
+      return '$month월 $day일 ($weekday)';
     } catch (_) {
       return dateStr;
     }

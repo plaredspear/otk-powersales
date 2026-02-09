@@ -24,15 +24,16 @@ class ProductSearchBar extends StatelessWidget {
       child: Container(
         height: AppSpacing.searchBarHeight,
         decoration: BoxDecoration(
-          color: AppColors.surfaceVariant,
+          color: AppColors.white,
           borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+          border: Border.all(color: AppColors.border, width: 1),
         ),
         child: Row(
           children: [
             const SizedBox(width: AppSpacing.md),
             const Icon(
               Icons.search,
-              color: AppColors.textTertiary,
+              color: AppColors.otokiYellow,
               size: AppSpacing.iconSize,
             ),
             const SizedBox(width: AppSpacing.sm),
