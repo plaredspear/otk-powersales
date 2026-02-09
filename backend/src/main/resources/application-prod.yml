@@ -1,0 +1,28 @@
+spring:
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/otoki}
+    username: ${DATABASE_USERNAME:postgres}
+    password: ${DATABASE_PASSWORD:}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: false
+
+# JWT 설정 (프로덕션용 - 환경변수 사용)
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION:3600000}  # 기본 1시간
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}  # 기본 7일
+
+logging:
+  level:
+    root: WARN
+    com.otoki.internal: INFO
+    org.springframework.security: INFO

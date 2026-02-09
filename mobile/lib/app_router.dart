@@ -1,0 +1,114 @@
+import 'package:flutter/material.dart';
+import 'presentation/screens/main_screen.dart';
+import 'presentation/screens/pos_sales_screen.dart';
+
+/// 앱 라우터
+///
+/// 앱 전체의 라우팅을 관리합니다.
+class AppRouter {
+  /// 라우트 이름 상수
+  static const String main = '/';
+  static const String posSales = '/pos-sales';
+
+  /// 라우트 맵
+  static Map<String, WidgetBuilder> get routes => {
+        main: (context) => const MainScreen(),
+        posSales: (context) => const PosSalesScreen(),
+      };
+
+  /// 초기 라우트
+  static String get initialRoute => main;
+
+  /// 알 수 없는 라우트 처리
+  static Route<dynamic>? onUnknownRoute(RouteSettings settings) {
+    return MaterialPageRoute(
+      builder: (context) => Scaffold(
+        appBar: AppBar(
+          title: const Text('페이지를 찾을 수 없습니다'),
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 80,
+                color: Colors.grey[400],
+              ),
+              const SizedBox(height: 24),
+              Text(
+                '페이지를 찾을 수 없습니다',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[700],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '요청한 페이지: ${settings.name}',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).pushNamedAndRemoveUntil(
+                    main,
+                    (route) => false,
+                  );
+                },
+                icon: const Icon(Icons.home),
+                label: const Text('홈으로 돌아가기'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 네비게이션 헬퍼 메서드
+  static Future<T?> navigateTo<T>(
+    BuildContext context,
+    String routeName, {
+    Object? arguments,
+  }) {
+    return Navigator.of(context).pushNamed<T>(
+      routeName,
+      arguments: arguments,
+    );
+  }
+
+  /// 네비게이션 교체 (뒤로가기 불가)
+  static Future<T?> navigateToAndReplace<T>(
+    BuildContext context,
+    String routeName, {
+    Object? arguments,
+  }) {
+    return Navigator.of(context).pushReplacementNamed<T, dynamic>(
+      routeName,
+      arguments: arguments,
+    );
+  }
+
+  /// 모든 라우트 제거하고 이동
+  static Future<T?> navigateToAndRemoveAll<T>(
+    BuildContext context,
+    String routeName, {
+    Object? arguments,
+  }) {
+    return Navigator.of(context).pushNamedAndRemoveUntil<T>(
+      routeName,
+      (route) => false,
+      arguments: arguments,
+    );
+  }
+
+  /// 뒤로가기
+  static void goBack(BuildContext context, {dynamic result}) {
+    Navigator.of(context).pop(result);
+  }
+}

@@ -1,0 +1,14 @@
+spring:
+  profiles:
+    active: test
+
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+    serialization:
+      write-dates-as-timestamps: false
+    time-zone: Asia/Seoul
+
+jwt:
+  secret: test-secret-key-that-is-at-least-256-bits-long-for-hmac-sha256-algorithm
+  expiration: 3600000
+  refresh-expiration: 604800000
