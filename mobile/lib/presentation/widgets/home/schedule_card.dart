@@ -3,6 +3,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../domain/entities/schedule.dart';
+import '../common/primary_button.dart';
 
 /// 일정 카드 위젯
 ///
@@ -76,25 +77,11 @@ class ScheduleCard extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.lg),
-        SizedBox(
-          width: double.infinity,
+        PrimaryButton(
+          text: '등록',
+          onPressed: onRegisterTap,
           height: AppSpacing.buttonHeightSmall,
-          child: OutlinedButton(
-            onPressed: onRegisterTap,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.textTertiary,
-              side: const BorderSide(color: AppColors.divider),
-              shape: RoundedRectangleBorder(
-                borderRadius: AppSpacing.buttonBorderRadius,
-              ),
-            ),
-            child: Text(
-              '등록',
-              style: AppTypography.bodyMedium.copyWith(
-                color: AppColors.textTertiary,
-              ),
-            ),
-          ),
+          fontSize: 14,
         ),
         const SizedBox(height: AppSpacing.lg),
       ],

@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/common/primary_button.dart';
 
 /// 로그인 화면
 ///
@@ -353,37 +354,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   /// 로그인 버튼
   Widget _buildLoginButton(bool isLoading) {
-    return SizedBox(
+    return PrimaryButton(
+      text: '로그인',
+      onPressed: _handleLogin,
+      isLoading: isLoading,
       height: 50,
-      child: ElevatedButton(
-        onPressed: isLoading ? null : _handleLogin,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.otokiBlue,
-          foregroundColor: AppColors.white,
-          disabledBackgroundColor: const Color(0xFF3A4A6A),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-          ),
-          elevation: 0,
-        ),
-        child: isLoading
-            ? const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: AppColors.white,
-                ),
-              )
-            : Text(
-                '로그인',
-                style: AppTypography.labelLarge.copyWith(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.white,
-                ),
-              ),
-      ),
+      fontSize: 16,
     );
   }
 
