@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import '../../../domain/entities/order.dart';
+import '../../../domain/entities/order_detail.dart';
 import '../../../domain/repositories/order_repository.dart';
 
 /// 주문 Mock Repository
@@ -390,5 +391,155 @@ class OrderMockRepository implements OrderRepository {
       isFirst: page == 0,
       isLast: page >= totalPages - 1 || totalPages == 0,
     );
+  }
+
+  /// Mock 주문 상세 데이터 (거래처 마감시간)
+  static final Map<int, String> _mockDeadlineTimes = {
+    1: '13:40',
+    2: '14:00',
+    3: '15:30',
+    4: '13:00',
+    5: '14:30',
+    6: '16:00',
+    7: '13:30',
+    8: '15:00',
+  };
+
+  /// Mock 주문한 제품 데이터
+  static List<OrderedItem> _getMockOrderedItems(int orderId) {
+    final random = Random(orderId); // orderId 기반 시드로 일관된 데이터 생성
+    final itemCount = random.nextInt(8) + 2; // 2~9개
+
+    final products = [
+      ('01101123', '갈릭 아이올리소스 240g'),
+      ('01101222', '오뚜기 3분 카레 100g'),
+      ('13310002', '미향500ML'),
+      ('23010011', '오감포차_크림새우180G'),
+      ('11110003', '토마토케찹500G'),
+      ('01202001', '진라면 매운맛 120g'),
+      ('01302010', '참깨라면 120g'),
+      ('02101003', '오뚜기밥 210g'),
+      ('03201001', '3분짜장 200g'),
+      ('04101002', '마요네즈 500g'),
+    ];
+
+    return List.generate(itemCount, (index) {
+      final product = products[index % products.length];
+      final boxes = (random.nextDouble() * 50 + 1).roundToDouble();
+      final pieces = (boxes * (random.nextInt(20) + 5)).toInt();
+      // orderId 4 (전송실패)의 경우 첫 번째 제품만 취소
+      final isCancelled =
+          orderId == 4 && index == 0 || orderId == 9 && index < 2;
+
+      return OrderedItem(
+        productCode: product.$1,
+        productName: product.$2,
+        totalQuantityBoxes: boxes,
+        totalQuantityPieces: pieces,
+        isCancelled: isCancelled,
+      );
+    });
+  }
+
+  /// Mock 주문 처리 현황 (마감후 주문에만 적용)
+  static OrderProcessingStatus? _getMockProcessingStatus(Order order) {
+    if (!order.isClosed) return null;
+
+    final items = _getMockOrderedItems(order.id);
+    final statuses = [
+      DeliveryStatus.waiting,
+      DeliveryStatus.shipping,
+      DeliveryStatus.delivered,
+    ];
+    final random = Random(order.id);
+
+    return OrderProcessingStatus(
+      sapOrderNumber: '030001${3650 + order.id}',
+      items: items.map((item) {
+        final statusIndex = random.nextInt(3);
+        final deliveredQty =
+            statusIndex == 2 ? '${item.totalQuantityPieces} EA' : '0 EA';
+        return ProcessingItem(
+          productCode: item.productCode,
+          productName: item.productName,
+          deliveredQuantity: deliveredQty,
+          deliveryStatus: statuses[statusIndex],
+        );
+      }).toList(),
+    );
+  }
+
+  /// Mock 반려 제품 (특정 주문에만 적용)
+  static List<RejectedItem>? _getMockRejectedItems(Order order) {
+    // id 1, 7 주문만 반려 제품 있음 (마감 완료된 주문 중 일부)
+    if (!order.isClosed || (order.id != 1 && order.id != 7)) return null;
+
+    final rejectedProducts = [
+      ('23010011', '오감포차_크림새우180G', 1, '납품일자가 업무일이 아닙니다.'),
+      ('11110003', '토마토케찹500G', 2, '납품일자가 업무일이 아닙니다.'),
+      ('01202001', '진라면 매운맛 120g', 3, '재고 부족'),
+      ('04101002', '마요네즈 500g', 5, '단가 불일치'),
+      ('03201001', '3분짜장 200g', 1, '최소 주문 수량 미달'),
+    ];
+
+    final count = order.id == 1 ? 5 : 2;
+    return rejectedProducts
+        .take(count)
+        .map((p) => RejectedItem(
+              productCode: p.$1,
+              productName: p.$2,
+              orderQuantityBoxes: p.$3,
+              rejectionReason: p.$4,
+            ))
+        .toList();
+  }
+
+  @override
+  Future<OrderDetail> getOrderDetail({required int orderId}) async {
+    await _simulateDelay();
+
+    final order = _mockOrders.firstWhere(
+      (o) => o.id == orderId,
+      orElse: () => throw Exception('ORDER_NOT_FOUND'),
+    );
+
+    final orderedItems = _getMockOrderedItems(orderId);
+    final processingStatus = _getMockProcessingStatus(order);
+    final rejectedItems = _getMockRejectedItems(order);
+
+    return OrderDetail(
+      id: order.id,
+      orderRequestNumber: order.orderRequestNumber,
+      clientId: order.clientId,
+      clientName: order.clientName,
+      clientDeadlineTime: _mockDeadlineTimes[order.clientId],
+      orderDate: order.orderDate,
+      deliveryDate: order.deliveryDate,
+      totalAmount: order.totalAmount,
+      totalApprovedAmount: order.isClosed ? (order.totalAmount * 0.85).toInt() : null,
+      approvalStatus: order.approvalStatus,
+      isClosed: order.isClosed,
+      orderedItemCount: orderedItems.length,
+      orderedItems: orderedItems,
+      orderProcessingStatus: processingStatus,
+      rejectedItems: rejectedItems,
+    );
+  }
+
+  @override
+  Future<void> resendOrder({required int orderId}) async {
+    await _simulateDelay();
+
+    final order = _mockOrders.firstWhere(
+      (o) => o.id == orderId,
+      orElse: () => throw Exception('ORDER_NOT_FOUND'),
+    );
+
+    if (order.approvalStatus != ApprovalStatus.sendFailed) {
+      throw Exception('INVALID_STATUS');
+    }
+
+    // Mock: 재전송 성공 시뮬레이션
+    // 실제 구현에서는 API 호출 후 상태가 변경됨
   }
 }

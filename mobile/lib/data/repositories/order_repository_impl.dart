@@ -1,4 +1,5 @@
 import '../../domain/entities/order.dart';
+import '../../domain/entities/order_detail.dart';
 import '../../domain/repositories/order_repository.dart';
 import '../datasources/order_remote_datasource.dart';
 
@@ -48,5 +49,16 @@ class OrderRepositoryImpl implements OrderRepository {
       isFirst: response.first,
       isLast: response.last,
     );
+  }
+
+  @override
+  Future<OrderDetail> getOrderDetail({required int orderId}) async {
+    final response = await _remoteDataSource.getOrderDetail(orderId: orderId);
+    return response.toEntity();
+  }
+
+  @override
+  Future<void> resendOrder({required int orderId}) async {
+    await _remoteDataSource.resendOrder(orderId: orderId);
   }
 }

@@ -1,4 +1,5 @@
 import '../entities/order.dart';
+import '../entities/order_detail.dart';
 
 /// 주문 목록 조회 결과 값 객체
 ///
@@ -104,4 +105,17 @@ abstract class OrderRepository {
     int page = 0,
     int size = 20,
   });
+
+  /// 주문 상세 조회
+  ///
+  /// [orderId]: 주문 고유 ID
+  ///
+  /// Returns: 주문 상세 정보 (주문정보 + 제품목록 + 처리현황 + 반려제품)
+  Future<OrderDetail> getOrderDetail({required int orderId});
+
+  /// 주문 재전송
+  ///
+  /// [orderId]: 재전송할 주문 ID
+  /// 전송실패 상태의 주문을 재전송합니다.
+  Future<void> resendOrder({required int orderId});
 }

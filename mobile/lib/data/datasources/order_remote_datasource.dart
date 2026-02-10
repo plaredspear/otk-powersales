@@ -1,3 +1,4 @@
+import '../models/order_detail_model.dart';
 import '../models/order_model.dart';
 
 /// 주문 API 응답 데이터를 담는 모델
@@ -59,4 +60,14 @@ abstract class OrderRemoteDataSource {
     int page = 0,
     int size = 20,
   });
+
+  /// GET /api/v1/me/orders/{orderId}
+  ///
+  /// 주문 상세 정보를 조회합니다.
+  Future<OrderDetailModel> getOrderDetail({required int orderId});
+
+  /// POST /api/v1/me/orders/{orderId}/resend
+  ///
+  /// 전송실패 주문을 재전송합니다.
+  Future<void> resendOrder({required int orderId});
 }
