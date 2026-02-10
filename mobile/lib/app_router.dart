@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'presentation/pages/attendance_page.dart';
 import 'presentation/pages/attendance_complete_page.dart';
+import 'presentation/pages/order_list_page.dart';
 import 'presentation/pages/product_search_page.dart';
 import 'presentation/pages/my_stores_page.dart';
 import 'presentation/pages/product_search_result_page.dart';
@@ -23,6 +24,7 @@ class AppRouter {
   static const String myStores = '/my-stores';
   static const String productSearch = '/product-search';
   static const String productSearchResult = '/product-search/result';
+  static const String orderList = '/order-list';
 
   /// 라우트 맵
   static Map<String, WidgetBuilder> get routes => {
@@ -35,6 +37,7 @@ class AppRouter {
         myStores: (context) => const MyStoresPage(),
         productSearch: (context) => const ProductSearchPage(),
         productSearchResult: (context) => const ProductSearchResultPage(),
+        orderList: (context) => const OrderListPage(),
       };
 
   /// 초기 라우트 - 로그인 화면에서 시작
