@@ -33,6 +33,10 @@ class User(
     @Column(name = "role", nullable = false, length = 20)
     val role: UserRole = UserRole.USER,
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "worker_type", nullable = false, length = 20)
+    val workerType: WorkerType = WorkerType.PATROL,
+
     @Column(name = "password_change_required", nullable = false)
     var passwordChangeRequired: Boolean = true,
 
