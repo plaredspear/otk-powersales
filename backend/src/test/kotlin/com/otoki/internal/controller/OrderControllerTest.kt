@@ -673,7 +673,7 @@ class OrderControllerTest {
         fun resendOrder_alreadyClosed_returns400() {
             // Given
             whenever(orderService.resendOrder(eq(1L), eq(1L)))
-                .thenThrow(OrderAlreadyClosedException())
+                .thenThrow(OrderAlreadyClosedException("마감된 주문은 재전송할 수 없습니다"))
 
             // When & Then
             mockMvc.perform(
@@ -720,6 +720,186 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error.code").value("FORBIDDEN"))
                 .andExpect(jsonPath("$.error.message").value("접근 권한이 없습니다"))
+        }
+    }
+
+    // ========== 주문 취소 테스트 ==========
+
+    @Nested
+    @DisplayName("주문 취소 - POST /api/v1/me/orders/{orderId}/cancel")
+    inner class CancelOrder {
+
+        @Test
+        @DisplayName("주문 취소 성공 (단일 제품) - 200 OK")
+        fun cancelOrder_singleProduct_returnsOk() {
+            // Given
+            val response = OrderCancelResponse(
+                cancelledCount = 1,
+                cancelledProductCodes = listOf("P001")
+            )
+            whenever(orderService.cancelOrder(eq(1L), eq(1L), eq(listOf("P001"))))
+                .thenReturn(response)
+
+            // When & Then
+            mockMvc.perform(
+                post("/api/v1/me/orders/1/cancel")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"product_codes": ["P001"]}""")
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.cancelled_count").value(1))
+                .andExpect(jsonPath("$.data.cancelled_product_codes").isArray)
+                .andExpect(jsonPath("$.data.cancelled_product_codes.length()").value(1))
+                .andExpect(jsonPath("$.data.cancelled_product_codes[0]").value("P001"))
+                .andExpect(jsonPath("$.message").value("주문이 취소되었습니다"))
+        }
+
+        @Test
+        @DisplayName("주문 취소 성공 (복수 제품) - 200 OK")
+        fun cancelOrder_multipleProducts_returnsOk() {
+            // Given
+            val response = OrderCancelResponse(
+                cancelledCount = 3,
+                cancelledProductCodes = listOf("P001", "P002", "P003")
+            )
+            whenever(orderService.cancelOrder(eq(1L), eq(1L), eq(listOf("P001", "P002", "P003"))))
+                .thenReturn(response)
+
+            // When & Then
+            mockMvc.perform(
+                post("/api/v1/me/orders/1/cancel")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"product_codes": ["P001", "P002", "P003"]}""")
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.cancelled_count").value(3))
+                .andExpect(jsonPath("$.data.cancelled_product_codes.length()").value(3))
+                .andExpect(jsonPath("$.message").value("주문이 취소되었습니다"))
+        }
+
+        @Test
+        @DisplayName("빈 제품코드 배열 - 400 INVALID_PARAMETER")
+        fun cancelOrder_emptyProductCodes_returns400() {
+            // When & Then
+            mockMvc.perform(
+                post("/api/v1/me/orders/1/cancel")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"product_codes": []}""")
+            )
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"))
+        }
+
+        @Test
+        @DisplayName("productCodes 누락 - 400 INVALID_PARAMETER")
+        fun cancelOrder_missingProductCodes_returns400() {
+            // When & Then
+            mockMvc.perform(
+                post("/api/v1/me/orders/1/cancel")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{}""")
+            )
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"))
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 주문 - 404 ORDER_NOT_FOUND")
+        fun cancelOrder_notFound_returns404() {
+            // Given
+            whenever(orderService.cancelOrder(eq(1L), eq(999L), any()))
+                .thenThrow(OrderNotFoundException())
+
+            // When & Then
+            mockMvc.perform(
+                post("/api/v1/me/orders/999/cancel")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"product_codes": ["P001"]}""")
+            )
+                .andExpect(status().isNotFound)
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("ORDER_NOT_FOUND"))
+                .andExpect(jsonPath("$.error.message").value("주문을 찾을 수 없습니다"))
+        }
+
+        @Test
+        @DisplayName("다른 사용자 주문 - 403 FORBIDDEN")
+        fun cancelOrder_forbidden_returns403() {
+            // Given
+            whenever(orderService.cancelOrder(eq(1L), eq(1L), any()))
+                .thenThrow(ForbiddenOrderAccessException())
+
+            // When & Then
+            mockMvc.perform(
+                post("/api/v1/me/orders/1/cancel")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"product_codes": ["P001"]}""")
+            )
+                .andExpect(status().isForbidden)
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("FORBIDDEN"))
+                .andExpect(jsonPath("$.error.message").value("접근 권한이 없습니다"))
+        }
+
+        @Test
+        @DisplayName("마감 후 주문 - 400 ORDER_ALREADY_CLOSED")
+        fun cancelOrder_alreadyClosed_returns400() {
+            // Given
+            whenever(orderService.cancelOrder(eq(1L), eq(1L), any()))
+                .thenThrow(OrderAlreadyClosedException("마감된 주문은 취소할 수 없습니다"))
+
+            // When & Then
+            mockMvc.perform(
+                post("/api/v1/me/orders/1/cancel")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"product_codes": ["P001"]}""")
+            )
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("ORDER_ALREADY_CLOSED"))
+                .andExpect(jsonPath("$.error.message").value("마감된 주문은 취소할 수 없습니다"))
+        }
+
+        @Test
+        @DisplayName("이미 취소된 제품 - 400 ALREADY_CANCELLED")
+        fun cancelOrder_alreadyCancelled_returns400() {
+            // Given
+            whenever(orderService.cancelOrder(eq(1L), eq(1L), any()))
+                .thenThrow(AlreadyCancelledException(listOf("P001", "P002")))
+
+            // When & Then
+            mockMvc.perform(
+                post("/api/v1/me/orders/1/cancel")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"product_codes": ["P001", "P002"]}""")
+            )
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("ALREADY_CANCELLED"))
+                .andExpect(jsonPath("$.error.message").value("이미 취소된 제품이 포함되어 있습니다: P001, P002"))
+        }
+
+        @Test
+        @DisplayName("주문에 없는 제품 - 400 PRODUCT_NOT_IN_ORDER")
+        fun cancelOrder_productNotInOrder_returns400() {
+            // Given
+            whenever(orderService.cancelOrder(eq(1L), eq(1L), any()))
+                .thenThrow(ProductNotInOrderException(listOf("P999")))
+
+            // When & Then
+            mockMvc.perform(
+                post("/api/v1/me/orders/1/cancel")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"product_codes": ["P999"]}""")
+            )
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("PRODUCT_NOT_IN_ORDER"))
+                .andExpect(jsonPath("$.error.message").value("해당 주문에 포함되지 않은 제품입니다: P999"))
         }
     }
 

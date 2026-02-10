@@ -1,5 +1,6 @@
 package com.otoki.internal.service
 
+import com.otoki.internal.dto.response.OrderCancelResponse
 import com.otoki.internal.dto.response.OrderDetailResponse
 import com.otoki.internal.dto.response.OrderSummaryResponse
 import com.otoki.internal.entity.ApprovalStatus
@@ -8,6 +9,7 @@ import com.otoki.internal.repository.OrderItemRepository
 import com.otoki.internal.repository.OrderProcessingRecordRepository
 import com.otoki.internal.repository.OrderRejectionRepository
 import com.otoki.internal.repository.OrderRepository
+import com.otoki.internal.repository.UserRepository
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
@@ -28,6 +30,7 @@ class OrderService(
     private val orderItemRepository: OrderItemRepository,
     private val orderProcessingRecordRepository: OrderProcessingRecordRepository,
     private val orderRejectionRepository: OrderRejectionRepository,
+    private val userRepository: UserRepository,
     private val clock: Clock = Clock.systemDefaultZone()
 ) {
 
@@ -156,7 +159,7 @@ class OrderService(
         // 3. 마감 여부 검증
         val isClosed = calculateIsClosed(order.deliveryDate, order.clientDeadlineTime)
         if (isClosed) {
-            throw OrderAlreadyClosedException()
+            throw OrderAlreadyClosedException("마감된 주문은 재전송할 수 없습니다")
         }
 
         // 4. 승인상태 검증
@@ -167,6 +170,75 @@ class OrderService(
         // 5. 상태 변경 (SEND_FAILED -> RESEND)
         order.approvalStatus = ApprovalStatus.RESEND
         orderRepository.save(order)
+    }
+
+    /**
+     * 주문 취소
+     *
+     * 선택한 제품들의 주문을 취소한다.
+     *
+     * @param userId 로그인 사용자 ID
+     * @param orderId 주문 ID
+     * @param productCodes 취소할 제품코드 목록
+     * @return 취소 결과 (취소된 제품 수, 제품코드 목록)
+     * @throws OrderNotFoundException 주문이 존재하지 않는 경우
+     * @throws ForbiddenOrderAccessException 다른 사용자의 주문에 접근한 경우
+     * @throws OrderAlreadyClosedException 마감된 주문인 경우
+     * @throws ProductNotInOrderException 요청한 제품코드가 해당 주문에 없는 경우
+     * @throws AlreadyCancelledException 이미 취소된 제품이 포함된 경우
+     */
+    @Transactional
+    fun cancelOrder(userId: Long, orderId: Long, productCodes: List<String>): OrderCancelResponse {
+        // 1. 주문 조회
+        val order = orderRepository.findById(orderId)
+            .orElseThrow { OrderNotFoundException() }
+
+        // 2. 사용자 권한 검증 (IDOR 방지)
+        if (order.user.id != userId) {
+            throw ForbiddenOrderAccessException()
+        }
+
+        // 3. 마감 여부 검증
+        val isClosed = calculateIsClosed(order.deliveryDate, order.clientDeadlineTime)
+        if (isClosed) {
+            throw OrderAlreadyClosedException("마감된 주문은 취소할 수 없습니다")
+        }
+
+        // 4. 해당 주문의 아이템 조회
+        val orderItems = orderItemRepository.findByOrderId(orderId)
+        val orderItemsByProductCode = orderItems.associateBy { it.productCode }
+
+        // 5. 제품 유효성 검증 — 해당 주문에 포함되지 않은 제품코드 확인
+        val notInOrder = productCodes.filter { it !in orderItemsByProductCode }
+        if (notInOrder.isNotEmpty()) {
+            throw ProductNotInOrderException(notInOrder)
+        }
+
+        // 6. 이미 취소된 제품 확인
+        val alreadyCancelled = productCodes.filter { orderItemsByProductCode[it]!!.isCancelled }
+        if (alreadyCancelled.isNotEmpty()) {
+            throw AlreadyCancelledException(alreadyCancelled)
+        }
+
+        // 7. 취소 요청자 사번 조회
+        val user = userRepository.findById(userId)
+            .orElseThrow { ForbiddenOrderAccessException() }
+
+        // 8. 취소 처리
+        val cancelledItems = productCodes.map { code ->
+            val item = orderItemsByProductCode[code]!!
+            item.cancel(user.employeeId)
+            item
+        }
+
+        // 9. 저장
+        orderItemRepository.saveAll(cancelledItems)
+
+        // 10. 응답 구성
+        return OrderCancelResponse(
+            cancelledCount = cancelledItems.size,
+            cancelledProductCodes = cancelledItems.map { it.productCode }
+        )
     }
 
     /**

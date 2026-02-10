@@ -48,10 +48,28 @@ class InvalidOrderStatusException : BusinessException(
 )
 
 /**
- * 마감된 주문 재전송 시도
+ * 마감된 주문에 대한 변경 시도 (재전송, 취소 등)
  */
-class OrderAlreadyClosedException : BusinessException(
+class OrderAlreadyClosedException(detail: String = "마감된 주문은 변경할 수 없습니다") : BusinessException(
     errorCode = "ORDER_ALREADY_CLOSED",
-    message = "마감된 주문은 재전송할 수 없습니다",
+    message = detail,
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+/**
+ * 이미 취소된 제품이 포함된 요청
+ */
+class AlreadyCancelledException(productCodes: List<String>) : BusinessException(
+    errorCode = "ALREADY_CANCELLED",
+    message = "이미 취소된 제품이 포함되어 있습니다: ${productCodes.joinToString(", ")}",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+/**
+ * 해당 주문에 포함되지 않은 제품코드
+ */
+class ProductNotInOrderException(productCodes: List<String>) : BusinessException(
+    errorCode = "PRODUCT_NOT_IN_ORDER",
+    message = "해당 주문에 포함되지 않은 제품입니다: ${productCodes.joinToString(", ")}",
     httpStatus = HttpStatus.BAD_REQUEST
 )

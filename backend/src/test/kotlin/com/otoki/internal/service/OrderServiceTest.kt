@@ -10,16 +10,20 @@ import com.otoki.internal.entity.Store
 import com.otoki.internal.entity.User
 import com.otoki.internal.entity.UserRole
 import com.otoki.internal.entity.WorkerType
+import com.otoki.internal.dto.response.OrderCancelResponse
+import com.otoki.internal.exception.AlreadyCancelledException
 import com.otoki.internal.exception.ForbiddenOrderAccessException
 import com.otoki.internal.exception.InvalidDateRangeException
 import com.otoki.internal.exception.InvalidOrderParameterException
 import com.otoki.internal.exception.InvalidOrderStatusException
 import com.otoki.internal.exception.OrderAlreadyClosedException
 import com.otoki.internal.exception.OrderNotFoundException
+import com.otoki.internal.exception.ProductNotInOrderException
 import com.otoki.internal.repository.OrderItemRepository
 import com.otoki.internal.repository.OrderProcessingRecordRepository
 import com.otoki.internal.repository.OrderRejectionRepository
 import com.otoki.internal.repository.OrderRepository
+import com.otoki.internal.repository.UserRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
@@ -61,6 +65,9 @@ class OrderServiceTest {
     private lateinit var orderRejectionRepository: OrderRejectionRepository
 
     @Mock
+    private lateinit var userRepository: UserRepository
+
+    @Mock
     private lateinit var clock: Clock
 
     private val testUser = User(
@@ -86,6 +93,7 @@ class OrderServiceTest {
             orderItemRepository = orderItemRepository,
             orderProcessingRecordRepository = orderProcessingRecordRepository,
             orderRejectionRepository = orderRejectionRepository,
+            userRepository = userRepository,
             clock = customClock ?: clock
         )
     }
@@ -934,6 +942,253 @@ class OrderServiceTest {
         }
     }
 
+    // ========== cancelOrder Tests ==========
+
+    @Nested
+    @DisplayName("주문 취소 - cancelOrder")
+    inner class CancelOrder {
+
+        @Test
+        @DisplayName("단일 제품 취소 성공 - isCancelled=true, cancelledAt 설정")
+        fun cancelOrder_singleProduct_success() {
+            // Given - 마감 전 시점으로 clock 고정
+            val fixedClock = Clock.fixed(
+                LocalDateTime.of(2026, 2, 4, 10, 0).atZone(ZoneId.of("Asia/Seoul")).toInstant(),
+                ZoneId.of("Asia/Seoul")
+            )
+            val orderService = createOrderService(fixedClock)
+            val order = createTestOrder(
+                id = 1L,
+                orderRequestNumber = "OP00000001",
+                approvalStatus = ApprovalStatus.APPROVED,
+                isClosed = false
+            )
+            val item = createTestOrderItem(1L, order, "P001", "제품A", 10.0, 5, isCancelled = false)
+            val items = listOf(item)
+
+            whenever(orderRepository.findById(1L)).thenReturn(Optional.of(order))
+            whenever(orderItemRepository.findByOrderId(1L)).thenReturn(items)
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(testUser))
+
+            // When
+            val result = orderService.cancelOrder(userId = 1L, orderId = 1L, productCodes = listOf("P001"))
+
+            // Then
+            assertThat(result.cancelledCount).isEqualTo(1)
+            assertThat(result.cancelledProductCodes).containsExactly("P001")
+            assertThat(item.isCancelled).isTrue()
+            assertThat(item.cancelledAt).isNotNull()
+            assertThat(item.cancelledBy).isEqualTo("12345678")
+            verify(orderItemRepository).saveAll(items)
+        }
+
+        @Test
+        @DisplayName("복수 제품 취소 성공 - 3개 모두 취소")
+        fun cancelOrder_multipleProducts_success() {
+            // Given - 마감 전 시점으로 clock 고정
+            val fixedClock = Clock.fixed(
+                LocalDateTime.of(2026, 2, 4, 10, 0).atZone(ZoneId.of("Asia/Seoul")).toInstant(),
+                ZoneId.of("Asia/Seoul")
+            )
+            val orderService = createOrderService(fixedClock)
+            val order = createTestOrder(
+                id = 1L,
+                orderRequestNumber = "OP00000001",
+                approvalStatus = ApprovalStatus.APPROVED,
+                isClosed = false
+            )
+            val item1 = createTestOrderItem(1L, order, "P001", "제품A", 10.0, 5)
+            val item2 = createTestOrderItem(2L, order, "P002", "제품B", 5.0, 10)
+            val item3 = createTestOrderItem(3L, order, "P003", "제품C", 8.0, 3)
+            val items = listOf(item1, item2, item3)
+
+            whenever(orderRepository.findById(1L)).thenReturn(Optional.of(order))
+            whenever(orderItemRepository.findByOrderId(1L)).thenReturn(items)
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(testUser))
+
+            // When
+            val result = orderService.cancelOrder(
+                userId = 1L,
+                orderId = 1L,
+                productCodes = listOf("P001", "P002", "P003")
+            )
+
+            // Then
+            assertThat(result.cancelledCount).isEqualTo(3)
+            assertThat(result.cancelledProductCodes).containsExactlyInAnyOrder("P001", "P002", "P003")
+            assertThat(item1.isCancelled).isTrue()
+            assertThat(item2.isCancelled).isTrue()
+            assertThat(item3.isCancelled).isTrue()
+            verify(orderItemRepository).saveAll(items)
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 주문 - OrderNotFoundException")
+        fun cancelOrder_orderNotFound_throwsException() {
+            // Given
+            val orderService = createOrderService()
+            whenever(orderRepository.findById(999L)).thenReturn(Optional.empty())
+
+            // When & Then
+            assertThatThrownBy {
+                orderService.cancelOrder(userId = 1L, orderId = 999L, productCodes = listOf("P001"))
+            }.isInstanceOf(OrderNotFoundException::class.java)
+                .hasMessageContaining("주문을 찾을 수 없습니다")
+        }
+
+        @Test
+        @DisplayName("다른 사용자 주문 - ForbiddenOrderAccessException")
+        fun cancelOrder_differentUser_throwsException() {
+            // Given
+            val orderService = createOrderService()
+            val otherUser = User(
+                id = 2L,
+                employeeId = "87654321",
+                password = "encoded",
+                name = "김철수",
+                department = "영업부",
+                branchName = "서울지점",
+                role = UserRole.USER,
+                workerType = WorkerType.PATROL
+            )
+            val order = createTestOrder(
+                id = 1L,
+                orderRequestNumber = "OP00000001",
+                approvalStatus = ApprovalStatus.APPROVED,
+                user = otherUser
+            )
+
+            whenever(orderRepository.findById(1L)).thenReturn(Optional.of(order))
+
+            // When & Then
+            assertThatThrownBy {
+                orderService.cancelOrder(userId = 1L, orderId = 1L, productCodes = listOf("P001"))
+            }.isInstanceOf(ForbiddenOrderAccessException::class.java)
+                .hasMessageContaining("접근 권한이 없습니다")
+        }
+
+        @Test
+        @DisplayName("마감 후 취소 시도 - OrderAlreadyClosedException")
+        fun cancelOrder_orderClosed_throwsException() {
+            // Given - 납기일(2026-02-04) 이후 시점의 Clock 사용
+            val fixedClock = Clock.fixed(
+                LocalDateTime.of(2026, 2, 5, 10, 0).atZone(ZoneId.of("Asia/Seoul")).toInstant(),
+                ZoneId.of("Asia/Seoul")
+            )
+            val orderService = createOrderService(fixedClock)
+            val order = createTestOrder(
+                id = 1L,
+                orderRequestNumber = "OP00000001",
+                approvalStatus = ApprovalStatus.APPROVED,
+                isClosed = true
+            )
+
+            whenever(orderRepository.findById(1L)).thenReturn(Optional.of(order))
+
+            // When & Then
+            assertThatThrownBy {
+                orderService.cancelOrder(userId = 1L, orderId = 1L, productCodes = listOf("P001"))
+            }.isInstanceOf(OrderAlreadyClosedException::class.java)
+                .hasMessageContaining("마감된 주문은 취소할 수 없습니다")
+
+            verify(orderItemRepository, never()).saveAll<OrderItem>(any())
+        }
+
+        @Test
+        @DisplayName("이미 취소된 제품 포함 - AlreadyCancelledException")
+        fun cancelOrder_alreadyCancelledProduct_throwsException() {
+            // Given - 마감 전 시점으로 clock 고정
+            val fixedClock = Clock.fixed(
+                LocalDateTime.of(2026, 2, 4, 10, 0).atZone(ZoneId.of("Asia/Seoul")).toInstant(),
+                ZoneId.of("Asia/Seoul")
+            )
+            val orderService = createOrderService(fixedClock)
+            val order = createTestOrder(
+                id = 1L,
+                orderRequestNumber = "OP00000001",
+                approvalStatus = ApprovalStatus.APPROVED,
+                isClosed = false
+            )
+            val item = createTestOrderItem(1L, order, "P001", "제품A", 10.0, 5, isCancelled = true)
+            val items = listOf(item)
+
+            whenever(orderRepository.findById(1L)).thenReturn(Optional.of(order))
+            whenever(orderItemRepository.findByOrderId(1L)).thenReturn(items)
+
+            // When & Then
+            assertThatThrownBy {
+                orderService.cancelOrder(userId = 1L, orderId = 1L, productCodes = listOf("P001"))
+            }.isInstanceOf(AlreadyCancelledException::class.java)
+
+            verify(orderItemRepository, never()).saveAll<OrderItem>(any())
+        }
+
+        @Test
+        @DisplayName("주문에 없는 제품코드 - ProductNotInOrderException")
+        fun cancelOrder_productNotInOrder_throwsException() {
+            // Given - 마감 전 시점으로 clock 고정
+            val fixedClock = Clock.fixed(
+                LocalDateTime.of(2026, 2, 4, 10, 0).atZone(ZoneId.of("Asia/Seoul")).toInstant(),
+                ZoneId.of("Asia/Seoul")
+            )
+            val orderService = createOrderService(fixedClock)
+            val order = createTestOrder(
+                id = 1L,
+                orderRequestNumber = "OP00000001",
+                approvalStatus = ApprovalStatus.APPROVED,
+                isClosed = false
+            )
+            val item = createTestOrderItem(1L, order, "P001", "제품A", 10.0, 5)
+            val items = listOf(item)
+
+            whenever(orderRepository.findById(1L)).thenReturn(Optional.of(order))
+            whenever(orderItemRepository.findByOrderId(1L)).thenReturn(items)
+
+            // When & Then
+            assertThatThrownBy {
+                orderService.cancelOrder(userId = 1L, orderId = 1L, productCodes = listOf("P999"))
+            }.isInstanceOf(ProductNotInOrderException::class.java)
+
+            verify(orderItemRepository, never()).saveAll<OrderItem>(any())
+        }
+
+        @Test
+        @DisplayName("전체 롤백 검증 - 3개 중 1개 이미 취소, saveAll 호출 안됨")
+        fun cancelOrder_partialAlreadyCancelled_rollbackAll() {
+            // Given - 마감 전 시점으로 clock 고정
+            val fixedClock = Clock.fixed(
+                LocalDateTime.of(2026, 2, 4, 10, 0).atZone(ZoneId.of("Asia/Seoul")).toInstant(),
+                ZoneId.of("Asia/Seoul")
+            )
+            val orderService = createOrderService(fixedClock)
+            val order = createTestOrder(
+                id = 1L,
+                orderRequestNumber = "OP00000001",
+                approvalStatus = ApprovalStatus.APPROVED,
+                isClosed = false
+            )
+            val item1 = createTestOrderItem(1L, order, "P001", "제품A", 10.0, 5, isCancelled = false)
+            val item2 = createTestOrderItem(2L, order, "P002", "제품B", 5.0, 10, isCancelled = true) // 이미 취소됨
+            val item3 = createTestOrderItem(3L, order, "P003", "제품C", 8.0, 3, isCancelled = false)
+            val items = listOf(item1, item2, item3)
+
+            whenever(orderRepository.findById(1L)).thenReturn(Optional.of(order))
+            whenever(orderItemRepository.findByOrderId(1L)).thenReturn(items)
+
+            // When & Then
+            assertThatThrownBy {
+                orderService.cancelOrder(
+                    userId = 1L,
+                    orderId = 1L,
+                    productCodes = listOf("P001", "P002", "P003")
+                )
+            }.isInstanceOf(AlreadyCancelledException::class.java)
+
+            // 롤백 검증 - saveAll이 호출되지 않음
+            verify(orderItemRepository, never()).saveAll<OrderItem>(any())
+        }
+    }
+
     // ========== calculateIsClosed Tests ==========
 
     @Nested
@@ -1098,7 +1353,8 @@ class OrderServiceTest {
         productCode: String,
         productName: String,
         quantityBoxes: Double,
-        quantityPieces: Int
+        quantityPieces: Int,
+        isCancelled: Boolean = false
     ): OrderItem {
         return OrderItem(
             id = id,
@@ -1107,7 +1363,7 @@ class OrderServiceTest {
             productName = productName,
             quantityBoxes = quantityBoxes,
             quantityPieces = quantityPieces,
-            isCancelled = false
+            isCancelled = isCancelled
         )
     }
 

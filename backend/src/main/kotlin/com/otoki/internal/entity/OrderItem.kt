@@ -37,7 +37,13 @@ class OrderItem(
     val quantityPieces: Int = 0,
 
     @Column(name = "is_cancelled", nullable = false)
-    val isCancelled: Boolean = false,
+    var isCancelled: Boolean = false,
+
+    @Column(name = "cancelled_at")
+    var cancelledAt: LocalDateTime? = null,
+
+    @Column(name = "cancelled_by", length = 8)
+    var cancelledBy: String? = null,
 
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
@@ -45,6 +51,17 @@ class OrderItem(
     @Column(name = "updated_at", nullable = false)
     var updatedAt: LocalDateTime = LocalDateTime.now()
 ) {
+
+    /**
+     * 주문 항목을 취소한다.
+     *
+     * @param employeeId 취소 요청자 사번
+     */
+    fun cancel(employeeId: String) {
+        this.isCancelled = true
+        this.cancelledAt = LocalDateTime.now()
+        this.cancelledBy = employeeId
+    }
 
     @PreUpdate
     fun onPreUpdate() {

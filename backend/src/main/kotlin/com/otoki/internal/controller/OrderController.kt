@@ -1,10 +1,13 @@
 package com.otoki.internal.controller
 
 import com.otoki.internal.dto.ApiResponse
+import com.otoki.internal.dto.request.OrderCancelRequest
+import com.otoki.internal.dto.response.OrderCancelResponse
 import com.otoki.internal.dto.response.OrderDetailResponse
 import com.otoki.internal.dto.response.OrderSummaryResponse
 import com.otoki.internal.security.UserPrincipal
 import com.otoki.internal.service.OrderService
+import jakarta.validation.Valid
 import org.springframework.data.domain.Page
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.ResponseEntity
@@ -87,5 +90,27 @@ class OrderController(
             orderId = orderId
         )
         return ResponseEntity.ok(ApiResponse.success(null as Any?, "주문이 재전송되었습니다"))
+    }
+
+    /**
+     * 주문 취소
+     * POST /api/v1/me/orders/{orderId}/cancel
+     *
+     * @param principal 인증된 사용자 정보
+     * @param orderId 주문 고유 ID
+     * @param request 취소할 제품코드 목록
+     */
+    @PostMapping("/orders/{orderId}/cancel")
+    fun cancelOrder(
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @PathVariable orderId: Long,
+        @Valid @RequestBody request: OrderCancelRequest
+    ): ResponseEntity<ApiResponse<OrderCancelResponse>> {
+        val result = orderService.cancelOrder(
+            userId = principal.userId,
+            orderId = orderId,
+            productCodes = request.productCodes
+        )
+        return ResponseEntity.ok(ApiResponse.success(result, "주문이 취소되었습니다"))
     }
 }

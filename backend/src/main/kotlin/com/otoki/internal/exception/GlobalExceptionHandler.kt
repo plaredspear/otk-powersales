@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.security.access.AccessDeniedException
 import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.validation.FieldError
+import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -38,6 +39,24 @@ class GlobalExceptionHandler {
         val response = ApiResponse.error<Any>(
             code = "INVALID_PARAMETER",
             message = errors
+        )
+
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(response)
+    }
+
+    /**
+     * 요청 본문 파싱 오류 예외 처리 (필수 필드 누락, JSON 형식 오류 등)
+     */
+    @ExceptionHandler(HttpMessageNotReadableException::class)
+    fun handleHttpMessageNotReadableException(
+        ex: HttpMessageNotReadableException,
+        request: WebRequest
+    ): ResponseEntity<ApiResponse<Any>> {
+        val response = ApiResponse.error<Any>(
+            code = "INVALID_PARAMETER",
+            message = "요청 본문이 올바르지 않습니다"
         )
 
         return ResponseEntity
