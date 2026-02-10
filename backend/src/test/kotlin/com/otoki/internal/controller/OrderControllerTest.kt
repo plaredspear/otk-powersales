@@ -1,9 +1,8 @@
 package com.otoki.internal.controller
 
-import com.otoki.internal.dto.response.OrderSummaryResponse
+import com.otoki.internal.dto.response.*
 import com.otoki.internal.entity.UserRole
-import com.otoki.internal.exception.InvalidDateRangeException
-import com.otoki.internal.exception.InvalidOrderParameterException
+import com.otoki.internal.exception.*
 import com.otoki.internal.security.JwtAuthenticationFilter
 import com.otoki.internal.security.JwtTokenProvider
 import com.otoki.internal.security.UserPrincipal
@@ -12,11 +11,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.isNull
-import org.mockito.kotlin.whenever
+import org.mockito.kotlin.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
@@ -28,6 +23,7 @@ import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
@@ -383,6 +379,347 @@ class OrderControllerTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.content[0].client_deadline_time").doesNotExist())
+        }
+    }
+
+    // ========== 주문 상세 조회 테스트 ==========
+
+    @Nested
+    @DisplayName("주문 상세 조회 - GET /api/v1/me/orders/{orderId}")
+    inner class GetOrderDetail {
+
+        @Test
+        @DisplayName("마감전 주문 상세 조회 성공 - 200 OK")
+        fun getOrderDetail_beforeClosed_returnsOk() {
+            // Given
+            val detailResponse = OrderDetailResponse(
+                id = 1L,
+                orderRequestNumber = "OP00000074",
+                clientId = 100L,
+                clientName = "천사푸드",
+                clientDeadlineTime = "13:40",
+                orderDate = "2026-02-01",
+                deliveryDate = "2026-02-04",
+                totalAmount = 612000000L,
+                totalApprovedAmount = 612000000L,
+                approvalStatus = "APPROVED",
+                isClosed = false,
+                orderedItemCount = 2,
+                orderedItems = listOf(
+                    OrderedItemResponse(
+                        productCode = "P001",
+                        productName = "진라면 순한맛 120g*40입",
+                        totalQuantityBoxes = 50.0,
+                        totalQuantityPieces = 0,
+                        isCancelled = false
+                    ),
+                    OrderedItemResponse(
+                        productCode = "P002",
+                        productName = "진라면 매운맛 120g*40입",
+                        totalQuantityBoxes = 30.0,
+                        totalQuantityPieces = 10,
+                        isCancelled = false
+                    )
+                ),
+                orderProcessingStatus = null,
+                rejectedItems = null
+            )
+            whenever(orderService.getOrderDetail(eq(1L), eq(1L))).thenReturn(detailResponse)
+
+            // When & Then
+            mockMvc.perform(
+                get("/api/v1/me/orders/1")
+                    .contentType(MediaType.APPLICATION_JSON)
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(1))
+                .andExpect(jsonPath("$.data.order_request_number").value("OP00000074"))
+                .andExpect(jsonPath("$.data.client_id").value(100))
+                .andExpect(jsonPath("$.data.client_name").value("천사푸드"))
+                .andExpect(jsonPath("$.data.client_deadline_time").value("13:40"))
+                .andExpect(jsonPath("$.data.order_date").value("2026-02-01"))
+                .andExpect(jsonPath("$.data.delivery_date").value("2026-02-04"))
+                .andExpect(jsonPath("$.data.total_amount").value(612000000))
+                .andExpect(jsonPath("$.data.total_approved_amount").value(612000000))
+                .andExpect(jsonPath("$.data.approval_status").value("APPROVED"))
+                .andExpect(jsonPath("$.data.is_closed").value(false))
+                .andExpect(jsonPath("$.data.ordered_item_count").value(2))
+                .andExpect(jsonPath("$.data.ordered_items").isArray)
+                .andExpect(jsonPath("$.data.ordered_items.length()").value(2))
+                .andExpect(jsonPath("$.data.ordered_items[0].product_code").value("P001"))
+                .andExpect(jsonPath("$.data.ordered_items[0].product_name").value("진라면 순한맛 120g*40입"))
+                .andExpect(jsonPath("$.data.ordered_items[0].total_quantity_boxes").value(50.0))
+                .andExpect(jsonPath("$.data.ordered_items[0].total_quantity_pieces").value(0))
+                .andExpect(jsonPath("$.data.ordered_items[0].is_cancelled").value(false))
+                .andExpect(jsonPath("$.data.order_processing_status").doesNotExist())
+                .andExpect(jsonPath("$.data.rejected_items").doesNotExist())
+                .andExpect(jsonPath("$.message").value("조회 성공"))
+        }
+
+        @Test
+        @DisplayName("마감후 주문 상세 조회 성공 (반려 없음) - 200 OK")
+        fun getOrderDetail_afterClosed_withoutRejection_returnsOk() {
+            // Given
+            val detailResponse = OrderDetailResponse(
+                id = 1L,
+                orderRequestNumber = "OP00000074",
+                clientId = 100L,
+                clientName = "천사푸드",
+                clientDeadlineTime = "13:40",
+                orderDate = "2026-02-01",
+                deliveryDate = "2026-02-04",
+                totalAmount = 612000000L,
+                totalApprovedAmount = 612000000L,
+                approvalStatus = "APPROVED",
+                isClosed = true,
+                orderedItemCount = 2,
+                orderedItems = listOf(
+                    OrderedItemResponse(
+                        productCode = "P001",
+                        productName = "진라면 순한맛 120g*40입",
+                        totalQuantityBoxes = 50.0,
+                        totalQuantityPieces = 0,
+                        isCancelled = false
+                    )
+                ),
+                orderProcessingStatus = OrderProcessingStatusResponse(
+                    sapOrderNumber = "SAP1234567",
+                    items = listOf(
+                        ProcessingItemResponse(
+                            productCode = "P001",
+                            productName = "진라면 순한맛 120g*40입",
+                            deliveredQuantity = "50박스",
+                            deliveryStatus = "출하완료"
+                        )
+                    )
+                ),
+                rejectedItems = null
+            )
+            whenever(orderService.getOrderDetail(eq(1L), eq(1L))).thenReturn(detailResponse)
+
+            // When & Then
+            mockMvc.perform(
+                get("/api/v1/me/orders/1")
+                    .contentType(MediaType.APPLICATION_JSON)
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.is_closed").value(true))
+                .andExpect(jsonPath("$.data.order_processing_status").exists())
+                .andExpect(jsonPath("$.data.order_processing_status.sap_order_number").value("SAP1234567"))
+                .andExpect(jsonPath("$.data.order_processing_status.items").isArray)
+                .andExpect(jsonPath("$.data.order_processing_status.items.length()").value(1))
+                .andExpect(jsonPath("$.data.order_processing_status.items[0].product_code").value("P001"))
+                .andExpect(jsonPath("$.data.order_processing_status.items[0].product_name").value("진라면 순한맛 120g*40입"))
+                .andExpect(jsonPath("$.data.order_processing_status.items[0].delivered_quantity").value("50박스"))
+                .andExpect(jsonPath("$.data.order_processing_status.items[0].delivery_status").value("출하완료"))
+                .andExpect(jsonPath("$.data.rejected_items").doesNotExist())
+        }
+
+        @Test
+        @DisplayName("마감후 주문 상세 조회 (반려 있음) - 200 OK")
+        fun getOrderDetail_afterClosed_withRejection_returnsOk() {
+            // Given
+            val detailResponse = OrderDetailResponse(
+                id = 1L,
+                orderRequestNumber = "OP00000074",
+                clientId = 100L,
+                clientName = "천사푸드",
+                clientDeadlineTime = "13:40",
+                orderDate = "2026-02-01",
+                deliveryDate = "2026-02-04",
+                totalAmount = 612000000L,
+                totalApprovedAmount = 400000000L,
+                approvalStatus = "APPROVED",
+                isClosed = true,
+                orderedItemCount = 2,
+                orderedItems = listOf(
+                    OrderedItemResponse(
+                        productCode = "P001",
+                        productName = "진라면 순한맛 120g*40입",
+                        totalQuantityBoxes = 50.0,
+                        totalQuantityPieces = 0,
+                        isCancelled = false
+                    ),
+                    OrderedItemResponse(
+                        productCode = "P002",
+                        productName = "진라면 매운맛 120g*40입",
+                        totalQuantityBoxes = 30.0,
+                        totalQuantityPieces = 10,
+                        isCancelled = true
+                    )
+                ),
+                orderProcessingStatus = OrderProcessingStatusResponse(
+                    sapOrderNumber = "SAP1234567",
+                    items = listOf(
+                        ProcessingItemResponse(
+                            productCode = "P001",
+                            productName = "진라면 순한맛 120g*40입",
+                            deliveredQuantity = "50박스",
+                            deliveryStatus = "출하완료"
+                        )
+                    )
+                ),
+                rejectedItems = listOf(
+                    RejectedItemResponse(
+                        productCode = "P002",
+                        productName = "진라면 매운맛 120g*40입",
+                        orderQuantityBoxes = 30,
+                        rejectionReason = "재고부족"
+                    )
+                )
+            )
+            whenever(orderService.getOrderDetail(eq(1L), eq(1L))).thenReturn(detailResponse)
+
+            // When & Then
+            mockMvc.perform(
+                get("/api/v1/me/orders/1")
+                    .contentType(MediaType.APPLICATION_JSON)
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.is_closed").value(true))
+                .andExpect(jsonPath("$.data.total_amount").value(612000000))
+                .andExpect(jsonPath("$.data.total_approved_amount").value(400000000))
+                .andExpect(jsonPath("$.data.rejected_items").isArray)
+                .andExpect(jsonPath("$.data.rejected_items.length()").value(1))
+                .andExpect(jsonPath("$.data.rejected_items[0].product_code").value("P002"))
+                .andExpect(jsonPath("$.data.rejected_items[0].product_name").value("진라면 매운맛 120g*40입"))
+                .andExpect(jsonPath("$.data.rejected_items[0].order_quantity_boxes").value(30))
+                .andExpect(jsonPath("$.data.rejected_items[0].rejection_reason").value("재고부족"))
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 주문 - 404 ORDER_NOT_FOUND")
+        fun getOrderDetail_notFound_returns404() {
+            // Given
+            whenever(orderService.getOrderDetail(eq(1L), eq(999L)))
+                .thenThrow(OrderNotFoundException())
+
+            // When & Then
+            mockMvc.perform(
+                get("/api/v1/me/orders/999")
+                    .contentType(MediaType.APPLICATION_JSON)
+            )
+                .andExpect(status().isNotFound)
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("ORDER_NOT_FOUND"))
+                .andExpect(jsonPath("$.error.message").value("주문을 찾을 수 없습니다"))
+        }
+
+        @Test
+        @DisplayName("다른 사용자의 주문 - 403 FORBIDDEN")
+        fun getOrderDetail_forbidden_returns403() {
+            // Given
+            whenever(orderService.getOrderDetail(eq(1L), eq(1L)))
+                .thenThrow(ForbiddenOrderAccessException())
+
+            // When & Then
+            mockMvc.perform(
+                get("/api/v1/me/orders/1")
+                    .contentType(MediaType.APPLICATION_JSON)
+            )
+                .andExpect(status().isForbidden)
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("FORBIDDEN"))
+                .andExpect(jsonPath("$.error.message").value("접근 권한이 없습니다"))
+        }
+    }
+
+    // ========== 주문 재전송 테스트 ==========
+
+    @Nested
+    @DisplayName("주문 재전송 - POST /api/v1/me/orders/{orderId}/resend")
+    inner class ResendOrder {
+
+        @Test
+        @DisplayName("재전송 성공 - 200 OK")
+        fun resendOrder_success_returnsOk() {
+            // Given
+            doNothing().whenever(orderService).resendOrder(eq(1L), eq(1L))
+
+            // When & Then
+            mockMvc.perform(
+                post("/api/v1/me/orders/1/resend")
+                    .contentType(MediaType.APPLICATION_JSON)
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").doesNotExist())
+                .andExpect(jsonPath("$.message").value("주문이 재전송되었습니다"))
+        }
+
+        @Test
+        @DisplayName("잘못된 상태 - 400 INVALID_ORDER_STATUS")
+        fun resendOrder_invalidStatus_returns400() {
+            // Given
+            whenever(orderService.resendOrder(eq(1L), eq(1L)))
+                .thenThrow(InvalidOrderStatusException())
+
+            // When & Then
+            mockMvc.perform(
+                post("/api/v1/me/orders/1/resend")
+                    .contentType(MediaType.APPLICATION_JSON)
+            )
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("INVALID_ORDER_STATUS"))
+                .andExpect(jsonPath("$.error.message").value("전송실패 상태의 주문만 재전송할 수 있습니다"))
+        }
+
+        @Test
+        @DisplayName("마감후 - 400 ORDER_ALREADY_CLOSED")
+        fun resendOrder_alreadyClosed_returns400() {
+            // Given
+            whenever(orderService.resendOrder(eq(1L), eq(1L)))
+                .thenThrow(OrderAlreadyClosedException())
+
+            // When & Then
+            mockMvc.perform(
+                post("/api/v1/me/orders/1/resend")
+                    .contentType(MediaType.APPLICATION_JSON)
+            )
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("ORDER_ALREADY_CLOSED"))
+                .andExpect(jsonPath("$.error.message").value("마감된 주문은 재전송할 수 없습니다"))
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 주문 - 404 ORDER_NOT_FOUND")
+        fun resendOrder_notFound_returns404() {
+            // Given
+            whenever(orderService.resendOrder(eq(1L), eq(999L)))
+                .thenThrow(OrderNotFoundException())
+
+            // When & Then
+            mockMvc.perform(
+                post("/api/v1/me/orders/999/resend")
+                    .contentType(MediaType.APPLICATION_JSON)
+            )
+                .andExpect(status().isNotFound)
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("ORDER_NOT_FOUND"))
+                .andExpect(jsonPath("$.error.message").value("주문을 찾을 수 없습니다"))
+        }
+
+        @Test
+        @DisplayName("다른 사용자 주문 - 403 FORBIDDEN")
+        fun resendOrder_forbidden_returns403() {
+            // Given
+            whenever(orderService.resendOrder(eq(1L), eq(1L)))
+                .thenThrow(ForbiddenOrderAccessException())
+
+            // When & Then
+            mockMvc.perform(
+                post("/api/v1/me/orders/1/resend")
+                    .contentType(MediaType.APPLICATION_JSON)
+            )
+                .andExpect(status().isForbidden)
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("FORBIDDEN"))
+                .andExpect(jsonPath("$.error.message").value("접근 권한이 없습니다"))
         }
     }
 

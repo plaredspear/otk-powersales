@@ -19,3 +19,39 @@ class InvalidDateRangeException : BusinessException(
     message = "납기일 종료일은 시작일 이후여야 합니다",
     httpStatus = HttpStatus.BAD_REQUEST
 )
+
+/**
+ * 주문을 찾을 수 없음
+ */
+class OrderNotFoundException : BusinessException(
+    errorCode = "ORDER_NOT_FOUND",
+    message = "주문을 찾을 수 없습니다",
+    httpStatus = HttpStatus.NOT_FOUND
+)
+
+/**
+ * 다른 사용자의 주문에 접근 시도
+ */
+class ForbiddenOrderAccessException : BusinessException(
+    errorCode = "FORBIDDEN",
+    message = "접근 권한이 없습니다",
+    httpStatus = HttpStatus.FORBIDDEN
+)
+
+/**
+ * 재전송 불가한 주문 상태
+ */
+class InvalidOrderStatusException : BusinessException(
+    errorCode = "INVALID_ORDER_STATUS",
+    message = "전송실패 상태의 주문만 재전송할 수 있습니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+/**
+ * 마감된 주문 재전송 시도
+ */
+class OrderAlreadyClosedException : BusinessException(
+    errorCode = "ORDER_ALREADY_CLOSED",
+    message = "마감된 주문은 재전송할 수 없습니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)

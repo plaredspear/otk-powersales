@@ -7,7 +7,6 @@ import java.time.LocalDateTime
 /**
  * 주문 Entity
  * 영업사원이 거래처에 등록한 주문 정보를 관리한다.
- * 후속 스펙(내주문상세, 주문서작성 등)에서 OrderItem, 반려 사유 등 확장 예정.
  */
 @Entity
 @Table(
@@ -46,9 +45,12 @@ class Order(
     @Column(name = "total_amount", nullable = false)
     val totalAmount: Long = 0,
 
+    @Column(name = "total_approved_amount", nullable = false)
+    val totalApprovedAmount: Long = 0,
+
     @Enumerated(EnumType.STRING)
     @Column(name = "approval_status", nullable = false, length = 20)
-    val approvalStatus: ApprovalStatus = ApprovalStatus.PENDING,
+    var approvalStatus: ApprovalStatus = ApprovalStatus.PENDING,
 
     @Column(name = "is_closed", nullable = false)
     var isClosed: Boolean = false,
@@ -62,6 +64,15 @@ class Order(
     @Column(name = "updated_at", nullable = false)
     var updatedAt: LocalDateTime = LocalDateTime.now()
 ) {
+
+    @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
+    val items: MutableList<OrderItem> = mutableListOf()
+
+    @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
+    val processingRecords: MutableList<OrderProcessingRecord> = mutableListOf()
+
+    @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
+    val rejections: MutableList<OrderRejection> = mutableListOf()
 
     @PreUpdate
     fun onPreUpdate() {

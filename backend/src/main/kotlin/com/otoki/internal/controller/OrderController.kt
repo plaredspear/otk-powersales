@@ -1,6 +1,7 @@
 package com.otoki.internal.controller
 
 import com.otoki.internal.dto.ApiResponse
+import com.otoki.internal.dto.response.OrderDetailResponse
 import com.otoki.internal.dto.response.OrderSummaryResponse
 import com.otoki.internal.security.UserPrincipal
 import com.otoki.internal.service.OrderService
@@ -8,10 +9,7 @@ import org.springframework.data.domain.Page
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 import java.time.LocalDate
 
 /**
@@ -26,16 +24,6 @@ class OrderController(
     /**
      * 내 주문 목록 조회
      * GET /api/v1/me/orders
-     *
-     * @param principal 인증된 사용자 정보
-     * @param clientId 거래처 ID (선택)
-     * @param status 승인상태 (선택: APPROVED, PENDING, SEND_FAILED, RESEND)
-     * @param deliveryDateFrom 납기일 시작 (선택, YYYY-MM-DD)
-     * @param deliveryDateTo 납기일 종료 (선택, YYYY-MM-DD)
-     * @param sortBy 정렬 기준 (선택: orderDate, deliveryDate, totalAmount. 기본: orderDate)
-     * @param sortDir 정렬 방향 (선택: ASC, DESC. 기본: DESC)
-     * @param page 페이지 번호 (선택, 기본: 0)
-     * @param size 페이지 크기 (선택, 기본: 20)
      */
     @GetMapping("/orders")
     fun getMyOrders(
@@ -61,5 +49,43 @@ class OrderController(
             size = size
         )
         return ResponseEntity.ok(ApiResponse.success(result, "조회 성공"))
+    }
+
+    /**
+     * 주문 상세 조회
+     * GET /api/v1/me/orders/{orderId}
+     *
+     * @param principal 인증된 사용자 정보
+     * @param orderId 주문 고유 ID
+     */
+    @GetMapping("/orders/{orderId}")
+    fun getOrderDetail(
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @PathVariable orderId: Long
+    ): ResponseEntity<ApiResponse<OrderDetailResponse>> {
+        val result = orderService.getOrderDetail(
+            userId = principal.userId,
+            orderId = orderId
+        )
+        return ResponseEntity.ok(ApiResponse.success(result, "조회 성공"))
+    }
+
+    /**
+     * 주문 재전송
+     * POST /api/v1/me/orders/{orderId}/resend
+     *
+     * @param principal 인증된 사용자 정보
+     * @param orderId 주문 고유 ID
+     */
+    @PostMapping("/orders/{orderId}/resend")
+    fun resendOrder(
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @PathVariable orderId: Long
+    ): ResponseEntity<ApiResponse<Any?>> {
+        orderService.resendOrder(
+            userId = principal.userId,
+            orderId = orderId
+        )
+        return ResponseEntity.ok(ApiResponse.success(null as Any?, "주문이 재전송되었습니다"))
     }
 }
