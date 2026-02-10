@@ -12,6 +12,7 @@ import '../widgets/order_form/delivery_date_picker.dart';
 import '../widgets/order_form/product_list_section.dart';
 import '../widgets/order_form/total_amount_display.dart';
 import '../widgets/order_form/order_form_action_buttons.dart';
+import '../widgets/order_form/add_product_bottom_sheet.dart';
 
 class OrderFormPage extends ConsumerStatefulWidget {
   final int? orderId; // null = new order, non-null = edit mode
@@ -169,10 +170,10 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
                     onToggleSelection: notifier.toggleProductSelection,
                     onToggleSelectAll: notifier.toggleSelectAllProducts,
                     onAddProduct: () {
-                      // P4에서 구현할 제품 추가 BottomSheet
+                      AddProductBottomSheet.show(context);
                     },
                     onBarcodeScan: () {
-                      // P4에서 구현할 바코드 스캔
+                      // TODO: 바코드 스캔 기능 (향후 구현)
                     },
                     onRemoveSelected: notifier.removeSelectedProducts,
                     onQuantityChanged: notifier.updateProductQuantity,

@@ -4,6 +4,7 @@ import 'presentation/pages/attendance_complete_page.dart';
 import 'presentation/pages/order_cancel_page.dart';
 import 'presentation/pages/order_detail_page.dart';
 import 'presentation/pages/order_list_page.dart';
+import 'presentation/pages/order_form_page.dart';
 import 'presentation/pages/product_search_page.dart';
 import 'presentation/pages/my_stores_page.dart';
 import 'presentation/pages/product_search_result_page.dart';
@@ -29,6 +30,7 @@ class AppRouter {
   static const String orderList = '/order-list';
   static const String orderDetail = '/order-detail';
   static const String orderCancel = '/order-cancel';
+  static const String orderForm = '/order-form';
 
   /// 라우트 맵
   static Map<String, WidgetBuilder> get routes => {
@@ -50,6 +52,11 @@ class AppRouter {
           final args = ModalRoute.of(context)!.settings.arguments
               as OrderCancelPageArgs;
           return OrderCancelPage(args: args);
+        },
+        orderForm: (context) {
+          final orderId =
+              ModalRoute.of(context)?.settings.arguments as int?;
+          return OrderFormPage(orderId: orderId);
         },
       };
 
