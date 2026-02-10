@@ -239,12 +239,6 @@ class OrderSubmitService(
         orderDraftRepository.deleteByUserId(userId)
 
         // 12. 응답 구성
-        val message = if (savedOrder.approvalStatus == ApprovalStatus.APPROVED) {
-            "주문이 승인되었습니다"
-        } else {
-            "주문 전송에 실패했습니다"
-        }
-
         return OrderSubmitResponse(
             orderId = savedOrder.id,
             orderRequestNumber = savedOrder.orderRequestNumber,
