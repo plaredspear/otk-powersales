@@ -12,6 +12,8 @@ import '../widgets/home/expiry_alert_card.dart';
 import '../widgets/home/notice_carousel.dart';
 import '../widgets/home/product_search_bar.dart';
 import '../widgets/home/quick_menu_grid.dart';
+import '../widgets/home/activity_registration_popup.dart';
+import '../../app_router.dart';
 
 /// 홈 화면
 ///
@@ -148,13 +150,40 @@ class _HomePageState extends ConsumerState<HomePage> {
           padding: AppSpacing.screenHorizontal,
           child: QuickMenuGrid(
             onMenuTap: (item) {
-              // TODO: 해당 기능 화면으로 이동 (후속 작업)
+              _handleQuickMenuTap(item);
             },
           ),
         ),
         const SizedBox(height: AppSpacing.xxxl),
       ],
     );
+  }
+
+  /// 빠른 메뉴 탭 핸들러
+  void _handleQuickMenuTap(QuickMenuItem item) {
+    if (item.label == '활동 등록') {
+      ActivityRegistrationPopup.show(
+        context,
+        onMenuTap: _handleActivityMenuTap,
+      );
+    } else if (item.route != null) {
+      AppRouter.navigateTo(context, item.route!);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('준비 중입니다')),
+      );
+    }
+  }
+
+  /// 활동등록 팝업 메뉴 탭 핸들러
+  void _handleActivityMenuTap(ActivityMenuItem item) {
+    if (item.route != null) {
+      AppRouter.navigateTo(context, item.route!);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${item.label} 기능은 준비 중입니다')),
+      );
+    }
   }
 
   /// 노란 배경 헤더 영역 (SafeArea + AppBar + 빨간 라인 + 확장)
