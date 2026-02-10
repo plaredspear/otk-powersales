@@ -7,6 +7,7 @@ import com.otoki.internal.security.JwtAuthenticationFilter
 import com.otoki.internal.security.JwtTokenProvider
 import com.otoki.internal.security.UserPrincipal
 import com.otoki.internal.service.OrderService
+import com.otoki.internal.service.OrderSubmitService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -37,6 +38,9 @@ class OrderControllerTest {
 
     @MockitoBean
     private lateinit var orderService: OrderService
+
+    @MockitoBean
+    private lateinit var orderSubmitService: OrderSubmitService
 
     @MockitoBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
@@ -900,6 +904,222 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error.code").value("PRODUCT_NOT_IN_ORDER"))
                 .andExpect(jsonPath("$.error.message").value("해당 주문에 포함되지 않은 제품입니다: P999"))
+        }
+    }
+
+    // ========== 주문서 유효성 체크 테스트 ==========
+
+    @Nested
+    @DisplayName("주문서 유효성 체크 - POST /api/v1/me/orders/validate")
+    inner class ValidateOrder {
+
+        @Test
+        @DisplayName("유효성 통과 - 200 OK, isValid=true")
+        fun validateOrder_allValid_returnsOk() {
+            // Given
+            val response = ValidationResultResponse(
+                isValid = true,
+                invalidItems = emptyList()
+            )
+            whenever(orderSubmitService.validateOrder(eq(1L), any())).thenReturn(response)
+
+            // When & Then
+            mockMvc.perform(
+                post("/api/v1/me/orders/validate")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                        {
+                            "client_id": 1,
+                            "delivery_date": "2026-03-01",
+                            "items": [
+                                {"product_code": "P001", "box_quantity": 5, "piece_quantity": 10}
+                            ]
+                        }
+                    """.trimIndent())
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.is_valid").value(true))
+                .andExpect(jsonPath("$.data.invalid_items").isArray)
+                .andExpect(jsonPath("$.data.invalid_items.length()").value(0))
+                .andExpect(jsonPath("$.message").value("유효성 검증 통과"))
+        }
+
+        @Test
+        @DisplayName("유효성 실패 - 200 OK, isValid=false, invalidItems 포함")
+        fun validateOrder_invalid_returnsFalse() {
+            // Given
+            val response = ValidationResultResponse(
+                isValid = false,
+                invalidItems = listOf(
+                    InvalidItemResponse(
+                        productCode = "P001",
+                        productName = "오뚜기 카레",
+                        boxQuantity = 0,
+                        pieceQuantity = 5,
+                        piecesPerBox = 50,
+                        minOrderUnit = 10,
+                        supplyQuantity = 100,
+                        dcQuantity = 50,
+                        validationErrors = listOf("수량이 최소주문단위(10개)보다 작습니다")
+                    )
+                )
+            )
+            whenever(orderSubmitService.validateOrder(eq(1L), any())).thenReturn(response)
+
+            // When & Then
+            mockMvc.perform(
+                post("/api/v1/me/orders/validate")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                        {
+                            "client_id": 1,
+                            "delivery_date": "2026-03-01",
+                            "items": [
+                                {"product_code": "P001", "box_quantity": 0, "piece_quantity": 5}
+                            ]
+                        }
+                    """.trimIndent())
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.is_valid").value(false))
+                .andExpect(jsonPath("$.data.invalid_items.length()").value(1))
+                .andExpect(jsonPath("$.data.invalid_items[0].product_code").value("P001"))
+                .andExpect(jsonPath("$.data.invalid_items[0].product_name").value("오뚜기 카레"))
+                .andExpect(jsonPath("$.data.invalid_items[0].validation_errors[0]").value("수량이 최소주문단위(10개)보다 작습니다"))
+                .andExpect(jsonPath("$.message").value("유효성 검증 실패"))
+        }
+
+        @Test
+        @DisplayName("제품 없음 - 404 PRODUCT_NOT_FOUND")
+        fun validateOrder_productNotFound_returns404() {
+            // Given
+            whenever(orderSubmitService.validateOrder(eq(1L), any()))
+                .thenThrow(ProductNotFoundException("INVALID"))
+
+            // When & Then
+            mockMvc.perform(
+                post("/api/v1/me/orders/validate")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                        {
+                            "client_id": 1,
+                            "delivery_date": "2026-03-01",
+                            "items": [
+                                {"product_code": "INVALID", "box_quantity": 5, "piece_quantity": 10}
+                            ]
+                        }
+                    """.trimIndent())
+            )
+                .andExpect(status().isNotFound)
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("PRODUCT_NOT_FOUND"))
+        }
+    }
+
+    // ========== 주문서 제출 테스트 ==========
+
+    @Nested
+    @DisplayName("주문서 제출 - POST /api/v1/me/orders")
+    inner class SubmitOrder {
+
+        @Test
+        @DisplayName("제출 성공 - 200 OK, APPROVED")
+        fun submitOrder_success_returnsApproved() {
+            // Given
+            val response = OrderSubmitResponse(
+                orderId = 1L,
+                orderRequestNumber = "OP00000074",
+                approvalStatus = "APPROVED",
+                totalAmount = 1_300_000,
+                submittedAt = "2026-02-10T14:30:00"
+            )
+            whenever(orderSubmitService.submitOrder(eq(1L), any())).thenReturn(response)
+
+            // When & Then
+            mockMvc.perform(
+                post("/api/v1/me/orders")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                        {
+                            "client_id": 1,
+                            "delivery_date": "2026-03-01",
+                            "items": [
+                                {"product_code": "P001", "box_quantity": 5, "piece_quantity": 10}
+                            ]
+                        }
+                    """.trimIndent())
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.order_id").value(1))
+                .andExpect(jsonPath("$.data.order_request_number").value("OP00000074"))
+                .andExpect(jsonPath("$.data.approval_status").value("APPROVED"))
+                .andExpect(jsonPath("$.data.total_amount").value(1300000))
+                .andExpect(jsonPath("$.data.submitted_at").value("2026-02-10T14:30:00"))
+                .andExpect(jsonPath("$.message").value("주문이 승인되었습니다"))
+        }
+
+        @Test
+        @DisplayName("SAP 전송 실패 - 200 OK, SEND_FAILED")
+        fun submitOrder_sapFailed_returnsSendFailed() {
+            // Given
+            val response = OrderSubmitResponse(
+                orderId = 1L,
+                orderRequestNumber = "OP00000074",
+                approvalStatus = "SEND_FAILED",
+                totalAmount = 1_300_000,
+                submittedAt = "2026-02-10T14:30:00",
+                failureReason = "SAP 연결 오류"
+            )
+            whenever(orderSubmitService.submitOrder(eq(1L), any())).thenReturn(response)
+
+            // When & Then
+            mockMvc.perform(
+                post("/api/v1/me/orders")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                        {
+                            "client_id": 1,
+                            "delivery_date": "2026-03-01",
+                            "items": [
+                                {"product_code": "P001", "box_quantity": 5, "piece_quantity": 10}
+                            ]
+                        }
+                    """.trimIndent())
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.approval_status").value("SEND_FAILED"))
+                .andExpect(jsonPath("$.data.failure_reason").value("SAP 연결 오류"))
+                .andExpect(jsonPath("$.message").value("주문 전송에 실패했습니다"))
+        }
+
+        @Test
+        @DisplayName("유효성 검증 실패 - 400 VALIDATION_FAILED")
+        fun submitOrder_validationFailed_returns400() {
+            // Given
+            whenever(orderSubmitService.submitOrder(eq(1L), any()))
+                .thenThrow(OrderValidationFailedException())
+
+            // When & Then
+            mockMvc.perform(
+                post("/api/v1/me/orders")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                        {
+                            "client_id": 1,
+                            "delivery_date": "2026-03-01",
+                            "items": [
+                                {"product_code": "P001", "box_quantity": 0, "piece_quantity": 0}
+                            ]
+                        }
+                    """.trimIndent())
+            )
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_FAILED"))
         }
     }
 

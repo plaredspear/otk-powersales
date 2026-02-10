@@ -2,11 +2,15 @@ package com.otoki.internal.controller
 
 import com.otoki.internal.dto.ApiResponse
 import com.otoki.internal.dto.request.OrderCancelRequest
+import com.otoki.internal.dto.request.OrderDraftRequest
 import com.otoki.internal.dto.response.OrderCancelResponse
 import com.otoki.internal.dto.response.OrderDetailResponse
+import com.otoki.internal.dto.response.OrderSubmitResponse
 import com.otoki.internal.dto.response.OrderSummaryResponse
+import com.otoki.internal.dto.response.ValidationResultResponse
 import com.otoki.internal.security.UserPrincipal
 import com.otoki.internal.service.OrderService
+import com.otoki.internal.service.OrderSubmitService
 import jakarta.validation.Valid
 import org.springframework.data.domain.Page
 import org.springframework.format.annotation.DateTimeFormat
@@ -21,7 +25,8 @@ import java.time.LocalDate
 @RestController
 @RequestMapping("/api/v1/me")
 class OrderController(
-    private val orderService: OrderService
+    private val orderService: OrderService,
+    private val orderSubmitService: OrderSubmitService
 ) {
 
     /**
@@ -112,5 +117,39 @@ class OrderController(
             productCodes = request.productCodes
         )
         return ResponseEntity.ok(ApiResponse.success(result, "주문이 취소되었습니다"))
+    }
+
+    /**
+     * 주문서 유효성 체크
+     * POST /api/v1/me/orders/validate
+     */
+    @PostMapping("/orders/validate")
+    fun validateOrder(
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @Valid @RequestBody request: OrderDraftRequest
+    ): ResponseEntity<ApiResponse<ValidationResultResponse>> {
+        val result = orderSubmitService.validateOrder(
+            userId = principal.userId,
+            request = request
+        )
+        val message = if (result.isValid) "유효성 검증 통과" else "유효성 검증 실패"
+        return ResponseEntity.ok(ApiResponse.success(result, message))
+    }
+
+    /**
+     * 주문서 승인요청(제출)
+     * POST /api/v1/me/orders
+     */
+    @PostMapping("/orders")
+    fun submitOrder(
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @Valid @RequestBody request: OrderDraftRequest
+    ): ResponseEntity<ApiResponse<OrderSubmitResponse>> {
+        val result = orderSubmitService.submitOrder(
+            userId = principal.userId,
+            request = request
+        )
+        val message = if (result.approvalStatus == "APPROVED") "주문이 승인되었습니다" else "주문 전송에 실패했습니다"
+        return ResponseEntity.ok(ApiResponse.success(result, message))
     }
 }
