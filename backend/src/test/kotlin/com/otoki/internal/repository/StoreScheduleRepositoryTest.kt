@@ -199,6 +199,124 @@ class StoreScheduleRepositoryTest {
         assertThat(result).isEmpty()
     }
 
+    @Test
+    @DisplayName("findByUserIdAndScheduleDateBetween - 기간 내 스케줄 조회")
+    fun findByScheduleDateBetween_withinRange() {
+        // Given
+        val startDate = today
+        val endDate = today.plusDays(6)
+
+        val schedule1 = createStoreSchedule(storeId = 101, storeName = "이마트 부산점", scheduleDate = today)
+        val schedule2 = createStoreSchedule(storeId = 102, storeName = "홈플러스 서면점", scheduleDate = today.plusDays(3))
+        val schedule3 = createStoreSchedule(storeId = 103, storeName = "롯데마트 해운대점", scheduleDate = today.plusDays(6))
+        testEntityManager.persistAndFlush(schedule1)
+        testEntityManager.persistAndFlush(schedule2)
+        testEntityManager.persistAndFlush(schedule3)
+        testEntityManager.clear()
+
+        // When
+        val result = storeScheduleRepository.findByUserIdAndScheduleDateBetween(testUserId, startDate, endDate)
+
+        // Then
+        assertThat(result).hasSize(3)
+        assertThat(result.map { it.storeName }).containsExactlyInAnyOrder(
+            "이마트 부산점",
+            "홈플러스 서면점",
+            "롯데마트 해운대점"
+        )
+    }
+
+    @Test
+    @DisplayName("findByUserIdAndScheduleDateBetween - 기간 외 스케줄은 제외")
+    fun findByScheduleDateBetween_outsideRange() {
+        // Given
+        val startDate = today.plusDays(1)
+        val endDate = today.plusDays(3)
+
+        val schedule1 = createStoreSchedule(storeId = 101, storeName = "이마트 부산점", scheduleDate = today)
+        val schedule2 = createStoreSchedule(storeId = 102, storeName = "홈플러스 서면점", scheduleDate = today.plusDays(2))
+        val schedule3 = createStoreSchedule(storeId = 103, storeName = "롯데마트 해운대점", scheduleDate = today.plusDays(5))
+        testEntityManager.persistAndFlush(schedule1)
+        testEntityManager.persistAndFlush(schedule2)
+        testEntityManager.persistAndFlush(schedule3)
+        testEntityManager.clear()
+
+        // When
+        val result = storeScheduleRepository.findByUserIdAndScheduleDateBetween(testUserId, startDate, endDate)
+
+        // Then
+        assertThat(result).hasSize(1)
+        assertThat(result[0].storeName).isEqualTo("홈플러스 서면점")
+    }
+
+    @Test
+    @DisplayName("findDistinctStoreIdsByUserIdAndScheduleDateBetween - 월별 중복 제거 거래처 ID 조회")
+    fun findDistinctStoreIds_removeDuplicates() {
+        // Given
+        val startDate = today
+        val endDate = today.plusDays(10)
+
+        // 같은 거래처에 여러 날짜 스케줄
+        val schedule1 = createStoreSchedule(storeId = 101, storeName = "이마트 부산점", scheduleDate = today)
+        val schedule2 = createStoreSchedule(storeId = 101, storeName = "이마트 부산점", scheduleDate = today.plusDays(3))
+        val schedule3 = createStoreSchedule(storeId = 101, storeName = "이마트 부산점", scheduleDate = today.plusDays(7))
+        val schedule4 = createStoreSchedule(storeId = 102, storeName = "홈플러스 서면점", scheduleDate = today.plusDays(2))
+        val schedule5 = createStoreSchedule(storeId = 102, storeName = "홈플러스 서면점", scheduleDate = today.plusDays(5))
+        val schedule6 = createStoreSchedule(storeId = 103, storeName = "롯데마트 해운대점", scheduleDate = today.plusDays(9))
+
+        testEntityManager.persistAndFlush(schedule1)
+        testEntityManager.persistAndFlush(schedule2)
+        testEntityManager.persistAndFlush(schedule3)
+        testEntityManager.persistAndFlush(schedule4)
+        testEntityManager.persistAndFlush(schedule5)
+        testEntityManager.persistAndFlush(schedule6)
+        testEntityManager.clear()
+
+        // When
+        val result = storeScheduleRepository.findDistinctStoreIdsByUserIdAndScheduleDateBetween(testUserId, startDate, endDate)
+
+        // Then
+        assertThat(result).hasSize(3)
+        assertThat(result).containsExactlyInAnyOrder(101L, 102L, 103L)
+    }
+
+    @Test
+    @DisplayName("findDistinctStoreIdsByUserIdAndScheduleDateBetween - 스케줄 없는 사용자는 빈 리스트 반환")
+    fun findDistinctStoreIds_noSchedules() {
+        // Given
+        val startDate = today
+        val endDate = today.plusDays(10)
+        val otherUserId = 999L
+
+        val schedule = createStoreSchedule(storeId = 101, storeName = "이마트 부산점", scheduleDate = today)
+        testEntityManager.persistAndFlush(schedule)
+        testEntityManager.clear()
+
+        // When
+        val result = storeScheduleRepository.findDistinctStoreIdsByUserIdAndScheduleDateBetween(otherUserId, startDate, endDate)
+
+        // Then
+        assertThat(result).isEmpty()
+    }
+
+    @Test
+    @DisplayName("findByUserIdAndScheduleDateBetween - 스케줄 없는 기간 조회 시 빈 리스트")
+    fun findByScheduleDateBetween_noSchedules() {
+        // Given
+        val startDate = today.plusMonths(1)
+        val endDate = today.plusMonths(1).plusDays(10)
+
+        val schedule = createStoreSchedule(storeId = 101, storeName = "이마트 부산점", scheduleDate = today)
+        testEntityManager.persistAndFlush(schedule)
+        testEntityManager.clear()
+
+        // When
+        val result = storeScheduleRepository.findByUserIdAndScheduleDateBetween(testUserId, startDate, endDate)
+
+        // Then
+        assertThat(result).isEmpty()
+    }
+
     // ========== Helpers ==========
 
     private fun createStoreSchedule(

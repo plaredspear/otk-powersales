@@ -43,4 +43,30 @@ interface StoreScheduleRepository : JpaRepository<StoreSchedule, Long> {
         @Param("scheduleDate") scheduleDate: LocalDate,
         @Param("keyword") keyword: String
     ): List<StoreSchedule>
+
+    /**
+     * 사용자의 기간 내 스케줄 전체 조회
+     */
+    fun findByUserIdAndScheduleDateBetween(
+        userId: Long,
+        startDate: LocalDate,
+        endDate: LocalDate
+    ): List<StoreSchedule>
+
+    /**
+     * 사용자의 월별 중복 제거 거래처 ID 조회
+     * 내 거래처 기능에서 한 달 일정의 거래처를 중복 없이 조회
+     */
+    @Query(
+        """
+        SELECT DISTINCT s.storeId FROM StoreSchedule s
+        WHERE s.userId = :userId
+        AND s.scheduleDate BETWEEN :startDate AND :endDate
+        """
+    )
+    fun findDistinctStoreIdsByUserIdAndScheduleDateBetween(
+        @Param("userId") userId: Long,
+        @Param("startDate") startDate: LocalDate,
+        @Param("endDate") endDate: LocalDate
+    ): List<Long>
 }
