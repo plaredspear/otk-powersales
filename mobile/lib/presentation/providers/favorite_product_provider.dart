@@ -33,7 +33,7 @@ class FavoriteProductNotifier extends StateNotifier<AsyncValue<List<FavoriteProd
     try {
       // Hive repository 초기화
       if (_repository is FavoriteProductHiveRepository) {
-        await (_repository as FavoriteProductHiveRepository).init();
+        await _repository.init();
       }
 
       final favorites = await _repository.getAllFavorites();

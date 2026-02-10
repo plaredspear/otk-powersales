@@ -111,7 +111,7 @@ class PosSalesItem extends ConsumerWidget {
                       height: 24,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     ),
-                    error: (_, __) => Icon(
+                    error: (_, _) => Icon(
                       Icons.star_border,
                       color: Colors.grey[400],
                       size: 24,
@@ -186,9 +186,9 @@ class PosSalesItem extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

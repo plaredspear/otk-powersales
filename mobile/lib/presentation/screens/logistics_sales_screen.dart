@@ -237,7 +237,7 @@ class _LogisticsSalesScreenState extends ConsumerState<LogisticsSalesScreen>
   }
 
   /// 당월/이전월 상태 표시
-  Widget _buildMonthTypeIndicator(state) {
+  Widget _buildMonthTypeIndicator(dynamic state) {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
@@ -269,7 +269,7 @@ class _LogisticsSalesScreenState extends ConsumerState<LogisticsSalesScreen>
   }
 
   /// 카테고리별 탭 내용
-  Widget _buildCategoryTab(state, LogisticsCategory category) {
+  Widget _buildCategoryTab(dynamic state, LogisticsCategory category) {
     // 로딩 중
     if (state.isLoading) {
       return const Center(child: LoadingIndicator());

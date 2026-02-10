@@ -74,7 +74,7 @@ class AttendanceStatusPopup extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppColors.otokiBlue.withOpacity(0.08),
+                  color: AppColors.otokiBlue.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -97,7 +97,7 @@ class AttendanceStatusPopup extends StatelessWidget {
             child: ListView.separated(
               shrinkWrap: true,
               itemCount: statusList.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              separatorBuilder: (_, _) => const SizedBox(height: 8),
               itemBuilder: (context, index) {
                 final status = statusList[index];
                 return _buildStatusItem(status);
@@ -146,7 +146,7 @@ class AttendanceStatusPopup extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: isCompleted
-            ? AppColors.success.withOpacity(0.04)
+            ? AppColors.success.withValues(alpha: 0.04)
             : AppColors.white,
         border: Border.all(color: AppColors.border),
         borderRadius: BorderRadius.circular(10),
@@ -175,7 +175,7 @@ class AttendanceStatusPopup extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: AppColors.success.withOpacity(0.1),
+                color: AppColors.success.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
@@ -191,7 +191,7 @@ class AttendanceStatusPopup extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: AppColors.textTertiary.withOpacity(0.1),
+                color: AppColors.textTertiary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: const Text(

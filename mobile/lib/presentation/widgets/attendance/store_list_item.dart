@@ -84,7 +84,7 @@ class StoreListItem extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.otokiBlue.withOpacity(0.06)
+              ? AppColors.otokiBlue.withValues(alpha: 0.06)
               : AppColors.white,
           border: Border.all(
             color: isSelected ? AppColors.otokiBlue : AppColors.border,
@@ -155,7 +155,7 @@ class StoreListItem extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: AppColors.otokiYellow.withOpacity(0.2),
+        color: AppColors.otokiYellow.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
@@ -178,7 +178,7 @@ class StoreListItem extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.success.withOpacity(0.1),
+        color: AppColors.success.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(

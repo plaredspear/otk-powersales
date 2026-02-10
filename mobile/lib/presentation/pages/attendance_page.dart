@@ -141,7 +141,7 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16),
                   itemCount: state.filteredStores.length,
-                  separatorBuilder: (_, __) =>
+                  separatorBuilder: (_, _) =>
                       const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     final store = state.filteredStores[index];
@@ -170,7 +170,7 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
           Icon(
             Icons.event_busy,
             size: 64,
-            color: AppColors.textTertiary.withOpacity(0.5),
+            color: AppColors.textTertiary.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 16),
           const Text(
@@ -202,7 +202,7 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
           Icon(
             Icons.search_off,
             size: 48,
-            color: AppColors.textTertiary.withOpacity(0.5),
+            color: AppColors.textTertiary.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 12),
           const Text(

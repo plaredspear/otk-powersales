@@ -4,7 +4,6 @@ import 'package:mobile/domain/entities/logistics_sales.dart';
 import 'package:mobile/domain/repositories/logistics_sales_repository.dart';
 import 'package:mobile/domain/usecases/get_logistics_sales.dart';
 import 'package:mobile/presentation/providers/logistics_sales_provider.dart';
-import 'package:mobile/presentation/providers/logistics_sales_state.dart';
 
 /// Mock Repository
 class MockLogisticsSalesRepository implements LogisticsSalesRepository {

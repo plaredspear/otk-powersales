@@ -1,11 +1,9 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/data/repositories/mock/attendance_mock_repository.dart';
 import 'package:mobile/domain/usecases/get_attendance_status.dart';
 import 'package:mobile/domain/usecases/get_store_list.dart';
 import 'package:mobile/domain/usecases/register_attendance.dart';
 import 'package:mobile/presentation/providers/attendance_provider.dart';
-import 'package:mobile/presentation/providers/attendance_state.dart';
 
 void main() {
   group('AttendanceNotifier', () {

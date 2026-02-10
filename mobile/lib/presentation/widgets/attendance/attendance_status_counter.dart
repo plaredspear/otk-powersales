@@ -26,13 +26,13 @@ class AttendanceStatusCounter extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: isComplete
-              ? AppColors.success.withOpacity(0.1)
-              : AppColors.otokiBlue.withOpacity(0.08),
+              ? AppColors.success.withValues(alpha: 0.1)
+              : AppColors.otokiBlue.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isComplete
-                ? AppColors.success.withOpacity(0.3)
-                : AppColors.otokiBlue.withOpacity(0.2),
+                ? AppColors.success.withValues(alpha: 0.3)
+                : AppColors.otokiBlue.withValues(alpha: 0.2),
           ),
         ),
         child: Row(

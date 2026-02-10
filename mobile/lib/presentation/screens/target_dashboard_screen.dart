@@ -85,7 +85,7 @@ class _TargetDashboardScreenState
   }
 
   /// 필터 섹션
-  Widget _buildFilterSection(state) {
+  Widget _buildFilterSection(dynamic state) {
     return Container(
       padding: const EdgeInsets.all(16),
       color: Colors.grey[100],
@@ -146,7 +146,7 @@ class _TargetDashboardScreenState
   }
 
   /// 통계 요약 카드
-  Widget _buildStatisticsSummary(state) {
+  Widget _buildStatisticsSummary(dynamic state) {
     if (state.isLoading || state.overallProgress == null) {
       return const SizedBox.shrink();
     }
@@ -291,7 +291,7 @@ class _TargetDashboardScreenState
   }
 
   /// 목표 목록
-  Widget _buildTargetList(state) {
+  Widget _buildTargetList(dynamic state) {
     if (state.isLoading) {
       return const LoadingIndicator();
     }

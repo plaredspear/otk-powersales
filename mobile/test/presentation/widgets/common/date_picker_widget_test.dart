@@ -228,7 +228,7 @@ void main() {
       final datePickerDialog =
           tester.widget<DatePickerDialog>(find.byType(DatePickerDialog));
       expect(
-        datePickerDialog.lastDate!.isBefore(endDate.add(const Duration(days: 1))),
+        datePickerDialog.lastDate.isBefore(endDate.add(const Duration(days: 1))),
         true,
       );
     });
@@ -263,7 +263,7 @@ void main() {
       final datePickerDialog =
           tester.widget<DatePickerDialog>(find.byType(DatePickerDialog));
       expect(
-        datePickerDialog.firstDate!.isAfter(startDate.subtract(const Duration(days: 1))),
+        datePickerDialog.firstDate.isAfter(startDate.subtract(const Duration(days: 1))),
         true,
       );
     });

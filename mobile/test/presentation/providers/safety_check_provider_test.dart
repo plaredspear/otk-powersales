@@ -8,7 +8,6 @@ import 'package:mobile/domain/repositories/safety_check_repository.dart';
 import 'package:mobile/domain/usecases/get_safety_check_items.dart';
 import 'package:mobile/domain/usecases/submit_safety_check.dart';
 import 'package:mobile/presentation/providers/safety_check_provider.dart';
-import 'package:mobile/presentation/providers/safety_check_state.dart';
 
 /// 테스트용 Mock SafetyCheckRepository
 class MockSafetyCheckRepository implements SafetyCheckRepository {

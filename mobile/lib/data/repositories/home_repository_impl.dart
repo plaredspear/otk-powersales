@@ -1,6 +1,4 @@
 import '../../domain/entities/expiry_alert.dart';
-import '../../domain/entities/notice.dart';
-import '../../domain/entities/schedule.dart';
 import '../../domain/repositories/home_repository.dart';
 import '../datasources/home_remote_datasource.dart';
 

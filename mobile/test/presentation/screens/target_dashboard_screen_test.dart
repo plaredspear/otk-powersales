@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/presentation/screens/target_dashboard_screen.dart';
-import 'package:mobile/presentation/providers/target_provider.dart';
 
 void main() {
   group('TargetDashboardScreen Tests', () {
@@ -197,7 +196,12 @@ void main() {
     });
 
     testWidgets('다음 달 버튼 클릭 시 년월이 변경된다', (tester) async {
-      // Arrange
+      // Arrange - Set larger test surface size to prevent RenderFlex overflow
+      tester.view.physicalSize = const Size(800, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
       await tester.pumpWidget(
         const ProviderScope(
           child: MaterialApp(

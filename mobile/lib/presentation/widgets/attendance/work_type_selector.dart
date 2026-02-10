@@ -87,7 +87,7 @@ class _WorkTypeRadio extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.otokiBlue.withOpacity(0.08)
+              ? AppColors.otokiBlue.withValues(alpha: 0.08)
               : AppColors.background,
           border: Border.all(
             color: isSelected ? AppColors.otokiBlue : AppColors.border,

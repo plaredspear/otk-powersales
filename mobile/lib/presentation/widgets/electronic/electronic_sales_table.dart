@@ -38,7 +38,7 @@ class ElectronicSalesTable extends StatelessWidget {
       scrollDirection: Axis.horizontal,
       child: SingleChildScrollView(
         child: DataTable(
-          headingRowColor: MaterialStateProperty.all(Colors.green[50]),
+          headingRowColor: WidgetStateProperty.all(Colors.green[50]),
           columnSpacing: 16,
           horizontalMargin: 12,
           dataRowMinHeight: 48,

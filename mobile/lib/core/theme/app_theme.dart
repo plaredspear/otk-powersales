@@ -66,7 +66,7 @@ abstract final class AppTheme {
       ),
 
       // ─── TabBar ────────────────────────────────────────
-      tabBarTheme: TabBarTheme(
+      tabBarTheme: TabBarThemeData(
         labelColor: AppColors.textPrimary,
         unselectedLabelColor: AppColors.textSecondary,
         labelStyle: AppTypography.labelMedium.copyWith(
@@ -115,11 +115,10 @@ abstract final class AppTheme {
       ),
 
       // ─── Card ──────────────────────────────────────────
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: AppColors.card,
         elevation: 1,
-        // ignore: deprecated_member_use
-        shadowColor: AppColors.black.withOpacity(0.08),
+        shadowColor: AppColors.black.withValues(alpha: 0.08),
         shape: RoundedRectangleBorder(
           borderRadius: AppSpacing.cardBorderRadius,
         ),
@@ -187,7 +186,7 @@ abstract final class AppTheme {
       ),
 
       // ─── Dialog ────────────────────────────────────────
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         backgroundColor: AppColors.card,
         elevation: 3,
         shape: RoundedRectangleBorder(

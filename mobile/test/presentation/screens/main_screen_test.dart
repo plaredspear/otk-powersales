@@ -68,6 +68,12 @@ void main() {
     });
 
     testWidgets('탭을 클릭하면 해당 화면으로 전환된다', (WidgetTester tester) async {
+      // Set larger test surface size to prevent RenderFlex overflow
+      tester.view.physicalSize = const Size(800, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
       await tester.pumpWidget(
         const ProviderScope(
           child: MaterialApp(
@@ -130,6 +136,12 @@ void main() {
     });
 
     testWidgets('전산매출 화면이 올바르게 렌더링된다', (WidgetTester tester) async {
+      // Set larger test surface size to prevent RenderFlex overflow
+      tester.view.physicalSize = const Size(800, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
       await tester.pumpWidget(
         const ProviderScope(
           child: MaterialApp(
