@@ -87,7 +87,9 @@ void main() {
       expect(routes.containsKey(AppRouter.posSales), true);
       expect(routes.containsKey(AppRouter.attendance), true);
       expect(routes.containsKey(AppRouter.attendanceComplete), true);
-      expect(routes.length, 6);
+      expect(routes.containsKey(AppRouter.productSearch), true);
+      expect(routes.containsKey(AppRouter.productSearchResult), true);
+      expect(routes.length, 8);
     });
 
     // 초기 라우트 테스트는 상단에서 이미 검증됨
