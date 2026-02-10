@@ -83,6 +83,10 @@ void main() {
       expect(AppRouter.orderList, equals('/order-list'));
     });
 
+    test('orderCancel 라우트 상수가 올바르다', () {
+      expect(AppRouter.orderCancel, equals('/order-cancel'));
+    });
+
     test('라우트 맵이 올바르게 정의되어 있다', () {
       final routes = AppRouter.routes;
 
@@ -96,7 +100,9 @@ void main() {
       expect(routes.containsKey(AppRouter.productSearchResult), true);
       expect(routes.containsKey(AppRouter.myStores), true);
       expect(routes.containsKey(AppRouter.orderList), true);
-      expect(routes.length, 10);
+      expect(routes.containsKey(AppRouter.orderDetail), true);
+      expect(routes.containsKey(AppRouter.orderCancel), true);
+      expect(routes.length, 12);
     });
 
     test('routes 맵에 orderList 라우트가 포함되어 있다', () {

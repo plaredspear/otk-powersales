@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app_router.dart';
 import '../../core/theme/app_colors.dart';
+import 'order_cancel_page.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../domain/entities/order_detail.dart';
@@ -137,7 +138,7 @@ class OrderDetailPage extends ConsumerWidget {
                 showCancelButton: state.showCancelButton,
                 showResendButton: state.showResendButton,
                 isResending: state.isResending,
-                onCancel: () => _onCancelOrder(context),
+                onCancel: () => _onCancelOrder(context, ref),
                 onResend: () => _onResendOrder(context, ref),
               ),
 
@@ -187,14 +188,26 @@ class OrderDetailPage extends ConsumerWidget {
   }
 
   /// 주문 취소 버튼 탭
-  void _onCancelOrder(BuildContext context) {
-    // 주문취소 화면(F19)으로 이동 (별도 스펙으로 구현 예정)
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('주문 취소 화면은 준비 중입니다'),
-        duration: Duration(seconds: 2),
+  Future<void> _onCancelOrder(BuildContext context, WidgetRef ref) async {
+    final state = ref.read(orderDetailProvider(orderId));
+    final detail = state.orderDetail;
+    if (detail == null) return;
+
+    final result = await AppRouter.navigateTo<bool>(
+      context,
+      AppRouter.orderCancel,
+      arguments: OrderCancelPageArgs(
+        orderId: detail.id,
+        allItems: detail.orderedItems,
       ),
     );
+
+    // 취소 성공 시 상세 화면 새로고침
+    if (result == true && context.mounted) {
+      ref
+          .read(orderDetailProvider(orderId).notifier)
+          .loadOrderDetail(orderId: orderId);
+    }
   }
 
   /// 주문 재전송 버튼 탭
