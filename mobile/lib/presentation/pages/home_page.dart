@@ -45,9 +45,9 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget build(BuildContext context) {
     final state = ref.watch(homeProvider);
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: _buildBody(state),
+    return Container(
+      color: AppColors.background,
+      child: _buildBody(state),
     );
   }
 
@@ -229,7 +229,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   IconButton(
                     icon: const Icon(Icons.menu, color: AppColors.textPrimary),
                     onPressed: () {
-                      // TODO: 전체 메뉴 Drawer 열기 (후속 작업)
+                      Scaffold.of(context).openEndDrawer();
                     },
                     tooltip: '전체 메뉴',
                   ),

@@ -1,20 +1,55 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mobile/presentation/pages/home_page.dart';
+import 'package:mobile/presentation/providers/auth_provider.dart';
+import 'package:mobile/presentation/providers/auth_state.dart';
+import 'package:mobile/presentation/providers/home_provider.dart';
+import 'package:mobile/presentation/providers/home_state.dart';
 import 'package:mobile/presentation/screens/main_screen.dart';
+import 'package:mobile/presentation/pages/home_page.dart';
+import 'package:mobile/presentation/widgets/menu/full_menu_drawer.dart';
+import 'package:mobile/domain/entities/user.dart';
+import 'package:mobile/domain/repositories/home_repository.dart';
 import '../../test_helper.dart';
+
+/// Mock HomeRepository for testing
+class MockHomeRepository implements HomeRepository {
+  @override
+  Future<HomeData> getHomeData() async {
+    return const HomeData(
+      todaySchedules: [],
+      expiryAlert: null,
+      notices: [],
+      currentDate: '2024-01-01',
+    );
+  }
+}
 
 void main() {
   setUpAll(() async {
     await TestHelper.initialize();
   });
 
-  group('MainScreen', () {
-    testWidgets('화면이 정상적으로 렌더링된다', (WidgetTester tester) async {
+  // Mock user for authenticated state
+  const mockUser = User(
+    id: 1,
+    employeeId: '12345678',
+    name: '홍길동',
+    department: '영업1팀',
+    branchName: '서울지점',
+    role: 'USER',
+  );
+
+  group('MainScreen - 새로운 구조 테스트', () {
+    testWidgets('하단 네비게이션 바에 3개 버튼이 표시된다 (뒤로, 홈으로, 전체메뉴)',
+        (WidgetTester tester) async {
+      // Arrange: Provider overrides with mock repository
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
+        ProviderScope(
+          overrides: [
+            homeRepositoryProvider.overrideWithValue(MockHomeRepository()),
+          ],
+          child: const MaterialApp(
             home: MainScreen(),
           ),
         ),
@@ -22,21 +57,26 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // BottomNavigationBar 확인
-      expect(find.byType(BottomNavigationBar), findsOneWidget);
+      // Assert: 3개의 버튼 레이블이 표시되는지 확인
+      expect(find.text('뒤로'), findsOneWidget);
+      expect(find.text('홈으로'), findsOneWidget);
+      expect(find.text('전체메뉴'), findsOneWidget);
 
-      // 5개 탭 확인
-      expect(find.text('홈'), findsOneWidget);
-      expect(find.text('POS 매출'), findsOneWidget);
-      expect(find.text('전산매출'), findsOneWidget);
-      expect(find.text('물류매출'), findsOneWidget);
-      expect(find.text('목표/진도율'), findsOneWidget);
+      // Assert: 각 버튼의 아이콘이 표시되는지 확인
+      // Note: arrow_back, home, menu 아이콘이 각각 최소 1개씩 존재함
+      expect(find.byIcon(Icons.arrow_back), findsWidgets);
+      expect(find.byIcon(Icons.home), findsWidgets);
+      expect(find.byIcon(Icons.menu), findsWidgets);
     });
 
-    testWidgets('BottomNavigationBar 아이콘이 표시된다', (WidgetTester tester) async {
+    testWidgets('전체메뉴 버튼 탭 시 endDrawer가 열린다', (WidgetTester tester) async {
+      // Arrange: Provider overrides with mock repository
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
+        ProviderScope(
+          overrides: [
+            homeRepositoryProvider.overrideWithValue(MockHomeRepository()),
+          ],
+          child: const MaterialApp(
             home: MainScreen(),
           ),
         ),
@@ -44,18 +84,26 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // 각 탭의 아이콘 확인 (홈 탭은 활성 상태이므로 activeIcon인 Icons.home이 표시됨)
-      expect(find.byIcon(Icons.home), findsOneWidget);
-      expect(find.byIcon(Icons.point_of_sale), findsOneWidget);
-      expect(find.byIcon(Icons.computer), findsOneWidget);
-      expect(find.byIcon(Icons.local_shipping), findsOneWidget);
-      expect(find.byIcon(Icons.trending_up), findsOneWidget);
+      // Assert: endDrawer가 닫혀있는 상태
+      expect(find.byType(FullMenuDrawer), findsNothing);
+
+      // Act: 전체메뉴 버튼 탭
+      await tester.tap(find.text('전체메뉴'));
+      await tester.pumpAndSettle();
+
+      // Assert: endDrawer가 열림
+      expect(find.byType(FullMenuDrawer), findsOneWidget);
     });
 
-    testWidgets('초기 화면은 홈 화면이다', (WidgetTester tester) async {
+    testWidgets('기존 5탭 BottomNavigationBar가 더 이상 존재하지 않는다',
+        (WidgetTester tester) async {
+      // Arrange: Provider overrides with mock repository
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
+        ProviderScope(
+          overrides: [
+            homeRepositoryProvider.overrideWithValue(MockHomeRepository()),
+          ],
+          child: const MaterialApp(
             home: MainScreen(),
           ),
         ),
@@ -63,20 +111,46 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // 홈 화면이 표시되는지 확인 (HomePage 위젯 존재)
+      // Assert: BottomNavigationBar가 존재하지 않음
+      expect(find.byType(BottomNavigationBar), findsNothing);
+
+      // Assert: 기존 5탭 레이블이 존재하지 않음
+      expect(find.text('POS 매출'), findsNothing);
+      expect(find.text('전산매출'), findsNothing);
+      expect(find.text('물류매출'), findsNothing);
+      expect(find.text('목표/진도율'), findsNothing);
+
+      // Assert: IndexedStack도 더 이상 사용하지 않음
+      expect(find.byType(IndexedStack), findsNothing);
+    });
+
+    testWidgets('MainScreen의 body는 HomePage이다', (WidgetTester tester) async {
+      // Arrange: Provider overrides with mock repository
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            homeRepositoryProvider.overrideWithValue(MockHomeRepository()),
+          ],
+          child: const MaterialApp(
+            home: MainScreen(),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Assert: HomePage가 body로 표시됨
       expect(find.byType(HomePage), findsOneWidget);
     });
 
-    testWidgets('탭을 클릭하면 해당 화면으로 전환된다', (WidgetTester tester) async {
-      // Set larger test surface size to prevent RenderFlex overflow
-      tester.view.physicalSize = const Size(800, 1200);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
+    testWidgets('MainScreen은 Scaffold를 사용한다', (WidgetTester tester) async {
+      // Arrange: Provider overrides with mock repository
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
+        ProviderScope(
+          overrides: [
+            homeRepositoryProvider.overrideWithValue(MockHomeRepository()),
+          ],
+          child: const MaterialApp(
             home: MainScreen(),
           ),
         ),
@@ -84,46 +158,19 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // POS 매출 탭 클릭
-      await tester.tap(find.text('POS 매출'));
-      await tester.pumpAndSettle();
-
-      // POS 매출 조회 화면 확인
-      expect(find.text('POS 매출 조회'), findsOneWidget);
-
-      // 전산매출 탭 클릭
-      await tester.tap(find.text('전산매출'));
-      await tester.pumpAndSettle();
-
-      // 전산매출 화면 확인 (실제 구현된 화면)
-      expect(find.text('전산매출 조회'), findsOneWidget);
-
-      // 물류매출 탭 클릭
-      await tester.tap(find.text('물류매출'));
-      await tester.pumpAndSettle();
-
-      // 물류매출 화면 확인 (실제 구현된 화면)
-      expect(find.text('물류매출 조회'), findsOneWidget);
-
-      // 목표/진도율 탭 클릭
-      await tester.tap(find.text('목표/진도율'));
-      await tester.pumpAndSettle();
-
-      // 목표/진도율 화면 확인 (실제 구현된 화면)
-      expect(find.text('목표/진도율'), findsNWidgets(2)); // 탭 + AppBar
-
-      // 홈 탭으로 다시 돌아가기
-      await tester.tap(find.text('홈'));
-      await tester.pumpAndSettle();
-
-      // 홈 화면 확인 (HomePage 위젯 존재)
-      expect(find.byType(HomePage), findsOneWidget);
+      // Assert: Scaffold가 존재함
+      expect(find.byType(Scaffold), findsOneWidget);
     });
 
-    testWidgets('IndexedStack을 사용하여 화면 상태를 유지한다', (WidgetTester tester) async {
+    testWidgets('하단 네비게이션 바는 Container 위젯을 사용한다',
+        (WidgetTester tester) async {
+      // Arrange: Provider overrides with mock repository
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
+        ProviderScope(
+          overrides: [
+            homeRepositoryProvider.overrideWithValue(MockHomeRepository()),
+          ],
+          child: const MaterialApp(
             home: MainScreen(),
           ),
         ),
@@ -131,69 +178,10 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // IndexedStack 확인
-      expect(find.byType(IndexedStack), findsOneWidget);
-    });
-
-    testWidgets('전산매출 화면이 올바르게 렌더링된다', (WidgetTester tester) async {
-      // Set larger test surface size to prevent RenderFlex overflow
-      tester.view.physicalSize = const Size(800, 1200);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
-            home: MainScreen(),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // 전산매출 탭으로 이동
-      await tester.tap(find.text('전산매출'));
-      await tester.pumpAndSettle();
-
-      // 전산매출 조회 화면 확인 (실제 구현된 화면)
-      expect(find.text('전산매출 조회'), findsOneWidget);
-    });
-
-    testWidgets('BottomNavigationBar 타입이 fixed다', (WidgetTester tester) async {
-      await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
-            home: MainScreen(),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      final bottomNavBar = tester.widget<BottomNavigationBar>(
-        find.byType(BottomNavigationBar),
-      );
-
-      expect(bottomNavBar.type, BottomNavigationBarType.fixed);
-    });
-
-    testWidgets('선택되지 않은 라벨도 표시된다', (WidgetTester tester) async {
-      await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
-            home: MainScreen(),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      final bottomNavBar = tester.widget<BottomNavigationBar>(
-        find.byType(BottomNavigationBar),
-      );
-
-      expect(bottomNavBar.showUnselectedLabels, true);
+      // Assert: 하단 네비게이션 바는 Container 기반 (BottomNavigationBar 아님)
+      final scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
+      expect(scaffold.bottomNavigationBar, isNotNull);
+      expect(scaffold.bottomNavigationBar, isNot(isA<BottomNavigationBar>()));
     });
   });
 }
