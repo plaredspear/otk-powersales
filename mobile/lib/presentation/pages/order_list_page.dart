@@ -59,14 +59,12 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
     }
   }
 
-  /// 주문 카드 탭
+  /// 주문 카드 탭 → 주문 상세 화면으로 이동
   void _onOrderTap(Order order) {
-    // 주문 상세 화면은 별도 스펙으로 구현 예정
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('주문 상세 화면은 준비 중입니다'),
-        duration: Duration(seconds: 2),
-      ),
+    AppRouter.navigateTo(
+      context,
+      AppRouter.orderDetail,
+      arguments: order.id,
     );
   }
 
