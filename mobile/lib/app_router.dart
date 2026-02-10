@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'presentation/pages/attendance_page.dart';
+import 'presentation/pages/attendance_complete_page.dart';
 import 'presentation/screens/change_password_screen.dart';
 import 'presentation/screens/login_screen.dart';
 import 'presentation/screens/main_screen.dart';
@@ -13,6 +15,8 @@ class AppRouter {
   static const String changePassword = '/change-password';
   static const String main = '/';
   static const String posSales = '/pos-sales';
+  static const String attendance = '/attendance';
+  static const String attendanceComplete = '/attendance/complete';
 
   /// 라우트 맵
   static Map<String, WidgetBuilder> get routes => {
@@ -20,6 +24,8 @@ class AppRouter {
         changePassword: (context) => const ChangePasswordScreen(),
         main: (context) => const MainScreen(),
         posSales: (context) => const PosSalesScreen(),
+        attendance: (context) => const AttendancePage(),
+        attendanceComplete: (context) => const AttendanceCompletePage(),
       };
 
   /// 초기 라우트 - 로그인 화면에서 시작

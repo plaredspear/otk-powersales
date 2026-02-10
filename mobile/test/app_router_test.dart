@@ -74,6 +74,8 @@ void main() {
       expect(AppRouter.changePassword, '/change-password');
       expect(AppRouter.main, '/');
       expect(AppRouter.posSales, '/pos-sales');
+      expect(AppRouter.attendance, '/attendance');
+      expect(AppRouter.attendanceComplete, '/attendance/complete');
     });
 
     test('라우트 맵이 올바르게 정의되어 있다', () {
@@ -83,7 +85,9 @@ void main() {
       expect(routes.containsKey(AppRouter.changePassword), true);
       expect(routes.containsKey(AppRouter.main), true);
       expect(routes.containsKey(AppRouter.posSales), true);
-      expect(routes.length, 4);
+      expect(routes.containsKey(AppRouter.attendance), true);
+      expect(routes.containsKey(AppRouter.attendanceComplete), true);
+      expect(routes.length, 6);
     });
 
     // 초기 라우트 테스트는 상단에서 이미 검증됨
