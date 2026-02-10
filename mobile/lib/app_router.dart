@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'presentation/pages/attendance_page.dart';
 import 'presentation/pages/attendance_complete_page.dart';
 import 'presentation/pages/product_search_page.dart';
+import 'presentation/pages/my_stores_page.dart';
 import 'presentation/pages/product_search_result_page.dart';
 import 'presentation/screens/change_password_screen.dart';
 import 'presentation/screens/login_screen.dart';
@@ -19,6 +20,7 @@ class AppRouter {
   static const String posSales = '/pos-sales';
   static const String attendance = '/attendance';
   static const String attendanceComplete = '/attendance/complete';
+  static const String myStores = '/my-stores';
   static const String productSearch = '/product-search';
   static const String productSearchResult = '/product-search/result';
 
@@ -30,6 +32,7 @@ class AppRouter {
         posSales: (context) => const PosSalesScreen(),
         attendance: (context) => const AttendancePage(),
         attendanceComplete: (context) => const AttendanceCompletePage(),
+        myStores: (context) => const MyStoresPage(),
         productSearch: (context) => const ProductSearchPage(),
         productSearchResult: (context) => const ProductSearchResultPage(),
       };

@@ -65,7 +65,11 @@ void main() {
 
     test('미구현 항목들은 route가 null이다', () {
       // 구현된 항목 목록
-      final implementedRoutes = {'/pos-sales', '/change-password'};
+      final implementedRoutes = {
+        '/pos-sales',
+        '/change-password',
+        '/my-stores',
+      };
 
       // 모든 아이템을 순회하며 확인
       final allItems = MenuConstants.menuGroups
@@ -74,16 +78,16 @@ void main() {
 
       // 구현된 항목만 route가 있어야 함
       final itemsWithRoute = allItems.where((item) => item.route != null);
-      expect(itemsWithRoute.length, 2);
+      expect(itemsWithRoute.length, 3);
 
       for (final item in itemsWithRoute) {
         expect(implementedRoutes.contains(item.route), true,
             reason: '${item.label}의 route는 구현된 route 목록에 있어야 합니다');
       }
 
-      // 나머지 11개 항목은 route가 null
+      // 나머지 10개 항목은 route가 null
       final itemsWithoutRoute = allItems.where((item) => item.route == null);
-      expect(itemsWithoutRoute.length, 11);
+      expect(itemsWithoutRoute.length, 10);
 
       for (final item in itemsWithoutRoute) {
         expect(item.isImplemented, false,
