@@ -1,6 +1,9 @@
 import '../entities/order.dart';
 import '../entities/order_cancel.dart';
 import '../entities/order_detail.dart';
+import '../entities/order_draft.dart';
+import '../entities/product_for_order.dart';
+import '../entities/validation_error.dart';
 
 /// 주문 목록 조회 결과 값 객체
 ///
@@ -130,4 +133,80 @@ abstract class OrderRepository {
     required int orderId,
     required List<String> productCodes,
   });
+
+  // ─── 주문서 작성 관련 메서드 (F22) ─────────────────────────────
+
+  /// 거래처 여신 잔액 조회
+  ///
+  /// [clientId]: 거래처 ID
+  /// Returns: 여신 잔액 (원)
+  Future<int> getCreditBalance({required int clientId});
+
+  /// 즐겨찾기 제품 목록 조회
+  ///
+  /// Returns: 즐겨찾기 등록된 제품 목록
+  Future<List<ProductForOrder>> getFavoriteProducts();
+
+  /// 제품 검색
+  ///
+  /// [query]: 검색어 (제품명 또는 제품코드)
+  /// [categoryMid]: 중분류 카테고리 (선택)
+  /// [categorySub]: 소분류 카테고리 (선택)
+  /// Returns: 검색 결과 제품 목록
+  Future<List<ProductForOrder>> searchProductsForOrder({
+    required String query,
+    String? categoryMid,
+    String? categorySub,
+  });
+
+  /// 바코드로 제품 조회
+  ///
+  /// [barcode]: 바코드 문자열
+  /// Returns: 해당 바코드의 제품 정보
+  Future<ProductForOrder> getProductByBarcode({required String barcode});
+
+  /// 주문서 임시저장 (로컬)
+  ///
+  /// [orderDraft]: 저장할 주문서 초안
+  Future<void> saveDraftOrder({required OrderDraft orderDraft});
+
+  /// 임시저장 주문서 불러오기
+  ///
+  /// Returns: 임시저장된 주문서 초안 (없으면 null)
+  Future<OrderDraft?> loadDraftOrder();
+
+  /// 임시저장 주문서 삭제
+  Future<void> deleteDraftOrder();
+
+  /// 주문서 유효성 검증
+  ///
+  /// [orderDraft]: 검증할 주문서 초안
+  /// Returns: 유효성 검증 결과
+  Future<ValidationResult> validateOrder({required OrderDraft orderDraft});
+
+  /// 주문서 전송 (승인요청)
+  ///
+  /// [orderDraft]: 전송할 주문서 초안
+  /// Returns: 전송 결과 (주문 ID, 요청번호, 상태)
+  Future<OrderSubmitResult> submitOrder({required OrderDraft orderDraft});
+
+  /// 주문서 수정
+  ///
+  /// [orderId]: 수정할 주문 ID
+  /// [orderDraft]: 수정된 주문서 초안
+  /// Returns: 수정 결과 (주문 ID, 요청번호, 상태)
+  Future<OrderSubmitResult> updateOrder({
+    required int orderId,
+    required OrderDraft orderDraft,
+  });
+
+  /// 즐겨찾기 추가
+  ///
+  /// [productCode]: 즐겨찾기에 추가할 제품코드
+  Future<void> addToFavorites({required String productCode});
+
+  /// 즐겨찾기 삭제
+  ///
+  /// [productCode]: 즐겨찾기에서 삭제할 제품코드
+  Future<void> removeFromFavorites({required String productCode});
 }

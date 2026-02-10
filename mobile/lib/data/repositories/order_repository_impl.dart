@@ -1,6 +1,9 @@
 import '../../domain/entities/order.dart';
 import '../../domain/entities/order_cancel.dart';
 import '../../domain/entities/order_detail.dart';
+import '../../domain/entities/order_draft.dart';
+import '../../domain/entities/product_for_order.dart';
+import '../../domain/entities/validation_error.dart';
 import '../../domain/repositories/order_repository.dart';
 import '../datasources/order_remote_datasource.dart';
 import '../models/order_cancel_model.dart';
@@ -77,5 +80,79 @@ class OrderRepositoryImpl implements OrderRepository {
       request: requestModel,
     );
     return response.toEntity();
+  }
+
+  // ─── 주문서 작성 관련 메서드 (F22) ─────────────────────────────
+  // TODO: Backend API 구현 후 실제 API 호출로 대체
+
+  @override
+  Future<int> getCreditBalance({required int clientId}) async {
+    throw UnimplementedError('Backend API 구현 후 연동 예정');
+  }
+
+  @override
+  Future<List<ProductForOrder>> getFavoriteProducts() async {
+    throw UnimplementedError('Backend API 구현 후 연동 예정');
+  }
+
+  @override
+  Future<List<ProductForOrder>> searchProductsForOrder({
+    required String query,
+    String? categoryMid,
+    String? categorySub,
+  }) async {
+    throw UnimplementedError('Backend API 구현 후 연동 예정');
+  }
+
+  @override
+  Future<ProductForOrder> getProductByBarcode({required String barcode}) async {
+    throw UnimplementedError('Backend API 구현 후 연동 예정');
+  }
+
+  @override
+  Future<void> saveDraftOrder({required OrderDraft orderDraft}) async {
+    throw UnimplementedError('Backend API 구현 후 연동 예정');
+  }
+
+  @override
+  Future<OrderDraft?> loadDraftOrder() async {
+    throw UnimplementedError('Backend API 구현 후 연동 예정');
+  }
+
+  @override
+  Future<void> deleteDraftOrder() async {
+    throw UnimplementedError('Backend API 구현 후 연동 예정');
+  }
+
+  @override
+  Future<ValidationResult> validateOrder({
+    required OrderDraft orderDraft,
+  }) async {
+    throw UnimplementedError('Backend API 구현 후 연동 예정');
+  }
+
+  @override
+  Future<OrderSubmitResult> submitOrder({
+    required OrderDraft orderDraft,
+  }) async {
+    throw UnimplementedError('Backend API 구현 후 연동 예정');
+  }
+
+  @override
+  Future<OrderSubmitResult> updateOrder({
+    required int orderId,
+    required OrderDraft orderDraft,
+  }) async {
+    throw UnimplementedError('Backend API 구현 후 연동 예정');
+  }
+
+  @override
+  Future<void> addToFavorites({required String productCode}) async {
+    throw UnimplementedError('Backend API 구현 후 연동 예정');
+  }
+
+  @override
+  Future<void> removeFromFavorites({required String productCode}) async {
+    throw UnimplementedError('Backend API 구현 후 연동 예정');
   }
 }

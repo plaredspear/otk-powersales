@@ -3,6 +3,9 @@ import 'dart:math';
 import '../../../domain/entities/order.dart';
 import '../../../domain/entities/order_cancel.dart';
 import '../../../domain/entities/order_detail.dart';
+import '../../../domain/entities/order_draft.dart';
+import '../../../domain/entities/product_for_order.dart';
+import '../../../domain/entities/validation_error.dart';
 import '../../../domain/repositories/order_repository.dart';
 
 /// 주문 Mock Repository
@@ -580,5 +583,305 @@ class OrderMockRepository implements OrderRepository {
       cancelledCount: productCodes.length,
       cancelledProductCodes: productCodes,
     );
+  }
+
+  // ─── 주문서 작성 관련 Mock 구현 (F22) ─────────────────────────────
+
+  /// Mock 임시저장 데이터
+  OrderDraft? _savedDraft;
+
+  /// Mock 즐겨찾기 제품 코드 목록
+  final Set<String> _favoriteProductCodes = {
+    '01101123',
+    '01101222',
+    '13310002',
+    '23010011',
+    '01202001',
+  };
+
+  /// Mock 제품 데이터 (주문용)
+  static final List<ProductForOrder> _mockProducts = [
+    const ProductForOrder(
+      productCode: '01101123',
+      productName: '갈릭 아이올리소스 240g',
+      barcode: '8801045123456',
+      storageType: '상온',
+      shelfLife: '12개월',
+      unitPrice: 3500,
+      boxSize: 20,
+      isFavorite: true,
+      categoryMid: '소스류',
+      categorySub: '마요/드레싱',
+    ),
+    const ProductForOrder(
+      productCode: '01101222',
+      productName: '오뚜기 3분 카레 100g',
+      barcode: '8801045234567',
+      storageType: '상온',
+      shelfLife: '18개월',
+      unitPrice: 1500,
+      boxSize: 24,
+      isFavorite: true,
+      categoryMid: '즉석식품',
+      categorySub: '3분요리',
+    ),
+    const ProductForOrder(
+      productCode: '13310002',
+      productName: '미향500ML',
+      barcode: '8801045345678',
+      storageType: '상온',
+      shelfLife: '24개월',
+      unitPrice: 2800,
+      boxSize: 12,
+      isFavorite: true,
+      categoryMid: '조미료',
+      categorySub: '참기름/식용유',
+    ),
+    const ProductForOrder(
+      productCode: '23010011',
+      productName: '오감포차_크림새우180G',
+      barcode: '8801045456789',
+      storageType: '냉동',
+      shelfLife: '12개월',
+      unitPrice: 5900,
+      boxSize: 16,
+      isFavorite: true,
+      categoryMid: '냉동식품',
+      categorySub: '냉동안주',
+    ),
+    const ProductForOrder(
+      productCode: '11110003',
+      productName: '토마토케찹500G',
+      barcode: '8801045567890',
+      storageType: '상온',
+      shelfLife: '18개월',
+      unitPrice: 3200,
+      boxSize: 20,
+      isFavorite: false,
+      categoryMid: '소스류',
+      categorySub: '케찹/소스',
+    ),
+    const ProductForOrder(
+      productCode: '01202001',
+      productName: '진라면 매운맛 120g',
+      barcode: '8801045678901',
+      storageType: '상온',
+      shelfLife: '6개월',
+      unitPrice: 850,
+      boxSize: 40,
+      isFavorite: true,
+      categoryMid: '라면',
+      categorySub: '봉지라면',
+    ),
+    const ProductForOrder(
+      productCode: '01302010',
+      productName: '참깨라면 120g',
+      barcode: '8801045789012',
+      storageType: '상온',
+      shelfLife: '6개월',
+      unitPrice: 900,
+      boxSize: 40,
+      isFavorite: false,
+      categoryMid: '라면',
+      categorySub: '봉지라면',
+    ),
+    const ProductForOrder(
+      productCode: '02101003',
+      productName: '오뚜기밥 210g',
+      barcode: '8801045890123',
+      storageType: '상온',
+      shelfLife: '12개월',
+      unitPrice: 1800,
+      boxSize: 12,
+      isFavorite: false,
+      categoryMid: '즉석식품',
+      categorySub: '즉석밥',
+    ),
+    const ProductForOrder(
+      productCode: '03201001',
+      productName: '3분짜장 200g',
+      barcode: '8801045901234',
+      storageType: '상온',
+      shelfLife: '18개월',
+      unitPrice: 1600,
+      boxSize: 24,
+      isFavorite: false,
+      categoryMid: '즉석식품',
+      categorySub: '3분요리',
+    ),
+    const ProductForOrder(
+      productCode: '04101002',
+      productName: '마요네즈 500g',
+      barcode: '8801045012345',
+      storageType: '냉장',
+      shelfLife: '7개월',
+      unitPrice: 4200,
+      boxSize: 10,
+      isFavorite: false,
+      categoryMid: '소스류',
+      categorySub: '마요/드레싱',
+    ),
+  ];
+
+  /// Mock 여신 잔액 데이터
+  static final Map<int, int> _mockCreditBalances = {
+    1: 100000000,
+    2: 50000000,
+    3: 75000000,
+    4: 30000000,
+    5: 120000000,
+    6: 85000000,
+    7: 45000000,
+    8: 60000000,
+  };
+
+  @override
+  Future<int> getCreditBalance({required int clientId}) async {
+    await _simulateDelay();
+    final balance = _mockCreditBalances[clientId];
+    if (balance == null) {
+      throw Exception('STORE_NOT_FOUND');
+    }
+    return balance;
+  }
+
+  @override
+  Future<List<ProductForOrder>> getFavoriteProducts() async {
+    await _simulateDelay();
+    return _mockProducts
+        .where((p) => _favoriteProductCodes.contains(p.productCode))
+        .map((p) => p.copyWith(isFavorite: true))
+        .toList();
+  }
+
+  @override
+  Future<List<ProductForOrder>> searchProductsForOrder({
+    required String query,
+    String? categoryMid,
+    String? categorySub,
+  }) async {
+    await _simulateDelay();
+    var results = _mockProducts.where((p) {
+      final q = query.toLowerCase();
+      return p.productName.toLowerCase().contains(q) ||
+          p.productCode.toLowerCase().contains(q);
+    }).toList();
+
+    if (categoryMid != null && categoryMid.isNotEmpty) {
+      results = results.where((p) => p.categoryMid == categoryMid).toList();
+    }
+    if (categorySub != null && categorySub.isNotEmpty) {
+      results = results.where((p) => p.categorySub == categorySub).toList();
+    }
+
+    // 즐겨찾기 상태 반영
+    return results
+        .map((p) => p.copyWith(
+            isFavorite: _favoriteProductCodes.contains(p.productCode)))
+        .toList();
+  }
+
+  @override
+  Future<ProductForOrder> getProductByBarcode({required String barcode}) async {
+    await _simulateDelay();
+    final product = _mockProducts.firstWhere(
+      (p) => p.barcode == barcode,
+      orElse: () => throw Exception('PRODUCT_NOT_FOUND'),
+    );
+    return product.copyWith(
+        isFavorite: _favoriteProductCodes.contains(product.productCode));
+  }
+
+  @override
+  Future<void> saveDraftOrder({required OrderDraft orderDraft}) async {
+    await _simulateDelay();
+    _savedDraft = orderDraft;
+  }
+
+  @override
+  Future<OrderDraft?> loadDraftOrder() async {
+    await _simulateDelay();
+    return _savedDraft;
+  }
+
+  @override
+  Future<void> deleteDraftOrder() async {
+    await _simulateDelay();
+    _savedDraft = null;
+  }
+
+  @override
+  Future<ValidationResult> validateOrder({
+    required OrderDraft orderDraft,
+  }) async {
+    await _simulateDelay();
+
+    // Mock: 모든 제품의 유효성을 통과시킴
+    // 특정 제품코드 '23010011'은 최소수량 미달로 실패하도록 시뮬레이션
+    final errors = <String, ValidationError>{};
+
+    for (final item in orderDraft.items) {
+      if (item.productCode == '23010011' && item.quantityBoxes < 5) {
+        errors[item.productCode] = const ValidationError(
+          errorType: ValidationErrorType.minOrderQuantity,
+          message: '최소 주문 수량은 5박스입니다',
+          minOrderQuantity: 5,
+          supplyQuantity: 100,
+          dcQuantity: 10,
+        );
+      }
+    }
+
+    return ValidationResult(
+      isValid: errors.isEmpty,
+      errors: errors,
+    );
+  }
+
+  @override
+  Future<OrderSubmitResult> submitOrder({
+    required OrderDraft orderDraft,
+  }) async {
+    await _simulateDelay();
+
+    // Mock: 주문서 전송 성공
+    final newId = _mockOrders.length + 1;
+    return OrderSubmitResult(
+      orderId: newId,
+      orderRequestNumber: 'OP${(50 + newId).toString().padLeft(8, '0')}',
+      status: 'PENDING',
+    );
+  }
+
+  @override
+  Future<OrderSubmitResult> updateOrder({
+    required int orderId,
+    required OrderDraft orderDraft,
+  }) async {
+    await _simulateDelay();
+
+    // 주문 존재 확인
+    _mockOrders.firstWhere(
+      (o) => o.id == orderId,
+      orElse: () => throw Exception('ORDER_NOT_FOUND'),
+    );
+
+    return OrderSubmitResult(
+      orderId: orderId,
+      orderRequestNumber: 'OP${(50 + orderId).toString().padLeft(8, '0')}',
+      status: 'PENDING',
+    );
+  }
+
+  @override
+  Future<void> addToFavorites({required String productCode}) async {
+    await _simulateDelay();
+    _favoriteProductCodes.add(productCode);
+  }
+
+  @override
+  Future<void> removeFromFavorites({required String productCode}) async {
+    await _simulateDelay();
+    _favoriteProductCodes.remove(productCode);
   }
 }
