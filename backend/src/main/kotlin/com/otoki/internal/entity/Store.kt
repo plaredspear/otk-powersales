@@ -31,6 +31,15 @@ class Store(
     @Column(name = "phone_number", length = 20)
     val phoneNumber: String? = null,
 
+    @Column(name = "credit_limit", nullable = false)
+    val creditLimit: Long = 0,
+
+    @Column(name = "used_credit", nullable = false)
+    val usedCredit: Long = 0,
+
+    @Column(name = "credit_updated_at")
+    val creditUpdatedAt: LocalDateTime? = null,
+
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
 

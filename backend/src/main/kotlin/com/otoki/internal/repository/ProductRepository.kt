@@ -49,4 +49,14 @@ interface ProductRepository : JpaRepository<Product, Long> {
      * 바코드 정확 일치 검색
      */
     fun findByBarcode(barcode: String, pageable: Pageable): Page<Product>
+
+    /**
+     * 제품코드로 제품 조회
+     */
+    fun findByProductCode(productCode: String): Product?
+
+    /**
+     * 제품코드 목록으로 일괄 조회
+     */
+    fun findByProductCodeIn(productCodes: List<String>): List<Product>
 }

@@ -36,6 +36,24 @@ class OrderItem(
     @Column(name = "quantity_pieces", nullable = false)
     val quantityPieces: Int = 0,
 
+    @Column(name = "unit_price", nullable = false)
+    val unitPrice: Long = 0,
+
+    @Column(name = "amount", nullable = false)
+    val amount: Long = 0,
+
+    @Column(name = "pieces_per_box", nullable = false)
+    val piecesPerBox: Int = 1,
+
+    @Column(name = "min_order_unit", nullable = false)
+    val minOrderUnit: Int = 1,
+
+    @Column(name = "supply_quantity", nullable = false)
+    val supplyQuantity: Int = 0,
+
+    @Column(name = "dc_quantity", nullable = false)
+    val dcQuantity: Int = 0,
+
     @Column(name = "is_cancelled", nullable = false)
     var isCancelled: Boolean = false,
 

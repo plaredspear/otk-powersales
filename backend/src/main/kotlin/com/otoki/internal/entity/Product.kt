@@ -47,6 +47,21 @@ class Product(
     @Column(name = "category_sub", length = 50)
     val categorySub: String? = null,
 
+    @Column(name = "pieces_per_box", nullable = false)
+    val piecesPerBox: Int = 1,
+
+    @Column(name = "min_order_unit", nullable = false)
+    val minOrderUnit: Int = 1,
+
+    @Column(name = "supply_quantity", nullable = false)
+    val supplyQuantity: Int = 0,
+
+    @Column(name = "dc_quantity", nullable = false)
+    val dcQuantity: Int = 0,
+
+    @Column(name = "unit_price", nullable = false)
+    val unitPrice: Long = 0,
+
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
 
