@@ -1,4 +1,5 @@
 import '../entities/order.dart';
+import '../entities/order_cancel.dart';
 import '../entities/order_detail.dart';
 
 /// 주문 목록 조회 결과 값 객체
@@ -118,4 +119,15 @@ abstract class OrderRepository {
   /// [orderId]: 재전송할 주문 ID
   /// 전송실패 상태의 주문을 재전송합니다.
   Future<void> resendOrder({required int orderId});
+
+  /// 주문 취소
+  ///
+  /// [orderId]: 취소할 주문 ID
+  /// [productCodes]: 취소할 제품코드 목록
+  ///
+  /// Returns: 취소 결과 (취소된 제품 수, 취소된 제품코드 목록)
+  Future<OrderCancelResult> cancelOrder({
+    required int orderId,
+    required List<String> productCodes,
+  });
 }

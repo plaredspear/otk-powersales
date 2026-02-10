@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import '../../../domain/entities/order.dart';
+import '../../../domain/entities/order_cancel.dart';
 import '../../../domain/entities/order_detail.dart';
 import '../../../domain/repositories/order_repository.dart';
 
@@ -541,5 +542,43 @@ class OrderMockRepository implements OrderRepository {
 
     // Mock: 재전송 성공 시뮬레이션
     // 실제 구현에서는 API 호출 후 상태가 변경됨
+  }
+
+  @override
+  Future<OrderCancelResult> cancelOrder({
+    required int orderId,
+    required List<String> productCodes,
+  }) async {
+    await _simulateDelay();
+
+    // 주문 존재 확인
+    final order = _mockOrders.firstWhere(
+      (o) => o.id == orderId,
+      orElse: () => throw Exception('ORDER_NOT_FOUND'),
+    );
+
+    // 마감된 주문은 취소 불가
+    if (order.isClosed) {
+      throw Exception('ORDER_ALREADY_CLOSED');
+    }
+
+    // 제품코드 유효성 확인
+    final orderedItems = _getMockOrderedItems(orderId);
+    final validCodes = orderedItems
+        .where((item) => !item.isCancelled)
+        .map((item) => item.productCode)
+        .toSet();
+
+    for (final code in productCodes) {
+      if (!validCodes.contains(code)) {
+        throw Exception('ALREADY_CANCELLED');
+      }
+    }
+
+    // Mock: 취소 성공 시뮬레이션
+    return OrderCancelResult(
+      cancelledCount: productCodes.length,
+      cancelledProductCodes: productCodes,
+    );
   }
 }

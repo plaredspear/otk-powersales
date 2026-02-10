@@ -1,3 +1,4 @@
+import '../models/order_cancel_model.dart';
 import '../models/order_detail_model.dart';
 import '../models/order_model.dart';
 
@@ -70,4 +71,12 @@ abstract class OrderRemoteDataSource {
   ///
   /// 전송실패 주문을 재전송합니다.
   Future<void> resendOrder({required int orderId});
+
+  /// POST /api/v1/me/orders/{orderId}/cancel
+  ///
+  /// 선택한 제품의 주문을 취소합니다.
+  Future<OrderCancelResponseModel> cancelOrder({
+    required int orderId,
+    required OrderCancelRequestModel request,
+  });
 }

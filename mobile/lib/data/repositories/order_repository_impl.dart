@@ -1,7 +1,9 @@
 import '../../domain/entities/order.dart';
+import '../../domain/entities/order_cancel.dart';
 import '../../domain/entities/order_detail.dart';
 import '../../domain/repositories/order_repository.dart';
 import '../datasources/order_remote_datasource.dart';
+import '../models/order_cancel_model.dart';
 
 /// 주문 Repository 구현체
 ///
@@ -60,5 +62,20 @@ class OrderRepositoryImpl implements OrderRepository {
   @override
   Future<void> resendOrder({required int orderId}) async {
     await _remoteDataSource.resendOrder(orderId: orderId);
+  }
+
+  @override
+  Future<OrderCancelResult> cancelOrder({
+    required int orderId,
+    required List<String> productCodes,
+  }) async {
+    final requestModel = OrderCancelRequestModel(
+      productCodes: productCodes,
+    );
+    final response = await _remoteDataSource.cancelOrder(
+      orderId: orderId,
+      request: requestModel,
+    );
+    return response.toEntity();
   }
 }

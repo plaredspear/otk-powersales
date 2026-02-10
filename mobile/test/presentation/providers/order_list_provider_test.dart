@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/data/repositories/mock/order_mock_repository.dart';
 import 'package:mobile/domain/entities/order.dart';
+import 'package:mobile/domain/entities/order_cancel.dart';
+import 'package:mobile/domain/entities/order_detail.dart';
 import 'package:mobile/domain/repositories/order_repository.dart';
 import 'package:mobile/presentation/providers/order_list_provider.dart';
 
@@ -387,5 +389,23 @@ class _ErrorOrderRepository implements OrderRepository {
     int size = 20,
   }) async {
     throw Exception('Failed to fetch orders');
+  }
+
+  @override
+  Future<OrderDetail> getOrderDetail({required int orderId}) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> resendOrder({required int orderId}) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<OrderCancelResult> cancelOrder({
+    required int orderId,
+    required List<String> productCodes,
+  }) {
+    throw UnimplementedError();
   }
 }

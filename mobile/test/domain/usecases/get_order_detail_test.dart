@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/domain/entities/order.dart';
+import 'package:mobile/domain/entities/order_cancel.dart';
 import 'package:mobile/domain/entities/order_detail.dart';
 import 'package:mobile/domain/repositories/order_repository.dart';
 import 'package:mobile/domain/usecases/get_order_detail.dart';
@@ -68,6 +69,14 @@ class _MockOrderRepository implements OrderRepository {
   @override
   Future<void> resendOrder({required int orderId}) {
     throw UnimplementedError('resendOrder not implemented in mock');
+  }
+
+  @override
+  Future<OrderCancelResult> cancelOrder({
+    required int orderId,
+    required List<String> productCodes,
+  }) {
+    throw UnimplementedError('cancelOrder not implemented in mock');
   }
 }
 
