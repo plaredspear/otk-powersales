@@ -8,6 +8,7 @@ import org.springframework.security.access.AccessDeniedException
 import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.validation.FieldError
 import org.springframework.web.bind.MethodArgumentNotValidException
+import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.context.request.WebRequest
@@ -37,6 +38,24 @@ class GlobalExceptionHandler {
         val response = ApiResponse.error<Any>(
             code = "INVALID_PARAMETER",
             message = errors
+        )
+
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(response)
+    }
+
+    /**
+     * 필수 요청 파라미터 누락 예외 처리
+     */
+    @ExceptionHandler(MissingServletRequestParameterException::class)
+    fun handleMissingServletRequestParameter(
+        ex: MissingServletRequestParameterException,
+        request: WebRequest
+    ): ResponseEntity<ApiResponse<Any>> {
+        val response = ApiResponse.error<Any>(
+            code = "INVALID_PARAMETER",
+            message = "필수 파라미터 '${ex.parameterName}'이(가) 누락되었습니다"
         )
 
         return ResponseEntity
