@@ -93,6 +93,10 @@ void main() {
       expect(AppRouter.inspectionRegister, equals('/inspection-register'));
     });
 
+    test('claim 라우트 상수가 올바르다', () {
+      expect(AppRouter.claimRegister, equals('/claim/register'));
+    });
+
     test('라우트 맵이 올바르게 정의되어 있다', () {
       final routes = AppRouter.routes;
 
@@ -110,7 +114,9 @@ void main() {
       expect(routes.containsKey(AppRouter.orderCancel), true);
       expect(routes.containsKey(AppRouter.inspectionList), true);
       expect(routes.containsKey(AppRouter.inspectionDetail), true);
-      expect(routes.length, 20);
+      expect(routes.containsKey(AppRouter.inspectionRegister), true);
+      expect(routes.containsKey(AppRouter.claimRegister), true);
+      expect(routes.length, 22);
     });
 
     test('routes 맵에 orderList 라우트가 포함되어 있다', () {

@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'domain/entities/shelf_life_item.dart';
 import 'presentation/pages/attendance_page.dart';
 import 'presentation/pages/attendance_complete_page.dart';
+import 'presentation/pages/claim_register_page.dart';
 import 'presentation/pages/client_order_detail_page.dart';
 import 'presentation/pages/inspection_detail_page.dart';
 import 'presentation/pages/inspection_list_page.dart';
+import 'presentation/pages/inspection/inspection_register_page.dart';
 import 'presentation/pages/order_cancel_page.dart';
 import 'presentation/pages/order_detail_page.dart';
 import 'presentation/pages/order_list_page.dart';
@@ -47,6 +49,7 @@ class AppRouter {
   static const String inspectionList = '/inspection-list';
   static const String inspectionDetail = '/inspection-detail';
   static const String inspectionRegister = '/inspection-register';
+  static const String claimRegister = '/claim/register';
 
   /// 라우트 맵
   static Map<String, WidgetBuilder> get routes => {
@@ -97,6 +100,8 @@ class AppRouter {
               ModalRoute.of(context)!.settings.arguments as int;
           return InspectionDetailPage(inspectionId: inspectionId);
         },
+        inspectionRegister: (context) => const InspectionRegisterPage(),
+        claimRegister: (context) => const ClaimRegisterPage(),
       };
 
   /// 초기 라우트 - 로그인 화면에서 시작
