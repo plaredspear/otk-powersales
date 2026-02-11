@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'domain/entities/shelf_life_item.dart';
 import 'presentation/pages/attendance_page.dart';
 import 'presentation/pages/attendance_complete_page.dart';
 import 'presentation/pages/client_order_detail_page.dart';
@@ -9,6 +10,8 @@ import 'presentation/pages/order_form_page.dart';
 import 'presentation/pages/product_search_page.dart';
 import 'presentation/pages/my_stores_page.dart';
 import 'presentation/pages/product_search_result_page.dart';
+import 'presentation/pages/shelf_life_list_page.dart';
+import 'presentation/pages/shelf_life_delete_page.dart';
 import 'presentation/screens/change_password_screen.dart';
 import 'presentation/screens/login_screen.dart';
 import 'presentation/screens/main_screen.dart';
@@ -33,6 +36,10 @@ class AppRouter {
   static const String orderCancel = '/order-cancel';
   static const String orderForm = '/order-form';
   static const String clientOrderDetail = '/client-order-detail';
+  static const String shelfLife = '/shelf-life';
+  static const String shelfLifeRegister = '/shelf-life/register';
+  static const String shelfLifeEdit = '/shelf-life/edit';
+  static const String shelfLifeDelete = '/shelf-life/delete';
 
   /// 라우트 맵
   static Map<String, WidgetBuilder> get routes => {
@@ -64,6 +71,12 @@ class AppRouter {
           final sapOrderNumber =
               ModalRoute.of(context)!.settings.arguments as String;
           return ClientOrderDetailPage(sapOrderNumber: sapOrderNumber);
+        },
+        shelfLife: (context) => const ShelfLifeListPage(),
+        shelfLifeDelete: (context) {
+          final items = ModalRoute.of(context)!.settings.arguments
+              as List<ShelfLifeItem>;
+          return ShelfLifeDeletePage(items: items);
         },
       };
 
