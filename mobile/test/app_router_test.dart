@@ -102,7 +102,7 @@ void main() {
       expect(routes.containsKey(AppRouter.orderList), true);
       expect(routes.containsKey(AppRouter.orderDetail), true);
       expect(routes.containsKey(AppRouter.orderCancel), true);
-      expect(routes.length, 12);
+      expect(routes.length, 18);
     });
 
     test('routes 맵에 orderList 라우트가 포함되어 있다', () {
