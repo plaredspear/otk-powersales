@@ -9,6 +9,7 @@ import '../../core/theme/app_typography.dart';
 import '../../domain/entities/inspection_detail.dart';
 import '../../domain/entities/inspection_list_item.dart';
 import '../providers/inspection_detail_provider.dart';
+import '../providers/inspection_detail_state.dart';
 import '../widgets/inspection/inspection_detail_competitor.dart';
 import '../widgets/inspection/inspection_detail_own.dart';
 

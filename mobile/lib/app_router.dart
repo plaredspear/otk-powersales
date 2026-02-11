@@ -3,6 +3,8 @@ import 'domain/entities/shelf_life_item.dart';
 import 'presentation/pages/attendance_page.dart';
 import 'presentation/pages/attendance_complete_page.dart';
 import 'presentation/pages/client_order_detail_page.dart';
+import 'presentation/pages/inspection_detail_page.dart';
+import 'presentation/pages/inspection_list_page.dart';
 import 'presentation/pages/order_cancel_page.dart';
 import 'presentation/pages/order_detail_page.dart';
 import 'presentation/pages/order_list_page.dart';
@@ -42,6 +44,9 @@ class AppRouter {
   static const String shelfLifeRegister = '/shelf-life/register';
   static const String shelfLifeEdit = '/shelf-life/edit';
   static const String shelfLifeDelete = '/shelf-life/delete';
+  static const String inspectionList = '/inspection-list';
+  static const String inspectionDetail = '/inspection-detail';
+  static const String inspectionRegister = '/inspection-register';
 
   /// 라우트 맵
   static Map<String, WidgetBuilder> get routes => {
@@ -85,6 +90,12 @@ class AppRouter {
           final items = ModalRoute.of(context)!.settings.arguments
               as List<ShelfLifeItem>;
           return ShelfLifeDeletePage(items: items);
+        },
+        inspectionList: (context) => const InspectionListPage(),
+        inspectionDetail: (context) {
+          final inspectionId =
+              ModalRoute.of(context)!.settings.arguments as int;
+          return InspectionDetailPage(inspectionId: inspectionId);
         },
       };
 
