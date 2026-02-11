@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'presentation/pages/attendance_page.dart';
 import 'presentation/pages/attendance_complete_page.dart';
+import 'presentation/pages/client_order_detail_page.dart';
 import 'presentation/pages/order_cancel_page.dart';
 import 'presentation/pages/order_detail_page.dart';
 import 'presentation/pages/order_list_page.dart';
@@ -31,6 +32,7 @@ class AppRouter {
   static const String orderDetail = '/order-detail';
   static const String orderCancel = '/order-cancel';
   static const String orderForm = '/order-form';
+  static const String clientOrderDetail = '/client-order-detail';
 
   /// 라우트 맵
   static Map<String, WidgetBuilder> get routes => {
@@ -57,6 +59,11 @@ class AppRouter {
           final orderId =
               ModalRoute.of(context)?.settings.arguments as int?;
           return OrderFormPage(orderId: orderId);
+        },
+        clientOrderDetail: (context) {
+          final sapOrderNumber =
+              ModalRoute.of(context)!.settings.arguments as String;
+          return ClientOrderDetailPage(sapOrderNumber: sapOrderNumber);
         },
       };
 

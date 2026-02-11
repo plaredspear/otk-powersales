@@ -5,12 +5,18 @@ import '../../app_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../domain/entities/client_order.dart';
 import '../../domain/entities/order.dart';
+import '../providers/client_order_list_provider.dart';
+import '../providers/client_order_list_state.dart';
 import '../providers/order_list_provider.dart';
 import '../providers/order_list_state.dart';
+import '../widgets/order/client_order_card.dart';
+import '../widgets/order/client_order_filter_bar.dart';
 import '../widgets/order/order_card.dart';
 import '../widgets/order/order_filter_bar.dart';
 import '../widgets/order/order_sort_bottom_sheet.dart';
+import '../widgets/order/page_navigator.dart';
 
 /// 주문 현황 페이지
 ///
@@ -40,6 +46,7 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
     // 페이지 진입 시 초기 데이터 로딩
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(orderListProvider.notifier).initialize();
+      ref.read(clientOrderListProvider.notifier).initialize();
     });
   }
 
@@ -132,8 +139,8 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
         children: [
           // 내 주문 탭
           _buildMyOrdersTab(state),
-          // 거래처별 주문 탭 (미구현)
-          _buildPlaceholderTab(),
+          // 거래처별 주문 탭
+          _buildClientOrdersTab(),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -317,26 +324,201 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
     );
   }
 
-  /// 거래처별 주문 탭 (미구현 플레이스홀더)
-  Widget _buildPlaceholderTab() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.construction,
-            size: 64,
-            color: AppColors.textTertiary,
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          Text(
-            '준비 중입니다',
-            style: AppTypography.bodyLarge.copyWith(
-              color: AppColors.textSecondary,
+  /// 거래처별 주문 탭
+  Widget _buildClientOrdersTab() {
+    return Consumer(
+      builder: (context, ref, child) {
+        final state = ref.watch(clientOrderListProvider);
+
+        // 에러 메시지 리스닝
+        ref.listen(clientOrderListProvider, (previous, next) {
+          if (next.errorMessage != null && previous?.errorMessage == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(next.errorMessage!),
+                duration: const Duration(seconds: 2),
+              ),
+            );
+            ref.read(clientOrderListProvider.notifier).clearError();
+          }
+        });
+
+        return Column(
+          children: [
+            // 필터 바
+            ClientOrderFilterBar(
+              stores: state.stores,
+              selectedStoreId: state.selectedStoreId,
+              selectedDeliveryDate: state.selectedDeliveryDate,
+              canSearch: state.canSearch,
+              onStoreChanged: (entry) {
+                if (entry == null) {
+                  ref
+                      .read(clientOrderListProvider.notifier)
+                      .selectStore(null, null);
+                } else {
+                  ref
+                      .read(clientOrderListProvider.notifier)
+                      .selectStore(entry.key, entry.value);
+                }
+              },
+              onDeliveryDateChanged: (date) {
+                ref
+                    .read(clientOrderListProvider.notifier)
+                    .updateDeliveryDate(date);
+              },
+              onSearch: () {
+                ref.read(clientOrderListProvider.notifier).searchOrders();
+              },
             ),
+            // 결과 헤더 (검색 후에만 표시)
+            if (state.hasSearched) _buildClientOrderResultHeader(state),
+            // 주문 목록
+            Expanded(
+              child: _buildClientOrderList(state),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// 거래처별 주문 결과 헤더
+  Widget _buildClientOrderResultHeader(ClientOrderListState state) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.sm,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            '주문 현황 (${state.totalElements})',
+            style: AppTypography.headlineSmall,
           ),
         ],
       ),
+    );
+  }
+
+  /// 거래처별 주문 목록
+  Widget _buildClientOrderList(ClientOrderListState state) {
+    // 로딩 상태
+    if (state.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    // 에러 상태 (재시도 버튼)
+    if (state.errorMessage != null && !state.hasResults) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: AppColors.textTertiary,
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              '일시적인 오류가 발생했습니다',
+              style: AppTypography.bodyLarge.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            ElevatedButton(
+              onPressed: () {
+                ref.read(clientOrderListProvider.notifier).searchOrders();
+              },
+              child: const Text('재시도'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // 빈 목록
+    if (state.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.inbox_outlined,
+              size: 64,
+              color: AppColors.textTertiary,
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              '조회된 주문이 없습니다',
+              style: AppTypography.bodyLarge.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // 검색 전 초기 상태
+    if (!state.hasSearched) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.search,
+              size: 64,
+              color: AppColors.textTertiary,
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              '거래처와 납기일을 선택 후 검색해주세요',
+              style: AppTypography.bodyLarge.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // 주문 카드 리스트 + 페이지네이터
+    return Column(
+      children: [
+        Expanded(
+          child: ListView.builder(
+            itemCount: state.orders.length,
+            itemBuilder: (context, index) {
+              final order = state.orders[index];
+              return ClientOrderCard(
+                order: order,
+                onTap: () => _onClientOrderTap(order),
+              );
+            },
+          ),
+        ),
+        // 페이지네이터 (totalPages > 1일 때만 표시)
+        if (state.totalPages > 1)
+          PageNavigator(
+            currentPage: state.currentPage,
+            totalPages: state.totalPages,
+            onPageChanged: (page) {
+              ref.read(clientOrderListProvider.notifier).goToPage(page);
+            },
+          ),
+      ],
+    );
+  }
+
+  /// 거래처별 주문 카드 탭 → 주문 상세 화면으로 이동
+  void _onClientOrderTap(ClientOrder order) {
+    AppRouter.navigateTo(
+      context,
+      AppRouter.clientOrderDetail,
+      arguments: order.sapOrderNumber,
     );
   }
 }
