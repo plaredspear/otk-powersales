@@ -164,5 +164,6 @@ class GlobalExceptionHandler {
 open class BusinessException(
     val errorCode: String,
     override val message: String,
-    val httpStatus: HttpStatus = HttpStatus.BAD_REQUEST
-) : RuntimeException(message)
+    val httpStatus: HttpStatus = HttpStatus.BAD_REQUEST,
+    override val cause: Throwable? = null
+) : RuntimeException(message, cause)
