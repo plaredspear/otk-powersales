@@ -90,6 +90,50 @@ class FileStorageService(
     }
 
     /**
+     * 클레임 사진 업로드
+     *
+     * @param file 업로드 파일
+     * @param userId 사용자 ID
+     * @param claimId 클레임 ID
+     * @param photoType 사진 유형 (DEFECT, LABEL, RECEIPT)
+     * @return 저장된 파일 URL
+     */
+    fun uploadClaimPhoto(
+        file: MultipartFile,
+        userId: Long,
+        claimId: Long,
+        photoType: String
+    ): String {
+        // 파일 검증
+        validateFile(file)
+
+        // 파일명 생성 (photoType-UUID + 확장자)
+        val originalFilename = file.originalFilename ?: "unknown"
+        val extension = getFileExtension(originalFilename)
+        val filename = "${photoType.lowercase()}-${UUID.randomUUID()}${extension}"
+
+        // 저장 경로 생성: claims/{userId}/{claimId}/{filename}
+        val targetLocation = rootLocation
+            .resolve("claims")
+            .resolve(userId.toString())
+            .resolve(claimId.toString())
+
+        try {
+            // 디렉토리 생성
+            Files.createDirectories(targetLocation)
+
+            // 파일 저장
+            val targetFile = targetLocation.resolve(filename)
+            Files.copy(file.inputStream, targetFile, StandardCopyOption.REPLACE_EXISTING)
+
+            // URL 반환
+            return "$baseUrl/claims/$userId/$claimId/$filename"
+        } catch (e: IOException) {
+            throw FileStorageException("파일 저장 실패: ${file.originalFilename}", e)
+        }
+    }
+
+    /**
      * 파일 유효성 검증
      */
     private fun validateFile(file: MultipartFile) {
