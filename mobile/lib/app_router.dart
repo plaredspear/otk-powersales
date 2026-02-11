@@ -12,6 +12,8 @@ import 'presentation/pages/my_stores_page.dart';
 import 'presentation/pages/product_search_result_page.dart';
 import 'presentation/pages/shelf_life_list_page.dart';
 import 'presentation/pages/shelf_life_delete_page.dart';
+import 'presentation/pages/shelf_life_register_page.dart';
+import 'presentation/pages/shelf_life_edit_page.dart';
 import 'presentation/screens/change_password_screen.dart';
 import 'presentation/screens/login_screen.dart';
 import 'presentation/screens/main_screen.dart';
@@ -73,6 +75,12 @@ class AppRouter {
           return ClientOrderDetailPage(sapOrderNumber: sapOrderNumber);
         },
         shelfLife: (context) => const ShelfLifeListPage(),
+        shelfLifeRegister: (context) => const ShelfLifeRegisterPage(),
+        shelfLifeEdit: (context) {
+          final item = ModalRoute.of(context)!.settings.arguments
+              as ShelfLifeItem;
+          return ShelfLifeEditPage(item: item);
+        },
         shelfLifeDelete: (context) {
           final items = ModalRoute.of(context)!.settings.arguments
               as List<ShelfLifeItem>;
