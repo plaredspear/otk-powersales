@@ -1,3 +1,4 @@
+import '../entities/client_order.dart';
 import '../entities/order.dart';
 import '../entities/order_cancel.dart';
 import '../entities/order_detail.dart';
@@ -209,4 +210,30 @@ abstract class OrderRepository {
   ///
   /// [productCode]: 즐겨찾기에서 삭제할 제품코드
   Future<void> removeFromFavorites({required String productCode});
+
+  // ─── 거래처별 주문 관련 메서드 (F28) ─────────────────────────────
+
+  /// 거래처별 주문 목록 조회
+  ///
+  /// [clientId]: 거래처 ID (필수)
+  /// [deliveryDate]: 납기일 (YYYY-MM-DD, 기본: 오늘)
+  /// [page]: 페이지 번호 (0부터 시작)
+  /// [size]: 페이지 크기 (기본: 20)
+  ///
+  /// Returns: 페이지네이션 정보를 포함한 거래처별 주문 목록
+  Future<ClientOrderListResult> getClientOrders({
+    required int clientId,
+    String? deliveryDate,
+    int page = 0,
+    int size = 20,
+  });
+
+  /// 거래처별 주문 상세 조회
+  ///
+  /// [sapOrderNumber]: SAP 주문번호
+  ///
+  /// Returns: 거래처별 주문 상세 정보
+  Future<ClientOrderDetail> getClientOrderDetail({
+    required String sapOrderNumber,
+  });
 }

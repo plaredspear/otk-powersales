@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/domain/entities/client_order.dart';
 import 'package:mobile/domain/entities/order.dart';
 import 'package:mobile/domain/entities/order_cancel.dart';
 import 'package:mobile/domain/entities/order_detail.dart';
@@ -724,6 +725,21 @@ class FakeOrderRepository implements OrderRepository {
 
   @override
   Future<void> removeFromFavorites({required String productCode}) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<ClientOrderListResult> getClientOrders({
+    required int clientId,
+    String? deliveryDate,
+    int page = 0,
+    int size = 20,
+  }) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<ClientOrderDetail> getClientOrderDetail({
+    required String sapOrderNumber,
+  }) async =>
       throw UnimplementedError();
 }
 

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/data/datasources/order_local_datasource.dart';
 import 'package:mobile/data/datasources/order_remote_datasource.dart';
+import 'package:mobile/data/models/client_order_model.dart';
 import 'package:mobile/data/models/order_cancel_model.dart';
 import 'package:mobile/data/models/order_detail_model.dart';
 import 'package:mobile/data/models/order_draft_model.dart';
@@ -450,6 +451,23 @@ class FakeOrderRemoteDataSource implements OrderRemoteDataSource {
   Future<OrderCancelResponseModel> cancelOrder({
     required int orderId,
     required OrderCancelRequestModel request,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<ClientOrderListResponseModel> getClientOrders({
+    required int clientId,
+    String? deliveryDate,
+    int page = 0,
+    int size = 20,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<ClientOrderDetailModel> getClientOrderDetail({
+    required String sapOrderNumber,
   }) {
     throw UnimplementedError();
   }

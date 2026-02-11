@@ -1,3 +1,4 @@
+import '../../domain/entities/client_order.dart';
 import '../../domain/entities/order.dart';
 import '../../domain/entities/order_cancel.dart';
 import '../../domain/entities/order_detail.dart';
@@ -185,5 +186,46 @@ class OrderRepositoryImpl implements OrderRepository {
   @override
   Future<void> removeFromFavorites({required String productCode}) async {
     await _remoteDataSource.removeFromFavorites(productCode: productCode);
+  }
+
+  // ─── 거래처별 주문 관련 메서드 (F28) ─────────────────────────────
+
+  @override
+  Future<ClientOrderListResult> getClientOrders({
+    required int clientId,
+    String? deliveryDate,
+    int page = 0,
+    int size = 20,
+  }) async {
+    final response = await _remoteDataSource.getClientOrders(
+      clientId: clientId,
+      deliveryDate: deliveryDate,
+      page: page,
+      size: size,
+    );
+
+    final orders = response.content
+        .map((model) => model.toEntity())
+        .toList();
+
+    return ClientOrderListResult(
+      orders: orders,
+      totalElements: response.totalElements,
+      totalPages: response.totalPages,
+      currentPage: response.number,
+      pageSize: response.size,
+      isFirst: response.first,
+      isLast: response.last,
+    );
+  }
+
+  @override
+  Future<ClientOrderDetail> getClientOrderDetail({
+    required String sapOrderNumber,
+  }) async {
+    final response = await _remoteDataSource.getClientOrderDetail(
+      sapOrderNumber: sapOrderNumber,
+    );
+    return response.toEntity();
   }
 }

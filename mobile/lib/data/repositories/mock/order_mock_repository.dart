@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import '../../../domain/entities/client_order.dart';
 import '../../../domain/entities/order.dart';
 import '../../../domain/entities/order_cancel.dart';
 import '../../../domain/entities/order_detail.dart';
@@ -883,5 +884,264 @@ class OrderMockRepository implements OrderRepository {
   Future<void> removeFromFavorites({required String productCode}) async {
     await _simulateDelay();
     _favoriteProductCodes.remove(productCode);
+  }
+
+  // ─── 거래처별 주문 Mock 구현 (F28) ─────────────────────────────
+
+  /// Mock 거래처별 주문 데이터
+  static final List<ClientOrder> _mockClientOrders = [
+    const ClientOrder(
+      sapOrderNumber: '300011396',
+      clientId: 2,
+      clientName: '(유)경산식품',
+      totalAmount: 3763740,
+    ),
+    const ClientOrder(
+      sapOrderNumber: '300011397',
+      clientId: 2,
+      clientName: '(유)경산식품',
+      totalAmount: 182820,
+    ),
+    const ClientOrder(
+      sapOrderNumber: '300011398',
+      clientId: 2,
+      clientName: '(유)경산식품',
+      totalAmount: 199800,
+    ),
+    const ClientOrder(
+      sapOrderNumber: '300011399',
+      clientId: 1,
+      clientName: '천사푸드',
+      totalAmount: 5210000,
+    ),
+    const ClientOrder(
+      sapOrderNumber: '300011400',
+      clientId: 1,
+      clientName: '천사푸드',
+      totalAmount: 1250000,
+    ),
+    const ClientOrder(
+      sapOrderNumber: '300011401',
+      clientId: 3,
+      clientName: '대한식품유통',
+      totalAmount: 8900000,
+    ),
+    const ClientOrder(
+      sapOrderNumber: '300011402',
+      clientId: 4,
+      clientName: '행복마트',
+      totalAmount: 450000,
+    ),
+    const ClientOrder(
+      sapOrderNumber: '300011403',
+      clientId: 5,
+      clientName: '명품식자재',
+      totalAmount: 2340000,
+    ),
+    const ClientOrder(
+      sapOrderNumber: '300011404',
+      clientId: 6,
+      clientName: '서울종합식품',
+      totalAmount: 6700000,
+    ),
+    const ClientOrder(
+      sapOrderNumber: '300011405',
+      clientId: 7,
+      clientName: '그린유통',
+      totalAmount: 890000,
+    ),
+    const ClientOrder(
+      sapOrderNumber: '300011406',
+      clientId: 8,
+      clientName: '삼성식품',
+      totalAmount: 3210000,
+    ),
+    const ClientOrder(
+      sapOrderNumber: '300011407',
+      clientId: 2,
+      clientName: '(유)경산식품',
+      totalAmount: 1540000,
+    ),
+    const ClientOrder(
+      sapOrderNumber: '300011408',
+      clientId: 1,
+      clientName: '천사푸드',
+      totalAmount: 780000,
+    ),
+    const ClientOrder(
+      sapOrderNumber: '300011409',
+      clientId: 3,
+      clientName: '대한식품유통',
+      totalAmount: 4560000,
+    ),
+    const ClientOrder(
+      sapOrderNumber: '300011410',
+      clientId: 4,
+      clientName: '행복마트',
+      totalAmount: 2100000,
+    ),
+    const ClientOrder(
+      sapOrderNumber: '300011411',
+      clientId: 5,
+      clientName: '명품식자재',
+      totalAmount: 990000,
+    ),
+    const ClientOrder(
+      sapOrderNumber: '300011412',
+      clientId: 6,
+      clientName: '서울종합식품',
+      totalAmount: 1870000,
+    ),
+    const ClientOrder(
+      sapOrderNumber: '300011413',
+      clientId: 7,
+      clientName: '그린유통',
+      totalAmount: 5600000,
+    ),
+    const ClientOrder(
+      sapOrderNumber: '300011414',
+      clientId: 8,
+      clientName: '삼성식품',
+      totalAmount: 430000,
+    ),
+    const ClientOrder(
+      sapOrderNumber: '300011415',
+      clientId: 1,
+      clientName: '천사푸드',
+      totalAmount: 7800000,
+    ),
+    const ClientOrder(
+      sapOrderNumber: '300011416',
+      clientId: 2,
+      clientName: '(유)경산식품',
+      totalAmount: 2450000,
+    ),
+    const ClientOrder(
+      sapOrderNumber: '300011417',
+      clientId: 3,
+      clientName: '대한식품유통',
+      totalAmount: 1320000,
+    ),
+    const ClientOrder(
+      sapOrderNumber: '300011418',
+      clientId: 4,
+      clientName: '행복마트',
+      totalAmount: 6100000,
+    ),
+    const ClientOrder(
+      sapOrderNumber: '300011419',
+      clientId: 5,
+      clientName: '명품식자재',
+      totalAmount: 3780000,
+    ),
+    const ClientOrder(
+      sapOrderNumber: '300011420',
+      clientId: 6,
+      clientName: '서울종합식품',
+      totalAmount: 920000,
+    ),
+  ];
+
+  @override
+  Future<ClientOrderListResult> getClientOrders({
+    required int clientId,
+    String? deliveryDate,
+    int page = 0,
+    int size = 20,
+  }) async {
+    await _simulateDelay();
+
+    // 거래처 ID로 필터링
+    final filtered = _mockClientOrders
+        .where((o) => o.clientId == clientId)
+        .toList();
+
+    // 페이지네이션
+    final totalElements = filtered.length;
+    final totalPages = (totalElements / size).ceil();
+    final startIndex = page * size;
+    final endIndex = min(startIndex + size, totalElements);
+
+    final pagedOrders = startIndex < totalElements
+        ? filtered.sublist(startIndex, endIndex)
+        : <ClientOrder>[];
+
+    return ClientOrderListResult(
+      orders: List.unmodifiable(pagedOrders),
+      totalElements: totalElements,
+      totalPages: totalPages == 0 ? 1 : totalPages,
+      currentPage: page,
+      pageSize: size,
+      isFirst: page == 0,
+      isLast: page >= totalPages - 1 || totalPages == 0,
+    );
+  }
+
+  @override
+  Future<ClientOrderDetail> getClientOrderDetail({
+    required String sapOrderNumber,
+  }) async {
+    await _simulateDelay();
+
+    final order = _mockClientOrders.firstWhere(
+      (o) => o.sapOrderNumber == sapOrderNumber,
+      orElse: () => throw Exception('ORDER_NOT_FOUND'),
+    );
+
+    final random = Random(int.parse(sapOrderNumber.substring(
+        sapOrderNumber.length - 4)));
+    final itemCount = random.nextInt(12) + 5; // 5~16개
+
+    final products = [
+      ('26310001', '프레스코_포도씨유0.5L'),
+      ('26110007', '옥수수유0.9L'),
+      ('20010007', '옛날_구수한끓여먹는누룽지240G'),
+      ('19710009', '통단팥죽(상온)285G'),
+      ('19610002', '맛있는미역국18G'),
+      ('19610001', '맛있는북엇국34G'),
+      ('01101123', '갈릭 아이올리소스 240g'),
+      ('01101222', '오뚜기 3분 카레 100g'),
+      ('13310002', '미향500ML'),
+      ('23010011', '오감포차_크림새우180G'),
+      ('11110003', '토마토케찹500G'),
+      ('01202001', '진라면 매운맛 120g'),
+      ('01302010', '참깨라면 120g'),
+      ('02101003', '오뚜기밥 210g'),
+      ('03201001', '3분짜장 200g'),
+      ('04101002', '마요네즈 500g'),
+    ];
+
+    final statuses = [
+      DeliveryStatus.waiting,
+      DeliveryStatus.shipping,
+      DeliveryStatus.delivered,
+    ];
+
+    final orderedItems = List.generate(itemCount, (index) {
+      final product = products[index % products.length];
+      final statusIndex = random.nextInt(3);
+      final deliveredQty = statusIndex == 2
+          ? '${random.nextInt(50) + 1} BOX'
+          : '0 BOX';
+
+      return ClientOrderItem(
+        productCode: product.$1,
+        productName: product.$2,
+        deliveredQuantity: deliveredQty,
+        deliveryStatus: statuses[statusIndex],
+      );
+    });
+
+    return ClientOrderDetail(
+      sapOrderNumber: order.sapOrderNumber,
+      clientId: order.clientId,
+      clientName: order.clientName,
+      clientDeadlineTime: _mockDeadlineTimes[order.clientId],
+      orderDate: DateTime(2026, 2, 14),
+      deliveryDate: DateTime(2026, 2, 19),
+      totalApprovedAmount: order.totalAmount,
+      orderedItemCount: orderedItems.length,
+      orderedItems: orderedItems,
+    );
   }
 }

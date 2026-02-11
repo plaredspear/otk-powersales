@@ -1,3 +1,4 @@
+import '../models/client_order_model.dart';
 import '../models/order_cancel_model.dart';
 import '../models/order_detail_model.dart';
 import '../models/order_model.dart';
@@ -150,4 +151,23 @@ abstract class OrderRemoteDataSource {
   ///
   /// 제품을 즐겨찾기에서 삭제합니다.
   Future<void> removeFromFavorites({required String productCode});
+
+  // ─── 거래처별 주문 관련 API (F28) ─────────────────────────────
+
+  /// GET /api/v1/client-orders
+  ///
+  /// 거래처별 주문 목록을 조회합니다.
+  Future<ClientOrderListResponseModel> getClientOrders({
+    required int clientId,
+    String? deliveryDate,
+    int page = 0,
+    int size = 20,
+  });
+
+  /// GET /api/v1/client-orders/{sapOrderNumber}
+  ///
+  /// 거래처별 주문 상세를 조회합니다.
+  Future<ClientOrderDetailModel> getClientOrderDetail({
+    required String sapOrderNumber,
+  });
 }
