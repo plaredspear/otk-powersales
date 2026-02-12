@@ -2,9 +2,44 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/datasources/suggestion_remote_datasource.dart';
+import '../../data/repositories/suggestion_repository_impl.dart';
 import '../../domain/entities/suggestion_form.dart';
+import '../../domain/repositories/suggestion_repository.dart';
 import '../../domain/usecases/register_suggestion_usecase.dart';
 import 'suggestion_register_state.dart';
+
+// ============================================
+// 1. DataSource Provider (Mock)
+// ============================================
+
+/// SuggestionRemoteDataSource Provider (임시 Mock)
+final suggestionRemoteDataSourceProvider =
+    Provider<SuggestionRemoteDataSource>((ref) {
+  // TODO: 실제 구현으로 대체
+  throw UnimplementedError('SuggestionRemoteDataSource not implemented yet');
+});
+
+// ============================================
+// 2. Repository Provider
+// ============================================
+
+/// SuggestionRepository Provider
+final suggestionRepositoryProvider = Provider<SuggestionRepository>((ref) {
+  final dataSource = ref.watch(suggestionRemoteDataSourceProvider);
+  return SuggestionRepositoryImpl(dataSource);
+});
+
+// ============================================
+// 3. UseCase Provider
+// ============================================
+
+/// RegisterSuggestionUseCase Provider
+final registerSuggestionUseCaseProvider =
+    Provider<RegisterSuggestionUseCase>((ref) {
+  final repository = ref.watch(suggestionRepositoryProvider);
+  return RegisterSuggestionUseCase(repository);
+});
 
 /// 제안하기 등록 Provider
 class SuggestionRegisterNotifier
@@ -140,3 +175,16 @@ class SuggestionRegisterNotifier
     state = state.copyWith(clearSuccessMessage: true);
   }
 }
+
+// ============================================
+// 4. StateNotifierProvider
+// ============================================
+
+/// 제안하기 등록 Provider
+final suggestionRegisterProvider =
+    StateNotifierProvider<SuggestionRegisterNotifier, SuggestionRegisterState>(
+        (ref) {
+  return SuggestionRegisterNotifier(
+    registerSuggestion: ref.watch(registerSuggestionUseCaseProvider),
+  );
+});
