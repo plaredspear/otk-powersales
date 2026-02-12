@@ -55,6 +55,7 @@ dependencies:
   intl: ^0.20.2
   logger: ^2.0.2+1
   url_launcher: ^6.3.1
+  image_picker: ^1.0.7
 
   # Push Notifications (추후 추가 예정 - Flutter SDK 업그레이드 후)
   # firebase_core: ^2.27.0
