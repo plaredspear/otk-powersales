@@ -134,6 +134,50 @@ class FileStorageService(
     }
 
     /**
+     * 제안 사진 업로드
+     *
+     * @param file 업로드 파일
+     * @param userId 사용자 ID
+     * @param suggestionId 제안 ID
+     * @param sortOrder 사진 정렬 순서 (0, 1)
+     * @return 저장된 파일 URL
+     */
+    fun uploadSuggestionPhoto(
+        file: MultipartFile,
+        userId: Long,
+        suggestionId: Long,
+        sortOrder: Int
+    ): String {
+        // 파일 검증
+        validateFile(file)
+
+        // 파일명 생성 (sortOrder-UUID + 확장자)
+        val originalFilename = file.originalFilename ?: "unknown"
+        val extension = getFileExtension(originalFilename)
+        val filename = "$sortOrder-${UUID.randomUUID()}${extension}"
+
+        // 저장 경로 생성: suggestions/{userId}/{suggestionId}/{filename}
+        val targetLocation = rootLocation
+            .resolve("suggestions")
+            .resolve(userId.toString())
+            .resolve(suggestionId.toString())
+
+        try {
+            // 디렉토리 생성
+            Files.createDirectories(targetLocation)
+
+            // 파일 저장
+            val targetFile = targetLocation.resolve(filename)
+            Files.copy(file.inputStream, targetFile, StandardCopyOption.REPLACE_EXISTING)
+
+            // URL 반환
+            return "$baseUrl/suggestions/$userId/$suggestionId/$filename"
+        } catch (e: IOException) {
+            throw FileStorageException("파일 저장 실패: ${file.originalFilename}", e)
+        }
+    }
+
+    /**
      * 파일 유효성 검증
      */
     private fun validateFile(file: MultipartFile) {
