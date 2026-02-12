@@ -7,6 +7,7 @@ import '../providers/event_detail_provider.dart';
 import '../providers/event_detail_state.dart';
 import '../widgets/sales/daily_sales_list_widget.dart';
 import '../widgets/sales/sales_info_widget.dart';
+import 'daily_sales_registration_page.dart';
 
 /// 행사 상세 페이지
 ///
@@ -145,16 +146,25 @@ class _EventDetailPageState extends ConsumerState<EventDetailPage>
         children: [
           if (salesInfo != null) SalesInfoWidget(salesInfo: salesInfo),
 
-          // 일매출 등록 버튼 (TODO: F51 연동 필요)
+          // 일매출 등록 버튼
           if (state.canRegisterDailySales && !state.isTodayRegistered)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: ElevatedButton.icon(
-                onPressed: () {
-                  // TODO: F51 일매출등록 화면으로 이동
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('일매출 등록 화면 (F51 구현 예정)')),
+                onPressed: () async {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          DailySalesRegistrationPage(event: state.event!),
+                    ),
                   );
+                  // 등록 성공 시 화면 새로고침
+                  if (result == true && mounted) {
+                    ref
+                        .read(eventDetailProvider.notifier)
+                        .refresh(widget.eventId);
+                  }
                 },
                 icon: const Icon(Icons.add),
                 label: const Text('일매출 등록'),
