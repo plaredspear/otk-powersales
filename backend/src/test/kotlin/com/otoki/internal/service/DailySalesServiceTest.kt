@@ -7,6 +7,7 @@ import com.otoki.internal.exception.*
 import com.otoki.internal.repository.DailySalesRepository
 import com.otoki.internal.repository.EventProductRepository
 import com.otoki.internal.repository.EventRepository
+import com.otoki.internal.repository.UserRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
@@ -36,6 +37,9 @@ class DailySalesServiceTest {
     private lateinit var eventProductRepository: EventProductRepository
 
     @Mock
+    private lateinit var userRepository: UserRepository
+
+    @Mock
     private lateinit var fileStorageService: FileStorageService
 
     @InjectMocks
@@ -45,6 +49,17 @@ class DailySalesServiceTest {
     private val testEmployeeId = "12345"
     private val testEventId = "EVT001"
     private val today = LocalDate.now()
+
+    private fun createTestUser(): com.otoki.internal.entity.User {
+        return com.otoki.internal.entity.User(
+            id = testUserId,
+            employeeId = testEmployeeId,
+            password = "encoded",
+            name = "테스트",
+            department = "영업팀",
+            branchName = "서울"
+        )
+    }
 
     private fun createTestEvent(): Event {
         return Event(
@@ -73,6 +88,7 @@ class DailySalesServiceTest {
     @DisplayName("일매출 등록 성공 - 대표제품만 입력")
     fun registerDailySales_Success_MainProductOnly() {
         // Given
+        val user = createTestUser()
         val event = createTestEvent()
         val photo = createTestPhoto()
         val request = DailySalesCreateRequest(
@@ -81,6 +97,7 @@ class DailySalesServiceTest {
             photo = photo
         )
 
+        whenever(userRepository.findById(testUserId)).thenReturn(Optional.of(user))
         whenever(eventRepository.findByEventId(testEventId)).thenReturn(Optional.of(event))
         whenever(dailySalesRepository.existsByEventIdAndEmployeeIdAndSalesDateAndStatus(
             any(), any(), any(), any()
@@ -108,7 +125,6 @@ class DailySalesServiceTest {
         // When
         val response = dailySalesService.registerDailySales(
             userId = testUserId,
-            employeeId = testEmployeeId,
             eventId = testEventId,
             request = request
         )
@@ -124,6 +140,7 @@ class DailySalesServiceTest {
     @DisplayName("일매출 등록 성공 - 기타제품만 입력")
     fun registerDailySales_Success_SubProductOnly() {
         // Given
+        val user = createTestUser()
         val event = createTestEvent()
         val photo = createTestPhoto()
         val request = DailySalesCreateRequest(
@@ -133,6 +150,7 @@ class DailySalesServiceTest {
             photo = photo
         )
 
+        whenever(userRepository.findById(testUserId)).thenReturn(Optional.of(user))
         whenever(eventRepository.findByEventId(testEventId)).thenReturn(Optional.of(event))
         whenever(dailySalesRepository.existsByEventIdAndEmployeeIdAndSalesDateAndStatus(
             any(), any(), any(), any()
@@ -162,7 +180,6 @@ class DailySalesServiceTest {
         // When
         val response = dailySalesService.registerDailySales(
             userId = testUserId,
-            employeeId = testEmployeeId,
             eventId = testEventId,
             request = request
         )
@@ -177,17 +194,19 @@ class DailySalesServiceTest {
     @DisplayName("일매출 등록 실패 - 행사를 찾을 수 없음")
     fun registerDailySales_Failure_EventNotFound() {
         // Given
+        val user = createTestUser()
         val request = DailySalesCreateRequest(
             mainProductPrice = 1000,
             mainProductQuantity = 10,
             photo = createTestPhoto()
         )
 
+        whenever(userRepository.findById(testUserId)).thenReturn(Optional.of(user))
         whenever(eventRepository.findByEventId(testEventId)).thenReturn(Optional.empty())
 
         // When & Then
         assertThatThrownBy {
-            dailySalesService.registerDailySales(testUserId, testEmployeeId, testEventId, request)
+            dailySalesService.registerDailySales(testUserId, testEventId, request)
         }.isInstanceOf(EventNotFoundException::class.java)
     }
 
@@ -195,6 +214,16 @@ class DailySalesServiceTest {
     @DisplayName("일매출 등록 실패 - 담당자가 아님")
     fun registerDailySales_Failure_NotAssignee() {
         // Given
+        val otherUser = createTestUser().apply {
+            val userWithDifferentId = com.otoki.internal.entity.User(
+                id = testUserId,
+                employeeId = "99999",
+                password = "encoded",
+                name = "다른사람",
+                department = "영업팀",
+                branchName = "서울"
+            )
+        }
         val event = createTestEvent()
         val request = DailySalesCreateRequest(
             mainProductPrice = 1000,
@@ -202,11 +231,21 @@ class DailySalesServiceTest {
             photo = createTestPhoto()
         )
 
+        whenever(userRepository.findById(testUserId)).thenReturn(Optional.of(
+            com.otoki.internal.entity.User(
+                id = testUserId,
+                employeeId = "99999",
+                password = "encoded",
+                name = "다른사람",
+                department = "영업팀",
+                branchName = "서울"
+            )
+        ))
         whenever(eventRepository.findByEventId(testEventId)).thenReturn(Optional.of(event))
 
         // When & Then
         assertThatThrownBy {
-            dailySalesService.registerDailySales(testUserId, "99999", testEventId, request)
+            dailySalesService.registerDailySales(testUserId, testEventId, request)
         }.isInstanceOf(DailySalesForbiddenException::class.java)
     }
 
@@ -214,6 +253,7 @@ class DailySalesServiceTest {
     @DisplayName("일매출 등록 실패 - 행사 기간이 아님")
     fun registerDailySales_Failure_EventPeriodExpired() {
         // Given
+        val user = createTestUser()
         val expiredEvent = Event(
             id = 1L,
             eventId = testEventId,
@@ -231,11 +271,12 @@ class DailySalesServiceTest {
             photo = createTestPhoto()
         )
 
+        whenever(userRepository.findById(testUserId)).thenReturn(Optional.of(user))
         whenever(eventRepository.findByEventId(testEventId)).thenReturn(Optional.of(expiredEvent))
 
         // When & Then
         assertThatThrownBy {
-            dailySalesService.registerDailySales(testUserId, testEmployeeId, testEventId, request)
+            dailySalesService.registerDailySales(testUserId, testEventId, request)
         }.isInstanceOf(EventPeriodExpiredException::class.java)
     }
 
@@ -243,6 +284,7 @@ class DailySalesServiceTest {
     @DisplayName("일매출 등록 실패 - 이미 등록됨")
     fun registerDailySales_Failure_AlreadyRegistered() {
         // Given
+        val user = createTestUser()
         val event = createTestEvent()
         val request = DailySalesCreateRequest(
             mainProductPrice = 1000,
@@ -250,6 +292,7 @@ class DailySalesServiceTest {
             photo = createTestPhoto()
         )
 
+        whenever(userRepository.findById(testUserId)).thenReturn(Optional.of(user))
         whenever(eventRepository.findByEventId(testEventId)).thenReturn(Optional.of(event))
         whenever(dailySalesRepository.existsByEventIdAndEmployeeIdAndSalesDateAndStatus(
             any(), any(), any(), any()
@@ -257,7 +300,7 @@ class DailySalesServiceTest {
 
         // When & Then
         assertThatThrownBy {
-            dailySalesService.registerDailySales(testUserId, testEmployeeId, testEventId, request)
+            dailySalesService.registerDailySales(testUserId, testEventId, request)
         }.isInstanceOf(DailySalesAlreadyRegisteredException::class.java)
     }
 
@@ -265,11 +308,13 @@ class DailySalesServiceTest {
     @DisplayName("일매출 등록 실패 - 대표제품과 기타제품 모두 미입력")
     fun registerDailySales_Failure_NoProductInput() {
         // Given
+        val user = createTestUser()
         val event = createTestEvent()
         val request = DailySalesCreateRequest(
             photo = createTestPhoto()
         )
 
+        whenever(userRepository.findById(testUserId)).thenReturn(Optional.of(user))
         whenever(eventRepository.findByEventId(testEventId)).thenReturn(Optional.of(event))
         whenever(dailySalesRepository.existsByEventIdAndEmployeeIdAndSalesDateAndStatus(
             any(), any(), any(), any()
@@ -277,7 +322,7 @@ class DailySalesServiceTest {
 
         // When & Then
         assertThatThrownBy {
-            dailySalesService.registerDailySales(testUserId, testEmployeeId, testEventId, request)
+            dailySalesService.registerDailySales(testUserId, testEventId, request)
         }.isInstanceOf(DailySalesInvalidParameterException::class.java)
             .hasMessageContaining("최소 하나를 입력")
     }
@@ -286,6 +331,7 @@ class DailySalesServiceTest {
     @DisplayName("일매출 등록 실패 - 기타제품 부분 입력")
     fun registerDailySales_Failure_PartialSubProduct() {
         // Given
+        val user = createTestUser()
         val event = createTestEvent()
         val request = DailySalesCreateRequest(
             subProductCode = "SUB001",
@@ -293,6 +339,7 @@ class DailySalesServiceTest {
             photo = createTestPhoto()
         )
 
+        whenever(userRepository.findById(testUserId)).thenReturn(Optional.of(user))
         whenever(eventRepository.findByEventId(testEventId)).thenReturn(Optional.of(event))
         whenever(dailySalesRepository.existsByEventIdAndEmployeeIdAndSalesDateAndStatus(
             any(), any(), any(), any()
@@ -300,7 +347,7 @@ class DailySalesServiceTest {
 
         // When & Then
         assertThatThrownBy {
-            dailySalesService.registerDailySales(testUserId, testEmployeeId, testEventId, request)
+            dailySalesService.registerDailySales(testUserId, testEventId, request)
         }.isInstanceOf(DailySalesInvalidParameterException::class.java)
             .hasMessageContaining("모두 입력")
     }
@@ -309,12 +356,14 @@ class DailySalesServiceTest {
     @DisplayName("일매출 등록 실패 - 사진 미첨부")
     fun registerDailySales_Failure_NoPhoto() {
         // Given
+        val user = createTestUser()
         val event = createTestEvent()
         val request = DailySalesCreateRequest(
             mainProductPrice = 1000,
             mainProductQuantity = 10
         )
 
+        whenever(userRepository.findById(testUserId)).thenReturn(Optional.of(user))
         whenever(eventRepository.findByEventId(testEventId)).thenReturn(Optional.of(event))
         whenever(dailySalesRepository.existsByEventIdAndEmployeeIdAndSalesDateAndStatus(
             any(), any(), any(), any()
@@ -322,7 +371,7 @@ class DailySalesServiceTest {
 
         // When & Then
         assertThatThrownBy {
-            dailySalesService.registerDailySales(testUserId, testEmployeeId, testEventId, request)
+            dailySalesService.registerDailySales(testUserId, testEventId, request)
         }.isInstanceOf(DailySalesInvalidPhotoException::class.java)
     }
 
@@ -330,6 +379,7 @@ class DailySalesServiceTest {
     @DisplayName("일매출 등록 실패 - 유효하지 않은 제품 코드")
     fun registerDailySales_Failure_InvalidProductCode() {
         // Given
+        val user = createTestUser()
         val event = createTestEvent()
         val request = DailySalesCreateRequest(
             subProductCode = "INVALID",
@@ -338,6 +388,7 @@ class DailySalesServiceTest {
             photo = createTestPhoto()
         )
 
+        whenever(userRepository.findById(testUserId)).thenReturn(Optional.of(user))
         whenever(eventRepository.findByEventId(testEventId)).thenReturn(Optional.of(event))
         whenever(dailySalesRepository.existsByEventIdAndEmployeeIdAndSalesDateAndStatus(
             any(), any(), any(), any()
@@ -347,7 +398,7 @@ class DailySalesServiceTest {
 
         // When & Then
         assertThatThrownBy {
-            dailySalesService.registerDailySales(testUserId, testEmployeeId, testEventId, request)
+            dailySalesService.registerDailySales(testUserId, testEventId, request)
         }.isInstanceOf(DailySalesInvalidProductException::class.java)
     }
 
@@ -355,11 +406,13 @@ class DailySalesServiceTest {
     @DisplayName("임시저장 성공 - 신규 생성")
     fun saveDailySalesDraft_Success_Create() {
         // Given
+        val user = createTestUser()
         val event = createTestEvent()
         val request = DailySalesCreateRequest(
             mainProductPrice = 500
         )
 
+        whenever(userRepository.findById(testUserId)).thenReturn(Optional.of(user))
         whenever(eventRepository.findByEventId(testEventId)).thenReturn(Optional.of(event))
         whenever(dailySalesRepository.findByEventIdAndEmployeeIdAndSalesDateAndStatus(
             any(), any(), any(), any()
@@ -385,7 +438,6 @@ class DailySalesServiceTest {
         // When
         val response = dailySalesService.saveDailySalesDraft(
             userId = testUserId,
-            employeeId = testEmployeeId,
             eventId = testEventId,
             request = request
         )
@@ -400,6 +452,7 @@ class DailySalesServiceTest {
     @DisplayName("임시저장 성공 - 기존 DRAFT 업데이트")
     fun saveDailySalesDraft_Success_Update() {
         // Given
+        val user = createTestUser()
         val event = createTestEvent()
         val existingDraft = DailySales(
             id = 999L,
@@ -414,6 +467,7 @@ class DailySalesServiceTest {
             mainProductQuantity = 10
         )
 
+        whenever(userRepository.findById(testUserId)).thenReturn(Optional.of(user))
         whenever(eventRepository.findByEventId(testEventId)).thenReturn(Optional.of(event))
         whenever(dailySalesRepository.findByEventIdAndEmployeeIdAndSalesDateAndStatus(
             any(), any(), any(), any()
@@ -425,7 +479,6 @@ class DailySalesServiceTest {
         // When
         val response = dailySalesService.saveDailySalesDraft(
             userId = testUserId,
-            employeeId = testEmployeeId,
             eventId = testEventId,
             request = request
         )
