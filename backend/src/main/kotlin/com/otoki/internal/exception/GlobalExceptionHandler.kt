@@ -83,6 +83,24 @@ class GlobalExceptionHandler {
     }
 
     /**
+     * 잘못된 인자 예외 처리 (파라미터 검증 실패)
+     */
+    @ExceptionHandler(IllegalArgumentException::class)
+    fun handleIllegalArgumentException(
+        ex: IllegalArgumentException,
+        request: WebRequest
+    ): ResponseEntity<ApiResponse<Any>> {
+        val response = ApiResponse.error<Any>(
+            code = "INVALID_PARAMETER",
+            message = ex.message ?: "잘못된 요청입니다"
+        )
+
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(response)
+    }
+
+    /**
      * 인증 실패 예외 처리
      */
     @ExceptionHandler(BadCredentialsException::class)

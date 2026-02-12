@@ -69,4 +69,22 @@ interface StoreScheduleRepository : JpaRepository<StoreSchedule, Long> {
         @Param("startDate") startDate: LocalDate,
         @Param("endDate") endDate: LocalDate
     ): List<Long>
+
+    /**
+     * 사용자의 기간 내 일정이 있는 날짜 목록 조회 (중복 제거)
+     * 월간 캘린더에서 근무일 여부 표시용
+     */
+    @Query(
+        """
+        SELECT DISTINCT s.scheduleDate FROM StoreSchedule s
+        WHERE s.userId = :userId
+        AND s.scheduleDate BETWEEN :startDate AND :endDate
+        ORDER BY s.scheduleDate
+        """
+    )
+    fun findDistinctScheduleDatesByUserIdAndDateBetween(
+        @Param("userId") userId: Long,
+        @Param("startDate") startDate: LocalDate,
+        @Param("endDate") endDate: LocalDate
+    ): List<LocalDate>
 }
