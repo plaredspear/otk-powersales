@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import '../models/login_response_model.dart';
 import '../models/auth_token_model.dart';
+import '../models/password_verification_response.dart';
 import 'auth_remote_datasource.dart';
 
 /// 인증 API 데이터소스 구현체
@@ -37,6 +38,20 @@ class AuthApiDataSource implements AuthRemoteDataSource {
     return AuthTokenModel.fromJson(
       response.data['data'] as Map<String, dynamic>,
     );
+  }
+
+  @override
+  Future<bool> verifyCurrentPassword(String currentPassword) async {
+    final response = await _dio.post(
+      '/api/v1/auth/verify-password',
+      data: {
+        'current_password': currentPassword,
+      },
+    );
+    final verification = PasswordVerificationResponse.fromJson(
+      response.data['data'] as Map<String, dynamic>,
+    );
+    return verification.isValid;
   }
 
   @override

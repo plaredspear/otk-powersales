@@ -11,6 +11,9 @@ abstract class AuthRemoteDataSource {
   /// 토큰 갱신 API 호출
   Future<AuthTokenModel> refreshToken(String refreshToken);
 
+  /// 현재 비밀번호 검증 API 호출
+  Future<bool> verifyCurrentPassword(String currentPassword);
+
   /// 비밀번호 변경 API 호출
   Future<void> changePassword(String currentPassword, String newPassword);
 
