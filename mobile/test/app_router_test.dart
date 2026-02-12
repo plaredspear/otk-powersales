@@ -112,11 +112,21 @@ void main() {
       expect(routes.containsKey(AppRouter.orderList), true);
       expect(routes.containsKey(AppRouter.orderDetail), true);
       expect(routes.containsKey(AppRouter.orderCancel), true);
+      expect(routes.containsKey(AppRouter.orderForm), true);
+      expect(routes.containsKey(AppRouter.clientOrderDetail), true);
+      expect(routes.containsKey(AppRouter.shelfLife), true);
+      expect(routes.containsKey(AppRouter.shelfLifeRegister), true);
+      expect(routes.containsKey(AppRouter.shelfLifeEdit), true);
+      expect(routes.containsKey(AppRouter.shelfLifeDelete), true);
       expect(routes.containsKey(AppRouter.inspectionList), true);
       expect(routes.containsKey(AppRouter.inspectionDetail), true);
       expect(routes.containsKey(AppRouter.inspectionRegister), true);
       expect(routes.containsKey(AppRouter.claimRegister), true);
-      expect(routes.length, 22);
+      expect(routes.containsKey(AppRouter.education), true);
+      expect(routes.containsKey(AppRouter.educationList), true);
+      expect(routes.containsKey(AppRouter.notices), true);
+      expect(routes.containsKey(AppRouter.noticeDetail), true);
+      expect(routes.length, 26);
     });
 
     test('routes 맵에 orderList 라우트가 포함되어 있다', () {
