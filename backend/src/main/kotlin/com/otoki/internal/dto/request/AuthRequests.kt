@@ -36,3 +36,11 @@ data class RefreshTokenRequest(
     @field:NotBlank(message = "Refresh Token은 필수입니다")
     val refreshToken: String
 )
+
+/**
+ * 비밀번호 검증 요청 DTO
+ */
+data class VerifyPasswordRequest(
+    @field:NotBlank(message = "비밀번호를 입력해주세요")
+    val password: String
+)

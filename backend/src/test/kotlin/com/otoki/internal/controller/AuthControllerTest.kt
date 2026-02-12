@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.otoki.internal.dto.request.ChangePasswordRequest
 import com.otoki.internal.dto.request.LoginRequest
 import com.otoki.internal.dto.request.RefreshTokenRequest
+import com.otoki.internal.dto.request.VerifyPasswordRequest
 import com.otoki.internal.dto.response.LoginResponse
 import com.otoki.internal.dto.response.TokenInfo
 import com.otoki.internal.dto.response.TokenResponse
@@ -276,6 +277,58 @@ class AuthControllerTest {
             post("/api/v1/auth/change-password")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"current_password": "oldPass123", "new_password": "12"}""")
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"))
+    }
+
+    // ========== Verify Password Tests ==========
+
+    @Test
+    @DisplayName("비밀번호 검증 성공 - 200 OK (인증 필요)")
+    fun verifyPassword_success() {
+        // Given
+        doNothing().whenever(authService).verifyPassword(eq(1L), any())
+
+        // When & Then
+        mockMvc.perform(
+            post("/api/v1/auth/verify-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"password": "correctPass123"}""")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.message").value("비밀번호가 확인되었습니다"))
+            .andExpect(jsonPath("$.data").isEmpty)
+    }
+
+    @Test
+    @DisplayName("비밀번호 검증 실패 - 비밀번호 불일치 시 401")
+    fun verifyPassword_passwordMismatch() {
+        // Given
+        doThrow(InvalidCurrentPasswordException())
+            .whenever(authService).verifyPassword(eq(1L), any())
+
+        // When & Then
+        mockMvc.perform(
+            post("/api/v1/auth/verify-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"password": "wrongPass"}""")
+        )
+            .andExpect(status().isUnauthorized)
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.code").value("INVALID_CURRENT_PASSWORD"))
+    }
+
+    @Test
+    @DisplayName("비밀번호 검증 - 비밀번호 필드 누락 시 400")
+    fun verifyPassword_missingPassword() {
+        // When & Then
+        mockMvc.perform(
+            post("/api/v1/auth/verify-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"password": ""}""")
         )
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.success").value(false))

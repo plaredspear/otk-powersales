@@ -4,6 +4,7 @@ import com.otoki.internal.dto.ApiResponse
 import com.otoki.internal.dto.request.ChangePasswordRequest
 import com.otoki.internal.dto.request.LoginRequest
 import com.otoki.internal.dto.request.RefreshTokenRequest
+import com.otoki.internal.dto.request.VerifyPasswordRequest
 import com.otoki.internal.dto.response.LoginResponse
 import com.otoki.internal.dto.response.TokenResponse
 import com.otoki.internal.security.UserPrincipal
@@ -41,6 +42,19 @@ class AuthController(
     fun refresh(@Valid @RequestBody request: RefreshTokenRequest): ResponseEntity<ApiResponse<TokenResponse>> {
         val response = authService.refreshAccessToken(request)
         return ResponseEntity.ok(ApiResponse.success(response, "토큰 갱신 성공"))
+    }
+
+    /**
+     * 비밀번호 검증
+     * POST /api/v1/auth/verify-password
+     */
+    @PostMapping("/verify-password")
+    fun verifyPassword(
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @Valid @RequestBody request: VerifyPasswordRequest
+    ): ResponseEntity<ApiResponse<Any?>> {
+        authService.verifyPassword(principal.userId, request)
+        return ResponseEntity.ok(ApiResponse.success(null, "비밀번호가 확인되었습니다"))
     }
 
     /**

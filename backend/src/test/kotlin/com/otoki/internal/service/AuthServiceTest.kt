@@ -3,6 +3,7 @@ package com.otoki.internal.service
 import com.otoki.internal.dto.request.ChangePasswordRequest
 import com.otoki.internal.dto.request.LoginRequest
 import com.otoki.internal.dto.request.RefreshTokenRequest
+import com.otoki.internal.dto.request.VerifyPasswordRequest
 import com.otoki.internal.entity.User
 import com.otoki.internal.entity.UserRole
 import com.otoki.internal.exception.*
@@ -246,6 +247,52 @@ class AuthServiceTest {
         // When & Then
         assertThatThrownBy { authService.refreshAccessToken(request) }
             .isInstanceOf(InvalidTokenException::class.java)
+    }
+
+    // ========== Verify Password Tests ==========
+
+    @Test
+    @DisplayName("비밀번호 검증 성공 - 올바른 비밀번호로 검증 시 예외 없이 정상 완료")
+    fun verifyPassword_success() {
+        // Given
+        val userId = 1L
+        val user = createTestUser(id = userId, password = "encoded_password")
+        val request = VerifyPasswordRequest("correct_password")
+
+        whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+        whenever(passwordEncoder.matches("correct_password", "encoded_password")).thenReturn(true)
+
+        // When & Then (예외 없이 정상 완료)
+        authService.verifyPassword(userId, request)
+    }
+
+    @Test
+    @DisplayName("비밀번호 검증 실패 - 잘못된 비밀번호로 검증 시 InvalidCurrentPasswordException 발생")
+    fun verifyPassword_passwordMismatch() {
+        // Given
+        val userId = 1L
+        val user = createTestUser(id = userId, password = "encoded_password")
+        val request = VerifyPasswordRequest("wrong_password")
+
+        whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+        whenever(passwordEncoder.matches("wrong_password", "encoded_password")).thenReturn(false)
+
+        // When & Then
+        assertThatThrownBy { authService.verifyPassword(userId, request) }
+            .isInstanceOf(InvalidCurrentPasswordException::class.java)
+    }
+
+    @Test
+    @DisplayName("비밀번호 검증 실패 - 존재하지 않는 사용자 ID로 요청 시 UserNotFoundException 발생")
+    fun verifyPassword_userNotFound() {
+        // Given
+        val request = VerifyPasswordRequest("some_password")
+
+        whenever(userRepository.findById(999L)).thenReturn(Optional.empty())
+
+        // When & Then
+        assertThatThrownBy { authService.verifyPassword(999L, request) }
+            .isInstanceOf(UserNotFoundException::class.java)
     }
 
     // ========== GPS Consent Tests ==========

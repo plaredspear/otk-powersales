@@ -3,6 +3,7 @@ package com.otoki.internal.service
 import com.otoki.internal.dto.request.ChangePasswordRequest
 import com.otoki.internal.dto.request.LoginRequest
 import com.otoki.internal.dto.request.RefreshTokenRequest
+import com.otoki.internal.dto.request.VerifyPasswordRequest
 import com.otoki.internal.dto.response.LoginResponse
 import com.otoki.internal.dto.response.TokenInfo
 import com.otoki.internal.dto.response.TokenResponse
@@ -113,6 +114,22 @@ class AuthService(
      */
     fun logout(accessToken: String) {
         jwtTokenProvider.blacklistToken(accessToken)
+    }
+
+    /**
+     * 비밀번호 검증
+     * 1. userId로 사용자 조회
+     * 2. 현재 비밀번호 BCrypt 검증
+     * 3. 검증 성공 시 정상 반환, 실패 시 InvalidCurrentPasswordException 발생
+     */
+    @Transactional(readOnly = true)
+    fun verifyPassword(userId: Long, request: VerifyPasswordRequest) {
+        val user = userRepository.findById(userId)
+            .orElseThrow { UserNotFoundException() }
+
+        if (!passwordEncoder.matches(request.password, user.password)) {
+            throw InvalidCurrentPasswordException()
+        }
     }
 
     /**
