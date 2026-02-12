@@ -23,6 +23,8 @@ import 'presentation/pages/shelf_life_list_page.dart';
 import 'presentation/pages/shelf_life_delete_page.dart';
 import 'presentation/pages/shelf_life_register_page.dart';
 import 'presentation/pages/shelf_life_edit_page.dart';
+import 'presentation/pages/change_password_page.dart';
+import 'presentation/pages/verify_password_page.dart';
 import 'presentation/screens/change_password_screen.dart';
 import 'presentation/screens/login_screen.dart';
 import 'presentation/screens/main_screen.dart';
@@ -35,6 +37,8 @@ class AppRouter {
   /// 라우트 이름 상수
   static const String login = '/login';
   static const String changePassword = '/change-password';
+  static const String verifyPassword = '/verify-password'; // F54: 현재 비밀번호 확인
+  static const String changePasswordNew = '/change-password-new'; // F54: 새 비밀번호 입력
   static const String main = '/';
   static const String posSales = '/pos-sales';
   static const String attendance = '/attendance';
@@ -64,6 +68,12 @@ class AppRouter {
   static Map<String, WidgetBuilder> get routes => {
         login: (context) => const LoginScreen(),
         changePassword: (context) => const ChangePasswordScreen(),
+        verifyPassword: (context) => const VerifyPasswordPage(), // F54: 현재 비밀번호 확인
+        changePasswordNew: (context) { // F54: 새 비밀번호 입력
+          final currentPassword =
+              ModalRoute.of(context)!.settings.arguments as String;
+          return ChangePasswordPage(currentPassword: currentPassword);
+        },
         main: (context) => const MainScreen(),
         posSales: (context) => const PosSalesScreen(),
         attendance: (context) => const AttendancePage(),

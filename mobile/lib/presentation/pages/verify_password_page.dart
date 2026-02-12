@@ -46,7 +46,7 @@ class _VerifyPasswordPageState extends ConsumerState<VerifyPasswordPage> {
       if (isValid) {
         // 성공: 새 비밀번호 입력 화면으로 이동
         Navigator.of(context).pushNamed(
-          '/change-password',
+          '/change-password-new',
           arguments: _passwordController.text, // 현재 비밀번호 전달
         );
       } else {

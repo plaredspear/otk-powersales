@@ -72,6 +72,8 @@ void main() {
     test('라우트 이름 상수가 정의되어 있다', () {
       expect(AppRouter.login, '/login');
       expect(AppRouter.changePassword, '/change-password');
+      expect(AppRouter.verifyPassword, '/verify-password');
+      expect(AppRouter.changePasswordNew, '/change-password-new');
       expect(AppRouter.main, '/');
       expect(AppRouter.posSales, '/pos-sales');
       expect(AppRouter.attendance, '/attendance');
@@ -102,6 +104,8 @@ void main() {
 
       expect(routes.containsKey(AppRouter.login), true);
       expect(routes.containsKey(AppRouter.changePassword), true);
+      expect(routes.containsKey(AppRouter.verifyPassword), true);
+      expect(routes.containsKey(AppRouter.changePasswordNew), true);
       expect(routes.containsKey(AppRouter.main), true);
       expect(routes.containsKey(AppRouter.posSales), true);
       expect(routes.containsKey(AppRouter.attendance), true);
@@ -126,7 +130,7 @@ void main() {
       expect(routes.containsKey(AppRouter.educationList), true);
       expect(routes.containsKey(AppRouter.notices), true);
       expect(routes.containsKey(AppRouter.noticeDetail), true);
-      expect(routes.length, 26);
+      expect(routes.length, 28);
     });
 
     test('routes 맵에 orderList 라우트가 포함되어 있다', () {
