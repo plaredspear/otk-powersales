@@ -178,6 +178,51 @@ class FileStorageService(
     }
 
     /**
+     * 일매출 사진 업로드
+     *
+     * @param file 업로드 파일
+     * @param userId 사용자 ID
+     * @param eventId 행사 ID
+     * @param salesDate 매출 날짜 (YYYYMMDD)
+     * @return 저장된 파일 URL
+     */
+    fun uploadDailySalesPhoto(
+        file: MultipartFile,
+        userId: Long,
+        eventId: String,
+        salesDate: String
+    ): String {
+        // 파일 검증
+        validateFile(file)
+
+        // 파일명 생성 (UUID + 확장자)
+        val originalFilename = file.originalFilename ?: "unknown"
+        val extension = getFileExtension(originalFilename)
+        val filename = "${UUID.randomUUID()}${extension}"
+
+        // 저장 경로 생성: daily-sales/{userId}/{eventId}/{salesDate}/{filename}
+        val targetLocation = rootLocation
+            .resolve("daily-sales")
+            .resolve(userId.toString())
+            .resolve(eventId)
+            .resolve(salesDate)
+
+        try {
+            // 디렉토리 생성
+            Files.createDirectories(targetLocation)
+
+            // 파일 저장
+            val targetFile = targetLocation.resolve(filename)
+            Files.copy(file.inputStream, targetFile, StandardCopyOption.REPLACE_EXISTING)
+
+            // URL 반환
+            return "$baseUrl/daily-sales/$userId/$eventId/$salesDate/$filename"
+        } catch (e: IOException) {
+            throw FileStorageException("파일 저장 실패: ${file.originalFilename}", e)
+        }
+    }
+
+    /**
      * 파일 유효성 검증
      */
     private fun validateFile(file: MultipartFile) {

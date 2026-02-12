@@ -17,4 +17,9 @@ interface EventProductRepository : JpaRepository<EventProduct, Long> {
      * 행사별 대표 제품 조회
      */
     fun findByEventIdAndIsMainProduct(eventId: String, isMainProduct: Boolean): EventProduct?
+
+    /**
+     * 행사별 제품 코드 존재 여부 확인
+     */
+    fun existsByEventIdAndProductCode(eventId: String, productCode: String): Boolean
 }
