@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'domain/entities/education_category.dart';
 import 'domain/entities/shelf_life_item.dart';
 import 'presentation/pages/attendance_page.dart';
 import 'presentation/pages/attendance_complete_page.dart';
 import 'presentation/pages/claim_register_page.dart';
 import 'presentation/pages/client_order_detail_page.dart';
+import 'presentation/pages/education_list_page.dart';
+import 'presentation/pages/education_main_page.dart';
 import 'presentation/pages/inspection_detail_page.dart';
 import 'presentation/pages/inspection_list_page.dart';
 import 'presentation/pages/inspection/inspection_register_page.dart';
@@ -50,6 +53,8 @@ class AppRouter {
   static const String inspectionDetail = '/inspection-detail';
   static const String inspectionRegister = '/inspection-register';
   static const String claimRegister = '/claim/register';
+  static const String education = '/education';
+  static const String educationList = '/education/list';
 
   /// 라우트 맵
   static Map<String, WidgetBuilder> get routes => {
@@ -102,6 +107,12 @@ class AppRouter {
         },
         inspectionRegister: (context) => const InspectionRegisterPage(),
         claimRegister: (context) => const ClaimRegisterPage(),
+        education: (context) => const EducationMainPage(),
+        educationList: (context) {
+          final category =
+              ModalRoute.of(context)?.settings.arguments as EducationCategory?;
+          return EducationListPage(category: category);
+        },
       };
 
   /// 초기 라우트 - 로그인 화면에서 시작
