@@ -8,6 +8,8 @@ import 'presentation/pages/client_order_detail_page.dart';
 import 'presentation/pages/education_list_page.dart';
 import 'presentation/pages/education_main_page.dart';
 import 'presentation/pages/inspection_detail_page.dart';
+import 'presentation/pages/notice_list_page.dart';
+import 'presentation/pages/notice_detail_page.dart';
 import 'presentation/pages/inspection_list_page.dart';
 import 'presentation/pages/inspection/inspection_register_page.dart';
 import 'presentation/pages/order_cancel_page.dart';
@@ -55,6 +57,8 @@ class AppRouter {
   static const String claimRegister = '/claim/register';
   static const String education = '/education';
   static const String educationList = '/education/list';
+  static const String notices = '/notices';
+  static const String noticeDetail = '/notices/detail';
 
   /// 라우트 맵
   static Map<String, WidgetBuilder> get routes => {
@@ -112,6 +116,11 @@ class AppRouter {
           final category =
               ModalRoute.of(context)?.settings.arguments as EducationCategory?;
           return EducationListPage(category: category);
+        },
+        notices: (context) => const NoticeListPage(),
+        noticeDetail: (context) {
+          final noticeId = ModalRoute.of(context)!.settings.arguments as int;
+          return NoticeDetailPage(noticeId: noticeId);
         },
       };
 
