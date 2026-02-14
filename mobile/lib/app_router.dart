@@ -25,6 +25,7 @@ import 'presentation/pages/shelf_life_register_page.dart';
 import 'presentation/pages/shelf_life_edit_page.dart';
 import 'presentation/pages/change_password_page.dart';
 import 'presentation/pages/verify_password_page.dart';
+import 'presentation/pages/my_schedule_calendar_page.dart';
 import 'presentation/screens/change_password_screen.dart';
 import 'presentation/screens/login_screen.dart';
 import 'presentation/screens/main_screen.dart';
@@ -63,6 +64,8 @@ class AppRouter {
   static const String educationList = '/education/list';
   static const String notices = '/notices';
   static const String noticeDetail = '/notices/detail';
+  static const String myScheduleCalendar = '/my-schedule'; // F56: 마이페이지 일정 캘린더
+  static const String myScheduleDetail = '/my-schedule/detail'; // F56: 일정 상세
 
   /// 라우트 맵
   static Map<String, WidgetBuilder> get routes => {
@@ -131,6 +134,16 @@ class AppRouter {
         noticeDetail: (context) {
           final noticeId = ModalRoute.of(context)!.settings.arguments as int;
           return NoticeDetailPage(noticeId: noticeId);
+        },
+        myScheduleCalendar: (context) => const MyScheduleCalendarPage(), // F56: 일정 캘린더
+        myScheduleDetail: (context) {
+          // F56: 일정 상세 (Task #10에서 구현 예정)
+          final date = ModalRoute.of(context)!.settings.arguments as DateTime;
+          // TODO: MyScheduleDetailPage 구현 후 교체
+          return Scaffold(
+            appBar: AppBar(title: const Text('일정 상세 (준비 중)')),
+            body: Center(child: Text('선택 날짜: ${date.toString()}')),
+          );
         },
       };
 
