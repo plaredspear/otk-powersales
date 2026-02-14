@@ -26,6 +26,7 @@ import 'presentation/pages/shelf_life_edit_page.dart';
 import 'presentation/pages/change_password_page.dart';
 import 'presentation/pages/verify_password_page.dart';
 import 'presentation/pages/my_schedule_calendar_page.dart';
+import 'presentation/pages/my_schedule_detail_page.dart';
 import 'presentation/screens/change_password_screen.dart';
 import 'presentation/screens/login_screen.dart';
 import 'presentation/screens/main_screen.dart';
@@ -137,13 +138,9 @@ class AppRouter {
         },
         myScheduleCalendar: (context) => const MyScheduleCalendarPage(), // F56: 일정 캘린더
         myScheduleDetail: (context) {
-          // F56: 일정 상세 (Task #10에서 구현 예정)
+          // F56: 일정 상세
           final date = ModalRoute.of(context)!.settings.arguments as DateTime;
-          // TODO: MyScheduleDetailPage 구현 후 교체
-          return Scaffold(
-            appBar: AppBar(title: const Text('일정 상세 (준비 중)')),
-            body: Center(child: Text('선택 날짜: ${date.toString()}')),
-          );
+          return MyScheduleDetailPage(selectedDate: date);
         },
       };
 
