@@ -130,7 +130,9 @@ void main() {
       expect(routes.containsKey(AppRouter.educationList), true);
       expect(routes.containsKey(AppRouter.notices), true);
       expect(routes.containsKey(AppRouter.noticeDetail), true);
-      expect(routes.length, 28);
+      expect(routes.containsKey(AppRouter.myScheduleCalendar), true);
+      expect(routes.containsKey(AppRouter.myScheduleDetail), true);
+      expect(routes.length, 30);
     });
 
     test('routes 맵에 orderList 라우트가 포함되어 있다', () {
