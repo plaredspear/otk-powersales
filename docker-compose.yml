@@ -21,6 +21,7 @@ services:
     restart: unless-stopped
 
   backend:
+    profiles: ["full"]
     build:
       context: ./backend
       dockerfile: Dockerfile

@@ -3,7 +3,7 @@ spring:
     name: otoki-internal-backend
 
   profiles:
-    active: dev
+    active: local
 
   jpa:
     open-in-view: false
