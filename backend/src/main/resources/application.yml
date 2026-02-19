@@ -21,6 +21,15 @@ spring:
       write-dates-as-timestamps: false
     time-zone: Asia/Seoul
 
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: method
+  api-docs:
+    path: /v3/api-docs
+  default-produces-media-type: application/json
+
 server:
   port: 8080
   error:

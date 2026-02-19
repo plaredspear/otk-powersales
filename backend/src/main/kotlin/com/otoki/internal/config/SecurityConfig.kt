@@ -34,7 +34,10 @@ class SecurityConfig(
                         "/api/v1/health",
                         "/api/v1/auth/login",
                         "/api/v1/auth/refresh",
-                        "/h2-console/**"
+                        "/h2-console/**",
+                        "/swagger-ui/**",
+                        "/swagger-ui.html",
+                        "/v3/api-docs/**"
                     ).permitAll()
                     .anyRequest().authenticated()
             }
