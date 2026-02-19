@@ -1,3 +1,4 @@
+/*
 package com.otoki.internal.entity
 
 import jakarta.persistence.*
@@ -20,3 +21,4 @@ class SafetyCheckSubmissionItem(
     @Column(name = "checked", nullable = false)
     val checked: Boolean = true
 )
+*/

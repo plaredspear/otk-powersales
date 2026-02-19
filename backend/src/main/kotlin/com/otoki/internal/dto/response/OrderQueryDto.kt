@@ -1,8 +1,9 @@
+/*
 package com.otoki.internal.dto.response
 
-/**
+/ **
  * 주문이력 제품 응답 DTO
- */
+ * /
 data class OrderHistoryProductResponse(
     val productCode: String,
     val productName: String,
@@ -14,9 +15,9 @@ data class OrderHistoryProductResponse(
     val totalOrderCount: Long
 )
 
-/**
+/ **
  * 거래처 여신잔액 응답 DTO
- */
+ * /
 data class CreditBalanceResponse(
     val clientId: Long,
     val clientName: String,
@@ -26,9 +27,9 @@ data class CreditBalanceResponse(
     val lastUpdatedAt: String?
 )
 
-/**
+/ **
  * 제품 주문정보 응답 DTO
- */
+ * /
 data class ProductOrderInfoResponse(
     val productCode: String,
     val productName: String,
@@ -38,3 +39,4 @@ data class ProductOrderInfoResponse(
     val dcQuantity: Int,
     val unitPrice: Long
 )
+*/

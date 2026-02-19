@@ -9,9 +9,12 @@ class SafetyCheckItem(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id", nullable = false)
-    val category: SafetyCheckCategory,
+    // Phase2: SafetyCheckCategory 주석 처리로 관계 제거
+    // @ManyToOne(fetch = FetchType.LAZY)
+    // @JoinColumn(name = "category_id", nullable = false)
+    // val category: SafetyCheckCategory,
+    @Column(name = "category_id", nullable = false)
+    val categoryId: Long = 0,
 
     @Column(name = "label", nullable = false, length = 100)
     val label: String,

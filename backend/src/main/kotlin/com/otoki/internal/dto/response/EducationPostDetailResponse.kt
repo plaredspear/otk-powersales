@@ -10,6 +10,7 @@ data class EducationPostDetailResponse(
     val title: String,
     val content: String,
     val createdAt: String,          // ISO 8601 형식
-    val images: List<EducationImageResponse>,
+    // Phase2: EducationImageResponse 주석 처리됨 - Any로 대체
+    val images: List<Any> = emptyList(),
     val attachments: List<EducationAttachmentResponse>
 )

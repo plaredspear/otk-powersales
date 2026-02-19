@@ -88,8 +88,9 @@ class Inspection(
 
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now()
-) {
-
-    @OneToMany(mappedBy = "inspection", fetch = FetchType.LAZY, cascade = [CascadeType.ALL], orphanRemoval = true)
-    val photos: MutableList<InspectionPhoto> = mutableListOf()
-}
+)
+// Phase2: InspectionPhoto 주석 처리로 관계 제거
+// {
+//     @OneToMany(mappedBy = "inspection", fetch = FetchType.LAZY, cascade = [CascadeType.ALL], orphanRemoval = true)
+//     val photos: MutableList<InspectionPhoto> = mutableListOf()
+// }

@@ -1,3 +1,4 @@
+/*
 package com.otoki.internal.dto.response
 
 import com.otoki.internal.entity.Order
@@ -5,9 +6,9 @@ import com.otoki.internal.entity.OrderItem
 import com.otoki.internal.entity.OrderProcessingRecord
 import com.otoki.internal.entity.OrderRejection
 
-/**
+/ **
  * 주문 상세 응답 DTO
- */
+ * /
 data class OrderDetailResponse(
     val id: Long,
     val orderRequestNumber: String,
@@ -68,9 +69,9 @@ data class OrderDetailResponse(
     }
 }
 
-/**
+/ **
  * 주문 제품 항목 응답 DTO
- */
+ * /
 data class OrderedItemResponse(
     val productCode: String,
     val productName: String,
@@ -91,9 +92,9 @@ data class OrderedItemResponse(
     }
 }
 
-/**
+/ **
  * 주문 처리 현황 응답 DTO
- */
+ * /
 data class OrderProcessingStatusResponse(
     val sapOrderNumber: String,
     val items: List<ProcessingItemResponse>
@@ -108,9 +109,9 @@ data class OrderProcessingStatusResponse(
     }
 }
 
-/**
+/ **
  * 처리 항목 응답 DTO
- */
+ * /
 data class ProcessingItemResponse(
     val productCode: String,
     val productName: String,
@@ -129,9 +130,9 @@ data class ProcessingItemResponse(
     }
 }
 
-/**
+/ **
  * 반려 제품 응답 DTO
- */
+ * /
 data class RejectedItemResponse(
     val productCode: String,
     val productName: String,
@@ -149,3 +150,4 @@ data class RejectedItemResponse(
         }
     }
 }
+*/

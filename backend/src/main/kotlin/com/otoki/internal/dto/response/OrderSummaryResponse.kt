@@ -1,11 +1,12 @@
+/*
 package com.otoki.internal.dto.response
 
 import com.otoki.internal.entity.Order
 
-/**
+/ **
  * 주문 요약 응답 DTO
  * 내주문 목록에서 사용
- */
+ * /
 data class OrderSummaryResponse(
     val id: Long,
     val orderRequestNumber: String,
@@ -35,3 +36,4 @@ data class OrderSummaryResponse(
         }
     }
 }
+*/

@@ -1,11 +1,12 @@
+/*
 package com.otoki.internal.dto.response
 
 import com.otoki.internal.entity.Event
 import com.otoki.internal.entity.EventProduct
 
-/**
+/ **
  * 행사 상세 응답 DTO
- */
+ * /
 data class EventDetailResponse(
     val event: EventInfo,
     val salesInfo: SalesInfo,
@@ -14,9 +15,9 @@ data class EventDetailResponse(
     val canRegisterToday: Boolean
 ) {
 
-    /**
+    / **
      * 행사 기본 정보
-     */
+     * /
     data class EventInfo(
         val eventId: String,
         val eventType: String,
@@ -43,9 +44,9 @@ data class EventDetailResponse(
         }
     }
 
-    /**
+    / **
      * 매출 정보
-     */
+     * /
     data class SalesInfo(
         val targetAmount: Long,
         val achievedAmount: Long,
@@ -53,9 +54,9 @@ data class EventDetailResponse(
         val progressRate: Double
     )
 
-    /**
+    / **
      * 제품 정보
-     */
+     * /
     data class ProductsInfo(
         val mainProduct: ProductInfo?,
         val subProducts: List<ProductInfo>
@@ -75,9 +76,9 @@ data class EventDetailResponse(
         }
     }
 
-    /**
+    / **
      * 제품 정보
-     */
+     * /
     data class ProductInfo(
         val productCode: String,
         val productName: String,
@@ -94,3 +95,4 @@ data class EventDetailResponse(
         }
     }
 }
+*/

@@ -1,12 +1,13 @@
+/*
 package com.otoki.internal.entity
 
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
-/**
+/ **
  * 제안 사진 Entity
  * 제안 등록 시 첨부된 사진 정보를 관리한다. (최대 2장)
- */
+ * /
 @Entity
 @Table(name = "suggestion_photos")
 class SuggestionPhoto(
@@ -37,3 +38,4 @@ class SuggestionPhoto(
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now()
 )
+*/

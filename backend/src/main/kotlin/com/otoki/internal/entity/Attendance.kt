@@ -1,12 +1,13 @@
+/*
 package com.otoki.internal.entity
 
 import jakarta.persistence.*
 import java.time.LocalDate
 import java.time.LocalDateTime
 
-/**
+/ **
  * 출근등록 Entity
- */
+ * /
 @Entity
 @Table(
     name = "attendances",
@@ -39,3 +40,4 @@ class Attendance(
     @Column(name = "registered_at", nullable = false)
     val registeredAt: LocalDateTime = LocalDateTime.now()
 )
+*/

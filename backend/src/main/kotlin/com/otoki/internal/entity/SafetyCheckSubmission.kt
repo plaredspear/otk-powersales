@@ -28,15 +28,12 @@ class SafetyCheckSubmission(
     @Column(name = "submitted_at", nullable = false)
     val submittedAt: LocalDateTime = LocalDateTime.now(),
 
-    @OneToMany(mappedBy = "submission", cascade = [CascadeType.ALL], orphanRemoval = true)
-    val submissionItems: MutableList<SafetyCheckSubmissionItem> = mutableListOf()
+    // Phase2: SafetyCheckSubmissionItem 주석 처리로 관계 제거
+    // @OneToMany(mappedBy = "submission", cascade = [CascadeType.ALL], orphanRemoval = true)
+    // val submissionItems: MutableList<SafetyCheckSubmissionItem> = mutableListOf()
 ) {
+    // Phase2: addItem 비활성화
     fun addItem(item: SafetyCheckItem) {
-        val submissionItem = SafetyCheckSubmissionItem(
-            submission = this,
-            item = item,
-            checked = true
-        )
-        submissionItems.add(submissionItem)
+        // no-op: SafetyCheckSubmissionItem 주석 처리됨
     }
 }

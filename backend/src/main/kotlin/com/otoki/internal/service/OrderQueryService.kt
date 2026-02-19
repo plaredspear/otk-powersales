@@ -1,3 +1,4 @@
+/*
 package com.otoki.internal.service
 
 import com.otoki.internal.dto.response.CreditBalanceResponse
@@ -18,12 +19,12 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-/**
+/ **
  * 주문 조회 관련 Service
  * - 주문이력 제품 조회
  * - 거래처 여신잔액 조회
  * - 제품 주문정보 조회
- */
+ * /
 @Service
 @Transactional(readOnly = true)
 class OrderQueryService(
@@ -38,7 +39,7 @@ class OrderQueryService(
         private const val DEFAULT_DATE_RANGE_DAYS = 3L
     }
 
-    /**
+    / **
      * 주문이력 제품 조회
      *
      * 과거 주문 이력에서 제품 목록을 조회합니다. 같은 제품이 여러 번 주문된 경우
@@ -50,7 +51,7 @@ class OrderQueryService(
      * @param page 페이지 번호 (기본: 0)
      * @param size 페이지 크기 (기본: 20, 최대: 100)
      * @return 주문이력 제품 페이지
-     */
+     * /
     fun getOrderHistoryProducts(
         userId: Long,
         orderDateFrom: LocalDate?,
@@ -91,13 +92,13 @@ class OrderQueryService(
         return PageImpl(products, pageable, totalCount)
     }
 
-    /**
+    / **
      * 거래처 여신잔액 조회
      *
      * @param clientId 거래처 ID
      * @return 여신잔액 정보
      * @throws ClientNotFoundException 거래처를 찾을 수 없는 경우
-     */
+     * /
     fun getClientCreditBalance(clientId: Long): CreditBalanceResponse {
         val store = storeRepository.findById(clientId)
             .orElseThrow { ClientNotFoundException() }
@@ -112,13 +113,13 @@ class OrderQueryService(
         )
     }
 
-    /**
+    / **
      * 제품 주문정보 조회
      *
      * @param productCode 제품코드
      * @return 제품 주문정보
      * @throws ProductNotFoundException 제품을 찾을 수 없는 경우
-     */
+     * /
     fun getProductOrderInfo(productCode: String): ProductOrderInfoResponse {
         val product = productRepository.findByProductCode(productCode)
             ?: throw ProductNotFoundException(productCode)
@@ -143,3 +144,4 @@ class OrderQueryService(
         }
     }
 }
+*/

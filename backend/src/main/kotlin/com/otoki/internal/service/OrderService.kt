@@ -1,3 +1,4 @@
+/*
 package com.otoki.internal.service
 
 import com.otoki.internal.dto.response.OrderCancelResponse
@@ -20,9 +21,9 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 
-/**
+/ **
  * 주문 Service
- */
+ * /
 @Service
 @Transactional(readOnly = true)
 class OrderService(
@@ -40,7 +41,7 @@ class OrderService(
         private const val DEFAULT_SORT_BY = "orderDate"
         private const val DEFAULT_SORT_DIR = "DESC"
 
-        /** 마감시간 20분 전부터 마감 처리 */
+        / ** 마감시간 20분 전부터 마감 처리 * /
         private const val DEADLINE_OFFSET_MINUTES = 20L
 
         private val VALID_SORT_FIELDS = setOf("orderDate", "deliveryDate", "totalAmount")
@@ -48,9 +49,9 @@ class OrderService(
         private val VALID_STATUSES = ApprovalStatus.entries.map { it.name }.toSet()
     }
 
-    /**
+    / **
      * 내 주문 목록 조회
-     */
+     * /
     fun getMyOrders(
         userId: Long,
         storeId: Long?,
@@ -98,7 +99,7 @@ class OrderService(
         return orderPage.map { OrderSummaryResponse.from(it) }
     }
 
-    /**
+    / **
      * 주문 상세 조회
      *
      * @param userId 로그인 사용자 ID
@@ -106,7 +107,7 @@ class OrderService(
      * @return 주문 상세 응답
      * @throws OrderNotFoundException 주문이 존재하지 않는 경우
      * @throws ForbiddenOrderAccessException 다른 사용자의 주문에 접근한 경우
-     */
+     * /
     fun getOrderDetail(userId: Long, orderId: Long): OrderDetailResponse {
         // 1. 주문 조회
         val order = orderRepository.findById(orderId)
@@ -135,7 +136,7 @@ class OrderService(
         )
     }
 
-    /**
+    / **
      * 주문 재전송
      *
      * @param userId 로그인 사용자 ID
@@ -144,7 +145,7 @@ class OrderService(
      * @throws ForbiddenOrderAccessException 다른 사용자의 주문에 접근한 경우
      * @throws OrderAlreadyClosedException 마감된 주문인 경우
      * @throws InvalidOrderStatusException 전송실패 상태가 아닌 경우
-     */
+     * /
     @Transactional
     fun resendOrder(userId: Long, orderId: Long) {
         // 1. 주문 조회
@@ -172,7 +173,7 @@ class OrderService(
         orderRepository.save(order)
     }
 
-    /**
+    / **
      * 주문 취소
      *
      * 선택한 제품들의 주문을 취소한다.
@@ -186,7 +187,7 @@ class OrderService(
      * @throws OrderAlreadyClosedException 마감된 주문인 경우
      * @throws ProductNotInOrderException 요청한 제품코드가 해당 주문에 없는 경우
      * @throws AlreadyCancelledException 이미 취소된 제품이 포함된 경우
-     */
+     * /
     @Transactional
     fun cancelOrder(userId: Long, orderId: Long, productCodes: List<String>): OrderCancelResponse {
         // 1. 주문 조회
@@ -241,7 +242,7 @@ class OrderService(
         )
     }
 
-    /**
+    / **
      * 마감 여부를 계산한다.
      *
      * 규칙:
@@ -249,7 +250,7 @@ class OrderService(
      * 2. 납기일 당일: 최초 마감시간 20분 전까지 → isClosed=false, 그 이후 → isClosed=true
      * 3. 납기일 다음날 이후 → isClosed=true
      * 4. clientDeadlineTime이 null이면 납기일 기준으로만 판단 (당일은 미마감)
-     */
+     * /
     internal fun calculateIsClosed(deliveryDate: LocalDate, clientDeadlineTime: String?): Boolean {
         val now = LocalDateTime.now(clock)
         val today = now.toLocalDate()
@@ -312,3 +313,4 @@ class OrderService(
         }
     }
 }
+*/

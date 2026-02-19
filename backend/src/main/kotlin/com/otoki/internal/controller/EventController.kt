@@ -1,3 +1,4 @@
+/*
 package com.otoki.internal.controller
 
 import com.otoki.internal.dto.ApiResponse
@@ -12,19 +13,19 @@ import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
 
-/**
+/ **
  * 행사 관련 API Controller
- */
+ * /
 @RestController
 @RequestMapping("/api/v1/events")
 class EventController(
     private val eventService: EventService
 ) {
 
-    /**
+    / **
      * 행사 목록 조회
      * GET /api/v1/events
-     */
+     * /
     @GetMapping
     fun getEvents(
         @AuthenticationPrincipal principal: UserPrincipal,
@@ -34,10 +35,10 @@ class EventController(
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
-    /**
+    / **
      * 행사 상세 조회
      * GET /api/v1/events/{eventId}
-     */
+     * /
     @GetMapping("/{eventId}")
     fun getEventDetail(
         @AuthenticationPrincipal principal: UserPrincipal,
@@ -47,10 +48,10 @@ class EventController(
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
-    /**
+    / **
      * 일별 매출 목록 조회
      * GET /api/v1/events/{eventId}/daily-sales
-     */
+     * /
     @GetMapping("/{eventId}/daily-sales")
     fun getDailySales(
         @AuthenticationPrincipal principal: UserPrincipal,
@@ -60,3 +61,4 @@ class EventController(
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 }
+*/

@@ -1,12 +1,13 @@
+/*
 package com.otoki.internal.entity
 
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
-/**
+/ **
  * 주문 제품 항목 Entity
  * 주문에 포함된 개별 제품 정보를 관리한다.
- */
+ * /
 @Entity
 @Table(
     name = "order_items",
@@ -70,11 +71,11 @@ class OrderItem(
     var updatedAt: LocalDateTime = LocalDateTime.now()
 ) {
 
-    /**
+    / **
      * 주문 항목을 취소한다.
      *
      * @param employeeId 취소 요청자 사번
-     */
+     * /
     fun cancel(employeeId: String) {
         this.isCancelled = true
         this.cancelledAt = LocalDateTime.now()
@@ -86,3 +87,4 @@ class OrderItem(
         this.updatedAt = LocalDateTime.now()
     }
 }
+*/

@@ -1,3 +1,4 @@
+/*
 package com.otoki.internal.repository
 
 import com.otoki.internal.entity.SafetyCheckCategory
@@ -7,3 +8,4 @@ interface SafetyCheckCategoryRepository : JpaRepository<SafetyCheckCategory, Lon
 
     fun findByActiveTrueOrderBySortOrderAsc(): List<SafetyCheckCategory>
 }
+*/

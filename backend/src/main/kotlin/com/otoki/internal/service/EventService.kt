@@ -1,3 +1,4 @@
+/*
 package com.otoki.internal.service
 
 import com.otoki.internal.dto.request.EventListRequest
@@ -16,9 +17,9 @@ import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import kotlin.math.min
 
-/**
+/ **
  * 행사 관련 비즈니스 로직
- */
+ * /
 @Service
 class EventService(
     private val eventRepository: EventRepository,
@@ -26,13 +27,13 @@ class EventService(
     private val userRepository: UserRepository
 ) {
 
-    /**
+    / **
      * 행사 목록 조회
      * - 현재 로그인 사용자의 담당 행사만 조회
      * - 거래처 필터 (미입력 시 전체)
      * - 기간 필터 (date가 startDate~endDate 사이)
      * - 페이징 처리, 정렬: startDate DESC
-     */
+     * /
     @Transactional(readOnly = true)
     fun getEvents(userId: Long, request: EventListRequest): EventListResponse {
         val user = userRepository.findById(userId)
@@ -59,14 +60,14 @@ class EventService(
         return EventListResponse.from(eventPage, customerNameMap)
     }
 
-    /**
+    / **
      * 행사 상세 조회
      * - 행사 기본 정보 + 매출 정보 + 제품 목록 + 오늘 등록 상태
      * - 진행율 계산: min(100, (오늘 - 시작일) / (종료일 - 시작일) * 100)
      * - 달성율 계산: (달성금액 / 목표금액) * 100
      * - canRegisterToday: 오늘이 행사기간 내 AND 현재 사용자가 담당자
      * - isTodayRegistered: 오늘 날짜의 REGISTERED 상태 일매출 존재 여부
-     */
+     * /
     @Transactional(readOnly = true)
     fun getEventDetail(userId: Long, eventId: String): EventDetailResponse {
         val user = userRepository.findById(userId)
@@ -120,10 +121,10 @@ class EventService(
         )
     }
 
-    /**
+    / **
      * 일별 매출 목록 조회
      * TODO: DailySales Entity 구현 후 연동 (F51)
-     */
+     * /
     @Transactional(readOnly = true)
     fun getDailySales(userId: Long, eventId: String): DailySalesListResponse {
         // 행사 존재 확인
@@ -134,3 +135,4 @@ class EventService(
         return DailySalesListResponse(emptyList())
     }
 }
+*/

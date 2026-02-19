@@ -1,3 +1,4 @@
+/*
 package com.otoki.internal.service
 
 import com.otoki.internal.dto.request.OrderDraftRequest
@@ -26,9 +27,9 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 
-/**
+/ **
  * 주문서 제출/유효성 검증 Service
- */
+ * /
 @Service
 @Transactional(readOnly = true)
 class OrderSubmitService(
@@ -46,13 +47,13 @@ class OrderSubmitService(
         private const val ORDER_NUMBER_LENGTH = 8
     }
 
-    /**
+    / **
      * 주문서 유효성 체크
      *
      * @param userId 로그인 사용자 ID
      * @param request 주문서 요청 데이터
      * @return 유효성 검증 결과
-     */
+     * /
     fun validateOrder(userId: Long, request: OrderDraftRequest): ValidationResultResponse {
         val clientId = request.clientId!!
         val deliveryDateStr = request.deliveryDate!!
@@ -111,13 +112,13 @@ class OrderSubmitService(
         }
     }
 
-    /**
+    / **
      * 주문서 제출 (승인요청)
      *
      * @param userId 로그인 사용자 ID
      * @param request 주문서 요청 데이터
      * @return 주문 제출 결과
-     */
+     * /
     @Transactional
     fun submitOrder(userId: Long, request: OrderDraftRequest): OrderSubmitResponse {
         val clientId = request.clientId!!
@@ -249,9 +250,9 @@ class OrderSubmitService(
         )
     }
 
-    /**
+    / **
      * 개별 제품 유효성 검증
-     */
+     * /
     private fun validateItem(totalQuantity: Long, boxQty: Int, pieceQty: Int, product: Product): List<String> {
         val errors = mutableListOf<String>()
 
@@ -278,9 +279,9 @@ class OrderSubmitService(
         return errors
     }
 
-    /**
+    / **
      * 주문 요청번호 생성 (OP + 8자리 숫자)
-     */
+     * /
     private fun generateOrderNumber(): String {
         val timestamp = System.currentTimeMillis() % 100_000_000
         return "$ORDER_NUMBER_PREFIX${timestamp.toString().padStart(ORDER_NUMBER_LENGTH, '0')}"
@@ -294,3 +295,4 @@ class OrderSubmitService(
         }
     }
 }
+*/

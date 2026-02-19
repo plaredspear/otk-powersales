@@ -19,8 +19,8 @@ import java.time.LocalDate
 class InspectionService(
     private val inspectionRepository: InspectionRepository,
     private val inspectionThemeRepository: InspectionThemeRepository,
-    private val inspectionFieldTypeRepository: InspectionFieldTypeRepository,
-    private val inspectionPhotoRepository: InspectionPhotoRepository,
+    // private val inspectionFieldTypeRepository: InspectionFieldTypeRepository,  // Phase2: PG 대응 테이블 없음
+    // private val inspectionPhotoRepository: InspectionPhotoRepository,  // Phase2: PG 대응 테이블 없음
     private val userRepository: UserRepository,
     private val storeRepository: StoreRepository,
     private val productRepository: ProductRepository,
@@ -121,9 +121,9 @@ class InspectionService(
         val store = storeRepository.findByIdOrNull(request.storeId!!)
             ?: throw StoreNotFoundException()
 
-        // 현장 유형 검증
-        val fieldType = inspectionFieldTypeRepository.findById(request.fieldTypeCode!!)
-            .orElseThrow { FieldTypeNotFoundException() }
+        // Phase2: InspectionFieldType PG 대응 테이블 없음 - 검증 생략
+        // val fieldType = inspectionFieldTypeRepository.findById(request.fieldTypeCode!!)
+        //     .orElseThrow { FieldTypeNotFoundException() }
 
         // 분류 검증
         val category = try {
@@ -147,8 +147,8 @@ class InspectionService(
             category = category,
             storeName = store.storeName,
             inspectionDate = parseDate(request.inspectionDate!!),
-            fieldTypeCode = fieldType.code,
-            fieldTypeName = fieldType.name,
+            fieldTypeCode = request.fieldTypeCode ?: "",
+            fieldTypeName = "",  // Phase2: fieldType 검증 비활성화
             description = request.description,
             productCode = request.productCode,
             productName = if (request.productCode != null) getProductName(request.productCode) else null,
@@ -163,18 +163,18 @@ class InspectionService(
         // 점검 저장
         val savedInspection = inspectionRepository.save(inspection)
 
-        // 사진 업로드 및 저장
-        photos.forEach { photo ->
-            val url = fileStorageService.uploadInspectionPhoto(photo, userId, savedInspection.id)
-            val inspectionPhoto = InspectionPhoto(
-                inspection = savedInspection,
-                url = url,
-                originalFileName = photo.originalFilename ?: "unknown",
-                fileSize = photo.size,
-                contentType = photo.contentType ?: "image/jpeg"
-            )
-            inspectionPhotoRepository.save(inspectionPhoto)
-        }
+        // Phase2: InspectionPhoto PG 대응 테이블 없음 - 사진 업로드 주석 처리
+        // photos.forEach { photo ->
+        //     val url = fileStorageService.uploadInspectionPhoto(photo, userId, savedInspection.id)
+        //     val inspectionPhoto = InspectionPhoto(
+        //         inspection = savedInspection,
+        //         url = url,
+        //         originalFileName = photo.originalFilename ?: "unknown",
+        //         fileSize = photo.size,
+        //         contentType = photo.contentType ?: "image/jpeg"
+        //     )
+        //     inspectionPhotoRepository.save(inspectionPhoto)
+        // }
 
         return InspectionListItemResponse.from(savedInspection)
     }
@@ -195,9 +195,13 @@ class InspectionService(
      *
      * @return 현장 유형 목록
      */
-    fun getFieldTypes(): List<FieldTypeResponse> {
-        val fieldTypes = inspectionFieldTypeRepository.findActiveFieldTypes()
-        return fieldTypes.map { FieldTypeResponse.from(it) }
+    // Phase2: InspectionFieldType PG 대응 테이블 없음
+    // fun getFieldTypes(): List<FieldTypeResponse> {
+    //     val fieldTypes = inspectionFieldTypeRepository.findActiveFieldTypes()
+    //     return fieldTypes.map { FieldTypeResponse.from(it) }
+    // }
+    fun getFieldTypes(): List<Any> {
+        return emptyList()
     }
 
     // ----- Private Helper Methods -----

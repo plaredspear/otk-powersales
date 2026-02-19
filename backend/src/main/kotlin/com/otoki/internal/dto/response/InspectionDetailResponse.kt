@@ -30,8 +30,8 @@ data class InspectionDetailResponse(
     val competitorProductPrice: Int?,
     val competitorSalesQuantity: Int?,
 
-    // 공통 필드
-    val photos: List<PhotoResponse>,
+    // Phase2: PhotoResponse 주석 처리됨 - photos 제거
+    // val photos: List<PhotoResponse>,
     val createdAt: String
 ) {
     companion object {
@@ -55,7 +55,7 @@ data class InspectionDetailResponse(
                 competitorProductName = inspection.competitorProductName,
                 competitorProductPrice = inspection.competitorProductPrice,
                 competitorSalesQuantity = inspection.competitorSalesQuantity,
-                photos = inspection.photos.map { PhotoResponse.from(it) },
+                // Phase2: photos 비활성화
                 createdAt = inspection.createdAt.toString()
             )
         }

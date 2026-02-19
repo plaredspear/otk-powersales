@@ -7,7 +7,7 @@ import com.otoki.internal.dto.response.SafetyCheckTodayResponse
 import com.otoki.internal.entity.SafetyCheckSubmission
 import com.otoki.internal.exception.AlreadySubmittedException
 import com.otoki.internal.exception.RequiredItemsMissingException
-import com.otoki.internal.repository.SafetyCheckCategoryRepository
+// import com.otoki.internal.repository.SafetyCheckCategoryRepository  // Phase2: PG 대응 테이블 없음
 import com.otoki.internal.repository.SafetyCheckItemRepository
 import com.otoki.internal.repository.SafetyCheckSubmissionRepository
 import org.springframework.stereotype.Service
@@ -16,7 +16,7 @@ import java.time.LocalDate
 
 @Service
 class SafetyCheckService(
-    private val categoryRepository: SafetyCheckCategoryRepository,
+    // private val categoryRepository: SafetyCheckCategoryRepository,  // Phase2: PG 대응 테이블 없음
     private val itemRepository: SafetyCheckItemRepository,
     private val submissionRepository: SafetyCheckSubmissionRepository
 ) {
@@ -27,29 +27,31 @@ class SafetyCheckService(
      * - 각 카테고리 내 활성 항목만 조회
      * - sortOrder 기준 정렬
      */
+    // Phase2: SafetyCheckCategory PG 대응 테이블 없음 - getChecklistItems 주석 처리
+    // @Transactional(readOnly = true)
+    // fun getChecklistItems(): SafetyCheckItemsResponse {
+    //     val categories = categoryRepository.findByActiveTrueOrderBySortOrderAsc()
+    //     val categoryInfos = categories.map { category ->
+    //         val activeItems = itemRepository.findByCategoryIdAndActiveTrueOrderBySortOrderAsc(category.id)
+    //         SafetyCheckItemsResponse.CategoryInfo(
+    //             id = category.id,
+    //             name = category.name,
+    //             description = category.description,
+    //             items = activeItems.map { item ->
+    //                 SafetyCheckItemsResponse.CheckItemInfo(
+    //                     id = item.id,
+    //                     label = item.label,
+    //                     sortOrder = item.sortOrder,
+    //                     required = item.required
+    //                 )
+    //             }
+    //         )
+    //     }
+    //     return SafetyCheckItemsResponse(categories = categoryInfos)
+    // }
     @Transactional(readOnly = true)
     fun getChecklistItems(): SafetyCheckItemsResponse {
-        val categories = categoryRepository.findByActiveTrueOrderBySortOrderAsc()
-
-        val categoryInfos = categories.map { category ->
-            val activeItems = itemRepository.findByCategoryIdAndActiveTrueOrderBySortOrderAsc(category.id)
-
-            SafetyCheckItemsResponse.CategoryInfo(
-                id = category.id,
-                name = category.name,
-                description = category.description,
-                items = activeItems.map { item ->
-                    SafetyCheckItemsResponse.CheckItemInfo(
-                        id = item.id,
-                        label = item.label,
-                        sortOrder = item.sortOrder,
-                        required = item.required
-                    )
-                }
-            )
-        }
-
-        return SafetyCheckItemsResponse(categories = categoryInfos)
+        return SafetyCheckItemsResponse(categories = emptyList())
     }
 
     /**

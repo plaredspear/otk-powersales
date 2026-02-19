@@ -17,7 +17,7 @@ import org.springframework.web.multipart.MultipartFile
 @Transactional(readOnly = true)
 class SuggestionService(
     private val suggestionRepository: SuggestionRepository,
-    private val suggestionPhotoRepository: SuggestionPhotoRepository,
+    // private val suggestionPhotoRepository: SuggestionPhotoRepository,  // Phase2: PG 대응 테이블 없음
     private val userRepository: UserRepository,
     private val productRepository: ProductRepository,
     private val fileStorageService: FileStorageService
@@ -119,30 +119,21 @@ class SuggestionService(
 
         val savedSuggestion = suggestionRepository.save(suggestion)
 
-        // 6. 사진 업로드 및 SuggestionPhoto 엔티티 생성
-        if (photos != null && photos.isNotEmpty()) {
-            val photoEntities = photos.mapIndexed { index, photo ->
-                // 사진 업로드
-                val photoUrl = fileStorageService.uploadSuggestionPhoto(
-                    file = photo,
-                    userId = userId,
-                    suggestionId = savedSuggestion.id,
-                    sortOrder = index
-                )
-
-                // SuggestionPhoto 엔티티 생성
-                SuggestionPhoto(
-                    suggestion = savedSuggestion,
-                    url = photoUrl,
-                    originalFileName = photo.originalFilename ?: "unknown",
-                    fileSize = photo.size,
-                    contentType = photo.contentType ?: "image/jpeg",
-                    sortOrder = index
-                )
-            }
-
-            suggestionPhotoRepository.saveAll(photoEntities)
-        }
+        // Phase2: SuggestionPhoto PG 대응 테이블 없음 - 사진 업로드 주석 처리
+        // if (photos != null && photos.isNotEmpty()) {
+        //     val photoEntities = photos.mapIndexed { index, photo ->
+        //         val photoUrl = fileStorageService.uploadSuggestionPhoto(
+        //             file = photo, userId = userId, suggestionId = savedSuggestion.id, sortOrder = index
+        //         )
+        //         SuggestionPhoto(
+        //             suggestion = savedSuggestion, url = photoUrl,
+        //             originalFileName = photo.originalFilename ?: "unknown",
+        //             fileSize = photo.size, contentType = photo.contentType ?: "image/jpeg",
+        //             sortOrder = index
+        //         )
+        //     }
+        //     suggestionPhotoRepository.saveAll(photoEntities)
+        // }
 
         // 7. 응답 생성
         return SuggestionCreateResponse.from(savedSuggestion)

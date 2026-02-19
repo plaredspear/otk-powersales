@@ -1,3 +1,4 @@
+/*
 package com.otoki.internal.service
 
 import com.otoki.internal.dto.response.*
@@ -26,9 +27,9 @@ class AttendanceService(
         private val DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd")
     }
 
-    /**
+    / **
      * 오늘 출근 거래처 목록 조회
-     */
+     * /
     @Transactional(readOnly = true)
     fun getStoreList(userId: Long, keyword: String?): StoreListResponse {
         val user = userRepository.findById(userId)
@@ -72,9 +73,9 @@ class AttendanceService(
         )
     }
 
-    /**
+    / **
      * 출근등록
-     */
+     * /
     @Transactional
     fun registerAttendance(userId: Long, storeId: Long, workTypeStr: String): AttendanceResponse {
         // 1. 사용자 확인
@@ -131,9 +132,9 @@ class AttendanceService(
         )
     }
 
-    /**
+    / **
      * 출근등록 현황 조회
-     */
+     * /
     @Transactional(readOnly = true)
     fun getAttendanceStatus(userId: Long): AttendanceStatusResponse {
         userRepository.findById(userId)
@@ -170,3 +171,4 @@ class AttendanceService(
         )
     }
 }
+*/

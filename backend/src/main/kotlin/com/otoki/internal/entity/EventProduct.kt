@@ -1,11 +1,12 @@
+/*
 package com.otoki.internal.entity
 
 import jakarta.persistence.*
 
-/**
+/ **
  * 행사 제품 Entity
  * 행사에 포함된 제품 목록 (대표 제품 + 기타 제품)
- */
+ * /
 @Entity
 @Table(
     name = "event_products",
@@ -32,3 +33,4 @@ class EventProduct(
     @Column(name = "is_main_product", nullable = false)
     val isMainProduct: Boolean = false
 )
+*/

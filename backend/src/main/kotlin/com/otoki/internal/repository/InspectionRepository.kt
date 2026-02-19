@@ -37,12 +37,9 @@ interface InspectionRepository : JpaRepository<Inspection, Long> {
         @Param("category") category: InspectionCategory?
     ): List<Inspection>
 
-    /**
-     * 현장 점검 상세 조회 (사진 포함)
-     */
+    // Phase2: photos 관계 제거로 findByIdWithPhotos → findByIdWithDetails로 변경
     @Query(
         "SELECT i FROM Inspection i " +
-        "LEFT JOIN FETCH i.photos " +
         "JOIN FETCH i.store " +
         "JOIN FETCH i.theme " +
         "WHERE i.id = :inspectionId"

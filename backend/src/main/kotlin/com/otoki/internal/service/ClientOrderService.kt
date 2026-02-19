@@ -1,3 +1,4 @@
+/*
 package com.otoki.internal.service
 
 import com.otoki.internal.dto.response.ClientOrderDetailResponse
@@ -18,10 +19,10 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
 import java.time.YearMonth
 
-/**
+/ **
  * 거래처별 주문 Service (F28)
  * 특정 거래처에 대한 모든 주문(내 주문 + 다른 영업사원의 주문)을 조회한다.
- */
+ * /
 @Service
 @Transactional(readOnly = true)
 class ClientOrderService(
@@ -35,7 +36,7 @@ class ClientOrderService(
         private const val MAX_PAGE_SIZE = 100
     }
 
-    /**
+    / **
      * 거래처별 주문 목록 조회
      *
      * @param userId 로그인 사용자 ID
@@ -44,7 +45,7 @@ class ClientOrderService(
      * @param page 페이지 번호 (기본: 0)
      * @param size 페이지 크기 (기본: 20, 최대: 100)
      * @return 페이지네이션된 거래처별 주문 목록
-     */
+     * /
     fun getClientOrders(
         userId: Long,
         clientId: Long,
@@ -92,7 +93,7 @@ class ClientOrderService(
         return PageImpl(pageContent, pageable, allItems.size.toLong())
     }
 
-    /**
+    / **
      * 거래처별 주문 상세 조회
      *
      * @param userId 로그인 사용자 ID
@@ -100,7 +101,7 @@ class ClientOrderService(
      * @return 주문 상세 + 제품 목록
      * @throws OrderNotFoundException SAP 주문번호에 해당하는 주문이 없는 경우
      * @throws ForbiddenClientAccessException 해당 거래처에 접근 권한이 없는 경우
-     */
+     * /
     fun getClientOrderDetail(
         userId: Long,
         sapOrderNumber: String
@@ -143,10 +144,10 @@ class ClientOrderService(
         )
     }
 
-    /**
+    / **
      * 거래처 접근 권한 검증
      * 로그인한 사용자의 당월 담당 거래처 목록에 해당 clientId가 포함되어 있어야 한다.
-     */
+     * /
     private fun validateClientAccess(userId: Long, clientId: Long) {
         val now = LocalDate.now()
         val yearMonth = YearMonth.from(now)
@@ -170,3 +171,4 @@ class ClientOrderService(
         }
     }
 }
+*/

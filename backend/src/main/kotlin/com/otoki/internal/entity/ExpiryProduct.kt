@@ -1,11 +1,12 @@
+/*
 package com.otoki.internal.entity
 
 import jakarta.persistence.*
 import java.time.LocalDate
 
-/**
+/ **
  * 유통기한 관리 제품 Entity
- */
+ * /
 @Entity
 @Table(name = "expiry_products")
 class ExpiryProduct(
@@ -26,3 +27,4 @@ class ExpiryProduct(
     @Column(name = "expiry_date", nullable = false)
     val expiryDate: LocalDate
 )
+*/

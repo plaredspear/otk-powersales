@@ -1,3 +1,4 @@
+/*
 package com.otoki.internal.controller
 
 import com.otoki.internal.dto.ApiResponse
@@ -13,21 +14,21 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
 import java.time.LocalDate
 
-/**
+/ **
  * 주문 조회 관련 API Controller
  * - 주문이력 제품 조회
  * - 거래처 여신잔액 조회
  * - 제품 주문정보 조회
- */
+ * /
 @RestController
 class OrderQueryController(
     private val orderQueryService: OrderQueryService
 ) {
 
-    /**
+    / **
      * 주문이력 제품 조회
      * GET /api/v1/me/order-history/products
-     */
+     * /
     @GetMapping("/api/v1/me/order-history/products")
     fun getOrderHistoryProducts(
         @AuthenticationPrincipal principal: UserPrincipal,
@@ -46,10 +47,10 @@ class OrderQueryController(
         return ResponseEntity.ok(ApiResponse.success(result, "조회 성공"))
     }
 
-    /**
+    / **
      * 거래처 여신잔액 조회
      * GET /api/v1/clients/{clientId}/credit-balance
-     */
+     * /
     @GetMapping("/api/v1/clients/{clientId}/credit-balance")
     fun getClientCreditBalance(
         @PathVariable clientId: Long
@@ -58,10 +59,10 @@ class OrderQueryController(
         return ResponseEntity.ok(ApiResponse.success(result, "조회 성공"))
     }
 
-    /**
+    / **
      * 제품 주문정보 조회
      * GET /api/v1/products/{productCode}/order-info
-     */
+     * /
     @GetMapping("/api/v1/products/{productCode}/order-info")
     fun getProductOrderInfo(
         @PathVariable productCode: String
@@ -70,3 +71,4 @@ class OrderQueryController(
         return ResponseEntity.ok(ApiResponse.success(result, "조회 성공"))
     }
 }
+*/

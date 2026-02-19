@@ -2,6 +2,25 @@ package com.otoki.internal.exception
 
 import org.springframework.http.HttpStatus
 
+// Phase2: 공유 예외 클래스 (원래 OrderExceptions.kt, AttendanceExceptions.kt에 정의되었으나 해당 파일이 주석 처리됨)
+class InvalidDateRangeException : BusinessException(
+    errorCode = "INVALID_DATE_RANGE",
+    message = "시작일은 종료일보다 이전이어야 합니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+class StoreNotFoundException : BusinessException(
+    errorCode = "STORE_NOT_FOUND",
+    message = "거래처를 찾을 수 없습니다",
+    httpStatus = HttpStatus.NOT_FOUND
+)
+
+class InvalidOrderParameterException(detail: String) : BusinessException(
+    errorCode = "INVALID_ORDER_PARAMETER",
+    message = detail,
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
 /**
  * 파일 저장 오류
  */

@@ -1,3 +1,4 @@
+/*
 package com.otoki.internal.controller
 
 import com.otoki.internal.dto.ApiResponse
@@ -19,9 +20,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
 import java.time.LocalDate
 
-/**
+/ **
  * 주문 API Controller
- */
+ * /
 @RestController
 @RequestMapping("/api/v1/me")
 class OrderController(
@@ -29,10 +30,10 @@ class OrderController(
     private val orderSubmitService: OrderSubmitService
 ) {
 
-    /**
+    / **
      * 내 주문 목록 조회
      * GET /api/v1/me/orders
-     */
+     * /
     @GetMapping("/orders")
     fun getMyOrders(
         @AuthenticationPrincipal principal: UserPrincipal,
@@ -59,13 +60,13 @@ class OrderController(
         return ResponseEntity.ok(ApiResponse.success(result, "조회 성공"))
     }
 
-    /**
+    / **
      * 주문 상세 조회
      * GET /api/v1/me/orders/{orderId}
      *
      * @param principal 인증된 사용자 정보
      * @param orderId 주문 고유 ID
-     */
+     * /
     @GetMapping("/orders/{orderId}")
     fun getOrderDetail(
         @AuthenticationPrincipal principal: UserPrincipal,
@@ -78,13 +79,13 @@ class OrderController(
         return ResponseEntity.ok(ApiResponse.success(result, "조회 성공"))
     }
 
-    /**
+    / **
      * 주문 재전송
      * POST /api/v1/me/orders/{orderId}/resend
      *
      * @param principal 인증된 사용자 정보
      * @param orderId 주문 고유 ID
-     */
+     * /
     @PostMapping("/orders/{orderId}/resend")
     fun resendOrder(
         @AuthenticationPrincipal principal: UserPrincipal,
@@ -97,14 +98,14 @@ class OrderController(
         return ResponseEntity.ok(ApiResponse.success(null as Any?, "주문이 재전송되었습니다"))
     }
 
-    /**
+    / **
      * 주문 취소
      * POST /api/v1/me/orders/{orderId}/cancel
      *
      * @param principal 인증된 사용자 정보
      * @param orderId 주문 고유 ID
      * @param request 취소할 제품코드 목록
-     */
+     * /
     @PostMapping("/orders/{orderId}/cancel")
     fun cancelOrder(
         @AuthenticationPrincipal principal: UserPrincipal,
@@ -119,10 +120,10 @@ class OrderController(
         return ResponseEntity.ok(ApiResponse.success(result, "주문이 취소되었습니다"))
     }
 
-    /**
+    / **
      * 주문서 유효성 체크
      * POST /api/v1/me/orders/validate
-     */
+     * /
     @PostMapping("/orders/validate")
     fun validateOrder(
         @AuthenticationPrincipal principal: UserPrincipal,
@@ -136,10 +137,10 @@ class OrderController(
         return ResponseEntity.ok(ApiResponse.success(result, message))
     }
 
-    /**
+    / **
      * 주문서 승인요청(제출)
      * POST /api/v1/me/orders
-     */
+     * /
     @PostMapping("/orders")
     fun submitOrder(
         @AuthenticationPrincipal principal: UserPrincipal,
@@ -153,3 +154,4 @@ class OrderController(
         return ResponseEntity.ok(ApiResponse.success(result, message))
     }
 }
+*/

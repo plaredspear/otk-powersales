@@ -1,12 +1,13 @@
+/*
 package com.otoki.internal.entity
 
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
-/**
+/ **
  * 주문 반려 제품 Entity
  * 마감 후 SAP에서 반려된 제품 정보를 저장한다.
- */
+ * /
 @Entity
 @Table(
     name = "order_rejections",
@@ -39,3 +40,4 @@ class OrderRejection(
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now()
 )
+*/

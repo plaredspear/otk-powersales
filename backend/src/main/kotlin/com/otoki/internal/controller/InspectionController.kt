@@ -104,14 +104,11 @@ class InspectionController(
         return ResponseEntity.ok(ApiResponse.success(result, "조회 성공"))
     }
 
-    /**
-     * 현장 유형 목록 조회
-     * GET /api/v1/inspections/field-types
-     */
+    // Phase2: FieldTypeResponse 주석 처리됨 - Any로 대체
     @GetMapping("/field-types")
     fun getFieldTypes(
         @AuthenticationPrincipal principal: UserPrincipal
-    ): ResponseEntity<ApiResponse<List<FieldTypeResponse>>> {
+    ): ResponseEntity<ApiResponse<List<Any>>> {
         val result = inspectionService.getFieldTypes()
         return ResponseEntity.ok(ApiResponse.success(result, "조회 성공"))
     }

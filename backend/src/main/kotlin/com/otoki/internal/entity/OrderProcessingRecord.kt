@@ -1,12 +1,13 @@
+/*
 package com.otoki.internal.entity
 
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
-/**
+/ **
  * 주문 처리 현황 Entity (SAP 연동 데이터)
  * SAP 시스템에서 수신한 주문 처리 상태를 저장한다.
- */
+ * /
 @Entity
 @Table(
     name = "order_processing_records",
@@ -52,3 +53,4 @@ class OrderProcessingRecord(
         this.updatedAt = LocalDateTime.now()
     }
 }
+*/

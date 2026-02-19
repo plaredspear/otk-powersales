@@ -2,7 +2,7 @@ package com.otoki.internal.service
 
 import com.otoki.internal.dto.response.HomeResponse
 import com.otoki.internal.exception.UserNotFoundException
-import com.otoki.internal.repository.ExpiryProductRepository
+// import com.otoki.internal.repository.ExpiryProductRepository  // Phase2: PG 대응 테이블 없음
 import com.otoki.internal.repository.NoticeRepository
 import com.otoki.internal.repository.ScheduleRepository
 import com.otoki.internal.repository.UserRepository
@@ -21,7 +21,7 @@ import java.time.format.DateTimeFormatter
 class HomeService(
     private val userRepository: UserRepository,
     private val scheduleRepository: ScheduleRepository,
-    private val expiryProductRepository: ExpiryProductRepository,
+    // private val expiryProductRepository: ExpiryProductRepository,  // Phase2: PG 대응 테이블 없음
     private val noticeRepository: NoticeRepository
 ) {
 
@@ -59,20 +59,21 @@ class HomeService(
                 )
             }
 
-        // 유통기한 임박제품 건수 조회 (오늘 ~ 7일 후)
-        val expiryCount = expiryProductRepository
-            .countByUserIdAndExpiryDateBetween(userId, today, today.plusDays(EXPIRY_ALERT_DAYS))
-
-        val expiryAlert = if (expiryCount > 0) {
-            HomeResponse.ExpiryAlertInfo(
-                branchName = user.branchName,
-                employeeName = user.name,
-                employeeId = user.employeeId,
-                expiryCount = expiryCount.toInt()
-            )
-        } else {
-            null
-        }
+        // Phase2: ExpiryProduct PG 대응 테이블 없음 - 주석 처리
+        // val expiryCount = expiryProductRepository
+        //     .countByUserIdAndExpiryDateBetween(userId, today, today.plusDays(EXPIRY_ALERT_DAYS))
+        //
+        // val expiryAlert = if (expiryCount > 0) {
+        //     HomeResponse.ExpiryAlertInfo(
+        //         branchName = user.branchName,
+        //         employeeName = user.name,
+        //         employeeId = user.employeeId,
+        //         expiryCount = expiryCount.toInt()
+        //     )
+        // } else {
+        //     null
+        // }
+        val expiryAlert: HomeResponse.ExpiryAlertInfo? = null
 
         // 최근 1주일 공지사항 조회
         val since = LocalDateTime.of(today.minusDays(NOTICE_DAYS), LocalTime.MIN)

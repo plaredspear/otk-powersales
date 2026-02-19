@@ -1,3 +1,4 @@
+/*
 package com.otoki.internal.service
 
 import com.otoki.internal.dto.request.ClaimCreateRequest
@@ -11,9 +12,9 @@ import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
 import java.time.LocalDate
 
-/**
+/ **
  * 클레임 Service
- */
+ * /
 @Service
 @Transactional(readOnly = true)
 class ClaimService(
@@ -29,7 +30,7 @@ class ClaimService(
     private val fileStorageService: FileStorageService
 ) {
 
-    /**
+    / **
      * 클레임 등록
      *
      * @param userId JWT에서 추출한 사용자 ID
@@ -38,7 +39,7 @@ class ClaimService(
      * @param labelPhoto 일부인 사진 (필수)
      * @param receiptPhoto 구매 영수증 사진 (선택)
      * @return 클레임 등록 결과
-     */
+     * /
     @Transactional
     fun createClaim(
         userId: Long,
@@ -214,12 +215,12 @@ class ClaimService(
         return ClaimCreateResponse.from(savedClaim)
     }
 
-    /**
+    / **
      * 폼 초기화 데이터 조회
      * 종류1+종류2, 구매방법, 요청사항을 한 번에 반환
      *
      * @return 폼 초기화 데이터
-     */
+     * /
     fun getFormData(): ClaimFormDataResponse {
         // 1. 활성 종류1 목록 조회 (sortOrder 순)
         val categories = claimCategoryRepository.findByIsActiveTrueOrderBySortOrderAsc()
@@ -251,3 +252,4 @@ class ClaimService(
         )
     }
 }
+*/

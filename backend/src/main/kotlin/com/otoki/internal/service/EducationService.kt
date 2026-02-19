@@ -5,7 +5,7 @@ import com.otoki.internal.entity.EducationCategory
 import com.otoki.internal.exception.EducationPostNotFoundException
 import com.otoki.internal.exception.InvalidEducationCategoryException
 import com.otoki.internal.repository.EducationPostAttachmentRepository
-import com.otoki.internal.repository.EducationPostImageRepository
+// import com.otoki.internal.repository.EducationPostImageRepository  // Phase2: PG 대응 테이블 없음
 import com.otoki.internal.repository.EducationPostRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
@@ -19,7 +19,7 @@ import java.time.format.DateTimeFormatter
 @Transactional(readOnly = true)
 class EducationService(
     private val educationPostRepository: EducationPostRepository,
-    private val educationPostImageRepository: EducationPostImageRepository,
+    // private val educationPostImageRepository: EducationPostImageRepository,  // Phase2: PG 대응 테이블 없음
     private val educationPostAttachmentRepository: EducationPostAttachmentRepository
 ) {
 
@@ -98,15 +98,16 @@ class EducationService(
         val post = educationPostRepository.findByIdAndIsActiveTrue(postId)
             ?: throw EducationPostNotFoundException()
 
-        // 2. 이미지 목록 조회 (sortOrder 오름차순)
-        val images = educationPostImageRepository.findByPostIdOrderBySortOrderAsc(postId)
-            .map { image ->
-                EducationImageResponse(
-                    id = image.id,
-                    url = image.url,
-                    sortOrder = image.sortOrder
-                )
-            }
+        // Phase2: EducationPostImage PG 대응 테이블 없음 - 주석 처리
+        // val images = educationPostImageRepository.findByPostIdOrderBySortOrderAsc(postId)
+        //     .map { image ->
+        //         EducationImageResponse(
+        //             id = image.id,
+        //             url = image.url,
+        //             sortOrder = image.sortOrder
+        //         )
+        //     }
+        val images = emptyList<Any>()
 
         // 3. 첨부파일 목록 조회
         val attachments = educationPostAttachmentRepository.findByPostId(postId)

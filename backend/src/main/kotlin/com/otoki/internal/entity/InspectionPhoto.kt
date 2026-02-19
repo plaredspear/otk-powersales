@@ -1,12 +1,13 @@
+/*
 package com.otoki.internal.entity
 
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
-/**
+/ **
  * 현장 점검 사진 Entity
  * 현장 점검 시 첨부된 사진 정보를 관리한다.
- */
+ * /
 @Entity
 @Table(name = "inspection_photos")
 class InspectionPhoto(
@@ -34,3 +35,4 @@ class InspectionPhoto(
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now()
 )
+*/

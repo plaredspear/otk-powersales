@@ -1,3 +1,4 @@
+/*
 package com.otoki.internal.service
 
 import com.otoki.internal.dto.request.DailySalesCreateRequest
@@ -13,9 +14,9 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-/**
+/ **
  * 일매출 관련 비즈니스 로직
- */
+ * /
 @Service
 class DailySalesService(
     private val dailySalesRepository: DailySalesRepository,
@@ -29,14 +30,14 @@ class DailySalesService(
         private val DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd")
     }
 
-    /**
+    / **
      * 일매출 등록
      *
      * @param userId 현재 로그인 사용자 ID
      * @param eventId 행사 ID
      * @param request 일매출 등록 요청
      * @return 일매출 등록 결과
-     */
+     * /
     @Transactional
     fun registerDailySales(
         userId: Long,
@@ -130,14 +131,14 @@ class DailySalesService(
         return DailySalesCreateResponse.from(saved)
     }
 
-    /**
+    / **
      * 일매출 임시저장
      *
      * @param userId 현재 로그인 사용자 ID
      * @param eventId 행사 ID
      * @param request 일매출 임시저장 요청
      * @return 일매출 저장 결과
-     */
+     * /
     @Transactional
     fun saveDailySalesDraft(
         userId: Long,
@@ -215,3 +216,4 @@ class DailySalesService(
         return DailySalesCreateResponse.from(saved)
     }
 }
+*/

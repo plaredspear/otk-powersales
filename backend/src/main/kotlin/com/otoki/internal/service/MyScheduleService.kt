@@ -2,7 +2,7 @@ package com.otoki.internal.service
 
 import com.otoki.internal.dto.response.*
 import com.otoki.internal.exception.UserNotFoundException
-import com.otoki.internal.repository.AttendanceRepository
+// import com.otoki.internal.repository.AttendanceRepository  // Phase2: PG 대응 테이블 없음
 import com.otoki.internal.repository.StoreScheduleRepository
 import com.otoki.internal.repository.UserRepository
 import org.springframework.stereotype.Service
@@ -14,8 +14,8 @@ import java.time.YearMonth
 @Service
 class MyScheduleService(
     private val userRepository: UserRepository,
-    private val storeScheduleRepository: StoreScheduleRepository,
-    private val attendanceRepository: AttendanceRepository
+    private val storeScheduleRepository: StoreScheduleRepository
+    // private val attendanceRepository: AttendanceRepository  // Phase2: PG 대응 테이블 없음
 ) {
 
     companion object {
@@ -79,19 +79,19 @@ class MyScheduleService(
         // 해당 날짜의 거래처 일정 목록 조회
         val schedules = storeScheduleRepository.findByUserIdAndScheduleDate(userId, date)
 
-        // 해당 날짜의 출근등록 현황 조회
-        val attendances = attendanceRepository.findByUserIdAndAttendanceDate(userId, date)
-        val attendanceStoreIds = attendances.map { it.storeId }.toSet()
+        // Phase2: Attendance PG 대응 테이블 없음 - 주석 처리
+        // val attendances = attendanceRepository.findByUserIdAndAttendanceDate(userId, date)
+        // val attendanceStoreIds = attendances.map { it.storeId }.toSet()
 
-        // 거래처 목록 매핑 (등록 여부 포함)
+        // 거래처 목록 매핑 (등록 여부 - Attendance 비활성화로 항상 false)
         val storeItems = schedules.map { schedule ->
             StoreScheduleItemDto(
                 storeId = schedule.storeId,
                 storeName = schedule.storeName,
                 workType1 = schedule.workCategory,
-                workType2 = "", // TODO: 추후 확장 필요
-                workType3 = "", // TODO: 추후 확장 필요
-                isRegistered = attendanceStoreIds.contains(schedule.storeId)
+                workType2 = "",
+                workType3 = "",
+                isRegistered = false  // Phase2: attendance 비활성화
             )
         }
 

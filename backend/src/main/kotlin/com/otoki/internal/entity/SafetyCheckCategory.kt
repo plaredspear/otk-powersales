@@ -1,3 +1,4 @@
+/*
 package com.otoki.internal.entity
 
 import jakarta.persistence.*
@@ -25,3 +26,4 @@ class SafetyCheckCategory(
     @OrderBy("sortOrder ASC")
     val items: MutableList<SafetyCheckItem> = mutableListOf()
 )
+*/

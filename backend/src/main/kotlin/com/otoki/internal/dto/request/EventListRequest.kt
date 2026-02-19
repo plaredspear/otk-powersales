@@ -1,3 +1,4 @@
+/*
 package com.otoki.internal.dto.request
 
 import jakarta.validation.constraints.Max
@@ -5,9 +6,9 @@ import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.Pattern
 import java.time.LocalDate
 
-/**
+/ **
  * 행사 목록 조회 요청 DTO
- */
+ * /
 data class EventListRequest(
     val customerId: String? = null,
 
@@ -24,9 +25,9 @@ data class EventListRequest(
     @field:Max(value = 100, message = "페이지 크기는 100 이하여야 합니다")
     val size: Int = 10
 ) {
-    /**
+    / **
      * 조회 기준일 (기본값: 오늘)
-     */
+     * /
     fun getDateOrToday(): LocalDate {
         return if (date != null) {
             LocalDate.parse(date)
@@ -35,3 +36,4 @@ data class EventListRequest(
         }
     }
 }
+*/

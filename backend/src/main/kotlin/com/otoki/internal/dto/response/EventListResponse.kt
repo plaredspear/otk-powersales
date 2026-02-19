@@ -1,11 +1,12 @@
+/*
 package com.otoki.internal.dto.response
 
 import com.otoki.internal.entity.Event
 import org.springframework.data.domain.Page
 
-/**
+/ **
  * 행사 목록 응답 DTO
- */
+ * /
 data class EventListResponse(
     val content: List<EventInfo>,
     val page: Int,
@@ -14,9 +15,9 @@ data class EventListResponse(
     val totalPages: Int
 ) {
 
-    /**
+    / **
      * 행사 정보
-     */
+     * /
     data class EventInfo(
         val eventId: String,
         val eventType: String,
@@ -55,3 +56,4 @@ data class EventListResponse(
         }
     }
 }
+*/

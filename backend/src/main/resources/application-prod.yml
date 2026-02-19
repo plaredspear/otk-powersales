@@ -11,9 +11,12 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: none
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     show-sql: false
+    properties:
+      hibernate:
+        default_schema: salesforce2
 
 # JWT 설정 (프로덕션용 - 환경변수 사용)
 jwt:

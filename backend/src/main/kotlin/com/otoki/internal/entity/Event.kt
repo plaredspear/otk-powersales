@@ -1,13 +1,14 @@
+/*
 package com.otoki.internal.entity
 
 import jakarta.persistence.*
 import java.time.LocalDate
 import java.time.LocalDateTime
 
-/**
+/ **
  * 행사 Entity
  * 영업사원이 담당하는 제품 판촉 행사 정보
- */
+ * /
 @Entity
 @Table(
     name = "events",
@@ -61,3 +62,4 @@ class Event(
         this.updatedAt = LocalDateTime.now()
     }
 }
+*/

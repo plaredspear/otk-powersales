@@ -1,13 +1,14 @@
+/*
 package com.otoki.internal.entity
 
 import jakarta.persistence.*
 import java.time.LocalDate
 import java.time.LocalDateTime
 
-/**
+/ **
  * 일매출 Entity
  * 영업사원이 매일 등록하는 행사 매출 정보
- */
+ * /
 @Entity
 @Table(
     name = "daily_sales",
@@ -78,3 +79,4 @@ class DailySales(
         const val STATUS_REGISTERED = "REGISTERED"
     }
 }
+*/

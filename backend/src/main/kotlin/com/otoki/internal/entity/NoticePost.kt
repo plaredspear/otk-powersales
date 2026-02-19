@@ -1,11 +1,12 @@
+/*
 package com.otoki.internal.entity
 
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
-/**
+/ **
  * 공지사항 게시물 Entity
- */
+ * /
 @Entity
 @Table(
     name = "notice_posts",
@@ -49,3 +50,4 @@ class NoticePost(
         this.updatedAt = LocalDateTime.now()
     }
 }
+*/

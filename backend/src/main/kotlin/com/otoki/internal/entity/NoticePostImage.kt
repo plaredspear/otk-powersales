@@ -1,11 +1,12 @@
+/*
 package com.otoki.internal.entity
 
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
-/**
+/ **
  * 공지사항 게시물 이미지 Entity
- */
+ * /
 @Entity
 @Table(name = "notice_post_images")
 class NoticePostImage(
@@ -27,3 +28,4 @@ class NoticePostImage(
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now()
 )
+*/
