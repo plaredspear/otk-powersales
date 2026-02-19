@@ -1,0 +1,55 @@
+stages:
+  - deploy
+
+variables:
+  AWS_DEFAULT_REGION: ap-northeast-2
+
+deploy:
+  stage: deploy
+  image: amazon/aws-cli:latest
+  id_tokens:
+    GITLAB_OIDC_TOKEN:
+      aud: https://gitlab.com
+  variables:
+    AWS_ROLE_ARN: $DEV_AWS_ROLE_ARN
+    CODEBUILD_PROJECT: $DEV_CODEBUILD_PROJECT
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: always
+  script:
+    # OIDC authentication
+    - >
+      CREDENTIALS=$(aws sts assume-role-with-web-identity
+      --role-arn "$AWS_ROLE_ARN"
+      --role-session-name "gitlab-ci-${CI_PIPELINE_ID}"
+      --web-identity-token "$GITLAB_OIDC_TOKEN"
+      --duration-seconds 3600
+      --output json)
+    - export AWS_ACCESS_KEY_ID=$(echo $CREDENTIALS | python3 -c "import sys,json; print(json.load(sys.stdin)['Credentials']['AccessKeyId'])")
+    - export AWS_SECRET_ACCESS_KEY=$(echo $CREDENTIALS | python3 -c "import sys,json; print(json.load(sys.stdin)['Credentials']['SecretAccessKey'])")
+    - export AWS_SESSION_TOKEN=$(echo $CREDENTIALS | python3 -c "import sys,json; print(json.load(sys.stdin)['Credentials']['SessionToken'])")
+
+    # Trigger CodeBuild
+    - >
+      BUILD_ID=$(aws codebuild start-build
+      --project-name "$CODEBUILD_PROJECT"
+      --source-type-override NO_SOURCE
+      --environment-variables-override
+      "name=CODEBUILD_RESOLVED_SOURCE_VERSION,value=${CI_COMMIT_SHORT_SHA},type=PLAINTEXT"
+      --query 'build.id' --output text)
+    - echo "CodeBuild started - $BUILD_ID"
+
+    # Poll until complete
+    - |
+      while true; do
+        STATUS=$(aws codebuild batch-get-builds --ids "$BUILD_ID" --query 'builds[0].buildStatus' --output text)
+        echo "Build status: $STATUS"
+        if [ "$STATUS" = "SUCCEEDED" ]; then
+          echo "Deploy succeeded"
+          break
+        elif [ "$STATUS" = "FAILED" ] || [ "$STATUS" = "FAULT" ] || [ "$STATUS" = "STOPPED" ] || [ "$STATUS" = "TIMED_OUT" ]; then
+          echo "Deploy failed with status: $STATUS"
+          exit 1
+        fi
+        sleep 15
+      done

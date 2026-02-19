@@ -1,0 +1,35 @@
+resource "aws_ecr_repository" "main" {
+  name                 = "${var.project}-${var.environment}-backend"
+  image_tag_mutability = "MUTABLE"
+  force_delete         = var.environment == "dev" ? true : false
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  tags = {
+    Name        = "${var.project}-${var.environment}-backend"
+    Environment = var.environment
+  }
+}
+
+resource "aws_ecr_lifecycle_policy" "main" {
+  repository = aws_ecr_repository.main.name
+
+  policy = jsonencode({
+    rules = [
+      {
+        rulePriority = 1
+        description  = "Keep last 10 images"
+        selection = {
+          tagStatus   = "any"
+          countType   = "imageCountMoreThan"
+          countNumber = 10
+        }
+        action = {
+          type = "expire"
+        }
+      }
+    ]
+  })
+}
