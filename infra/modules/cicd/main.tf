@@ -180,6 +180,14 @@ resource "aws_iam_role_policy" "codebuild" {
             "iam:PassedToService" = "ecs-tasks.amazonaws.com"
           }
         }
+      },
+      # CodeConnections — GitLab 소스 clone
+      {
+        Effect = "Allow"
+        Action = [
+          "codeconnections:UseConnection"
+        ]
+        Resource = aws_codeconnections_connection.gitlab.arn
       }
     ]
   })
