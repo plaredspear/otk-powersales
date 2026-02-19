@@ -29,6 +29,12 @@ variable "gitlab_deploy_branch" {
   default     = "main"
 }
 
+variable "gitlab_repository_url" {
+  description = "GitLab repository HTTPS URL (e.g., https://gitlab.com/group/project.git)"
+  type        = string
+}
+
+
 variable "ecr_repository_url" {
   description = "ECR repository URL"
   type        = string

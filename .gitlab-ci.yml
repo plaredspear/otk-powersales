@@ -33,7 +33,7 @@ deploy:
     - >
       BUILD_ID=$(aws codebuild start-build
       --project-name "$CODEBUILD_PROJECT"
-      --source-type-override NO_SOURCE
+      --source-version "${CI_COMMIT_SHA}"
       --environment-variables-override
       "name=CODEBUILD_RESOLVED_SOURCE_VERSION,value=${CI_COMMIT_SHORT_SHA},type=PLAINTEXT"
       --query 'build.id' --output text)

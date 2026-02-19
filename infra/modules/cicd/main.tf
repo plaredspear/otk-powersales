@@ -13,6 +13,26 @@ resource "aws_iam_openid_connect_provider" "gitlab" {
 }
 
 ################################################################################
+# CodeConnections — GitLab 연동 (CodeBuild → GitLab repo clone)
+# NOTE: apply 후 AWS Console에서 1회 수동 승인 필요 (Step 6-1 참조)
+################################################################################
+
+resource "aws_codeconnections_connection" "gitlab" {
+  name          = "${var.project}-${var.environment}-gitlab"
+  provider_type = "GitLab"
+
+  tags = {
+    Environment = var.environment
+  }
+}
+
+resource "aws_codebuild_source_credential" "gitlab" {
+  auth_type   = "CODECONNECTIONS"
+  server_type = "GITLAB"
+  token       = aws_codeconnections_connection.gitlab.arn
+}
+
+################################################################################
 # GitLab CI Role (assumed via OIDC — triggers CodeBuild)
 ################################################################################
 
@@ -231,8 +251,10 @@ resource "aws_codebuild_project" "deploy" {
   }
 
   source {
-    type      = "NO_SOURCE"
-    buildspec = file("${path.module}/buildspec.yml")
+    type            = "GITLAB"
+    location        = var.gitlab_repository_url
+    git_clone_depth = 1
+    buildspec       = file("${path.module}/buildspec.yml")
   }
 
   cache {

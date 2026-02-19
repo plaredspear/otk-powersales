@@ -23,6 +23,11 @@ output "api_url" {
   value       = "https://${var.domain_name}"
 }
 
+output "nat_gateway_public_ip" {
+  description = "NAT Gateway Elastic IP — outbound IP for external system firewall whitelisting"
+  value       = module.networking.nat_gateway_public_ip
+}
+
 output "ecs_cluster_name" {
   description = "ECS cluster name"
   value       = module.ecs.cluster_name

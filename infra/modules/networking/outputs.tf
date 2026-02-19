@@ -27,3 +27,8 @@ output "rds_security_group_id" {
   description = "RDS security group ID"
   value       = aws_security_group.rds.id
 }
+
+output "nat_gateway_public_ip" {
+  description = "NAT Gateway Elastic IP (outbound IP for firewall whitelisting)"
+  value       = aws_eip.nat.public_ip
+}

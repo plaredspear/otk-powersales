@@ -138,6 +138,11 @@ variable "gitlab_project_path" {
   type        = string
 }
 
+variable "gitlab_repository_url" {
+  description = "GitLab repository HTTPS URL (e.g., https://gitlab.com/group/project.git)"
+  type        = string
+}
+
 variable "gitlab_deploy_branch" {
   description = "Branch that triggers deployment"
   type        = string
