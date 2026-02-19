@@ -1,51 +1,18 @@
 services:
-  postgres:
-    image: postgres:14-alpine
-    container_name: otoki-postgres
-    environment:
-      POSTGRES_DB: otoki
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-postgres}
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-      - ./docker/init-db:/docker-entrypoint-initdb.d
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - otoki-network
-    restart: unless-stopped
-
   backend:
     profiles: ["full"]
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: otoki-backend
-    depends_on:
-      postgres:
-        condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
-      DATABASE_URL: jdbc:postgresql://postgres:5432/otoki
-      DATABASE_USERNAME: postgres
-      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-postgres}
-      JWT_SECRET: ${JWT_SECRET:-your-secret-key-here-change-in-production}
+      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_USERNAME: ${DATABASE_USERNAME}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-3600000}
       JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-86400000}
     ports:
       - "8080:8080"
-    networks:
-      - otoki-network
     restart: unless-stopped
-
-volumes:
-  postgres-data:
-
-networks:
-  otoki-network:
-    driver: bridge
