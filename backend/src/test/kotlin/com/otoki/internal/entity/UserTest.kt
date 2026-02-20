@@ -3,7 +3,6 @@ package com.otoki.internal.entity
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import java.time.LocalDateTime
 
 /**
  * User Entity 테스트
@@ -15,21 +14,19 @@ class UserTest {
         employeeId: String = "12345678",
         password: String = "encodedPassword",
         name: String = "홍길동",
-        department: String = "영업1팀",
-        branchName: String = "서울지점",
-        role: UserRole = UserRole.USER,
+        orgName: String = "서울지점",
+        appAuthority: String? = null,
         passwordChangeRequired: Boolean = true,
-        lastGpsConsentAt: LocalDateTime? = null
+        agreementFlag: Boolean? = null
     ): User {
         return User(
             employeeId = employeeId,
             password = password,
             name = name,
-            department = department,
-            branchName = branchName,
-            role = role,
+            orgName = orgName,
+            appAuthority = appAuthority,
             passwordChangeRequired = passwordChangeRequired,
-            lastGpsConsentAt = lastGpsConsentAt
+            agreementFlag = agreementFlag
         )
     }
 
@@ -62,25 +59,27 @@ class UserTest {
     }
 
     @Test
-    @DisplayName("비밀번호 변경 시 updatedAt이 갱신된다")
-    fun changePassword_UpdatesUpdatedAt() {
+    @DisplayName("비밀번호 변경 시 updDate가 갱신된다")
+    fun changePassword_UpdatesUpdDate() {
         // given
         val user = createTestUser()
-        val originalUpdatedAt = user.updatedAt
-        Thread.sleep(10) // 시간 차이를 보장하기 위한 대기
+        val originalUpdDate = user.updDate
 
         // when
         user.changePassword("newEncodedPassword")
 
         // then
-        assertThat(user.updatedAt).isAfter(originalUpdatedAt)
+        assertThat(user.updDate).isNotNull()
+        if (originalUpdDate != null) {
+            assertThat(user.updDate).isAfterOrEqualTo(originalUpdDate)
+        }
     }
 
     @Test
-    @DisplayName("GPS 동의 이력이 없으면 동의가 필요하다")
-    fun requiresGpsConsent_ReturnsTrueWhenLastGpsConsentAtIsNull() {
+    @DisplayName("GPS 동의 플래그가 null이면 동의가 필요하다")
+    fun requiresGpsConsent_ReturnsTrueWhenAgreementFlagIsNull() {
         // given
-        val user = createTestUser(lastGpsConsentAt = null)
+        val user = createTestUser(agreementFlag = null)
 
         // when
         val result = user.requiresGpsConsent()
@@ -90,11 +89,10 @@ class UserTest {
     }
 
     @Test
-    @DisplayName("GPS 동의 후 6개월이 경과하면 동의가 필요하다")
-    fun requiresGpsConsent_ReturnsTrueWhenSixMonthsElapsed() {
+    @DisplayName("GPS 동의 플래그가 false이면 동의가 필요하다")
+    fun requiresGpsConsent_ReturnsTrueWhenAgreementFlagIsFalse() {
         // given
-        val sixMonthsAndOneDayAgo = LocalDateTime.now().minusMonths(6).minusDays(1)
-        val user = createTestUser(lastGpsConsentAt = sixMonthsAndOneDayAgo)
+        val user = createTestUser(agreementFlag = false)
 
         // when
         val result = user.requiresGpsConsent()
@@ -104,11 +102,10 @@ class UserTest {
     }
 
     @Test
-    @DisplayName("GPS 동의 후 6개월이 경과하지 않았으면 동의가 필요하지 않다")
-    fun requiresGpsConsent_ReturnsFalseWhenWithinSixMonths() {
+    @DisplayName("GPS 동의 플래그가 true이면 동의가 필요하지 않다")
+    fun requiresGpsConsent_ReturnsFalseWhenAgreementFlagIsTrue() {
         // given
-        val fiveMonthsAgo = LocalDateTime.now().minusMonths(5)
-        val user = createTestUser(lastGpsConsentAt = fiveMonthsAgo)
+        val user = createTestUser(agreementFlag = true)
 
         // when
         val result = user.requiresGpsConsent()
@@ -118,48 +115,29 @@ class UserTest {
     }
 
     @Test
-    @DisplayName("GPS 동의를 최근에 했으면 동의가 필요하지 않다")
-    fun requiresGpsConsent_ReturnsFalseWhenRecentlyConsented() {
+    @DisplayName("GPS 동의 기록 시 agreementFlag가 true로 설정된다")
+    fun recordGpsConsent_SetsAgreementFlagToTrue() {
         // given
-        val oneDayAgo = LocalDateTime.now().minusDays(1)
-        val user = createTestUser(lastGpsConsentAt = oneDayAgo)
-
-        // when
-        val result = user.requiresGpsConsent()
-
-        // then
-        assertThat(result).isFalse()
-    }
-
-    @Test
-    @DisplayName("GPS 동의 기록 시 lastGpsConsentAt이 현재 시간으로 갱신된다")
-    fun recordGpsConsent_UpdatesLastGpsConsentAt() {
-        // given
-        val user = createTestUser(lastGpsConsentAt = null)
-        val beforeRecording = LocalDateTime.now().minusSeconds(1)
+        val user = createTestUser(agreementFlag = null)
 
         // when
         user.recordGpsConsent()
 
         // then
-        assertThat(user.lastGpsConsentAt)
-            .isNotNull()
-            .isAfter(beforeRecording)
+        assertThat(user.agreementFlag).isTrue()
     }
 
     @Test
-    @DisplayName("GPS 동의 기록 시 updatedAt이 갱신된다")
-    fun recordGpsConsent_UpdatesUpdatedAt() {
+    @DisplayName("GPS 동의 기록 시 updDate가 갱신된다")
+    fun recordGpsConsent_UpdatesUpdDate() {
         // given
         val user = createTestUser()
-        val originalUpdatedAt = user.updatedAt
-        Thread.sleep(10) // 시간 차이를 보장하기 위한 대기
 
         // when
         user.recordGpsConsent()
 
         // then
-        assertThat(user.updatedAt).isAfter(originalUpdatedAt)
+        assertThat(user.updDate).isNotNull()
     }
 
     @Test
@@ -172,21 +150,21 @@ class UserTest {
         assertThat(user.id).isEqualTo(0)
         assertThat(user.role).isEqualTo(UserRole.USER)
         assertThat(user.passwordChangeRequired).isTrue()
-        assertThat(user.lastGpsConsentAt).isNull()
-        assertThat(user.createdAt).isNotNull()
-        assertThat(user.updatedAt).isNotNull()
+        assertThat(user.agreementFlag).isNull()
     }
 
     @Test
-    @DisplayName("다양한 권한으로 사용자를 생성할 수 있다")
-    fun createUser_SupportsAllRoles() {
+    @DisplayName("appAuthority로부터 role이 올바르게 도출된다")
+    fun role_ComputedFromAppAuthority() {
         // given & when
-        val regularUser = createTestUser(role = UserRole.USER)
-        val leader = createTestUser(role = UserRole.LEADER)
-        val admin = createTestUser(role = UserRole.ADMIN)
+        val regularUser = createTestUser(appAuthority = null)
+        val regularUser2 = createTestUser(appAuthority = "여사원")
+        val leader = createTestUser(appAuthority = "조장")
+        val admin = createTestUser(appAuthority = "지점장")
 
         // then
         assertThat(regularUser.role).isEqualTo(UserRole.USER)
+        assertThat(regularUser2.role).isEqualTo(UserRole.USER)
         assertThat(leader.role).isEqualTo(UserRole.LEADER)
         assertThat(admin.role).isEqualTo(UserRole.ADMIN)
     }

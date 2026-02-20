@@ -243,8 +243,7 @@ class ClaimServiceTest {
         employeeId = "10000001",
         password = "encoded",
         name = "테스트",
-        department = "영업부",
-        branchName = "서울"
+        orgName = "서울"
     )
 
     private fun createMockStore() = Store(

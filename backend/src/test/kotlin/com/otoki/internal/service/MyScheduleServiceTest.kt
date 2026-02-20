@@ -272,10 +272,7 @@ class MyScheduleServiceTest {
             employeeId = employeeId,
             password = "encoded",
             name = name,
-            department = "영업부",
-            branchName = "서울지점",
-            role = UserRole.USER,
-            workerType = WorkerType.PATROL
+            orgName = "서울지점"
         )
     }
 

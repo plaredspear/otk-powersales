@@ -3,8 +3,6 @@ package com.otoki.internal.service
 import com.otoki.internal.entity.Store
 import com.otoki.internal.entity.StoreSchedule
 import com.otoki.internal.entity.User
-import com.otoki.internal.entity.UserRole
-import com.otoki.internal.entity.WorkerType
 import com.otoki.internal.exception.UserNotFoundException
 import com.otoki.internal.repository.StoreRepository
 import com.otoki.internal.repository.StoreScheduleRepository
@@ -530,18 +528,14 @@ class MyStoreServiceTest {
 
     private fun createUser(
         id: Long = 1L,
-        employeeId: String = "12345678",
-        workerType: WorkerType = WorkerType.PATROL
+        employeeId: String = "12345678"
     ): User {
         return User(
             id = id,
             employeeId = employeeId,
             password = "encodedPassword",
             name = "테스트 사용자",
-            department = "영업부",
-            branchName = "부산지점",
-            role = UserRole.USER,
-            workerType = workerType,
+            orgName = "부산지점",
             passwordChangeRequired = false
         )
     }

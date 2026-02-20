@@ -8,8 +8,6 @@ import com.otoki.internal.entity.OrderProcessingRecord
 import com.otoki.internal.entity.OrderRejection
 import com.otoki.internal.entity.Store
 import com.otoki.internal.entity.User
-import com.otoki.internal.entity.UserRole
-import com.otoki.internal.entity.WorkerType
 import com.otoki.internal.dto.response.OrderCancelResponse
 import com.otoki.internal.exception.AlreadyCancelledException
 import com.otoki.internal.exception.ForbiddenOrderAccessException
@@ -75,10 +73,7 @@ class OrderServiceTest {
         employeeId = "12345678",
         password = "encoded",
         name = "홍길동",
-        department = "영업부",
-        branchName = "서울지점",
-        role = UserRole.USER,
-        workerType = WorkerType.PATROL
+        orgName = "서울지점"
     )
 
     private val testStore = Store(
@@ -714,10 +709,7 @@ class OrderServiceTest {
                 employeeId = "87654321",
                 password = "encoded",
                 name = "김철수",
-                department = "영업부",
-                branchName = "서울지점",
-                role = UserRole.USER,
-                workerType = WorkerType.PATROL
+                orgName = "서울지점"
             )
             val order = createTestOrder(
                 id = 1L,
@@ -839,10 +831,7 @@ class OrderServiceTest {
                 employeeId = "87654321",
                 password = "encoded",
                 name = "김철수",
-                department = "영업부",
-                branchName = "서울지점",
-                role = UserRole.USER,
-                workerType = WorkerType.PATROL
+                orgName = "서울지점"
             )
             val order = createTestOrder(
                 id = 1L,
@@ -1046,10 +1035,7 @@ class OrderServiceTest {
                 employeeId = "87654321",
                 password = "encoded",
                 name = "김철수",
-                department = "영업부",
-                branchName = "서울지점",
-                role = UserRole.USER,
-                workerType = WorkerType.PATROL
+                orgName = "서울지점"
             )
             val order = createTestOrder(
                 id = 1L,

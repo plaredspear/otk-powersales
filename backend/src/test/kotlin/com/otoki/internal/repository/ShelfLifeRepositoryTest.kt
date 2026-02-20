@@ -43,9 +43,7 @@ class ShelfLifeRepositoryTest {
                 employeeId = "20030117",
                 password = "encodedPassword",
                 name = "최금주",
-                department = "영업1팀",
-                branchName = "부산1지점",
-                role = UserRole.USER
+                orgName = "부산1지점"
             )
         )
 
@@ -54,9 +52,7 @@ class ShelfLifeRepositoryTest {
                 employeeId = "20030118",
                 password = "encodedPassword",
                 name = "김영희",
-                department = "영업2팀",
-                branchName = "서울1지점",
-                role = UserRole.USER
+                orgName = "서울1지점"
             )
         )
 

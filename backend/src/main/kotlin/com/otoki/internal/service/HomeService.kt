@@ -78,7 +78,7 @@ class HomeService(
         // 최근 1주일 공지사항 조회
         val since = LocalDateTime.of(today.minusDays(NOTICE_DAYS), LocalTime.MIN)
         val notices = noticeRepository
-            .findRecentNotices(branchName = user.branchName, since = since)
+            .findRecentNotices(branchName = user.orgName ?: "", since = since)
             .map { notice ->
                 HomeResponse.NoticeInfo(
                     id = notice.id,

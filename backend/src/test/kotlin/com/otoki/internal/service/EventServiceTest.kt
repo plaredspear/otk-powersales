@@ -259,20 +259,14 @@ class EventServiceTest {
         id: Long,
         employeeId: String = "EMP001",
         name: String = "홍길동",
-        department: String = "영업팀",
-        branchName: String = "서울지점",
-        role: UserRole = UserRole.USER,
-        workerType: WorkerType = WorkerType.PATROL
+        orgName: String = "서울지점"
     ): User {
         return User(
             id = id,
             employeeId = employeeId,
             password = "encoded_password",
             name = name,
-            department = department,
-            branchName = branchName,
-            role = role,
-            workerType = workerType
+            orgName = orgName
         )
     }
 

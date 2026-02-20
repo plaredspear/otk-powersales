@@ -37,10 +37,7 @@ class SuggestionPhotoRepositoryTest {
                 employeeId = "10000001",
                 password = "encoded",
                 name = "홍길동",
-                department = "영업부",
-                branchName = "서울지점",
-                role = UserRole.USER,
-                workerType = WorkerType.PATROL
+                orgName = "서울지점"
             )
         )
 

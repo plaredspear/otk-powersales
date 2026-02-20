@@ -23,7 +23,6 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.security.crypto.password.PasswordEncoder
-import java.time.LocalDateTime
 import java.util.*
 
 @ExtendWith(MockitoExtension::class)
@@ -59,7 +58,7 @@ class AuthServiceTest {
             employeeId = employeeId,
             password = encodedPassword,
             passwordChangeRequired = true,
-            lastGpsConsentAt = null
+            agreementFlag = null
         )
 
         val loginRequest = LoginRequest(employeeId, rawPassword)
@@ -80,8 +79,7 @@ class AuthServiceTest {
         assertThat(response.user.id).isEqualTo(1L)
         assertThat(response.user.employeeId).isEqualTo(employeeId)
         assertThat(response.user.name).isEqualTo("홍길동")
-        assertThat(response.user.department).isEqualTo("영업1팀")
-        assertThat(response.user.branchName).isEqualTo("서울지점")
+        assertThat(response.user.orgName).isEqualTo("서울지점")
         assertThat(response.user.role).isEqualTo("USER")
         assertThat(response.token.accessToken).isEqualTo(accessToken)
         assertThat(response.token.refreshToken).isEqualTo(refreshToken)
@@ -298,11 +296,11 @@ class AuthServiceTest {
     // ========== GPS Consent Tests ==========
 
     @Test
-    @DisplayName("GPS 동의 기록 성공 - lastGpsConsentAt이 현재 시간으로 업데이트")
+    @DisplayName("GPS 동의 기록 성공 - agreementFlag가 true로 업데이트")
     fun recordGpsConsent_success() {
         // Given
         val userId = 1L
-        val user = createTestUser(id = userId, lastGpsConsentAt = null)
+        val user = createTestUser(id = userId, agreementFlag = null)
 
         whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
         whenever(userRepository.save(any<User>())).thenAnswer { it.arguments[0] }
@@ -313,8 +311,7 @@ class AuthServiceTest {
         // Then
         verify(userRepository).save(userCaptor.capture())
         val savedUser = userCaptor.value
-        assertThat(savedUser.lastGpsConsentAt).isNotNull()
-        assertThat(savedUser.lastGpsConsentAt).isBeforeOrEqualTo(LocalDateTime.now())
+        assertThat(savedUser.agreementFlag).isTrue()
     }
 
     @Test
@@ -350,22 +347,20 @@ class AuthServiceTest {
         employeeId: String = "12345678",
         password: String = "encoded_password",
         name: String = "홍길동",
-        department: String = "영업1팀",
-        branchName: String = "서울지점",
-        role: UserRole = UserRole.USER,
+        orgName: String = "서울지점",
+        appAuthority: String? = null,
         passwordChangeRequired: Boolean = true,
-        lastGpsConsentAt: LocalDateTime? = null
+        agreementFlag: Boolean? = null
     ): User {
         return User(
             id = id,
             employeeId = employeeId,
             password = password,
             name = name,
-            department = department,
-            branchName = branchName,
-            role = role,
+            orgName = orgName,
+            appAuthority = appAuthority,
             passwordChangeRequired = passwordChangeRequired,
-            lastGpsConsentAt = lastGpsConsentAt
+            agreementFlag = agreementFlag
         )
     }
 }

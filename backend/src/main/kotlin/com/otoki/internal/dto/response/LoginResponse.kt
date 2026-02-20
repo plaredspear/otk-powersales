@@ -19,8 +19,7 @@ data class UserInfo(
     val id: Long,
     val employeeId: String,
     val name: String,
-    val department: String,
-    val branchName: String,
+    val orgName: String?,
     val role: String
 ) {
     companion object {
@@ -29,8 +28,7 @@ data class UserInfo(
                 id = user.id,
                 employeeId = user.employeeId,
                 name = user.name,
-                department = user.department,
-                branchName = user.branchName,
+                orgName = user.orgName,
                 role = user.role.name
             )
         }

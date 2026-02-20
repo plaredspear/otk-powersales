@@ -340,10 +340,7 @@ class ClientOrderServiceTest {
             employeeId = "EMP001",
             password = "password",
             name = "테스트 사용자",
-            department = "영업팀",
-            branchName = "서울지점",
-            role = UserRole.USER,
-            workerType = WorkerType.PATROL
+            orgName = "서울지점"
         )
         val order = Order(
             id = 1L,
@@ -448,8 +445,7 @@ class ClientOrderServiceTest {
             employeeId = "EMP001",
             password = "password",
             name = "테스트 사용자",
-            department = "영업팀",
-            branchName = "서울지점"
+            orgName = "서울지점"
         )
         val order = Order(
             id = 1L,
@@ -510,10 +506,8 @@ class ClientOrderServiceTest {
             employeeId = "EMP999",
             password = "password",
             name = "매핑 테스트 사용자",
-            department = "영업2팀",
-            branchName = "부산지점",
-            role = UserRole.ADMIN,
-            workerType = WorkerType.PATROL
+            orgName = "부산지점",
+            appAuthority = "지점장"
         )
         val order = Order(
             id = 999L,

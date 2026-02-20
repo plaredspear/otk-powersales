@@ -291,18 +291,14 @@ class HomeServiceTest {
         id: Long = 1L,
         employeeId: String = "20030117",
         name: String = "최금주",
-        department: String = "영업1팀",
-        branchName: String = "부산1지점",
-        role: UserRole = UserRole.USER
+        orgName: String = "부산1지점"
     ): User {
         return User(
             id = id,
             employeeId = employeeId,
             password = "encoded_password",
             name = name,
-            department = department,
-            branchName = branchName,
-            role = role
+            orgName = orgName
         )
     }
 }

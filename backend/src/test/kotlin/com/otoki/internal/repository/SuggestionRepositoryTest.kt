@@ -37,10 +37,7 @@ class SuggestionRepositoryTest {
                 employeeId = "10000001",
                 password = "encoded",
                 name = "홍길동",
-                department = "영업부",
-                branchName = "서울지점",
-                role = UserRole.USER,
-                workerType = WorkerType.PATROL
+                orgName = "서울지점"
             )
         )
 
@@ -49,10 +46,7 @@ class SuggestionRepositoryTest {
                 employeeId = "10000002",
                 password = "encoded",
                 name = "김영희",
-                department = "영업부",
-                branchName = "부산지점",
-                role = UserRole.USER,
-                workerType = WorkerType.PATROL
+                orgName = "부산지점"
             )
         )
     }

@@ -47,7 +47,7 @@ class AttendanceServiceTest {
         fun getStoreList_withSchedules() {
             // Given
             val userId = 1L
-            val user = createUser(id = userId, workerType = WorkerType.PATROL)
+            val user = createUser(id = userId)
             val today = LocalDate.now()
             val schedules = listOf(
                 createStoreSchedule(storeId = 101, storeName = "이마트 부산점"),
@@ -65,7 +65,6 @@ class AttendanceServiceTest {
             val result = attendanceService.getStoreList(userId, null)
 
             // Then
-            assertThat(result.workerType).isEqualTo("PATROL")
             assertThat(result.stores).hasSize(3)
             assertThat(result.totalCount).isEqualTo(3)
             assertThat(result.registeredCount).isEqualTo(0)
@@ -101,7 +100,7 @@ class AttendanceServiceTest {
         fun getStoreList_withPartialRegistrations() {
             // Given
             val userId = 1L
-            val user = createUser(id = userId, workerType = WorkerType.PATROL)
+            val user = createUser(id = userId)
             val today = LocalDate.now()
             val schedules = listOf(
                 createStoreSchedule(storeId = 101, storeName = "이마트 부산점"),
@@ -160,7 +159,7 @@ class AttendanceServiceTest {
         fun getStoreList_fixedWorker() {
             // Given
             val userId = 1L
-            val user = createUser(id = userId, workerType = WorkerType.FIXED)
+            val user = createUser(id = userId)
             val today = LocalDate.now()
             val schedules = listOf(
                 createStoreSchedule(storeId = 101, storeName = "이마트 부산점")
@@ -176,7 +175,6 @@ class AttendanceServiceTest {
             val result = attendanceService.getStoreList(userId, null)
 
             // Then
-            assertThat(result.workerType).isEqualTo("FIXED")
             assertThat(result.stores).hasSize(1)
         }
 
@@ -205,7 +203,7 @@ class AttendanceServiceTest {
             // Given
             val userId = 1L
             val storeId = 101L
-            val user = createUser(id = userId, workerType = WorkerType.PATROL)
+            val user = createUser(id = userId)
             val today = LocalDate.now()
             val schedule = createStoreSchedule(storeId = storeId, storeName = "이마트 부산점")
 
@@ -313,7 +311,7 @@ class AttendanceServiceTest {
             // Given
             val userId = 1L
             val storeId = 103L
-            val user = createUser(id = userId, workerType = WorkerType.IRREGULAR)
+            val user = createUser(id = userId)
             val today = LocalDate.now()
             val schedule = createStoreSchedule(storeId = storeId)
 
@@ -336,7 +334,7 @@ class AttendanceServiceTest {
             // Given
             val userId = 1L
             val storeId = 102L
-            val user = createUser(id = userId, workerType = WorkerType.IRREGULAR)
+            val user = createUser(id = userId)
             val today = LocalDate.now()
             val schedule = createStoreSchedule(storeId = storeId, storeName = "홈플러스 서면점")
 
@@ -378,7 +376,7 @@ class AttendanceServiceTest {
             // Given
             val userId = 1L
             val storeId = 105L
-            val user = createUser(id = userId, workerType = WorkerType.PATROL)
+            val user = createUser(id = userId)
             val today = LocalDate.now()
             val schedule = createStoreSchedule(storeId = storeId, storeName = "테스트 매장")
 
@@ -532,18 +530,14 @@ class AttendanceServiceTest {
 
     private fun createUser(
         id: Long = 1L,
-        employeeId: String = "12345678",
-        workerType: WorkerType = WorkerType.PATROL
+        employeeId: String = "12345678"
     ): User {
         return User(
             id = id,
             employeeId = employeeId,
             password = "encodedPassword",
             name = "테스트 사용자",
-            department = "영업부",
-            branchName = "부산지점",
-            role = UserRole.USER,
-            workerType = workerType,
+            orgName = "부산지점",
             passwordChangeRequired = false
         )
     }

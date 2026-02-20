@@ -40,8 +40,7 @@ class UserRepositoryTest {
         val testUser = createTestUser(
             employeeId = "20010585",
             name = "홍길동",
-            department = "영업1팀",
-            branchName = "부산1지점"
+            orgName = "부산1지점"
         )
         testEntityManager.persistAndFlush(testUser)
         testEntityManager.clear()
@@ -53,8 +52,7 @@ class UserRepositoryTest {
         assertThat(result).isPresent
         assertThat(result.get().employeeId).isEqualTo("20010585")
         assertThat(result.get().name).isEqualTo("홍길동")
-        assertThat(result.get().department).isEqualTo("영업1팀")
-        assertThat(result.get().branchName).isEqualTo("부산1지점")
+        assertThat(result.get().orgName).isEqualTo("부산1지점")
     }
 
     @Test
@@ -103,23 +101,23 @@ class UserRepositoryTest {
     }
 
     @Test
-    @DisplayName("findByBranchName - 해당 지점에 사용자가 있으면 사용자 목록을 반환한다")
-    fun findByBranchName_WithExistingBranch_ReturnsUserList() {
+    @DisplayName("findByOrgName - 해당 조직에 사용자가 있으면 사용자 목록을 반환한다")
+    fun findByOrgName_WithExistingOrg_ReturnsUserList() {
         // Given
         val user1 = createTestUser(
             employeeId = "20010585",
             name = "홍길동",
-            branchName = "부산1지점"
+            orgName = "부산1지점"
         )
         val user2 = createTestUser(
             employeeId = "20010586",
             name = "김영희",
-            branchName = "부산1지점"
+            orgName = "부산1지점"
         )
         val user3 = createTestUser(
             employeeId = "20010587",
             name = "이철수",
-            branchName = "서울1지점"
+            orgName = "서울1지점"
         )
         testEntityManager.persistAndFlush(user1)
         testEntityManager.persistAndFlush(user2)
@@ -127,54 +125,54 @@ class UserRepositoryTest {
         testEntityManager.clear()
 
         // When
-        val result = userRepository.findByBranchName("부산1지점")
+        val result = userRepository.findByOrgName("부산1지점")
 
         // Then
         assertThat(result).hasSize(2)
         assertThat(result.map { it.employeeId }).containsExactlyInAnyOrder("20010585", "20010586")
         assertThat(result.map { it.name }).containsExactlyInAnyOrder("홍길동", "김영희")
-        assertThat(result.all { it.branchName == "부산1지점" }).isTrue()
+        assertThat(result.all { it.orgName == "부산1지점" }).isTrue()
     }
 
     @Test
-    @DisplayName("findByBranchName - 해당 지점에 사용자가 없으면 빈 목록을 반환한다")
-    fun findByBranchName_WithNonExistingBranch_ReturnsEmptyList() {
+    @DisplayName("findByOrgName - 해당 조직에 사용자가 없으면 빈 목록을 반환한다")
+    fun findByOrgName_WithNonExistingOrg_ReturnsEmptyList() {
         // Given
         val user1 = createTestUser(
             employeeId = "20010585",
-            branchName = "부산1지점"
+            orgName = "부산1지점"
         )
         testEntityManager.persistAndFlush(user1)
         testEntityManager.clear()
 
         // When
-        val result = userRepository.findByBranchName("대구1지점")
+        val result = userRepository.findByOrgName("대구1지점")
 
         // Then
         assertThat(result).isEmpty()
     }
 
     @Test
-    @DisplayName("findByBranchName - 다양한 역할의 사용자가 같은 지점에 있으면 모두 조회된다")
-    fun findByBranchName_WithVariousRoles_ReturnsAllUsers() {
+    @DisplayName("findByOrgName - 다양한 역할의 사용자가 같은 조직에 있으면 모두 조회된다")
+    fun findByOrgName_WithVariousRoles_ReturnsAllUsers() {
         // Given
         val user = createTestUser(
             employeeId = "20010585",
             name = "일반사원",
-            branchName = "서울1지점",
-            role = UserRole.USER
+            orgName = "서울1지점",
+            appAuthority = null
         )
         val leader = createTestUser(
             employeeId = "20010586",
             name = "팀장",
-            branchName = "서울1지점",
-            role = UserRole.LEADER
+            orgName = "서울1지점",
+            appAuthority = "조장"
         )
         val admin = createTestUser(
             employeeId = "20010587",
             name = "관리자",
-            branchName = "서울1지점",
-            role = UserRole.ADMIN
+            orgName = "서울1지점",
+            appAuthority = "지점장"
         )
         testEntityManager.persistAndFlush(user)
         testEntityManager.persistAndFlush(leader)
@@ -182,7 +180,7 @@ class UserRepositoryTest {
         testEntityManager.clear()
 
         // When
-        val result = userRepository.findByBranchName("서울1지점")
+        val result = userRepository.findByOrgName("서울1지점")
 
         // Then
         assertThat(result).hasSize(3)
@@ -199,17 +197,15 @@ class UserRepositoryTest {
     private fun createTestUser(
         employeeId: String = "20010585",
         name: String = "홍길동",
-        department: String = "영업1팀",
-        branchName: String = "부산1지점",
-        role: UserRole = UserRole.USER
+        orgName: String = "부산1지점",
+        appAuthority: String? = null
     ): User {
         return User(
             employeeId = employeeId,
             password = "encodedPassword",
             name = name,
-            department = department,
-            branchName = branchName,
-            role = role
+            orgName = orgName,
+            appAuthority = appAuthority
         )
     }
 }

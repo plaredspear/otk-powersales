@@ -43,10 +43,8 @@ class NoticeServiceTest {
             employeeId = "10000001",
             password = "encoded",
             name = "관리자",
-            department = "인사팀",
-            branchName = "본사",
-            role = UserRole.ADMIN,
-            workerType = WorkerType.PATROL
+            orgName = "본사",
+            appAuthority = "지점장"
         )
 
         testPost = NoticePost(

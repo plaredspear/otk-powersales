@@ -399,8 +399,7 @@ class InspectionServiceTest {
             employeeId = "10000001",
             password = "encoded",
             name = "테스트 사용자",
-            department = "영업부",
-            branchName = "서울지점"
+            orgName = "서울지점"
         )
     }
 

@@ -33,10 +33,7 @@ class ShelfLifeAlertServiceTest {
             employeeId = "EMP001",
             password = "encoded",
             name = "테스트 사원",
-            department = "영업부",
-            branchName = "강남지점",
-            role = UserRole.USER,
-            workerType = WorkerType.PATROL
+            orgName = "강남지점"
         )
 
         testStore = Store(

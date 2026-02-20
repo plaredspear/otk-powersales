@@ -53,10 +53,7 @@ class OrderDraftServiceTest {
             employeeId = "20010585",
             password = "encodedPassword",
             name = "홍길동",
-            department = "영업1팀",
-            branchName = "서울지점",
-            role = UserRole.USER,
-            workerType = WorkerType.PATROL
+            orgName = "서울지점"
         )
     }
 

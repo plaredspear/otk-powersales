@@ -20,7 +20,7 @@ interface UserRepository : JpaRepository<User, Long> {
     fun existsByEmployeeId(employeeId: String): Boolean
 
     /**
-     * 지점별 사용자 목록 조회
+     * 조직별 사용자 목록 조회
      */
-    fun findByBranchName(branchName: String): List<User>
+    fun findByOrgName(orgName: String): List<User>
 }

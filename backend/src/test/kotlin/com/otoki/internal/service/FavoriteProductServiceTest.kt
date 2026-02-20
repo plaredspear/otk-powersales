@@ -47,8 +47,7 @@ class FavoriteProductServiceTest {
             employeeId = "20010585",
             password = "encodedPassword",
             name = "홍길동",
-            department = "영업1팀",
-            branchName = "서울지점"
+            orgName = "서울지점"
         )
     }
 

@@ -51,7 +51,7 @@ class AuthService(
                 refreshToken = refreshToken,
                 expiresIn = jwtTokenProvider.getAccessTokenExpirationSeconds()
             ),
-            requiresPasswordChange = user.passwordChangeRequired,
+            requiresPasswordChange = user.passwordChangeRequired ?: true,
             requiresGpsConsent = user.requiresGpsConsent()
         )
     }

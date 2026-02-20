@@ -56,8 +56,7 @@ class DailySalesServiceTest {
             employeeId = testEmployeeId,
             password = "encoded",
             name = "테스트",
-            department = "영업팀",
-            branchName = "서울"
+            orgName = "서울"
         )
     }
 
@@ -220,8 +219,7 @@ class DailySalesServiceTest {
                 employeeId = "99999",
                 password = "encoded",
                 name = "다른사람",
-                department = "영업팀",
-                branchName = "서울"
+                orgName = "서울"
             )
         }
         val event = createTestEvent()
@@ -237,8 +235,7 @@ class DailySalesServiceTest {
                 employeeId = "99999",
                 password = "encoded",
                 name = "다른사람",
-                department = "영업팀",
-                branchName = "서울"
+                orgName = "서울"
             )
         ))
         whenever(eventRepository.findByEventId(testEventId)).thenReturn(Optional.of(event))

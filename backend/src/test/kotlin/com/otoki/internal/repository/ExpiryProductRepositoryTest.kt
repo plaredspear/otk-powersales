@@ -2,7 +2,6 @@ package com.otoki.internal.repository
 
 import com.otoki.internal.entity.ExpiryProduct
 import com.otoki.internal.entity.User
-import com.otoki.internal.entity.UserRole
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -39,9 +38,7 @@ class ExpiryProductRepositoryTest {
             employeeId = "20030117",
             password = "encodedPassword",
             name = "최금주",
-            department = "영업1팀",
-            branchName = "부산1지점",
-            role = UserRole.USER
+            orgName = "부산1지점"
         )
         testUserId = testEntityManager.persistAndFlush(user).id
         testEntityManager.clear()
@@ -116,9 +113,7 @@ class ExpiryProductRepositoryTest {
             employeeId = "20030118",
             password = "encodedPassword",
             name = "김영희",
-            department = "영업2팀",
-            branchName = "서울1지점",
-            role = UserRole.USER
+            orgName = "서울1지점"
         )
         val otherUserId = testEntityManager.persistAndFlush(otherUser).id
 

@@ -690,10 +690,7 @@ class ShelfLifeServiceTest {
             employeeId = employeeId,
             password = "encodedPassword",
             name = "테스트 사용자",
-            department = "영업부",
-            branchName = "부산지점",
-            role = UserRole.USER,
-            workerType = WorkerType.PATROL,
+            orgName = "부산지점",
             passwordChangeRequired = false
         )
     }

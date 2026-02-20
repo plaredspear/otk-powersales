@@ -80,7 +80,7 @@ class AuthControllerTest {
         // Given
         val request = LoginRequest(employeeId = "12345678", password = "password123")
         val mockResponse = LoginResponse(
-            user = UserInfo(1L, "12345678", "홍길동", "영업1팀", "서울지점", "USER"),
+            user = UserInfo(1L, "12345678", "홍길동", "서울지점", "USER"),
             token = TokenInfo("access-token", "refresh-token", 3600),
             requiresPasswordChange = false,
             requiresGpsConsent = false
@@ -100,8 +100,7 @@ class AuthControllerTest {
             .andExpect(jsonPath("$.data.user.id").value(1))
             .andExpect(jsonPath("$.data.user.employee_id").value("12345678"))
             .andExpect(jsonPath("$.data.user.name").value("홍길동"))
-            .andExpect(jsonPath("$.data.user.department").value("영업1팀"))
-            .andExpect(jsonPath("$.data.user.branch_name").value("서울지점"))
+            .andExpect(jsonPath("$.data.user.org_name").value("서울지점"))
             .andExpect(jsonPath("$.data.user.role").value("USER"))
             .andExpect(jsonPath("$.data.token.access_token").value("access-token"))
             .andExpect(jsonPath("$.data.token.refresh_token").value("refresh-token"))
@@ -115,7 +114,7 @@ class AuthControllerTest {
     fun login_initialPassword() {
         // Given
         val mockResponse = LoginResponse(
-            user = UserInfo(2L, "87654321", "김철수", "영업2팀", "부산지점", "USER"),
+            user = UserInfo(2L, "87654321", "김철수", "부산지점", "USER"),
             token = TokenInfo("access-token", "refresh-token", 3600),
             requiresPasswordChange = true,
             requiresGpsConsent = true
