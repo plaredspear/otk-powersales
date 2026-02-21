@@ -6,6 +6,11 @@
 CLAUDE.local.md
 .claudeignore
 
+# Claude Code - local only (spec writing)
+.claude/guides/spec-mode.md
+.claude/commands/spec.md
+.claude/agents/legacy-analyzer.md
+
 
 # Obsidian
 .obsidian/
