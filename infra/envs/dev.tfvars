@@ -18,6 +18,9 @@ rds_multi_az          = false
 db_name               = "otoki"
 db_username           = "otoki_admin"
 
+# ElastiCache
+elasticache_node_type = "cache.t4g.micro"
+
 # ECS
 ecs_task_cpu      = "512"
 ecs_task_memory   = "1024"

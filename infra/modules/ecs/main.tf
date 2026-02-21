@@ -129,7 +129,9 @@ resource "aws_ecs_task_definition" "main" {
       environment = [
         { name = "SPRING_PROFILES_ACTIVE", value = var.environment },
         { name = "DATABASE_URL", value = "jdbc:postgresql://${var.db_host}:${var.db_port}/${var.db_name}" },
-        { name = "SERVER_PORT", value = "8080" }
+        { name = "SERVER_PORT", value = "8080" },
+        { name = "REDIS_HOST", value = var.redis_host },
+        { name = "REDIS_PORT", value = tostring(var.redis_port) }
       ]
 
       secrets = [
@@ -146,6 +148,14 @@ resource "aws_ecs_task_definition" "main" {
           valueFrom = "${var.jwt_secret_arn}:secret::"
         }
       ]
+
+      healthCheck = {
+        command     = ["CMD-SHELL", "curl -f http://localhost:8080/api/v1/health || exit 1"]
+        interval    = 30
+        timeout     = 5
+        retries     = 3
+        startPeriod = 60
+      }
 
       logConfiguration = {
         logDriver = "awslogs"

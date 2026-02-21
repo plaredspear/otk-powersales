@@ -188,6 +188,18 @@ resource "aws_iam_role_policy" "codebuild" {
           "codeconnections:UseConnection"
         ]
         Resource = aws_codeconnections_connection.gitlab.arn
+      },
+      # SSM Parameter Store — read infra outputs
+      {
+        Effect = "Allow"
+        Action = [
+          "ssm:GetParameter",
+          "ssm:GetParametersByPath"
+        ]
+        Resource = [
+          "arn:aws:ssm:${var.region}:${var.aws_account_id}:parameter/${var.project}/${var.environment}/infra",
+          "arn:aws:ssm:${var.region}:${var.aws_account_id}:parameter/${var.project}/${var.environment}/infra/*"
+        ]
       }
     ]
   })
@@ -250,6 +262,11 @@ resource "aws_codebuild_project" "deploy" {
     environment_variable {
       name  = "ECS_SERVICE_NAME"
       value = var.ecs_service_name
+    }
+
+    environment_variable {
+      name  = "PROJECT"
+      value = var.project
     }
 
     environment_variable {

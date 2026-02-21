@@ -7,6 +7,12 @@ env:
 phases:
   pre_build:
     commands:
+      - echo "=== Fetch Infra Outputs ==="
+      - >
+        aws ssm get-parameters-by-path
+        --path "/${PROJECT}/${ENVIRONMENT}/infra"
+        --query "Parameters[].{Name:Name,Value:Value}"
+        --output json > infra-outputs.json
       - echo "=== ECR Login ==="
       - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_REPOSITORY_URL
       - IMAGE_TAG="${CODEBUILD_RESOLVED_SOURCE_VERSION:=latest}"
@@ -31,11 +37,37 @@ phases:
       - docker push $FULL_IMAGE
       - docker push $LATEST_IMAGE
 
+      - echo "=== Register New Task Definition ==="
+      # 현재 task definition에서 컨테이너 정의를 가져와 이미지만 교체한 새 revision 등록
+      - TASK_FAMILY="${PROJECT}-${ENVIRONMENT}-backend"
+      - >
+        CURRENT_TASK_DEF=$(aws ecs describe-task-definition
+        --task-definition $TASK_FAMILY
+        --query 'taskDefinition'
+        --output json)
+      - >
+        NEW_TASK_DEF=$(echo "$CURRENT_TASK_DEF" | python3 -c "
+        import json, sys
+        td = json.load(sys.stdin)
+        td['containerDefinitions'][0]['image'] = '$FULL_IMAGE'
+        keep = ['family','containerDefinitions','taskRoleArn','executionRoleArn',
+                'networkMode','volumes','placementConstraints','requiresCompatibilities',
+                'cpu','memory','runtimePlatform']
+        print(json.dumps({k: td[k] for k in keep if k in td}))
+        ")
+      - >
+        NEW_REVISION=$(aws ecs register-task-definition
+        --cli-input-json "$NEW_TASK_DEF"
+        --query 'taskDefinition.taskDefinitionArn'
+        --output text)
+      - echo "New task definition = $NEW_REVISION"
+
       - echo "=== Update ECS Service ==="
       - >
         aws ecs update-service
         --cluster $ECS_CLUSTER_NAME
         --service $ECS_SERVICE_NAME
+        --task-definition $NEW_REVISION
         --force-new-deployment
         --region $AWS_DEFAULT_REGION
 

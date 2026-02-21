@@ -61,6 +61,22 @@ module "rds" {
 }
 
 ################################################################################
+# ElastiCache (Redis)
+################################################################################
+
+module "elasticache" {
+  source = "./modules/elasticache"
+
+  project     = var.project
+  environment = var.environment
+
+  subnet_ids        = module.networking.private_subnet_ids
+  security_group_id = module.networking.elasticache_security_group_id
+
+  node_type = var.elasticache_node_type
+}
+
+################################################################################
 # Secrets Manager
 ################################################################################
 
@@ -149,12 +165,38 @@ module "ecs" {
   db_port = module.rds.port
   db_name = var.db_name
 
+  redis_host = module.elasticache.endpoint
+  redis_port = module.elasticache.port
+
   db_credentials_arn = module.secrets.db_credentials_arn
   jwt_secret_arn     = module.secrets.jwt_secret_arn
   secrets_arns = [
     module.secrets.db_credentials_arn,
     module.secrets.jwt_secret_arn,
   ]
+}
+
+################################################################################
+# SSM Parameter Store — Infra Outputs
+################################################################################
+
+module "ssm_outputs" {
+  source = "./modules/ssm-outputs"
+
+  project     = var.project
+  environment = var.environment
+
+  outputs = {
+    "api-url"              = "https://${var.domain_name}"
+    "ecr-repository-url"   = module.ecr.repository_url
+    "ecs-cluster-name"     = module.ecs.cluster_name
+    "ecs-service-name"     = module.ecs.service_name
+    "rds-address"          = module.rds.address
+    "rds-port"             = tostring(module.rds.port)
+    "elasticache-endpoint" = module.elasticache.endpoint
+    "elasticache-port"     = tostring(module.elasticache.port)
+    "nat-gateway-ip"       = module.networking.nat_gateway_public_ip
+  }
 }
 
 ################################################################################

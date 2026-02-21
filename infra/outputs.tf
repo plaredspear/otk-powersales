@@ -13,6 +13,11 @@ output "rds_endpoint" {
   value       = module.rds.endpoint
 }
 
+output "elasticache_endpoint" {
+  description = "ElastiCache Redis endpoint"
+  value       = module.elasticache.endpoint
+}
+
 output "alb_dns_name" {
   description = "ALB DNS name"
   value       = module.alb.alb_dns_name

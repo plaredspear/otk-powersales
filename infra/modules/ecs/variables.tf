@@ -67,6 +67,17 @@ variable "db_name" {
   type        = string
 }
 
+variable "redis_host" {
+  description = "Redis host"
+  type        = string
+}
+
+variable "redis_port" {
+  description = "Redis port"
+  type        = number
+  default     = 6379
+}
+
 variable "db_credentials_arn" {
   description = "Secrets Manager ARN for DB credentials"
   type        = string
