@@ -6,15 +6,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### 문서 관련
 - **프로젝트 가이드**: 이 CLAUDE.md 파일. 프로젝트의 최상위 규칙과 가이드라인.
-- **개발 로그**: `docs/execution/06-개발 로그/` 디렉토리의 날짜별 작업 기록
-- **기술 결정 문서**: `docs/execution/07-기술 결정/` 디렉토리의 기술적 의사결정 기록
 - **기존소스**: `docs/기존소스/` 디렉토리의 파일. 기존 시스템의 레퍼런스 소스코드.
 - **현재소스**: `backend/`, `mobile/` 디렉토리의 소스코드. 현재 개발 중인 실제 코드베이스.
 
 ### 작업 관련
 - **Feature (기능)**: 사용자에게 제공하는 하나의 독립적인 기능 단위 (예: 로그인, 홈화면, 주문현황)
-- **Part (파트)**: 플랫폼별 스펙을 한 세션에서 완료할 수 있는 크기로 분할한 작업 단위. 식별자: `<접두사><번호>-<플랫폼>-P<순번>` (예: F59-M-P1)
-- **Task (태스크)**: Part 내의 세부 작업. TodoWrite 도구로 관리됨
+- **Issue**: GitHub Issue. 스펙/요구사항의 단위. Issue 번호(`#42`)가 작업 식별자
+- **Part (파트)**: 하나의 Issue를 한 세션에서 완료할 수 있는 크기로 분할한 작업 단위. 식별자: `#<Issue번호>-P<순번>` (예: `#42-P1`)
+- **Task (태스크)**: Part 내의 세부 작업
 - **플랫폼 약어**: M (Mobile/Flutter), B (Backend/Spring Boot), W (Web/React)
 
 ---
@@ -88,6 +87,17 @@ otoki/                          # 워크스페이스 루트
 
 **IMPORTANT**: 작업 시작 시 사용자의 요청을 분석하여 적절한 모드의 가이드를 반드시 읽은 후 진행합니다.
 
+### 워크플로우 (GitHub Issue 기반)
+
+```
+1. 사용자가 스펙 작성 (/spec) + 리뷰 (/spec-review)
+2. 부모 Issue (전체 스펙) + Part Issue (Part별 스펙) 등록
+3. Part Issue에서 @claude 언급 → Claude Code Action 트리거
+4. Part별 구현 + 테스트 → PR 생성 (Part Issue 참조: "Closes #XX")
+5. PR merge → Part Issue 자동 close → 부모 Issue Task List 업데이트
+6. 모든 Part 완료 → 부모 Issue close → Feature 완료
+```
+
 ### 모드 판별 규칙
 
 | 사용자 요청 패턴 | 모드 | 로드할 가이드 |
@@ -96,14 +106,15 @@ otoki/                          # 워크스페이스 루트
 
 ### 모드별 역할
 
-- **구현 모드**: 승인된 스펙을 기반으로 코드 구현. 테스트 작성. Git 워크플로우 준수. 개발 로그 기록.
+- **구현 모드**: GitHub Issue의 스펙을 기반으로 코드 구현. 테스트 작성. PR 생성.
 
 ---
 
-## 4. 스펙 문서 규칙
+## 4. 스펙 관리 규칙
 
-- **완료된 스펙 수정 금지**: `docs/specs/completed/` 디렉토리의 스펙 문서는 읽기 전용이며 수정하지 않는다. 완료된 기능에 변경이 필요하면 새 번호의 독립 스펙을 생성한다.
-- **활성 스펙 수정 제한**: `docs/specs/` 내 활성 스펙도 원칙적으로 새 스펙 생성을 우선하며, 기존 스펙은 참조(읽기)만 한다. (상세: `.claude/guides/spec-mode.md`의 "기존 스펙 수정 금지 원칙")
+- **스펙은 GitHub Issue로 관리**: Issue 번호가 스펙 식별자. `docs/specs/` 파일은 생성하지 않음
+- **Issue 제목에 작업 유형 표기**: `[Feature] 매출현황`, `[Bug] 로그인 오류` 등 (또는 GitHub Labels 활용)
+- **완료된 Issue**: PR merge 시 자동 close
 
 ---
 
@@ -121,10 +132,7 @@ docs/
 │   ├── 02-화면 설계.md
 │   ├── 03-기술 스택.md
 │   └── 04-API 설계.md
-├── specs/                       # 스펙 문서 (spec-mode 가이드 참조)
 └── execution/                # 실행 및 작업 기록
-    ├── 06-개발 로그/            # 주차별 상세 작업 기록
-    ├── 07-기술 결정.md
     └── 08-프로젝트 관리 방법론.md
 ```
 
@@ -133,5 +141,6 @@ docs/
 | 문서 | 경로 | 모드 |
 |------|------|------|
 | 구현 가이드 | `.claude/guides/impl-mode.md` | 구현 |
-| Mobile 개발 가이드 | `MOBILE_DEV_GUIDE.md` (워크스페이스 루트) | 구현 (Flutter) |
-| Backend 개발 가이드 | `BACKEND_DEV_GUIDE.md` (워크스페이스 루트) | 구현 (Backend) |
+| Backend 컨벤션 | `.claude/guides/backend-conventions.md` | 구현 (Backend) |
+| Mobile 컨벤션 | `.claude/guides/mobile-conventions.md` | 구현 (Flutter) |
+| 스펙 리뷰 기준 | `.claude/guides/spec-review-criteria.md` | 스펙 리뷰 |
