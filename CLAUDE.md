@@ -27,36 +27,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Auth: 사번 + 비밀번호 로그인
 - Data Sources: Orora 영업 시스템, SAP, 대형마트 EDI
 
-### 저장소 구조 (Git Bare Repo + Worktree)
-
-Git bare repository를 활용하여 플랫폼별 브랜치를 독립 워크트리로 관리합니다.
+### 저장소 구조
 
 ```
-otoki/                          # 워크스페이스 루트
-├── .bare/                      # Git bare repository (core)
-├── main/                       # main 브랜치 워크트리
-│   ├── mobile/                 # Flutter app
-│   ├── backend/                # Spring Boot API
-│   ├── .claude -> ../.claude   # 공유 심볼릭 링크
-│   ├── CLAUDE.md -> ../CLAUDE.md
-│   └── docs -> ../docs
-├── mobile/                     # mobile 브랜치 워크트리 (모바일 전용 개발)
-├── backend/                    # backend 브랜치 워크트리 (백엔드 전용 개발)
-├── .claude/                    # Claude Code 설정 (모든 워크트리에서 공유)
+otoki/                          # 프로젝트 루트
+├── mobile/                     # Flutter app
+├── backend/                    # Spring Boot API
+├── .claude/                    # Claude Code 설정 (가이드, 커맨드)
 ├── docs/                       # 문서 디렉토리 (git 추적 대상 아님)
-├── CLAUDE.md                   # 이 파일 (모든 워크트리에서 심볼릭 링크로 공유)
-├── MOBILE_DEV_GUIDE.md         # Mobile 개발 가이드
-└── BACKEND_DEV_GUIDE.md        # Backend 개발 가이드
+└── CLAUDE.md                   # 이 파일
 ```
 
-**Git Worktree 목록**:
-- `main/` — `main` 브랜치: 전체 코드베이스 (mobile + backend)
-- `mobile/` — `mobile` 브랜치: 모바일 전용 개발
-- `backend/` — `backend` 브랜치: 백엔드 전용 개발
-
-**IMPORTANT**:
-- `docs/`, `.claude/`, `CLAUDE.md`, `CLAUDE.local.md`는 워크스페이스 루트에 위치하며, 각 워크트리에서 심볼릭 링크로 참조합니다.
-- 이들은 `.gitignore`에 의해 git 추적 대상에서 제외되므로, `git add`, `git commit` 대상에 포함하지 마세요.
+**IMPORTANT**: `docs/`는 `.gitignore`에 의해 git 추적 대상에서 제외됩니다.
 
 ### Tech Stack
 
