@@ -14,7 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Issue**: GitHub Issue. 스펙/요구사항의 단위. Issue 번호(`#42`)가 작업 식별자
 - **Part (파트)**: 하나의 Issue를 한 세션에서 완료할 수 있는 크기로 분할한 작업 단위. 식별자: `#<Issue번호>-P<순번>` (예: `#42-P1`)
 - **Task (태스크)**: Part 내의 세부 작업
-- **플랫폼 약어**: M (Mobile/Flutter), B (Backend/Spring Boot), W (Web/React)
+- **플랫폼 약어**: M (Mobile/Flutter), B (Backend/Spring Boot), W (Web/React), I (Infra/Terraform)
 
 ---
 
@@ -33,6 +33,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 otoki/                          # 프로젝트 루트
 ├── mobile/                     # Flutter app
 ├── backend/                    # Spring Boot API
+├── infra/                      # Terraform IaC (AWS)
 ├── .claude/                    # Claude Code 설정 (가이드, 커맨드)
 ├── docs/                       # 문서 디렉토리 (git 추적 대상 아님)
 └── CLAUDE.md                   # 이 파일
@@ -47,6 +48,7 @@ otoki/                          # 프로젝트 루트
 | **Mobile** | Flutter 3.x, Riverpod 2.0, Dio + Retrofit, fl_chart, Hive, flutter_secure_storage |
 | **Backend** | Spring Boot 3.x (Java/Kotlin), PostgreSQL, Redis, JWT, Firebase Admin SDK |
 | **Web** | React 18 + Vite + TypeScript, Zustand + TanStack Query, Ant Design, ECharts |
+| **Infra** | Terraform >= 1.11, AWS (VPC, ECS Fargate, RDS PostgreSQL, ElastiCache Redis, ALB, ECR, ACM/Route53) |
 
 ### 아키텍처
 - Clean Architecture (domain/data/presentation layers)

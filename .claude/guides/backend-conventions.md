@@ -314,3 +314,17 @@ class AuthControllerTest {
 ```
 
 **규칙**: `@WebMvcTest` + `addFilters = false` + `@MockitoBean` + JSON body는 `objectMapper` 또는 raw string
+
+---
+
+## 환경 변수 패턴
+
+### 규칙
+- 환경별 값: `${ENV_VAR:default}` 형식 (application-dev.yml, application-prod.yml)
+- 시크릿(비밀번호, API 키): `${ENV_VAR}` (default 없이, 누락 시 기동 실패)
+- 새 환경 변수 추가 시 `docker-compose.yml` environment 섹션도 함께 수정
+
+### Terraform 연계
+- ECS Task Definition의 환경 변수: `infra/modules/ecs/main.tf`의 `environment` 블록
+- Secrets Manager 시크릿: `infra/modules/secrets/main.tf` + ECS `secrets` 블록
+- 새 환경 변수가 인프라 변경을 수반하면 별도 Infra Issue 필요

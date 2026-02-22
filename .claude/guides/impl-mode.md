@@ -11,6 +11,7 @@
 | `mobile/**` | Flutter | `.claude/guides/mobile-conventions.md` |
 | `backend/**` | Backend | `.claude/guides/backend-conventions.md` |
 | `web/**` | Web | (추후 생성) |
+| `infra/**` | Terraform | (이 파일의 "Terraform 구현 체크리스트" 참조) |
 | `docs/**`, 기타 | 공통 | 테스트 불필요 |
 
 **IMPORTANT**: 컨텍스트별 컨벤션 문서를 반드시 읽고 패턴을 따르세요.
@@ -71,6 +72,7 @@ fix: 로그인 세션 만료 버그 수정 (#55)
 |--------|-----------|-----------|
 | Flutter | `cd mobile && flutter test test/<path>/<name>_test.dart --reporter compact 2>&1 \| tail -1` | `cd mobile && flutter test --reporter compact 2>&1 \| tail -1` |
 | Backend | `cd backend && ./gradlew test --tests "com.otoki.internal.<패키지>.<Name>Test"` | `cd backend && ./gradlew test` |
+| Terraform | `cd infra && terraform validate` | `cd infra && terraform fmt -check -recursive && terraform validate` |
 
 ### 테스트 실행 전략
 
@@ -94,6 +96,37 @@ fix: 로그인 세션 만료 버그 수정 (#55)
 - 실패 시: `flutter test --reporter expanded 2>&1 | grep -A 20 "FAIL"` → 원인 파악
 
 `flutter test` 전체 출력은 1300+ 라인이 되어 컨텍스트를 낭비합니다. 처음부터 전체 출력을 보지 마세요.
+
+---
+
+## Terraform 구현 체크리스트
+
+### 작업 절차
+1. `infra/` 디렉토리에서 작업
+2. 모듈 수정 시: 기존 모듈 구조(variables.tf / main.tf / outputs.tf) 유지
+3. 신규 모듈 시: 기존 모듈 패턴 참조 (변수명 규칙: `project`, `environment` 필수)
+
+### 검증 단계
+1. **포맷팅**: `terraform fmt -recursive` 실행
+2. **검증**: `terraform validate` 실행
+3. **Plan**: `make plan-dev` 실행 → 예상 변경 수와 스펙 일치 확인
+4. **Apply**: `make apply-dev` (사용자 승인 후에만)
+
+### 커밋 규칙
+- prefix: `infra:` (예: `infra: CloudWatch Alarm 모듈 추가 (#60)`)
+- `terraform.tfstate`, `secrets.tfvars`는 커밋 금지 (.gitignore 확인)
+
+### 변수 추가 시
+1. `infra/variables.tf`에 변수 선언
+2. `infra/envs/dev.tfvars`에 값 설정
+3. 시크릿이면 `secrets.tfvars`에 추가 (`.gitignore` 대상)
+4. `secrets.tfvars.example` 업데이트
+
+### 출력 추가 시
+1. 모듈 `outputs.tf`에 output 추가
+2. `infra/main.tf`에서 모듈 output 참조
+3. `infra/outputs.tf`에 root output 추가
+4. 필요 시 `ssm-outputs` 모듈에 파라미터 추가
 
 ---
 
