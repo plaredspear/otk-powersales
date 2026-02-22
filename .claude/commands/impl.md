@@ -26,7 +26,7 @@ runOn: project
 
 **로컬에서 직접 실행된 경우**:
 1. Issue 본문 읽기: `gh issue view <번호>`
-2. Feature 브랜치 생성: `feature/#<번호>-<설명>`
+2. Feature 브랜치 생성: `feature/<번호>-<설명>`
 3. 구현 → 테스트 → PR 생성
 
 ## 워크플로우

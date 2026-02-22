@@ -103,7 +103,7 @@ Prerequisites: #<선행PR번호> 또는 "None"
 ### Part PR 생성 예시
 
 ```bash
-git checkout -b feature/#42-P1-domain
+git checkout -b feature/42-P1-domain
 gh pr create --draft \
   --title "feat: 매출현황 도메인 레이어 (#42-P1)" \
   --body "Spec: #42
