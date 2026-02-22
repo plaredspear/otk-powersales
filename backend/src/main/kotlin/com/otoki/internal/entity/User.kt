@@ -9,17 +9,13 @@ import java.time.LocalDateTime
  *
  * 레거시 스키마 2개 테이블에 매핑:
  * - Primary: dkretail__employee__c (사원 마스터)
- * - Secondary: employee_mng (인증/기기 정보)
+ * - Secondary: employee_mng (인증/기기 정보) — @OneToOne 관계
+ *
+ * employee_mng 조인은 empcode__c = dkretail__empcode__c (non-PK 컬럼).
+ * JPA @SecondaryTable은 PK 기반 조인만 지원하므로, @OneToOne + delegate property로 구현.
  */
 @Entity
 @Table(name = "dkretail__employee__c")
-@SecondaryTable(
-    name = "employee_mng",
-    pkJoinColumns = [PrimaryKeyJoinColumn(
-        name = "empcode__c",
-        referencedColumnName = "dkretail__empcode__c"
-    )]
-)
 class User(
 
     @Id
@@ -83,32 +79,71 @@ class User(
     @Column(name = "_hc_err", columnDefinition = "TEXT")
     val hcErr: String? = null,
 
-    // --- Secondary Table: employee_mng ---
+    // --- Secondary Table (employee_mng) 필드: constructor param only (JPA 미매핑) ---
 
-    @Column(name = "emp_pwd", table = "employee_mng", length = 200)
-    var password: String,
-
-    @Column(name = "pwd_yn", table = "employee_mng")
-    var passwordChangeRequired: Boolean? = true,
-
-    @Column(name = "emp_uuid", table = "employee_mng", length = 200)
-    var deviceUuid: String? = null,
-
-    @Column(name = "emp_token", table = "employee_mng", length = 200)
-    var fcmToken: String? = null,
-
-    @Column(name = "gps_yn", table = "employee_mng")
-    val gpsYn: Boolean? = null,
-
-    @Column(name = "gps_yn_date", table = "employee_mng")
-    val gpsYnDate: LocalDateTime? = null,
-
-    @Column(name = "inst_date", table = "employee_mng")
-    val instDate: LocalDateTime? = null,
-
-    @Column(name = "upd_date", table = "employee_mng")
-    var updDate: LocalDateTime? = null
+    password: String = "",
+    passwordChangeRequired: Boolean? = true,
+    deviceUuid: String? = null,
+    fcmToken: String? = null
 ) {
+
+    // --- employee_mng @OneToOne 관계 ---
+
+    @OneToOne(cascade = [CascadeType.ALL], fetch = FetchType.EAGER, optional = true)
+    @JoinColumn(
+        name = "dkretail__empcode__c",
+        referencedColumnName = "empcode__c",
+        insertable = false,
+        updatable = false,
+        foreignKey = ForeignKey(ConstraintMode.NO_CONSTRAINT)
+    )
+    var employeeMng: EmployeeMng? = EmployeeMng(
+        empcode = employeeId,
+        password = password,
+        passwordChangeRequired = passwordChangeRequired,
+        deviceUuid = deviceUuid,
+        fcmToken = fcmToken
+    )
+
+    // --- Delegate properties (기존 인터페이스 유지) ---
+
+    var password: String
+        get() = employeeMng?.password ?: ""
+        set(value) { ensureEmployeeMng().password = value }
+
+    var passwordChangeRequired: Boolean?
+        get() = employeeMng?.passwordChangeRequired
+        set(value) { ensureEmployeeMng().passwordChangeRequired = value }
+
+    var deviceUuid: String?
+        get() = employeeMng?.deviceUuid
+        set(value) { ensureEmployeeMng().deviceUuid = value }
+
+    var fcmToken: String?
+        get() = employeeMng?.fcmToken
+        set(value) { ensureEmployeeMng().fcmToken = value }
+
+    val gpsYn: Boolean?
+        get() = employeeMng?.gpsYn
+
+    val gpsYnDate: LocalDateTime?
+        get() = employeeMng?.gpsYnDate
+
+    val instDate: LocalDateTime?
+        get() = employeeMng?.instDate
+
+    var updDate: LocalDateTime?
+        get() = employeeMng?.updDate
+        set(value) { ensureEmployeeMng().updDate = value }
+
+    private fun ensureEmployeeMng(): EmployeeMng {
+        if (employeeMng == null) {
+            employeeMng = EmployeeMng(empcode = employeeId)
+        }
+        return employeeMng!!
+    }
+
+    // --- Computed properties ---
 
     /**
      * role은 DB에 저장하지 않고 appAuthority로부터 도출하는 computed property
@@ -119,6 +154,8 @@ class User(
             "지점장" -> UserRole.ADMIN
             else -> UserRole.USER
         }
+
+    // --- Domain methods ---
 
     fun changePassword(newEncodedPassword: String) {
         this.password = newEncodedPassword
