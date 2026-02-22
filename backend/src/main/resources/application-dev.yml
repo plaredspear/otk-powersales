@@ -23,7 +23,7 @@ spring:
       port: ${REDIS_PORT:6379}
 
   flyway:
-    enabled: false
+    enabled: true
 
 jwt:
   secret: ${JWT_SECRET}
