@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 작업 관련
 - **Feature (기능)**: 사용자에게 제공하는 하나의 독립적인 기능 단위 (예: 로그인, 홈화면, 주문현황)
 - **Spec (스펙)**: `docs/specs/<번호>-<기능명>/` 폴더. 스펙/요구사항의 단위. 순차 번호가 작업 식별자
-- **Part (파트)**: 하나의 Spec을 한 세션에서 완료할 수 있는 크기로 분할한 작업 단위. 식별자: `<스펙번호>-P<순번>` (예: `1-P1`). 단일 Part면 분할 없이 spec.md 하나로 관리
+- **Part (파트)**: 하나의 Spec을 플랫폼별 또는 규모별로 분할한 작업 단위. 파일명: `P<순번>-<플랫폼>.md` (예: `P1-B.md`). 단일 플랫폼이면 `spec-B.md` 하나로 관리
 - **Task (태스크)**: Part 내의 세부 작업
 - **플랫폼 약어**: M (Mobile/Flutter), B (Backend/Spring Boot), W (Web/React), I (Infra/Terraform)
 
@@ -80,9 +80,9 @@ otoki/                          # 프로젝트 루트
 ### 워크플로우 (docs/specs/ 폴더 기반)
 
 ```
-1. 스펙 작성 (/spec) → docs/specs/<번호>-<기능명>/ 폴더에 spec.md 생성 (복수 Part면 P*.md도 생성)
+1. 스펙 작성 (/spec) → docs/specs/<번호>-<기능명>/ 폴더에 스펙 생성 (단일 플랫폼: spec-B.md, 복수 플랫폼: spec.md + P1-B.md + P2-M.md)
 2. AI 리뷰 (/spec-review) → 터미널에 리포트 출력
-3. 사용자 검토 → 승인 (spec.md 승인 이력 업데이트)
+3. 사용자 검토 → 승인 (승인 이력 업데이트)
 4. /impl → dev worktree에서 직접 구현 + 테스트 + 커밋
 5. /complete-task → main worktree에서 merge --no-ff → dev worktree rebase
 6. 완료 → docs/specs/completed/ 로 이동
@@ -117,7 +117,7 @@ git rebase main
 
 ## 4. 스펙 관리 규칙
 
-- **스펙은 `docs/specs/<번호>-<기능명>/`에 폴더로 관리**: 단일 Part → spec.md만, 복수 Part → spec.md + P*.md
+- **스펙은 `docs/specs/<번호>-<기능명>/`에 폴더로 관리**: 단일 플랫폼 → `spec-{P}.md`, 복수 플랫폼 → `spec.md` + `P<N>-{P}.md`. 모든 스펙 파일에 플랫폼 접미사 필수
 - **스펙 번호는 순차 부여**: `docs/specs/` + `docs/specs/completed/` 에서 최대 번호 + 1
 - **완료된 스펙**: 완료 시 `docs/specs/completed/`로 폴더 이동
 
@@ -138,10 +138,12 @@ docs/
 │   ├── 03-기술 스택.md
 │   └── 04-API 설계.md
 ├── specs/                # 스펙 폴더 (번호-기능명/ 구조)
-│   ├── 1-redis-config/   #   예시: 스펙 번호 1
+│   ├── 68-querydsl-setup/#   예시: 단일 플랫폼 스펙
+│   │   └── spec-B.md     #     Backend 단일 스펙
+│   ├── 62-gps-consent/   #   예시: 복수 플랫폼 스펙
 │   │   ├── spec.md       #     부모 스펙 + Part 체크리스트
-│   │   ├── P1.md         #     Part 1 자기 완결적 스펙
-│   │   └── P2.md         #     Part 2 자기 완결적 스펙
+│   │   ├── P1-B.md       #     Part 1: Backend
+│   │   └── P2-M.md       #     Part 2: Mobile
 │   └── completed/        #   완료된 스펙 폴더 이동 대상
 └── execution/                # 실행 및 작업 기록
     └── 08-프로젝트 관리 방법론.md
