@@ -7,16 +7,14 @@ class UserModel {
   final int id;
   final String employeeId;
   final String name;
-  final String department;
-  final String branchName;
+  final String? orgName;
   final String role;
 
   const UserModel({
     required this.id,
     required this.employeeId,
     required this.name,
-    required this.department,
-    required this.branchName,
+    this.orgName,
     required this.role,
   });
 
@@ -26,8 +24,7 @@ class UserModel {
       id: json['id'] as int,
       employeeId: json['employee_id'] as String,
       name: json['name'] as String,
-      department: json['department'] as String,
-      branchName: json['branch_name'] as String,
+      orgName: json['org_name'] as String?,
       role: json['role'] as String,
     );
   }
@@ -38,8 +35,7 @@ class UserModel {
       'id': id,
       'employee_id': employeeId,
       'name': name,
-      'department': department,
-      'branch_name': branchName,
+      'org_name': orgName,
       'role': role,
     };
   }
@@ -50,8 +46,7 @@ class UserModel {
       id: id,
       employeeId: employeeId,
       name: name,
-      department: department,
-      branchName: branchName,
+      orgName: orgName,
       role: role,
     );
   }
@@ -62,8 +57,7 @@ class UserModel {
       id: entity.id,
       employeeId: entity.employeeId,
       name: entity.name,
-      department: entity.department,
-      branchName: entity.branchName,
+      orgName: entity.orgName,
       role: entity.role,
     );
   }
@@ -75,8 +69,7 @@ class UserModel {
         other.id == id &&
         other.employeeId == employeeId &&
         other.name == name &&
-        other.department == department &&
-        other.branchName == branchName &&
+        other.orgName == orgName &&
         other.role == role;
   }
 
@@ -86,14 +79,13 @@ class UserModel {
       id,
       employeeId,
       name,
-      department,
-      branchName,
+      orgName,
       role,
     );
   }
 
   @override
   String toString() {
-    return 'UserModel(id: $id, employeeId: $employeeId, name: $name, department: $department, branchName: $branchName, role: $role)';
+    return 'UserModel(id: $id, employeeId: $employeeId, name: $name, orgName: $orgName, role: $role)';
   }
 }

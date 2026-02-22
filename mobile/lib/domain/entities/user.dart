@@ -10,11 +10,8 @@ class User {
   /// 이름
   final String name;
 
-  /// 부서
-  final String department;
-
-  /// 소속 지점명
-  final String branchName;
+  /// 소속 조직명 (nullable)
+  final String? orgName;
 
   /// 권한 (USER, LEADER, ADMIN)
   final String role;
@@ -23,8 +20,7 @@ class User {
     required this.id,
     required this.employeeId,
     required this.name,
-    required this.department,
-    required this.branchName,
+    this.orgName,
     required this.role,
   });
 
@@ -32,16 +28,15 @@ class User {
     int? id,
     String? employeeId,
     String? name,
-    String? department,
-    String? branchName,
+    String? orgName,
+    bool clearOrgName = false,
     String? role,
   }) {
     return User(
       id: id ?? this.id,
       employeeId: employeeId ?? this.employeeId,
       name: name ?? this.name,
-      department: department ?? this.department,
-      branchName: branchName ?? this.branchName,
+      orgName: clearOrgName ? null : (orgName ?? this.orgName),
       role: role ?? this.role,
     );
   }
@@ -51,8 +46,7 @@ class User {
       'id': id,
       'employeeId': employeeId,
       'name': name,
-      'department': department,
-      'branchName': branchName,
+      'orgName': orgName,
       'role': role,
     };
   }
@@ -62,8 +56,7 @@ class User {
       id: json['id'] as int,
       employeeId: json['employeeId'] as String,
       name: json['name'] as String,
-      department: json['department'] as String,
-      branchName: json['branchName'] as String,
+      orgName: json['orgName'] as String?,
       role: json['role'] as String,
     );
   }
@@ -75,8 +68,7 @@ class User {
         other.id == id &&
         other.employeeId == employeeId &&
         other.name == name &&
-        other.department == department &&
-        other.branchName == branchName &&
+        other.orgName == orgName &&
         other.role == role;
   }
 
@@ -86,14 +78,13 @@ class User {
       id,
       employeeId,
       name,
-      department,
-      branchName,
+      orgName,
       role,
     );
   }
 
   @override
   String toString() {
-    return 'User(id: $id, employeeId: $employeeId, name: $name, department: $department, branchName: $branchName, role: $role)';
+    return 'User(id: $id, employeeId: $employeeId, name: $name, orgName: $orgName, role: $role)';
   }
 }

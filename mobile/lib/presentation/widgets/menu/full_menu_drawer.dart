@@ -111,10 +111,9 @@ class FullMenuDrawer extends ConsumerWidget {
   /// 사용자 정보 문자열 생성
   String _buildUserInfo(dynamic user) {
     if (user == null) return '';
-    final parts = <String>[];
-    if (user.department.isNotEmpty) parts.add(user.department);
-    if (user.branchName.isNotEmpty) parts.add(user.branchName);
-    return parts.join(' / ');
+    final orgName = user.orgName as String?;
+    if (orgName != null && orgName.isNotEmpty) return orgName;
+    return '';
   }
 
   /// 메뉴 아이템 탭 핸들러
