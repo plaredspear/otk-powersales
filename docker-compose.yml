@@ -1,10 +1,26 @@
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: otoki-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
   backend:
     profiles: ["full"]
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: otoki-backend
+    depends_on:
+      redis:
+        condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
       DATABASE_URL: ${DATABASE_URL}
@@ -13,6 +29,11 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-3600000}
       JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-86400000}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     ports:
       - "8080:8080"
     restart: unless-stopped
+
+volumes:
+  redis-data:

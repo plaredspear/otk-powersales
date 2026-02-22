@@ -16,6 +16,13 @@ spring:
     init:
       mode: never  # Prevent data.sql from running in tests
 
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+  data:
+    redis:
+      repositories:
+        enabled: false
+
 logging:
   level:
     org.hibernate.SQL: DEBUG

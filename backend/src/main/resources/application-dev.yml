@@ -17,6 +17,11 @@ spring:
       hibernate:
         default_schema: salesforce2
 
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+
   flyway:
     enabled: false
 
