@@ -42,7 +42,8 @@ otoki/                          # 프로젝트 루트
 │   ├── docs/                   #   문서 디렉토리 (git 추적 대상 아님)
 │   └── CLAUDE.md               #   이 파일
 ├── backend-dev/                # [backend-dev] Backend 개발 worktree
-└── mobile-dev/                 # [mobile-dev] Mobile 개발 worktree
+├── mobile-dev/                 # [mobile-dev] Mobile 개발 worktree
+└── docs-spec/                  # [docs-spec] 스펙/문서 작업 worktree
 ```
 
 **IMPORTANT**: `docs/`는 `.gitignore`에 의해 git 추적 대상에서 제외됩니다.
