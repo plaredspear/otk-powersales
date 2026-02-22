@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 작업 관련
 - **Feature (기능)**: 사용자에게 제공하는 하나의 독립적인 기능 단위 (예: 로그인, 홈화면, 주문현황)
 - **Spec (스펙)**: `docs/specs/<번호>-<기능명>/` 폴더. 스펙/요구사항의 단위. 순차 번호가 작업 식별자
-- **Part (파트)**: 하나의 Spec을 한 세션에서 완료할 수 있는 크기로 분할한 작업 단위. 식별자: `<스펙번호>-P<순번>` (예: `1-P1`)
+- **Part (파트)**: 하나의 Spec을 한 세션에서 완료할 수 있는 크기로 분할한 작업 단위. 식별자: `<스펙번호>-P<순번>` (예: `1-P1`). 단일 Part면 분할 없이 spec.md 하나로 관리
 - **Task (태스크)**: Part 내의 세부 작업
 - **플랫폼 약어**: M (Mobile/Flutter), B (Backend/Spring Boot), W (Web/React), I (Infra/Terraform)
 
@@ -80,25 +80,27 @@ otoki/                          # 프로젝트 루트
 ### 워크플로우 (docs/specs/ 폴더 기반)
 
 ```
-1. 스펙 작성 (/spec) → docs/specs/<번호>-<기능명>/ 폴더에 spec.md + P*.md 생성
+1. 스펙 작성 (/spec) → docs/specs/<번호>-<기능명>/ 폴더에 spec.md 생성 (복수 Part면 P*.md도 생성)
 2. AI 리뷰 (/spec-review) → 터미널에 리포트 출력
 3. 사용자 검토 → 승인 (spec.md 승인 이력 업데이트)
-4. Part별 Feature 브랜치 생성 (feature/<번호>-P<파트>-<설명>)
+4. Feature 브랜치 생성 (단일 Part: feature/<번호>-<설명>, 복수 Part: feature/<번호>-P<N>-<설명>)
 5. /impl → 구현 + 테스트 + 커밋
 6. /complete-task → main에 로컬 merge --no-ff
-7. spec.md Part 체크리스트 업데이트
-8. 모든 Part 완료 → docs/specs/completed/ 로 이동
+7. 완료 → docs/specs/completed/ 로 이동
 ```
 
 ### 브랜치 & 머지 예시
 
 ```bash
-# 브랜치 생성
+# 단일 Part
+git checkout -b feature/64-entity-schema-align
+
+# 복수 Part
 git checkout -b feature/1-P1-redis-config
 
 # 구현 완료 후 main에 머지
 git checkout main
-git merge --no-ff feature/1-P1-redis-config -m "feat(backend): Redis 설정 (1-P1)"
+git merge --no-ff feature/64-entity-schema-align -m "refactor(backend): User 엔티티 레거시 스키마 정렬 (64)"
 ```
 
 ### 모드 판별 규칙
@@ -115,9 +117,9 @@ git merge --no-ff feature/1-P1-redis-config -m "feat(backend): Redis 설정 (1-P
 
 ## 4. 스펙 관리 규칙
 
-- **스펙은 `docs/specs/<번호>-<기능명>/`에 폴더로 관리**: spec.md (부모 스펙 + Part 체크리스트) + P1.md, P2.md (파트별 자기 완결적 스펙)
+- **스펙은 `docs/specs/<번호>-<기능명>/`에 폴더로 관리**: 단일 Part → spec.md만, 복수 Part → spec.md + P*.md
 - **스펙 번호는 순차 부여**: `docs/specs/` + `docs/specs/completed/` 에서 최대 번호 + 1
-- **완료된 스펙**: 모든 Part 완료 시 `docs/specs/completed/`로 폴더 이동
+- **완료된 스펙**: 완료 시 `docs/specs/completed/`로 폴더 이동
 
 ---
 
