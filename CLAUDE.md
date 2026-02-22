@@ -83,24 +83,24 @@ otoki/                          # 프로젝트 루트
 1. 스펙 작성 (/spec) → docs/specs/<번호>-<기능명>/ 폴더에 spec.md 생성 (복수 Part면 P*.md도 생성)
 2. AI 리뷰 (/spec-review) → 터미널에 리포트 출력
 3. 사용자 검토 → 승인 (spec.md 승인 이력 업데이트)
-4. Feature 브랜치 생성 (단일 Part: feature/<번호>-<설명>, 복수 Part: feature/<번호>-P<N>-<설명>)
-5. /impl → 구현 + 테스트 + 커밋
-6. /complete-task → main에 로컬 merge --no-ff
-7. 완료 → docs/specs/completed/ 로 이동
+4. /impl → dev worktree에서 직접 구현 + 테스트 + 커밋
+5. /complete-task → main worktree에서 merge --no-ff → dev worktree rebase
+6. 완료 → docs/specs/completed/ 로 이동
 ```
 
-### 브랜치 & 머지 예시
+### 머지 예시
+
+각 dev worktree 브랜치에서 직접 작업하고, main worktree에서 머지합니다.
+별도 feature 브랜치는 만들지 않습니다 (worktree가 격리 역할을 대체).
 
 ```bash
-# 단일 Part
-git checkout -b feature/64-entity-schema-align
+# main worktree에서 머지
+cd /path/to/main
+git merge --no-ff backend-dev -m "refactor(backend): User 엔티티 레거시 스키마 정렬 (64)"
 
-# 복수 Part
-git checkout -b feature/1-P1-redis-config
-
-# 구현 완료 후 main에 머지
-git checkout main
-git merge --no-ff feature/64-entity-schema-align -m "refactor(backend): User 엔티티 레거시 스키마 정렬 (64)"
+# dev worktree로 돌아와서 main 동기화
+cd /path/to/backend-dev
+git rebase main
 ```
 
 ### 모드 판별 규칙
