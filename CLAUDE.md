@@ -79,9 +79,9 @@ otoki/                          # 프로젝트 루트
 3. 사용자 검토 → 승인 또는 수정
 4. 부모 Issue 등록 (전체 스펙 + Part 체크리스트)
 5. Part별 Feature 브랜치 + Draft PR 생성 (로컬에서 `gh pr create`)
-   - PR 본문: 부모 Issue 참조 + Part 범위 요약 + @claude
-6. Claude Code Action 자동 실행 → 구현 → Push
-7. PR 리뷰 댓글로 피드백 → @claude 수정 지시 → 반복
+   - PR 본문: 부모 Issue 참조 + Part 범위 요약
+6. PR 리뷰 코멘트에 `@claude` → Claude Code Action 실행 → 구현 → Push
+7. PR 리뷰 코멘트로 피드백 → @claude 수정 지시 → 반복
 8. Ready for Review → Merge → 부모 Issue 체크리스트 업데이트
 9. 모든 Part 완료 → 부모 Issue close
 ```
@@ -98,8 +98,6 @@ Prerequisites: #<선행PR번호> 또는 "None"
 
 ### Files
 [대상 파일 목록]
-
-@claude 위 스펙을 기반으로 구현을 시작해주세요.
 ```
 
 ### Part PR 생성 예시
@@ -114,9 +112,8 @@ Prerequisites: None
 
 ### Scope
 - Entity, Repository 인터페이스
-- UseCase 구현
-
-@claude Spec #42의 P1 범위를 구현해주세요."
+- UseCase 구현"
+# PR 생성 후 리뷰 코멘트에 @claude 를 달아 구현 트리거
 ```
 
 ### 모드 판별 규칙
