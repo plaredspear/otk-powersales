@@ -9,7 +9,7 @@
 | 작업 경로 | 컨텍스트 | 필독 컨벤션 |
 |----------|----------|------------|
 | `mobile/**` | Flutter | `.claude/guides/mobile-conventions.md` |
-| `backend/**` | Backend | `.claude/guides/backend-conventions.md` |
+| `backend/**` | Backend | `.claude/guides/backend-conventions.md` + `backend/ARCHITECTURE.md` |
 | `web/**` | Web | (추후 생성) |
 | `infra/**` | Terraform | (이 파일의 "Terraform 구현 체크리스트" 참조) |
 | `docs/**`, 기타 | 공통 | 테스트 불필요 |
