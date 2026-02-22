@@ -49,10 +49,10 @@ model: sonnet
 - **NEEDS_WORK**: FAIL 2건 이하 또는 WARN 3건 이상
 - **NOT_READY**: FAIL 3건 이상
 
-### 5. Part Issue 본문 초안 생성 (READY 판정 시)
+### 5. Part 파일 초안 생성 (READY 판정 시)
 
-종합 판정이 READY인 경우, Part Issue 본문 초안을 함께 생성합니다:
-- 스펙의 Part 분할 계획을 기반으로 각 Part의 Issue 본문 초안 작성
+종합 판정이 READY인 경우, Part 파일 초안을 함께 생성합니다:
+- 스펙의 Part 분할 계획을 기반으로 각 Part 파일 초안 작성
 - 각 Part는 자기 완결적이어야 함 (공유 데이터 모델은 각 Part에 복사)
 
 ---
@@ -61,4 +61,4 @@ model: sonnet
 
 리뷰 기준 문서의 "리포트 출력 형식"에 따라 리포트를 작성하여 반환합니다.
 
-READY 판정 시에는 리포트 뒤에 Part Issue 본문 초안도 함께 반환합니다.
+READY 판정 시에는 리포트 뒤에 Part 파일 초안도 함께 반환합니다.

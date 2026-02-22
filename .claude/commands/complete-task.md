@@ -36,9 +36,9 @@ runOn: project
 
 | work_type | 태그 형식 | 예시 |
 |-----------|---------|------|
-| Feature | `#개발로그 #<work_id> #<platform> #<기술키워드들>` | `#개발로그 #F59 #Mobile #알림 #Riverpod` |
-| System | `#개발로그 #<work_id> #<기술키워드들>` | `#개발로그 #S001 #Docker #Backend #인프라` |
-| Bug | `#개발로그 #<work_id> #<기술키워드들>` | `#개발로그 #B001 #로그인 #버그수정` |
+| Feature | `#개발로그 #<work_id> #<platform> #<기술키워드들>` | `#개발로그 #1-P1 #Mobile #알림 #Riverpod` |
+| System | `#개발로그 #<work_id> #<기술키워드들>` | `#개발로그 #1-P1 #Docker #Backend #인프라` |
+| Bug | `#개발로그 #<work_id> #<기술키워드들>` | `#개발로그 #2-P1 #로그인 #버그수정` |
 | 기타 | `#개발로그 #<work_id> #<기술키워드들>` | 동일 패턴 |
 
 ---
@@ -52,7 +52,7 @@ runOn: project
 | 변수명 | 설명 | 예시 |
 |--------|------|------|
 | `work_type` | Feature, Bug, Refactor, Hotfix, System, Docs 중 하나 | Feature |
-| `work_id` | 작업 식별자 | F59, B63, R60, H65, S61, D66 |
+| `work_id` | 작업 식별자 (스펙번호-파트) | 1-P1, 2-P3, S001, D001 |
 | `platform` | M (Mobile), B (Backend), W (Web) - **Feature인 경우만** | M |
 | `title` | 작업 제목 (한국어, 간결하게) | 로그인 UI 구현 |
 | `work_path` | 작업 경로 (테스트 컨텍스트 판단용) | apps/mobile/ |
@@ -126,12 +126,12 @@ runOn: project
 
 | work_type | 예시 |
 |-----------|------|
-| Feature | `feat(mobile): 알림 UI 구현 (F59)` |
-| Bug | `fix: 로그인 세션 만료 버그 수정 (B001)` |
-| Refactor | `refactor: Repository 구조 개선 (R001)` |
-| Hotfix | `fix: [HOTFIX] 프로덕션 크래시 수정 (H001)` |
-| System | `build: Backend Docker 환경 구성 (S001)` |
-| Docs | `docs: API 스펙 문서화 (D001)` |
+| Feature | `feat(mobile): 알림 UI 구현 (1-P1)` |
+| Bug | `fix: 로그인 세션 만료 버그 수정 (2-P1)` |
+| Refactor | `refactor: Repository 구조 개선 (3-P1)` |
+| Hotfix | `fix: [HOTFIX] 프로덕션 크래시 수정 (4-P1)` |
+| System | `build: Backend Docker 환경 구성 (1-P1)` |
+| Docs | `docs: API 스펙 문서화 (5-P1)` |
 
 ### 커밋 실행
 
@@ -154,6 +154,28 @@ EOF
 ```
 
 커밋 후 `git log -1 --format='%h'`로 commit hash를 기록합니다.
+
+---
+
+## Phase 3.5: Main 머지
+
+Feature 브랜치의 작업을 main에 로컬 머지합니다.
+
+```bash
+git checkout main
+git merge --no-ff <feature-branch> -m "<prefix> <설명적 제목> (<work_id>)"
+```
+
+예시:
+```bash
+git checkout main
+git merge --no-ff feature/1-P1-redis-config -m "feat(backend): Redis 설정 (1-P1)"
+```
+
+머지 완료 후 (선택) Feature 브랜치 삭제:
+```bash
+git branch -d <feature-branch>
+```
 
 ---
 
@@ -196,8 +218,9 @@ Task 도구 호출 시 다음 정보를 prompt에 포함합니다:
 
 1. **개발 로그 파일 생성** - `docs/execution/06-개발 로그/<주차>/` 에 로그 파일 생성
 2. **00-INDEX.md 업데이트** - 주차별 테이블, 작업 유형별 인덱스, 통계 갱신
-3. **스펙 파일 처리** (Feature/System만) - 구현 결과 작성, 상태 업데이트, 완료 이동
-4. **기획문서 페이지 인덱스 완료 여부 업데이트** (Feature만) - `docs/specs/기획문서-페이지-인덱스.md`의 전체 페이지 인덱스에서 해당 Feature 관련 페이지의 완료 열 갱신 (P: 부분 완료, V: 완료)
+3. **spec.md Part 체크리스트 업데이트** - 완료된 Part의 `- [ ]`를 `- [x]`로 변경
+4. **모든 Part 완료 시** - `docs/specs/<번호>-<기능명>/` 폴더를 `docs/specs/completed/`로 이동
+5. **기획문서 페이지 인덱스 완료 여부 업데이트** (Feature만) - `docs/specs/기획문서-페이지-인덱스.md`의 전체 페이지 인덱스에서 해당 Feature 관련 페이지의 완료 열 갱신 (P: 부분 완료, V: 완료)
 
 상세 로직은 `.claude/agents/task-completion.md` 참조.
 

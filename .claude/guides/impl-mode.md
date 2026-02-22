@@ -1,6 +1,6 @@
 # 구현 모드 가이드
 
-이 가이드는 GitHub Issue에 작성된 스펙을 기반으로 코드를 구현할 때 적용됩니다.
+이 가이드는 `docs/specs/` 폴더에 작성된 스펙을 기반으로 코드를 구현할 때 적용됩니다.
 
 ---
 
@@ -18,11 +18,13 @@
 
 ---
 
-## Issue 기반 스펙 읽기
+## Docs 기반 스펙 읽기
 
-1. `gh issue view <번호>`로 Issue 본문 확인
-2. Issue 본문에서 구현할 기능, API 설계, 비즈니스 규칙 파악
-3. Part 분할이 명시된 경우 해당 Part만 구현
+1. 현재 브랜치명에서 스펙번호/파트 추출: `feature/<번호>-P<파트>-<설명>` 패턴
+2. `docs/specs/`에서 `<번호>-*` 폴더 탐색
+3. `P<파트>.md` 읽기 (구현 대상 Part 스펙)
+4. `spec.md` 읽기 (전체 컨텍스트 참조)
+5. Part 스펙에서 구현할 기능, API 설계, 비즈니스 규칙 파악
 
 ---
 
@@ -31,8 +33,8 @@
 ### 1. 브랜치 생성
 
 ```
-feature/<Issue번호>-<간단한설명>   (예: feature/42-매출현황)
-fix/<Issue번호>-<간단한설명>       (예: fix/55-로그인오류)
+feature/<스펙번호>-P<파트번호>-<간단한설명>   (예: feature/1-P1-redis-config)
+fix/<스펙번호>-P<파트번호>-<간단한설명>       (예: fix/2-P1-login-bug)
 ```
 
 ### 2. Task 단위 구현 + 커밋
@@ -42,18 +44,18 @@ fix/<Issue번호>-<간단한설명>       (예: fix/55-로그인오류)
 2. 전체 테스트 실행 → regression 확인
 3. 자동 커밋
 
-**커밋 메시지**: Conventional Commits + Issue 번호
+**커밋 메시지**: Conventional Commits + 스펙번호-파트
 ```
-feat(mobile): 매출현황 목록 조회 (#42)
-fix: 로그인 세션 만료 버그 수정 (#55)
+feat(mobile): 매출현황 목록 조회 (1-P1)
+fix: 로그인 세션 만료 버그 수정 (2-P1)
 ```
 
-### 3. PR 생성
+### 3. 완료 처리
 
 모든 Task 완료 후:
-- 제목: `feat(mobile): 매출현황 목록 조회 (Closes #42)`
-- 본문: 구현 내용 요약 + 테스트 결과
-- `Closes #<Issue번호>`로 자동 close 연결
+1. `/complete-task` 실행
+2. main에 로컬 `git merge --no-ff` 머지
+3. spec.md Part 체크리스트 업데이트 (`- [ ]` → `- [x]`)
 
 **예외**: 스펙 규모가 작아 소스 파일 10개 이하인 경우, Part를 분할하지 않고 한 번에 처리합니다.
 
@@ -113,7 +115,7 @@ fix: 로그인 세션 만료 버그 수정 (#55)
 4. **Apply**: `make apply-dev` (사용자 승인 후에만)
 
 ### 커밋 규칙
-- prefix: `infra:` (예: `infra: CloudWatch Alarm 모듈 추가 (#60)`)
+- prefix: `infra:` (예: `infra: CloudWatch Alarm 모듈 추가 (3-P1)`)
 - `terraform.tfstate`, `secrets.tfvars`는 커밋 금지 (.gitignore 확인)
 
 ### 변수 추가 시

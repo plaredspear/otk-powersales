@@ -11,8 +11,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### 작업 관련
 - **Feature (기능)**: 사용자에게 제공하는 하나의 독립적인 기능 단위 (예: 로그인, 홈화면, 주문현황)
-- **Issue**: GitHub Issue. 스펙/요구사항의 단위. Issue 번호(`#42`)가 작업 식별자
-- **Part (파트)**: 하나의 Issue를 한 세션에서 완료할 수 있는 크기로 분할한 작업 단위. 식별자: `#<Issue번호>-P<순번>` (예: `#42-P1`)
+- **Spec (스펙)**: `docs/specs/<번호>-<기능명>/` 폴더. 스펙/요구사항의 단위. 순차 번호가 작업 식별자
+- **Part (파트)**: 하나의 Spec을 한 세션에서 완료할 수 있는 크기로 분할한 작업 단위. 식별자: `<스펙번호>-P<순번>` (예: `1-P1`)
 - **Task (태스크)**: Part 내의 세부 작업
 - **플랫폼 약어**: M (Mobile/Flutter), B (Backend/Spring Boot), W (Web/React), I (Infra/Terraform)
 
@@ -71,49 +71,28 @@ otoki/                          # 프로젝트 루트
 
 **IMPORTANT**: 작업 시작 시 사용자의 요청을 분석하여 적절한 모드의 가이드를 반드시 읽은 후 진행합니다.
 
-### 워크플로우 (GitHub Issue + PR 기반)
+### 워크플로우 (docs/specs/ 폴더 기반)
 
 ```
-1. 스펙 작성 (/spec) → docs/specs/ 에 .md 파일로 저장
+1. 스펙 작성 (/spec) → docs/specs/<번호>-<기능명>/ 폴더에 spec.md + P*.md 생성
 2. AI 리뷰 (/spec-review) → 터미널에 리포트 출력
-3. 사용자 검토 → 승인 또는 수정
-4. 부모 Issue 등록 (전체 스펙 + Part 체크리스트)
-5. Part별 Feature 브랜치 + Draft PR 생성 (로컬에서 `gh pr create`)
-   - PR 본문: 부모 Issue 참조 + Part 범위 요약
-6. PR 리뷰 코멘트에 `@claude` → Claude Code Action 실행 → 구현 → Push
-7. PR 리뷰 코멘트로 피드백 → @claude 수정 지시 → 반복
-8. Ready for Review → Merge → 부모 Issue 체크리스트 업데이트
-9. 모든 Part 완료 → 부모 Issue close
+3. 사용자 검토 → 승인 (spec.md 승인 이력 업데이트)
+4. Part별 Feature 브랜치 생성 (feature/<번호>-P<파트>-<설명>)
+5. /impl → 구현 + 테스트 + 커밋
+6. /complete-task → main에 로컬 merge --no-ff
+7. spec.md Part 체크리스트 업데이트
+8. 모든 Part 완료 → docs/specs/completed/ 로 이동
 ```
 
-### Part PR 본문 형식
-
-```markdown
-Spec: #<부모Issue번호>
-Part: P<순번>/<총Part수>
-Prerequisites: #<선행PR번호> 또는 "None"
-
-### Scope
-[이 Part에서 구현할 내용 - 부모 Issue 스펙에서 해당 부분만 발췌/요약]
-
-### Files
-[대상 파일 목록]
-```
-
-### Part PR 생성 예시
+### 브랜치 & 머지 예시
 
 ```bash
-git checkout -b feature/42-P1-domain
-gh pr create --draft \
-  --title "feat: 매출현황 도메인 레이어 (#42-P1)" \
-  --body "Spec: #42
-Part: P1/3
-Prerequisites: None
+# 브랜치 생성
+git checkout -b feature/1-P1-redis-config
 
-### Scope
-- Entity, Repository 인터페이스
-- UseCase 구현"
-# PR 생성 후 리뷰 코멘트에 @claude 를 달아 구현 트리거
+# 구현 완료 후 main에 머지
+git checkout main
+git merge --no-ff feature/1-P1-redis-config -m "feat(backend): Redis 설정 (1-P1)"
 ```
 
 ### 모드 판별 규칙
@@ -124,15 +103,15 @@ Prerequisites: None
 
 ### 모드별 역할
 
-- **구현 모드**: GitHub Issue의 스펙을 기반으로 코드 구현. 테스트 작성. PR 생성.
+- **구현 모드**: docs/specs/ 폴더의 스펙을 기반으로 코드 구현. 테스트 작성. main 머지.
 
 ---
 
 ## 4. 스펙 관리 규칙
 
-- **스펙은 `docs/specs/`에 .md 파일로 작성** 후 사람 리뷰를 거쳐 **GitHub Issue로 등록**: Issue 번호가 최종 스펙 식별자
-- **Issue 제목에 작업 유형 표기**: `[Feature] 매출현황`, `[Bug] 로그인 오류` 등 (또는 GitHub Labels 활용)
-- **완료된 Issue**: PR merge 시 자동 close
+- **스펙은 `docs/specs/<번호>-<기능명>/`에 폴더로 관리**: spec.md (부모 스펙 + Part 체크리스트) + P1.md, P2.md (파트별 자기 완결적 스펙)
+- **스펙 번호는 순차 부여**: `docs/specs/` + `docs/specs/completed/` 에서 최대 번호 + 1
+- **완료된 스펙**: 모든 Part 완료 시 `docs/specs/completed/`로 폴더 이동
 
 ---
 
@@ -150,7 +129,12 @@ docs/
 │   ├── 02-화면 설계.md
 │   ├── 03-기술 스택.md
 │   └── 04-API 설계.md
-├── specs/                # 스펙 파일 (사람 리뷰용, Issue 등록 전 단계)
+├── specs/                # 스펙 폴더 (번호-기능명/ 구조)
+│   ├── 1-redis-config/   #   예시: 스펙 번호 1
+│   │   ├── spec.md       #     부모 스펙 + Part 체크리스트
+│   │   ├── P1.md         #     Part 1 자기 완결적 스펙
+│   │   └── P2.md         #     Part 2 자기 완결적 스펙
+│   └── completed/        #   완료된 스펙 폴더 이동 대상
 └── execution/                # 실행 및 작업 기록
     └── 08-프로젝트 관리 방법론.md
 ```
