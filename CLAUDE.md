@@ -74,12 +74,14 @@ otoki/                          # 프로젝트 루트
 ### 워크플로우 (GitHub Issue 기반)
 
 ```
-1. 사용자가 스펙 작성 (/spec) + 리뷰 (/spec-review)
-2. 부모 Issue (전체 스펙) + Part Issue (Part별 스펙) 등록
-3. Part Issue에서 @claude 언급 → Claude Code Action 트리거
-4. Part별 구현 + 테스트 → PR 생성 (Part Issue 참조: "Closes #XX")
-5. PR merge → Part Issue 자동 close → 부모 Issue Task List 업데이트
-6. 모든 Part 완료 → 부모 Issue close → Feature 완료
+1. 스펙 작성 (/spec) → docs/specs/ 에 .md 파일로 저장
+2. AI 리뷰 (/spec-review) → 터미널에 리포트 출력
+3. 사용자가 스펙 파일을 에디터에서 확인 → 터미널에서 승인 또는 수정 요청
+4. 승인 시: 부모 Issue + Part Issue 등록
+5. Part Issue에서 @claude 언급 → Claude Code Action 트리거
+6. Part별 구현 + 테스트 → PR 생성 (Part Issue 참조: "Closes #XX")
+7. PR merge → Part Issue 자동 close → 부모 Issue Task List 업데이트
+8. 모든 Part 완료 → 부모 Issue close → Feature 완료
 ```
 
 ### 모드 판별 규칙
@@ -96,7 +98,7 @@ otoki/                          # 프로젝트 루트
 
 ## 4. 스펙 관리 규칙
 
-- **스펙은 GitHub Issue로 관리**: Issue 번호가 스펙 식별자. `docs/specs/` 파일은 생성하지 않음
+- **스펙은 `docs/specs/`에 .md 파일로 작성** 후 사람 리뷰를 거쳐 **GitHub Issue로 등록**: Issue 번호가 최종 스펙 식별자
 - **Issue 제목에 작업 유형 표기**: `[Feature] 매출현황`, `[Bug] 로그인 오류` 등 (또는 GitHub Labels 활용)
 - **완료된 Issue**: PR merge 시 자동 close
 
@@ -116,6 +118,7 @@ docs/
 │   ├── 02-화면 설계.md
 │   ├── 03-기술 스택.md
 │   └── 04-API 설계.md
+├── specs/                # 스펙 파일 (사람 리뷰용, Issue 등록 전 단계)
 └── execution/                # 실행 및 작업 기록
     └── 08-프로젝트 관리 방법론.md
 ```
