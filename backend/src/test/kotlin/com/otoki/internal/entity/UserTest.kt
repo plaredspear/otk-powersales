@@ -168,4 +168,16 @@ class UserTest {
         assertThat(leader.role).isEqualTo(UserRole.LEADER)
         assertThat(admin.role).isEqualTo(UserRole.ADMIN)
     }
+
+    @Test
+    @DisplayName("매핑 테이블에 없는 appAuthority 값은 USER로 폴백된다")
+    fun role_UnknownAppAuthority_FallsBackToUser() {
+        // given & when
+        val unknownRole = createTestUser(appAuthority = "대리")
+        val emptyRole = createTestUser(appAuthority = "")
+
+        // then
+        assertThat(unknownRole.role).isEqualTo(UserRole.USER)
+        assertThat(emptyRole.role).isEqualTo(UserRole.USER)
+    }
 }
