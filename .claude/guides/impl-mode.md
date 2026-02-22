@@ -30,6 +30,32 @@
 
 ## 작업 워크플로우
 
+### 0. 사전 점검 (구현 시작 전 필수)
+
+**IMPORTANT**: 아래 점검을 통과해야만 구현을 시작합니다. 실패 시 작업을 중단하고 사용자에게 알립니다.
+
+**Step 1: Working tree 상태 확인**
+```bash
+git status --porcelain
+```
+- 출력이 비어있으면 → Step 2로 진행
+- unstaged/staged 파일이 존재하면 → **구현 시작 금지**, 사용자에게 알림:
+  ```
+  ⚠️ 구현을 시작할 수 없습니다.
+
+  Working tree에 uncommitted 변경사항이 있습니다:
+  [파일 목록]
+
+  커밋 또는 stash 후 다시 시도해주세요.
+  ```
+
+**Step 2: main 브랜치 동기화**
+```bash
+git rebase main
+```
+- 성공 → Step 3(브랜치 생성)으로 진행
+- 충돌 발생 → `git rebase --abort` 실행 후 사용자에게 충돌 내역 알림, 구현 중단
+
 ### 1. 브랜치 생성
 
 ```
