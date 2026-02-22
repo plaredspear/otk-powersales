@@ -20,11 +20,10 @@
 
 ## Docs 기반 스펙 읽기
 
-1. 현재 브랜치명에서 스펙번호/파트 추출: `feature/<번호>-P<파트>-<설명>` 패턴
+1. 사용자 입력에서 스펙번호(+파트) 추출 (예: `스펙 64 구현`, `/impl 1-P1`)
 2. `docs/specs/`에서 `<번호>-*` 폴더 탐색
-3. `P<파트>.md` 읽기 (구현 대상 Part 스펙)
-4. `spec.md` 읽기 (전체 컨텍스트 참조)
-5. Part 스펙에서 구현할 기능, API 설계, 비즈니스 규칙 파악
+3. 단일 Part → `spec.md` 읽기, 복수 Part → `P<파트>.md` + `spec.md` 읽기
+4. 스펙에서 구현할 기능, API 설계, 비즈니스 규칙 파악
 
 ---
 
@@ -53,17 +52,10 @@ git status --porcelain
 ```bash
 git rebase main
 ```
-- 성공 → Step 3(브랜치 생성)으로 진행
+- 성공 → 구현 시작
 - 충돌 발생 → `git rebase --abort` 실행 후 사용자에게 충돌 내역 알림, 구현 중단
 
-### 1. 브랜치 생성
-
-```
-feature/<스펙번호>-P<파트번호>-<간단한설명>   (예: feature/1-P1-redis-config)
-fix/<스펙번호>-P<파트번호>-<간단한설명>       (예: fix/2-P1-login-bug)
-```
-
-### 2. Task 단위 구현 + 커밋
+### 1. Task 단위 구현 + 커밋
 
 각 Task 완료 시:
 1. 대응 테스트 실행 → 통과 확인
@@ -76,12 +68,13 @@ feat(mobile): 매출현황 목록 조회 (1-P1)
 fix: 로그인 세션 만료 버그 수정 (2-P1)
 ```
 
-### 3. 완료 처리
+### 2. 완료 처리
 
 모든 Task 완료 후:
 1. `/complete-task` 실행
-2. main에 로컬 `git merge --no-ff` 머지
-3. spec.md Part 체크리스트 업데이트 (`- [ ]` → `- [x]`)
+2. main worktree에서 `git merge --no-ff <dev-branch>` 머지
+3. dev worktree에서 `git rebase main` 동기화
+4. spec.md Part 체크리스트 업데이트 (`- [ ]` → `- [x]`)
 
 **예외**: 스펙 규모가 작아 소스 파일 10개 이하인 경우, Part를 분할하지 않고 한 번에 처리합니다.
 

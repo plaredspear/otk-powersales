@@ -159,22 +159,24 @@ EOF
 
 ## Phase 3.5: Main 머지
 
-Feature 브랜치의 작업을 main에 로컬 머지합니다.
+dev worktree의 작업을 main worktree에서 로컬 머지합니다.
+별도 feature 브랜치 없이, worktree 브랜치를 직접 머지합니다.
 
 ```bash
-git checkout main
-git merge --no-ff <feature-branch> -m "<prefix> <설명적 제목> (<work_id>)"
+cd <main worktree 경로>
+git merge --no-ff <dev-branch> -m "<prefix> <설명적 제목> (<work_id>)"
 ```
 
 예시:
 ```bash
-git checkout main
-git merge --no-ff feature/1-P1-redis-config -m "feat(backend): Redis 설정 (1-P1)"
+cd /Users/youngsoolim/dev/codapt/otoki/main
+git merge --no-ff backend-dev -m "feat(backend): Redis 설정 (1-P1)"
 ```
 
-머지 완료 후 (선택) Feature 브랜치 삭제:
+머지 완료 후 dev worktree에서 main과 동기화:
 ```bash
-git branch -d <feature-branch>
+cd <dev worktree 경로>
+git rebase main
 ```
 
 ---
