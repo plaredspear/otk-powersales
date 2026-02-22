@@ -19,6 +19,11 @@ spring:
     redis:
       timeout: 5000ms
 
+  flyway:
+    schemas: salesforce2
+    baseline-on-migrate: true
+    baseline-version: 1
+
   jackson:
     property-naming-strategy: SNAKE_CASE
     serialization:

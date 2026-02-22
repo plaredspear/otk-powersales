@@ -19,7 +19,7 @@ spring:
       port: 6379
 
   flyway:
-    enabled: false
+    enabled: true
 
 jwt:
   secret: otoki-internal-dev-secret-key-change-in-production-minimum-256-bits

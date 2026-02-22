@@ -18,6 +18,9 @@ spring:
       hibernate:
         default_schema: salesforce2
 
+  flyway:
+    enabled: true
+
   data:
     redis:
       host: ${REDIS_HOST}
