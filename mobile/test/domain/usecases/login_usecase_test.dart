@@ -69,8 +69,7 @@ void main() {
         id: 1,
         employeeId: '20010585',
         name: '홍길동',
-        department: '영업1팀',
-        branchName: '부산1지점',
+        orgName: '부산1지점',
         role: 'USER',
       );
       const expectedToken = AuthToken(
@@ -147,8 +146,7 @@ void main() {
           id: 1,
           employeeId: testEmployeeId,
           name: '홍길동',
-          department: '영업1팀',
-          branchName: '부산1지점',
+          orgName: '부산1지점',
           role: 'USER',
         ),
         token: AuthToken(
