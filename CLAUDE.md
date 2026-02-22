@@ -71,17 +71,52 @@ otoki/                          # 프로젝트 루트
 
 **IMPORTANT**: 작업 시작 시 사용자의 요청을 분석하여 적절한 모드의 가이드를 반드시 읽은 후 진행합니다.
 
-### 워크플로우 (GitHub Issue 기반)
+### 워크플로우 (GitHub Issue + PR 기반)
 
 ```
 1. 스펙 작성 (/spec) → docs/specs/ 에 .md 파일로 저장
 2. AI 리뷰 (/spec-review) → 터미널에 리포트 출력
-3. 사용자가 스펙 파일을 에디터에서 확인 → 터미널에서 승인 또는 수정 요청
-4. 승인 시: 부모 Issue + Part Issue 등록
-5. Part Issue에서 @claude 언급 → Claude Code Action 트리거
-6. Part별 구현 + 테스트 → PR 생성 (Part Issue 참조: "Closes #XX")
-7. PR merge → Part Issue 자동 close → 부모 Issue Task List 업데이트
-8. 모든 Part 완료 → 부모 Issue close → Feature 완료
+3. 사용자 검토 → 승인 또는 수정
+4. 부모 Issue 등록 (전체 스펙 + Part 체크리스트)
+5. Part별 Feature 브랜치 + Draft PR 생성 (로컬에서 `gh pr create`)
+   - PR 본문: 부모 Issue 참조 + Part 범위 요약 + @claude
+6. Claude Code Action 자동 실행 → 구현 → Push
+7. PR 리뷰 댓글로 피드백 → @claude 수정 지시 → 반복
+8. Ready for Review → Merge → 부모 Issue 체크리스트 업데이트
+9. 모든 Part 완료 → 부모 Issue close
+```
+
+### Part PR 본문 형식
+
+```markdown
+Spec: #<부모Issue번호>
+Part: P<순번>/<총Part수>
+Prerequisites: #<선행PR번호> 또는 "None"
+
+### Scope
+[이 Part에서 구현할 내용 - 부모 Issue 스펙에서 해당 부분만 발췌/요약]
+
+### Files
+[대상 파일 목록]
+
+@claude 위 스펙을 기반으로 구현을 시작해주세요.
+```
+
+### Part PR 생성 예시
+
+```bash
+git checkout -b feature/#42-P1-domain
+gh pr create --draft \
+  --title "feat: 매출현황 도메인 레이어 (#42-P1)" \
+  --body "Spec: #42
+Part: P1/3
+Prerequisites: None
+
+### Scope
+- Entity, Repository 인터페이스
+- UseCase 구현
+
+@claude Spec #42의 P1 범위를 구현해주세요."
 ```
 
 ### 모드 판별 규칙

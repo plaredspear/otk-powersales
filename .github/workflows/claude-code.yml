@@ -1,10 +1,10 @@
 name: Claude Code
 
 on:
-  issues:
-    types: [opened]
   issue_comment:
     types: [created]
+  pull_request:
+    types: [opened, closed]
   pull_request_review_comment:
     types: [created]
   pull_request_review:
@@ -17,10 +17,50 @@ permissions:
   id-token: write
 
 jobs:
+  # ──────────────────────────────────────────
+  # Job 1: 선행 Part PR merge 시 → 후속 Part PR에 알림
+  # ──────────────────────────────────────────
+  notify-dependents:
+    if: |
+      github.event_name == 'pull_request' &&
+      github.event.action == 'closed' &&
+      github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Find and notify dependent PRs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const mergedPR = context.payload.pull_request.number;
+
+            // 열린 PR 중 Prerequisites에 이 PR을 참조하는 것 찾기
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+            });
+
+            for (const pr of prs) {
+              const body = pr.body || '';
+              // "Prerequisites: #XX" 패턴 매칭
+              if (body.includes(`Prerequisites: #${mergedPR}`) ||
+                  body.includes(`Prerequisites:#${mergedPR}`)) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  body: `> 선행 Part PR #${mergedPR} 이 merge 되었습니다.\n\n구현을 시작하려면 \`@claude\` 를 댓글로 추가해주세요.`,
+                });
+              }
+            }
+
+  # ──────────────────────────────────────────
+  # Job 2: 선행 Part 확인 + Claude Code Action 실행
+  # ──────────────────────────────────────────
   claude-code:
     if: |
-      (github.event_name == 'issues' && contains(github.event.issue.body, '@claude')) ||
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request' && github.event.action == 'opened' && contains(github.event.pull_request.body, '@claude')) ||
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude'))
     runs-on: ubuntu-latest
@@ -29,32 +69,104 @@ jobs:
       group: claude-coding
       cancel-in-progress: false
     steps:
+      # 선행 Part PR merge 여부 확인
+      - name: Check prerequisites
+        id: prereqs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // PR 번호 추출
+            const prNumber =
+              context.payload.pull_request?.number ||
+              context.payload.issue?.number;
+
+            if (!prNumber) {
+              core.setOutput('met', 'true');
+              return;
+            }
+
+            // PR 본문 읽기
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+            });
+
+            const body = pr.body || '';
+
+            // Prerequisites 패턴 파싱: "Prerequisites: #123" 또는 "Prerequisites: None"
+            const match = body.match(/Prerequisites:\s*#(\d+)/);
+
+            if (!match) {
+              // Prerequisites 없거나 "None" → 통과
+              core.setOutput('met', 'true');
+              return;
+            }
+
+            const prereqPR = parseInt(match[1]);
+
+            // 선행 PR merge 여부 확인
+            const { data: prereqData } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prereqPR,
+            });
+
+            if (prereqData.merged) {
+              core.setOutput('met', 'true');
+            } else {
+              core.setOutput('met', 'false');
+              core.setOutput('blocking_pr', prereqPR.toString());
+
+              // 선행 미완료 알림 댓글
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: `> **선행 Part PR #${prereqPR} 이 아직 merge 되지 않았습니다.**\n\n선행 Part가 완료된 후 \`@claude\` 를 다시 댓글로 추가해주세요.`,
+              });
+            }
+
+      # 선행 조건 미충족 시 중단
+      - name: Skip if prerequisites not met
+        if: steps.prereqs.outputs.met == 'false'
+        run: |
+          echo "Prerequisites not met. Blocking PR: #${{ steps.prereqs.outputs.blocking_pr }}"
+          exit 0
+
       - uses: actions/checkout@v4
+        if: steps.prereqs.outputs.met == 'true'
         with:
           fetch-depth: 0
 
       - uses: actions/setup-java@v4
+        if: steps.prereqs.outputs.met == 'true'
         with:
           distribution: 'temurin'
           java-version: '17'
           cache: 'gradle'
 
       - uses: subosito/flutter-action@v2
+        if: steps.prereqs.outputs.met == 'true'
         with:
           flutter-version: '3.27.x'
           channel: 'stable'
           cache: true
 
       - uses: actions/setup-node@v4
+        if: steps.prereqs.outputs.met == 'true'
         with:
           node-version: '20'
       - uses: pnpm/action-setup@v4
+        if: steps.prereqs.outputs.met == 'true'
         with:
           version: 9
 
       - run: chmod +x backend/gradlew
+        if: steps.prereqs.outputs.met == 'true'
 
       - id: claude
+        if: steps.prereqs.outputs.met == 'true'
         uses: anthropics/claude-code-action@v1
         continue-on-error: true
         with:
@@ -63,7 +175,7 @@ jobs:
           claude_args: "--model claude-sonnet-4-6"
 
       - name: Report failure
-        if: steps.claude.outcome == 'failure'
+        if: steps.prereqs.outputs.met == 'true' && steps.claude.outcome == 'failure'
         uses: actions/github-script@v7
         with:
           script: |
@@ -90,5 +202,5 @@ jobs:
             }
 
       - name: Propagate failure
-        if: steps.claude.outcome == 'failure'
+        if: steps.prereqs.outputs.met == 'true' && steps.claude.outcome == 'failure'
         run: exit 1
