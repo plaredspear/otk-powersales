@@ -27,16 +27,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Auth: 사번 + 비밀번호 로그인
 - Data Sources: Orora 영업 시스템, SAP, 대형마트 EDI
 
-### 저장소 구조
+### 저장소 구조 (Git Worktree)
+
+Bare repository + worktree 방식으로 운영합니다.
 
 ```
 otoki/                          # 프로젝트 루트
-├── mobile/                     # Flutter app
-├── backend/                    # Spring Boot API
-├── infra/                      # Terraform IaC (AWS)
-├── .claude/                    # Claude Code 설정 (가이드, 커맨드)
-├── docs/                       # 문서 디렉토리 (git 추적 대상 아님)
-└── CLAUDE.md                   # 이 파일
+├── .bare/                      # Bare repository (git 데이터)
+├── main/                       # [main] 메인 브랜치 worktree
+│   ├── mobile/                 #   Flutter app
+│   ├── backend/                #   Spring Boot API
+│   ├── infra/                  #   Terraform IaC (AWS)
+│   ├── .claude/                #   Claude Code 설정 (가이드, 커맨드)
+│   ├── docs/                   #   문서 디렉토리 (git 추적 대상 아님)
+│   └── CLAUDE.md               #   이 파일
+├── backend-dev/                # [backend-dev] Backend 개발 worktree
+└── mobile-dev/                 # [mobile-dev] Mobile 개발 worktree
 ```
 
 **IMPORTANT**: `docs/`는 `.gitignore`에 의해 git 추적 대상에서 제외됩니다.
