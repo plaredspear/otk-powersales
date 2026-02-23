@@ -8,9 +8,12 @@ import com.otoki.internal.dto.response.LoginResponse
 import com.otoki.internal.dto.response.TokenInfo
 import com.otoki.internal.dto.response.TokenResponse
 import com.otoki.internal.dto.response.UserInfo
+import com.otoki.internal.entity.LoginHistory
 import com.otoki.internal.exception.*
+import com.otoki.internal.repository.LoginHistoryRepository
 import com.otoki.internal.repository.UserRepository
 import com.otoki.internal.security.JwtTokenProvider
+import org.slf4j.LoggerFactory
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -21,9 +24,12 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class AuthService(
     private val userRepository: UserRepository,
+    private val loginHistoryRepository: LoginHistoryRepository,
     private val passwordEncoder: PasswordEncoder,
     private val jwtTokenProvider: JwtTokenProvider
 ) {
+
+    private val log = LoggerFactory.getLogger(AuthService::class.java)
 
     /**
      * 로그인
@@ -39,6 +45,13 @@ class AuthService(
 
         if (!passwordEncoder.matches(request.password, user.password)) {
             throw InvalidCredentialsException()
+        }
+
+        // 로그인 이력 기록 (실패해도 로그인에 영향 없음)
+        try {
+            loginHistoryRepository.save(LoginHistory(employeeId = user.employeeId))
+        } catch (e: Exception) {
+            log.warn("로그인 이력 기록 실패: employeeId={}", user.employeeId, e)
         }
 
         val accessToken = jwtTokenProvider.createAccessToken(user.id, user.role)
