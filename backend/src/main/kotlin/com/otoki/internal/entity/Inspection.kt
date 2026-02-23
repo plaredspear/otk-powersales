@@ -1,14 +1,15 @@
+/*
 package com.otoki.internal.entity
 
 import jakarta.persistence.*
 import java.time.LocalDate
 import java.time.LocalDateTime
 
-/**
+/ **
  * 현장 점검 Entity
  * 영업사원이 거래처에서 수행한 현장 점검 정보를 관리한다.
  * 자사 점검과 경쟁사 점검을 분류(category)에 따라 구분한다.
- */
+ * /
 @Entity
 @Table(
     name = "inspections",
@@ -94,3 +95,4 @@ class Inspection(
 //     @OneToMany(mappedBy = "inspection", fetch = FetchType.LAZY, cascade = [CascadeType.ALL], orphanRemoval = true)
 //     val photos: MutableList<InspectionPhoto> = mutableListOf()
 // }
+*/

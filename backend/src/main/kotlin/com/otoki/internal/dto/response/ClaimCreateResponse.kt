@@ -1,10 +1,11 @@
+/*
 package com.otoki.internal.dto.response
 
 import com.otoki.internal.entity.Claim
 
-/**
+/ **
  * 클레임 등록 응답 DTO
- */
+ * /
 data class ClaimCreateResponse(
     val id: Long,
     val storeName: String,
@@ -26,3 +27,4 @@ data class ClaimCreateResponse(
         }
     }
 }
+*/

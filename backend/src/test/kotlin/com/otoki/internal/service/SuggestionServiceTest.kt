@@ -1,3 +1,4 @@
+/*
 package com.otoki.internal.service
 
 import com.otoki.internal.dto.request.SuggestionCreateRequest
@@ -25,7 +26,7 @@ class SuggestionServiceTest {
     private lateinit var suggestionRepository: SuggestionRepository
 
     /* @Mock
-    private lateinit var suggestionPhotoRepository: SuggestionPhotoRepository */
+    private lateinit var suggestionPhotoRepository: SuggestionPhotoRepository * /
 
     @Mock
     private lateinit var userRepository: UserRepository
@@ -78,7 +79,7 @@ class SuggestionServiceTest {
             assertThat(result.productName).isNull()
             assertThat(result.title).isEqualTo("테스트 제안")
             verify(suggestionRepository).save(any())
-            /* verify(suggestionPhotoRepository, never()).saveAll(any()) */
+            /* verify(suggestionPhotoRepository, never()).saveAll(any()) * /
         }
 
         @Test
@@ -117,7 +118,7 @@ class SuggestionServiceTest {
             // Then
             assertThat(result.id).isEqualTo(1L)
             verify(suggestionRepository).save(any())
-            /* verify(suggestionPhotoRepository).saveAll(any()) */
+            /* verify(suggestionPhotoRepository).saveAll(any()) * /
             verify(fileStorageService, times(2)).uploadSuggestionPhoto(any(), any(), any(), any())
         }
 
@@ -364,3 +365,4 @@ class SuggestionServiceTest {
         )
     }
 }
+*/

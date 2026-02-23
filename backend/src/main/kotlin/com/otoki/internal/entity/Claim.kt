@@ -1,13 +1,14 @@
+/*
 package com.otoki.internal.entity
 
 import jakarta.persistence.*
 import java.time.LocalDate
 import java.time.LocalDateTime
 
-/**
+/ **
  * 클레임 Entity
  * 사용자가 등록한 클레임 정보를 관리한다.
- */
+ * /
 @Entity
 @Table(
     name = "claims",
@@ -82,3 +83,4 @@ class Claim(
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now()
 )
+*/

@@ -1,12 +1,13 @@
+/*
 package com.otoki.internal.entity
 
 import jakarta.persistence.*
 
-/**
+/ **
  * 클레임 종류2 Entity
  * 클레임의 세부 카테고리를 관리한다. 종류1에 속한다.
  * 예: 벌레, 금속, 비닐, 곰팡이, 변색 등
- */
+ * /
 @Entity
 @Table(name = "claim_subcategories")
 class ClaimSubcategory(
@@ -28,3 +29,4 @@ class ClaimSubcategory(
     @Column(name = "is_active", nullable = false)
     val isActive: Boolean = true
 )
+*/

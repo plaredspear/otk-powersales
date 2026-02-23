@@ -1,10 +1,11 @@
+/*
 package com.otoki.internal.dto.response
 
 import com.otoki.internal.entity.Inspection
 
-/**
+/ **
  * 현장 점검 목록 항목 응답 DTO
- */
+ * /
 data class InspectionListItemResponse(
     val id: Long,
     val category: String,
@@ -28,3 +29,4 @@ data class InspectionListItemResponse(
         }
     }
 }
+*/

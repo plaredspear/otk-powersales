@@ -1,11 +1,12 @@
+/*
 package com.otoki.internal.dto.response
 
 import com.otoki.internal.entity.Suggestion
 import com.otoki.internal.entity.SuggestionCategory
 
-/**
+/ **
  * 제안 등록 응답 DTO
- */
+ * /
 data class SuggestionCreateResponse(
     val id: Long,
     val category: String,
@@ -16,9 +17,9 @@ data class SuggestionCreateResponse(
     val createdAt: String
 ) {
     companion object {
-        /**
+        / **
          * Entity로부터 Response DTO 생성
-         */
+         * /
         fun from(suggestion: Suggestion): SuggestionCreateResponse {
             return SuggestionCreateResponse(
                 id = suggestion.id,
@@ -31,9 +32,9 @@ data class SuggestionCreateResponse(
             )
         }
 
-        /**
+        / **
          * 분류 코드를 한글명으로 변환
-         */
+         * /
         private fun getCategoryName(category: SuggestionCategory): String {
             return when (category) {
                 SuggestionCategory.NEW_PRODUCT -> "신제품 제안"
@@ -42,3 +43,4 @@ data class SuggestionCreateResponse(
         }
     }
 }
+*/

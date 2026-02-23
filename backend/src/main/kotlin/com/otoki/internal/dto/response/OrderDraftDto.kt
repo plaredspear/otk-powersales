@@ -1,12 +1,13 @@
+/*
 package com.otoki.internal.dto.response
 
 import com.otoki.internal.entity.OrderDraft
 import com.otoki.internal.entity.OrderDraftItem
 import java.time.format.DateTimeFormatter
 
-/**
+/ **
  * 임시저장 주문서 응답 DTO
- */
+ * /
 data class OrderDraftResponse(
     val clientId: Long,
     val clientName: String,
@@ -32,9 +33,9 @@ data class OrderDraftResponse(
     }
 }
 
-/**
+/ **
  * 임시저장 제품 항목 응답 DTO
- */
+ * /
 data class DraftItemResponse(
     val productCode: String,
     val productName: String,
@@ -65,9 +66,10 @@ data class DraftItemResponse(
     }
 }
 
-/**
+/ **
  * 임시저장 성공 응답 DTO
- */
+ * /
 data class DraftSavedResponse(
     val savedAt: String
 )
+*/

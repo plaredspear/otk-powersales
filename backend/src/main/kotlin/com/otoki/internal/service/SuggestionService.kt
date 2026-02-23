@@ -1,3 +1,4 @@
+/*
 package com.otoki.internal.service
 
 import com.otoki.internal.dto.request.SuggestionCreateRequest
@@ -10,9 +11,9 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
 
-/**
+/ **
  * 제안 Service
- */
+ * /
 @Service
 @Transactional(readOnly = true)
 class SuggestionService(
@@ -28,14 +29,14 @@ class SuggestionService(
         private const val MAX_PHOTO_SIZE = 10 * 1024 * 1024L // 10MB
     }
 
-    /**
+    / **
      * 제안 등록
      *
      * @param userId JWT에서 추출한 사용자 ID
      * @param request 제안 등록 요청
      * @param photos 사진 목록 (최대 2장, 선택)
      * @return 제안 등록 결과
-     */
+     * /
     @Transactional
     fun createSuggestion(
         userId: Long,
@@ -139,3 +140,4 @@ class SuggestionService(
         return SuggestionCreateResponse.from(savedSuggestion)
     }
 }
+*/

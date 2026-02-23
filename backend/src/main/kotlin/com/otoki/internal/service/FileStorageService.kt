@@ -46,136 +46,79 @@ class FileStorageService(
         }
     }
 
-    /**
-     * 현장 점검 사진 업로드
-     *
-     * @param file 업로드 파일
-     * @param userId 사용자 ID
-     * @param inspectionId 점검 ID (임시 저장 시 null 가능)
-     * @return 저장된 파일 URL
-     */
+    /*
     fun uploadInspectionPhoto(
         file: MultipartFile,
         userId: Long,
         inspectionId: Long? = null
     ): String {
-        // 파일 검증
         validateFile(file)
-
-        // 파일명 생성 (UUID + 확장자)
         val originalFilename = file.originalFilename ?: "unknown"
         val extension = getFileExtension(originalFilename)
         val filename = "${UUID.randomUUID()}${extension}"
-
-        // 저장 경로 생성: inspections/{userId}/{inspectionId 또는 temp}/{filename}
         val subDir = if (inspectionId != null) "$inspectionId" else "temp"
         val targetLocation = rootLocation
             .resolve("inspections")
             .resolve(userId.toString())
             .resolve(subDir)
-
         try {
-            // 디렉토리 생성
             Files.createDirectories(targetLocation)
-
-            // 파일 저장
             val targetFile = targetLocation.resolve(filename)
             Files.copy(file.inputStream, targetFile, StandardCopyOption.REPLACE_EXISTING)
-
-            // URL 반환
             return "$baseUrl/inspections/$userId/$subDir/$filename"
         } catch (e: IOException) {
             throw FileStorageException("파일 저장 실패: ${file.originalFilename}", e)
         }
     }
 
-    /**
-     * 클레임 사진 업로드
-     *
-     * @param file 업로드 파일
-     * @param userId 사용자 ID
-     * @param claimId 클레임 ID
-     * @param photoType 사진 유형 (DEFECT, LABEL, RECEIPT)
-     * @return 저장된 파일 URL
-     */
     fun uploadClaimPhoto(
         file: MultipartFile,
         userId: Long,
         claimId: Long,
         photoType: String
     ): String {
-        // 파일 검증
         validateFile(file)
-
-        // 파일명 생성 (photoType-UUID + 확장자)
         val originalFilename = file.originalFilename ?: "unknown"
         val extension = getFileExtension(originalFilename)
         val filename = "${photoType.lowercase()}-${UUID.randomUUID()}${extension}"
-
-        // 저장 경로 생성: claims/{userId}/{claimId}/{filename}
         val targetLocation = rootLocation
             .resolve("claims")
             .resolve(userId.toString())
             .resolve(claimId.toString())
-
         try {
-            // 디렉토리 생성
             Files.createDirectories(targetLocation)
-
-            // 파일 저장
             val targetFile = targetLocation.resolve(filename)
             Files.copy(file.inputStream, targetFile, StandardCopyOption.REPLACE_EXISTING)
-
-            // URL 반환
             return "$baseUrl/claims/$userId/$claimId/$filename"
         } catch (e: IOException) {
             throw FileStorageException("파일 저장 실패: ${file.originalFilename}", e)
         }
     }
 
-    /**
-     * 제안 사진 업로드
-     *
-     * @param file 업로드 파일
-     * @param userId 사용자 ID
-     * @param suggestionId 제안 ID
-     * @param sortOrder 사진 정렬 순서 (0, 1)
-     * @return 저장된 파일 URL
-     */
     fun uploadSuggestionPhoto(
         file: MultipartFile,
         userId: Long,
         suggestionId: Long,
         sortOrder: Int
     ): String {
-        // 파일 검증
         validateFile(file)
-
-        // 파일명 생성 (sortOrder-UUID + 확장자)
         val originalFilename = file.originalFilename ?: "unknown"
         val extension = getFileExtension(originalFilename)
         val filename = "$sortOrder-${UUID.randomUUID()}${extension}"
-
-        // 저장 경로 생성: suggestions/{userId}/{suggestionId}/{filename}
         val targetLocation = rootLocation
             .resolve("suggestions")
             .resolve(userId.toString())
             .resolve(suggestionId.toString())
-
         try {
-            // 디렉토리 생성
             Files.createDirectories(targetLocation)
-
-            // 파일 저장
             val targetFile = targetLocation.resolve(filename)
             Files.copy(file.inputStream, targetFile, StandardCopyOption.REPLACE_EXISTING)
-
-            // URL 반환
             return "$baseUrl/suggestions/$userId/$suggestionId/$filename"
         } catch (e: IOException) {
             throw FileStorageException("파일 저장 실패: ${file.originalFilename}", e)
         }
     }
+    */
 
     /**
      * 일매출 사진 업로드

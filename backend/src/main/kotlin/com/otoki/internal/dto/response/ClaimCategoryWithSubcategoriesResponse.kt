@@ -1,10 +1,11 @@
+/*
 package com.otoki.internal.dto.response
 
 import com.otoki.internal.entity.ClaimCategory
 
-/**
+/ **
  * 클레임 종류1 (하위 종류2 포함) 응답 DTO
- */
+ * /
 data class ClaimCategoryWithSubcategoriesResponse(
     val id: Long,
     val name: String,
@@ -23,3 +24,4 @@ data class ClaimCategoryWithSubcategoriesResponse(
         }
     }
 }
+*/
