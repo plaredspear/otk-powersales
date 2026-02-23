@@ -12,7 +12,7 @@
 #   3. SUCCESS → 다음 반복, FAILED/NO_SPECS → 종료
 #   4. 배치 요약 출력
 #
-# Ctrl+C로 중단 가능 (현재 반복 종료 후 안전하게 종료)
+# Ctrl+C로 즉시 중단 가능
 
 set -uo pipefail
 
@@ -29,6 +29,8 @@ LOCKFILE="$PROJECT_ROOT/.impl-batch.lock"
 # ─── 상태 변수 ────────────────────────────────────────────────────────
 
 INTERRUPTED=false
+CLAUDE_PID=""
+TAIL_PID=""
 completed=()
 fail_spec=""
 fail_reason=""
@@ -43,13 +45,29 @@ log() {
 }
 
 cleanup() {
+    # 자식 프로세스 정리
+    kill_children
     rm -f "$LOCKFILE"
+}
+
+kill_children() {
+    if [ -n "$CLAUDE_PID" ] && kill -0 "$CLAUDE_PID" 2>/dev/null; then
+        kill -TERM "$CLAUDE_PID" 2>/dev/null
+        wait "$CLAUDE_PID" 2>/dev/null || true
+    fi
+    if [ -n "$TAIL_PID" ] && kill -0 "$TAIL_PID" 2>/dev/null; then
+        kill -TERM "$TAIL_PID" 2>/dev/null
+        wait "$TAIL_PID" 2>/dev/null || true
+    fi
+    CLAUDE_PID=""
+    TAIL_PID=""
 }
 
 on_interrupt() {
     INTERRUPTED=true
     echo ""
-    log "⚠️  중단 요청됨 (Ctrl+C) — 안전하게 종료합니다..."
+    log "⚠️  중단 요청됨 (Ctrl+C)"
+    kill_children
 }
 
 print_summary() {
@@ -134,12 +152,27 @@ while [ "$iteration" -lt "$MAX_ITERATIONS" ]; do
     log "━━━ 반복 $iteration / $MAX_ITERATIONS ━━━"
     log "claude 실행 시작..."
 
-    # claude 실행 — verbose + tee로 중간 과정 포함 실시간 출력
-    set +eo pipefail
-    cd "$PROJECT_ROOT"
-    claude -p "/impl-next" --dangerously-skip-permissions --verbose 2>&1 | tee "$iter_log"
-    exit_code=${PIPESTATUS[0]}
-    set -eo pipefail
+    # claude를 백그라운드로 실행 (로그 파일에 출력)
+    # → wait가 시그널에 즉시 반응하므로 Ctrl+C가 동작함
+    > "$iter_log"
+    claude -p "/impl-next" --dangerously-skip-permissions --verbose >> "$iter_log" 2>&1 &
+    CLAUDE_PID=$!
+
+    # tail -f로 실시간 터미널 출력
+    tail -f "$iter_log" &
+    TAIL_PID=$!
+
+    # wait는 시그널 수신 시 즉시 리턴 → trap 핸들러 실행 가능
+    wait "$CLAUDE_PID" 2>/dev/null
+    exit_code=$?
+    CLAUDE_PID=""
+
+    # tail 정리
+    if [ -n "$TAIL_PID" ] && kill -0 "$TAIL_PID" 2>/dev/null; then
+        kill "$TAIL_PID" 2>/dev/null
+        wait "$TAIL_PID" 2>/dev/null || true
+    fi
+    TAIL_PID=""
 
     iter_end="$(date +%s)"
     iter_elapsed=$(( iter_end - iter_start ))
