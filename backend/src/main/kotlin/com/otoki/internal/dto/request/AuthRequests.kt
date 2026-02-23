@@ -14,7 +14,9 @@ data class LoginRequest(
 
     @field:NotBlank(message = "비밀번호는 필수입니다")
     @field:Size(min = 4, message = "비밀번호는 4글자 이상이어야 합니다")
-    val password: String
+    val password: String,
+
+    val deviceId: String? = null
 )
 
 /**

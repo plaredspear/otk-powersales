@@ -1,5 +1,6 @@
 package com.otoki.internal.service
 
+import com.otoki.internal.config.DeviceBindingProperties
 import com.otoki.internal.dto.request.ChangePasswordRequest
 import com.otoki.internal.dto.request.LoginRequest
 import com.otoki.internal.dto.request.RefreshTokenRequest
@@ -9,6 +10,7 @@ import com.otoki.internal.dto.response.TokenInfo
 import com.otoki.internal.dto.response.TokenResponse
 import com.otoki.internal.dto.response.UserInfo
 import com.otoki.internal.entity.LoginHistory
+import com.otoki.internal.entity.User
 import com.otoki.internal.exception.*
 import com.otoki.internal.repository.LoginHistoryRepository
 import com.otoki.internal.repository.UserRepository
@@ -26,7 +28,8 @@ class AuthService(
     private val userRepository: UserRepository,
     private val loginHistoryRepository: LoginHistoryRepository,
     private val passwordEncoder: PasswordEncoder,
-    private val jwtTokenProvider: JwtTokenProvider
+    private val jwtTokenProvider: JwtTokenProvider,
+    private val deviceBindingProperties: DeviceBindingProperties
 ) {
 
     private val log = LoggerFactory.getLogger(AuthService::class.java)
@@ -35,10 +38,11 @@ class AuthService(
      * 로그인
      * 1. 사번으로 사용자 조회 (없으면 INVALID_CREDENTIALS)
      * 2. BCrypt 비밀번호 검증 (불일치 시 INVALID_CREDENTIALS)
-     * 3. Access Token + Refresh Token 생성
-     * 4. requiresPasswordChange, requiresGpsConsent 포함하여 반환
+     * 3. 단말기 바인딩 검증 (device_id 존재 시)
+     * 4. Access Token + Refresh Token 생성
+     * 5. requiresPasswordChange, requiresGpsConsent 포함하여 반환
      */
-    @Transactional(readOnly = true)
+    @Transactional
     fun login(request: LoginRequest): LoginResponse {
         val user = userRepository.findByEmployeeId(request.employeeId)
             .orElseThrow { InvalidCredentialsException() }
@@ -46,6 +50,9 @@ class AuthService(
         if (!passwordEncoder.matches(request.password, user.password)) {
             throw InvalidCredentialsException()
         }
+
+        // 단말기 바인딩 검증 (비밀번호 검증 이후)
+        validateDeviceBinding(user, request.deviceId)
 
         // 로그인 이력 기록 (실패해도 로그인에 영향 없음)
         try {
@@ -67,6 +74,31 @@ class AuthService(
             requiresPasswordChange = user.passwordChangeRequired ?: true,
             requiresGpsConsent = user.requiresGpsConsent()
         )
+    }
+
+    /**
+     * 단말기 바인딩 검증
+     * 1. device_id 미전달 → 검증 스킵 (웹 브라우저)
+     * 2. 바인딩 비활성화 → 검증 스킵
+     * 3. 예외 사번 → 검증 스킵
+     * 4. DB deviceUuid == NULL → 최초 등록
+     * 5. 일치 → 정상
+     * 6. 불일치 → DEVICE_MISMATCH 에러
+     */
+    private fun validateDeviceBinding(user: User, deviceId: String?) {
+        if (deviceId.isNullOrBlank()) return
+        if (!deviceBindingProperties.enabled) return
+        if (deviceBindingProperties.isExcluded(user.employeeId)) return
+
+        if (user.deviceUuid == null) {
+            user.bindDevice(deviceId)
+            userRepository.save(user)
+            return
+        }
+
+        if (user.deviceUuid != deviceId) {
+            throw DeviceMismatchException()
+        }
     }
 
     /**
@@ -154,6 +186,18 @@ class AuthService(
             .orElseThrow { UserNotFoundException() }
 
         user.recordGpsConsent()
+        userRepository.save(user)
+    }
+
+    /**
+     * 단말기 초기화 (관리자 전용)
+     */
+    @Transactional
+    fun resetDevice(employeeId: String) {
+        val user = userRepository.findByEmployeeId(employeeId)
+            .orElseThrow { UserNotFoundException() }
+
+        user.resetDevice()
         userRepository.save(user)
     }
 
