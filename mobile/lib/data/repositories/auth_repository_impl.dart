@@ -19,7 +19,9 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<LoginResult> login(String employeeId, String password) async {
-    final response = await _remoteDataSource.login(employeeId, password);
+    final deviceId = await _localDataSource.getDeviceId();
+    final response =
+        await _remoteDataSource.login(employeeId, password, deviceId);
     final result = response.toLoginResult();
 
     // 토큰을 로컬 저장소에 저장
