@@ -9,7 +9,9 @@ import com.otoki.internal.dto.response.*
 import com.otoki.internal.entity.UserRole
 import com.otoki.internal.exception.InvalidCredentialsException
 import com.otoki.internal.exception.InvalidCurrentPasswordException
+import com.otoki.internal.exception.InvalidTokenException
 import com.otoki.internal.exception.TermsNotFoundException
+import com.otoki.internal.exception.TokenReuseDetectedException
 import com.otoki.internal.security.GpsConsentFilter
 import com.otoki.internal.security.JwtAuthenticationFilter
 import com.otoki.internal.security.JwtTokenProvider
@@ -201,10 +203,14 @@ class AuthControllerTest {
     // ========== Token Refresh Tests ==========
 
     @Test
-    @DisplayName("토큰 갱신 성공 - 200 OK")
+    @DisplayName("토큰 갱신 성공 - 200 OK, access_token + refresh_token 반환")
     fun refresh_success() {
         // Given
-        val mockResponse = TokenResponse(accessToken = "new-access-token", expiresIn = 3600)
+        val mockResponse = TokenResponse(
+            accessToken = "new-access-token",
+            refreshToken = "new-refresh-token",
+            expiresIn = 3600
+        )
 
         whenever(authService.refreshAccessToken(any())).thenReturn(mockResponse)
 
@@ -218,7 +224,43 @@ class AuthControllerTest {
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.message").value("토큰 갱신 성공"))
             .andExpect(jsonPath("$.data.access_token").value("new-access-token"))
+            .andExpect(jsonPath("$.data.refresh_token").value("new-refresh-token"))
             .andExpect(jsonPath("$.data.expires_in").value(3600))
+    }
+
+    @Test
+    @DisplayName("탈취 감지 - 재사용된 Refresh Token 시 401 TOKEN_REUSE_DETECTED")
+    fun refresh_tokenReuseDetected() {
+        // Given
+        whenever(authService.refreshAccessToken(any()))
+            .thenThrow(TokenReuseDetectedException())
+
+        // When & Then
+        mockMvc.perform(
+            post("/api/v1/auth/refresh")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"refresh_token": "reused-refresh-token"}""")
+        )
+            .andExpect(status().isUnauthorized)
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.code").value("TOKEN_REUSE_DETECTED"))
+    }
+
+    @Test
+    @DisplayName("유효하지 않은 토큰 - 변조된 Refresh Token 시 401 INVALID_TOKEN")
+    fun refresh_invalidToken() {
+        // Given
+        whenever(authService.refreshAccessToken(any()))
+            .thenThrow(InvalidTokenException())
+
+        // When & Then
+        mockMvc.perform(
+            post("/api/v1/auth/refresh")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"refresh_token": "tampered-token"}""")
+        )
+            .andExpect(status().isUnauthorized)
+            .andExpect(jsonPath("$.error.code").value("INVALID_TOKEN"))
     }
 
     @Test
