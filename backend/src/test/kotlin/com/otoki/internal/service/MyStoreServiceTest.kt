@@ -1,10 +1,10 @@
 package com.otoki.internal.service
 
-import com.otoki.internal.entity.Store
+import com.otoki.internal.entity.Account
 import com.otoki.internal.entity.StoreSchedule
 import com.otoki.internal.entity.User
 import com.otoki.internal.exception.UserNotFoundException
-import com.otoki.internal.repository.StoreRepository
+import com.otoki.internal.repository.AccountRepository
 import com.otoki.internal.repository.StoreScheduleRepository
 import com.otoki.internal.repository.UserRepository
 import org.assertj.core.api.Assertions.assertThat
@@ -31,7 +31,7 @@ class MyStoreServiceTest {
     private lateinit var storeScheduleRepository: StoreScheduleRepository
 
     @Mock
-    private lateinit var storeRepository: StoreRepository
+    private lateinit var accountRepository: AccountRepository
 
     @InjectMocks
     private lateinit var myStoreService: MyStoreService
@@ -54,29 +54,29 @@ class MyStoreServiceTest {
 
             val distinctStoreIds = listOf(1025172L, 1025173L, 1025174L)
             val stores = listOf(
-                createStore(
+                createAccount(
                     id = 1025172L,
-                    storeCode = "1025172",
-                    storeName = "(유)경산식품",
-                    address = "전라남도 목포시 임암로20번길 6",
-                    representativeName = "김정자",
-                    phoneNumber = "061-123-4567"
+                    externalKey = "1025172",
+                    name = "(유)경산식품",
+                    address1 = "전라남도 목포시 임암로20번길 6",
+                    representative = "김정자",
+                    phone = "061-123-4567"
                 ),
-                createStore(
+                createAccount(
                     id = 1025173L,
-                    storeCode = "1025173",
-                    storeName = "(주)대한식품",
-                    address = "서울시 강남구",
-                    representativeName = "이영희",
-                    phoneNumber = "02-111-2222"
+                    externalKey = "1025173",
+                    name = "(주)대한식품",
+                    address1 = "서울시 강남구",
+                    representative = "이영희",
+                    phone = "02-111-2222"
                 ),
-                createStore(
+                createAccount(
                     id = 1025174L,
-                    storeCode = "1025174",
-                    storeName = "부산마트",
-                    address = "부산시 해운대구",
-                    representativeName = "박철수",
-                    phoneNumber = "051-333-4444"
+                    externalKey = "1025174",
+                    name = "부산마트",
+                    address1 = "부산시 해운대구",
+                    representative = "박철수",
+                    phone = "051-333-4444"
                 )
             )
             val schedules = listOf(
@@ -88,7 +88,7 @@ class MyStoreServiceTest {
             whenever(userRepository.existsById(userId)).thenReturn(true)
             whenever(storeScheduleRepository.findDistinctStoreIdsByUserIdAndScheduleDateBetween(userId, startDate, endDate))
                 .thenReturn(distinctStoreIds)
-            whenever(storeRepository.findByIdIn(distinctStoreIds)).thenReturn(stores)
+            whenever(accountRepository.findByIdIn(distinctStoreIds)).thenReturn(stores)
             whenever(storeScheduleRepository.findByUserIdAndScheduleDateBetween(userId, startDate, endDate))
                 .thenReturn(schedules)
 
@@ -118,13 +118,13 @@ class MyStoreServiceTest {
 
             val distinctStoreIds = listOf(1025172L)
             val stores = listOf(
-                createStore(
+                createAccount(
                     id = 1025172L,
-                    storeCode = "1025172",
-                    storeName = "(유)경산식품",
-                    address = "전라남도 목포시 임암로20번길 6",
-                    representativeName = "김정자",
-                    phoneNumber = "061-123-4567"
+                    externalKey = "1025172",
+                    name = "(유)경산식품",
+                    address1 = "전라남도 목포시 임암로20번길 6",
+                    representative = "김정자",
+                    phone = "061-123-4567"
                 )
             )
             val schedules = listOf(
@@ -138,7 +138,7 @@ class MyStoreServiceTest {
             whenever(userRepository.existsById(userId)).thenReturn(true)
             whenever(storeScheduleRepository.findDistinctStoreIdsByUserIdAndScheduleDateBetween(userId, startDate, endDate))
                 .thenReturn(distinctStoreIds)
-            whenever(storeRepository.findByIdIn(distinctStoreIds)).thenReturn(stores)
+            whenever(accountRepository.findByIdIn(distinctStoreIds)).thenReturn(stores)
             whenever(storeScheduleRepository.findByUserIdAndScheduleDateBetween(userId, startDate, endDate))
                 .thenReturn(schedules)
 
@@ -165,21 +165,21 @@ class MyStoreServiceTest {
 
             val distinctStoreIds = listOf(1025172L, 1025173L)
             val stores = listOf(
-                createStore(
+                createAccount(
                     id = 1025172L,
-                    storeCode = "1025172",
-                    storeName = "(유)경산식품",
-                    address = "전라남도 목포시 임암로20번길 6",
-                    representativeName = "김정자",
-                    phoneNumber = "061-123-4567"
+                    externalKey = "1025172",
+                    name = "(유)경산식품",
+                    address1 = "전라남도 목포시 임암로20번길 6",
+                    representative = "김정자",
+                    phone = "061-123-4567"
                 ),
-                createStore(
+                createAccount(
                     id = 1025173L,
-                    storeCode = "1025173",
-                    storeName = "(주)대한식품",
-                    address = "서울시 강남구",
-                    representativeName = "이영희",
-                    phoneNumber = "02-111-2222"
+                    externalKey = "1025173",
+                    name = "(주)대한식품",
+                    address1 = "서울시 강남구",
+                    representative = "이영희",
+                    phone = "02-111-2222"
                 )
             )
             val schedules = listOf(
@@ -190,7 +190,7 @@ class MyStoreServiceTest {
             whenever(userRepository.existsById(userId)).thenReturn(true)
             whenever(storeScheduleRepository.findDistinctStoreIdsByUserIdAndScheduleDateBetween(userId, startDate, endDate))
                 .thenReturn(distinctStoreIds)
-            whenever(storeRepository.findByIdIn(distinctStoreIds)).thenReturn(stores)
+            whenever(accountRepository.findByIdIn(distinctStoreIds)).thenReturn(stores)
             whenever(storeScheduleRepository.findByUserIdAndScheduleDateBetween(userId, startDate, endDate))
                 .thenReturn(schedules)
 
@@ -216,21 +216,21 @@ class MyStoreServiceTest {
 
             val distinctStoreIds = listOf(1025172L, 1025173L)
             val stores = listOf(
-                createStore(
+                createAccount(
                     id = 1025172L,
-                    storeCode = "1025172",
-                    storeName = "(유)경산식품",
-                    address = "전라남도 목포시 임암로20번길 6",
-                    representativeName = "김정자",
-                    phoneNumber = "061-123-4567"
+                    externalKey = "1025172",
+                    name = "(유)경산식품",
+                    address1 = "전라남도 목포시 임암로20번길 6",
+                    representative = "김정자",
+                    phone = "061-123-4567"
                 ),
-                createStore(
+                createAccount(
                     id = 1025173L,
-                    storeCode = "1025173",
-                    storeName = "(주)대한식품",
-                    address = "서울시 강남구",
-                    representativeName = "이영희",
-                    phoneNumber = "02-111-2222"
+                    externalKey = "1025173",
+                    name = "(주)대한식품",
+                    address1 = "서울시 강남구",
+                    representative = "이영희",
+                    phone = "02-111-2222"
                 )
             )
             val schedules = listOf(
@@ -241,7 +241,7 @@ class MyStoreServiceTest {
             whenever(userRepository.existsById(userId)).thenReturn(true)
             whenever(storeScheduleRepository.findDistinctStoreIdsByUserIdAndScheduleDateBetween(userId, startDate, endDate))
                 .thenReturn(distinctStoreIds)
-            whenever(storeRepository.findByIdIn(distinctStoreIds)).thenReturn(stores)
+            whenever(accountRepository.findByIdIn(distinctStoreIds)).thenReturn(stores)
             whenever(storeScheduleRepository.findByUserIdAndScheduleDateBetween(userId, startDate, endDate))
                 .thenReturn(schedules)
 
@@ -301,13 +301,13 @@ class MyStoreServiceTest {
 
             val distinctStoreIds = listOf(1025172L)
             val stores = listOf(
-                createStore(
+                createAccount(
                     id = 1025172L,
-                    storeCode = "1025172",
-                    storeName = "(유)경산식품",
-                    address = "전라남도 목포시 임암로20번길 6",
-                    representativeName = "김정자",
-                    phoneNumber = "061-123-4567"
+                    externalKey = "1025172",
+                    name = "(유)경산식품",
+                    address1 = "전라남도 목포시 임암로20번길 6",
+                    representative = "김정자",
+                    phone = "061-123-4567"
                 )
             )
             val schedules = listOf(
@@ -317,7 +317,7 @@ class MyStoreServiceTest {
             whenever(userRepository.existsById(userId)).thenReturn(true)
             whenever(storeScheduleRepository.findDistinctStoreIdsByUserIdAndScheduleDateBetween(userId, startDate, endDate))
                 .thenReturn(distinctStoreIds)
-            whenever(storeRepository.findByIdIn(distinctStoreIds)).thenReturn(stores)
+            whenever(accountRepository.findByIdIn(distinctStoreIds)).thenReturn(stores)
             whenever(storeScheduleRepository.findByUserIdAndScheduleDateBetween(userId, startDate, endDate))
                 .thenReturn(schedules)
 
@@ -341,7 +341,7 @@ class MyStoreServiceTest {
             val endDate = yearMonth.atEndOfMonth()
 
             val distinctStoreIds = listOf(1025172L)
-            val stores = emptyList<Store>()
+            val stores = emptyList<Account>()
             val schedules = listOf(
                 createStoreSchedule(
                     userId = userId,
@@ -355,7 +355,7 @@ class MyStoreServiceTest {
             whenever(userRepository.existsById(userId)).thenReturn(true)
             whenever(storeScheduleRepository.findDistinctStoreIdsByUserIdAndScheduleDateBetween(userId, startDate, endDate))
                 .thenReturn(distinctStoreIds)
-            whenever(storeRepository.findByIdIn(distinctStoreIds)).thenReturn(stores)
+            whenever(accountRepository.findByIdIn(distinctStoreIds)).thenReturn(stores)
             whenever(storeScheduleRepository.findByUserIdAndScheduleDateBetween(userId, startDate, endDate))
                 .thenReturn(schedules)
 
@@ -384,29 +384,29 @@ class MyStoreServiceTest {
 
             val distinctStoreIds = listOf(1025173L, 1025172L, 1025174L)
             val stores = listOf(
-                createStore(
+                createAccount(
                     id = 1025173L,
-                    storeCode = "1025173",
-                    storeName = "홈플러스 서면점",
-                    address = "부산시 서면",
-                    representativeName = "이영희",
-                    phoneNumber = "02-111-2222"
+                    externalKey = "1025173",
+                    name = "홈플러스 서면점",
+                    address1 = "부산시 서면",
+                    representative = "이영희",
+                    phone = "02-111-2222"
                 ),
-                createStore(
+                createAccount(
                     id = 1025172L,
-                    storeCode = "1025172",
-                    storeName = "가나다식품",
-                    address = "전라남도 목포시",
-                    representativeName = "김정자",
-                    phoneNumber = "061-123-4567"
+                    externalKey = "1025172",
+                    name = "가나다식품",
+                    address1 = "전라남도 목포시",
+                    representative = "김정자",
+                    phone = "061-123-4567"
                 ),
-                createStore(
+                createAccount(
                     id = 1025174L,
-                    storeCode = "1025174",
-                    storeName = "나라마트",
-                    address = "부산시 해운대구",
-                    representativeName = "박철수",
-                    phoneNumber = "051-333-4444"
+                    externalKey = "1025174",
+                    name = "나라마트",
+                    address1 = "부산시 해운대구",
+                    representative = "박철수",
+                    phone = "051-333-4444"
                 )
             )
             val schedules = listOf(
@@ -418,7 +418,7 @@ class MyStoreServiceTest {
             whenever(userRepository.existsById(userId)).thenReturn(true)
             whenever(storeScheduleRepository.findDistinctStoreIdsByUserIdAndScheduleDateBetween(userId, startDate, endDate))
                 .thenReturn(distinctStoreIds)
-            whenever(storeRepository.findByIdIn(distinctStoreIds)).thenReturn(stores)
+            whenever(accountRepository.findByIdIn(distinctStoreIds)).thenReturn(stores)
             whenever(storeScheduleRepository.findByUserIdAndScheduleDateBetween(userId, startDate, endDate))
                 .thenReturn(schedules)
 
@@ -445,13 +445,13 @@ class MyStoreServiceTest {
 
             val distinctStoreIds = listOf(1025172L)
             val stores = listOf(
-                createStore(
+                createAccount(
                     id = 1025172L,
-                    storeCode = "1025172",
-                    storeName = "(유)경산식품",
-                    address = "전라남도 목포시",
-                    representativeName = "김정자",
-                    phoneNumber = "061-123-4567"
+                    externalKey = "1025172",
+                    name = "(유)경산식품",
+                    address1 = "전라남도 목포시",
+                    representative = "김정자",
+                    phone = "061-123-4567"
                 )
             )
             val schedules = listOf(
@@ -461,7 +461,7 @@ class MyStoreServiceTest {
             whenever(userRepository.existsById(userId)).thenReturn(true)
             whenever(storeScheduleRepository.findDistinctStoreIdsByUserIdAndScheduleDateBetween(userId, startDate, endDate))
                 .thenReturn(distinctStoreIds)
-            whenever(storeRepository.findByIdIn(distinctStoreIds)).thenReturn(stores)
+            whenever(accountRepository.findByIdIn(distinctStoreIds)).thenReturn(stores)
             whenever(storeScheduleRepository.findByUserIdAndScheduleDateBetween(userId, startDate, endDate))
                 .thenReturn(schedules)
 
@@ -486,21 +486,21 @@ class MyStoreServiceTest {
 
             val distinctStoreIds = listOf(1025172L, 1025173L)
             val stores = listOf(
-                createStore(
+                createAccount(
                     id = 1025172L,
-                    storeCode = "1025172",
-                    storeName = "(유)경산식품",
-                    address = "전라남도 목포시",
-                    representativeName = "김정자",
-                    phoneNumber = "061-123-4567"
+                    externalKey = "1025172",
+                    name = "(유)경산식품",
+                    address1 = "전라남도 목포시",
+                    representative = "김정자",
+                    phone = "061-123-4567"
                 ),
-                createStore(
+                createAccount(
                     id = 1025173L,
-                    storeCode = "1025173",
-                    storeName = "(주)대한식품",
-                    address = "서울시 강남구",
-                    representativeName = "이영희",
-                    phoneNumber = "02-111-2222"
+                    externalKey = "1025173",
+                    name = "(주)대한식품",
+                    address1 = "서울시 강남구",
+                    representative = "이영희",
+                    phone = "02-111-2222"
                 )
             )
             val schedules = listOf(
@@ -511,7 +511,7 @@ class MyStoreServiceTest {
             whenever(userRepository.existsById(userId)).thenReturn(true)
             whenever(storeScheduleRepository.findDistinctStoreIdsByUserIdAndScheduleDateBetween(userId, startDate, endDate))
                 .thenReturn(distinctStoreIds)
-            whenever(storeRepository.findByIdIn(distinctStoreIds)).thenReturn(stores)
+            whenever(accountRepository.findByIdIn(distinctStoreIds)).thenReturn(stores)
             whenever(storeScheduleRepository.findByUserIdAndScheduleDateBetween(userId, startDate, endDate))
                 .thenReturn(schedules)
 
@@ -540,21 +540,21 @@ class MyStoreServiceTest {
         )
     }
 
-    private fun createStore(
+    private fun createAccount(
         id: Long = 1025172L,
-        storeCode: String = "1025172",
-        storeName: String = "(유)경산식품",
-        address: String? = "전라남도 목포시 임암로20번길 6",
-        representativeName: String? = "김정자",
-        phoneNumber: String? = "061-123-4567"
-    ): Store {
-        return Store(
+        externalKey: String = "1025172",
+        name: String = "(유)경산식품",
+        address1: String? = "전라남도 목포시 임암로20번길 6",
+        representative: String? = "김정자",
+        phone: String? = "061-123-4567"
+    ): Account {
+        return Account(
             id = id,
-            storeCode = storeCode,
-            storeName = storeName,
-            address = address,
-            representativeName = representativeName,
-            phoneNumber = phoneNumber
+            externalKey = externalKey,
+            name = name,
+            address1 = address1,
+            representative = representative,
+            phone = phone
         )
     }
 

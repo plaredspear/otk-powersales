@@ -28,10 +28,10 @@ class ShelfLifeRepositoryTest {
     private lateinit var testEntityManager: TestEntityManager
 
     private lateinit var testUser: User
-    private lateinit var testStore: Store
+    private lateinit var testStore: Account
     private lateinit var testProduct: Product
     private lateinit var otherUser: User
-    private lateinit var otherStore: Store
+    private lateinit var otherStore: Account
 
     @BeforeEach
     fun setUp() {
@@ -57,16 +57,16 @@ class ShelfLifeRepositoryTest {
         )
 
         testStore = testEntityManager.persistAndFlush(
-            Store(
-                storeCode = "1025",
-                storeName = "그린유통D"
+            Account(
+                externalKey = "1025",
+                name = "그린유통D"
             )
         )
 
         otherStore = testEntityManager.persistAndFlush(
-            Store(
-                storeCode = "2030",
-                storeName = "광양식자재도매센터(주)"
+            Account(
+                externalKey = "2030",
+                name = "광양식자재도매센터(주)"
             )
         )
 
@@ -363,7 +363,7 @@ class ShelfLifeRepositoryTest {
                 product = testProduct,
                 productCode = testProduct.productCode,
                 productName = testProduct.productName,
-                storeName = testStore.storeName,
+                storeName = testStore.name ?: "",
                 expiryDate = today.plusDays(10),
                 alertDate = today.plusDays(9),
                 description = "테스트 설명"
@@ -386,7 +386,7 @@ class ShelfLifeRepositoryTest {
 
     private fun persistShelfLife(
         user: User,
-        store: Store,
+        store: Account,
         product: Product,
         expiryDate: LocalDate,
         alertDate: LocalDate,
@@ -399,7 +399,7 @@ class ShelfLifeRepositoryTest {
             product = product,
             productCode = product.productCode,
             productName = product.productName,
-            storeName = store.storeName,
+            storeName = store.name ?: "",
             expiryDate = expiryDate,
             alertDate = alertDate,
             description = description,
