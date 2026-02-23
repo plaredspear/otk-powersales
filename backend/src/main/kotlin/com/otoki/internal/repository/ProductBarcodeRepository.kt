@@ -1,0 +1,16 @@
+package com.otoki.internal.repository
+
+import com.otoki.internal.entity.ProductBarcode
+import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.stereotype.Repository
+
+/**
+ * 제품 바코드 Repository
+ */
+@Repository
+interface ProductBarcodeRepository : JpaRepository<ProductBarcode, Long> {
+
+    fun findByProduct(product: String): List<ProductBarcode>
+
+    fun findByProductBarcode(productBarcode: String): List<ProductBarcode>
+}

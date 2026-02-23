@@ -54,15 +54,12 @@ class FavoriteProductServiceTest {
     private fun createTestProduct(productCode: String = "01101123"): Product {
         return Product(
             id = 1L,
-            productId = productCode,
-            productName = "갈릭 아이올리소스 240g",
+            name = "갈릭 아이올리소스 240g",
             productCode = productCode,
-            barcode = "8801045570716",
-            storageType = "냉장",
-            categoryMid = "소스",
-            categorySub = "양념소스",
-            piecesPerBox = 20,
-            unitPrice = 3000L
+            logisticsBarcode = "8801045570716",
+            storageCondition = "냉장",
+            category1 = "소스",
+            category2 = "양념소스"
         )
     }
 
@@ -74,7 +71,7 @@ class FavoriteProductServiceTest {
             id = 1L,
             user = user,
             product = product,
-            productCode = product.productCode,
+            productCode = product.productCode ?: "",
             createdAt = LocalDateTime.of(2026, 2, 1, 10, 0)
         )
     }
@@ -101,8 +98,8 @@ class FavoriteProductServiceTest {
         assertThat(result.totalElements).isEqualTo(1)
         assertThat(result.content[0].productCode).isEqualTo("01101123")
         assertThat(result.content[0].productName).isEqualTo("갈릭 아이올리소스 240g")
-        assertThat(result.content[0].barcode).isEqualTo("8801045570716")
-        assertThat(result.content[0].storageType).isEqualTo("냉장")
+        assertThat(result.content[0].logisticsBarcode).isEqualTo("8801045570716")
+        assertThat(result.content[0].storageCondition).isEqualTo("냉장")
     }
 
     @Test

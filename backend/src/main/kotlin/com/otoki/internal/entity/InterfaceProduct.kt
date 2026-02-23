@@ -5,17 +5,17 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 /**
- * 제품 Entity
- * V1 스키마 dkretail__product__c 테이블에 매핑.
- * Heroku Connect로 Salesforce Product 오브젝트와 동기화된다.
+ * 인터페이스 제품 Entity
+ * V1 스키마 if_product__c 테이블에 매핑.
+ * dkretail__product__c의 트리거(if__product)가 INSERT 시 id를 복사하므로 외부 할당 PK.
+ * 읽기 전용 — 앱에서 INSERT/UPDATE 하지 않음.
  */
 @Entity
-@Table(name = "dkretail__product__c")
-class Product(
+@Table(name = "if_product__c")
+class InterfaceProduct(
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0,
+    val id: Int = 0,
 
     @Column(name = "sfid", length = 18)
     val sfid: String? = null,
@@ -122,6 +122,9 @@ class Product(
     @Column(name = "imgrefpathtxt__c", length = 255)
     val imgRefPathTxt: String? = null,
 
+    @Column(name = "updateflag__c")
+    val updateFlag: Boolean? = null,
+
     @Column(name = "isdeleted")
     val isDeleted: Boolean? = null,
 
@@ -136,13 +139,4 @@ class Product(
 
     @Column(name = "_hc_err", columnDefinition = "TEXT")
     val hcErr: String? = null
-
-    /* --- 주석 처리: V1에 없는 기존 필드 ---
-    productId: V1에 없음 (sfid로 대체)
-    piecesPerBox: V1에 없음 (boxReceivingQuantity로 대체)
-    minOrderUnit: V1에 없음
-    supplyQuantity: V1에 없음
-    dcQuantity: V1에 없음
-    unitPrice: V1에 없음 (standardUnitPrice로 대체)
-    */
 )

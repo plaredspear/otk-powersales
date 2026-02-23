@@ -32,13 +32,13 @@ class ProductRepositoryTest {
 
         // 테스트 데이터 삽입
         val products = listOf(
-            createProduct("18110014", "열라면_용기105G", "18110014", "8801045570716", "라면", "용기면"),
-            createProduct("18110007", "열라면_용기115G", "18110007", "8801045570723", "라면", "용기면"),
-            createProduct("18110001", "열라면_봉지120G", "18110001", "8801045570730", "라면", "봉지면"),
-            createProduct("18120001", "진라면_순한맛_봉지120G", "18120001", "8801045571001", "라면", "봉지면"),
-            createProduct("18120002", "진라면_매운맛_봉지120G", "18120002", "8801045571018", "라면", "봉지면"),
-            createProduct("19110001", "오뚜기카레_약간매운맛100G", "19110001", "8801045573001", "즉석식품", "카레"),
-            createProduct("20110001", "오뚜기마요네스500G", "20110001", "8801045575001", "소스", "마요네스")
+            createProduct("열라면_용기105G", "18110014", "8801045570716", "라면", "용기면"),
+            createProduct("열라면_용기115G", "18110007", "8801045570723", "라면", "용기면"),
+            createProduct("열라면_봉지120G", "18110001", "8801045570730", "라면", "봉지면"),
+            createProduct("진라면_순한맛_봉지120G", "18120001", "8801045571001", "라면", "봉지면"),
+            createProduct("진라면_매운맛_봉지120G", "18120002", "8801045571018", "라면", "봉지면"),
+            createProduct("오뚜기카레_약간매운맛100G", "19110001", "8801045573001", "즉석식품", "카레"),
+            createProduct("오뚜기마요네스500G", "20110001", "8801045575001", "소스", "마요네스")
         )
         products.forEach { testEntityManager.persistAndFlush(it) }
         testEntityManager.clear()
@@ -62,7 +62,7 @@ class ProductRepositoryTest {
             // Then
             assertThat(result.content).hasSize(3)
             assertThat(result.content).allSatisfy { product ->
-                assertThat(product.productName).containsIgnoringCase("열라면")
+                assertThat(product.name).containsIgnoringCase("열라면")
             }
         }
 
@@ -78,7 +78,7 @@ class ProductRepositoryTest {
             // Then
             assertThat(result.content).hasSize(2)
             assertThat(result.content).allSatisfy { product ->
-                assertThat(product.productName).containsIgnoringCase("진라면")
+                assertThat(product.name).containsIgnoringCase("진라면")
             }
         }
 
@@ -123,7 +123,7 @@ class ProductRepositoryTest {
 
             // Then
             assertThat(result.content).hasSizeGreaterThan(1)
-            val names = result.content.map { it.productName }
+            val names = result.content.map { it.name }
             assertThat(names).isSorted()
         }
     }
@@ -145,7 +145,7 @@ class ProductRepositoryTest {
 
             // Then
             assertThat(result.content).hasSize(1)
-            assertThat(result.content[0].barcode).isEqualTo("8801045570716")
+            assertThat(result.content[0].logisticsBarcode).isEqualTo("8801045570716")
         }
 
         @Test
@@ -165,35 +165,35 @@ class ProductRepositoryTest {
         }
     }
 
-    // ========== findByBarcode Tests ==========
+    // ========== findByLogisticsBarcode Tests ==========
 
     @Nested
-    @DisplayName("findByBarcode - 바코드 정확 일치 검색")
-    inner class FindByBarcodeTests {
+    @DisplayName("findByLogisticsBarcode - 바코드 정확 일치 검색")
+    inner class FindByLogisticsBarcodeTests {
 
         @Test
         @DisplayName("존재하는 바코드 검색 - 해당 제품 반환")
-        fun findByBarcode_existingBarcode_returnsProduct() {
+        fun findByLogisticsBarcode_existingBarcode_returnsProduct() {
             // Given
             val pageable = PageRequest.of(0, 20)
 
             // When
-            val result = productRepository.findByBarcode("8801045570716", pageable)
+            val result = productRepository.findByLogisticsBarcode("8801045570716", pageable)
 
             // Then
             assertThat(result.content).hasSize(1)
-            assertThat(result.content[0].barcode).isEqualTo("8801045570716")
-            assertThat(result.content[0].productName).isEqualTo("열라면_용기105G")
+            assertThat(result.content[0].logisticsBarcode).isEqualTo("8801045570716")
+            assertThat(result.content[0].name).isEqualTo("열라면_용기105G")
         }
 
         @Test
         @DisplayName("존재하지 않는 바코드 검색 - 빈 결과 반환")
-        fun findByBarcode_nonExistingBarcode_returnsEmpty() {
+        fun findByLogisticsBarcode_nonExistingBarcode_returnsEmpty() {
             // Given
             val pageable = PageRequest.of(0, 20)
 
             // When
-            val result = productRepository.findByBarcode("0000000000000", pageable)
+            val result = productRepository.findByLogisticsBarcode("0000000000000", pageable)
 
             // Then
             assertThat(result.content).isEmpty()
@@ -241,22 +241,20 @@ class ProductRepositoryTest {
     // ========== 헬퍼 메서드 ==========
 
     private fun createProduct(
-        productId: String,
         productName: String,
         productCode: String,
-        barcode: String,
-        categoryMid: String? = null,
-        categorySub: String? = null
+        logisticsBarcode: String,
+        category1: String? = null,
+        category2: String? = null
     ): Product {
         return Product(
-            productId = productId,
-            productName = productName,
+            name = productName,
             productCode = productCode,
-            barcode = barcode,
-            storageType = "상온",
+            logisticsBarcode = logisticsBarcode,
+            storageCondition = "상온",
             shelfLife = "7개월",
-            categoryMid = categoryMid,
-            categorySub = categorySub
+            category1 = category1,
+            category2 = category2
         )
     }
 }

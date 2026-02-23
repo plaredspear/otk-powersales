@@ -716,11 +716,10 @@ class ShelfLifeServiceTest {
     ): Product {
         return Product(
             id = id,
-            productId = productCode,
-            productName = productName,
+            name = productName,
             productCode = productCode,
-            barcode = "8801045570001",
-            storageType = "상온"
+            logisticsBarcode = "8801045570001",
+            storageCondition = "상온"
         )
     }
 
@@ -742,8 +741,8 @@ class ShelfLifeServiceTest {
             user = user,
             store = account,
             product = product,
-            productCode = product.productCode,
-            productName = product.productName,
+            productCode = product.productCode ?: "",
+            productName = product.name ?: "",
             storeName = account.name ?: "",
             expiryDate = expiryDate,
             alertDate = alertDate,
