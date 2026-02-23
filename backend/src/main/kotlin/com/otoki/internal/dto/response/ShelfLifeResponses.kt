@@ -1,12 +1,12 @@
 package com.otoki.internal.dto.response
 
+/* --- 전체 주석 처리: V1 Entity 리매핑 (Spec 77) ---
+ * ShelfLife Entity 구조 변경으로 from() 변환 로직이 컴파일 오류 → 주석 처리.
+
 import com.otoki.internal.entity.ShelfLife
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
-/**
- * 유통기한 항목 Response DTO (목록/상세 공통)
- */
 data class ShelfLifeItemResponse(
     val id: Long,
     val productCode: String,
@@ -20,17 +20,10 @@ data class ShelfLifeItemResponse(
     val isExpired: Boolean
 ) {
     companion object {
-        /**
-         * Entity → Response 변환
-         * dDay와 isExpired는 오늘 날짜 기준으로 계산한다.
-         */
         fun from(entity: ShelfLife): ShelfLifeItemResponse {
             return from(entity, LocalDate.now())
         }
 
-        /**
-         * Entity → Response 변환 (기준일 지정, 테스트용)
-         */
         fun from(entity: ShelfLife, today: LocalDate): ShelfLifeItemResponse {
             val dDay = ChronoUnit.DAYS.between(today, entity.expiryDate).toInt()
             return ShelfLifeItemResponse(
@@ -49,18 +42,14 @@ data class ShelfLifeItemResponse(
     }
 }
 
-/**
- * 유통기한 목록 조회 Response DTO
- */
 data class ShelfLifeListResponse(
     val totalCount: Int,
     val expiredItems: List<ShelfLifeItemResponse>,
     val upcomingItems: List<ShelfLifeItemResponse>
 )
 
-/**
- * 유통기한 일괄 삭제 Response DTO
- */
 data class ShelfLifeBatchDeleteResponse(
     val deletedCount: Int
 )
+
+--- */

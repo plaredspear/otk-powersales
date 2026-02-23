@@ -5,39 +5,35 @@ import java.time.LocalDateTime
 
 /**
  * 즐겨찾기 제품 Entity
- * 사용자가 즐겨찾기한 제품 정보를 관리한다.
- * 사용자당 동일 제품 중복 방지를 위해 Unique Constraint를 적용한다.
+ *
+ * V1 테이블: salesforce2.product_favorites (PK 없음 → @IdClass 복합 키)
+ * @ManyToOne 관계를 raw String 컬럼으로 전환.
  */
 @Entity
-@Table(
-    name = "favorite_products",
-    uniqueConstraints = [
-        UniqueConstraint(
-            name = "uk_favorite_products_user_product",
-            columnNames = ["user_id", "product_id"]
-        )
-    ],
-    indexes = [
-        Index(name = "idx_favorite_products_user_id", columnList = "user_id")
-    ]
-)
+@Table(name = "product_favorites")
+@IdClass(ProductFavoriteId::class)
 class FavoriteProduct(
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0,
+    @Column(name = "employeecode", length = 80)
+    val employeeCode: String = "",
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    val user: User,
+    @Id
+    @Column(name = "productcode", length = 80)
+    val productCode: String = "",
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id", nullable = false)
-    val product: Product,
+    @Column(name = "inst_date")
+    val instDate: LocalDateTime? = null,
 
-    @Column(name = "product_code", nullable = false, length = 20)
-    val productCode: String,
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    val createdAt: LocalDateTime = LocalDateTime.now()
+    @Column(name = "upd_date")
+    val updDate: LocalDateTime? = null
 )
+
+/* --- 주석 처리: V1에 없는 기존 필드 ---
+id: Long — V2 IDENTITY PK → @IdClass(employeeCode, productCode) 로 대체
+user: User (@ManyToOne) → employeeCode: String
+product: Product (@ManyToOne) → productCode: String (컬럼 재정의)
+productCode: String (기존 @Column 정의) → @Id 컬럼으로 승격
+createdAt → instDate
+@UniqueConstraint, @Table(indexes): V1 매핑 시 제거
+--- */

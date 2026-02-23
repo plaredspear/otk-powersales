@@ -1,22 +1,23 @@
 package com.otoki.internal.repository
 
 import com.otoki.internal.entity.FavoriteProduct
-import org.springframework.data.domain.Page
-import org.springframework.data.domain.Pageable
+import com.otoki.internal.entity.ProductFavoriteId
 import org.springframework.data.jpa.repository.JpaRepository
-import org.springframework.data.jpa.repository.Query
-import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
 
 /**
  * 즐겨찾기 제품 Repository
+ *
+ * V1 스키마 리매핑 후: 기존 쿼리 메서드는 @ManyToOne 기반 경로 참조로
+ * Entity 변경에 의해 컴파일 오류 발생 → 전체 주석 처리.
+ * Service 비활성 상태이므로 호출부 없음.
  */
 @Repository
-interface FavoriteProductRepository : JpaRepository<FavoriteProduct, Long> {
+interface FavoriteProductRepository : JpaRepository<FavoriteProduct, ProductFavoriteId>
 
-    /**
-     * 사용자의 즐겨찾기 제품 목록 조회 (Product JOIN FETCH)
-     */
+/* --- 주석 처리: V1 리매핑으로 경로 변경된 기존 쿼리 메서드 ---
+
+    // findByUserIdWithProduct: f.user.id, JOIN FETCH f.product, f.createdAt 참조
     @Query(
         "SELECT f FROM FavoriteProduct f " +
         "JOIN FETCH f.product " +
@@ -29,13 +30,10 @@ interface FavoriteProductRepository : JpaRepository<FavoriteProduct, Long> {
         pageable: Pageable
     ): Page<FavoriteProduct>
 
-    /**
-     * 사용자가 특정 제품을 즐겨찾기에 추가했는지 확인
-     */
+    // existsByUserIdAndProductCode: userId → employeeCode 변경
     fun existsByUserIdAndProductCode(userId: Long, productCode: String): Boolean
 
-    /**
-     * 사용자와 제품코드로 즐겨찾기 조회
-     */
+    // findByUserIdAndProductCode: userId → employeeCode 변경
     fun findByUserIdAndProductCode(userId: Long, productCode: String): FavoriteProduct?
-}
+
+--- */

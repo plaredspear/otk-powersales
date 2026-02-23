@@ -1,5 +1,8 @@
 package com.otoki.internal.dto.request
 
+/* --- 전체 주석 처리: V1 Entity 리매핑 (Spec 77) ---
+ * ShelfLifeController/Service 비활성화로 Request DTO도 주석 처리.
+
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotEmpty
 import jakarta.validation.constraints.NotNull
@@ -7,9 +10,6 @@ import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Positive
 import jakarta.validation.constraints.Size
 
-/**
- * 유통기한 등록 요청 DTO
- */
 data class ShelfLifeCreateRequest(
     @field:NotNull(message = "거래처 ID는 필수입니다")
     @field:Positive(message = "거래처 ID는 양수여야 합니다")
@@ -36,9 +36,6 @@ data class ShelfLifeCreateRequest(
     val description: String? = null
 )
 
-/**
- * 유통기한 수정 요청 DTO
- */
 data class ShelfLifeUpdateRequest(
     @field:NotBlank(message = "유통기한은 필수입니다")
     @field:Pattern(
@@ -58,10 +55,9 @@ data class ShelfLifeUpdateRequest(
     val description: String? = null
 )
 
-/**
- * 유통기한 일괄 삭제 요청 DTO
- */
 data class ShelfLifeBatchDeleteRequest(
     @field:NotEmpty(message = "삭제할 항목을 선택해주세요")
     val ids: List<@Positive(message = "ID는 양수여야 합니다") Long>?
 )
+
+--- */

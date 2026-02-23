@@ -1,5 +1,10 @@
 package com.otoki.internal.service
 
+/* --- 전체 주석 처리: V1 Entity 리매핑 (Spec 77) ---
+ * FavoriteProduct Entity가 V1 스키마로 리매핑되어 @ManyToOne 관계(user, product)가
+ * raw String 컬럼으로 변환됨. 기존 비즈니스 로직이 V2 Entity 구조를 직접 참조하므로
+ * 컴파일 오류 발생 → 전체 주석 처리.
+
 import com.otoki.internal.dto.response.FavoriteProductResponse
 import com.otoki.internal.entity.FavoriteProduct
 import com.otoki.internal.exception.AlreadyFavoritedException
@@ -14,9 +19,6 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
-/**
- * 즐겨찾기 제품 Service
- */
 @Service
 @Transactional(readOnly = true)
 class FavoriteProductService(
@@ -30,14 +32,6 @@ class FavoriteProductService(
         private const val MAX_PAGE_SIZE = 100
     }
 
-    /**
-     * 즐겨찾기 제품 목록 조회
-     *
-     * @param userId 로그인 사용자 ID
-     * @param page 페이지 번호 (기본: 0)
-     * @param size 페이지 크기 (기본: 20, 최대: 100)
-     * @return 즐겨찾기 제품 페이지
-     */
     fun getMyFavoriteProducts(
         userId: Long,
         page: Int?,
@@ -54,30 +48,18 @@ class FavoriteProductService(
         return favoritePage.map { FavoriteProductResponse.from(it) }
     }
 
-    /**
-     * 즐겨찾기 추가
-     *
-     * @param userId 로그인 사용자 ID
-     * @param productCode 제품코드
-     * @throws ProductNotFoundException 제품을 찾을 수 없는 경우
-     * @throws AlreadyFavoritedException 이미 즐겨찾기에 추가된 경우
-     */
     @Transactional
     fun addFavoriteProduct(userId: Long, productCode: String) {
-        // 1. 제품 존재 확인
         val product = productRepository.findByProductCode(productCode)
             ?: throw ProductNotFoundException(productCode)
 
-        // 2. 중복 확인
         if (favoriteProductRepository.existsByUserIdAndProductCode(userId, productCode)) {
             throw AlreadyFavoritedException()
         }
 
-        // 3. 사용자 조회
         val user = userRepository.findById(userId)
             .orElseThrow { IllegalStateException("사용자를 찾을 수 없습니다") }
 
-        // 4. 즐겨찾기 생성 및 저장
         val favorite = FavoriteProduct(
             user = user,
             product = product,
@@ -86,13 +68,6 @@ class FavoriteProductService(
         favoriteProductRepository.save(favorite)
     }
 
-    /**
-     * 즐겨찾기 해제
-     *
-     * @param userId 로그인 사용자 ID
-     * @param productCode 제품코드
-     * @throws FavoriteNotFoundException 즐겨찾기에 없는 경우
-     */
     @Transactional
     fun removeFavoriteProduct(userId: Long, productCode: String) {
         val favorite = favoriteProductRepository.findByUserIdAndProductCode(userId, productCode)
@@ -110,3 +85,5 @@ class FavoriteProductService(
         }
     }
 }
+
+--- */
