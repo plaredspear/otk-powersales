@@ -38,5 +38,8 @@ class EmployeeMng(
     val instDate: LocalDateTime? = null,
 
     @Column(name = "upd_date")
-    var updDate: LocalDateTime? = null
+    var updDate: LocalDateTime? = null,
+
+    @Column(name = "last_agreement_number", length = 80)
+    var lastAgreementNumber: String? = null
 )

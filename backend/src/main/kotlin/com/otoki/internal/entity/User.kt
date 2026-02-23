@@ -84,7 +84,8 @@ class User(
     password: String = "",
     passwordChangeRequired: Boolean? = true,
     deviceUuid: String? = null,
-    fcmToken: String? = null
+    fcmToken: String? = null,
+    lastAgreementNumber: String? = null
 ) {
 
     // --- employee_mng @OneToOne 관계 ---
@@ -102,7 +103,8 @@ class User(
         password = password,
         passwordChangeRequired = passwordChangeRequired,
         deviceUuid = deviceUuid,
-        fcmToken = fcmToken
+        fcmToken = fcmToken,
+        lastAgreementNumber = lastAgreementNumber
     )
 
     // --- Delegate properties (기존 인터페이스 유지) ---
@@ -122,6 +124,10 @@ class User(
     var fcmToken: String?
         get() = employeeMng?.fcmToken
         set(value) { ensureEmployeeMng().fcmToken = value }
+
+    var lastAgreementNumber: String?
+        get() = employeeMng?.lastAgreementNumber
+        set(value) { ensureEmployeeMng().lastAgreementNumber = value }
 
     val gpsYn: Boolean?
         get() = employeeMng?.gpsYn
@@ -167,8 +173,11 @@ class User(
         return agreementFlag != true
     }
 
-    fun recordGpsConsent() {
+    fun recordGpsConsent(agreementNumber: String? = null) {
         this.agreementFlag = true
+        if (agreementNumber != null) {
+            this.lastAgreementNumber = agreementNumber
+        }
         this.updDate = LocalDateTime.now()
     }
 

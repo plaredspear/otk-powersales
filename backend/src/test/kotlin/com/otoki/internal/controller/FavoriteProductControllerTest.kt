@@ -5,6 +5,7 @@ import com.otoki.internal.entity.UserRole
 import com.otoki.internal.exception.AlreadyFavoritedException
 import com.otoki.internal.exception.FavoriteNotFoundException
 import com.otoki.internal.exception.ProductNotFoundException
+import com.otoki.internal.security.GpsConsentFilter
 import com.otoki.internal.security.JwtAuthenticationFilter
 import com.otoki.internal.security.JwtTokenProvider
 import com.otoki.internal.security.UserPrincipal
@@ -40,6 +41,9 @@ class FavoriteProductControllerTest {
 
     @MockitoBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
+
+    @MockitoBean
+    private lateinit var gpsConsentFilter: GpsConsentFilter
 
     private val testUserId = 1L
 

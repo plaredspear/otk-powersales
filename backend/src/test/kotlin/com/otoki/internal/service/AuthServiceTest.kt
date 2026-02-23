@@ -2,13 +2,16 @@ package com.otoki.internal.service
 
 import com.otoki.internal.config.DeviceBindingProperties
 import com.otoki.internal.dto.request.ChangePasswordRequest
+import com.otoki.internal.dto.request.GpsConsentRequest
 import com.otoki.internal.dto.request.LoginRequest
 import com.otoki.internal.dto.request.RefreshTokenRequest
 import com.otoki.internal.dto.request.VerifyPasswordRequest
+import com.otoki.internal.entity.AgreementWord
 import com.otoki.internal.entity.LoginHistory
 import com.otoki.internal.entity.User
 import com.otoki.internal.entity.UserRole
 import com.otoki.internal.exception.*
+import com.otoki.internal.repository.AgreementWordRepository
 import com.otoki.internal.repository.LoginHistoryRepository
 import com.otoki.internal.repository.UserRepository
 import com.otoki.internal.security.JwtTokenProvider
@@ -38,6 +41,9 @@ class AuthServiceTest {
 
     @Mock
     private lateinit var loginHistoryRepository: LoginHistoryRepository
+
+    @Mock
+    private lateinit var agreementWordRepository: AgreementWordRepository
 
     @Mock
     private lateinit var passwordEncoder: PasswordEncoder
@@ -78,7 +84,7 @@ class AuthServiceTest {
 
         whenever(userRepository.findByEmployeeId(employeeId)).thenReturn(Optional.of(user))
         whenever(passwordEncoder.matches(rawPassword, encodedPassword)).thenReturn(true)
-        whenever(jwtTokenProvider.createAccessToken(user.id, user.role)).thenReturn(accessToken)
+        whenever(jwtTokenProvider.createAccessToken(user.id, user.role, false)).thenReturn(accessToken)
         whenever(jwtTokenProvider.createRefreshToken(user.id)).thenReturn(refreshToken)
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(expiresIn)
 
@@ -269,7 +275,7 @@ class AuthServiceTest {
         whenever(jwtTokenProvider.getTokenType(refreshToken)).thenReturn("refresh")
         whenever(jwtTokenProvider.getUserIdFromToken(refreshToken)).thenReturn(userId)
         whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-        whenever(jwtTokenProvider.createAccessToken(userId, UserRole.USER)).thenReturn(newAccessToken)
+        whenever(jwtTokenProvider.createAccessToken(userId, UserRole.USER, false)).thenReturn(newAccessToken)
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(expiresIn)
 
         // When
@@ -357,7 +363,69 @@ class AuthServiceTest {
     // ========== GPS Consent Tests ==========
 
     @Test
-    @DisplayName("GPS 동의 기록 성공 - agreementFlag가 true로 업데이트")
+    @DisplayName("GPS 약관 조회 성공 - 활성 약관 반환")
+    fun getGpsConsentTerms_success() {
+        // Given
+        val terms = AgreementWord(
+            id = 1,
+            name = "AGR-2025-001",
+            contents = "약관 본문",
+            active = true,
+            isDeleted = false
+        )
+        whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
+            .thenReturn(Optional.of(terms))
+
+        // When
+        val response = authService.getGpsConsentTerms()
+
+        // Then
+        assertThat(response.agreementNumber).isEqualTo("AGR-2025-001")
+        assertThat(response.contents).isEqualTo("약관 본문")
+    }
+
+    @Test
+    @DisplayName("GPS 약관 조회 실패 - 활성 약관 없음")
+    fun getGpsConsentTerms_notFound() {
+        // Given
+        whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
+            .thenReturn(Optional.empty())
+
+        // When & Then
+        assertThatThrownBy { authService.getGpsConsentTerms() }
+            .isInstanceOf(TermsNotFoundException::class.java)
+    }
+
+    @Test
+    @DisplayName("GPS 동의 상태 - 미동의 사용자")
+    fun getGpsConsentStatus_requiresConsent() {
+        // Given
+        val user = createTestUser(id = 1L, agreementFlag = null)
+        whenever(userRepository.findById(1L)).thenReturn(Optional.of(user))
+
+        // When
+        val response = authService.getGpsConsentStatus(1L)
+
+        // Then
+        assertThat(response.requiresGpsConsent).isTrue()
+    }
+
+    @Test
+    @DisplayName("GPS 동의 상태 - 동의 완료 사용자")
+    fun getGpsConsentStatus_consentGiven() {
+        // Given
+        val user = createTestUser(id = 1L, agreementFlag = true)
+        whenever(userRepository.findById(1L)).thenReturn(Optional.of(user))
+
+        // When
+        val response = authService.getGpsConsentStatus(1L)
+
+        // Then
+        assertThat(response.requiresGpsConsent).isFalse()
+    }
+
+    @Test
+    @DisplayName("GPS 동의 기록 성공 - agreementFlag가 true로 업데이트, 새 토큰 반환")
     fun recordGpsConsent_success() {
         // Given
         val userId = 1L
@@ -365,14 +433,41 @@ class AuthServiceTest {
 
         whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
         whenever(userRepository.save(any<User>())).thenAnswer { it.arguments[0] }
+        whenever(jwtTokenProvider.createAccessToken(userId, UserRole.USER, true)).thenReturn("new-token")
+        whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
         // When
-        authService.recordGpsConsent(userId)
+        val response = authService.recordGpsConsent(userId)
 
         // Then
         verify(userRepository).save(userCaptor.capture())
         val savedUser = userCaptor.value
         assertThat(savedUser.agreementFlag).isTrue()
+        assertThat(response.accessToken).isEqualTo("new-token")
+        assertThat(response.expiresIn).isEqualTo(3600)
+    }
+
+    @Test
+    @DisplayName("GPS 동의 기록 - 약관번호 포함 시 lastAgreementNumber 저장")
+    fun recordGpsConsent_withAgreementNumber() {
+        // Given
+        val userId = 1L
+        val user = createTestUser(id = userId, agreementFlag = null)
+        val request = GpsConsentRequest(agreementNumber = "AGR-2025-001")
+
+        whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+        whenever(userRepository.save(any<User>())).thenAnswer { it.arguments[0] }
+        whenever(jwtTokenProvider.createAccessToken(userId, UserRole.USER, true)).thenReturn("new-token")
+        whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
+
+        // When
+        authService.recordGpsConsent(userId, request)
+
+        // Then
+        verify(userRepository).save(userCaptor.capture())
+        val savedUser = userCaptor.value
+        assertThat(savedUser.agreementFlag).isTrue()
+        assertThat(savedUser.lastAgreementNumber).isEqualTo("AGR-2025-001")
     }
 
     @Test
@@ -415,7 +510,7 @@ class AuthServiceTest {
         whenever(deviceBindingProperties.enabled).thenReturn(true)
         whenever(deviceBindingProperties.isExcluded("12345678")).thenReturn(false)
         whenever(userRepository.save(any<User>())).thenAnswer { it.arguments[0] }
-        whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER)).thenReturn("token")
+        whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER, false)).thenReturn("token")
         whenever(jwtTokenProvider.createRefreshToken(1L)).thenReturn("refresh")
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
@@ -439,7 +534,7 @@ class AuthServiceTest {
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
         whenever(deviceBindingProperties.enabled).thenReturn(true)
         whenever(deviceBindingProperties.isExcluded("12345678")).thenReturn(false)
-        whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER)).thenReturn("token")
+        whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER, false)).thenReturn("token")
         whenever(jwtTokenProvider.createRefreshToken(1L)).thenReturn("refresh")
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
@@ -476,7 +571,7 @@ class AuthServiceTest {
 
         whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(user))
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
-        whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER)).thenReturn("token")
+        whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER, false)).thenReturn("token")
         whenever(jwtTokenProvider.createRefreshToken(1L)).thenReturn("refresh")
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
@@ -497,7 +592,7 @@ class AuthServiceTest {
         whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(user))
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
         whenever(deviceBindingProperties.enabled).thenReturn(false)
-        whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER)).thenReturn("token")
+        whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER, false)).thenReturn("token")
         whenever(jwtTokenProvider.createRefreshToken(1L)).thenReturn("refresh")
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
@@ -519,7 +614,7 @@ class AuthServiceTest {
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
         whenever(deviceBindingProperties.enabled).thenReturn(true)
         whenever(deviceBindingProperties.isExcluded("20010585")).thenReturn(true)
-        whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER)).thenReturn("token")
+        whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER, false)).thenReturn("token")
         whenever(jwtTokenProvider.createRefreshToken(1L)).thenReturn("refresh")
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 

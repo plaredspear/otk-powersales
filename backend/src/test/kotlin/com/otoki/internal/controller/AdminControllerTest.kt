@@ -2,6 +2,7 @@ package com.otoki.internal.controller
 
 import com.otoki.internal.entity.UserRole
 import com.otoki.internal.exception.UserNotFoundException
+import com.otoki.internal.security.GpsConsentFilter
 import com.otoki.internal.security.JwtAuthenticationFilter
 import com.otoki.internal.security.JwtTokenProvider
 import com.otoki.internal.security.UserPrincipal
@@ -40,6 +41,9 @@ class AdminControllerTest {
 
     @MockitoBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
+
+    @MockitoBean
+    private lateinit var gpsConsentFilter: GpsConsentFilter
 
     @Nested
     @DisplayName("POST /api/v1/admin/users/{employeeId}/reset-device - 단말기 초기화")

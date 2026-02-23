@@ -1,5 +1,6 @@
 package com.otoki.internal.config
 
+import com.otoki.internal.security.GpsConsentFilter
 import com.otoki.internal.security.JwtAuthenticationFilter
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
@@ -22,7 +23,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableMethodSecurity(prePostEnabled = true)
 @EnableConfigurationProperties(DeviceBindingProperties::class)
 class SecurityConfig(
-    private val jwtAuthenticationFilter: JwtAuthenticationFilter
+    private val jwtAuthenticationFilter: JwtAuthenticationFilter,
+    private val gpsConsentFilter: GpsConsentFilter
 ) {
 
     @Bean
@@ -47,6 +49,7 @@ class SecurityConfig(
                 headers.frameOptions { it.sameOrigin() }  // H2 Console 사용을 위해
             }
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
+            .addFilterAfter(gpsConsentFilter, JwtAuthenticationFilter::class.java)
 
         return http.build()
     }

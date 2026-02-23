@@ -8,6 +8,7 @@ import com.otoki.internal.exception.ClientNotFoundException
 import com.otoki.internal.exception.ForbiddenClientAccessException
 import com.otoki.internal.exception.InvalidOrderParameterException
 import com.otoki.internal.exception.OrderNotFoundException
+import com.otoki.internal.security.GpsConsentFilter
 import com.otoki.internal.security.JwtAuthenticationFilter
 import com.otoki.internal.security.JwtTokenProvider
 import com.otoki.internal.security.UserPrincipal
@@ -48,6 +49,9 @@ class ClientOrderControllerTest {
 
     @MockitoBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
+
+    @MockitoBean
+    private lateinit var gpsConsentFilter: GpsConsentFilter
 
     private val testPrincipal = UserPrincipal(userId = 1L, role = UserRole.USER)
 

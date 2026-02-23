@@ -55,3 +55,15 @@ class DeviceMismatchException : BusinessException(
     message = "등록된 단말기와 다른 기기입니다. 관리자에게 문의하세요",
     httpStatus = HttpStatus.FORBIDDEN
 )
+
+class TermsNotFoundException : BusinessException(
+    errorCode = "TERMS_NOT_FOUND",
+    message = "활성화된 약관이 없습니다",
+    httpStatus = HttpStatus.NOT_FOUND
+)
+
+class GpsConsentRequiredException : BusinessException(
+    errorCode = "GPS_CONSENT_REQUIRED",
+    message = "GPS 사용 동의가 필요합니다",
+    httpStatus = HttpStatus.FORBIDDEN
+)

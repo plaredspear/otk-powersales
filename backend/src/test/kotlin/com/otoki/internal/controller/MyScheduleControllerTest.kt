@@ -2,6 +2,7 @@ package com.otoki.internal.controller
 
 import com.otoki.internal.dto.response.*
 import com.otoki.internal.entity.UserRole
+import com.otoki.internal.security.GpsConsentFilter
 import com.otoki.internal.security.JwtAuthenticationFilter
 import com.otoki.internal.security.JwtTokenProvider
 import com.otoki.internal.security.UserPrincipal
@@ -44,6 +45,9 @@ class MyScheduleControllerTest {
 
     @MockitoBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
+
+    @MockitoBean
+    private lateinit var gpsConsentFilter: GpsConsentFilter
 
     private val testPrincipal = UserPrincipal(userId = 1L, role = UserRole.USER)
 

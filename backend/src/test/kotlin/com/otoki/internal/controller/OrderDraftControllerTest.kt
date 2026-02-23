@@ -11,6 +11,7 @@ import com.otoki.internal.exception.ClientNotFoundException
 import com.otoki.internal.exception.DraftNotFoundException
 import com.otoki.internal.exception.InvalidDeliveryDateException
 import com.otoki.internal.exception.ProductNotFoundException
+import com.otoki.internal.security.GpsConsentFilter
 import com.otoki.internal.security.JwtAuthenticationFilter
 import com.otoki.internal.security.JwtTokenProvider
 import com.otoki.internal.security.UserPrincipal
@@ -53,6 +54,9 @@ class OrderDraftControllerTest {
 
     @MockitoBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
+
+    @MockitoBean
+    private lateinit var gpsConsentFilter: GpsConsentFilter
 
     private lateinit var testPrincipal: UserPrincipal
 
