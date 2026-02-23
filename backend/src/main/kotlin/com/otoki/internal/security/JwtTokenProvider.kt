@@ -1,12 +1,15 @@
 package com.otoki.internal.security
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.otoki.internal.entity.UserRole
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.ExpiredJwtException
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.security.Keys
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.stereotype.Component
+import java.time.Duration
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import javax.crypto.SecretKey
@@ -18,7 +21,9 @@ import javax.crypto.SecretKey
 class JwtTokenProvider(
     @Value("\${jwt.secret}") private val secret: String,
     @Value("\${jwt.expiration}") private val accessExpiration: Long,
-    @Value("\${jwt.refresh-expiration}") private val refreshExpiration: Long
+    @Value("\${jwt.refresh-expiration}") private val refreshExpiration: Long,
+    private val redisTemplate: RedisTemplate<String, String>,
+    private val objectMapper: ObjectMapper
 ) {
 
     private val key: SecretKey by lazy {
@@ -47,15 +52,19 @@ class JwtTokenProvider(
     }
 
     /**
-     * Refresh Token 생성
+     * Refresh Token 생성 (Rotation 지원)
+     * family_id: Token Family ID (최초 로그인 시 생성, UUID)
+     * token_id: 개별 Token ID (매 갱신 시 새로 생성, UUID)
      */
-    fun createRefreshToken(userId: Long): String {
+    fun createRefreshToken(userId: Long, familyId: String, tokenId: String): String {
         val now = Date()
         val expiry = Date(now.time + refreshExpiration)
 
         return Jwts.builder()
             .subject(userId.toString())
             .claim("type", "refresh")
+            .claim("family_id", familyId)
+            .claim("token_id", tokenId)
             .issuedAt(now)
             .expiration(expiry)
             .signWith(key)
@@ -107,6 +116,20 @@ class JwtTokenProvider(
     }
 
     /**
+     * 토큰에서 family_id 추출
+     */
+    fun getFamilyIdFromToken(token: String): String {
+        return parseClaims(token).get("family_id", String::class.java)
+    }
+
+    /**
+     * 토큰에서 token_id 추출
+     */
+    fun getTokenIdFromToken(token: String): String {
+        return parseClaims(token).get("token_id", String::class.java)
+    }
+
+    /**
      * 토큰을 블랙리스트에 추가 (로그아웃 시 사용)
      */
     fun blacklistToken(token: String) {
@@ -125,6 +148,63 @@ class JwtTokenProvider(
     fun getAccessTokenExpirationSeconds(): Int {
         return (accessExpiration / 1000).toInt()
     }
+
+    // ========== Redis operations for Refresh Token Rotation ==========
+
+    /**
+     * Refresh Token 메타데이터를 Redis에 저장
+     */
+    fun storeRefreshToken(tokenId: String, userId: Long, familyId: String) {
+        val metadata = mapOf(
+            "userId" to userId,
+            "familyId" to familyId,
+            "issuedAt" to System.currentTimeMillis(),
+            "expiresAt" to System.currentTimeMillis() + refreshExpiration
+        )
+        val json = objectMapper.writeValueAsString(metadata)
+        val ttl = Duration.ofMillis(refreshExpiration)
+        redisTemplate.opsForValue().set("refresh:$tokenId", json, ttl)
+        redisTemplate.opsForValue().set("user_refresh:$userId", tokenId, ttl)
+    }
+
+    /**
+     * Refresh Token을 Redis에서 삭제
+     */
+    fun deleteRefreshToken(tokenId: String) {
+        redisTemplate.delete("refresh:$tokenId")
+    }
+
+    /**
+     * userId 기반으로 Refresh Token을 Redis에서 삭제 (로그아웃 시 사용)
+     */
+    fun deleteRefreshTokenByUserId(userId: Long) {
+        val tokenId = redisTemplate.opsForValue().get("user_refresh:$userId")
+        if (tokenId != null) {
+            redisTemplate.delete("refresh:$tokenId")
+        }
+        redisTemplate.delete("user_refresh:$userId")
+    }
+
+    /**
+     * Refresh Token이 Redis에 존재하는지 확인
+     */
+    fun isRefreshTokenStored(tokenId: String): Boolean =
+        redisTemplate.hasKey("refresh:$tokenId") == true
+
+    /**
+     * Token Family 전체 무효화 (탈취 감지 시)
+     */
+    fun revokeTokenFamily(familyId: String) {
+        redisTemplate.opsForValue().set(
+            "refresh_family:$familyId", "revoked", Duration.ofMillis(refreshExpiration)
+        )
+    }
+
+    /**
+     * Token Family가 무효화되었는지 확인
+     */
+    fun isTokenFamilyRevoked(familyId: String): Boolean =
+        redisTemplate.hasKey("refresh_family:$familyId") == true
 
     private fun isBlacklisted(token: String): Boolean {
         return blacklist.containsKey(token)

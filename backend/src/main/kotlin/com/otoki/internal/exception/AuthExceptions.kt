@@ -67,3 +67,12 @@ class GpsConsentRequiredException : BusinessException(
     message = "GPS 사용 동의가 필요합니다",
     httpStatus = HttpStatus.FORBIDDEN
 )
+
+/**
+ * Refresh Token 재사용 감지 (탈취 의심)
+ */
+class TokenReuseDetectedException : BusinessException(
+    errorCode = "TOKEN_REUSE_DETECTED",
+    message = "보안 이상이 감지되었습니다. 다시 로그인해주세요",
+    httpStatus = HttpStatus.UNAUTHORIZED
+)

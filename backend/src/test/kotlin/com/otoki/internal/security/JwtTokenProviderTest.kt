@@ -1,20 +1,29 @@
 package com.otoki.internal.security
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.otoki.internal.entity.UserRole
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.mock
+import org.springframework.data.redis.core.RedisTemplate
 
 /**
  * JwtTokenProvider 테스트
  */
 class JwtTokenProviderTest {
 
+    private val redisTemplate = mock<RedisTemplate<String, String>>()
+    private val objectMapper = ObjectMapper()
+
     private val jwtTokenProvider = JwtTokenProvider(
         secret = "test-secret-key-that-is-at-least-256-bits-long-for-hmac-sha256-algorithm",
         accessExpiration = 3600000,  // 1 hour
-        refreshExpiration = 604800000  // 7 days
+        refreshExpiration = 604800000,  // 7 days
+        redisTemplate = redisTemplate,
+        objectMapper = objectMapper
     )
 
     @Test
@@ -38,14 +47,16 @@ class JwtTokenProviderTest {
     fun createRefreshToken_returnsValidJwt() {
         // Given
         val userId = 12345L
+        val familyId = "family-123"
+        val tokenId = "token-456"
 
         // When
-        val token = jwtTokenProvider.createRefreshToken(userId)
+        val token = jwtTokenProvider.createRefreshToken(userId, familyId, tokenId)
 
         // Then
         assertNotNull(token)
         assertTrue(token.isNotEmpty())
-        assertTrue(token.split(".").size == 3) // JWT has 3 parts: header.payload.signature
+        assertTrue(token.split(".").size == 3)
     }
 
     @Test
@@ -70,7 +81,9 @@ class JwtTokenProviderTest {
         val shortLivedProvider = JwtTokenProvider(
             secret = "test-secret-key-that-is-at-least-256-bits-long-for-hmac-sha256-algorithm",
             accessExpiration = 1,  // 1ms
-            refreshExpiration = 1  // 1ms
+            refreshExpiration = 1,  // 1ms
+            redisTemplate = redisTemplate,
+            objectMapper = objectMapper
         )
         val userId = 12345L
         val role = UserRole.USER
@@ -192,7 +205,7 @@ class JwtTokenProviderTest {
     fun getTokenType_returnsRefresh_forRefreshToken() {
         // Given
         val userId = 12345L
-        val token = jwtTokenProvider.createRefreshToken(userId)
+        val token = jwtTokenProvider.createRefreshToken(userId, "family-1", "token-1")
 
         // When
         val tokenType = jwtTokenProvider.getTokenType(token)
@@ -237,7 +250,9 @@ class JwtTokenProviderTest {
         val shortLivedProvider = JwtTokenProvider(
             secret = "test-secret-key-that-is-at-least-256-bits-long-for-hmac-sha256-algorithm",
             accessExpiration = 1,
-            refreshExpiration = 1
+            refreshExpiration = 1,
+            redisTemplate = redisTemplate,
+            objectMapper = objectMapper
         )
         val userId = 12345L
         val role = UserRole.USER
@@ -342,11 +357,60 @@ class JwtTokenProviderTest {
     fun refreshToken_doesNotContainRole() {
         // Given
         val userId = 12345L
-        val refreshToken = jwtTokenProvider.createRefreshToken(userId)
+        val refreshToken = jwtTokenProvider.createRefreshToken(userId, "family-1", "token-1")
 
         // When & Then: refresh token에서 role을 추출하려 하면 예외 발생
         assertThrows<Exception> {
             jwtTokenProvider.getRoleFromToken(refreshToken)
+        }
+    }
+
+    // ========== Refresh Token Rotation claim 테스트 ==========
+
+    @Nested
+    @DisplayName("Refresh Token Rotation claims")
+    inner class RefreshTokenRotationClaimTests {
+
+        @Test
+        @DisplayName("getFamilyIdFromToken은 올바른 familyId를 추출한다")
+        fun getFamilyIdFromToken_extractsCorrectFamilyId() {
+            // Given
+            val familyId = "test-family-uuid-123"
+            val token = jwtTokenProvider.createRefreshToken(1L, familyId, "token-1")
+
+            // When
+            val extracted = jwtTokenProvider.getFamilyIdFromToken(token)
+
+            // Then
+            assertEquals(familyId, extracted)
+        }
+
+        @Test
+        @DisplayName("getTokenIdFromToken은 올바른 tokenId를 추출한다")
+        fun getTokenIdFromToken_extractsCorrectTokenId() {
+            // Given
+            val tokenId = "test-token-uuid-456"
+            val token = jwtTokenProvider.createRefreshToken(1L, "family-1", tokenId)
+
+            // When
+            val extracted = jwtTokenProvider.getTokenIdFromToken(token)
+
+            // Then
+            assertEquals(tokenId, extracted)
+        }
+
+        @Test
+        @DisplayName("getUserIdFromToken은 refresh token에서도 올바른 userId를 추출한다")
+        fun getUserIdFromToken_worksForRefreshToken() {
+            // Given
+            val userId = 42L
+            val token = jwtTokenProvider.createRefreshToken(userId, "family-1", "token-1")
+
+            // When
+            val extracted = jwtTokenProvider.getUserIdFromToken(token)
+
+            // Then
+            assertEquals(userId, extracted)
         }
     }
 }

@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.util.*
 
 /**
  * 인증 관련 비즈니스 로직
@@ -39,8 +40,9 @@ class AuthService(
      * 1. 사번으로 사용자 조회 (없으면 INVALID_CREDENTIALS)
      * 2. BCrypt 비밀번호 검증 (불일치 시 INVALID_CREDENTIALS)
      * 3. 단말기 바인딩 검증 (device_id 존재 시)
-     * 4. Access Token + Refresh Token 생성
-     * 5. requiresPasswordChange, requiresGpsConsent 포함하여 반환
+     * 4. Access Token + Refresh Token 생성 (familyId, tokenId 포함)
+     * 5. Redis에 Refresh Token 메타데이터 저장
+     * 6. requiresPasswordChange, requiresGpsConsent 포함하여 반환
      */
     @Transactional
     fun login(request: LoginRequest): LoginResponse {
@@ -62,7 +64,14 @@ class AuthService(
         }
 
         val accessToken = jwtTokenProvider.createAccessToken(user.id, user.role, user.agreementFlag == true)
-        val refreshToken = jwtTokenProvider.createRefreshToken(user.id)
+
+        // Refresh Token Rotation: familyId + tokenId 생성
+        val familyId = UUID.randomUUID().toString()
+        val tokenId = UUID.randomUUID().toString()
+        val refreshToken = jwtTokenProvider.createRefreshToken(user.id, familyId, tokenId)
+
+        // Redis에 Refresh Token 메타데이터 저장
+        jwtTokenProvider.storeRefreshToken(tokenId, user.id, familyId)
 
         return LoginResponse(
             user = UserInfo.from(user),
@@ -125,13 +134,19 @@ class AuthService(
     }
 
     /**
-     * 토큰 갱신
-     * 1. Refresh Token 유효성 검증
-     * 2. userId 추출 및 사용자 존재 확인
-     * 3. 새 Access Token 생성
+     * 토큰 갱신 (Refresh Token Rotation)
+     * 1. Refresh Token JWT 서명/만료 검증
+     * 2. JWT에서 tokenId, familyId 추출
+     * 3. Token Family 무효화 여부 확인
+     * 4. Redis에 Refresh Token 존재 여부 확인 (없으면 탈취 감지)
+     * 5. 이전 Refresh Token Redis에서 삭제
+     * 6. 새 tokenId 생성, 동일 familyId로 새 Refresh Token 발급
+     * 7. Redis에 새 Refresh Token 저장
+     * 8. 새 Access Token + 새 Refresh Token 반환
      */
     @Transactional(readOnly = true)
     fun refreshAccessToken(request: RefreshTokenRequest): TokenResponse {
+        // 1. JWT 서명/만료 검증
         if (!jwtTokenProvider.validateToken(request.refreshToken)) {
             throw InvalidTokenException()
         }
@@ -141,24 +156,60 @@ class AuthService(
             throw InvalidTokenException()
         }
 
+        // 2. JWT에서 tokenId, familyId 추출
+        val tokenId = jwtTokenProvider.getTokenIdFromToken(request.refreshToken)
+        val familyId = jwtTokenProvider.getFamilyIdFromToken(request.refreshToken)
+
+        // 3. Token Family 무효화 여부 확인
+        if (jwtTokenProvider.isTokenFamilyRevoked(familyId)) {
+            throw TokenReuseDetectedException()
+        }
+
+        // 4. Redis에 Refresh Token 존재 여부 확인
+        if (!jwtTokenProvider.isRefreshTokenStored(tokenId)) {
+            // 이미 사용된 토큰 → 탈취 감지 → Family 전체 무효화
+            jwtTokenProvider.revokeTokenFamily(familyId)
+            throw TokenReuseDetectedException()
+        }
+
+        // 5. 이전 Refresh Token 삭제
+        jwtTokenProvider.deleteRefreshToken(tokenId)
+
+        // 6. 사용자 정보 조회
         val userId = jwtTokenProvider.getUserIdFromToken(request.refreshToken)
         val user = userRepository.findById(userId)
             .orElseThrow { InvalidTokenException() }
 
-        val accessToken = jwtTokenProvider.createAccessToken(user.id, user.role, user.agreementFlag == true)
+        // 7. 새 토큰 발급 (동일 familyId, 새 tokenId)
+        val newTokenId = UUID.randomUUID().toString()
+        val newAccessToken = jwtTokenProvider.createAccessToken(user.id, user.role, user.agreementFlag == true)
+        val newRefreshToken = jwtTokenProvider.createRefreshToken(user.id, familyId, newTokenId)
+
+        // 8. Redis에 새 Refresh Token 저장
+        jwtTokenProvider.storeRefreshToken(newTokenId, user.id, familyId)
 
         return TokenResponse(
-            accessToken = accessToken,
+            accessToken = newAccessToken,
+            refreshToken = newRefreshToken,
             expiresIn = jwtTokenProvider.getAccessTokenExpirationSeconds()
         )
     }
 
     /**
      * 로그아웃
-     * Access Token을 블랙리스트에 추가
+     * 1. Access Token을 블랙리스트에 추가
+     * 2. Redis에서 Refresh Token 삭제
      */
     fun logout(accessToken: String) {
         jwtTokenProvider.blacklistToken(accessToken)
+
+        // Redis에서 Refresh Token 삭제 (userId 기반)
+        try {
+            val userId = jwtTokenProvider.getUserIdFromToken(accessToken)
+            jwtTokenProvider.deleteRefreshTokenByUserId(userId)
+        } catch (e: Exception) {
+            log.debug("Refresh token cleanup skipped during logout: {}", e.message)
+        }
     }
 
     /**

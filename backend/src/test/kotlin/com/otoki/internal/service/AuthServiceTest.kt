@@ -18,6 +18,7 @@ import com.otoki.internal.security.JwtTokenProvider
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.ArgumentCaptor
@@ -26,6 +27,7 @@ import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -85,7 +87,7 @@ class AuthServiceTest {
         whenever(userRepository.findByEmployeeId(employeeId)).thenReturn(Optional.of(user))
         whenever(passwordEncoder.matches(rawPassword, encodedPassword)).thenReturn(true)
         whenever(jwtTokenProvider.createAccessToken(user.id, user.role, false)).thenReturn(accessToken)
-        whenever(jwtTokenProvider.createRefreshToken(user.id)).thenReturn(refreshToken)
+        whenever(jwtTokenProvider.createRefreshToken(eq(user.id), any(), any())).thenReturn(refreshToken)
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(expiresIn)
 
         // When
@@ -103,6 +105,7 @@ class AuthServiceTest {
         assertThat(response.requiresPasswordChange).isTrue()
         assertThat(response.requiresGpsConsent).isTrue()
         verify(loginHistoryRepository).save(any<LoginHistory>())
+        verify(jwtTokenProvider).storeRefreshToken(any(), eq(user.id), any())
     }
 
     @Test
@@ -117,7 +120,7 @@ class AuthServiceTest {
         whenever(userRepository.findByEmployeeId(employeeId)).thenReturn(Optional.of(user))
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
         whenever(jwtTokenProvider.createAccessToken(user.id, user.role)).thenReturn("token")
-        whenever(jwtTokenProvider.createRefreshToken(user.id)).thenReturn("refresh")
+        whenever(jwtTokenProvider.createRefreshToken(eq(user.id), any(), any())).thenReturn("refresh")
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
         // When
@@ -142,7 +145,7 @@ class AuthServiceTest {
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
         whenever(loginHistoryRepository.save(any<LoginHistory>())).thenThrow(RuntimeException("DB error"))
         whenever(jwtTokenProvider.createAccessToken(user.id, user.role)).thenReturn("token")
-        whenever(jwtTokenProvider.createRefreshToken(user.id)).thenReturn("refresh")
+        whenever(jwtTokenProvider.createRefreshToken(eq(user.id), any(), any())).thenReturn("refresh")
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
         // When
@@ -258,60 +261,118 @@ class AuthServiceTest {
             .hasMessageContaining("동일한 비밀번호")
     }
 
-    // ========== Refresh Token Tests ==========
+    // ========== Refresh Token Rotation Tests ==========
 
-    @Test
-    @DisplayName("토큰 갱신 성공 - 유효한 Refresh Token으로 새 Access Token 발급")
-    fun refreshAccessToken_success() {
-        // Given
-        val userId = 1L
-        val refreshToken = "valid_refresh_token"
-        val newAccessToken = "new_access_token"
-        val expiresIn = 3600
-        val user = createTestUser(id = userId)
-        val request = RefreshTokenRequest(refreshToken)
+    @Nested
+    @DisplayName("refreshAccessToken - 토큰 갱신 (Rotation)")
+    inner class RefreshAccessTokenTests {
 
-        whenever(jwtTokenProvider.validateToken(refreshToken)).thenReturn(true)
-        whenever(jwtTokenProvider.getTokenType(refreshToken)).thenReturn("refresh")
-        whenever(jwtTokenProvider.getUserIdFromToken(refreshToken)).thenReturn(userId)
-        whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-        whenever(jwtTokenProvider.createAccessToken(userId, UserRole.USER, false)).thenReturn(newAccessToken)
-        whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(expiresIn)
+        @Test
+        @DisplayName("정상 Rotation - 유효한 Refresh Token으로 새 Access + Refresh Token 발급")
+        fun refreshAccessToken_success() {
+            // Given
+            val userId = 1L
+            val refreshToken = "valid_refresh_token"
+            val newAccessToken = "new_access_token"
+            val newRefreshToken = "new_refresh_token"
+            val expiresIn = 3600
+            val user = createTestUser(id = userId)
+            val request = RefreshTokenRequest(refreshToken)
+            val tokenId = "token-id-123"
+            val familyId = "family-id-456"
 
-        // When
-        val response = authService.refreshAccessToken(request)
+            whenever(jwtTokenProvider.validateToken(refreshToken)).thenReturn(true)
+            whenever(jwtTokenProvider.getTokenType(refreshToken)).thenReturn("refresh")
+            whenever(jwtTokenProvider.getTokenIdFromToken(refreshToken)).thenReturn(tokenId)
+            whenever(jwtTokenProvider.getFamilyIdFromToken(refreshToken)).thenReturn(familyId)
+            whenever(jwtTokenProvider.isTokenFamilyRevoked(familyId)).thenReturn(false)
+            whenever(jwtTokenProvider.isRefreshTokenStored(tokenId)).thenReturn(true)
+            whenever(jwtTokenProvider.getUserIdFromToken(refreshToken)).thenReturn(userId)
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(jwtTokenProvider.createAccessToken(userId, UserRole.USER, false)).thenReturn(newAccessToken)
+            whenever(jwtTokenProvider.createRefreshToken(eq(userId), eq(familyId), any())).thenReturn(newRefreshToken)
+            whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(expiresIn)
 
-        // Then
-        assertThat(response.accessToken).isEqualTo(newAccessToken)
-        assertThat(response.expiresIn).isEqualTo(expiresIn)
-    }
+            // When
+            val response = authService.refreshAccessToken(request)
 
-    @Test
-    @DisplayName("토큰 갱신 실패 - 유효하지 않은 Refresh Token 사용 시 InvalidTokenException 발생")
-    fun refreshAccessToken_invalidToken() {
-        // Given
-        val request = RefreshTokenRequest("invalid_refresh_token")
+            // Then
+            assertThat(response.accessToken).isEqualTo(newAccessToken)
+            assertThat(response.refreshToken).isEqualTo(newRefreshToken)
+            assertThat(response.expiresIn).isEqualTo(expiresIn)
+            verify(jwtTokenProvider).deleteRefreshToken(tokenId)
+            verify(jwtTokenProvider).storeRefreshToken(any(), eq(userId), eq(familyId))
+        }
 
-        whenever(jwtTokenProvider.validateToken("invalid_refresh_token")).thenReturn(false)
+        @Test
+        @DisplayName("토큰 갱신 실패 - 유효하지 않은 Refresh Token 사용 시 InvalidTokenException 발생")
+        fun refreshAccessToken_invalidToken() {
+            // Given
+            val request = RefreshTokenRequest("invalid_refresh_token")
 
-        // When & Then
-        assertThatThrownBy { authService.refreshAccessToken(request) }
-            .isInstanceOf(InvalidTokenException::class.java)
-    }
+            whenever(jwtTokenProvider.validateToken("invalid_refresh_token")).thenReturn(false)
 
-    @Test
-    @DisplayName("토큰 갱신 실패 - Access Token을 Refresh Token으로 사용 시 InvalidTokenException 발생")
-    fun refreshAccessToken_wrongTokenType() {
-        // Given
-        val accessToken = "access_token_not_refresh"
-        val request = RefreshTokenRequest(accessToken)
+            // When & Then
+            assertThatThrownBy { authService.refreshAccessToken(request) }
+                .isInstanceOf(InvalidTokenException::class.java)
+        }
 
-        whenever(jwtTokenProvider.validateToken(accessToken)).thenReturn(true)
-        whenever(jwtTokenProvider.getTokenType(accessToken)).thenReturn("access")
+        @Test
+        @DisplayName("토큰 갱신 실패 - Access Token을 Refresh Token으로 사용 시 InvalidTokenException 발생")
+        fun refreshAccessToken_wrongTokenType() {
+            // Given
+            val accessToken = "access_token_not_refresh"
+            val request = RefreshTokenRequest(accessToken)
 
-        // When & Then
-        assertThatThrownBy { authService.refreshAccessToken(request) }
-            .isInstanceOf(InvalidTokenException::class.java)
+            whenever(jwtTokenProvider.validateToken(accessToken)).thenReturn(true)
+            whenever(jwtTokenProvider.getTokenType(accessToken)).thenReturn("access")
+
+            // When & Then
+            assertThatThrownBy { authService.refreshAccessToken(request) }
+                .isInstanceOf(InvalidTokenException::class.java)
+        }
+
+        @Test
+        @DisplayName("탈취 감지 - Redis에 없는 토큰 사용 시 Family 무효화 + TokenReuseDetectedException")
+        fun refreshAccessToken_tokenReuseDetected() {
+            // Given
+            val refreshToken = "reused_refresh_token"
+            val request = RefreshTokenRequest(refreshToken)
+            val tokenId = "already-used-token-id"
+            val familyId = "family-id-to-revoke"
+
+            whenever(jwtTokenProvider.validateToken(refreshToken)).thenReturn(true)
+            whenever(jwtTokenProvider.getTokenType(refreshToken)).thenReturn("refresh")
+            whenever(jwtTokenProvider.getTokenIdFromToken(refreshToken)).thenReturn(tokenId)
+            whenever(jwtTokenProvider.getFamilyIdFromToken(refreshToken)).thenReturn(familyId)
+            whenever(jwtTokenProvider.isTokenFamilyRevoked(familyId)).thenReturn(false)
+            whenever(jwtTokenProvider.isRefreshTokenStored(tokenId)).thenReturn(false)
+
+            // When & Then
+            assertThatThrownBy { authService.refreshAccessToken(request) }
+                .isInstanceOf(TokenReuseDetectedException::class.java)
+            verify(jwtTokenProvider).revokeTokenFamily(familyId)
+        }
+
+        @Test
+        @DisplayName("무효화된 Family - 이미 revoked된 Family의 토큰 사용 시 TokenReuseDetectedException")
+        fun refreshAccessToken_revokedFamily() {
+            // Given
+            val refreshToken = "family_revoked_token"
+            val request = RefreshTokenRequest(refreshToken)
+            val tokenId = "some-token-id"
+            val familyId = "revoked-family-id"
+
+            whenever(jwtTokenProvider.validateToken(refreshToken)).thenReturn(true)
+            whenever(jwtTokenProvider.getTokenType(refreshToken)).thenReturn("refresh")
+            whenever(jwtTokenProvider.getTokenIdFromToken(refreshToken)).thenReturn(tokenId)
+            whenever(jwtTokenProvider.getFamilyIdFromToken(refreshToken)).thenReturn(familyId)
+            whenever(jwtTokenProvider.isTokenFamilyRevoked(familyId)).thenReturn(true)
+
+            // When & Then
+            assertThatThrownBy { authService.refreshAccessToken(request) }
+                .isInstanceOf(TokenReuseDetectedException::class.java)
+        }
     }
 
     // ========== Verify Password Tests ==========
@@ -484,10 +545,29 @@ class AuthServiceTest {
     // ========== Logout Tests ==========
 
     @Test
-    @DisplayName("로그아웃 성공 - Access Token을 블랙리스트에 추가")
+    @DisplayName("로그아웃 성공 - Access Token 블랙리스트 + Refresh Token Redis 삭제")
     fun logout_success() {
         // Given
         val accessToken = "access_token_to_blacklist"
+        val userId = 1L
+
+        whenever(jwtTokenProvider.getUserIdFromToken(accessToken)).thenReturn(userId)
+
+        // When
+        authService.logout(accessToken)
+
+        // Then
+        verify(jwtTokenProvider).blacklistToken(accessToken)
+        verify(jwtTokenProvider).deleteRefreshTokenByUserId(userId)
+    }
+
+    @Test
+    @DisplayName("로그아웃 - 토큰 파싱 실패해도 블랙리스트 등록은 수행")
+    fun logout_tokenParsingFails_stillBlacklists() {
+        // Given
+        val accessToken = "expired_or_invalid_token"
+
+        whenever(jwtTokenProvider.getUserIdFromToken(accessToken)).thenThrow(RuntimeException("Token expired"))
 
         // When
         authService.logout(accessToken)
@@ -511,7 +591,7 @@ class AuthServiceTest {
         whenever(deviceBindingProperties.isExcluded("12345678")).thenReturn(false)
         whenever(userRepository.save(any<User>())).thenAnswer { it.arguments[0] }
         whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER, false)).thenReturn("token")
-        whenever(jwtTokenProvider.createRefreshToken(1L)).thenReturn("refresh")
+        whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
         // When
@@ -535,7 +615,7 @@ class AuthServiceTest {
         whenever(deviceBindingProperties.enabled).thenReturn(true)
         whenever(deviceBindingProperties.isExcluded("12345678")).thenReturn(false)
         whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER, false)).thenReturn("token")
-        whenever(jwtTokenProvider.createRefreshToken(1L)).thenReturn("refresh")
+        whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
         // When
@@ -572,7 +652,7 @@ class AuthServiceTest {
         whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(user))
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
         whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER, false)).thenReturn("token")
-        whenever(jwtTokenProvider.createRefreshToken(1L)).thenReturn("refresh")
+        whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
         // When
@@ -593,7 +673,7 @@ class AuthServiceTest {
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
         whenever(deviceBindingProperties.enabled).thenReturn(false)
         whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER, false)).thenReturn("token")
-        whenever(jwtTokenProvider.createRefreshToken(1L)).thenReturn("refresh")
+        whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
         // When
@@ -615,7 +695,7 @@ class AuthServiceTest {
         whenever(deviceBindingProperties.enabled).thenReturn(true)
         whenever(deviceBindingProperties.isExcluded("20010585")).thenReturn(true)
         whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER, false)).thenReturn("token")
-        whenever(jwtTokenProvider.createRefreshToken(1L)).thenReturn("refresh")
+        whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
         // When
