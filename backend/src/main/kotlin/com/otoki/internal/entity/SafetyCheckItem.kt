@@ -3,28 +3,29 @@ package com.otoki.internal.entity
 import jakarta.persistence.*
 
 @Entity
-@Table(name = "safety_check_items")
+@Table(name = "safetycheck_list")
+@IdClass(SafetyCheckItemId::class)
 class SafetyCheckItem(
+
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0,
+    @Column(name = "question_num", nullable = false)
+    val questionNum: Int = 0,
 
-    // Phase2: SafetyCheckCategory 주석 처리로 관계 제거
-    // @ManyToOne(fetch = FetchType.LAZY)
-    // @JoinColumn(name = "category_id", nullable = false)
-    // val category: SafetyCheckCategory,
-    @Column(name = "category_id", nullable = false)
-    val categoryId: Long = 0,
+    @Id
+    @Column(name = "seq_num", nullable = false)
+    val seqNum: Int = 0,
 
-    @Column(name = "label", nullable = false, length = 100)
-    val label: String,
+    @Column(name = "contents", nullable = false, length = 500)
+    val contents: String = "",
 
-    @Column(name = "sort_order", nullable = false)
-    val sortOrder: Int,
+    @Column(name = "use_yn", length = 1)
+    val useYn: String? = "Y"
 
-    @Column(name = "required", nullable = false)
-    val required: Boolean = true,
-
-    @Column(name = "active", nullable = false)
-    val active: Boolean = true
+    // Phase2: 기존 V2 필드 주석 처리
+    // val id: Long = 0,                    // auto-increment PK → 복합 키로 대체
+    // val categoryId: Long = 0,            // V1에 없음
+    // val label: String,                   // → contents로 대체
+    // val sortOrder: Int,                  // V1에 없음
+    // val required: Boolean = true,        // V1에 없음
+    // val active: Boolean = true           // → useYn (String 'Y'/'N')으로 대체
 )
