@@ -45,29 +45,34 @@ log() {
 }
 
 cleanup() {
-    # 자식 프로세스 정리
-    kill_children
+    # 남은 자식 프로세스 강제 종료
+    force_kill "$CLAUDE_PID"
+    force_kill "$TAIL_PID"
+    wait 2>/dev/null || true
     rm -f "$LOCKFILE"
 }
 
-kill_children() {
-    if [ -n "$CLAUDE_PID" ] && kill -0 "$CLAUDE_PID" 2>/dev/null; then
-        kill -TERM "$CLAUDE_PID" 2>/dev/null
-        wait "$CLAUDE_PID" 2>/dev/null || true
-    fi
-    if [ -n "$TAIL_PID" ] && kill -0 "$TAIL_PID" 2>/dev/null; then
-        kill -TERM "$TAIL_PID" 2>/dev/null
-        wait "$TAIL_PID" 2>/dev/null || true
-    fi
-    CLAUDE_PID=""
-    TAIL_PID=""
+force_kill() {
+    local pid="$1"
+    [ -z "$pid" ] && return
+    kill -0 "$pid" 2>/dev/null || return
+    kill -TERM "$pid" 2>/dev/null
+    # SIGTERM 후 0.5초 대기, 아직 살아있으면 SIGKILL
+    local i=0
+    while [ $i -lt 5 ] && kill -0 "$pid" 2>/dev/null; do
+        sleep 0.1
+        i=$((i + 1))
+    done
+    kill -KILL "$pid" 2>/dev/null || true
 }
 
 on_interrupt() {
     INTERRUPTED=true
     echo ""
     log "⚠️  중단 요청됨 (Ctrl+C)"
-    kill_children
+    # trap 핸들러 안에서는 wait 없이 즉시 kill만 수행
+    [ -n "$CLAUDE_PID" ] && kill -KILL "$CLAUDE_PID" 2>/dev/null
+    [ -n "$TAIL_PID" ] && kill -KILL "$TAIL_PID" 2>/dev/null
 }
 
 print_summary() {
@@ -167,11 +172,9 @@ while [ "$iteration" -lt "$MAX_ITERATIONS" ]; do
     exit_code=$?
     CLAUDE_PID=""
 
-    # tail 정리
-    if [ -n "$TAIL_PID" ] && kill -0 "$TAIL_PID" 2>/dev/null; then
-        kill "$TAIL_PID" 2>/dev/null
-        wait "$TAIL_PID" 2>/dev/null || true
-    fi
+    # tail 정리 (SIGKILL로 즉시 종료)
+    [ -n "$TAIL_PID" ] && kill -KILL "$TAIL_PID" 2>/dev/null
+    wait "$TAIL_PID" 2>/dev/null || true
     TAIL_PID=""
 
     iter_end="$(date +%s)"
