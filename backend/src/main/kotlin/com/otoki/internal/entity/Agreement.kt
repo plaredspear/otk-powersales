@@ -1,11 +1,12 @@
 package com.otoki.internal.entity
 
 import jakarta.persistence.*
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 @Entity
-@Table(name = "dkretail__notice__c")
-class Notice(
+@Table(name = "agreementword__c")
+class Agreement(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -17,26 +18,17 @@ class Notice(
     @Column(name = "name", length = 80)
     val name: String? = null,
 
-    @Column(name = "employeeid__c", length = 18)
-    val employeeId: String? = null,
-
-    @Column(name = "dkretail__scope__c", length = 255)
-    val scope: String? = null,
-
-    @Column(name = "dkretail__category__c", length = 255)
-    val category: String? = null,
-
-    @Column(name = "dkretail__contents__c", columnDefinition = "TEXT")
+    @Column(name = "contents__c", length = 8000)
     val contents: String? = null,
 
-    @Column(name = "dkretail__educategory__c", length = 255)
-    val eduCategory: String? = null,
+    @Column(name = "activedate__c")
+    val activeDate: LocalDate? = null,
 
-    @Column(name = "dkretail__jeejum__c", length = 255)
-    val branch: String? = null,
+    @Column(name = "afteractivedate__c")
+    val afterActiveDate: LocalDate? = null,
 
-    @Column(name = "dkretail__jeejumcode__c", length = 255)
-    val branchCode: String? = null,
+    @Column(name = "active__c")
+    val active: Boolean? = null,
 
     @Column(name = "isdeleted")
     val isDeleted: Boolean? = null,
