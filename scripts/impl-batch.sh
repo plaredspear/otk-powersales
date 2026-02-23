@@ -11,8 +11,10 @@
 #   2. 상태 마커 파싱 (SUCCESS / NO_SPECS / FAILED)
 #   3. SUCCESS → 다음 반복, FAILED/NO_SPECS → 종료
 #   4. 배치 요약 출력
+#
+# Ctrl+C로 즉시 중단 가능
 
-set -euo pipefail
+set -uo pipefail
 
 # ─── 설정 ───────────────────────────────────────────────────────────
 
@@ -24,6 +26,16 @@ LOG_DIR="$PROJECT_ROOT/docs/execution/impl-batch-logs"
 BATCH_LOG="$LOG_DIR/batch-$TIMESTAMP.log"
 LOCKFILE="$PROJECT_ROOT/.impl-batch.lock"
 
+# ─── 상태 변수 ────────────────────────────────────────────────────────
+
+INTERRUPTED=false
+CLAUDE_PID=""
+TAIL_PID=""
+completed=()
+fail_spec=""
+fail_reason=""
+iteration=0
+
 # ─── 함수 ───────────────────────────────────────────────────────────
 
 log() {
@@ -33,17 +45,40 @@ log() {
 }
 
 cleanup() {
+    # 자식 프로세스 정리
+    kill_children
     rm -f "$LOCKFILE"
-    log "Lockfile removed."
+}
+
+kill_children() {
+    if [ -n "$CLAUDE_PID" ] && kill -0 "$CLAUDE_PID" 2>/dev/null; then
+        kill -TERM "$CLAUDE_PID" 2>/dev/null
+        wait "$CLAUDE_PID" 2>/dev/null || true
+    fi
+    if [ -n "$TAIL_PID" ] && kill -0 "$TAIL_PID" 2>/dev/null; then
+        kill -TERM "$TAIL_PID" 2>/dev/null
+        wait "$TAIL_PID" 2>/dev/null || true
+    fi
+    CLAUDE_PID=""
+    TAIL_PID=""
+}
+
+on_interrupt() {
+    INTERRUPTED=true
+    echo ""
+    log "⚠️  중단 요청됨 (Ctrl+C)"
+    kill_children
 }
 
 print_summary() {
+    local end_time
+    end_time="$(date +%Y%m%d-%H%M%S)"
     echo ""
     echo "============================================"
     echo "  impl-batch 배치 요약"
     echo "============================================"
     echo "  시작 시각: $TIMESTAMP"
-    echo "  종료 시각: $(date +%Y%m%d-%H%M%S)"
+    echo "  종료 시각: $end_time"
     echo "  총 반복:   $iteration / $MAX_ITERATIONS"
     echo "  성공:      ${#completed[@]}"
     if [ ${#completed[@]} -gt 0 ]; then
@@ -53,20 +88,33 @@ print_summary() {
         done
     fi
     if [ -n "$fail_reason" ]; then
-        echo "  실패:      $fail_spec ($fail_reason)"
+        echo "  종료 사유: $fail_reason"
+        if [ -n "$fail_spec" ]; then
+            echo "  실패 스펙: $fail_spec"
+        fi
     fi
-    echo "  로그 디렉토리: $LOG_DIR"
+    echo "  로그: $LOG_DIR"
     echo "============================================"
 }
+
+# ─── 시그널 트랩 ──────────────────────────────────────────────────────
+
+trap on_interrupt INT TERM
+trap cleanup EXIT
 
 # ─── 사전 점검 ──────────────────────────────────────────────────────
 
 # Lockfile 중복 실행 방지
 if [ -f "$LOCKFILE" ]; then
     existing_pid=$(cat "$LOCKFILE" 2>/dev/null || echo "unknown")
-    echo "ERROR: impl-batch가 이미 실행 중입니다 (PID: $existing_pid)"
-    echo "강제 종료하려면: rm $LOCKFILE"
-    exit 1
+    if kill -0 "$existing_pid" 2>/dev/null; then
+        echo "ERROR: impl-batch가 이미 실행 중입니다 (PID: $existing_pid)"
+        echo "강제 종료하려면: rm $LOCKFILE"
+        exit 1
+    else
+        echo "WARN: 이전 실행의 잔여 lockfile 제거 (PID $existing_pid 는 이미 종료됨)"
+        rm -f "$LOCKFILE"
+    fi
 fi
 
 # claude CLI 존재 확인
@@ -80,69 +128,91 @@ fi
 
 mkdir -p "$LOG_DIR"
 echo $$ > "$LOCKFILE"
-trap cleanup EXIT
 
-completed=()
-fail_spec=""
-fail_reason=""
-iteration=0
-
-log "impl-batch 시작 (max=$MAX_ITERATIONS)"
+log "impl-batch 시작 (max=$MAX_ITERATIONS, PID=$$)"
 log "프로젝트: $PROJECT_ROOT"
 log "로그: $LOG_DIR"
+log "중단: Ctrl+C"
 
 # ─── 메인 루프 ──────────────────────────────────────────────────────
 
 while [ "$iteration" -lt "$MAX_ITERATIONS" ]; do
+
+    # Ctrl+C 체크
+    if [ "$INTERRUPTED" = true ]; then
+        fail_reason="USER_INTERRUPTED"
+        break
+    fi
+
     iteration=$((iteration + 1))
     iter_log="$LOG_DIR/iter-$iteration-$TIMESTAMP.log"
+    iter_start="$(date +%s)"
 
     log ""
     log "━━━ 반복 $iteration / $MAX_ITERATIONS ━━━"
+    log "claude 실행 시작..."
 
-    # claude -p "/impl-next" 실행
-    log "claude -p \"/impl-next\" 실행 중..."
+    # claude를 백그라운드로 실행 (로그 파일에 출력)
+    # → wait가 시그널에 즉시 반응하므로 Ctrl+C가 동작함
+    > "$iter_log"
+    claude -p "/impl-next" --dangerously-skip-permissions --verbose >> "$iter_log" 2>&1 &
+    CLAUDE_PID=$!
 
-    set +e
-    output=$(cd "$PROJECT_ROOT" && claude -p "/impl-next" --dangerously-skip-permissions 2>&1)
+    # tail -f로 실시간 터미널 출력
+    tail -f "$iter_log" &
+    TAIL_PID=$!
+
+    # wait는 시그널 수신 시 즉시 리턴 → trap 핸들러 실행 가능
+    wait "$CLAUDE_PID" 2>/dev/null
     exit_code=$?
-    set -e
+    CLAUDE_PID=""
 
-    # 반복별 로그 저장
-    echo "$output" > "$iter_log"
-    log "Claude 종료 코드: $exit_code (로그: $iter_log)"
+    # tail 정리
+    if [ -n "$TAIL_PID" ] && kill -0 "$TAIL_PID" 2>/dev/null; then
+        kill "$TAIL_PID" 2>/dev/null
+        wait "$TAIL_PID" 2>/dev/null || true
+    fi
+    TAIL_PID=""
 
-    # ─── 상태 마커 파싱 (macOS 호환: sed 사용) ───
+    iter_end="$(date +%s)"
+    iter_elapsed=$(( iter_end - iter_start ))
+    log "claude 종료 (exit=$exit_code, ${iter_elapsed}초 소요)"
+
+    # Ctrl+C 체크 (claude 실행 중 인터럽트된 경우)
+    if [ "$INTERRUPTED" = true ]; then
+        fail_reason="USER_INTERRUPTED"
+        break
+    fi
+
+    # ─── 상태 마커 파싱 (로그 파일에서) ───
 
     # SUCCESS 체크
-    success_spec=$(echo "$output" | sed -n 's/.*\[IMPL-BATCH:SUCCESS:\([^]]*\)\].*/\1/p' | tail -1)
+    success_spec=$(sed -n 's/.*\[IMPL-BATCH:SUCCESS:\([^]]*\)\].*/\1/p' "$iter_log" | tail -1)
     if [ -n "$success_spec" ]; then
-        log "SUCCESS: $success_spec"
+        log "✅ SUCCESS: $success_spec (${iter_elapsed}초)"
         completed+=("$success_spec")
         continue
     fi
 
     # NO_SPECS 체크
-    if echo "$output" | grep -q '\[IMPL-BATCH:NO_SPECS\]'; then
-        log "NO_SPECS: 구현할 승인 스펙이 없습니다."
+    if grep -q '\[IMPL-BATCH:NO_SPECS\]' "$iter_log"; then
+        log "📭 NO_SPECS: 구현할 승인 스펙이 없습니다."
+        fail_reason="NO_SPECS"
         break
     fi
 
     # FAILED 체크
-    failed_line=$(echo "$output" | sed -n 's/.*\[IMPL-BATCH:FAILED:\([^]]*\)\].*/\1/p' | tail -1)
+    failed_line=$(sed -n 's/.*\[IMPL-BATCH:FAILED:\([^]]*\)\].*/\1/p' "$iter_log" | tail -1)
     if [ -n "$failed_line" ]; then
-        # spec-id:REASON 형식 파싱
         fail_spec=$(echo "$failed_line" | sed 's/:\([^:]*\)$//')
         fail_reason=$(echo "$failed_line" | sed 's/.*:\([^:]*\)$/\1/')
-        log "FAILED: $fail_spec ($fail_reason)"
-        log "상세 로그: $iter_log"
+        log "❌ FAILED: $fail_spec ($fail_reason)"
         break
     fi
 
     # 마커 없음 (비정상 종료)
-    log "WARNING: 상태 마커를 찾을 수 없습니다. (exit_code=$exit_code)"
-    log "상세 로그: $iter_log"
-    fail_reason="UNKNOWN (no status marker, exit_code=$exit_code)"
+    log "⚠️  WARNING: 상태 마커를 찾을 수 없습니다 (exit=$exit_code)"
+    fail_reason="UNKNOWN (no status marker, exit=$exit_code)"
     break
 
 done
@@ -152,15 +222,14 @@ done
 print_summary | tee -a "$BATCH_LOG"
 
 # 종료 코드
-if [ ${#completed[@]} -gt 0 ] && [ -z "$fail_reason" ]; then
+if [ "$fail_reason" = "USER_INTERRUPTED" ]; then
+    exit 130
+elif [ ${#completed[@]} -gt 0 ] && [ -z "$fail_reason" ]; then
     exit 0
-elif [ ${#completed[@]} -gt 0 ] && [ -n "$fail_reason" ]; then
-    # 일부 성공 후 실패
+elif [ "$fail_reason" = "NO_SPECS" ]; then
+    exit 0
+elif [ ${#completed[@]} -gt 0 ]; then
     exit 1
-elif [ -z "$fail_reason" ]; then
-    # NO_SPECS (구현할 것 없음)
-    exit 0
 else
-    # 첫 반복부터 실패
     exit 1
 fi
