@@ -1,12 +1,13 @@
+/*
 package com.otoki.internal.entity
 
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
-/**
+/ **
  * 제안 Entity
  * 사용자가 등록한 제안(신제품, 기존제품 개선) 정보를 관리한다.
- */
+ * /
 @Entity
 @Table(
     name = "suggestions",
@@ -47,3 +48,4 @@ class Suggestion(
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now()
 )
+*/

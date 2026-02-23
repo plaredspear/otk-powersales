@@ -1,13 +1,14 @@
+/*
 package com.otoki.internal.entity
 
 import jakarta.persistence.*
 import java.time.LocalDate
 import java.time.LocalDateTime
 
-/**
+/ **
  * 임시저장 주문서 Entity
  * 사용자당 최근 1건만 유지
- */
+ * /
 @Entity
 @Table(
     name = "order_drafts",
@@ -50,3 +51,4 @@ class OrderDraft(
         this.updatedAt = LocalDateTime.now()
     }
 }
+*/

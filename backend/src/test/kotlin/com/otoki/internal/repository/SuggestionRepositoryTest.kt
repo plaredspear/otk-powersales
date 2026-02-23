@@ -1,3 +1,4 @@
+/*
 package com.otoki.internal.repository
 
 import com.otoki.internal.entity.*
@@ -153,3 +154,4 @@ class SuggestionRepositoryTest {
         assertThat(suggestions[1].id).isEqualTo(suggestion1.id)
     }
 }
+*/

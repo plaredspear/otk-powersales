@@ -1,3 +1,4 @@
+/*
 package com.otoki.internal.dto.request
 
 import jakarta.validation.constraints.NotBlank
@@ -5,10 +6,10 @@ import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Positive
 import jakarta.validation.constraints.Size
 
-/**
+/ **
  * 현장 점검 등록 요청 DTO
  * multipart/form-data로 전송되며, 사진 파일은 MultipartFile[]로 별도 처리
- */
+ * /
 data class InspectionCreateRequest(
     @field:NotNull(message = "테마 ID는 필수입니다")
     @field:Positive(message = "테마 ID는 양수여야 합니다")
@@ -51,3 +52,4 @@ data class InspectionCreateRequest(
     @field:Positive(message = "판매 수량은 양수여야 합니다")
     val competitorSalesQuantity: Int? = null
 )
+*/

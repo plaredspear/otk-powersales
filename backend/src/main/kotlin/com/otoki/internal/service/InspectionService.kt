@@ -1,3 +1,4 @@
+/*
 package com.otoki.internal.service
 
 import com.otoki.internal.dto.request.InspectionCreateRequest
@@ -11,9 +12,9 @@ import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
 import java.time.LocalDate
 
-/**
+/ **
  * 현장 점검 Service
- */
+ * /
 @Service
 @Transactional(readOnly = true)
 class InspectionService(
@@ -27,7 +28,7 @@ class InspectionService(
     private val fileStorageService: FileStorageService
 ) {
 
-    /**
+    / **
      * 현장 점검 목록 조회
      *
      * @param userId 사용자 ID
@@ -36,7 +37,7 @@ class InspectionService(
      * @param storeId 거래처 ID (선택)
      * @param category 분류 (선택: OWN, COMPETITOR)
      * @return 점검 목록
-     */
+     * /
     fun getInspectionList(
         userId: Long,
         fromDate: String,
@@ -76,13 +77,13 @@ class InspectionService(
         return InspectionListResponse.of(items)
     }
 
-    /**
+    / **
      * 현장 점검 상세 조회
      *
      * @param inspectionId 점검 ID
      * @param userId 요청 사용자 ID
      * @return 점검 상세
-     */
+     * /
     fun getInspectionDetail(inspectionId: Long, userId: Long): InspectionDetailResponse {
         // 점검 조회 (사진 포함)
         val inspection = inspectionRepository.findByIdWithPhotos(inspectionId)
@@ -96,14 +97,14 @@ class InspectionService(
         return InspectionDetailResponse.from(inspection)
     }
 
-    /**
+    / **
      * 현장 점검 등록
      *
      * @param request 등록 요청
      * @param photos 사진 파일 (1~2장)
      * @param userId 사용자 ID
      * @return 생성된 점검 정보
-     */
+     * /
     @Transactional
     fun createInspection(
         request: InspectionCreateRequest,
@@ -179,22 +180,22 @@ class InspectionService(
         return InspectionListItemResponse.from(savedInspection)
     }
 
-    /**
+    / **
      * 테마 목록 조회 (오늘 날짜 기준 활성 테마)
      *
      * @return 테마 목록
-     */
+     * /
     fun getThemes(): List<ThemeResponse> {
         val today = LocalDate.now()
         val themes = inspectionThemeRepository.findActiveThemesByDate(today)
         return themes.map { ThemeResponse.from(it) }
     }
 
-    /**
+    / **
      * 현장 유형 목록 조회
      *
      * @return 현장 유형 목록
-     */
+     * /
     // Phase2: InspectionFieldType PG 대응 테이블 없음
     // fun getFieldTypes(): List<FieldTypeResponse> {
     //     val fieldTypes = inspectionFieldTypeRepository.findActiveFieldTypes()
@@ -206,9 +207,9 @@ class InspectionService(
 
     // ----- Private Helper Methods -----
 
-    /**
+    / **
      * 날짜 문자열 파싱
-     */
+     * /
     private fun parseDate(dateStr: String): LocalDate {
         return try {
             LocalDate.parse(dateStr)
@@ -217,9 +218,9 @@ class InspectionService(
         }
     }
 
-    /**
+    / **
      * 사진 파일 검증
-     */
+     * /
     private fun validatePhotos(photos: Array<MultipartFile>) {
         if (photos.isEmpty()) {
             throw PhotoRequiredException()
@@ -229,9 +230,9 @@ class InspectionService(
         }
     }
 
-    /**
+    / **
      * 분류별 필수 필드 검증
-     */
+     * /
     private fun validateRequiredFields(request: InspectionCreateRequest, category: InspectionCategory) {
         when (category) {
             InspectionCategory.OWN -> {
@@ -269,12 +270,13 @@ class InspectionService(
         }
     }
 
-    /**
+    / **
      * 제품 코드로 제품명 조회
-     */
+     * /
     private fun getProductName(productCode: String): String {
         val product = productRepository.findByProductCode(productCode)
             ?: return productCode
         return product.productName
     }
 }
+*/

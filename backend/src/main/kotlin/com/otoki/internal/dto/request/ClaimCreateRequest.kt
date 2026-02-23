@@ -1,3 +1,4 @@
+/*
 package com.otoki.internal.dto.request
 
 import jakarta.validation.constraints.NotBlank
@@ -5,10 +6,10 @@ import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Positive
 import jakarta.validation.constraints.Size
 
-/**
+/ **
  * 클레임 등록 요청 DTO
  * multipart/form-data로 전송되며, 사진 파일은 MultipartFile로 별도 처리
- */
+ * /
 data class ClaimCreateRequest(
     @field:NotNull(message = "거래처 ID는 필수입니다")
     @field:Positive(message = "거래처 ID는 양수여야 합니다")
@@ -48,3 +49,4 @@ data class ClaimCreateRequest(
     // 요청사항 (선택)
     val requestTypeCode: String? = null
 )
+*/

@@ -1,3 +1,4 @@
+/*
 package com.otoki.internal.service
 
 import com.otoki.internal.dto.request.OrderDraftRequest
@@ -20,9 +21,9 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 
-/**
+/ **
  * 임시저장 주문서 Service
- */
+ * /
 @Service
 @Transactional(readOnly = true)
 class OrderDraftService(
@@ -32,25 +33,25 @@ class OrderDraftService(
     private val userRepository: UserRepository
 ) {
 
-    /**
+    / **
      * 임시저장 주문서 조회
      *
      * @param userId 로그인 사용자 ID
      * @return 임시저장 주문서 (없으면 null)
-     */
+     * /
     fun getMyDraft(userId: Long): OrderDraftResponse? {
         val draft = orderDraftRepository.findByUserIdWithItems(userId) ?: return null
         return OrderDraftResponse.from(draft)
     }
 
-    /**
+    / **
      * 주문서 임시저장
      * 기존 임시저장 데이터가 있으면 삭제하고, 새로 생성한다.
      *
      * @param userId 로그인 사용자 ID
      * @param request 임시저장 요청 데이터
      * @return 저장 결과
-     */
+     * /
     @Transactional
     fun saveDraft(userId: Long, request: OrderDraftRequest): DraftSavedResponse {
         val clientId = request.clientId!!
@@ -150,11 +151,11 @@ class OrderDraftService(
         )
     }
 
-    /**
+    / **
      * 임시저장 주문서 삭제
      *
      * @param userId 로그인 사용자 ID
-     */
+     * /
     @Transactional
     fun deleteDraft(userId: Long) {
         val draft = orderDraftRepository.findByUserIdWithItems(userId)
@@ -170,3 +171,4 @@ class OrderDraftService(
         }
     }
 }
+*/

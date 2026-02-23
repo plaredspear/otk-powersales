@@ -1,3 +1,4 @@
+/*
 package com.otoki.internal.controller
 
 import com.otoki.internal.dto.ApiResponse
@@ -12,16 +13,16 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
 
-/**
+/ **
  * 제안하기 API Controller
- */
+ * /
 @RestController
 @RequestMapping("/api/v1/suggestions")
 class SuggestionController(
     private val suggestionService: SuggestionService
 ) {
 
-    /**
+    / **
      * 제안하기 등록
      * POST /api/v1/suggestions
      *
@@ -29,7 +30,7 @@ class SuggestionController(
      * @param request 제안 등록 요청 (multipart form fields)
      * @param photos 사진 목록 (선택, 최대 2장)
      * @return 제안 등록 결과
-     */
+     * /
     @PostMapping(consumes = ["multipart/form-data"])
     fun createSuggestion(
         @AuthenticationPrincipal principal: UserPrincipal,
@@ -46,3 +47,4 @@ class SuggestionController(
             .body(ApiResponse.success(result, "제안이 등록되었습니다"))
     }
 }
+*/

@@ -1,3 +1,4 @@
+/*
 package com.otoki.internal.repository
 
 import com.otoki.internal.entity.Inspection
@@ -8,17 +9,17 @@ import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
 import java.time.LocalDate
 
-/**
+/ **
  * 현장 점검 Repository
- */
+ * /
 @Repository
 interface InspectionRepository : JpaRepository<Inspection, Long> {
 
-    /**
+    / **
      * 사용자별 현장 점검 목록 조회 (동적 필터링)
      * 거래처ID, 분류는 선택적 (null이면 조건 미적용)
      * 점검일 기준 내림차순 정렬
-     */
+     * /
     @Query(
         "SELECT i FROM Inspection i " +
         "JOIN FETCH i.store " +
@@ -48,3 +49,4 @@ interface InspectionRepository : JpaRepository<Inspection, Long> {
         @Param("inspectionId") inspectionId: Long
     ): Inspection?
 }
+*/

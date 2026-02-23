@@ -1,11 +1,12 @@
+/*
 package com.otoki.internal.entity
 
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
-/**
+/ **
  * 임시저장 주문서 제품 항목 Entity
- */
+ * /
 @Entity
 @Table(
     name = "order_draft_items",
@@ -56,3 +57,4 @@ class OrderDraftItem(
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now()
 )
+*/

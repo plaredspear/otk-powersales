@@ -1,11 +1,12 @@
+/*
 package com.otoki.internal.dto.response
 
 import com.otoki.internal.entity.Inspection
 
-/**
+/ **
  * 현장 점검 상세 응답 DTO
  * 분류(자사/경쟁사)에 따라 필드가 달라진다.
- */
+ * /
 data class InspectionDetailResponse(
     val id: Long,
     val category: String,
@@ -61,3 +62,4 @@ data class InspectionDetailResponse(
         }
     }
 }
+*/
