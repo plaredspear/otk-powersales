@@ -41,6 +41,7 @@ otoki/                          # 프로젝트 루트
 │   ├── .claude/                #   Claude Code 설정 (가이드, 커맨드)
 │   ├── docs/                   #   문서 디렉토리 (git 추적 대상 아님)
 │   └── CLAUDE.md               #   이 파일
+├── impl/                       # [impl] 구현 작업 worktree
 ├── backend-dev/                # [backend-dev] Backend 개발 worktree
 ├── mobile-dev/                 # [mobile-dev] Mobile 개발 worktree
 └── docs-spec/                  # [docs-spec] 스펙/문서 작업 worktree
