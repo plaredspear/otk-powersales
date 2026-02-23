@@ -83,8 +83,76 @@ abstract class AuthRepository {
   /// 서버에 로그아웃을 알리고 로컬 토큰을 삭제합니다.
   Future<void> logout();
 
+  /// GPS 동의 약관 조회
+  Future<GpsConsentTerms> getGpsConsentTerms();
+
+  /// GPS 동의 상태 조회
+  Future<GpsConsentStatus> getGpsConsentStatus();
+
   /// GPS 위치정보 동의 기록
   ///
-  /// 사용자의 GPS 위치정보 수집 동의를 서버에 기록합니다.
-  Future<void> recordGpsConsent();
+  /// [agreementNumber]: 동의한 약관 번호 (선택)
+  /// Returns: 새 access_token 포함 결과
+  Future<GpsConsentRecordResult> recordGpsConsent({String? agreementNumber});
+}
+
+/// GPS 동의 약관 값 객체
+class GpsConsentTerms {
+  final String agreementNumber;
+  final String contents;
+
+  const GpsConsentTerms({
+    required this.agreementNumber,
+    required this.contents,
+  });
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is GpsConsentTerms &&
+        other.agreementNumber == agreementNumber &&
+        other.contents == contents;
+  }
+
+  @override
+  int get hashCode => Object.hash(agreementNumber, contents);
+}
+
+/// GPS 동의 상태 값 객체
+class GpsConsentStatus {
+  final bool requiresGpsConsent;
+
+  const GpsConsentStatus({required this.requiresGpsConsent});
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is GpsConsentStatus &&
+        other.requiresGpsConsent == requiresGpsConsent;
+  }
+
+  @override
+  int get hashCode => requiresGpsConsent.hashCode;
+}
+
+/// GPS 동의 기록 결과 값 객체
+class GpsConsentRecordResult {
+  final String accessToken;
+  final int expiresIn;
+
+  const GpsConsentRecordResult({
+    required this.accessToken,
+    required this.expiresIn,
+  });
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is GpsConsentRecordResult &&
+        other.accessToken == accessToken &&
+        other.expiresIn == expiresIn;
+  }
+
+  @override
+  int get hashCode => Object.hash(accessToken, expiresIn);
 }

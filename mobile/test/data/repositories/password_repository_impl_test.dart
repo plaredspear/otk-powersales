@@ -104,7 +104,17 @@ class FakeAuthRemoteDataSource implements AuthRemoteDataSource {
   }
 
   @override
-  Future<void> recordGpsConsent() {
+  Future<Map<String, dynamic>> getGpsConsentTerms() {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Map<String, dynamic>> getGpsConsentStatus() {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Map<String, dynamic>> recordGpsConsent({String? agreementNumber}) {
     throw UnimplementedError();
   }
 }
