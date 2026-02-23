@@ -46,16 +46,17 @@ class HomeService(
 
         val today = LocalDate.now()
 
-        // 오늘 일정 조회
+        // 오늘 일정 조회 (V1: employeeId(sfid) + workingDate로 조회)
+        val userSfid = user.sfid ?: ""
         val todaySchedules = scheduleRepository
-            .findByUserIdAndScheduleDate(userId, today)
+            .findByEmployeeIdAndWorkingDate(userSfid, today)
             .map { schedule ->
                 HomeResponse.ScheduleInfo(
                     id = schedule.id,
-                    storeName = schedule.storeName,
-                    startTime = schedule.startTime.format(TIME_FORMATTER),
-                    endTime = schedule.endTime.format(TIME_FORMATTER),
-                    type = schedule.type
+                    storeName = "",  // V1에서 storeName 삭제됨
+                    startTime = schedule.startTime?.toLocalTime()?.format(TIME_FORMATTER) ?: "",
+                    endTime = schedule.completeTime?.toLocalTime()?.format(TIME_FORMATTER) ?: "",
+                    type = schedule.workingType ?: ""
                 )
             }
 

@@ -20,7 +20,7 @@ interface InspectionThemeRepository : JpaRepository<InspectionTheme, Long> {
      */
     @Query(
         "SELECT t FROM InspectionTheme t " +
-        "WHERE t.isActive = true " +
+        "WHERE t.publicFlag = true " +
         "AND t.startDate <= :targetDate " +
         "AND t.endDate >= :targetDate " +
         "ORDER BY t.name ASC"

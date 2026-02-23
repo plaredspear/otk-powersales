@@ -2,7 +2,6 @@ package com.otoki.internal.service
 
 import com.otoki.internal.entity.*
 import com.otoki.internal.exception.UserNotFoundException
-import com.otoki.internal.repository.AttendanceRepository
 import com.otoki.internal.repository.StoreScheduleRepository
 import com.otoki.internal.repository.UserRepository
 import org.assertj.core.api.Assertions.assertThat
@@ -28,9 +27,6 @@ class MyScheduleServiceTest {
     @Mock
     private lateinit var storeScheduleRepository: StoreScheduleRepository
 
-    @Mock
-    private lateinit var attendanceRepository: AttendanceRepository
-
     @InjectMocks
     private lateinit var myScheduleService: MyScheduleService
 
@@ -47,14 +43,16 @@ class MyScheduleServiceTest {
             val userId = 1L
             val year = 2020
             val month = 8
+            val mockUser = createMockUser(userId, "최금주", "20030117", sfid = "a0B000000012345")
             val workDates = listOf(
                 LocalDate.of(2020, 8, 1),
                 LocalDate.of(2020, 8, 4),
                 LocalDate.of(2020, 8, 10)
             )
 
-            whenever(storeScheduleRepository.findDistinctScheduleDatesByUserIdAndDateBetween(
-                eq(userId),
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
+            whenever(storeScheduleRepository.findDistinctStartDatesByFullNameAndDateBetween(
+                eq("a0B000000012345"),
                 eq(LocalDate.of(2020, 8, 1)),
                 eq(LocalDate.of(2020, 8, 31))
             )).thenReturn(workDates)
@@ -71,7 +69,7 @@ class MyScheduleServiceTest {
             assertThat(result.workDays[0].hasWork).isTrue()
             assertThat(result.workDays[3].date).isEqualTo("2020-08-04")
             assertThat(result.workDays[3].hasWork).isTrue()
-            assertThat(result.workDays[1].hasWork).isFalse() // 2020-08-02는 근무일 아님
+            assertThat(result.workDays[1].hasWork).isFalse()
         }
 
         @Test
@@ -81,9 +79,11 @@ class MyScheduleServiceTest {
             val userId = 1L
             val year = 2020
             val month = 8
+            val mockUser = createMockUser(userId, "최금주", "20030117", sfid = "a0B000000012345")
 
-            whenever(storeScheduleRepository.findDistinctScheduleDatesByUserIdAndDateBetween(
-                eq(userId),
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
+            whenever(storeScheduleRepository.findDistinctStartDatesByFullNameAndDateBetween(
+                eq("a0B000000012345"),
                 any(),
                 any()
             )).thenReturn(emptyList())
@@ -105,9 +105,11 @@ class MyScheduleServiceTest {
             val userId = 1L
             val year = 2021
             val month = 2
+            val mockUser = createMockUser(userId, "최금주", "20030117", sfid = "a0B000000012345")
 
-            whenever(storeScheduleRepository.findDistinctScheduleDatesByUserIdAndDateBetween(
-                eq(userId),
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
+            whenever(storeScheduleRepository.findDistinctStartDatesByFullNameAndDateBetween(
+                eq("a0B000000012345"),
                 any(),
                 any()
             )).thenReturn(emptyList())
@@ -118,6 +120,19 @@ class MyScheduleServiceTest {
             // Then
             assertThat(result.workDays).hasSize(28)
         }
+
+        @Test
+        @DisplayName("실패 - 사용자 없음")
+        fun getMonthlySchedule_userNotFound() {
+            // Given
+            val userId = 999L
+            whenever(userRepository.findById(userId)).thenReturn(Optional.empty())
+
+            // When & Then
+            assertThrows<UserNotFoundException> {
+                myScheduleService.getMonthlySchedule(userId, 2020, 8)
+            }
+        }
     }
 
     // ========== 일간 일정 상세 조회 Tests ==========
@@ -127,23 +142,21 @@ class MyScheduleServiceTest {
     inner class GetDailySchedule {
 
         @Test
-        @DisplayName("성공 - 전체 미등록")
-        fun getDailySchedule_allUnregistered_success() {
+        @DisplayName("성공 - 일정 있음")
+        fun getDailySchedule_withSchedules_success() {
             // Given
             val userId = 1L
             val date = LocalDate.of(2020, 8, 4)
-            val mockUser = createMockUser(userId, "최금주", "20030117")
+            val mockUser = createMockUser(userId, "최금주", "20030117", sfid = "a0B000000012345")
             val mockSchedules = listOf(
-                createMockSchedule(1L, userId, 100L, "이마트", "진열", date),
-                createMockSchedule(2L, userId, 200L, "롯데마트", "진열", date),
-                createMockSchedule(3L, userId, 300L, "미광물류", "진열", date)
+                createMockSchedule(account = "ACC001", typeOfWork1 = "진열", startDate = date),
+                createMockSchedule(account = "ACC002", typeOfWork1 = "진열", startDate = date),
+                createMockSchedule(account = "ACC003", typeOfWork1 = "진열", startDate = date)
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(storeScheduleRepository.findByUserIdAndScheduleDate(userId, date))
+            whenever(storeScheduleRepository.findByFullNameAndStartDate("a0B000000012345", date))
                 .thenReturn(mockSchedules)
-            whenever(attendanceRepository.findByUserIdAndAttendanceDate(userId, date))
-                .thenReturn(emptyList())
 
             // When
             val result = myScheduleService.getDailySchedule(userId, date)
@@ -161,81 +174,15 @@ class MyScheduleServiceTest {
         }
 
         @Test
-        @DisplayName("성공 - 부분 등록")
-        fun getDailySchedule_partiallyRegistered_success() {
-            // Given
-            val userId = 1L
-            val date = LocalDate.of(2020, 8, 4)
-            val mockUser = createMockUser(userId, "최금주", "20030117")
-            val mockSchedules = listOf(
-                createMockSchedule(1L, userId, 100L, "이마트", "진열", date),
-                createMockSchedule(2L, userId, 200L, "롯데마트", "진열", date),
-                createMockSchedule(3L, userId, 300L, "미광물류", "진열", date)
-            )
-            val mockAttendances = listOf(
-                createMockAttendance(1L, userId, 100L, date) // 100L만 등록됨
-            )
-
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(storeScheduleRepository.findByUserIdAndScheduleDate(userId, date))
-                .thenReturn(mockSchedules)
-            whenever(attendanceRepository.findByUserIdAndAttendanceDate(userId, date))
-                .thenReturn(mockAttendances)
-
-            // When
-            val result = myScheduleService.getDailySchedule(userId, date)
-
-            // Then
-            assertThat(result.reportProgress.completed).isEqualTo(1)
-            assertThat(result.reportProgress.total).isEqualTo(3)
-            assertThat(result.stores[0].isRegistered).isTrue() // storeId=100L
-            assertThat(result.stores[1].isRegistered).isFalse() // storeId=200L
-            assertThat(result.stores[2].isRegistered).isFalse() // storeId=300L
-        }
-
-        @Test
-        @DisplayName("성공 - 전체 등록")
-        fun getDailySchedule_allRegistered_success() {
-            // Given
-            val userId = 1L
-            val date = LocalDate.of(2020, 8, 4)
-            val mockUser = createMockUser(userId, "최금주", "20030117")
-            val mockSchedules = listOf(
-                createMockSchedule(1L, userId, 100L, "이마트", "진열", date),
-                createMockSchedule(2L, userId, 200L, "롯데마트", "진열", date)
-            )
-            val mockAttendances = listOf(
-                createMockAttendance(1L, userId, 100L, date),
-                createMockAttendance(2L, userId, 200L, date)
-            )
-
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(storeScheduleRepository.findByUserIdAndScheduleDate(userId, date))
-                .thenReturn(mockSchedules)
-            whenever(attendanceRepository.findByUserIdAndAttendanceDate(userId, date))
-                .thenReturn(mockAttendances)
-
-            // When
-            val result = myScheduleService.getDailySchedule(userId, date)
-
-            // Then
-            assertThat(result.reportProgress.completed).isEqualTo(2)
-            assertThat(result.reportProgress.total).isEqualTo(2)
-            assertThat(result.stores.all { it.isRegistered }).isTrue()
-        }
-
-        @Test
         @DisplayName("성공 - 일정 없음")
         fun getDailySchedule_noSchedule_success() {
             // Given
             val userId = 1L
             val date = LocalDate.of(2020, 8, 4)
-            val mockUser = createMockUser(userId, "최금주", "20030117")
+            val mockUser = createMockUser(userId, "최금주", "20030117", sfid = "a0B000000012345")
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(storeScheduleRepository.findByUserIdAndScheduleDate(userId, date))
-                .thenReturn(emptyList())
-            whenever(attendanceRepository.findByUserIdAndAttendanceDate(userId, date))
+            whenever(storeScheduleRepository.findByFullNameAndStartDate("a0B000000012345", date))
                 .thenReturn(emptyList())
 
             // When
@@ -266,47 +213,29 @@ class MyScheduleServiceTest {
 
     // ========== Helper Methods ==========
 
-    private fun createMockUser(userId: Long, name: String, employeeId: String): User {
+    private fun createMockUser(userId: Long, name: String, employeeId: String, sfid: String? = null): User {
         return User(
             id = userId,
             employeeId = employeeId,
             password = "encoded",
             name = name,
-            orgName = "서울지점"
+            orgName = "서울지점",
+            sfid = sfid
         )
     }
 
     private fun createMockSchedule(
-        id: Long,
-        userId: Long,
-        storeId: Long,
-        storeName: String,
-        workCategory: String,
-        scheduleDate: LocalDate
+        id: Long = 0,
+        account: String = "ACC001",
+        typeOfWork1: String = "진열",
+        startDate: LocalDate = LocalDate.now()
     ): StoreSchedule {
         return StoreSchedule(
             id = id,
-            userId = userId,
-            storeId = storeId,
-            storeName = storeName,
-            storeCode = "ST${storeId}",
-            workCategory = workCategory,
-            scheduleDate = scheduleDate
-        )
-    }
-
-    private fun createMockAttendance(
-        id: Long,
-        userId: Long,
-        storeId: Long,
-        attendanceDate: LocalDate
-    ): Attendance {
-        return Attendance(
-            id = id,
-            userId = userId,
-            storeId = storeId,
-            workType = AttendanceWorkType.ROOM_TEMP,
-            attendanceDate = attendanceDate
+            fullName = "a0B000000012345",
+            account = account,
+            typeOfWork1 = typeOfWork1,
+            startDate = startDate
         )
     }
 }

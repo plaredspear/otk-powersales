@@ -16,9 +16,11 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
 import java.time.LocalDate
 import java.time.YearMonth
+import java.util.Optional
 
 @ExtendWith(MockitoExtension::class)
 @DisplayName("MyStoreService 테스트")
@@ -36,6 +38,8 @@ class MyStoreServiceTest {
     @InjectMocks
     private lateinit var myStoreService: MyStoreService
 
+    private val testUserSfid = "a0B000000012345"
+
     // ========== getMyStores Tests ==========
 
     @Nested
@@ -43,216 +47,44 @@ class MyStoreServiceTest {
     inner class GetMyStoresTests {
 
         @Test
-        @DisplayName("한 달 거래처 조회 - 스케줄 데이터 존재 -> 중복 제거된 거래처 목록 반환")
-        fun getMyStores_withScheduleData() {
+        @DisplayName("한 달 거래처 조회 - Account 마스터가 있으면 Account 정보 반환")
+        fun getMyStores_withAccountMaster() {
             // Given
             val userId = 1L
+            val mockUser = createUser(id = userId, sfid = testUserSfid)
             val now = LocalDate.now()
             val yearMonth = YearMonth.from(now)
             val startDate = yearMonth.atDay(1)
             val endDate = yearMonth.atEndOfMonth()
 
-            val distinctStoreIds = listOf(1025172L, 1025173L, 1025174L)
-            val stores = listOf(
-                createAccount(
-                    id = 1025172L,
-                    externalKey = "1025172",
-                    name = "(유)경산식품",
-                    address1 = "전라남도 목포시 임암로20번길 6",
-                    representative = "김정자",
-                    phone = "061-123-4567"
-                ),
-                createAccount(
-                    id = 1025173L,
-                    externalKey = "1025173",
-                    name = "(주)대한식품",
-                    address1 = "서울시 강남구",
-                    representative = "이영희",
-                    phone = "02-111-2222"
-                ),
-                createAccount(
-                    id = 1025174L,
-                    externalKey = "1025174",
-                    name = "부산마트",
-                    address1 = "부산시 해운대구",
-                    representative = "박철수",
-                    phone = "051-333-4444"
-                )
+            val distinctAccountSfids = listOf("SF_ACC001", "SF_ACC002")
+            val accounts = listOf(
+                createAccount(id = 1L, sfid = "SF_ACC001", name = "(유)경산식품", externalKey = "1025172",
+                    address1 = "전라남도 목포시", representative = "김정자", phone = "061-123-4567"),
+                createAccount(id = 2L, sfid = "SF_ACC002", name = "(주)대한식품", externalKey = "1025173",
+                    address1 = "서울시 강남구", representative = "이영희", phone = "02-111-2222")
             )
             val schedules = listOf(
-                createStoreSchedule(userId = userId, storeId = 1025172L, storeName = "(유)경산식품", storeCode = "1025172"),
-                createStoreSchedule(userId = userId, storeId = 1025173L, storeName = "(주)대한식품", storeCode = "1025173"),
-                createStoreSchedule(userId = userId, storeId = 1025174L, storeName = "부산마트", storeCode = "1025174")
+                createStoreSchedule(account = "SF_ACC001", startDate = now),
+                createStoreSchedule(account = "SF_ACC002", startDate = now)
             )
 
-            whenever(userRepository.existsById(userId)).thenReturn(true)
-            whenever(storeScheduleRepository.findDistinctStoreIdsByUserIdAndScheduleDateBetween(userId, startDate, endDate))
-                .thenReturn(distinctStoreIds)
-            whenever(accountRepository.findByIdIn(distinctStoreIds)).thenReturn(stores)
-            whenever(storeScheduleRepository.findByUserIdAndScheduleDateBetween(userId, startDate, endDate))
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
+            whenever(storeScheduleRepository.findDistinctAccountsByFullNameAndStartDateBetween(testUserSfid, startDate, endDate))
+                .thenReturn(distinctAccountSfids)
+            whenever(accountRepository.findAll()).thenReturn(accounts)
+            whenever(storeScheduleRepository.findByFullNameAndStartDateBetween(testUserSfid, startDate, endDate))
                 .thenReturn(schedules)
 
             // When
             val result = myStoreService.getMyStores(userId, null)
 
             // Then
-            assertThat(result.stores).hasSize(3)
-            assertThat(result.totalCount).isEqualTo(3)
-            assertThat(result.stores[0].storeId).isEqualTo(1025172L)
+            assertThat(result.stores).hasSize(2)
+            assertThat(result.totalCount).isEqualTo(2)
             assertThat(result.stores[0].storeName).isEqualTo("(유)경산식품")
             assertThat(result.stores[0].storeCode).isEqualTo("1025172")
-            assertThat(result.stores[0].address).isEqualTo("전라남도 목포시 임암로20번길 6")
             assertThat(result.stores[0].representativeName).isEqualTo("김정자")
-            assertThat(result.stores[0].phoneNumber).isEqualTo("061-123-4567")
-        }
-
-        @Test
-        @DisplayName("중복 제거 - 동일 거래처가 5일에 스케줄 -> 해당 거래처 1건만 반환")
-        fun getMyStores_deduplicatesStores() {
-            // Given
-            val userId = 1L
-            val now = LocalDate.now()
-            val yearMonth = YearMonth.from(now)
-            val startDate = yearMonth.atDay(1)
-            val endDate = yearMonth.atEndOfMonth()
-
-            val distinctStoreIds = listOf(1025172L)
-            val stores = listOf(
-                createAccount(
-                    id = 1025172L,
-                    externalKey = "1025172",
-                    name = "(유)경산식품",
-                    address1 = "전라남도 목포시 임암로20번길 6",
-                    representative = "김정자",
-                    phone = "061-123-4567"
-                )
-            )
-            val schedules = listOf(
-                createStoreSchedule(userId = userId, storeId = 1025172L, storeName = "(유)경산식품", storeCode = "1025172", scheduleDate = now.withDayOfMonth(1)),
-                createStoreSchedule(userId = userId, storeId = 1025172L, storeName = "(유)경산식품", storeCode = "1025172", scheduleDate = now.withDayOfMonth(5)),
-                createStoreSchedule(userId = userId, storeId = 1025172L, storeName = "(유)경산식품", storeCode = "1025172", scheduleDate = now.withDayOfMonth(10)),
-                createStoreSchedule(userId = userId, storeId = 1025172L, storeName = "(유)경산식품", storeCode = "1025172", scheduleDate = now.withDayOfMonth(15)),
-                createStoreSchedule(userId = userId, storeId = 1025172L, storeName = "(유)경산식품", storeCode = "1025172", scheduleDate = now.withDayOfMonth(20))
-            )
-
-            whenever(userRepository.existsById(userId)).thenReturn(true)
-            whenever(storeScheduleRepository.findDistinctStoreIdsByUserIdAndScheduleDateBetween(userId, startDate, endDate))
-                .thenReturn(distinctStoreIds)
-            whenever(accountRepository.findByIdIn(distinctStoreIds)).thenReturn(stores)
-            whenever(storeScheduleRepository.findByUserIdAndScheduleDateBetween(userId, startDate, endDate))
-                .thenReturn(schedules)
-
-            // When
-            val result = myStoreService.getMyStores(userId, null)
-
-            // Then
-            assertThat(result.stores).hasSize(1)
-            assertThat(result.totalCount).isEqualTo(1)
-            assertThat(result.stores[0].storeId).isEqualTo(1025172L)
-            assertThat(result.stores[0].storeName).isEqualTo("(유)경산식품")
-        }
-
-        @Test
-        @DisplayName("검색 — 거래처명 - '경산' 검색 -> '(유)경산식품' 매칭")
-        fun getMyStores_searchByStoreName() {
-            // Given
-            val userId = 1L
-            val keyword = "경산"
-            val now = LocalDate.now()
-            val yearMonth = YearMonth.from(now)
-            val startDate = yearMonth.atDay(1)
-            val endDate = yearMonth.atEndOfMonth()
-
-            val distinctStoreIds = listOf(1025172L, 1025173L)
-            val stores = listOf(
-                createAccount(
-                    id = 1025172L,
-                    externalKey = "1025172",
-                    name = "(유)경산식품",
-                    address1 = "전라남도 목포시 임암로20번길 6",
-                    representative = "김정자",
-                    phone = "061-123-4567"
-                ),
-                createAccount(
-                    id = 1025173L,
-                    externalKey = "1025173",
-                    name = "(주)대한식품",
-                    address1 = "서울시 강남구",
-                    representative = "이영희",
-                    phone = "02-111-2222"
-                )
-            )
-            val schedules = listOf(
-                createStoreSchedule(userId = userId, storeId = 1025172L, storeName = "(유)경산식품", storeCode = "1025172"),
-                createStoreSchedule(userId = userId, storeId = 1025173L, storeName = "(주)대한식품", storeCode = "1025173")
-            )
-
-            whenever(userRepository.existsById(userId)).thenReturn(true)
-            whenever(storeScheduleRepository.findDistinctStoreIdsByUserIdAndScheduleDateBetween(userId, startDate, endDate))
-                .thenReturn(distinctStoreIds)
-            whenever(accountRepository.findByIdIn(distinctStoreIds)).thenReturn(stores)
-            whenever(storeScheduleRepository.findByUserIdAndScheduleDateBetween(userId, startDate, endDate))
-                .thenReturn(schedules)
-
-            // When
-            val result = myStoreService.getMyStores(userId, keyword)
-
-            // Then
-            assertThat(result.stores).hasSize(1)
-            assertThat(result.totalCount).isEqualTo(1)
-            assertThat(result.stores[0].storeName).isEqualTo("(유)경산식품")
-        }
-
-        @Test
-        @DisplayName("검색 — 거래처코드 - '1025172' 검색 -> 해당 코드 거래처 매칭")
-        fun getMyStores_searchByStoreCode() {
-            // Given
-            val userId = 1L
-            val keyword = "1025172"
-            val now = LocalDate.now()
-            val yearMonth = YearMonth.from(now)
-            val startDate = yearMonth.atDay(1)
-            val endDate = yearMonth.atEndOfMonth()
-
-            val distinctStoreIds = listOf(1025172L, 1025173L)
-            val stores = listOf(
-                createAccount(
-                    id = 1025172L,
-                    externalKey = "1025172",
-                    name = "(유)경산식품",
-                    address1 = "전라남도 목포시 임암로20번길 6",
-                    representative = "김정자",
-                    phone = "061-123-4567"
-                ),
-                createAccount(
-                    id = 1025173L,
-                    externalKey = "1025173",
-                    name = "(주)대한식품",
-                    address1 = "서울시 강남구",
-                    representative = "이영희",
-                    phone = "02-111-2222"
-                )
-            )
-            val schedules = listOf(
-                createStoreSchedule(userId = userId, storeId = 1025172L, storeName = "(유)경산식품", storeCode = "1025172"),
-                createStoreSchedule(userId = userId, storeId = 1025173L, storeName = "(주)대한식품", storeCode = "1025173")
-            )
-
-            whenever(userRepository.existsById(userId)).thenReturn(true)
-            whenever(storeScheduleRepository.findDistinctStoreIdsByUserIdAndScheduleDateBetween(userId, startDate, endDate))
-                .thenReturn(distinctStoreIds)
-            whenever(accountRepository.findByIdIn(distinctStoreIds)).thenReturn(stores)
-            whenever(storeScheduleRepository.findByUserIdAndScheduleDateBetween(userId, startDate, endDate))
-                .thenReturn(schedules)
-
-            // When
-            val result = myStoreService.getMyStores(userId, keyword)
-
-            // Then
-            assertThat(result.stores).hasSize(1)
-            assertThat(result.totalCount).isEqualTo(1)
-            assertThat(result.stores[0].storeCode).isEqualTo("1025172")
-            assertThat(result.stores[0].storeName).isEqualTo("(유)경산식품")
         }
 
         @Test
@@ -260,13 +92,14 @@ class MyStoreServiceTest {
         fun getMyStores_noSchedules() {
             // Given
             val userId = 1L
+            val mockUser = createUser(id = userId, sfid = testUserSfid)
             val now = LocalDate.now()
             val yearMonth = YearMonth.from(now)
             val startDate = yearMonth.atDay(1)
             val endDate = yearMonth.atEndOfMonth()
 
-            whenever(userRepository.existsById(userId)).thenReturn(true)
-            whenever(storeScheduleRepository.findDistinctStoreIdsByUserIdAndScheduleDateBetween(userId, startDate, endDate))
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
+            whenever(storeScheduleRepository.findDistinctAccountsByFullNameAndStartDateBetween(testUserSfid, startDate, endDate))
                 .thenReturn(emptyList())
 
             // When
@@ -282,7 +115,7 @@ class MyStoreServiceTest {
         fun getMyStores_userNotFound() {
             // Given
             val userId = 999L
-            whenever(userRepository.existsById(userId)).thenReturn(false)
+            whenever(userRepository.findById(userId)).thenReturn(Optional.empty())
 
             // When & Then
             assertThatThrownBy { myStoreService.getMyStores(userId, null) }
@@ -290,136 +123,70 @@ class MyStoreServiceTest {
         }
 
         @Test
-        @DisplayName("Store 마스터 정보 병합 - Store 마스터가 있으면 대표자명/전화번호 포함")
-        fun getMyStores_withStoreMaster() {
+        @DisplayName("검색 — 거래처명 - '경산' 검색 -> '(유)경산식품' 매칭")
+        fun getMyStores_searchByStoreName() {
             // Given
             val userId = 1L
+            val keyword = "경산"
+            val mockUser = createUser(id = userId, sfid = testUserSfid)
             val now = LocalDate.now()
             val yearMonth = YearMonth.from(now)
             val startDate = yearMonth.atDay(1)
             val endDate = yearMonth.atEndOfMonth()
 
-            val distinctStoreIds = listOf(1025172L)
-            val stores = listOf(
-                createAccount(
-                    id = 1025172L,
-                    externalKey = "1025172",
-                    name = "(유)경산식품",
-                    address1 = "전라남도 목포시 임암로20번길 6",
-                    representative = "김정자",
-                    phone = "061-123-4567"
-                )
+            val distinctAccountSfids = listOf("SF_ACC001", "SF_ACC002")
+            val accounts = listOf(
+                createAccount(id = 1L, sfid = "SF_ACC001", name = "(유)경산식품", externalKey = "1025172"),
+                createAccount(id = 2L, sfid = "SF_ACC002", name = "(주)대한식품", externalKey = "1025173")
             )
             val schedules = listOf(
-                createStoreSchedule(userId = userId, storeId = 1025172L, storeName = "(유)경산식품", storeCode = "1025172")
+                createStoreSchedule(account = "SF_ACC001", startDate = now),
+                createStoreSchedule(account = "SF_ACC002", startDate = now)
             )
 
-            whenever(userRepository.existsById(userId)).thenReturn(true)
-            whenever(storeScheduleRepository.findDistinctStoreIdsByUserIdAndScheduleDateBetween(userId, startDate, endDate))
-                .thenReturn(distinctStoreIds)
-            whenever(accountRepository.findByIdIn(distinctStoreIds)).thenReturn(stores)
-            whenever(storeScheduleRepository.findByUserIdAndScheduleDateBetween(userId, startDate, endDate))
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
+            whenever(storeScheduleRepository.findDistinctAccountsByFullNameAndStartDateBetween(testUserSfid, startDate, endDate))
+                .thenReturn(distinctAccountSfids)
+            whenever(accountRepository.findAll()).thenReturn(accounts)
+            whenever(storeScheduleRepository.findByFullNameAndStartDateBetween(testUserSfid, startDate, endDate))
                 .thenReturn(schedules)
 
             // When
-            val result = myStoreService.getMyStores(userId, null)
+            val result = myStoreService.getMyStores(userId, keyword)
 
             // Then
             assertThat(result.stores).hasSize(1)
-            assertThat(result.stores[0].representativeName).isEqualTo("김정자")
-            assertThat(result.stores[0].phoneNumber).isEqualTo("061-123-4567")
-        }
-
-        @Test
-        @DisplayName("Store 마스터 없는 fallback - Store 마스터 없으면 StoreSchedule 정보만 사용 (representativeName/phoneNumber null)")
-        fun getMyStores_withoutStoreMaster() {
-            // Given
-            val userId = 1L
-            val now = LocalDate.now()
-            val yearMonth = YearMonth.from(now)
-            val startDate = yearMonth.atDay(1)
-            val endDate = yearMonth.atEndOfMonth()
-
-            val distinctStoreIds = listOf(1025172L)
-            val stores = emptyList<Account>()
-            val schedules = listOf(
-                createStoreSchedule(
-                    userId = userId,
-                    storeId = 1025172L,
-                    storeName = "(유)경산식품",
-                    storeCode = "1025172",
-                    address = "전라남도 목포시"
-                )
-            )
-
-            whenever(userRepository.existsById(userId)).thenReturn(true)
-            whenever(storeScheduleRepository.findDistinctStoreIdsByUserIdAndScheduleDateBetween(userId, startDate, endDate))
-                .thenReturn(distinctStoreIds)
-            whenever(accountRepository.findByIdIn(distinctStoreIds)).thenReturn(stores)
-            whenever(storeScheduleRepository.findByUserIdAndScheduleDateBetween(userId, startDate, endDate))
-                .thenReturn(schedules)
-
-            // When
-            val result = myStoreService.getMyStores(userId, null)
-
-            // Then
-            assertThat(result.stores).hasSize(1)
-            assertThat(result.stores[0].storeId).isEqualTo(1025172L)
             assertThat(result.stores[0].storeName).isEqualTo("(유)경산식품")
-            assertThat(result.stores[0].storeCode).isEqualTo("1025172")
-            assertThat(result.stores[0].address).isEqualTo("전라남도 목포시")
-            assertThat(result.stores[0].representativeName).isNull()
-            assertThat(result.stores[0].phoneNumber).isNull()
         }
 
         @Test
-        @DisplayName("거래처명 기준 오름차순 정렬 - 결과가 storeName 오름차순으로 정렬됨")
+        @DisplayName("거래처명 기준 오름차순 정렬")
         fun getMyStores_sortedByStoreName() {
             // Given
             val userId = 1L
+            val mockUser = createUser(id = userId, sfid = testUserSfid)
             val now = LocalDate.now()
             val yearMonth = YearMonth.from(now)
             val startDate = yearMonth.atDay(1)
             val endDate = yearMonth.atEndOfMonth()
 
-            val distinctStoreIds = listOf(1025173L, 1025172L, 1025174L)
-            val stores = listOf(
-                createAccount(
-                    id = 1025173L,
-                    externalKey = "1025173",
-                    name = "홈플러스 서면점",
-                    address1 = "부산시 서면",
-                    representative = "이영희",
-                    phone = "02-111-2222"
-                ),
-                createAccount(
-                    id = 1025172L,
-                    externalKey = "1025172",
-                    name = "가나다식품",
-                    address1 = "전라남도 목포시",
-                    representative = "김정자",
-                    phone = "061-123-4567"
-                ),
-                createAccount(
-                    id = 1025174L,
-                    externalKey = "1025174",
-                    name = "나라마트",
-                    address1 = "부산시 해운대구",
-                    representative = "박철수",
-                    phone = "051-333-4444"
-                )
+            val distinctAccountSfids = listOf("SF_ACC001", "SF_ACC002", "SF_ACC003")
+            val accounts = listOf(
+                createAccount(id = 1L, sfid = "SF_ACC001", name = "홈플러스 서면점", externalKey = "1025173"),
+                createAccount(id = 2L, sfid = "SF_ACC002", name = "가나다식품", externalKey = "1025172"),
+                createAccount(id = 3L, sfid = "SF_ACC003", name = "나라마트", externalKey = "1025174")
             )
             val schedules = listOf(
-                createStoreSchedule(userId = userId, storeId = 1025173L, storeName = "홈플러스 서면점", storeCode = "1025173"),
-                createStoreSchedule(userId = userId, storeId = 1025172L, storeName = "가나다식품", storeCode = "1025172"),
-                createStoreSchedule(userId = userId, storeId = 1025174L, storeName = "나라마트", storeCode = "1025174")
+                createStoreSchedule(account = "SF_ACC001", startDate = now),
+                createStoreSchedule(account = "SF_ACC002", startDate = now),
+                createStoreSchedule(account = "SF_ACC003", startDate = now)
             )
 
-            whenever(userRepository.existsById(userId)).thenReturn(true)
-            whenever(storeScheduleRepository.findDistinctStoreIdsByUserIdAndScheduleDateBetween(userId, startDate, endDate))
-                .thenReturn(distinctStoreIds)
-            whenever(accountRepository.findByIdIn(distinctStoreIds)).thenReturn(stores)
-            whenever(storeScheduleRepository.findByUserIdAndScheduleDateBetween(userId, startDate, endDate))
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
+            whenever(storeScheduleRepository.findDistinctAccountsByFullNameAndStartDateBetween(testUserSfid, startDate, endDate))
+                .thenReturn(distinctAccountSfids)
+            whenever(accountRepository.findAll()).thenReturn(accounts)
+            whenever(storeScheduleRepository.findByFullNameAndStartDateBetween(testUserSfid, startDate, endDate))
                 .thenReturn(schedules)
 
             // When
@@ -431,104 +198,14 @@ class MyStoreServiceTest {
             assertThat(result.stores[1].storeName).isEqualTo("나라마트")
             assertThat(result.stores[2].storeName).isEqualTo("홈플러스 서면점")
         }
-
-        @Test
-        @DisplayName("검색 키워드 대소문자 무시 - 'KYUNGSAN' 검색 -> '경산식품' 매칭되지 않음 (한글-영문 불일치)")
-        fun getMyStores_searchCaseInsensitive() {
-            // Given
-            val userId = 1L
-            val keyword = "GYEONGSAN"
-            val now = LocalDate.now()
-            val yearMonth = YearMonth.from(now)
-            val startDate = yearMonth.atDay(1)
-            val endDate = yearMonth.atEndOfMonth()
-
-            val distinctStoreIds = listOf(1025172L)
-            val stores = listOf(
-                createAccount(
-                    id = 1025172L,
-                    externalKey = "1025172",
-                    name = "(유)경산식품",
-                    address1 = "전라남도 목포시",
-                    representative = "김정자",
-                    phone = "061-123-4567"
-                )
-            )
-            val schedules = listOf(
-                createStoreSchedule(userId = userId, storeId = 1025172L, storeName = "(유)경산식품", storeCode = "1025172")
-            )
-
-            whenever(userRepository.existsById(userId)).thenReturn(true)
-            whenever(storeScheduleRepository.findDistinctStoreIdsByUserIdAndScheduleDateBetween(userId, startDate, endDate))
-                .thenReturn(distinctStoreIds)
-            whenever(accountRepository.findByIdIn(distinctStoreIds)).thenReturn(stores)
-            whenever(storeScheduleRepository.findByUserIdAndScheduleDateBetween(userId, startDate, endDate))
-                .thenReturn(schedules)
-
-            // When
-            val result = myStoreService.getMyStores(userId, keyword)
-
-            // Then
-            assertThat(result.stores).isEmpty()
-            assertThat(result.totalCount).isEqualTo(0)
-        }
-
-        @Test
-        @DisplayName("검색 키워드가 공백인 경우 - 필터링하지 않고 전체 결과 반환")
-        fun getMyStores_searchWithBlankKeyword() {
-            // Given
-            val userId = 1L
-            val keyword = "   "
-            val now = LocalDate.now()
-            val yearMonth = YearMonth.from(now)
-            val startDate = yearMonth.atDay(1)
-            val endDate = yearMonth.atEndOfMonth()
-
-            val distinctStoreIds = listOf(1025172L, 1025173L)
-            val stores = listOf(
-                createAccount(
-                    id = 1025172L,
-                    externalKey = "1025172",
-                    name = "(유)경산식품",
-                    address1 = "전라남도 목포시",
-                    representative = "김정자",
-                    phone = "061-123-4567"
-                ),
-                createAccount(
-                    id = 1025173L,
-                    externalKey = "1025173",
-                    name = "(주)대한식품",
-                    address1 = "서울시 강남구",
-                    representative = "이영희",
-                    phone = "02-111-2222"
-                )
-            )
-            val schedules = listOf(
-                createStoreSchedule(userId = userId, storeId = 1025172L, storeName = "(유)경산식품", storeCode = "1025172"),
-                createStoreSchedule(userId = userId, storeId = 1025173L, storeName = "(주)대한식품", storeCode = "1025173")
-            )
-
-            whenever(userRepository.existsById(userId)).thenReturn(true)
-            whenever(storeScheduleRepository.findDistinctStoreIdsByUserIdAndScheduleDateBetween(userId, startDate, endDate))
-                .thenReturn(distinctStoreIds)
-            whenever(accountRepository.findByIdIn(distinctStoreIds)).thenReturn(stores)
-            whenever(storeScheduleRepository.findByUserIdAndScheduleDateBetween(userId, startDate, endDate))
-                .thenReturn(schedules)
-
-            // When
-            val result = myStoreService.getMyStores(userId, keyword)
-
-            // Then
-            assertThat(result.stores).hasSize(2)
-            assertThat(result.totalCount).isEqualTo(2)
-        }
     }
 
     // ========== Helpers ==========
 
     private fun createUser(
         id: Long = 1L,
-        employeeId: String = "12345678"
+        employeeId: String = "12345678",
+        sfid: String? = null
     ): User {
         return User(
             id = id,
@@ -536,20 +213,23 @@ class MyStoreServiceTest {
             password = "encodedPassword",
             name = "테스트 사용자",
             orgName = "부산지점",
-            passwordChangeRequired = false
+            passwordChangeRequired = false,
+            sfid = sfid
         )
     }
 
     private fun createAccount(
-        id: Long = 1025172L,
+        id: Long = 1L,
+        sfid: String? = null,
         externalKey: String = "1025172",
         name: String = "(유)경산식품",
-        address1: String? = "전라남도 목포시 임암로20번길 6",
+        address1: String? = "전라남도 목포시",
         representative: String? = "김정자",
         phone: String? = "061-123-4567"
     ): Account {
         return Account(
             id = id,
+            sfid = sfid,
             externalKey = externalKey,
             name = name,
             address1 = address1,
@@ -559,21 +239,15 @@ class MyStoreServiceTest {
     }
 
     private fun createStoreSchedule(
-        userId: Long = 1L,
-        storeId: Long = 1025172L,
-        storeName: String = "(유)경산식품",
-        storeCode: String = "1025172",
-        address: String? = "전라남도 목포시",
-        scheduleDate: LocalDate = LocalDate.now()
+        account: String = "SF_ACC001",
+        typeOfWork1: String = "진열",
+        startDate: LocalDate = LocalDate.now()
     ): StoreSchedule {
         return StoreSchedule(
-            userId = userId,
-            storeId = storeId,
-            storeName = storeName,
-            storeCode = storeCode,
-            workCategory = "진열",
-            address = address,
-            scheduleDate = scheduleDate
+            fullName = testUserSfid,
+            account = account,
+            typeOfWork1 = typeOfWork1,
+            startDate = startDate
         )
     }
 }

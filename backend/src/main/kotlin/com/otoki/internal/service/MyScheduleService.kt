@@ -36,6 +36,11 @@ class MyScheduleService(
      */
     @Transactional(readOnly = true)
     fun getMonthlySchedule(userId: Long, year: Int, month: Int): MonthlyScheduleResponse {
+        // 사용자 sfid 조회 (V1 StoreSchedule은 fullName(sfid)로 조회)
+        val user = userRepository.findById(userId)
+            .orElseThrow { UserNotFoundException() }
+        val userSfid = user.sfid ?: ""
+
         // YearMonth로 해당 월의 시작일/종료일 계산
         val yearMonth = YearMonth.of(year, month)
         val startDate = yearMonth.atDay(1)
@@ -43,7 +48,7 @@ class MyScheduleService(
 
         // 해당 기간 내 일정이 있는 날짜 목록 조회
         val workDates = storeScheduleRepository
-            .findDistinctScheduleDatesByUserIdAndDateBetween(userId, startDate, endDate)
+            .findDistinctStartDatesByFullNameAndDateBetween(userSfid, startDate, endDate)
             .toSet()
 
         // 해당 월의 모든 날짜에 대해 근무 여부 판정
@@ -75,20 +80,22 @@ class MyScheduleService(
         // 사용자 정보 조회
         val user = userRepository.findById(userId)
             .orElseThrow { UserNotFoundException() }
+        val userSfid = user.sfid ?: ""
 
         // 해당 날짜의 거래처 일정 목록 조회
-        val schedules = storeScheduleRepository.findByUserIdAndScheduleDate(userId, date)
+        val schedules = storeScheduleRepository.findByFullNameAndStartDate(userSfid, date)
 
         // Phase2: Attendance PG 대응 테이블 없음 - 주석 처리
         // val attendances = attendanceRepository.findByUserIdAndAttendanceDate(userId, date)
         // val attendanceStoreIds = attendances.map { it.storeId }.toSet()
 
         // 거래처 목록 매핑 (등록 여부 - Attendance 비활성화로 항상 false)
+        // Note: V1 리매핑으로 storeId(Long)→account(String sfid) 변경, DTO는 Long 유지 → 0L 대체
         val storeItems = schedules.map { schedule ->
             StoreScheduleItemDto(
-                storeId = schedule.storeId,
-                storeName = schedule.storeName,
-                workType1 = schedule.workCategory,
+                storeId = 0L,  // V1: account(String sfid)로 변경됨, DTO Long 타입 유지
+                storeName = "",  // V1에서 storeName 삭제됨
+                workType1 = schedule.typeOfWork1 ?: "",
                 workType2 = "",
                 workType3 = "",
                 isRegistered = false  // Phase2: attendance 비활성화
@@ -98,7 +105,7 @@ class MyScheduleService(
         // 보고 진행 상황 계산
         val completed = storeItems.count { it.isRegistered }
         val total = storeItems.size
-        val workType = schedules.firstOrNull()?.workCategory ?: ""
+        val workType = schedules.firstOrNull()?.typeOfWork1 ?: ""
 
         // 요일 계산
         val dayOfWeek = DAY_OF_WEEK_KR[date.dayOfWeek] ?: ""
