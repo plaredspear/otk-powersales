@@ -74,16 +74,16 @@ class HomeServiceTest {
         val notices = listOf(
             Notice(
                 id = 1L,
-                title = "2월 영업 목표 달성 현황",
-                type = NoticeType.BRANCH,
-                branchName = "부산1지점",
-                createdAt = LocalDateTime.now().minusDays(1)
+                name = "2월 영업 목표 달성 현황",
+                category = "BRANCH",
+                branch = "부산1지점",
+                createdDate = LocalDateTime.now().minusDays(1)
             ),
             Notice(
                 id = 2L,
-                title = "신제품 출시 안내",
-                type = NoticeType.ALL,
-                createdAt = LocalDateTime.now().minusDays(2)
+                name = "신제품 출시 안내",
+                category = "ALL",
+                createdDate = LocalDateTime.now().minusDays(2)
             )
         )
 
@@ -221,16 +221,16 @@ class HomeServiceTest {
         val user = createTestUser(id = userId)
 
         val notices = listOf(
-            Notice(id = 1L, title = "지점공지1", type = NoticeType.BRANCH, branchName = "부산1지점",
-                createdAt = LocalDateTime.now().minusHours(1)),
-            Notice(id = 2L, title = "지점공지2", type = NoticeType.BRANCH, branchName = "부산1지점",
-                createdAt = LocalDateTime.now().minusHours(2)),
-            Notice(id = 3L, title = "전체공지1", type = NoticeType.ALL,
-                createdAt = LocalDateTime.now().minusHours(3)),
-            Notice(id = 4L, title = "전체공지2", type = NoticeType.ALL,
-                createdAt = LocalDateTime.now().minusDays(1)),
-            Notice(id = 5L, title = "전체공지3", type = NoticeType.ALL,
-                createdAt = LocalDateTime.now().minusDays(2))
+            Notice(id = 1L, name = "지점공지1", category = "BRANCH", branch = "부산1지점",
+                createdDate = LocalDateTime.now().minusHours(1)),
+            Notice(id = 2L, name = "지점공지2", category = "BRANCH", branch = "부산1지점",
+                createdDate = LocalDateTime.now().minusHours(2)),
+            Notice(id = 3L, name = "전체공지1", category = "ALL",
+                createdDate = LocalDateTime.now().minusHours(3)),
+            Notice(id = 4L, name = "전체공지2", category = "ALL",
+                createdDate = LocalDateTime.now().minusDays(1)),
+            Notice(id = 5L, name = "전체공지3", category = "ALL",
+                createdDate = LocalDateTime.now().minusDays(2))
         )
 
         whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
