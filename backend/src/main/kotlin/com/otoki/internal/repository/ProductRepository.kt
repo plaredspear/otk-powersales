@@ -20,9 +20,9 @@ interface ProductRepository : JpaRepository<Product, Long> {
      */
     @Query(
         "SELECT p FROM Product p " +
-        "WHERE LOWER(p.productName) LIKE LOWER(CONCAT('%', :query, '%')) " +
+        "WHERE LOWER(p.name) LIKE LOWER(CONCAT('%', :query, '%')) " +
         "OR LOWER(p.productCode) LIKE LOWER(CONCAT('%', :query, '%')) " +
-        "ORDER BY p.productName ASC"
+        "ORDER BY p.name ASC"
     )
     fun searchByText(
         @Param("query") query: String,
@@ -35,10 +35,10 @@ interface ProductRepository : JpaRepository<Product, Long> {
      */
     @Query(
         "SELECT p FROM Product p " +
-        "WHERE LOWER(p.productName) LIKE LOWER(CONCAT('%', :query, '%')) " +
+        "WHERE LOWER(p.name) LIKE LOWER(CONCAT('%', :query, '%')) " +
         "OR LOWER(p.productCode) LIKE LOWER(CONCAT('%', :query, '%')) " +
-        "OR p.barcode LIKE CONCAT('%', :query, '%') " +
-        "ORDER BY p.productName ASC"
+        "OR p.logisticsBarcode LIKE CONCAT('%', :query, '%') " +
+        "ORDER BY p.name ASC"
     )
     fun searchByTextIncludingBarcode(
         @Param("query") query: String,
@@ -48,12 +48,12 @@ interface ProductRepository : JpaRepository<Product, Long> {
     /**
      * 바코드 정확 일치 검색
      */
-    fun findByBarcode(barcode: String, pageable: Pageable): Page<Product>
+    fun findByLogisticsBarcode(logisticsBarcode: String, pageable: Pageable): Page<Product>
 
     /**
      * 제품코드로 제품 조회
      */
-    fun findByProductCode(productCode: String): Product?
+    fun findByProductCode(productCode: String?): Product?
 
     /**
      * 제품코드 목록으로 일괄 조회

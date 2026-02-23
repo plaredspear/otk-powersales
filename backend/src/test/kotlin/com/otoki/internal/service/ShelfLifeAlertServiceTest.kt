@@ -44,11 +44,10 @@ class ShelfLifeAlertServiceTest {
 
         testProduct = Product(
             id = 100L,
-            productId = "PROD001",
-            productName = "오뚜기 카레",
+            name = "오뚜기 카레",
             productCode = "P001",
-            barcode = "8801234567890",
-            storageType = "냉장"
+            logisticsBarcode = "8801234567890",
+            storageCondition = "냉장"
         )
     }
 

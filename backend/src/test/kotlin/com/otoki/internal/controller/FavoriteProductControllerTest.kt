@@ -68,19 +68,19 @@ class FavoriteProductControllerTest {
             FavoriteProductResponse(
                 productCode = "PC001",
                 productName = "오뚜기 카레",
-                barcode = "8801234567890",
-                storageType = "냉장",
-                categoryMid = "조미식품",
-                categorySub = "카레",
+                logisticsBarcode ="8801234567890",
+                storageCondition ="냉장",
+                category1 ="조미식품",
+                category2 ="카레",
                 addedAt = "2025-02-10T10:00:00"
             ),
             FavoriteProductResponse(
                 productCode = "PC002",
                 productName = "오뚜기 케첩",
-                barcode = "8801234567891",
-                storageType = "상온",
-                categoryMid = "조미식품",
-                categorySub = "소스",
+                logisticsBarcode ="8801234567891",
+                storageCondition ="상온",
+                category1 ="조미식품",
+                category2 ="소스",
                 addedAt = "2025-02-10T09:00:00"
             )
         )
@@ -102,10 +102,10 @@ class FavoriteProductControllerTest {
             .andExpect(jsonPath("$.data.content.length()").value(2))
             .andExpect(jsonPath("$.data.content[0].product_code").value("PC001"))
             .andExpect(jsonPath("$.data.content[0].product_name").value("오뚜기 카레"))
-            .andExpect(jsonPath("$.data.content[0].barcode").value("8801234567890"))
-            .andExpect(jsonPath("$.data.content[0].storage_type").value("냉장"))
-            .andExpect(jsonPath("$.data.content[0].category_mid").value("조미식품"))
-            .andExpect(jsonPath("$.data.content[0].category_sub").value("카레"))
+            .andExpect(jsonPath("$.data.content[0].logistics_barcode").value("8801234567890"))
+            .andExpect(jsonPath("$.data.content[0].storage_condition").value("냉장"))
+            .andExpect(jsonPath("$.data.content[0].category1").value("조미식품"))
+            .andExpect(jsonPath("$.data.content[0].category2").value("카레"))
             .andExpect(jsonPath("$.data.content[0].added_at").exists())
             .andExpect(jsonPath("$.data.content[1].product_code").value("PC002"))
             .andExpect(jsonPath("$.data.content[1].product_name").value("오뚜기 케첩"))

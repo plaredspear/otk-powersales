@@ -134,15 +134,15 @@ class ProductServiceTest {
                 createTestProduct("18110014", "열라면_용기105G", "18110014", "8801045570716")
             )
             val page = PageImpl(products, PageRequest.of(0, 20), 1)
-            whenever(productRepository.findByBarcode(eq("8801045570716"), any())).thenReturn(page)
+            whenever(productRepository.findByLogisticsBarcode(eq("8801045570716"), any())).thenReturn(page)
 
             // When
             val result = productService.searchProducts("8801045570716", "barcode", 0, 20)
 
             // Then
             assertThat(result.content).hasSize(1)
-            assertThat(result.content[0].barcode).isEqualTo("8801045570716")
-            verify(productRepository).findByBarcode(eq("8801045570716"), any())
+            assertThat(result.content[0].logisticsBarcode).isEqualTo("8801045570716")
+            verify(productRepository).findByLogisticsBarcode(eq("8801045570716"), any())
         }
 
         @Test
@@ -256,20 +256,19 @@ class ProductServiceTest {
         productName: String,
         productCode: String,
         barcode: String,
-        storageType: String = "상온",
+        storageCondition: String = "상온",
         shelfLife: String = "7개월",
-        categoryMid: String = "라면",
-        categorySub: String = "봉지면"
+        category1: String = "라면",
+        category2: String = "봉지면"
     ): Product {
         return Product(
-            productId = productId,
-            productName = productName,
+            name = productName,
             productCode = productCode,
-            barcode = barcode,
-            storageType = storageType,
+            logisticsBarcode = barcode,
+            storageCondition = storageCondition,
             shelfLife = shelfLife,
-            categoryMid = categoryMid,
-            categorySub = categorySub
+            category1 = category1,
+            category2 = category2
         )
     }
 }

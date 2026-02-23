@@ -7,12 +7,12 @@ import java.time.format.DateTimeFormatter
  * 즐겨찾기 제품 응답 DTO
  */
 data class FavoriteProductResponse(
-    val productCode: String,
-    val productName: String,
-    val barcode: String,
-    val storageType: String,
-    val categoryMid: String?,
-    val categorySub: String?,
+    val productCode: String?,
+    val productName: String?,
+    val logisticsBarcode: String?,
+    val storageCondition: String?,
+    val category1: String?,
+    val category2: String?,
     val addedAt: String
 ) {
     companion object {
@@ -20,11 +20,11 @@ data class FavoriteProductResponse(
             val product = favorite.product
             return FavoriteProductResponse(
                 productCode = product.productCode,
-                productName = product.productName,
-                barcode = product.barcode,
-                storageType = product.storageType,
-                categoryMid = product.categoryMid,
-                categorySub = product.categorySub,
+                productName = product.name,
+                logisticsBarcode = product.logisticsBarcode,
+                storageCondition = product.storageCondition,
+                category1 = product.category1,
+                category2 = product.category2,
                 addedAt = favorite.createdAt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
             )
         }

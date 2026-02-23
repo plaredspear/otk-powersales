@@ -55,7 +55,7 @@ class ProductService(
         val productPage = when (type) {
             "barcode" -> {
                 validateBarcodeQuery(query)
-                productRepository.findByBarcode(query.trim(), pageable)
+                productRepository.findByLogisticsBarcode(query.trim(), pageable)
             }
             else -> {
                 validateTextQuery(query)

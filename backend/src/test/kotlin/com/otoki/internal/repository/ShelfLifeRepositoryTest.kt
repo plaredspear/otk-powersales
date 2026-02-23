@@ -72,11 +72,10 @@ class ShelfLifeRepositoryTest {
 
         testProduct = testEntityManager.persistAndFlush(
             Product(
-                productId = "30310009",
-                productName = "고등어김치&무조림(캔)280G",
+                name = "고등어김치&무조림(캔)280G",
                 productCode = "30310009",
-                barcode = "8801045570001",
-                storageType = "상온"
+                logisticsBarcode = "8801045570001",
+                storageCondition = "상온"
             )
         )
 
@@ -154,11 +153,10 @@ class ShelfLifeRepositoryTest {
             val today = LocalDate.now()
             val product2 = testEntityManager.persistAndFlush(
                 Product(
-                    productId = "11110015",
-                    productName = "카레케찹280G",
+                    name = "카레케찹280G",
                     productCode = "11110015",
-                    barcode = "8801045570002",
-                    storageType = "상온"
+                    logisticsBarcode = "8801045570002",
+                    storageCondition = "상온"
                 )
             )
             testEntityManager.clear()
@@ -196,11 +194,10 @@ class ShelfLifeRepositoryTest {
             val today = LocalDate.now()
             val product2 = testEntityManager.persistAndFlush(
                 Product(
-                    productId = "11110015",
-                    productName = "카레케찹280G",
+                    name = "카레케찹280G",
                     productCode = "11110015",
-                    barcode = "8801045570002",
-                    storageType = "상온"
+                    logisticsBarcode = "8801045570002",
+                    storageCondition = "상온"
                 )
             )
             testEntityManager.clear()
@@ -317,11 +314,10 @@ class ShelfLifeRepositoryTest {
             val today = LocalDate.now()
             val product2 = testEntityManager.persistAndFlush(
                 Product(
-                    productId = "11110015",
-                    productName = "카레케찹280G",
+                    name = "카레케찹280G",
                     productCode = "11110015",
-                    barcode = "8801045570002",
-                    storageType = "상온"
+                    logisticsBarcode = "8801045570002",
+                    storageCondition = "상온"
                 )
             )
             testEntityManager.clear()
@@ -361,8 +357,8 @@ class ShelfLifeRepositoryTest {
                 user = testUser,
                 store = testStore,
                 product = testProduct,
-                productCode = testProduct.productCode,
-                productName = testProduct.productName,
+                productCode = testProduct.productCode ?: "",
+                productName = testProduct.name ?: "",
                 storeName = testStore.name ?: "",
                 expiryDate = today.plusDays(10),
                 alertDate = today.plusDays(9),
@@ -397,8 +393,8 @@ class ShelfLifeRepositoryTest {
             user = user,
             store = store,
             product = product,
-            productCode = product.productCode,
-            productName = product.productName,
+            productCode = product.productCode ?: "",
+            productName = product.name ?: "",
             storeName = store.name ?: "",
             expiryDate = expiryDate,
             alertDate = alertDate,

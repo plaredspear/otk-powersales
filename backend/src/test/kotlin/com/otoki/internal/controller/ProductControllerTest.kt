@@ -88,10 +88,9 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content").isArray)
                 .andExpect(jsonPath("$.data.content.length()").value(2))
-                .andExpect(jsonPath("$.data.content[0].product_id").value("18110014"))
                 .andExpect(jsonPath("$.data.content[0].product_name").value("열라면_용기105G"))
                 .andExpect(jsonPath("$.data.content[0].product_code").value("18110014"))
-                .andExpect(jsonPath("$.data.content[0].barcode").value("8801045570716"))
+                .andExpect(jsonPath("$.data.content[0].logistics_barcode").value("8801045570716"))
                 .andExpect(jsonPath("$.data.total_elements").value(2))
                 .andExpect(jsonPath("$.data.total_pages").value(1))
                 .andExpect(jsonPath("$.data.number").value(0))
@@ -121,7 +120,7 @@ class ProductControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content.length()").value(1))
-                .andExpect(jsonPath("$.data.content[0].barcode").value("8801045570716"))
+                .andExpect(jsonPath("$.data.content[0].logistics_barcode").value("8801045570716"))
         }
 
         @Test
@@ -255,14 +254,13 @@ class ProductControllerTest {
         barcode: String
     ): ProductDto {
         return ProductDto(
-            productId = productId,
-            productName = productName,
             productCode = productCode,
-            barcode = barcode,
-            storageType = "상온",
+            productName = productName,
+            logisticsBarcode = barcode,
+            storageCondition = "상온",
             shelfLife = "7개월",
-            categoryMid = "라면",
-            categorySub = "용기면"
+            category1 = "라면",
+            category2 = "용기면"
         )
     }
 }
