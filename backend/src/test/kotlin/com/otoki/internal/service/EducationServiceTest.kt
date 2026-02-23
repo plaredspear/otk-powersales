@@ -3,13 +3,14 @@ package com.otoki.internal.service
 import com.otoki.internal.entity.*
 import com.otoki.internal.exception.EducationPostNotFoundException
 import com.otoki.internal.exception.InvalidEducationCategoryException
+import com.otoki.internal.repository.EducationCodeRepository
 import com.otoki.internal.repository.EducationPostAttachmentRepository
-import com.otoki.internal.repository.EducationPostImageRepository
 import com.otoki.internal.repository.EducationPostRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.InjectMocks
@@ -20,6 +21,7 @@ import org.mockito.kotlin.whenever
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import java.time.LocalDateTime
+import java.util.*
 
 @ExtendWith(MockitoExtension::class)
 @DisplayName("EducationService 테스트")
@@ -32,201 +34,178 @@ class EducationServiceTest {
     private lateinit var educationPostRepository: EducationPostRepository
 
     @Mock
-    private lateinit var educationPostImageRepository: EducationPostImageRepository
-
-    @Mock
     private lateinit var educationPostAttachmentRepository: EducationPostAttachmentRepository
 
-    private lateinit var testUser: User
+    @Mock
+    private lateinit var educationCodeRepository: EducationCodeRepository
+
     private lateinit var testPost: EducationPost
 
     @BeforeEach
     fun setUp() {
-        testUser = User(
-            id = 1L,
-            employeeId = "10000001",
-            password = "encoded",
-            name = "관리자",
-            orgName = "본사",
-            appAuthority = "지점장"
-        )
-
         testPost = EducationPost(
-            id = 9L,
-            category = EducationCategory.TASTING_MANUAL,
-            title = "진짬뽕 시식 매뉴얼",
-            content = "진짬뽕 시식 방법을 안내합니다.",
-            createdBy = testUser,
-            isActive = true,
-            createdAt = LocalDateTime.of(2020, 8, 10, 0, 0, 0)
+            eduId = "EDU001",
+            eduTitle = "진짬뽕 시식 매뉴얼",
+            eduContent = "진짬뽕 시식 방법을 안내합니다.",
+            eduCode = "TASTING_MANUAL",
+            empCode = "10000001",
+            instDate = LocalDateTime.of(2020, 8, 10, 0, 0, 0)
         )
     }
 
-    @Test
-    @DisplayName("카테고리별 게시물 목록을 조회할 수 있다")
-    fun getPosts_Success() {
-        // Given
-        val posts = listOf(testPost)
-        val page = PageImpl(posts, PageRequest.of(0, 10), 1)
+    @Nested
+    @DisplayName("getPosts - 게시물 목록 조회")
+    inner class GetPostsTests {
 
-        whenever(educationPostRepository.findByCategoryAndIsActiveTrueOrderByCreatedAtDesc(any(), any()))
-            .thenReturn(page)
+        @Test
+        @DisplayName("정상 조회 - 카테고리별 게시물 목록 반환")
+        fun getPosts_success() {
+            // Given
+            val posts = listOf(testPost)
+            val page = PageImpl(posts, PageRequest.of(0, 10), 1)
 
-        // When
-        val result = educationService.getPosts(
-            category = "TASTING_MANUAL",
-            search = null,
-            page = 1,
-            size = 10
-        )
+            whenever(educationCodeRepository.existsById("TASTING_MANUAL")).thenReturn(true)
+            whenever(educationPostRepository.findByEduCodeOrderByInstDateDesc(any(), any()))
+                .thenReturn(page)
 
-        // Then
-        assertThat(result.content).hasSize(1)
-        assertThat(result.totalCount).isEqualTo(1)
-        assertThat(result.totalPages).isEqualTo(1)
-        assertThat(result.currentPage).isEqualTo(1)
-        assertThat(result.size).isEqualTo(10)
-        assertThat(result.content[0].id).isEqualTo(9L)
-        assertThat(result.content[0].title).isEqualTo("진짬뽕 시식 매뉴얼")
-        assertThat(result.content[0].createdAt).isEqualTo("2020-08-10T00:00:00")
-    }
-
-    @Test
-    @DisplayName("검색 키워드로 게시물을 조회할 수 있다")
-    fun getPosts_WithSearch() {
-        // Given
-        val posts = listOf(testPost)
-        val page = PageImpl(posts, PageRequest.of(0, 10), 1)
-
-        whenever(educationPostRepository.findByCategoryAndSearchWithPaging(any(), any(), any()))
-            .thenReturn(page)
-
-        // When
-        val result = educationService.getPosts(
-            category = "TASTING_MANUAL",
-            search = "시식",
-            page = 1,
-            size = 10
-        )
-
-        // Then
-        assertThat(result.content).hasSize(1)
-        assertThat(result.content[0].title).isEqualTo("진짬뽕 시식 매뉴얼")
-    }
-
-    @Test
-    @DisplayName("유효하지 않은 카테고리로 조회 시 예외가 발생한다")
-    fun getPosts_InvalidCategory() {
-        // When & Then
-        assertThatThrownBy {
-            educationService.getPosts(
-                category = "INVALID_CATEGORY",
+            // When
+            val result = educationService.getPosts(
+                category = "TASTING_MANUAL",
                 search = null,
                 page = 1,
                 size = 10
             )
-        }.isInstanceOf(InvalidEducationCategoryException::class.java)
-    }
 
-    @Test
-    @DisplayName("조회 결과가 없을 때 빈 리스트를 반환한다")
-    fun getPosts_EmptyResult() {
-        // Given
-        val emptyPage = PageImpl<EducationPost>(emptyList(), PageRequest.of(0, 10), 0)
+            // Then
+            assertThat(result.content).hasSize(1)
+            assertThat(result.totalCount).isEqualTo(1)
+            assertThat(result.totalPages).isEqualTo(1)
+            assertThat(result.currentPage).isEqualTo(1)
+            assertThat(result.size).isEqualTo(10)
+            assertThat(result.content[0].id).isEqualTo("EDU001")
+            assertThat(result.content[0].title).isEqualTo("진짬뽕 시식 매뉴얼")
+            assertThat(result.content[0].createdAt).isEqualTo("2020-08-10T00:00:00")
+        }
 
-        whenever(educationPostRepository.findByCategoryAndIsActiveTrueOrderByCreatedAtDesc(any(), any()))
-            .thenReturn(emptyPage)
+        @Test
+        @DisplayName("검색 조회 - 검색 키워드로 게시물 목록 반환")
+        fun getPosts_withSearch() {
+            // Given
+            val posts = listOf(testPost)
+            val page = PageImpl(posts, PageRequest.of(0, 10), 1)
 
-        // When
-        val result = educationService.getPosts(
-            category = "TASTING_MANUAL",
-            search = null,
-            page = 1,
-            size = 10
-        )
+            whenever(educationCodeRepository.existsById("TASTING_MANUAL")).thenReturn(true)
+            whenever(educationPostRepository.findByEduCodeAndSearchWithPaging(any(), any(), any()))
+                .thenReturn(page)
 
-        // Then
-        assertThat(result.content).isEmpty()
-        assertThat(result.totalCount).isEqualTo(0)
-    }
-
-    @Test
-    @DisplayName("게시물 상세를 조회할 수 있다")
-    fun getPostDetail_Success() {
-        // Given
-        val images = listOf(
-            EducationPostImage(
-                id = 1L,
-                post = testPost,
-                url = "https://storage.example.com/img1.jpg",
-                sortOrder = 1
-            ),
-            EducationPostImage(
-                id = 2L,
-                post = testPost,
-                url = "https://storage.example.com/img2.jpg",
-                sortOrder = 2
+            // When
+            val result = educationService.getPosts(
+                category = "TASTING_MANUAL",
+                search = "시식",
+                page = 1,
+                size = 10
             )
-        )
 
-        val attachments = listOf(
-            EducationPostAttachment(
-                id = 1L,
-                post = testPost,
-                fileName = "guide.pdf",
-                fileUrl = "https://storage.example.com/guide.pdf",
-                fileSize = 2048576,
-                contentType = "application/pdf"
+            // Then
+            assertThat(result.content).hasSize(1)
+            assertThat(result.content[0].title).isEqualTo("진짬뽕 시식 매뉴얼")
+        }
+
+        @Test
+        @DisplayName("유효하지 않은 카테고리 - InvalidEducationCategoryException")
+        fun getPosts_invalidCategory() {
+            // Given
+            whenever(educationCodeRepository.existsById("INVALID_CATEGORY")).thenReturn(false)
+
+            // When & Then
+            assertThatThrownBy {
+                educationService.getPosts(
+                    category = "INVALID_CATEGORY",
+                    search = null,
+                    page = 1,
+                    size = 10
+                )
+            }.isInstanceOf(InvalidEducationCategoryException::class.java)
+        }
+
+        @Test
+        @DisplayName("빈 결과 - 조회 결과 없을 때 빈 리스트 반환")
+        fun getPosts_emptyResult() {
+            // Given
+            val emptyPage = PageImpl<EducationPost>(emptyList(), PageRequest.of(0, 10), 0)
+
+            whenever(educationCodeRepository.existsById("TASTING_MANUAL")).thenReturn(true)
+            whenever(educationPostRepository.findByEduCodeOrderByInstDateDesc(any(), any()))
+                .thenReturn(emptyPage)
+
+            // When
+            val result = educationService.getPosts(
+                category = "TASTING_MANUAL",
+                search = null,
+                page = 1,
+                size = 10
             )
-        )
 
-        whenever(educationPostRepository.findByIdAndIsActiveTrue(9L))
-            .thenReturn(testPost)
-        whenever(educationPostImageRepository.findByPostIdOrderBySortOrderAsc(9L))
-            .thenReturn(images)
-        whenever(educationPostAttachmentRepository.findByPostId(9L))
-            .thenReturn(attachments)
-
-        // When
-        val result = educationService.getPostDetail(9L)
-
-        // Then
-        assertThat(result.id).isEqualTo(9L)
-        assertThat(result.category).isEqualTo("TASTING_MANUAL")
-        assertThat(result.categoryName).isEqualTo("시식 매뉴얼")
-        assertThat(result.title).isEqualTo("진짬뽕 시식 매뉴얼")
-        assertThat(result.content).isEqualTo("진짬뽕 시식 방법을 안내합니다.")
-        assertThat(result.createdAt).isEqualTo("2020-08-10T00:00:00")
-        assertThat(result.images).hasSize(2)
-        assertThat(result.images[0].sortOrder).isEqualTo(1)
-        assertThat(result.images[1].sortOrder).isEqualTo(2)
-        assertThat(result.attachments).hasSize(1)
-        assertThat(result.attachments[0].fileName).isEqualTo("guide.pdf")
+            // Then
+            assertThat(result.content).isEmpty()
+            assertThat(result.totalCount).isEqualTo(0)
+        }
     }
 
-    @Test
-    @DisplayName("존재하지 않는 게시물 조회 시 예외가 발생한다")
-    fun getPostDetail_NotFound() {
-        // Given
-        whenever(educationPostRepository.findByIdAndIsActiveTrue(999L))
-            .thenReturn(null)
+    @Nested
+    @DisplayName("getPostDetail - 게시물 상세 조회")
+    inner class GetPostDetailTests {
 
-        // When & Then
-        assertThatThrownBy {
-            educationService.getPostDetail(999L)
-        }.isInstanceOf(EducationPostNotFoundException::class.java)
-    }
+        @Test
+        @DisplayName("정상 조회 - 게시물 상세 + 첨부파일 반환")
+        fun getPostDetail_success() {
+            // Given
+            val attachments = listOf(
+                EducationPostAttachment(
+                    eduId = "EDU001",
+                    eduFileKey = "file-key-001",
+                    eduFileType = "pdf",
+                    eduFileOrgNm = "guide.pdf"
+                )
+            )
 
-    @Test
-    @DisplayName("비활성 게시물 조회 시 예외가 발생한다")
-    fun getPostDetail_InactivePost() {
-        // Given
-        whenever(educationPostRepository.findByIdAndIsActiveTrue(9L))
-            .thenReturn(null) // isActive=false인 경우 null 반환
+            val eduCode = EducationCode(
+                eduCode = "TASTING_MANUAL",
+                eduCodeNm = "시식 매뉴얼"
+            )
 
-        // When & Then
-        assertThatThrownBy {
-            educationService.getPostDetail(9L)
-        }.isInstanceOf(EducationPostNotFoundException::class.java)
+            whenever(educationPostRepository.findById("EDU001"))
+                .thenReturn(Optional.of(testPost))
+            whenever(educationPostAttachmentRepository.findByEduId("EDU001"))
+                .thenReturn(attachments)
+            whenever(educationCodeRepository.findById("TASTING_MANUAL"))
+                .thenReturn(Optional.of(eduCode))
+
+            // When
+            val result = educationService.getPostDetail("EDU001")
+
+            // Then
+            assertThat(result.id).isEqualTo("EDU001")
+            assertThat(result.category).isEqualTo("TASTING_MANUAL")
+            assertThat(result.categoryName).isEqualTo("시식 매뉴얼")
+            assertThat(result.title).isEqualTo("진짬뽕 시식 매뉴얼")
+            assertThat(result.content).isEqualTo("진짬뽕 시식 방법을 안내합니다.")
+            assertThat(result.createdAt).isEqualTo("2020-08-10T00:00:00")
+            assertThat(result.attachments).hasSize(1)
+            assertThat(result.attachments[0].fileName).isEqualTo("guide.pdf")
+        }
+
+        @Test
+        @DisplayName("게시물 미존재 - EducationPostNotFoundException")
+        fun getPostDetail_notFound() {
+            // Given
+            whenever(educationPostRepository.findById("NONEXIST"))
+                .thenReturn(Optional.empty())
+
+            // When & Then
+            assertThatThrownBy {
+                educationService.getPostDetail("NONEXIST")
+            }.isInstanceOf(EducationPostNotFoundException::class.java)
+        }
     }
 }

@@ -1,11 +1,11 @@
 package com.otoki.internal.service
 
 import com.otoki.internal.dto.response.*
-import com.otoki.internal.entity.EducationCategory
 import com.otoki.internal.exception.EducationPostNotFoundException
 import com.otoki.internal.exception.InvalidEducationCategoryException
 import com.otoki.internal.repository.EducationPostAttachmentRepository
 // import com.otoki.internal.repository.EducationPostImageRepository  // Phase2: PG 대응 테이블 없음
+import com.otoki.internal.repository.EducationCodeRepository
 import com.otoki.internal.repository.EducationPostRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
@@ -20,7 +20,8 @@ import java.time.format.DateTimeFormatter
 class EducationService(
     private val educationPostRepository: EducationPostRepository,
     // private val educationPostImageRepository: EducationPostImageRepository,  // Phase2: PG 대응 테이블 없음
-    private val educationPostAttachmentRepository: EducationPostAttachmentRepository
+    private val educationPostAttachmentRepository: EducationPostAttachmentRepository,
+    private val educationCodeRepository: EducationCodeRepository
 ) {
 
     companion object {
@@ -31,7 +32,7 @@ class EducationService(
     /**
      * 교육 게시물 목록 조회
      *
-     * @param category 카테고리 문자열 (EducationCategory enum name)
+     * @param category 카테고리 문자열 (edu_code 값)
      * @param search 검색 키워드 (nullable, 제목+내용 LIKE 검색)
      * @param page 페이지 번호 (1부터 시작)
      * @param size 페이지 크기
@@ -44,10 +45,8 @@ class EducationService(
         page: Int = 1,
         size: Int = 10
     ): EducationPostListResponse {
-        // 1. 카테고리 enum 변환
-        val categoryEnum = try {
-            EducationCategory.fromString(category)
-        } catch (e: IllegalArgumentException) {
+        // 1. 카테고리 유효성 검증 (education_code_mng 테이블 참조)
+        if (!educationCodeRepository.existsById(category)) {
             throw InvalidEducationCategoryException()
         }
 
@@ -56,14 +55,14 @@ class EducationService(
 
         // 3. 검색 키워드에 따라 다른 메서드 호출
         val postsPage = if (search.isNullOrBlank()) {
-            educationPostRepository.findByCategoryAndIsActiveTrueOrderByCreatedAtDesc(
-                categoryEnum,
+            educationPostRepository.findByEduCodeOrderByInstDateDesc(
+                category,
                 pageable
             )
         } else {
-            educationPostRepository.findByCategoryAndSearchWithPaging(
-                categoryEnum,
-                search.take(100), // 최대 100자까지만 검색
+            educationPostRepository.findByEduCodeAndSearchWithPaging(
+                category,
+                search.take(100),
                 pageable
             )
         }
@@ -71,9 +70,9 @@ class EducationService(
         // 4. Entity → DTO 변환
         val summaries = postsPage.content.map { post ->
             EducationPostSummaryResponse(
-                id = post.id,
-                title = post.title,
-                createdAt = post.createdAt.format(DATE_TIME_FORMATTER)
+                id = post.eduId,
+                title = post.eduTitle ?: "",
+                createdAt = post.instDate?.format(DATE_TIME_FORMATTER) ?: ""
             )
         }
 
@@ -89,14 +88,14 @@ class EducationService(
     /**
      * 교육 게시물 상세 조회
      *
-     * @param postId 게시물 ID
-     * @return 게시물 상세 + 이미지 + 첨부파일
+     * @param postId 게시물 ID (edu_id)
+     * @return 게시물 상세 + 첨부파일
      * @throws EducationPostNotFoundException 게시물을 찾을 수 없음
      */
-    fun getPostDetail(postId: Long): EducationPostDetailResponse {
-        // 1. 게시물 조회 (isActive=true만)
-        val post = educationPostRepository.findByIdAndIsActiveTrue(postId)
-            ?: throw EducationPostNotFoundException()
+    fun getPostDetail(postId: String): EducationPostDetailResponse {
+        // 1. 게시물 조회
+        val post = educationPostRepository.findById(postId)
+            .orElseThrow { EducationPostNotFoundException() }
 
         // Phase2: EducationPostImage PG 대응 테이블 없음 - 주석 처리
         // val images = educationPostImageRepository.findByPostIdOrderBySortOrderAsc(postId)
@@ -110,24 +109,29 @@ class EducationService(
         val images = emptyList<Any>()
 
         // 3. 첨부파일 목록 조회
-        val attachments = educationPostAttachmentRepository.findByPostId(postId)
+        val attachments = educationPostAttachmentRepository.findByEduId(postId)
             .map { attachment ->
                 EducationAttachmentResponse(
-                    id = attachment.id,
-                    fileName = attachment.fileName,
-                    fileUrl = attachment.fileUrl,
-                    fileSize = attachment.fileSize
+                    id = attachment.eduFileKey,
+                    fileName = attachment.eduFileOrgNm ?: "",
+                    fileUrl = attachment.eduFileKey,
+                    fileSize = 0
                 )
             }
 
-        // 4. 응답 생성
+        // 4. 카테고리명 조회
+        val categoryName = post.eduCode?.let { code ->
+            educationCodeRepository.findById(code).orElse(null)?.eduCodeNm
+        } ?: ""
+
+        // 5. 응답 생성
         return EducationPostDetailResponse(
-            id = post.id,
-            category = post.category.name,
-            categoryName = post.category.displayName,
-            title = post.title,
-            content = post.content,
-            createdAt = post.createdAt.format(DATE_TIME_FORMATTER),
+            id = post.eduId,
+            category = post.eduCode ?: "",
+            categoryName = categoryName,
+            title = post.eduTitle ?: "",
+            content = post.eduContent ?: "",
+            createdAt = post.instDate?.format(DATE_TIME_FORMATTER) ?: "",
             images = images,
             attachments = attachments
         )
