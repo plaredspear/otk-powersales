@@ -4,9 +4,11 @@ import com.otoki.internal.dto.request.ChangePasswordRequest
 import com.otoki.internal.dto.request.LoginRequest
 import com.otoki.internal.dto.request.RefreshTokenRequest
 import com.otoki.internal.dto.request.VerifyPasswordRequest
+import com.otoki.internal.entity.LoginHistory
 import com.otoki.internal.entity.User
 import com.otoki.internal.entity.UserRole
 import com.otoki.internal.exception.*
+import com.otoki.internal.repository.LoginHistoryRepository
 import com.otoki.internal.repository.UserRepository
 import com.otoki.internal.security.JwtTokenProvider
 import org.assertj.core.api.Assertions.assertThat
@@ -20,6 +22,7 @@ import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.security.crypto.password.PasswordEncoder
@@ -31,6 +34,9 @@ class AuthServiceTest {
 
     @Mock
     private lateinit var userRepository: UserRepository
+
+    @Mock
+    private lateinit var loginHistoryRepository: LoginHistoryRepository
 
     @Mock
     private lateinit var passwordEncoder: PasswordEncoder
@@ -86,6 +92,55 @@ class AuthServiceTest {
         assertThat(response.token.expiresIn).isEqualTo(expiresIn)
         assertThat(response.requiresPasswordChange).isTrue()
         assertThat(response.requiresGpsConsent).isTrue()
+        verify(loginHistoryRepository).save(any<LoginHistory>())
+    }
+
+    @Test
+    @DisplayName("로그인 성공 시 이력 기록 - employeeId가 설정된 LoginHistory가 저장된다")
+    fun login_success_savesLoginHistory() {
+        // Given
+        val employeeId = "12345678"
+        val user = createTestUser(id = 1L, employeeId = employeeId)
+        val loginRequest = LoginRequest(employeeId, "password123")
+        val historyCaptor = ArgumentCaptor.forClass(LoginHistory::class.java)
+
+        whenever(userRepository.findByEmployeeId(employeeId)).thenReturn(Optional.of(user))
+        whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
+        whenever(jwtTokenProvider.createAccessToken(user.id, user.role)).thenReturn("token")
+        whenever(jwtTokenProvider.createRefreshToken(user.id)).thenReturn("refresh")
+        whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
+
+        // When
+        authService.login(loginRequest)
+
+        // Then
+        verify(loginHistoryRepository).save(historyCaptor.capture())
+        val savedHistory = historyCaptor.value
+        assertThat(savedHistory.employeeId).isEqualTo(employeeId)
+        assertThat(savedHistory.loginAt).isNotNull()
+    }
+
+    @Test
+    @DisplayName("이력 기록 실패 시 로그인 정상 - DB 오류가 발생해도 LoginResponse를 정상 반환한다")
+    fun login_historyFailure_stillReturnsResponse() {
+        // Given
+        val employeeId = "12345678"
+        val user = createTestUser(id = 1L, employeeId = employeeId)
+        val loginRequest = LoginRequest(employeeId, "password123")
+
+        whenever(userRepository.findByEmployeeId(employeeId)).thenReturn(Optional.of(user))
+        whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
+        whenever(loginHistoryRepository.save(any<LoginHistory>())).thenThrow(RuntimeException("DB error"))
+        whenever(jwtTokenProvider.createAccessToken(user.id, user.role)).thenReturn("token")
+        whenever(jwtTokenProvider.createRefreshToken(user.id)).thenReturn("refresh")
+        whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
+
+        // When
+        val response = authService.login(loginRequest)
+
+        // Then
+        assertThat(response.token.accessToken).isEqualTo("token")
+        assertThat(response.user.employeeId).isEqualTo(employeeId)
     }
 
     @Test
@@ -99,6 +154,7 @@ class AuthServiceTest {
         // When & Then
         assertThatThrownBy { authService.login(loginRequest) }
             .isInstanceOf(InvalidCredentialsException::class.java)
+        verify(loginHistoryRepository, never()).save(any<LoginHistory>())
     }
 
     @Test
@@ -114,6 +170,7 @@ class AuthServiceTest {
         // When & Then
         assertThatThrownBy { authService.login(loginRequest) }
             .isInstanceOf(InvalidCredentialsException::class.java)
+        verify(loginHistoryRepository, never()).save(any<LoginHistory>())
     }
 
     // ========== Change Password Tests ==========
