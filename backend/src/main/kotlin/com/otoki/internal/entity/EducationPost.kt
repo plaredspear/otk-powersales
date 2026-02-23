@@ -5,46 +5,43 @@ import java.time.LocalDateTime
 
 /**
  * 교육 게시물 Entity
+ *
+ * V1 테이블: education_mng
+ * PK: edu_id (VARCHAR)
  */
 @Entity
-@Table(
-    name = "education_posts",
-    indexes = [
-        Index(name = "idx_edu_post_category_created", columnList = "category,created_at"),
-        Index(name = "idx_edu_post_active", columnList = "is_active")
-    ]
-)
+@Table(name = "education_mng")
 class EducationPost(
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0,
+    @Column(name = "edu_id", length = 20, nullable = false)
+    val eduId: String,
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "category", nullable = false, length = 30)
-    val category: EducationCategory,
+    @Column(name = "edu_title", length = 150)
+    val eduTitle: String? = null,
 
-    @Column(name = "title", nullable = false, length = 200)
-    val title: String,
+    @Column(name = "edu_content", columnDefinition = "TEXT")
+    val eduContent: String? = null,
 
-    @Column(name = "content", columnDefinition = "TEXT", nullable = false)
-    val content: String,
+    @Column(name = "edu_code", length = 50)
+    val eduCode: String? = null,
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by", nullable = false)
-    val createdBy: User,
+    @Column(name = "empcode__c", length = 40)
+    val empCode: String? = null,
 
-    @Column(name = "is_active", nullable = false)
-    val isActive: Boolean = true,
+    @Column(name = "inst_date")
+    val instDate: LocalDateTime? = null,
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    val createdAt: LocalDateTime = LocalDateTime.now(),
+    @Column(name = "upd_date")
+    var updDate: LocalDateTime? = null
 
-    @Column(name = "updated_at", nullable = false)
-    var updatedAt: LocalDateTime = LocalDateTime.now()
-) {
-    @PreUpdate
-    fun onPreUpdate() {
-        this.updatedAt = LocalDateTime.now()
-    }
-}
+    // --- 주석 처리: V1 스키마에 없는 필드 ---
+    // val id: Long = 0,                          // PK 변경: Long → String (eduId)
+    // val category: EducationCategory,            // Enum → String (eduCode)
+    // val title: String,                          // → eduTitle
+    // val content: String,                        // → eduContent
+    // @ManyToOne val createdBy: User,             // @ManyToOne → raw String (empCode)
+    // val isActive: Boolean = true,               // V1에 없음
+    // val createdAt: LocalDateTime,               // → instDate
+    // var updatedAt: LocalDateTime                // → updDate
+)
