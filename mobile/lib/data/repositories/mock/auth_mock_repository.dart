@@ -38,6 +38,17 @@ class AuthMockRepository implements AuthRepository {
       'requiresPasswordChange': false,
       'requiresGpsConsent': false,
     },
+    // DEVICE_MISMATCH 테스트용 계정 (다른 단말기에서 바인딩됨)
+    '20040001': {
+      'id': 4,
+      'password': 'test1234',
+      'name': '박테스트',
+      'orgName': '서울1지점',
+      'role': 'USER',
+      'requiresPasswordChange': false,
+      'requiresGpsConsent': false,
+      'deviceBound': true,
+    },
   };
 
   /// Mock 토큰 상수
@@ -65,6 +76,11 @@ class AuthMockRepository implements AuthRepository {
     // 비밀번호 검증
     if (account['password'] != password) {
       throw Exception('사번 또는 비밀번호가 올바르지 않습니다');
+    }
+
+    // 단말기 바인딩 검증 (DEVICE_MISMATCH 시뮬레이션)
+    if (account['deviceBound'] == true) {
+      throw Exception('등록된 단말기와 다른 기기입니다. 관리자에게 문의하세요');
     }
 
     // 현재 로그인된 사번 저장

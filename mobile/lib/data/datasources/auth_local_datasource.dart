@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hive/hive.dart';
 
@@ -7,10 +10,13 @@ import 'package:hive/hive.dart';
 class AuthLocalDataSource {
   final FlutterSecureStorage _secureStorage;
 
+  final DeviceInfoPlugin _deviceInfo;
+
   // Secure Storage keys
   static const String _accessTokenKey = 'access_token';
   static const String _refreshTokenKey = 'refresh_token';
   static const String _autoLoginKey = 'auto_login';
+  static const String _deviceIdKey = 'device_id';
 
   // Hive box and keys
   static const String _authBoxName = 'auth_box';
@@ -19,7 +25,9 @@ class AuthLocalDataSource {
 
   AuthLocalDataSource({
     FlutterSecureStorage? secureStorage,
-  }) : _secureStorage = secureStorage ?? const FlutterSecureStorage();
+    DeviceInfoPlugin? deviceInfo,
+  })  : _secureStorage = secureStorage ?? const FlutterSecureStorage(),
+        _deviceInfo = deviceInfo ?? DeviceInfoPlugin();
 
   // --- Secure Storage (토큰 관리) ---
 
@@ -61,6 +69,46 @@ class AuthLocalDataSource {
   Future<bool> isAutoLoginEnabled() async {
     final value = await _secureStorage.read(key: _autoLoginKey);
     return value == 'true';
+  }
+
+  // --- Device ID (단말기 바인딩) ---
+
+  /// 디바이스 고유 ID 조회
+  ///
+  /// 1. Secure Storage에 저장된 ID가 있으면 반환
+  /// 2. 없으면 플랫폼별 고유 식별자 취득 (Android: androidId, iOS: identifierForVendor)
+  /// 3. 플랫폼 식별자도 없으면 UUID v4 생성
+  /// 4. 생성된 ID를 Secure Storage에 저장 후 반환
+  Future<String> getDeviceId() async {
+    // 저장된 ID 확인
+    final savedId = await _secureStorage.read(key: _deviceIdKey);
+    if (savedId != null && savedId.isNotEmpty) {
+      return savedId;
+    }
+
+    // 플랫폼별 고유 식별자 취득
+    String? platformId;
+    try {
+      if (Platform.isAndroid) {
+        final androidInfo = await _deviceInfo.androidInfo;
+        platformId = androidInfo.id;
+      } else if (Platform.isIOS) {
+        final iosInfo = await _deviceInfo.iosInfo;
+        platformId = iosInfo.identifierForVendor;
+      }
+    } catch (_) {
+      // 플랫폼 식별자 취득 실패 시 무시
+    }
+
+    // 식별자가 없으면 타임스탬프 기반 고유 ID 생성
+    final deviceId = (platformId != null && platformId.isNotEmpty)
+        ? platformId
+        : 'generated-${DateTime.now().microsecondsSinceEpoch}';
+
+    // Secure Storage에 저장
+    await _secureStorage.write(key: _deviceIdKey, value: deviceId);
+
+    return deviceId;
   }
 
   // --- Hive (아이디 기억하기) ---

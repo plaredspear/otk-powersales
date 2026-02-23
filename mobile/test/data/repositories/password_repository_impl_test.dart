@@ -88,7 +88,8 @@ class FakeAuthRemoteDataSource implements AuthRemoteDataSource {
 
   // 나머지 메서드는 미구현 (이 테스트에서는 사용하지 않음)
   @override
-  Future<LoginResponseModel> login(String employeeId, String password) {
+  Future<LoginResponseModel> login(
+      String employeeId, String password, String deviceId) {
     throw UnimplementedError();
   }
 
