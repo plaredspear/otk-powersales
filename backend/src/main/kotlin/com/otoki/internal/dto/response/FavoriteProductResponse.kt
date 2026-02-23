@@ -1,11 +1,11 @@
 package com.otoki.internal.dto.response
 
+/* --- 전체 주석 처리: V1 Entity 리매핑 (Spec 77) ---
+ * FavoriteProduct Entity 구조 변경으로 from() 변환 로직이 컴파일 오류 → 주석 처리.
+
 import com.otoki.internal.entity.FavoriteProduct
 import java.time.format.DateTimeFormatter
 
-/**
- * 즐겨찾기 제품 응답 DTO
- */
 data class FavoriteProductResponse(
     val productCode: String?,
     val productName: String?,
@@ -30,3 +30,5 @@ data class FavoriteProductResponse(
         }
     }
 }
+
+--- */

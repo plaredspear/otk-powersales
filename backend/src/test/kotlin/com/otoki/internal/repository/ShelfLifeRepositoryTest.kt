@@ -1,6 +1,6 @@
 package com.otoki.internal.repository
 
-import com.otoki.internal.entity.*
+import com.otoki.internal.entity.ShelfLife
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -12,13 +12,17 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager
 import org.springframework.test.context.ActiveProfiles
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 /**
- * ShelfLifeRepository 테스트
+ * ShelfLife V1 리매핑 테스트
+ *
+ * expirationdate__mng 테이블 매핑, seq(Int) PK, raw String 컬럼 검증.
  */
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
 @ActiveProfiles("test")
+@DisplayName("ShelfLifeRepository 테스트 (V1 리매핑)")
 class ShelfLifeRepositoryTest {
 
     @Autowired
@@ -27,342 +31,31 @@ class ShelfLifeRepositoryTest {
     @Autowired
     private lateinit var testEntityManager: TestEntityManager
 
-    private lateinit var testUser: User
-    private lateinit var testStore: Account
-    private lateinit var testProduct: Product
-    private lateinit var otherUser: User
-    private lateinit var otherStore: Account
-
     @BeforeEach
     fun setUp() {
         shelfLifeRepository.deleteAll()
         testEntityManager.clear()
-
-        testUser = testEntityManager.persistAndFlush(
-            User(
-                employeeId = "20030117",
-                password = "encodedPassword",
-                name = "최금주",
-                orgName = "부산1지점"
-            )
-        )
-
-        otherUser = testEntityManager.persistAndFlush(
-            User(
-                employeeId = "20030118",
-                password = "encodedPassword",
-                name = "김영희",
-                orgName = "서울1지점"
-            )
-        )
-
-        testStore = testEntityManager.persistAndFlush(
-            Account(
-                externalKey = "1025",
-                name = "그린유통D"
-            )
-        )
-
-        otherStore = testEntityManager.persistAndFlush(
-            Account(
-                externalKey = "2030",
-                name = "광양식자재도매센터(주)"
-            )
-        )
-
-        testProduct = testEntityManager.persistAndFlush(
-            Product(
-                name = "고등어김치&무조림(캔)280G",
-                productCode = "30310009",
-                logisticsBarcode = "8801045570001",
-                storageCondition = "상온"
-            )
-        )
-
-        testEntityManager.clear()
     }
 
-    // ========== findByUserIdAndExpiryDateBetween ==========
-
     @Nested
-    @DisplayName("findByUserIdAndExpiryDateBetween - 사용자별 기간 조회")
-    inner class FindByUserIdAndExpiryDateBetweenTests {
+    @DisplayName("save + findById - seq(Int) PK 매핑")
+    inner class SaveAndFindByIdTests {
 
         @Test
-        @DisplayName("기간 내 데이터 조회 - 해당 기간 데이터 반환")
-        fun findByUserIdAndExpiryDateBetween_success() {
+        @DisplayName("저장 후 seq PK로 조회 - 정상 매핑")
+        fun save_andFindBySeq_success() {
             // Given
-            val today = LocalDate.now()
-            persistShelfLife(
-                user = testUser, store = testStore, product = testProduct,
-                expiryDate = today.plusDays(3), alertDate = today.plusDays(2)
-            )
-
-            // When
-            val result = shelfLifeRepository.findByUserIdAndExpiryDateBetween(
-                testUser.id, today, today.plusDays(7)
-            )
-
-            // Then
-            assertThat(result).hasSize(1)
-            assertThat(result[0].productName).isEqualTo("고등어김치&무조림(캔)280G")
-        }
-
-        @Test
-        @DisplayName("기간 외 데이터 - 범위 밖 데이터는 조회되지 않음")
-        fun findByUserIdAndExpiryDateBetween_outOfRange() {
-            // Given
-            val today = LocalDate.now()
-            persistShelfLife(
-                user = testUser, store = testStore, product = testProduct,
-                expiryDate = today.plusDays(30), alertDate = today.plusDays(29)
-            )
-
-            // When
-            val result = shelfLifeRepository.findByUserIdAndExpiryDateBetween(
-                testUser.id, today, today.plusDays(7)
-            )
-
-            // Then
-            assertThat(result).isEmpty()
-        }
-
-        @Test
-        @DisplayName("다른 사용자 데이터 - 타인 데이터는 조회되지 않음")
-        fun findByUserIdAndExpiryDateBetween_differentUser() {
-            // Given
-            val today = LocalDate.now()
-            persistShelfLife(
-                user = otherUser, store = testStore, product = testProduct,
-                expiryDate = today.plusDays(3), alertDate = today.plusDays(2)
-            )
-
-            // When
-            val result = shelfLifeRepository.findByUserIdAndExpiryDateBetween(
-                testUser.id, today, today.plusDays(7)
-            )
-
-            // Then
-            assertThat(result).isEmpty()
-        }
-
-        @Test
-        @DisplayName("expiryDate 오름차순 정렬 확인")
-        fun findByUserIdAndExpiryDateBetween_orderedByExpiryDate() {
-            // Given
-            val today = LocalDate.now()
-            val product2 = testEntityManager.persistAndFlush(
-                Product(
-                    name = "카레케찹280G",
-                    productCode = "11110015",
-                    logisticsBarcode = "8801045570002",
-                    storageCondition = "상온"
-                )
-            )
-            testEntityManager.clear()
-
-            persistShelfLife(
-                user = testUser, store = testStore, product = product2,
-                expiryDate = today.plusDays(5), alertDate = today.plusDays(4)
-            )
-            persistShelfLife(
-                user = testUser, store = otherStore, product = testProduct,
-                expiryDate = today.plusDays(2), alertDate = today.plusDays(1)
-            )
-
-            // When
-            val result = shelfLifeRepository.findByUserIdAndExpiryDateBetween(
-                testUser.id, today, today.plusDays(7)
-            )
-
-            // Then
-            assertThat(result).hasSize(2)
-            assertThat(result[0].expiryDate).isBefore(result[1].expiryDate)
-        }
-    }
-
-    // ========== findByUserIdAndStoreIdAndExpiryDateBetween ==========
-
-    @Nested
-    @DisplayName("findByUserIdAndStoreIdAndExpiryDateBetween - 사용자+거래처별 기간 조회")
-    inner class FindByUserIdAndStoreIdAndExpiryDateBetweenTests {
-
-        @Test
-        @DisplayName("특정 거래처 데이터만 조회")
-        fun findByUserIdAndStoreIdAndExpiryDateBetween_storeFilter() {
-            // Given
-            val today = LocalDate.now()
-            val product2 = testEntityManager.persistAndFlush(
-                Product(
-                    name = "카레케찹280G",
-                    productCode = "11110015",
-                    logisticsBarcode = "8801045570002",
-                    storageCondition = "상온"
-                )
-            )
-            testEntityManager.clear()
-
-            persistShelfLife(
-                user = testUser, store = testStore, product = testProduct,
-                expiryDate = today.plusDays(3), alertDate = today.plusDays(2)
-            )
-            persistShelfLife(
-                user = testUser, store = otherStore, product = product2,
-                expiryDate = today.plusDays(4), alertDate = today.plusDays(3)
-            )
-
-            // When
-            val result = shelfLifeRepository.findByUserIdAndStoreIdAndExpiryDateBetween(
-                testUser.id, testStore.id, today, today.plusDays(7)
-            )
-
-            // Then
-            assertThat(result).hasSize(1)
-            assertThat(result[0].storeName).isEqualTo("그린유통D")
-        }
-    }
-
-    // ========== existsByUserIdAndStoreIdAndProductId ==========
-
-    @Nested
-    @DisplayName("existsByUserIdAndStoreIdAndProductId - 중복 확인")
-    inner class ExistsByUserIdAndStoreIdAndProductIdTests {
-
-        @Test
-        @DisplayName("존재하는 조합 -> true")
-        fun existsByUserIdAndStoreIdAndProductId_exists() {
-            // Given
-            val today = LocalDate.now()
-            persistShelfLife(
-                user = testUser, store = testStore, product = testProduct,
-                expiryDate = today.plusDays(3), alertDate = today.plusDays(2)
-            )
-
-            // When
-            val result = shelfLifeRepository.existsByUserIdAndStoreIdAndProductId(
-                testUser.id, testStore.id, testProduct.id
-            )
-
-            // Then
-            assertThat(result).isTrue()
-        }
-
-        @Test
-        @DisplayName("존재하지 않는 조합 -> false")
-        fun existsByUserIdAndStoreIdAndProductId_notExists() {
-            // When
-            val result = shelfLifeRepository.existsByUserIdAndStoreIdAndProductId(
-                testUser.id, testStore.id, testProduct.id
-            )
-
-            // Then
-            assertThat(result).isFalse()
-        }
-    }
-
-    // ========== findByAlertDateAndAlertSentFalse ==========
-
-    @Nested
-    @DisplayName("findByAlertDateAndAlertSentFalse - 알림 발송 대상 조회")
-    inner class FindByAlertDateAndAlertSentFalseTests {
-
-        @Test
-        @DisplayName("오늘 알림 대상 - alertDate=오늘, alertSent=false -> 조회됨")
-        fun findByAlertDateAndAlertSentFalse_success() {
-            // Given
-            val today = LocalDate.now()
-            persistShelfLife(
-                user = testUser, store = testStore, product = testProduct,
-                expiryDate = today.plusDays(3), alertDate = today, alertSent = false
-            )
-
-            // When
-            val result = shelfLifeRepository.findByAlertDateAndAlertSentFalse(today)
-
-            // Then
-            assertThat(result).hasSize(1)
-        }
-
-        @Test
-        @DisplayName("이미 발송 완료 - alertSent=true -> 조회되지 않음")
-        fun findByAlertDateAndAlertSentFalse_alreadySent() {
-            // Given
-            val today = LocalDate.now()
-            persistShelfLife(
-                user = testUser, store = testStore, product = testProduct,
-                expiryDate = today.plusDays(3), alertDate = today, alertSent = true
-            )
-
-            // When
-            val result = shelfLifeRepository.findByAlertDateAndAlertSentFalse(today)
-
-            // Then
-            assertThat(result).isEmpty()
-        }
-    }
-
-    // ========== findByIdInAndUserId ==========
-
-    @Nested
-    @DisplayName("findByIdInAndUserId - 사용자 소유 항목 일괄 조회")
-    inner class FindByIdInAndUserIdTests {
-
-        @Test
-        @DisplayName("본인 소유 항목만 조회")
-        fun findByIdInAndUserId_ownerOnly() {
-            // Given
-            val today = LocalDate.now()
-            val product2 = testEntityManager.persistAndFlush(
-                Product(
-                    name = "카레케찹280G",
-                    productCode = "11110015",
-                    logisticsBarcode = "8801045570002",
-                    storageCondition = "상온"
-                )
-            )
-            testEntityManager.clear()
-
-            val sl1 = persistShelfLife(
-                user = testUser, store = testStore, product = testProduct,
-                expiryDate = today.plusDays(3), alertDate = today.plusDays(2)
-            )
-            val sl2 = persistShelfLife(
-                user = otherUser, store = testStore, product = product2,
-                expiryDate = today.plusDays(4), alertDate = today.plusDays(3)
-            )
-
-            // When
-            val result = shelfLifeRepository.findByIdInAndUserId(
-                listOf(sl1.id, sl2.id), testUser.id
-            )
-
-            // Then
-            assertThat(result).hasSize(1)
-            assertThat(result[0].user.id).isEqualTo(testUser.id)
-        }
-    }
-
-    // ========== save ==========
-
-    @Nested
-    @DisplayName("save - 유통기한 저장")
-    inner class SaveTests {
-
-        @Test
-        @DisplayName("신규 저장 성공")
-        fun save_success() {
-            // Given
-            val today = LocalDate.now()
             val shelfLife = ShelfLife(
-                user = testUser,
-                store = testStore,
-                product = testProduct,
-                productCode = testProduct.productCode ?: "",
-                productName = testProduct.name ?: "",
-                storeName = testStore.name ?: "",
-                expiryDate = today.plusDays(10),
-                alertDate = today.plusDays(9),
-                description = "테스트 설명"
+                accountId = "ACC001",
+                accountCode = "1025",
+                employeeId = "20030117",
+                productId = "PROD001",
+                productCode = "30310009",
+                expirationDate = LocalDate.of(2026, 6, 1),
+                alarmDate = LocalDate.of(2026, 5, 25),
+                description = "테스트 설명",
+                instDt = LocalDateTime.of(2026, 2, 23, 10, 0),
+                updtDt = LocalDateTime.of(2026, 2, 23, 10, 0)
             )
 
             // When
@@ -371,38 +64,71 @@ class ShelfLifeRepositoryTest {
             testEntityManager.clear()
 
             // Then
-            val found = shelfLifeRepository.findById(saved.id)
+            val found = shelfLifeRepository.findById(saved.seq)
             assertThat(found).isPresent
+            assertThat(found.get().seq).isEqualTo(saved.seq)
+            assertThat(found.get().accountId).isEqualTo("ACC001")
+            assertThat(found.get().accountCode).isEqualTo("1025")
+            assertThat(found.get().employeeId).isEqualTo("20030117")
+            assertThat(found.get().productId).isEqualTo("PROD001")
             assertThat(found.get().productCode).isEqualTo("30310009")
+            assertThat(found.get().expirationDate).isEqualTo(LocalDate.of(2026, 6, 1))
+            assertThat(found.get().alarmDate).isEqualTo(LocalDate.of(2026, 5, 25))
             assertThat(found.get().description).isEqualTo("테스트 설명")
+        }
+
+        @Test
+        @DisplayName("nullable 필드 - null 값 저장/조회 정상")
+        fun save_withNullableFields_success() {
+            // Given
+            val shelfLife = ShelfLife(
+                employeeId = "20030117",
+                productCode = "30310009"
+            )
+
+            // When
+            val saved = shelfLifeRepository.save(shelfLife)
+            testEntityManager.flush()
+            testEntityManager.clear()
+
+            // Then
+            val found = shelfLifeRepository.findById(saved.seq)
+            assertThat(found).isPresent
+            assertThat(found.get().accountId).isNull()
+            assertThat(found.get().expirationDate).isNull()
+            assertThat(found.get().alarmDate).isNull()
+            assertThat(found.get().description).isNull()
+            assertThat(found.get().instDt).isNull()
+            assertThat(found.get().updtDt).isNull()
         }
     }
 
-    // ========== Helper ==========
+    @Nested
+    @DisplayName("ManyToOne 제거 검증 - raw String 필드")
+    inner class RawStringFieldTests {
 
-    private fun persistShelfLife(
-        user: User,
-        store: Account,
-        product: Product,
-        expiryDate: LocalDate,
-        alertDate: LocalDate,
-        alertSent: Boolean = false,
-        description: String? = null
-    ): ShelfLife {
-        val shelfLife = ShelfLife(
-            user = user,
-            store = store,
-            product = product,
-            productCode = product.productCode ?: "",
-            productName = product.name ?: "",
-            storeName = store.name ?: "",
-            expiryDate = expiryDate,
-            alertDate = alertDate,
-            description = description,
-            alertSent = alertSent
-        )
-        val persisted = testEntityManager.persistAndFlush(shelfLife)
-        testEntityManager.clear()
-        return persisted
+        @Test
+        @DisplayName("FK 없는 raw String 필드 - 임의 값 저장 가능")
+        fun rawStringFields_noFkConstraint() {
+            // Given - FK 제약 없이 임의의 문자열 저장 가능
+            val shelfLife = ShelfLife(
+                accountId = "NON_EXISTENT_ACCOUNT",
+                employeeId = "NON_EXISTENT_EMP",
+                productId = "NON_EXISTENT_PRODUCT",
+                productCode = "ARBITRARY_CODE"
+            )
+
+            // When
+            val saved = shelfLifeRepository.save(shelfLife)
+            testEntityManager.flush()
+            testEntityManager.clear()
+
+            // Then
+            val found = shelfLifeRepository.findById(saved.seq)
+            assertThat(found).isPresent
+            assertThat(found.get().accountId).isEqualTo("NON_EXISTENT_ACCOUNT")
+            assertThat(found.get().employeeId).isEqualTo("NON_EXISTENT_EMP")
+            assertThat(found.get().productId).isEqualTo("NON_EXISTENT_PRODUCT")
+        }
     }
 }

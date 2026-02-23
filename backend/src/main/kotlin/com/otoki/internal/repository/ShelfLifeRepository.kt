@@ -2,21 +2,21 @@ package com.otoki.internal.repository
 
 import com.otoki.internal.entity.ShelfLife
 import org.springframework.data.jpa.repository.JpaRepository
-import org.springframework.data.jpa.repository.Query
-import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
-import java.time.LocalDate
 
 /**
  * 유통기한 관리 Repository
+ *
+ * V1 스키마 리매핑 후: 기존 쿼리 메서드는 @ManyToOne 기반 경로 참조로
+ * Entity 변경에 의해 컴파일 오류 발생 → 전체 주석 처리.
+ * Service 비활성 상태이므로 호출부 없음.
  */
 @Repository
-interface ShelfLifeRepository : JpaRepository<ShelfLife, Long> {
+interface ShelfLifeRepository : JpaRepository<ShelfLife, Int>
 
-    /**
-     * 사용자별 유통기한 목록 조회 (기간 필터)
-     * Store, Product 정보는 비정규화 컬럼 사용으로 FetchJoin 불필요
-     */
+/* --- 주석 처리: V1 리매핑으로 경로 변경된 기존 쿼리 메서드 ---
+
+    // findByUserIdAndExpiryDateBetween: sl.user.id, sl.expiryDate 참조
     @Query(
         "SELECT sl FROM ShelfLife sl " +
         "WHERE sl.user.id = :userId " +
@@ -29,9 +29,7 @@ interface ShelfLifeRepository : JpaRepository<ShelfLife, Long> {
         @Param("toDate") toDate: LocalDate
     ): List<ShelfLife>
 
-    /**
-     * 사용자별 + 거래처별 유통기한 목록 조회 (기간 필터)
-     */
+    // findByUserIdAndStoreIdAndExpiryDateBetween: sl.user.id, sl.store.id, sl.expiryDate 참조
     @Query(
         "SELECT sl FROM ShelfLife sl " +
         "WHERE sl.user.id = :userId " +
@@ -46,14 +44,10 @@ interface ShelfLifeRepository : JpaRepository<ShelfLife, Long> {
         @Param("toDate") toDate: LocalDate
     ): List<ShelfLife>
 
-    /**
-     * 중복 등록 확인 (동일 사용자 + 거래처 + 제품)
-     */
+    // existsByUserIdAndStoreIdAndProductId: @ManyToOne 기반 파생 쿼리
     fun existsByUserIdAndStoreIdAndProductId(userId: Long, storeId: Long, productId: Long): Boolean
 
-    /**
-     * 알림 발송 대상 조회 (alertDate가 오늘이고 alertSent가 false)
-     */
+    // findByAlertDateAndAlertSentFalse: sl.alertSent 필드 V1에 없음
     @Query(
         "SELECT sl FROM ShelfLife sl " +
         "JOIN FETCH sl.user " +
@@ -63,8 +57,7 @@ interface ShelfLifeRepository : JpaRepository<ShelfLife, Long> {
         @Param("alertDate") alertDate: LocalDate
     ): List<ShelfLife>
 
-    /**
-     * 사용자 ID와 ID 목록으로 일괄 조회
-     */
+    // findByIdInAndUserId: id, userId 모두 리매핑 대상
     fun findByIdInAndUserId(ids: List<Long>, userId: Long): List<ShelfLife>
-}
+
+--- */

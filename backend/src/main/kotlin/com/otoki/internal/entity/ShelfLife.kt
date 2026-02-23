@@ -6,89 +6,63 @@ import java.time.LocalDateTime
 
 /**
  * 유통기한 관리 Entity
- * 영업사원이 거래처별로 제품의 유통기한을 등록·관리하고,
- * 마감 전 푸시 알림을 받을 수 있다.
+ *
+ * V1 테이블: salesforce2.expirationdate__mng (sequence PK: seq)
+ * @ManyToOne 관계를 raw String 컬럼으로 전환.
  */
 @Entity
-@Table(
-    name = "shelf_lives",
-    uniqueConstraints = [
-        UniqueConstraint(
-            name = "uk_shelf_life_user_store_product",
-            columnNames = ["user_id", "store_id", "product_id"]
-        )
-    ],
-    indexes = [
-        Index(name = "idx_shelf_life_user_expiry", columnList = "user_id, expiry_date"),
-        Index(name = "idx_shelf_life_alert", columnList = "alert_date, alert_sent")
-    ]
-)
+@Table(name = "expirationdate__mng")
 class ShelfLife(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0,
+    @Column(name = "seq")
+    val seq: Int = 0,
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    val user: User,
+    @Column(name = "account_id", length = 100)
+    val accountId: String? = null,
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "store_id", nullable = false)
-    val store: Account,
+    @Column(name = "account_code", length = 100)
+    val accountCode: String? = null,
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id", nullable = false)
-    val product: Product,
+    @Column(name = "employee_id", length = 100)
+    val employeeId: String? = null,
 
-    @Column(name = "product_code", nullable = false, length = 20)
-    val productCode: String,
+    @Column(name = "product_id", length = 100)
+    val productId: String? = null,
 
-    @Column(name = "product_name", nullable = false, length = 200)
-    val productName: String,
+    @Column(name = "product_code", length = 100)
+    val productCode: String? = null,
 
-    @Column(name = "store_name", nullable = false, length = 100)
-    val storeName: String,
+    @Column(name = "expiration_date")
+    val expirationDate: LocalDate? = null,
 
-    @Column(name = "expiry_date", nullable = false)
-    var expiryDate: LocalDate,
+    @Column(name = "alarm_date")
+    val alarmDate: LocalDate? = null,
 
-    @Column(name = "alert_date", nullable = false)
-    var alertDate: LocalDate,
+    @Column(name = "description", columnDefinition = "TEXT")
+    val description: String? = null,
 
-    @Column(name = "description", length = 500)
-    var description: String? = null,
+    @Column(name = "inst_dt")
+    val instDt: LocalDateTime? = null,
 
-    @Column(name = "alert_sent", nullable = false)
-    var alertSent: Boolean = false,
+    @Column(name = "updt_dt")
+    val updtDt: LocalDateTime? = null
+)
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    val createdAt: LocalDateTime = LocalDateTime.now(),
-
-    @Column(name = "updated_at", nullable = false)
-    var updatedAt: LocalDateTime = LocalDateTime.now()
-) {
-
-    /**
-     * 유통기한/알림일/설명을 수정한다.
-     * alertDate가 변경되고 아직 발송 전이면 alertSent를 false로 리셋한다.
-     */
-    fun update(newExpiryDate: LocalDate, newAlertDate: LocalDate, newDescription: String?) {
-        val alertDateChanged = this.alertDate != newAlertDate
-        this.expiryDate = newExpiryDate
-        this.alertDate = newAlertDate
-        this.description = newDescription
-        if (alertDateChanged && !this.alertSent) {
-            this.alertSent = false
-        }
-        // alertDate가 변경되고 이미 발송된 경우 리셋
-        if (alertDateChanged && this.alertSent) {
-            this.alertSent = false
-        }
-    }
-
-    @PreUpdate
-    fun onPreUpdate() {
-        this.updatedAt = LocalDateTime.now()
-    }
-}
+/* --- 주석 처리: V1에 없는 기존 필드 ---
+id: Long — V2 IDENTITY PK → seq: Int (sequence) 로 대체
+user: User (@ManyToOne) → employeeId: String
+store: Account (@ManyToOne) → accountId: String
+product: Product (@ManyToOne) → productId: String
+productName: V1에 없음 (비정규화 필드)
+storeName: V1에 없음 (비정규화 필드)
+expiryDate → expirationDate
+alertDate → alarmDate
+alertSent: V1에 없음
+createdAt → instDt
+updatedAt → updtDt
+update(): V1에서 앱 직접 갱신 안 함
+@PreUpdate onPreUpdate(): V1에서 앱 직접 갱신 안 함
+@UniqueConstraint, @Table(indexes): V1 매핑 시 제거
+--- */

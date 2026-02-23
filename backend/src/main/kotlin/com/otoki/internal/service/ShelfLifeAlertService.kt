@@ -1,5 +1,9 @@
 package com.otoki.internal.service
 
+/* --- 전체 주석 처리: V1 Entity 리매핑 (Spec 77) ---
+ * ShelfLife Entity가 V1 스키마로 리매핑되어 user.id, productName, alertSent 등
+ * V2 전용 필드가 제거됨. 기존 스케줄 로직이 해당 필드를 참조하므로 주석 처리.
+
 import com.otoki.internal.repository.ShelfLifeRepository
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
@@ -8,11 +12,6 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
-/**
- * 유통기한 알림 발송 스케줄 Service
- * 매일 오전 9시에 alertDate가 오늘이고 alertSent가 false인 항목에 대해
- * 푸시 알림을 발송하고 alertSent를 true로 업데이트한다.
- */
 @Service
 class ShelfLifeAlertService(
     private val shelfLifeRepository: ShelfLifeRepository
@@ -20,15 +19,6 @@ class ShelfLifeAlertService(
 
     private val log = LoggerFactory.getLogger(ShelfLifeAlertService::class.java)
 
-    /**
-     * 유통기한 마감 전 알림 발송
-     * 매일 오전 9시에 실행
-     *
-     * 1. alertDate가 오늘이고 alertSent가 false인 ShelfLife 목록 조회
-     * 2. 각 항목에 대해 해당 사용자에게 푸시 알림 발송
-     * 3. 발송 성공 시 alertSent를 true로 업데이트
-     * 4. 발송 실패 시 alertSent를 false로 유지 (다음 실행 시 재시도)
-     */
     @Scheduled(cron = "0 0 9 * * *")
     @Transactional
     fun sendExpiryAlerts() {
@@ -51,8 +41,6 @@ class ShelfLifeAlertService(
                 val title = "유통기한 알림"
                 val body = "${shelfLife.productName}의 유통기한이 ${daysRemaining}일 남았습니다"
 
-                // TODO: Firebase Cloud Messaging (FCM) 연동
-                // pushNotificationService.send(shelfLife.user.id, title, body)
                 log.info(
                     "알림 발송 - userId: {}, product: {}, daysRemaining: {}",
                     shelfLife.user.id, shelfLife.productName, daysRemaining
@@ -67,10 +55,11 @@ class ShelfLifeAlertService(
                     shelfLife.id, e.message
                 )
                 failCount++
-                // alertSent를 false로 유지하여 다음 실행 시 재시도
             }
         }
 
         log.info("유통기한 알림 발송 완료: 성공 {}건, 실패 {}건", successCount, failCount)
     }
 }
+
+--- */
