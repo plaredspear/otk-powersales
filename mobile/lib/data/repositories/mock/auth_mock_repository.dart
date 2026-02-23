@@ -155,7 +155,33 @@ class AuthMockRepository implements AuthRepository {
   }
 
   @override
-  Future<void> recordGpsConsent() async {
+  Future<GpsConsentTerms> getGpsConsentTerms() async {
+    await _simulateDelay();
+    return const GpsConsentTerms(
+      agreementNumber: 'AGR-MOCK-001',
+      contents: '개인정보, 위치정보의 수집 및 이용에 대한 동의서\n\n'
+          '회사는 영업활동 관리 목적으로 GPS 위치정보를 수집합니다.\n'
+          '수집된 위치정보는 근태관리 및 영업활동 확인에 활용됩니다.\n\n'
+          '동의를 거부할 수 있으나, 거부 시 앱 사용이 제한됩니다.',
+    );
+  }
+
+  @override
+  Future<GpsConsentStatus> getGpsConsentStatus() async {
+    await _simulateDelay();
+    if (_currentEmployeeId != null) {
+      final account = _mockAccounts[_currentEmployeeId];
+      if (account != null) {
+        return GpsConsentStatus(
+          requiresGpsConsent: account['requiresGpsConsent'] as bool,
+        );
+      }
+    }
+    return const GpsConsentStatus(requiresGpsConsent: false);
+  }
+
+  @override
+  Future<GpsConsentRecordResult> recordGpsConsent({String? agreementNumber}) async {
     await _simulateDelay();
 
     // Mock에서는 GPS 동의 상태 변경
@@ -165,5 +191,11 @@ class AuthMockRepository implements AuthRepository {
         account['requiresGpsConsent'] = false;
       }
     }
+
+    return GpsConsentRecordResult(
+      accessToken:
+          '${_mockAccessToken}_consented_${DateTime.now().millisecondsSinceEpoch}',
+      expiresIn: 86400,
+    );
   }
 }

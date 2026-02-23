@@ -21,6 +21,12 @@ abstract class AuthRemoteDataSource {
   /// 로그아웃 API 호출
   Future<void> logout();
 
+  /// GPS 동의 약관 조회 API 호출
+  Future<Map<String, dynamic>> getGpsConsentTerms();
+
+  /// GPS 동의 상태 조회 API 호출
+  Future<Map<String, dynamic>> getGpsConsentStatus();
+
   /// GPS 동의 기록 API 호출
-  Future<void> recordGpsConsent();
+  Future<Map<String, dynamic>> recordGpsConsent({String? agreementNumber});
 }

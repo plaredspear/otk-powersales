@@ -218,7 +218,17 @@ class MockAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<void> recordGpsConsent() {
-    throw UnimplementedError();
+  Future<GpsConsentTerms> getGpsConsentTerms() async {
+    return const GpsConsentTerms(agreementNumber: 'AGR-001', contents: 'test');
+  }
+
+  @override
+  Future<GpsConsentStatus> getGpsConsentStatus() async {
+    return const GpsConsentStatus(requiresGpsConsent: false);
+  }
+
+  @override
+  Future<GpsConsentRecordResult> recordGpsConsent({String? agreementNumber}) async {
+    return const GpsConsentRecordResult(accessToken: 'mock_token', expiresIn: 3600);
   }
 }

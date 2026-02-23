@@ -28,6 +28,7 @@ import 'presentation/pages/verify_password_page.dart';
 import 'presentation/pages/my_schedule_calendar_page.dart';
 import 'presentation/pages/my_schedule_detail_page.dart';
 import 'presentation/screens/change_password_screen.dart';
+import 'presentation/screens/gps_consent_screen.dart';
 import 'presentation/screens/login_screen.dart';
 import 'presentation/screens/main_screen.dart';
 import 'presentation/screens/pos_sales_screen.dart';
@@ -41,6 +42,7 @@ class AppRouter {
   static const String changePassword = '/change-password';
   static const String verifyPassword = '/verify-password'; // F54: 현재 비밀번호 확인
   static const String changePasswordNew = '/change-password-new'; // F54: 새 비밀번호 입력
+  static const String gpsConsent = '/gps-consent'; // F62: GPS 사용 동의
   static const String main = '/';
   static const String posSales = '/pos-sales';
   static const String attendance = '/attendance';
@@ -72,6 +74,7 @@ class AppRouter {
   static Map<String, WidgetBuilder> get routes => {
         login: (context) => const LoginScreen(),
         changePassword: (context) => const ChangePasswordScreen(),
+        gpsConsent: (context) => const GpsConsentScreen(), // F62: GPS 동의
         verifyPassword: (context) => const VerifyPasswordPage(), // F54: 현재 비밀번호 확인
         changePasswordNew: (context) { // F54: 새 비밀번호 입력
           final currentPassword =

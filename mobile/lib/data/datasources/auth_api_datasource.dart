@@ -73,7 +73,25 @@ class AuthApiDataSource implements AuthRemoteDataSource {
   }
 
   @override
-  Future<void> recordGpsConsent() async {
-    await _dio.post('/api/v1/auth/gps-consent');
+  Future<Map<String, dynamic>> getGpsConsentTerms() async {
+    final response = await _dio.get('/api/v1/auth/gps-consent/terms');
+    return response.data['data'] as Map<String, dynamic>;
+  }
+
+  @override
+  Future<Map<String, dynamic>> getGpsConsentStatus() async {
+    final response = await _dio.get('/api/v1/auth/gps-consent/status');
+    return response.data['data'] as Map<String, dynamic>;
+  }
+
+  @override
+  Future<Map<String, dynamic>> recordGpsConsent({String? agreementNumber}) async {
+    final response = await _dio.post(
+      '/api/v1/auth/gps-consent',
+      data: agreementNumber != null
+          ? {'agreement_number': agreementNumber}
+          : null,
+    );
+    return response.data['data'] as Map<String, dynamic>;
   }
 }

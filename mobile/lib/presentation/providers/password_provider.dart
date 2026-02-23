@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/datasources/auth_api_datasource.dart';
@@ -8,18 +7,9 @@ import '../../domain/repositories/password_repository.dart';
 import '../../domain/usecases/change_password_usecase.dart';
 import '../../domain/usecases/verify_current_password_usecase.dart';
 import 'auth_provider.dart'; // auth_provider에서 changePasswordUseCaseProvider 재사용
+import 'dio_provider.dart';
 
 // --- Repository & DataSource Providers ---
-
-/// Dio HTTP Client Provider (임시)
-/// TODO: 실제 API URL로 변경
-final dioProvider = Provider<Dio>((ref) {
-  return Dio(BaseOptions(
-    baseUrl: 'https://api.example.com',
-    connectTimeout: const Duration(seconds: 10),
-    receiveTimeout: const Duration(seconds: 10),
-  ));
-});
 
 /// Password Repository Provider (비밀번호 검증용)
 final passwordRepositoryProvider = Provider<PasswordRepository>((ref) {

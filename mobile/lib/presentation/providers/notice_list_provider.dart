@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/datasources/notice_api_datasource.dart';
@@ -6,18 +5,10 @@ import '../../data/repositories/notice_repository_impl.dart';
 import '../../domain/entities/notice_category.dart';
 import '../../domain/repositories/notice_repository.dart';
 import '../../domain/usecases/get_notice_posts_usecase.dart';
+import 'dio_provider.dart';
 import 'notice_list_state.dart';
 
 // --- Dependency Providers ---
-
-/// Dio HTTP Client Provider
-final dioProvider = Provider<Dio>((ref) {
-  return Dio(BaseOptions(
-    baseUrl: 'https://api.example.com', // TODO: 실제 API URL로 변경
-    connectTimeout: const Duration(seconds: 10),
-    receiveTimeout: const Duration(seconds: 10),
-  ));
-});
 
 /// Notice Repository Provider
 final noticeRepositoryProvider = Provider<NoticeRepository>((ref) {

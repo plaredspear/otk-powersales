@@ -5,6 +5,7 @@ import '../../data/repositories/mock/auth_mock_repository.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/auto_login_usecase.dart';
 import '../../domain/usecases/change_password_usecase.dart';
+import '../../domain/usecases/check_gps_consent_usecase.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/logout_usecase.dart';
 import 'auth_state.dart';
@@ -43,6 +44,12 @@ final changePasswordUseCaseProvider = Provider<ChangePasswordUseCase>((ref) {
 final logoutUseCaseProvider = Provider<LogoutUseCase>((ref) {
   final repository = ref.watch(authRepositoryProvider);
   return LogoutUseCase(repository);
+});
+
+/// CheckGpsConsentUseCase Provider
+final checkGpsConsentUseCaseProvider = Provider<CheckGpsConsentUseCase>((ref) {
+  final repository = ref.watch(authRepositoryProvider);
+  return CheckGpsConsentUseCase(repository);
 });
 
 // --- AuthNotifier ---
@@ -248,14 +255,28 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   /// GPS 동의 기록
-  Future<void> recordGpsConsent() async {
+  ///
+  /// [agreementNumber]: 동의한 약관 번호 (선택)
+  Future<void> recordGpsConsent({String? agreementNumber}) async {
     state = state.toLoading();
 
     try {
-      await _repository.recordGpsConsent();
+      final result = await _repository.recordGpsConsent(
+        agreementNumber: agreementNumber,
+      );
+
+      // 새 access_token 저장
+      await _localDataSource.saveAccessToken(result.accessToken);
 
       // GPS 동의 완료 → 인증 완료
-      state = state.toAuthenticated(state.user!);
+      if (state.user != null) {
+        state = state.toAuthenticated(state.user!);
+      } else {
+        state = state.copyWith(
+          isLoading: false,
+          requiresGpsConsent: false,
+        );
+      }
     } catch (e) {
       state = state.toError(e.toString().replaceFirst('Exception: ', ''));
     }

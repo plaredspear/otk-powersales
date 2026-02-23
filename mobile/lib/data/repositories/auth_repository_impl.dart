@@ -54,7 +54,32 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<void> recordGpsConsent() async {
-    await _remoteDataSource.recordGpsConsent();
+  Future<GpsConsentTerms> getGpsConsentTerms() async {
+    final data = await _remoteDataSource.getGpsConsentTerms();
+    return GpsConsentTerms(
+      agreementNumber: data['agreement_number'] as String,
+      contents: data['contents'] as String,
+    );
+  }
+
+  @override
+  Future<GpsConsentStatus> getGpsConsentStatus() async {
+    final data = await _remoteDataSource.getGpsConsentStatus();
+    return GpsConsentStatus(
+      requiresGpsConsent: data['requires_gps_consent'] as bool,
+    );
+  }
+
+  @override
+  Future<GpsConsentRecordResult> recordGpsConsent({String? agreementNumber}) async {
+    final data = await _remoteDataSource.recordGpsConsent(
+      agreementNumber: agreementNumber,
+    );
+    final result = GpsConsentRecordResult(
+      accessToken: data['access_token'] as String,
+      expiresIn: data['expires_in'] as int,
+    );
+    await _localDataSource.saveAccessToken(result.accessToken);
+    return result;
   }
 }
