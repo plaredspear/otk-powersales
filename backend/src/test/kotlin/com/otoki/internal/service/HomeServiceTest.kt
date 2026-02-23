@@ -2,7 +2,6 @@ package com.otoki.internal.service
 
 import com.otoki.internal.entity.*
 import com.otoki.internal.exception.UserNotFoundException
-import com.otoki.internal.repository.ExpiryProductRepository
 import com.otoki.internal.repository.NoticeRepository
 import com.otoki.internal.repository.ScheduleRepository
 import com.otoki.internal.repository.UserRepository
@@ -19,7 +18,6 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.LocalTime
 import java.util.*
 
 @ExtendWith(MockitoExtension::class)
@@ -33,41 +31,37 @@ class HomeServiceTest {
     private lateinit var scheduleRepository: ScheduleRepository
 
     @Mock
-    private lateinit var expiryProductRepository: ExpiryProductRepository
-
-    @Mock
     private lateinit var noticeRepository: NoticeRepository
 
     @InjectMocks
     private lateinit var homeService: HomeService
 
+    private val testUserSfid = "a0B000000012345"
+
     // ========== 정상 조회 Tests ==========
 
     @Test
-    @DisplayName("홈 데이터 조회 성공 - 일정, 유통기한 알림, 공지사항 모두 있는 경우")
+    @DisplayName("홈 데이터 조회 성공 - 일정, 공지사항 있는 경우")
     fun getHomeData_allDataPresent() {
         // Given
         val userId = 1L
-        val user = createTestUser(id = userId)
+        val user = createTestUser(id = userId, sfid = testUserSfid)
 
         val schedules = listOf(
             Schedule(
                 id = 1L,
-                userId = userId,
-                storeName = "이마트 부산점",
-                scheduleDate = LocalDate.now(),
-                startTime = LocalTime.of(9, 0),
-                endTime = LocalTime.of(12, 0),
-                type = "순회"
+                employeeId = testUserSfid,
+                workingDate = LocalDate.now(),
+                workingType = "순회",
+                startTime = LocalDateTime.now().withHour(9).withMinute(0)
             ),
             Schedule(
                 id = 2L,
-                userId = userId,
-                storeName = "홈플러스 해운대점",
-                scheduleDate = LocalDate.now(),
-                startTime = LocalTime.of(14, 0),
-                endTime = LocalTime.of(17, 0),
-                type = "격고"
+                employeeId = testUserSfid,
+                workingDate = LocalDate.now(),
+                workingType = "격고",
+                startTime = LocalDateTime.now().withHour(14).withMinute(0),
+                completeTime = LocalDateTime.now().withHour(17).withMinute(0)
             )
         )
 
@@ -88,10 +82,8 @@ class HomeServiceTest {
         )
 
         whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-        whenever(scheduleRepository.findByUserIdAndScheduleDate(eq(userId), any()))
+        whenever(scheduleRepository.findByEmployeeIdAndWorkingDate(eq(testUserSfid), any()))
             .thenReturn(schedules)
-        whenever(expiryProductRepository.countByUserIdAndExpiryDateBetween(eq(userId), any(), any()))
-            .thenReturn(3L)
         whenever(noticeRepository.findRecentNotices(eq("부산1지점"), any(), any(), any()))
             .thenReturn(notices)
 
@@ -100,17 +92,11 @@ class HomeServiceTest {
 
         // Then
         assertThat(result.todaySchedules).hasSize(2)
-        assertThat(result.todaySchedules[0].storeName).isEqualTo("이마트 부산점")
-        assertThat(result.todaySchedules[0].startTime).isEqualTo("09:00")
-        assertThat(result.todaySchedules[0].endTime).isEqualTo("12:00")
         assertThat(result.todaySchedules[0].type).isEqualTo("순회")
-        assertThat(result.todaySchedules[1].storeName).isEqualTo("홈플러스 해운대점")
+        assertThat(result.todaySchedules[1].type).isEqualTo("격고")
 
-        assertThat(result.expiryAlert).isNotNull
-        assertThat(result.expiryAlert!!.branchName).isEqualTo("부산1지점")
-        assertThat(result.expiryAlert!!.employeeName).isEqualTo("최금주")
-        assertThat(result.expiryAlert!!.employeeId).isEqualTo("20030117")
-        assertThat(result.expiryAlert!!.expiryCount).isEqualTo(3)
+        // Phase2: expiryAlert는 비활성화됨
+        assertThat(result.expiryAlert).isNull()
 
         assertThat(result.notices).hasSize(2)
         assertThat(result.notices[0].title).isEqualTo("2월 영업 목표 달성 현황")
@@ -126,13 +112,11 @@ class HomeServiceTest {
     fun getHomeData_noSchedules() {
         // Given
         val userId = 1L
-        val user = createTestUser(id = userId)
+        val user = createTestUser(id = userId, sfid = testUserSfid)
 
         whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-        whenever(scheduleRepository.findByUserIdAndScheduleDate(eq(userId), any()))
+        whenever(scheduleRepository.findByEmployeeIdAndWorkingDate(eq(testUserSfid), any()))
             .thenReturn(emptyList())
-        whenever(expiryProductRepository.countByUserIdAndExpiryDateBetween(eq(userId), any(), any()))
-            .thenReturn(0L)
         whenever(noticeRepository.findRecentNotices(eq("부산1지점"), any(), any(), any()))
             .thenReturn(emptyList())
 
@@ -144,65 +128,15 @@ class HomeServiceTest {
     }
 
     @Test
-    @DisplayName("홈 데이터 조회 - 유통기한 임박제품이 없는 경우 expiryAlert가 null")
-    fun getHomeData_noExpiryProducts() {
-        // Given
-        val userId = 1L
-        val user = createTestUser(id = userId)
-
-        whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-        whenever(scheduleRepository.findByUserIdAndScheduleDate(eq(userId), any()))
-            .thenReturn(emptyList())
-        whenever(expiryProductRepository.countByUserIdAndExpiryDateBetween(eq(userId), any(), any()))
-            .thenReturn(0L)
-        whenever(noticeRepository.findRecentNotices(eq("부산1지점"), any(), any(), any()))
-            .thenReturn(emptyList())
-
-        // When
-        val result = homeService.getHomeData(userId)
-
-        // Then
-        assertThat(result.expiryAlert).isNull()
-    }
-
-    @Test
-    @DisplayName("홈 데이터 조회 - 유통기한 임박제품이 있는 경우 사용자 정보와 함께 알림 반환")
-    fun getHomeData_withExpiryProducts() {
-        // Given
-        val userId = 1L
-        val user = createTestUser(id = userId)
-
-        whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-        whenever(scheduleRepository.findByUserIdAndScheduleDate(eq(userId), any()))
-            .thenReturn(emptyList())
-        whenever(expiryProductRepository.countByUserIdAndExpiryDateBetween(eq(userId), any(), any()))
-            .thenReturn(5L)
-        whenever(noticeRepository.findRecentNotices(eq("부산1지점"), any(), any(), any()))
-            .thenReturn(emptyList())
-
-        // When
-        val result = homeService.getHomeData(userId)
-
-        // Then
-        assertThat(result.expiryAlert).isNotNull
-        assertThat(result.expiryAlert!!.expiryCount).isEqualTo(5)
-        assertThat(result.expiryAlert!!.branchName).isEqualTo("부산1지점")
-        assertThat(result.expiryAlert!!.employeeName).isEqualTo("최금주")
-        assertThat(result.expiryAlert!!.employeeId).isEqualTo("20030117")
-    }
-
-    @Test
     @DisplayName("홈 데이터 조회 - 공지사항이 없는 경우 빈 배열 반환")
     fun getHomeData_noNotices() {
         // Given
         val userId = 1L
-        val user = createTestUser(id = userId)
+        val user = createTestUser(id = userId, sfid = testUserSfid)
 
         whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-        whenever(scheduleRepository.findByUserIdAndScheduleDate(eq(userId), any()))
+        whenever(scheduleRepository.findByEmployeeIdAndWorkingDate(eq(testUserSfid), any()))
             .thenReturn(emptyList())
-        whenever(expiryProductRepository.countByUserIdAndExpiryDateBetween(eq(userId), any(), any()))
-            .thenReturn(0L)
         whenever(noticeRepository.findRecentNotices(eq("부산1지점"), any(), any(), any()))
             .thenReturn(emptyList())
 
@@ -218,7 +152,7 @@ class HomeServiceTest {
     fun getHomeData_mixedNotices() {
         // Given
         val userId = 1L
-        val user = createTestUser(id = userId)
+        val user = createTestUser(id = userId, sfid = testUserSfid)
 
         val notices = listOf(
             Notice(id = 1L, name = "지점공지1", category = "BRANCH", branch = "부산1지점",
@@ -234,10 +168,8 @@ class HomeServiceTest {
         )
 
         whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-        whenever(scheduleRepository.findByUserIdAndScheduleDate(eq(userId), any()))
+        whenever(scheduleRepository.findByEmployeeIdAndWorkingDate(eq(testUserSfid), any()))
             .thenReturn(emptyList())
-        whenever(expiryProductRepository.countByUserIdAndExpiryDateBetween(eq(userId), any(), any()))
-            .thenReturn(0L)
         whenever(noticeRepository.findRecentNotices(eq("부산1지점"), any(), any(), any()))
             .thenReturn(notices)
 
@@ -268,13 +200,11 @@ class HomeServiceTest {
     fun getHomeData_currentDateIsToday() {
         // Given
         val userId = 1L
-        val user = createTestUser(id = userId)
+        val user = createTestUser(id = userId, sfid = testUserSfid)
 
         whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-        whenever(scheduleRepository.findByUserIdAndScheduleDate(eq(userId), any()))
+        whenever(scheduleRepository.findByEmployeeIdAndWorkingDate(eq(testUserSfid), any()))
             .thenReturn(emptyList())
-        whenever(expiryProductRepository.countByUserIdAndExpiryDateBetween(eq(userId), any(), any()))
-            .thenReturn(0L)
         whenever(noticeRepository.findRecentNotices(eq("부산1지점"), any(), any(), any()))
             .thenReturn(emptyList())
 
@@ -291,14 +221,16 @@ class HomeServiceTest {
         id: Long = 1L,
         employeeId: String = "20030117",
         name: String = "최금주",
-        orgName: String = "부산1지점"
+        orgName: String = "부산1지점",
+        sfid: String? = null
     ): User {
         return User(
             id = id,
             employeeId = employeeId,
             password = "encoded_password",
             name = name,
-            orgName = orgName
+            orgName = orgName,
+            sfid = sfid
         )
     }
 }
