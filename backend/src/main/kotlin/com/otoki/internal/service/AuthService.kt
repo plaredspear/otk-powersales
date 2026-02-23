@@ -2,16 +2,15 @@ package com.otoki.internal.service
 
 import com.otoki.internal.config.DeviceBindingProperties
 import com.otoki.internal.dto.request.ChangePasswordRequest
+import com.otoki.internal.dto.request.GpsConsentRequest
 import com.otoki.internal.dto.request.LoginRequest
 import com.otoki.internal.dto.request.RefreshTokenRequest
 import com.otoki.internal.dto.request.VerifyPasswordRequest
-import com.otoki.internal.dto.response.LoginResponse
-import com.otoki.internal.dto.response.TokenInfo
-import com.otoki.internal.dto.response.TokenResponse
-import com.otoki.internal.dto.response.UserInfo
+import com.otoki.internal.dto.response.*
 import com.otoki.internal.entity.LoginHistory
 import com.otoki.internal.entity.User
 import com.otoki.internal.exception.*
+import com.otoki.internal.repository.AgreementWordRepository
 import com.otoki.internal.repository.LoginHistoryRepository
 import com.otoki.internal.repository.UserRepository
 import com.otoki.internal.security.JwtTokenProvider
@@ -27,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional
 class AuthService(
     private val userRepository: UserRepository,
     private val loginHistoryRepository: LoginHistoryRepository,
+    private val agreementWordRepository: AgreementWordRepository,
     private val passwordEncoder: PasswordEncoder,
     private val jwtTokenProvider: JwtTokenProvider,
     private val deviceBindingProperties: DeviceBindingProperties
@@ -61,7 +61,7 @@ class AuthService(
             log.warn("로그인 이력 기록 실패: employeeId={}", user.employeeId, e)
         }
 
-        val accessToken = jwtTokenProvider.createAccessToken(user.id, user.role)
+        val accessToken = jwtTokenProvider.createAccessToken(user.id, user.role, user.agreementFlag == true)
         val refreshToken = jwtTokenProvider.createRefreshToken(user.id)
 
         return LoginResponse(
@@ -145,7 +145,7 @@ class AuthService(
         val user = userRepository.findById(userId)
             .orElseThrow { InvalidTokenException() }
 
-        val accessToken = jwtTokenProvider.createAccessToken(user.id, user.role)
+        val accessToken = jwtTokenProvider.createAccessToken(user.id, user.role, user.agreementFlag == true)
 
         return TokenResponse(
             accessToken = accessToken,
@@ -178,15 +178,49 @@ class AuthService(
     }
 
     /**
-     * GPS 동의 기록
+     * GPS 동의 약관 조회
      */
-    @Transactional
-    fun recordGpsConsent(userId: Long) {
+    @Transactional(readOnly = true)
+    fun getGpsConsentTerms(): GpsConsentTermsResponse {
+        val terms = agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse()
+            .orElseThrow { TermsNotFoundException() }
+
+        return GpsConsentTermsResponse(
+            agreementNumber = terms.name,
+            contents = terms.contents
+        )
+    }
+
+    /**
+     * GPS 동의 상태 조회
+     */
+    @Transactional(readOnly = true)
+    fun getGpsConsentStatus(userId: Long): GpsConsentStatusResponse {
         val user = userRepository.findById(userId)
             .orElseThrow { UserNotFoundException() }
 
-        user.recordGpsConsent()
+        return GpsConsentStatusResponse(
+            requiresGpsConsent = user.requiresGpsConsent()
+        )
+    }
+
+    /**
+     * GPS 동의 기록 + 갱신된 access token 반환
+     */
+    @Transactional
+    fun recordGpsConsent(userId: Long, request: GpsConsentRequest? = null): GpsConsentRecordResponse {
+        val user = userRepository.findById(userId)
+            .orElseThrow { UserNotFoundException() }
+
+        user.recordGpsConsent(request?.agreementNumber)
         userRepository.save(user)
+
+        val accessToken = jwtTokenProvider.createAccessToken(user.id, user.role, true)
+
+        return GpsConsentRecordResponse(
+            accessToken = accessToken,
+            expiresIn = jwtTokenProvider.getAccessTokenExpirationSeconds()
+        )
     }
 
     /**

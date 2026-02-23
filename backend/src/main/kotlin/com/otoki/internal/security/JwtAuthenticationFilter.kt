@@ -30,7 +30,8 @@ class JwtAuthenticationFilter(
             if (tokenType == "access") {
                 val userId = jwtTokenProvider.getUserIdFromToken(token)
                 val role = jwtTokenProvider.getRoleFromToken(token)
-                val principal = UserPrincipal(userId, role)
+                val agreementFlag = jwtTokenProvider.getAgreementFlagFromToken(token)
+                val principal = UserPrincipal(userId, role, agreementFlag)
 
                 val authentication = UsernamePasswordAuthenticationToken(
                     principal,

@@ -31,7 +31,7 @@ class JwtTokenProvider(
     /**
      * Access Token 생성
      */
-    fun createAccessToken(userId: Long, role: UserRole): String {
+    fun createAccessToken(userId: Long, role: UserRole, agreementFlag: Boolean = false): String {
         val now = Date()
         val expiry = Date(now.time + accessExpiration)
 
@@ -39,6 +39,7 @@ class JwtTokenProvider(
             .subject(userId.toString())
             .claim("role", role.name)
             .claim("type", "access")
+            .claim("agreement_flag", agreementFlag)
             .issuedAt(now)
             .expiration(expiry)
             .signWith(key)
@@ -89,6 +90,13 @@ class JwtTokenProvider(
     fun getRoleFromToken(token: String): UserRole {
         val roleName = parseClaims(token).get("role", String::class.java)
         return UserRole.valueOf(roleName)
+    }
+
+    /**
+     * 토큰에서 agreement_flag 추출
+     */
+    fun getAgreementFlagFromToken(token: String): Boolean {
+        return parseClaims(token).get("agreement_flag", java.lang.Boolean::class.java)?.booleanValue() ?: false
     }
 
     /**

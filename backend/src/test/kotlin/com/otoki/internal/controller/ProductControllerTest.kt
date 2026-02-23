@@ -4,6 +4,7 @@ import com.otoki.internal.dto.response.ProductDto
 import com.otoki.internal.entity.UserRole
 import com.otoki.internal.exception.InvalidSearchParameterException
 import com.otoki.internal.exception.InvalidSearchTypeException
+import com.otoki.internal.security.GpsConsentFilter
 import com.otoki.internal.security.JwtAuthenticationFilter
 import com.otoki.internal.security.JwtTokenProvider
 import com.otoki.internal.security.UserPrincipal
@@ -45,6 +46,9 @@ class ProductControllerTest {
 
     @MockitoBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
+
+    @MockitoBean
+    private lateinit var gpsConsentFilter: GpsConsentFilter
 
     private val testPrincipal = UserPrincipal(userId = 1L, role = UserRole.USER)
 

@@ -299,6 +299,45 @@ class JwtTokenProviderTest {
     }
 
     @Test
+    @DisplayName("getAgreementFlagFromToken은 agreement_flag=true를 올바르게 추출한다")
+    fun getAgreementFlagFromToken_true() {
+        // Given
+        val token = jwtTokenProvider.createAccessToken(1L, UserRole.USER, true)
+
+        // When
+        val flag = jwtTokenProvider.getAgreementFlagFromToken(token)
+
+        // Then
+        assertTrue(flag)
+    }
+
+    @Test
+    @DisplayName("getAgreementFlagFromToken은 agreement_flag=false를 올바르게 추출한다")
+    fun getAgreementFlagFromToken_false() {
+        // Given
+        val token = jwtTokenProvider.createAccessToken(1L, UserRole.USER, false)
+
+        // When
+        val flag = jwtTokenProvider.getAgreementFlagFromToken(token)
+
+        // Then
+        assertFalse(flag)
+    }
+
+    @Test
+    @DisplayName("getAgreementFlagFromToken은 기본값(agreementFlag 미지정) 시 false를 반환한다")
+    fun getAgreementFlagFromToken_default() {
+        // Given
+        val token = jwtTokenProvider.createAccessToken(1L, UserRole.USER)
+
+        // When
+        val flag = jwtTokenProvider.getAgreementFlagFromToken(token)
+
+        // Then
+        assertFalse(flag)
+    }
+
+    @Test
     @DisplayName("refresh token은 role 정보를 포함하지 않는다")
     fun refreshToken_doesNotContainRole() {
         // Given

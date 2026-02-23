@@ -2,11 +2,11 @@ package com.otoki.internal.controller
 
 import com.otoki.internal.dto.ApiResponse
 import com.otoki.internal.dto.request.ChangePasswordRequest
+import com.otoki.internal.dto.request.GpsConsentRequest
 import com.otoki.internal.dto.request.LoginRequest
 import com.otoki.internal.dto.request.RefreshTokenRequest
 import com.otoki.internal.dto.request.VerifyPasswordRequest
-import com.otoki.internal.dto.response.LoginResponse
-import com.otoki.internal.dto.response.TokenResponse
+import com.otoki.internal.dto.response.*
 import com.otoki.internal.security.UserPrincipal
 import com.otoki.internal.service.AuthService
 import jakarta.servlet.http.HttpServletRequest
@@ -84,15 +84,40 @@ class AuthController(
     }
 
     /**
+     * GPS 동의 약관 조회
+     * GET /api/v1/auth/gps-consent/terms
+     */
+    @GetMapping("/gps-consent/terms")
+    fun getGpsConsentTerms(
+        @AuthenticationPrincipal principal: UserPrincipal
+    ): ResponseEntity<ApiResponse<GpsConsentTermsResponse>> {
+        val response = authService.getGpsConsentTerms()
+        return ResponseEntity.ok(ApiResponse.success(response, "약관 조회 성공"))
+    }
+
+    /**
+     * GPS 동의 상태 조회
+     * GET /api/v1/auth/gps-consent/status
+     */
+    @GetMapping("/gps-consent/status")
+    fun getGpsConsentStatus(
+        @AuthenticationPrincipal principal: UserPrincipal
+    ): ResponseEntity<ApiResponse<GpsConsentStatusResponse>> {
+        val response = authService.getGpsConsentStatus(principal.userId)
+        return ResponseEntity.ok(ApiResponse.success(response, "GPS 동의 상태 조회 성공"))
+    }
+
+    /**
      * GPS 동의 기록
      * POST /api/v1/auth/gps-consent
      */
     @PostMapping("/gps-consent")
     fun recordGpsConsent(
-        @AuthenticationPrincipal principal: UserPrincipal
-    ): ResponseEntity<ApiResponse<Any?>> {
-        authService.recordGpsConsent(principal.userId)
-        return ResponseEntity.ok(ApiResponse.success(null, "GPS 사용 동의가 기록되었습니다"))
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @RequestBody(required = false) request: GpsConsentRequest?
+    ): ResponseEntity<ApiResponse<GpsConsentRecordResponse>> {
+        val response = authService.recordGpsConsent(principal.userId, request)
+        return ResponseEntity.ok(ApiResponse.success(response, "GPS 사용 동의가 기록되었습니다"))
     }
 
     /**

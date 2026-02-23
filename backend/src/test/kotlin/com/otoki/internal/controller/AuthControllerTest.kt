@@ -5,13 +5,12 @@ import com.otoki.internal.dto.request.ChangePasswordRequest
 import com.otoki.internal.dto.request.LoginRequest
 import com.otoki.internal.dto.request.RefreshTokenRequest
 import com.otoki.internal.dto.request.VerifyPasswordRequest
-import com.otoki.internal.dto.response.LoginResponse
-import com.otoki.internal.dto.response.TokenInfo
-import com.otoki.internal.dto.response.TokenResponse
-import com.otoki.internal.dto.response.UserInfo
+import com.otoki.internal.dto.response.*
 import com.otoki.internal.entity.UserRole
 import com.otoki.internal.exception.InvalidCredentialsException
 import com.otoki.internal.exception.InvalidCurrentPasswordException
+import com.otoki.internal.exception.TermsNotFoundException
+import com.otoki.internal.security.GpsConsentFilter
 import com.otoki.internal.security.JwtAuthenticationFilter
 import com.otoki.internal.security.JwtTokenProvider
 import com.otoki.internal.security.UserPrincipal
@@ -21,6 +20,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
@@ -34,6 +34,7 @@ import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
@@ -60,6 +61,9 @@ class AuthControllerTest {
 
     @MockitoBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
+
+    @MockitoBean
+    private lateinit var gpsConsentFilter: GpsConsentFilter
 
     private val testPrincipal = UserPrincipal(userId = 1L, role = UserRole.USER)
 
@@ -363,22 +367,96 @@ class AuthControllerTest {
             .andExpect(status().isNoContent)
     }
 
-    // ========== GPS Consent Tests ==========
+    // ========== GPS Consent Terms Tests ==========
 
     @Test
-    @DisplayName("GPS 동의 기록 성공 - 200 OK (인증 필요)")
-    fun gpsConsent_success() {
+    @DisplayName("GPS 약관 조회 성공 - 200 OK")
+    fun gpsConsentTerms_success() {
         // Given
-        doNothing().whenever(authService).recordGpsConsent(1L)
+        val response = GpsConsentTermsResponse("AGR-2025-001", "약관 본문 텍스트")
+        whenever(authService.getGpsConsentTerms()).thenReturn(response)
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/auth/gps-consent/terms"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.agreement_number").value("AGR-2025-001"))
+            .andExpect(jsonPath("$.data.contents").value("약관 본문 텍스트"))
+    }
+
+    @Test
+    @DisplayName("GPS 약관 조회 실패 - 활성 약관 없음 404")
+    fun gpsConsentTerms_notFound() {
+        // Given
+        whenever(authService.getGpsConsentTerms()).thenThrow(TermsNotFoundException())
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/auth/gps-consent/terms"))
+            .andExpect(status().isNotFound)
+            .andExpect(jsonPath("$.error.code").value("TERMS_NOT_FOUND"))
+    }
+
+    // ========== GPS Consent Status Tests ==========
+
+    @Test
+    @DisplayName("GPS 동의 상태 조회 - 동의 필요")
+    fun gpsConsentStatus_requiresConsent() {
+        // Given
+        val response = GpsConsentStatusResponse(requiresGpsConsent = true)
+        whenever(authService.getGpsConsentStatus(1L)).thenReturn(response)
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/auth/gps-consent/status"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.requires_gps_consent").value(true))
+    }
+
+    @Test
+    @DisplayName("GPS 동의 상태 조회 - 동의 불필요")
+    fun gpsConsentStatus_consentGiven() {
+        // Given
+        val response = GpsConsentStatusResponse(requiresGpsConsent = false)
+        whenever(authService.getGpsConsentStatus(1L)).thenReturn(response)
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/auth/gps-consent/status"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.requires_gps_consent").value(false))
+    }
+
+    // ========== GPS Consent Record Tests ==========
+
+    @Test
+    @DisplayName("GPS 동의 기록 성공 - 약관번호 포함, 새 토큰 반환")
+    fun gpsConsent_success_withAgreementNumber() {
+        // Given
+        val response = GpsConsentRecordResponse(accessToken = "new-token", expiresIn = 3600)
+        whenever(authService.recordGpsConsent(eq(1L), any())).thenReturn(response)
 
         // When & Then
         mockMvc.perform(
             post("/api/v1/auth/gps-consent")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"agreement_number": "AGR-2025-001"}""")
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.message").value("GPS 사용 동의가 기록되었습니다"))
+            .andExpect(jsonPath("$.data.access_token").value("new-token"))
+            .andExpect(jsonPath("$.data.expires_in").value(3600))
+    }
 
-        verify(authService).recordGpsConsent(1L)
+    @Test
+    @DisplayName("GPS 동의 기록 성공 - 요청 본문 없이 (하위 호환)")
+    fun gpsConsent_success_withoutBody() {
+        // Given
+        val response = GpsConsentRecordResponse(accessToken = "new-token", expiresIn = 3600)
+        whenever(authService.recordGpsConsent(eq(1L), anyOrNull())).thenReturn(response)
+
+        // When & Then
+        mockMvc.perform(post("/api/v1/auth/gps-consent"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.access_token").value("new-token"))
     }
 }
