@@ -26,6 +26,11 @@ spring:
       repositories:
         enabled: false
 
+device:
+  binding:
+    enabled: true
+    excluded-ids: ""
+
 logging:
   level:
     org.hibernate.SQL: DEBUG

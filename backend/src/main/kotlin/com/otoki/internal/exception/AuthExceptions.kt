@@ -46,3 +46,12 @@ class UserNotFoundException : BusinessException(
     message = "사용자를 찾을 수 없습니다",
     httpStatus = HttpStatus.NOT_FOUND
 )
+
+/**
+ * 단말기 불일치
+ */
+class DeviceMismatchException : BusinessException(
+    errorCode = "DEVICE_MISMATCH",
+    message = "등록된 단말기와 다른 기기입니다. 관리자에게 문의하세요",
+    httpStatus = HttpStatus.FORBIDDEN
+)

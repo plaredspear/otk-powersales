@@ -1,5 +1,6 @@
 package com.otoki.internal.service
 
+import com.otoki.internal.config.DeviceBindingProperties
 import com.otoki.internal.dto.request.ChangePasswordRequest
 import com.otoki.internal.dto.request.LoginRequest
 import com.otoki.internal.dto.request.RefreshTokenRequest
@@ -43,6 +44,9 @@ class AuthServiceTest {
 
     @Mock
     private lateinit var jwtTokenProvider: JwtTokenProvider
+
+    @Mock
+    private lateinit var deviceBindingProperties: DeviceBindingProperties
 
     @InjectMocks
     private lateinit var authService: AuthService
@@ -397,6 +401,165 @@ class AuthServiceTest {
         verify(jwtTokenProvider).blacklistToken(accessToken)
     }
 
+    // ========== Device Binding Tests ==========
+
+    @Test
+    @DisplayName("최초 모바일 로그인 - device_id 전달 시 deviceUuid 저장 후 로그인 성공")
+    fun login_firstMobileLogin_bindsDevice() {
+        // Given
+        val user = createTestUser(id = 1L, deviceUuid = null)
+        val request = LoginRequest("12345678", "password123", deviceId = "device-abc-123")
+
+        whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(user))
+        whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
+        whenever(deviceBindingProperties.enabled).thenReturn(true)
+        whenever(deviceBindingProperties.isExcluded("12345678")).thenReturn(false)
+        whenever(userRepository.save(any<User>())).thenAnswer { it.arguments[0] }
+        whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER)).thenReturn("token")
+        whenever(jwtTokenProvider.createRefreshToken(1L)).thenReturn("refresh")
+        whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
+
+        // When
+        val response = authService.login(request)
+
+        // Then
+        assertThat(response.token.accessToken).isEqualTo("token")
+        verify(userRepository).save(userCaptor.capture())
+        assertThat(userCaptor.value.deviceUuid).isEqualTo("device-abc-123")
+    }
+
+    @Test
+    @DisplayName("동일 단말기 로그인 - 등록된 device_id와 일치 시 로그인 성공")
+    fun login_sameDevice_success() {
+        // Given
+        val user = createTestUser(id = 1L, deviceUuid = "device-abc-123")
+        val request = LoginRequest("12345678", "password123", deviceId = "device-abc-123")
+
+        whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(user))
+        whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
+        whenever(deviceBindingProperties.enabled).thenReturn(true)
+        whenever(deviceBindingProperties.isExcluded("12345678")).thenReturn(false)
+        whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER)).thenReturn("token")
+        whenever(jwtTokenProvider.createRefreshToken(1L)).thenReturn("refresh")
+        whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
+
+        // When
+        val response = authService.login(request)
+
+        // Then
+        assertThat(response.token.accessToken).isEqualTo("token")
+    }
+
+    @Test
+    @DisplayName("다른 단말기 로그인 - 등록된 device_id와 불일치 시 DeviceMismatchException 발생")
+    fun login_differentDevice_throwsDeviceMismatch() {
+        // Given
+        val user = createTestUser(id = 1L, deviceUuid = "device-abc-123")
+        val request = LoginRequest("12345678", "password123", deviceId = "device-xyz-789")
+
+        whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(user))
+        whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
+        whenever(deviceBindingProperties.enabled).thenReturn(true)
+        whenever(deviceBindingProperties.isExcluded("12345678")).thenReturn(false)
+
+        // When & Then
+        assertThatThrownBy { authService.login(request) }
+            .isInstanceOf(DeviceMismatchException::class.java)
+    }
+
+    @Test
+    @DisplayName("웹 로그인 - device_id 미전달 시 단말기 검증 스킵, 로그인 성공")
+    fun login_webLogin_skipsDeviceBinding() {
+        // Given
+        val user = createTestUser(id = 1L, deviceUuid = "device-abc-123")
+        val request = LoginRequest("12345678", "password123")
+
+        whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(user))
+        whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
+        whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER)).thenReturn("token")
+        whenever(jwtTokenProvider.createRefreshToken(1L)).thenReturn("refresh")
+        whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
+
+        // When
+        val response = authService.login(request)
+
+        // Then
+        assertThat(response.token.accessToken).isEqualTo("token")
+    }
+
+    @Test
+    @DisplayName("바인딩 비활성화 - enabled=false일 때 device_id 불일치여도 로그인 성공")
+    fun login_bindingDisabled_skipsValidation() {
+        // Given
+        val user = createTestUser(id = 1L, deviceUuid = "device-abc-123")
+        val request = LoginRequest("12345678", "password123", deviceId = "device-xyz-789")
+
+        whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(user))
+        whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
+        whenever(deviceBindingProperties.enabled).thenReturn(false)
+        whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER)).thenReturn("token")
+        whenever(jwtTokenProvider.createRefreshToken(1L)).thenReturn("refresh")
+        whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
+
+        // When
+        val response = authService.login(request)
+
+        // Then
+        assertThat(response.token.accessToken).isEqualTo("token")
+    }
+
+    @Test
+    @DisplayName("예외 사번 로그인 - excluded-ids에 포함된 사번은 device_id 불일치여도 로그인 성공")
+    fun login_excludedEmployee_skipsValidation() {
+        // Given
+        val user = createTestUser(id = 1L, employeeId = "20010585", deviceUuid = "device-abc-123")
+        val request = LoginRequest("20010585", "password123", deviceId = "device-xyz-789")
+
+        whenever(userRepository.findByEmployeeId("20010585")).thenReturn(Optional.of(user))
+        whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
+        whenever(deviceBindingProperties.enabled).thenReturn(true)
+        whenever(deviceBindingProperties.isExcluded("20010585")).thenReturn(true)
+        whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER)).thenReturn("token")
+        whenever(jwtTokenProvider.createRefreshToken(1L)).thenReturn("refresh")
+        whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
+
+        // When
+        val response = authService.login(request)
+
+        // Then
+        assertThat(response.token.accessToken).isEqualTo("token")
+    }
+
+    // ========== Reset Device Tests ==========
+
+    @Test
+    @DisplayName("단말기 초기화 성공 - 유효한 사번의 deviceUuid를 NULL로 초기화")
+    fun resetDevice_success() {
+        // Given
+        val user = createTestUser(id = 1L, employeeId = "20010585", deviceUuid = "device-abc-123")
+
+        whenever(userRepository.findByEmployeeId("20010585")).thenReturn(Optional.of(user))
+        whenever(userRepository.save(any<User>())).thenAnswer { it.arguments[0] }
+
+        // When
+        authService.resetDevice("20010585")
+
+        // Then
+        verify(userRepository).save(userCaptor.capture())
+        assertThat(userCaptor.value.deviceUuid).isNull()
+    }
+
+    @Test
+    @DisplayName("단말기 초기화 실패 - 존재하지 않는 사번 시 UserNotFoundException 발생")
+    fun resetDevice_userNotFound() {
+        // Given
+        whenever(userRepository.findByEmployeeId("99999999")).thenReturn(Optional.empty())
+
+        // When & Then
+        assertThatThrownBy { authService.resetDevice("99999999") }
+            .isInstanceOf(UserNotFoundException::class.java)
+    }
+
     // ========== Helper ==========
 
     private fun createTestUser(
@@ -407,7 +570,8 @@ class AuthServiceTest {
         orgName: String = "서울지점",
         appAuthority: String? = null,
         passwordChangeRequired: Boolean = true,
-        agreementFlag: Boolean? = null
+        agreementFlag: Boolean? = null,
+        deviceUuid: String? = null
     ): User {
         return User(
             id = id,
@@ -417,7 +581,8 @@ class AuthServiceTest {
             orgName = orgName,
             appAuthority = appAuthority,
             passwordChangeRequired = passwordChangeRequired,
-            agreementFlag = agreementFlag
+            agreementFlag = agreementFlag,
+            deviceUuid = deviceUuid
         )
     }
 }

@@ -172,6 +172,16 @@ class User(
         this.updDate = LocalDateTime.now()
     }
 
+    fun bindDevice(deviceId: String) {
+        this.deviceUuid = deviceId
+        this.updDate = LocalDateTime.now()
+    }
+
+    fun resetDevice() {
+        this.deviceUuid = null
+        this.updDate = LocalDateTime.now()
+    }
+
     @PreUpdate
     fun onPreUpdate() {
         this.updDate = LocalDateTime.now()

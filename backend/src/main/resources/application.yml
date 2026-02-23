@@ -39,6 +39,11 @@ springdoc:
     path: /v3/api-docs
   default-produces-media-type: application/json
 
+device:
+  binding:
+    enabled: true
+    excluded-ids: ""
+
 server:
   port: 8080
   error:

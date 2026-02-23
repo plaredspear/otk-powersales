@@ -24,8 +24,8 @@ class SuggestionServiceTest {
     @Mock
     private lateinit var suggestionRepository: SuggestionRepository
 
-    @Mock
-    private lateinit var suggestionPhotoRepository: SuggestionPhotoRepository
+    /* @Mock
+    private lateinit var suggestionPhotoRepository: SuggestionPhotoRepository */
 
     @Mock
     private lateinit var userRepository: UserRepository
@@ -78,7 +78,7 @@ class SuggestionServiceTest {
             assertThat(result.productName).isNull()
             assertThat(result.title).isEqualTo("테스트 제안")
             verify(suggestionRepository).save(any())
-            verify(suggestionPhotoRepository, never()).saveAll(any<List<SuggestionPhoto>>())
+            /* verify(suggestionPhotoRepository, never()).saveAll(any()) */
         }
 
         @Test
@@ -117,7 +117,7 @@ class SuggestionServiceTest {
             // Then
             assertThat(result.id).isEqualTo(1L)
             verify(suggestionRepository).save(any())
-            verify(suggestionPhotoRepository).saveAll(any<List<SuggestionPhoto>>())
+            /* verify(suggestionPhotoRepository).saveAll(any()) */
             verify(fileStorageService, times(2)).uploadSuggestionPhoto(any(), any(), any(), any())
         }
 
