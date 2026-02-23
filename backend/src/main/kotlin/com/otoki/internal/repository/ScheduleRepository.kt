@@ -10,7 +10,7 @@ import java.time.LocalDate
 interface ScheduleRepository : JpaRepository<Schedule, Long> {
 
     /**
-     * 사용자 ID와 일정 날짜로 일정 조회
+     * 사원 sfid와 근무 날짜로 일정 조회
      */
-    fun findByUserIdAndScheduleDate(userId: Long, scheduleDate: LocalDate): List<Schedule>
+    fun findByEmployeeIdAndWorkingDate(employeeId: String, workingDate: LocalDate): List<Schedule>
 }

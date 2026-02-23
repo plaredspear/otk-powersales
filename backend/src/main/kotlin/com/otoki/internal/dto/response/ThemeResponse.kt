@@ -15,9 +15,9 @@ data class ThemeResponse(
         fun from(theme: InspectionTheme): ThemeResponse {
             return ThemeResponse(
                 id = theme.id,
-                name = theme.name,
-                startDate = theme.startDate.toString(),
-                endDate = theme.endDate.toString()
+                name = theme.name ?: "",
+                startDate = theme.startDate?.toString() ?: "",
+                endDate = theme.endDate?.toString() ?: ""
             )
         }
     }
