@@ -10,7 +10,7 @@ import com.otoki.internal.entity.ShelfLife
 import com.otoki.internal.exception.*
 import com.otoki.internal.repository.ProductRepository
 import com.otoki.internal.repository.ShelfLifeRepository
-import com.otoki.internal.repository.StoreRepository
+import com.otoki.internal.repository.AccountRepository
 import com.otoki.internal.repository.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -26,7 +26,7 @@ import java.time.temporal.ChronoUnit
 class ShelfLifeService(
     private val shelfLifeRepository: ShelfLifeRepository,
     private val userRepository: UserRepository,
-    private val storeRepository: StoreRepository,
+    private val accountRepository: AccountRepository,
     private val productRepository: ProductRepository
 ) {
 
@@ -115,7 +115,7 @@ class ShelfLifeService(
         }
 
         // 거래처 존재 확인
-        val store = storeRepository.findById(storeId)
+        val store = accountRepository.findById(storeId)
             .orElseThrow { ShelfLifeStoreNotFoundException() }
 
         // 제품 존재 확인
@@ -137,7 +137,7 @@ class ShelfLifeService(
             product = product,
             productCode = product.productCode,
             productName = product.productName,
-            storeName = store.storeName,
+            storeName = store.name ?: "",
             expiryDate = expiryDate,
             alertDate = alertDate,
             description = request.description

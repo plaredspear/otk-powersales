@@ -7,7 +7,7 @@ import com.otoki.internal.entity.*
 import com.otoki.internal.exception.*
 import com.otoki.internal.repository.ProductRepository
 import com.otoki.internal.repository.ShelfLifeRepository
-import com.otoki.internal.repository.StoreRepository
+import com.otoki.internal.repository.AccountRepository
 import com.otoki.internal.repository.UserRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -35,7 +35,7 @@ class ShelfLifeServiceTest {
     private lateinit var userRepository: UserRepository
 
     @Mock
-    private lateinit var storeRepository: StoreRepository
+    private lateinit var accountRepository: AccountRepository
 
     @Mock
     private lateinit var productRepository: ProductRepository
@@ -291,10 +291,10 @@ class ShelfLifeServiceTest {
             )
 
             val user = createUser(id = userId)
-            val store = createStore(id = 1025L)
+            val store = createAccount(id = 1025L)
             val product = createProduct()
 
-            whenever(storeRepository.findById(1025L)).thenReturn(Optional.of(store))
+            whenever(accountRepository.findById(1025L)).thenReturn(Optional.of(store))
             whenever(productRepository.findByProductCode("30310009")).thenReturn(product)
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
             whenever(shelfLifeRepository.existsByUserIdAndStoreIdAndProductId(userId, 1025L, product.id))
@@ -336,7 +336,7 @@ class ShelfLifeServiceTest {
                 alertDate = LocalDate.now().plusDays(9).toString()
             )
 
-            whenever(storeRepository.findById(9999L)).thenReturn(Optional.empty())
+            whenever(accountRepository.findById(9999L)).thenReturn(Optional.empty())
 
             // When & Then
             assertThatThrownBy { shelfLifeService.createShelfLife(userId, request) }
@@ -354,9 +354,9 @@ class ShelfLifeServiceTest {
                 expiryDate = LocalDate.now().plusDays(10).toString(),
                 alertDate = LocalDate.now().plusDays(9).toString()
             )
-            val store = createStore(id = 1025L)
+            val store = createAccount(id = 1025L)
 
-            whenever(storeRepository.findById(1025L)).thenReturn(Optional.of(store))
+            whenever(accountRepository.findById(1025L)).thenReturn(Optional.of(store))
             whenever(productRepository.findByProductCode("INVALID")).thenReturn(null)
 
             // When & Then
@@ -375,11 +375,11 @@ class ShelfLifeServiceTest {
                 expiryDate = LocalDate.now().plusDays(10).toString(),
                 alertDate = LocalDate.now().plusDays(9).toString()
             )
-            val store = createStore(id = 1025L)
+            val store = createAccount(id = 1025L)
             val product = createProduct()
             val user = createUser(id = userId)
 
-            whenever(storeRepository.findById(1025L)).thenReturn(Optional.of(store))
+            whenever(accountRepository.findById(1025L)).thenReturn(Optional.of(store))
             whenever(productRepository.findByProductCode("30310009")).thenReturn(product)
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
             whenever(shelfLifeRepository.existsByUserIdAndStoreIdAndProductId(userId, 1025L, product.id))
@@ -695,15 +695,17 @@ class ShelfLifeServiceTest {
         )
     }
 
-    private fun createStore(
+    private fun createAccount(
         id: Long = 1025L,
-        storeCode: String = "1025",
-        storeName: String = "그린유통D"
-    ): Store {
-        return Store(
+        name: String = "테스트 거래처",
+        externalKey: String = "1025",
+        phone: String? = "010-1234-5678"
+    ): Account {
+        return Account(
             id = id,
-            storeCode = storeCode,
-            storeName = storeName
+            name = name,
+            externalKey = externalKey,
+            phone = phone
         )
     }
 
@@ -732,17 +734,17 @@ class ShelfLifeServiceTest {
         description: String? = null
     ): ShelfLife {
         val user = createUser(id = userId)
-        val store = createStore(id = storeId)
+        val account = createAccount(id = storeId)
         val product = createProduct()
 
         return ShelfLife(
             id = id,
             user = user,
-            store = store,
+            store = account,
             product = product,
             productCode = product.productCode,
             productName = product.productName,
-            storeName = store.storeName,
+            storeName = account.name ?: "",
             expiryDate = expiryDate,
             alertDate = alertDate,
             description = description,

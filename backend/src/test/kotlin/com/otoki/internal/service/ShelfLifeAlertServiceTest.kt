@@ -23,7 +23,7 @@ class ShelfLifeAlertServiceTest {
     private lateinit var shelfLifeAlertService: ShelfLifeAlertService
 
     private lateinit var testUser: User
-    private lateinit var testStore: Store
+    private lateinit var testStore: Account
     private lateinit var testProduct: Product
 
     @BeforeEach
@@ -36,10 +36,10 @@ class ShelfLifeAlertServiceTest {
             orgName = "강남지점"
         )
 
-        testStore = Store(
+        testStore = Account(
             id = 10L,
-            storeCode = "S001",
-            storeName = "이마트 강남점"
+            externalKey = "S001",
+            name = "이마트 강남점"
         )
 
         testProduct = Product(
