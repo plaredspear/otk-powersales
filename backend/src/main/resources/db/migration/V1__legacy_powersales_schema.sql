@@ -1,13 +1,15 @@
 -- V1: Legacy PowerSales schema migration
 -- Source: docs/plan/기존소스/파워세일즈 스키마.SQL (2,652 lines)
--- Original DB user (u4bee3ek26k44g) is preserved as-is from Heroku Connect
+-- Legacy Heroku Connect user (u4bee3ek26k44g) references removed.
+-- Schema objects are owned by the Flyway execution user (= datasource user).
+-- HC infrastructure (triggers, functions, meta tables) is preserved as-is for later analysis.
 
 -- hstore extension required by hc_capture_*_from_row functions
 CREATE EXTENSION IF NOT EXISTS hstore;
 
 -- DROP SCHEMA salesforce2;
 
-CREATE SCHEMA IF NOT EXISTS salesforce2 AUTHORIZATION u4bee3ek26k44g;
+CREATE SCHEMA IF NOT EXISTS salesforce2;
 
 -- DROP SEQUENCE salesforce2._hcmeta_id_seq;
 
@@ -19,11 +21,6 @@ CREATE SEQUENCE salesforce2._hcmeta_id_seq
 	CACHE 1
 	NO CYCLE;
 
--- Permissions
-
-ALTER SEQUENCE salesforce2._hcmeta_id_seq OWNER TO u4bee3ek26k44g;
-GRANT ALL ON SEQUENCE salesforce2._hcmeta_id_seq TO u4bee3ek26k44g;
-
 -- DROP SEQUENCE salesforce2._sf_event_log_id_seq;
 
 CREATE SEQUENCE salesforce2._sf_event_log_id_seq
@@ -33,11 +30,6 @@ CREATE SEQUENCE salesforce2._sf_event_log_id_seq
 	START 1
 	CACHE 1
 	NO CYCLE;
-
--- Permissions
-
-ALTER SEQUENCE salesforce2._sf_event_log_id_seq OWNER TO u4bee3ek26k44g;
-GRANT ALL ON SEQUENCE salesforce2._sf_event_log_id_seq TO u4bee3ek26k44g;
 
 -- DROP SEQUENCE salesforce2._trigger_log_id_seq;
 
@@ -49,11 +41,6 @@ CREATE SEQUENCE salesforce2._trigger_log_id_seq
 	CACHE 1
 	NO CYCLE;
 
--- Permissions
-
-ALTER SEQUENCE salesforce2._trigger_log_id_seq OWNER TO u4bee3ek26k44g;
-GRANT ALL ON SEQUENCE salesforce2._trigger_log_id_seq TO u4bee3ek26k44g;
-
 -- DROP SEQUENCE salesforce2.account_id_seq;
 
 CREATE SEQUENCE salesforce2.account_id_seq
@@ -63,11 +50,6 @@ CREATE SEQUENCE salesforce2.account_id_seq
 	START 1
 	CACHE 1
 	NO CYCLE;
-
--- Permissions
-
-ALTER SEQUENCE salesforce2.account_id_seq OWNER TO u4bee3ek26k44g;
-GRANT ALL ON SEQUENCE salesforce2.account_id_seq TO u4bee3ek26k44g;
 
 -- DROP SEQUENCE salesforce2.agreementword__c_id_seq;
 
@@ -79,11 +61,6 @@ CREATE SEQUENCE salesforce2.agreementword__c_id_seq
 	CACHE 1
 	NO CYCLE;
 
--- Permissions
-
-ALTER SEQUENCE salesforce2.agreementword__c_id_seq OWNER TO u4bee3ek26k44g;
-GRANT ALL ON SEQUENCE salesforce2.agreementword__c_id_seq TO u4bee3ek26k44g;
-
 -- DROP SEQUENCE salesforce2.displayworkschedulemaster__c_id_seq;
 
 CREATE SEQUENCE salesforce2.displayworkschedulemaster__c_id_seq
@@ -93,11 +70,6 @@ CREATE SEQUENCE salesforce2.displayworkschedulemaster__c_id_seq
 	START 1
 	CACHE 1
 	NO CYCLE;
-
--- Permissions
-
-ALTER SEQUENCE salesforce2.displayworkschedulemaster__c_id_seq OWNER TO u4bee3ek26k44g;
-GRANT ALL ON SEQUENCE salesforce2.displayworkschedulemaster__c_id_seq TO u4bee3ek26k44g;
 
 -- DROP SEQUENCE salesforce2.dkretail__employee__c_id_seq;
 
@@ -109,11 +81,6 @@ CREATE SEQUENCE salesforce2.dkretail__employee__c_id_seq
 	CACHE 1
 	NO CYCLE;
 
--- Permissions
-
-ALTER SEQUENCE salesforce2.dkretail__employee__c_id_seq OWNER TO u4bee3ek26k44g;
-GRANT ALL ON SEQUENCE salesforce2.dkretail__employee__c_id_seq TO u4bee3ek26k44g;
-
 -- DROP SEQUENCE salesforce2.dkretail__notice__c_id_seq;
 
 CREATE SEQUENCE salesforce2.dkretail__notice__c_id_seq
@@ -123,11 +90,6 @@ CREATE SEQUENCE salesforce2.dkretail__notice__c_id_seq
 	START 1
 	CACHE 1
 	NO CYCLE;
-
--- Permissions
-
-ALTER SEQUENCE salesforce2.dkretail__notice__c_id_seq OWNER TO u4bee3ek26k44g;
-GRANT ALL ON SEQUENCE salesforce2.dkretail__notice__c_id_seq TO u4bee3ek26k44g;
 
 -- DROP SEQUENCE salesforce2.dkretail__product__c_id_seq;
 
@@ -139,11 +101,6 @@ CREATE SEQUENCE salesforce2.dkretail__product__c_id_seq
 	CACHE 1
 	NO CYCLE;
 
--- Permissions
-
-ALTER SEQUENCE salesforce2.dkretail__product__c_id_seq OWNER TO u4bee3ek26k44g;
-GRANT ALL ON SEQUENCE salesforce2.dkretail__product__c_id_seq TO u4bee3ek26k44g;
-
 -- DROP SEQUENCE salesforce2.dkretail__teammemberschedule__c_id_seq;
 
 CREATE SEQUENCE salesforce2.dkretail__teammemberschedule__c_id_seq
@@ -153,11 +110,6 @@ CREATE SEQUENCE salesforce2.dkretail__teammemberschedule__c_id_seq
 	START 1
 	CACHE 1
 	NO CYCLE;
-
--- Permissions
-
-ALTER SEQUENCE salesforce2.dkretail__teammemberschedule__c_id_seq OWNER TO u4bee3ek26k44g;
-GRANT ALL ON SEQUENCE salesforce2.dkretail__teammemberschedule__c_id_seq TO u4bee3ek26k44g;
 
 -- DROP SEQUENCE salesforce2.expirationdate__mng_id_seq;
 
@@ -169,11 +121,6 @@ CREATE SEQUENCE salesforce2.expirationdate__mng_id_seq
 	CACHE 1
 	NO CYCLE;
 
--- Permissions
-
-ALTER SEQUENCE salesforce2.expirationdate__mng_id_seq OWNER TO u4bee3ek26k44g;
-GRANT ALL ON SEQUENCE salesforce2.expirationdate__mng_id_seq TO u4bee3ek26k44g;
-
 -- DROP SEQUENCE salesforce2.hqreview__c_id_seq;
 
 CREATE SEQUENCE salesforce2.hqreview__c_id_seq
@@ -183,11 +130,6 @@ CREATE SEQUENCE salesforce2.hqreview__c_id_seq
 	START 1
 	CACHE 1
 	NO CYCLE;
-
--- Permissions
-
-ALTER SEQUENCE salesforce2.hqreview__c_id_seq OWNER TO u4bee3ek26k44g;
-GRANT ALL ON SEQUENCE salesforce2.hqreview__c_id_seq TO u4bee3ek26k44g;
 
 -- DROP SEQUENCE salesforce2.monthlysaleshistory__c_id_seq;
 
@@ -199,11 +141,6 @@ CREATE SEQUENCE salesforce2.monthlysaleshistory__c_id_seq
 	CACHE 1
 	NO CYCLE;
 
--- Permissions
-
-ALTER SEQUENCE salesforce2.monthlysaleshistory__c_id_seq OWNER TO u4bee3ek26k44g;
-GRANT ALL ON SEQUENCE salesforce2.monthlysaleshistory__c_id_seq TO u4bee3ek26k44g;
-
 -- DROP SEQUENCE salesforce2.productbarcode__c_id_seq;
 
 CREATE SEQUENCE salesforce2.productbarcode__c_id_seq
@@ -213,11 +150,6 @@ CREATE SEQUENCE salesforce2.productbarcode__c_id_seq
 	START 1
 	CACHE 1
 	NO CYCLE;
-
--- Permissions
-
-ALTER SEQUENCE salesforce2.productbarcode__c_id_seq OWNER TO u4bee3ek26k44g;
-GRANT ALL ON SEQUENCE salesforce2.productbarcode__c_id_seq TO u4bee3ek26k44g;
 
 -- DROP SEQUENCE salesforce2.pushmessage__c_id_seq;
 
@@ -229,11 +161,6 @@ CREATE SEQUENCE salesforce2.pushmessage__c_id_seq
 	CACHE 1
 	NO CYCLE;
 
--- Permissions
-
-ALTER SEQUENCE salesforce2.pushmessage__c_id_seq OWNER TO u4bee3ek26k44g;
-GRANT ALL ON SEQUENCE salesforce2.pushmessage__c_id_seq TO u4bee3ek26k44g;
-
 -- DROP SEQUENCE salesforce2.pushmessagereceiver__c_id_seq;
 
 CREATE SEQUENCE salesforce2.pushmessagereceiver__c_id_seq
@@ -243,11 +170,6 @@ CREATE SEQUENCE salesforce2.pushmessagereceiver__c_id_seq
 	START 1
 	CACHE 1
 	NO CYCLE;
-
--- Permissions
-
-ALTER SEQUENCE salesforce2.pushmessagereceiver__c_id_seq OWNER TO u4bee3ek26k44g;
-GRANT ALL ON SEQUENCE salesforce2.pushmessagereceiver__c_id_seq TO u4bee3ek26k44g;
 
 -- DROP SEQUENCE salesforce2.staffreview__c_id_seq;
 
@@ -259,11 +181,6 @@ CREATE SEQUENCE salesforce2.staffreview__c_id_seq
 	CACHE 1
 	NO CYCLE;
 
--- Permissions
-
-ALTER SEQUENCE salesforce2.staffreview__c_id_seq OWNER TO u4bee3ek26k44g;
-GRANT ALL ON SEQUENCE salesforce2.staffreview__c_id_seq TO u4bee3ek26k44g;
-
 -- DROP SEQUENCE salesforce2.theme__c_id_seq;
 
 CREATE SEQUENCE salesforce2.theme__c_id_seq
@@ -273,11 +190,6 @@ CREATE SEQUENCE salesforce2.theme__c_id_seq
 	START 1
 	CACHE 1
 	NO CYCLE;
-
--- Permissions
-
-ALTER SEQUENCE salesforce2.theme__c_id_seq OWNER TO u4bee3ek26k44g;
-GRANT ALL ON SEQUENCE salesforce2.theme__c_id_seq TO u4bee3ek26k44g;
 
 -- DROP SEQUENCE salesforce2.uploadfile__c_id_seq;
 
@@ -289,10 +201,6 @@ CREATE SEQUENCE salesforce2.uploadfile__c_id_seq
 	CACHE 1
 	NO CYCLE;
 
--- Permissions
-
-ALTER SEQUENCE salesforce2.uploadfile__c_id_seq OWNER TO u4bee3ek26k44g;
-GRANT ALL ON SEQUENCE salesforce2.uploadfile__c_id_seq TO u4bee3ek26k44g;
 -- salesforce2._hcmeta definition
 
 -- Drop table
@@ -300,12 +208,6 @@ GRANT ALL ON SEQUENCE salesforce2.uploadfile__c_id_seq TO u4bee3ek26k44g;
 -- DROP TABLE salesforce2._hcmeta;
 
 CREATE TABLE salesforce2._hcmeta ( id serial4 NOT NULL, hcver int4 NULL, org_id varchar(50) NULL, details text NULL, CONSTRAINT _hcmeta_pkey PRIMARY KEY (id));
-
--- Permissions
-
-ALTER TABLE salesforce2._hcmeta OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2._hcmeta TO u4bee3ek26k44g;
-
 
 -- salesforce2._sf_event_log definition
 
@@ -316,12 +218,6 @@ GRANT ALL ON TABLE salesforce2._hcmeta TO u4bee3ek26k44g;
 CREATE TABLE salesforce2._sf_event_log ( id serial4 NOT NULL, table_name varchar(128) NULL, "action" varchar(7) NULL, synced_at timestamptz DEFAULT now() NULL, sf_timestamp timestamptz NULL, sfid varchar(20) NULL, record text NULL, processed bool NULL, CONSTRAINT _sf_event_log_pkey PRIMARY KEY (id));
 CREATE INDEX idx__sf_event_log_comp_key ON salesforce2._sf_event_log USING btree (table_name, synced_at);
 CREATE INDEX idx__sf_event_log_sfid ON salesforce2._sf_event_log USING btree (sfid);
-
--- Permissions
-
-ALTER TABLE salesforce2._sf_event_log OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2._sf_event_log TO u4bee3ek26k44g;
-
 
 -- salesforce2._trigger_log definition
 
@@ -341,12 +237,6 @@ insert
     on
     salesforce2._trigger_log for each row execute function salesforce2.tlog_notify_trigger();
 
--- Permissions
-
-ALTER TABLE salesforce2._trigger_log OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2._trigger_log TO u4bee3ek26k44g;
-
-
 -- salesforce2._trigger_log_archive definition
 
 -- Drop table
@@ -357,12 +247,6 @@ CREATE TABLE salesforce2._trigger_log_archive ( id int4 NOT NULL, txid int8 NULL
 CREATE INDEX _trigger_log_archive_idx_created_at ON salesforce2._trigger_log_archive USING btree (created_at);
 CREATE INDEX _trigger_log_archive_idx_record_id ON salesforce2._trigger_log_archive USING btree (record_id);
 CREATE INDEX _trigger_log_archive_idx_state_table_name ON salesforce2._trigger_log_archive USING btree (state, table_name) WHERE ((state)::text = 'FAILED'::text);
-
--- Permissions
-
-ALTER TABLE salesforce2._trigger_log_archive OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2._trigger_log_archive TO u4bee3ek26k44g;
-
 
 -- salesforce2.account definition
 
@@ -392,12 +276,6 @@ update
     on
     salesforce2.account for each row execute function salesforce2.hc_account_status();
 
--- Permissions
-
-ALTER TABLE salesforce2.account OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2.account TO u4bee3ek26k44g;
-
-
 -- salesforce2.agreementword__c definition
 
 -- Drop table
@@ -426,12 +304,6 @@ update
     on
     salesforce2.agreementword__c for each row execute function salesforce2.hc_agreementword__c_status();
 
--- Permissions
-
-ALTER TABLE salesforce2.agreementword__c OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2.agreementword__c TO u4bee3ek26k44g;
-
-
 -- salesforce2.commute_distance definition
 
 -- Drop table
@@ -441,12 +313,6 @@ GRANT ALL ON TABLE salesforce2.agreementword__c TO u4bee3ek26k44g;
 CREATE TABLE salesforce2.commute_distance ( distance int4 NULL);
 COMMENT ON TABLE salesforce2.commute_distance IS '출근거리';
 
--- Permissions
-
-ALTER TABLE salesforce2.commute_distance OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2.commute_distance TO u4bee3ek26k44g;
-
-
 -- salesforce2.device_version_mng definition
 
 -- Drop table
@@ -454,12 +320,6 @@ GRANT ALL ON TABLE salesforce2.commute_distance TO u4bee3ek26k44g;
 -- DROP TABLE salesforce2.device_version_mng;
 
 CREATE TABLE salesforce2.device_version_mng ( "version" varchar(10) NOT NULL, device varchar(10) NOT NULL, createdate timestamp NOT NULL, contents varchar(1000) NOT NULL, s3_key varchar(200) NOT NULL, file_url varchar(300) NULL, s3_key_ipa varchar(200) NULL, file_url_ipa varchar(300) NULL, CONSTRAINT device_version_mng_pk PRIMARY KEY (version, device));
-
--- Permissions
-
-ALTER TABLE salesforce2.device_version_mng OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2.device_version_mng TO u4bee3ek26k44g;
-
 
 -- salesforce2.displayworkschedulemaster__c definition
 
@@ -489,12 +349,6 @@ update
     on
     salesforce2.displayworkschedulemaster__c for each row execute function salesforce2.hc_displayworkschedulemaster__c_status();
 
--- Permissions
-
-ALTER TABLE salesforce2.displayworkschedulemaster__c OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2.displayworkschedulemaster__c TO u4bee3ek26k44g;
-
-
 -- salesforce2.dkretail__employee__c definition
 
 -- Drop table
@@ -522,12 +376,6 @@ insert
 update
     on
     salesforce2.dkretail__employee__c for each row execute function salesforce2.hc_dkretail__employee__c_status();
-
--- Permissions
-
-ALTER TABLE salesforce2.dkretail__employee__c OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2.dkretail__employee__c TO u4bee3ek26k44g;
-
 
 -- salesforce2.dkretail__notice__c definition
 
@@ -557,12 +405,6 @@ insert
 update
     on
     salesforce2.dkretail__notice__c for each row execute function salesforce2.hc_dkretail__notice__c_status();
-
--- Permissions
-
-ALTER TABLE salesforce2.dkretail__notice__c OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2.dkretail__notice__c TO u4bee3ek26k44g;
-
 
 -- salesforce2.dkretail__product__c definition
 
@@ -599,12 +441,6 @@ insert
 
 COMMENT ON TRIGGER if__product ON salesforce2.dkretail__product__c IS 'IF_product 테이블에 삽입하기위함';
 
--- Permissions
-
-ALTER TABLE salesforce2.dkretail__product__c OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2.dkretail__product__c TO u4bee3ek26k44g;
-
-
 -- salesforce2.dkretail__teammemberschedule__c definition
 
 -- Drop table
@@ -633,12 +469,6 @@ update
     on
     salesforce2.dkretail__teammemberschedule__c for each row execute function salesforce2.hc_dkretail__teammemberschedule__c_status();
 
--- Permissions
-
-ALTER TABLE salesforce2.dkretail__teammemberschedule__c OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2.dkretail__teammemberschedule__c TO u4bee3ek26k44g;
-
-
 -- salesforce2.education_code_mng definition
 
 -- Drop table
@@ -651,12 +481,6 @@ COMMENT ON TABLE salesforce2.education_code_mng IS '교육관리 코드 테이�
 -- Column comments
 
 COMMENT ON COLUMN salesforce2.education_code_mng.edu_type IS '분류 유형';
-
--- Permissions
-
-ALTER TABLE salesforce2.education_code_mng OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2.education_code_mng TO u4bee3ek26k44g;
-
 
 -- salesforce2.education_file_mng definition
 
@@ -672,12 +496,6 @@ COMMENT ON TABLE salesforce2.education_file_mng IS '교육자료 파일 관리 �
 COMMENT ON COLUMN salesforce2.education_file_mng.edu_id IS '교육자료 ID';
 COMMENT ON COLUMN salesforce2.education_file_mng.edu_file_key IS '업로드된 파일 key값';
 COMMENT ON COLUMN salesforce2.education_file_mng.edu_file_type IS '업로드된 파일 타입(이미지, 영상, 문서)';
-
--- Permissions
-
-ALTER TABLE salesforce2.education_file_mng OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2.education_file_mng TO u4bee3ek26k44g;
-
 
 -- salesforce2.education_member_history definition
 
@@ -695,12 +513,6 @@ COMMENT ON COLUMN salesforce2.education_member_history.empcode__c IS '사번';
 COMMENT ON COLUMN salesforce2.education_member_history."name" IS '이름';
 COMMENT ON COLUMN salesforce2.education_member_history.costcentercode__c IS '지점코드';
 COMMENT ON COLUMN salesforce2.education_member_history.inst_date IS '등록시간';
-
--- Permissions
-
-ALTER TABLE salesforce2.education_member_history OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2.education_member_history TO u4bee3ek26k44g;
-
 
 -- salesforce2.education_mng definition
 
@@ -721,12 +533,6 @@ COMMENT ON COLUMN salesforce2.education_mng.empcode__c IS '등록자';
 COMMENT ON COLUMN salesforce2.education_mng.inst_date IS '등록일';
 COMMENT ON COLUMN salesforce2.education_mng.upd_date IS '수정일';
 
--- Permissions
-
-ALTER TABLE salesforce2.education_mng OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2.education_mng TO u4bee3ek26k44g;
-
-
 -- salesforce2.employee_admin_mng definition
 
 -- Drop table
@@ -735,12 +541,6 @@ GRANT ALL ON TABLE salesforce2.education_mng TO u4bee3ek26k44g;
 
 CREATE TABLE salesforce2.employee_admin_mng ( empcode__c varchar(40) NOT NULL, CONSTRAINT employee_admin_mng_pkey PRIMARY KEY (empcode__c));
 COMMENT ON TABLE salesforce2.employee_admin_mng IS '관리자 접근 계정 관리 테이블';
-
--- Permissions
-
-ALTER TABLE salesforce2.employee_admin_mng OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2.employee_admin_mng TO u4bee3ek26k44g;
-
 
 -- salesforce2.employee_his definition
 
@@ -751,12 +551,6 @@ GRANT ALL ON TABLE salesforce2.employee_admin_mng TO u4bee3ek26k44g;
 CREATE TABLE salesforce2.employee_his ( empcode__c varchar(80) NULL, inst_date timestamp NULL);
 COMMENT ON TABLE salesforce2.employee_his IS '로그인 사용장 이력';
 
--- Permissions
-
-ALTER TABLE salesforce2.employee_his OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2.employee_his TO u4bee3ek26k44g;
-
-
 -- salesforce2.employee_mng definition
 
 -- Drop table
@@ -766,12 +560,6 @@ GRANT ALL ON TABLE salesforce2.employee_his TO u4bee3ek26k44g;
 CREATE TABLE salesforce2.employee_mng ( empcode__c varchar(40) NOT NULL, emp_pwd varchar(200) NULL, emp_uuid varchar(200) NULL, gps_yn bool NULL, pwd_yn bool NULL, inst_date timestamp NULL, upd_date timestamp NULL, emp_token varchar(200) NULL, gps_yn_date timestamp NULL, CONSTRAINT employee_mng_pkey PRIMARY KEY (empcode__c));
 COMMENT ON TABLE salesforce2.employee_mng IS '로그인 사용자 정보';
 
--- Permissions
-
-ALTER TABLE salesforce2.employee_mng OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2.employee_mng TO u4bee3ek26k44g;
-
-
 -- salesforce2.expirationdate__mng definition
 
 -- Drop table
@@ -780,12 +568,6 @@ GRANT ALL ON TABLE salesforce2.employee_mng TO u4bee3ek26k44g;
 
 CREATE TABLE salesforce2.expirationdate__mng ( account_id varchar(100) NULL, account_code varchar(100) NULL, employee_id varchar(100) NULL, product_id varchar(100) NULL, product_code varchar(100) NULL, expiration_date date NULL, alarm_date date NULL, description text NULL, seq int4 DEFAULT nextval('salesforce2.expirationdate__mng_id_seq'::regclass) NOT NULL, inst_dt timestamp NULL, updt_dt timestamp NULL, CONSTRAINT expirationdate__mng_pkey PRIMARY KEY (seq));
 COMMENT ON TABLE salesforce2.expirationdate__mng IS '판매사원_유통기한_알림관리 테이블';
-
--- Permissions
-
-ALTER TABLE salesforce2.expirationdate__mng OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2.expirationdate__mng TO u4bee3ek26k44g;
-
 
 -- salesforce2.hqreview__c definition
 
@@ -815,12 +597,6 @@ update
     on
     salesforce2.hqreview__c for each row execute function salesforce2.hc_hqreview__c_status();
 
--- Permissions
-
-ALTER TABLE salesforce2.hqreview__c OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2.hqreview__c TO u4bee3ek26k44g;
-
-
 -- salesforce2.if_product__c definition
 
 -- Drop table
@@ -828,12 +604,6 @@ GRANT ALL ON TABLE salesforce2.hqreview__c TO u4bee3ek26k44g;
 -- DROP TABLE salesforce2.if_product__c;
 
 CREATE TABLE salesforce2.if_product__c ( dkretail__orderingunit__c varchar(40) NULL, dkretail__shelflifeunit__c varchar(40) NULL, dkretail__producttype__c varchar(255) NULL, dkretail__standardunitprice__c float8 NULL, dkretail__categorycode3__c varchar(100) NULL, dkretail__categorycode2__c varchar(100) NULL, dkretail__shelflife__c varchar(30) NULL, dkretail__categorycode1__c varchar(100) NULL, "name" varchar(80) NULL, dkretail__logisticsbarcode__c varchar(100) NULL, dkretail__productstatus__c varchar(255) NULL, isdeleted bool NULL, systemmodstamp timestamp NULL, dkretail__productcode__c varchar(100) NULL, dkretail__unit__c varchar(40) NULL, createddate timestamp NULL, dkretail__category3__c varchar(255) NULL, dkretail__launchdate__c date NULL, dkretail__conversionquantity__c float8 NULL, dkretail__boxreceivingquantity__c float8 NULL, dkretail__category2__c varchar(255) NULL, dkretail__category1__c varchar(255) NULL, dkretail__storecondition__c varchar(255) NULL, sfid varchar(18) NULL, id int4 NOT NULL, supertax__c float8 NULL, tastegift__c varchar(1) NULL, allergen__c text NULL, sellingpoint__c text NULL, purpose__c text NULL, imgrefpathtxt__c text NULL, updateflag__c bool NULL, imgrefpath__c varchar(255) NULL, crosscontamination__c text NULL, productfeatures__c text NULL, imgrefpath_front__c text NULL, imgrefpath_back__c text NULL, targetaccounttype__c text NULL, CONSTRAINT if_product__c_pkey PRIMARY KEY (id));
-
--- Permissions
-
-ALTER TABLE salesforce2.if_product__c OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2.if_product__c TO u4bee3ek26k44g;
-
 
 -- salesforce2.monthlysaleshistory__c definition
 
@@ -863,12 +633,6 @@ update
     on
     salesforce2.monthlysaleshistory__c for each row execute function salesforce2.hc_monthlysaleshistory__c_status();
 
--- Permissions
-
-ALTER TABLE salesforce2.monthlysaleshistory__c OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2.monthlysaleshistory__c TO u4bee3ek26k44g;
-
-
 -- salesforce2.product_favorites definition
 
 -- Drop table
@@ -877,12 +641,6 @@ GRANT ALL ON TABLE salesforce2.monthlysaleshistory__c TO u4bee3ek26k44g;
 
 CREATE TABLE salesforce2.product_favorites ( employeecode varchar(80) NULL, productcode varchar(80) NULL, inst_date timestamp NULL, upd_date timestamp NULL);
 COMMENT ON TABLE salesforce2.product_favorites IS '즐겨찾기';
-
--- Permissions
-
-ALTER TABLE salesforce2.product_favorites OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2.product_favorites TO u4bee3ek26k44g;
-
 
 -- salesforce2.productbarcode__c definition
 
@@ -912,12 +670,6 @@ update
     on
     salesforce2.productbarcode__c for each row execute function salesforce2.hc_productbarcode__c_status();
 
--- Permissions
-
-ALTER TABLE salesforce2.productbarcode__c OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2.productbarcode__c TO u4bee3ek26k44g;
-
-
 -- salesforce2.pushmessage__c definition
 
 -- Drop table
@@ -946,12 +698,6 @@ update
     on
     salesforce2.pushmessage__c for each row execute function salesforce2.hc_pushmessage__c_status();
 
--- Permissions
-
-ALTER TABLE salesforce2.pushmessage__c OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2.pushmessage__c TO u4bee3ek26k44g;
-
-
 -- salesforce2.pushmessagereceiver__c definition
 
 -- Drop table
@@ -979,12 +725,6 @@ insert
 update
     on
     salesforce2.pushmessagereceiver__c for each row execute function salesforce2.hc_pushmessagereceiver__c_status();
-
--- Permissions
-
-ALTER TABLE salesforce2.pushmessagereceiver__c OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2.pushmessagereceiver__c TO u4bee3ek26k44g;
-
 
 -- salesforce2.safetycheck__workschedule__member definition
 
@@ -1019,12 +759,6 @@ COMMENT ON COLUMN salesforce2.safetycheck__workschedule__member.traversalflag IS
 COMMENT ON COLUMN salesforce2.safetycheck__workschedule__member.eventmasterid IS '행사마스터 sfid';
 COMMENT ON COLUMN salesforce2.safetycheck__workschedule__member.completeworkyn IS '출근등록 완료 여부';
 
--- Permissions
-
-ALTER TABLE salesforce2.safetycheck__workschedule__member OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2.safetycheck__workschedule__member TO u4bee3ek26k44g;
-
-
 -- salesforce2.safetycheck_list definition
 
 -- Drop table
@@ -1040,12 +774,6 @@ COMMENT ON COLUMN salesforce2.safetycheck_list.question_num IS '질문 문항 ex
 COMMENT ON COLUMN salesforce2.safetycheck_list.seq_num IS '문항순서, 체크리스트의 정렬순서';
 COMMENT ON COLUMN salesforce2.safetycheck_list.contents IS '점검내용';
 COMMENT ON COLUMN salesforce2.safetycheck_list.use_yn IS '사용여부';
-
--- Permissions
-
-ALTER TABLE salesforce2.safetycheck_list OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2.safetycheck_list TO u4bee3ek26k44g;
-
 
 -- salesforce2.staffreview__c definition
 
@@ -1075,12 +803,6 @@ update
     on
     salesforce2.staffreview__c for each row execute function salesforce2.hc_staffreview__c_status();
 
--- Permissions
-
-ALTER TABLE salesforce2.staffreview__c OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2.staffreview__c TO u4bee3ek26k44g;
-
-
 -- salesforce2.theme__c definition
 
 -- Drop table
@@ -1109,12 +831,6 @@ update
     on
     salesforce2.theme__c for each row execute function salesforce2.hc_theme__c_status();
 
--- Permissions
-
-ALTER TABLE salesforce2.theme__c OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2.theme__c TO u4bee3ek26k44g;
-
-
 -- salesforce2.tmp_claim definition
 
 -- Drop table
@@ -1123,12 +839,6 @@ GRANT ALL ON TABLE salesforce2.theme__c TO u4bee3ek26k44g;
 
 CREATE TABLE salesforce2.tmp_claim ( tmp_sapaccountname varchar(80) NULL, tmp_sapaccountcode varchar(80) NULL, tmp_productname varchar(100) NULL, tmp_productcode varchar(80) NULL, tmp_expirationdate varchar(80) NULL, tmp_claimtype1 varchar(80) NULL, tmp_claimtype2 varchar(80) NULL, tmp_description text NULL, tmp_quantity varchar(80) NULL, tmp_claimimagefilename varchar(200) NULL, tmp_partimagefilename varchar(200) NULL, tmp_amount varchar(80) NULL, tmp_purchasemethod varchar(80) NULL, tmp_receiptimagefilename varchar(200) NULL, tmp_requesttype text NULL, inst_date timestamp NULL, upd_date timestamp NULL, tmp_employeecode varchar(80) NULL, tmp_claimtype1_name varchar(80) NULL, tmp_claimtype2_name varchar(80) NULL, tmp_purchasecode varchar(80) NULL, tmp_claimimageextension varchar(80) NULL, tmp_partimageextension varchar(80) NULL, tmp_receiptimageextension varchar(80) NULL, tmp_receiptimagebuffer text NULL, tmp_partimagebuffer text NULL, tmp_claimimagebuffer text NULL, tmp_manufacturingdate varchar(80) NULL);
 COMMENT ON TABLE salesforce2.tmp_claim IS '클레임 임시저장 테이블';
-
--- Permissions
-
-ALTER TABLE salesforce2.tmp_claim OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2.tmp_claim TO u4bee3ek26k44g;
-
 
 -- salesforce2.tmp_claimcode definition
 
@@ -1139,12 +849,6 @@ GRANT ALL ON TABLE salesforce2.tmp_claim TO u4bee3ek26k44g;
 CREATE TABLE salesforce2.tmp_claimcode ( claim1_code varchar(80) NULL, claim1_name varchar(80) NULL, claim2_code varchar(80) NULL, claim2_name varchar(80) NULL, inst_date timestamp NULL, upd_date timestamp NULL);
 COMMENT ON TABLE salesforce2.tmp_claimcode IS '클레임 카테고리 코드';
 
--- Permissions
-
-ALTER TABLE salesforce2.tmp_claimcode OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2.tmp_claimcode TO u4bee3ek26k44g;
-
-
 -- salesforce2.tmp_onsite definition
 
 -- Drop table
@@ -1152,12 +856,6 @@ GRANT ALL ON TABLE salesforce2.tmp_claimcode TO u4bee3ek26k44g;
 -- DROP TABLE salesforce2.tmp_onsite;
 
 CREATE TABLE salesforce2.tmp_onsite ( tmp_employeecode varchar(80) NULL, tmp_themecode varchar(80) NULL, tmp_themename varchar(80) NULL, tmp_classification varchar(80) NULL, tmp_sapaccountname varchar(100) NULL, tmp_sapaccoutncode varchar(80) NULL, tmp_category varchar(100) NULL, tmp_activitydate varchar(80) NULL, tmp_description text NULL, tmp_productname varchar(80) NULL, tmp_productcode varchar(80) NULL, tmp_competitorname varchar(80) NULL, tmp_competitoractivity text NULL, tmp_sampletastflag bpchar(1) NULL, tmp_competitorproudctname varchar(80) NULL, tmp_sampletasterprice varchar(80) NULL, tmp_activityamount varchar(40) NULL, tmp_s3imagekey1 varchar(255) NULL, tmp_s3imagekey2 varchar(255) NULL, inst_date timestamp NULL, upd_date timestamp NULL, tmp_s3imagefilename1 varchar(80) NULL, tmp_s3imagefilesize1 varchar(80) NULL, tmp_s3imagefilename2 varchar(80) NULL, tmp_s3imagefilesize2 varchar(80) NULL);
-
--- Permissions
-
-ALTER TABLE salesforce2.tmp_onsite OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2.tmp_onsite TO u4bee3ek26k44g;
-
 
 -- salesforce2.tmp_order definition
 
@@ -1168,12 +866,6 @@ GRANT ALL ON TABLE salesforce2.tmp_onsite TO u4bee3ek26k44g;
 CREATE TABLE salesforce2.tmp_order ( tmp_employeecode varchar(80) NOT NULL, tmp_accountcode varchar(80) NULL, tmp_orderdate date NULL, tmp_totalamount varchar(80) NULL, inst_date timestamp NULL, upd_date timestamp NULL, CONSTRAINT tmp_order_pkey PRIMARY KEY (tmp_employeecode));
 COMMENT ON TABLE salesforce2.tmp_order IS '주문서 작성 임시저장 테이블';
 
--- Permissions
-
-ALTER TABLE salesforce2.tmp_order OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2.tmp_order TO u4bee3ek26k44g;
-
-
 -- salesforce2.tmp_order_product definition
 
 -- Drop table
@@ -1183,12 +875,6 @@ GRANT ALL ON TABLE salesforce2.tmp_order TO u4bee3ek26k44g;
 CREATE TABLE salesforce2.tmp_order_product ( tmp_employeecode varchar(80) NULL, tmp_productcode varchar(80) NULL, tmp_boxcnt varchar(80) NULL, tmp_eacnt varchar(80) NULL, inst_date timestamp NULL, upd_date timestamp NULL, tmp_totalcnt varchar(80) NULL);
 COMMENT ON TABLE salesforce2.tmp_order_product IS '주문서작성 제품 임시저장 테이블';
 
--- Permissions
-
-ALTER TABLE salesforce2.tmp_order_product OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2.tmp_order_product TO u4bee3ek26k44g;
-
-
 -- salesforce2.tmp_promotion definition
 
 -- Drop table
@@ -1196,12 +882,6 @@ GRANT ALL ON TABLE salesforce2.tmp_order_product TO u4bee3ek26k44g;
 -- DROP TABLE salesforce2.tmp_promotion;
 
 CREATE TABLE salesforce2.tmp_promotion ( tmp_employeecode varchar(80) NULL, tmp_promotiontype varchar(80) NULL, tmp_promotionname varchar(100) NULL, tmp_promotionproductname varchar(80) NULL, tmp_promotionproductcode varchar(80) NULL, tmp_baseprice varchar(80) NULL, tmp_primaryquantity varchar(80) NULL, tmp_otherproduct varchar(80) NULL, tmp_otherquantity varchar(80) NULL, tmp_othertotalamount varchar(80) NULL, tmp_imageurl varchar(200) NULL, inst_date timestamp NULL, upd_date timestamp NULL, tmp_promotion_id varchar(80) NULL, tmp_promotion_seq varchar(80) NULL, tmp_imagefilename varchar(80) NULL, tmp_otherchangeproduct varchar(80) NULL);
-
--- Permissions
-
-ALTER TABLE salesforce2.tmp_promotion OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2.tmp_promotion TO u4bee3ek26k44g;
-
 
 -- salesforce2.tmp_suggest definition
 
@@ -1211,12 +891,6 @@ GRANT ALL ON TABLE salesforce2.tmp_promotion TO u4bee3ek26k44g;
 
 CREATE TABLE salesforce2.tmp_suggest ( tmp_category varchar(80) NULL, tmp_productname varchar(80) NULL, tmp_productcode varchar(80) NULL, tmp_title varchar(100) NULL, tmp_description text NULL, tmp_employeecode varchar(80) NULL, tmp_s3imageurl1 varchar(80) NULL, tmp_s3imageurl2 varchar(80) NULL, inst_date timestamp NULL, upd_date timestamp NULL, tmp_s3imagefilename1 varchar(80) NULL, tmp_s3imagefilename2 varchar(80) NULL, tmp_s3imagefilesize1 varchar(80) NULL, tmp_s3imagefilesize2 varchar(80) NULL, tmp_carnumber text NULL, tmp_accountcode text NULL, tmp_claimlist text NULL, tmp_claimdate date NULL);
 COMMENT ON TABLE salesforce2.tmp_suggest IS '제안하기 임시저장 테이블';
-
--- Permissions
-
-ALTER TABLE salesforce2.tmp_suggest OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2.tmp_suggest TO u4bee3ek26k44g;
-
 
 -- salesforce2.uploadfile__c definition
 
@@ -1246,13 +920,6 @@ update
     on
     salesforce2.uploadfile__c for each row execute function salesforce2.hc_uploadfile__c_status();
 
--- Permissions
-
-ALTER TABLE salesforce2.uploadfile__c OWNER TO u4bee3ek26k44g;
-GRANT ALL ON TABLE salesforce2.uploadfile__c TO u4bee3ek26k44g;
-
-
-
 -- DROP FUNCTION salesforce2.get_xmlbinary();
 
 CREATE OR REPLACE FUNCTION salesforce2.get_xmlbinary()
@@ -1269,11 +936,6 @@ AS $function$                    DECLARE
 
 COMMENT ON FUNCTION salesforce2.get_xmlbinary() IS 'get_xmlbinary 함수 없을 경우 
 heroku_connect로 관리되는 테이블에 crud 불가능';
-
--- Permissions
-
-ALTER FUNCTION salesforce2.get_xmlbinary() OWNER TO u4bee3ek26k44g;
-GRANT ALL ON FUNCTION salesforce2.get_xmlbinary() TO u4bee3ek26k44g;
 
 -- DROP FUNCTION salesforce2.hc_account_logger();
 
@@ -1323,11 +985,6 @@ AS $function$
         $function$
 ;
 
--- Permissions
-
-ALTER FUNCTION salesforce2.hc_account_logger() OWNER TO u4bee3ek26k44g;
-GRANT ALL ON FUNCTION salesforce2.hc_account_logger() TO u4bee3ek26k44g;
-
 -- DROP FUNCTION salesforce2.hc_account_status();
 
 CREATE OR REPLACE FUNCTION salesforce2.hc_account_status()
@@ -1351,11 +1008,6 @@ AS $function$
                     END;
                  $function$
 ;
-
--- Permissions
-
-ALTER FUNCTION salesforce2.hc_account_status() OWNER TO u4bee3ek26k44g;
-GRANT ALL ON FUNCTION salesforce2.hc_account_status() TO u4bee3ek26k44g;
 
 -- DROP FUNCTION salesforce2.hc_agreementword__c_logger();
 
@@ -1405,11 +1057,6 @@ AS $function$
         $function$
 ;
 
--- Permissions
-
-ALTER FUNCTION salesforce2.hc_agreementword__c_logger() OWNER TO u4bee3ek26k44g;
-GRANT ALL ON FUNCTION salesforce2.hc_agreementword__c_logger() TO u4bee3ek26k44g;
-
 -- DROP FUNCTION salesforce2.hc_agreementword__c_status();
 
 CREATE OR REPLACE FUNCTION salesforce2.hc_agreementword__c_status()
@@ -1433,11 +1080,6 @@ AS $function$
                     END;
                  $function$
 ;
-
--- Permissions
-
-ALTER FUNCTION salesforce2.hc_agreementword__c_status() OWNER TO u4bee3ek26k44g;
-GRANT ALL ON FUNCTION salesforce2.hc_agreementword__c_status() TO u4bee3ek26k44g;
 
 -- DROP FUNCTION salesforce2.hc_capture_insert_from_row(hstore, varchar, _text);
 
@@ -1470,11 +1112,6 @@ AS $function$
         END;
         $function$
 ;
-
--- Permissions
-
-ALTER FUNCTION salesforce2.hc_capture_insert_from_row(hstore, varchar, _text) OWNER TO u4bee3ek26k44g;
-GRANT ALL ON FUNCTION salesforce2.hc_capture_insert_from_row(hstore, varchar, _text) TO u4bee3ek26k44g;
 
 -- DROP FUNCTION salesforce2.hc_capture_update_from_row(hstore, varchar, _text);
 
@@ -1514,11 +1151,6 @@ AS $function$
         END;
         $function$
 ;
-
--- Permissions
-
-ALTER FUNCTION salesforce2.hc_capture_update_from_row(hstore, varchar, _text) OWNER TO u4bee3ek26k44g;
-GRANT ALL ON FUNCTION salesforce2.hc_capture_update_from_row(hstore, varchar, _text) TO u4bee3ek26k44g;
 
 -- DROP FUNCTION salesforce2.hc_displayworkschedulemaster__c_logger();
 
@@ -1568,11 +1200,6 @@ AS $function$
         $function$
 ;
 
--- Permissions
-
-ALTER FUNCTION salesforce2.hc_displayworkschedulemaster__c_logger() OWNER TO u4bee3ek26k44g;
-GRANT ALL ON FUNCTION salesforce2.hc_displayworkschedulemaster__c_logger() TO u4bee3ek26k44g;
-
 -- DROP FUNCTION salesforce2.hc_displayworkschedulemaster__c_status();
 
 CREATE OR REPLACE FUNCTION salesforce2.hc_displayworkschedulemaster__c_status()
@@ -1596,11 +1223,6 @@ AS $function$
                     END;
                  $function$
 ;
-
--- Permissions
-
-ALTER FUNCTION salesforce2.hc_displayworkschedulemaster__c_status() OWNER TO u4bee3ek26k44g;
-GRANT ALL ON FUNCTION salesforce2.hc_displayworkschedulemaster__c_status() TO u4bee3ek26k44g;
 
 -- DROP FUNCTION salesforce2.hc_dkretail__employee__c_logger();
 
@@ -1650,11 +1272,6 @@ AS $function$
         $function$
 ;
 
--- Permissions
-
-ALTER FUNCTION salesforce2.hc_dkretail__employee__c_logger() OWNER TO u4bee3ek26k44g;
-GRANT ALL ON FUNCTION salesforce2.hc_dkretail__employee__c_logger() TO u4bee3ek26k44g;
-
 -- DROP FUNCTION salesforce2.hc_dkretail__employee__c_status();
 
 CREATE OR REPLACE FUNCTION salesforce2.hc_dkretail__employee__c_status()
@@ -1678,11 +1295,6 @@ AS $function$
                     END;
                  $function$
 ;
-
--- Permissions
-
-ALTER FUNCTION salesforce2.hc_dkretail__employee__c_status() OWNER TO u4bee3ek26k44g;
-GRANT ALL ON FUNCTION salesforce2.hc_dkretail__employee__c_status() TO u4bee3ek26k44g;
 
 -- DROP FUNCTION salesforce2.hc_dkretail__notice__c_logger();
 
@@ -1732,11 +1344,6 @@ AS $function$
         $function$
 ;
 
--- Permissions
-
-ALTER FUNCTION salesforce2.hc_dkretail__notice__c_logger() OWNER TO u4bee3ek26k44g;
-GRANT ALL ON FUNCTION salesforce2.hc_dkretail__notice__c_logger() TO u4bee3ek26k44g;
-
 -- DROP FUNCTION salesforce2.hc_dkretail__notice__c_status();
 
 CREATE OR REPLACE FUNCTION salesforce2.hc_dkretail__notice__c_status()
@@ -1760,11 +1367,6 @@ AS $function$
                     END;
                  $function$
 ;
-
--- Permissions
-
-ALTER FUNCTION salesforce2.hc_dkretail__notice__c_status() OWNER TO u4bee3ek26k44g;
-GRANT ALL ON FUNCTION salesforce2.hc_dkretail__notice__c_status() TO u4bee3ek26k44g;
 
 -- DROP FUNCTION salesforce2.hc_dkretail__product__c_logger();
 
@@ -1814,11 +1416,6 @@ AS $function$
         $function$
 ;
 
--- Permissions
-
-ALTER FUNCTION salesforce2.hc_dkretail__product__c_logger() OWNER TO u4bee3ek26k44g;
-GRANT ALL ON FUNCTION salesforce2.hc_dkretail__product__c_logger() TO u4bee3ek26k44g;
-
 -- DROP FUNCTION salesforce2.hc_dkretail__product__c_status();
 
 CREATE OR REPLACE FUNCTION salesforce2.hc_dkretail__product__c_status()
@@ -1842,11 +1439,6 @@ AS $function$
                     END;
                  $function$
 ;
-
--- Permissions
-
-ALTER FUNCTION salesforce2.hc_dkretail__product__c_status() OWNER TO u4bee3ek26k44g;
-GRANT ALL ON FUNCTION salesforce2.hc_dkretail__product__c_status() TO u4bee3ek26k44g;
 
 -- DROP FUNCTION salesforce2.hc_dkretail__teammemberschedule__c_logger();
 
@@ -1902,11 +1494,6 @@ AS $function$
         $function$
 ;
 
--- Permissions
-
-ALTER FUNCTION salesforce2.hc_dkretail__teammemberschedule__c_logger() OWNER TO u4bee3ek26k44g;
-GRANT ALL ON FUNCTION salesforce2.hc_dkretail__teammemberschedule__c_logger() TO u4bee3ek26k44g;
-
 -- DROP FUNCTION salesforce2.hc_dkretail__teammemberschedule__c_status();
 
 CREATE OR REPLACE FUNCTION salesforce2.hc_dkretail__teammemberschedule__c_status()
@@ -1930,11 +1517,6 @@ AS $function$
                     END;
                  $function$
 ;
-
--- Permissions
-
-ALTER FUNCTION salesforce2.hc_dkretail__teammemberschedule__c_status() OWNER TO u4bee3ek26k44g;
-GRANT ALL ON FUNCTION salesforce2.hc_dkretail__teammemberschedule__c_status() TO u4bee3ek26k44g;
 
 -- DROP FUNCTION salesforce2.hc_hqreview__c_logger();
 
@@ -1984,11 +1566,6 @@ AS $function$
         $function$
 ;
 
--- Permissions
-
-ALTER FUNCTION salesforce2.hc_hqreview__c_logger() OWNER TO u4bee3ek26k44g;
-GRANT ALL ON FUNCTION salesforce2.hc_hqreview__c_logger() TO u4bee3ek26k44g;
-
 -- DROP FUNCTION salesforce2.hc_hqreview__c_status();
 
 CREATE OR REPLACE FUNCTION salesforce2.hc_hqreview__c_status()
@@ -2012,11 +1589,6 @@ AS $function$
                     END;
                  $function$
 ;
-
--- Permissions
-
-ALTER FUNCTION salesforce2.hc_hqreview__c_status() OWNER TO u4bee3ek26k44g;
-GRANT ALL ON FUNCTION salesforce2.hc_hqreview__c_status() TO u4bee3ek26k44g;
 
 -- DROP FUNCTION salesforce2.hc_monthlysaleshistory__c_logger();
 
@@ -2066,11 +1638,6 @@ AS $function$
         $function$
 ;
 
--- Permissions
-
-ALTER FUNCTION salesforce2.hc_monthlysaleshistory__c_logger() OWNER TO u4bee3ek26k44g;
-GRANT ALL ON FUNCTION salesforce2.hc_monthlysaleshistory__c_logger() TO u4bee3ek26k44g;
-
 -- DROP FUNCTION salesforce2.hc_monthlysaleshistory__c_status();
 
 CREATE OR REPLACE FUNCTION salesforce2.hc_monthlysaleshistory__c_status()
@@ -2094,11 +1661,6 @@ AS $function$
                     END;
                  $function$
 ;
-
--- Permissions
-
-ALTER FUNCTION salesforce2.hc_monthlysaleshistory__c_status() OWNER TO u4bee3ek26k44g;
-GRANT ALL ON FUNCTION salesforce2.hc_monthlysaleshistory__c_status() TO u4bee3ek26k44g;
 
 -- DROP FUNCTION salesforce2.hc_productbarcode__c_logger();
 
@@ -2148,11 +1710,6 @@ AS $function$
         $function$
 ;
 
--- Permissions
-
-ALTER FUNCTION salesforce2.hc_productbarcode__c_logger() OWNER TO u4bee3ek26k44g;
-GRANT ALL ON FUNCTION salesforce2.hc_productbarcode__c_logger() TO u4bee3ek26k44g;
-
 -- DROP FUNCTION salesforce2.hc_productbarcode__c_status();
 
 CREATE OR REPLACE FUNCTION salesforce2.hc_productbarcode__c_status()
@@ -2176,11 +1733,6 @@ AS $function$
                     END;
                  $function$
 ;
-
--- Permissions
-
-ALTER FUNCTION salesforce2.hc_productbarcode__c_status() OWNER TO u4bee3ek26k44g;
-GRANT ALL ON FUNCTION salesforce2.hc_productbarcode__c_status() TO u4bee3ek26k44g;
 
 -- DROP FUNCTION salesforce2.hc_pushmessage__c_logger();
 
@@ -2230,11 +1782,6 @@ AS $function$
         $function$
 ;
 
--- Permissions
-
-ALTER FUNCTION salesforce2.hc_pushmessage__c_logger() OWNER TO u4bee3ek26k44g;
-GRANT ALL ON FUNCTION salesforce2.hc_pushmessage__c_logger() TO u4bee3ek26k44g;
-
 -- DROP FUNCTION salesforce2.hc_pushmessage__c_status();
 
 CREATE OR REPLACE FUNCTION salesforce2.hc_pushmessage__c_status()
@@ -2258,11 +1805,6 @@ AS $function$
                     END;
                  $function$
 ;
-
--- Permissions
-
-ALTER FUNCTION salesforce2.hc_pushmessage__c_status() OWNER TO u4bee3ek26k44g;
-GRANT ALL ON FUNCTION salesforce2.hc_pushmessage__c_status() TO u4bee3ek26k44g;
 
 -- DROP FUNCTION salesforce2.hc_pushmessagereceiver__c_logger();
 
@@ -2312,11 +1854,6 @@ AS $function$
         $function$
 ;
 
--- Permissions
-
-ALTER FUNCTION salesforce2.hc_pushmessagereceiver__c_logger() OWNER TO u4bee3ek26k44g;
-GRANT ALL ON FUNCTION salesforce2.hc_pushmessagereceiver__c_logger() TO u4bee3ek26k44g;
-
 -- DROP FUNCTION salesforce2.hc_pushmessagereceiver__c_status();
 
 CREATE OR REPLACE FUNCTION salesforce2.hc_pushmessagereceiver__c_status()
@@ -2340,11 +1877,6 @@ AS $function$
                     END;
                  $function$
 ;
-
--- Permissions
-
-ALTER FUNCTION salesforce2.hc_pushmessagereceiver__c_status() OWNER TO u4bee3ek26k44g;
-GRANT ALL ON FUNCTION salesforce2.hc_pushmessagereceiver__c_status() TO u4bee3ek26k44g;
 
 -- DROP FUNCTION salesforce2.hc_staffreview__c_logger();
 
@@ -2394,11 +1926,6 @@ AS $function$
         $function$
 ;
 
--- Permissions
-
-ALTER FUNCTION salesforce2.hc_staffreview__c_logger() OWNER TO u4bee3ek26k44g;
-GRANT ALL ON FUNCTION salesforce2.hc_staffreview__c_logger() TO u4bee3ek26k44g;
-
 -- DROP FUNCTION salesforce2.hc_staffreview__c_status();
 
 CREATE OR REPLACE FUNCTION salesforce2.hc_staffreview__c_status()
@@ -2422,11 +1949,6 @@ AS $function$
                     END;
                  $function$
 ;
-
--- Permissions
-
-ALTER FUNCTION salesforce2.hc_staffreview__c_status() OWNER TO u4bee3ek26k44g;
-GRANT ALL ON FUNCTION salesforce2.hc_staffreview__c_status() TO u4bee3ek26k44g;
 
 -- DROP FUNCTION salesforce2.hc_theme__c_logger();
 
@@ -2476,11 +1998,6 @@ AS $function$
         $function$
 ;
 
--- Permissions
-
-ALTER FUNCTION salesforce2.hc_theme__c_logger() OWNER TO u4bee3ek26k44g;
-GRANT ALL ON FUNCTION salesforce2.hc_theme__c_logger() TO u4bee3ek26k44g;
-
 -- DROP FUNCTION salesforce2.hc_theme__c_status();
 
 CREATE OR REPLACE FUNCTION salesforce2.hc_theme__c_status()
@@ -2504,11 +2021,6 @@ AS $function$
                     END;
                  $function$
 ;
-
--- Permissions
-
-ALTER FUNCTION salesforce2.hc_theme__c_status() OWNER TO u4bee3ek26k44g;
-GRANT ALL ON FUNCTION salesforce2.hc_theme__c_status() TO u4bee3ek26k44g;
 
 -- DROP FUNCTION salesforce2.hc_uploadfile__c_logger();
 
@@ -2558,11 +2070,6 @@ AS $function$
         $function$
 ;
 
--- Permissions
-
-ALTER FUNCTION salesforce2.hc_uploadfile__c_logger() OWNER TO u4bee3ek26k44g;
-GRANT ALL ON FUNCTION salesforce2.hc_uploadfile__c_logger() TO u4bee3ek26k44g;
-
 -- DROP FUNCTION salesforce2.hc_uploadfile__c_status();
 
 CREATE OR REPLACE FUNCTION salesforce2.hc_uploadfile__c_status()
@@ -2587,11 +2094,6 @@ AS $function$
                  $function$
 ;
 
--- Permissions
-
-ALTER FUNCTION salesforce2.hc_uploadfile__c_status() OWNER TO u4bee3ek26k44g;
-GRANT ALL ON FUNCTION salesforce2.hc_uploadfile__c_status() TO u4bee3ek26k44g;
-
 -- DROP FUNCTION salesforce2.tlog_notify_trigger();
 
 CREATE OR REPLACE FUNCTION salesforce2.tlog_notify_trigger()
@@ -2606,11 +2108,6 @@ AS $function$
              END;
             $function$
 ;
-
--- Permissions
-
-ALTER FUNCTION salesforce2.tlog_notify_trigger() OWNER TO u4bee3ek26k44g;
-GRANT ALL ON FUNCTION salesforce2.tlog_notify_trigger() TO u4bee3ek26k44g;
 
 -- DROP FUNCTION salesforce2.trigger_employee_data();
 
@@ -2629,11 +2126,6 @@ $function$
 
 COMMENT ON FUNCTION salesforce2.trigger_employee_data() IS '개발';
 
--- Permissions
-
-ALTER FUNCTION salesforce2.trigger_employee_data() OWNER TO u4bee3ek26k44g;
-GRANT ALL ON FUNCTION salesforce2.trigger_employee_data() TO u4bee3ek26k44g;
-
 -- DROP FUNCTION salesforce2.trigger_product_data();
 
 CREATE OR REPLACE FUNCTION salesforce2.trigger_product_data()
@@ -2649,12 +2141,3 @@ END;$function$
 
 COMMENT ON FUNCTION salesforce2.trigger_product_data() IS 'if용';
 
--- Permissions
-
-ALTER FUNCTION salesforce2.trigger_product_data() OWNER TO u4bee3ek26k44g;
-GRANT ALL ON FUNCTION salesforce2.trigger_product_data() TO u4bee3ek26k44g;
-
-
--- Permissions
-
-GRANT ALL ON SCHEMA salesforce2 TO u4bee3ek26k44g;
