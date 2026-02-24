@@ -1,11 +1,11 @@
-package com.otoki.internal.service
+package com.otoki.internal.notice.service
 
-import com.otoki.internal.entity.*
+import com.otoki.internal.notice.entity.*
 import com.otoki.internal.common.entity.*
-import com.otoki.internal.exception.InvalidNoticeCategoryException
-import com.otoki.internal.exception.NoticePostNotFoundException
-import com.otoki.internal.repository.NoticePostImageRepository
-import com.otoki.internal.repository.NoticePostRepository
+import com.otoki.internal.notice.exception.InvalidNoticeCategoryException
+import com.otoki.internal.notice.exception.NoticePostNotFoundException
+import com.otoki.internal.notice.repository.NoticePostImageRepository
+import com.otoki.internal.notice.repository.NoticePostRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach

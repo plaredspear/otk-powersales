@@ -1,5 +1,5 @@
 /*
-package com.otoki.internal.dto.response
+package com.otoki.internal.notice.dto.response
 
 / **
  * 공지사항 게시물 목록 + 페이지네이션 Response

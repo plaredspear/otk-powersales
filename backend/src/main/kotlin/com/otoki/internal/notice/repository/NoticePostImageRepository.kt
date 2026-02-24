@@ -1,7 +1,7 @@
 /*
-package com.otoki.internal.repository
+package com.otoki.internal.notice.repository
 
-import com.otoki.internal.entity.NoticePostImage
+import com.otoki.internal.notice.entity.NoticePostImage
 import org.springframework.data.jpa.repository.JpaRepository
 
 / **
