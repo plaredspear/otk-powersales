@@ -17,6 +17,37 @@ resource "aws_ecs_cluster" "main" {
 }
 
 ################################################################################
+# Capacity Provider (EC2 ASG)
+################################################################################
+
+resource "aws_ecs_capacity_provider" "ec2" {
+  name = "${var.project}-${var.environment}-ec2-cp"
+
+  auto_scaling_group_provider {
+    auto_scaling_group_arn         = var.asg_arn
+    managed_termination_protection = "ENABLED"
+
+    managed_scaling {
+      status                    = "ENABLED"
+      target_capacity           = 100
+      minimum_scaling_step_size = 1
+      maximum_scaling_step_size = 1
+    }
+  }
+}
+
+resource "aws_ecs_cluster_capacity_providers" "main" {
+  cluster_name = aws_ecs_cluster.main.name
+
+  capacity_providers = [aws_ecs_capacity_provider.ec2.name]
+
+  default_capacity_provider_strategy {
+    capacity_provider = aws_ecs_capacity_provider.ec2.name
+    weight            = 1
+  }
+}
+
+################################################################################
 # CloudWatch Log Group
 ################################################################################
 
@@ -102,26 +133,27 @@ resource "aws_iam_role" "ecs_task" {
 }
 
 ################################################################################
-# Task Definition
+# Task Definition (EC2 launch type, bridge network mode)
 ################################################################################
 
 resource "aws_ecs_task_definition" "main" {
   family                   = "${var.project}-${var.environment}-backend"
-  network_mode             = "awsvpc"
-  requires_compatibilities = ["FARGATE"]
-  cpu                      = var.task_cpu
-  memory                   = var.task_memory
+  network_mode             = "bridge"
+  requires_compatibilities = ["EC2"]
   execution_role_arn       = aws_iam_role.ecs_task_execution.arn
   task_role_arn            = aws_iam_role.ecs_task.arn
 
   container_definitions = jsonencode([
     {
-      name  = "backend"
-      image = "${var.ecr_repository_url}:latest"
+      name              = "backend"
+      image             = "${var.ecr_repository_url}:latest"
+      memory            = var.container_memory
+      memoryReservation = var.container_memory_reservation
 
       portMappings = [
         {
           containerPort = 8080
+          hostPort      = 0
           protocol      = "tcp"
         }
       ]
@@ -176,7 +208,7 @@ resource "aws_ecs_task_definition" "main" {
 }
 
 ################################################################################
-# ECS Service
+# ECS Service (EC2 Capacity Provider, bridge mode)
 ################################################################################
 
 resource "aws_ecs_service" "main" {
@@ -184,12 +216,15 @@ resource "aws_ecs_service" "main" {
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.main.arn
   desired_count   = var.desired_count
-  launch_type     = "FARGATE"
 
-  network_configuration {
-    subnets          = var.private_subnet_ids
-    security_groups  = [var.security_group_id]
-    assign_public_ip = false
+  capacity_provider_strategy {
+    capacity_provider = aws_ecs_capacity_provider.ec2.name
+    weight            = 1
+  }
+
+  ordered_placement_strategy {
+    type  = "spread"
+    field = "attribute:ecs.availability-zone"
   }
 
   load_balancer {
@@ -197,6 +232,9 @@ resource "aws_ecs_service" "main" {
     container_name   = "backend"
     container_port   = 8080
   }
+
+  deployment_minimum_healthy_percent = 0
+  deployment_maximum_percent         = 200
 
   deployment_circuit_breaker {
     enable   = true
@@ -210,4 +248,6 @@ resource "aws_ecs_service" "main" {
   lifecycle {
     ignore_changes = [task_definition]
   }
+
+  depends_on = [aws_ecs_cluster_capacity_providers.main]
 }

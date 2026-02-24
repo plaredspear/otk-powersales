@@ -96,17 +96,47 @@ variable "elasticache_node_type" {
 }
 
 ################################################################################
+# EC2 (ECS EC2 launch type)
+################################################################################
+
+variable "ec2_instance_type" {
+  description = "EC2 instance type for ECS"
+  type        = string
+  default     = "t3.small"
+}
+
+variable "ec2_asg_min_size" {
+  description = "ASG minimum instance count"
+  type        = number
+  default     = 1
+}
+
+variable "ec2_asg_max_size" {
+  description = "ASG maximum instance count"
+  type        = number
+  default     = 3
+}
+
+variable "ec2_asg_desired_capacity" {
+  description = "ASG desired instance count"
+  type        = number
+  default     = 1
+}
+
+################################################################################
 # ECS
 ################################################################################
 
-variable "ecs_task_cpu" {
-  description = "ECS task CPU units"
-  type        = string
+variable "ecs_container_memory" {
+  description = "Container hard memory limit in MiB"
+  type        = number
+  default     = 896
 }
 
-variable "ecs_task_memory" {
-  description = "ECS task memory in MiB"
-  type        = string
+variable "ecs_container_memory_reservation" {
+  description = "Container soft memory limit (memoryReservation) in MiB"
+  type        = number
+  default     = 512
 }
 
 variable "ecs_desired_count" {
