@@ -1,7 +1,7 @@
 /*
-package com.otoki.internal.repository
+package com.otoki.internal.education.repository
 
-import com.otoki.internal.entity.EducationPostImage
+import com.otoki.internal.education.entity.EducationPostImage
 import org.springframework.data.jpa.repository.JpaRepository
 
 / **

@@ -1,4 +1,4 @@
-package com.otoki.internal.dto.response
+package com.otoki.internal.education.dto.response
 
 /**
  * 교육 게시물 상세 Response

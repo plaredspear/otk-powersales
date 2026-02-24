@@ -1,12 +1,12 @@
-package com.otoki.internal.service
+package com.otoki.internal.education.service
 
-import com.otoki.internal.entity.*
+import com.otoki.internal.education.entity.*
 import com.otoki.internal.common.entity.*
-import com.otoki.internal.exception.EducationPostNotFoundException
-import com.otoki.internal.exception.InvalidEducationCategoryException
-import com.otoki.internal.repository.EducationCodeRepository
-import com.otoki.internal.repository.EducationPostAttachmentRepository
-import com.otoki.internal.repository.EducationPostRepository
+import com.otoki.internal.education.exception.EducationPostNotFoundException
+import com.otoki.internal.education.exception.InvalidEducationCategoryException
+import com.otoki.internal.education.repository.EducationCodeRepository
+import com.otoki.internal.education.repository.EducationPostAttachmentRepository
+import com.otoki.internal.education.repository.EducationPostRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach

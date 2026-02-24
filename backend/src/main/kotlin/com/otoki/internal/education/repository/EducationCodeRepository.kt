@@ -1,6 +1,6 @@
-package com.otoki.internal.repository
+package com.otoki.internal.education.repository
 
-import com.otoki.internal.entity.EducationCode
+import com.otoki.internal.education.entity.EducationCode
 import org.springframework.data.jpa.repository.JpaRepository
 
 /**

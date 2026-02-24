@@ -1,5 +1,5 @@
 /*
-package com.otoki.internal.entity
+package com.otoki.internal.education.entity
 
 // V1은 String edu_code 사용 — Enum 불필요 (Spec 73)
 
