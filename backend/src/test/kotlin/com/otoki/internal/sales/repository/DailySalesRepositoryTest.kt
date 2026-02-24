@@ -1,7 +1,7 @@
 package com.otoki.internal.sales.repository
 
 import com.otoki.internal.sales.entity.DailySales
-import com.otoki.internal.entity.Event
+import com.otoki.internal.event.entity.Event
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
