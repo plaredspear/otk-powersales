@@ -1,13 +1,13 @@
-package com.otoki.internal.service
+package com.otoki.internal.education.service
 
-import com.otoki.internal.dto.response.*
+import com.otoki.internal.education.dto.response.*
 import com.otoki.internal.common.dto.response.*
-import com.otoki.internal.exception.EducationPostNotFoundException
-import com.otoki.internal.exception.InvalidEducationCategoryException
-import com.otoki.internal.repository.EducationPostAttachmentRepository
-// import com.otoki.internal.repository.EducationPostImageRepository  // Phase2: PG 대응 테이블 없음
-import com.otoki.internal.repository.EducationCodeRepository
-import com.otoki.internal.repository.EducationPostRepository
+import com.otoki.internal.education.exception.EducationPostNotFoundException
+import com.otoki.internal.education.exception.InvalidEducationCategoryException
+import com.otoki.internal.education.repository.EducationPostAttachmentRepository
+// import com.otoki.internal.education.repository.EducationPostImageRepository  // Phase2: PG 대응 테이블 없음
+import com.otoki.internal.education.repository.EducationCodeRepository
+import com.otoki.internal.education.repository.EducationPostRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

@@ -1,4 +1,4 @@
-package com.otoki.internal.entity
+package com.otoki.internal.education.entity
 
 import java.io.Serializable
 import java.time.LocalDateTime

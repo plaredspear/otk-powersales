@@ -1,7 +1,7 @@
-package com.otoki.internal.repository
+package com.otoki.internal.education.repository
 
-import com.otoki.internal.entity.EducationViewHistory
-import com.otoki.internal.entity.EducationViewHistoryId
+import com.otoki.internal.education.entity.EducationViewHistory
+import com.otoki.internal.education.entity.EducationViewHistoryId
 import org.springframework.data.jpa.repository.JpaRepository
 
 /**

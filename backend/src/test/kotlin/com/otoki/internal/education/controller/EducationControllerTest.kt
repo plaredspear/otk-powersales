@@ -1,15 +1,15 @@
-package com.otoki.internal.controller
+package com.otoki.internal.education.controller
 
-import com.otoki.internal.dto.response.*
+import com.otoki.internal.education.dto.response.*
 import com.otoki.internal.common.dto.response.*
 import com.otoki.internal.common.entity.UserRole
-import com.otoki.internal.exception.EducationPostNotFoundException
-import com.otoki.internal.exception.InvalidEducationCategoryException
+import com.otoki.internal.education.exception.EducationPostNotFoundException
+import com.otoki.internal.education.exception.InvalidEducationCategoryException
 import com.otoki.internal.common.security.GpsConsentFilter
 import com.otoki.internal.common.security.JwtAuthenticationFilter
 import com.otoki.internal.common.security.JwtTokenProvider
 import com.otoki.internal.common.security.UserPrincipal
-import com.otoki.internal.service.EducationService
+import com.otoki.internal.education.service.EducationService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested

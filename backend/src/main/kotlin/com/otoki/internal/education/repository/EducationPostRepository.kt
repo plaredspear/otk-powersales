@@ -1,6 +1,6 @@
-package com.otoki.internal.repository
+package com.otoki.internal.education.repository
 
-import com.otoki.internal.entity.EducationPost
+import com.otoki.internal.education.entity.EducationPost
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
