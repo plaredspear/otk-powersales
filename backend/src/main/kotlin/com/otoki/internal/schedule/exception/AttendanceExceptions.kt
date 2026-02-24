@@ -1,5 +1,5 @@
 /*
-package com.otoki.internal.exception
+package com.otoki.internal.schedule.exception
 
 import com.otoki.internal.common.exception.BusinessException
 

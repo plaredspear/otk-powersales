@@ -1,9 +1,9 @@
-package com.otoki.internal.service
+package com.otoki.internal.schedule.service
 
-import com.otoki.internal.dto.response.*
+import com.otoki.internal.schedule.dto.response.*
 import com.otoki.internal.common.dto.response.*
 import com.otoki.internal.auth.exception.UserNotFoundException
-// import com.otoki.internal.repository.AttendanceRepository  // Phase2: PG 대응 테이블 없음
+// import com.otoki.internal.schedule.repository.AttendanceRepository  // Phase2: PG 대응 테이블 없음
 import com.otoki.internal.common.repository.StoreScheduleRepository
 import com.otoki.internal.common.repository.UserRepository
 import org.springframework.stereotype.Service

@@ -1,5 +1,5 @@
 /*
-package com.otoki.internal.entity
+package com.otoki.internal.schedule.entity
 
 import jakarta.persistence.*
 import java.time.LocalDate

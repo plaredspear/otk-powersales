@@ -1,5 +1,5 @@
 /*
-package com.otoki.internal.dto.response
+package com.otoki.internal.schedule.dto.response
 
 import java.time.LocalDateTime
 

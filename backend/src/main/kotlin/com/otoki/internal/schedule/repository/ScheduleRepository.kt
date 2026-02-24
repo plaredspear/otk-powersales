@@ -1,6 +1,6 @@
-package com.otoki.internal.repository
+package com.otoki.internal.schedule.repository
 
-import com.otoki.internal.entity.Schedule
+import com.otoki.internal.schedule.entity.Schedule
 import org.springframework.data.jpa.repository.JpaRepository
 import java.time.LocalDate
 

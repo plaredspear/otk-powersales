@@ -1,7 +1,7 @@
 /*
-package com.otoki.internal.repository
+package com.otoki.internal.schedule.repository
 
-import com.otoki.internal.entity.Attendance
+import com.otoki.internal.schedule.entity.Attendance
 import org.springframework.data.jpa.repository.JpaRepository
 import java.time.LocalDate
 

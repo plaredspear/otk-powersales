@@ -1,15 +1,15 @@
 /*
-package com.otoki.internal.service
+package com.otoki.internal.schedule.service
 
-import com.otoki.internal.dto.response.*
+import com.otoki.internal.schedule.dto.response.*
 import com.otoki.internal.common.dto.response.*
-import com.otoki.internal.entity.Attendance
-import com.otoki.internal.entity.AttendanceWorkType
+import com.otoki.internal.schedule.entity.Attendance
+import com.otoki.internal.schedule.entity.AttendanceWorkType
 import com.otoki.internal.common.entity.StoreSchedule
 import com.otoki.internal.entity.WorkerType
-import com.otoki.internal.exception.*
+import com.otoki.internal.schedule.exception.*
 import com.otoki.internal.common.exception.*
-import com.otoki.internal.repository.AttendanceRepository
+import com.otoki.internal.schedule.repository.AttendanceRepository
 import com.otoki.internal.common.repository.StoreScheduleRepository
 import com.otoki.internal.common.repository.UserRepository
 import org.springframework.stereotype.Service

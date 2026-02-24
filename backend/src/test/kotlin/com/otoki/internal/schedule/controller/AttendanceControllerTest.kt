@@ -1,17 +1,17 @@
-package com.otoki.internal.controller
+package com.otoki.internal.schedule.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.otoki.internal.dto.request.AttendanceRequest
-import com.otoki.internal.dto.response.*
+import com.otoki.internal.schedule.dto.request.AttendanceRequest
+import com.otoki.internal.schedule.dto.response.*
 import com.otoki.internal.common.dto.response.*
 import com.otoki.internal.common.entity.UserRole
-import com.otoki.internal.exception.*
+import com.otoki.internal.schedule.exception.*
 import com.otoki.internal.common.exception.*
 import com.otoki.internal.common.security.GpsConsentFilter
 import com.otoki.internal.common.security.JwtAuthenticationFilter
 import com.otoki.internal.common.security.JwtTokenProvider
 import com.otoki.internal.common.security.UserPrincipal
-import com.otoki.internal.service.AttendanceService
+import com.otoki.internal.schedule.service.AttendanceService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested

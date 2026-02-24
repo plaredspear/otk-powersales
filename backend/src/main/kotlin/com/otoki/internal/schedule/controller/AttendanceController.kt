@@ -1,13 +1,13 @@
 /*
-package com.otoki.internal.controller
+package com.otoki.internal.schedule.controller
 
 import com.otoki.internal.common.dto.ApiResponse
-import com.otoki.internal.dto.request.AttendanceRequest
-import com.otoki.internal.dto.response.AttendanceResponse
-import com.otoki.internal.dto.response.AttendanceStatusResponse
+import com.otoki.internal.schedule.dto.request.AttendanceRequest
+import com.otoki.internal.schedule.dto.response.AttendanceResponse
+import com.otoki.internal.schedule.dto.response.AttendanceStatusResponse
 import com.otoki.internal.common.dto.response.StoreListResponse
 import com.otoki.internal.common.security.UserPrincipal
-import com.otoki.internal.service.AttendanceService
+import com.otoki.internal.schedule.service.AttendanceService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
