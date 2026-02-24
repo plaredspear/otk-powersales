@@ -1,4 +1,4 @@
-package com.otoki.internal.dto.response
+package com.otoki.internal.auth.dto.response
 
 /**
  * 토큰 갱신 응답 DTO

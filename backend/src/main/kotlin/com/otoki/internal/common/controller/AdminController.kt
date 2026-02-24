@@ -1,7 +1,7 @@
 package com.otoki.internal.common.controller
 
 import com.otoki.internal.common.dto.ApiResponse
-import com.otoki.internal.service.AuthService
+import com.otoki.internal.auth.service.AuthService
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*

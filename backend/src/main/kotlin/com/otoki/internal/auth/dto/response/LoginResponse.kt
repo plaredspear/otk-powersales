@@ -1,4 +1,4 @@
-package com.otoki.internal.dto.response
+package com.otoki.internal.auth.dto.response
 
 import com.otoki.internal.common.entity.User
 

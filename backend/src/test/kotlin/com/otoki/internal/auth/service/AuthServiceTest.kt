@@ -1,16 +1,16 @@
-package com.otoki.internal.service
+package com.otoki.internal.auth.service
 
 import com.otoki.internal.common.config.DeviceBindingProperties
-import com.otoki.internal.dto.request.ChangePasswordRequest
+import com.otoki.internal.auth.dto.request.ChangePasswordRequest
 import com.otoki.internal.common.dto.request.GpsConsentRequest
-import com.otoki.internal.dto.request.LoginRequest
-import com.otoki.internal.dto.request.RefreshTokenRequest
-import com.otoki.internal.dto.request.VerifyPasswordRequest
+import com.otoki.internal.auth.dto.request.LoginRequest
+import com.otoki.internal.auth.dto.request.RefreshTokenRequest
+import com.otoki.internal.auth.dto.request.VerifyPasswordRequest
 import com.otoki.internal.common.entity.AgreementWord
 import com.otoki.internal.common.entity.LoginHistory
 import com.otoki.internal.common.entity.User
 import com.otoki.internal.common.entity.UserRole
-import com.otoki.internal.exception.*
+import com.otoki.internal.auth.exception.*
 import com.otoki.internal.common.exception.*
 import com.otoki.internal.common.repository.AgreementWordRepository
 import com.otoki.internal.common.repository.LoginHistoryRepository

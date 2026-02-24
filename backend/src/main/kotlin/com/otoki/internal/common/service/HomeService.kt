@@ -1,7 +1,7 @@
 package com.otoki.internal.common.service
 
 import com.otoki.internal.common.dto.response.HomeResponse
-import com.otoki.internal.exception.UserNotFoundException
+import com.otoki.internal.auth.exception.UserNotFoundException
 // import com.otoki.internal.repository.ExpiryProductRepository  // Phase2: PG 대응 테이블 없음
 import com.otoki.internal.repository.NoticeRepository
 import com.otoki.internal.repository.ScheduleRepository

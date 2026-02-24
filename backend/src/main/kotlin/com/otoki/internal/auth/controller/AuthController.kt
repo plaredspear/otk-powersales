@@ -1,15 +1,15 @@
-package com.otoki.internal.controller
+package com.otoki.internal.auth.controller
 
 import com.otoki.internal.common.dto.ApiResponse
-import com.otoki.internal.dto.request.ChangePasswordRequest
+import com.otoki.internal.auth.dto.request.ChangePasswordRequest
 import com.otoki.internal.common.dto.request.GpsConsentRequest
-import com.otoki.internal.dto.request.LoginRequest
-import com.otoki.internal.dto.request.RefreshTokenRequest
-import com.otoki.internal.dto.request.VerifyPasswordRequest
-import com.otoki.internal.dto.response.*
+import com.otoki.internal.auth.dto.request.LoginRequest
+import com.otoki.internal.auth.dto.request.RefreshTokenRequest
+import com.otoki.internal.auth.dto.request.VerifyPasswordRequest
+import com.otoki.internal.auth.dto.response.*
 import com.otoki.internal.common.dto.response.*
 import com.otoki.internal.common.security.UserPrincipal
-import com.otoki.internal.service.AuthService
+import com.otoki.internal.auth.service.AuthService
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity

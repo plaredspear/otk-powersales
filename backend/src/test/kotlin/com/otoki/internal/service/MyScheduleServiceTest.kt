@@ -2,7 +2,7 @@ package com.otoki.internal.service
 
 import com.otoki.internal.entity.*
 import com.otoki.internal.common.entity.*
-import com.otoki.internal.exception.UserNotFoundException
+import com.otoki.internal.auth.exception.UserNotFoundException
 import com.otoki.internal.common.repository.StoreScheduleRepository
 import com.otoki.internal.common.repository.UserRepository
 import org.assertj.core.api.Assertions.assertThat
