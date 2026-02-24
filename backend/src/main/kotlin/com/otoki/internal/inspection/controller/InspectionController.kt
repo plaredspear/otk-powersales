@@ -1,12 +1,12 @@
 /*
-package com.otoki.internal.controller
+package com.otoki.internal.inspection.controller
 
 import com.otoki.internal.common.dto.ApiResponse
-import com.otoki.internal.dto.request.InspectionCreateRequest
-import com.otoki.internal.dto.response.*
+import com.otoki.internal.inspection.dto.request.InspectionCreateRequest
+import com.otoki.internal.inspection.dto.response.*
 import com.otoki.internal.common.dto.response.*
 import com.otoki.internal.common.security.UserPrincipal
-import com.otoki.internal.service.InspectionService
+import com.otoki.internal.inspection.service.InspectionService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity

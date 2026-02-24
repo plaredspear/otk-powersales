@@ -1,7 +1,7 @@
 /*
-package com.otoki.internal.repository
+package com.otoki.internal.inspection.repository
 
-import com.otoki.internal.entity.InspectionPhoto
+import com.otoki.internal.inspection.entity.InspectionPhoto
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 

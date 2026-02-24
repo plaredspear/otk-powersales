@@ -1,14 +1,14 @@
 /*
-package com.otoki.internal.controller
+package com.otoki.internal.inspection.controller
 
-import com.otoki.internal.dto.response.*
+import com.otoki.internal.inspection.dto.response.*
 import com.otoki.internal.common.dto.response.*
 import com.otoki.internal.common.entity.UserRole
 import com.otoki.internal.common.security.GpsConsentFilter
 import com.otoki.internal.common.security.JwtAuthenticationFilter
 import com.otoki.internal.common.security.JwtTokenProvider
 import com.otoki.internal.common.security.UserPrincipal
-import com.otoki.internal.service.InspectionService
+import com.otoki.internal.inspection.service.InspectionService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test

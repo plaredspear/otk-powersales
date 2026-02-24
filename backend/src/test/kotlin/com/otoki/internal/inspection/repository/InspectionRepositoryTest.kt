@@ -1,7 +1,7 @@
 /*
-package com.otoki.internal.repository
+package com.otoki.internal.inspection.repository
 
-import com.otoki.internal.entity.*
+import com.otoki.internal.inspection.entity.*
 import com.otoki.internal.common.entity.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach

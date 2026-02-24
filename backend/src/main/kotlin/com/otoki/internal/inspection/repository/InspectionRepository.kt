@@ -1,8 +1,8 @@
 /*
-package com.otoki.internal.repository
+package com.otoki.internal.inspection.repository
 
-import com.otoki.internal.entity.Inspection
-import com.otoki.internal.entity.InspectionCategory
+import com.otoki.internal.inspection.entity.Inspection
+import com.otoki.internal.inspection.entity.InspectionCategory
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
