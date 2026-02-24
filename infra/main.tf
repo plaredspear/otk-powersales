@@ -142,6 +142,26 @@ resource "aws_route53_record" "api" {
 }
 
 ################################################################################
+# EC2 Auto Scaling Group (ECS EC2 launch type)
+################################################################################
+
+module "ec2_asg" {
+  source = "./modules/ec2-asg"
+
+  project     = var.project
+  environment = var.environment
+
+  cluster_name         = "${var.project}-${var.environment}-cluster"
+  instance_type        = var.ec2_instance_type
+  asg_min_size         = var.ec2_asg_min_size
+  asg_max_size         = var.ec2_asg_max_size
+  asg_desired_capacity = var.ec2_asg_desired_capacity
+
+  private_subnet_ids = module.networking.private_subnet_ids
+  security_group_id  = module.networking.ec2_security_group_id
+}
+
+################################################################################
 # ECS
 ################################################################################
 
@@ -152,14 +172,13 @@ module "ecs" {
   environment = var.environment
   region      = var.region
 
-  private_subnet_ids = module.networking.private_subnet_ids
-  security_group_id  = module.networking.ecs_security_group_id
   target_group_arn   = module.alb.target_group_arn
-
   ecr_repository_url = module.ecr.repository_url
-  task_cpu           = var.ecs_task_cpu
-  task_memory        = var.ecs_task_memory
-  desired_count      = var.ecs_desired_count
+
+  asg_arn                      = module.ec2_asg.asg_arn
+  container_memory             = var.ecs_container_memory
+  container_memory_reservation = var.ecs_container_memory_reservation
+  desired_count                = var.ecs_desired_count
 
   db_host = module.rds.address
   db_port = module.rds.port
@@ -211,7 +230,7 @@ module "cicd" {
   region         = var.region
   aws_account_id = var.aws_account_id
 
-  gitlab_project_path  = var.gitlab_project_path
+  gitlab_project_path   = var.gitlab_project_path
   gitlab_repository_url = var.gitlab_repository_url
   gitlab_deploy_branch  = var.gitlab_deploy_branch
 

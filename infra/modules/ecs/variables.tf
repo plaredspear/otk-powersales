@@ -13,16 +13,6 @@ variable "region" {
   type        = string
 }
 
-variable "private_subnet_ids" {
-  description = "Private subnet IDs for ECS tasks"
-  type        = list(string)
-}
-
-variable "security_group_id" {
-  description = "Security group ID for ECS tasks"
-  type        = string
-}
-
 variable "target_group_arn" {
   description = "ALB target group ARN"
   type        = string
@@ -33,16 +23,21 @@ variable "ecr_repository_url" {
   type        = string
 }
 
-variable "task_cpu" {
-  description = "Task CPU units (1 vCPU = 1024)"
+variable "asg_arn" {
+  description = "Auto Scaling Group ARN for ECS Capacity Provider"
   type        = string
-  default     = "512"
 }
 
-variable "task_memory" {
-  description = "Task memory in MiB"
-  type        = string
-  default     = "1024"
+variable "container_memory" {
+  description = "Container hard memory limit in MiB"
+  type        = number
+  default     = 896
+}
+
+variable "container_memory_reservation" {
+  description = "Container soft memory limit (memoryReservation) in MiB"
+  type        = number
+  default     = 512
 }
 
 variable "desired_count" {

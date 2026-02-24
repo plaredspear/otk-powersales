@@ -194,6 +194,66 @@ resource "aws_security_group" "ecs" {
   }
 }
 
+# EC2 Instance Security Group (ECS EC2 launch type)
+resource "aws_security_group" "ec2_instance" {
+  name_prefix = "${var.project}-${var.environment}-ec2-"
+  description = "Security group for ECS EC2 instances"
+  vpc_id      = aws_vpc.main.id
+
+  # Dynamic port mapping: ALB -> EC2 ephemeral ports
+  ingress {
+    description     = "Dynamic port mapping from ALB"
+    from_port       = 32768
+    to_port         = 65535
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb.id]
+  }
+
+  # ECS agent communication (self-reference)
+  ingress {
+    description = "ECS agent internal communication"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    self        = true
+  }
+
+  # ECR, SSM, CloudWatch
+  egress {
+    description = "HTTPS for ECR, SSM, CloudWatch"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # RDS
+  egress {
+    description     = "PostgreSQL to RDS"
+    from_port       = 5432
+    to_port         = 5432
+    protocol        = "tcp"
+    security_groups = [aws_security_group.rds.id]
+  }
+
+  # ElastiCache
+  egress {
+    description     = "Redis to ElastiCache"
+    from_port       = 6379
+    to_port         = 6379
+    protocol        = "tcp"
+    security_groups = [aws_security_group.elasticache.id]
+  }
+
+  tags = {
+    Name = "${var.project}-${var.environment}-ec2-sg"
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
 # ElastiCache Security Group
 resource "aws_security_group" "elasticache" {
   name_prefix = "${var.project}-${var.environment}-elasticache-"
@@ -252,4 +312,28 @@ resource "aws_security_group" "rds" {
   lifecycle {
     create_before_destroy = true
   }
+}
+
+################################################################################
+# EC2 Instance → RDS/ElastiCache ingress (separate rules to avoid circular deps)
+################################################################################
+
+resource "aws_security_group_rule" "rds_from_ec2" {
+  type                     = "ingress"
+  from_port                = 5432
+  to_port                  = 5432
+  protocol                 = "tcp"
+  description              = "PostgreSQL from EC2 instances"
+  security_group_id        = aws_security_group.rds.id
+  source_security_group_id = aws_security_group.ec2_instance.id
+}
+
+resource "aws_security_group_rule" "elasticache_from_ec2" {
+  type                     = "ingress"
+  from_port                = 6379
+  to_port                  = 6379
+  protocol                 = "tcp"
+  description              = "Redis from EC2 instances"
+  security_group_id        = aws_security_group.elasticache.id
+  source_security_group_id = aws_security_group.ec2_instance.id
 }

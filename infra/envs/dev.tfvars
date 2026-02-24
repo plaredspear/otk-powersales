@@ -21,10 +21,16 @@ db_username           = "otoki_admin"
 # ElastiCache
 elasticache_node_type = "cache.t4g.micro"
 
+# EC2 (ECS EC2 launch type)
+ec2_instance_type        = "t3.small"
+ec2_asg_min_size         = 1
+ec2_asg_max_size         = 3
+ec2_asg_desired_capacity = 1
+
 # ECS
-ecs_task_cpu      = "512"
-ecs_task_memory   = "1024"
-ecs_desired_count = 1
+ecs_container_memory             = 896
+ecs_container_memory_reservation = 512
+ecs_desired_count                = 1
 
 # DNS — 실제 값으로 교체 필요
 domain_name    = "dev-pwrs-api.codapt.kr"

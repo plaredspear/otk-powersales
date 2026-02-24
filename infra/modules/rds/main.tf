@@ -27,10 +27,10 @@ resource "aws_db_instance" "main" {
   db_subnet_group_name   = aws_db_subnet_group.main.name
   vpc_security_group_ids = [var.security_group_id]
 
-  backup_retention_period = var.backup_retention_period
-  skip_final_snapshot     = var.environment == "dev" ? true : false
+  backup_retention_period   = var.backup_retention_period
+  skip_final_snapshot       = var.environment == "dev" ? true : false
   final_snapshot_identifier = var.environment == "dev" ? null : "${var.project}-${var.environment}-final-snapshot"
-  deletion_protection     = var.environment == "dev" ? false : true
+  deletion_protection       = var.environment == "dev" ? false : true
 
   publicly_accessible = false
 
