@@ -1,4 +1,4 @@
-package com.otoki.internal.dto.request
+package com.otoki.internal.safetycheck.dto.request
 
 import jakarta.validation.constraints.NotEmpty
 

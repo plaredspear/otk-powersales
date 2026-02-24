@@ -1,12 +1,12 @@
-package com.otoki.internal.controller
+package com.otoki.internal.safetycheck.controller
 
 import com.otoki.internal.common.dto.ApiResponse
-import com.otoki.internal.dto.request.SafetyCheckSubmitRequest
-import com.otoki.internal.dto.response.SafetyCheckItemsResponse
-import com.otoki.internal.dto.response.SafetyCheckSubmitResponse
-import com.otoki.internal.dto.response.SafetyCheckTodayResponse
+import com.otoki.internal.safetycheck.dto.request.SafetyCheckSubmitRequest
+import com.otoki.internal.safetycheck.dto.response.SafetyCheckItemsResponse
+import com.otoki.internal.safetycheck.dto.response.SafetyCheckSubmitResponse
+import com.otoki.internal.safetycheck.dto.response.SafetyCheckTodayResponse
 import com.otoki.internal.common.security.UserPrincipal
-import com.otoki.internal.service.SafetyCheckService
+import com.otoki.internal.safetycheck.service.SafetyCheckService
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal

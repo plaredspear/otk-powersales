@@ -1,7 +1,7 @@
 /*
-package com.otoki.internal.repository
+package com.otoki.internal.safetycheck.repository
 
-import com.otoki.internal.entity.SafetyCheckCategory
+import com.otoki.internal.safetycheck.entity.SafetyCheckCategory
 import org.springframework.data.jpa.repository.JpaRepository
 
 interface SafetyCheckCategoryRepository : JpaRepository<SafetyCheckCategory, Long> {

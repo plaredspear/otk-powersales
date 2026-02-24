@@ -1,14 +1,14 @@
-package com.otoki.internal.service
+package com.otoki.internal.safetycheck.service
 
 // Phase2: Entity V1 리매핑으로 인해 비즈니스 로직 전체 주석 처리
 // V1 비즈니스 로직 복원은 후속 스펙에서 별도 진행
 
 /*
-import com.otoki.internal.entity.SafetyCheckSubmission
+import com.otoki.internal.safetycheck.entity.SafetyCheckSubmission
 import com.otoki.internal.exception.AlreadySubmittedException
 import com.otoki.internal.exception.RequiredItemsMissingException
-import com.otoki.internal.repository.SafetyCheckItemRepository
-import com.otoki.internal.repository.SafetyCheckSubmissionRepository
+import com.otoki.internal.safetycheck.repository.SafetyCheckItemRepository
+import com.otoki.internal.safetycheck.repository.SafetyCheckSubmissionRepository
 import java.time.LocalDate
 
 @Service
@@ -73,10 +73,10 @@ class SafetyCheckService(
 }
 */
 
-import com.otoki.internal.dto.request.SafetyCheckSubmitRequest
-import com.otoki.internal.dto.response.SafetyCheckItemsResponse
-import com.otoki.internal.dto.response.SafetyCheckSubmitResponse
-import com.otoki.internal.dto.response.SafetyCheckTodayResponse
+import com.otoki.internal.safetycheck.dto.request.SafetyCheckSubmitRequest
+import com.otoki.internal.safetycheck.dto.response.SafetyCheckItemsResponse
+import com.otoki.internal.safetycheck.dto.response.SafetyCheckSubmitResponse
+import com.otoki.internal.safetycheck.dto.response.SafetyCheckTodayResponse
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime

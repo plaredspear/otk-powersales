@@ -1,10 +1,10 @@
-package com.otoki.internal.controller
+package com.otoki.internal.safetycheck.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.otoki.internal.dto.request.SafetyCheckSubmitRequest
-import com.otoki.internal.dto.response.SafetyCheckItemsResponse
-import com.otoki.internal.dto.response.SafetyCheckSubmitResponse
-import com.otoki.internal.dto.response.SafetyCheckTodayResponse
+import com.otoki.internal.safetycheck.dto.request.SafetyCheckSubmitRequest
+import com.otoki.internal.safetycheck.dto.response.SafetyCheckItemsResponse
+import com.otoki.internal.safetycheck.dto.response.SafetyCheckSubmitResponse
+import com.otoki.internal.safetycheck.dto.response.SafetyCheckTodayResponse
 import com.otoki.internal.common.entity.UserRole
 import com.otoki.internal.exception.AlreadySubmittedException
 import com.otoki.internal.exception.RequiredItemsMissingException
@@ -12,7 +12,7 @@ import com.otoki.internal.common.security.GpsConsentFilter
 import com.otoki.internal.common.security.JwtAuthenticationFilter
 import com.otoki.internal.common.security.JwtTokenProvider
 import com.otoki.internal.common.security.UserPrincipal
-import com.otoki.internal.service.SafetyCheckService
+import com.otoki.internal.safetycheck.service.SafetyCheckService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested

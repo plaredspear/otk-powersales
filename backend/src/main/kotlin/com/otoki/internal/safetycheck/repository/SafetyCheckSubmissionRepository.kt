@@ -1,7 +1,7 @@
-package com.otoki.internal.repository
+package com.otoki.internal.safetycheck.repository
 
-import com.otoki.internal.entity.SafetyCheckMemberId
-import com.otoki.internal.entity.SafetyCheckSubmission
+import com.otoki.internal.safetycheck.entity.SafetyCheckMemberId
+import com.otoki.internal.safetycheck.entity.SafetyCheckSubmission
 import org.springframework.data.jpa.repository.JpaRepository
 
 interface SafetyCheckSubmissionRepository : JpaRepository<SafetyCheckSubmission, SafetyCheckMemberId> {

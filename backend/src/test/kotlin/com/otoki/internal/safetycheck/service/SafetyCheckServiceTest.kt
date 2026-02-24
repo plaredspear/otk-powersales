@@ -1,17 +1,17 @@
-package com.otoki.internal.service
+package com.otoki.internal.safetycheck.service
 
 // Phase2: Entity V1 리매핑으로 인해 Service 테스트 전체 주석 처리
 // SafetyCheckSubmission/SafetyCheckItem 생성자 변경으로 기존 테스트 컴파일 불가
 // V1 비즈니스 로직 복원 시 테스트도 함께 재작성
 
 /*
-import com.otoki.internal.dto.request.SafetyCheckSubmitRequest
-import com.otoki.internal.entity.SafetyCheckItem
-import com.otoki.internal.entity.SafetyCheckSubmission
+import com.otoki.internal.safetycheck.dto.request.SafetyCheckSubmitRequest
+import com.otoki.internal.safetycheck.entity.SafetyCheckItem
+import com.otoki.internal.safetycheck.entity.SafetyCheckSubmission
 import com.otoki.internal.exception.AlreadySubmittedException
 import com.otoki.internal.exception.RequiredItemsMissingException
-import com.otoki.internal.repository.SafetyCheckItemRepository
-import com.otoki.internal.repository.SafetyCheckSubmissionRepository
+import com.otoki.internal.safetycheck.repository.SafetyCheckItemRepository
+import com.otoki.internal.safetycheck.repository.SafetyCheckSubmissionRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName

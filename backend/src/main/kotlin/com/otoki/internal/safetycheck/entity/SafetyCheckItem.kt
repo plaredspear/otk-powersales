@@ -1,4 +1,4 @@
-package com.otoki.internal.entity
+package com.otoki.internal.safetycheck.entity
 
 import jakarta.persistence.*
 

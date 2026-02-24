@@ -1,4 +1,4 @@
-package com.otoki.internal.dto.response
+package com.otoki.internal.safetycheck.dto.response
 
 import java.time.LocalDateTime
 

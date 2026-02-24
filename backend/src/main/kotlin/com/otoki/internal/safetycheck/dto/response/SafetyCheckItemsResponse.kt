@@ -1,4 +1,4 @@
-package com.otoki.internal.dto.response
+package com.otoki.internal.safetycheck.dto.response
 
 data class SafetyCheckItemsResponse(
     val categories: List<CategoryInfo>
