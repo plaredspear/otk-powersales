@@ -1,7 +1,7 @@
 package com.otoki.internal.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.otoki.internal.dto.response.DailySalesListResponse
+import com.otoki.internal.sales.dto.response.DailySalesListResponse
 import com.otoki.internal.dto.response.EventDetailResponse
 import com.otoki.internal.dto.response.EventListResponse
 import com.otoki.internal.common.entity.UserRole

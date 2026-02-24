@@ -2,7 +2,7 @@
 package com.otoki.internal.service
 
 import com.otoki.internal.dto.request.EventListRequest
-import com.otoki.internal.dto.response.DailySalesListResponse
+import com.otoki.internal.sales.dto.response.DailySalesListResponse
 import com.otoki.internal.dto.response.EventDetailResponse
 import com.otoki.internal.dto.response.EventListResponse
 import com.otoki.internal.exception.EventNotFoundException
