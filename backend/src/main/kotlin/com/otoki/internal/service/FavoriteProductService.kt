@@ -9,7 +9,7 @@ import com.otoki.internal.dto.response.FavoriteProductResponse
 import com.otoki.internal.entity.FavoriteProduct
 import com.otoki.internal.exception.AlreadyFavoritedException
 import com.otoki.internal.exception.FavoriteNotFoundException
-import com.otoki.internal.exception.InvalidOrderParameterException
+import com.otoki.internal.order.exception.InvalidOrderParameterException
 import com.otoki.internal.exception.ProductNotFoundException
 import com.otoki.internal.repository.FavoriteProductRepository
 import com.otoki.internal.repository.ProductRepository
