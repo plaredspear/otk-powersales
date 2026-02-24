@@ -1,5 +1,7 @@
 package com.otoki.internal.exception
 
+import com.otoki.internal.common.exception.BusinessException
+
 /* --- 전체 주석 처리: V1 Entity 리매핑 (Spec 77) ---
  * ShelfLifeService/Controller 비활성화로 예외 클래스도 주석 처리.
  * Service 재작성 시 함께 활성화.

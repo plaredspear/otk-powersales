@@ -1,10 +1,12 @@
 package com.otoki.internal.service
 
 import com.otoki.internal.entity.*
+import com.otoki.internal.common.entity.*
 import com.otoki.internal.exception.*
+import com.otoki.internal.common.exception.*
 import com.otoki.internal.repository.AttendanceRepository
-import com.otoki.internal.repository.StoreScheduleRepository
-import com.otoki.internal.repository.UserRepository
+import com.otoki.internal.common.repository.StoreScheduleRepository
+import com.otoki.internal.common.repository.UserRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName

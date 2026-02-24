@@ -1,6 +1,8 @@
 /*
 package com.otoki.internal.exception
 
+import com.otoki.internal.common.exception.BusinessException
+
 import org.springframework.http.HttpStatus
 
 // Phase2: 공유 예외 클래스 (원래 OrderExceptions.kt, AttendanceExceptions.kt에 정의되었으나 해당 파일이 주석 처리됨)

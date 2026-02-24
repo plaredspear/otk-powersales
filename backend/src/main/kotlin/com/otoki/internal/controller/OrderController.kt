@@ -1,7 +1,7 @@
 /*
 package com.otoki.internal.controller
 
-import com.otoki.internal.dto.ApiResponse
+import com.otoki.internal.common.dto.ApiResponse
 import com.otoki.internal.dto.request.OrderCancelRequest
 import com.otoki.internal.dto.request.OrderDraftRequest
 import com.otoki.internal.dto.response.OrderCancelResponse
@@ -9,7 +9,7 @@ import com.otoki.internal.dto.response.OrderDetailResponse
 import com.otoki.internal.dto.response.OrderSubmitResponse
 import com.otoki.internal.dto.response.OrderSummaryResponse
 import com.otoki.internal.dto.response.ValidationResultResponse
-import com.otoki.internal.security.UserPrincipal
+import com.otoki.internal.common.security.UserPrincipal
 import com.otoki.internal.service.OrderService
 import com.otoki.internal.service.OrderSubmitService
 import jakarta.validation.Valid

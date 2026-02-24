@@ -4,8 +4,11 @@ package com.otoki.internal.service
 import com.otoki.internal.dto.request.SuggestionCreateRequest
 import com.otoki.internal.dto.response.SuggestionCreateResponse
 import com.otoki.internal.entity.*
+import com.otoki.internal.common.entity.*
 import com.otoki.internal.exception.*
+import com.otoki.internal.common.exception.*
 import com.otoki.internal.repository.*
+import com.otoki.internal.common.repository.*
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

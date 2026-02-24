@@ -1,6 +1,8 @@
 /*
 package com.otoki.internal.exception
 
+import com.otoki.internal.common.exception.BusinessException
+
 import org.springframework.http.HttpStatus
 
 / **

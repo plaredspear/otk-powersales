@@ -1,6 +1,6 @@
 package com.otoki.internal.controller
 
-import com.otoki.internal.dto.ApiResponse
+import com.otoki.internal.common.dto.ApiResponse
 import com.otoki.internal.dto.request.MonthlySalesRequest
 import com.otoki.internal.dto.response.MonthlySalesResponse
 import com.otoki.internal.service.MonthlySalesService

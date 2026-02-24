@@ -1,9 +1,9 @@
 package com.otoki.internal.controller
 
-import com.otoki.internal.dto.ApiResponse
+import com.otoki.internal.common.dto.ApiResponse
 import com.otoki.internal.dto.response.EducationPostDetailResponse
 import com.otoki.internal.dto.response.EducationPostListResponse
-import com.otoki.internal.security.UserPrincipal
+import com.otoki.internal.common.security.UserPrincipal
 import com.otoki.internal.service.EducationService
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal

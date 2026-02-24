@@ -1,6 +1,7 @@
 package com.otoki.internal.service
 
 import com.otoki.internal.dto.response.*
+import com.otoki.internal.common.dto.response.*
 import com.otoki.internal.exception.EducationPostNotFoundException
 import com.otoki.internal.exception.InvalidEducationCategoryException
 import com.otoki.internal.repository.EducationPostAttachmentRepository

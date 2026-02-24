@@ -1,6 +1,7 @@
 package com.otoki.internal.repository
 
 import com.otoki.internal.entity.*
+import com.otoki.internal.common.entity.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName

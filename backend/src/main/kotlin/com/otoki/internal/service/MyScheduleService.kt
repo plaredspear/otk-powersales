@@ -1,10 +1,11 @@
 package com.otoki.internal.service
 
 import com.otoki.internal.dto.response.*
+import com.otoki.internal.common.dto.response.*
 import com.otoki.internal.exception.UserNotFoundException
 // import com.otoki.internal.repository.AttendanceRepository  // Phase2: PG 대응 테이블 없음
-import com.otoki.internal.repository.StoreScheduleRepository
-import com.otoki.internal.repository.UserRepository
+import com.otoki.internal.common.repository.StoreScheduleRepository
+import com.otoki.internal.common.repository.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.DayOfWeek

@@ -2,7 +2,7 @@ package com.otoki.internal.repository
 
 import com.otoki.internal.entity.Attendance
 import com.otoki.internal.entity.AttendanceWorkType
-import com.otoki.internal.entity.User
+import com.otoki.internal.common.entity.User
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName

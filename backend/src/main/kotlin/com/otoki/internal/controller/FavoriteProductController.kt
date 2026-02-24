@@ -3,9 +3,9 @@ package com.otoki.internal.controller
 /* --- 전체 주석 처리: V1 Entity 리매핑 (Spec 77) ---
  * FavoriteProductService 비활성화에 따라 Controller도 주석 처리.
 
-import com.otoki.internal.dto.ApiResponse
+import com.otoki.internal.common.dto.ApiResponse
 import com.otoki.internal.dto.response.FavoriteProductResponse
-import com.otoki.internal.security.UserPrincipal
+import com.otoki.internal.common.security.UserPrincipal
 import com.otoki.internal.service.FavoriteProductService
 import org.springframework.data.domain.Page
 import org.springframework.http.ResponseEntity

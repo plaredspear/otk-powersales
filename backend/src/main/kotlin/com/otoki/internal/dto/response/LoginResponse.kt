@@ -1,6 +1,6 @@
 package com.otoki.internal.dto.response
 
-import com.otoki.internal.entity.User
+import com.otoki.internal.common.entity.User
 
 /**
  * 로그인 응답 DTO

@@ -1,10 +1,10 @@
 /*
 package com.otoki.internal.controller
 
-import com.otoki.internal.dto.ApiResponse
+import com.otoki.internal.common.dto.ApiResponse
 import com.otoki.internal.dto.request.DailySalesCreateRequest
 import com.otoki.internal.dto.response.DailySalesCreateResponse
-import com.otoki.internal.security.UserPrincipal
+import com.otoki.internal.common.security.UserPrincipal
 import com.otoki.internal.service.DailySalesService
 import jakarta.validation.Valid
 import org.springframework.http.MediaType

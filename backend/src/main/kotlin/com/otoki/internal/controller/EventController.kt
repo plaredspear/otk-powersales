@@ -1,12 +1,12 @@
 /*
 package com.otoki.internal.controller
 
-import com.otoki.internal.dto.ApiResponse
+import com.otoki.internal.common.dto.ApiResponse
 import com.otoki.internal.dto.request.EventListRequest
 import com.otoki.internal.dto.response.DailySalesListResponse
 import com.otoki.internal.dto.response.EventDetailResponse
 import com.otoki.internal.dto.response.EventListResponse
-import com.otoki.internal.security.UserPrincipal
+import com.otoki.internal.common.security.UserPrincipal
 import com.otoki.internal.service.EventService
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity

@@ -2,10 +2,11 @@ package com.otoki.internal.service
 
 import com.otoki.internal.dto.request.EventListRequest
 import com.otoki.internal.entity.*
+import com.otoki.internal.common.entity.*
 import com.otoki.internal.exception.EventNotFoundException
 import com.otoki.internal.repository.EventProductRepository
 import com.otoki.internal.repository.EventRepository
-import com.otoki.internal.repository.UserRepository
+import com.otoki.internal.common.repository.UserRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName

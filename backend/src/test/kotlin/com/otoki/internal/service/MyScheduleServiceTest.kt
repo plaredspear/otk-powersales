@@ -1,9 +1,10 @@
 package com.otoki.internal.service
 
 import com.otoki.internal.entity.*
+import com.otoki.internal.common.entity.*
 import com.otoki.internal.exception.UserNotFoundException
-import com.otoki.internal.repository.StoreScheduleRepository
-import com.otoki.internal.repository.UserRepository
+import com.otoki.internal.common.repository.StoreScheduleRepository
+import com.otoki.internal.common.repository.UserRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested

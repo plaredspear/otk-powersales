@@ -10,7 +10,7 @@ import com.otoki.internal.exception.InvalidOrderParameterException
 import com.otoki.internal.exception.OrderNotFoundException
 import com.otoki.internal.repository.OrderProcessingRecordRepository
 import com.otoki.internal.repository.StoreRepository
-import com.otoki.internal.repository.StoreScheduleRepository
+import com.otoki.internal.common.repository.StoreScheduleRepository
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
