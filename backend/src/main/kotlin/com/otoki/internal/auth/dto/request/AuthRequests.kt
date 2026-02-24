@@ -1,4 +1,4 @@
-package com.otoki.internal.dto.request
+package com.otoki.internal.auth.dto.request
 
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Pattern

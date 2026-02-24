@@ -2,7 +2,7 @@ package com.otoki.internal.common.service
 
 import com.otoki.internal.entity.*
 import com.otoki.internal.common.entity.*
-import com.otoki.internal.exception.UserNotFoundException
+import com.otoki.internal.auth.exception.UserNotFoundException
 import com.otoki.internal.repository.NoticeRepository
 import com.otoki.internal.repository.ScheduleRepository
 import com.otoki.internal.common.repository.UserRepository

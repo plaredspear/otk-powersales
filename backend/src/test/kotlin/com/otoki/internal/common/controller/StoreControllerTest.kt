@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.otoki.internal.common.dto.response.MyStoreInfo
 import com.otoki.internal.common.dto.response.MyStoreListResponse
 import com.otoki.internal.common.entity.UserRole
-import com.otoki.internal.exception.UserNotFoundException
+import com.otoki.internal.auth.exception.UserNotFoundException
 import com.otoki.internal.common.security.GpsConsentFilter
 import com.otoki.internal.common.security.JwtAuthenticationFilter
 import com.otoki.internal.common.security.JwtTokenProvider

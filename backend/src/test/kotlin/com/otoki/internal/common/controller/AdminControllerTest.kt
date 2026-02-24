@@ -1,12 +1,12 @@
 package com.otoki.internal.common.controller
 
 import com.otoki.internal.common.entity.UserRole
-import com.otoki.internal.exception.UserNotFoundException
+import com.otoki.internal.auth.exception.UserNotFoundException
 import com.otoki.internal.common.security.GpsConsentFilter
 import com.otoki.internal.common.security.JwtAuthenticationFilter
 import com.otoki.internal.common.security.JwtTokenProvider
 import com.otoki.internal.common.security.UserPrincipal
-import com.otoki.internal.service.AuthService
+import com.otoki.internal.auth.service.AuthService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
