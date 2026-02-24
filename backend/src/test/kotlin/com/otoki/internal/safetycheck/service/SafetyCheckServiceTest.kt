@@ -8,8 +8,8 @@ package com.otoki.internal.safetycheck.service
 import com.otoki.internal.safetycheck.dto.request.SafetyCheckSubmitRequest
 import com.otoki.internal.safetycheck.entity.SafetyCheckItem
 import com.otoki.internal.safetycheck.entity.SafetyCheckSubmission
-import com.otoki.internal.exception.AlreadySubmittedException
-import com.otoki.internal.exception.RequiredItemsMissingException
+import com.otoki.internal.safetycheck.exception.AlreadySubmittedException
+import com.otoki.internal.safetycheck.exception.RequiredItemsMissingException
 import com.otoki.internal.safetycheck.repository.SafetyCheckItemRepository
 import com.otoki.internal.safetycheck.repository.SafetyCheckSubmissionRepository
 import org.assertj.core.api.Assertions.assertThat
