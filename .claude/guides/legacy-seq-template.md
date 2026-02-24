@@ -1,0 +1,182 @@
+# 기존소스 Sequence Diagram 문서 템플릿
+
+> 이 파일은 `/legacy-seq` 커맨드가 호출하는 분석 에이전트의 출력 형식을 정의합니다.
+> 에이전트는 이 템플릿의 섹션 순서와 작성 규칙을 반드시 따릅니다.
+
+---
+
+## 출력 구조
+
+```markdown
+# <기능명> 기능 분석
+
+## 처리 흐름 Sequence Diagram
+
+![[attachments/<모듈명>-sequence.svg]]
+
+(Mermaid sequenceDiagram — 아래 작성 규칙 참조)
+
+## 개요
+
+(1~2줄 요약: 이 기능이 무엇인지, 어떤 흐름으로 동작하는지)
+
+## 관련 소스 파일
+
+(파일-역할 테이블)
+
+## 상세 분석
+
+(레이어별 분석: View → Controller → Config/Security → Service → Mapper)
+
+## 주요 클래스별 메서드 정리
+
+(클래스별 메서드-설명 테이블)
+
+## 핵심 분기점
+
+(비즈니스 로직 주요 분기 요약)
+```
+
+---
+
+## 섹션별 작성 규칙
+
+### 1. 처리 흐름 Sequence Diagram
+
+#### participant 규칙
+
+- **W (웹/클라이언트)**: `participant W as W: Browser (<JSP 파일명>)`
+- **S (서버 각 클래스)**: `participant <Alias> as S: <클래스명>`
+  - Alias는 클래스명 약어 사용 (예: `LC` = LoginController, `LS` = LoginService)
+- **DB**: `participant DB as S: Database`
+
+#### 호출 표현
+
+- 서버 측은 **클래스별 메서드 호출 관계**를 포함
+- 메서드명과 주요 파라미터를 화살표 위에 표기
+- `activate/deactivate` 대신 `+/-` 축약 사용
+- 분기는 `alt/else/end`로 표현
+- 주석은 `Note over` 사용
+
+#### Mermaid 예약어 회피 규칙
+
+Mermaid에서 예약어로 사용되는 단어가 participant alias나 텍스트에 포함되면 렌더링 오류가 발생합니다.
+
+| 예약어 | 회피 방법 | 예시 |
+|--------|----------|------|
+| `Details` | alias 변경 | `AuthDtl`, `Dtl` 등 |
+| `Note` | alias 변경 | `Nt`, `Noti` 등 |
+| `Title` | alias 변경 | `Ttl` 등 |
+| `end` | 텍스트 내 사용 시 줄바꿈 회피 | 메시지 안에서만 사용 가능 |
+| `loop`, `alt`, `opt`, `par`, `rect` | alias로 사용 금지 | 풀네임 또는 약어 변경 |
+| `as` | 메시지 텍스트에 단독 사용 주의 | 문장 내 자연스럽게 포함은 OK |
+
+#### 기타 주의사항
+
+- 한 다이어그램이 너무 길면(participant 15개 이상) 주요 흐름과 서브 흐름으로 분리
+- 외부 API 호출은 `participant Ext as S: External API (Orora 등)` 형태로 포함
+
+### 2. 개요
+
+- 1~2줄로 기능의 핵심 동작 요약
+- 사용하는 주요 기술/패턴 언급 (예: "Spring Security formLogin 기반", "MyBatis 임시저장 CRUD")
+
+### 3. 관련 소스 파일
+
+| 파일 | 역할 |
+|------|------|
+| `<상대 경로>` | <한 줄 설명> |
+
+- 경로는 `$ROOT` 기준 상대 경로 (예: `controller/LoginController.java`)
+- View, Controller, Config/Security, Service, Mapper 순서로 나열
+
+### 4. 상세 분석
+
+레이어별로 소제목을 붙여 분석:
+
+```markdown
+### <View 파일명> 상세
+- 폼 구성, 입력 필드, JS 동작 등
+
+### <Controller> 상세
+- URL 매핑, 비즈니스 로직 흐름
+
+### Config/Security (해당 시)
+- 설정 내용, 필터 체인 등
+
+### <Service> → <Mapper> (DB 연동)
+- 메서드별 SQL 동작
+```
+
+### 5. 주요 클래스별 메서드 정리
+
+클래스별로 테이블 작성:
+
+```markdown
+### <클래스명>
+| 메서드 | 설명 |
+|--------|------|
+| `메서드명(파라미터)` | 동작 설명 |
+```
+
+- public 메서드 위주
+- 파라미터 타입은 간략히 (예: `String`, `Map` 등)
+
+### 6. 핵심 분기점
+
+- 비즈니스 로직의 주요 분기를 **불릿 포인트**로 요약
+- 각 분기의 조건과 결과를 명시
+- 설정값에 의한 동작 변경도 포함
+
+---
+
+## SVG 이미지 생성 규칙
+
+문서 저장 후, Mermaid 코드 블록에서 SVG 이미지를 생성하여 옵시디언 임베드로 포함합니다.
+
+### 생성 절차
+
+1. 문서에서 Mermaid 코드 블록을 임시 파일로 추출
+2. `npx @mermaid-js/mermaid-cli`로 SVG 변환
+3. 문서와 같은 경로의 `attachments/` 디렉토리에 저장
+4. 문서 상단 Sequence Diagram 섹션에 옵시디언 임베드 링크 삽입
+
+### 변환 명령어
+
+```bash
+# 1. Mermaid 코드 블록 추출
+python3 -c "
+import re, pathlib
+text = pathlib.Path('<문서경로>').read_text()
+m = re.search(r'\`\`\`mermaid\n(.*?)\`\`\`', text, re.DOTALL)
+if m:
+    pathlib.Path('/tmp/<모듈명>-seq.mmd').write_text(m.group(1))
+"
+
+# 2. SVG 변환
+npx @mermaid-js/mermaid-cli -i /tmp/<모듈명>-seq.mmd -o <문서디렉토리>/attachments/<모듈명>-sequence.svg -b white
+```
+
+### 파일 배치
+
+```
+docs/plan/기존소스/summaries/docs/
+├── <모듈명>.md                           # 분석 문서
+└── attachments/
+    └── <모듈명>-sequence.svg             # Sequence Diagram 이미지
+```
+
+### 임베드 위치
+
+`## 처리 흐름 Sequence Diagram` 섹션에서 Mermaid 코드 블록 **위**에 삽입:
+
+```markdown
+## 처리 흐름 Sequence Diagram
+
+![[attachments/<모듈명>-sequence.svg]]
+
+```mermaid
+sequenceDiagram
+    ...
+```
+```
