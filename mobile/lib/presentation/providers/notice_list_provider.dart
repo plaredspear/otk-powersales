@@ -5,7 +5,7 @@ import '../../data/repositories/notice_repository_impl.dart';
 import '../../domain/entities/notice_category.dart';
 import '../../domain/repositories/notice_repository.dart';
 import '../../domain/usecases/get_notice_posts_usecase.dart';
-import 'dio_provider.dart';
+import '../../core/network/dio_provider.dart';
 import 'notice_list_state.dart';
 
 // --- Dependency Providers ---

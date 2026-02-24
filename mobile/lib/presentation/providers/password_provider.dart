@@ -7,7 +7,7 @@ import '../../domain/repositories/password_repository.dart';
 import '../../domain/usecases/change_password_usecase.dart';
 import '../../domain/usecases/verify_current_password_usecase.dart';
 import 'auth_provider.dart'; // auth_provider에서 changePasswordUseCaseProvider 재사용
-import 'dio_provider.dart';
+import '../../core/network/dio_provider.dart';
 
 // --- Repository & DataSource Providers ---
 
