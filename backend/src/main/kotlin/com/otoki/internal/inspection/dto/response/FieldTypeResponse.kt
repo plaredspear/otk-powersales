@@ -1,7 +1,7 @@
 /*
-package com.otoki.internal.dto.response
+package com.otoki.internal.inspection.dto.response
 
-import com.otoki.internal.entity.InspectionFieldType
+import com.otoki.internal.inspection.entity.InspectionFieldType
 
 / **
  * 현장 유형 응답 DTO

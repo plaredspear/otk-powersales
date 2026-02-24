@@ -1,6 +1,6 @@
-package com.otoki.internal.dto.response
+package com.otoki.internal.inspection.dto.response
 
-import com.otoki.internal.entity.InspectionTheme
+import com.otoki.internal.inspection.entity.InspectionTheme
 
 /**
  * 현장 점검 테마 응답 DTO

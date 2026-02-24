@@ -1,5 +1,5 @@
 /*
-package com.otoki.internal.dto.response
+package com.otoki.internal.inspection.dto.response
 
 / **
  * 현장 점검 목록 응답 DTO

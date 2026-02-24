@@ -1,5 +1,5 @@
 /*
-package com.otoki.internal.entity
+package com.otoki.internal.inspection.entity
 
 import jakarta.persistence.*
 

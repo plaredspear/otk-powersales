@@ -1,14 +1,14 @@
 /*
-package com.otoki.internal.service
+package com.otoki.internal.inspection.service
 
-import com.otoki.internal.dto.request.InspectionCreateRequest
-import com.otoki.internal.dto.response.*
+import com.otoki.internal.inspection.dto.request.InspectionCreateRequest
+import com.otoki.internal.inspection.dto.response.*
 import com.otoki.internal.common.dto.response.*
-import com.otoki.internal.entity.*
+import com.otoki.internal.inspection.entity.*
 import com.otoki.internal.common.entity.*
-import com.otoki.internal.exception.*
+import com.otoki.internal.inspection.exception.*
 import com.otoki.internal.common.exception.*
-import com.otoki.internal.repository.*
+import com.otoki.internal.inspection.repository.*
 import com.otoki.internal.common.repository.*
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
