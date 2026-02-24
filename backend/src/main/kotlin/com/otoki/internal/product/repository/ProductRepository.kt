@@ -1,6 +1,6 @@
-package com.otoki.internal.repository
+package com.otoki.internal.product.repository
 
-import com.otoki.internal.entity.Product
+import com.otoki.internal.product.entity.Product
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository

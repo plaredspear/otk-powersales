@@ -1,7 +1,7 @@
 /*
-package com.otoki.internal.repository
+package com.otoki.internal.product.repository
 
-import com.otoki.internal.entity.ExpiryProduct
+import com.otoki.internal.product.entity.ExpiryProduct
 import org.springframework.data.jpa.repository.JpaRepository
 import java.time.LocalDate
 

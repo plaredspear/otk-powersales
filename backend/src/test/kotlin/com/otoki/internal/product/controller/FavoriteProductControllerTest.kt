@@ -1,4 +1,4 @@
-package com.otoki.internal.controller
+package com.otoki.internal.product.controller
 
 /* --- 전체 주석 처리: V1 Entity 리매핑 (Spec 77) ---
  * FavoriteProductController가 주석 처리되어 테스트 대상 없음.

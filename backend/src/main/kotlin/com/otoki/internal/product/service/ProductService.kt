@@ -1,9 +1,9 @@
-package com.otoki.internal.service
+package com.otoki.internal.product.service
 
-import com.otoki.internal.dto.response.ProductDto
-import com.otoki.internal.exception.InvalidSearchParameterException
-import com.otoki.internal.exception.InvalidSearchTypeException
-import com.otoki.internal.repository.ProductRepository
+import com.otoki.internal.product.dto.response.ProductDto
+import com.otoki.internal.product.exception.InvalidSearchParameterException
+import com.otoki.internal.product.exception.InvalidSearchTypeException
+import com.otoki.internal.product.repository.ProductRepository
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service

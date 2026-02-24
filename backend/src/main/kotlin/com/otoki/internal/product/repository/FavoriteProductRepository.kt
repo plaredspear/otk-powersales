@@ -1,7 +1,7 @@
-package com.otoki.internal.repository
+package com.otoki.internal.product.repository
 
-import com.otoki.internal.entity.FavoriteProduct
-import com.otoki.internal.entity.ProductFavoriteId
+import com.otoki.internal.product.entity.FavoriteProduct
+import com.otoki.internal.product.entity.ProductFavoriteId
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 

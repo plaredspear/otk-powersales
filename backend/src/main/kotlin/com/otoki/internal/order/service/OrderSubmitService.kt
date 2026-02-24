@@ -8,7 +8,7 @@ import com.otoki.internal.dto.response.ValidationResultResponse
 import com.otoki.internal.order.entity.ApprovalStatus
 import com.otoki.internal.order.entity.Order
 import com.otoki.internal.order.entity.OrderItem
-import com.otoki.internal.entity.Product
+import com.otoki.internal.product.entity.Product
 import com.otoki.internal.exception.ClientNotFoundException
 import com.otoki.internal.exception.InvalidDeliveryDateException
 import com.otoki.internal.order.exception.OrderValidationFailedException
@@ -17,7 +17,7 @@ import com.otoki.internal.order.integration.SapOrderClient
 import com.otoki.internal.order.repository.OrderDraftRepository
 import com.otoki.internal.order.repository.OrderItemRepository
 import com.otoki.internal.order.repository.OrderRepository
-import com.otoki.internal.repository.ProductRepository
+import com.otoki.internal.product.repository.ProductRepository
 import com.otoki.internal.repository.StoreRepository
 import com.otoki.internal.common.repository.UserRepository
 import org.springframework.stereotype.Service

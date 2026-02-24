@@ -1,4 +1,4 @@
-package com.otoki.internal.exception
+package com.otoki.internal.product.exception
 
 import com.otoki.internal.common.exception.BusinessException
 

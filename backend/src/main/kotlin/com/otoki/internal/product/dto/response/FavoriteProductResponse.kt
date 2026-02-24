@@ -1,9 +1,9 @@
-package com.otoki.internal.dto.response
+package com.otoki.internal.product.dto.response
 
 /* --- 전체 주석 처리: V1 Entity 리매핑 (Spec 77) ---
  * FavoriteProduct Entity 구조 변경으로 from() 변환 로직이 컴파일 오류 → 주석 처리.
 
-import com.otoki.internal.entity.FavoriteProduct
+import com.otoki.internal.product.entity.FavoriteProduct
 import java.time.format.DateTimeFormatter
 
 data class FavoriteProductResponse(
