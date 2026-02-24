@@ -1,4 +1,4 @@
-// package com.otoki.internal.entity
+// package com.otoki.internal.notice.entity
 //
 // /**
 //  * 공지사항 유형

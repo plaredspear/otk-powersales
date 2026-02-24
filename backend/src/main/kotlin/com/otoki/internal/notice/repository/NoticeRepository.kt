@@ -1,6 +1,6 @@
-package com.otoki.internal.repository
+package com.otoki.internal.notice.repository
 
-import com.otoki.internal.entity.Notice
+import com.otoki.internal.notice.entity.Notice
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param

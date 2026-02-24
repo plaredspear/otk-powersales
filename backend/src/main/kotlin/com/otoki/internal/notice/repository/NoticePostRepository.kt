@@ -1,8 +1,8 @@
 /*
-package com.otoki.internal.repository
+package com.otoki.internal.notice.repository
 
-import com.otoki.internal.entity.NoticeCategory
-import com.otoki.internal.entity.NoticePost
+import com.otoki.internal.notice.entity.NoticeCategory
+import com.otoki.internal.notice.entity.NoticePost
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository

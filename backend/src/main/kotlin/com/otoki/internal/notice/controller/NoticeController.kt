@@ -1,11 +1,11 @@
 /*
-package com.otoki.internal.controller
+package com.otoki.internal.notice.controller
 
 import com.otoki.internal.common.dto.ApiResponse
-import com.otoki.internal.dto.response.NoticePostDetailResponse
-import com.otoki.internal.dto.response.NoticePostListResponse
+import com.otoki.internal.notice.dto.response.NoticePostDetailResponse
+import com.otoki.internal.notice.dto.response.NoticePostListResponse
 import com.otoki.internal.common.security.UserPrincipal
-import com.otoki.internal.service.NoticeService
+import com.otoki.internal.notice.service.NoticeService
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*

@@ -1,13 +1,13 @@
 /*
-package com.otoki.internal.service
+package com.otoki.internal.notice.service
 
-import com.otoki.internal.dto.response.*
+import com.otoki.internal.notice.dto.response.*
 import com.otoki.internal.common.dto.response.*
-import com.otoki.internal.entity.NoticeCategory
-import com.otoki.internal.exception.InvalidNoticeCategoryException
-import com.otoki.internal.exception.NoticePostNotFoundException
-import com.otoki.internal.repository.NoticePostImageRepository
-import com.otoki.internal.repository.NoticePostRepository
+import com.otoki.internal.notice.entity.NoticeCategory
+import com.otoki.internal.notice.exception.InvalidNoticeCategoryException
+import com.otoki.internal.notice.exception.NoticePostNotFoundException
+import com.otoki.internal.notice.repository.NoticePostImageRepository
+import com.otoki.internal.notice.repository.NoticePostRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

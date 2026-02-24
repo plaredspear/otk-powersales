@@ -1,6 +1,6 @@
-package com.otoki.internal.repository
+package com.otoki.internal.notice.repository
 
-import com.otoki.internal.entity.Notice
+import com.otoki.internal.notice.entity.Notice
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
