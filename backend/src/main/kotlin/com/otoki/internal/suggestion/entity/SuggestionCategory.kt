@@ -1,5 +1,5 @@
 /*
-package com.otoki.internal.entity
+package com.otoki.internal.suggestion.entity
 
 / **
  * 제안 분류 Enum

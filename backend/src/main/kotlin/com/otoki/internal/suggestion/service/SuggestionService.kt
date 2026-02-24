@@ -1,8 +1,8 @@
 /*
-package com.otoki.internal.service
+package com.otoki.internal.suggestion.service
 
-import com.otoki.internal.dto.request.SuggestionCreateRequest
-import com.otoki.internal.dto.response.SuggestionCreateResponse
+import com.otoki.internal.suggestion.dto.request.SuggestionCreateRequest
+import com.otoki.internal.suggestion.dto.response.SuggestionCreateResponse
 import com.otoki.internal.entity.*
 import com.otoki.internal.common.entity.*
 import com.otoki.internal.exception.*

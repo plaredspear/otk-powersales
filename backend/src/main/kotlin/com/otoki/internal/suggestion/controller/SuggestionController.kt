@@ -1,11 +1,11 @@
 /*
-package com.otoki.internal.controller
+package com.otoki.internal.suggestion.controller
 
 import com.otoki.internal.common.dto.ApiResponse
-import com.otoki.internal.dto.request.SuggestionCreateRequest
-import com.otoki.internal.dto.response.SuggestionCreateResponse
+import com.otoki.internal.suggestion.dto.request.SuggestionCreateRequest
+import com.otoki.internal.suggestion.dto.response.SuggestionCreateResponse
 import com.otoki.internal.common.security.UserPrincipal
-import com.otoki.internal.service.SuggestionService
+import com.otoki.internal.suggestion.service.SuggestionService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity

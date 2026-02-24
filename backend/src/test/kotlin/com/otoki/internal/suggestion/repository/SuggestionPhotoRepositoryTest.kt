@@ -1,4 +1,4 @@
-package com.otoki.internal.repository
+package com.otoki.internal.suggestion.repository
 
 import com.otoki.internal.entity.*
 import com.otoki.internal.common.entity.*

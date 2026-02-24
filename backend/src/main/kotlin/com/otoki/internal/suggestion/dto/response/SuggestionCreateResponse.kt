@@ -1,8 +1,8 @@
 /*
-package com.otoki.internal.dto.response
+package com.otoki.internal.suggestion.dto.response
 
-import com.otoki.internal.entity.Suggestion
-import com.otoki.internal.entity.SuggestionCategory
+import com.otoki.internal.suggestion.entity.Suggestion
+import com.otoki.internal.suggestion.entity.SuggestionCategory
 
 / **
  * 제안 등록 응답 DTO

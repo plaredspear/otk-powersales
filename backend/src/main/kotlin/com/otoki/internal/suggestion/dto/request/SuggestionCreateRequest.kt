@@ -1,5 +1,5 @@
 /*
-package com.otoki.internal.dto.request
+package com.otoki.internal.suggestion.dto.request
 
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size

@@ -1,7 +1,7 @@
 /*
-package com.otoki.internal.repository
+package com.otoki.internal.suggestion.repository
 
-import com.otoki.internal.entity.SuggestionPhoto
+import com.otoki.internal.suggestion.entity.SuggestionPhoto
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 
