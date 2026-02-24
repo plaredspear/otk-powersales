@@ -10,7 +10,7 @@ import com.otoki.internal.exception.DraftNotFoundException
 import com.otoki.internal.exception.InvalidDeliveryDateException
 import com.otoki.internal.exception.ProductNotFoundException
 import com.otoki.internal.order.repository.OrderDraftRepository
-import com.otoki.internal.repository.ProductRepository
+import com.otoki.internal.product.repository.ProductRepository
 import com.otoki.internal.repository.StoreRepository
 import com.otoki.internal.common.repository.UserRepository
 import org.assertj.core.api.Assertions.assertThat

@@ -15,7 +15,7 @@ import com.otoki.internal.dto.response.ShelfLifeListResponse
 import com.otoki.internal.entity.ShelfLife
 import com.otoki.internal.exception.*
 import com.otoki.internal.common.exception.*
-import com.otoki.internal.repository.ProductRepository
+import com.otoki.internal.product.repository.ProductRepository
 import com.otoki.internal.repository.ShelfLifeRepository
 import com.otoki.internal.repository.AccountRepository
 import com.otoki.internal.common.repository.UserRepository

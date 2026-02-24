@@ -1,14 +1,14 @@
-package com.otoki.internal.controller
+package com.otoki.internal.product.controller
 
-import com.otoki.internal.dto.response.ProductDto
+import com.otoki.internal.product.dto.response.ProductDto
 import com.otoki.internal.common.entity.UserRole
-import com.otoki.internal.exception.InvalidSearchParameterException
-import com.otoki.internal.exception.InvalidSearchTypeException
+import com.otoki.internal.product.exception.InvalidSearchParameterException
+import com.otoki.internal.product.exception.InvalidSearchTypeException
 import com.otoki.internal.common.security.GpsConsentFilter
 import com.otoki.internal.common.security.JwtAuthenticationFilter
 import com.otoki.internal.common.security.JwtTokenProvider
 import com.otoki.internal.common.security.UserPrincipal
-import com.otoki.internal.service.ProductService
+import com.otoki.internal.product.service.ProductService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested

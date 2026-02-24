@@ -1,4 +1,4 @@
-package com.otoki.internal.service
+package com.otoki.internal.product.service
 
 /* --- 전체 주석 처리: V1 Entity 리매핑 (Spec 77) ---
  * FavoriteProductService가 주석 처리되어 테스트 대상 없음.

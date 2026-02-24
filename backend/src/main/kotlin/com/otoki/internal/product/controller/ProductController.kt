@@ -1,9 +1,9 @@
-package com.otoki.internal.controller
+package com.otoki.internal.product.controller
 
 import com.otoki.internal.common.dto.ApiResponse
-import com.otoki.internal.dto.response.ProductDto
+import com.otoki.internal.product.dto.response.ProductDto
 import com.otoki.internal.common.security.UserPrincipal
-import com.otoki.internal.service.ProductService
+import com.otoki.internal.product.service.ProductService
 import org.springframework.data.domain.Page
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal

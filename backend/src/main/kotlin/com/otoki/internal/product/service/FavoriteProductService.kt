@@ -1,18 +1,18 @@
-package com.otoki.internal.service
+package com.otoki.internal.product.service
 
 /* --- 전체 주석 처리: V1 Entity 리매핑 (Spec 77) ---
  * FavoriteProduct Entity가 V1 스키마로 리매핑되어 @ManyToOne 관계(user, product)가
  * raw String 컬럼으로 변환됨. 기존 비즈니스 로직이 V2 Entity 구조를 직접 참조하므로
  * 컴파일 오류 발생 → 전체 주석 처리.
 
-import com.otoki.internal.dto.response.FavoriteProductResponse
-import com.otoki.internal.entity.FavoriteProduct
+import com.otoki.internal.product.dto.response.FavoriteProductResponse
+import com.otoki.internal.product.entity.FavoriteProduct
 import com.otoki.internal.exception.AlreadyFavoritedException
 import com.otoki.internal.exception.FavoriteNotFoundException
 import com.otoki.internal.order.exception.InvalidOrderParameterException
 import com.otoki.internal.exception.ProductNotFoundException
-import com.otoki.internal.repository.FavoriteProductRepository
-import com.otoki.internal.repository.ProductRepository
+import com.otoki.internal.product.repository.FavoriteProductRepository
+import com.otoki.internal.product.repository.ProductRepository
 import com.otoki.internal.common.repository.UserRepository
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest

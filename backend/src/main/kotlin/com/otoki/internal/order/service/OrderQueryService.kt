@@ -9,7 +9,7 @@ import com.otoki.internal.order.exception.InvalidOrderDateRangeException
 import com.otoki.internal.order.exception.InvalidOrderParameterException
 import com.otoki.internal.exception.ProductNotFoundException
 import com.otoki.internal.order.repository.OrderItemRepository
-import com.otoki.internal.repository.ProductRepository
+import com.otoki.internal.product.repository.ProductRepository
 import com.otoki.internal.repository.StoreRepository
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
