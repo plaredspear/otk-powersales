@@ -2,12 +2,12 @@ package com.otoki.internal.sales.service
 
 import com.otoki.internal.sales.dto.request.DailySalesCreateRequest
 import com.otoki.internal.sales.entity.DailySales
-import com.otoki.internal.entity.Event
+import com.otoki.internal.event.entity.Event
 import com.otoki.internal.sales.exception.*
 import com.otoki.internal.common.exception.*
 import com.otoki.internal.sales.repository.DailySalesRepository
-import com.otoki.internal.repository.EventProductRepository
-import com.otoki.internal.repository.EventRepository
+import com.otoki.internal.event.repository.EventProductRepository
+import com.otoki.internal.event.repository.EventRepository
 import com.otoki.internal.common.repository.UserRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
