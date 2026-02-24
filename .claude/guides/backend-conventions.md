@@ -8,17 +8,48 @@
 
 ```
 com.otoki.internal/
-├── controller/     # REST Controller
-├── service/        # Business Logic
-├── repository/     # JPA Repository
-├── entity/         # JPA Entity + Enum
+├── OtokiInternalApplication.kt
+├── common/          # 공통 인프라 + User/Store + Home
+│   ├── config/
+│   ├── security/
+│   ├── entity/
+│   ├── dto/
+│   ├── repository/
+│   ├── service/
+│   ├── controller/
+│   └── exception/
+├── auth/            # 인증
+├── order/           # 주문
+│   └── integration/ # SAP 연동
+├── claim/           # 클레임
+├── inspection/      # 점검
+├── product/         # 상품
+├── notice/          # 공지
+├── education/       # 교육
+├── sales/           # 실적
+├── schedule/        # 일정/근태
+├── safetycheck/     # 안전점검
+├── suggestion/      # 제안
+├── event/           # 행사
+└── shelflife/       # 유통기한
+
+# 각 도메인 내부 구조 (해당 레이어 파일이 있는 경우)
+<domain>/
+├── entity/
 ├── dto/
-│   ├── request/    # Request DTO (validation 포함)
-│   └── response/   # Response DTO
-├── exception/      # BusinessException + 도메인별 예외
-├── config/         # SecurityConfig, AppConfig 등
-└── security/       # JWT, UserPrincipal
+│   ├── request/
+│   └── response/
+├── repository/
+├── service/
+├── controller/
+└── exception/
 ```
+
+### 패키지 배치 규칙
+
+- **새 기능 추가 시**: 해당 도메인 패키지 하위에 생성 (예: `order/entity/NewEntity.kt`)
+- **새 도메인 추가 시**: 최상위에 도메인 패키지 생성 + 내부 레이어 구조 따르기
+- **공유 클래스**: `common/` 패키지에 배치 (여러 도메인에서 사용하는 entity, DTO 등)
 
 ## Jackson 설정 (IMPORTANT)
 
