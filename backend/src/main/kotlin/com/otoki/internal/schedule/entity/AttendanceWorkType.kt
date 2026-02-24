@@ -1,5 +1,5 @@
 /*
-package com.otoki.internal.entity
+package com.otoki.internal.schedule.entity
 
 / **
  * 출근등록 근무 유형 Enum

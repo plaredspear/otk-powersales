@@ -1,6 +1,6 @@
-package com.otoki.internal.repository
+package com.otoki.internal.schedule.repository
 
-import com.otoki.internal.entity.Schedule
+import com.otoki.internal.schedule.entity.Schedule
 import com.otoki.internal.common.entity.User
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach

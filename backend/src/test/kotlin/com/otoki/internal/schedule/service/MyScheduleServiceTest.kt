@@ -1,6 +1,6 @@
-package com.otoki.internal.service
+package com.otoki.internal.schedule.service
 
-import com.otoki.internal.entity.*
+import com.otoki.internal.schedule.entity.*
 import com.otoki.internal.common.entity.*
 import com.otoki.internal.auth.exception.UserNotFoundException
 import com.otoki.internal.common.repository.StoreScheduleRepository

@@ -1,10 +1,10 @@
-package com.otoki.internal.controller
+package com.otoki.internal.schedule.controller
 
 import com.otoki.internal.common.dto.ApiResponse
-import com.otoki.internal.dto.response.DailyScheduleResponse
-import com.otoki.internal.dto.response.MonthlyScheduleResponse
+import com.otoki.internal.schedule.dto.response.DailyScheduleResponse
+import com.otoki.internal.schedule.dto.response.MonthlyScheduleResponse
 import com.otoki.internal.common.security.UserPrincipal
-import com.otoki.internal.service.MyScheduleService
+import com.otoki.internal.schedule.service.MyScheduleService
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*

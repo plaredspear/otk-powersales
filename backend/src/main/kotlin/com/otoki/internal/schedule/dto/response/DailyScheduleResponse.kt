@@ -1,4 +1,4 @@
-package com.otoki.internal.dto.response
+package com.otoki.internal.schedule.dto.response
 
 import com.fasterxml.jackson.annotation.JsonProperty
 

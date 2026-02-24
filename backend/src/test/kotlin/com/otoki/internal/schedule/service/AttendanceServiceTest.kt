@@ -1,10 +1,10 @@
-package com.otoki.internal.service
+package com.otoki.internal.schedule.service
 
-import com.otoki.internal.entity.*
+import com.otoki.internal.schedule.entity.*
 import com.otoki.internal.common.entity.*
-import com.otoki.internal.exception.*
+import com.otoki.internal.schedule.exception.*
 import com.otoki.internal.common.exception.*
-import com.otoki.internal.repository.AttendanceRepository
+import com.otoki.internal.schedule.repository.AttendanceRepository
 import com.otoki.internal.common.repository.StoreScheduleRepository
 import com.otoki.internal.common.repository.UserRepository
 import org.assertj.core.api.Assertions.assertThat
