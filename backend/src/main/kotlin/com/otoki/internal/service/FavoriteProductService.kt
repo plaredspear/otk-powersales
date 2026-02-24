@@ -13,7 +13,7 @@ import com.otoki.internal.exception.InvalidOrderParameterException
 import com.otoki.internal.exception.ProductNotFoundException
 import com.otoki.internal.repository.FavoriteProductRepository
 import com.otoki.internal.repository.ProductRepository
-import com.otoki.internal.repository.UserRepository
+import com.otoki.internal.common.repository.UserRepository
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service

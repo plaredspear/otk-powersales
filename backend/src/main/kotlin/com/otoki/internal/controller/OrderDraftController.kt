@@ -1,11 +1,11 @@
 /*
 package com.otoki.internal.controller
 
-import com.otoki.internal.dto.ApiResponse
+import com.otoki.internal.common.dto.ApiResponse
 import com.otoki.internal.dto.request.OrderDraftRequest
 import com.otoki.internal.dto.response.DraftSavedResponse
 import com.otoki.internal.dto.response.OrderDraftResponse
-import com.otoki.internal.security.UserPrincipal
+import com.otoki.internal.common.security.UserPrincipal
 import com.otoki.internal.service.OrderDraftService
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity

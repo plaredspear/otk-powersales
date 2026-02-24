@@ -14,10 +14,11 @@ import com.otoki.internal.dto.response.ShelfLifeItemResponse
 import com.otoki.internal.dto.response.ShelfLifeListResponse
 import com.otoki.internal.entity.ShelfLife
 import com.otoki.internal.exception.*
+import com.otoki.internal.common.exception.*
 import com.otoki.internal.repository.ProductRepository
 import com.otoki.internal.repository.ShelfLifeRepository
 import com.otoki.internal.repository.AccountRepository
-import com.otoki.internal.repository.UserRepository
+import com.otoki.internal.common.repository.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate

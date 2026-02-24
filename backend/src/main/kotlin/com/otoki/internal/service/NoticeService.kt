@@ -2,6 +2,7 @@
 package com.otoki.internal.service
 
 import com.otoki.internal.dto.response.*
+import com.otoki.internal.common.dto.response.*
 import com.otoki.internal.entity.NoticeCategory
 import com.otoki.internal.exception.InvalidNoticeCategoryException
 import com.otoki.internal.exception.NoticePostNotFoundException

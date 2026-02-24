@@ -3,13 +3,14 @@ package com.otoki.internal.service
 import com.otoki.internal.dto.response.ClientOrderDetailResponse
 import com.otoki.internal.dto.response.ClientOrderSummaryResponse
 import com.otoki.internal.entity.*
+import com.otoki.internal.common.entity.*
 import com.otoki.internal.exception.ClientNotFoundException
 import com.otoki.internal.exception.ForbiddenClientAccessException
 import com.otoki.internal.exception.InvalidOrderParameterException
 import com.otoki.internal.exception.OrderNotFoundException
 import com.otoki.internal.repository.OrderProcessingRecordRepository
 import com.otoki.internal.repository.StoreRepository
-import com.otoki.internal.repository.StoreScheduleRepository
+import com.otoki.internal.common.repository.StoreScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach

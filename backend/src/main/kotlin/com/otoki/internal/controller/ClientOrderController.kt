@@ -1,10 +1,10 @@
 /*
 package com.otoki.internal.controller
 
-import com.otoki.internal.dto.ApiResponse
+import com.otoki.internal.common.dto.ApiResponse
 import com.otoki.internal.dto.response.ClientOrderDetailResponse
 import com.otoki.internal.dto.response.ClientOrderSummaryResponse
-import com.otoki.internal.security.UserPrincipal
+import com.otoki.internal.common.security.UserPrincipal
 import com.otoki.internal.service.ClientOrderService
 import org.springframework.data.domain.Page
 import org.springframework.format.annotation.DateTimeFormat

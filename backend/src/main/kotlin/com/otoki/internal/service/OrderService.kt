@@ -6,11 +6,12 @@ import com.otoki.internal.dto.response.OrderDetailResponse
 import com.otoki.internal.dto.response.OrderSummaryResponse
 import com.otoki.internal.entity.ApprovalStatus
 import com.otoki.internal.exception.*
+import com.otoki.internal.common.exception.*
 import com.otoki.internal.repository.OrderItemRepository
 import com.otoki.internal.repository.OrderProcessingRecordRepository
 import com.otoki.internal.repository.OrderRejectionRepository
 import com.otoki.internal.repository.OrderRepository
-import com.otoki.internal.repository.UserRepository
+import com.otoki.internal.common.repository.UserRepository
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort

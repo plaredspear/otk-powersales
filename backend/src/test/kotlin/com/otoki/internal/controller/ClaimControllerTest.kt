@@ -2,11 +2,12 @@
 package com.otoki.internal.controller
 
 import com.otoki.internal.dto.response.*
-import com.otoki.internal.entity.UserRole
-import com.otoki.internal.security.GpsConsentFilter
-import com.otoki.internal.security.JwtAuthenticationFilter
-import com.otoki.internal.security.JwtTokenProvider
-import com.otoki.internal.security.UserPrincipal
+import com.otoki.internal.common.dto.response.*
+import com.otoki.internal.common.entity.UserRole
+import com.otoki.internal.common.security.GpsConsentFilter
+import com.otoki.internal.common.security.JwtAuthenticationFilter
+import com.otoki.internal.common.security.JwtTokenProvider
+import com.otoki.internal.common.security.UserPrincipal
 import com.otoki.internal.service.ClaimService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName

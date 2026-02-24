@@ -5,10 +5,11 @@ import com.otoki.internal.dto.request.DailySalesCreateRequest
 import com.otoki.internal.dto.response.DailySalesCreateResponse
 import com.otoki.internal.entity.DailySales
 import com.otoki.internal.exception.*
+import com.otoki.internal.common.exception.*
 import com.otoki.internal.repository.DailySalesRepository
 import com.otoki.internal.repository.EventProductRepository
 import com.otoki.internal.repository.EventRepository
-import com.otoki.internal.repository.UserRepository
+import com.otoki.internal.common.repository.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate

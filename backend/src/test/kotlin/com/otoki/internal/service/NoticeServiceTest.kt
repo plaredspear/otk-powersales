@@ -1,6 +1,7 @@
 package com.otoki.internal.service
 
 import com.otoki.internal.entity.*
+import com.otoki.internal.common.entity.*
 import com.otoki.internal.exception.InvalidNoticeCategoryException
 import com.otoki.internal.exception.NoticePostNotFoundException
 import com.otoki.internal.repository.NoticePostImageRepository

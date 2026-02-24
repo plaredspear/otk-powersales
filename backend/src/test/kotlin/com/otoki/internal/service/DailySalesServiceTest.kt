@@ -4,10 +4,11 @@ import com.otoki.internal.dto.request.DailySalesCreateRequest
 import com.otoki.internal.entity.DailySales
 import com.otoki.internal.entity.Event
 import com.otoki.internal.exception.*
+import com.otoki.internal.common.exception.*
 import com.otoki.internal.repository.DailySalesRepository
 import com.otoki.internal.repository.EventProductRepository
 import com.otoki.internal.repository.EventRepository
-import com.otoki.internal.repository.UserRepository
+import com.otoki.internal.common.repository.UserRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
@@ -50,8 +51,8 @@ class DailySalesServiceTest {
     private val testEventId = "EVT001"
     private val today = LocalDate.now()
 
-    private fun createTestUser(): com.otoki.internal.entity.User {
-        return com.otoki.internal.entity.User(
+    private fun createTestUser(): com.otoki.internal.common.entity.User {
+        return com.otoki.internal.common.entity.User(
             id = testUserId,
             employeeId = testEmployeeId,
             password = "encoded",
@@ -214,7 +215,7 @@ class DailySalesServiceTest {
     fun registerDailySales_Failure_NotAssignee() {
         // Given
         val otherUser = createTestUser().apply {
-            val userWithDifferentId = com.otoki.internal.entity.User(
+            val userWithDifferentId = com.otoki.internal.common.entity.User(
                 id = testUserId,
                 employeeId = "99999",
                 password = "encoded",
@@ -230,7 +231,7 @@ class DailySalesServiceTest {
         )
 
         whenever(userRepository.findById(testUserId)).thenReturn(Optional.of(
-            com.otoki.internal.entity.User(
+            com.otoki.internal.common.entity.User(
                 id = testUserId,
                 employeeId = "99999",
                 password = "encoded",

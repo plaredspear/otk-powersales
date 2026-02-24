@@ -3,14 +3,14 @@ package com.otoki.internal.controller
 /* --- 전체 주석 처리: V1 Entity 리매핑 (Spec 77) ---
  * ShelfLifeService 비활성화에 따라 Controller도 주석 처리.
 
-import com.otoki.internal.dto.ApiResponse
+import com.otoki.internal.common.dto.ApiResponse
 import com.otoki.internal.dto.request.ShelfLifeBatchDeleteRequest
 import com.otoki.internal.dto.request.ShelfLifeCreateRequest
 import com.otoki.internal.dto.request.ShelfLifeUpdateRequest
 import com.otoki.internal.dto.response.ShelfLifeBatchDeleteResponse
 import com.otoki.internal.dto.response.ShelfLifeItemResponse
 import com.otoki.internal.dto.response.ShelfLifeListResponse
-import com.otoki.internal.security.UserPrincipal
+import com.otoki.internal.common.security.UserPrincipal
 import com.otoki.internal.service.ShelfLifeService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
