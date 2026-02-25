@@ -5,6 +5,7 @@ import com.otoki.internal.common.entity.User
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
@@ -112,5 +113,74 @@ class ScheduleRepositoryTest {
 
         // Then
         assertThat(result).isEmpty()
+    }
+
+    @Nested
+    @DisplayName("findByWorkingDateAndEmployeeIdIn")
+    inner class FindByWorkingDateAndEmployeeIdIn {
+
+        @Test
+        @DisplayName("팀 스케줄 조회 - 3명의 사원 스케줄 반환")
+        fun findByWorkingDateAndEmployeeIdIn_threeEmployees() {
+            // Given
+            val today = LocalDate.now()
+            val employeeId1 = "a0B000000011111"
+            val employeeId2 = "a0B000000022222"
+            val employeeId3 = "a0B000000033333"
+
+            val schedule1 = Schedule(
+                employeeId = employeeId1,
+                workingDate = today,
+                workingType = "순회"
+            )
+            val schedule2 = Schedule(
+                employeeId = employeeId2,
+                workingDate = today,
+                workingType = "격고"
+            )
+            val schedule3 = Schedule(
+                employeeId = employeeId3,
+                workingDate = today,
+                workingType = "휴가"
+            )
+            testEntityManager.persistAndFlush(schedule1)
+            testEntityManager.persistAndFlush(schedule2)
+            testEntityManager.persistAndFlush(schedule3)
+            testEntityManager.clear()
+
+            // When
+            val result = scheduleRepository.findByWorkingDateAndEmployeeIdIn(
+                today,
+                listOf(employeeId1, employeeId2, employeeId3)
+            )
+
+            // Then
+            assertThat(result).hasSize(3)
+            assertThat(result.map { it.employeeId })
+                .containsExactlyInAnyOrder(employeeId1, employeeId2, employeeId3)
+        }
+
+        @Test
+        @DisplayName("빈 결과 - 일치하는 사원 없음")
+        fun findByWorkingDateAndEmployeeIdIn_noMatchingEmployees() {
+            // Given
+            val today = LocalDate.now()
+            val schedule = Schedule(
+                employeeId = "a0B000000099999",
+                workingDate = today,
+                workingType = "순회"
+            )
+            testEntityManager.persistAndFlush(schedule)
+            testEntityManager.clear()
+
+            // When
+            val result = scheduleRepository.findByWorkingDateAndEmployeeIdIn(
+                today,
+                listOf("a0B000000011111", "a0B000000022222")
+            )
+
+            // Then
+            assertThat(result).isEmpty()
+        }
     }
 }

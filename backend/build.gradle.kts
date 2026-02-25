@@ -106,7 +106,7 @@ sourceSets {
 				"**/DailySalesServiceTest.kt",
 				"**/EducationServiceTest.kt",
 				"**/EventServiceTest.kt",
-				"**/HomeServiceTest.kt",
+				// "**/HomeServiceTest.kt", // re-enabled: test rewritten for V1 schema
 				"**/InspectionServiceTest.kt",
 				"**/MyScheduleServiceTest.kt",
 				"**/NoticeServiceTest.kt",

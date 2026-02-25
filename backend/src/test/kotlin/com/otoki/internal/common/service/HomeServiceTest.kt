@@ -1,15 +1,20 @@
 package com.otoki.internal.common.service
 
-import com.otoki.internal.entity.*
-import com.otoki.internal.common.entity.*
-import com.otoki.internal.notice.entity.Notice
 import com.otoki.internal.auth.exception.UserNotFoundException
-import com.otoki.internal.notice.repository.NoticeRepository
-import com.otoki.internal.schedule.repository.ScheduleRepository
+import com.otoki.internal.common.entity.User
 import com.otoki.internal.common.repository.UserRepository
+import com.otoki.internal.entity.Account
+import com.otoki.internal.notice.entity.Notice
+import com.otoki.internal.notice.repository.NoticeRepository
+import com.otoki.internal.repository.AccountRepository
+import com.otoki.internal.safetycheck.dto.response.SafetyCheckTodayResponse
+import com.otoki.internal.safetycheck.service.SafetyCheckService
+import com.otoki.internal.schedule.entity.Schedule
+import com.otoki.internal.schedule.repository.ScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.InjectMocks
@@ -35,196 +40,342 @@ class HomeServiceTest {
     @Mock
     private lateinit var noticeRepository: NoticeRepository
 
+    @Mock
+    private lateinit var accountRepository: AccountRepository
+
+    @Mock
+    private lateinit var safetyCheckService: SafetyCheckService
+
     @InjectMocks
     private lateinit var homeService: HomeService
 
-    private val testUserSfid = "a0B000000012345"
+    @Nested
+    @DisplayName("getHomeData - 홈 화면 데이터 조회")
+    inner class GetHomeDataTests {
 
-    // ========== 정상 조회 Tests ==========
+        // ========== 역할별 스케줄 조회 ==========
 
-    @Test
-    @DisplayName("홈 데이터 조회 성공 - 일정, 공지사항 있는 경우")
-    fun getHomeData_allDataPresent() {
-        // Given
-        val userId = 1L
-        val user = createTestUser(id = userId, sfid = testUserSfid)
+        @Test
+        @DisplayName("여사원 - 본인 스케줄만 조회 -> 본인 employeeId로 조회된 스케줄만 반환")
+        fun user_onlyOwnSchedules() {
+            // Given
+            val userId = 1L
+            val userSfid = "a0B000000012345"
+            val user = createUser(id = userId, sfid = userSfid, appAuthority = null)
+            val account = createAccount(sfid = "ACC001", name = "이마트 부산점")
 
-        val schedules = listOf(
-            Schedule(
-                id = 1L,
-                employeeId = testUserSfid,
-                workingDate = LocalDate.now(),
-                workingType = "순회",
-                startTime = LocalDateTime.now().withHour(9).withMinute(0)
-            ),
-            Schedule(
-                id = 2L,
-                employeeId = testUserSfid,
-                workingDate = LocalDate.now(),
-                workingType = "격고",
-                startTime = LocalDateTime.now().withHour(14).withMinute(0),
-                completeTime = LocalDateTime.now().withHour(17).withMinute(0)
+            val schedules = listOf(
+                createSchedule(sfid = "SCH001", employeeId = userSfid, accountId = "ACC001", workingCategory1 = "진열"),
+                createSchedule(sfid = "SCH002", employeeId = userSfid, accountId = "ACC001", workingCategory1 = "행사")
             )
-        )
 
-        val notices = listOf(
-            Notice(
-                id = 1L,
-                name = "2월 영업 목표 달성 현황",
-                category = "BRANCH",
-                branch = "부산1지점",
-                createdDate = LocalDateTime.now().minusDays(1)
-            ),
-            Notice(
-                id = 2L,
-                name = "신제품 출시 안내",
-                category = "ALL",
-                createdDate = LocalDateTime.now().minusDays(2)
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(scheduleRepository.findByEmployeeIdAndWorkingDate(eq(userSfid), any()))
+                .thenReturn(schedules)
+            whenever(accountRepository.findBySfidIn(any())).thenReturn(listOf(account))
+            whenever(safetyCheckService.getTodayStatus(any()))
+                .thenReturn(SafetyCheckTodayResponse(completed = false))
+            whenever(noticeRepository.findRecentNotices(any(), any(), any(), any()))
+                .thenReturn(emptyList())
+
+            // When
+            val result = homeService.getHomeData(userId)
+
+            // Then
+            assertThat(result.todaySchedules).hasSize(2)
+            assertThat(result.todaySchedules).allMatch { it.employeeSfid == userSfid }
+            assertThat(result.todaySchedules[0].storeName).isEqualTo("이마트 부산점")
+        }
+
+        @Test
+        @DisplayName("조장 - 팀 전체 스케줄 조회 -> orgName 기반 팀원 전체 스케줄 반환")
+        fun leader_teamSchedules() {
+            // Given
+            val userId = 1L
+            val leaderSfid = "a0B000000099999"
+            val member1Sfid = "a0B000000011111"
+            val member2Sfid = "a0B000000022222"
+            val orgName = "부산1지점"
+
+            val leader = createUser(id = userId, sfid = leaderSfid, orgName = orgName, appAuthority = "조장")
+            val member1 = createUser(id = 2L, sfid = member1Sfid, orgName = orgName, name = "김영희")
+            val member2 = createUser(id = 3L, sfid = member2Sfid, orgName = orgName, name = "박미나")
+            val teamUsers = listOf(leader, member1, member2)
+
+            val schedules = listOf(
+                createSchedule(sfid = "SCH001", employeeId = member1Sfid, accountId = "ACC001", workingCategory1 = "진열"),
+                createSchedule(sfid = "SCH002", employeeId = member2Sfid, accountId = "ACC002", workingCategory1 = "행사"),
+                createSchedule(sfid = "SCH003", employeeId = leaderSfid, accountId = "ACC001", workingCategory1 = "진열")
             )
-        )
 
-        whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-        whenever(scheduleRepository.findByEmployeeIdAndWorkingDate(eq(testUserSfid), any()))
-            .thenReturn(schedules)
-        whenever(noticeRepository.findRecentNotices(eq("부산1지점"), any(), any(), any()))
-            .thenReturn(notices)
+            val accounts = listOf(
+                createAccount(sfid = "ACC001", name = "이마트 부산점"),
+                createAccount(sfid = "ACC002", name = "홈플러스 해운대점")
+            )
 
-        // When
-        val result = homeService.getHomeData(userId)
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(leader))
+            whenever(userRepository.findByOrgName(orgName)).thenReturn(teamUsers)
+            whenever(scheduleRepository.findByWorkingDateAndEmployeeIdIn(any(), any()))
+                .thenReturn(schedules)
+            whenever(accountRepository.findBySfidIn(any())).thenReturn(accounts)
+            whenever(noticeRepository.findRecentNotices(any(), any(), any(), any()))
+                .thenReturn(emptyList())
 
-        // Then
-        assertThat(result.todaySchedules).hasSize(2)
-        assertThat(result.todaySchedules[0].type).isEqualTo("순회")
-        assertThat(result.todaySchedules[1].type).isEqualTo("격고")
+            // When
+            val result = homeService.getHomeData(userId)
 
-        // Phase2: expiryAlert는 비활성화됨
-        assertThat(result.expiryAlert).isNull()
+            // Then
+            assertThat(result.todaySchedules).hasSize(3)
+            val employeeSfids = result.todaySchedules.map { it.employeeSfid }
+            assertThat(employeeSfids).containsExactlyInAnyOrder(member1Sfid, member2Sfid, leaderSfid)
+        }
 
-        assertThat(result.notices).hasSize(2)
-        assertThat(result.notices[0].title).isEqualTo("2월 영업 목표 달성 현황")
-        assertThat(result.notices[0].type).isEqualTo("BRANCH")
-        assertThat(result.notices[1].title).isEqualTo("신제품 출시 안내")
-        assertThat(result.notices[1].type).isEqualTo("ALL")
+        // ========== 안전점검 ==========
 
-        assertThat(result.currentDate).isEqualTo(LocalDate.now().toString())
+        @Test
+        @DisplayName("여사원 안전점검 미완료 - 오늘 안전점검 미완료 -> safetyCheckRequired=true")
+        fun user_safetyCheckNotCompleted() {
+            // Given
+            val userId = 1L
+            val user = createUser(id = userId, sfid = "a0B000000012345", appAuthority = null)
+
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(scheduleRepository.findByEmployeeIdAndWorkingDate(any(), any()))
+                .thenReturn(emptyList())
+            whenever(safetyCheckService.getTodayStatus(userId))
+                .thenReturn(SafetyCheckTodayResponse(completed = false))
+            whenever(noticeRepository.findRecentNotices(any(), any(), any(), any()))
+                .thenReturn(emptyList())
+
+            // When
+            val result = homeService.getHomeData(userId)
+
+            // Then
+            assertThat(result.safetyCheckRequired).isTrue()
+        }
+
+        @Test
+        @DisplayName("여사원 안전점검 완료 - 오늘 안전점검 완료 -> safetyCheckRequired=false")
+        fun user_safetyCheckCompleted() {
+            // Given
+            val userId = 1L
+            val user = createUser(id = userId, sfid = "a0B000000012345", appAuthority = null)
+
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(scheduleRepository.findByEmployeeIdAndWorkingDate(any(), any()))
+                .thenReturn(emptyList())
+            whenever(safetyCheckService.getTodayStatus(userId))
+                .thenReturn(SafetyCheckTodayResponse(completed = true, submittedAt = LocalDateTime.now()))
+            whenever(noticeRepository.findRecentNotices(any(), any(), any(), any()))
+                .thenReturn(emptyList())
+
+            // When
+            val result = homeService.getHomeData(userId)
+
+            // Then
+            assertThat(result.safetyCheckRequired).isFalse()
+        }
+
+        @Test
+        @DisplayName("조장 안전점검 - 조장은 역할과 무관하게 -> safetyCheckRequired=false")
+        fun leader_safetyCheckAlwaysFalse() {
+            // Given
+            val userId = 1L
+            val leader = createUser(id = userId, sfid = "a0B000000099999", orgName = "부산1지점", appAuthority = "조장")
+
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(leader))
+            whenever(userRepository.findByOrgName("부산1지점")).thenReturn(listOf(leader))
+            whenever(scheduleRepository.findByWorkingDateAndEmployeeIdIn(any(), any()))
+                .thenReturn(emptyList())
+            whenever(noticeRepository.findRecentNotices(any(), any(), any(), any()))
+                .thenReturn(emptyList())
+
+            // When
+            val result = homeService.getHomeData(userId)
+
+            // Then
+            assertThat(result.safetyCheckRequired).isFalse()
+        }
+
+        // ========== 정렬 ==========
+
+        @Test
+        @DisplayName("4단계 정렬 - 출근완료(0) -> 임시배정(1) -> 행사(2) -> 진열(3) 순서로 정렬")
+        fun schedules_sortedByPriority() {
+            // Given
+            val userId = 1L
+            val userSfid = "a0B000000012345"
+            val user = createUser(id = userId, sfid = userSfid, appAuthority = null)
+
+            // 진열 (priority 3)
+            val displaySchedule = createSchedule(
+                sfid = "SCH_DISPLAY",
+                employeeId = userSfid,
+                accountId = "ACC001",
+                workingCategory1 = "진열",
+                workingCategory2 = null,
+                commuteLogId = null
+            )
+            // 행사 (priority 2)
+            val eventSchedule = createSchedule(
+                sfid = "SCH_EVENT",
+                employeeId = userSfid,
+                accountId = "ACC002",
+                workingCategory1 = "행사",
+                workingCategory2 = null,
+                commuteLogId = null
+            )
+            // 임시배정 (priority 1)
+            val tempSchedule = createSchedule(
+                sfid = "SCH_TEMP",
+                employeeId = userSfid,
+                accountId = "ACC003",
+                workingCategory1 = "진열",
+                workingCategory2 = "임시배정",
+                commuteLogId = null
+            )
+            // 출근완료 (priority 0)
+            val commuteSchedule = createSchedule(
+                sfid = "SCH_COMMUTE",
+                employeeId = userSfid,
+                accountId = "ACC004",
+                workingCategory1 = "진열",
+                workingCategory2 = null,
+                commuteLogId = "CLG001"
+            )
+
+            // 의도적으로 역순 전달 (진열 -> 행사 -> 임시 -> 출근완료)
+            val schedules = listOf(displaySchedule, eventSchedule, tempSchedule, commuteSchedule)
+
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(scheduleRepository.findByEmployeeIdAndWorkingDate(eq(userSfid), any()))
+                .thenReturn(schedules)
+            whenever(accountRepository.findBySfidIn(any())).thenReturn(emptyList())
+            whenever(safetyCheckService.getTodayStatus(any()))
+                .thenReturn(SafetyCheckTodayResponse(completed = true))
+            whenever(noticeRepository.findRecentNotices(any(), any(), any(), any()))
+                .thenReturn(emptyList())
+
+            // When
+            val result = homeService.getHomeData(userId)
+
+            // Then
+            assertThat(result.todaySchedules).hasSize(4)
+            assertThat(result.todaySchedules[0].scheduleId).isEqualTo("SCH_COMMUTE")
+            assertThat(result.todaySchedules[1].scheduleId).isEqualTo("SCH_TEMP")
+            assertThat(result.todaySchedules[2].scheduleId).isEqualTo("SCH_EVENT")
+            assertThat(result.todaySchedules[3].scheduleId).isEqualTo("SCH_DISPLAY")
+        }
+
+        // ========== 중복 제거 ==========
+
+        @Test
+        @DisplayName("중복 사원 제거 - 동일 sfid 스케줄이 복수 존재 -> 정렬 후 첫 번째만 반환")
+        fun schedules_deduplicatedBySfid() {
+            // Given
+            val userId = 1L
+            val userSfid = "a0B000000012345"
+            val user = createUser(id = userId, sfid = userSfid, appAuthority = null)
+
+            // 같은 sfid로 진열(priority 3)과 행사(priority 2) 스케줄 존재
+            val displaySchedule = createSchedule(
+                sfid = "SCH_SAME",
+                employeeId = userSfid,
+                accountId = "ACC001",
+                workingCategory1 = "진열",
+                commuteLogId = null
+            )
+            val eventSchedule = createSchedule(
+                sfid = "SCH_SAME",
+                employeeId = userSfid,
+                accountId = "ACC002",
+                workingCategory1 = "행사",
+                commuteLogId = null
+            )
+            val otherSchedule = createSchedule(
+                sfid = "SCH_OTHER",
+                employeeId = userSfid,
+                accountId = "ACC003",
+                workingCategory1 = "진열",
+                commuteLogId = null
+            )
+
+            val schedules = listOf(displaySchedule, eventSchedule, otherSchedule)
+
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(scheduleRepository.findByEmployeeIdAndWorkingDate(eq(userSfid), any()))
+                .thenReturn(schedules)
+            whenever(accountRepository.findBySfidIn(any())).thenReturn(emptyList())
+            whenever(safetyCheckService.getTodayStatus(any()))
+                .thenReturn(SafetyCheckTodayResponse(completed = true))
+            whenever(noticeRepository.findRecentNotices(any(), any(), any(), any()))
+                .thenReturn(emptyList())
+
+            // When
+            val result = homeService.getHomeData(userId)
+
+            // Then
+            assertThat(result.todaySchedules).hasSize(2)
+            val scheduleIds = result.todaySchedules.map { it.scheduleId }
+            assertThat(scheduleIds).containsExactlyInAnyOrder("SCH_SAME", "SCH_OTHER")
+        }
+
+        // ========== 출근현황 집계 ==========
+
+        @Test
+        @DisplayName("출근현황 집계 - 전체 건수와 출근 등록 건수 -> attendanceSummary 정확히 반환")
+        fun attendanceSummary_correctCounts() {
+            // Given
+            val userId = 1L
+            val userSfid = "a0B000000012345"
+            val user = createUser(id = userId, sfid = userSfid, appAuthority = null)
+
+            val schedules = listOf(
+                createSchedule(sfid = "SCH001", employeeId = userSfid, accountId = "ACC001", commuteLogId = "CLG001"),
+                createSchedule(sfid = "SCH002", employeeId = userSfid, accountId = "ACC002", commuteLogId = "CLG002"),
+                createSchedule(sfid = "SCH003", employeeId = userSfid, accountId = "ACC003", commuteLogId = null)
+            )
+
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(scheduleRepository.findByEmployeeIdAndWorkingDate(eq(userSfid), any()))
+                .thenReturn(schedules)
+            whenever(accountRepository.findBySfidIn(any())).thenReturn(emptyList())
+            whenever(safetyCheckService.getTodayStatus(any()))
+                .thenReturn(SafetyCheckTodayResponse(completed = true))
+            whenever(noticeRepository.findRecentNotices(any(), any(), any(), any()))
+                .thenReturn(emptyList())
+
+            // When
+            val result = homeService.getHomeData(userId)
+
+            // Then
+            assertThat(result.attendanceSummary.totalCount).isEqualTo(3)
+            assertThat(result.attendanceSummary.registeredCount).isEqualTo(2)
+        }
+
+        // ========== 에러 케이스 ==========
+
+        @Test
+        @DisplayName("사용자 없음 - 존재하지 않는 userId -> UserNotFoundException 발생")
+        fun userNotFound_throwsException() {
+            // Given
+            whenever(userRepository.findById(999L)).thenReturn(Optional.empty())
+
+            // When & Then
+            assertThatThrownBy { homeService.getHomeData(999L) }
+                .isInstanceOf(UserNotFoundException::class.java)
+        }
     }
 
-    @Test
-    @DisplayName("홈 데이터 조회 - 오늘 일정이 없는 경우 빈 배열 반환")
-    fun getHomeData_noSchedules() {
-        // Given
-        val userId = 1L
-        val user = createTestUser(id = userId, sfid = testUserSfid)
+    // ========== Helper Factories ==========
 
-        whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-        whenever(scheduleRepository.findByEmployeeIdAndWorkingDate(eq(testUserSfid), any()))
-            .thenReturn(emptyList())
-        whenever(noticeRepository.findRecentNotices(eq("부산1지점"), any(), any(), any()))
-            .thenReturn(emptyList())
-
-        // When
-        val result = homeService.getHomeData(userId)
-
-        // Then
-        assertThat(result.todaySchedules).isEmpty()
-    }
-
-    @Test
-    @DisplayName("홈 데이터 조회 - 공지사항이 없는 경우 빈 배열 반환")
-    fun getHomeData_noNotices() {
-        // Given
-        val userId = 1L
-        val user = createTestUser(id = userId, sfid = testUserSfid)
-
-        whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-        whenever(scheduleRepository.findByEmployeeIdAndWorkingDate(eq(testUserSfid), any()))
-            .thenReturn(emptyList())
-        whenever(noticeRepository.findRecentNotices(eq("부산1지점"), any(), any(), any()))
-            .thenReturn(emptyList())
-
-        // When
-        val result = homeService.getHomeData(userId)
-
-        // Then
-        assertThat(result.notices).isEmpty()
-    }
-
-    @Test
-    @DisplayName("홈 데이터 조회 - 지점공지 + 전체공지 혼합 조회")
-    fun getHomeData_mixedNotices() {
-        // Given
-        val userId = 1L
-        val user = createTestUser(id = userId, sfid = testUserSfid)
-
-        val notices = listOf(
-            Notice(id = 1L, name = "지점공지1", category = "BRANCH", branch = "부산1지점",
-                createdDate = LocalDateTime.now().minusHours(1)),
-            Notice(id = 2L, name = "지점공지2", category = "BRANCH", branch = "부산1지점",
-                createdDate = LocalDateTime.now().minusHours(2)),
-            Notice(id = 3L, name = "전체공지1", category = "ALL",
-                createdDate = LocalDateTime.now().minusHours(3)),
-            Notice(id = 4L, name = "전체공지2", category = "ALL",
-                createdDate = LocalDateTime.now().minusDays(1)),
-            Notice(id = 5L, name = "전체공지3", category = "ALL",
-                createdDate = LocalDateTime.now().minusDays(2))
-        )
-
-        whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-        whenever(scheduleRepository.findByEmployeeIdAndWorkingDate(eq(testUserSfid), any()))
-            .thenReturn(emptyList())
-        whenever(noticeRepository.findRecentNotices(eq("부산1지점"), any(), any(), any()))
-            .thenReturn(notices)
-
-        // When
-        val result = homeService.getHomeData(userId)
-
-        // Then
-        assertThat(result.notices).hasSize(5)
-        assertThat(result.notices[0].type).isEqualTo("BRANCH")
-        assertThat(result.notices[2].type).isEqualTo("ALL")
-    }
-
-    // ========== 에러 케이스 Tests ==========
-
-    @Test
-    @DisplayName("홈 데이터 조회 실패 - 존재하지 않는 사용자 ID로 조회 시 UserNotFoundException 발생")
-    fun getHomeData_userNotFound() {
-        // Given
-        whenever(userRepository.findById(999L)).thenReturn(Optional.empty())
-
-        // When & Then
-        assertThatThrownBy { homeService.getHomeData(999L) }
-            .isInstanceOf(UserNotFoundException::class.java)
-    }
-
-    @Test
-    @DisplayName("홈 데이터 조회 - currentDate가 서버 기준 현재 날짜를 반환")
-    fun getHomeData_currentDateIsToday() {
-        // Given
-        val userId = 1L
-        val user = createTestUser(id = userId, sfid = testUserSfid)
-
-        whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-        whenever(scheduleRepository.findByEmployeeIdAndWorkingDate(eq(testUserSfid), any()))
-            .thenReturn(emptyList())
-        whenever(noticeRepository.findRecentNotices(eq("부산1지점"), any(), any(), any()))
-            .thenReturn(emptyList())
-
-        // When
-        val result = homeService.getHomeData(userId)
-
-        // Then
-        assertThat(result.currentDate).isEqualTo(LocalDate.now().toString())
-    }
-
-    // ========== Helper ==========
-
-    private fun createTestUser(
+    private fun createUser(
         id: Long = 1L,
         employeeId: String = "20030117",
         name: String = "최금주",
         orgName: String = "부산1지점",
-        sfid: String? = null
+        sfid: String? = null,
+        appAuthority: String? = null
     ): User {
         return User(
             id = id,
@@ -232,7 +383,46 @@ class HomeServiceTest {
             password = "encoded_password",
             name = name,
             orgName = orgName,
-            sfid = sfid
+            sfid = sfid,
+            appAuthority = appAuthority
+        )
+    }
+
+    private fun createSchedule(
+        id: Long = 0L,
+        sfid: String? = null,
+        employeeId: String? = null,
+        accountId: String? = null,
+        workingDate: LocalDate = LocalDate.now(),
+        workingType: String? = "순회",
+        workingCategory1: String? = "진열",
+        workingCategory2: String? = null,
+        commuteLogId: String? = null,
+        commuteReportDatetime: LocalDateTime? = null
+    ): Schedule {
+        return Schedule(
+            id = id,
+            sfid = sfid,
+            employeeId = employeeId,
+            accountId = accountId,
+            workingDate = workingDate,
+            workingType = workingType,
+            workingCategory1 = workingCategory1,
+            workingCategory2 = workingCategory2,
+            commuteLogId = commuteLogId,
+            commuteReportDatetime = commuteReportDatetime
+        )
+    }
+
+    private fun createAccount(
+        id: Long = 0L,
+        sfid: String? = null,
+        name: String? = null
+    ): Account {
+        return Account(
+            id = id,
+            sfid = sfid,
+            name = name
         )
     }
 }

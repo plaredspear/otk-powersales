@@ -1,9 +1,13 @@
 package com.otoki.internal.common.service
 
 import com.otoki.internal.common.dto.response.HomeResponse
+import com.otoki.internal.common.entity.User
+import com.otoki.internal.common.entity.UserRole
 import com.otoki.internal.auth.exception.UserNotFoundException
-// import com.otoki.internal.product.repository.ExpiryProductRepository  // Phase2: PG 대응 테이블 없음
 import com.otoki.internal.notice.repository.NoticeRepository
+import com.otoki.internal.repository.AccountRepository
+import com.otoki.internal.safetycheck.service.SafetyCheckService
+import com.otoki.internal.schedule.entity.Schedule
 import com.otoki.internal.schedule.repository.ScheduleRepository
 import com.otoki.internal.common.repository.UserRepository
 import org.springframework.stereotype.Service
@@ -21,24 +25,32 @@ import java.time.format.DateTimeFormatter
 class HomeService(
     private val userRepository: UserRepository,
     private val scheduleRepository: ScheduleRepository,
-    // private val expiryProductRepository: ExpiryProductRepository,  // Phase2: PG 대응 테이블 없음
-    private val noticeRepository: NoticeRepository
+    private val noticeRepository: NoticeRepository,
+    private val accountRepository: AccountRepository,
+    private val safetyCheckService: SafetyCheckService
 ) {
 
     companion object {
-        private const val EXPIRY_ALERT_DAYS = 7L
         private const val NOTICE_DAYS = 7L
-        private val TIME_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
         private val DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+
+        /** 정렬 우선순위: 출근완료(0) → 임시배정(1) → 행사(2) → 진열(3) */
+        private fun sortPriority(schedule: Schedule): Int {
+            return when {
+                schedule.commuteLogId != null -> 0
+                schedule.workingCategory2?.contains("임시") == true -> 1
+                schedule.workingCategory1 != "진열" -> 2
+                else -> 3
+            }
+        }
     }
 
     /**
      * 홈 화면 데이터 통합 조회
      *
-     * 1. 사용자 존재 확인
-     * 2. 오늘 일정 조회
-     * 3. 유통기한 임박제품 건수 조회
-     * 4. 최근 1주일 공지사항 조회
+     * 역할별 분기:
+     * - USER(여사원): 본인 스케줄, 안전점검 확인
+     * - LEADER(조장): 팀 전체 스케줄, 안전점검 항상 false
      */
     fun getHomeData(userId: Long): HomeResponse {
         val user = userRepository.findById(userId)
@@ -46,34 +58,33 @@ class HomeService(
 
         val today = LocalDate.now()
 
-        // 오늘 일정 조회 (V1: employeeId(sfid) + workingDate로 조회)
-        val userSfid = user.sfid ?: ""
-        val todaySchedules = scheduleRepository
-            .findByEmployeeIdAndWorkingDate(userSfid, today)
-            .map { schedule ->
-                HomeResponse.ScheduleInfo(
-                    id = schedule.id,
-                    storeName = "",  // V1에서 storeName 삭제됨
-                    startTime = schedule.startTime?.toLocalTime()?.format(TIME_FORMATTER) ?: "",
-                    endTime = schedule.completeTime?.toLocalTime()?.format(TIME_FORMATTER) ?: "",
-                    type = schedule.workingType ?: ""
-                )
-            }
+        // 역할별 스케줄 조회
+        val (schedules, userMap) = fetchSchedulesByRole(user, today)
 
-        // Phase2: ExpiryProduct PG 대응 테이블 없음 - 주석 처리
-        // val expiryCount = expiryProductRepository
-        //     .countByUserIdAndExpiryDateBetween(userId, today, today.plusDays(EXPIRY_ALERT_DAYS))
-        //
-        // val expiryAlert = if (expiryCount > 0) {
-        //     HomeResponse.ExpiryAlertInfo(
-        //         branchName = user.branchName,
-        //         employeeName = user.name,
-        //         employeeId = user.employeeId,
-        //         expiryCount = expiryCount.toInt()
-        //     )
-        // } else {
-        //     null
-        // }
+        // 스케줄 → 거래처명 매핑 (batch fetch)
+        val accountMap = fetchAccountMap(schedules)
+
+        // 정렬 + 중복 제거 + DTO 변환
+        val todaySchedules = schedules
+            .sortedBy { sortPriority(it) }
+            .distinctBy { it.sfid }
+            .map { schedule -> toScheduleInfo(schedule, userMap, accountMap) }
+
+        // 출근 현황 집계
+        val attendanceSummary = HomeResponse.AttendanceSummaryInfo(
+            totalCount = todaySchedules.size,
+            registeredCount = todaySchedules.count { it.isCommuteRegistered }
+        )
+
+        // 안전점검 필요 여부 (조장은 항상 false)
+        val safetyCheckRequired = when (user.role) {
+            UserRole.USER -> {
+                val todayStatus = safetyCheckService.getTodayStatus(userId)
+                !todayStatus.completed
+            }
+            else -> false
+        }
+
         val expiryAlert: HomeResponse.ExpiryAlertInfo? = null
 
         // 최근 1주일 공지사항 조회
@@ -91,9 +102,70 @@ class HomeService(
 
         return HomeResponse(
             todaySchedules = todaySchedules,
+            attendanceSummary = attendanceSummary,
+            safetyCheckRequired = safetyCheckRequired,
             expiryAlert = expiryAlert,
             notices = notices,
             currentDate = today.format(DATE_FORMATTER)
+        )
+    }
+
+    /**
+     * 역할별 스케줄 조회
+     * @return Pair(스케줄 목록, sfid→User 매핑)
+     */
+    private fun fetchSchedulesByRole(user: User, today: LocalDate): Pair<List<Schedule>, Map<String, User>> {
+        return when (user.role) {
+            UserRole.LEADER -> {
+                val teamUsers = userRepository.findByOrgName(user.orgName ?: "")
+                val sfids = teamUsers.mapNotNull { it.sfid }
+                val schedules = if (sfids.isNotEmpty()) {
+                    scheduleRepository.findByWorkingDateAndEmployeeIdIn(today, sfids)
+                } else {
+                    emptyList()
+                }
+                val userMap = teamUsers.associateBy { it.sfid ?: "" }
+                Pair(schedules, userMap)
+            }
+            else -> {
+                val userSfid = user.sfid ?: ""
+                val schedules = scheduleRepository.findByEmployeeIdAndWorkingDate(userSfid, today)
+                val userMap = mapOf(userSfid to user)
+                Pair(schedules, userMap)
+            }
+        }
+    }
+
+    /**
+     * 스케줄의 accountId → Account 이름 매핑 (batch fetch)
+     */
+    private fun fetchAccountMap(schedules: List<Schedule>): Map<String, String> {
+        val accountSfids = schedules.mapNotNull { it.accountId }.distinct()
+        if (accountSfids.isEmpty()) return emptyMap()
+        return accountRepository.findBySfidIn(accountSfids)
+            .associate { (it.sfid ?: "") to (it.name ?: "") }
+    }
+
+    /**
+     * Schedule entity → ScheduleInfo DTO 변환
+     */
+    private fun toScheduleInfo(
+        schedule: Schedule,
+        userMap: Map<String, User>,
+        accountMap: Map<String, String>
+    ): HomeResponse.ScheduleInfo {
+        val employeeSfid = schedule.employeeId ?: ""
+        val matchedUser = userMap[employeeSfid]
+        return HomeResponse.ScheduleInfo(
+            scheduleId = schedule.sfid ?: "",
+            employeeName = matchedUser?.name ?: "",
+            employeeSfid = employeeSfid,
+            storeName = schedule.accountId?.let { accountMap[it] },
+            storeSfid = schedule.accountId,
+            workCategory = schedule.workingCategory1 ?: "",
+            workType = schedule.workingType,
+            isCommuteRegistered = schedule.commuteLogId != null,
+            commuteRegisteredAt = schedule.commuteReportDatetime
         )
     }
 }
