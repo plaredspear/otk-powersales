@@ -1,32 +1,30 @@
-/*
 package com.otoki.internal.schedule.controller
 
 import com.otoki.internal.common.dto.ApiResponse
-import com.otoki.internal.schedule.dto.request.AttendanceRequest
-import com.otoki.internal.schedule.dto.response.AttendanceResponse
-import com.otoki.internal.schedule.dto.response.AttendanceStatusResponse
 import com.otoki.internal.common.dto.response.StoreListResponse
 import com.otoki.internal.common.security.UserPrincipal
+import com.otoki.internal.schedule.dto.request.CommuteRequest
+import com.otoki.internal.schedule.dto.response.CommuteResponse
+import com.otoki.internal.schedule.dto.response.CommuteStatusResponse
 import com.otoki.internal.schedule.service.AttendanceService
 import jakarta.validation.Valid
-import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
 
-/ **
- * 출근등록 API Controller
- * /
+/**
+ * 출근 등록 API Controller
+ */
 @RestController
 @RequestMapping("/api/v1/attendance")
 class AttendanceController(
     private val attendanceService: AttendanceService
 ) {
 
-    / **
-     * 오늘 출근 거래처 목록 조회
+    /**
+     * 출근 거래처 목록 조회
      * GET /api/v1/attendance/stores
-     * /
+     */
     @GetMapping("/stores")
     fun getStoreList(
         @AuthenticationPrincipal principal: UserPrincipal,
@@ -36,35 +34,34 @@ class AttendanceController(
         return ResponseEntity.ok(ApiResponse.success(response, "조회 성공"))
     }
 
-    / **
-     * 출근등록
+    /**
+     * 출근 등록
      * POST /api/v1/attendance
-     * /
+     */
     @PostMapping
-    fun registerAttendance(
+    fun registerCommute(
         @AuthenticationPrincipal principal: UserPrincipal,
-        @Valid @RequestBody request: AttendanceRequest
-    ): ResponseEntity<ApiResponse<AttendanceResponse>> {
-        val response = attendanceService.registerAttendance(
+        @Valid @RequestBody request: CommuteRequest
+    ): ResponseEntity<ApiResponse<CommuteResponse>> {
+        val response = attendanceService.registerCommute(
             userId = principal.userId,
-            storeId = request.storeId!!,
-            workTypeStr = request.workType!!
+            scheduleSfid = request.scheduleSfid,
+            latitude = request.latitude!!,
+            longitude = request.longitude!!,
+            workType = request.workType
         )
-        return ResponseEntity
-            .status(HttpStatus.CREATED)
-            .body(ApiResponse.success(response, "출근등록 완료"))
+        return ResponseEntity.ok(ApiResponse.success(response, "출근등록 완료"))
     }
 
-    / **
-     * 출근등록 현황 조회
+    /**
+     * 출근 현황 조회
      * GET /api/v1/attendance/status
-     * /
+     */
     @GetMapping("/status")
-    fun getAttendanceStatus(
+    fun getCommuteStatus(
         @AuthenticationPrincipal principal: UserPrincipal
-    ): ResponseEntity<ApiResponse<AttendanceStatusResponse>> {
-        val response = attendanceService.getAttendanceStatus(principal.userId)
+    ): ResponseEntity<ApiResponse<CommuteStatusResponse>> {
+        val response = attendanceService.getCommuteStatus(principal.userId)
         return ResponseEntity.ok(ApiResponse.success(response, "조회 성공"))
     }
 }
-*/

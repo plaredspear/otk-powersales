@@ -1,37 +1,40 @@
 package com.otoki.internal.schedule.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.otoki.internal.schedule.dto.request.AttendanceRequest
-import com.otoki.internal.schedule.dto.response.*
-import com.otoki.internal.common.dto.response.*
+import com.otoki.internal.common.dto.response.StoreInfo
+import com.otoki.internal.common.dto.response.StoreListResponse
 import com.otoki.internal.common.entity.UserRole
-import com.otoki.internal.schedule.exception.*
-import com.otoki.internal.common.exception.*
 import com.otoki.internal.common.security.GpsConsentFilter
 import com.otoki.internal.common.security.JwtAuthenticationFilter
 import com.otoki.internal.common.security.JwtTokenProvider
 import com.otoki.internal.common.security.UserPrincipal
+import com.otoki.internal.schedule.dto.response.CommuteResponse
+import com.otoki.internal.schedule.dto.response.CommuteStatusItem
+import com.otoki.internal.schedule.dto.response.CommuteStatusResponse
+import com.otoki.internal.schedule.exception.AlreadyRegisteredException
+import com.otoki.internal.schedule.exception.DistanceExceededException
+import com.otoki.internal.schedule.exception.ScheduleNotFoundException
 import com.otoki.internal.schedule.service.AttendanceService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
-import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
-import java.time.LocalDateTime
 
 @WebMvcTest(AttendanceController::class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -66,6 +69,167 @@ class AttendanceControllerTest {
         SecurityContextHolder.getContext().authentication = authentication
     }
 
+    // ========== POST /api/v1/attendance ==========
+
+    @Nested
+    @DisplayName("POST /api/v1/attendance - 출근등록")
+    inner class RegisterCommuteTests {
+
+        @Test
+        @DisplayName("출근 등록 성공 - 200 OK, schedule_sfid 포함")
+        fun registerCommute_success() {
+            // Given
+            val mockResponse = CommuteResponse(
+                scheduleSfid = "SCH-001",
+                storeName = "이마트 부산점",
+                workType = "ROOM_TEMP",
+                distanceKm = 0.12,
+                totalCount = 5,
+                registeredCount = 2
+            )
+
+            whenever(
+                attendanceService.registerCommute(
+                    eq(1L), eq("SCH-001"), eq(35.1234), eq(129.0567), eq("ROOM_TEMP")
+                )
+            ).thenReturn(mockResponse)
+
+            val requestJson = """
+                {
+                    "schedule_sfid": "SCH-001",
+                    "latitude": 35.1234,
+                    "longitude": 129.0567,
+                    "work_type": "ROOM_TEMP"
+                }
+            """.trimIndent()
+
+            // When & Then
+            mockMvc.perform(
+                post("/api/v1/attendance")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(requestJson)
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("출근등록 완료"))
+                .andExpect(jsonPath("$.data.schedule_sfid").value("SCH-001"))
+                .andExpect(jsonPath("$.data.store_name").value("이마트 부산점"))
+                .andExpect(jsonPath("$.data.work_type").value("ROOM_TEMP"))
+                .andExpect(jsonPath("$.data.distance_km").value(0.12))
+                .andExpect(jsonPath("$.data.total_count").value(5))
+                .andExpect(jsonPath("$.data.registered_count").value(2))
+        }
+
+        @Test
+        @DisplayName("거리 초과 - 400 DISTANCE_EXCEEDED")
+        fun registerCommute_distanceExceeded() {
+            // Given
+            whenever(
+                attendanceService.registerCommute(
+                    eq(1L), eq("SCH-001"), eq(35.1234), eq(129.0567), anyOrNull()
+                )
+            ).thenThrow(DistanceExceededException(1.5))
+
+            val requestJson = """
+                {
+                    "schedule_sfid": "SCH-001",
+                    "latitude": 35.1234,
+                    "longitude": 129.0567
+                }
+            """.trimIndent()
+
+            // When & Then
+            mockMvc.perform(
+                post("/api/v1/attendance")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(requestJson)
+            )
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("DISTANCE_EXCEEDED"))
+        }
+
+        @Test
+        @DisplayName("필수 필드 누락 (schedule_sfid 없음) - 400 INVALID_PARAMETER")
+        fun registerCommute_missingScheduleSfid() {
+            // Given - schedule_sfid 누락
+            val requestJson = """
+                {
+                    "latitude": 35.1234,
+                    "longitude": 129.0567
+                }
+            """.trimIndent()
+
+            // When & Then
+            mockMvc.perform(
+                post("/api/v1/attendance")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(requestJson)
+            )
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"))
+        }
+
+        @Test
+        @DisplayName("이미 등록 - 409 ALREADY_REGISTERED")
+        fun registerCommute_alreadyRegistered() {
+            // Given
+            whenever(
+                attendanceService.registerCommute(
+                    eq(1L), eq("SCH-001"), eq(35.1234), eq(129.0567), anyOrNull()
+                )
+            ).thenThrow(AlreadyRegisteredException())
+
+            val requestJson = """
+                {
+                    "schedule_sfid": "SCH-001",
+                    "latitude": 35.1234,
+                    "longitude": 129.0567
+                }
+            """.trimIndent()
+
+            // When & Then
+            mockMvc.perform(
+                post("/api/v1/attendance")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(requestJson)
+            )
+                .andExpect(status().isConflict)
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("ALREADY_REGISTERED"))
+        }
+
+        @Test
+        @DisplayName("스케줄 없음 - 404 SCHEDULE_NOT_FOUND")
+        fun registerCommute_scheduleNotFound() {
+            // Given
+            whenever(
+                attendanceService.registerCommute(
+                    eq(1L), eq("SCH-999"), eq(35.1234), eq(129.0567), anyOrNull()
+                )
+            ).thenThrow(ScheduleNotFoundException())
+
+            val requestJson = """
+                {
+                    "schedule_sfid": "SCH-999",
+                    "latitude": 35.1234,
+                    "longitude": 129.0567
+                }
+            """.trimIndent()
+
+            // When & Then
+            mockMvc.perform(
+                post("/api/v1/attendance")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(requestJson)
+            )
+                .andExpect(status().isNotFound)
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("SCHEDULE_NOT_FOUND"))
+        }
+    }
+
     // ========== GET /api/v1/attendance/stores ==========
 
     @Nested
@@ -73,34 +237,37 @@ class AttendanceControllerTest {
     inner class GetStoreListTests {
 
         @Test
-        @DisplayName("정상 조회 - 200 OK, 거래처 목록 반환")
+        @DisplayName("정상 조회 - 200 OK, latitude/longitude 포함")
         fun getStoreList_success() {
             // Given
             val mockResponse = StoreListResponse(
-                workerType = "PATROL",
                 stores = listOf(
                     StoreInfo(
-                        storeId = 101,
+                        scheduleSfid = "SCH-001",
+                        storeSfid = "ACC-001",
                         storeName = "이마트 부산점",
-                        storeCode = "ST-00101",
+                        storeTypeCode = "2110",
                         workCategory = "진열",
                         address = "부산시 해운대구 센텀2로 25",
-                        isRegistered = false,
-                        registeredWorkType = null
+                        latitude = 35.1696,
+                        longitude = 129.1314,
+                        isRegistered = false
                     ),
                     StoreInfo(
-                        storeId = 102,
+                        scheduleSfid = "SCH-002",
+                        storeSfid = "ACC-002",
                         storeName = "홈플러스 서면점",
-                        storeCode = "ST-00102",
+                        storeTypeCode = "2120",
                         workCategory = "상시",
                         address = "부산시 부산진구 부전동 168-7",
-                        isRegistered = true,
-                        registeredWorkType = "ROOM_TEMP"
+                        latitude = 35.1577,
+                        longitude = 129.0602,
+                        isRegistered = true
                     )
                 ),
                 totalCount = 2,
                 registeredCount = 1,
-                currentDate = "2026-02-09"
+                currentDate = "2026-02-25"
             )
 
             whenever(attendanceService.getStoreList(eq(1L), eq(null))).thenReturn(mockResponse)
@@ -113,40 +280,42 @@ class AttendanceControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("조회 성공"))
-                .andExpect(jsonPath("$.data.worker_type").value("PATROL"))
                 .andExpect(jsonPath("$.data.stores").isArray)
-                .andExpect(jsonPath("$.data.stores[0].store_id").value(101))
+                .andExpect(jsonPath("$.data.stores[0].schedule_sfid").value("SCH-001"))
+                .andExpect(jsonPath("$.data.stores[0].store_sfid").value("ACC-001"))
                 .andExpect(jsonPath("$.data.stores[0].store_name").value("이마트 부산점"))
-                .andExpect(jsonPath("$.data.stores[0].store_code").value("ST-00101"))
+                .andExpect(jsonPath("$.data.stores[0].store_type_code").value("2110"))
+                .andExpect(jsonPath("$.data.stores[0].work_category").value("진열"))
+                .andExpect(jsonPath("$.data.stores[0].latitude").value(35.1696))
+                .andExpect(jsonPath("$.data.stores[0].longitude").value(129.1314))
                 .andExpect(jsonPath("$.data.stores[0].is_registered").value(false))
-                .andExpect(jsonPath("$.data.stores[0].registered_work_type").doesNotExist())
                 .andExpect(jsonPath("$.data.stores[1].is_registered").value(true))
-                .andExpect(jsonPath("$.data.stores[1].registered_work_type").value("ROOM_TEMP"))
                 .andExpect(jsonPath("$.data.total_count").value(2))
                 .andExpect(jsonPath("$.data.registered_count").value(1))
-                .andExpect(jsonPath("$.data.current_date").value("2026-02-09"))
+                .andExpect(jsonPath("$.data.current_date").value("2026-02-25"))
         }
 
         @Test
-        @DisplayName("키워드 검색 조회 - 200 OK")
+        @DisplayName("키워드 검색 - 200 OK")
         fun getStoreList_withKeyword() {
             // Given
             val mockResponse = StoreListResponse(
-                workerType = "PATROL",
                 stores = listOf(
                     StoreInfo(
-                        storeId = 101,
+                        scheduleSfid = "SCH-001",
+                        storeSfid = "ACC-001",
                         storeName = "이마트 부산점",
-                        storeCode = "ST-00101",
+                        storeTypeCode = "2110",
                         workCategory = "진열",
-                        address = "부산시 해운대구",
-                        isRegistered = false,
-                        registeredWorkType = null
+                        address = "부산시 해운대구 센텀2로 25",
+                        latitude = 35.1696,
+                        longitude = 129.1314,
+                        isRegistered = false
                     )
                 ),
                 totalCount = 1,
                 registeredCount = 0,
-                currentDate = "2026-02-09"
+                currentDate = "2026-02-25"
             )
 
             whenever(attendanceService.getStoreList(eq(1L), eq("이마트"))).thenReturn(mockResponse)
@@ -162,208 +331,47 @@ class AttendanceControllerTest {
                 .andExpect(jsonPath("$.data.stores").isArray)
                 .andExpect(jsonPath("$.data.stores[0].store_name").value("이마트 부산점"))
                 .andExpect(jsonPath("$.data.total_count").value(1))
-        }
-    }
-
-    // ========== POST /api/v1/attendance ==========
-
-    @Nested
-    @DisplayName("POST /api/v1/attendance - 출근등록")
-    inner class RegisterAttendanceTests {
-
-        @Test
-        @DisplayName("정상 등록 - 201 Created")
-        fun registerAttendance_success() {
-            // Given
-            val registeredAt = LocalDateTime.of(2026, 2, 9, 9, 5, 23)
-            val mockResponse = AttendanceResponse(
-                attendanceId = 1001,
-                storeId = 101,
-                storeName = "이마트 부산점",
-                workType = "ROOM_TEMP",
-                registeredAt = registeredAt,
-                totalCount = 5,
-                registeredCount = 2
-            )
-
-            whenever(attendanceService.registerAttendance(eq(1L), eq(101L), eq("ROOM_TEMP")))
-                .thenReturn(mockResponse)
-
-            val request = AttendanceRequest(storeId = 101L, workType = "ROOM_TEMP")
-
-            // When & Then
-            mockMvc.perform(
-                post("/api/v1/attendance")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request))
-            )
-                .andExpect(status().isCreated)
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("출근등록 완료"))
-                .andExpect(jsonPath("$.data.attendance_id").value(1001))
-                .andExpect(jsonPath("$.data.store_id").value(101))
-                .andExpect(jsonPath("$.data.store_name").value("이마트 부산점"))
-                .andExpect(jsonPath("$.data.work_type").value("ROOM_TEMP"))
-                .andExpect(jsonPath("$.data.total_count").value(5))
-                .andExpect(jsonPath("$.data.registered_count").value(2))
-        }
-
-        @Test
-        @DisplayName("storeId 누락 - 400 INVALID_PARAMETER")
-        fun registerAttendance_missingStoreId() {
-            // Given - storeId null
-            val requestJson = """{"store_id": null, "work_type": "ROOM_TEMP"}"""
-
-            // When & Then
-            mockMvc.perform(
-                post("/api/v1/attendance")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(requestJson)
-            )
-                .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"))
-        }
-
-        @Test
-        @DisplayName("workType 누락 - 400 INVALID_PARAMETER")
-        fun registerAttendance_missingWorkType() {
-            // Given - workType 빈 문자열
-            val requestJson = """{"store_id": 101, "work_type": ""}"""
-
-            // When & Then
-            mockMvc.perform(
-                post("/api/v1/attendance")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(requestJson)
-            )
-                .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"))
-        }
-
-        @Test
-        @DisplayName("유효하지 않은 workType - 400 INVALID_WORK_TYPE")
-        fun registerAttendance_invalidWorkType() {
-            // Given
-            whenever(attendanceService.registerAttendance(eq(1L), eq(101L), eq("INVALID")))
-                .thenThrow(InvalidWorkTypeException())
-
-            val request = AttendanceRequest(storeId = 101L, workType = "INVALID")
-
-            // When & Then
-            mockMvc.perform(
-                post("/api/v1/attendance")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request))
-            )
-                .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.error.code").value("INVALID_WORK_TYPE"))
-        }
-
-        @Test
-        @DisplayName("거래처 없음 - 404 STORE_NOT_FOUND")
-        fun registerAttendance_storeNotFound() {
-            // Given
-            whenever(attendanceService.registerAttendance(eq(1L), eq(999L), eq("ROOM_TEMP")))
-                .thenThrow(StoreNotFoundException())
-
-            val request = AttendanceRequest(storeId = 999L, workType = "ROOM_TEMP")
-
-            // When & Then
-            mockMvc.perform(
-                post("/api/v1/attendance")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request))
-            )
-                .andExpect(status().isNotFound)
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.error.code").value("STORE_NOT_FOUND"))
-        }
-
-        @Test
-        @DisplayName("중복 등록 - 409 ALREADY_REGISTERED")
-        fun registerAttendance_alreadyRegistered() {
-            // Given
-            whenever(attendanceService.registerAttendance(eq(1L), eq(101L), eq("ROOM_TEMP")))
-                .thenThrow(AlreadyRegisteredException())
-
-            val request = AttendanceRequest(storeId = 101L, workType = "ROOM_TEMP")
-
-            // When & Then
-            mockMvc.perform(
-                post("/api/v1/attendance")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request))
-            )
-                .andExpect(status().isConflict)
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.error.code").value("ALREADY_REGISTERED"))
-        }
-
-        @Test
-        @DisplayName("격고 한도 초과 - 409 REGISTRATION_LIMIT_EXCEEDED")
-        fun registerAttendance_limitExceeded() {
-            // Given
-            whenever(attendanceService.registerAttendance(eq(1L), eq(103L), eq("ROOM_TEMP")))
-                .thenThrow(RegistrationLimitExceededException())
-
-            val request = AttendanceRequest(storeId = 103L, workType = "ROOM_TEMP")
-
-            // When & Then
-            mockMvc.perform(
-                post("/api/v1/attendance")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request))
-            )
-                .andExpect(status().isConflict)
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.error.code").value("REGISTRATION_LIMIT_EXCEEDED"))
+                .andExpect(jsonPath("$.data.registered_count").value(0))
         }
     }
 
     // ========== GET /api/v1/attendance/status ==========
 
     @Nested
-    @DisplayName("GET /api/v1/attendance/status - 현황 조회")
-    inner class GetAttendanceStatusTests {
+    @DisplayName("GET /api/v1/attendance/status - 출근 현황 조회")
+    inner class GetCommuteStatusTests {
 
         @Test
-        @DisplayName("정상 현황 조회 - 200 OK")
-        fun getAttendanceStatus_success() {
+        @DisplayName("정상 조회 - 200 OK, status_list 포함")
+        fun getCommuteStatus_success() {
             // Given
-            val registeredAt = LocalDateTime.of(2026, 2, 9, 9, 5, 23)
-            val mockResponse = AttendanceStatusResponse(
+            val mockResponse = CommuteStatusResponse(
                 totalCount = 3,
                 registeredCount = 1,
                 statusList = listOf(
-                    AttendanceStatusInfo(
-                        storeId = 101,
+                    CommuteStatusItem(
+                        scheduleSfid = "SCH-001",
                         storeName = "이마트 부산점",
-                        status = "COMPLETED",
-                        workType = "ROOM_TEMP",
-                        registeredAt = registeredAt
+                        workCategory = "진열",
+                        status = "REGISTERED"
                     ),
-                    AttendanceStatusInfo(
-                        storeId = 102,
+                    CommuteStatusItem(
+                        scheduleSfid = "SCH-002",
                         storeName = "홈플러스 서면점",
-                        status = "PENDING",
-                        workType = null,
-                        registeredAt = null
+                        workCategory = "상시",
+                        status = "PENDING"
                     ),
-                    AttendanceStatusInfo(
-                        storeId = 103,
+                    CommuteStatusItem(
+                        scheduleSfid = "SCH-003",
                         storeName = "롯데마트 동래점",
-                        status = "PENDING",
-                        workType = null,
-                        registeredAt = null
+                        workCategory = "상시",
+                        status = "PENDING"
                     )
                 ),
-                currentDate = "2026-02-09"
+                currentDate = "2026-02-25"
             )
 
-            whenever(attendanceService.getAttendanceStatus(1L)).thenReturn(mockResponse)
+            whenever(attendanceService.getCommuteStatus(1L)).thenReturn(mockResponse)
 
             // When & Then
             mockMvc.perform(
@@ -376,31 +384,14 @@ class AttendanceControllerTest {
                 .andExpect(jsonPath("$.data.total_count").value(3))
                 .andExpect(jsonPath("$.data.registered_count").value(1))
                 .andExpect(jsonPath("$.data.status_list").isArray)
-                .andExpect(jsonPath("$.data.status_list[0].store_id").value(101))
-                .andExpect(jsonPath("$.data.status_list[0].status").value("COMPLETED"))
-                .andExpect(jsonPath("$.data.status_list[0].work_type").value("ROOM_TEMP"))
-                .andExpect(jsonPath("$.data.status_list[0].registered_at").exists())
+                .andExpect(jsonPath("$.data.status_list[0].schedule_sfid").value("SCH-001"))
+                .andExpect(jsonPath("$.data.status_list[0].store_name").value("이마트 부산점"))
+                .andExpect(jsonPath("$.data.status_list[0].work_category").value("진열"))
+                .andExpect(jsonPath("$.data.status_list[0].status").value("REGISTERED"))
+                .andExpect(jsonPath("$.data.status_list[1].schedule_sfid").value("SCH-002"))
+                .andExpect(jsonPath("$.data.status_list[1].store_name").value("홈플러스 서면점"))
                 .andExpect(jsonPath("$.data.status_list[1].status").value("PENDING"))
-                .andExpect(jsonPath("$.data.status_list[1].work_type").doesNotExist())
-                .andExpect(jsonPath("$.data.status_list[1].registered_at").doesNotExist())
-                .andExpect(jsonPath("$.data.current_date").value("2026-02-09"))
-        }
-
-        @Test
-        @DisplayName("사용자 없음 - 404 USER_NOT_FOUND")
-        fun getAttendanceStatus_userNotFound() {
-            // Given
-            whenever(attendanceService.getAttendanceStatus(1L))
-                .thenThrow(UserNotFoundException())
-
-            // When & Then
-            mockMvc.perform(
-                get("/api/v1/attendance/status")
-                    .contentType(MediaType.APPLICATION_JSON)
-            )
-                .andExpect(status().isNotFound)
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.error.code").value("USER_NOT_FOUND"))
+                .andExpect(jsonPath("$.data.current_date").value("2026-02-25"))
         }
     }
 }

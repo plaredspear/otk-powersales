@@ -22,4 +22,9 @@ interface AccountRepository : JpaRepository<Account, Long> {
      * 거래처 sfid 목록으로 일괄 조회 (스케줄 → 거래처명 매핑용)
      */
     fun findBySfidIn(sfids: List<String>): List<Account>
+
+    /**
+     * 거래처 sfid로 단건 조회 (출근 등록 시 위경도 확보)
+     */
+    fun findBySfid(sfid: String): Account?
 }

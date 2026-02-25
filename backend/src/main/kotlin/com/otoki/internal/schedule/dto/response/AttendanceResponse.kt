@@ -1,18 +1,13 @@
-/*
 package com.otoki.internal.schedule.dto.response
 
-import java.time.LocalDateTime
-
-/ **
- * 출근등록 응답 DTO
- * /
-data class AttendanceResponse(
-    val attendanceId: Long,
-    val storeId: Long,
+/**
+ * 출근 등록 응답 DTO
+ */
+data class CommuteResponse(
+    val scheduleSfid: String,
     val storeName: String,
-    val workType: String,
-    val registeredAt: LocalDateTime,
+    val workType: String?,
+    val distanceKm: Double,
     val totalCount: Int,
     val registeredCount: Int
 )
-*/
