@@ -13,4 +13,9 @@ interface ScheduleRepository : JpaRepository<Schedule, Long> {
      * 사원 sfid와 근무 날짜로 일정 조회
      */
     fun findByEmployeeIdAndWorkingDate(employeeId: String, workingDate: LocalDate): List<Schedule>
+
+    /**
+     * 복수 사원 sfid와 근무 날짜로 일정 일괄 조회 (조장 팀 전체 조회용)
+     */
+    fun findByWorkingDateAndEmployeeIdIn(workingDate: LocalDate, employeeIds: List<String>): List<Schedule>
 }
