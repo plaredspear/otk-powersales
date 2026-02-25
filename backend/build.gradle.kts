@@ -79,7 +79,7 @@ sourceSets {
 	test {
 		kotlin {
 			exclude(
-				"**/AttendanceControllerTest.kt",
+				// "**/AttendanceControllerTest.kt", // re-enabled: test rewritten for V1 schema
 				"**/ClaimControllerTest.kt",
 				"**/ClientOrderControllerTest.kt",
 				"**/EventControllerTest.kt",
@@ -100,7 +100,7 @@ sourceSets {
 				"**/NoticePostRepositoryTest.kt",
 				"**/OrderRepositoryTest.kt",
 				"**/SuggestionPhotoRepositoryTest.kt",
-				"**/AttendanceServiceTest.kt",
+				// "**/AttendanceServiceTest.kt", // re-enabled: test rewritten for V1 schema
 				"**/ClaimServiceTest.kt",
 				"**/ClientOrderServiceTest.kt",
 				"**/DailySalesServiceTest.kt",
