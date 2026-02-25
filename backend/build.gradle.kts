@@ -121,8 +121,21 @@ sourceSets {
 
 tasks.withType<Test> {
 	useJUnitPlatform()
+}
 
+tasks.test {
 	// Redis 미연결로 인한 @SpringBootTest 컨텍스트 로드 실패 (기존 이슈)
 	exclude("**/OtokiInternalApplicationTests*")
 	exclude("**/HealthControllerTest*")
+
+	// OpenAPI spec 생성 테스트는 전용 task로만 실행
+	exclude("**/OpenApiSpecGeneratorTest*")
+}
+
+tasks.register<Test>("generateOpenApiDocs") {
+	group = "documentation"
+	description = "OpenAPI spec JSON 파일 생성 (backend/openapi.json)"
+	filter {
+		includeTestsMatching("com.otoki.internal.OpenApiSpecGeneratorTest")
+	}
 }
