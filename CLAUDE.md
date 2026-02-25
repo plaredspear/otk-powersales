@@ -159,3 +159,9 @@ docs/
 | Backend 컨벤션 | `.claude/guides/backend-conventions.md` | 구현 (Backend) |
 | Mobile 컨벤션 | `.claude/guides/mobile-conventions.md` | 구현 (Flutter) |
 | 스펙 리뷰 기준 | `.claude/guides/spec-review-criteria.md` | 스펙 리뷰 |
+
+### API 스펙
+
+- **파일**: `backend/openapi.json` — 전체 REST API 엔드포인트가 포함된 OpenAPI 3.1 spec
+- **용도**: API 계약 확인 시 컨트롤러 파일을 일일이 읽지 않고 이 파일 1회 Read로 파악
+- **재생성**: `cd backend && ./gradlew generateOpenApiDocs` (API 변경 후 실행)
