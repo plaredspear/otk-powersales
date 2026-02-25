@@ -1,26 +1,21 @@
-/*
 package com.otoki.internal.schedule.dto.response
 
-import java.time.LocalDateTime
-
-/ **
- * 출근등록 현황 응답 DTO
- * /
-data class AttendanceStatusResponse(
+/**
+ * 출근 현황 응답 DTO
+ */
+data class CommuteStatusResponse(
     val totalCount: Int,
     val registeredCount: Int,
-    val statusList: List<AttendanceStatusInfo>,
+    val statusList: List<CommuteStatusItem>,
     val currentDate: String
 )
 
-/ **
- * 거래처별 출근등록 현황
- * /
-data class AttendanceStatusInfo(
-    val storeId: Long,
+/**
+ * 출근 현황 항목
+ */
+data class CommuteStatusItem(
+    val scheduleSfid: String,
     val storeName: String,
-    val status: String,
-    val workType: String?,
-    val registeredAt: LocalDateTime?
+    val workCategory: String,
+    val status: String
 )
-*/

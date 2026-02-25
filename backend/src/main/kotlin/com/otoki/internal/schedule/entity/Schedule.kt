@@ -53,7 +53,7 @@ class Schedule(
     val altHolidayId: String? = null,
 
     @Column(name = "dkretail__commutelogid__c", length = 18)
-    val commuteLogId: String? = null,
+    var commuteLogId: String? = null,
 
     @Column(name = "dkretail__promotionempid__c", length = 18)
     val promotionEmpId: String? = null,

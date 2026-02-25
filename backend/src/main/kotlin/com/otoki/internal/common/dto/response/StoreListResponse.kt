@@ -1,10 +1,9 @@
 package com.otoki.internal.common.dto.response
 
 /**
- * 오늘 출근 거래처 목록 응답 DTO
+ * 출근 거래처 목록 응답 DTO
  */
 data class StoreListResponse(
-    val workerType: String,
     val stores: List<StoreInfo>,
     val totalCount: Int,
     val registeredCount: Int,
@@ -12,14 +11,16 @@ data class StoreListResponse(
 )
 
 /**
- * 거래처 정보
+ * 거래처 정보 (GPS 좌표 포함)
  */
 data class StoreInfo(
-    val storeId: Long,
+    val scheduleSfid: String,
+    val storeSfid: String?,
     val storeName: String,
-    val storeCode: String,
+    val storeTypeCode: String?,
     val workCategory: String,
     val address: String?,
-    val isRegistered: Boolean,
-    val registeredWorkType: String?
+    val latitude: Double?,
+    val longitude: Double?,
+    val isRegistered: Boolean
 )
