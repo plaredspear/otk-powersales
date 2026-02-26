@@ -23,9 +23,9 @@ model: sonnet
 기능명: <한글 기능명>
 모듈명: <영문 모듈명>
 템플릿 경로: .claude/guides/legacy-seq-template.md
-원본 소스 루트: docs/plan/기존소스/otg_PowerSales-master/
-요약 파일 루트: docs/plan/기존소스/summaries/
-_index.md 경로: docs/plan/기존소스/summaries/_index.md
+원본 소스 루트: docs/plan/old_source/otg_PowerSales-master/
+요약 파일 루트: docs/plan/old_source/summaries/
+_index.md 경로: docs/plan/old_source/summaries/_index.md
 관련 요약 파일 목록: [...]
 호출 체인: [...]
 ```
@@ -123,7 +123,7 @@ $ROOT/src/main/java/com/ottogi/security/*.java
 기능명: <한글 기능명>
 모듈명: <영문 모듈명>
 템플릿 경로: .claude/guides/legacy-seq-template.md (BDD 시나리오 작성 규칙 섹션)
-분석 문서 경로: docs/plan/기존소스/summaries/docs/<모듈명>.md
+분석 문서 경로: docs/plan/old_source/summaries/docs/<모듈명>.md
 ```
 
 ### BDD 작성 절차
