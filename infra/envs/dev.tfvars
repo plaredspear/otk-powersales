@@ -38,7 +38,6 @@ hosted_zone_id = "Z02189752GJTU3DRB1DOX"
 
 # RDS Public Access (dev only)
 rds_publicly_accessible = true
-rds_allowed_cidrs       = [] # 실제 개발자 IP 추가: ["x.x.x.x/32"]
 
 # CI/CD
 github_repo           = "plaredspear/otk-powersales"
