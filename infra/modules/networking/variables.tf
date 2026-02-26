@@ -31,3 +31,9 @@ variable "availability_zones" {
   type        = list(string)
   default     = ["ap-northeast-2a", "ap-northeast-2c"]
 }
+
+variable "rds_allowed_cidrs" {
+  description = "RDS 외부 접근 허용 CIDR 목록 (빈 리스트면 규칙 미생성)"
+  type        = list(string)
+  default     = []
+}

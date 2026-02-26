@@ -36,6 +36,10 @@ ecs_desired_count                = 1
 domain_name    = "dev-pwrs-api.codapt.kr"
 hosted_zone_id = "Z02189752GJTU3DRB1DOX"
 
+# RDS Public Access (dev only)
+rds_publicly_accessible = true
+rds_allowed_cidrs       = ["<개발자IP>/32"]
+
 # CI/CD
 github_repo           = "plaredspear/otk-powersales"
 github_repository_url = "https://github.com/plaredspear/otk-powersales.git"

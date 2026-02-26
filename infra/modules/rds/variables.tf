@@ -69,3 +69,9 @@ variable "backup_retention_period" {
   type        = number
   default     = 7
 }
+
+variable "publicly_accessible" {
+  description = "RDS 퍼블릭 접근 허용 여부 (dev 환경 전용)"
+  type        = bool
+  default     = false
+}
