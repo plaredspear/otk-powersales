@@ -32,7 +32,7 @@ resource "aws_db_instance" "main" {
   final_snapshot_identifier = var.environment == "dev" ? null : "${var.project}-${var.environment}-final-snapshot"
   deletion_protection       = var.environment == "dev" ? false : true
 
-  publicly_accessible = false
+  publicly_accessible = var.publicly_accessible
 
   tags = {
     Name        = "${var.project}-${var.environment}-db"

@@ -24,6 +24,8 @@ module "networking" {
   public_subnet_cidrs  = var.public_subnet_cidrs
   private_subnet_cidrs = var.private_subnet_cidrs
   availability_zones   = var.availability_zones
+
+  rds_allowed_cidrs = var.rds_allowed_cidrs
 }
 
 ################################################################################
@@ -47,8 +49,10 @@ module "rds" {
   project     = var.project
   environment = var.environment
 
-  subnet_ids        = module.networking.private_subnet_ids
+  subnet_ids        = var.rds_publicly_accessible ? module.networking.public_subnet_ids : module.networking.private_subnet_ids
   security_group_id = module.networking.rds_security_group_id
+
+  publicly_accessible = var.rds_publicly_accessible
 
   instance_class    = var.rds_instance_class
   engine_version    = var.rds_engine_version

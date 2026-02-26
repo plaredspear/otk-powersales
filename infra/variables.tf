@@ -70,6 +70,18 @@ variable "rds_multi_az" {
   type        = bool
 }
 
+variable "rds_publicly_accessible" {
+  description = "RDS 퍼블릭 접근 허용 (dev 전용)"
+  type        = bool
+  default     = false
+}
+
+variable "rds_allowed_cidrs" {
+  description = "RDS 외부 접근 허용 CIDR 목록"
+  type        = list(string)
+  default     = []
+}
+
 variable "db_name" {
   description = "Database name"
   type        = string

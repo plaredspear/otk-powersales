@@ -328,6 +328,18 @@ resource "aws_security_group_rule" "rds_from_ec2" {
   source_security_group_id = aws_security_group.ec2_instance.id
 }
 
+resource "aws_security_group_rule" "rds_from_external" {
+  count = length(var.rds_allowed_cidrs)
+
+  type              = "ingress"
+  from_port         = 5432
+  to_port           = 5432
+  protocol          = "tcp"
+  description       = "PostgreSQL from allowed external CIDR"
+  security_group_id = aws_security_group.rds.id
+  cidr_blocks       = [var.rds_allowed_cidrs[count.index]]
+}
+
 resource "aws_security_group_rule" "elasticache_from_ec2" {
   type                     = "ingress"
   from_port                = 6379
