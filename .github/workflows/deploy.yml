@@ -1,0 +1,74 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_DEFAULT_REGION: ap-northeast-2
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Run tests
+        run: cd backend && ./gradlew test --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: backend/build/test-results/test/*.xml
+
+  deploy:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE_ARN }}
+          aws-region: ap-northeast-2
+
+      - name: Trigger CodeBuild
+        id: codebuild
+        run: |
+          BUILD_ID=$(aws codebuild start-build \
+            --project-name "${{ secrets.DEV_CODEBUILD_PROJECT }}" \
+            --source-version "${GITHUB_SHA}" \
+            --environment-variables-override \
+            "name=CODEBUILD_RESOLVED_SOURCE_VERSION,value=${GITHUB_SHA::7},type=PLAINTEXT" \
+            --query 'build.id' --output text)
+          echo "build_id=$BUILD_ID" >> "$GITHUB_OUTPUT"
+          echo "CodeBuild started - $BUILD_ID"
+
+      - name: Wait for CodeBuild
+        run: |
+          while true; do
+            STATUS=$(aws codebuild batch-get-builds \
+              --ids "${{ steps.codebuild.outputs.build_id }}" \
+              --query 'builds[0].buildStatus' --output text)
+            echo "Build status: $STATUS"
+            if [ "$STATUS" = "SUCCEEDED" ]; then
+              echo "Deploy succeeded"
+              break
+            elif [ "$STATUS" = "FAILED" ] || [ "$STATUS" = "FAULT" ] || [ "$STATUS" = "STOPPED" ] || [ "$STATUS" = "TIMED_OUT" ]; then
+              echo "Deploy failed with status: $STATUS"
+              exit 1
+            fi
+            sleep 15
+          done

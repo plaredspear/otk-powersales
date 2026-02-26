@@ -36,7 +36,7 @@ ecs_desired_count                = 1
 domain_name    = "dev-pwrs-api.codapt.kr"
 hosted_zone_id = "Z02189752GJTU3DRB1DOX"
 
-# CI/CD — 실제 값으로 교체 필요
-gitlab_project_path   = "plaredspear-group/otk-powersales"
-gitlab_repository_url = "https://gitlab.com/plaredspear-group/otk-powersales.git"
-gitlab_deploy_branch  = "main"
+# CI/CD
+github_repo           = "plaredspear/otk-powersales"
+github_repository_url = "https://github.com/plaredspear/otk-powersales.git"
+github_deploy_branch  = "main"

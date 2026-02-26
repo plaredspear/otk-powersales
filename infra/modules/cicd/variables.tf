@@ -18,19 +18,19 @@ variable "aws_account_id" {
   type        = string
 }
 
-variable "gitlab_project_path" {
-  description = "GitLab project path (e.g., group/project)"
+variable "github_repo" {
+  description = "GitHub repository (e.g., owner/repo)"
   type        = string
 }
 
-variable "gitlab_deploy_branch" {
+variable "github_deploy_branch" {
   description = "Branch that triggers deployment (e.g., main, develop)"
   type        = string
   default     = "main"
 }
 
-variable "gitlab_repository_url" {
-  description = "GitLab repository HTTPS URL (e.g., https://gitlab.com/group/project.git)"
+variable "github_repository_url" {
+  description = "GitHub repository HTTPS URL (e.g., https://github.com/owner/repo.git)"
   type        = string
 }
 
