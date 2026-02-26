@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### 문서 관련
 - **프로젝트 가이드**: 이 CLAUDE.md 파일. 프로젝트의 최상위 규칙과 가이드라인.
-- **기존소스**: `docs/기존소스/` 디렉토리의 파일. 기존 시스템의 레퍼런스 소스코드.
+- **기존소스**: `docs/plan/old_source/` 디렉토리의 파일. 기존 시스템의 레퍼런스 소스코드.
 - **현재소스**: `backend/`, `mobile/` 디렉토리의 소스코드. 현재 개발 중인 실제 코드베이스.
 
 ### 작업 관련
