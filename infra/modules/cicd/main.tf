@@ -1,43 +1,43 @@
 ################################################################################
-# GitLab OIDC Provider (for GitLab CI → AWS authentication)
+# GitHub OIDC Provider (for GitHub Actions → AWS authentication)
 ################################################################################
 
-resource "aws_iam_openid_connect_provider" "gitlab" {
-  url             = "https://gitlab.com"
-  client_id_list  = ["https://gitlab.com"]
-  thumbprint_list = ["b3dd7606d2b5a8b4a13771dbecc9ee1cecafa38a"]
+resource "aws_iam_openid_connect_provider" "github" {
+  url             = "https://token.actions.githubusercontent.com"
+  client_id_list  = ["sts.amazonaws.com"]
+  thumbprint_list = ["ffffffffffffffffffffffffffffffffffffffff"]
 
   tags = {
-    Name = "${var.project}-${var.environment}-gitlab-oidc"
+    Name = "${var.project}-${var.environment}-github-oidc"
   }
 }
 
 ################################################################################
-# CodeConnections — GitLab 연동 (CodeBuild → GitLab repo clone)
+# CodeConnections — GitHub 연동 (CodeBuild → GitHub repo clone)
 # NOTE: apply 후 AWS Console에서 1회 수동 승인 필요 (Step 6-1 참조)
 ################################################################################
 
-resource "aws_codeconnections_connection" "gitlab" {
-  name          = "${var.project}-${var.environment}-gitlab"
-  provider_type = "GitLab"
+resource "aws_codeconnections_connection" "github" {
+  name          = "${var.project}-${var.environment}-github"
+  provider_type = "GitHub"
 
   tags = {
     Environment = var.environment
   }
 }
 
-resource "aws_codebuild_source_credential" "gitlab" {
+resource "aws_codebuild_source_credential" "github" {
   auth_type   = "CODECONNECTIONS"
-  server_type = "GITLAB"
-  token       = aws_codeconnections_connection.gitlab.arn
+  server_type = "GITHUB"
+  token       = aws_codeconnections_connection.github.arn
 }
 
 ################################################################################
-# GitLab CI Role (assumed via OIDC — triggers CodeBuild)
+# GitHub Actions Role (assumed via OIDC — triggers CodeBuild)
 ################################################################################
 
-resource "aws_iam_role" "gitlab_ci" {
-  name = "${var.project}-${var.environment}-gitlab-ci"
+resource "aws_iam_role" "github_actions" {
+  name = "${var.project}-${var.environment}-github-actions"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -45,15 +45,15 @@ resource "aws_iam_role" "gitlab_ci" {
       {
         Effect = "Allow"
         Principal = {
-          Federated = aws_iam_openid_connect_provider.gitlab.arn
+          Federated = aws_iam_openid_connect_provider.github.arn
         }
         Action = "sts:AssumeRoleWithWebIdentity"
         Condition = {
           StringEquals = {
-            "gitlab.com:aud" = "https://gitlab.com"
+            "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
           }
           StringLike = {
-            "gitlab.com:sub" = "project_path:${var.gitlab_project_path}:ref_type:branch:ref:${var.gitlab_deploy_branch}"
+            "token.actions.githubusercontent.com:sub" = "repo:${var.github_repo}:ref:refs/heads/${var.github_deploy_branch}"
           }
         }
       }
@@ -65,9 +65,9 @@ resource "aws_iam_role" "gitlab_ci" {
   }
 }
 
-resource "aws_iam_role_policy" "gitlab_ci" {
-  name = "${var.project}-${var.environment}-gitlab-ci-policy"
-  role = aws_iam_role.gitlab_ci.id
+resource "aws_iam_role_policy" "github_actions" {
+  name = "${var.project}-${var.environment}-github-actions-policy"
+  role = aws_iam_role.github_actions.id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -181,13 +181,13 @@ resource "aws_iam_role_policy" "codebuild" {
           }
         }
       },
-      # CodeConnections — GitLab 소스 clone
+      # CodeConnections — GitHub 소스 clone
       {
         Effect = "Allow"
         Action = [
           "codeconnections:UseConnection"
         ]
-        Resource = aws_codeconnections_connection.gitlab.arn
+        Resource = aws_codeconnections_connection.github.arn
       },
       # SSM Parameter Store — read infra outputs
       {
@@ -276,8 +276,8 @@ resource "aws_codebuild_project" "deploy" {
   }
 
   source {
-    type            = "GITLAB"
-    location        = var.gitlab_repository_url
+    type            = "GITHUB"
+    location        = var.github_repository_url
     git_clone_depth = 1
     buildspec       = file("${path.module}/buildspec.yml")
   }

@@ -63,12 +63,12 @@ aws route53 list-hosted-zones --query 'HostedZones[*].[Name,Id]' --output table
 
 Hosted Zone이 없다면 도메인을 Route53에 등록하거나, 기존 도메인의 서브도메인을 위한 Hosted Zone을 생성합니다.
 
-### 1-3. GitLab 프로젝트 정보
+### 1-3. GitHub 저장소 정보
 
-GitLab.com 프로젝트에서 다음 정보를 확인합니다:
+GitHub 저장소에서 다음 정보를 확인합니다:
 
-- **프로젝트 경로**: Settings > General (예: `your-group/otoki`)
-- **리포지토리 HTTPS URL**: Clone 버튼에서 확인 (예: `https://gitlab.com/your-group/otoki.git`)
+- **저장소 경로**: Settings > General (예: `owner/otoki`)
+- **리포지토리 HTTPS URL**: Code 버튼에서 확인 (예: `https://github.com/owner/otoki.git`)
 
 ---
 
@@ -132,9 +132,9 @@ domain_name    = "dev-api.yourdomain.com"    # ← 실제 도메인
 hosted_zone_id = "Z0123456789ABCDEFGHIJ"     # ← 실제 Hosted Zone ID
 
 # CI/CD — 실제 값으로 교체
-gitlab_project_path   = "your-group/otoki"                       # ← 실제 GitLab 프로젝트 경로
-gitlab_repository_url = "https://gitlab.com/your-group/otoki.git" # ← 실제 HTTPS clone URL
-gitlab_deploy_branch  = "main"
+github_repo           = "owner/otoki"                        # ← 실제 GitHub 저장소 경로
+github_repository_url = "https://github.com/owner/otoki.git" # ← 실제 HTTPS clone URL
+github_deploy_branch  = "main"
 ```
 
 ### 3-2. secrets.tfvars — 시크릿 생성
@@ -222,17 +222,17 @@ terraform apply -var-file=envs/dev.tfvars -var-file=envs/secrets.tfvars
 
 ACM 인증서는 DNS 검증을 사용합니다. Terraform이 Route53에 CNAME 레코드를 자동으로 생성하지만, DNS 전파에 시간이 걸릴 수 있습니다. 보통 수 분 이내에 완료되나, 경우에 따라 최대 30분 소요될 수 있습니다.
 
-### Step 6-1: CodeConnections — GitLab 연동 승인 (최초 1회)
+### Step 6-1: CodeConnections — GitHub 연동 승인 (최초 1회)
 
-Terraform apply가 완료되면, CodeBuild가 GitLab 리포지토리에 접근하기 위한 연동을 수동 승인해야 합니다.
+Terraform apply가 완료되면, CodeBuild가 GitHub 리포지토리에 접근하기 위한 연동을 수동 승인해야 합니다.
 
 1. **AWS Console** > **Developer Tools** > **Settings** > **Connections**
-2. `otoki-dev-gitlab` 연결이 **Pending** 상태로 표시됩니다
+2. `otoki-dev-github` 연결이 **Pending** 상태로 표시됩니다
 3. **Update pending connection** 클릭
-4. GitLab 계정으로 로그인하여 **승인(Authorize)** 클릭
+4. GitHub 계정으로 로그인하여 **Install a new app** 또는 기존 GitHub App을 선택하여 **승인(Authorize)** 클릭
 5. 연결 상태가 **Available**로 변경되면 완료
 
-> **참고**: 이 승인은 최초 1회만 필요합니다. 승인 후에는 CodeBuild가 GitLab 리포지토리 (private 포함)에서 자동으로 소스코드를 clone할 수 있습니다.
+> **참고**: 이 승인은 최초 1회만 필요합니다. 승인 후에는 CodeBuild가 GitHub 리포지토리 (private 포함)에서 자동으로 소스코드를 clone할 수 있습니다.
 
 ---
 
@@ -254,23 +254,23 @@ terraform output
 | `nat_gateway_public_ip` | NAT Gateway EIP | **외부 시스템 방화벽 등록용 Outbound IP** |
 | `ecs_cluster_name` | ECS 클러스터 이름 | CI/CD 설정 |
 | `ecs_service_name` | ECS 서비스 이름 | CI/CD 설정 |
-| `gitlab_ci_role_arn` | GitLab CI IAM Role ARN | **GitLab CI/CD 변수로 등록** |
-| `codebuild_project_name` | CodeBuild 프로젝트 이름 | **GitLab CI/CD 변수로 등록** |
+| `github_actions_role_arn` | GitHub Actions IAM Role ARN | **GitHub Secrets로 등록** |
+| `codebuild_project_name` | CodeBuild 프로젝트 이름 | **GitHub Secrets로 등록** |
 
 ---
 
-## Step 8: GitLab CI/CD 변수 등록
+## Step 8: GitHub Secrets 등록
 
-GitLab 프로젝트의 **Settings > CI/CD > Variables** 에서 다음 변수를 등록합니다:
+GitHub 저장소의 **Settings > Secrets and variables > Actions** 에서 다음 시크릿을 등록합니다:
 
-| 변수명 | 값 | 비고 |
-|-------|---|------|
-| `DEV_AWS_ROLE_ARN` | `terraform output -raw gitlab_ci_role_arn` 의 출력값 | Protected, Masked |
-| `DEV_CODEBUILD_PROJECT` | `terraform output -raw codebuild_project_name` 의 출력값 | Protected |
+| 시크릿 이름 | 값 | 비고 |
+|------------|---|------|
+| `DEV_AWS_ROLE_ARN` | `terraform output -raw github_actions_role_arn` 의 출력값 | Repository secret |
+| `DEV_CODEBUILD_PROJECT` | `terraform output -raw codebuild_project_name` 의 출력값 | Repository secret |
 
 ```bash
 # 각 값 확인
-terraform output -raw gitlab_ci_role_arn
+terraform output -raw github_actions_role_arn
 terraform output -raw codebuild_project_name
 ```
 
@@ -334,12 +334,12 @@ curl -s $API_URL/actuator/health | jq .
 
 ## 일상 운영
 
-### GitLab CI/CD 자동 배포
+### GitHub Actions 자동 배포
 
 위 설정이 완료되면, `main` 브랜치에 push할 때마다 자동으로:
-1. GitLab CI가 AWS OIDC 인증
+1. GitHub Actions가 AWS OIDC 인증
 2. CodeBuild 트리거 (해당 커밋 SHA 전달)
-3. CodeBuild가 GitLab에서 소스코드 clone (CodeConnections 사용, private repo 지원)
+3. CodeBuild가 GitHub에서 소스코드 clone (CodeConnections 사용, private repo 지원)
 4. Docker 이미지 빌드 → ECR 푸시
 5. ECS 서비스 업데이트 (Rolling Deploy)
 
@@ -409,8 +409,8 @@ aws ecs describe-services \
 
 - AWS Console > Developer Tools > Connections에서 연결 상태가 **Available**인지 확인
 - 연결이 **Pending** 상태이면 Step 6-1의 수동 승인을 수행
-- `gitlab_repository_url`이 올바른 HTTPS clone URL인지 확인 (예: `https://gitlab.com/group/project.git`)
-- GitLab 계정의 리포지토리 접근 권한이 유효한지 확인
+- `github_repository_url`이 올바른 HTTPS clone URL인지 확인 (예: `https://github.com/owner/repo.git`)
+- GitHub 계정의 리포지토리 접근 권한이 유효한지 확인
 
 ---
 
@@ -430,7 +430,7 @@ infra/
 │   ├── alb/              # Application Load Balancer
 │   ├── dns/              # ACM 인증서 + DNS 검증
 │   ├── ecs/              # ECS Fargate 서비스
-│   └── cicd/             # GitLab OIDC + CodeBuild
+│   └── cicd/             # GitHub OIDC + CodeBuild
 ├── envs/
 │   ├── dev.tfvars        # Step 3-1: dev 환경 변수값
 │   ├── dev.backend.hcl   # S3 backend 설정

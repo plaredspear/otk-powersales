@@ -219,7 +219,7 @@ module "ssm_outputs" {
 }
 
 ################################################################################
-# CI/CD (CodeBuild + GitLab OIDC)
+# CI/CD (CodeBuild + GitHub OIDC)
 ################################################################################
 
 module "cicd" {
@@ -230,9 +230,9 @@ module "cicd" {
   region         = var.region
   aws_account_id = var.aws_account_id
 
-  gitlab_project_path   = var.gitlab_project_path
-  gitlab_repository_url = var.gitlab_repository_url
-  gitlab_deploy_branch  = var.gitlab_deploy_branch
+  github_repo           = var.github_repo
+  github_repository_url = var.github_repository_url
+  github_deploy_branch  = var.github_deploy_branch
 
   ecr_repository_url = module.ecr.repository_url
   ecr_repository_arn = module.ecr.repository_arn
