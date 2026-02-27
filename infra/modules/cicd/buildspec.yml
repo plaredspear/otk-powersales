@@ -15,7 +15,7 @@ phases:
         --output json > infra-outputs.json
       - echo "=== ECR Login ==="
       - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_REPOSITORY_URL
-      - IMAGE_TAG="${CODEBUILD_RESOLVED_SOURCE_VERSION:=latest}"
+      - IMAGE_TAG="${SHORT_COMMIT_SHA:-${CODEBUILD_RESOLVED_SOURCE_VERSION:=latest}}"
       - FULL_IMAGE="$ECR_REPOSITORY_URL:$IMAGE_TAG"
       - LATEST_IMAGE="$ECR_REPOSITORY_URL:latest"
 
