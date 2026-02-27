@@ -159,11 +159,21 @@ resource "aws_ecs_task_definition" "main" {
       ]
 
       environment = [
-        { name = "SPRING_PROFILES_ACTIVE", value = var.environment },
         { name = "DATABASE_URL", value = "jdbc:postgresql://${var.db_host}:${var.db_port}/${var.db_name}" },
         { name = "SERVER_PORT", value = "8080" },
         { name = "REDIS_HOST", value = var.redis_host },
-        { name = "REDIS_PORT", value = tostring(var.redis_port) }
+        { name = "REDIS_PORT", value = tostring(var.redis_port) },
+        { name = "JPA_DDL_AUTO", value = "none" },
+        { name = "JPA_SHOW_SQL", value = "false" },
+        { name = "HIKARI_MAX_POOL", value = tostring(var.hikari_max_pool) },
+        { name = "HIKARI_MIN_IDLE", value = tostring(var.hikari_min_idle) },
+        { name = "JWT_EXPIRATION", value = "3600000" },
+        { name = "LOG_LEVEL_ROOT", value = var.log_level_root },
+        { name = "LOG_LEVEL_APP", value = var.log_level_app },
+        { name = "LOG_LEVEL_SECURITY", value = var.log_level_security },
+        { name = "LOG_LEVEL_HIBERNATE_SQL", value = "OFF" },
+        { name = "LOG_LEVEL_HIBERNATE_BIND", value = "OFF" },
+        { name = "ORORA_MOCK_ENABLED", value = tostring(var.orora_mock_enabled) },
       ]
 
       secrets = [

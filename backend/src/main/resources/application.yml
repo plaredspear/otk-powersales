@@ -2,33 +2,54 @@ spring:
   application:
     name: otoki-internal-backend
 
-  profiles:
-    active: local
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/otoki}
+    username: ${DATABASE_USERNAME:postgres}
+    password: ${DATABASE_PASSWORD:postgres}
+    hikari:
+      maximum-pool-size: ${HIKARI_MAX_POOL:5}
+      minimum-idle: ${HIKARI_MIN_IDLE:2}
+      connection-timeout: 30000
 
   jpa:
     open-in-view: false
-    show-sql: true
+    show-sql: ${JPA_SHOW_SQL:true}
     hibernate:
-      ddl-auto: none
+      ddl-auto: ${JPA_DDL_AUTO:validate}
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     properties:
       hibernate:
         format_sql: true
         default_batch_fetch_size: 100
+        default_schema: salesforce2
 
   data:
     redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
       timeout: 5000ms
 
   flyway:
     schemas: salesforce2
     baseline-on-migrate: true
     baseline-version: 1
+    enabled: true
 
   jackson:
     property-naming-strategy: SNAKE_CASE
     serialization:
       write-dates-as-timestamps: false
     time-zone: Asia/Seoul
+
+jwt:
+  secret: ${JWT_SECRET:otoki-internal-dev-secret-key-change-in-production-minimum-256-bits}
+  expiration: ${JWT_EXPIRATION:86400000}
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
+
+orora:
+  mock:
+    enabled: ${ORORA_MOCK_ENABLED:true}
 
 springdoc:
   swagger-ui:
@@ -45,14 +66,15 @@ device:
     excluded-ids: ""
 
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
   error:
     include-message: always
     include-binding-errors: always
 
 logging:
   level:
-    root: INFO
-    com.otoki.internal: DEBUG
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    root: ${LOG_LEVEL_ROOT:INFO}
+    com.otoki.internal: ${LOG_LEVEL_APP:DEBUG}
+    org.springframework.security: ${LOG_LEVEL_SECURITY:DEBUG}
+    org.hibernate.SQL: ${LOG_LEVEL_HIBERNATE_SQL:DEBUG}
+    org.hibernate.type.descriptor.sql.BasicBinder: ${LOG_LEVEL_HIBERNATE_BIND:TRACE}
