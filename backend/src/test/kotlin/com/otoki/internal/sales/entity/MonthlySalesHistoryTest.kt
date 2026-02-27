@@ -9,6 +9,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager
 import org.springframework.test.context.ActiveProfiles
 import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
@@ -159,7 +160,7 @@ class MonthlySalesHistoryTest {
     @DisplayName("MonthlySalesHistory 생성 - SF 공통 필드 매핑 확인")
     fun createMonthlySalesHistory_sfCommonFields() {
         // Given
-        val now = LocalDateTime.now()
+        val now = LocalDateTime.now().truncatedTo(ChronoUnit.MICROS)
         val history = MonthlySalesHistory(
             name = "MSH-SF",
             sfid = "a0B5g000001XYZ",
