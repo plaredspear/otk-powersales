@@ -191,6 +191,13 @@ module "ecs" {
   redis_host = module.elasticache.endpoint
   redis_port = module.elasticache.port
 
+  hikari_max_pool    = var.ecs_hikari_max_pool
+  hikari_min_idle    = var.ecs_hikari_min_idle
+  log_level_root     = var.ecs_log_level_root
+  log_level_app      = var.ecs_log_level_app
+  log_level_security = var.ecs_log_level_security
+  orora_mock_enabled = var.ecs_orora_mock_enabled
+
   db_credentials_arn = module.secrets.db_credentials_arn
   jwt_secret_arn     = module.secrets.jwt_secret_arn
   secrets_arns = [

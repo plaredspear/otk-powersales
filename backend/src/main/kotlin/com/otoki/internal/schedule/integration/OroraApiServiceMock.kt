@@ -1,7 +1,7 @@
 package com.otoki.internal.schedule.integration
 
 import com.otoki.internal.schedule.repository.ScheduleRepository
-import org.springframework.context.annotation.Profile
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional
  * (실서비스에서는 Orora→Salesforce 동기화로 자동 반영)
  */
 @Service
-@Profile("!production")
+@ConditionalOnProperty(name = ["orora.mock.enabled"], havingValue = "true", matchIfMissing = true)
 class OroraApiServiceMock(
     private val scheduleRepository: ScheduleRepository
 ) : OroraApiService {

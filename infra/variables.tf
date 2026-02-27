@@ -156,6 +156,42 @@ variable "ecs_desired_count" {
   type        = number
 }
 
+variable "ecs_hikari_max_pool" {
+  description = "HikariCP maximum pool size"
+  type        = number
+  default     = 5
+}
+
+variable "ecs_hikari_min_idle" {
+  description = "HikariCP minimum idle connections"
+  type        = number
+  default     = 2
+}
+
+variable "ecs_log_level_root" {
+  description = "Root log level"
+  type        = string
+  default     = "INFO"
+}
+
+variable "ecs_log_level_app" {
+  description = "Application log level (com.otoki.internal)"
+  type        = string
+  default     = "DEBUG"
+}
+
+variable "ecs_log_level_security" {
+  description = "Spring Security log level"
+  type        = string
+  default     = "INFO"
+}
+
+variable "ecs_orora_mock_enabled" {
+  description = "Enable Orora API mock"
+  type        = bool
+  default     = true
+}
+
 ################################################################################
 # DNS
 ################################################################################
