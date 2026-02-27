@@ -10,6 +10,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager
 import org.springframework.test.context.ActiveProfiles
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
@@ -78,7 +79,7 @@ class AgreementTest {
     @DisplayName("Agreement 생성 - SF 공통 필드 매핑 확인")
     fun createAgreement_sfCommonFields() {
         // Given
-        val now = LocalDateTime.now()
+        val now = LocalDateTime.now().truncatedTo(ChronoUnit.MICROS)
         val agreement = Agreement(
             name = "GPS 동의",
             active = true,

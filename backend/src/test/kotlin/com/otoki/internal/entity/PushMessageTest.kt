@@ -9,6 +9,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager
 import org.springframework.test.context.ActiveProfiles
 import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
@@ -23,7 +24,7 @@ class PushMessageTest {
     @DisplayName("PushMessage 생성/조회 - 기본 필드 매핑 확인")
     fun createPushMessage_basicFields() {
         // Given
-        val now = LocalDateTime.now()
+        val now = LocalDateTime.now().truncatedTo(ChronoUnit.MICROS)
         val pushMessage = PushMessage(
             name = "공지사항 알림",
             message = "신제품 출시 안내",
@@ -71,7 +72,7 @@ class PushMessageTest {
     @DisplayName("PushMessage 생성 - SF 공통 필드 매핑 확인")
     fun createPushMessage_sfCommonFields() {
         // Given
-        val now = LocalDateTime.now()
+        val now = LocalDateTime.now().truncatedTo(ChronoUnit.MICROS)
         val pushMessage = PushMessage(
             sfid = "a0B5g000001ABC",
             isDeleted = false,
