@@ -185,6 +185,8 @@ resource "aws_iam_role_policy" "codebuild" {
       {
         Effect = "Allow"
         Action = [
+          "codeconnections:GetConnectionToken",
+          "codeconnections:GetConnection",
           "codeconnections:UseConnection"
         ]
         Resource = aws_codeconnections_connection.github.arn
