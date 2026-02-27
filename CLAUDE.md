@@ -73,6 +73,9 @@ otoki/                          # 프로젝트 루트
 - Secure token storage (flutter_secure_storage)
 - Password encryption + Auto token refresh
 
+### 개발 환경 특이사항
+- **RDS 퍼블릭 접근 (dev only)**: dev 환경 RDS PostgreSQL은 `publicly_accessible = true`로 설정되어 있음. 로컬 IDE에서 직접 DB 접속 가능. 허용 IP는 `infra/envs/dev.tfvars`의 `rds_allowed_cidrs`로 제한. (Spec #89)
+
 ---
 
 ## 3. 작업 모드
