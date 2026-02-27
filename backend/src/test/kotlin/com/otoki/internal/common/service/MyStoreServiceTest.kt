@@ -59,9 +59,9 @@ class MyStoreServiceTest {
 
             val distinctAccountSfids = listOf("SF_ACC001", "SF_ACC002")
             val accounts = listOf(
-                createAccount(id = 1L, sfid = "SF_ACC001", name = "(유)경산식품", externalKey = "1025172",
+                createAccount(id = 1, sfid = "SF_ACC001", name = "(유)경산식품", externalKey = "1025172",
                     address1 = "전라남도 목포시", representative = "김정자", phone = "061-123-4567"),
-                createAccount(id = 2L, sfid = "SF_ACC002", name = "(주)대한식품", externalKey = "1025173",
+                createAccount(id = 2, sfid = "SF_ACC002", name = "(주)대한식품", externalKey = "1025173",
                     address1 = "서울시 강남구", representative = "이영희", phone = "02-111-2222")
             )
             val schedules = listOf(
@@ -136,8 +136,8 @@ class MyStoreServiceTest {
 
             val distinctAccountSfids = listOf("SF_ACC001", "SF_ACC002")
             val accounts = listOf(
-                createAccount(id = 1L, sfid = "SF_ACC001", name = "(유)경산식품", externalKey = "1025172"),
-                createAccount(id = 2L, sfid = "SF_ACC002", name = "(주)대한식품", externalKey = "1025173")
+                createAccount(id = 1, sfid = "SF_ACC001", name = "(유)경산식품", externalKey = "1025172"),
+                createAccount(id = 2, sfid = "SF_ACC002", name = "(주)대한식품", externalKey = "1025173")
             )
             val schedules = listOf(
                 createStoreSchedule(account = "SF_ACC001", startDate = now),
@@ -172,9 +172,9 @@ class MyStoreServiceTest {
 
             val distinctAccountSfids = listOf("SF_ACC001", "SF_ACC002", "SF_ACC003")
             val accounts = listOf(
-                createAccount(id = 1L, sfid = "SF_ACC001", name = "홈플러스 서면점", externalKey = "1025173"),
-                createAccount(id = 2L, sfid = "SF_ACC002", name = "가나다식품", externalKey = "1025172"),
-                createAccount(id = 3L, sfid = "SF_ACC003", name = "나라마트", externalKey = "1025174")
+                createAccount(id = 1, sfid = "SF_ACC001", name = "홈플러스 서면점", externalKey = "1025173"),
+                createAccount(id = 2, sfid = "SF_ACC002", name = "가나다식품", externalKey = "1025172"),
+                createAccount(id = 3, sfid = "SF_ACC003", name = "나라마트", externalKey = "1025174")
             )
             val schedules = listOf(
                 createStoreSchedule(account = "SF_ACC001", startDate = now),
@@ -219,7 +219,7 @@ class MyStoreServiceTest {
     }
 
     private fun createAccount(
-        id: Long = 1L,
+        id: Int = 1,
         sfid: String? = null,
         externalKey: String = "1025172",
         name: String = "(유)경산식품",

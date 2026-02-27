@@ -111,7 +111,7 @@ class MyStoreService(
 
         return when {
             account != null -> MyStoreInfo(
-                storeId = account.id,
+                storeId = account.id.toLong(),
                 storeName = account.name ?: "",
                 storeCode = account.externalKey ?: "",
                 address = account.address1,

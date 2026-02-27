@@ -178,7 +178,7 @@ class AccountRepositoryTest {
             testEntityManager.clear()
 
             // When
-            val result = accountRepository.findByIdIn(listOf(saved1.id, saved2.id, 999L, 888L))
+            val result = accountRepository.findByIdIn(listOf(saved1.id, saved2.id, 999, 888))
 
             // Then
             assertThat(result).hasSize(2)

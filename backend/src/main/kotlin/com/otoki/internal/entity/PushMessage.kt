@@ -13,7 +13,7 @@ class PushMessage(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0,
+    val id: Int = 0,
 
     @Column(name = "sfid", length = 18)
     val sfid: String? = null,

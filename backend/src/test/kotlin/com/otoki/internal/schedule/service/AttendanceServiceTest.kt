@@ -710,7 +710,7 @@ class AttendanceServiceTest {
     }
 
     private fun createAccount(
-        id: Long = 0L,
+        id: Int = 0,
         sfid: String? = "ACC001",
         name: String? = "테스트 거래처",
         address: String? = "서울시 강남구",

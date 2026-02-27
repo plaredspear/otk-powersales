@@ -77,7 +77,7 @@ class UploadFileRepositoryTest {
         @DisplayName("존재하지 않는 ID 조회 시 empty 반환")
         fun findById_notFound_returnsEmpty() {
             // When
-            val result = uploadFileRepository.findById(99999L)
+            val result = uploadFileRepository.findById(99999)
 
             // Then
             assertThat(result).isEmpty

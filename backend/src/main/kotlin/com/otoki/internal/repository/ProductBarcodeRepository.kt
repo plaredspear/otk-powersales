@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository
  * 제품 바코드 Repository
  */
 @Repository
-interface ProductBarcodeRepository : JpaRepository<ProductBarcode, Long> {
+interface ProductBarcodeRepository : JpaRepository<ProductBarcode, Int> {
 
     fun findByProduct(product: String): List<ProductBarcode>
 
