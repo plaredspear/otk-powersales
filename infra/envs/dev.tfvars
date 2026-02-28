@@ -34,6 +34,7 @@ ecs_desired_count                = 1
 
 # DNS — 실제 값으로 교체 필요
 domain_name    = "dev-pwrs-api.codapt.kr"
+db_domain_name = "dev-db.codapt.kr"
 hosted_zone_id = "Z02189752GJTU3DRB1DOX"
 
 # RDS Public Access (dev only)

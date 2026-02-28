@@ -146,6 +146,20 @@ resource "aws_route53_record" "api" {
 }
 
 ################################################################################
+# Route53 CNAME — RDS (db_domain_name이 설정된 경우만 생성)
+################################################################################
+
+resource "aws_route53_record" "db" {
+  count = var.db_domain_name != "" ? 1 : 0
+
+  zone_id = var.hosted_zone_id
+  name    = var.db_domain_name
+  type    = "CNAME"
+  ttl     = 300
+  records = [module.rds.address]
+}
+
+################################################################################
 # EC2 Auto Scaling Group (ECS EC2 launch type)
 ################################################################################
 
