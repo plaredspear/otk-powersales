@@ -123,200 +123,215 @@ resource "aws_route_table_association" "private" {
 }
 
 ################################################################################
-# Security Groups
+# Security Groups (shell only — all rules are separate resources below)
 ################################################################################
 
-# ALB Security Group
 resource "aws_security_group" "alb" {
-  name_prefix = "${var.project}-${var.environment}-alb-"
+  name        = "${var.project}-${var.environment}-alb-sg"
   description = "Security group for ALB"
   vpc_id      = aws_vpc.main.id
-
-  ingress {
-    description = "HTTPS from anywhere"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "HTTP from anywhere (redirect to HTTPS)"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
 
   tags = {
     Name = "${var.project}-${var.environment}-alb-sg"
   }
-
-  lifecycle {
-    create_before_destroy = true
-  }
 }
 
-# ECS Security Group
 resource "aws_security_group" "ecs" {
-  name_prefix = "${var.project}-${var.environment}-ecs-"
+  name        = "${var.project}-${var.environment}-ecs-sg"
   description = "Security group for ECS tasks"
   vpc_id      = aws_vpc.main.id
-
-  ingress {
-    description     = "HTTP from ALB"
-    from_port       = 8080
-    to_port         = 8080
-    protocol        = "tcp"
-    security_groups = [aws_security_group.alb.id]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
 
   tags = {
     Name = "${var.project}-${var.environment}-ecs-sg"
   }
-
-  lifecycle {
-    create_before_destroy = true
-  }
 }
 
-# EC2 Instance Security Group (ECS EC2 launch type)
 resource "aws_security_group" "ec2_instance" {
-  name_prefix = "${var.project}-${var.environment}-ec2-"
+  name        = "${var.project}-${var.environment}-ec2-sg"
   description = "Security group for ECS EC2 instances"
   vpc_id      = aws_vpc.main.id
-
-  # Dynamic port mapping: ALB -> EC2 ephemeral ports
-  ingress {
-    description     = "Dynamic port mapping from ALB"
-    from_port       = 32768
-    to_port         = 65535
-    protocol        = "tcp"
-    security_groups = [aws_security_group.alb.id]
-  }
-
-  # ECS agent communication (self-reference)
-  ingress {
-    description = "ECS agent internal communication"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    self        = true
-  }
-
-  # ECR, SSM, CloudWatch
-  egress {
-    description = "HTTPS for ECR, SSM, CloudWatch"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # RDS
-  egress {
-    description     = "PostgreSQL to RDS"
-    from_port       = 5432
-    to_port         = 5432
-    protocol        = "tcp"
-    security_groups = [aws_security_group.rds.id]
-  }
-
-  # ElastiCache
-  egress {
-    description     = "Redis to ElastiCache"
-    from_port       = 6379
-    to_port         = 6379
-    protocol        = "tcp"
-    security_groups = [aws_security_group.elasticache.id]
-  }
 
   tags = {
     Name = "${var.project}-${var.environment}-ec2-sg"
   }
-
-  lifecycle {
-    create_before_destroy = true
-  }
 }
 
-# ElastiCache Security Group
 resource "aws_security_group" "elasticache" {
-  name_prefix = "${var.project}-${var.environment}-elasticache-"
+  name        = "${var.project}-${var.environment}-elasticache-sg"
   description = "Security group for ElastiCache"
   vpc_id      = aws_vpc.main.id
-
-  ingress {
-    description     = "Redis from ECS"
-    from_port       = 6379
-    to_port         = 6379
-    protocol        = "tcp"
-    security_groups = [aws_security_group.ecs.id]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
 
   tags = {
     Name = "${var.project}-${var.environment}-elasticache-sg"
   }
-
-  lifecycle {
-    create_before_destroy = true
-  }
 }
 
-# RDS Security Group
 resource "aws_security_group" "rds" {
-  name_prefix = "${var.project}-${var.environment}-rds-"
+  name        = "${var.project}-${var.environment}-rds-sg"
   description = "Security group for RDS"
   vpc_id      = aws_vpc.main.id
-
-  ingress {
-    description     = "PostgreSQL from ECS"
-    from_port       = 5432
-    to_port         = 5432
-    protocol        = "tcp"
-    security_groups = [aws_security_group.ecs.id]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
 
   tags = {
     Name = "${var.project}-${var.environment}-rds-sg"
   }
-
-  lifecycle {
-    create_before_destroy = true
-  }
 }
 
 ################################################################################
-# EC2 Instance → RDS/ElastiCache ingress (separate rules to avoid circular deps)
+# Security Group Rules — ALB
 ################################################################################
+
+resource "aws_security_group_rule" "alb_ingress_https" {
+  type              = "ingress"
+  from_port         = 443
+  to_port           = 443
+  protocol          = "tcp"
+  description       = "HTTPS from anywhere"
+  security_group_id = aws_security_group.alb.id
+  cidr_blocks       = ["0.0.0.0/0"]
+}
+
+resource "aws_security_group_rule" "alb_ingress_http" {
+  type              = "ingress"
+  from_port         = 80
+  to_port           = 80
+  protocol          = "tcp"
+  description       = "HTTP from anywhere (redirect to HTTPS)"
+  security_group_id = aws_security_group.alb.id
+  cidr_blocks       = ["0.0.0.0/0"]
+}
+
+resource "aws_security_group_rule" "alb_egress_all" {
+  type              = "egress"
+  from_port         = 0
+  to_port           = 0
+  protocol          = "-1"
+  security_group_id = aws_security_group.alb.id
+  cidr_blocks       = ["0.0.0.0/0"]
+}
+
+################################################################################
+# Security Group Rules — ECS
+################################################################################
+
+resource "aws_security_group_rule" "ecs_ingress_from_alb" {
+  type                     = "ingress"
+  from_port                = 8080
+  to_port                  = 8080
+  protocol                 = "tcp"
+  description              = "HTTP from ALB"
+  security_group_id        = aws_security_group.ecs.id
+  source_security_group_id = aws_security_group.alb.id
+}
+
+resource "aws_security_group_rule" "ecs_egress_all" {
+  type              = "egress"
+  from_port         = 0
+  to_port           = 0
+  protocol          = "-1"
+  security_group_id = aws_security_group.ecs.id
+  cidr_blocks       = ["0.0.0.0/0"]
+}
+
+################################################################################
+# Security Group Rules — EC2 Instance
+################################################################################
+
+resource "aws_security_group_rule" "ec2_ingress_from_alb" {
+  type                     = "ingress"
+  from_port                = 32768
+  to_port                  = 65535
+  protocol                 = "tcp"
+  description              = "Dynamic port mapping from ALB"
+  security_group_id        = aws_security_group.ec2_instance.id
+  source_security_group_id = aws_security_group.alb.id
+}
+
+resource "aws_security_group_rule" "ec2_ingress_self" {
+  type              = "ingress"
+  from_port         = 0
+  to_port           = 0
+  protocol          = "-1"
+  description       = "ECS agent internal communication"
+  security_group_id = aws_security_group.ec2_instance.id
+  self              = true
+}
+
+resource "aws_security_group_rule" "ec2_egress_https" {
+  type              = "egress"
+  from_port         = 443
+  to_port           = 443
+  protocol          = "tcp"
+  description       = "HTTPS for ECR, SSM, CloudWatch"
+  security_group_id = aws_security_group.ec2_instance.id
+  cidr_blocks       = ["0.0.0.0/0"]
+}
+
+resource "aws_security_group_rule" "ec2_egress_rds" {
+  type                     = "egress"
+  from_port                = 5432
+  to_port                  = 5432
+  protocol                 = "tcp"
+  description              = "PostgreSQL to RDS"
+  security_group_id        = aws_security_group.ec2_instance.id
+  source_security_group_id = aws_security_group.rds.id
+}
+
+resource "aws_security_group_rule" "ec2_egress_elasticache" {
+  type                     = "egress"
+  from_port                = 6379
+  to_port                  = 6379
+  protocol                 = "tcp"
+  description              = "Redis to ElastiCache"
+  security_group_id        = aws_security_group.ec2_instance.id
+  source_security_group_id = aws_security_group.elasticache.id
+}
+
+################################################################################
+# Security Group Rules — ElastiCache
+################################################################################
+
+resource "aws_security_group_rule" "elasticache_ingress_from_ecs" {
+  type                     = "ingress"
+  from_port                = 6379
+  to_port                  = 6379
+  protocol                 = "tcp"
+  description              = "Redis from ECS"
+  security_group_id        = aws_security_group.elasticache.id
+  source_security_group_id = aws_security_group.ecs.id
+}
+
+resource "aws_security_group_rule" "elasticache_ingress_from_ec2" {
+  type                     = "ingress"
+  from_port                = 6379
+  to_port                  = 6379
+  protocol                 = "tcp"
+  description              = "Redis from EC2 instances"
+  security_group_id        = aws_security_group.elasticache.id
+  source_security_group_id = aws_security_group.ec2_instance.id
+}
+
+resource "aws_security_group_rule" "elasticache_egress_all" {
+  type              = "egress"
+  from_port         = 0
+  to_port           = 0
+  protocol          = "-1"
+  security_group_id = aws_security_group.elasticache.id
+  cidr_blocks       = ["0.0.0.0/0"]
+}
+
+################################################################################
+# Security Group Rules — RDS
+################################################################################
+
+resource "aws_security_group_rule" "rds_ingress_from_ecs" {
+  type                     = "ingress"
+  from_port                = 5432
+  to_port                  = 5432
+  protocol                 = "tcp"
+  description              = "PostgreSQL from ECS"
+  security_group_id        = aws_security_group.rds.id
+  source_security_group_id = aws_security_group.ecs.id
+}
 
 resource "aws_security_group_rule" "rds_from_ec2" {
   type                     = "ingress"
@@ -340,12 +355,11 @@ resource "aws_security_group_rule" "rds_from_external" {
   cidr_blocks       = [var.rds_allowed_cidrs[count.index]]
 }
 
-resource "aws_security_group_rule" "elasticache_from_ec2" {
-  type                     = "ingress"
-  from_port                = 6379
-  to_port                  = 6379
-  protocol                 = "tcp"
-  description              = "Redis from EC2 instances"
-  security_group_id        = aws_security_group.elasticache.id
-  source_security_group_id = aws_security_group.ec2_instance.id
+resource "aws_security_group_rule" "rds_egress_all" {
+  type              = "egress"
+  from_port         = 0
+  to_port           = 0
+  protocol          = "-1"
+  security_group_id = aws_security_group.rds.id
+  cidr_blocks       = ["0.0.0.0/0"]
 }
