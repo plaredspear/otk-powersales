@@ -6,7 +6,6 @@ import '../datasources/auth_local_datasource.dart';
 /// 인증 Repository 구현체
 ///
 /// 실제 API DataSource를 사용하여 인증 기능을 구현합니다.
-/// Backend API 연동 시점에 AuthMockRepository를 대체합니다.
 class AuthRepositoryImpl implements AuthRepository {
   final AuthRemoteDataSource _remoteDataSource;
   final AuthLocalDataSource _localDataSource;

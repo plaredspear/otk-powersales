@@ -1,7 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/network/dio_provider.dart';
+import '../../data/datasources/auth_api_datasource.dart';
 import '../../data/datasources/auth_local_datasource.dart';
-import '../../data/repositories/mock/auth_mock_repository.dart';
+import '../../data/datasources/auth_remote_datasource.dart';
+import '../../data/repositories/auth_repository_impl.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/auto_login_usecase.dart';
 import '../../domain/usecases/change_password_usecase.dart';
@@ -12,9 +15,20 @@ import 'auth_state.dart';
 
 // --- Providers ---
 
+/// Auth Remote DataSource Provider
+final authRemoteDataSourceProvider = Provider<AuthRemoteDataSource>((ref) {
+  final dio = ref.watch(dioProvider);
+  return AuthApiDataSource(dio);
+});
+
 /// Auth Repository Provider
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  return AuthMockRepository();
+  final remoteDataSource = ref.watch(authRemoteDataSourceProvider);
+  final localDataSource = ref.watch(authLocalDataSourceProvider);
+  return AuthRepositoryImpl(
+    remoteDataSource: remoteDataSource,
+    localDataSource: localDataSource,
+  );
 });
 
 /// Auth Local DataSource Provider
