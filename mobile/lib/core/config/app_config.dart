@@ -5,8 +5,9 @@
 ///
 /// 사용 예:
 /// ```bash
+/// # 로컬 개발 (config/dev.json.example을 복사하여 사용)
+/// cp config/dev.json.example config/dev.json
 /// flutter run --dart-define-from-file=config/dev.json
-/// flutter build apk --dart-define-from-file=config/prod.json
 /// ```
 class AppConfig {
   AppConfig._();
