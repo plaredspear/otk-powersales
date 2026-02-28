@@ -221,7 +221,7 @@ Task 도구 호출 시 다음 정보를 prompt에 포함합니다:
 1. **개발 로그 파일 생성** - `docs/execution/06-개발 로그/<주차>/` 에 로그 파일 생성
 2. **00-INDEX.md 업데이트** - 주차별 테이블, 작업 유형별 인덱스, 통계 갱신
 3. **spec.md Part 체크리스트 업데이트** - 완료된 Part의 `- [ ]`를 `- [x]`로 변경
-4. **모든 Part 완료 시** - `docs/specs/<번호>-<기능명>/` 폴더를 `docs/specs/completed/`로 이동
+4. **모든 Part 완료 시** - `docs/specs/ready/<번호>-<기능명>/` 폴더를 `docs/specs/completed/`로 이동
 5. **기획문서 페이지 인덱스 완료 여부 업데이트** (Feature만) - `docs/specs/기획문서-페이지-인덱스.md`의 전체 페이지 인덱스에서 해당 Feature 관련 페이지의 완료 열 갱신 (P: 부분 완료, V: 완료)
 
 상세 로직은 `.claude/agents/task-completion.md` 참조.

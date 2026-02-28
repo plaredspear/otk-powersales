@@ -21,7 +21,7 @@
 ## Docs 기반 스펙 읽기
 
 1. 사용자 입력에서 스펙번호(+파트) 추출 (예: `스펙 64 구현`, `/impl 1-P1`)
-2. `docs/specs/`에서 `<번호>-*` 폴더 탐색
+2. `docs/specs/ready/`에서 `<번호>-*` 폴더 탐색 (없으면 `docs/specs/backlog/`도 확인)
 3. 단일 Part → `spec.md` 읽기, 복수 Part → `P<파트>.md` + `spec.md` 읽기
 4. 스펙에서 구현할 기능, API 설계, 비즈니스 규칙 파악
 

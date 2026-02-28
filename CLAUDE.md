@@ -85,10 +85,10 @@ otoki/                          # 프로젝트 루트
 ### 워크플로우 (docs/specs/ 폴더 기반)
 
 ```
-1. 스펙 작성 (/spec) → docs/specs/<번호>-<기능명>/ 폴더에 스펙 생성 (단일 플랫폼: spec-B.md, 복수 플랫폼: spec.md + P1-B.md + P2-M.md)
+1. 스펙 작성 (/spec) → docs/specs/backlog/<번호>-<기능명>/ 에 스펙 생성
 2. AI 리뷰 (/spec-review) → 터미널에 리포트 출력
-3. 사용자 검토 → 승인 (승인 이력 업데이트)
-4. /impl → dev worktree에서 직접 구현 + 테스트 + 커밋
+3. 사용자 검토 → 승인 → docs/specs/ready/ 로 이동
+4. /impl → ready/ 에서 스펙 읽기 → dev worktree에서 직접 구현 + 테스트 + 커밋
 5. /complete-task → main worktree에서 merge --no-ff → dev worktree rebase
 6. 완료 → docs/specs/completed/ 로 이동
 ```
@@ -116,15 +116,19 @@ git rebase main
 
 ### 모드별 역할
 
-- **구현 모드**: docs/specs/ 폴더의 스펙을 기반으로 코드 구현. 테스트 작성. main 머지.
+- **구현 모드**: docs/specs/ready/ 폴더의 승인된 스펙을 기반으로 코드 구현. 테스트 작성. main 머지.
 
 ---
 
 ## 4. 스펙 관리 규칙
 
-- **스펙은 `docs/specs/<번호>-<기능명>/`에 폴더로 관리**: 단일 플랫폼 → `spec-{P}.md`, 복수 플랫폼 → `spec.md` + `P<N>-{P}.md`. 모든 스펙 파일에 플랫폼 접미사 필수
-- **스펙 번호는 순차 부여**: `docs/specs/` + `docs/specs/completed/` 에서 최대 번호 + 1
-- **완료된 스펙**: 완료 시 `docs/specs/completed/`로 폴더 이동
+- **스펙은 3단계 폴더로 관리**: `backlog/` → `ready/` → `completed/`
+  - `docs/specs/backlog/<번호>-<기능명>/` — 초안, 리뷰 전
+  - `docs/specs/ready/<번호>-<기능명>/` — 리뷰 완료 + 승인, 구현 대기
+  - `docs/specs/completed/<번호>-<기능명>/` — 구현 완료
+- **파일 구조**: 단일 플랫폼 → `spec-{P}.md`, 복수 플랫폼 → `spec.md` + `P<N>-{P}.md`. 모든 스펙 파일에 플랫폼 접미사 필수
+- **스펙 번호는 순차 부여**: `backlog/` + `ready/` + `completed/` 에서 최대 번호 + 1
+- **상태 전환**: 승인 시 `backlog/` → `ready/` 이동, 구현 완료 시 `ready/` → `completed/` 이동
 
 ---
 
@@ -142,14 +146,13 @@ docs/
 │   ├── 02-화면 설계.md
 │   ├── 03-기술 스택.md
 │   └── 04-API 설계.md
-├── specs/                # 스펙 폴더 (번호-기능명/ 구조)
-│   ├── 68-querydsl-setup/#   예시: 단일 플랫폼 스펙
-│   │   └── spec-B.md     #     Backend 단일 스펙
-│   ├── 62-gps-consent/   #   예시: 복수 플랫폼 스펙
-│   │   ├── spec.md       #     부모 스펙 + Part 체크리스트
-│   │   ├── P1-B.md       #     Part 1: Backend
-│   │   └── P2-M.md       #     Part 2: Mobile
-│   └── completed/        #   완료된 스펙 폴더 이동 대상
+├── specs/                # 스펙 폴더 (칸반: backlog → ready → completed)
+│   ├── backlog/          #   초안, 리뷰 전
+│   │   └── 92-web-admin-init/
+│   ├── ready/            #   리뷰 완료 + 승인, 구현 대기
+│   │   └── (승인된 스펙들)
+│   ├── completed/        #   구현 완료
+│   │   └── (완료된 스펙들)
 └── execution/                # 실행 및 작업 기록
     └── 08-프로젝트 관리 방법론.md
 ```
