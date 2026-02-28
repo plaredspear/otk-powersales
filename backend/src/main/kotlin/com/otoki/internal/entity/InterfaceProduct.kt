@@ -41,9 +41,6 @@ class InterfaceProduct(
     @Column(name = "dkretail__shelflifeunit__c", length = 40)
     val shelfLifeUnit: String? = null,
 
-    @Column(name = "shelflifefull__c", length = 1300)
-    val shelfLifeFull: String? = null,
-
     @Column(name = "dkretail__category1__c", length = 255)
     val category1: String? = null,
 
@@ -76,9 +73,6 @@ class InterfaceProduct(
 
     @Column(name = "dkretail__standardunitprice__c")
     val standardUnitPrice: Double? = null,
-
-    @Column(name = "standardprice__c")
-    val standardPrice: Double? = null,
 
     @Column(name = "supertax__c")
     val superTax: Double? = null,
@@ -134,9 +128,4 @@ class InterfaceProduct(
     @Column(name = "systemmodstamp")
     val systemModStamp: LocalDateTime? = null,
 
-    @Column(name = "_hc_lastop", length = 32)
-    val hcLastOp: String? = null,
-
-    @Column(name = "_hc_err", columnDefinition = "TEXT")
-    val hcErr: String? = null
 )
