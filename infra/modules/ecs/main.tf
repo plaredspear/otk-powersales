@@ -168,6 +168,7 @@ resource "aws_ecs_task_definition" "main" {
         { name = "HIKARI_MAX_POOL", value = tostring(var.hikari_max_pool) },
         { name = "HIKARI_MIN_IDLE", value = tostring(var.hikari_min_idle) },
         { name = "JWT_EXPIRATION", value = "3600000" },
+        { name = "JWT_REFRESH_EXPIRATION", value = "604800000" },
         { name = "LOG_LEVEL_ROOT", value = var.log_level_root },
         { name = "LOG_LEVEL_APP", value = var.log_level_app },
         { name = "LOG_LEVEL_SECURITY", value = var.log_level_security },
