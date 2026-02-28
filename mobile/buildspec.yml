@@ -1,0 +1,38 @@
+version: 0.2
+
+env:
+  variables:
+    ENV: "dev"
+  parameter-store:
+    BASE_URL: "/otoki/dev/base-url"
+
+phases:
+  install:
+    runtime-versions:
+      java: corretto17
+    commands:
+      # Flutter SDK 설치 — 버전과 URL은 별도 스펙(CodeBuild 프로젝트 구성)에서 확정
+      - echo "Flutter SDK install step (see CodeBuild project spec)"
+
+  pre_build:
+    commands:
+      - flutter pub get
+      - |
+        mkdir -p config
+        cat > config/prod.json << EOF
+        {
+          "BASE_URL": "$BASE_URL",
+          "ENV": "$ENV"
+        }
+        EOF
+
+  build:
+    commands:
+      - flutter build apk
+          --release
+          --dart-define-from-file=config/prod.json
+
+artifacts:
+  files:
+    - build/app/outputs/flutter-apk/app-release.apk
+  discard-paths: yes

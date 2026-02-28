@@ -49,4 +49,5 @@ app.*.map.json
 test/temp/
 
 # Environment config files
-config/
+config/*
+!config/*.example
