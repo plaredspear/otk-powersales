@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import java.time.LocalDate
 
-interface StoreScheduleRepository : JpaRepository<StoreSchedule, Int> {
+interface StoreScheduleRepository : JpaRepository<StoreSchedule, Long> {
 
     /**
      * 사원(fullName sfid)의 특정 날짜 거래처 스케줄 조회
