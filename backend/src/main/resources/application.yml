@@ -17,6 +17,8 @@ spring:
     show-sql: ${JPA_SHOW_SQL:true}
     hibernate:
       ddl-auto: ${JPA_DDL_AUTO:validate}
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     properties:
       hibernate:
