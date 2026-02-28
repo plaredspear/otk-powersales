@@ -1,3 +1,4 @@
+import '../../core/utils/error_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/usecases/get_order_detail.dart';
@@ -50,7 +51,7 @@ class OrderDetailNotifier extends StateNotifier<OrderDetailState> {
       );
     } catch (e) {
       state = state.toError(
-        e.toString().replaceFirst('Exception: ', ''),
+        extractErrorMessage(e),
       );
     }
   }
@@ -72,7 +73,7 @@ class OrderDetailNotifier extends StateNotifier<OrderDetailState> {
     } catch (e) {
       state = state.copyWith(
         isResending: false,
-        errorMessage: e.toString().replaceFirst('Exception: ', ''),
+        errorMessage: extractErrorMessage(e),
       );
       return false;
     }

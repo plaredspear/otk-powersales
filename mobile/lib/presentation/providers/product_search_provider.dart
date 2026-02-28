@@ -1,3 +1,4 @@
+import '../../core/utils/error_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/repositories/mock/mock_product_repository.dart';
@@ -62,7 +63,7 @@ class ProductSearchNotifier extends StateNotifier<ProductSearchState> {
       state = state.toError(e.message as String);
     } catch (e) {
       state = state.toError(
-        e.toString().replaceFirst('Exception: ', ''),
+        extractErrorMessage(e),
       );
     }
   }
@@ -102,7 +103,7 @@ class ProductSearchNotifier extends StateNotifier<ProductSearchState> {
       );
     } catch (e) {
       state = state.toError(
-        e.toString().replaceFirst('Exception: ', ''),
+        extractErrorMessage(e),
       );
     }
   }

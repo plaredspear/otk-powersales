@@ -1,3 +1,4 @@
+import '../../core/utils/error_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/repositories/mock/attendance_mock_repository.dart';
@@ -63,7 +64,7 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
       );
     } catch (e) {
       state = state.toError(
-        e.toString().replaceFirst('Exception: ', ''),
+        extractErrorMessage(e),
       );
     }
   }
@@ -119,7 +120,7 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
       state = state.toError(e.message as String);
     } catch (e) {
       state = state.toError(
-        e.toString().replaceFirst('Exception: ', ''),
+        extractErrorMessage(e),
       );
     }
   }
@@ -159,7 +160,7 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
       );
     } catch (e) {
       state = state.toError(
-        e.toString().replaceFirst('Exception: ', ''),
+        extractErrorMessage(e),
       );
     }
   }

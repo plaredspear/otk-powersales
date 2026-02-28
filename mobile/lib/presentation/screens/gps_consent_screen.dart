@@ -1,3 +1,4 @@
+import '../../core/utils/error_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -50,7 +51,7 @@ class _GpsConsentScreenState extends ConsumerState<GpsConsentScreen> {
       });
     } catch (e) {
       setState(() {
-        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+        _errorMessage = extractErrorMessage(e);
         _isLoading = false;
       });
     }
@@ -76,7 +77,7 @@ class _GpsConsentScreenState extends ConsumerState<GpsConsentScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.toString().replaceFirst('Exception: ', '')),
+            content: Text(extractErrorMessage(e)),
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
           ),

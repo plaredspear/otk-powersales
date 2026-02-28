@@ -1,3 +1,4 @@
+import '../../core/utils/error_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/entities/order_draft.dart';
@@ -84,7 +85,7 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
       );
     } catch (e) {
       state = state.toError(
-        e.toString().replaceFirst('Exception: ', ''),
+        extractErrorMessage(e),
       );
     }
   }
@@ -117,7 +118,7 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
       );
     } catch (e) {
       state = state.toError(
-        e.toString().replaceFirst('Exception: ', ''),
+        extractErrorMessage(e),
       );
     }
   }
@@ -183,7 +184,7 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
       );
     } catch (e) {
       state = state.toError(
-        e.toString().replaceFirst('Exception: ', ''),
+        extractErrorMessage(e),
       );
     }
   }
@@ -213,7 +214,7 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
       );
     } catch (e) {
       state = state.toError(
-        e.toString().replaceFirst('Exception: ', ''),
+        extractErrorMessage(e),
       );
     }
   }

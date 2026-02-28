@@ -1,3 +1,4 @@
+import '../../core/utils/error_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/usecases/get_client_order_detail_usecase.dart';
@@ -40,7 +41,7 @@ class ClientOrderDetailNotifier extends StateNotifier<ClientOrderDetailState> {
       );
     } catch (e) {
       state = state.toError(
-        e.toString().replaceFirst('Exception: ', ''),
+        extractErrorMessage(e),
       );
     }
   }

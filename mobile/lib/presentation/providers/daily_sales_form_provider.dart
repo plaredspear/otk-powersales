@@ -1,3 +1,4 @@
+import '../../core/utils/error_utils.dart';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -138,7 +139,7 @@ class DailySalesFormNotifier extends StateNotifier<DailySalesFormState> {
     } catch (e) {
       // 제출 실패 상태로 변경
       state = state.toError(
-        e.toString().replaceFirst('Exception: ', ''),
+        extractErrorMessage(e),
       );
       return false;
     }
@@ -179,7 +180,7 @@ class DailySalesFormNotifier extends StateNotifier<DailySalesFormState> {
     } catch (e) {
       // 제출 실패 상태로 변경
       state = state.toError(
-        e.toString().replaceFirst('Exception: ', ''),
+        extractErrorMessage(e),
       );
       return false;
     }

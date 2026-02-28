@@ -1,3 +1,4 @@
+import '../../core/utils/error_utils.dart';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -51,7 +52,7 @@ class InspectionRegisterNotifier
         stores: storeMap,
       );
     } catch (e) {
-      state = state.toError(e.toString().replaceFirst('Exception: ', ''));
+      state = state.toError(extractErrorMessage(e));
     }
   }
 
@@ -230,7 +231,7 @@ class InspectionRegisterNotifier
       state = state.copyWith(isLoading: false, errorMessage: null);
       return true;
     } catch (e) {
-      state = state.toError(e.toString().replaceFirst('Exception: ', ''));
+      state = state.toError(extractErrorMessage(e));
       return false;
     }
   }

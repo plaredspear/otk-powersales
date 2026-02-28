@@ -1,3 +1,4 @@
+import '../../core/utils/error_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/network/dio_provider.dart';
@@ -230,7 +231,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } on ArgumentError catch (e) {
       state = state.toError(e.message as String);
     } catch (e) {
-      state = state.toError(e.toString().replaceFirst('Exception: ', ''));
+      state = state.toError(extractErrorMessage(e));
     }
   }
 
@@ -264,7 +265,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } on ArgumentError catch (e) {
       state = state.toError(e.message as String);
     } catch (e) {
-      state = state.toError(e.toString().replaceFirst('Exception: ', ''));
+      state = state.toError(extractErrorMessage(e));
     }
   }
 
@@ -292,7 +293,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         );
       }
     } catch (e) {
-      state = state.toError(e.toString().replaceFirst('Exception: ', ''));
+      state = state.toError(extractErrorMessage(e));
     }
   }
 

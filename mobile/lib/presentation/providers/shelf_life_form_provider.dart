@@ -1,3 +1,4 @@
+import '../../core/utils/error_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/repositories/mock/my_store_mock_repository.dart';
@@ -131,7 +132,7 @@ class ShelfLifeFormNotifier extends StateNotifier<ShelfLifeFormState> {
       state = state.copyWith(isLoading: false, isSaved: true);
     } catch (e) {
       state = state.toError(
-        e.toString().replaceFirst('Exception: ', ''),
+        extractErrorMessage(e),
       );
     }
   }
@@ -154,7 +155,7 @@ class ShelfLifeFormNotifier extends StateNotifier<ShelfLifeFormState> {
       state = state.copyWith(isLoading: false, isSaved: true);
     } catch (e) {
       state = state.toError(
-        e.toString().replaceFirst('Exception: ', ''),
+        extractErrorMessage(e),
       );
     }
   }
@@ -171,7 +172,7 @@ class ShelfLifeFormNotifier extends StateNotifier<ShelfLifeFormState> {
       state = state.copyWith(isLoading: false, isDeleted: true);
     } catch (e) {
       state = state.toError(
-        e.toString().replaceFirst('Exception: ', ''),
+        extractErrorMessage(e),
       );
     }
   }

@@ -1,3 +1,4 @@
+import '../../core/utils/error_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/repositories/mock/order_mock_repository.dart';
@@ -85,7 +86,7 @@ class ClientOrderListNotifier extends StateNotifier<ClientOrderListState> {
       );
     } catch (e) {
       state = state.toError(
-        e.toString().replaceFirst('Exception: ', ''),
+        extractErrorMessage(e),
       );
     }
   }
@@ -115,7 +116,7 @@ class ClientOrderListNotifier extends StateNotifier<ClientOrderListState> {
       );
     } catch (e) {
       state = state.toError(
-        e.toString().replaceFirst('Exception: ', ''),
+        extractErrorMessage(e),
       );
     }
   }

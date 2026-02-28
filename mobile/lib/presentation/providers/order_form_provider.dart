@@ -1,3 +1,4 @@
+import '../../core/utils/error_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/entities/order_draft.dart';
@@ -135,7 +136,7 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
       }
     } catch (e) {
       state = state.toError(
-        e.toString().replaceFirst('Exception: ', ''),
+        extractErrorMessage(e),
       );
     }
   }
@@ -175,7 +176,7 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
       );
     } catch (e) {
       state = state.toError(
-        e.toString().replaceFirst('Exception: ', ''),
+        extractErrorMessage(e),
       );
     }
   }
@@ -352,7 +353,7 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
     } catch (e) {
       state = state.copyWith(
         isSubmitting: false,
-        errorMessage: e.toString().replaceFirst('Exception: ', ''),
+        errorMessage: extractErrorMessage(e),
       );
     }
   }
@@ -376,7 +377,7 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
     } catch (e) {
       state = state.copyWith(
         isSubmitting: false,
-        errorMessage: e.toString().replaceFirst('Exception: ', ''),
+        errorMessage: extractErrorMessage(e),
       );
     }
   }
@@ -388,7 +389,7 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
       state = OrderFormState.initial();
     } catch (e) {
       state = state.toError(
-        e.toString().replaceFirst('Exception: ', ''),
+        extractErrorMessage(e),
       );
     }
   }

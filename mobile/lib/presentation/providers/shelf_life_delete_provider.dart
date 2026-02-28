@@ -1,3 +1,4 @@
+import '../../core/utils/error_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/entities/shelf_life_item.dart';
@@ -88,7 +89,7 @@ class ShelfLifeDeleteNotifier extends StateNotifier<ShelfLifeDeleteState> {
       );
     } catch (e) {
       state = state.toError(
-        e.toString().replaceFirst('Exception: ', ''),
+        extractErrorMessage(e),
       );
     }
   }
