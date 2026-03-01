@@ -77,17 +77,17 @@ class ScheduleCard extends StatelessWidget {
             else
               _buildScheduleList(),
 
-            // 등록 버튼 (totalCount > 0 일 때)
-            if (totalCount > 0) ...[
-              const SizedBox(height: AppSpacing.md),
-              PrimaryButton(
-                text: registeredCount == totalCount ? '등록 완료' : '등록',
-                onPressed: registeredCount == totalCount ? null : onRegisterTap,
-                height: AppSpacing.buttonHeightSmall,
-                fontSize: 14,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-            ],
+            // 등록 버튼
+            const SizedBox(height: AppSpacing.md),
+            PrimaryButton(
+              text: _buttonText(totalCount, registeredCount),
+              onPressed: _isButtonEnabled(totalCount, registeredCount)
+                  ? onRegisterTap
+                  : null,
+              height: AppSpacing.buttonHeightSmall,
+              fontSize: 14,
+            ),
+            const SizedBox(height: AppSpacing.sm),
           ],
         ),
       ),
@@ -117,7 +117,7 @@ class ScheduleCard extends StatelessWidget {
             '$registeredCount/$totalCount',
             style: AppTypography.headlineSmall.copyWith(
               fontWeight: FontWeight.w700,
-              color: isComplete ? AppColors.success : AppColors.textPrimary,
+              color: isComplete ? AppColors.success : AppColors.textSecondary,
             ),
           ),
         ],
@@ -146,12 +146,11 @@ class ScheduleCard extends StatelessWidget {
       children: [
         const SizedBox(height: AppSpacing.xs),
         Text(
-          '출근 후 등록을 누르세요.',
+          '오늘 등록된 스케줄이 없습니다.',
           style: AppTypography.bodyMedium.copyWith(
             color: AppColors.textSecondary,
           ),
         ),
-        const SizedBox(height: AppSpacing.lg),
       ],
     );
   }
@@ -219,6 +218,19 @@ class ScheduleCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// 버튼 텍스트 결정
+  String _buttonText(int totalCount, int registeredCount) {
+    if (totalCount == 0 || registeredCount == 0) return '등록';
+    if (registeredCount == totalCount) return '등록 완료';
+    return '다음 등록';
+  }
+
+  /// 버튼 활성 여부 결정
+  bool _isButtonEnabled(int totalCount, int registeredCount) {
+    if (totalCount == 0) return false;
+    return registeredCount < totalCount;
   }
 
   /// 날짜 문자열을 "MM월 dd일 (요일)" 형식으로 변환
