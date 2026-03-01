@@ -1,3 +1,4 @@
+import '../entities/attendance_summary.dart';
 import '../entities/expiry_alert.dart';
 import '../entities/notice.dart';
 import '../entities/schedule.dart';
@@ -5,12 +6,16 @@ import '../entities/schedule.dart';
 /// 홈 데이터 조회 결과를 담는 값 객체
 class HomeData {
   final List<Schedule> todaySchedules;
+  final AttendanceSummary attendanceSummary;
+  final bool safetyCheckRequired;
   final ExpiryAlert? expiryAlert;
   final List<Notice> notices;
   final String currentDate;
 
   const HomeData({
     required this.todaySchedules,
+    required this.attendanceSummary,
+    required this.safetyCheckRequired,
     this.expiryAlert,
     required this.notices,
     required this.currentDate,
@@ -31,7 +36,9 @@ class HomeData {
       if (notices[i] != other.notices[i]) return false;
     }
 
-    return expiryAlert == other.expiryAlert &&
+    return attendanceSummary == other.attendanceSummary &&
+        safetyCheckRequired == other.safetyCheckRequired &&
+        expiryAlert == other.expiryAlert &&
         currentDate == other.currentDate;
   }
 
@@ -39,6 +46,8 @@ class HomeData {
   int get hashCode {
     return Object.hash(
       Object.hashAll(todaySchedules),
+      attendanceSummary,
+      safetyCheckRequired,
       expiryAlert,
       Object.hashAll(notices),
       currentDate,
@@ -47,7 +56,7 @@ class HomeData {
 
   @override
   String toString() {
-    return 'HomeData(todaySchedules: $todaySchedules, expiryAlert: $expiryAlert, notices: $notices, currentDate: $currentDate)';
+    return 'HomeData(todaySchedules: $todaySchedules, attendanceSummary: $attendanceSummary, safetyCheckRequired: $safetyCheckRequired, expiryAlert: $expiryAlert, notices: $notices, currentDate: $currentDate)';
   }
 }
 

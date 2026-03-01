@@ -1,3 +1,4 @@
+import '../../domain/entities/attendance_summary.dart';
 import '../../domain/entities/expiry_alert.dart';
 import '../../domain/entities/notice.dart';
 import '../../domain/entities/schedule.dart';
@@ -7,30 +8,44 @@ class HomeMockData {
   /// 오늘 일정 목록 (일정이 있는 경우)
   static const List<Schedule> todaySchedules = [
     Schedule(
-      id: 1,
+      scheduleId: 'a0X000001',
+      employeeName: '홍길동',
+      employeeSfid: '005000001',
       storeName: '이마트 부산점',
-      startTime: '09:00',
-      endTime: '12:00',
-      type: '순회',
+      storeSfid: '001000001',
+      workCategory: '순회',
+      workType: '정기',
+      isCommuteRegistered: false,
     ),
     Schedule(
-      id: 2,
+      scheduleId: 'a0X000002',
+      employeeName: '홍길동',
+      employeeSfid: '005000001',
       storeName: '홈플러스 해운대점',
-      startTime: '13:00',
-      endTime: '15:00',
-      type: '격고',
+      storeSfid: '001000002',
+      workCategory: '격고',
+      workType: '정기',
+      isCommuteRegistered: true,
     ),
     Schedule(
-      id: 3,
+      scheduleId: 'a0X000003',
+      employeeName: '홍길동',
+      employeeSfid: '005000001',
       storeName: '롯데마트 서면점',
-      startTime: '15:30',
-      endTime: '17:00',
-      type: '고정',
+      storeSfid: '001000003',
+      workCategory: '고정',
+      isCommuteRegistered: false,
     ),
   ];
 
   /// 오늘 일정 목록 (일정이 없는 경우)
   static const List<Schedule> emptySchedules = [];
+
+  /// 출근 현황 집계
+  static const AttendanceSummary attendanceSummary = AttendanceSummary(
+    totalCount: 3,
+    registeredCount: 1,
+  );
 
   /// 유통기한 알림
   static const ExpiryAlert expiryAlert = ExpiryAlert(

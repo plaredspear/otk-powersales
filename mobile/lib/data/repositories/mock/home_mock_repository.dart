@@ -1,3 +1,4 @@
+import '../../../domain/entities/attendance_summary.dart';
 import '../../../domain/entities/expiry_alert.dart';
 import '../../../domain/entities/notice.dart';
 import '../../../domain/entities/schedule.dart';
@@ -10,6 +11,8 @@ import '../../mock/home_mock_data.dart';
 class HomeMockRepository implements HomeRepository {
   /// Mock 데이터 커스텀 (테스트용)
   List<Schedule>? customSchedules;
+  AttendanceSummary? customAttendanceSummary;
+  bool? customSafetyCheckRequired;
   ExpiryAlert? customExpiryAlert;
   bool useNullExpiryAlert = false;
   List<Notice>? customNotices;
@@ -30,6 +33,11 @@ class HomeMockRepository implements HomeRepository {
 
     final schedules = customSchedules ?? HomeMockData.todaySchedules;
 
+    final attendanceSummary = customAttendanceSummary ??
+        HomeMockData.attendanceSummary;
+
+    final safetyCheckRequired = customSafetyCheckRequired ?? false;
+
     ExpiryAlert? expiryAlert;
     if (!useNullExpiryAlert) {
       expiryAlert = customExpiryAlert ?? HomeMockData.expiryAlert;
@@ -40,6 +48,8 @@ class HomeMockRepository implements HomeRepository {
 
     return HomeData(
       todaySchedules: schedules,
+      attendanceSummary: attendanceSummary,
+      safetyCheckRequired: safetyCheckRequired,
       expiryAlert: expiryAlert,
       notices: notices,
       currentDate: currentDate,
