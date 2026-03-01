@@ -82,14 +82,14 @@ void main() {
     });
 
     group('본문 영역', () {
-      testWidgets('T1: totalCount == 0 이면 "오늘 등록된 스케줄이 없습니다." 표시',
+      testWidgets('T1: totalCount == 0 이면 "출근 후 등록을 누르세요." 표시',
           (tester) async {
         await tester.pumpWidget(buildTestWidget(
           attendanceSummary:
               const AttendanceSummary(totalCount: 0, registeredCount: 0),
         ));
 
-        expect(find.text('오늘 등록된 스케줄이 없습니다.'), findsOneWidget);
+        expect(find.text('출근 후 등록을 누르세요.'), findsOneWidget);
       });
 
       testWidgets('T2: totalCount > 0, registeredCount == 0 이면 미출근 안내 표시',
