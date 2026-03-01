@@ -17,3 +17,9 @@ variable "hosted_zone_id" {
   description = "Route53 hosted zone ID"
   type        = string
 }
+
+variable "subject_alternative_names" {
+  description = "ACM 인증서에 추가할 SAN 도메인 목록"
+  type        = list(string)
+  default     = []
+}

@@ -109,8 +109,9 @@ module "dns" {
   project     = var.project
   environment = var.environment
 
-  domain_name    = var.domain_name
-  hosted_zone_id = var.hosted_zone_id
+  domain_name               = var.domain_name
+  hosted_zone_id            = var.hosted_zone_id
+  subject_alternative_names = var.admin_domain_name != "" ? [var.admin_domain_name] : []
 }
 
 ################################################################################
@@ -157,6 +158,24 @@ resource "aws_route53_record" "db" {
   type    = "CNAME"
   ttl     = 300
   records = [module.rds.address]
+}
+
+################################################################################
+# Route53 A Record — Web Admin (admin_domain_name이 설정된 경우만 생성)
+################################################################################
+
+resource "aws_route53_record" "admin" {
+  count = var.admin_domain_name != "" ? 1 : 0
+
+  zone_id = var.hosted_zone_id
+  name    = var.admin_domain_name
+  type    = "A"
+
+  alias {
+    name                   = module.alb.alb_dns_name
+    zone_id                = module.alb.alb_zone_id
+    evaluate_target_health = true
+  }
 }
 
 ################################################################################
@@ -232,6 +251,7 @@ module "ssm_outputs" {
 
   outputs = {
     "api-url"              = "https://${var.domain_name}"
+    "admin-url"            = var.admin_domain_name != "" ? "https://${var.admin_domain_name}" : ""
     "ecr-repository-url"   = module.ecr.repository_url
     "ecs-cluster-name"     = module.ecs.cluster_name
     "ecs-service-name"     = module.ecs.service_name

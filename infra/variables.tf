@@ -206,6 +206,12 @@ variable "hosted_zone_id" {
   type        = string
 }
 
+variable "admin_domain_name" {
+  description = "Web Admin 전용 도메인. 빈 문자열이면 SAN + A 레코드 미생성"
+  type        = string
+  default     = ""
+}
+
 variable "db_domain_name" {
   description = "RDS CNAME 도메인 (예: db.codapt.kr). 빈 문자열이면 레코드 미생성"
   type        = string
