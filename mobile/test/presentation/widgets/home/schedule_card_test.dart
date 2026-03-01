@@ -82,14 +82,14 @@ void main() {
     });
 
     group('본문 영역', () {
-      testWidgets('T1: totalCount == 0 이면 "출근 후 등록을 누르세요." 표시',
+      testWidgets('T1: totalCount == 0 이면 "오늘 등록된 스케줄이 없습니다." 표시',
           (tester) async {
         await tester.pumpWidget(buildTestWidget(
           attendanceSummary:
               const AttendanceSummary(totalCount: 0, registeredCount: 0),
         ));
 
-        expect(find.text('출근 후 등록을 누르세요.'), findsOneWidget);
+        expect(find.text('오늘 등록된 스케줄이 없습니다.'), findsOneWidget);
       });
 
       testWidgets('T2: totalCount > 0, registeredCount == 0 이면 미출근 안내 표시',
@@ -118,17 +118,20 @@ void main() {
     });
 
     group('등록 버튼', () {
-      testWidgets('T1: totalCount == 0 이면 등록 버튼 숨김', (tester) async {
+      testWidgets('T1: totalCount == 0 이면 "등록" 버튼 비활성', (tester) async {
         await tester.pumpWidget(buildTestWidget(
           attendanceSummary:
               const AttendanceSummary(totalCount: 0, registeredCount: 0),
+          onRegisterTap: () {},
         ));
 
-        // "등록" 또는 "등록 완료" 버튼이 없어야 함
-        final registerButtons = find.widgetWithText(ElevatedButton, '등록');
-        final completeButtons = find.widgetWithText(ElevatedButton, '등록 완료');
-        expect(registerButtons, findsNothing);
-        expect(completeButtons, findsNothing);
+        final button = find.widgetWithText(ElevatedButton, '등록');
+        expect(button, findsOneWidget);
+
+        // 비활성이므로 onPressed가 null
+        final elevatedButton =
+            tester.widget<ElevatedButton>(find.byType(ElevatedButton));
+        expect(elevatedButton.onPressed, isNull);
       });
 
       testWidgets('T2: registeredCount < totalCount 이면 "등록" 버튼 활성',
@@ -142,6 +145,21 @@ void main() {
         ));
 
         final button = find.widgetWithText(ElevatedButton, '등록');
+        expect(button, findsOneWidget);
+        await tester.tap(button);
+        expect(tapped, isTrue);
+      });
+
+      testWidgets('T3: 부분 출근 시 "다음 등록" 버튼 활성', (tester) async {
+        var tapped = false;
+        await tester.pumpWidget(buildTestWidget(
+          schedules: _makeSchedules(8, registered: 3),
+          attendanceSummary:
+              const AttendanceSummary(totalCount: 8, registeredCount: 3),
+          onRegisterTap: () => tapped = true,
+        ));
+
+        final button = find.widgetWithText(ElevatedButton, '다음 등록');
         expect(button, findsOneWidget);
         await tester.tap(button);
         expect(tapped, isTrue);
@@ -187,6 +205,14 @@ void main() {
 
         expect(find.text('1/1'), findsOneWidget);
         expect(find.widgetWithText(ElevatedButton, '등록 완료'), findsOneWidget);
+      });
+
+      testWidgets('T8: attendanceSummary 기본값(0/0)이면 휴무 상태 표시',
+          (tester) async {
+        await tester.pumpWidget(buildTestWidget());
+
+        expect(find.text('오늘 등록된 스케줄이 없습니다.'), findsOneWidget);
+        expect(find.text('0/0'), findsNothing); // 배지 숨김
       });
     });
   });
