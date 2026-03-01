@@ -2,6 +2,7 @@ package com.otoki.internal.notice.controller
 
 import com.otoki.internal.common.dto.ApiResponse
 import com.otoki.internal.notice.dto.response.NoticePostDetailResponse
+import com.otoki.internal.notice.dto.response.NoticePostListResponse
 import com.otoki.internal.common.security.UserPrincipal
 import com.otoki.internal.notice.exception.InvalidNoticeIdException
 import com.otoki.internal.notice.service.NoticeService
@@ -14,6 +15,18 @@ import org.springframework.web.bind.annotation.*
 class NoticeController(
     private val noticeService: NoticeService
 ) {
+
+    @GetMapping
+    fun getPosts(
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @RequestParam(required = false) category: String?,
+        @RequestParam(required = false) search: String?,
+        @RequestParam(required = false, defaultValue = "1") page: Int,
+        @RequestParam(required = false, defaultValue = "10") size: Int
+    ): ResponseEntity<ApiResponse<NoticePostListResponse>> {
+        val response = noticeService.getPosts(principal.userId, category, search, page, size)
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
 
     @GetMapping("/{noticeId}")
     fun getNoticeDetail(

@@ -3,6 +3,9 @@ package com.otoki.internal.notice.controller
 import com.otoki.internal.common.entity.UserRole
 import com.otoki.internal.notice.dto.response.NoticeImageResponse
 import com.otoki.internal.notice.dto.response.NoticePostDetailResponse
+import com.otoki.internal.notice.dto.response.NoticePostListResponse
+import com.otoki.internal.notice.dto.response.NoticePostSummaryResponse
+import com.otoki.internal.notice.exception.InvalidNoticeCategoryException
 import com.otoki.internal.notice.exception.InvalidNoticeIdException
 import com.otoki.internal.notice.exception.NoticePostNotFoundException
 import com.otoki.internal.common.security.GpsConsentFilter
@@ -14,6 +17,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -55,6 +60,118 @@ class NoticeControllerTest {
             testPrincipal, null, testPrincipal.authorities
         )
         SecurityContextHolder.getContext().authentication = authentication
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/notices - 목록 조회")
+    inner class GetPostsTests {
+
+        @Test
+        @DisplayName("성공 - 전체 목록 조회")
+        fun getPosts_success() {
+            // Given
+            val response = NoticePostListResponse(
+                content = listOf(
+                    NoticePostSummaryResponse(id = 42L, category = "ALL", categoryName = "전체공지", title = "전체공지 제목", createdAt = "2026-02-28T10:30:00"),
+                    NoticePostSummaryResponse(id = 41L, category = "BRANCH", categoryName = "지점공지", title = "지점공지 제목", createdAt = "2026-02-27T09:00:00")
+                ),
+                totalCount = 5,
+                totalPages = 1,
+                currentPage = 1,
+                size = 10
+            )
+            whenever(noticeService.getPosts(eq(1L), eq(null), eq(null), eq(1), eq(10))).thenReturn(response)
+
+            // When & Then
+            mockMvc.perform(
+                get("/api/v1/notices")
+                    .contentType(MediaType.APPLICATION_JSON)
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.content").isArray)
+                .andExpect(jsonPath("$.data.content[0].id").value(42))
+                .andExpect(jsonPath("$.data.content[0].category").value("ALL"))
+                .andExpect(jsonPath("$.data.content[0].category_name").value("전체공지"))
+                .andExpect(jsonPath("$.data.content[0].title").value("전체공지 제목"))
+                .andExpect(jsonPath("$.data.content[0].created_at").value("2026-02-28T10:30:00"))
+                .andExpect(jsonPath("$.data.content[1].id").value(41))
+                .andExpect(jsonPath("$.data.total_count").value(5))
+                .andExpect(jsonPath("$.data.total_pages").value(1))
+                .andExpect(jsonPath("$.data.current_page").value(1))
+                .andExpect(jsonPath("$.data.size").value(10))
+        }
+
+        @Test
+        @DisplayName("성공 - 카테고리 + 검색 + 페이지네이션")
+        fun getPosts_withParams() {
+            // Given
+            val response = NoticePostListResponse(
+                content = listOf(
+                    NoticePostSummaryResponse(id = 1L, category = "ALL", categoryName = "전체공지", title = "영업 목표", createdAt = "2026-02-28T10:30:00")
+                ),
+                totalCount = 1,
+                totalPages = 1,
+                currentPage = 1,
+                size = 5
+            )
+            whenever(noticeService.getPosts(eq(1L), eq("COMPANY"), eq("영업"), eq(1), eq(5))).thenReturn(response)
+
+            // When & Then
+            mockMvc.perform(
+                get("/api/v1/notices")
+                    .param("category", "COMPANY")
+                    .param("search", "영업")
+                    .param("page", "1")
+                    .param("size", "5")
+                    .contentType(MediaType.APPLICATION_JSON)
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data.content").isArray)
+                .andExpect(jsonPath("$.data.content[0].title").value("영업 목표"))
+                .andExpect(jsonPath("$.data.total_count").value(1))
+        }
+
+        @Test
+        @DisplayName("성공 - 빈 결과")
+        fun getPosts_emptyResult() {
+            // Given
+            val response = NoticePostListResponse(
+                content = emptyList(),
+                totalCount = 0,
+                totalPages = 0,
+                currentPage = 1,
+                size = 10
+            )
+            whenever(noticeService.getPosts(eq(1L), eq(null), eq(null), eq(1), eq(10))).thenReturn(response)
+
+            // When & Then
+            mockMvc.perform(
+                get("/api/v1/notices")
+                    .contentType(MediaType.APPLICATION_JSON)
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data.content").isEmpty)
+                .andExpect(jsonPath("$.data.total_count").value(0))
+        }
+
+        @Test
+        @DisplayName("실패 - 잘못된 카테고리 -> 400")
+        fun getPosts_invalidCategory() {
+            // Given
+            whenever(noticeService.getPosts(eq(1L), eq("INVALID"), eq(null), eq(1), eq(10)))
+                .thenThrow(InvalidNoticeCategoryException())
+
+            // When & Then
+            mockMvc.perform(
+                get("/api/v1/notices")
+                    .param("category", "INVALID")
+                    .contentType(MediaType.APPLICATION_JSON)
+            )
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("INVALID_CATEGORY"))
+        }
     }
 
     @Nested

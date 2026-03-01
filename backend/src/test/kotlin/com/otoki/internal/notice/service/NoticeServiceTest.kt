@@ -1,7 +1,10 @@
 package com.otoki.internal.notice.service
 
+import com.otoki.internal.common.entity.User
+import com.otoki.internal.common.repository.UserRepository
 import com.otoki.internal.notice.entity.Notice
 import com.otoki.internal.notice.entity.UploadFile
+import com.otoki.internal.notice.exception.InvalidNoticeCategoryException
 import com.otoki.internal.notice.exception.NoticePostNotFoundException
 import com.otoki.internal.notice.repository.NoticeRepository
 import com.otoki.internal.notice.repository.UploadFileRepository
@@ -14,7 +17,11 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
+import org.springframework.data.domain.PageImpl
+import org.springframework.data.domain.PageRequest
 import java.time.LocalDateTime
 import java.util.*
 
@@ -28,11 +35,14 @@ class NoticeServiceTest {
     @Mock
     private lateinit var uploadFileRepository: UploadFileRepository
 
+    @Mock
+    private lateinit var userRepository: UserRepository
+
     private lateinit var noticeService: NoticeService
 
     @BeforeEach
     fun setUp() {
-        noticeService = NoticeService(noticeRepository, uploadFileRepository, "test-bucket")
+        noticeService = NoticeService(noticeRepository, uploadFileRepository, userRepository, "test-bucket")
     }
 
     @Nested
@@ -204,12 +214,171 @@ class NoticeServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("getPosts - 공지사항 목록 조회")
+    inner class GetPostsTests {
+
+        private val userId = 1L
+        private val testUser = User(id = userId, employeeId = "20030117", name = "테스트사원", orgName = "테스트지점")
+
+        @BeforeEach
+        fun setUpUser() {
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(testUser))
+        }
+
+        @Test
+        @DisplayName("전체 목록 조회 - category null -> ALL + 사용자 지점 BRANCH 공지 반환")
+        fun getPosts_allCategories() {
+            // Given
+            val notices = listOf(
+                createNotice(id = 1L, category = "ALL", name = "전체공지 제목"),
+                createNotice(id = 2L, category = "BRANCH", name = "지점공지 제목", branch = "테스트지점")
+            )
+            val page = PageImpl(notices, PageRequest.of(0, 10), 2)
+            whenever(noticeRepository.findNotices(eq(null), eq(null), eq("테스트지점"), any())).thenReturn(page)
+
+            // When
+            val result = noticeService.getPosts(userId, null, null, 1, 10)
+
+            // Then
+            assertThat(result.content).hasSize(2)
+            assertThat(result.totalCount).isEqualTo(2)
+            assertThat(result.totalPages).isEqualTo(1)
+            assertThat(result.currentPage).isEqualTo(1)
+            assertThat(result.size).isEqualTo(10)
+        }
+
+        @Test
+        @DisplayName("회사공지만 조회 - category=COMPANY -> ALL 공지만 반환")
+        fun getPosts_companyOnly() {
+            // Given
+            val notices = listOf(createNotice(id = 1L, category = "ALL", name = "전체공지"))
+            val page = PageImpl(notices, PageRequest.of(0, 10), 1)
+            whenever(noticeRepository.findNotices(eq("COMPANY"), eq(null), eq("테스트지점"), any())).thenReturn(page)
+
+            // When
+            val result = noticeService.getPosts(userId, "COMPANY", null, 1, 10)
+
+            // Then
+            assertThat(result.content).hasSize(1)
+            assertThat(result.content[0].category).isEqualTo("ALL")
+            assertThat(result.content[0].categoryName).isEqualTo("전체공지")
+        }
+
+        @Test
+        @DisplayName("지점공지만 조회 - category=BRANCH -> 사용자 지점 BRANCH 공지만 반환")
+        fun getPosts_branchOnly() {
+            // Given
+            val notices = listOf(createNotice(id = 2L, category = "BRANCH", name = "지점공지", branch = "테스트지점"))
+            val page = PageImpl(notices, PageRequest.of(0, 10), 1)
+            whenever(noticeRepository.findNotices(eq("BRANCH"), eq(null), eq("테스트지점"), any())).thenReturn(page)
+
+            // When
+            val result = noticeService.getPosts(userId, "BRANCH", null, 1, 10)
+
+            // Then
+            assertThat(result.content).hasSize(1)
+            assertThat(result.content[0].category).isEqualTo("BRANCH")
+            assertThat(result.content[0].categoryName).isEqualTo("지점공지")
+        }
+
+        @Test
+        @DisplayName("검색 조회 - search 키워드로 필터링")
+        fun getPosts_withSearch() {
+            // Given
+            val notices = listOf(createNotice(id = 1L, category = "ALL", name = "영업 목표 안내"))
+            val page = PageImpl(notices, PageRequest.of(0, 10), 1)
+            whenever(noticeRepository.findNotices(eq(null), eq("영업"), eq("테스트지점"), any())).thenReturn(page)
+
+            // When
+            val result = noticeService.getPosts(userId, null, "영업", 1, 10)
+
+            // Then
+            assertThat(result.content).hasSize(1)
+            assertThat(result.content[0].title).isEqualTo("영업 목표 안내")
+        }
+
+        @Test
+        @DisplayName("페이지네이션 - page=2, size=2 -> 올바른 페이지 정보 반환")
+        fun getPosts_pagination() {
+            // Given
+            val notices = listOf(createNotice(id = 3L, category = "ALL"))
+            val page = PageImpl(notices, PageRequest.of(1, 2), 5)
+            whenever(noticeRepository.findNotices(eq(null), eq(null), eq("테스트지점"), any())).thenReturn(page)
+
+            // When
+            val result = noticeService.getPosts(userId, null, null, 2, 2)
+
+            // Then
+            assertThat(result.currentPage).isEqualTo(2)
+            assertThat(result.size).isEqualTo(2)
+            assertThat(result.totalCount).isEqualTo(5)
+            assertThat(result.totalPages).isEqualTo(3)
+        }
+
+        @Test
+        @DisplayName("빈 결과 - 매칭 없는 검색어 -> 빈 배열, totalCount=0")
+        fun getPosts_emptyResult() {
+            // Given
+            val page = PageImpl<Notice>(emptyList(), PageRequest.of(0, 10), 0)
+            whenever(noticeRepository.findNotices(eq(null), eq("없는검색어"), eq("테스트지점"), any())).thenReturn(page)
+
+            // When
+            val result = noticeService.getPosts(userId, null, "없는검색어", 1, 10)
+
+            // Then
+            assertThat(result.content).isEmpty()
+            assertThat(result.totalCount).isEqualTo(0)
+        }
+
+        @Test
+        @DisplayName("잘못된 카테고리 - INVALID -> InvalidNoticeCategoryException")
+        fun getPosts_invalidCategory() {
+            // When & Then
+            assertThatThrownBy { noticeService.getPosts(userId, "INVALID", null, 1, 10) }
+                .isInstanceOf(InvalidNoticeCategoryException::class.java)
+        }
+
+        @Test
+        @DisplayName("카테고리 매핑 - DB '회사공지' -> 응답 ALL/전체공지")
+        fun getPosts_categoryMapping_korean() {
+            // Given
+            val notices = listOf(createNotice(id = 1L, category = "회사공지", name = "공지"))
+            val page = PageImpl(notices, PageRequest.of(0, 10), 1)
+            whenever(noticeRepository.findNotices(eq(null), eq(null), eq("테스트지점"), any())).thenReturn(page)
+
+            // When
+            val result = noticeService.getPosts(userId, null, null, 1, 10)
+
+            // Then
+            assertThat(result.content[0].category).isEqualTo("ALL")
+            assertThat(result.content[0].categoryName).isEqualTo("전체공지")
+        }
+
+        @Test
+        @DisplayName("검색 키워드 100자 제한 - 101자 -> 100자로 잘림")
+        fun getPosts_searchTruncated() {
+            // Given
+            val longSearch = "가".repeat(101)
+            val truncated = "가".repeat(100)
+            val page = PageImpl<Notice>(emptyList(), PageRequest.of(0, 10), 0)
+            whenever(noticeRepository.findNotices(eq(null), eq(truncated), eq("테스트지점"), any())).thenReturn(page)
+
+            // When
+            val result = noticeService.getPosts(userId, null, longSearch, 1, 10)
+
+            // Then
+            assertThat(result.content).isEmpty()
+        }
+    }
+
     private fun createNotice(
         id: Long = 1L,
         sfid: String? = null,
         name: String? = "테스트 공지",
         category: String? = "ALL",
         contents: String? = "본문 내용",
+        branch: String? = null,
         isDeleted: Boolean? = false,
         createdDate: LocalDateTime? = LocalDateTime.of(2026, 1, 1, 0, 0, 0)
     ): Notice = Notice(
@@ -218,6 +387,7 @@ class NoticeServiceTest {
         name = name,
         category = category,
         contents = contents,
+        branch = branch,
         isDeleted = isDeleted,
         createdDate = createdDate
     )
