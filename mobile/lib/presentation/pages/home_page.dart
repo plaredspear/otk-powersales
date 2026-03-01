@@ -100,6 +100,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             child: ScheduleCard(
               schedules: homeData.todaySchedules,
               currentDate: homeData.currentDate,
+              attendanceSummary: homeData.attendanceSummary,
               onRegisterTap: () async {
                 await AppRouter.navigateTo(context, AppRouter.attendance);
                 if (mounted) {

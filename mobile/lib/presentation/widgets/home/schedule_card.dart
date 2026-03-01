@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../domain/entities/attendance_summary.dart';
 import '../../../domain/entities/schedule.dart';
 import '../common/primary_button.dart';
 
@@ -10,12 +11,16 @@ import '../common/primary_button.dart';
 /// 홈 화면의 #1 영역: 오늘 일정을 표시한다.
 /// - 일정 없음: "오늘 등록된 스케줄이 없습니다." + "등록" 버튼
 /// - 일정 있음: 오늘 스케줄 목록 (근무유형 배지, 매장명, 출근 상태)
+/// - 출근 카운트 배지: "✓ X/N" 형태로 출근 현황 표시
 class ScheduleCard extends StatelessWidget {
   /// 오늘 일정 목록
   final List<Schedule> schedules;
 
   /// 현재 날짜 문자열 (예: '2026-02-07')
   final String currentDate;
+
+  /// 출근 현황 집계
+  final AttendanceSummary attendanceSummary;
 
   /// "등록" 버튼 탭 콜백
   final VoidCallback? onRegisterTap;
@@ -27,12 +32,16 @@ class ScheduleCard extends StatelessWidget {
     super.key,
     required this.schedules,
     required this.currentDate,
+    required this.attendanceSummary,
     this.onRegisterTap,
     this.onScheduleTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final totalCount = attendanceSummary.totalCount;
+    final registeredCount = attendanceSummary.registeredCount;
+
     return Container(
       decoration: BoxDecoration(
         color: AppColors.card,
@@ -44,24 +53,90 @@ class ScheduleCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 날짜 헤더
-            Text(
-              _formatDate(currentDate),
-              style: AppTypography.headlineLarge.copyWith(
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-              ),
+            // 날짜 헤더 + 출근 카운트 배지
+            Row(
+              children: [
+                Text(
+                  _formatDate(currentDate),
+                  style: AppTypography.headlineLarge.copyWith(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const Spacer(),
+                if (totalCount > 0) _buildAttendanceBadge(registeredCount, totalCount),
+              ],
             ),
             const SizedBox(height: AppSpacing.md),
 
-            // 일정 내용
-            if (schedules.isEmpty)
+            // 본문 영역
+            if (totalCount == 0)
               _buildEmptySchedule()
+            else if (registeredCount == 0)
+              _buildUnregisteredMessage()
             else
               _buildScheduleList(),
+
+            // 등록 버튼 (totalCount > 0 일 때)
+            if (totalCount > 0) ...[
+              const SizedBox(height: AppSpacing.md),
+              PrimaryButton(
+                text: registeredCount == totalCount ? '등록 완료' : '등록',
+                onPressed: registeredCount == totalCount ? null : onRegisterTap,
+                height: AppSpacing.buttonHeightSmall,
+                fontSize: 14,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+            ],
           ],
         ),
       ),
+    );
+  }
+
+  /// 출근 카운트 배지
+  Widget _buildAttendanceBadge(int registeredCount, int totalCount) {
+    final isComplete = registeredCount == totalCount;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: isComplete ? AppColors.success.withOpacity(0.1) : null,
+        border: Border.all(color: isComplete ? AppColors.success : AppColors.border),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.check,
+            size: 16,
+            color: isComplete ? AppColors.success : AppColors.textSecondary,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '$registeredCount/$totalCount',
+            style: AppTypography.headlineSmall.copyWith(
+              fontWeight: FontWeight.w700,
+              color: isComplete ? AppColors.success : AppColors.textPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 미출근 안내 텍스트
+  Widget _buildUnregisteredMessage() {
+    return Column(
+      children: [
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          '출근 후 등록을 누르세요.',
+          style: AppTypography.bodyMedium.copyWith(
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ],
     );
   }
 
@@ -75,13 +150,6 @@ class ScheduleCard extends StatelessWidget {
           style: AppTypography.bodyMedium.copyWith(
             color: AppColors.textSecondary,
           ),
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        PrimaryButton(
-          text: '등록',
-          onPressed: onRegisterTap,
-          height: AppSpacing.buttonHeightSmall,
-          fontSize: 14,
         ),
         const SizedBox(height: AppSpacing.lg),
       ],
