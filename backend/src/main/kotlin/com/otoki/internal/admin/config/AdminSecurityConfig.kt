@@ -25,7 +25,7 @@ class AdminSecurityConfig(
             .csrf { /* enabled by default */ }
             .authorizeHttpRequests { auth ->
                 auth
-                    .requestMatchers("/admin/login", "/admin/css/**").permitAll()
+                    .requestMatchers("/admin/login", "/admin/css/**", "/admin/vendor/**").permitAll()
                     .anyRequest().hasAnyRole("LEADER", "ADMIN")
             }
             .formLogin { form ->
