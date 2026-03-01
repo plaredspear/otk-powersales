@@ -2,109 +2,57 @@ import '../../domain/entities/store_schedule_item.dart';
 
 /// 거래처 일정 API 모델 (DTO)
 ///
-/// Backend API의 snake_case JSON을 파싱하여 StoreScheduleItem 엔티티로 변환합니다.
+/// Backend API의 camelCase JSON을 파싱하여 StoreScheduleItem 엔티티로 변환합니다.
 class StoreScheduleItemModel {
-  final int storeId;
+  final String scheduleSfid;
+  final String? storeSfid;
   final String storeName;
-  final String storeCode;
+  final String? storeTypeCode;
   final String workCategory;
-  final String address;
+  final String? address;
+  final double? latitude;
+  final double? longitude;
   final bool isRegistered;
-  final String? registeredWorkType;
 
   const StoreScheduleItemModel({
-    required this.storeId,
+    required this.scheduleSfid,
+    this.storeSfid,
     required this.storeName,
-    required this.storeCode,
+    this.storeTypeCode,
     required this.workCategory,
-    required this.address,
+    this.address,
+    this.latitude,
+    this.longitude,
     required this.isRegistered,
-    this.registeredWorkType,
   });
 
-  /// snake_case JSON에서 파싱
+  /// camelCase JSON에서 파싱
   factory StoreScheduleItemModel.fromJson(Map<String, dynamic> json) {
     return StoreScheduleItemModel(
-      storeId: json['store_id'] as int,
-      storeName: json['store_name'] as String,
-      storeCode: json['store_code'] as String,
-      workCategory: json['work_category'] as String,
-      address: json['address'] as String,
-      isRegistered: json['is_registered'] as bool,
-      registeredWorkType: json['registered_work_type'] as String?,
+      scheduleSfid: json['scheduleSfid'] as String,
+      storeSfid: json['storeSfid'] as String?,
+      storeName: json['storeName'] as String,
+      storeTypeCode: json['storeTypeCode'] as String?,
+      workCategory: json['workCategory'] as String,
+      address: json['address'] as String?,
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
+      isRegistered: json['isRegistered'] as bool,
     );
-  }
-
-  /// snake_case JSON으로 직렬화
-  Map<String, dynamic> toJson() {
-    return {
-      'store_id': storeId,
-      'store_name': storeName,
-      'store_code': storeCode,
-      'work_category': workCategory,
-      'address': address,
-      'is_registered': isRegistered,
-      'registered_work_type': registeredWorkType,
-    };
   }
 
   /// Domain Entity로 변환
   StoreScheduleItem toEntity() {
     return StoreScheduleItem(
-      storeId: storeId,
+      scheduleSfid: scheduleSfid,
+      storeSfid: storeSfid,
       storeName: storeName,
-      storeCode: storeCode,
+      storeTypeCode: storeTypeCode,
       workCategory: workCategory,
-      address: address,
+      address: address ?? '',
+      latitude: latitude,
+      longitude: longitude,
       isRegistered: isRegistered,
-      registeredWorkType: registeredWorkType,
     );
-  }
-
-  /// Domain Entity에서 생성
-  factory StoreScheduleItemModel.fromEntity(StoreScheduleItem entity) {
-    return StoreScheduleItemModel(
-      storeId: entity.storeId,
-      storeName: entity.storeName,
-      storeCode: entity.storeCode,
-      workCategory: entity.workCategory,
-      address: entity.address,
-      isRegistered: entity.isRegistered,
-      registeredWorkType: entity.registeredWorkType,
-    );
-  }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is StoreScheduleItemModel &&
-        other.storeId == storeId &&
-        other.storeName == storeName &&
-        other.storeCode == storeCode &&
-        other.workCategory == workCategory &&
-        other.address == address &&
-        other.isRegistered == isRegistered &&
-        other.registeredWorkType == registeredWorkType;
-  }
-
-  @override
-  int get hashCode {
-    return Object.hash(
-      storeId,
-      storeName,
-      storeCode,
-      workCategory,
-      address,
-      isRegistered,
-      registeredWorkType,
-    );
-  }
-
-  @override
-  String toString() {
-    return 'StoreScheduleItemModel(storeId: $storeId, storeName: $storeName, '
-        'storeCode: $storeCode, workCategory: $workCategory, '
-        'address: $address, isRegistered: $isRegistered, '
-        'registeredWorkType: $registeredWorkType)';
   }
 }

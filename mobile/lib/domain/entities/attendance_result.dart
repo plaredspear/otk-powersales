@@ -2,39 +2,35 @@
 ///
 /// 출근등록 API 호출 후 반환되는 등록 결과 정보입니다.
 class AttendanceResult {
-  final int attendanceId;
-  final int storeId;
+  final String scheduleSfid;
   final String storeName;
   final String workType;
-  final DateTime registeredAt;
+  final double distanceKm;
   final int totalCount;
   final int registeredCount;
 
   const AttendanceResult({
-    required this.attendanceId,
-    required this.storeId,
+    required this.scheduleSfid,
     required this.storeName,
     required this.workType,
-    required this.registeredAt,
+    required this.distanceKm,
     required this.totalCount,
     required this.registeredCount,
   });
 
   AttendanceResult copyWith({
-    int? attendanceId,
-    int? storeId,
+    String? scheduleSfid,
     String? storeName,
     String? workType,
-    DateTime? registeredAt,
+    double? distanceKm,
     int? totalCount,
     int? registeredCount,
   }) {
     return AttendanceResult(
-      attendanceId: attendanceId ?? this.attendanceId,
-      storeId: storeId ?? this.storeId,
+      scheduleSfid: scheduleSfid ?? this.scheduleSfid,
       storeName: storeName ?? this.storeName,
       workType: workType ?? this.workType,
-      registeredAt: registeredAt ?? this.registeredAt,
+      distanceKm: distanceKm ?? this.distanceKm,
       totalCount: totalCount ?? this.totalCount,
       registeredCount: registeredCount ?? this.registeredCount,
     );
@@ -42,11 +38,10 @@ class AttendanceResult {
 
   Map<String, dynamic> toJson() {
     return {
-      'attendanceId': attendanceId,
-      'storeId': storeId,
+      'scheduleSfid': scheduleSfid,
       'storeName': storeName,
       'workType': workType,
-      'registeredAt': registeredAt.toIso8601String(),
+      'distanceKm': distanceKm,
       'totalCount': totalCount,
       'registeredCount': registeredCount,
     };
@@ -54,11 +49,10 @@ class AttendanceResult {
 
   factory AttendanceResult.fromJson(Map<String, dynamic> json) {
     return AttendanceResult(
-      attendanceId: json['attendanceId'] as int,
-      storeId: json['storeId'] as int,
+      scheduleSfid: json['scheduleSfid'] as String,
       storeName: json['storeName'] as String,
       workType: json['workType'] as String,
-      registeredAt: DateTime.parse(json['registeredAt'] as String),
+      distanceKm: (json['distanceKm'] as num).toDouble(),
       totalCount: json['totalCount'] as int,
       registeredCount: json['registeredCount'] as int,
     );
@@ -74,11 +68,10 @@ class AttendanceResult {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is AttendanceResult &&
-        other.attendanceId == attendanceId &&
-        other.storeId == storeId &&
+        other.scheduleSfid == scheduleSfid &&
         other.storeName == storeName &&
         other.workType == workType &&
-        other.registeredAt == registeredAt &&
+        other.distanceKm == distanceKm &&
         other.totalCount == totalCount &&
         other.registeredCount == registeredCount;
   }
@@ -86,11 +79,10 @@ class AttendanceResult {
   @override
   int get hashCode {
     return Object.hash(
-      attendanceId,
-      storeId,
+      scheduleSfid,
       storeName,
       workType,
-      registeredAt,
+      distanceKm,
       totalCount,
       registeredCount,
     );
@@ -98,9 +90,9 @@ class AttendanceResult {
 
   @override
   String toString() {
-    return 'AttendanceResult(attendanceId: $attendanceId, storeId: $storeId, '
+    return 'AttendanceResult(scheduleSfid: $scheduleSfid, '
         'storeName: $storeName, workType: $workType, '
-        'registeredAt: $registeredAt, totalCount: $totalCount, '
+        'distanceKm: $distanceKm, totalCount: $totalCount, '
         'registeredCount: $registeredCount)';
   }
 }

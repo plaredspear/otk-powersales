@@ -1,7 +1,9 @@
+import '../../core/network/dio_provider.dart';
 import '../../core/utils/error_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/repositories/mock/attendance_mock_repository.dart';
+import '../../data/datasources/attendance_api_datasource.dart';
+import '../../data/repositories/attendance_repository_impl.dart';
 import '../../domain/repositories/attendance_repository.dart';
 import '../../domain/usecases/get_attendance_status.dart';
 import '../../domain/usecases/get_store_list.dart';
@@ -11,7 +13,9 @@ import 'attendance_state.dart';
 // --- Dependency Providers ---
 
 final attendanceRepositoryProvider = Provider<AttendanceRepository>((ref) {
-  return AttendanceMockRepository();
+  final dio = ref.watch(dioProvider);
+  final dataSource = AttendanceApiDataSource(dio);
+  return AttendanceRepositoryImpl(dataSource: dataSource);
 });
 
 final getStoreListUseCaseProvider = Provider<GetStoreList>((ref) {
@@ -55,7 +59,6 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
 
       state = state.copyWith(
         isLoading: false,
-        workerType: result.workerType,
         allStores: result.stores,
         filteredStores: result.stores,
         totalCount: result.totalCount,
@@ -75,14 +78,13 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
     final filtered = state.allStores.where((store) {
       if (keyword.isEmpty) return true;
       return store.storeName.toLowerCase().contains(lowerKeyword) ||
-          store.address.toLowerCase().contains(lowerKeyword) ||
-          store.storeCode.toLowerCase().contains(lowerKeyword);
+          store.address.toLowerCase().contains(lowerKeyword);
     }).toList();
 
     state = state.copyWith(
       searchKeyword: keyword,
       filteredStores: filtered,
-      selectedStoreId: null,
+      selectedScheduleSfid: null,
     );
   }
 
@@ -92,23 +94,28 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
   }
 
   /// 거래처 선택
-  void selectStore(int storeId) {
-    state = state.copyWith(selectedStoreId: storeId);
+  void selectStore(String scheduleSfid) {
+    state = state.copyWith(selectedScheduleSfid: scheduleSfid);
   }
 
   /// 출근등록
   Future<void> register({double? latitude, double? longitude}) async {
-    final storeId = state.selectedStoreId;
-    if (storeId == null) return;
+    final scheduleSfid = state.selectedScheduleSfid;
+    if (scheduleSfid == null) return;
+
+    if (latitude == null || longitude == null) {
+      state = state.toError('GPS 좌표를 가져올 수 없습니다');
+      return;
+    }
 
     state = state.toRegistering();
 
     try {
       final result = await _registerAttendance.call(
-        storeId: storeId,
-        workType: state.selectedWorkType,
+        scheduleSfid: scheduleSfid,
         latitude: latitude,
         longitude: longitude,
+        workType: state.selectedWorkType,
       );
 
       state = state.copyWith(
@@ -130,7 +137,7 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
   /// 다음 등록 (등록 완료 후 목록으로 복귀)
   Future<void> prepareNextRegistration() async {
     state = state.copyWith(
-      selectedStoreId: null,
+      selectedScheduleSfid: null,
       searchKeyword: '',
     );
 
@@ -141,7 +148,6 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
   /// 등록 결과 초기화
   void clearRegistrationResult() {
     state = AttendanceState(
-      workerType: state.workerType,
       allStores: state.allStores,
       filteredStores: state.allStores,
       totalCount: state.totalCount,

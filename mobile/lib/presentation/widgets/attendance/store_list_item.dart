@@ -134,14 +134,16 @@ class StoreListItem extends StatelessWidget {
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    store.storeCode,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.textTertiary,
+                  if (store.storeTypeCode != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      store.storeTypeCode!,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textTertiary,
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),

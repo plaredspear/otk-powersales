@@ -8,9 +8,6 @@ class AttendanceState {
   final bool isRegistering;
   final String? errorMessage;
 
-  /// 근무자 유형 (PATROL, IRREGULAR, FIXED)
-  final String? workerType;
-
   /// 거래처 목록 (전체)
   final List<StoreScheduleItem> allStores;
 
@@ -26,8 +23,8 @@ class AttendanceState {
   /// 선택된 근무유형 ('ROOM_TEMP' 또는 'REFRIGERATED')
   final String selectedWorkType;
 
-  /// 선택된 거래처 ID
-  final int? selectedStoreId;
+  /// 선택된 스케줄 SFID
+  final String? selectedScheduleSfid;
 
   /// 검색 키워드
   final String searchKeyword;
@@ -42,13 +39,12 @@ class AttendanceState {
     this.isLoading = false,
     this.isRegistering = false,
     this.errorMessage,
-    this.workerType,
     this.allStores = const [],
     this.filteredStores = const [],
     this.totalCount = 0,
     this.registeredCount = 0,
     this.selectedWorkType = 'ROOM_TEMP',
-    this.selectedStoreId,
+    this.selectedScheduleSfid,
     this.searchKeyword = '',
     this.registrationResult,
     this.statusList = const [],
@@ -77,9 +73,6 @@ class AttendanceState {
     );
   }
 
-  /// 고정근무자 여부
-  bool get isFixedWorker => workerType == 'FIXED';
-
   /// 모든 거래처 등록 완료 여부
   bool get isAllRegistered =>
       totalCount > 0 && registeredCount >= totalCount;
@@ -95,13 +88,12 @@ class AttendanceState {
     bool? isLoading,
     bool? isRegistering,
     String? errorMessage,
-    String? workerType,
     List<StoreScheduleItem>? allStores,
     List<StoreScheduleItem>? filteredStores,
     int? totalCount,
     int? registeredCount,
     String? selectedWorkType,
-    int? selectedStoreId,
+    String? selectedScheduleSfid,
     String? searchKeyword,
     AttendanceResult? registrationResult,
     List<AttendanceStatus>? statusList,
@@ -110,13 +102,12 @@ class AttendanceState {
       isLoading: isLoading ?? this.isLoading,
       isRegistering: isRegistering ?? this.isRegistering,
       errorMessage: errorMessage,
-      workerType: workerType ?? this.workerType,
       allStores: allStores ?? this.allStores,
       filteredStores: filteredStores ?? this.filteredStores,
       totalCount: totalCount ?? this.totalCount,
       registeredCount: registeredCount ?? this.registeredCount,
       selectedWorkType: selectedWorkType ?? this.selectedWorkType,
-      selectedStoreId: selectedStoreId ?? this.selectedStoreId,
+      selectedScheduleSfid: selectedScheduleSfid ?? this.selectedScheduleSfid,
       searchKeyword: searchKeyword ?? this.searchKeyword,
       registrationResult: registrationResult ?? this.registrationResult,
       statusList: statusList ?? this.statusList,
