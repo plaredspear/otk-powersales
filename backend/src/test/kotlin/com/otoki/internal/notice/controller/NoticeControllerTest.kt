@@ -1,7 +1,9 @@
 package com.otoki.internal.notice.controller
 
 import com.otoki.internal.common.entity.UserRole
-import com.otoki.internal.notice.exception.InvalidNoticeCategoryException
+import com.otoki.internal.notice.dto.response.NoticeImageResponse
+import com.otoki.internal.notice.dto.response.NoticePostDetailResponse
+import com.otoki.internal.notice.exception.InvalidNoticeIdException
 import com.otoki.internal.notice.exception.NoticePostNotFoundException
 import com.otoki.internal.common.security.GpsConsentFilter
 import com.otoki.internal.common.security.JwtAuthenticationFilter
@@ -10,6 +12,7 @@ import com.otoki.internal.common.security.UserPrincipal
 import com.otoki.internal.notice.service.NoticeService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
@@ -54,38 +57,111 @@ class NoticeControllerTest {
         SecurityContextHolder.getContext().authentication = authentication
     }
 
-    @Test
-    @DisplayName("유효하지 않은 category로 요청 시 400 Bad Request 반환")
-    fun getPosts_InvalidCategory() {
-        // Given
-        whenever(noticeService.getPosts("INVALID", null, 1, 10))
-            .thenThrow(InvalidNoticeCategoryException())
+    @Nested
+    @DisplayName("GET /api/v1/notices/{noticeId} - 상세 조회")
+    inner class GetNoticeDetailTests {
 
-        // When & Then
-        mockMvc.perform(
-            get("/api/v1/notices")
-                .param("category", "INVALID")
-                .contentType(MediaType.APPLICATION_JSON)
-        )
-            .andExpect(status().isBadRequest)
-            .andExpect(jsonPath("$.success").value(false))
-            .andExpect(jsonPath("$.error.code").value("INVALID_CATEGORY"))
-    }
+        @Test
+        @DisplayName("성공 - 공지사항 상세 조회")
+        fun getNoticeDetail_success() {
+            // Given
+            val response = NoticePostDetailResponse(
+                id = 42L,
+                category = "ALL",
+                categoryName = "전체공지",
+                title = "테스트 공지",
+                content = "본문 내용입니다.",
+                createdAt = "2026-02-28T10:30:00",
+                images = listOf(
+                    NoticeImageResponse(id = 101L, url = "https://bucket.s3.ap-northeast-2.amazonaws.com/img.jpg", sortOrder = 0)
+                )
+            )
+            whenever(noticeService.getNoticeDetail(42L)).thenReturn(response)
 
-    @Test
-    @DisplayName("존재하지 않는 공지사항 조회 시 404 Not Found 반환")
-    fun getPostDetail_NotFound() {
-        // Given
-        whenever(noticeService.getPostDetail(999L))
-            .thenThrow(NoticePostNotFoundException())
+            // When & Then
+            mockMvc.perform(
+                get("/api/v1/notices/42")
+                    .contentType(MediaType.APPLICATION_JSON)
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(42))
+                .andExpect(jsonPath("$.data.category").value("ALL"))
+                .andExpect(jsonPath("$.data.category_name").value("전체공지"))
+                .andExpect(jsonPath("$.data.title").value("테스트 공지"))
+                .andExpect(jsonPath("$.data.content").value("본문 내용입니다."))
+                .andExpect(jsonPath("$.data.created_at").value("2026-02-28T10:30:00"))
+                .andExpect(jsonPath("$.data.images").isArray)
+                .andExpect(jsonPath("$.data.images[0].id").value(101))
+                .andExpect(jsonPath("$.data.images[0].url").value("https://bucket.s3.ap-northeast-2.amazonaws.com/img.jpg"))
+                .andExpect(jsonPath("$.data.images[0].sort_order").value(0))
+        }
 
-        // When & Then
-        mockMvc.perform(
-            get("/api/v1/notices/999")
-                .contentType(MediaType.APPLICATION_JSON)
-        )
-            .andExpect(status().isNotFound)
-            .andExpect(jsonPath("$.success").value(false))
-            .andExpect(jsonPath("$.error.code").value("NOTICE_NOT_FOUND"))
+        @Test
+        @DisplayName("성공 - 이미지 없는 공지 조회")
+        fun getNoticeDetail_noImages() {
+            // Given
+            val response = NoticePostDetailResponse(
+                id = 10L,
+                category = "BRANCH",
+                categoryName = "지점공지",
+                title = "지점 안내",
+                content = "지점 공지 본문",
+                createdAt = "2026-01-01T00:00:00",
+                images = emptyList()
+            )
+            whenever(noticeService.getNoticeDetail(10L)).thenReturn(response)
+
+            // When & Then
+            mockMvc.perform(
+                get("/api/v1/notices/10")
+                    .contentType(MediaType.APPLICATION_JSON)
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data.images").isEmpty)
+        }
+
+        @Test
+        @DisplayName("실패 - 존재하지 않는 공지 ID -> 404")
+        fun getNoticeDetail_notFound() {
+            // Given
+            whenever(noticeService.getNoticeDetail(999L))
+                .thenThrow(NoticePostNotFoundException())
+
+            // When & Then
+            mockMvc.perform(
+                get("/api/v1/notices/999")
+                    .contentType(MediaType.APPLICATION_JSON)
+            )
+                .andExpect(status().isNotFound)
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("NOTICE_NOT_FOUND"))
+        }
+
+        @Test
+        @DisplayName("실패 - noticeId 0 이하 -> 400")
+        fun getNoticeDetail_invalidId() {
+            // When & Then
+            mockMvc.perform(
+                get("/api/v1/notices/0")
+                    .contentType(MediaType.APPLICATION_JSON)
+            )
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"))
+        }
+
+        @Test
+        @DisplayName("실패 - 음수 noticeId -> 400")
+        fun getNoticeDetail_negativeId() {
+            // When & Then
+            mockMvc.perform(
+                get("/api/v1/notices/-1")
+                    .contentType(MediaType.APPLICATION_JSON)
+            )
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"))
+        }
     }
 }

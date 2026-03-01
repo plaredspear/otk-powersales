@@ -21,3 +21,12 @@ class NoticePostNotFoundException : BusinessException(
     message = "공지사항을 찾을 수 없습니다",
     httpStatus = HttpStatus.NOT_FOUND
 )
+
+/**
+ * 유효하지 않은 공지사항 ID
+ */
+class InvalidNoticeIdException : BusinessException(
+    errorCode = "INVALID_PARAMETER",
+    message = "유효하지 않은 요청입니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)

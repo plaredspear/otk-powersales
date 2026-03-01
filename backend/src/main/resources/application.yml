@@ -54,6 +54,11 @@ jwt:
   expiration: ${JWT_EXPIRATION:86400000}
   refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
 
+aws:
+  s3:
+    bucket:
+      name: ${AWS_S3_BUCKET_NAME:otoki-bucket}
+
 orora:
   mock:
     enabled: ${ORORA_MOCK_ENABLED:true}
