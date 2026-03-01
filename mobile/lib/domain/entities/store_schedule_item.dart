@@ -2,39 +2,51 @@
 ///
 /// 오늘 출근해야 할 거래처 정보를 나타냅니다.
 class StoreScheduleItem {
-  final int storeId;
+  final String scheduleSfid;
+  final String? storeSfid;
   final String storeName;
-  final String storeCode;
+  final String? storeTypeCode;
   final String workCategory;
   final String address;
+  final double? latitude;
+  final double? longitude;
   final bool isRegistered;
   final String? registeredWorkType;
 
   const StoreScheduleItem({
-    required this.storeId,
+    required this.scheduleSfid,
+    this.storeSfid,
     required this.storeName,
-    required this.storeCode,
+    this.storeTypeCode,
     required this.workCategory,
     required this.address,
+    this.latitude,
+    this.longitude,
     required this.isRegistered,
     this.registeredWorkType,
   });
 
   StoreScheduleItem copyWith({
-    int? storeId,
+    String? scheduleSfid,
+    String? storeSfid,
     String? storeName,
-    String? storeCode,
+    String? storeTypeCode,
     String? workCategory,
     String? address,
+    double? latitude,
+    double? longitude,
     bool? isRegistered,
     String? registeredWorkType,
   }) {
     return StoreScheduleItem(
-      storeId: storeId ?? this.storeId,
+      scheduleSfid: scheduleSfid ?? this.scheduleSfid,
+      storeSfid: storeSfid ?? this.storeSfid,
       storeName: storeName ?? this.storeName,
-      storeCode: storeCode ?? this.storeCode,
+      storeTypeCode: storeTypeCode ?? this.storeTypeCode,
       workCategory: workCategory ?? this.workCategory,
       address: address ?? this.address,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
       isRegistered: isRegistered ?? this.isRegistered,
       registeredWorkType: registeredWorkType ?? this.registeredWorkType,
     );
@@ -42,11 +54,14 @@ class StoreScheduleItem {
 
   Map<String, dynamic> toJson() {
     return {
-      'storeId': storeId,
+      'scheduleSfid': scheduleSfid,
+      'storeSfid': storeSfid,
       'storeName': storeName,
-      'storeCode': storeCode,
+      'storeTypeCode': storeTypeCode,
       'workCategory': workCategory,
       'address': address,
+      'latitude': latitude,
+      'longitude': longitude,
       'isRegistered': isRegistered,
       'registeredWorkType': registeredWorkType,
     };
@@ -54,11 +69,14 @@ class StoreScheduleItem {
 
   factory StoreScheduleItem.fromJson(Map<String, dynamic> json) {
     return StoreScheduleItem(
-      storeId: json['storeId'] as int,
+      scheduleSfid: json['scheduleSfid'] as String,
+      storeSfid: json['storeSfid'] as String?,
       storeName: json['storeName'] as String,
-      storeCode: json['storeCode'] as String,
+      storeTypeCode: json['storeTypeCode'] as String?,
       workCategory: json['workCategory'] as String,
-      address: json['address'] as String,
+      address: json['address'] as String? ?? '',
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
       isRegistered: json['isRegistered'] as bool,
       registeredWorkType: json['registeredWorkType'] as String?,
     );
@@ -68,33 +86,28 @@ class StoreScheduleItem {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is StoreScheduleItem &&
-        other.storeId == storeId &&
+        other.scheduleSfid == scheduleSfid &&
         other.storeName == storeName &&
-        other.storeCode == storeCode &&
         other.workCategory == workCategory &&
         other.address == address &&
-        other.isRegistered == isRegistered &&
-        other.registeredWorkType == registeredWorkType;
+        other.isRegistered == isRegistered;
   }
 
   @override
   int get hashCode {
     return Object.hash(
-      storeId,
+      scheduleSfid,
       storeName,
-      storeCode,
       workCategory,
       address,
       isRegistered,
-      registeredWorkType,
     );
   }
 
   @override
   String toString() {
-    return 'StoreScheduleItem(storeId: $storeId, storeName: $storeName, '
-        'storeCode: $storeCode, workCategory: $workCategory, '
-        'address: $address, isRegistered: $isRegistered, '
-        'registeredWorkType: $registeredWorkType)';
+    return 'StoreScheduleItem(scheduleSfid: $scheduleSfid, storeName: $storeName, '
+        'workCategory: $workCategory, address: $address, '
+        'isRegistered: $isRegistered)';
   }
 }

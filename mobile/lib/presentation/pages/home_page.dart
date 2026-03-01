@@ -100,11 +100,19 @@ class _HomePageState extends ConsumerState<HomePage> {
             child: ScheduleCard(
               schedules: homeData.todaySchedules,
               currentDate: homeData.currentDate,
-              onRegisterTap: () {
-                // TODO: 일정 등록 화면으로 이동 (후속 작업)
+              onRegisterTap: () async {
+                await AppRouter.navigateTo(context, AppRouter.attendance);
+                if (mounted) {
+                  ref.read(homeProvider.notifier).refresh();
+                }
               },
-              onScheduleTap: (schedule) {
-                // TODO: 일정 상세 화면으로 이동 (후속 작업)
+              onScheduleTap: (schedule) async {
+                if (!schedule.isCommuteRegistered) {
+                  await AppRouter.navigateTo(context, AppRouter.attendance);
+                  if (mounted) {
+                    ref.read(homeProvider.notifier).refresh();
+                  }
+                }
               },
             ),
           ),

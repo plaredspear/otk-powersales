@@ -43,10 +43,6 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
     AttendanceNotifier notifier,
     dynamic state,
   ) async {
-    if (state.isFixedWorker && state.allStores.isNotEmpty) {
-      notifier.selectStore(state.allStores.first.storeId);
-    }
-
     // GPS 좌표 획득
     final locationService = ref.read(locationServiceProvider);
     final helper = LocationPermissionHelper(locationService);
@@ -146,12 +142,11 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
               ),
               const SizedBox(height: 12),
 
-              // #2 검색 바 (고정근무자는 숨김)
-              if (!state.isFixedWorker)
-                StoreSearchBar(
-                  controller: _searchController,
-                  onChanged: notifier.searchStores,
-                ),
+              // #2 검색 바
+              StoreSearchBar(
+                controller: _searchController,
+                onChanged: notifier.searchStores,
+              ),
             ],
           ),
         ),
@@ -171,10 +166,10 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
                     return StoreListItem(
                       store: store,
                       isSelected:
-                          store.storeId == state.selectedStoreId,
+                          store.scheduleSfid == state.selectedScheduleSfid,
                       onTap: () {
                         if (!store.isRegistered) {
-                          notifier.selectStore(store.storeId);
+                          notifier.selectStore(store.scheduleSfid);
                         }
                       },
                     );
@@ -242,11 +237,7 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
   }
 
   Widget? _buildBottomBar(dynamic state, AttendanceNotifier notifier) {
-    // 고정근무자는 선택 불필요 - 항상 첫 번째 거래처 사용
-    final canRegister = state.isFixedWorker
-        ? state.allStores.isNotEmpty &&
-            !state.allStores.first.isRegistered
-        : state.selectedStoreId != null;
+    final canRegister = state.selectedScheduleSfid != null;
 
     if (state.allStores.isEmpty) return null;
 

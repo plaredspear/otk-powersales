@@ -11,30 +11,25 @@ class RegisterAttendance {
 
   /// 출근등록 실행
   ///
-  /// [storeId]: 거래처 ID
-  /// [workType]: 근무유형 ('ROOM_TEMP' 또는 'REFRIGERATED')
-  /// [latitude]: GPS 위도 (nullable)
-  /// [longitude]: GPS 경도 (nullable)
+  /// [scheduleSfid]: 스케줄 SFID
+  /// [latitude]: GPS 위도
+  /// [longitude]: GPS 경도
+  /// [workType]: 근무유형 (optional)
   Future<AttendanceResult> call({
-    required int storeId,
-    required String workType,
-    double? latitude,
-    double? longitude,
+    required String scheduleSfid,
+    required double latitude,
+    required double longitude,
+    String? workType,
   }) async {
-    // 입력값 검증
-    if (storeId <= 0) {
+    if (scheduleSfid.isEmpty) {
       throw ArgumentError('유효하지 않은 거래처입니다');
     }
 
-    if (workType != 'ROOM_TEMP' && workType != 'REFRIGERATED') {
-      throw ArgumentError('유효하지 않은 근무유형입니다');
-    }
-
     return await _repository.registerAttendance(
-      storeId: storeId,
-      workType: workType,
+      scheduleSfid: scheduleSfid,
       latitude: latitude,
       longitude: longitude,
+      workType: workType,
     );
   }
 }
