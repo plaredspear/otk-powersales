@@ -211,27 +211,10 @@ class _HomePageState extends ConsumerState<HomePage> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
-                  RichText(
-                    text: TextSpan(
-                      children: [
-                        TextSpan(
-                          text: '오뚜기 ',
-                          style: AppTypography.headlineLarge.copyWith(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        TextSpan(
-                          text: '파워세일즈',
-                          style: AppTypography.headlineLarge.copyWith(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.otokiRed,
-                          ),
-                        ),
-                      ],
-                    ),
+                  Image.asset(
+                    'assets/images/h1_logo.png',
+                    height: 28,
+                    fit: BoxFit.contain,
                   ),
                   const Spacer(),
                   IconButton(
