@@ -43,6 +43,8 @@ abstract class AttendanceRepository {
   Future<AttendanceResult> registerAttendance({
     required int storeId,
     required String workType,
+    double? latitude,
+    double? longitude,
   });
 
   /// 출근등록 현황 조회

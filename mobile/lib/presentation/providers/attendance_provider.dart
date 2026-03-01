@@ -97,7 +97,7 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
   }
 
   /// 출근등록
-  Future<void> register() async {
+  Future<void> register({double? latitude, double? longitude}) async {
     final storeId = state.selectedStoreId;
     if (storeId == null) return;
 
@@ -107,6 +107,8 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
       final result = await _registerAttendance.call(
         storeId: storeId,
         workType: state.selectedWorkType,
+        latitude: latitude,
+        longitude: longitude,
       );
 
       state = state.copyWith(
