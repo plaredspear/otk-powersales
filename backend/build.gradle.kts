@@ -87,7 +87,7 @@ sourceSets {
 				"**/ClientOrderControllerTest.kt",
 				"**/EventControllerTest.kt",
 				"**/InspectionControllerTest.kt",
-				"**/NoticeControllerTest.kt",
+				// "**/NoticeControllerTest.kt", // re-enabled: test rewritten for legacy table
 				"**/OrderControllerTest.kt",
 				"**/OrderQueryControllerTest.kt",
 				"**/DailySalesCreateRequestTest.kt",
@@ -112,7 +112,7 @@ sourceSets {
 				// "**/HomeServiceTest.kt", // re-enabled: test rewritten for V1 schema
 				"**/InspectionServiceTest.kt",
 				"**/MyScheduleServiceTest.kt",
-				"**/NoticeServiceTest.kt",
+				// "**/NoticeServiceTest.kt", // re-enabled: test rewritten for legacy table
 				"**/OrderQueryServiceTest.kt",
 				"**/OrderServiceTest.kt",
 				"**/OrderSubmitServiceTest.kt",
