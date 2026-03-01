@@ -137,7 +137,11 @@ class _HomePageState extends ConsumerState<HomePage> {
         NoticeCarousel(
           notices: homeData.notices,
           onNoticeTap: (notice) {
-            // TODO: 공지 상세 화면으로 이동 (후속 작업)
+            AppRouter.navigateTo(
+              context,
+              AppRouter.noticeDetail,
+              arguments: notice.id,
+            );
           },
         ),
         const SizedBox(height: AppSpacing.xl),
