@@ -1,54 +1,57 @@
 /// 오늘 일정 엔티티
 ///
 /// 홈화면에 표시되는 오늘의 스케줄 정보를 나타낸다.
+/// Backend ScheduleInfo DTO에 맞춘 필드 구조.
 class Schedule {
-  final int id;
-  final String storeName;
-  final String startTime;
-  final String endTime;
-  final String type;
+  final String scheduleId;
+  final String employeeName;
+  final String employeeSfid;
+  final String? storeName;
+  final String? storeSfid;
+  final String workCategory;
+  final String? workType;
+  final bool isCommuteRegistered;
+  final DateTime? commuteRegisteredAt;
 
   const Schedule({
-    required this.id,
-    required this.storeName,
-    required this.startTime,
-    required this.endTime,
-    required this.type,
+    required this.scheduleId,
+    required this.employeeName,
+    required this.employeeSfid,
+    this.storeName,
+    this.storeSfid,
+    required this.workCategory,
+    this.workType,
+    required this.isCommuteRegistered,
+    this.commuteRegisteredAt,
   });
 
   Schedule copyWith({
-    int? id,
+    String? scheduleId,
+    String? employeeName,
+    String? employeeSfid,
     String? storeName,
-    String? startTime,
-    String? endTime,
-    String? type,
+    String? storeSfid,
+    String? workCategory,
+    String? workType,
+    bool? isCommuteRegistered,
+    DateTime? commuteRegisteredAt,
+    bool clearStoreName = false,
+    bool clearStoreSfid = false,
+    bool clearWorkType = false,
+    bool clearCommuteRegisteredAt = false,
   }) {
     return Schedule(
-      id: id ?? this.id,
-      storeName: storeName ?? this.storeName,
-      startTime: startTime ?? this.startTime,
-      endTime: endTime ?? this.endTime,
-      type: type ?? this.type,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'storeName': storeName,
-      'startTime': startTime,
-      'endTime': endTime,
-      'type': type,
-    };
-  }
-
-  factory Schedule.fromJson(Map<String, dynamic> json) {
-    return Schedule(
-      id: json['id'] as int,
-      storeName: json['storeName'] as String,
-      startTime: json['startTime'] as String,
-      endTime: json['endTime'] as String,
-      type: json['type'] as String,
+      scheduleId: scheduleId ?? this.scheduleId,
+      employeeName: employeeName ?? this.employeeName,
+      employeeSfid: employeeSfid ?? this.employeeSfid,
+      storeName: clearStoreName ? null : (storeName ?? this.storeName),
+      storeSfid: clearStoreSfid ? null : (storeSfid ?? this.storeSfid),
+      workCategory: workCategory ?? this.workCategory,
+      workType: clearWorkType ? null : (workType ?? this.workType),
+      isCommuteRegistered: isCommuteRegistered ?? this.isCommuteRegistered,
+      commuteRegisteredAt: clearCommuteRegisteredAt
+          ? null
+          : (commuteRegisteredAt ?? this.commuteRegisteredAt),
     );
   }
 
@@ -56,26 +59,34 @@ class Schedule {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is Schedule &&
-        other.id == id &&
+        other.scheduleId == scheduleId &&
+        other.employeeName == employeeName &&
+        other.employeeSfid == employeeSfid &&
         other.storeName == storeName &&
-        other.startTime == startTime &&
-        other.endTime == endTime &&
-        other.type == type;
+        other.storeSfid == storeSfid &&
+        other.workCategory == workCategory &&
+        other.workType == workType &&
+        other.isCommuteRegistered == isCommuteRegistered &&
+        other.commuteRegisteredAt == commuteRegisteredAt;
   }
 
   @override
   int get hashCode {
     return Object.hash(
-      id,
+      scheduleId,
+      employeeName,
+      employeeSfid,
       storeName,
-      startTime,
-      endTime,
-      type,
+      storeSfid,
+      workCategory,
+      workType,
+      isCommuteRegistered,
+      commuteRegisteredAt,
     );
   }
 
   @override
   String toString() {
-    return 'Schedule(id: $id, storeName: $storeName, startTime: $startTime, endTime: $endTime, type: $type)';
+    return 'Schedule(scheduleId: $scheduleId, employeeName: $employeeName, storeName: $storeName, workCategory: $workCategory, isCommuteRegistered: $isCommuteRegistered)';
   }
 }
