@@ -1,9 +1,8 @@
-/*
 package com.otoki.internal.notice.dto.response
 
-/ **
+/**
  * 공지사항 게시물 요약 Response (목록용)
- * /
+ */
 data class NoticePostSummaryResponse(
     val id: Long,
     val category: String,           // enum name (e.g., "COMPANY")
@@ -11,4 +10,3 @@ data class NoticePostSummaryResponse(
     val title: String,
     val createdAt: String           // ISO 8601 형식
 )
-*/

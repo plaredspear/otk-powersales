@@ -1,11 +1,18 @@
 package com.otoki.internal.notice.service
 
+import com.otoki.internal.auth.exception.UserNotFoundException
+import com.otoki.internal.common.repository.UserRepository
 import com.otoki.internal.notice.dto.response.NoticeImageResponse
 import com.otoki.internal.notice.dto.response.NoticePostDetailResponse
+import com.otoki.internal.notice.dto.response.NoticePostListResponse
+import com.otoki.internal.notice.dto.response.NoticePostSummaryResponse
+import com.otoki.internal.notice.entity.NoticeCategory
+import com.otoki.internal.notice.exception.InvalidNoticeCategoryException
 import com.otoki.internal.notice.exception.NoticePostNotFoundException
 import com.otoki.internal.notice.repository.NoticeRepository
 import com.otoki.internal.notice.repository.UploadFileRepository
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.format.DateTimeFormatter
@@ -15,6 +22,7 @@ import java.time.format.DateTimeFormatter
 class NoticeService(
     private val noticeRepository: NoticeRepository,
     private val uploadFileRepository: UploadFileRepository,
+    private val userRepository: UserRepository,
     @Value("\${aws.s3.bucket.name:otoki-bucket}")
     private val s3BucketName: String
 ) {
@@ -63,6 +71,43 @@ class NoticeService(
             content = notice.contents ?: "",
             createdAt = notice.createdDate?.format(DATE_TIME_FORMATTER) ?: "",
             images = images
+        )
+    }
+
+    fun getPosts(userId: Long, category: String?, search: String?, page: Int, size: Int): NoticePostListResponse {
+        val user = userRepository.findById(userId)
+            .orElseThrow { UserNotFoundException() }
+        val branch = user.orgName ?: ""
+
+        if (category != null) {
+            try {
+                NoticeCategory.fromString(category)
+            } catch (_: IllegalArgumentException) {
+                throw InvalidNoticeCategoryException()
+            }
+        }
+
+        val truncatedSearch = search?.take(100)?.ifBlank { null }
+        val pageable = PageRequest.of(page - 1, size)
+        val noticePage = noticeRepository.findNotices(category, truncatedSearch, branch, pageable)
+
+        val content = noticePage.content.map { notice ->
+            val (categoryCode, categoryName) = mapCategory(notice.category)
+            NoticePostSummaryResponse(
+                id = notice.id,
+                category = categoryCode,
+                categoryName = categoryName,
+                title = notice.name ?: "",
+                createdAt = notice.createdDate?.format(DATE_TIME_FORMATTER) ?: ""
+            )
+        }
+
+        return NoticePostListResponse(
+            content = content,
+            totalCount = noticePage.totalElements,
+            totalPages = noticePage.totalPages,
+            currentPage = page,
+            size = size
         )
     }
 
