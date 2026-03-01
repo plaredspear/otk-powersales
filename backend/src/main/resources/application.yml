@@ -38,6 +38,11 @@ spring:
     baseline-version: 0
     enabled: true
 
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    cache: ${THYMELEAF_CACHE:false}
+
   jackson:
     property-naming-strategy: SNAKE_CASE
     serialization:
