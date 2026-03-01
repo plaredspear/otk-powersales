@@ -110,6 +110,8 @@ class AttendanceMockRepository implements AttendanceRepository {
   Future<AttendanceResult> registerAttendance({
     required int storeId,
     required String workType,
+    double? latitude,
+    double? longitude,
   }) async {
     await _simulateDelay();
 

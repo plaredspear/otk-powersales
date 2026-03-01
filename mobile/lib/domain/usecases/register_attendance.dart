@@ -13,9 +13,13 @@ class RegisterAttendance {
   ///
   /// [storeId]: 거래처 ID
   /// [workType]: 근무유형 ('ROOM_TEMP' 또는 'REFRIGERATED')
+  /// [latitude]: GPS 위도 (nullable)
+  /// [longitude]: GPS 경도 (nullable)
   Future<AttendanceResult> call({
     required int storeId,
     required String workType,
+    double? latitude,
+    double? longitude,
   }) async {
     // 입력값 검증
     if (storeId <= 0) {
@@ -29,6 +33,8 @@ class RegisterAttendance {
     return await _repository.registerAttendance(
       storeId: storeId,
       workType: workType,
+      latitude: latitude,
+      longitude: longitude,
     );
   }
 }

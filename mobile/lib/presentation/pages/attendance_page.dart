@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/services/location_permission_helper.dart';
+import '../../core/services/location_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../providers/attendance_provider.dart';
 import '../widgets/attendance/attendance_status_counter.dart';
@@ -35,6 +37,27 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleRegister(
+    AttendanceNotifier notifier,
+    dynamic state,
+  ) async {
+    if (state.isFixedWorker && state.allStores.isNotEmpty) {
+      notifier.selectStore(state.allStores.first.storeId);
+    }
+
+    // GPS 좌표 획득
+    final locationService = ref.read(locationServiceProvider);
+    final helper = LocationPermissionHelper(locationService);
+    final position = await helper.ensurePermissionAndGetPosition(context);
+
+    if (!mounted) return;
+
+    notifier.register(
+      latitude: position?.latitude,
+      longitude: position?.longitude,
+    );
   }
 
   @override
@@ -239,13 +262,7 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
         text: '등록하기',
         isLoading: state.isRegistering,
         onPressed: canRegister && !state.isRegistering
-            ? () {
-                if (state.isFixedWorker &&
-                    state.allStores.isNotEmpty) {
-                  notifier.selectStore(state.allStores.first.storeId);
-                }
-                notifier.register();
-              }
+            ? () => _handleRegister(notifier, state)
             : null,
       ),
     );
