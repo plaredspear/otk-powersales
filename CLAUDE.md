@@ -34,16 +34,14 @@ Bare repository + worktree 방식으로 운영합니다.
 ```
 otoki/                          # 프로젝트 루트
 ├── .bare/                      # Bare repository (git 데이터)
-├── main/                       # [main] 메인 브랜치 worktree
+├── main/                       # [main] 메인 브랜치 worktree (머지 전용)
 │   ├── mobile/                 #   Flutter app
 │   ├── backend/                #   Spring Boot API
 │   ├── infra/                  #   Terraform IaC (AWS)
 │   ├── .claude/                #   Claude Code 설정 (가이드, 커맨드)
 │   ├── docs/                   #   문서 디렉토리 (git 추적 대상 아님)
 │   └── CLAUDE.md               #   이 파일
-├── impl/                       # [impl] 구현 작업 worktree
-├── backend-dev/                # [backend-dev] Backend 개발 worktree
-├── mobile-dev/                 # [mobile-dev] Mobile 개발 worktree
+├── impl/                       # [impl] 구현 작업 worktree (Backend/Mobile/Infra 모든 플랫폼)
 └── docs-spec/                  # [docs-spec] 스펙/문서 작업 worktree
 ```
 
@@ -88,23 +86,23 @@ otoki/                          # 프로젝트 루트
 1. 스펙 작성 (/spec) → docs/specs/backlog/<번호>-<기능명>/ 에 스펙 생성
 2. AI 리뷰 (/spec-review) → 터미널에 리포트 출력
 3. 사용자 검토 → 승인 → docs/specs/ready/ 로 이동
-4. /impl → ready/ 에서 스펙 읽기 → dev worktree에서 직접 구현 + 테스트 + 커밋
-5. /complete-task → main worktree에서 merge --no-ff → dev worktree rebase
+4. /impl → ready/ 에서 스펙 읽기 → impl worktree에서 구현 + 테스트 + 커밋
+5. /complete-task → main worktree에서 merge --no-ff → impl worktree rebase
 6. 완료 → docs/specs/completed/ 로 이동
 ```
 
 ### 머지 예시
 
-각 dev worktree 브랜치에서 직접 작업하고, main worktree에서 머지합니다.
+`impl` worktree에서 모든 플랫폼(Backend/Mobile/Infra)을 구현하고, `main` worktree에서 머지합니다.
 별도 feature 브랜치는 만들지 않습니다 (worktree가 격리 역할을 대체).
 
 ```bash
 # main worktree에서 머지
 cd /path/to/main
-git merge --no-ff backend-dev -m "refactor(backend): User 엔티티 레거시 스키마 정렬 (64)"
+git merge --no-ff impl -m "refactor(backend): User 엔티티 레거시 스키마 정렬 (64)"
 
-# dev worktree로 돌아와서 main 동기화
-cd /path/to/backend-dev
+# impl worktree로 돌아와서 main 동기화
+cd /path/to/impl
 git rebase main
 ```
 
