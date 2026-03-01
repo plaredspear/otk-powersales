@@ -1,12 +1,26 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../data/repositories/mock/home_mock_repository.dart';
+import '../../core/network/dio_provider.dart';
+import '../../data/datasources/home_api_datasource.dart';
+import '../../data/datasources/home_remote_datasource.dart';
+import '../../data/repositories/home_repository_impl.dart';
 import '../../domain/repositories/home_repository.dart';
 import '../../domain/usecases/get_home_data.dart';
 import 'home_state.dart';
 
+// ============================================
+// 1. Dependency Providers (DataSource, Repository, UseCase)
+// ============================================
+
+/// Home Remote DataSource Provider
+final homeRemoteDataSourceProvider = Provider<HomeRemoteDataSource>((ref) {
+  final dio = ref.watch(dioProvider);
+  return HomeApiDataSource(dio);
+});
+
 /// Home Repository Provider
 final homeRepositoryProvider = Provider<HomeRepository>((ref) {
-  return HomeMockRepository();
+  final remoteDataSource = ref.watch(homeRemoteDataSourceProvider);
+  return HomeRepositoryImpl(remoteDataSource: remoteDataSource);
 });
 
 /// GetHomeData UseCase Provider
@@ -14,6 +28,10 @@ final getHomeDataUseCaseProvider = Provider<GetHomeData>((ref) {
   final repository = ref.watch(homeRepositoryProvider);
   return GetHomeData(repository);
 });
+
+// ============================================
+// 2. StateNotifier Implementation
+// ============================================
 
 /// 홈 화면 상태 관리 Notifier
 ///
@@ -40,6 +58,10 @@ class HomeNotifier extends StateNotifier<HomeState> {
     await fetchHomeData();
   }
 }
+
+// ============================================
+// 3. StateNotifier Provider Definition
+// ============================================
 
 /// Home StateNotifier Provider
 final homeProvider =

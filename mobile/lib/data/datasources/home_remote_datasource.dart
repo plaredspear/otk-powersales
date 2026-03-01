@@ -1,3 +1,4 @@
+import '../models/attendance_summary_model.dart';
 import '../models/expiry_alert_model.dart';
 import '../models/notice_model.dart';
 import '../models/schedule_model.dart';
@@ -5,12 +6,16 @@ import '../models/schedule_model.dart';
 /// 홈 API 응답 데이터를 담는 모델
 class HomeResponseModel {
   final List<ScheduleModel> todaySchedules;
+  final AttendanceSummaryModel attendanceSummary;
+  final bool safetyCheckRequired;
   final ExpiryAlertModel? expiryAlert;
   final List<NoticeModel> notices;
   final String currentDate;
 
   const HomeResponseModel({
     required this.todaySchedules,
+    required this.attendanceSummary,
+    required this.safetyCheckRequired,
     this.expiryAlert,
     required this.notices,
     required this.currentDate,
@@ -23,6 +28,13 @@ class HomeResponseModel {
     final todaySchedules = schedulesJson
         .map((e) => ScheduleModel.fromJson(e as Map<String, dynamic>))
         .toList();
+
+    final attendanceSummaryJson =
+        data['attendance_summary'] as Map<String, dynamic>;
+    final attendanceSummary =
+        AttendanceSummaryModel.fromJson(attendanceSummaryJson);
+
+    final safetyCheckRequired = data['safety_check_required'] as bool;
 
     ExpiryAlertModel? expiryAlert;
     final expiryAlertJson = data['expiry_alert'] as Map<String, dynamic>?;
@@ -39,6 +51,8 @@ class HomeResponseModel {
 
     return HomeResponseModel(
       todaySchedules: todaySchedules,
+      attendanceSummary: attendanceSummary,
+      safetyCheckRequired: safetyCheckRequired,
       expiryAlert: expiryAlert,
       notices: notices,
       currentDate: currentDate,

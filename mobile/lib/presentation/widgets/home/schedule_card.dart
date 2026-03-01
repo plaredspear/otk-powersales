@@ -9,7 +9,7 @@ import '../common/primary_button.dart';
 ///
 /// 홈 화면의 #1 영역: 오늘 일정을 표시한다.
 /// - 일정 없음: "오늘 등록된 스케줄이 없습니다." + "등록" 버튼
-/// - 일정 있음: 오늘 스케줄 목록 (매장명, 시간, 근무유형)
+/// - 일정 있음: 오늘 스케줄 목록 (근무유형 배지, 매장명, 출근 상태)
 class ScheduleCard extends StatelessWidget {
   /// 오늘 일정 목록
   final List<Schedule> schedules;
@@ -108,29 +108,6 @@ class ScheduleCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // 시간
-            SizedBox(
-              width: 100,
-              child: Text(
-                '${schedule.startTime}~${schedule.endTime}',
-                style: AppTypography.bodyMedium.copyWith(
-                  color: AppColors.secondary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-
-            // 매장명
-            Expanded(
-              child: Text(
-                schedule.storeName,
-                style: AppTypography.bodyMedium,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-
             // 근무유형 배지
             Container(
               padding: const EdgeInsets.symmetric(
@@ -142,10 +119,32 @@ class ScheduleCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
               ),
               child: Text(
-                schedule.type,
+                schedule.workCategory,
                 style: AppTypography.labelMedium.copyWith(
                   color: AppColors.onPrimary,
                 ),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+
+            // 매장명
+            Expanded(
+              child: Text(
+                schedule.storeName ?? '(미지정)',
+                style: AppTypography.bodyMedium,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+
+            // 출근 상태
+            Text(
+              schedule.isCommuteRegistered ? '출근완료' : '미등록',
+              style: AppTypography.labelMedium.copyWith(
+                color: schedule.isCommuteRegistered
+                    ? AppColors.success
+                    : AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],

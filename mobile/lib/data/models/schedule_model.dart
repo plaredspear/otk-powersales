@@ -4,57 +4,83 @@ import '../../domain/entities/schedule.dart';
 ///
 /// API 응답의 snake_case JSON을 Domain Entity로 변환한다.
 class ScheduleModel {
-  final int id;
-  final String storeName;
-  final String startTime;
-  final String endTime;
-  final String type;
+  final String scheduleId;
+  final String employeeName;
+  final String employeeSfid;
+  final String? storeName;
+  final String? storeSfid;
+  final String workCategory;
+  final String? workType;
+  final bool isCommuteRegistered;
+  final DateTime? commuteRegisteredAt;
 
   const ScheduleModel({
-    required this.id,
-    required this.storeName,
-    required this.startTime,
-    required this.endTime,
-    required this.type,
+    required this.scheduleId,
+    required this.employeeName,
+    required this.employeeSfid,
+    this.storeName,
+    this.storeSfid,
+    required this.workCategory,
+    this.workType,
+    required this.isCommuteRegistered,
+    this.commuteRegisteredAt,
   });
 
   factory ScheduleModel.fromJson(Map<String, dynamic> json) {
     return ScheduleModel(
-      id: json['id'] as int,
-      storeName: json['store_name'] as String,
-      startTime: json['start_time'] as String,
-      endTime: json['end_time'] as String,
-      type: json['type'] as String,
+      scheduleId: json['schedule_id'] as String,
+      employeeName: json['employee_name'] as String,
+      employeeSfid: json['employee_sfid'] as String,
+      storeName: json['store_name'] as String?,
+      storeSfid: json['store_sfid'] as String?,
+      workCategory: json['work_category'] as String,
+      workType: json['work_type'] as String?,
+      isCommuteRegistered: json['is_commute_registered'] as bool,
+      commuteRegisteredAt: json['commute_registered_at'] != null
+          ? DateTime.parse(json['commute_registered_at'] as String)
+          : null,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      'schedule_id': scheduleId,
+      'employee_name': employeeName,
+      'employee_sfid': employeeSfid,
       'store_name': storeName,
-      'start_time': startTime,
-      'end_time': endTime,
-      'type': type,
+      'store_sfid': storeSfid,
+      'work_category': workCategory,
+      'work_type': workType,
+      'is_commute_registered': isCommuteRegistered,
+      'commute_registered_at': commuteRegisteredAt?.toIso8601String(),
     };
   }
 
   Schedule toEntity() {
     return Schedule(
-      id: id,
+      scheduleId: scheduleId,
+      employeeName: employeeName,
+      employeeSfid: employeeSfid,
       storeName: storeName,
-      startTime: startTime,
-      endTime: endTime,
-      type: type,
+      storeSfid: storeSfid,
+      workCategory: workCategory,
+      workType: workType,
+      isCommuteRegistered: isCommuteRegistered,
+      commuteRegisteredAt: commuteRegisteredAt,
     );
   }
 
   factory ScheduleModel.fromEntity(Schedule entity) {
     return ScheduleModel(
-      id: entity.id,
+      scheduleId: entity.scheduleId,
+      employeeName: entity.employeeName,
+      employeeSfid: entity.employeeSfid,
       storeName: entity.storeName,
-      startTime: entity.startTime,
-      endTime: entity.endTime,
-      type: entity.type,
+      storeSfid: entity.storeSfid,
+      workCategory: entity.workCategory,
+      workType: entity.workType,
+      isCommuteRegistered: entity.isCommuteRegistered,
+      commuteRegisteredAt: entity.commuteRegisteredAt,
     );
   }
 
@@ -62,26 +88,34 @@ class ScheduleModel {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is ScheduleModel &&
-        other.id == id &&
+        other.scheduleId == scheduleId &&
+        other.employeeName == employeeName &&
+        other.employeeSfid == employeeSfid &&
         other.storeName == storeName &&
-        other.startTime == startTime &&
-        other.endTime == endTime &&
-        other.type == type;
+        other.storeSfid == storeSfid &&
+        other.workCategory == workCategory &&
+        other.workType == workType &&
+        other.isCommuteRegistered == isCommuteRegistered &&
+        other.commuteRegisteredAt == commuteRegisteredAt;
   }
 
   @override
   int get hashCode {
     return Object.hash(
-      id,
+      scheduleId,
+      employeeName,
+      employeeSfid,
       storeName,
-      startTime,
-      endTime,
-      type,
+      storeSfid,
+      workCategory,
+      workType,
+      isCommuteRegistered,
+      commuteRegisteredAt,
     );
   }
 
   @override
   String toString() {
-    return 'ScheduleModel(id: $id, storeName: $storeName, startTime: $startTime, endTime: $endTime, type: $type)';
+    return 'ScheduleModel(scheduleId: $scheduleId, employeeName: $employeeName, storeName: $storeName, workCategory: $workCategory, isCommuteRegistered: $isCommuteRegistered)';
   }
 }

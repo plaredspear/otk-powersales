@@ -20,6 +20,8 @@ class HomeRepositoryImpl implements HomeRepository {
         .map((model) => model.toEntity())
         .toList();
 
+    final attendanceSummary = response.attendanceSummary.toEntity();
+
     final ExpiryAlert? expiryAlert = response.expiryAlert?.toEntity();
 
     final notices = response.notices
@@ -28,6 +30,8 @@ class HomeRepositoryImpl implements HomeRepository {
 
     return HomeData(
       todaySchedules: todaySchedules,
+      attendanceSummary: attendanceSummary,
+      safetyCheckRequired: response.safetyCheckRequired,
       expiryAlert: expiryAlert,
       notices: notices,
       currentDate: response.currentDate,
