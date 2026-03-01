@@ -64,7 +64,7 @@ abstract final class MenuConstants {
       label: '커뮤니티',
       items: [
         MenuItem(id: 'education', label: '교육'),
-        MenuItem(id: 'notices', label: '공지사항'),
+        MenuItem(id: 'notices', label: '공지사항', route: '/notices'),
       ],
     ),
     // 7. 마이페이지
