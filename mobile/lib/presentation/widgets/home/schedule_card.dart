@@ -9,7 +9,7 @@ import '../common/primary_button.dart';
 /// 일정 카드 위젯
 ///
 /// 홈 화면의 #1 영역: 오늘 일정을 표시한다.
-/// - 일정 없음: "오늘 등록된 스케줄이 없습니다." + "등록" 버튼
+/// - 일정 없음: "출근 후 등록을 누르세요." + "등록" 버튼
 /// - 일정 있음: 오늘 스케줄 목록 (근무유형 배지, 매장명, 출근 상태)
 /// - 출근 카운트 배지: "✓ X/N" 형태로 출근 현황 표시
 class ScheduleCard extends StatelessWidget {
@@ -146,7 +146,7 @@ class ScheduleCard extends StatelessWidget {
       children: [
         const SizedBox(height: AppSpacing.xs),
         Text(
-          '오늘 등록된 스케줄이 없습니다.',
+          '출근 후 등록을 누르세요.',
           style: AppTypography.bodyMedium.copyWith(
             color: AppColors.textSecondary,
           ),
