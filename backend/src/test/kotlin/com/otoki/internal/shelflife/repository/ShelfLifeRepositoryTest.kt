@@ -107,6 +107,86 @@ class ShelfLifeRepositoryTest {
     }
 
     @Nested
+    @DisplayName("countByEmployeeIdAndAlarmDate - 사원별 알람일 기준 건수 조회")
+    inner class CountByEmployeeIdAndAlarmDateTests {
+
+        @Test
+        @DisplayName("알람 대상 건수 조회 - 해당 사원/오늘 3건 -> 3 반환")
+        fun count_matchingRecords() {
+            // Given
+            val today = LocalDate.now()
+            val employeeId = "EMP_SFID_001"
+
+            repeat(3) {
+                testEntityManager.persistAndFlush(
+                    ShelfLife(employeeId = employeeId, alarmDate = today, productCode = "P00$it")
+                )
+            }
+            testEntityManager.clear()
+
+            // When
+            val count = shelfLifeRepository.countByEmployeeIdAndAlarmDate(employeeId, today)
+
+            // Then
+            assertThat(count).isEqualTo(3L)
+        }
+
+        @Test
+        @DisplayName("알람 대상 0건 - 해당 사원/오늘 0건 -> 0 반환")
+        fun count_noMatchingRecords() {
+            // Given
+            val today = LocalDate.now()
+
+            // When
+            val count = shelfLifeRepository.countByEmployeeIdAndAlarmDate("EMP_SFID_001", today)
+
+            // Then
+            assertThat(count).isEqualTo(0L)
+        }
+
+        @Test
+        @DisplayName("다른 날짜 건 제외 - 어제 알람만 존재 -> 오늘 조회 시 0")
+        fun count_excludesDifferentDate() {
+            // Given
+            val today = LocalDate.now()
+            val yesterday = today.minusDays(1)
+            val employeeId = "EMP_SFID_001"
+
+            testEntityManager.persistAndFlush(
+                ShelfLife(employeeId = employeeId, alarmDate = yesterday, productCode = "P001")
+            )
+            testEntityManager.clear()
+
+            // When
+            val count = shelfLifeRepository.countByEmployeeIdAndAlarmDate(employeeId, today)
+
+            // Then
+            assertThat(count).isEqualTo(0L)
+        }
+
+        @Test
+        @DisplayName("다른 사원 건 제외 - 다른 employeeId의 건 -> 본인만 카운트")
+        fun count_excludesDifferentEmployee() {
+            // Given
+            val today = LocalDate.now()
+
+            testEntityManager.persistAndFlush(
+                ShelfLife(employeeId = "EMP_SFID_001", alarmDate = today, productCode = "P001")
+            )
+            testEntityManager.persistAndFlush(
+                ShelfLife(employeeId = "EMP_SFID_002", alarmDate = today, productCode = "P002")
+            )
+            testEntityManager.clear()
+
+            // When
+            val count = shelfLifeRepository.countByEmployeeIdAndAlarmDate("EMP_SFID_001", today)
+
+            // Then
+            assertThat(count).isEqualTo(1L)
+        }
+    }
+
+    @Nested
     @DisplayName("ManyToOne 제거 검증 - raw String 필드")
     inner class RawStringFieldTests {
 

@@ -10,6 +10,7 @@ import com.otoki.internal.safetycheck.service.SafetyCheckService
 import com.otoki.internal.schedule.entity.Schedule
 import com.otoki.internal.schedule.repository.ScheduleRepository
 import com.otoki.internal.common.repository.UserRepository
+import com.otoki.internal.shelflife.repository.ShelfLifeRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -27,7 +28,8 @@ class HomeService(
     private val scheduleRepository: ScheduleRepository,
     private val noticeRepository: NoticeRepository,
     private val accountRepository: AccountRepository,
-    private val safetyCheckService: SafetyCheckService
+    private val safetyCheckService: SafetyCheckService,
+    private val shelfLifeRepository: ShelfLifeRepository
 ) {
 
     companion object {
@@ -85,7 +87,16 @@ class HomeService(
             else -> false
         }
 
-        val expiryAlert: HomeResponse.ExpiryAlertInfo? = null
+        val expiryCount = user.sfid?.let { sfid ->
+            shelfLifeRepository.countByEmployeeIdAndAlarmDate(sfid, today)
+        } ?: 0L
+
+        val expiryAlert = HomeResponse.ExpiryAlertInfo(
+            branchName = user.orgName ?: "",
+            employeeName = user.name,
+            employeeId = user.employeeId,
+            expiryCount = expiryCount.toInt()
+        )
 
         // 최근 1주일 공지사항 조회
         val since = LocalDateTime.of(today.minusDays(NOTICE_DAYS), LocalTime.MIN)

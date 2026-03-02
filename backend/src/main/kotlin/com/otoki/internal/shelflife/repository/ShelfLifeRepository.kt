@@ -3,6 +3,7 @@ package com.otoki.internal.shelflife.repository
 import com.otoki.internal.shelflife.entity.ShelfLife
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
+import java.time.LocalDate
 
 /**
  * 유통기한 관리 Repository
@@ -12,7 +13,9 @@ import org.springframework.stereotype.Repository
  * Service 비활성 상태이므로 호출부 없음.
  */
 @Repository
-interface ShelfLifeRepository : JpaRepository<ShelfLife, Int>
+interface ShelfLifeRepository : JpaRepository<ShelfLife, Int> {
+    fun countByEmployeeIdAndAlarmDate(employeeId: String, alarmDate: LocalDate): Long
+}
 
 /* --- 주석 처리: V1 리매핑으로 경로 변경된 기존 쿼리 메서드 ---
 
