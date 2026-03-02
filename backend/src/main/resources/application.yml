@@ -72,6 +72,11 @@ springdoc:
     path: /v3/api-docs
   default-produces-media-type: application/json
 
+app:
+  domain:
+    api: ${API_DOMAIN:}
+    admin: ${ADMIN_DOMAIN:}
+
 device:
   binding:
     enabled: true
