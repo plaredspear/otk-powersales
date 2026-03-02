@@ -175,6 +175,8 @@ resource "aws_ecs_task_definition" "main" {
         { name = "LOG_LEVEL_HIBERNATE_SQL", value = "OFF" },
         { name = "LOG_LEVEL_HIBERNATE_BIND", value = "OFF" },
         { name = "ORORA_MOCK_ENABLED", value = tostring(var.orora_mock_enabled) },
+        { name = "API_DOMAIN", value = var.api_domain },
+        { name = "ADMIN_DOMAIN", value = var.admin_domain },
       ]
 
       secrets = [

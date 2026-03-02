@@ -123,3 +123,15 @@ variable "orora_mock_enabled" {
   type        = bool
   default     = true
 }
+
+variable "api_domain" {
+  description = "API domain for Host header guard (e.g. dev-pwrs-api.codapt.kr)"
+  type        = string
+  default     = ""
+}
+
+variable "admin_domain" {
+  description = "Admin domain for Host header guard (e.g. dev-pwrs-admin.codapt.kr)"
+  type        = string
+  default     = ""
+}
