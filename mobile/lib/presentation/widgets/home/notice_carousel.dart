@@ -33,20 +33,25 @@ class NoticeCarousel extends StatelessWidget {
       return _buildEmptyNotice();
     }
 
-    return SizedBox(
-      height: 130,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-        itemCount: notices.length + 1,
-        separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
-        itemBuilder: (context, index) {
-          if (index == notices.length) {
-            return _buildViewAllCard();
-          }
-          return _buildNoticeCard(notices[index]);
-        },
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cardWidth = constraints.maxWidth * 0.4;
+        return SizedBox(
+          height: 130,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            itemCount: notices.length + 1,
+            separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
+            itemBuilder: (context, index) {
+              if (index == notices.length) {
+                return _buildViewAllCard(cardWidth);
+              }
+              return _buildNoticeCard(notices[index], cardWidth);
+            },
+          ),
+        );
+      },
     );
   }
 
@@ -66,12 +71,12 @@ class NoticeCarousel extends StatelessWidget {
   }
 
   /// 공지 카드 UI
-  Widget _buildNoticeCard(Notice notice) {
+  Widget _buildNoticeCard(Notice notice, double cardWidth) {
     return InkWell(
       onTap: onNoticeTap != null ? () => onNoticeTap!(notice) : null,
       borderRadius: AppSpacing.cardBorderRadius,
       child: Container(
-        width: 180,
+        width: cardWidth,
         decoration: BoxDecoration(
           color: AppColors.card,
           borderRadius: AppSpacing.cardBorderRadius,
@@ -130,12 +135,12 @@ class NoticeCarousel extends StatelessWidget {
   }
 
   /// 전체보기 카드 UI
-  Widget _buildViewAllCard() {
+  Widget _buildViewAllCard(double cardWidth) {
     return InkWell(
       onTap: onViewAllTap,
       borderRadius: AppSpacing.cardBorderRadius,
       child: Container(
-        width: 180,
+        width: cardWidth,
         decoration: BoxDecoration(
           color: AppColors.card,
           borderRadius: AppSpacing.cardBorderRadius,
