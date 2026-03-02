@@ -1,7 +1,13 @@
-import '../../core/utils/error_utils.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/repositories/mock/order_mock_repository.dart';
+import '../../core/network/dio_provider.dart';
+import '../../core/utils/error_utils.dart';
+import '../../data/datasources/order_api_datasource.dart';
+import '../../data/datasources/order_local_datasource.dart';
+import '../../data/datasources/order_remote_datasource.dart';
+import '../../data/models/my_store_model.dart';
+import '../../data/repositories/order_repository_impl.dart';
 import '../../domain/entities/order.dart';
 import '../../domain/repositories/order_repository.dart';
 import '../../domain/usecases/get_my_orders.dart';
@@ -11,7 +17,13 @@ import 'order_list_state.dart';
 
 /// Order Repository Provider
 final orderRepositoryProvider = Provider<OrderRepository>((ref) {
-  return OrderMockRepository();
+  final dio = ref.watch(dioProvider);
+  final remoteDataSource = OrderApiDataSource(dio);
+  final localDataSource = OrderLocalDataSource();
+  return OrderRepositoryImpl(
+    remoteDataSource: remoteDataSource,
+    localDataSource: localDataSource,
+  );
 });
 
 /// GetMyOrders UseCase Provider
@@ -27,22 +39,34 @@ final getMyOrdersUseCaseProvider = Provider<GetMyOrders>((ref) {
 /// 필터링, 정렬, 페이지네이션(무한 스크롤), 검색 기능을 관리합니다.
 class OrderListNotifier extends StateNotifier<OrderListState> {
   final GetMyOrders _getMyOrders;
-  final OrderMockRepository? _mockRepository;
+  final Dio _dio;
 
   OrderListNotifier({
     required GetMyOrders getMyOrders,
-    OrderMockRepository? mockRepository,
+    required Dio dio,
   })  : _getMyOrders = getMyOrders,
-        _mockRepository = mockRepository,
+        _dio = dio,
         super(OrderListState.initial());
 
   /// 초기 데이터 로딩
   ///
-  /// 거래처 목록 로딩 + 기본 필터로 주문 목록 조회
+  /// 거래처 목록 API 로딩 + 기본 필터로 주문 목록 조회
   Future<void> initialize() async {
-    // Mock Repository에서 거래처 목록 로딩
-    if (_mockRepository != null) {
-      state = state.copyWith(clients: _mockRepository.mockClients);
+    // GET /api/v1/stores/my 에서 거래처 목록 로딩
+    try {
+      final response = await _dio.get('/api/v1/stores/my');
+      final data = response.data['data'] as Map<String, dynamic>;
+      final storesJson = data['stores'] as List<dynamic>;
+      final clientMap = <int, String>{};
+      for (final store in storesJson) {
+        final storeMap = store as Map<String, dynamic>;
+        clientMap[storeMap['store_id'] as int] =
+            storeMap['store_name'] as String;
+      }
+      state = state.copyWith(clients: clientMap);
+    } catch (e) {
+      // 거래처 목록 로드 실패: 빈 맵으로 설정 (드롭다운은 빈 상태)
+      state = state.copyWith(clients: const {});
     }
 
     // 기본 필터로 주문 목록 조회
@@ -165,14 +189,11 @@ class OrderListNotifier extends StateNotifier<OrderListState> {
 /// OrderList StateNotifier Provider
 final orderListProvider =
     StateNotifierProvider<OrderListNotifier, OrderListState>((ref) {
-  final repository = ref.watch(orderRepositoryProvider);
   final useCase = ref.watch(getMyOrdersUseCaseProvider);
-
-  // Mock Repository인 경우 거래처 목록 접근용으로 전달
-  final mockRepo = repository is OrderMockRepository ? repository : null;
+  final dio = ref.watch(dioProvider);
 
   return OrderListNotifier(
     getMyOrders: useCase,
-    mockRepository: mockRepo,
+    dio: dio,
   );
 });

@@ -248,14 +248,14 @@ class OrderFilterBar extends StatelessWidget {
   }
 
   Future<void> _showDateRangePicker(BuildContext context) async {
-    // 현재 선택된 범위 기본값
+    // 현재 선택된 범위 기본값: 오늘 ~ 오늘+7일
     final now = DateTime.now();
     final initialFrom = deliveryDateFrom != null
         ? DateTime.parse(deliveryDateFrom!)
-        : now.subtract(const Duration(days: 7));
+        : now;
     final initialTo = deliveryDateTo != null
         ? DateTime.parse(deliveryDateTo!)
-        : now;
+        : now.add(const Duration(days: 7));
 
     final picked = await showDateRangePicker(
       context: context,
@@ -279,10 +279,22 @@ class OrderFilterBar extends StatelessWidget {
     );
 
     if (picked != null) {
+      // 최대 7일 범위 제한
+      var start = picked.start;
+      var end = picked.end;
+      if (end.difference(start).inDays > 7) {
+        end = start.add(const Duration(days: 7));
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('최대 7일까지 선택 가능합니다')),
+          );
+        }
+      }
+
       final fromStr =
-          '${picked.start.year}-${picked.start.month.toString().padLeft(2, '0')}-${picked.start.day.toString().padLeft(2, '0')}';
+          '${start.year}-${start.month.toString().padLeft(2, '0')}-${start.day.toString().padLeft(2, '0')}';
       final toStr =
-          '${picked.end.year}-${picked.end.month.toString().padLeft(2, '0')}-${picked.end.day.toString().padLeft(2, '0')}';
+          '${end.year}-${end.month.toString().padLeft(2, '0')}-${end.day.toString().padLeft(2, '0')}';
       onDateRangeChanged(fromStr, toStr);
     }
   }

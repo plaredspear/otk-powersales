@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mobile/data/repositories/mock/order_mock_repository.dart';
+import '../../helpers/fake_order_repository.dart';
 import 'package:mobile/domain/entities/client_order.dart';
 import 'package:mobile/domain/entities/order.dart';
 import 'package:mobile/domain/entities/order_cancel.dart';
@@ -15,10 +15,10 @@ import 'package:mobile/presentation/providers/order_list_provider.dart';
 void main() {
   group('ClientOrderDetailNotifier', () {
     late ProviderContainer container;
-    late OrderMockRepository mockRepository;
+    late FakeOrderRepository mockRepository;
 
     setUp(() {
-      mockRepository = OrderMockRepository();
+      mockRepository = FakeOrderRepository();
       container = ProviderContainer(
         overrides: [
           orderRepositoryProvider.overrideWithValue(mockRepository),

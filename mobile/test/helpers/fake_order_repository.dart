@@ -1,18 +1,16 @@
 import 'dart:math';
 
-import '../../../domain/entities/client_order.dart';
-import '../../../domain/entities/order.dart';
-import '../../../domain/entities/order_cancel.dart';
-import '../../../domain/entities/order_detail.dart';
-import '../../../domain/entities/order_draft.dart';
-import '../../../domain/entities/product_for_order.dart';
-import '../../../domain/entities/validation_error.dart';
-import '../../../domain/repositories/order_repository.dart';
+import 'package:mobile/domain/entities/client_order.dart';
+import 'package:mobile/domain/entities/order.dart';
+import 'package:mobile/domain/entities/order_cancel.dart';
+import 'package:mobile/domain/entities/order_detail.dart';
+import 'package:mobile/domain/entities/order_draft.dart';
+import 'package:mobile/domain/entities/product_for_order.dart';
+import 'package:mobile/domain/entities/validation_error.dart';
+import 'package:mobile/domain/repositories/order_repository.dart';
 
-/// 주문 Mock Repository
-///
-/// Backend API 개발 전까지 사용하는 Mock 데이터 기반 Repository입니다.
-class OrderMockRepository implements OrderRepository {
+/// 테스트용 주문 Fake Repository
+class FakeOrderRepository implements OrderRepository {
   /// 네트워크 지연 시뮬레이션 (300ms)
   Future<void> _simulateDelay() async {
     await Future.delayed(const Duration(milliseconds: 300));
@@ -586,7 +584,7 @@ class OrderMockRepository implements OrderRepository {
     );
   }
 
-  // ─── 주문서 작성 관련 Mock 구현 (F22) ─────────────────────────────
+  // --- 주문서 작성 관련 Mock 구현 (F22) ---
 
   /// Mock 임시저장 데이터
   OrderDraft? _savedDraft;
@@ -886,7 +884,7 @@ class OrderMockRepository implements OrderRepository {
     _favoriteProductCodes.remove(productCode);
   }
 
-  // ─── 거래처별 주문 Mock 구현 (F28) ─────────────────────────────
+  // --- 거래처별 주문 Mock 구현 (F28) ---
 
   /// Mock 거래처별 주문 데이터
   static final List<ClientOrder> _mockClientOrders = [
