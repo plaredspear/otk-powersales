@@ -12,6 +12,11 @@ import org.springframework.web.bind.annotation.RequestParam
 @RequestMapping("/admin")
 class AdminWebController {
 
+    @GetMapping("", "/")
+    fun root(): String {
+        return "redirect:/admin/dashboard"
+    }
+
     @GetMapping("/login")
     fun loginPage(
         @RequestParam(required = false) error: String?,
