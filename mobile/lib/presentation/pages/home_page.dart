@@ -167,7 +167,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   },
                 ),
               ),
-              const SizedBox(height: AppSpacing.xl),
+              const SizedBox(height: AppSpacing.md),
 
               // #5 빠른 메뉴
               Padding(
