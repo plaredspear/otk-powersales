@@ -2,6 +2,7 @@ package com.otoki.internal.common.config
 
 import com.otoki.internal.common.entity.AgreementWord
 import com.otoki.internal.common.entity.User
+import com.otoki.internal.common.entity.UserRole
 import com.otoki.internal.common.repository.AgreementWordRepository
 import com.otoki.internal.common.repository.UserRepository
 import com.otoki.internal.notice.entity.Notice
@@ -15,7 +16,10 @@ import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.check
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.security.crypto.password.PasswordEncoder
@@ -40,34 +44,79 @@ class LocalDataInitializerTest {
     @InjectMocks
     private lateinit var localDataInitializer: LocalDataInitializer
 
+    private fun stubAllUsersNotExist() {
+        whenever(userRepository.existsByEmployeeId("00000001")).thenReturn(false)
+        whenever(userRepository.existsByEmployeeId("00000002")).thenReturn(false)
+        whenever(userRepository.existsByEmployeeId("00000003")).thenReturn(false)
+        whenever(passwordEncoder.encode("1234")).thenReturn("encoded_password")
+        whenever(userRepository.save(any<User>())).thenAnswer { it.getArgument<User>(0) }
+    }
+
+    private fun stubAllUsersExist() {
+        whenever(userRepository.existsByEmployeeId("00000001")).thenReturn(true)
+        whenever(userRepository.existsByEmployeeId("00000002")).thenReturn(true)
+        whenever(userRepository.existsByEmployeeId("00000003")).thenReturn(true)
+    }
+
+    private fun stubOtherSeedsExist() {
+        whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
+            .thenReturn(Optional.of(AgreementWord()))
+    }
+
+    private fun captureAllSavedUsers(): List<User> {
+        val captor = argumentCaptor<User>()
+        verify(userRepository, times(3)).save(captor.capture())
+        return captor.allValues
+    }
+
     @Nested
-    @DisplayName("run - 시드 계정 생성")
-    inner class RunTests {
+    @DisplayName("seedUser - 조장 사용자 생성")
+    inner class LeaderUserTests {
 
         @Test
-        @DisplayName("정상 생성 - DB에 시드 계정 없음 -> User 생성 및 저장")
-        fun run_createsUser_whenNotExists() {
+        @DisplayName("정상 생성 - DB에 00000001 없음 -> 조장 사용자 필드 검증")
+        fun createsLeaderUser_whenNotExists() {
             // Given
-            whenever(userRepository.existsByEmployeeId("00000009")).thenReturn(false)
-            whenever(passwordEncoder.encode("1234")).thenReturn("encoded_password")
-            whenever(userRepository.save(any<User>())).thenAnswer { it.getArgument<User>(0) }
-            whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
-                .thenReturn(Optional.of(AgreementWord()))
+            stubAllUsersNotExist()
+            stubOtherSeedsExist()
 
             // When
             localDataInitializer.run(null)
 
             // Then
-            verify(userRepository).save(any<User>())
+            val users = captureAllSavedUsers()
+            val leader = users.find { it.employeeId == "00000001" }!!
+            assertThat(leader.name).isEqualTo("개발테스트")
+            assertThat(leader.status).isEqualTo("재직")
+            assertThat(leader.appLoginActive).isTrue()
+            assertThat(leader.orgName).isEqualTo("테스트지점")
+            assertThat(leader.appAuthority).isEqualTo("조장")
+            assertThat(leader.password).isEqualTo("encoded_password")
+            assertThat(leader.passwordChangeRequired).isFalse()
         }
 
         @Test
-        @DisplayName("멱등성 - DB에 시드 계정 이미 존재 -> 저장 skip")
-        fun run_skips_whenAlreadyExists() {
+        @DisplayName("역할 검증 - 조장 사용자 -> UserRole.LEADER")
+        fun leaderUser_hasLeaderRole() {
             // Given
-            whenever(userRepository.existsByEmployeeId("00000009")).thenReturn(true)
-            whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
-                .thenReturn(Optional.of(AgreementWord()))
+            stubAllUsersNotExist()
+            stubOtherSeedsExist()
+
+            // When
+            localDataInitializer.run(null)
+
+            // Then
+            val users = captureAllSavedUsers()
+            val leader = users.find { it.employeeId == "00000001" }!!
+            assertThat(leader.role).isEqualTo(UserRole.LEADER)
+        }
+
+        @Test
+        @DisplayName("멱등성 - DB에 00000001 존재 -> save 미호출")
+        fun skipsLeader_whenAlreadyExists() {
+            // Given
+            stubAllUsersExist()
+            stubOtherSeedsExist()
 
             // When
             localDataInitializer.run(null)
@@ -75,30 +124,191 @@ class LocalDataInitializerTest {
             // Then
             verify(userRepository, never()).save(any<User>())
         }
+    }
+
+    @Nested
+    @DisplayName("seedUser - 여사원 사용자 생성")
+    inner class SalesUserTests {
 
         @Test
-        @DisplayName("정상 생성 - 생성된 User의 employeeId와 name 확인")
-        fun run_createsUserWithCorrectData() {
+        @DisplayName("정상 생성 - DB에 00000002 없음 -> 여사원 사용자 필드 검증")
+        fun createsSalesUser_whenNotExists() {
             // Given
-            whenever(userRepository.existsByEmployeeId("00000009")).thenReturn(false)
-            whenever(passwordEncoder.encode("1234")).thenReturn("encoded_password")
-            whenever(userRepository.save(any<User>())).thenAnswer { it.getArgument<User>(0) }
-            whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
-                .thenReturn(Optional.of(AgreementWord()))
+            stubAllUsersNotExist()
+            stubOtherSeedsExist()
 
             // When
             localDataInitializer.run(null)
 
             // Then
-            verify(userRepository).save(org.mockito.kotlin.check<User> { user ->
-                assertThat(user.employeeId).isEqualTo("00000009")
-                assertThat(user.name).isEqualTo("개발테스트")
-                assertThat(user.status).isEqualTo("재직")
-                assertThat(user.appLoginActive).isTrue()
+            val users = captureAllSavedUsers()
+            val salesUser = users.find { it.employeeId == "00000002" }!!
+            assertThat(salesUser.name).isEqualTo("여사원테스트")
+            assertThat(salesUser.status).isEqualTo("재직")
+            assertThat(salesUser.appLoginActive).isTrue()
+            assertThat(salesUser.orgName).isEqualTo("테스트지점")
+            assertThat(salesUser.appAuthority).isEqualTo("여사원")
+            assertThat(salesUser.password).isEqualTo("encoded_password")
+            assertThat(salesUser.passwordChangeRequired).isFalse()
+        }
+
+        @Test
+        @DisplayName("역할 검증 - 여사원 사용자 -> UserRole.USER")
+        fun salesUser_hasUserRole() {
+            // Given
+            stubAllUsersNotExist()
+            stubOtherSeedsExist()
+
+            // When
+            localDataInitializer.run(null)
+
+            // Then
+            val users = captureAllSavedUsers()
+            val salesUser = users.find { it.employeeId == "00000002" }!!
+            assertThat(salesUser.role).isEqualTo(UserRole.USER)
+        }
+
+        @Test
+        @DisplayName("멱등성 - DB에 00000002 존재 -> 해당 사용자 save 미호출")
+        fun skipsSalesUser_whenAlreadyExists() {
+            // Given
+            whenever(userRepository.existsByEmployeeId("00000001")).thenReturn(false)
+            whenever(userRepository.existsByEmployeeId("00000002")).thenReturn(true)
+            whenever(userRepository.existsByEmployeeId("00000003")).thenReturn(false)
+            whenever(passwordEncoder.encode("1234")).thenReturn("encoded_password")
+            whenever(userRepository.save(any<User>())).thenAnswer { it.getArgument<User>(0) }
+            stubOtherSeedsExist()
+
+            // When
+            localDataInitializer.run(null)
+
+            // Then
+            val captor = argumentCaptor<User>()
+            verify(userRepository, times(2)).save(captor.capture())
+            val savedIds = captor.allValues.map { it.employeeId }
+            assertThat(savedIds).containsExactly("00000001", "00000003")
+        }
+    }
+
+    @Nested
+    @DisplayName("seedUser - 지점장 사용자 생성")
+    inner class AdminUserTests {
+
+        @Test
+        @DisplayName("정상 생성 - DB에 00000003 없음 -> 지점장 사용자 필드 검증")
+        fun createsAdminUser_whenNotExists() {
+            // Given
+            stubAllUsersNotExist()
+            stubOtherSeedsExist()
+
+            // When
+            localDataInitializer.run(null)
+
+            // Then
+            val users = captureAllSavedUsers()
+            val admin = users.find { it.employeeId == "00000003" }!!
+            assertThat(admin.name).isEqualTo("지점장테스트")
+            assertThat(admin.status).isEqualTo("재직")
+            assertThat(admin.appLoginActive).isTrue()
+            assertThat(admin.orgName).isEqualTo("테스트지점")
+            assertThat(admin.appAuthority).isEqualTo("지점장")
+            assertThat(admin.password).isEqualTo("encoded_password")
+            assertThat(admin.passwordChangeRequired).isFalse()
+        }
+
+        @Test
+        @DisplayName("역할 검증 - 지점장 사용자 -> UserRole.ADMIN")
+        fun adminUser_hasAdminRole() {
+            // Given
+            stubAllUsersNotExist()
+            stubOtherSeedsExist()
+
+            // When
+            localDataInitializer.run(null)
+
+            // Then
+            val users = captureAllSavedUsers()
+            val admin = users.find { it.employeeId == "00000003" }!!
+            assertThat(admin.role).isEqualTo(UserRole.ADMIN)
+        }
+
+        @Test
+        @DisplayName("멱등성 - DB에 00000003 존재 -> 해당 사용자 save 미호출")
+        fun skipsAdminUser_whenAlreadyExists() {
+            // Given
+            whenever(userRepository.existsByEmployeeId("00000001")).thenReturn(false)
+            whenever(userRepository.existsByEmployeeId("00000002")).thenReturn(false)
+            whenever(userRepository.existsByEmployeeId("00000003")).thenReturn(true)
+            whenever(passwordEncoder.encode("1234")).thenReturn("encoded_password")
+            whenever(userRepository.save(any<User>())).thenAnswer { it.getArgument<User>(0) }
+            stubOtherSeedsExist()
+
+            // When
+            localDataInitializer.run(null)
+
+            // Then
+            val captor = argumentCaptor<User>()
+            verify(userRepository, times(2)).save(captor.capture())
+            val savedIds = captor.allValues.map { it.employeeId }
+            assertThat(savedIds).containsExactly("00000001", "00000002")
+        }
+    }
+
+    @Nested
+    @DisplayName("seedUser - 부분 존재 및 동일 지점 검증")
+    inner class PartialAndGroupTests {
+
+        @Test
+        @DisplayName("부분 존재 - 00000001만 존재 -> 나머지 2명만 생성")
+        fun createsOnlyMissing_whenPartiallyExists() {
+            // Given
+            whenever(userRepository.existsByEmployeeId("00000001")).thenReturn(true)
+            whenever(userRepository.existsByEmployeeId("00000002")).thenReturn(false)
+            whenever(userRepository.existsByEmployeeId("00000003")).thenReturn(false)
+            whenever(passwordEncoder.encode("1234")).thenReturn("encoded_password")
+            whenever(userRepository.save(any<User>())).thenAnswer { it.getArgument<User>(0) }
+            stubOtherSeedsExist()
+
+            // When
+            localDataInitializer.run(null)
+
+            // Then
+            val captor = argumentCaptor<User>()
+            verify(userRepository, times(2)).save(captor.capture())
+            val savedIds = captor.allValues.map { it.employeeId }
+            assertThat(savedIds).containsExactly("00000002", "00000003")
+        }
+
+        @Test
+        @DisplayName("동일 지점 소속 검증 - 세 사용자 모두 테스트지점")
+        fun allUsers_sameBranch() {
+            // Given
+            stubAllUsersNotExist()
+            stubOtherSeedsExist()
+
+            // When
+            localDataInitializer.run(null)
+
+            // Then
+            val users = captureAllSavedUsers()
+            assertThat(users).hasSize(3)
+            users.forEach { user ->
                 assertThat(user.orgName).isEqualTo("테스트지점")
-                assertThat(user.password).isEqualTo("encoded_password")
-                assertThat(user.passwordChangeRequired).isFalse()
-            })
+            }
+        }
+
+        @Test
+        @DisplayName("전체 멱등성 - 세 사용자 모두 존재 -> save 미호출")
+        fun noSave_whenAllExist() {
+            // Given
+            stubAllUsersExist()
+            stubOtherSeedsExist()
+
+            // When
+            localDataInitializer.run(null)
+
+            // Then
+            verify(userRepository, never()).save(any<User>())
         }
     }
 
@@ -110,7 +320,7 @@ class LocalDataInitializerTest {
         @DisplayName("정상 생성 - 활성 약관 없음 -> AgreementWord 생성 및 저장")
         fun run_createsAgreementWord_whenNotExists() {
             // Given
-            whenever(userRepository.existsByEmployeeId("00000009")).thenReturn(true)
+            stubAllUsersExist()
             whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
                 .thenReturn(Optional.empty())
             whenever(agreementWordRepository.save(any<AgreementWord>()))
@@ -127,9 +337,8 @@ class LocalDataInitializerTest {
         @DisplayName("멱등성 - 활성 약관 이미 존재 -> 저장 skip")
         fun run_skipsAgreementWord_whenAlreadyExists() {
             // Given
-            whenever(userRepository.existsByEmployeeId("00000009")).thenReturn(true)
-            whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
-                .thenReturn(Optional.of(AgreementWord()))
+            stubAllUsersExist()
+            stubOtherSeedsExist()
 
             // When
             localDataInitializer.run(null)
@@ -142,7 +351,7 @@ class LocalDataInitializerTest {
         @DisplayName("정상 생성 - 생성된 AgreementWord의 필드 확인")
         fun run_createsAgreementWordWithCorrectData() {
             // Given
-            whenever(userRepository.existsByEmployeeId("00000009")).thenReturn(true)
+            stubAllUsersExist()
             whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
                 .thenReturn(Optional.empty())
             whenever(agreementWordRepository.save(any<AgreementWord>()))
@@ -152,7 +361,7 @@ class LocalDataInitializerTest {
             localDataInitializer.run(null)
 
             // Then
-            verify(agreementWordRepository).save(org.mockito.kotlin.check<AgreementWord> { aw ->
+            verify(agreementWordRepository).save(check<AgreementWord> { aw ->
                 assertThat(aw.name).isEqualTo("AGR-LOCAL-001")
                 assertThat(aw.contents).contains("[LOCAL 개발용]")
                 assertThat(aw.contents).contains("위치정보 수집·이용 동의서")
@@ -161,26 +370,6 @@ class LocalDataInitializerTest {
                 assertThat(aw.activeDate).isNotNull()
                 assertThat(aw.createdDate).isNotNull()
             })
-        }
-
-        @Test
-        @DisplayName("시드 계정 + 약관 동시 생성 - 두 테이블 모두 비어 있음 -> 모두 생성")
-        fun run_createsBoth_whenNeitherExists() {
-            // Given
-            whenever(userRepository.existsByEmployeeId("00000009")).thenReturn(false)
-            whenever(passwordEncoder.encode("1234")).thenReturn("encoded_password")
-            whenever(userRepository.save(any<User>())).thenAnswer { it.getArgument<User>(0) }
-            whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
-                .thenReturn(Optional.empty())
-            whenever(agreementWordRepository.save(any<AgreementWord>()))
-                .thenAnswer { it.getArgument<AgreementWord>(0) }
-
-            // When
-            localDataInitializer.run(null)
-
-            // Then
-            verify(userRepository).save(any<User>())
-            verify(agreementWordRepository).save(any<AgreementWord>())
         }
     }
 
@@ -192,16 +381,15 @@ class LocalDataInitializerTest {
         @DisplayName("정상 생성 - 공지 없음 -> Notice 5건 생성")
         fun run_createsNotices_whenNotExists() {
             // Given
-            whenever(userRepository.existsByEmployeeId("00000009")).thenReturn(true)
-            whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
-                .thenReturn(Optional.of(AgreementWord()))
+            stubAllUsersExist()
+            stubOtherSeedsExist()
             whenever(noticeRepository.count()).thenReturn(0L)
 
             // When
             localDataInitializer.run(null)
 
             // Then
-            verify(noticeRepository).saveAll(org.mockito.kotlin.check<List<Notice>> { notices ->
+            verify(noticeRepository).saveAll(check<List<Notice>> { notices ->
                 assertThat(notices).hasSize(5)
             })
         }
@@ -210,9 +398,8 @@ class LocalDataInitializerTest {
         @DisplayName("멱등성 - 공지 이미 존재 -> 저장 skip")
         fun run_skipsNotices_whenAlreadyExists() {
             // Given
-            whenever(userRepository.existsByEmployeeId("00000009")).thenReturn(true)
-            whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
-                .thenReturn(Optional.of(AgreementWord()))
+            stubAllUsersExist()
+            stubOtherSeedsExist()
             whenever(noticeRepository.count()).thenReturn(3L)
 
             // When
@@ -226,17 +413,15 @@ class LocalDataInitializerTest {
         @DisplayName("정상 생성 - 시드 데이터 필드 검증")
         fun run_createsNoticesWithCorrectData() {
             // Given
-            whenever(userRepository.existsByEmployeeId("00000009")).thenReturn(true)
-            whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
-                .thenReturn(Optional.of(AgreementWord()))
+            stubAllUsersExist()
+            stubOtherSeedsExist()
             whenever(noticeRepository.count()).thenReturn(0L)
 
             // When
             localDataInitializer.run(null)
 
             // Then
-            verify(noticeRepository).saveAll(org.mockito.kotlin.check<List<Notice>> { notices ->
-                // ALL 카테고리 3건
+            verify(noticeRepository).saveAll(check<List<Notice>> { notices ->
                 val allNotices = notices.filter { it.category == "ALL" }
                 assertThat(allNotices).hasSize(3)
                 allNotices.forEach { notice ->
@@ -247,7 +432,6 @@ class LocalDataInitializerTest {
                     assertThat(notice.contents).contains("[LOCAL 개발용]")
                 }
 
-                // BRANCH 카테고리 2건
                 val branchNotices = notices.filter { it.category == "BRANCH" }
                 assertThat(branchNotices).hasSize(2)
                 branchNotices.forEach { notice ->
@@ -257,38 +441,12 @@ class LocalDataInitializerTest {
                     assertThat(notice.isDeleted).isFalse()
                 }
 
-                // eduCategory 확인
                 val eduNotice = notices.find { it.name == "NTC-LOCAL-003" }
                 assertThat(eduNotice?.eduCategory).isEqualTo("교육")
 
-                // createdDate 분산 확인
                 val dates = notices.mapNotNull { it.createdDate }
                 assertThat(dates).hasSize(5)
                 assertThat(dates).isSorted()
-            })
-        }
-
-        @Test
-        @DisplayName("시드 계정 + 약관 + 공지 동시 생성 - 세 테이블 모두 비어 있음 -> 모두 생성")
-        fun run_createsAll_whenNoneExists() {
-            // Given
-            whenever(userRepository.existsByEmployeeId("00000009")).thenReturn(false)
-            whenever(passwordEncoder.encode("1234")).thenReturn("encoded_password")
-            whenever(userRepository.save(any<User>())).thenAnswer { it.getArgument<User>(0) }
-            whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
-                .thenReturn(Optional.empty())
-            whenever(agreementWordRepository.save(any<AgreementWord>()))
-                .thenAnswer { it.getArgument<AgreementWord>(0) }
-            whenever(noticeRepository.count()).thenReturn(0L)
-
-            // When
-            localDataInitializer.run(null)
-
-            // Then
-            verify(userRepository).save(any<User>())
-            verify(agreementWordRepository).save(any<AgreementWord>())
-            verify(noticeRepository).saveAll(org.mockito.kotlin.check<List<Notice>> { notices ->
-                assertThat(notices).hasSize(5)
             })
         }
     }
