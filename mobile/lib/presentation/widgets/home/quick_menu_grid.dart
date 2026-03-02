@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../app_router.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/app_colors.dart';
@@ -36,7 +37,7 @@ class QuickMenuGrid extends StatelessWidget {
 
   /// 기본 메뉴 목록
   static const List<QuickMenuItem> defaultMenuItems = [
-    QuickMenuItem(assetPath: 'assets/images/ico_quick1.png', label: '내 일정'),
+    QuickMenuItem(assetPath: 'assets/images/ico_quick1.png', label: '내 일정', route: AppRouter.myScheduleCalendar),
     QuickMenuItem(assetPath: 'assets/images/ico_quick2.png', label: '매출 현황'),
     QuickMenuItem(assetPath: 'assets/images/ico_quick3.png', label: '주문 관리'),
     QuickMenuItem(assetPath: 'assets/images/ico_quick4.png', label: '활동 등록'),
