@@ -75,15 +75,9 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
     );
   }
 
-  /// 주문 FAB 탭
+  /// 주문 FAB 탭 → 주문서 작성 화면으로 이동
   void _onFabTap() {
-    // 주문서 작성 화면은 별도 스펙으로 구현 예정
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('주문서 작성 화면은 준비 중입니다'),
-        duration: Duration(seconds: 2),
-      ),
-    );
+    AppRouter.navigateTo(context, AppRouter.orderForm);
   }
 
   /// 정렬 버튼 탭
