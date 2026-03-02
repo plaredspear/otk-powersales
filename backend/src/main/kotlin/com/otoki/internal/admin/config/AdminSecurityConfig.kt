@@ -20,7 +20,7 @@ class AdminSecurityConfig(
     @Bean
     fun adminSecurityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
-            .securityMatcher("/admin/**")
+            .securityMatcher("/admin", "/admin/**")
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) }
             .csrf { /* enabled by default */ }
             .authorizeHttpRequests { auth ->
