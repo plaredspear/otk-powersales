@@ -4,12 +4,11 @@ import com.otoki.internal.education.entity.EducationPost
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
-import org.springframework.data.jpa.repository.Query
 
 /**
  * 교육 게시물 Repository
  */
-interface EducationPostRepository : JpaRepository<EducationPost, String> {
+interface EducationPostRepository : JpaRepository<EducationPost, String>, EducationPostRepositoryCustom {
 
     /**
      * 카테고리별 게시물 조회 (페이지네이션)
@@ -17,23 +16,6 @@ interface EducationPostRepository : JpaRepository<EducationPost, String> {
      */
     fun findByEduCodeOrderByInstDateDesc(
         eduCode: String,
-        pageable: Pageable
-    ): Page<EducationPost>
-
-    /**
-     * 카테고리별 게시물 검색 (타이틀 + 내용 LIKE 검색, 페이지네이션)
-     */
-    @Query(
-        """
-        SELECT p FROM EducationPost p
-        WHERE p.eduCode = :eduCode
-          AND (p.eduTitle LIKE %:search% OR p.eduContent LIKE %:search%)
-        ORDER BY p.instDate DESC
-        """
-    )
-    fun findByEduCodeAndSearchWithPaging(
-        eduCode: String,
-        search: String,
         pageable: Pageable
     ): Page<EducationPost>
 
