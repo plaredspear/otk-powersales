@@ -83,13 +83,15 @@ otoki/                          # 프로젝트 루트
 ### 워크플로우 (docs/specs/ 폴더 기반)
 
 ```
-1. 스펙 작성 (/spec) → docs/specs/backlog/<번호>-<기능명>/ 에 스펙 생성
-2. AI 리뷰 (/spec-review) → 터미널에 리포트 출력
-3. 사용자 검토 → 승인 → docs/specs/ready/ 로 이동
-4. /impl → ready/ 에서 스펙 읽기 → impl worktree에서 구현 + 테스트 + 커밋
-5. /complete-task → main worktree에서 merge --no-ff → impl worktree rebase
-6. 완료 → docs/specs/completed/ 로 이동
+1. 스펙 작성 → docs/specs/backlog/<번호>-<기능명>/ 에 스펙 생성
+   ↳ 자동으로 /spec-review 실행 (AI 리뷰 → 터미널에 리포트 출력)
+2. 사용자 검토 → 승인 → docs/specs/ready/ 로 이동
+3. /impl → ready/ 에서 스펙 읽기 → impl worktree에서 구현 + 테스트 + 커밋
+4. /complete-task → main worktree에서 merge --no-ff → impl worktree rebase
+5. 완료 → docs/specs/completed/ 로 이동
 ```
+
+> **자동 리뷰 규칙**: 스펙 파일 작성이 완료되면, `.claude/commands/spec-review.md`를 읽고 그 지시사항에 따라 리뷰를 수행한다. 별도 사용자 요청 없이도 스펙 작성 직후 자동으로 실행한다.
 
 ### 머지 예시
 
