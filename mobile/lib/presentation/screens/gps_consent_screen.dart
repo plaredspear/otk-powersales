@@ -66,10 +66,7 @@ class _GpsConsentScreenState extends ConsumerState<GpsConsentScreen> {
       await ref.read(authProvider.notifier).recordGpsConsent(
             agreementNumber: _agreementNumber,
           );
-      // 동의 완료 후 pop (원래 화면으로 복귀)
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
+      // auth state가 isAuthenticated로 변경되면 main.dart 리스너가 자동 네비게이션
     } catch (e) {
       setState(() {
         _isSaving = false;
