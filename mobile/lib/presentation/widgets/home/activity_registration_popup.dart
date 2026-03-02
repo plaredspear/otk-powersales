@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../app_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -41,18 +42,22 @@ class ActivityRegistrationPopup extends StatelessWidget {
     ActivityMenuItem(
       icon: Icons.access_time,
       label: '유통기한 관리',
+      route: AppRouter.shelfLife,
     ),
     ActivityMenuItem(
       icon: Icons.fact_check_outlined,
       label: '현장점검',
+      route: AppRouter.inspectionRegister,
     ),
     ActivityMenuItem(
       icon: Icons.report_problem_outlined,
       label: '클레임 등록',
+      route: AppRouter.claimRegister,
     ),
     ActivityMenuItem(
       icon: Icons.lightbulb_outline,
       label: '제안하기',
+      route: AppRouter.suggestionRegister,
     ),
   ];
 
@@ -93,57 +98,9 @@ class ActivityRegistrationPopup extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.lg),
 
-          // 타이틀
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '활동등록 하기',
-                style: AppTypography.headlineMedium,
-              ),
-              // X 닫기 버튼
-              GestureDetector(
-                onTap: () => Navigator.of(context).pop(),
-                child: const Icon(
-                  Icons.close,
-                  size: AppSpacing.iconSize,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          const Divider(height: 1, color: AppColors.divider),
-          const SizedBox(height: AppSpacing.sm),
-
           // 메뉴 리스트
           ...defaultMenuItems.map(
             (item) => _buildMenuItem(context, item),
-          ),
-
-          const SizedBox(height: AppSpacing.sm),
-
-          // 닫기 버튼
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: () => Navigator.of(context).pop(),
-              style: OutlinedButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(vertical: AppSpacing.md),
-                shape: RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius.circular(AppSpacing.radiusLg),
-                ),
-                side: const BorderSide(color: AppColors.border),
-              ),
-              child: Text(
-                '닫기',
-                style: AppTypography.labelLarge.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ),
           ),
 
           // SafeArea 하단 여백

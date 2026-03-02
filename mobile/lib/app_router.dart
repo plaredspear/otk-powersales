@@ -20,6 +20,7 @@ import 'presentation/pages/product_search_page.dart';
 import 'presentation/pages/my_stores_page.dart';
 import 'presentation/pages/product_search_result_page.dart';
 import 'presentation/pages/shelf_life_list_page.dart';
+import 'presentation/pages/suggestion_register_page.dart';
 import 'presentation/pages/shelf_life_delete_page.dart';
 import 'presentation/pages/shelf_life_register_page.dart';
 import 'presentation/pages/shelf_life_edit_page.dart';
@@ -64,6 +65,7 @@ class AppRouter {
   static const String inspectionDetail = '/inspection-detail';
   static const String inspectionRegister = '/inspection-register';
   static const String claimRegister = '/claim/register';
+  static const String suggestionRegister = '/suggestion/register';
   static const String education = '/education';
   static const String educationList = '/education/list';
   static const String notices = '/notices';
@@ -130,6 +132,7 @@ class AppRouter {
         },
         inspectionRegister: (context) => const InspectionRegisterPage(),
         claimRegister: (context) => const ClaimRegisterPage(),
+        suggestionRegister: (context) => const SuggestionRegisterPage(),
         education: (context) => const EducationMainPage(),
         educationList: (context) {
           final category =
