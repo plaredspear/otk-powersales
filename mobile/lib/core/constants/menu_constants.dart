@@ -77,7 +77,7 @@ abstract final class MenuConstants {
         MenuItem(
           id: 'change-password',
           label: '비밀번호 변경',
-          route: '/change-password',
+          route: '/verify-password',
         ),
       ],
     ),

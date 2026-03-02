@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../providers/auth_provider.dart';
 import '../providers/password_provider.dart';
 
 /// 현재 비밀번호 확인 페이지 (F54 1단계)
@@ -76,8 +77,7 @@ class _VerifyPasswordPageState extends ConsumerState<VerifyPasswordPage> {
 
   @override
   Widget build(BuildContext context) {
-    // TODO: 실제로는 auth provider에서 현재 로그인한 사용자 정보를 가져와야 함
-    const employeeId = '12345678'; // Mock 데이터
+    final employeeId = ref.watch(authProvider).user?.employeeId ?? '';
 
     return Scaffold(
       appBar: AppBar(
