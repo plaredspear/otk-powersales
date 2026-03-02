@@ -80,7 +80,7 @@ class NoticeCarousel extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.card,
           borderRadius: AppSpacing.cardBorderRadius,
-          border: Border.all(color: AppColors.border, width: 1),
+          boxShadow: AppSpacing.cardShadow,
         ),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.md),
@@ -144,7 +144,7 @@ class NoticeCarousel extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.card,
           borderRadius: AppSpacing.cardBorderRadius,
-          border: Border.all(color: AppColors.border, width: 1),
+          boxShadow: AppSpacing.cardShadow,
         ),
         child: Center(
           child: Column(

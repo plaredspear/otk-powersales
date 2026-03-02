@@ -113,13 +113,13 @@ abstract final class AppSpacing {
   static const double tabIndicatorWeight = 3;
 
   // ─── Elevation / Shadow ──────────────────────────────────
-  /// 카드 기본 그림자
+  /// 카드 기본 그림자 (기존 소스 CSS: box-shadow: 0 3px 10px rgba(0,0,0,0.1))
   static List<BoxShadow> get cardShadow => [
         BoxShadow(
           // ignore: deprecated_member_use
-          color: const Color(0xFF000000).withOpacity(0.08),
-          blurRadius: 3,
-          offset: const Offset(0, 1),
+          color: const Color(0xFF000000).withOpacity(0.1),
+          blurRadius: 10,
+          offset: const Offset(0, 3),
         ),
       ];
 
