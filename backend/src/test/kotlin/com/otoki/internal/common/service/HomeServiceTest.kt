@@ -11,6 +11,7 @@ import com.otoki.internal.safetycheck.dto.response.SafetyCheckTodayResponse
 import com.otoki.internal.safetycheck.service.SafetyCheckService
 import com.otoki.internal.schedule.entity.Schedule
 import com.otoki.internal.schedule.repository.ScheduleRepository
+import com.otoki.internal.shelflife.repository.ShelfLifeRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
@@ -45,6 +46,9 @@ class HomeServiceTest {
 
     @Mock
     private lateinit var safetyCheckService: SafetyCheckService
+
+    @Mock
+    private lateinit var shelfLifeRepository: ShelfLifeRepository
 
     @InjectMocks
     private lateinit var homeService: HomeService
@@ -195,6 +199,112 @@ class HomeServiceTest {
 
             // Then
             assertThat(result.safetyCheckRequired).isFalse()
+        }
+
+        // ========== 유통기한 임박 알림 ==========
+
+        @Test
+        @DisplayName("유통기한 알림 - sfid로 오늘 알람 3건 -> expiryCount=3, 프로필 정보 포함")
+        fun expiryAlert_withCount() {
+            // Given
+            val userId = 1L
+            val userSfid = "a0B000000012345"
+            val user = createUser(id = userId, sfid = userSfid, appAuthority = null)
+
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(scheduleRepository.findByEmployeeIdAndWorkingDate(any(), any()))
+                .thenReturn(emptyList())
+            whenever(safetyCheckService.getTodayStatus(any()))
+                .thenReturn(SafetyCheckTodayResponse(completed = true))
+            whenever(noticeRepository.findRecentNotices(any(), any(), any(), any()))
+                .thenReturn(emptyList())
+            whenever(shelfLifeRepository.countByEmployeeIdAndAlarmDate(eq(userSfid), any()))
+                .thenReturn(3L)
+
+            // When
+            val result = homeService.getHomeData(userId)
+
+            // Then
+            assertThat(result.expiryAlert).isNotNull
+            assertThat(result.expiryAlert!!.expiryCount).isEqualTo(3)
+            assertThat(result.expiryAlert!!.branchName).isEqualTo("부산1지점")
+            assertThat(result.expiryAlert!!.employeeName).isEqualTo("최금주")
+            assertThat(result.expiryAlert!!.employeeId).isEqualTo("20030117")
+        }
+
+        @Test
+        @DisplayName("유통기한 알림 0건 - 오늘 알람 0건 -> expiryAlert not null, expiryCount=0")
+        fun expiryAlert_zeroCount() {
+            // Given
+            val userId = 1L
+            val userSfid = "a0B000000012345"
+            val user = createUser(id = userId, sfid = userSfid, appAuthority = null)
+
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(scheduleRepository.findByEmployeeIdAndWorkingDate(any(), any()))
+                .thenReturn(emptyList())
+            whenever(safetyCheckService.getTodayStatus(any()))
+                .thenReturn(SafetyCheckTodayResponse(completed = true))
+            whenever(noticeRepository.findRecentNotices(any(), any(), any(), any()))
+                .thenReturn(emptyList())
+            whenever(shelfLifeRepository.countByEmployeeIdAndAlarmDate(eq(userSfid), any()))
+                .thenReturn(0L)
+
+            // When
+            val result = homeService.getHomeData(userId)
+
+            // Then
+            assertThat(result.expiryAlert).isNotNull
+            assertThat(result.expiryAlert!!.expiryCount).isEqualTo(0)
+        }
+
+        @Test
+        @DisplayName("유통기한 알림 sfid null - sfid 없는 사용자 -> expiryCount=0")
+        fun expiryAlert_sfidNull() {
+            // Given
+            val userId = 1L
+            val user = createUser(id = userId, sfid = null, appAuthority = null)
+
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(scheduleRepository.findByEmployeeIdAndWorkingDate(any(), any()))
+                .thenReturn(emptyList())
+            whenever(safetyCheckService.getTodayStatus(any()))
+                .thenReturn(SafetyCheckTodayResponse(completed = true))
+            whenever(noticeRepository.findRecentNotices(any(), any(), any(), any()))
+                .thenReturn(emptyList())
+
+            // When
+            val result = homeService.getHomeData(userId)
+
+            // Then
+            assertThat(result.expiryAlert).isNotNull
+            assertThat(result.expiryAlert!!.expiryCount).isEqualTo(0)
+        }
+
+        @Test
+        @DisplayName("유통기한 알림 orgName null - orgName 없는 사용자 -> branchName 빈 문자열")
+        fun expiryAlert_orgNameNull() {
+            // Given
+            val userId = 1L
+            val userSfid = "a0B000000012345"
+            val user = createUser(id = userId, sfid = userSfid, orgName = null, appAuthority = null)
+
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(scheduleRepository.findByEmployeeIdAndWorkingDate(any(), any()))
+                .thenReturn(emptyList())
+            whenever(safetyCheckService.getTodayStatus(any()))
+                .thenReturn(SafetyCheckTodayResponse(completed = true))
+            whenever(noticeRepository.findRecentNotices(any(), any(), any(), any()))
+                .thenReturn(emptyList())
+            whenever(shelfLifeRepository.countByEmployeeIdAndAlarmDate(eq(userSfid), any()))
+                .thenReturn(1L)
+
+            // When
+            val result = homeService.getHomeData(userId)
+
+            // Then
+            assertThat(result.expiryAlert).isNotNull
+            assertThat(result.expiryAlert!!.branchName).isEqualTo("")
         }
 
         // ========== 정렬 ==========
@@ -373,7 +483,7 @@ class HomeServiceTest {
         id: Long = 1L,
         employeeId: String = "20030117",
         name: String = "최금주",
-        orgName: String = "부산1지점",
+        orgName: String? = "부산1지점",
         sfid: String? = null,
         appAuthority: String? = null
     ): User {
