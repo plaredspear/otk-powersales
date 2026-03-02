@@ -1,5 +1,7 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/network/dio_provider.dart';
+import '../../core/utils/error_utils.dart';
 import '../../data/datasources/my_schedule_api_datasource.dart';
 import '../../data/repositories/my_schedule_repository_impl.dart';
 import '../../domain/repositories/my_schedule_repository.dart';
@@ -47,7 +49,8 @@ class MyScheduleCalendarNotifier extends StateNotifier<MyScheduleCalendarState> 
       final workDays = await _getMonthlySchedule(year, month);
       state = state.toData(workDays);
     } catch (e) {
-      state = state.toError(e.toString());
+      if (e is DioException && e.type == DioExceptionType.cancel) return;
+      state = state.toError(extractErrorMessage(e));
     }
   }
 
@@ -112,7 +115,8 @@ class MyScheduleDetailNotifier extends StateNotifier<MyScheduleDetailState> {
       final scheduleInfo = await _getDailySchedule(date);
       state = state.toData(scheduleInfo);
     } catch (e) {
-      state = state.toError(e.toString());
+      if (e is DioException && e.type == DioExceptionType.cancel) return;
+      state = state.toError(extractErrorMessage(e));
     }
   }
 

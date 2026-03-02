@@ -1,9 +1,12 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/domain/entities/daily_schedule_info.dart';
 import 'package:mobile/domain/entities/monthly_schedule_day.dart';
 import 'package:mobile/domain/entities/schedule_store_detail.dart';
 import 'package:mobile/domain/repositories/my_schedule_repository.dart';
+import 'package:mobile/domain/usecases/get_daily_schedule.dart';
+import 'package:mobile/domain/usecases/get_monthly_schedule.dart';
 import 'package:mobile/presentation/providers/my_schedule_provider.dart';
 import 'package:mobile/presentation/providers/my_schedule_state.dart';
 
@@ -11,7 +14,7 @@ import 'package:mobile/presentation/providers/my_schedule_state.dart';
 class MockMyScheduleRepository implements MyScheduleRepository {
   List<MonthlyScheduleDay>? monthlySchedule;
   DailyScheduleInfo? dailySchedule;
-  Exception? exceptionToThrow;
+  Object? exceptionToThrow;
 
   @override
   Future<List<MonthlyScheduleDay>> getMonthlySchedule(
@@ -209,6 +212,88 @@ void main() {
       final state = MyScheduleDetailState.initial().toData(scheduleInfo);
 
       expect(state.unregisteredCount, 1);
+    });
+  });
+
+  group('MyScheduleCalendarNotifier', () {
+    late MockMyScheduleRepository mockRepo;
+
+    setUp(() {
+      mockRepo = MockMyScheduleRepository();
+      mockRepo.monthlySchedule = [];
+    });
+
+    MyScheduleCalendarNotifier createNotifier() {
+      final useCase = GetMonthlySchedule(mockRepo);
+      return MyScheduleCalendarNotifier(useCase);
+    }
+
+    test('cancel DioException 발생 시 에러 상태 설정하지 않음', () async {
+      final notifier = createNotifier();
+      // 초기 로드 완료 대기
+      await Future<void>.delayed(Duration.zero);
+
+      mockRepo.exceptionToThrow = DioException(
+        requestOptions: RequestOptions(path: '/test'),
+        type: DioExceptionType.cancel,
+        message: '',
+      );
+
+      await notifier.loadMonthlySchedule(2026, 3);
+
+      expect(notifier.state.errorMessage, isNull);
+      expect(notifier.state.isError, false);
+    });
+
+    test('일반 에러 발생 시 extractErrorMessage로 메시지 설정', () async {
+      final notifier = createNotifier();
+      await Future<void>.delayed(Duration.zero);
+
+      mockRepo.exceptionToThrow = Exception('네트워크 오류');
+
+      await notifier.loadMonthlySchedule(2026, 3);
+
+      expect(notifier.state.errorMessage, '네트워크 오류');
+      expect(notifier.state.isError, true);
+    });
+  });
+
+  group('MyScheduleDetailNotifier', () {
+    late MockMyScheduleRepository mockRepo;
+
+    setUp(() {
+      mockRepo = MockMyScheduleRepository();
+    });
+
+    MyScheduleDetailNotifier createNotifier() {
+      final useCase = GetDailySchedule(mockRepo);
+      return MyScheduleDetailNotifier(useCase);
+    }
+
+    test('cancel DioException 발생 시 에러 상태 설정하지 않음', () async {
+      final notifier = createNotifier();
+
+      mockRepo.exceptionToThrow = DioException(
+        requestOptions: RequestOptions(path: '/test'),
+        type: DioExceptionType.cancel,
+        message: '',
+      );
+
+      await notifier.loadDailySchedule(DateTime(2026, 3, 2));
+
+      expect(notifier.state.errorMessage, isNull);
+      expect(notifier.state.isError, false);
+    });
+
+    test('일반 에러 발생 시 extractErrorMessage로 메시지 설정', () async {
+      final notifier = createNotifier();
+
+      mockRepo.exceptionToThrow = Exception('서버 오류');
+
+      await notifier.loadDailySchedule(DateTime(2026, 3, 2));
+
+      expect(notifier.state.errorMessage, '서버 오류');
+      expect(notifier.state.isError, true);
     });
   });
 }

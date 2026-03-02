@@ -1,11 +1,14 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/data/datasources/auth_interceptor.dart';
 import 'package:mobile/data/datasources/auth_local_datasource.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   late FakeAuthLocalDataSource fakeLocalDataSource;
   late Dio dio;
   late AuthInterceptor interceptor;
@@ -107,6 +110,85 @@ void main() {
       );
     });
   });
+
+  group('_handle403', () {
+    Dio createDioWith403({
+      required String body,
+      String contentType = 'application/json; charset=utf-8',
+    }) {
+      final d = Dio(BaseOptions(baseUrl: 'https://api.test.com'));
+      final localDS = FakeAuthLocalDataSource();
+      d.interceptors.add(
+        AuthInterceptor(localDataSource: localDS, dio: d),
+      );
+      d.httpClientAdapter = _Mock403Adapter(
+        body: body,
+        contentType: contentType,
+      );
+      return d;
+    }
+
+    test('Map 응답에서 GPS_CONSENT_REQUIRED 감지 시 cancel DioException 반환',
+        () async {
+      final d = createDioWith403(
+        body:
+            '{"success":false,"data":null,"error":{"code":"GPS_CONSENT_REQUIRED","message":"GPS 사용 동의가 필요합니다"}}',
+      );
+
+      try {
+        await d.get('/api/v1/schedule/monthly');
+        fail('Expected DioException');
+      } on DioException catch (e) {
+        expect(e.type, DioExceptionType.cancel);
+        expect(e.message, '');
+      }
+    });
+
+    test('String JSON 응답에서 GPS_CONSENT_REQUIRED 감지 시 cancel DioException 반환',
+        () async {
+      final d = createDioWith403(
+        body:
+            '{"success":false,"data":null,"error":{"code":"GPS_CONSENT_REQUIRED","message":"GPS 사용 동의가 필요합니다"}}',
+        contentType: 'text/plain',
+      );
+
+      try {
+        await d.get('/api/v1/schedule/monthly');
+        fail('Expected DioException');
+      } on DioException catch (e) {
+        expect(e.type, DioExceptionType.cancel);
+      }
+    });
+
+    test('GPS 외 403 에러는 일반 에러로 전달', () async {
+      final d = createDioWith403(
+        body:
+            '{"success":false,"data":null,"error":{"code":"ACCESS_DENIED","message":"접근 권한이 없습니다"}}',
+      );
+
+      try {
+        await d.get('/api/v1/admin/users');
+        fail('Expected DioException');
+      } on DioException catch (e) {
+        expect(e.type, DioExceptionType.badResponse);
+        expect(e.response?.statusCode, 403);
+      }
+    });
+
+    test('파싱 불가능한 String 응답은 일반 403 에러로 전달', () async {
+      final d = createDioWith403(
+        body: 'not json',
+        contentType: 'text/plain',
+      );
+
+      try {
+        await d.get('/api/v1/schedule/monthly');
+        fail('Expected DioException');
+      } on DioException catch (e) {
+        expect(e.type, DioExceptionType.badResponse);
+      }
+    });
+  });
 }
 
 // --- Fakes ---
@@ -187,6 +269,33 @@ class FakeAuthLocalDataSource implements AuthLocalDataSource {
 
   // AuthLocalDataSource는 class이므로 noSuchMethod로 미구현 메서드 처리 불필요
   // 모든 public 메서드를 위에서 구현했습니다.
+}
+
+// --- Mock 403 Adapter ---
+
+/// 모든 요청에 403 응답을 반환하는 테스트용 HttpClientAdapter
+class _Mock403Adapter implements HttpClientAdapter {
+  final String body;
+  final String contentType;
+
+  _Mock403Adapter({
+    required this.body,
+    this.contentType = 'application/json; charset=utf-8',
+  });
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    return ResponseBody.fromString(body, 403, headers: {
+      'content-type': [contentType],
+    });
+  }
+
+  @override
+  void close({bool force = false}) {}
 }
 
 // --- Test Data ---

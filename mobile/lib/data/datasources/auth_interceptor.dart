@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -136,13 +137,35 @@ class AuthInterceptor extends Interceptor {
   /// 403 처리: GPS_CONSENT_REQUIRED이면 GPS 동의 화면으로 이동
   void _handle403(DioException err, ErrorInterceptorHandler handler) {
     final data = err.response?.data;
+
+    // 응답 body를 Map으로 변환 (Map 직접 수신 또는 String JSON 디코딩)
+    Map<String, dynamic>? parsed;
     if (data is Map<String, dynamic>) {
-      final error = data['error'];
+      parsed = data;
+    } else if (data is String) {
+      try {
+        final decoded = jsonDecode(data);
+        if (decoded is Map<String, dynamic>) {
+          parsed = decoded;
+        }
+      } catch (_) {
+        // JSON 파싱 실패 → 일반 403 처리
+      }
+    }
+
+    if (parsed != null) {
+      final error = parsed['error'];
       final code = error is Map<String, dynamic> ? error['code'] : null;
       if (code == 'GPS_CONSENT_REQUIRED') {
         _navigateToGpsConsent();
-        // 원래 요청은 에러로 전달 (화면 복귀 후 자연스럽게 재조회)
-        handler.next(err);
+        // cancel 타입으로 교체하여 UI에서 에러 표시 억제
+        handler.reject(
+          DioException(
+            requestOptions: err.requestOptions,
+            type: DioExceptionType.cancel,
+            message: '',
+          ),
+        );
         return;
       }
     }
