@@ -144,6 +144,9 @@ class _HomePageState extends ConsumerState<HomePage> {
               arguments: notice.id,
             );
           },
+          onViewAllTap: () {
+            AppRouter.navigateTo(context, AppRouter.notices);
+          },
         ),
         const SizedBox(height: AppSpacing.xl),
 
