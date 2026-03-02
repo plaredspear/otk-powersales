@@ -1,14 +1,14 @@
-/*
 package com.otoki.internal.order.entity
 
+import com.otoki.internal.common.entity.User
 import jakarta.persistence.*
 import java.time.LocalDate
 import java.time.LocalDateTime
 
-/ **
+/**
  * 주문 Entity
  * 영업사원이 거래처에 등록한 주문 정보를 관리한다.
- * /
+ */
 @Entity
 @Table(
     name = "orders",
@@ -80,4 +80,3 @@ class Order(
         this.updatedAt = LocalDateTime.now()
     }
 }
-*/

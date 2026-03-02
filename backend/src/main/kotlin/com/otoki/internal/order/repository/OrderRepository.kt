@@ -1,4 +1,3 @@
-/*
 package com.otoki.internal.order.repository
 
 import com.otoki.internal.order.entity.ApprovalStatus
@@ -12,16 +11,16 @@ import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
 import java.time.LocalDate
 
-/ **
+/**
  * 주문 Repository
- * /
+ */
 @Repository
 interface OrderRepository : JpaRepository<Order, Long>, JpaSpecificationExecutor<Order> {
 
-    / **
+    /**
      * 사용자별 주문 조회 (동적 필터링 + 페이지네이션)
      * 모든 필터는 선택적 (null이면 조건 미적용)
-     * /
+     */
     @Query(
         "SELECT o FROM Order o " +
         "JOIN FETCH o.store s " +
@@ -46,4 +45,3 @@ interface OrderRepository : JpaRepository<Order, Long>, JpaSpecificationExecutor
         pageable: Pageable
     ): Page<Order>
 }
-*/
