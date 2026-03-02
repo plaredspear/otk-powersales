@@ -1,10 +1,13 @@
 package com.otoki.internal.common.config
 
+import com.otoki.internal.common.security.DomainGuardFilter
 import com.otoki.internal.common.security.GpsConsentFilter
 import com.otoki.internal.common.security.JwtAuthenticationFilter
 import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.boot.web.servlet.FilterRegistrationBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
@@ -22,11 +25,12 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
-@EnableConfigurationProperties(DeviceBindingProperties::class)
+@EnableConfigurationProperties(DeviceBindingProperties::class, DomainProperties::class)
 @Order(2)
 class SecurityConfig(
     private val jwtAuthenticationFilter: JwtAuthenticationFilter,
-    private val gpsConsentFilter: GpsConsentFilter
+    private val gpsConsentFilter: GpsConsentFilter,
+    private val domainProperties: DomainProperties
 ) {
 
     @Bean
@@ -60,5 +64,13 @@ class SecurityConfig(
     @Bean
     fun passwordEncoder(): PasswordEncoder {
         return BCryptPasswordEncoder()
+    }
+
+    @Bean
+    fun domainGuardFilter(): FilterRegistrationBean<DomainGuardFilter> {
+        val registration = FilterRegistrationBean<DomainGuardFilter>()
+        registration.filter = DomainGuardFilter(domainProperties.api, domainProperties.admin)
+        registration.order = Ordered.HIGHEST_PRECEDENCE + 1
+        return registration
     }
 }
