@@ -1,7 +1,8 @@
-import '../../core/utils/error_utils.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/repositories/mock/order_mock_repository.dart';
+import '../../core/network/dio_provider.dart';
+import '../../core/utils/error_utils.dart';
 import '../../domain/usecases/get_client_orders_usecase.dart';
 import 'client_order_list_state.dart';
 import 'order_list_provider.dart';
@@ -21,22 +22,32 @@ final getClientOrdersUseCaseProvider = Provider<GetClientOrdersUseCase>((ref) {
 /// 거래처 선택, 납기일 선택, 페이지네이션 기능을 관리합니다.
 class ClientOrderListNotifier extends StateNotifier<ClientOrderListState> {
   final GetClientOrdersUseCase _getClientOrders;
-  final OrderMockRepository? _mockRepository;
+  final Dio _dio;
 
   ClientOrderListNotifier({
     required GetClientOrdersUseCase getClientOrders,
-    OrderMockRepository? mockRepository,
+    required Dio dio,
   })  : _getClientOrders = getClientOrders,
-        _mockRepository = mockRepository,
+        _dio = dio,
         super(ClientOrderListState.initial());
 
   /// 초기 데이터 로딩
   ///
-  /// 거래처 목록 로딩
+  /// GET /api/v1/stores/my 에서 거래처 목록 로딩
   Future<void> initialize() async {
-    // Mock Repository에서 거래처 목록 로딩
-    if (_mockRepository != null) {
-      state = state.copyWith(stores: _mockRepository.mockClients);
+    try {
+      final response = await _dio.get('/api/v1/stores/my');
+      final data = response.data['data'] as Map<String, dynamic>;
+      final storesJson = data['stores'] as List<dynamic>;
+      final storeMap = <int, String>{};
+      for (final store in storesJson) {
+        final json = store as Map<String, dynamic>;
+        storeMap[json['store_id'] as int] = json['store_name'] as String;
+      }
+      state = state.copyWith(stores: storeMap);
+    } catch (e) {
+      // 거래처 목록 로드 실패: 빈 맵으로 설정
+      state = state.copyWith(stores: const {});
     }
   }
 
@@ -130,14 +141,11 @@ class ClientOrderListNotifier extends StateNotifier<ClientOrderListState> {
 /// ClientOrderList StateNotifier Provider
 final clientOrderListProvider =
     StateNotifierProvider<ClientOrderListNotifier, ClientOrderListState>((ref) {
-  final repository = ref.watch(orderRepositoryProvider);
   final useCase = ref.watch(getClientOrdersUseCaseProvider);
-
-  // Mock Repository인 경우 거래처 목록 접근용으로 전달
-  final mockRepo = repository is OrderMockRepository ? repository : null;
+  final dio = ref.watch(dioProvider);
 
   return ClientOrderListNotifier(
     getClientOrders: useCase,
-    mockRepository: mockRepo,
+    dio: dio,
   );
 });

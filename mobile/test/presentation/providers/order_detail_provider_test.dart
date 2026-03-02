@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mobile/data/repositories/mock/order_mock_repository.dart';
+import '../../helpers/fake_order_repository.dart';
 import 'package:mobile/domain/entities/order.dart';
 import 'package:mobile/domain/entities/order_detail.dart';
 import 'package:mobile/domain/usecases/get_order_detail.dart';
@@ -247,11 +247,11 @@ void main() {
   });
 
   group('OrderDetailNotifier', () {
-    late OrderMockRepository mockRepository;
+    late FakeOrderRepository mockRepository;
     late OrderDetailNotifier notifier;
 
     setUp(() {
-      mockRepository = OrderMockRepository();
+      mockRepository = FakeOrderRepository();
       final getOrderDetail = GetOrderDetail(mockRepository);
       final resendOrder = ResendOrder(mockRepository);
       notifier = OrderDetailNotifier(

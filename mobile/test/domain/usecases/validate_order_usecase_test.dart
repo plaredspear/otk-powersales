@@ -1,15 +1,15 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mobile/data/repositories/mock/order_mock_repository.dart';
+import '../../helpers/fake_order_repository.dart';
 import 'package:mobile/domain/entities/order_draft.dart';
 import 'package:mobile/domain/entities/validation_error.dart';
 import 'package:mobile/domain/usecases/validate_order_usecase.dart';
 
 void main() {
-  late OrderMockRepository repository;
+  late FakeOrderRepository repository;
   late ValidateOrder validateOrder;
 
   setUp(() {
-    repository = OrderMockRepository();
+    repository = FakeOrderRepository();
     validateOrder = ValidateOrder(repository);
   });
 

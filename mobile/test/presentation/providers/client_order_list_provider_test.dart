@@ -1,6 +1,7 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mobile/data/repositories/mock/order_mock_repository.dart';
+import 'package:mobile/core/network/dio_provider.dart';
 import 'package:mobile/domain/entities/client_order.dart';
 import 'package:mobile/domain/entities/order.dart';
 import 'package:mobile/domain/entities/order_cancel.dart';
@@ -12,16 +13,51 @@ import 'package:mobile/domain/repositories/order_repository.dart';
 import 'package:mobile/presentation/providers/client_order_list_provider.dart';
 import 'package:mobile/presentation/providers/order_list_provider.dart';
 
+import '../../helpers/fake_order_repository.dart';
+
+Dio _createMockDio() {
+  final dio = Dio(BaseOptions(baseUrl: 'http://localhost'));
+  dio.interceptors.add(InterceptorsWrapper(
+    onRequest: (options, handler) {
+      if (options.path == '/api/v1/stores/my') {
+        handler.resolve(Response(
+          data: {
+            'success': true,
+            'data': {
+              'stores': [
+                {'store_id': 1, 'store_name': '천사푸드', 'store_code': 'S001', 'address': '', 'representative_name': ''},
+                {'store_id': 2, 'store_name': '(유)경산식품', 'store_code': 'S002', 'address': '', 'representative_name': ''},
+                {'store_id': 3, 'store_name': '대한식품유통', 'store_code': 'S003', 'address': '', 'representative_name': ''},
+                {'store_id': 4, 'store_name': '행복마트', 'store_code': 'S004', 'address': '', 'representative_name': ''},
+                {'store_id': 5, 'store_name': '명품식자재', 'store_code': 'S005', 'address': '', 'representative_name': ''},
+                {'store_id': 6, 'store_name': '서울종합식품', 'store_code': 'S006', 'address': '', 'representative_name': ''},
+                {'store_id': 7, 'store_name': '그린유통', 'store_code': 'S007', 'address': '', 'representative_name': ''},
+                {'store_id': 8, 'store_name': '삼성식품', 'store_code': 'S008', 'address': '', 'representative_name': ''},
+              ]
+            }
+          },
+          statusCode: 200,
+          requestOptions: options,
+        ));
+        return;
+      }
+      handler.reject(DioException(requestOptions: options, message: 'Not mocked'));
+    },
+  ));
+  return dio;
+}
+
 void main() {
   group('ClientOrderListNotifier', () {
     late ProviderContainer container;
-    late OrderMockRepository mockRepository;
+    late FakeOrderRepository fakeRepository;
 
     setUp(() {
-      mockRepository = OrderMockRepository();
+      fakeRepository = FakeOrderRepository();
       container = ProviderContainer(
         overrides: [
-          orderRepositoryProvider.overrideWithValue(mockRepository),
+          orderRepositoryProvider.overrideWithValue(fakeRepository),
+          dioProvider.overrideWithValue(_createMockDio()),
         ],
       );
     });
@@ -217,6 +253,7 @@ void main() {
       final errorContainer = ProviderContainer(
         overrides: [
           orderRepositoryProvider.overrideWithValue(errorRepository),
+          dioProvider.overrideWithValue(_createMockDio()),
         ],
       );
 

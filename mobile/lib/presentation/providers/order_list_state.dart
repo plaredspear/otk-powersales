@@ -75,13 +75,13 @@ class OrderListState {
 
   /// 초기 상태
   factory OrderListState.initial() {
-    // 기본 납기일: 최근 7일
+    // 기본 납기일: 오늘 ~ 오늘+7일 (old_source 기준)
     final now = DateTime.now();
-    final sevenDaysAgo = now.subtract(const Duration(days: 7));
+    final sevenDaysLater = now.add(const Duration(days: 7));
     final fromStr =
-        '${sevenDaysAgo.year}-${sevenDaysAgo.month.toString().padLeft(2, '0')}-${sevenDaysAgo.day.toString().padLeft(2, '0')}';
-    final toStr =
         '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    final toStr =
+        '${sevenDaysLater.year}-${sevenDaysLater.month.toString().padLeft(2, '0')}-${sevenDaysLater.day.toString().padLeft(2, '0')}';
 
     return OrderListState(
       deliveryDateFrom: fromStr,
