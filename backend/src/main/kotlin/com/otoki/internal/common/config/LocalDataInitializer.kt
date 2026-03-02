@@ -35,25 +35,58 @@ class LocalDataInitializer(
     }
 
     private fun seedUser() {
-        val employeeId = "00000009"
+        val encodedPassword = passwordEncoder.encode("1234")
 
-        if (userRepository.existsByEmployeeId(employeeId)) {
-            log.info("시드 계정이 이미 존재합니다: employeeId={}", employeeId)
-            return
+        // 조장 (LEADER)
+        if (!userRepository.existsByEmployeeId("00000001")) {
+            userRepository.save(
+                User(
+                    employeeId = "00000001",
+                    name = "개발테스트",
+                    status = "재직",
+                    appLoginActive = true,
+                    orgName = "테스트지점",
+                    appAuthority = "조장",
+                    password = encodedPassword,
+                    passwordChangeRequired = false
+                )
+            )
+            log.info("시드 계정 생성 완료: employeeId=00000001, name=개발테스트, role=LEADER")
         }
 
-        val user = User(
-            employeeId = employeeId,
-            name = "개발테스트",
-            status = "재직",
-            appLoginActive = true,
-            orgName = "테스트지점",
-            password = passwordEncoder.encode("1234"),
-            passwordChangeRequired = false
-        )
+        // 여사원 (USER)
+        if (!userRepository.existsByEmployeeId("00000002")) {
+            userRepository.save(
+                User(
+                    employeeId = "00000002",
+                    name = "여사원테스트",
+                    status = "재직",
+                    appLoginActive = true,
+                    orgName = "테스트지점",
+                    appAuthority = "여사원",
+                    password = encodedPassword,
+                    passwordChangeRequired = false
+                )
+            )
+            log.info("시드 계정 생성 완료: employeeId=00000002, name=여사원테스트, role=USER")
+        }
 
-        userRepository.save(user)
-        log.info("시드 계정 생성 완료: employeeId={}, name={}", employeeId, user.name)
+        // 지점장 (ADMIN)
+        if (!userRepository.existsByEmployeeId("00000003")) {
+            userRepository.save(
+                User(
+                    employeeId = "00000003",
+                    name = "지점장테스트",
+                    status = "재직",
+                    appLoginActive = true,
+                    orgName = "테스트지점",
+                    appAuthority = "지점장",
+                    password = encodedPassword,
+                    passwordChangeRequired = false
+                )
+            )
+            log.info("시드 계정 생성 완료: employeeId=00000003, name=지점장테스트, role=ADMIN")
+        }
     }
 
     private fun seedNotices() {
