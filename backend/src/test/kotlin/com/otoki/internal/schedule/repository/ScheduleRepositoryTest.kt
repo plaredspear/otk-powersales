@@ -186,4 +186,39 @@ class ScheduleRepositoryTest {
             assertThat(result).isEmpty()
         }
     }
+
+    @Nested
+    @DisplayName("updateCommuteLogId - commuteLogId 업데이트")
+    inner class UpdateCommuteLogIdTests {
+
+        @Test
+        @DisplayName("정상 업데이트 - sfid 일치 시 commuteLogId 변경")
+        fun updateCommuteLogId_success() {
+            // Given
+            val schedule = Schedule(
+                sfid = "SF001",
+                employeeId = testEmployeeId,
+                workingDate = LocalDate.now(),
+                workingType = "순회"
+            )
+            testEntityManager.persistAndFlush(schedule)
+            testEntityManager.clear()
+
+            // When
+            scheduleRepository.updateCommuteLogId("SF001", "OK")
+            testEntityManager.clear()
+
+            // Then
+            val updated = scheduleRepository.findBySfid("SF001")
+            assertThat(updated).isNotNull
+            assertThat(updated!!.commuteLogId).isEqualTo("OK")
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 sfid - 에러 없이 0건 업데이트")
+        fun updateCommuteLogId_nonExistentSfid() {
+            // When & Then (에러 없이 실행)
+            scheduleRepository.updateCommuteLogId("NONE", "OK")
+        }
+    }
 }
