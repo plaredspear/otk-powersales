@@ -230,6 +230,8 @@ module "ecs" {
   log_level_app      = var.ecs_log_level_app
   log_level_security = var.ecs_log_level_security
   orora_mock_enabled = var.ecs_orora_mock_enabled
+  api_domain         = var.domain_name
+  admin_domain       = var.admin_domain_name
 
   db_credentials_arn = module.secrets.db_credentials_arn
   jwt_secret_arn     = module.secrets.jwt_secret_arn
