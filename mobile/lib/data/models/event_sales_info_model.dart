@@ -20,21 +20,21 @@ class EventSalesInfoModel {
 
   factory EventSalesInfoModel.fromJson(Map<String, dynamic> json) {
     return EventSalesInfoModel(
-      eventId: json['eventId'] as String,
-      targetAmount: json['targetAmount'] as int,
-      achievedAmount: json['achievedAmount'] as int,
-      achievementRate: (json['achievementRate'] as num).toDouble(),
-      progressRate: (json['progressRate'] as num).toDouble(),
+      eventId: json['event_id'] as String,
+      targetAmount: json['target_amount'] as int,
+      achievedAmount: json['achieved_amount'] as int,
+      achievementRate: (json['achievement_rate'] as num).toDouble(),
+      progressRate: (json['progress_rate'] as num).toDouble(),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'eventId': eventId,
-      'targetAmount': targetAmount,
-      'achievedAmount': achievedAmount,
-      'achievementRate': achievementRate,
-      'progressRate': progressRate,
+      'event_id': eventId,
+      'target_amount': targetAmount,
+      'achieved_amount': achievedAmount,
+      'achievement_rate': achievementRate,
+      'progress_rate': progressRate,
     };
   }
 

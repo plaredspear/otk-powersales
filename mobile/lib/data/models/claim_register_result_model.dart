@@ -22,11 +22,11 @@ class ClaimRegisterResultModel {
   factory ClaimRegisterResultModel.fromJson(Map<String, dynamic> json) {
     return ClaimRegisterResultModel(
       id: json['id'] as int,
-      storeName: json['storeName'] as String,
-      storeId: json['storeId'] as int,
-      productName: json['productName'] as String,
-      productCode: json['productCode'] as String,
-      createdAt: json['createdAt'] as String,
+      storeName: json['store_name'] as String,
+      storeId: json['store_id'] as int,
+      productName: json['product_name'] as String,
+      productCode: json['product_code'] as String,
+      createdAt: json['created_at'] as String,
     );
   }
 

@@ -21,8 +21,8 @@ class InspectionThemeModel {
     return InspectionThemeModel(
       id: json['id'] as int,
       name: json['name'] as String,
-      startDate: json['startDate'] as String,
-      endDate: json['endDate'] as String,
+      startDate: json['start_date'] as String,
+      endDate: json['end_date'] as String,
     );
   }
 
@@ -31,8 +31,8 @@ class InspectionThemeModel {
     return {
       'id': id,
       'name': name,
-      'startDate': startDate,
-      'endDate': endDate,
+      'start_date': startDate,
+      'end_date': endDate,
     };
   }
 

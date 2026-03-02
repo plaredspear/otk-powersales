@@ -2,7 +2,7 @@ import '../../domain/entities/attendance_result.dart';
 
 /// 출근등록 결과 API 모델 (DTO)
 ///
-/// Backend API의 camelCase JSON을 파싱하여 AttendanceResult 엔티티로 변환합니다.
+/// Backend API의 snake_case JSON을 파싱하여 AttendanceResult 엔티티로 변환합니다.
 class AttendanceResultModel {
   final String scheduleSfid;
   final String storeName;
@@ -20,15 +20,15 @@ class AttendanceResultModel {
     required this.registeredCount,
   });
 
-  /// camelCase JSON에서 파싱
+  /// snake_case JSON에서 파싱
   factory AttendanceResultModel.fromJson(Map<String, dynamic> json) {
     return AttendanceResultModel(
-      scheduleSfid: json['scheduleSfid'] as String,
-      storeName: json['storeName'] as String,
-      workType: json['workType'] as String,
-      distanceKm: (json['distanceKm'] as num).toDouble(),
-      totalCount: json['totalCount'] as int,
-      registeredCount: json['registeredCount'] as int,
+      scheduleSfid: json['schedule_sfid'] as String,
+      storeName: json['store_name'] as String,
+      workType: json['work_type'] as String,
+      distanceKm: (json['distance_km'] as num).toDouble(),
+      totalCount: json['total_count'] as int,
+      registeredCount: json['registered_count'] as int,
     );
   }
 

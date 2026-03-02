@@ -18,7 +18,7 @@ class NoticeImageModel {
     return NoticeImageModel(
       id: json['id'] as int,
       url: json['url'] as String,
-      sortOrder: json['sortOrder'] as int,
+      sortOrder: json['sort_order'] as int,
     );
   }
 
@@ -27,7 +27,7 @@ class NoticeImageModel {
     return {
       'id': id,
       'url': url,
-      'sortOrder': sortOrder,
+      'sort_order': sortOrder,
     };
   }
 
@@ -75,10 +75,10 @@ class NoticePostDetailModel {
     return NoticePostDetailModel(
       id: json['id'] as int,
       category: json['category'] as String,
-      categoryName: json['categoryName'] as String,
+      categoryName: json['category_name'] as String,
       title: json['title'] as String,
       content: json['content'] as String,
-      createdAt: json['createdAt'] as String,
+      createdAt: json['created_at'] as String,
       images: (json['images'] as List)
           .map((item) => NoticeImageModel.fromJson(item as Map<String, dynamic>))
           .toList(),
@@ -90,10 +90,10 @@ class NoticePostDetailModel {
     return {
       'id': id,
       'category': category,
-      'categoryName': categoryName,
+      'category_name': categoryName,
       'title': title,
       'content': content,
-      'createdAt': createdAt,
+      'created_at': createdAt,
       'images': images.map((img) => img.toJson()).toList(),
     };
   }

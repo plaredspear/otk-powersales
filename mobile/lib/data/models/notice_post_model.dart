@@ -22,9 +22,9 @@ class NoticePostModel {
     return NoticePostModel(
       id: json['id'] as int,
       category: json['category'] as String,
-      categoryName: json['categoryName'] as String,
+      categoryName: json['category_name'] as String,
       title: json['title'] as String,
-      createdAt: json['createdAt'] as String,
+      createdAt: json['created_at'] as String,
     );
   }
 
@@ -33,9 +33,9 @@ class NoticePostModel {
     return {
       'id': id,
       'category': category,
-      'categoryName': categoryName,
+      'category_name': categoryName,
       'title': title,
-      'createdAt': createdAt,
+      'created_at': createdAt,
     };
   }
 
@@ -84,9 +84,9 @@ class NoticePostPageModel {
       content: (json['content'] as List)
           .map((item) => NoticePostModel.fromJson(item as Map<String, dynamic>))
           .toList(),
-      totalCount: json['totalCount'] as int,
-      totalPages: json['totalPages'] as int,
-      currentPage: json['currentPage'] as int,
+      totalCount: json['total_count'] as int,
+      totalPages: json['total_pages'] as int,
+      currentPage: json['current_page'] as int,
       size: json['size'] as int,
     );
   }
@@ -95,9 +95,9 @@ class NoticePostPageModel {
   Map<String, dynamic> toJson() {
     return {
       'content': content.map((post) => post.toJson()).toList(),
-      'totalCount': totalCount,
-      'totalPages': totalPages,
-      'currentPage': currentPage,
+      'total_count': totalCount,
+      'total_pages': totalPages,
+      'current_page': currentPage,
       'size': size,
     };
   }

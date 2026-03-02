@@ -18,18 +18,18 @@ class DailySalesSummaryModel {
 
   factory DailySalesSummaryModel.fromJson(Map<String, dynamic> json) {
     return DailySalesSummaryModel(
-      dailySalesId: json['dailySalesId'] as String,
-      salesDate: json['salesDate'] as String,
-      totalAmount: json['totalAmount'] as int,
+      dailySalesId: json['daily_sales_id'] as String,
+      salesDate: json['sales_date'] as String,
+      totalAmount: json['total_amount'] as int,
       status: json['status'] as String,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'dailySalesId': dailySalesId,
-      'salesDate': salesDate,
-      'totalAmount': totalAmount,
+      'daily_sales_id': dailySalesId,
+      'sales_date': salesDate,
+      'total_amount': totalAmount,
       'status': status,
     };
   }

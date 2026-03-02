@@ -2,7 +2,7 @@ import '../../domain/entities/store_schedule_item.dart';
 
 /// 거래처 일정 API 모델 (DTO)
 ///
-/// Backend API의 camelCase JSON을 파싱하여 StoreScheduleItem 엔티티로 변환합니다.
+/// Backend API의 snake_case JSON을 파싱하여 StoreScheduleItem 엔티티로 변환합니다.
 class StoreScheduleItemModel {
   final String scheduleSfid;
   final String? storeSfid;
@@ -26,18 +26,18 @@ class StoreScheduleItemModel {
     required this.isRegistered,
   });
 
-  /// camelCase JSON에서 파싱
+  /// snake_case JSON에서 파싱
   factory StoreScheduleItemModel.fromJson(Map<String, dynamic> json) {
     return StoreScheduleItemModel(
-      scheduleSfid: json['scheduleSfid'] as String,
-      storeSfid: json['storeSfid'] as String?,
-      storeName: json['storeName'] as String,
-      storeTypeCode: json['storeTypeCode'] as String?,
-      workCategory: json['workCategory'] as String,
+      scheduleSfid: json['schedule_sfid'] as String,
+      storeSfid: json['store_sfid'] as String?,
+      storeName: json['store_name'] as String,
+      storeTypeCode: json['store_type_code'] as String?,
+      workCategory: json['work_category'] as String,
       address: json['address'] as String?,
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
-      isRegistered: json['isRegistered'] as bool,
+      isRegistered: json['is_registered'] as bool,
     );
   }
 
