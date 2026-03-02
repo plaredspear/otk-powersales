@@ -38,10 +38,10 @@ class QuickMenuGrid extends StatelessWidget {
   /// 기본 메뉴 목록
   static const List<QuickMenuItem> defaultMenuItems = [
     QuickMenuItem(assetPath: 'assets/images/ico_quick1.png', label: '내 일정', route: AppRouter.myScheduleCalendar),
-    QuickMenuItem(assetPath: 'assets/images/ico_quick2.png', label: '매출 현황'),
-    QuickMenuItem(assetPath: 'assets/images/ico_quick3.png', label: '주문 관리'),
+    QuickMenuItem(assetPath: 'assets/images/ico_quick2.png', label: '매출 현황', route: AppRouter.salesOverview),
+    QuickMenuItem(assetPath: 'assets/images/ico_quick3.png', label: '주문 관리', route: AppRouter.orderList),
     QuickMenuItem(assetPath: 'assets/images/ico_quick4.png', label: '활동 등록'),
-    QuickMenuItem(assetPath: 'assets/images/ico_quick5.png', label: '교육'),
+    QuickMenuItem(assetPath: 'assets/images/ico_quick5.png', label: '교육', route: AppRouter.education),
     QuickMenuItem(assetPath: 'assets/images/ico_quick6.png', label: '행사매출\n등록'),
   ];
 

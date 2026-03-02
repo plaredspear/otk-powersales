@@ -32,6 +32,7 @@ import 'presentation/screens/gps_consent_screen.dart';
 import 'presentation/screens/login_screen.dart';
 import 'presentation/screens/main_screen.dart';
 import 'presentation/screens/pos_sales_screen.dart';
+import 'presentation/screens/sales_overview_screen.dart';
 
 /// 앱 라우터
 ///
@@ -67,6 +68,7 @@ class AppRouter {
   static const String educationList = '/education/list';
   static const String notices = '/notices';
   static const String noticeDetail = '/notices/detail';
+  static const String salesOverview = '/sales-overview';
   static const String myScheduleCalendar = '/my-schedule'; // F56: 마이페이지 일정 캘린더
   static const String myScheduleDetail = '/my-schedule/detail'; // F56: 일정 상세
 
@@ -138,6 +140,11 @@ class AppRouter {
         noticeDetail: (context) {
           final noticeId = ModalRoute.of(context)!.settings.arguments as int;
           return NoticeDetailPage(noticeId: noticeId);
+        },
+        salesOverview: (context) {
+          final initialTabIndex =
+              ModalRoute.of(context)?.settings.arguments as int?;
+          return SalesOverviewScreen(initialTabIndex: initialTabIndex);
         },
         myScheduleCalendar: (context) => const MyScheduleCalendarPage(), // F56: 일정 캘린더
         myScheduleDetail: (context) {

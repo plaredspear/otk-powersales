@@ -193,6 +193,8 @@ class _HomePageState extends ConsumerState<HomePage> {
         context,
         onMenuTap: _handleActivityMenuTap,
       );
+    } else if (item.label == '행사매출\n등록') {
+      AppRouter.navigateTo(context, AppRouter.salesOverview, arguments: 0);
     } else if (item.route != null) {
       AppRouter.navigateTo(context, item.route!);
     } else {
