@@ -7,7 +7,9 @@ import '../pages/monthly_sales_tab_page.dart';
 ///
 /// 행사매출/월매출 탭을 포함하는 메인 화면입니다.
 class SalesOverviewScreen extends StatefulWidget {
-  const SalesOverviewScreen({super.key});
+  final int? initialTabIndex;
+
+  const SalesOverviewScreen({super.key, this.initialTabIndex});
 
   @override
   State<SalesOverviewScreen> createState() => _SalesOverviewScreenState();
@@ -20,7 +22,12 @@ class _SalesOverviewScreenState extends State<SalesOverviewScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    final tabIndex = (widget.initialTabIndex != null &&
+            widget.initialTabIndex! >= 0 &&
+            widget.initialTabIndex! < 2)
+        ? widget.initialTabIndex!
+        : 0;
+    _tabController = TabController(length: 2, vsync: this, initialIndex: tabIndex);
   }
 
   @override
