@@ -73,7 +73,7 @@ abstract final class MenuConstants {
       icon: Icons.person,
       label: '마이페이지',
       items: [
-        MenuItem(id: 'my-schedule', label: '내 일정/등록'),
+        MenuItem(id: 'my-schedule', label: '내 일정/등록', route: '/my-schedule'),
         MenuItem(
           id: 'change-password',
           label: '비밀번호 변경',
