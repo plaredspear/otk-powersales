@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../data/repositories/mock/my_schedule_mock_repository.dart';
+import '../../core/network/dio_provider.dart';
+import '../../data/datasources/my_schedule_api_datasource.dart';
+import '../../data/repositories/my_schedule_repository_impl.dart';
 import '../../domain/repositories/my_schedule_repository.dart';
 import '../../domain/usecases/get_daily_schedule.dart';
 import '../../domain/usecases/get_monthly_schedule.dart';
@@ -7,7 +9,10 @@ import 'my_schedule_state.dart';
 
 /// MySchedule Repository Provider
 final myScheduleRepositoryProvider = Provider<MyScheduleRepository>((ref) {
-  return MyScheduleMockRepository();
+  final dio = ref.watch(dioProvider);
+  return MyScheduleRepositoryImpl(
+    remoteDataSource: MyScheduleApiDataSource(dio),
+  );
 });
 
 /// GetMonthlySchedule UseCase Provider

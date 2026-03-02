@@ -101,19 +101,22 @@ class _HomePageState extends ConsumerState<HomePage> {
               schedules: homeData.todaySchedules,
               currentDate: homeData.currentDate,
               attendanceSummary: homeData.attendanceSummary,
+              onHeaderTap: () {
+                AppRouter.navigateTo(context, AppRouter.myScheduleCalendar);
+              },
               onRegisterTap: () async {
                 await AppRouter.navigateTo(context, AppRouter.attendance);
                 if (mounted) {
                   ref.read(homeProvider.notifier).refresh();
                 }
               },
-              onScheduleTap: (schedule) async {
-                if (!schedule.isCommuteRegistered) {
-                  await AppRouter.navigateTo(context, AppRouter.attendance);
-                  if (mounted) {
-                    ref.read(homeProvider.notifier).refresh();
-                  }
-                }
+              onScheduleTap: (schedule) {
+                final date = DateTime.tryParse(homeData.currentDate) ?? DateTime.now();
+                AppRouter.navigateTo(
+                  context,
+                  AppRouter.myScheduleDetail,
+                  arguments: date,
+                );
               },
             ),
           ),
