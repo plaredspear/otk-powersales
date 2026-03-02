@@ -26,7 +26,7 @@ class ProductSearchBar extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.white,
           borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-          border: Border.all(color: AppColors.border, width: 1),
+          boxShadow: AppSpacing.cardShadow,
         ),
         child: Row(
           children: [

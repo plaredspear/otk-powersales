@@ -50,7 +50,7 @@ class ScheduleCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.card,
         borderRadius: AppSpacing.cardBorderRadius,
-        border: Border.all(color: AppColors.border, width: 1),
+        boxShadow: AppSpacing.cardShadow,
       ),
       child: Padding(
         padding: AppSpacing.cardPadding,
