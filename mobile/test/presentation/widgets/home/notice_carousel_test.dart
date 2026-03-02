@@ -8,19 +8,64 @@ void main() {
     List<Notice> notices = const [],
     void Function(Notice)? onNoticeTap,
     VoidCallback? onViewAllTap,
+    double? screenWidth,
   }) {
-    return MaterialApp(
-      home: Scaffold(
-        body: NoticeCarousel(
-          notices: notices,
-          onNoticeTap: onNoticeTap,
-          onViewAllTap: onViewAllTap,
+    final widget = NoticeCarousel(
+      notices: notices,
+      onNoticeTap: onNoticeTap,
+      onViewAllTap: onViewAllTap,
+    );
+
+    if (screenWidth != null) {
+      return MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: screenWidth,
+            child: widget,
+          ),
         ),
-      ),
+      );
+    }
+
+    return MaterialApp(
+      home: Scaffold(body: widget),
     );
   }
 
   group('NoticeCarousel', () {
+    group('카드 가로폭 비율', () {
+      testWidgets('일반 디바이스(393dp)에서 카드 폭이 부모의 40%여야 한다',
+          (tester) async {
+        await tester.pumpWidget(buildTestWidget(
+          notices: _sampleNotices,
+          screenWidth: 393,
+        ));
+
+        // 공지 카드의 Container width 확인
+        final containers = tester.widgetList<Container>(find.byType(Container))
+            .where((c) => c.constraints != null &&
+                (c.constraints!.maxWidth - 393 * 0.4).abs() < 0.01)
+            .toList();
+        expect(containers, isNotEmpty,
+            reason: '카드 폭이 393 * 0.4 = 157.2dp이어야 한다');
+      });
+
+      testWidgets('소형 디바이스(320dp)에서 카드 폭이 부모의 40%여야 한다',
+          (tester) async {
+        await tester.pumpWidget(buildTestWidget(
+          notices: _sampleNotices,
+          screenWidth: 320,
+        ));
+
+        final containers = tester.widgetList<Container>(find.byType(Container))
+            .where((c) => c.constraints != null &&
+                (c.constraints!.maxWidth - 320 * 0.4).abs() < 0.01)
+            .toList();
+        expect(containers, isNotEmpty,
+            reason: '카드 폭이 320 * 0.4 = 128dp이어야 한다');
+      });
+    });
+
     group('전체보기 카드', () {
       testWidgets('공지 1건 이상일 때 전체보기 카드가 표시되어야 한다', (tester) async {
         await tester.pumpWidget(buildTestWidget(notices: _sampleNotices));
@@ -37,6 +82,8 @@ void main() {
           onViewAllTap: () => tapped = true,
         ));
 
+        await tester.ensureVisible(find.text('전체보기'));
+        await tester.pumpAndSettle();
         await tester.tap(find.text('전체보기'));
         expect(tapped, isTrue);
       });
@@ -48,7 +95,9 @@ void main() {
           onViewAllTap: null,
         ));
 
-        await tester.tap(find.text('전체보기'));
+        await tester.ensureVisible(find.text('전체보기'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('전체보기'), warnIfMissed: false);
         // no error
       });
     });
