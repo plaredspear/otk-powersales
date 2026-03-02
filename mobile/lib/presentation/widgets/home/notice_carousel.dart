@@ -17,10 +17,14 @@ class NoticeCarousel extends StatelessWidget {
   /// 공지 카드 탭 콜백 (공지 상세 화면으로 이동)
   final void Function(Notice notice)? onNoticeTap;
 
+  /// 전체보기 카드 탭 콜백 (공지사항 목록 화면으로 이동)
+  final VoidCallback? onViewAllTap;
+
   const NoticeCarousel({
     super.key,
     required this.notices,
     this.onNoticeTap,
+    this.onViewAllTap,
   });
 
   @override
@@ -34,9 +38,12 @@ class NoticeCarousel extends StatelessWidget {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-        itemCount: notices.length,
-        separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.md),
+        itemCount: notices.length + 1,
+        separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
         itemBuilder: (context, index) {
+          if (index == notices.length) {
+            return _buildViewAllCard();
+          }
           return _buildNoticeCard(notices[index]);
         },
       ),
@@ -113,6 +120,41 @@ class NoticeCarousel extends StatelessWidget {
                 _formatDateWithDay(notice.createdAt),
                 style: AppTypography.bodySmall.copyWith(
                   color: AppColors.textTertiary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 전체보기 카드 UI
+  Widget _buildViewAllCard() {
+    return InkWell(
+      onTap: onViewAllTap,
+      borderRadius: AppSpacing.cardBorderRadius,
+      child: Container(
+        width: 180,
+        decoration: BoxDecoration(
+          color: AppColors.card,
+          borderRadius: AppSpacing.cardBorderRadius,
+          border: Border.all(color: AppColors.border, width: 1),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 24,
+                color: AppColors.textSecondary,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                '전체보기',
+                style: AppTypography.labelLarge.copyWith(
+                  color: AppColors.textSecondary,
                 ),
               ),
             ],
