@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/app_colors.dart';
 
 /// 빠른 메뉴 아이템 데이터
 class QuickMenuItem {
-  /// 메뉴 아이콘
-  final IconData icon;
+  /// PNG 에셋 경로
+  final String assetPath;
 
   /// 메뉴 이름
   final String label;
@@ -15,7 +15,7 @@ class QuickMenuItem {
   final String? route;
 
   const QuickMenuItem({
-    required this.icon,
+    required this.assetPath,
     required this.label,
     this.route,
   });
@@ -36,12 +36,12 @@ class QuickMenuGrid extends StatelessWidget {
 
   /// 기본 메뉴 목록
   static const List<QuickMenuItem> defaultMenuItems = [
-    QuickMenuItem(icon: Icons.calendar_month, label: '내 일정'),
-    QuickMenuItem(icon: Icons.bar_chart, label: '매출 현황'),
-    QuickMenuItem(icon: Icons.assignment, label: '주문 관리'),
-    QuickMenuItem(icon: Icons.checklist, label: '활동 등록'),
-    QuickMenuItem(icon: Icons.menu_book, label: '교육'),
-    QuickMenuItem(icon: Icons.celebration, label: '행사매출\n등록'),
+    QuickMenuItem(assetPath: 'assets/images/ico_quick1.png', label: '내 일정'),
+    QuickMenuItem(assetPath: 'assets/images/ico_quick2.png', label: '매출 현황'),
+    QuickMenuItem(assetPath: 'assets/images/ico_quick3.png', label: '주문 관리'),
+    QuickMenuItem(assetPath: 'assets/images/ico_quick4.png', label: '활동 등록'),
+    QuickMenuItem(assetPath: 'assets/images/ico_quick5.png', label: '교육'),
+    QuickMenuItem(assetPath: 'assets/images/ico_quick6.png', label: '행사매출\n등록'),
   ];
 
   @override
@@ -67,10 +67,10 @@ class QuickMenuGrid extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            item.icon,
-            size: AppSpacing.iconSizeMenu,
-            color: AppColors.otokiYellow,
+          Image.asset(
+            item.assetPath,
+            width: AppSpacing.iconSizeMenu,
+            height: AppSpacing.iconSizeMenu,
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
