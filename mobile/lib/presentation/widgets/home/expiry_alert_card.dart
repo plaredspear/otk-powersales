@@ -7,8 +7,8 @@ import '../../../domain/entities/expiry_alert.dart';
 /// 유통기한 알림 카드 위젯
 ///
 /// 홈 화면의 #2 영역: 유통기한 임박제품 알림을 표시한다.
-/// - expiryCount > 0: 알림 카드 표시
-/// - expiryAlert가 null이거나 expiryCount == 0: 카드 숨김 (빈 SizedBox)
+/// - expiryAlert != null: 카드 표시 (0건이어도 표시)
+/// - expiryAlert == null: 카드 숨김 (API 미응답)
 class ExpiryAlertCard extends StatelessWidget {
   /// 유통기한 알림 데이터 (null이면 카드 숨김)
   final ExpiryAlert? expiryAlert;
@@ -24,8 +24,8 @@ class ExpiryAlertCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // null이거나 expiryCount가 0이면 숨김
-    if (expiryAlert == null || expiryAlert!.expiryCount <= 0) {
+    // null이면 숨김 (API 미응답). 0건이어도 카드 표시.
+    if (expiryAlert == null) {
       return const SizedBox.shrink();
     }
 
@@ -80,7 +80,9 @@ class ExpiryAlertCard extends StatelessWidget {
                       Text(
                         '${alert.expiryCount}건',
                         style: AppTypography.bodySmall.copyWith(
-                          color: AppColors.otokiBlue,
+                          color: alert.expiryCount > 0
+                              ? AppColors.otokiBlue
+                              : AppColors.textSecondary,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
