@@ -16,17 +16,17 @@ class EventProductModel {
 
   factory EventProductModel.fromJson(Map<String, dynamic> json) {
     return EventProductModel(
-      productCode: json['productCode'] as String,
-      productName: json['productName'] as String,
-      isMainProduct: json['isMainProduct'] as bool,
+      productCode: json['product_code'] as String,
+      productName: json['product_name'] as String,
+      isMainProduct: json['is_main_product'] as bool,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'productCode': productCode,
-      'productName': productName,
-      'isMainProduct': isMainProduct,
+      'product_code': productCode,
+      'product_name': productName,
+      'is_main_product': isMainProduct,
     };
   }
 
@@ -97,18 +97,18 @@ class EventModel {
   factory EventModel.fromJson(Map<String, dynamic> json) {
     return EventModel(
       id: json['id'] as String,
-      eventType: json['eventType'] as String,
-      eventName: json['eventName'] as String,
-      startDate: json['startDate'] as String,
-      endDate: json['endDate'] as String,
-      customerId: json['customerId'] as String,
-      customerName: json['customerName'] as String,
-      assigneeId: json['assigneeId'] as String,
-      mainProduct: json['mainProduct'] != null
-          ? EventProductModel.fromJson(json['mainProduct'] as Map<String, dynamic>)
+      eventType: json['event_type'] as String,
+      eventName: json['event_name'] as String,
+      startDate: json['start_date'] as String,
+      endDate: json['end_date'] as String,
+      customerId: json['customer_id'] as String,
+      customerName: json['customer_name'] as String,
+      assigneeId: json['assignee_id'] as String,
+      mainProduct: json['main_product'] != null
+          ? EventProductModel.fromJson(json['main_product'] as Map<String, dynamic>)
           : null,
-      subProducts: json['subProducts'] != null
-          ? (json['subProducts'] as List<dynamic>)
+      subProducts: json['sub_products'] != null
+          ? (json['sub_products'] as List<dynamic>)
               .map((item) => EventProductModel.fromJson(item as Map<String, dynamic>))
               .toList()
           : const [],
@@ -118,15 +118,15 @@ class EventModel {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'eventType': eventType,
-      'eventName': eventName,
-      'startDate': startDate,
-      'endDate': endDate,
-      'customerId': customerId,
-      'customerName': customerName,
-      'assigneeId': assigneeId,
-      'mainProduct': mainProduct?.toJson(),
-      'subProducts': subProducts.map((product) => product.toJson()).toList(),
+      'event_type': eventType,
+      'event_name': eventName,
+      'start_date': startDate,
+      'end_date': endDate,
+      'customer_id': customerId,
+      'customer_name': customerName,
+      'assignee_id': assigneeId,
+      'main_product': mainProduct?.toJson(),
+      'sub_products': subProducts.map((product) => product.toJson()).toList(),
     };
   }
 

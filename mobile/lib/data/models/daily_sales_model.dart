@@ -37,36 +37,36 @@ class DailySalesModel {
   factory DailySalesModel.fromJson(Map<String, dynamic> json) {
     return DailySalesModel(
       id: json['id'] as String,
-      eventId: json['eventId'] as String,
-      salesDate: json['salesDate'] as String,
-      mainProductPrice: json['mainProductPrice'] as int?,
-      mainProductQuantity: json['mainProductQuantity'] as int?,
-      mainProductAmount: json['mainProductAmount'] as int?,
-      subProductCode: json['subProductCode'] as String?,
-      subProductName: json['subProductName'] as String?,
-      subProductQuantity: json['subProductQuantity'] as int?,
-      subProductAmount: json['subProductAmount'] as int?,
-      photoUrl: json['photoUrl'] as String?,
+      eventId: json['event_id'] as String,
+      salesDate: json['sales_date'] as String,
+      mainProductPrice: json['main_product_price'] as int?,
+      mainProductQuantity: json['main_product_quantity'] as int?,
+      mainProductAmount: json['main_product_amount'] as int?,
+      subProductCode: json['sub_product_code'] as String?,
+      subProductName: json['sub_product_name'] as String?,
+      subProductQuantity: json['sub_product_quantity'] as int?,
+      subProductAmount: json['sub_product_amount'] as int?,
+      photoUrl: json['photo_url'] as String?,
       status: json['status'] as String,
-      registeredAt: json['registeredAt'] as String?,
+      registeredAt: json['registered_at'] as String?,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'eventId': eventId,
-      'salesDate': salesDate,
-      'mainProductPrice': mainProductPrice,
-      'mainProductQuantity': mainProductQuantity,
-      'mainProductAmount': mainProductAmount,
-      'subProductCode': subProductCode,
-      'subProductName': subProductName,
-      'subProductQuantity': subProductQuantity,
-      'subProductAmount': subProductAmount,
-      'photoUrl': photoUrl,
+      'event_id': eventId,
+      'sales_date': salesDate,
+      'main_product_price': mainProductPrice,
+      'main_product_quantity': mainProductQuantity,
+      'main_product_amount': mainProductAmount,
+      'sub_product_code': subProductCode,
+      'sub_product_name': subProductName,
+      'sub_product_quantity': subProductQuantity,
+      'sub_product_amount': subProductAmount,
+      'photo_url': photoUrl,
       'status': status,
-      'registeredAt': registeredAt,
+      'registered_at': registeredAt,
     };
   }
 

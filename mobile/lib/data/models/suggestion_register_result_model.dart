@@ -26,11 +26,11 @@ class SuggestionRegisterResultModel {
     return SuggestionRegisterResultModel(
       id: json['id'] as int,
       category: json['category'] as String,
-      categoryName: json['categoryName'] as String,
-      productCode: json['productCode'] as String?,
-      productName: json['productName'] as String?,
+      categoryName: json['category_name'] as String,
+      productCode: json['product_code'] as String?,
+      productName: json['product_name'] as String?,
       title: json['title'] as String,
-      createdAt: json['createdAt'] as String,
+      createdAt: json['created_at'] as String,
     );
   }
 

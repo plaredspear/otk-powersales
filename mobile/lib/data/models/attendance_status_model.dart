@@ -2,7 +2,7 @@ import '../../domain/entities/attendance_status.dart';
 
 /// 출근등록 현황 API 모델 (DTO)
 ///
-/// Backend API의 camelCase JSON을 파싱하여 AttendanceStatus 엔티티로 변환합니다.
+/// Backend API의 snake_case JSON을 파싱하여 AttendanceStatus 엔티티로 변환합니다.
 class AttendanceStatusModel {
   final String scheduleSfid;
   final String storeName;
@@ -18,14 +18,14 @@ class AttendanceStatusModel {
     this.workType,
   });
 
-  /// camelCase JSON에서 파싱
+  /// snake_case JSON에서 파싱
   factory AttendanceStatusModel.fromJson(Map<String, dynamic> json) {
     return AttendanceStatusModel(
-      scheduleSfid: json['scheduleSfid'] as String,
-      storeName: json['storeName'] as String,
-      workCategory: json['workCategory'] as String,
+      scheduleSfid: json['schedule_sfid'] as String,
+      storeName: json['store_name'] as String,
+      workCategory: json['work_category'] as String,
       status: json['status'] as String,
-      workType: json['workType'] as String?,
+      workType: json['work_type'] as String?,
     );
   }
 

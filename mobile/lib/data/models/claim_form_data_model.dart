@@ -20,10 +20,10 @@ class ClaimFormDataModel {
       categories: (json['categories'] as List)
           .map((c) => ClaimCategoryModel.fromJson(c as Map<String, dynamic>))
           .toList(),
-      purchaseMethods: (json['purchaseMethods'] as List)
+      purchaseMethods: (json['purchase_methods'] as List)
           .map((p) => PurchaseMethodModel.fromJson(p as Map<String, dynamic>))
           .toList(),
-      requestTypes: (json['requestTypes'] as List)
+      requestTypes: (json['request_types'] as List)
           .map((r) => ClaimRequestTypeModel.fromJson(r as Map<String, dynamic>))
           .toList(),
     );
