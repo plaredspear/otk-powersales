@@ -31,10 +31,10 @@ class ProductSearchBar extends StatelessWidget {
         child: Row(
           children: [
             const SizedBox(width: AppSpacing.md),
-            const Icon(
-              Icons.search,
-              color: AppColors.otokiYellow,
-              size: AppSpacing.iconSize,
+            Image.asset(
+              'assets/images/ico_search.png',
+              width: 20,
+              height: 20,
             ),
             const SizedBox(width: AppSpacing.sm),
             Text(
