@@ -11,6 +11,7 @@ void main() {
     AttendanceSummary? attendanceSummary,
     VoidCallback? onRegisterTap,
     void Function(Schedule)? onScheduleTap,
+    VoidCallback? onHeaderTap,
   }) {
     return MaterialApp(
       home: Scaffold(
@@ -22,6 +23,7 @@ void main() {
                 const AttendanceSummary(totalCount: 0, registeredCount: 0),
             onRegisterTap: onRegisterTap,
             onScheduleTap: onScheduleTap,
+            onHeaderTap: onHeaderTap,
           ),
         ),
       ),
@@ -34,6 +36,24 @@ void main() {
         await tester.pumpWidget(buildTestWidget(currentDate: '2026-03-01'));
 
         expect(find.text('03월 01일 (일)'), findsOneWidget);
+      });
+
+      testWidgets('"내 일정" 링크가 표시되어야 한다', (tester) async {
+        await tester.pumpWidget(buildTestWidget());
+
+        expect(find.text('내 일정'), findsOneWidget);
+        expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+      });
+
+      testWidgets('"내 일정" 탭 시 onHeaderTap 콜백이 호출되어야 한다',
+          (tester) async {
+        var tapped = false;
+        await tester.pumpWidget(buildTestWidget(
+          onHeaderTap: () => tapped = true,
+        ));
+
+        await tester.tap(find.text('내 일정'));
+        expect(tapped, isTrue);
       });
     });
 

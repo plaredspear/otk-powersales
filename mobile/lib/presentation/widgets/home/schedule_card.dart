@@ -28,6 +28,9 @@ class ScheduleCard extends StatelessWidget {
   /// 일정 아이템 탭 콜백
   final void Function(Schedule schedule)? onScheduleTap;
 
+  /// "내 일정 >" 헤더 링크 탭 콜백
+  final VoidCallback? onHeaderTap;
+
   const ScheduleCard({
     super.key,
     required this.schedules,
@@ -35,6 +38,7 @@ class ScheduleCard extends StatelessWidget {
     required this.attendanceSummary,
     this.onRegisterTap,
     this.onScheduleTap,
+    this.onHeaderTap,
   });
 
   @override
@@ -53,7 +57,7 @@ class ScheduleCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 날짜 헤더 + 출근 카운트 배지
+            // 날짜 헤더 + "내 일정 >" 링크 + 출근 카운트 배지
             Row(
               children: [
                 Text(
@@ -65,6 +69,26 @@ class ScheduleCard extends StatelessWidget {
                 ),
                 const Spacer(),
                 if (totalCount > 0) _buildAttendanceBadge(registeredCount, totalCount),
+                if (totalCount > 0) const SizedBox(width: AppSpacing.sm),
+                GestureDetector(
+                  onTap: onHeaderTap,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '내 일정',
+                        style: AppTypography.labelMedium.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      Icon(
+                        Icons.chevron_right,
+                        size: 16,
+                        color: AppColors.textSecondary,
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: AppSpacing.md),
