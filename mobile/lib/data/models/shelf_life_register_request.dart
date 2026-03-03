@@ -4,27 +4,33 @@ import '../../domain/entities/shelf_life_form.dart';
 ///
 /// POST /api/v1/shelf-life 요청 바디를 snake_case JSON으로 직렬화합니다.
 class ShelfLifeRegisterRequest {
-  final int storeId;
+  final String accountCode;
+  final String accountName;
   final String productCode;
-  final String expiryDate;
-  final String alertDate;
+  final String productName;
+  final String expirationDate;
+  final String alarmDate;
   final String description;
 
   const ShelfLifeRegisterRequest({
-    required this.storeId,
+    required this.accountCode,
+    required this.accountName,
     required this.productCode,
-    required this.expiryDate,
-    required this.alertDate,
+    required this.productName,
+    required this.expirationDate,
+    required this.alarmDate,
     this.description = '',
   });
 
   /// snake_case JSON으로 직렬화
   Map<String, dynamic> toJson() {
     return {
-      'store_id': storeId,
+      'account_code': accountCode,
+      'account_name': accountName,
       'product_code': productCode,
-      'expiry_date': expiryDate,
-      'alert_date': alertDate,
+      'product_name': productName,
+      'expiration_date': expirationDate,
+      'alarm_date': alarmDate,
       'description': description,
     };
   }
@@ -32,10 +38,12 @@ class ShelfLifeRegisterRequest {
   /// Domain Form에서 생성
   factory ShelfLifeRegisterRequest.fromForm(ShelfLifeRegisterForm form) {
     return ShelfLifeRegisterRequest(
-      storeId: form.storeId,
+      accountCode: form.accountCode,
+      accountName: form.accountName,
       productCode: form.productCode,
-      expiryDate: form.expiryDate.toIso8601String().substring(0, 10),
-      alertDate: form.alertDate.toIso8601String().substring(0, 10),
+      productName: form.productName,
+      expirationDate: form.expiryDate.toIso8601String().substring(0, 10),
+      alarmDate: form.alertDate.toIso8601String().substring(0, 10),
       description: form.description,
     );
   }
@@ -44,22 +52,33 @@ class ShelfLifeRegisterRequest {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! ShelfLifeRegisterRequest) return false;
-    return other.storeId == storeId &&
+    return other.accountCode == accountCode &&
+        other.accountName == accountName &&
         other.productCode == productCode &&
-        other.expiryDate == expiryDate &&
-        other.alertDate == alertDate &&
+        other.productName == productName &&
+        other.expirationDate == expirationDate &&
+        other.alarmDate == alarmDate &&
         other.description == description;
   }
 
   @override
   int get hashCode {
-    return Object.hash(storeId, productCode, expiryDate, alertDate, description);
+    return Object.hash(
+      accountCode,
+      accountName,
+      productCode,
+      productName,
+      expirationDate,
+      alarmDate,
+      description,
+    );
   }
 
   @override
   String toString() {
-    return 'ShelfLifeRegisterRequest(storeId: $storeId, '
-        'productCode: $productCode, expiryDate: $expiryDate, '
-        'alertDate: $alertDate, description: $description)';
+    return 'ShelfLifeRegisterRequest(accountCode: $accountCode, '
+        'accountName: $accountName, productCode: $productCode, '
+        'productName: $productName, expirationDate: $expirationDate, '
+        'alarmDate: $alarmDate, description: $description)';
   }
 }

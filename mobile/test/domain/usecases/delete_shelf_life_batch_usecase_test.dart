@@ -24,18 +24,18 @@ class _MockShelfLifeRepository implements ShelfLifeRepository {
   }
 
   @override
-  Future<ShelfLifeItem> updateShelfLife(int id, ShelfLifeUpdateForm form) async {
+  Future<ShelfLifeItem> updateShelfLife(int seq, ShelfLifeUpdateForm form) async {
     if (error != null) throw error!;
     return itemResult!;
   }
 
   @override
-  Future<void> deleteShelfLife(int id) async {
+  Future<void> deleteShelfLife(int seq) async {
     if (error != null) throw error!;
   }
 
   @override
-  Future<int> deleteShelfLifeBatch(List<int> ids) async {
+  Future<int> deleteShelfLifeBatch(List<int> seqs) async {
     if (error != null) throw error!;
     return deleteCount!;
   }
@@ -57,38 +57,38 @@ void main() {
 
     test('유통기한을 성공적으로 삭제한다', () async {
       // Given
-      const itemId = 1;
+      const itemSeq = 1;
 
       // When
-      await useCase(itemId);
+      await useCase(itemSeq);
 
       // Then
       // 예외가 발생하지 않으면 성공
     });
 
-    test('ID가 0 이하일 때 예외를 발생시킨다', () async {
+    test('seq가 0 이하일 때 예외를 발생시킨다', () async {
       // Given
-      const invalidId = 0;
+      const invalidSeq = 0;
 
       // When & Then
       expect(
-        () => useCase(invalidId),
+        () => useCase(invalidSeq),
         throwsA(isA<Exception>().having(
           (e) => e.toString(),
           'message',
-          contains('유효하지 않은 유통기한 ID입니다'),
+          contains('유효하지 않은 유통기한 시퀀스입니다'),
         )),
       );
     });
 
     test('Repository 에러를 전파한다', () async {
       // Given
-      const itemId = 1;
+      const itemSeq = 1;
       repository.error = Exception('삭제 실패');
 
       // When & Then
       expect(
-        () => useCase(itemId),
+        () => useCase(itemSeq),
         throwsA(isA<Exception>().having(
           (e) => e.toString(),
           'message',
@@ -107,23 +107,23 @@ void main() {
 
     test('유통기한을 성공적으로 일괄 삭제한다', () async {
       // Given
-      final ids = [1, 2, 3];
+      final seqs = [1, 2, 3];
       repository.deleteCount = 3;
 
       // When
-      final result = await useCase(ids);
+      final result = await useCase(seqs);
 
       // Then
       expect(result, 3);
     });
 
-    test('빈 ID 목록일 때 예외를 발생시킨다', () async {
+    test('빈 seq 목록일 때 예외를 발생시킨다', () async {
       // Given
-      final emptyIds = <int>[];
+      final emptySeqs = <int>[];
 
       // When & Then
       expect(
-        () => useCase(emptyIds),
+        () => useCase(emptySeqs),
         throwsA(isA<Exception>().having(
           (e) => e.toString(),
           'message',
@@ -134,12 +134,12 @@ void main() {
 
     test('Repository 에러를 전파한다', () async {
       // Given
-      final ids = [1, 2, 3];
+      final seqs = [1, 2, 3];
       repository.error = Exception('일괄 삭제 실패');
 
       // When & Then
       expect(
-        () => useCase(ids),
+        () => useCase(seqs),
         throwsA(isA<Exception>().having(
           (e) => e.toString(),
           'message',

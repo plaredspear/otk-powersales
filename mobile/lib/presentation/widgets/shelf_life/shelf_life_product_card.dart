@@ -57,7 +57,7 @@ class ShelfLifeProductCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      '${item.storeName} | ${dateFormat.format(item.expiryDate)}까지',
+                      '${item.accountName} | ${dateFormat.format(item.expiryDate)}까지',
                       style: AppTypography.bodySmall.copyWith(
                         color: AppColors.textSecondary,
                       ),

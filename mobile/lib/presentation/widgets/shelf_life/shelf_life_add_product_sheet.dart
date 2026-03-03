@@ -1,7 +1,10 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/network/dio_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -21,7 +24,7 @@ class ProductSelection {
 ///
 /// 단일 제품 선택 전용입니다.
 /// 제품 검색 후 탭하면 즉시 선택되어 등록 화면에 반영됩니다.
-class ShelfLifeAddProductSheet extends StatefulWidget {
+class ShelfLifeAddProductSheet extends ConsumerStatefulWidget {
   const ShelfLifeAddProductSheet({super.key});
 
   /// BottomSheet 표시 (선택된 제품을 반환)
@@ -40,14 +43,15 @@ class ShelfLifeAddProductSheet extends StatefulWidget {
   }
 
   @override
-  State<ShelfLifeAddProductSheet> createState() =>
+  ConsumerState<ShelfLifeAddProductSheet> createState() =>
       _ShelfLifeAddProductSheetState();
 }
 
-class _ShelfLifeAddProductSheetState extends State<ShelfLifeAddProductSheet> {
+class _ShelfLifeAddProductSheetState
+    extends ConsumerState<ShelfLifeAddProductSheet> {
   final _searchController = TextEditingController();
   Timer? _debounceTimer;
-  List<_MockProduct> _searchResults = [];
+  List<ProductSelection> _searchResults = [];
   bool _isLoading = false;
   bool _hasSearched = false;
 
@@ -60,12 +64,12 @@ class _ShelfLifeAddProductSheetState extends State<ShelfLifeAddProductSheet> {
 
   void _onSearchChanged(String query) {
     _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 400), () {
+    _debounceTimer = Timer(const Duration(milliseconds: 300), () {
       _performSearch(query);
     });
   }
 
-  void _performSearch(String query) {
+  Future<void> _performSearch(String query) async {
     if (query.length < 2) {
       setState(() {
         _searchResults = [];
@@ -78,14 +82,27 @@ class _ShelfLifeAddProductSheetState extends State<ShelfLifeAddProductSheet> {
       _isLoading = true;
     });
 
-    // Mock 검색 (실제로는 API 호출)
-    Future.delayed(const Duration(milliseconds: 200), () {
+    try {
+      final dio = ref.read(dioProvider);
+      final response = await dio.get(
+        '/api/v1/products/search',
+        queryParameters: {
+          'query': query,
+          'type': 'text',
+          'size': 20,
+        },
+      );
+
       if (!mounted) return;
 
-      final results = _mockProducts.where((p) {
-        final q = query.toLowerCase();
-        return p.productName.toLowerCase().contains(q) ||
-            p.productCode.contains(q);
+      final data = response.data['data'] as Map<String, dynamic>;
+      final content = data['content'] as List<dynamic>;
+      final results = content.map((e) {
+        final item = e as Map<String, dynamic>;
+        return ProductSelection(
+          productCode: item['product_code'] as String,
+          productName: item['product_name'] as String,
+        );
       }).toList();
 
       setState(() {
@@ -93,16 +110,18 @@ class _ShelfLifeAddProductSheetState extends State<ShelfLifeAddProductSheet> {
         _isLoading = false;
         _hasSearched = true;
       });
-    });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _searchResults = [];
+        _isLoading = false;
+        _hasSearched = true;
+      });
+    }
   }
 
-  void _onProductTap(_MockProduct product) {
-    Navigator.of(context).pop(
-      ProductSelection(
-        productCode: product.productCode,
-        productName: product.productName,
-      ),
-    );
+  void _onProductTap(ProductSelection product) {
+    Navigator.of(context).pop(product);
   }
 
   @override
@@ -220,7 +239,7 @@ class _ShelfLifeAddProductSheetState extends State<ShelfLifeAddProductSheet> {
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       itemCount: _searchResults.length,
-      separatorBuilder: (_, _) => const Divider(height: 1),
+      separatorBuilder: (_, __) => const Divider(height: 1),
       itemBuilder: (context, index) {
         final product = _searchResults[index];
         return ListTile(
@@ -247,33 +266,3 @@ class _ShelfLifeAddProductSheetState extends State<ShelfLifeAddProductSheet> {
     );
   }
 }
-
-// ──────────────────────────────────────────────────────────────────
-// Mock Product Data
-// ──────────────────────────────────────────────────────────────────
-
-class _MockProduct {
-  final String productCode;
-  final String productName;
-
-  const _MockProduct(this.productCode, this.productName);
-}
-
-const _mockProducts = [
-  _MockProduct('30310009', '고등어김치&무조림(캔)280G'),
-  _MockProduct('11110015', '카레케찹280G'),
-  _MockProduct('11610028', '고깃집소스(트레이더스)830G'),
-  _MockProduct('18410022', '미니뿌셔_불고기맛(55GX4)'),
-  _MockProduct('10210005', '진라면(순한맛)5입'),
-  _MockProduct('10210006', '진라면(매운맛)5입'),
-  _MockProduct('11310012', '오뚜기카레약간매운맛100G'),
-  _MockProduct('12110008', '3분짜장'),
-  _MockProduct('12110009', '3분카레'),
-  _MockProduct('12110010', '3분짜장덮밥'),
-  _MockProduct('10110001', '오뚜기밥'),
-  _MockProduct('10110002', '맛있는오뚜기밥210G'),
-  _MockProduct('15110001', '참기름160ML'),
-  _MockProduct('15110002', '방앗간참기름320ML'),
-  _MockProduct('16110001', '오뚜기케첩300G'),
-  _MockProduct('16110002', '토마토케첩500G'),
-];

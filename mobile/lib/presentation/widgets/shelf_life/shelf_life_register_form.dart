@@ -10,10 +10,10 @@ import '../../../core/theme/app_typography.dart';
 /// 거래처 선택, 제품 선택, 유통기한, 알림일, 설명 입력을 제공합니다.
 class ShelfLifeRegisterForm extends StatelessWidget {
   /// 거래처 목록
-  final Map<int, String> stores;
+  final Map<String, String> stores;
 
-  /// 선택된 거래처 ID
-  final int? selectedStoreId;
+  /// 선택된 거래처 코드
+  final String? selectedAccountCode;
 
   /// 선택된 제품 코드
   final String? selectedProductCode;
@@ -31,7 +31,7 @@ class ShelfLifeRegisterForm extends StatelessWidget {
   final String description;
 
   /// 거래처 선택 콜백
-  final void Function(int storeId, String storeName) onStoreChanged;
+  final void Function(String accountCode, String accountName) onStoreChanged;
 
   /// 제품 선택 버튼 콜백
   final VoidCallback onSelectProduct;
@@ -51,7 +51,7 @@ class ShelfLifeRegisterForm extends StatelessWidget {
   const ShelfLifeRegisterForm({
     super.key,
     required this.stores,
-    this.selectedStoreId,
+    this.selectedAccountCode,
     this.selectedProductCode,
     this.selectedProductName,
     required this.expiryDate,
@@ -143,19 +143,19 @@ class ShelfLifeRegisterForm extends StatelessWidget {
       ),
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
       child: DropdownButtonHideUnderline(
-        child: DropdownButton<int>(
-          value: selectedStoreId,
+        child: DropdownButton<String>(
+          value: selectedAccountCode,
           hint: Text('거래처 선택', style: AppTypography.bodyMedium.copyWith(color: AppColors.textTertiary)),
           isExpanded: true,
           items: sortedEntries.map((entry) {
-            return DropdownMenuItem<int>(
+            return DropdownMenuItem<String>(
               value: entry.key,
               child: Text(entry.value, style: AppTypography.bodyMedium),
             );
           }).toList(),
-          onChanged: (storeId) {
-            if (storeId != null) {
-              onStoreChanged(storeId, stores[storeId]!);
+          onChanged: (accountCode) {
+            if (accountCode != null) {
+              onStoreChanged(accountCode, stores[accountCode]!);
             }
           },
         ),

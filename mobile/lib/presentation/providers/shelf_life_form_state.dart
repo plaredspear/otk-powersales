@@ -10,11 +10,11 @@ class ShelfLifeFormState {
   final String? errorMessage;
 
   // ── 거래처 정보 ──
-  /// 선택된 거래처 ID
-  final int? selectedStoreId;
+  /// 선택된 거래처 코드
+  final String? selectedAccountCode;
 
   /// 선택된 거래처명
-  final String? selectedStoreName;
+  final String? selectedAccountName;
 
   // ── 제품 정보 ──
   /// 선택된 제품 코드
@@ -35,8 +35,8 @@ class ShelfLifeFormState {
   final String description;
 
   // ── 수정 모드 전용 ──
-  /// 수정 대상 유통기한 ID (null이면 등록 모드)
-  final int? editId;
+  /// 수정 대상 유통기한 시퀀스 (null이면 등록 모드)
+  final int? editSeq;
 
   // ── 결과 상태 ──
   /// 저장 완료 여부 (등록 또는 수정 완료)
@@ -46,19 +46,19 @@ class ShelfLifeFormState {
   final bool isDeleted;
 
   /// 거래처 목록 (드롭다운용)
-  final Map<int, String> stores;
+  final Map<String, String> stores;
 
   const ShelfLifeFormState({
     required this.isLoading,
     this.errorMessage,
-    this.selectedStoreId,
-    this.selectedStoreName,
+    this.selectedAccountCode,
+    this.selectedAccountName,
     this.selectedProductCode,
     this.selectedProductName,
     required this.expiryDate,
     required this.alertDate,
     this.description = '',
-    this.editId,
+    this.editSeq,
     this.isSaved = false,
     this.isDeleted = false,
     this.stores = const {},
@@ -81,13 +81,13 @@ class ShelfLifeFormState {
   // ── Computed Getters ──
 
   /// 등록 모드 여부
-  bool get isRegisterMode => editId == null;
+  bool get isRegisterMode => editSeq == null;
 
   /// 수정 모드 여부
-  bool get isEditMode => editId != null;
+  bool get isEditMode => editSeq != null;
 
   /// 거래처가 선택되었는지
-  bool get hasStore => selectedStoreId != null;
+  bool get hasStore => selectedAccountCode != null && selectedAccountCode!.isNotEmpty;
 
   /// 제품이 선택되었는지
   bool get hasProduct =>
@@ -122,8 +122,8 @@ class ShelfLifeFormState {
     bool? isLoading,
     String? errorMessage,
     bool clearError = false,
-    int? selectedStoreId,
-    String? selectedStoreName,
+    String? selectedAccountCode,
+    String? selectedAccountName,
     bool clearStore = false,
     String? selectedProductCode,
     String? selectedProductName,
@@ -131,18 +131,18 @@ class ShelfLifeFormState {
     DateTime? expiryDate,
     DateTime? alertDate,
     String? description,
-    int? editId,
+    int? editSeq,
     bool? isSaved,
     bool? isDeleted,
-    Map<int, String>? stores,
+    Map<String, String>? stores,
   }) {
     return ShelfLifeFormState(
       isLoading: isLoading ?? this.isLoading,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
-      selectedStoreId:
-          clearStore ? null : (selectedStoreId ?? this.selectedStoreId),
-      selectedStoreName:
-          clearStore ? null : (selectedStoreName ?? this.selectedStoreName),
+      selectedAccountCode:
+          clearStore ? null : (selectedAccountCode ?? this.selectedAccountCode),
+      selectedAccountName:
+          clearStore ? null : (selectedAccountName ?? this.selectedAccountName),
       selectedProductCode:
           clearProduct ? null : (selectedProductCode ?? this.selectedProductCode),
       selectedProductName:
@@ -150,7 +150,7 @@ class ShelfLifeFormState {
       expiryDate: expiryDate ?? this.expiryDate,
       alertDate: alertDate ?? this.alertDate,
       description: description ?? this.description,
-      editId: editId ?? this.editId,
+      editSeq: editSeq ?? this.editSeq,
       isSaved: isSaved ?? this.isSaved,
       isDeleted: isDeleted ?? this.isDeleted,
       stores: stores ?? this.stores,

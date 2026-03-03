@@ -13,15 +13,15 @@ class UpdateShelfLife {
 
   /// 유통기한 수정 실행
   ///
-  /// [id]: 수정할 유통기한 항목 ID
+  /// [seq]: 수정할 유통기한 항목 시퀀스
   /// [form]: 수정 폼 데이터 (유통기한, 알림일, 설명)
   /// Returns: 수정된 유통기한 항목
-  /// Throws: [Exception] ID가 유효하지 않은 경우
-  Future<ShelfLifeItem> call(int id, ShelfLifeUpdateForm form) async {
-    if (id <= 0) {
-      throw Exception('유효하지 않은 유통기한 ID입니다');
+  /// Throws: [Exception] 시퀀스가 유효하지 않은 경우
+  Future<ShelfLifeItem> call(int seq, ShelfLifeUpdateForm form) async {
+    if (seq <= 0) {
+      throw Exception('유효하지 않은 유통기한 시퀀스입니다');
     }
 
-    return await _repository.updateShelfLife(id, form);
+    return await _repository.updateShelfLife(seq, form);
   }
 }

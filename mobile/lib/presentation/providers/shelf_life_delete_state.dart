@@ -11,8 +11,8 @@ class ShelfLifeDeleteState {
   /// 삭제할 유통기한 목록 (관리 화면에서 전달받은 목록)
   final List<ShelfLifeItem> items;
 
-  /// 선택된 항목 ID 목록
-  final Set<int> selectedIds;
+  /// 선택된 항목 시퀀스 목록
+  final Set<int> selectedSeqs;
 
   /// 삭제 완료 여부
   final bool isDeleted;
@@ -21,7 +21,7 @@ class ShelfLifeDeleteState {
     this.isLoading = false,
     this.errorMessage,
     this.items = const [],
-    this.selectedIds = const {},
+    this.selectedSeqs = const {},
     this.isDeleted = false,
   });
 
@@ -51,39 +51,39 @@ class ShelfLifeDeleteState {
         ..sort((a, b) => a.dDay.compareTo(b.dDay));
 
   /// 선택된 항목 수
-  int get selectedCount => selectedIds.length;
+  int get selectedCount => selectedSeqs.length;
 
   /// 삭제 가능 여부 (1개 이상 선택)
-  bool get canDelete => selectedIds.isNotEmpty;
+  bool get canDelete => selectedSeqs.isNotEmpty;
 
   /// 전체 선택 여부
   bool get isAllSelected =>
-      items.isNotEmpty && selectedIds.length == items.length;
+      items.isNotEmpty && selectedSeqs.length == items.length;
 
   /// 만료 그룹 전체 선택 여부
   bool get isExpiredGroupSelected {
-    final expiredIds = expiredItems.map((e) => e.id).toSet();
-    return expiredIds.isNotEmpty && expiredIds.every(selectedIds.contains);
+    final expiredSeqs = expiredItems.map((e) => e.seq).toSet();
+    return expiredSeqs.isNotEmpty && expiredSeqs.every(selectedSeqs.contains);
   }
 
   /// 만료 전 그룹 전체 선택 여부
   bool get isActiveGroupSelected {
-    final activeIds = activeItems.map((e) => e.id).toSet();
-    return activeIds.isNotEmpty && activeIds.every(selectedIds.contains);
+    final activeSeqs = activeItems.map((e) => e.seq).toSet();
+    return activeSeqs.isNotEmpty && activeSeqs.every(selectedSeqs.contains);
   }
 
   ShelfLifeDeleteState copyWith({
     bool? isLoading,
     String? errorMessage,
     List<ShelfLifeItem>? items,
-    Set<int>? selectedIds,
+    Set<int>? selectedSeqs,
     bool? isDeleted,
   }) {
     return ShelfLifeDeleteState(
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage,
       items: items ?? this.items,
-      selectedIds: selectedIds ?? this.selectedIds,
+      selectedSeqs: selectedSeqs ?? this.selectedSeqs,
       isDeleted: isDeleted ?? this.isDeleted,
     );
   }

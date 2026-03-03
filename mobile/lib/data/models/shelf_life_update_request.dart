@@ -2,23 +2,23 @@ import '../../domain/entities/shelf_life_form.dart';
 
 /// 유통기한 수정 API 요청 모델
 ///
-/// PUT /api/v1/shelf-life/{id} 요청 바디를 snake_case JSON으로 직렬화합니다.
+/// PUT /api/v1/shelf-life/{seq} 요청 바디를 snake_case JSON으로 직렬화합니다.
 class ShelfLifeUpdateRequest {
-  final String expiryDate;
-  final String alertDate;
+  final String expirationDate;
+  final String alarmDate;
   final String description;
 
   const ShelfLifeUpdateRequest({
-    required this.expiryDate,
-    required this.alertDate,
+    required this.expirationDate,
+    required this.alarmDate,
     this.description = '',
   });
 
   /// snake_case JSON으로 직렬화
   Map<String, dynamic> toJson() {
     return {
-      'expiry_date': expiryDate,
-      'alert_date': alertDate,
+      'expiration_date': expirationDate,
+      'alarm_date': alarmDate,
       'description': description,
     };
   }
@@ -26,8 +26,8 @@ class ShelfLifeUpdateRequest {
   /// Domain Form에서 생성
   factory ShelfLifeUpdateRequest.fromForm(ShelfLifeUpdateForm form) {
     return ShelfLifeUpdateRequest(
-      expiryDate: form.expiryDate.toIso8601String().substring(0, 10),
-      alertDate: form.alertDate.toIso8601String().substring(0, 10),
+      expirationDate: form.expiryDate.toIso8601String().substring(0, 10),
+      alarmDate: form.alertDate.toIso8601String().substring(0, 10),
       description: form.description,
     );
   }
@@ -36,17 +36,17 @@ class ShelfLifeUpdateRequest {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! ShelfLifeUpdateRequest) return false;
-    return other.expiryDate == expiryDate &&
-        other.alertDate == alertDate &&
+    return other.expirationDate == expirationDate &&
+        other.alarmDate == alarmDate &&
         other.description == description;
   }
 
   @override
-  int get hashCode => Object.hash(expiryDate, alertDate, description);
+  int get hashCode => Object.hash(expirationDate, alarmDate, description);
 
   @override
   String toString() {
-    return 'ShelfLifeUpdateRequest(expiryDate: $expiryDate, '
-        'alertDate: $alertDate, description: $description)';
+    return 'ShelfLifeUpdateRequest(expirationDate: $expirationDate, '
+        'alarmDate: $alarmDate, description: $description)';
   }
 }

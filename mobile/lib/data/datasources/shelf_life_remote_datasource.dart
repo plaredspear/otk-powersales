@@ -20,11 +20,11 @@ class ShelfLifeBatchDeleteResponse {
 ///
 /// 유통기한 관련 API 호출을 추상화합니다.
 abstract class ShelfLifeRemoteDataSource {
-  /// GET /api/v1/shelf-life?store_id=&from_date=&to_date=
+  /// GET /api/v1/shelf-life?accountCode=&fromDate=&toDate=
   ///
   /// 유통기한 목록을 조회합니다.
   Future<List<ShelfLifeItemModel>> getShelfLifeList({
-    int? storeId,
+    String? accountCode,
     required String fromDate,
     required String toDate,
   });
@@ -36,21 +36,21 @@ abstract class ShelfLifeRemoteDataSource {
     ShelfLifeRegisterRequest request,
   );
 
-  /// PUT /api/v1/shelf-life/{shelfLifeId}
+  /// PUT /api/v1/shelf-life/{seq}
   ///
   /// 유통기한을 수정합니다.
   Future<ShelfLifeItemModel> updateShelfLife(
-    int shelfLifeId,
+    int seq,
     ShelfLifeUpdateRequest request,
   );
 
-  /// DELETE /api/v1/shelf-life/{shelfLifeId}
+  /// DELETE /api/v1/shelf-life/{seq}
   ///
   /// 유통기한 단건을 삭제합니다.
-  Future<void> deleteShelfLife(int shelfLifeId);
+  Future<void> deleteShelfLife(int seq);
 
-  /// DELETE /api/v1/shelf-life
+  /// POST /api/v1/shelf-life/batch-delete
   ///
   /// 유통기한을 일괄 삭제합니다.
-  Future<ShelfLifeBatchDeleteResponse> deleteShelfLifeBatch(List<int> ids);
+  Future<ShelfLifeBatchDeleteResponse> deleteShelfLifeBatch(List<int> seqs);
 }

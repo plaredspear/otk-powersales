@@ -1,7 +1,8 @@
+import 'package:dio/dio.dart';
 import '../../core/utils/error_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/repositories/mock/my_store_mock_repository.dart';
+import '../../core/network/dio_provider.dart';
 import '../../domain/entities/shelf_life_form.dart';
 import '../../domain/entities/shelf_life_item.dart';
 import '../../domain/usecases/delete_shelf_life_usecase.dart';
@@ -41,47 +42,59 @@ class ShelfLifeFormNotifier extends StateNotifier<ShelfLifeFormState> {
   final RegisterShelfLife _registerShelfLife;
   final UpdateShelfLife _updateShelfLife;
   final DeleteShelfLife _deleteShelfLife;
+  final Dio _dio;
 
   ShelfLifeFormNotifier({
     required RegisterShelfLife registerShelfLife,
     required UpdateShelfLife updateShelfLife,
     required DeleteShelfLife deleteShelfLife,
+    required Dio dio,
   })  : _registerShelfLife = registerShelfLife,
         _updateShelfLife = updateShelfLife,
         _deleteShelfLife = deleteShelfLife,
+        _dio = dio,
         super(ShelfLifeFormState.initial());
 
   /// 등록 모드 초기화 (거래처 목록 로드)
   Future<void> initializeForRegister() async {
-    final mockStoreRepo = MyStoreMockRepository();
-    final storeResult = await mockStoreRepo.getMyStores();
-    final storesMap = <int, String>{};
-    for (final store in storeResult.stores) {
-      storesMap[store.storeId] = store.storeName;
+    try {
+      final response = await _dio.get('/api/v1/stores/my');
+      final data = response.data['data'] as Map<String, dynamic>;
+      final storesList = data['stores'] as List<dynamic>;
+      final storesMap = <String, String>{};
+      for (final store in storesList) {
+        final storeMap = store as Map<String, dynamic>;
+        final code = storeMap['store_code'] as String;
+        final name = storeMap['store_name'] as String;
+        storesMap[code] = name;
+      }
+      state = ShelfLifeFormState.initial().copyWith(stores: storesMap);
+    } catch (e) {
+      // 거래처 로딩 실패 시 빈 목록으로 초기화
+      state = ShelfLifeFormState.initial();
     }
-    state = ShelfLifeFormState.initial().copyWith(stores: storesMap);
   }
 
   /// 수정 모드 초기화 (기존 데이터 로드)
   void initializeForEdit(ShelfLifeItem item) {
     state = ShelfLifeFormState(
       isLoading: false,
-      selectedStoreId: item.storeId,
-      selectedStoreName: item.storeName,
+      selectedAccountCode: item.accountCode,
+      selectedAccountName: item.accountName,
       selectedProductCode: item.productCode,
       selectedProductName: item.productName,
       expiryDate: item.expiryDate,
       alertDate: item.alertDate,
       description: item.description,
-      editId: item.id,
+      editSeq: item.seq,
     );
   }
 
   /// 거래처 선택
-  void selectStore(int storeId, String storeName) {
+  void selectStore(String accountCode, String accountName) {
     state = state.copyWith(
-      selectedStoreId: storeId,
-      selectedStoreName: storeName,
+      selectedAccountCode: accountCode,
+      selectedAccountName: accountName,
     );
   }
 
@@ -120,8 +133,10 @@ class ShelfLifeFormNotifier extends StateNotifier<ShelfLifeFormState> {
 
     try {
       final form = ShelfLifeRegisterForm(
-        storeId: state.selectedStoreId!,
+        accountCode: state.selectedAccountCode!,
+        accountName: state.selectedAccountName!,
         productCode: state.selectedProductCode!,
+        productName: state.selectedProductName!,
         expiryDate: state.expiryDate,
         alertDate: state.alertDate,
         description: state.description,
@@ -139,7 +154,7 @@ class ShelfLifeFormNotifier extends StateNotifier<ShelfLifeFormState> {
 
   /// 유통기한 수정
   Future<void> update() async {
-    if (state.editId == null) return;
+    if (state.editSeq == null) return;
 
     state = state.toLoading();
 
@@ -150,7 +165,7 @@ class ShelfLifeFormNotifier extends StateNotifier<ShelfLifeFormState> {
         description: state.description,
       );
 
-      await _updateShelfLife.call(state.editId!, form);
+      await _updateShelfLife.call(state.editSeq!, form);
 
       state = state.copyWith(isLoading: false, isSaved: true);
     } catch (e) {
@@ -162,12 +177,12 @@ class ShelfLifeFormNotifier extends StateNotifier<ShelfLifeFormState> {
 
   /// 유통기한 단건 삭제 (수정 화면에서)
   Future<void> delete() async {
-    if (state.editId == null) return;
+    if (state.editSeq == null) return;
 
     state = state.toLoading();
 
     try {
-      await _deleteShelfLife.call(state.editId!);
+      await _deleteShelfLife.call(state.editSeq!);
 
       state = state.copyWith(isLoading: false, isDeleted: true);
     } catch (e) {
@@ -193,10 +208,12 @@ final shelfLifeFormProvider =
   final registerUseCase = ref.watch(registerShelfLifeUseCaseProvider);
   final updateUseCase = ref.watch(updateShelfLifeUseCaseProvider);
   final deleteUseCase = ref.watch(deleteShelfLifeUseCaseProvider);
+  final dio = ref.watch(dioProvider);
 
   return ShelfLifeFormNotifier(
     registerShelfLife: registerUseCase,
     updateShelfLife: updateUseCase,
     deleteShelfLife: deleteUseCase,
+    dio: dio,
   );
 });

@@ -25,7 +25,7 @@ void main() {
         ];
 
         final filter = ShelfLifeFilter(
-          storeId: 100,
+          accountCode: 'ACC100',
           fromDate: DateTime(2026, 2, 1),
           toDate: DateTime(2026, 2, 28),
         );
@@ -36,31 +36,31 @@ void main() {
         expect(result, isList);
         expect(result.length, 2);
         expect(result[0], isA<ShelfLifeItem>());
-        expect(result[0].id, 1);
+        expect(result[0].seq, 1);
         expect(result[0].productName, '진라면');
-        expect(result[1].id, 2);
+        expect(result[1].seq, 2);
         expect(result[1].productName, '케첩');
       });
 
-      test('필터의 storeId를 datasource에 전달해야 한다', () async {
+      test('필터의 accountCode를 datasource에 전달해야 한다', () async {
         fakeDataSource.shelfLifeListToReturn = [];
 
         final filter = ShelfLifeFilter(
-          storeId: 200,
+          accountCode: 'ACC200',
           fromDate: DateTime(2026, 2, 1),
           toDate: DateTime(2026, 2, 28),
         );
 
         await repository.getShelfLifeList(filter);
 
-        expect(fakeDataSource.lastGetListStoreId, 200);
+        expect(fakeDataSource.lastGetListAccountCode, 'ACC200');
       });
 
       test('필터의 날짜를 YYYY-MM-DD 형식으로 변환하여 전달해야 한다', () async {
         fakeDataSource.shelfLifeListToReturn = [];
 
         final filter = ShelfLifeFilter(
-          storeId: 100,
+          accountCode: 'ACC100',
           fromDate: DateTime(2026, 1, 5),
           toDate: DateTime(2026, 3, 10),
         );
@@ -71,7 +71,7 @@ void main() {
         expect(fakeDataSource.lastGetListToDate, '2026-03-10');
       });
 
-      test('storeId가 null인 필터도 처리해야 한다', () async {
+      test('accountCode가 null인 필터도 처리해야 한다', () async {
         fakeDataSource.shelfLifeListToReturn = [];
 
         final filter = ShelfLifeFilter(
@@ -81,7 +81,7 @@ void main() {
 
         await repository.getShelfLifeList(filter);
 
-        expect(fakeDataSource.lastGetListStoreId, isNull);
+        expect(fakeDataSource.lastGetListAccountCode, isNull);
       });
 
       test('빈 목록을 올바르게 반환해야 한다', () async {
@@ -117,8 +117,10 @@ void main() {
         fakeDataSource.registerResultToReturn = _sampleModel1;
 
         final form = ShelfLifeRegisterForm(
-          storeId: 100,
+          accountCode: 'ACC100',
+          accountName: '이마트 강남점',
           productCode: 'P001',
+          productName: '진라면',
           expiryDate: DateTime(2026, 3, 15),
           alertDate: DateTime(2026, 3, 8),
           description: '3층 선반',
@@ -128,7 +130,7 @@ void main() {
 
         expect(fakeDataSource.registerShelfLifeCalls, 1);
         expect(result, isA<ShelfLifeItem>());
-        expect(result.id, 1);
+        expect(result.seq, 1);
         expect(result.productCode, 'P001');
         expect(result.productName, '진라면');
       });
@@ -137,8 +139,10 @@ void main() {
         fakeDataSource.registerResultToReturn = _sampleModel1;
 
         final form = ShelfLifeRegisterForm(
-          storeId: 100,
+          accountCode: 'ACC100',
+          accountName: '이마트 강남점',
           productCode: 'P001',
+          productName: '진라면',
           expiryDate: DateTime(2026, 3, 15),
           alertDate: DateTime(2026, 3, 8),
           description: '3층 선반',
@@ -147,10 +151,12 @@ void main() {
         await repository.registerShelfLife(form);
 
         final capturedRequest = fakeDataSource.lastRegisterRequest!;
-        expect(capturedRequest.storeId, 100);
+        expect(capturedRequest.accountCode, 'ACC100');
+        expect(capturedRequest.accountName, '이마트 강남점');
         expect(capturedRequest.productCode, 'P001');
-        expect(capturedRequest.expiryDate, '2026-03-15');
-        expect(capturedRequest.alertDate, '2026-03-08');
+        expect(capturedRequest.productName, '진라면');
+        expect(capturedRequest.expirationDate, '2026-03-15');
+        expect(capturedRequest.alarmDate, '2026-03-08');
         expect(capturedRequest.description, '3층 선반');
       });
     });
@@ -158,13 +164,13 @@ void main() {
     group('updateShelfLife', () {
       test('datasource를 호출하고 수정된 엔티티를 반환해야 한다', () async {
         fakeDataSource.updateResultToReturn = const ShelfLifeItemModel(
-          id: 1,
+          seq: 1,
           productCode: 'P001',
           productName: '진라면',
-          storeName: '이마트 강남점',
-          storeId: 100,
-          expiryDate: '2026-04-01',
-          alertDate: '2026-03-25',
+          accountName: '이마트 강남점',
+          accountCode: 'ACC100',
+          expirationDate: '2026-04-01',
+          alarmDate: '2026-03-25',
           dDay: 49,
           description: '수정된 메모',
           isExpired: false,
@@ -180,12 +186,12 @@ void main() {
 
         expect(fakeDataSource.updateShelfLifeCalls, 1);
         expect(result, isA<ShelfLifeItem>());
-        expect(result.id, 1);
+        expect(result.seq, 1);
         expect(result.expiryDate, DateTime(2026, 4, 1));
         expect(result.description, '수정된 메모');
       });
 
-      test('id와 Request 모델을 datasource에 전달해야 한다', () async {
+      test('seq와 Request 모델을 datasource에 전달해야 한다', () async {
         fakeDataSource.updateResultToReturn = _sampleModel1;
 
         final form = ShelfLifeUpdateForm(
@@ -196,10 +202,10 @@ void main() {
 
         await repository.updateShelfLife(42, form);
 
-        expect(fakeDataSource.lastUpdateId, 42);
+        expect(fakeDataSource.lastUpdateSeq, 42);
         final capturedRequest = fakeDataSource.lastUpdateRequest!;
-        expect(capturedRequest.expiryDate, '2026-04-01');
-        expect(capturedRequest.alertDate, '2026-03-25');
+        expect(capturedRequest.expirationDate, '2026-04-01');
+        expect(capturedRequest.alarmDate, '2026-03-25');
         expect(capturedRequest.description, '수정됨');
       });
     });
@@ -209,13 +215,13 @@ void main() {
         await repository.deleteShelfLife(1);
 
         expect(fakeDataSource.deleteShelfLifeCalls, 1);
-        expect(fakeDataSource.lastDeleteId, 1);
+        expect(fakeDataSource.lastDeleteSeq, 1);
       });
 
-      test('올바른 id를 전달해야 한다', () async {
+      test('올바른 seq를 전달해야 한다', () async {
         await repository.deleteShelfLife(42);
 
-        expect(fakeDataSource.lastDeleteId, 42);
+        expect(fakeDataSource.lastDeleteSeq, 42);
       });
     });
 
@@ -230,13 +236,13 @@ void main() {
         expect(result, 3);
       });
 
-      test('id 목록을 datasource에 전달해야 한다', () async {
+      test('seq 목록을 datasource에 전달해야 한다', () async {
         fakeDataSource.batchDeleteResultToReturn =
             const ShelfLifeBatchDeleteResponse(deletedCount: 2);
 
         await repository.deleteShelfLifeBatch([10, 20]);
 
-        expect(fakeDataSource.lastBatchDeleteIds, [10, 20]);
+        expect(fakeDataSource.lastBatchDeleteSeqs, [10, 20]);
       });
 
       test('빈 목록도 처리해야 한다', () async {
@@ -246,7 +252,7 @@ void main() {
         final result = await repository.deleteShelfLifeBatch([]);
 
         expect(result, 0);
-        expect(fakeDataSource.lastBatchDeleteIds, isEmpty);
+        expect(fakeDataSource.lastBatchDeleteSeqs, isEmpty);
       });
     });
   });
@@ -272,23 +278,23 @@ class FakeShelfLifeRemoteDataSource implements ShelfLifeRemoteDataSource {
       const ShelfLifeBatchDeleteResponse(deletedCount: 0);
 
   // ─── Captured parameters ───────────────────────────────────────
-  int? lastGetListStoreId;
+  String? lastGetListAccountCode;
   String? lastGetListFromDate;
   String? lastGetListToDate;
   ShelfLifeRegisterRequest? lastRegisterRequest;
-  int? lastUpdateId;
+  int? lastUpdateSeq;
   ShelfLifeUpdateRequest? lastUpdateRequest;
-  int? lastDeleteId;
-  List<int>? lastBatchDeleteIds;
+  int? lastDeleteSeq;
+  List<int>? lastBatchDeleteSeqs;
 
   @override
   Future<List<ShelfLifeItemModel>> getShelfLifeList({
-    int? storeId,
+    String? accountCode,
     required String fromDate,
     required String toDate,
   }) async {
     getShelfLifeListCalls++;
-    lastGetListStoreId = storeId;
+    lastGetListAccountCode = accountCode;
     lastGetListFromDate = fromDate;
     lastGetListToDate = toDate;
     return shelfLifeListToReturn;
@@ -305,27 +311,27 @@ class FakeShelfLifeRemoteDataSource implements ShelfLifeRemoteDataSource {
 
   @override
   Future<ShelfLifeItemModel> updateShelfLife(
-    int shelfLifeId,
+    int seq,
     ShelfLifeUpdateRequest request,
   ) async {
     updateShelfLifeCalls++;
-    lastUpdateId = shelfLifeId;
+    lastUpdateSeq = seq;
     lastUpdateRequest = request;
     return updateResultToReturn!;
   }
 
   @override
-  Future<void> deleteShelfLife(int shelfLifeId) async {
+  Future<void> deleteShelfLife(int seq) async {
     deleteShelfLifeCalls++;
-    lastDeleteId = shelfLifeId;
+    lastDeleteSeq = seq;
   }
 
   @override
   Future<ShelfLifeBatchDeleteResponse> deleteShelfLifeBatch(
-    List<int> ids,
+    List<int> seqs,
   ) async {
     deleteShelfLifeBatchCalls++;
-    lastBatchDeleteIds = ids;
+    lastBatchDeleteSeqs = seqs;
     return batchDeleteResultToReturn;
   }
 }
@@ -335,26 +341,26 @@ class FakeShelfLifeRemoteDataSource implements ShelfLifeRemoteDataSource {
 // ──────────────────────────────────────────────────────────────────
 
 const _sampleModel1 = ShelfLifeItemModel(
-  id: 1,
+  seq: 1,
   productCode: 'P001',
   productName: '진라면',
-  storeName: '이마트 강남점',
-  storeId: 100,
-  expiryDate: '2026-03-15',
-  alertDate: '2026-03-08',
+  accountName: '이마트 강남점',
+  accountCode: 'ACC100',
+  expirationDate: '2026-03-15',
+  alarmDate: '2026-03-08',
   dDay: 32,
   description: '3층 선반',
   isExpired: false,
 );
 
 const _sampleModel2 = ShelfLifeItemModel(
-  id: 2,
+  seq: 2,
   productCode: 'P002',
   productName: '케첩',
-  storeName: '이마트 강남점',
-  storeId: 100,
-  expiryDate: '2026-02-20',
-  alertDate: '2026-02-13',
+  accountName: '이마트 강남점',
+  accountCode: 'ACC100',
+  expirationDate: '2026-02-20',
+  alarmDate: '2026-02-13',
   dDay: -3,
   description: '',
   isExpired: true,

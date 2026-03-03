@@ -7,16 +7,20 @@ void main() {
     final testAlertDate = DateTime(2025, 3, 10);
 
     final testForm = ShelfLifeRegisterForm(
-      storeId: 101,
+      accountCode: 'ACC101',
+      accountName: '그린유통D',
       productCode: 'P001',
+      productName: '진라면',
       expiryDate: testExpiryDate,
       alertDate: testAlertDate,
       description: '유통기한 주의',
     );
 
     final testJson = {
-      'storeId': 101,
+      'accountCode': 'ACC101',
+      'accountName': '그린유통D',
       'productCode': 'P001',
+      'productName': '진라면',
       'expiryDate': '2025-03-15',
       'alertDate': '2025-03-10',
       'description': '유통기한 주의',
@@ -25,22 +29,28 @@ void main() {
     group('생성', () {
       test('필수 필드로 ShelfLifeRegisterForm이 올바르게 생성된다', () {
         final form = ShelfLifeRegisterForm(
-          storeId: 101,
+          accountCode: 'ACC101',
+          accountName: '그린유통D',
           productCode: 'P001',
+          productName: '진라면',
           expiryDate: testExpiryDate,
           alertDate: testAlertDate,
         );
 
-        expect(form.storeId, 101);
+        expect(form.accountCode, 'ACC101');
+        expect(form.accountName, '그린유통D');
         expect(form.productCode, 'P001');
+        expect(form.productName, '진라면');
         expect(form.expiryDate, testExpiryDate);
         expect(form.alertDate, testAlertDate);
         expect(form.description, '');
       });
 
       test('description 필드와 함께 ShelfLifeRegisterForm이 올바르게 생성된다', () {
-        expect(testForm.storeId, 101);
+        expect(testForm.accountCode, 'ACC101');
+        expect(testForm.accountName, '그린유통D');
         expect(testForm.productCode, 'P001');
+        expect(testForm.productName, '진라면');
         expect(testForm.expiryDate, testExpiryDate);
         expect(testForm.alertDate, testAlertDate);
         expect(testForm.description, '유통기한 주의');
@@ -54,7 +64,7 @@ void main() {
           description: '신규 등록',
         );
 
-        expect(copied.storeId, testForm.storeId);
+        expect(copied.accountCode, testForm.accountCode);
         expect(copied.productCode, 'P002');
         expect(copied.expiryDate, testForm.expiryDate);
         expect(copied.alertDate, testForm.alertDate);
@@ -66,15 +76,19 @@ void main() {
         final newAlertDate = DateTime(2025, 4, 15);
 
         final copied = testForm.copyWith(
-          storeId: 102,
+          accountCode: 'ACC102',
+          accountName: '다른거래처',
           productCode: 'P002',
+          productName: '케첩',
           expiryDate: newExpiryDate,
           alertDate: newAlertDate,
           description: '긴급 등록',
         );
 
-        expect(copied.storeId, 102);
+        expect(copied.accountCode, 'ACC102');
+        expect(copied.accountName, '다른거래처');
         expect(copied.productCode, 'P002');
+        expect(copied.productName, '케첩');
         expect(copied.expiryDate, newExpiryDate);
         expect(copied.alertDate, newAlertDate);
         expect(copied.description, '긴급 등록');
@@ -92,8 +106,10 @@ void main() {
       test('올바른 JSON Map을 반환한다', () {
         final result = testForm.toJson();
 
-        expect(result['storeId'], 101);
+        expect(result['accountCode'], 'ACC101');
+        expect(result['accountName'], '그린유통D');
         expect(result['productCode'], 'P001');
+        expect(result['productName'], '진라면');
         expect(result['expiryDate'], '2025-03-15');
         expect(result['alertDate'], '2025-03-10');
         expect(result['description'], '유통기한 주의');
@@ -108,8 +124,10 @@ void main() {
 
       test('description이 빈 문자열인 경우도 직렬화된다', () {
         final form = ShelfLifeRegisterForm(
-          storeId: 101,
+          accountCode: 'ACC101',
+          accountName: '그린유통D',
           productCode: 'P001',
+          productName: '진라면',
           expiryDate: testExpiryDate,
           alertDate: testAlertDate,
         );
@@ -121,10 +139,12 @@ void main() {
     });
 
     group('isValid', () {
-      test('storeId > 0이고 productCode가 비어있지 않으면 유효하다', () {
+      test('accountCode가 비어있지 않고 productCode가 비어있지 않으면 유효하다', () {
         final form = ShelfLifeRegisterForm(
-          storeId: 1,
+          accountCode: 'ACC001',
+          accountName: '거래처명',
           productCode: 'P001',
+          productName: '제품명',
           expiryDate: testExpiryDate,
           alertDate: testAlertDate,
         );
@@ -132,21 +152,12 @@ void main() {
         expect(form.isValid, isTrue);
       });
 
-      test('storeId가 0이면 유효하지 않다', () {
+      test('accountCode가 빈 문자열이면 유효하지 않다', () {
         final form = ShelfLifeRegisterForm(
-          storeId: 0,
+          accountCode: '',
+          accountName: '거래처명',
           productCode: 'P001',
-          expiryDate: testExpiryDate,
-          alertDate: testAlertDate,
-        );
-
-        expect(form.isValid, isFalse);
-      });
-
-      test('storeId가 음수이면 유효하지 않다', () {
-        final form = ShelfLifeRegisterForm(
-          storeId: -1,
-          productCode: 'P001',
+          productName: '제품명',
           expiryDate: testExpiryDate,
           alertDate: testAlertDate,
         );
@@ -156,8 +167,10 @@ void main() {
 
       test('productCode가 빈 문자열이면 유효하지 않다', () {
         final form = ShelfLifeRegisterForm(
-          storeId: 101,
+          accountCode: 'ACC101',
+          accountName: '거래처명',
           productCode: '',
+          productName: '제품명',
           expiryDate: testExpiryDate,
           alertDate: testAlertDate,
         );
@@ -165,10 +178,12 @@ void main() {
         expect(form.isValid, isFalse);
       });
 
-      test('storeId가 0이고 productCode가 비어있으면 유효하지 않다', () {
+      test('accountCode와 productCode가 모두 빈 문자열이면 유효하지 않다', () {
         final form = ShelfLifeRegisterForm(
-          storeId: 0,
+          accountCode: '',
+          accountName: '',
           productCode: '',
+          productName: '',
           expiryDate: testExpiryDate,
           alertDate: testAlertDate,
         );
@@ -180,16 +195,20 @@ void main() {
     group('equality', () {
       test('같은 값을 가진 두 ShelfLifeRegisterForm은 동일하다', () {
         final form1 = ShelfLifeRegisterForm(
-          storeId: 101,
+          accountCode: 'ACC101',
+          accountName: '그린유통D',
           productCode: 'P001',
+          productName: '진라면',
           expiryDate: testExpiryDate,
           alertDate: testAlertDate,
           description: '유통기한 주의',
         );
 
         final form2 = ShelfLifeRegisterForm(
-          storeId: 101,
+          accountCode: 'ACC101',
+          accountName: '그린유통D',
           productCode: 'P001',
+          productName: '진라면',
           expiryDate: testExpiryDate,
           alertDate: testAlertDate,
           description: '유통기한 주의',
@@ -200,8 +219,10 @@ void main() {
 
       test('다른 값을 가진 두 ShelfLifeRegisterForm은 동일하지 않다', () {
         final other = ShelfLifeRegisterForm(
-          storeId: 102,
+          accountCode: 'ACC102',
+          accountName: '다른거래처',
           productCode: 'P002',
+          productName: '케첩',
           expiryDate: DateTime(2025, 4, 20),
           alertDate: DateTime(2025, 4, 15),
           description: '긴급',
@@ -214,16 +235,20 @@ void main() {
     group('hashCode', () {
       test('같은 값을 가진 두 ShelfLifeRegisterForm은 같은 hashCode를 가진다', () {
         final form1 = ShelfLifeRegisterForm(
-          storeId: 101,
+          accountCode: 'ACC101',
+          accountName: '그린유통D',
           productCode: 'P001',
+          productName: '진라면',
           expiryDate: testExpiryDate,
           alertDate: testAlertDate,
           description: '유통기한 주의',
         );
 
         final form2 = ShelfLifeRegisterForm(
-          storeId: 101,
+          accountCode: 'ACC101',
+          accountName: '그린유통D',
           productCode: 'P001',
+          productName: '진라면',
           expiryDate: testExpiryDate,
           alertDate: testAlertDate,
           description: '유통기한 주의',
@@ -238,7 +263,7 @@ void main() {
         final result = testForm.toString();
 
         expect(result, contains('ShelfLifeRegisterForm'));
-        expect(result, contains('storeId: 101'));
+        expect(result, contains('accountCode: ACC101'));
         expect(result, contains('productCode: P001'));
         expect(result, contains('description: 유통기한 주의'));
       });

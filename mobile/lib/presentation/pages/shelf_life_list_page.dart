@@ -96,11 +96,12 @@ class _ShelfLifeListPageState extends ConsumerState<ShelfLifeListPage> {
           // 검색 필터
           ShelfLifeFilterBar(
             stores: state.stores,
-            selectedStoreId: state.selectedStoreId,
+            selectedAccountCode: state.selectedAccountCode,
+            isStoresLoading: state.isStoresLoading,
             fromDate: state.fromDate,
             toDate: state.toDate,
-            onStoreChanged: (id, name) {
-              ref.read(shelfLifeListProvider.notifier).selectStore(id, name);
+            onStoreChanged: (code, name) {
+              ref.read(shelfLifeListProvider.notifier).selectStore(code, name);
             },
             onFromDateChanged: (date) {
               ref.read(shelfLifeListProvider.notifier).updateFromDate(date);

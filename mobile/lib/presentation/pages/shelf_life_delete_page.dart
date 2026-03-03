@@ -137,9 +137,9 @@ class _ShelfLifeDeletePageState extends ConsumerState<ShelfLifeDeletePage> {
           ),
           ...state.expiredItems.map((item) => ShelfLifeDeleteCard(
                 item: item,
-                isSelected: state.selectedIds.contains(item.id),
+                isSelected: state.selectedSeqs.contains(item.seq),
                 onChanged: (_) {
-                  ref.read(shelfLifeDeleteProvider.notifier).toggleItem(item.id);
+                  ref.read(shelfLifeDeleteProvider.notifier).toggleItem(item.seq);
                 },
               )),
           const SizedBox(height: AppSpacing.md),
@@ -154,9 +154,9 @@ class _ShelfLifeDeletePageState extends ConsumerState<ShelfLifeDeletePage> {
           ),
           ...state.activeItems.map((item) => ShelfLifeDeleteCard(
                 item: item,
-                isSelected: state.selectedIds.contains(item.id),
+                isSelected: state.selectedSeqs.contains(item.seq),
                 onChanged: (_) {
-                  ref.read(shelfLifeDeleteProvider.notifier).toggleItem(item.id);
+                  ref.read(shelfLifeDeleteProvider.notifier).toggleItem(item.seq);
                 },
               )),
         ],

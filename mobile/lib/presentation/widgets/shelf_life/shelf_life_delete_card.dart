@@ -72,7 +72,7 @@ class ShelfLifeDeleteCard extends StatelessWidget {
 
                   // 거래처명 | 유통기한 날짜
                   Text(
-                    '${item.storeName} | ${dateFormat.format(item.expiryDate)}까지',
+                    '${item.accountName} | ${dateFormat.format(item.expiryDate)}까지',
                     style: AppTypography.bodySmall.copyWith(
                       color: AppColors.textSecondary,
                     ),

@@ -10,7 +10,7 @@ import '../../../core/theme/app_typography.dart';
 /// 거래처/제품은 읽기 전용, 유통기한/알림일/설명만 수정 가능합니다.
 class ShelfLifeEditForm extends StatelessWidget {
   /// 거래처명 (읽기 전용)
-  final String storeName;
+  final String accountName;
 
   /// 제품명 (읽기 전용)
   final String productName;
@@ -38,7 +38,7 @@ class ShelfLifeEditForm extends StatelessWidget {
 
   const ShelfLifeEditForm({
     super.key,
-    required this.storeName,
+    required this.accountName,
     required this.productName,
     required this.productCode,
     required this.expiryDate,
@@ -59,7 +59,7 @@ class ShelfLifeEditForm extends StatelessWidget {
         // 거래처 (읽기 전용)
         _buildLabel('거래처'),
         const SizedBox(height: AppSpacing.xs),
-        _buildReadOnlyField(storeName),
+        _buildReadOnlyField(accountName),
 
         const SizedBox(height: AppSpacing.lg),
 
