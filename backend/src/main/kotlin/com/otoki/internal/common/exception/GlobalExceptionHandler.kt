@@ -17,7 +17,6 @@ import org.springframework.web.context.request.WebRequest
 
 /**
  * 전역 예외 처리 핸들러 (REST API 전용)
- * @Controller(Thymeleaf) 예외를 가로채지 않도록 @RestController 범위로 제한
  */
 @RestControllerAdvice(annotations = [RestController::class])
 class GlobalExceptionHandler {
