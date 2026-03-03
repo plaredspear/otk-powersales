@@ -1,16 +1,12 @@
 package com.otoki.internal.shelflife.controller
 
-/* --- 전체 주석 처리: V1 Entity 리매핑 (Spec 77) ---
- * ShelfLifeService 비활성화에 따라 Controller도 주석 처리.
-
 import com.otoki.internal.common.dto.ApiResponse
+import com.otoki.internal.common.security.UserPrincipal
 import com.otoki.internal.shelflife.dto.request.ShelfLifeBatchDeleteRequest
 import com.otoki.internal.shelflife.dto.request.ShelfLifeCreateRequest
 import com.otoki.internal.shelflife.dto.request.ShelfLifeUpdateRequest
 import com.otoki.internal.shelflife.dto.response.ShelfLifeBatchDeleteResponse
 import com.otoki.internal.shelflife.dto.response.ShelfLifeItemResponse
-import com.otoki.internal.shelflife.dto.response.ShelfLifeListResponse
-import com.otoki.internal.common.security.UserPrincipal
 import com.otoki.internal.shelflife.service.ShelfLifeService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
@@ -27,20 +23,11 @@ class ShelfLifeController(
     @GetMapping
     fun getShelfLifeList(
         @AuthenticationPrincipal principal: UserPrincipal,
-        @RequestParam(required = false) storeId: Long?,
+        @RequestParam(required = false) accountCode: String?,
         @RequestParam fromDate: String,
         @RequestParam toDate: String
-    ): ResponseEntity<ApiResponse<ShelfLifeListResponse>> {
-        val response = shelfLifeService.getShelfLifeList(principal.userId, storeId, fromDate, toDate)
-        return ResponseEntity.ok(ApiResponse.success(response, "조회 성공"))
-    }
-
-    @GetMapping("/{shelfLifeId}")
-    fun getShelfLife(
-        @AuthenticationPrincipal principal: UserPrincipal,
-        @PathVariable shelfLifeId: Long
-    ): ResponseEntity<ApiResponse<ShelfLifeItemResponse>> {
-        val response = shelfLifeService.getShelfLife(principal.userId, shelfLifeId)
+    ): ResponseEntity<ApiResponse<List<ShelfLifeItemResponse>>> {
+        val response = shelfLifeService.getShelfLifeList(principal.userId, accountCode, fromDate, toDate)
         return ResponseEntity.ok(ApiResponse.success(response, "조회 성공"))
     }
 
@@ -54,22 +41,22 @@ class ShelfLifeController(
             .body(ApiResponse.success(response, "유통기한이 등록되었습니다"))
     }
 
-    @PutMapping("/{shelfLifeId}")
+    @PutMapping("/{seq}")
     fun updateShelfLife(
         @AuthenticationPrincipal principal: UserPrincipal,
-        @PathVariable shelfLifeId: Long,
+        @PathVariable seq: Int,
         @Valid @RequestBody request: ShelfLifeUpdateRequest
     ): ResponseEntity<ApiResponse<ShelfLifeItemResponse>> {
-        val response = shelfLifeService.updateShelfLife(principal.userId, shelfLifeId, request)
+        val response = shelfLifeService.updateShelfLife(principal.userId, seq, request)
         return ResponseEntity.ok(ApiResponse.success(response, "유통기한이 수정되었습니다"))
     }
 
-    @DeleteMapping("/{shelfLifeId}")
+    @DeleteMapping("/{seq}")
     fun deleteShelfLife(
         @AuthenticationPrincipal principal: UserPrincipal,
-        @PathVariable shelfLifeId: Long
+        @PathVariable seq: Int
     ): ResponseEntity<ApiResponse<Any?>> {
-        shelfLifeService.deleteShelfLife(principal.userId, shelfLifeId)
+        shelfLifeService.deleteShelfLife(principal.userId, seq)
         return ResponseEntity.ok(ApiResponse.success(null as Any?, "유통기한이 삭제되었습니다"))
     }
 
@@ -84,5 +71,3 @@ class ShelfLifeController(
         )
     }
 }
-
---- */

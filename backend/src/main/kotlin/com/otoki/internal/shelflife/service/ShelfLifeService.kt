@@ -1,118 +1,77 @@
 package com.otoki.internal.shelflife.service
 
-/* --- 전체 주석 처리: V1 Entity 리매핑 (Spec 77) ---
- * ShelfLife Entity가 V1 스키마로 리매핑되어 @ManyToOne 관계(user, store, product)가
- * raw String 컬럼으로 변환됨. 기존 비즈니스 로직이 V2 Entity 구조를 직접 참조하므로
- * 컴파일 오류 발생 → 전체 주석 처리.
- * Service/Controller 비즈니스 로직 재작성은 별도 스펙에서 수행.
-
+import com.otoki.internal.auth.exception.UserNotFoundException
+import com.otoki.internal.common.repository.UserRepository
 import com.otoki.internal.shelflife.dto.request.ShelfLifeBatchDeleteRequest
 import com.otoki.internal.shelflife.dto.request.ShelfLifeCreateRequest
 import com.otoki.internal.shelflife.dto.request.ShelfLifeUpdateRequest
 import com.otoki.internal.shelflife.dto.response.ShelfLifeBatchDeleteResponse
 import com.otoki.internal.shelflife.dto.response.ShelfLifeItemResponse
-import com.otoki.internal.shelflife.dto.response.ShelfLifeListResponse
 import com.otoki.internal.shelflife.entity.ShelfLife
-import com.otoki.internal.exception.*
-import com.otoki.internal.common.exception.*
-import com.otoki.internal.product.repository.ProductRepository
+import com.otoki.internal.shelflife.exception.InvalidAlertDateException
+import com.otoki.internal.shelflife.exception.InvalidShelfLifeDateRangeException
+import com.otoki.internal.shelflife.exception.ShelfLifeForbiddenException
+import com.otoki.internal.shelflife.exception.ShelfLifeNotFoundException
 import com.otoki.internal.shelflife.repository.ShelfLifeRepository
-import com.otoki.internal.repository.AccountRepository
-import com.otoki.internal.common.repository.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.format.DateTimeParseException
 import java.time.temporal.ChronoUnit
 
 @Service
+@Transactional(readOnly = true)
 class ShelfLifeService(
     private val shelfLifeRepository: ShelfLifeRepository,
-    private val userRepository: UserRepository,
-    private val accountRepository: AccountRepository,
-    private val productRepository: ProductRepository
+    private val userRepository: UserRepository
 ) {
 
-    @Transactional(readOnly = true)
-    fun getShelfLifeList(userId: Long, storeId: Long?, fromDate: String, toDate: String): ShelfLifeListResponse {
+    fun getShelfLifeList(
+        userId: Long, accountCode: String?, fromDate: String, toDate: String
+    ): List<ShelfLifeItemResponse> {
         val parsedFromDate = parseDate(fromDate)
         val parsedToDate = parseDate(toDate)
+        validateDateRange(parsedFromDate, parsedToDate)
 
-        if (parsedToDate.isBefore(parsedFromDate)) {
-            throw InvalidShelfLifeDateRangeException("종료일은 시작일 이후여야 합니다")
-        }
-        if (ChronoUnit.MONTHS.between(parsedFromDate, parsedToDate) > 6) {
-            throw InvalidShelfLifeDateRangeException("유통기한 검색 기간은 최대 6개월입니다")
-        }
+        val employeeId = getEmployeeId(userId) ?: return emptyList()
 
-        val items = if (storeId != null) {
-            shelfLifeRepository.findByUserIdAndStoreIdAndExpiryDateBetween(
-                userId, storeId, parsedFromDate, parsedToDate
+        val items = if (accountCode != null) {
+            shelfLifeRepository.findByEmployeeIdAndAccountCodeAndExpirationDateBetweenOrderByExpirationDateAsc(
+                employeeId, accountCode, parsedFromDate, parsedToDate
             )
         } else {
-            shelfLifeRepository.findByUserIdAndExpiryDateBetween(
-                userId, parsedFromDate, parsedToDate
+            shelfLifeRepository.findByEmployeeIdAndExpirationDateBetweenOrderByExpirationDateAsc(
+                employeeId, parsedFromDate, parsedToDate
             )
         }
 
         val today = LocalDate.now()
-        val responses = items.map { ShelfLifeItemResponse.from(it, today) }
-
-        val expiredItems = responses
-            .filter { it.isExpired }
-            .sortedBy { it.dDay }
-        val upcomingItems = responses
-            .filter { !it.isExpired }
-            .sortedBy { it.dDay }
-
-        return ShelfLifeListResponse(
-            totalCount = responses.size,
-            expiredItems = expiredItems,
-            upcomingItems = upcomingItems
-        )
-    }
-
-    @Transactional(readOnly = true)
-    fun getShelfLife(userId: Long, shelfLifeId: Long): ShelfLifeItemResponse {
-        val shelfLife = findShelfLifeById(shelfLifeId)
-        validateOwnership(shelfLife, userId)
-        return ShelfLifeItemResponse.from(shelfLife)
+        return items.map { ShelfLifeItemResponse.from(it, today) }
     }
 
     @Transactional
     fun createShelfLife(userId: Long, request: ShelfLifeCreateRequest): ShelfLifeItemResponse {
-        val storeId = request.storeId!!
-        val productCode = request.productCode!!
-        val expiryDate = parseDate(request.expiryDate!!)
-        val alertDate = parseDate(request.alertDate!!)
+        val employeeId = getEmployeeId(userId)
+            ?: throw UserNotFoundException()
 
-        if (!alertDate.isBefore(expiryDate)) {
+        val expirationDate = parseDate(request.expirationDate)
+        val alarmDate = parseDate(request.alarmDate)
+
+        if (!alarmDate.isBefore(expirationDate)) {
             throw InvalidAlertDateException()
         }
 
-        val store = accountRepository.findById(storeId)
-            .orElseThrow { ShelfLifeStoreNotFoundException() }
-
-        val product = productRepository.findByProductCode(productCode)
-            ?: throw ShelfLifeProductNotFoundException()
-
-        val user = userRepository.findById(userId)
-            .orElseThrow { UserNotFoundException() }
-
-        if (shelfLifeRepository.existsByUserIdAndStoreIdAndProductId(userId, storeId, product.id)) {
-            throw DuplicateShelfLifeException()
-        }
-
         val shelfLife = ShelfLife(
-            user = user,
-            store = store,
-            product = product,
-            productCode = product.productCode ?: "",
-            productName = product.name ?: "",
-            storeName = store.name ?: "",
-            expiryDate = expiryDate,
-            alertDate = alertDate,
-            description = request.description
+            employeeId = employeeId,
+            accountCode = request.accountCode,
+            accountId = request.accountName,
+            productCode = request.productCode,
+            productId = request.productName,
+            expirationDate = expirationDate,
+            alarmDate = alarmDate,
+            description = request.description,
+            instDt = LocalDateTime.now()
         )
 
         val saved = shelfLifeRepository.save(shelfLife)
@@ -120,54 +79,76 @@ class ShelfLifeService(
     }
 
     @Transactional
-    fun updateShelfLife(userId: Long, shelfLifeId: Long, request: ShelfLifeUpdateRequest): ShelfLifeItemResponse {
-        val shelfLife = findShelfLifeById(shelfLifeId)
-        validateOwnership(shelfLife, userId)
+    fun updateShelfLife(userId: Long, seq: Int, request: ShelfLifeUpdateRequest): ShelfLifeItemResponse {
+        val employeeId = getEmployeeId(userId)
+            ?: throw UserNotFoundException()
+        val shelfLife = findBySeq(seq)
+        validateOwnership(shelfLife, employeeId)
 
-        val expiryDate = parseDate(request.expiryDate!!)
-        val alertDate = parseDate(request.alertDate!!)
+        val expirationDate = parseDate(request.expirationDate)
+        val alarmDate = parseDate(request.alarmDate)
 
-        if (!alertDate.isBefore(expiryDate)) {
+        if (!alarmDate.isBefore(expirationDate)) {
             throw InvalidAlertDateException()
         }
 
-        shelfLife.update(expiryDate, alertDate, request.description)
-        val updated = shelfLifeRepository.save(shelfLife)
-        return ShelfLifeItemResponse.from(updated)
+        shelfLife.update(expirationDate, alarmDate, request.description)
+        return ShelfLifeItemResponse.from(shelfLife)
     }
 
     @Transactional
-    fun deleteShelfLife(userId: Long, shelfLifeId: Long) {
-        val shelfLife = findShelfLifeById(shelfLifeId)
-        validateOwnership(shelfLife, userId)
+    fun deleteShelfLife(userId: Long, seq: Int) {
+        val employeeId = getEmployeeId(userId)
+            ?: throw UserNotFoundException()
+        val shelfLife = findBySeq(seq)
+        validateOwnership(shelfLife, employeeId)
         shelfLifeRepository.delete(shelfLife)
     }
 
     @Transactional
     fun deleteShelfLifeBatch(userId: Long, request: ShelfLifeBatchDeleteRequest): ShelfLifeBatchDeleteResponse {
-        val ids = request.ids!!
+        val employeeId = getEmployeeId(userId)
+            ?: throw UserNotFoundException()
 
-        val ownedItems = shelfLifeRepository.findByIdInAndUserId(ids, userId)
+        val items = shelfLifeRepository.findBySeqInAndEmployeeId(request.ids, employeeId)
 
-        val allExistingItems = shelfLifeRepository.findAllById(ids)
-        val otherUserItems = allExistingItems.filter { it.user.id != userId }
-        if (otherUserItems.isNotEmpty()) {
-            throw ShelfLifeForbiddenException()
+        if (items.size != request.ids.size) {
+            val foundSeqs = items.map { it.seq }.toSet()
+            val missingSeqs = request.ids.filter { it !in foundSeqs }
+
+            val allExisting = shelfLifeRepository.findAllById(missingSeqs)
+            if (allExisting.isNotEmpty()) {
+                throw ShelfLifeForbiddenException()
+            }
         }
 
-        shelfLifeRepository.deleteAll(ownedItems)
-
-        return ShelfLifeBatchDeleteResponse(deletedCount = ownedItems.size)
+        shelfLifeRepository.deleteAll(items)
+        return ShelfLifeBatchDeleteResponse(deletedCount = items.size)
     }
 
-    private fun findShelfLifeById(shelfLifeId: Long): ShelfLife {
-        return shelfLifeRepository.findById(shelfLifeId)
+    private fun getEmployeeId(userId: Long): String? {
+        val user = userRepository.findById(userId)
+            .orElseThrow { UserNotFoundException() }
+        return user.sfid
+    }
+
+    private fun findBySeq(seq: Int): ShelfLife {
+        return shelfLifeRepository.findById(seq)
             .orElseThrow { ShelfLifeNotFoundException() }
     }
 
-    private fun validateOwnership(shelfLife: ShelfLife, userId: Long) {
-        if (shelfLife.user.id != userId) {
+    private fun validateOwnership(shelfLife: ShelfLife, employeeId: String) {
+        if (shelfLife.employeeId != employeeId) {
             throw ShelfLifeForbiddenException()
+        }
+    }
+
+    private fun validateDateRange(fromDate: LocalDate, toDate: LocalDate) {
+        if (toDate.isBefore(fromDate)) {
+            throw InvalidShelfLifeDateRangeException("날짜 범위가 올바르지 않습니다")
+        }
+        if (ChronoUnit.DAYS.between(fromDate, toDate) > 180) {
+            throw InvalidShelfLifeDateRangeException("날짜 범위가 올바르지 않습니다")
         }
     }
 
@@ -175,9 +156,7 @@ class ShelfLifeService(
         return try {
             LocalDate.parse(dateStr)
         } catch (e: DateTimeParseException) {
-            throw InvalidShelfLifeDateRangeException("날짜 형식이 올바르지 않습니다: $dateStr")
+            throw InvalidShelfLifeDateRangeException("유효하지 않은 요청입니다")
         }
     }
 }
-
---- */
