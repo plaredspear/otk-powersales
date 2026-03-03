@@ -112,10 +112,12 @@ git rebase main
 
 | 사용자 요청 패턴 | 모드 | 로드할 가이드 |
 |----------------|------|-------------|
+| 스펙 작성/스펙 만들어/요구사항 정리/기능 정의 | **스펙 작성** | `.claude/guides/spec-writing-guide.md` 읽기 |
 | 구현/개발/코드 작성/테스트/수정/버그, `/impl` 명령어 | **구현** | `.claude/guides/impl-mode.md` 읽기 |
 
 ### 모드별 역할
 
+- **스펙 작성 모드**: 사용자 요구사항을 docs/specs/backlog/에 스펙 문서로 정리. 작성 완료 후 자동으로 /spec-review 실행. **구현 코드 포함 금지**.
 - **구현 모드**: docs/specs/ready/ 폴더의 승인된 스펙을 기반으로 코드 구현. 테스트 작성. main 머지.
 
 ---
@@ -131,6 +133,10 @@ git rebase main
 - **상태 전환**:
   - **승인**: ① `backlog/` → `ready/` 폴더 이동 ② spec.md 승인 이력 테이블의 `사람 리뷰` 행을 `APPROVED | 사용자 | 날짜 | 승인`으로 업데이트
   - **구현 완료**: `ready/` → `completed/` 폴더 이동
+- **스펙 작성 금지사항**:
+  - 구현 코드 포함 금지: Java, Kotlin, Dart, TypeScript, SQL, HCL 코드 블록 불가
+  - 허용: JSON 예시(API 계약), 설정 키-값 테이블, ASCII 와이어프레임
+  - 모호한 표현 금지: "적절히", "필요에 따라" 대신 구체적 수치/조건 사용
 
 ---
 
@@ -166,6 +172,7 @@ docs/
 | 구현 가이드 | `.claude/guides/impl-mode.md` | 구현 |
 | Backend 컨벤션 | `.claude/guides/backend-conventions.md` | 구현 (Backend) |
 | Mobile 컨벤션 | `.claude/guides/mobile-conventions.md` | 구현 (Flutter) |
+| 스펙 작성 가이드 | `.claude/guides/spec-writing-guide.md` | 스펙 작성 |
 | 스펙 리뷰 기준 | `.claude/guides/spec-review-criteria.md` | 스펙 리뷰 |
 
 ### API 스펙
