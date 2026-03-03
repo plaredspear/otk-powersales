@@ -26,13 +26,19 @@ class QuickMenuItem {
 ///
 /// 홈 화면의 #5 영역: 3x2 그리드 (아이콘 + 텍스트) 빠른 메뉴.
 /// 내 일정, 매출 현황, 주문 관리, 활동 등록, 교육, 행사매출 등록
+///
+/// 조장(LEADER)/지점장(ADMIN): "행사매출 등록" 탭 시 스낵바 안내 + 이동 차단
 class QuickMenuGrid extends StatelessWidget {
   /// 메뉴 아이템 탭 콜백
   final void Function(QuickMenuItem item)? onMenuTap;
 
+  /// 사용자 역할 ("USER", "LEADER", "ADMIN")
+  final String userRole;
+
   const QuickMenuGrid({
     super.key,
     this.onMenuTap,
+    this.userRole = 'USER',
   });
 
   /// 기본 메뉴 목록

@@ -71,22 +71,8 @@ class FullMenuDrawer extends ConsumerWidget {
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
-                      // 메뉴 그룹 목록
-                      ...List.generate(
-                        MenuConstants.menuGroups.length,
-                        (index) {
-                          final group = MenuConstants.menuGroups[index];
-                          return MenuGroupWidget(
-                            group: group,
-                            isLast:
-                                index == MenuConstants.menuGroups.length - 1,
-                            onItemTap: (item) {
-                              Navigator.of(context).pop();
-                              _handleMenuItemTap(context, item);
-                            },
-                          );
-                        },
-                      ),
+                      // 메뉴 그룹 목록 (조장/지점장은 "거래처" 다음에 "팀 관리" 삽입)
+                      ..._buildMenuGroups(context, user?.role),
                     ],
                   ),
                 ),
@@ -106,6 +92,34 @@ class FullMenuDrawer extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  /// 메뉴 그룹 위젯 목록 생성
+  ///
+  /// LEADER/ADMIN일 때 "거래처" 그룹 다음에 "팀 관리" 그룹을 삽입한다.
+  List<Widget> _buildMenuGroups(BuildContext context, String? role) {
+    final isLeaderOrAdmin = role == 'LEADER' || role == 'ADMIN';
+
+    // 조건부 삽입할 그룹 목록 구성
+    final groups = <domain.MenuGroup>[];
+    for (final group in MenuConstants.menuGroups) {
+      groups.add(group);
+      if (isLeaderOrAdmin && group.id == 'trade') {
+        groups.add(MenuConstants.teamManagementGroup);
+      }
+    }
+
+    return List.generate(groups.length, (index) {
+      final group = groups[index];
+      return MenuGroupWidget(
+        group: group,
+        isLast: index == groups.length - 1,
+        onItemTap: (item) {
+          Navigator.of(context).pop();
+          _handleMenuItemTap(context, item);
+        },
+      );
+    });
   }
 
   /// 사용자 정보 문자열 생성

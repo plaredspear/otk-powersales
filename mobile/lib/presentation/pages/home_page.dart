@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../providers/auth_provider.dart';
 import '../providers/home_provider.dart';
 import '../providers/home_state.dart';
 import '../widgets/common/error_view.dart';
@@ -44,15 +45,17 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(homeProvider);
+    final authState = ref.watch(authProvider);
+    final userRole = authState.user?.role ?? 'USER';
 
     return Container(
       color: AppColors.otokiYellow,
-      child: _buildBody(state),
+      child: _buildBody(state, userRole),
     );
   }
 
   /// 본문 영역
-  Widget _buildBody(HomeState state) {
+  Widget _buildBody(HomeState state, String userRole) {
     // 초기 상태 또는 로딩 중 (데이터 없음)
     if (state.homeData == null && !state.isError) {
       return const LoadingIndicator(
@@ -77,13 +80,13 @@ class _HomePageState extends ConsumerState<HomePage> {
       color: AppColors.primary,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        child: _buildContent(state),
+        child: _buildContent(state, userRole),
       ),
     );
   }
 
   /// 홈 화면 콘텐츠
-  Widget _buildContent(HomeState state) {
+  Widget _buildContent(HomeState state, String userRole) {
     final homeData = state.homeData!;
 
     return Column(
@@ -106,6 +109,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                     schedules: homeData.todaySchedules,
                     currentDate: homeData.currentDate,
                     attendanceSummary: homeData.attendanceSummary,
+                    userRole: userRole,
                     onHeaderTap: () {
                       AppRouter.navigateTo(context, AppRouter.myScheduleCalendar);
                     },
@@ -173,8 +177,9 @@ class _HomePageState extends ConsumerState<HomePage> {
               Padding(
                 padding: AppSpacing.screenHorizontal,
                 child: QuickMenuGrid(
+                  userRole: userRole,
                   onMenuTap: (item) {
-                    _handleQuickMenuTap(item);
+                    _handleQuickMenuTap(item, userRole);
                   },
                 ),
               ),
@@ -187,14 +192,25 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   /// 빠른 메뉴 탭 핸들러
-  void _handleQuickMenuTap(QuickMenuItem item) {
+  void _handleQuickMenuTap(QuickMenuItem item, String userRole) {
+    final isLeaderOrAdmin = userRole == 'LEADER' || userRole == 'ADMIN';
+
     if (item.label == '활동 등록') {
       ActivityRegistrationPopup.show(
         context,
         onMenuTap: _handleActivityMenuTap,
       );
     } else if (item.label == '행사매출\n등록') {
-      AppRouter.navigateTo(context, AppRouter.salesOverview, arguments: 0);
+      if (isLeaderOrAdmin) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('행사 담당자만 행사매출을 등록할 수 있습니다.'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      } else {
+        AppRouter.navigateTo(context, AppRouter.salesOverview, arguments: 0);
+      }
     } else if (item.route != null) {
       AppRouter.navigateTo(context, item.route!);
     } else {

@@ -83,6 +83,23 @@ abstract final class MenuConstants {
     ),
   ];
 
+  /// 조장/지점장 전용: "팀 관리" 메뉴 그룹
+  ///
+  /// FullMenuDrawer에서 user.role이 LEADER 또는 ADMIN일 때
+  /// "거래처" 그룹 다음 위치에 삽입한다.
+  static const MenuGroup teamManagementGroup = MenuGroup(
+    id: 'team-management',
+    icon: Icons.groups,
+    label: '팀 관리',
+    items: [
+      MenuItem(
+        id: 'team-schedule',
+        label: '팀원 일정 관리',
+        route: '/my-schedule-calendar',
+      ),
+    ],
+  );
+
   /// 총 메뉴 그룹 수
   static int get groupCount => menuGroups.length;
 
