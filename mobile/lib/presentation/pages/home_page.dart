@@ -266,7 +266,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             ),
           ),
           // 노란 확장 영역 (스케줄 카드가 위에서 겹치는 영역)
-          const SizedBox(height: 24),
+          const SizedBox(height: 36),
         ],
       ),
     );
