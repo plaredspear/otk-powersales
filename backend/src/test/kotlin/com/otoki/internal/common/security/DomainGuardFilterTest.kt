@@ -46,9 +46,43 @@ class DomainGuardFilterTest {
         }
 
         @Test
-        @DisplayName("API 도메인 + Admin 경로 - 404 차단")
-        fun apiDomain_adminPath_blocked() {
-            val request = createRequest(apiDomain, "/admin/login")
+        @DisplayName("API 도메인 + OpenAPI 스펙 경로 - 통과")
+        fun apiDomain_openApiDocsPath_passes() {
+            val request = createRequest(apiDomain, "/v3/api-docs/swagger-config")
+            val response = MockHttpServletResponse()
+
+            filter.doFilter(request, response, filterChain)
+
+            verify(filterChain).doFilter(request, response)
+        }
+
+        @Test
+        @DisplayName("API 도메인 + H2 콘솔 경로 - 통과")
+        fun apiDomain_h2ConsolePath_passes() {
+            val request = createRequest(apiDomain, "/h2-console/login.do")
+            val response = MockHttpServletResponse()
+
+            filter.doFilter(request, response, filterChain)
+
+            verify(filterChain).doFilter(request, response)
+        }
+
+        @Test
+        @DisplayName("API 도메인 + SPA 라우트 - 404 차단")
+        fun apiDomain_spaRoute_blocked() {
+            val request = createRequest(apiDomain, "/sales/monthly")
+            val response = MockHttpServletResponse()
+
+            filter.doFilter(request, response, filterChain)
+
+            assertThat(response.status).isEqualTo(404)
+            verifyNoInteractions(filterChain)
+        }
+
+        @Test
+        @DisplayName("API 도메인 + 루트 경로 - 404 차단")
+        fun apiDomain_rootPath_blocked() {
+            val request = createRequest(apiDomain, "/")
             val response = MockHttpServletResponse()
 
             filter.doFilter(request, response, filterChain)
@@ -63,9 +97,9 @@ class DomainGuardFilterTest {
     inner class AdminDomainTests {
 
         @Test
-        @DisplayName("Admin 도메인 + Admin 경로 - 통과")
-        fun adminDomain_adminPath_passes() {
-            val request = createRequest(adminDomain, "/admin/dashboard")
+        @DisplayName("Admin 도메인 + 인증 API 허용 - 통과")
+        fun adminDomain_authApi_passes() {
+            val request = createRequest(adminDomain, "/api/v1/auth/login")
             val response = MockHttpServletResponse()
 
             filter.doFilter(request, response, filterChain)
@@ -74,15 +108,59 @@ class DomainGuardFilterTest {
         }
 
         @Test
-        @DisplayName("Admin 도메인 + API 경로 - 404 차단")
-        fun adminDomain_apiPath_blocked() {
-            val request = createRequest(adminDomain, "/api/v1/health")
+        @DisplayName("Admin 도메인 + 인증 갱신 API 허용 - 통과")
+        fun adminDomain_authRefreshApi_passes() {
+            val request = createRequest(adminDomain, "/api/v1/auth/refresh")
+            val response = MockHttpServletResponse()
+
+            filter.doFilter(request, response, filterChain)
+
+            verify(filterChain).doFilter(request, response)
+        }
+
+        @Test
+        @DisplayName("Admin 도메인 + 관리자 API 허용 - 통과")
+        fun adminDomain_adminApi_passes() {
+            val request = createRequest(adminDomain, "/api/v1/admin/dashboard")
+            val response = MockHttpServletResponse()
+
+            filter.doFilter(request, response, filterChain)
+
+            verify(filterChain).doFilter(request, response)
+        }
+
+        @Test
+        @DisplayName("Admin 도메인 + 모바일 API 차단 - 404")
+        fun adminDomain_mobileApi_blocked() {
+            val request = createRequest(adminDomain, "/api/v1/home/dashboard")
             val response = MockHttpServletResponse()
 
             filter.doFilter(request, response, filterChain)
 
             assertThat(response.status).isEqualTo(404)
             verifyNoInteractions(filterChain)
+        }
+
+        @Test
+        @DisplayName("Admin 도메인 + SPA 라우트 - 통과")
+        fun adminDomain_spaRoute_passes() {
+            val request = createRequest(adminDomain, "/sales/monthly")
+            val response = MockHttpServletResponse()
+
+            filter.doFilter(request, response, filterChain)
+
+            verify(filterChain).doFilter(request, response)
+        }
+
+        @Test
+        @DisplayName("Admin 도메인 + 루트 경로 - 통과")
+        fun adminDomain_rootPath_passes() {
+            val request = createRequest(adminDomain, "/")
+            val response = MockHttpServletResponse()
+
+            filter.doFilter(request, response, filterChain)
+
+            verify(filterChain).doFilter(request, response)
         }
     }
 
@@ -93,7 +171,7 @@ class DomainGuardFilterTest {
         @Test
         @DisplayName("localhost - 모든 경로 통과")
         fun localhost_allPaths_pass() {
-            val request = createRequest("localhost", "/admin/login")
+            val request = createRequest("localhost", "/sales/monthly")
             val response = MockHttpServletResponse()
 
             filter.doFilter(request, response, filterChain)
@@ -121,7 +199,7 @@ class DomainGuardFilterTest {
         @DisplayName("도메인 미설정 시 모든 경로 통과")
         fun emptyDomain_allPaths_pass() {
             val emptyFilter = DomainGuardFilter("", "")
-            val request = createRequest("any-host.com", "/admin/login")
+            val request = createRequest("any-host.com", "/sales/monthly")
             val response = MockHttpServletResponse()
 
             emptyFilter.doFilter(request, response, filterChain)
@@ -135,9 +213,9 @@ class DomainGuardFilterTest {
     inner class HostPortTests {
 
         @Test
-        @DisplayName("Host에 포트 포함 시 포트 제거 후 매칭 - 404 차단")
+        @DisplayName("Host에 포트 포함 시 포트 제거 후 매칭 - SPA 라우트 차단")
         fun hostWithPort_stripsPort() {
-            val request = createRequest("$apiDomain:443", "/admin/login")
+            val request = createRequest("$apiDomain:443", "/sales/monthly")
             val response = MockHttpServletResponse()
 
             filter.doFilter(request, response, filterChain)

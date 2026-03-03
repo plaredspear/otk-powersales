@@ -5,6 +5,9 @@ env:
     GRADLE_USER_HOME: "/root/.gradle"
 
 phases:
+  install:
+    runtime-versions:
+      nodejs: 24
   pre_build:
     commands:
       - echo "=== Fetch Infra Outputs ==="
@@ -21,6 +24,10 @@ phases:
 
   build:
     commands:
+      - echo "=== Web Build ==="
+      - cd web && npm ci && npm run build && cd ..
+      - mkdir -p backend/src/main/resources/static
+      - cp -r web/dist/* backend/src/main/resources/static/
       - echo "=== Docker Build ==="
       - >
         docker build
@@ -75,3 +82,4 @@ cache:
   paths:
     - "/root/.gradle/caches/**/*"
     - "/root/.gradle/wrapper/**/*"
+    - "web/node_modules/**/*"
