@@ -85,7 +85,7 @@ otoki/                          # 프로젝트 루트
 ```
 1. 스펙 작성 → docs/specs/backlog/<번호>-<기능명>/ 에 스펙 생성
    ↳ 자동으로 /spec-review 실행 (AI 리뷰 → 터미널에 리포트 출력)
-2. 사용자 검토 → 승인 → docs/specs/ready/ 로 이동
+2. 사용자 검토 → 승인 → docs/specs/ready/ 로 이동 + spec.md 승인 이력 업데이트
 3. /impl → ready/ 에서 스펙 읽기 → impl worktree에서 구현 + 테스트 + 커밋
 4. /complete-task → main worktree에서 merge --no-ff → impl worktree rebase
 5. 완료 → docs/specs/completed/ 로 이동
@@ -128,7 +128,9 @@ git rebase main
   - `docs/specs/completed/<번호>-<기능명>/` — 구현 완료
 - **파일 구조**: 단일 플랫폼 → `spec-{P}.md`, 복수 플랫폼 → `spec.md` + `P<N>-{P}.md`. 모든 스펙 파일에 플랫폼 접미사 필수
 - **스펙 번호는 순차 부여**: `backlog/` + `ready/` + `completed/` 에서 최대 번호 + 1
-- **상태 전환**: 승인 시 `backlog/` → `ready/` 이동, 구현 완료 시 `ready/` → `completed/` 이동
+- **상태 전환**:
+  - **승인**: ① `backlog/` → `ready/` 폴더 이동 ② spec.md 승인 이력 테이블의 `사람 리뷰` 행을 `APPROVED | 사용자 | 날짜 | 승인`으로 업데이트
+  - **구현 완료**: `ready/` → `completed/` 폴더 이동
 
 ---
 
