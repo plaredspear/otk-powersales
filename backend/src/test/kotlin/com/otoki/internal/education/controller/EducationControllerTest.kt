@@ -7,6 +7,7 @@ import com.otoki.internal.education.exception.EducationPostNotFoundException
 import com.otoki.internal.education.exception.InvalidEducationCategoryException
 import com.otoki.internal.common.security.GpsConsentFilter
 import com.otoki.internal.common.security.JwtAuthenticationFilter
+import com.otoki.internal.admin.security.AdminAuthorityFilter
 import com.otoki.internal.common.security.JwtTokenProvider
 import com.otoki.internal.common.security.UserPrincipal
 import com.otoki.internal.education.service.EducationService
@@ -43,6 +44,7 @@ class EducationControllerTest {
 
     @MockitoBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
+    @MockitoBean private lateinit var adminAuthorityFilter: AdminAuthorityFilter
 
     @MockitoBean
     private lateinit var gpsConsentFilter: GpsConsentFilter

@@ -3,6 +3,7 @@ package com.otoki.internal.shelflife.controller
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.otoki.internal.common.entity.UserRole
 import com.otoki.internal.common.security.JwtAuthenticationFilter
+import com.otoki.internal.admin.security.AdminAuthorityFilter
 import com.otoki.internal.common.security.JwtTokenProvider
 import com.otoki.internal.common.security.UserPrincipal
 import com.otoki.internal.shelflife.dto.response.ShelfLifeBatchDeleteResponse
@@ -50,6 +51,7 @@ class ShelfLifeControllerTest {
 
     @MockitoBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
+    @MockitoBean private lateinit var adminAuthorityFilter: AdminAuthorityFilter
 
     @BeforeEach
     fun setUp() {
