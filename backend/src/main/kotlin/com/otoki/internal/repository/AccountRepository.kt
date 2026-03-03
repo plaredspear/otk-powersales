@@ -27,4 +27,9 @@ interface AccountRepository : JpaRepository<Account, Int> {
      * 거래처 sfid로 단건 조회 (출근 등록 시 위경도 확보)
      */
     fun findBySfid(sfid: String): Account?
+
+    /**
+     * 지점 코드 목록으로 거래처 일괄 조회 (관리자 대시보드 범위 필터)
+     */
+    fun findByBranchCodeIn(branchCodes: List<String>): List<Account>
 }
