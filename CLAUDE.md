@@ -142,7 +142,7 @@ git rebase main
 docs/
 ├── plan/                 # 설계 및 계획 문서
 │   ├── 00-프로젝트 개요.md
-│   ├── 01-기능 요구사항/
+│   ├── requirements/
 │   ├── 02-화면 설계.md
 │   ├── 03-기술 스택.md
 │   └── 04-API 설계.md
