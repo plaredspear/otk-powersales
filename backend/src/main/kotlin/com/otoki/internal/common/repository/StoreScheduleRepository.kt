@@ -2,6 +2,7 @@ package com.otoki.internal.common.repository
 
 import com.otoki.internal.common.entity.StoreSchedule
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Query
 import java.time.LocalDate
 
 interface StoreScheduleRepository : JpaRepository<StoreSchedule, Long>, StoreScheduleRepositoryCustom {
@@ -45,5 +46,28 @@ interface StoreScheduleRepository : JpaRepository<StoreSchedule, Long>, StoreSch
         fullName: String,
         startDateStart: LocalDate,
         startDateEnd: LocalDate
+    ): List<StoreSchedule>
+
+    /**
+     * 특정 월에 겹치는 확정 스케줄 조회 (전체)
+     */
+    @Query(
+        "SELECT s FROM StoreSchedule s WHERE s.confirmed = true " +
+        "AND s.startDate <= :monthEnd AND s.endDate >= :monthStart"
+    )
+    fun findConfirmedByMonth(monthStart: LocalDate, monthEnd: LocalDate): List<StoreSchedule>
+
+    /**
+     * 특정 월에 겹치는 확정 스케줄 조회 (특정 거래처 sfid 목록)
+     */
+    @Query(
+        "SELECT s FROM StoreSchedule s WHERE s.confirmed = true " +
+        "AND s.startDate <= :monthEnd AND s.endDate >= :monthStart " +
+        "AND s.account IN :accountSfids"
+    )
+    fun findConfirmedByMonthAndAccountSfids(
+        monthStart: LocalDate,
+        monthEnd: LocalDate,
+        accountSfids: List<String>
     ): List<StoreSchedule>
 }
