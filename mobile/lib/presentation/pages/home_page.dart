@@ -74,120 +74,160 @@ class _HomePageState extends ConsumerState<HomePage> {
       );
     }
 
-    // 데이터 있음 → 화면 렌더링
+    // 데이터 있음 → Stack(배경 + 스크롤 콘텐츠)
     return RefreshIndicator(
       onRefresh: _onRefresh,
       color: AppColors.primary,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: _buildContent(state, userRole),
+      child: Stack(
+        children: [
+          Positioned.fill(child: _buildBackgroundLayer()),
+          SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: _buildContent(state, userRole),
+          ),
+        ],
       ),
     );
   }
 
-  /// 홈 화면 콘텐츠
-  Widget _buildContent(HomeState state, String userRole) {
-    final homeData = state.homeData!;
+  /// 배경 레이어: 상단 노랑 + 하단 흰색
+  Widget _buildBackgroundLayer() {
+    final topPadding = MediaQuery.of(context).padding.top;
+    final yellowHeight = topPadding +
+        AppSpacing.appBarHeight +
+        AppSpacing.lg +
+        AppSpacing.homeYellowOverlap;
 
     return Column(
       children: [
-        // #0 노란 배경 헤더 (AppBar + 빨간 라인 + 노란 확장)
-        _buildYellowHeader(),
+        Container(height: yellowHeight, color: AppColors.otokiYellow),
+        Expanded(child: Container(color: AppColors.background)),
+      ],
+    );
+  }
 
-        // 헤더 이후 콘텐츠를 흰색 배경으로 감싸기
-        Container(
-          color: AppColors.background,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // #1 스케줄 카드 (노란 영역과 약 30% 중첩 → 음수 margin)
-              Transform.translate(
-                offset: const Offset(0, -40),
-                child: Padding(
-                  padding: AppSpacing.screenHorizontal,
-                  child: ScheduleCard(
-                    schedules: homeData.todaySchedules,
-                    currentDate: homeData.currentDate,
-                    attendanceSummary: homeData.attendanceSummary,
-                    userRole: userRole,
-                    onHeaderTap: () {
-                      AppRouter.navigateTo(context, AppRouter.myScheduleCalendar);
-                    },
-                    onRegisterTap: () async {
-                      await AppRouter.navigateTo(context, AppRouter.attendance);
-                      if (mounted) {
-                        ref.read(homeProvider.notifier).refresh();
-                      }
-                    },
-                    onScheduleTap: (schedule) {
-                      final date = DateTime.tryParse(homeData.currentDate) ?? DateTime.now();
-                      AppRouter.navigateTo(
-                        context,
-                        AppRouter.myScheduleDetail,
-                        arguments: date,
-                      );
-                    },
-                  ),
-                ),
-              ),
+  /// 홈 화면 콘텐츠 (단순 수직 배치)
+  Widget _buildContent(HomeState state, String userRole) {
+    final homeData = state.homeData!;
+    final topPadding = MediaQuery.of(context).padding.top;
 
-              // 중첩 offset 만큼 간격 보정
-              const SizedBox(height: 0),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // SafeArea 상단 여백
+        SizedBox(height: topPadding),
 
-              // #2 유통기한 알림
-              Padding(
-                padding: AppSpacing.screenHorizontal,
-                child: ExpiryAlertCard(
-                  expiryAlert: homeData.expiryAlert,
-                  onTap: () {
-                    // TODO: 유통기한 관리 화면으로 이동 (후속 작업)
-                  },
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
+        // AppBar 영역 (로고 + 햄버거 메뉴)
+        _buildAppBar(),
+        const SizedBox(height: AppSpacing.lg),
 
-              // #3 공지 영역 (가로 스크롤)
-              NoticeCarousel(
-                notices: homeData.notices,
-                onNoticeTap: (notice) {
-                  AppRouter.navigateTo(
-                    context,
-                    AppRouter.noticeDetail,
-                    arguments: notice.id,
-                  );
-                },
-                onViewAllTap: () {
-                  AppRouter.navigateTo(context, AppRouter.notices);
-                },
-              ),
-              const SizedBox(height: AppSpacing.xl),
-
-              // #4 제품 검색 바
-              Padding(
-                padding: AppSpacing.screenHorizontal,
-                child: ProductSearchBar(
-                  onTap: () {
-                    // TODO: 제품 검색 화면으로 이동 (후속 작업)
-                  },
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-
-              // #5 빠른 메뉴
-              Padding(
-                padding: AppSpacing.screenHorizontal,
-                child: QuickMenuGrid(
-                  userRole: userRole,
-                  onMenuTap: (item) {
-                    _handleQuickMenuTap(item, userRole);
-                  },
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xxxl),
-            ],
+        // #1 스케줄 카드
+        Padding(
+          padding: AppSpacing.screenHorizontal,
+          child: ScheduleCard(
+            schedules: homeData.todaySchedules,
+            currentDate: homeData.currentDate,
+            attendanceSummary: homeData.attendanceSummary,
+            userRole: userRole,
+            onHeaderTap: () {
+              AppRouter.navigateTo(context, AppRouter.myScheduleCalendar);
+            },
+            onRegisterTap: () async {
+              await AppRouter.navigateTo(context, AppRouter.attendance);
+              if (mounted) {
+                ref.read(homeProvider.notifier).refresh();
+              }
+            },
+            onScheduleTap: (schedule) {
+              final date = DateTime.tryParse(homeData.currentDate) ?? DateTime.now();
+              AppRouter.navigateTo(
+                context,
+                AppRouter.myScheduleDetail,
+                arguments: date,
+              );
+            },
           ),
         ),
+        const SizedBox(height: AppSpacing.lg),
+
+        // #2 유통기한 알림
+        Padding(
+          padding: AppSpacing.screenHorizontal,
+          child: ExpiryAlertCard(
+            expiryAlert: homeData.expiryAlert,
+            onTap: () {
+              // TODO: 유통기한 관리 화면으로 이동 (후속 작업)
+            },
+          ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+
+        // #3 공지 영역 (가로 스크롤)
+        NoticeCarousel(
+          notices: homeData.notices,
+          onNoticeTap: (notice) {
+            AppRouter.navigateTo(
+              context,
+              AppRouter.noticeDetail,
+              arguments: notice.id,
+            );
+          },
+          onViewAllTap: () {
+            AppRouter.navigateTo(context, AppRouter.notices);
+          },
+        ),
+        const SizedBox(height: AppSpacing.xl),
+
+        // #4 제품 검색 바
+        Padding(
+          padding: AppSpacing.screenHorizontal,
+          child: ProductSearchBar(
+            onTap: () {
+              // TODO: 제품 검색 화면으로 이동 (후속 작업)
+            },
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+
+        // #5 빠른 메뉴
+        Padding(
+          padding: AppSpacing.screenHorizontal,
+          child: QuickMenuGrid(
+            userRole: userRole,
+            onMenuTap: (item) {
+              _handleQuickMenuTap(item, userRole);
+            },
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xxxl),
       ],
+    );
+  }
+
+  /// AppBar 영역 (로고 + 햄버거 메뉴)
+  Widget _buildAppBar() {
+    return SizedBox(
+      height: AppSpacing.appBarHeight,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          children: [
+            Image.asset(
+              'assets/images/h1_logo.png',
+              height: 28,
+              fit: BoxFit.contain,
+            ),
+            const Spacer(),
+            IconButton(
+              icon: const Icon(Icons.menu, color: AppColors.textPrimary),
+              onPressed: () {
+                Scaffold.of(context).openEndDrawer();
+              },
+              tooltip: '전체 메뉴',
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -231,44 +271,4 @@ class _HomePageState extends ConsumerState<HomePage> {
     }
   }
 
-  /// 노란 배경 헤더 영역 (SafeArea + AppBar + 빨간 라인 + 확장)
-  Widget _buildYellowHeader() {
-    final topPadding = MediaQuery.of(context).padding.top;
-
-    return Container(
-      color: AppColors.otokiYellow,
-      child: Column(
-        children: [
-          // SafeArea 상단 여백
-          SizedBox(height: topPadding),
-          // AppBar 영역
-          SizedBox(
-            height: AppSpacing.appBarHeight,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  Image.asset(
-                    'assets/images/h1_logo.png',
-                    height: 28,
-                    fit: BoxFit.contain,
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.menu, color: AppColors.textPrimary),
-                    onPressed: () {
-                      Scaffold.of(context).openEndDrawer();
-                    },
-                    tooltip: '전체 메뉴',
-                  ),
-                ],
-              ),
-            ),
-          ),
-          // 노란 확장 영역 (스케줄 카드가 위에서 겹치는 영역)
-          const SizedBox(height: 36),
-        ],
-      ),
-    );
-  }
 }

@@ -72,6 +72,10 @@ abstract final class AppSpacing {
   static BorderRadius get inputBorderRadius =>
       BorderRadius.circular(radiusMd);
 
+  // ─── Home Layout ────────────────────────────────────────
+  /// 홈 화면 노란 배경이 스케줄 카드와 겹치는 깊이 (dp)
+  static const double homeYellowOverlap = 60;
+
   // ─── Component Sizes ─────────────────────────────────────
   /// AppBar 높이
   static const double appBarHeight = 56;
