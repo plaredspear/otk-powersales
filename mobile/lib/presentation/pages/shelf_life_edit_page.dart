@@ -78,7 +78,7 @@ class _ShelfLifeEditPageState extends ConsumerState<ShelfLifeEditPage> {
         ],
       ),
       body: ShelfLifeEditForm(
-        storeName: state.selectedStoreName ?? widget.item.storeName,
+        accountName: state.selectedAccountName ?? widget.item.accountName,
         productName: state.selectedProductName ?? widget.item.productName,
         productCode: state.selectedProductCode ?? widget.item.productCode,
         expiryDate: state.expiryDate,

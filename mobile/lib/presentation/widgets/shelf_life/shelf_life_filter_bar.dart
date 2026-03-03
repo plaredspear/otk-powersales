@@ -9,11 +9,14 @@ import '../../../core/theme/app_typography.dart';
 ///
 /// 거래처 드롭다운 + 유통기한 날짜 범위 + 검색 버튼
 class ShelfLifeFilterBar extends StatelessWidget {
-  /// 거래처 목록 {storeId: storeName}
-  final Map<int, String> stores;
+  /// 거래처 목록 {accountCode: accountName}
+  final Map<String, String> stores;
 
-  /// 선택된 거래처 ID
-  final int? selectedStoreId;
+  /// 선택된 거래처 코드
+  final String? selectedAccountCode;
+
+  /// 거래처 목록 로딩 중 여부
+  final bool isStoresLoading;
 
   /// 검색 시작일
   final DateTime fromDate;
@@ -22,7 +25,7 @@ class ShelfLifeFilterBar extends StatelessWidget {
   final DateTime toDate;
 
   /// 거래처 선택 콜백
-  final void Function(int? storeId, String? storeName) onStoreChanged;
+  final void Function(String? accountCode, String? accountName) onStoreChanged;
 
   /// 시작일 변경 콜백
   final void Function(DateTime date) onFromDateChanged;
@@ -36,7 +39,8 @@ class ShelfLifeFilterBar extends StatelessWidget {
   const ShelfLifeFilterBar({
     super.key,
     required this.stores,
-    this.selectedStoreId,
+    this.selectedAccountCode,
+    this.isStoresLoading = false,
     required this.fromDate,
     required this.toDate,
     required this.onStoreChanged,
@@ -89,39 +93,54 @@ class ShelfLifeFilterBar extends StatelessWidget {
         borderRadius: AppSpacing.inputBorderRadius,
         border: Border.all(color: AppColors.border),
       ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<int?>(
-          value: selectedStoreId,
-          isExpanded: true,
-          hint: Text(
-            '거래처 전체',
-            style: AppTypography.bodyMedium
-                .copyWith(color: AppColors.textSecondary),
-          ),
-          items: [
-            DropdownMenuItem<int?>(
-              value: null,
-              child: Text(
-                '거래처 전체',
-                style: AppTypography.bodyMedium,
+      child: isStoresLoading
+          ? const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  SizedBox(width: 8),
+                  Text('거래처 로딩 중...'),
+                ],
+              ),
+            )
+          : DropdownButtonHideUnderline(
+              child: DropdownButton<String?>(
+                value: selectedAccountCode,
+                isExpanded: true,
+                hint: Text(
+                  '거래처 전체',
+                  style: AppTypography.bodyMedium
+                      .copyWith(color: AppColors.textSecondary),
+                ),
+                items: [
+                  DropdownMenuItem<String?>(
+                    value: null,
+                    child: Text(
+                      '거래처 전체',
+                      style: AppTypography.bodyMedium,
+                    ),
+                  ),
+                  ...stores.entries.map((entry) {
+                    return DropdownMenuItem<String?>(
+                      value: entry.key,
+                      child: Text(
+                        entry.value,
+                        style: AppTypography.bodyMedium,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    );
+                  }),
+                ],
+                onChanged: (value) {
+                  onStoreChanged(value, value != null ? stores[value] : null);
+                },
               ),
             ),
-            ...stores.entries.map((entry) {
-              return DropdownMenuItem<int?>(
-                value: entry.key,
-                child: Text(
-                  entry.value,
-                  style: AppTypography.bodyMedium,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              );
-            }),
-          ],
-          onChanged: (value) {
-            onStoreChanged(value, value != null ? stores[value] : null);
-          },
-        ),
-      ),
     );
   }
 

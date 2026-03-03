@@ -23,29 +23,29 @@ class _MockShelfLifeRepository implements ShelfLifeRepository {
   }
 
   @override
-  Future<ShelfLifeItem> updateShelfLife(int id, ShelfLifeUpdateForm form) async {
+  Future<ShelfLifeItem> updateShelfLife(int seq, ShelfLifeUpdateForm form) async {
     if (error != null) throw error!;
     return itemResult!;
   }
 
   @override
-  Future<void> deleteShelfLife(int id) async {
+  Future<void> deleteShelfLife(int seq) async {
     if (error != null) throw error!;
   }
 
   @override
-  Future<int> deleteShelfLifeBatch(List<int> ids) async {
+  Future<int> deleteShelfLifeBatch(List<int> seqs) async {
     if (error != null) throw error!;
     return deleteCount!;
   }
 }
 
 ShelfLifeItem _createTestItem({
-  int id = 1,
+  int seq = 1,
   String productCode = '30310009',
   String productName = '고등어김치&무조림(캔)280G',
-  String storeName = '그린유통D',
-  int storeId = 1025,
+  String accountName = '그린유통D',
+  String accountCode = 'ACC1025',
   DateTime? expiryDate,
   DateTime? alertDate,
   int dDay = 0,
@@ -53,11 +53,11 @@ ShelfLifeItem _createTestItem({
   bool isExpired = true,
 }) {
   return ShelfLifeItem(
-    id: id,
+    seq: seq,
     productCode: productCode,
     productName: productName,
-    storeName: storeName,
-    storeId: storeId,
+    accountName: accountName,
+    accountCode: accountCode,
     expiryDate: expiryDate ?? DateTime(2026, 2, 15),
     alertDate: alertDate ?? DateTime(2026, 2, 14),
     dDay: dDay,
@@ -78,14 +78,14 @@ void main() {
   group('UpdateShelfLife', () {
     test('유통기한을 성공적으로 수정한다', () async {
       // Given
-      const itemId = 1;
+      const itemSeq = 1;
       final form = ShelfLifeUpdateForm(
         expiryDate: DateTime(2027, 1, 31),
         alertDate: DateTime(2027, 1, 1),
         description: '수정된 설명',
       );
       final expectedItem = _createTestItem(
-        id: itemId,
+        seq: itemSeq,
         expiryDate: DateTime(2027, 1, 31),
         alertDate: DateTime(2027, 1, 1),
         description: '수정된 설명',
@@ -93,19 +93,19 @@ void main() {
       repository.itemResult = expectedItem;
 
       // When
-      final result = await useCase(itemId, form);
+      final result = await useCase(itemSeq, form);
 
       // Then
       expect(result, expectedItem);
-      expect(result.id, itemId);
+      expect(result.seq, itemSeq);
       expect(result.expiryDate, DateTime(2027, 1, 31));
       expect(result.alertDate, DateTime(2027, 1, 1));
       expect(result.description, '수정된 설명');
     });
 
-    test('ID가 0 이하일 때 예외를 발생시킨다', () async {
+    test('seq가 0 이하일 때 예외를 발생시킨다', () async {
       // Given
-      const invalidId = 0;
+      const invalidSeq = 0;
       final form = ShelfLifeUpdateForm(
         expiryDate: DateTime(2027, 1, 31),
         alertDate: DateTime(2027, 1, 1),
@@ -114,18 +114,18 @@ void main() {
 
       // When & Then
       expect(
-        () => useCase(invalidId, form),
+        () => useCase(invalidSeq, form),
         throwsA(isA<Exception>().having(
           (e) => e.toString(),
           'message',
-          contains('유효하지 않은 유통기한 ID입니다'),
+          contains('유효하지 않은 유통기한 시퀀스입니다'),
         )),
       );
     });
 
     test('Repository 에러를 전파한다', () async {
       // Given
-      const itemId = 1;
+      const itemSeq = 1;
       final form = ShelfLifeUpdateForm(
         expiryDate: DateTime(2027, 1, 31),
         alertDate: DateTime(2027, 1, 1),
@@ -135,7 +135,7 @@ void main() {
 
       // When & Then
       expect(
-        () => useCase(itemId, form),
+        () => useCase(itemSeq, form),
         throwsA(isA<Exception>().having(
           (e) => e.toString(),
           'message',

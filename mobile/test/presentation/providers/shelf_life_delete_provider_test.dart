@@ -19,7 +19,7 @@ void main() {
     test('초기 상태가 올바르게 설정되어야 한다', () {
       expect(notifier.state.isLoading, false);
       expect(notifier.state.items, isEmpty);
-      expect(notifier.state.selectedIds, isEmpty);
+      expect(notifier.state.selectedSeqs, isEmpty);
       expect(notifier.state.isDeleted, false);
     });
 
@@ -28,7 +28,7 @@ void main() {
         notifier.setItems(_allItems);
 
         expect(notifier.state.items.length, 4);
-        expect(notifier.state.selectedIds, isEmpty);
+        expect(notifier.state.selectedSeqs, isEmpty);
       });
     });
 
@@ -38,7 +38,7 @@ void main() {
 
         notifier.toggleItem(1);
 
-        expect(notifier.state.selectedIds, contains(1));
+        expect(notifier.state.selectedSeqs, contains(1));
         expect(notifier.state.selectedCount, 1);
       });
 
@@ -47,7 +47,7 @@ void main() {
         notifier.toggleItem(1);
         notifier.toggleItem(1);
 
-        expect(notifier.state.selectedIds, isNot(contains(1)));
+        expect(notifier.state.selectedSeqs, isNot(contains(1)));
         expect(notifier.state.selectedCount, 0);
       });
 
@@ -57,7 +57,7 @@ void main() {
         notifier.toggleItem(1);
         notifier.toggleItem(3);
 
-        expect(notifier.state.selectedIds, {1, 3});
+        expect(notifier.state.selectedSeqs, {1, 3});
         expect(notifier.state.selectedCount, 2);
       });
     });
@@ -99,8 +99,8 @@ void main() {
         notifier.toggleGroup(expired: true);
 
         expect(notifier.state.isExpiredGroupSelected, true);
-        expect(notifier.state.selectedIds, containsAll([1, 2]));
-        expect(notifier.state.selectedIds.length, 2);
+        expect(notifier.state.selectedSeqs, containsAll([1, 2]));
+        expect(notifier.state.selectedSeqs.length, 2);
       });
 
       test('만료 그룹 전체를 해제할 수 있어야 한다', () {
@@ -110,7 +110,7 @@ void main() {
         notifier.toggleGroup(expired: true);
 
         expect(notifier.state.isExpiredGroupSelected, false);
-        expect(notifier.state.selectedIds, isEmpty);
+        expect(notifier.state.selectedSeqs, isEmpty);
       });
 
       test('만료 전 그룹 전체를 선택할 수 있어야 한다', () {
@@ -119,7 +119,7 @@ void main() {
         notifier.toggleGroup(expired: false);
 
         expect(notifier.state.isActiveGroupSelected, true);
-        expect(notifier.state.selectedIds, containsAll([3, 4]));
+        expect(notifier.state.selectedSeqs, containsAll([3, 4]));
       });
 
       test('만료 전 그룹 전체를 해제할 수 있어야 한다', () {
@@ -129,7 +129,7 @@ void main() {
         notifier.toggleGroup(expired: false);
 
         expect(notifier.state.isActiveGroupSelected, false);
-        expect(notifier.state.selectedIds, isEmpty);
+        expect(notifier.state.selectedSeqs, isEmpty);
       });
 
       test('다른 그룹 선택에 영향을 주지 않아야 한다', () {
@@ -178,7 +178,7 @@ void main() {
         expect(notifier.state.isDeleted, false);
       });
 
-      test('삭제 전달된 ID가 올바라야 한다', () async {
+      test('삭제 전달된 seq가 올바라야 한다', () async {
         fakeRepository.batchDeleteCount = 2;
         notifier.setItems(_allItems);
         notifier.toggleItem(1);
@@ -187,7 +187,7 @@ void main() {
         await notifier.deleteSelected();
 
         expect(
-          fakeRepository.lastBatchDeleteIds?.toSet(),
+          fakeRepository.lastBatchDeleteSeqs?.toSet(),
           {1, 3},
         );
       });
@@ -217,7 +217,7 @@ void main() {
 class FakeShelfLifeRepository implements ShelfLifeRepository {
   int batchDeleteCount = 0;
   int deleteBatchCalls = 0;
-  List<int>? lastBatchDeleteIds;
+  List<int>? lastBatchDeleteSeqs;
   Exception? exceptionToThrow;
 
   @override
@@ -231,19 +231,19 @@ class FakeShelfLifeRepository implements ShelfLifeRepository {
   }
 
   @override
-  Future<ShelfLifeItem> updateShelfLife(int id, dynamic form) async {
+  Future<ShelfLifeItem> updateShelfLife(int seq, dynamic form) async {
     throw UnimplementedError();
   }
 
   @override
-  Future<void> deleteShelfLife(int id) async {
+  Future<void> deleteShelfLife(int seq) async {
     throw UnimplementedError();
   }
 
   @override
-  Future<int> deleteShelfLifeBatch(List<int> ids) async {
+  Future<int> deleteShelfLifeBatch(List<int> seqs) async {
     deleteBatchCalls++;
-    lastBatchDeleteIds = ids;
+    lastBatchDeleteSeqs = seqs;
     if (exceptionToThrow != null) throw exceptionToThrow!;
     return batchDeleteCount;
   }
@@ -254,11 +254,11 @@ class FakeShelfLifeRepository implements ShelfLifeRepository {
 // ──────────────────────────────────────────────────────────────────
 
 final _expiredItem1 = ShelfLifeItem(
-  id: 1,
+  seq: 1,
   productCode: 'P001',
   productName: '진라면',
-  storeName: '이마트',
-  storeId: 100,
+  accountName: '이마트',
+  accountCode: 'ACC001',
   expiryDate: DateTime(2026, 2, 1),
   alertDate: DateTime(2026, 1, 31),
   dDay: -10,
@@ -267,11 +267,11 @@ final _expiredItem1 = ShelfLifeItem(
 );
 
 final _expiredItem2 = ShelfLifeItem(
-  id: 2,
+  seq: 2,
   productCode: 'P002',
   productName: '케첩',
-  storeName: '이마트',
-  storeId: 100,
+  accountName: '이마트',
+  accountCode: 'ACC001',
   expiryDate: DateTime(2026, 2, 5),
   alertDate: DateTime(2026, 2, 4),
   dDay: -5,
@@ -280,11 +280,11 @@ final _expiredItem2 = ShelfLifeItem(
 );
 
 final _activeItem1 = ShelfLifeItem(
-  id: 3,
+  seq: 3,
   productCode: 'P003',
   productName: '카레',
-  storeName: '이마트',
-  storeId: 100,
+  accountName: '이마트',
+  accountCode: 'ACC001',
   expiryDate: DateTime(2026, 3, 15),
   alertDate: DateTime(2026, 3, 14),
   dDay: 5,
@@ -293,11 +293,11 @@ final _activeItem1 = ShelfLifeItem(
 );
 
 final _activeItem2 = ShelfLifeItem(
-  id: 4,
+  seq: 4,
   productCode: 'P004',
   productName: '마요네즈',
-  storeName: '이마트',
-  storeId: 100,
+  accountName: '이마트',
+  accountCode: 'ACC001',
   expiryDate: DateTime(2026, 3, 20),
   alertDate: DateTime(2026, 3, 19),
   dDay: 10,

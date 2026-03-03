@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/domain/entities/shelf_life_item.dart';
 import 'package:mobile/domain/repositories/shelf_life_repository.dart';
@@ -14,7 +15,13 @@ void main() {
     setUp(() {
       fakeRepository = FakeShelfLifeRepository();
       useCase = GetShelfLifeList(fakeRepository);
-      notifier = ShelfLifeListNotifier(getShelfLifeList: useCase);
+      // Constructor now requires Dio. Tests that don't call initialize() can
+      // safely pass a plain Dio() with no baseUrl — _loadStores() won't be
+      // triggered and the instance is never actually used for network calls.
+      notifier = ShelfLifeListNotifier(
+        getShelfLifeList: useCase,
+        dio: Dio(),
+      );
     });
 
     test('초기 상태가 올바르게 설정되어야 한다', () {
@@ -25,18 +32,18 @@ void main() {
 
     group('selectStore', () {
       test('거래처를 선택하면 state에 반영되어야 한다', () {
-        notifier.selectStore(100, '이마트');
+        notifier.selectStore('ACC001', '이마트');
 
-        expect(notifier.state.selectedStoreId, 100);
-        expect(notifier.state.selectedStoreName, '이마트');
+        expect(notifier.state.selectedAccountCode, 'ACC001');
+        expect(notifier.state.selectedAccountName, '이마트');
       });
 
       test('null을 전달하면 거래처 필터가 초기화되어야 한다', () {
-        notifier.selectStore(100, '이마트');
+        notifier.selectStore('ACC001', '이마트');
         notifier.selectStore(null, null);
 
-        expect(notifier.state.selectedStoreId, isNull);
-        expect(notifier.state.selectedStoreName, isNull);
+        expect(notifier.state.selectedAccountCode, isNull);
+        expect(notifier.state.selectedAccountName, isNull);
       });
     });
 
@@ -145,18 +152,18 @@ class FakeShelfLifeRepository implements ShelfLifeRepository {
   }
 
   @override
-  Future<ShelfLifeItem> updateShelfLife(int id, dynamic form) async {
+  Future<ShelfLifeItem> updateShelfLife(int seq, dynamic form) async {
     if (exceptionToThrow != null) throw exceptionToThrow!;
     return updateResult!;
   }
 
   @override
-  Future<void> deleteShelfLife(int id) async {
+  Future<void> deleteShelfLife(int seq) async {
     if (exceptionToThrow != null) throw exceptionToThrow!;
   }
 
   @override
-  Future<int> deleteShelfLifeBatch(List<int> ids) async {
+  Future<int> deleteShelfLifeBatch(List<int> seqs) async {
     if (exceptionToThrow != null) throw exceptionToThrow!;
     return batchDeleteCount;
   }
@@ -167,11 +174,11 @@ class FakeShelfLifeRepository implements ShelfLifeRepository {
 // ──────────────────────────────────────────────────────────────────
 
 final _sampleItem1 = ShelfLifeItem(
-  id: 1,
+  seq: 1,
   productCode: 'P001',
   productName: '진라면',
-  storeName: '이마트',
-  storeId: 100,
+  accountName: '이마트',
+  accountCode: 'ACC001',
   expiryDate: DateTime(2026, 3, 15),
   alertDate: DateTime(2026, 3, 14),
   dDay: 5,
@@ -180,11 +187,11 @@ final _sampleItem1 = ShelfLifeItem(
 );
 
 final _sampleItem2 = ShelfLifeItem(
-  id: 2,
+  seq: 2,
   productCode: 'P002',
   productName: '케첩',
-  storeName: '이마트',
-  storeId: 100,
+  accountName: '이마트',
+  accountCode: 'ACC001',
   expiryDate: DateTime(2026, 2, 1),
   alertDate: DateTime(2026, 1, 31),
   dDay: -10,

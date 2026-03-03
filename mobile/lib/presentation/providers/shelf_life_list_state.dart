@@ -15,10 +15,10 @@ class ShelfLifeListState {
   final bool hasSearched;
 
   /// 거래처 필터 (null이면 전체)
-  final int? selectedStoreId;
+  final String? selectedAccountCode;
 
   /// 선택된 거래처명
-  final String? selectedStoreName;
+  final String? selectedAccountName;
 
   /// 검색 시작일
   final DateTime fromDate;
@@ -26,28 +26,32 @@ class ShelfLifeListState {
   /// 검색 종료일
   final DateTime toDate;
 
-  /// 내 거래처 목록 (드롭다운용) - {storeId: storeName}
-  final Map<int, String> stores;
+  /// 내 거래처 목록 (드롭다운용) - {accountCode: accountName}
+  final Map<String, String> stores;
+
+  /// 거래처 목록 로딩 중 여부
+  final bool isStoresLoading;
 
   const ShelfLifeListState({
     this.isLoading = false,
     this.errorMessage,
     this.items = const [],
     this.hasSearched = false,
-    this.selectedStoreId,
-    this.selectedStoreName,
+    this.selectedAccountCode,
+    this.selectedAccountName,
     required this.fromDate,
     required this.toDate,
     this.stores = const {},
+    this.isStoresLoading = false,
   });
 
-  /// 초기 상태 (기본 필터: 오늘 기준 앞/뒤 7일)
+  /// 초기 상태 (시작: 오늘 - 7일, 종료: 오늘 + 3개월)
   factory ShelfLifeListState.initial() {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     return ShelfLifeListState(
       fromDate: today.subtract(const Duration(days: 7)),
-      toDate: today.add(const Duration(days: 7)),
+      toDate: DateTime(today.year, today.month + 3, today.day),
     );
   }
 
@@ -85,11 +89,12 @@ class ShelfLifeListState {
     String? errorMessage,
     List<ShelfLifeItem>? items,
     bool? hasSearched,
-    int? selectedStoreId,
-    String? selectedStoreName,
+    String? selectedAccountCode,
+    String? selectedAccountName,
     DateTime? fromDate,
     DateTime? toDate,
-    Map<int, String>? stores,
+    Map<String, String>? stores,
+    bool? isStoresLoading,
     bool clearStoreFilter = false,
   }) {
     return ShelfLifeListState(
@@ -97,13 +102,14 @@ class ShelfLifeListState {
       errorMessage: errorMessage,
       items: items ?? this.items,
       hasSearched: hasSearched ?? this.hasSearched,
-      selectedStoreId:
-          clearStoreFilter ? null : (selectedStoreId ?? this.selectedStoreId),
-      selectedStoreName:
-          clearStoreFilter ? null : (selectedStoreName ?? this.selectedStoreName),
+      selectedAccountCode:
+          clearStoreFilter ? null : (selectedAccountCode ?? this.selectedAccountCode),
+      selectedAccountName:
+          clearStoreFilter ? null : (selectedAccountName ?? this.selectedAccountName),
       fromDate: fromDate ?? this.fromDate,
       toDate: toDate ?? this.toDate,
       stores: stores ?? this.stores,
+      isStoresLoading: isStoresLoading ?? this.isStoresLoading,
     );
   }
 }

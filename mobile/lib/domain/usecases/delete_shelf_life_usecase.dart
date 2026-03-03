@@ -10,13 +10,13 @@ class DeleteShelfLife {
 
   /// 유통기한 단건 삭제 실행
   ///
-  /// [id]: 삭제할 유통기한 항목 ID
-  /// Throws: [Exception] ID가 유효하지 않은 경우
-  Future<void> call(int id) async {
-    if (id <= 0) {
-      throw Exception('유효하지 않은 유통기한 ID입니다');
+  /// [seq]: 삭제할 유통기한 항목 시퀀스
+  /// Throws: [Exception] 시퀀스가 유효하지 않은 경우
+  Future<void> call(int seq) async {
+    if (seq <= 0) {
+      throw Exception('유효하지 않은 유통기한 시퀀스입니다');
     }
 
-    await _repository.deleteShelfLife(id);
+    await _repository.deleteShelfLife(seq);
   }
 }

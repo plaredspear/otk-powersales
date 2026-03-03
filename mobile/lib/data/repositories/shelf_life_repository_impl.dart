@@ -19,7 +19,7 @@ class ShelfLifeRepositoryImpl implements ShelfLifeRepository {
   @override
   Future<List<ShelfLifeItem>> getShelfLifeList(ShelfLifeFilter filter) async {
     final response = await _remoteDataSource.getShelfLifeList(
-      storeId: filter.storeId,
+      accountCode: filter.accountCode,
       fromDate: filter.fromDate.toIso8601String().substring(0, 10),
       toDate: filter.toDate.toIso8601String().substring(0, 10),
     );
@@ -36,22 +36,22 @@ class ShelfLifeRepositoryImpl implements ShelfLifeRepository {
 
   @override
   Future<ShelfLifeItem> updateShelfLife(
-    int id,
+    int seq,
     ShelfLifeUpdateForm form,
   ) async {
     final request = ShelfLifeUpdateRequest.fromForm(form);
-    final response = await _remoteDataSource.updateShelfLife(id, request);
+    final response = await _remoteDataSource.updateShelfLife(seq, request);
     return response.toEntity();
   }
 
   @override
-  Future<void> deleteShelfLife(int id) async {
-    await _remoteDataSource.deleteShelfLife(id);
+  Future<void> deleteShelfLife(int seq) async {
+    await _remoteDataSource.deleteShelfLife(seq);
   }
 
   @override
-  Future<int> deleteShelfLifeBatch(List<int> ids) async {
-    final response = await _remoteDataSource.deleteShelfLifeBatch(ids);
+  Future<int> deleteShelfLifeBatch(List<int> seqs) async {
+    final response = await _remoteDataSource.deleteShelfLifeBatch(seqs);
     return response.deletedCount;
   }
 }

@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/domain/entities/shelf_life_form.dart';
 import 'package:mobile/domain/entities/shelf_life_item.dart';
@@ -20,17 +21,20 @@ void main() {
       registerUseCase = RegisterShelfLife(fakeRepository);
       updateUseCase = UpdateShelfLife(fakeRepository);
       deleteUseCase = DeleteShelfLife(fakeRepository);
+      // Constructor now requires Dio. Pass a plain Dio() for tests that don't
+      // call initializeForRegister() — _dio is only used inside that method.
       notifier = ShelfLifeFormNotifier(
         registerShelfLife: registerUseCase,
         updateShelfLife: updateUseCase,
         deleteShelfLife: deleteUseCase,
+        dio: Dio(),
       );
     });
 
     test('초기 상태가 올바르게 설정되어야 한다', () {
       expect(notifier.state.isLoading, false);
       expect(notifier.state.isRegisterMode, true);
-      expect(notifier.state.selectedStoreId, isNull);
+      expect(notifier.state.selectedAccountCode, isNull);
       expect(notifier.state.selectedProductCode, isNull);
       expect(notifier.state.isSaved, false);
       expect(notifier.state.isDeleted, false);
@@ -41,9 +45,9 @@ void main() {
         notifier.initializeForEdit(_sampleItem);
 
         expect(notifier.state.isEditMode, true);
-        expect(notifier.state.editId, 1);
-        expect(notifier.state.selectedStoreId, 100);
-        expect(notifier.state.selectedStoreName, '이마트');
+        expect(notifier.state.editSeq, 1);
+        expect(notifier.state.selectedAccountCode, 'ACC001');
+        expect(notifier.state.selectedAccountName, '이마트');
         expect(notifier.state.selectedProductCode, 'P001');
         expect(notifier.state.selectedProductName, '진라면');
         expect(notifier.state.expiryDate, DateTime(2026, 3, 15));
@@ -54,10 +58,10 @@ void main() {
 
     group('selectStore', () {
       test('거래처를 선택하면 state에 반영되어야 한다', () {
-        notifier.selectStore(100, '이마트');
+        notifier.selectStore('ACC001', '이마트');
 
-        expect(notifier.state.selectedStoreId, 100);
-        expect(notifier.state.selectedStoreName, '이마트');
+        expect(notifier.state.selectedAccountCode, 'ACC001');
+        expect(notifier.state.selectedAccountName, '이마트');
       });
     });
 
@@ -102,7 +106,7 @@ void main() {
     group('register', () {
       test('등록 성공 시 isSaved가 true여야 한다', () async {
         fakeRepository.registerResult = _sampleItem;
-        notifier.selectStore(100, '이마트');
+        notifier.selectStore('ACC001', '이마트');
         notifier.selectProduct('P001', '진라면');
 
         await notifier.register();
@@ -122,7 +126,7 @@ void main() {
 
       test('등록 실패 시 에러 메시지를 설정해야 한다', () async {
         fakeRepository.exceptionToThrow = Exception('이미 등록된 유통기한입니다');
-        notifier.selectStore(100, '이마트');
+        notifier.selectStore('ACC001', '이마트');
         notifier.selectProduct('P001', '진라면');
 
         await notifier.register();
@@ -134,14 +138,15 @@ void main() {
 
       test('등록 시 올바른 폼 데이터가 전달되어야 한다', () async {
         fakeRepository.registerResult = _sampleItem;
-        notifier.selectStore(100, '이마트');
+        notifier.selectStore('ACC001', '이마트');
         notifier.selectProduct('P001', '진라면');
         notifier.updateDescription('3층 선반');
 
         await notifier.register();
 
         expect(fakeRepository.lastRegisterForm, isNotNull);
-        expect(fakeRepository.lastRegisterForm!.storeId, 100);
+        expect(fakeRepository.lastRegisterForm!.accountCode, 'ACC001');
+        expect(fakeRepository.lastRegisterForm!.accountName, '이마트');
         expect(fakeRepository.lastRegisterForm!.productCode, 'P001');
         expect(fakeRepository.lastRegisterForm!.description, '3층 선반');
       });
@@ -159,8 +164,8 @@ void main() {
         expect(notifier.state.errorMessage, isNull);
       });
 
-      test('editId가 없으면 수정하지 않아야 한다', () async {
-        // 등록 모드 (editId = null)
+      test('editSeq가 없으면 수정하지 않아야 한다', () async {
+        // 등록 모드 (editSeq = null)
         await notifier.update();
 
         expect(notifier.state.isSaved, false);
@@ -186,7 +191,7 @@ void main() {
 
         await notifier.update();
 
-        expect(fakeRepository.lastUpdateId, 1);
+        expect(fakeRepository.lastUpdateSeq, 1);
         expect(fakeRepository.lastUpdateForm, isNotNull);
         expect(
           fakeRepository.lastUpdateForm!.expiryDate,
@@ -211,8 +216,8 @@ void main() {
         expect(notifier.state.errorMessage, isNull);
       });
 
-      test('editId가 없으면 삭제하지 않아야 한다', () async {
-        // 등록 모드 (editId = null)
+      test('editSeq가 없으면 삭제하지 않아야 한다', () async {
+        // 등록 모드 (editSeq = null)
         await notifier.delete();
 
         expect(notifier.state.isDeleted, false);
@@ -230,19 +235,19 @@ void main() {
         expect(notifier.state.isDeleted, false);
       });
 
-      test('삭제 시 올바른 ID가 전달되어야 한다', () async {
+      test('삭제 시 올바른 seq가 전달되어야 한다', () async {
         notifier.initializeForEdit(_sampleItem);
 
         await notifier.delete();
 
-        expect(fakeRepository.lastDeleteId, 1);
+        expect(fakeRepository.lastDeleteSeq, 1);
       });
     });
 
     group('clearError', () {
       test('에러 메시지를 초기화해야 한다', () async {
         fakeRepository.exceptionToThrow = Exception('에러');
-        notifier.selectStore(100, '이마트');
+        notifier.selectStore('ACC001', '이마트');
         notifier.selectProduct('P001', '진라면');
         await notifier.register();
 
@@ -267,9 +272,9 @@ class FakeShelfLifeRepository implements ShelfLifeRepository {
   int updateCalls = 0;
   int deleteCalls = 0;
   ShelfLifeRegisterForm? lastRegisterForm;
-  int? lastUpdateId;
+  int? lastUpdateSeq;
   ShelfLifeUpdateForm? lastUpdateForm;
-  int? lastDeleteId;
+  int? lastDeleteSeq;
   Exception? exceptionToThrow;
 
   @override
@@ -286,25 +291,25 @@ class FakeShelfLifeRepository implements ShelfLifeRepository {
   }
 
   @override
-  Future<ShelfLifeItem> updateShelfLife(int id, dynamic form) async {
+  Future<ShelfLifeItem> updateShelfLife(int seq, dynamic form) async {
     updateCalls++;
-    lastUpdateId = id;
+    lastUpdateSeq = seq;
     lastUpdateForm = form as ShelfLifeUpdateForm;
     if (exceptionToThrow != null) throw exceptionToThrow!;
     return updateResult!;
   }
 
   @override
-  Future<void> deleteShelfLife(int id) async {
+  Future<void> deleteShelfLife(int seq) async {
     deleteCalls++;
-    lastDeleteId = id;
+    lastDeleteSeq = seq;
     if (exceptionToThrow != null) throw exceptionToThrow!;
   }
 
   @override
-  Future<int> deleteShelfLifeBatch(List<int> ids) async {
+  Future<int> deleteShelfLifeBatch(List<int> seqs) async {
     if (exceptionToThrow != null) throw exceptionToThrow!;
-    return ids.length;
+    return seqs.length;
   }
 }
 
@@ -313,11 +318,11 @@ class FakeShelfLifeRepository implements ShelfLifeRepository {
 // ──────────────────────────────────────────────────────────────────
 
 final _sampleItem = ShelfLifeItem(
-  id: 1,
+  seq: 1,
   productCode: 'P001',
   productName: '진라면',
-  storeName: '이마트',
-  storeId: 100,
+  accountName: '이마트',
+  accountCode: 'ACC001',
   expiryDate: DateTime(2026, 3, 15),
   alertDate: DateTime(2026, 3, 14),
   dDay: 5,

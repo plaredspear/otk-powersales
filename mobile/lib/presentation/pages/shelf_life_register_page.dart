@@ -62,16 +62,16 @@ class _ShelfLifeRegisterPageState
           ? const Center(child: CircularProgressIndicator())
           : ShelfLifeRegisterForm(
               stores: state.stores,
-              selectedStoreId: state.selectedStoreId,
+              selectedAccountCode: state.selectedAccountCode,
               selectedProductCode: state.selectedProductCode,
               selectedProductName: state.selectedProductName,
               expiryDate: state.expiryDate,
               alertDate: state.alertDate,
               description: state.description,
-              onStoreChanged: (storeId, storeName) {
+              onStoreChanged: (accountCode, accountName) {
                 ref
                     .read(shelfLifeFormProvider.notifier)
-                    .selectStore(storeId, storeName);
+                    .selectStore(accountCode, accountName);
               },
               onSelectProduct: () async {
                 final result =

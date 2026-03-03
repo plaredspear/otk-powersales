@@ -32,27 +32,27 @@ class ShelfLifeDeleteNotifier extends StateNotifier<ShelfLifeDeleteState> {
 
   /// 삭제 화면 초기화 (관리 화면에서 전달받은 목록 설정)
   void setItems(List<ShelfLifeItem> items) {
-    state = state.copyWith(items: items, selectedIds: {});
+    state = state.copyWith(items: items, selectedSeqs: {});
   }
 
   /// 개별 항목 선택/해제 토글
-  void toggleItem(int id) {
-    final selected = Set<int>.from(state.selectedIds);
-    if (selected.contains(id)) {
-      selected.remove(id);
+  void toggleItem(int seq) {
+    final selected = Set<int>.from(state.selectedSeqs);
+    if (selected.contains(seq)) {
+      selected.remove(seq);
     } else {
-      selected.add(id);
+      selected.add(seq);
     }
-    state = state.copyWith(selectedIds: selected);
+    state = state.copyWith(selectedSeqs: selected);
   }
 
   /// 전체 선택/해제 토글
   void toggleAll() {
     if (state.isAllSelected) {
-      state = state.copyWith(selectedIds: {});
+      state = state.copyWith(selectedSeqs: {});
     } else {
-      final allIds = state.items.map((e) => e.id).toSet();
-      state = state.copyWith(selectedIds: allIds);
+      final allSeqs = state.items.map((e) => e.seq).toSet();
+      state = state.copyWith(selectedSeqs: allSeqs);
     }
   }
 
@@ -60,17 +60,17 @@ class ShelfLifeDeleteNotifier extends StateNotifier<ShelfLifeDeleteState> {
   void toggleGroup({required bool expired}) {
     final groupItems =
         expired ? state.expiredItems : state.activeItems;
-    final groupIds = groupItems.map((e) => e.id).toSet();
+    final groupSeqs = groupItems.map((e) => e.seq).toSet();
 
-    final selected = Set<int>.from(state.selectedIds);
-    final isGroupSelected = groupIds.every(selected.contains);
+    final selected = Set<int>.from(state.selectedSeqs);
+    final isGroupSelected = groupSeqs.every(selected.contains);
 
     if (isGroupSelected) {
-      selected.removeAll(groupIds);
+      selected.removeAll(groupSeqs);
     } else {
-      selected.addAll(groupIds);
+      selected.addAll(groupSeqs);
     }
-    state = state.copyWith(selectedIds: selected);
+    state = state.copyWith(selectedSeqs: selected);
   }
 
   /// 선택된 항목 일괄 삭제
@@ -80,7 +80,7 @@ class ShelfLifeDeleteNotifier extends StateNotifier<ShelfLifeDeleteState> {
     state = state.toLoading();
 
     try {
-      await _deleteBatch.call(state.selectedIds.toList());
+      await _deleteBatch.call(state.selectedSeqs.toList());
 
       state = state.copyWith(
         isLoading: false,
