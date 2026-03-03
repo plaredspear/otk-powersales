@@ -119,7 +119,6 @@ class _HomePageState extends ConsumerState<HomePage> {
 
         // AppBar 영역 (로고 + 햄버거 메뉴)
         _buildAppBar(),
-        const SizedBox(height: AppSpacing.lg),
 
         // #1 스케줄 카드
         Padding(
