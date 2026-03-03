@@ -9,6 +9,7 @@ void main() {
     List<Schedule> schedules = const [],
     String currentDate = '2026-03-01',
     AttendanceSummary? attendanceSummary,
+    String userRole = 'USER',
     VoidCallback? onRegisterTap,
     void Function(Schedule)? onScheduleTap,
     VoidCallback? onHeaderTap,
@@ -21,6 +22,7 @@ void main() {
             currentDate: currentDate,
             attendanceSummary: attendanceSummary ??
                 const AttendanceSummary(totalCount: 0, registeredCount: 0),
+            userRole: userRole,
             onRegisterTap: onRegisterTap,
             onScheduleTap: onScheduleTap,
             onHeaderTap: onHeaderTap,
@@ -204,6 +206,215 @@ void main() {
       });
     });
 
+    group('조장(LEADER) 뷰', () {
+      testWidgets('헤더에 "일정 관리" 텍스트가 표시되어야 한다', (tester) async {
+        await tester.pumpWidget(buildTestWidget(
+          userRole: 'LEADER',
+          attendanceSummary:
+              const AttendanceSummary(totalCount: 5, registeredCount: 3),
+        ));
+
+        expect(find.text('일정 관리'), findsOneWidget);
+        expect(find.text('내 일정'), findsNothing);
+      });
+
+      testWidgets('"팀 출근 현황: N명 중 M명 등록 완료" 텍스트가 표시되어야 한다',
+          (tester) async {
+        await tester.pumpWidget(buildTestWidget(
+          userRole: 'LEADER',
+          attendanceSummary:
+              const AttendanceSummary(totalCount: 5, registeredCount: 3),
+        ));
+
+        expect(find.text('팀 출근 현황: 5명 중 3명 등록 완료'), findsOneWidget);
+      });
+
+      testWidgets('스케줄 없음 시 "오늘 등록된 팀 스케줄이 없습니다." 표시',
+          (tester) async {
+        await tester.pumpWidget(buildTestWidget(
+          userRole: 'LEADER',
+          attendanceSummary:
+              const AttendanceSummary(totalCount: 0, registeredCount: 0),
+        ));
+
+        expect(find.text('오늘 등록된 팀 스케줄이 없습니다.'), findsOneWidget);
+      });
+
+      testWidgets('팀원 이름이 가나다순으로 정렬되어 표시되어야 한다', (tester) async {
+        await tester.pumpWidget(buildTestWidget(
+          userRole: 'LEADER',
+          schedules: _makeLeaderSchedules(),
+          attendanceSummary:
+              const AttendanceSummary(totalCount: 3, registeredCount: 1),
+        ));
+
+        // 가나다순: 김영미 → 박수진 → 이지현
+        expect(find.text('김영미'), findsOneWidget);
+        expect(find.text('박수진'), findsOneWidget);
+        expect(find.text('이지현'), findsOneWidget);
+      });
+
+      testWidgets('출근 등록 버튼이 표시되지 않아야 한다', (tester) async {
+        await tester.pumpWidget(buildTestWidget(
+          userRole: 'LEADER',
+          schedules: _makeLeaderSchedules(),
+          attendanceSummary:
+              const AttendanceSummary(totalCount: 3, registeredCount: 1),
+          onRegisterTap: () {},
+        ));
+
+        expect(find.byType(ElevatedButton), findsNothing);
+      });
+
+      testWidgets('출근 완료 시 체크 아이콘과 시간이 표시되어야 한다', (tester) async {
+        await tester.pumpWidget(buildTestWidget(
+          userRole: 'LEADER',
+          schedules: [
+            Schedule(
+              scheduleId: 'SCH-1',
+              employeeName: '김영미',
+              employeeSfid: 'EMP-001',
+              storeName: '이마트 강남점',
+              workCategory: '행사',
+              isCommuteRegistered: true,
+              commuteRegisteredAt: DateTime(2026, 3, 3, 9, 30),
+            ),
+          ],
+          attendanceSummary:
+              const AttendanceSummary(totalCount: 1, registeredCount: 1),
+        ));
+
+        expect(find.text('09:30'), findsOneWidget);
+        expect(find.byIcon(Icons.check), findsOneWidget);
+      });
+
+      testWidgets('미등록 시 "미등록" 텍스트가 표시되어야 한다', (tester) async {
+        await tester.pumpWidget(buildTestWidget(
+          userRole: 'LEADER',
+          schedules: [
+            const Schedule(
+              scheduleId: 'SCH-1',
+              employeeName: '박수진',
+              employeeSfid: 'EMP-002',
+              storeName: '홈플러스 잠실점',
+              workCategory: '진열',
+              isCommuteRegistered: false,
+            ),
+          ],
+          attendanceSummary:
+              const AttendanceSummary(totalCount: 1, registeredCount: 0),
+        ));
+
+        expect(find.text('미등록'), findsOneWidget);
+      });
+
+      testWidgets('출근 카운트 배지가 숨겨져야 한다 (팀 출근 현황 텍스트로 대체)',
+          (tester) async {
+        await tester.pumpWidget(buildTestWidget(
+          userRole: 'LEADER',
+          schedules: _makeLeaderSchedules(),
+          attendanceSummary:
+              const AttendanceSummary(totalCount: 3, registeredCount: 1),
+        ));
+
+        // 기존 "X/N" 배지가 표시되지 않아야 함
+        expect(find.text('1/3'), findsNothing);
+      });
+
+      testWidgets('"일정 관리" 탭 시 onHeaderTap 콜백이 호출되어야 한다',
+          (tester) async {
+        var tapped = false;
+        await tester.pumpWidget(buildTestWidget(
+          userRole: 'LEADER',
+          onHeaderTap: () => tapped = true,
+        ));
+
+        await tester.tap(find.text('일정 관리'));
+        expect(tapped, isTrue);
+      });
+
+      testWidgets('동일 팀원의 복수 스케줄이 독립 표시되어야 한다', (tester) async {
+        await tester.pumpWidget(buildTestWidget(
+          userRole: 'LEADER',
+          schedules: const [
+            Schedule(
+              scheduleId: 'SCH-1',
+              employeeName: '김영미',
+              employeeSfid: 'EMP-001',
+              storeName: '이마트 강남점',
+              workCategory: '행사',
+              isCommuteRegistered: true,
+              commuteRegisteredAt: null,
+            ),
+            Schedule(
+              scheduleId: 'SCH-2',
+              employeeName: '김영미',
+              employeeSfid: 'EMP-001',
+              storeName: '롯데마트 서초점',
+              workCategory: '진열',
+              isCommuteRegistered: false,
+            ),
+          ],
+          attendanceSummary:
+              const AttendanceSummary(totalCount: 2, registeredCount: 1),
+        ));
+
+        // 김영미가 2번 표시
+        expect(find.text('김영미'), findsNWidgets(2));
+        expect(find.text('이마트 강남점'), findsOneWidget);
+        expect(find.text('롯데마트 서초점'), findsOneWidget);
+      });
+    });
+
+    group('지점장(ADMIN) 뷰', () {
+      testWidgets('ADMIN도 조장과 동일한 UI를 표시해야 한다', (tester) async {
+        await tester.pumpWidget(buildTestWidget(
+          userRole: 'ADMIN',
+          schedules: _makeLeaderSchedules(),
+          attendanceSummary:
+              const AttendanceSummary(totalCount: 3, registeredCount: 1),
+        ));
+
+        expect(find.text('일정 관리'), findsOneWidget);
+        expect(find.text('팀 출근 현황: 3명 중 1명 등록 완료'), findsOneWidget);
+        expect(find.text('내 일정'), findsNothing);
+        expect(find.byType(ElevatedButton), findsNothing);
+      });
+    });
+
+    group('일반 사원(USER) 뷰 (기존 동작 확인)', () {
+      testWidgets('USER는 "내 일정" 링크가 표시되어야 한다', (tester) async {
+        await tester.pumpWidget(buildTestWidget(
+          userRole: 'USER',
+        ));
+
+        expect(find.text('내 일정'), findsOneWidget);
+        expect(find.text('일정 관리'), findsNothing);
+      });
+
+      testWidgets('USER는 등록 버튼이 표시되어야 한다', (tester) async {
+        await tester.pumpWidget(buildTestWidget(
+          userRole: 'USER',
+          schedules: _makeSchedules(3, registered: 1),
+          attendanceSummary:
+              const AttendanceSummary(totalCount: 3, registeredCount: 1),
+          onRegisterTap: () {},
+        ));
+
+        expect(find.byType(ElevatedButton), findsOneWidget);
+      });
+
+      testWidgets('USER는 팀 출근 현황 텍스트가 표시되지 않아야 한다', (tester) async {
+        await tester.pumpWidget(buildTestWidget(
+          userRole: 'USER',
+          attendanceSummary:
+              const AttendanceSummary(totalCount: 5, registeredCount: 3),
+        ));
+
+        expect(find.textContaining('팀 출근 현황'), findsNothing);
+      });
+    });
+
     group('경계 케이스', () {
       testWidgets('T5: totalCount 1, registeredCount 0', (tester) async {
         await tester.pumpWidget(buildTestWidget(
@@ -238,7 +449,7 @@ void main() {
   });
 }
 
-/// 테스트용 Schedule 목록 생성
+/// 테스트용 Schedule 목록 생성 (일반 사원)
 List<Schedule> _makeSchedules(int count, {required int registered}) {
   return List.generate(count, (i) {
     return Schedule(
@@ -250,4 +461,36 @@ List<Schedule> _makeSchedules(int count, {required int registered}) {
       isCommuteRegistered: i < registered,
     );
   });
+}
+
+/// 테스트용 Schedule 목록 생성 (조장 뷰 — 팀원별 다른 이름)
+List<Schedule> _makeLeaderSchedules() {
+  return [
+    Schedule(
+      scheduleId: 'SCH-1',
+      employeeName: '김영미',
+      employeeSfid: 'EMP-001',
+      storeName: '이마트 강남점',
+      workCategory: '행사',
+      isCommuteRegistered: true,
+      commuteRegisteredAt: DateTime(2026, 3, 3, 9, 30),
+    ),
+    const Schedule(
+      scheduleId: 'SCH-2',
+      employeeName: '박수진',
+      employeeSfid: 'EMP-002',
+      storeName: '홈플러스 잠실점',
+      workCategory: '진열',
+      isCommuteRegistered: false,
+    ),
+    Schedule(
+      scheduleId: 'SCH-3',
+      employeeName: '이지현',
+      employeeSfid: 'EMP-003',
+      storeName: '롯데마트 서초점',
+      workCategory: '행사',
+      isCommuteRegistered: false,
+      commuteRegisteredAt: null,
+    ),
+  ];
 }
