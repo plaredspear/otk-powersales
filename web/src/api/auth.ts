@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 interface LoginRequest {
-  employeeId: string;
+  employee_id: string;
   password: string;
 }
 
@@ -43,7 +43,7 @@ export async function login(request: LoginRequest): Promise<LoginData> {
 
 export async function refreshToken(token: string): Promise<RefreshData> {
   const res = await axios.post<ApiResponse<RefreshData>>('/api/v1/auth/refresh', {
-    refreshToken: token,
+    refresh_token: token,
   });
   if (!res.data.success || !res.data.data) {
     throw new Error('토큰 갱신에 실패했습니다');

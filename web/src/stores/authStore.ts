@@ -27,7 +27,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
 
   login: async (employeeId: string, password: string) => {
-    const data = await loginApi({ employeeId, password });
+    const data = await loginApi({ employee_id: employeeId, password });
 
     const user: AuthUser = {
       id: data.user.id,
