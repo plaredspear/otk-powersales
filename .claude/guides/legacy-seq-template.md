@@ -73,6 +73,17 @@ Mermaid에서 예약어로 사용되는 단어가 participant alias나 텍스트
 | `loop`, `alt`, `opt`, `par`, `rect` | alias로 사용 금지 | 풀네임 또는 약어 변경 |
 | `as` | 메시지 텍스트에 단독 사용 주의 | 문장 내 자연스럽게 포함은 OK |
 
+#### Salesforce participant 규칙
+
+- **UI (Aura/LWC/VF)**: `participant UI as W: <ComponentName>`
+- **Apex Controller**: `participant <Alias> as S: <ClassName>`
+- **Trigger**: `participant <Alias> as S: <Object>Trigger`
+- **TriggerHandler**: `participant <Alias> as S: <Handler>`
+- **REST Endpoint**: `participant <Alias> as S: <IF_REST_*>`
+- **Batch**: `participant <Alias> as S: <BatchName>`
+- **External System**: `participant Ext as S: External (<시스템명>)`
+- **Salesforce DB**: `participant DB as S: Salesforce Database`
+
 #### 기타 주의사항
 
 - 한 다이어그램이 너무 길면(participant 15개 이상) 주요 흐름과 서브 흐름으로 분리
@@ -96,6 +107,8 @@ Mermaid에서 예약어로 사용되는 단어가 participant alias나 텍스트
 
 레이어별로 소제목을 붙여 분석:
 
+#### Heroku/Spring 레이어 순서
+
 ```markdown
 ### <View 파일명> 상세
 - 폼 구성, 입력 필드, JS 동작 등
@@ -108,6 +121,28 @@ Mermaid에서 예약어로 사용되는 단어가 participant alias나 텍스트
 
 ### <Service> → <Mapper> (DB 연동)
 - 메서드별 SQL 동작
+```
+
+#### Salesforce 레이어 순서
+
+```markdown
+### UI 계층 (Aura/LWC/VF)
+- 컴포넌트 구성, 이벤트 처리
+
+### Client Controller (JS)
+- Controller.js / Helper.js 동작
+
+### Apex Controller (@AuraEnabled / @RestResource)
+- 메서드 시그니처, 비즈니스 로직
+
+### Trigger → TriggerHandler
+- Trigger context (before/after, insert/update/delete), Handler 로직
+
+### Utility Classes
+- IF_Util, RestAPIUtils 등 공통 유틸리티
+
+### SOQL/DML (데이터 모델)
+- 쿼리 구조, DML 대상 오브젝트
 ```
 
 ### 5. 주요 클래스별 메서드 정리
