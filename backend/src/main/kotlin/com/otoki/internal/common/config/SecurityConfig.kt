@@ -2,6 +2,7 @@ package com.otoki.internal.common.config
 
 import com.otoki.internal.common.security.DomainGuardFilter
 import com.otoki.internal.common.security.GpsConsentFilter
+import com.otoki.internal.common.security.JwtAuthenticationEntryPoint
 import com.otoki.internal.common.security.JwtAuthenticationFilter
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.web.servlet.FilterRegistrationBean
@@ -29,6 +30,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Order(2)
 class SecurityConfig(
     private val jwtAuthenticationFilter: JwtAuthenticationFilter,
+    private val jwtAuthenticationEntryPoint: JwtAuthenticationEntryPoint,
     private val gpsConsentFilter: GpsConsentFilter,
     private val domainProperties: DomainProperties
 ) {
@@ -55,6 +57,7 @@ class SecurityConfig(
             .headers { headers ->
                 headers.frameOptions { it.sameOrigin() }  // H2 Console 사용을 위해
             }
+            .exceptionHandling { it.authenticationEntryPoint(jwtAuthenticationEntryPoint) }
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
             .addFilterAfter(gpsConsentFilter, JwtAuthenticationFilter::class.java)
 

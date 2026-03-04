@@ -365,6 +365,59 @@ class JwtTokenProviderTest {
         }
     }
 
+    // ========== isTokenExpired 테스트 ==========
+
+    @Nested
+    @DisplayName("isTokenExpired - 토큰 만료 여부 확인")
+    inner class IsTokenExpiredTests {
+
+        @Test
+        @DisplayName("만료된 토큰 - true 반환")
+        fun isTokenExpired_returnsTrue_forExpiredToken() {
+            // Given
+            val shortLivedProvider = JwtTokenProvider(
+                secret = "test-secret-key-that-is-at-least-256-bits-long-for-hmac-sha256-algorithm",
+                accessExpiration = 1,
+                refreshExpiration = 1,
+                redisTemplate = redisTemplate,
+                objectMapper = objectMapper
+            )
+            val token = shortLivedProvider.createAccessToken(1L, UserRole.USER)
+            Thread.sleep(10)
+
+            // When & Then
+            assertTrue(shortLivedProvider.isTokenExpired(token))
+        }
+
+        @Test
+        @DisplayName("유효한 토큰 - false 반환")
+        fun isTokenExpired_returnsFalse_forValidToken() {
+            // Given
+            val token = jwtTokenProvider.createAccessToken(1L, UserRole.USER)
+
+            // When & Then
+            assertFalse(jwtTokenProvider.isTokenExpired(token))
+        }
+
+        @Test
+        @DisplayName("잘못된 서명 토큰 - false 반환 (만료가 아닌 다른 이유)")
+        fun isTokenExpired_returnsFalse_forTamperedToken() {
+            // Given
+            val token = jwtTokenProvider.createAccessToken(1L, UserRole.USER)
+            val tampered = token.dropLast(10) + "TAMPERED123"
+
+            // When & Then
+            assertFalse(jwtTokenProvider.isTokenExpired(tampered))
+        }
+
+        @Test
+        @DisplayName("형식 오류 토큰 - false 반환")
+        fun isTokenExpired_returnsFalse_forInvalidFormatToken() {
+            // When & Then
+            assertFalse(jwtTokenProvider.isTokenExpired("invalid_string"))
+        }
+    }
+
     // ========== Refresh Token Rotation claim 테스트 ==========
 
     @Nested
