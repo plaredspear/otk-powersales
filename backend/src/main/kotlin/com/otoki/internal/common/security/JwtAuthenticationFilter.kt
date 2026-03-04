@@ -25,21 +25,25 @@ class JwtAuthenticationFilter(
     ) {
         val token = resolveToken(request)
 
-        if (token != null && jwtTokenProvider.validateToken(token)) {
-            val tokenType = jwtTokenProvider.getTokenType(token)
-            if (tokenType == "access") {
-                val userId = jwtTokenProvider.getUserIdFromToken(token)
-                val role = jwtTokenProvider.getRoleFromToken(token)
-                val agreementFlag = jwtTokenProvider.getAgreementFlagFromToken(token)
-                val principal = UserPrincipal(userId, role, agreementFlag)
+        if (token != null) {
+            if (jwtTokenProvider.validateToken(token)) {
+                val tokenType = jwtTokenProvider.getTokenType(token)
+                if (tokenType == "access") {
+                    val userId = jwtTokenProvider.getUserIdFromToken(token)
+                    val role = jwtTokenProvider.getRoleFromToken(token)
+                    val agreementFlag = jwtTokenProvider.getAgreementFlagFromToken(token)
+                    val principal = UserPrincipal(userId, role, agreementFlag)
 
-                val authentication = UsernamePasswordAuthenticationToken(
-                    principal,
-                    null,
-                    principal.authorities
-                )
-                authentication.details = WebAuthenticationDetailsSource().buildDetails(request)
-                SecurityContextHolder.getContext().authentication = authentication
+                    val authentication = UsernamePasswordAuthenticationToken(
+                        principal,
+                        null,
+                        principal.authorities
+                    )
+                    authentication.details = WebAuthenticationDetailsSource().buildDetails(request)
+                    SecurityContextHolder.getContext().authentication = authentication
+                }
+            } else if (jwtTokenProvider.isTokenExpired(token)) {
+                request.setAttribute("jwt.expired", true)
             }
         }
 

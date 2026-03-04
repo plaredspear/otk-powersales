@@ -206,6 +206,20 @@ class JwtTokenProvider(
     fun isTokenFamilyRevoked(familyId: String): Boolean =
         redisTemplate.hasKey("refresh_family:$familyId") == true
 
+    /**
+     * 토큰이 만료되었는지 확인 (서명은 유효하나 만료 시간 초과)
+     */
+    fun isTokenExpired(token: String): Boolean {
+        return try {
+            parseClaims(token)
+            false // 정상 파싱 → 아직 만료되지 않음
+        } catch (e: ExpiredJwtException) {
+            true // 서명 유효, 만료됨
+        } catch (e: Exception) {
+            false // 서명 오류 등 만료가 아닌 다른 이유
+        }
+    }
+
     private fun isBlacklisted(token: String): Boolean {
         return blacklist.containsKey(token)
     }
