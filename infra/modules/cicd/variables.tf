@@ -59,3 +59,27 @@ variable "ecs_task_role_arns" {
   description = "List of ECS task/execution role ARNs for iam:PassRole"
   type        = list(string)
 }
+
+variable "admin_s3_bucket_arn" {
+  description = "Web Admin S3 bucket ARN"
+  type        = string
+  default     = ""
+}
+
+variable "admin_s3_bucket_name" {
+  description = "Web Admin S3 bucket name (for buildspec env var)"
+  type        = string
+  default     = ""
+}
+
+variable "admin_cloudfront_distribution_arn" {
+  description = "CloudFront Distribution ARN"
+  type        = string
+  default     = ""
+}
+
+variable "admin_cloudfront_distribution_id" {
+  description = "CloudFront Distribution ID (for invalidation command)"
+  type        = string
+  default     = ""
+}

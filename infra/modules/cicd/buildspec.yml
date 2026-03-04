@@ -26,8 +26,8 @@ phases:
     commands:
       - echo "=== Web Build ==="
       - cd web && npm ci && npm run build && cd ..
-      - mkdir -p backend/src/main/resources/static
-      - cp -r web/dist/* backend/src/main/resources/static/
+      - echo "=== Upload to S3 ==="
+      - aws s3 sync web/dist/ s3://$ADMIN_S3_BUCKET_NAME/ --delete
       - echo "=== Docker Build ==="
       - >
         docker build
@@ -75,6 +75,9 @@ phases:
         --task-definition $NEW_REVISION
         --force-new-deployment
         --region $AWS_DEFAULT_REGION
+
+      - echo "=== CloudFront Invalidation ==="
+      - aws cloudfront create-invalidation --distribution-id $ADMIN_CLOUDFRONT_DISTRIBUTION_ID --paths "/*"
 
       - echo "=== Deploy complete ==="
 
