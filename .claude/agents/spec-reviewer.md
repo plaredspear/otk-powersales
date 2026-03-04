@@ -1,8 +1,8 @@
 ---
 name: spec-reviewer
-description: 스펙의 AI 구현 준비도를 리뷰하는 에이전트. spec-review-criteria.md 기준으로 평가하고 리포트를 생성합니다.
+description: "스펙의 AI 구현 준비도를 리뷰하는 에이전트. spec-review-criteria.md 기준으로 평가하고 리포트를 생성합니다."
 tools: Read, Glob, Grep
-model: sonnet
+model: opus
 ---
 
 # Spec Reviewer Agent
