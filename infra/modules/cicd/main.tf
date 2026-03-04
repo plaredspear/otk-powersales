@@ -202,6 +202,28 @@ resource "aws_iam_role_policy" "codebuild" {
           "arn:aws:ssm:${var.region}:${var.aws_account_id}:parameter/${var.project}/${var.environment}/infra",
           "arn:aws:ssm:${var.region}:${var.aws_account_id}:parameter/${var.project}/${var.environment}/infra/*"
         ]
+      },
+      # S3 — Web Admin static files upload
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:PutObject",
+          "s3:DeleteObject",
+          "s3:ListBucket",
+          "s3:GetBucketLocation"
+        ]
+        Resource = var.admin_s3_bucket_arn != "" ? [
+          var.admin_s3_bucket_arn,
+          "${var.admin_s3_bucket_arn}/*"
+        ] : []
+      },
+      # CloudFront — cache invalidation
+      {
+        Effect = "Allow"
+        Action = [
+          "cloudfront:CreateInvalidation"
+        ]
+        Resource = var.admin_cloudfront_distribution_arn != "" ? [var.admin_cloudfront_distribution_arn] : []
       }
     ]
   })
@@ -274,6 +296,16 @@ resource "aws_codebuild_project" "deploy" {
     environment_variable {
       name  = "ENVIRONMENT"
       value = var.environment
+    }
+
+    environment_variable {
+      name  = "ADMIN_S3_BUCKET_NAME"
+      value = var.admin_s3_bucket_name
+    }
+
+    environment_variable {
+      name  = "ADMIN_CLOUDFRONT_DISTRIBUTION_ID"
+      value = var.admin_cloudfront_distribution_id
     }
   }
 

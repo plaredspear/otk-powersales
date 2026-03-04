@@ -10,6 +10,19 @@ provider "aws" {
   }
 }
 
+provider "aws" {
+  alias  = "us_east_1"
+  region = "us-east-1"
+
+  default_tags {
+    tags = {
+      Project     = var.project
+      Environment = var.environment
+      ManagedBy   = "terraform"
+    }
+  }
+}
+
 ################################################################################
 # Networking
 ################################################################################
@@ -131,6 +144,69 @@ module "alb" {
 }
 
 ################################################################################
+# ACM Certificate (us-east-1) — CloudFront requires certs in us-east-1
+################################################################################
+
+resource "aws_acm_certificate" "admin_cf" {
+  count    = var.admin_domain_name != "" ? 1 : 0
+  provider = aws.us_east_1
+
+  domain_name       = var.admin_domain_name
+  validation_method = "DNS"
+
+  tags = {
+    Name        = "${var.project}-${var.environment}-admin-cf-cert"
+    Environment = var.environment
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "aws_route53_record" "admin_cf_validation" {
+  for_each = var.admin_domain_name != "" ? {
+    for dvo in aws_acm_certificate.admin_cf[0].domain_validation_options : dvo.domain_name => {
+      name   = dvo.resource_record_name
+      record = dvo.resource_record_value
+      type   = dvo.resource_record_type
+    }
+  } : {}
+
+  zone_id = var.hosted_zone_id
+  name    = each.value.name
+  type    = each.value.type
+  records = [each.value.record]
+  ttl     = 60
+
+  allow_overwrite = true
+}
+
+resource "aws_acm_certificate_validation" "admin_cf" {
+  count    = var.admin_domain_name != "" ? 1 : 0
+  provider = aws.us_east_1
+
+  certificate_arn         = aws_acm_certificate.admin_cf[0].arn
+  validation_record_fqdns = [for record in aws_route53_record.admin_cf_validation : record.fqdn]
+}
+
+################################################################################
+# CloudFront (admin domain → S3 + ALB)
+################################################################################
+
+module "cloudfront" {
+  count  = var.admin_domain_name != "" ? 1 : 0
+  source = "./modules/cloudfront"
+
+  project     = var.project
+  environment = var.environment
+
+  admin_domain_name   = var.admin_domain_name
+  api_domain_name     = var.domain_name
+  acm_certificate_arn = aws_acm_certificate_validation.admin_cf[0].certificate_arn
+}
+
+################################################################################
 # Route53 A Record (depends on ALB — here to avoid circular dependency)
 ################################################################################
 
@@ -172,9 +248,9 @@ resource "aws_route53_record" "admin" {
   type    = "A"
 
   alias {
-    name                   = module.alb.alb_dns_name
-    zone_id                = module.alb.alb_zone_id
-    evaluate_target_health = true
+    name                   = module.cloudfront[0].distribution_domain_name
+    zone_id                = module.cloudfront[0].distribution_hosted_zone_id
+    evaluate_target_health = false
   }
 }
 
@@ -252,16 +328,18 @@ module "ssm_outputs" {
   environment = var.environment
 
   outputs = {
-    "api-url"              = "https://${var.domain_name}"
-    "admin-url"            = var.admin_domain_name != "" ? "https://${var.admin_domain_name}" : ""
-    "ecr-repository-url"   = module.ecr.repository_url
-    "ecs-cluster-name"     = module.ecs.cluster_name
-    "ecs-service-name"     = module.ecs.service_name
-    "rds-address"          = module.rds.address
-    "rds-port"             = tostring(module.rds.port)
-    "elasticache-endpoint" = module.elasticache.endpoint
-    "elasticache-port"     = tostring(module.elasticache.port)
-    "nat-gateway-ip"       = module.networking.nat_gateway_public_ip
+    "api-url"                          = "https://${var.domain_name}"
+    "admin-url"                        = var.admin_domain_name != "" ? "https://${var.admin_domain_name}" : ""
+    "ecr-repository-url"               = module.ecr.repository_url
+    "ecs-cluster-name"                 = module.ecs.cluster_name
+    "ecs-service-name"                 = module.ecs.service_name
+    "rds-address"                      = module.rds.address
+    "rds-port"                         = tostring(module.rds.port)
+    "elasticache-endpoint"             = module.elasticache.endpoint
+    "elasticache-port"                 = tostring(module.elasticache.port)
+    "nat-gateway-ip"                   = module.networking.nat_gateway_public_ip
+    "admin-s3-bucket-name"             = var.admin_domain_name != "" ? module.cloudfront[0].s3_bucket_name : ""
+    "admin-cloudfront-distribution-id" = var.admin_domain_name != "" ? module.cloudfront[0].distribution_id : ""
   }
 }
 
@@ -290,4 +368,9 @@ module "cicd" {
     module.ecs.task_execution_role_arn,
     module.ecs.task_role_arn,
   ]
+
+  admin_s3_bucket_arn               = var.admin_domain_name != "" ? module.cloudfront[0].s3_bucket_arn : ""
+  admin_s3_bucket_name              = var.admin_domain_name != "" ? module.cloudfront[0].s3_bucket_name : ""
+  admin_cloudfront_distribution_arn = var.admin_domain_name != "" ? "arn:aws:cloudfront::${var.aws_account_id}:distribution/${module.cloudfront[0].distribution_id}" : ""
+  admin_cloudfront_distribution_id  = var.admin_domain_name != "" ? module.cloudfront[0].distribution_id : ""
 }
