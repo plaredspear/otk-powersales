@@ -1,3 +1,4 @@
+/* Order 모듈 전체 비활성화로 인해 주석 처리
 package com.otoki.internal.order.repository
 
 import com.otoki.internal.order.entity.ApprovalStatus
@@ -475,3 +476,4 @@ class OrderRepositoryTest {
         )
     }
 }
+*/

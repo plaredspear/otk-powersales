@@ -1,3 +1,4 @@
+/*
 package com.otoki.internal.order.repository
 
 import com.otoki.internal.order.entity.OrderItem
@@ -15,3 +16,4 @@ interface OrderItemRepository : JpaRepository<OrderItem, Long> {
     // TODO: Spec #XXX에서 활성화 — findOrderHistoryProducts (Product 엔티티 필드 매핑 확인 후)
     // TODO: Spec #XXX에서 활성화 — countOrderHistoryProducts
 }
+*/

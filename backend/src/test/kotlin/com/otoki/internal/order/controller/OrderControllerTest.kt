@@ -1,3 +1,4 @@
+/* Order 모듈 전체 비활성화로 인해 주석 처리
 package com.otoki.internal.order.controller
 
 import com.otoki.internal.dto.response.*
@@ -1153,3 +1154,4 @@ class OrderControllerTest {
         )
     }
 }
+*/

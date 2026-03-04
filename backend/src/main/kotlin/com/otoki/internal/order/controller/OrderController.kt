@@ -1,3 +1,4 @@
+/* Order 모듈 전체 비활성화 — DB 테이블 미존재
 package com.otoki.internal.order.controller
 
 import com.otoki.internal.common.dto.ApiResponse
@@ -56,3 +57,4 @@ class OrderController(
     // TODO: Spec #XXX에서 활성화 — POST /api/v1/me/orders/validate (유효성 체크)
     // TODO: Spec #XXX에서 활성화 — POST /api/v1/me/orders (주문서 제출)
 }
+*/

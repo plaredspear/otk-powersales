@@ -1,3 +1,4 @@
+/* OrderItem 엔티티 비활성화로 ClientOrderService 사용 불가 — 전체 주석 처리
 package com.otoki.internal.order.controller
 
 import com.otoki.internal.common.dto.ApiResponse
@@ -50,3 +51,4 @@ class ClientOrderController(
 
     // TODO: Spec #XXX에서 활성화 — GET /api/v1/client-orders/{sapOrderNumber} (거래처별 주문 상세)
 }
+*/

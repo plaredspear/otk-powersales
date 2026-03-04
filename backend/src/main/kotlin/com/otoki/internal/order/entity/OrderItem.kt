@@ -1,3 +1,4 @@
+/*
 package com.otoki.internal.order.entity
 
 import jakarta.persistence.*
@@ -86,3 +87,4 @@ class OrderItem(
         this.updatedAt = LocalDateTime.now()
     }
 }
+*/

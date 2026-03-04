@@ -1,3 +1,4 @@
+/* Order 모듈 전체 비활성화 — DB 테이블 미존재
 package com.otoki.internal.order.entity
 
 import com.otoki.internal.common.entity.User
@@ -66,8 +67,9 @@ class Order(
     var updatedAt: LocalDateTime = LocalDateTime.now()
 ) {
 
-    @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
-    val items: MutableList<OrderItem> = mutableListOf()
+    // TODO: OrderItem 엔티티 활성화 시 복원
+    // @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
+    // val items: MutableList<OrderItem> = mutableListOf()
 
     @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
     val processingRecords: MutableList<OrderProcessingRecord> = mutableListOf()
@@ -80,3 +82,4 @@ class Order(
         this.updatedAt = LocalDateTime.now()
     }
 }
+*/

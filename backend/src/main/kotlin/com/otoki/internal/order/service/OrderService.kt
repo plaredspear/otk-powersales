@@ -1,9 +1,9 @@
+/* Order 모듈 전체 비활성화 — DB 테이블 미존재
 package com.otoki.internal.order.service
 
 import com.otoki.internal.order.dto.response.OrderSummaryResponse
 import com.otoki.internal.order.entity.ApprovalStatus
 import com.otoki.internal.order.exception.*
-import com.otoki.internal.order.repository.OrderItemRepository
 import com.otoki.internal.order.repository.OrderProcessingRecordRepository
 import com.otoki.internal.order.repository.OrderRejectionRepository
 import com.otoki.internal.order.repository.OrderRepository
@@ -25,7 +25,6 @@ import java.time.LocalTime
 @Transactional(readOnly = true)
 class OrderService(
     private val orderRepository: OrderRepository,
-    private val orderItemRepository: OrderItemRepository,
     private val orderProcessingRecordRepository: OrderProcessingRecordRepository,
     private val orderRejectionRepository: OrderRejectionRepository,
     private val userRepository: UserRepository,
@@ -162,3 +161,4 @@ class OrderService(
         }
     }
 }
+*/

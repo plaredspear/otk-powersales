@@ -1,3 +1,4 @@
+/* Order 모듈 전체 비활성화 — DB 테이블 미존재
 package com.otoki.internal.order.repository
 
 import com.otoki.internal.order.entity.Store
@@ -6,3 +7,4 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface StoreRepository : JpaRepository<Store, Long>
+*/

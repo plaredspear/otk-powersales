@@ -1,3 +1,4 @@
+/* OrderItem 엔티티 비활성화로 findClientOrderSummaries 사용 불가 — 전체 주석 처리
 package com.otoki.internal.order.service
 
 import com.otoki.internal.order.dto.response.ClientOrderSummaryResponse
@@ -93,3 +94,4 @@ class ClientOrderService(
         }
     }
 }
+*/

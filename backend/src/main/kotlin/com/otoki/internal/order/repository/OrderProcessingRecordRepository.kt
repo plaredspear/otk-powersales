@@ -1,11 +1,9 @@
+/* Order 모듈 전체 비활성화 — DB 테이블 미존재
 package com.otoki.internal.order.repository
 
 import com.otoki.internal.order.entity.OrderProcessingRecord
 import org.springframework.data.jpa.repository.JpaRepository
-import org.springframework.data.jpa.repository.Query
-import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
-import java.time.LocalDate
 
 /**
  * 주문 처리 현황 Repository (SAP 연동 데이터)
@@ -15,29 +13,8 @@ interface OrderProcessingRecordRepository : JpaRepository<OrderProcessingRecord,
 
     fun findByOrderId(orderId: Long): List<OrderProcessingRecord>
 
-    /**
-     * 거래처 + 납기일 기준으로 SAP 주문번호별 그룹핑 조회
-     * 거래처별 주문 목록 조회용 (F28)
-     *
-     * @return [sapOrderNumber, clientId, clientName, totalAmount] 배열 목록
-     */
-    @Query(
-        """
-        SELECT opr.sapOrderNumber, o.store.id, o.store.storeName, SUM(oi.amount)
-        FROM OrderProcessingRecord opr
-        JOIN opr.order o
-        JOIN o.store s
-        JOIN OrderItem oi ON oi.order = o AND oi.productCode = opr.productCode
-        WHERE o.store.id = :storeId
-        AND o.deliveryDate = :deliveryDate
-        GROUP BY opr.sapOrderNumber, o.store.id, o.store.storeName
-        ORDER BY opr.sapOrderNumber DESC
-        """
-    )
-    fun findClientOrderSummaries(
-        @Param("storeId") storeId: Long,
-        @Param("deliveryDate") deliveryDate: LocalDate
-    ): List<Array<Any>>
+    // TODO: OrderItem 엔티티 활성화 시 복원
+    // fun findClientOrderSummaries(...)
 
     /**
      * SAP 주문번호로 처리 기록 목록 조회
@@ -45,3 +22,4 @@ interface OrderProcessingRecordRepository : JpaRepository<OrderProcessingRecord,
      */
     fun findBySapOrderNumber(sapOrderNumber: String): List<OrderProcessingRecord>
 }
+*/

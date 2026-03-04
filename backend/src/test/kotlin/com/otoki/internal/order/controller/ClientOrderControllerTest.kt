@@ -1,3 +1,4 @@
+/* OrderItem 엔티티 비활성화로 인해 전체 주석 처리
 package com.otoki.internal.order.controller
 
 import com.otoki.internal.order.dto.response.ClientOrderDetailResponse
@@ -457,3 +458,4 @@ class ClientOrderControllerTest {
         }
     }
 }
+*/
