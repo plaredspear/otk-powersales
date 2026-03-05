@@ -2,9 +2,13 @@ package com.otoki.internal.notice.service
 
 import com.otoki.internal.common.entity.User
 import com.otoki.internal.common.repository.UserRepository
+import com.otoki.internal.notice.dto.request.NoticeCreateRequest
+import com.otoki.internal.notice.dto.request.NoticeUpdateRequest
 import com.otoki.internal.notice.entity.Notice
 import com.otoki.internal.notice.entity.UploadFile
+import com.otoki.internal.notice.exception.BranchRequiredException
 import com.otoki.internal.notice.exception.InvalidNoticeCategoryException
+import com.otoki.internal.notice.exception.InvalidNoticeIdException
 import com.otoki.internal.notice.exception.NoticePostNotFoundException
 import com.otoki.internal.notice.repository.NoticeRepository
 import com.otoki.internal.notice.repository.UploadFileRepository
@@ -369,6 +373,239 @@ class NoticeServiceTest {
 
             // Then
             assertThat(result.content).isEmpty()
+        }
+    }
+
+    @Nested
+    @DisplayName("getPostsForAdmin - Admin 공지사항 목록 조회")
+    inner class GetPostsForAdminTests {
+
+        @Test
+        @DisplayName("전체 목록 조회 - category null -> 모든 카테고리 반환")
+        fun getPostsForAdmin_allCategories() {
+            val notices = listOf(
+                createNotice(id = 1L, category = "ALL", name = "전체공지"),
+                createNotice(id = 2L, category = "BRANCH", name = "지점공지", branch = "서울지점")
+            )
+            val page = PageImpl(notices, PageRequest.of(0, 10), 2)
+            whenever(noticeRepository.findAllNotices(eq(null), eq(null), any())).thenReturn(page)
+
+            val result = noticeService.getPostsForAdmin(null, null, 1, 10)
+
+            assertThat(result.content).hasSize(2)
+            assertThat(result.totalCount).isEqualTo(2)
+        }
+
+        @Test
+        @DisplayName("잘못된 카테고리 - INVALID -> InvalidNoticeCategoryException")
+        fun getPostsForAdmin_invalidCategory() {
+            assertThatThrownBy { noticeService.getPostsForAdmin("INVALID", null, 1, 10) }
+                .isInstanceOf(InvalidNoticeCategoryException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("createNotice - 공지사항 작성")
+    inner class CreateNoticeTests {
+
+        @Test
+        @DisplayName("회사공지 작성 성공 - category=COMPANY -> DB에 ALL로 저장")
+        fun createNotice_company_success() {
+            val request = NoticeCreateRequest(
+                title = "테스트 공지",
+                category = "COMPANY",
+                content = "<p>내용</p>"
+            )
+            whenever(noticeRepository.save(any<Notice>())).thenAnswer { it.getArgument<Notice>(0) }
+
+            val result = noticeService.createNotice(request)
+
+            assertThat(result.title).isEqualTo("테스트 공지")
+            assertThat(result.category).isEqualTo("COMPANY")
+            assertThat(result.categoryName).isEqualTo("전체공지")
+            assertThat(result.branch).isNull()
+            assertThat(result.branchCode).isNull()
+        }
+
+        @Test
+        @DisplayName("지점공지 작성 성공 - category=BRANCH + branch/branchCode 포함")
+        fun createNotice_branch_success() {
+            val request = NoticeCreateRequest(
+                title = "지점 공지",
+                category = "BRANCH",
+                content = "<p>지점 내용</p>",
+                branch = "서울1지점",
+                branchCode = "1101"
+            )
+            whenever(noticeRepository.save(any<Notice>())).thenAnswer { it.getArgument<Notice>(0) }
+
+            val result = noticeService.createNotice(request)
+
+            assertThat(result.category).isEqualTo("BRANCH")
+            assertThat(result.categoryName).isEqualTo("지점공지")
+            assertThat(result.branch).isEqualTo("서울1지점")
+            assertThat(result.branchCode).isEqualTo("1101")
+        }
+
+        @Test
+        @DisplayName("회사공지 작성 시 branch 무시 - category=COMPANY + branch 전달 -> branch null")
+        fun createNotice_company_ignoresBranch() {
+            val request = NoticeCreateRequest(
+                title = "전체 공지",
+                category = "COMPANY",
+                content = "<p>내용</p>",
+                branch = "잘못된지점",
+                branchCode = "9999"
+            )
+            whenever(noticeRepository.save(any<Notice>())).thenAnswer { it.getArgument<Notice>(0) }
+
+            val result = noticeService.createNotice(request)
+
+            assertThat(result.branch).isNull()
+            assertThat(result.branchCode).isNull()
+        }
+
+        @Test
+        @DisplayName("잘못된 카테고리 -> InvalidNoticeCategoryException")
+        fun createNotice_invalidCategory() {
+            val request = NoticeCreateRequest(title = "공지", category = "UNKNOWN", content = "내용")
+
+            assertThatThrownBy { noticeService.createNotice(request) }
+                .isInstanceOf(InvalidNoticeCategoryException::class.java)
+        }
+
+        @Test
+        @DisplayName("지점공지 branch 누락 -> BranchRequiredException")
+        fun createNotice_branchRequired() {
+            val request = NoticeCreateRequest(
+                title = "지점 공지",
+                category = "BRANCH",
+                content = "<p>내용</p>",
+                branch = null,
+                branchCode = null
+            )
+
+            assertThatThrownBy { noticeService.createNotice(request) }
+                .isInstanceOf(BranchRequiredException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("updateNotice - 공지사항 수정")
+    inner class UpdateNoticeTests {
+
+        @Test
+        @DisplayName("수정 성공 - 제목/내용 변경")
+        fun updateNotice_success() {
+            val existing = createNotice(id = 10L, category = "ALL", name = "원래 제목")
+            whenever(noticeRepository.findById(10L)).thenReturn(Optional.of(existing))
+            whenever(noticeRepository.save(any<Notice>())).thenAnswer { it.getArgument<Notice>(0) }
+
+            val request = NoticeUpdateRequest(
+                title = "수정된 제목",
+                category = "COMPANY",
+                content = "<p>수정 내용</p>"
+            )
+
+            val result = noticeService.updateNotice(10L, request)
+
+            assertThat(result.title).isEqualTo("수정된 제목")
+            assertThat(result.content).isEqualTo("<p>수정 내용</p>")
+        }
+
+        @Test
+        @DisplayName("카테고리 변경 - COMPANY -> BRANCH + branch/branchCode 포함")
+        fun updateNotice_changeCategoryToBranch() {
+            val existing = createNotice(id = 10L, category = "ALL", name = "전체 공지")
+            whenever(noticeRepository.findById(10L)).thenReturn(Optional.of(existing))
+            whenever(noticeRepository.save(any<Notice>())).thenAnswer { it.getArgument<Notice>(0) }
+
+            val request = NoticeUpdateRequest(
+                title = "지점 공지로 변경",
+                category = "BRANCH",
+                content = "<p>내용</p>",
+                branch = "서울1지점",
+                branchCode = "1101"
+            )
+
+            val result = noticeService.updateNotice(10L, request)
+
+            assertThat(result.category).isEqualTo("BRANCH")
+            assertThat(result.branch).isEqualTo("서울1지점")
+            assertThat(result.branchCode).isEqualTo("1101")
+        }
+
+        @Test
+        @DisplayName("0 이하 ID -> InvalidNoticeIdException")
+        fun updateNotice_invalidId() {
+            val request = NoticeUpdateRequest(title = "제목", category = "COMPANY", content = "내용")
+
+            assertThatThrownBy { noticeService.updateNotice(0L, request) }
+                .isInstanceOf(InvalidNoticeIdException::class.java)
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 공지 -> NoticePostNotFoundException")
+        fun updateNotice_notFound() {
+            whenever(noticeRepository.findById(999L)).thenReturn(Optional.empty())
+            val request = NoticeUpdateRequest(title = "제목", category = "COMPANY", content = "내용")
+
+            assertThatThrownBy { noticeService.updateNotice(999L, request) }
+                .isInstanceOf(NoticePostNotFoundException::class.java)
+        }
+
+        @Test
+        @DisplayName("삭제된 공지 수정 -> NoticePostNotFoundException")
+        fun updateNotice_deleted() {
+            val existing = createNotice(id = 10L, isDeleted = true)
+            whenever(noticeRepository.findById(10L)).thenReturn(Optional.of(existing))
+            val request = NoticeUpdateRequest(title = "제목", category = "COMPANY", content = "내용")
+
+            assertThatThrownBy { noticeService.updateNotice(10L, request) }
+                .isInstanceOf(NoticePostNotFoundException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("deleteNotice - 공지사항 삭제")
+    inner class DeleteNoticeTests {
+
+        @Test
+        @DisplayName("삭제 성공 - isDeleted=true 설정")
+        fun deleteNotice_success() {
+            val existing = createNotice(id = 10L)
+            whenever(noticeRepository.findById(10L)).thenReturn(Optional.of(existing))
+            whenever(noticeRepository.save(any<Notice>())).thenAnswer { it.getArgument<Notice>(0) }
+
+            noticeService.deleteNotice(10L)
+
+            assertThat(existing.isDeleted).isTrue()
+        }
+
+        @Test
+        @DisplayName("0 이하 ID -> InvalidNoticeIdException")
+        fun deleteNotice_invalidId() {
+            assertThatThrownBy { noticeService.deleteNotice(-1L) }
+                .isInstanceOf(InvalidNoticeIdException::class.java)
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 공지 -> NoticePostNotFoundException")
+        fun deleteNotice_notFound() {
+            whenever(noticeRepository.findById(999L)).thenReturn(Optional.empty())
+
+            assertThatThrownBy { noticeService.deleteNotice(999L) }
+                .isInstanceOf(NoticePostNotFoundException::class.java)
+        }
+
+        @Test
+        @DisplayName("이미 삭제된 공지 -> NoticePostNotFoundException")
+        fun deleteNotice_alreadyDeleted() {
+            val existing = createNotice(id = 10L, isDeleted = true)
+            whenever(noticeRepository.findById(10L)).thenReturn(Optional.of(existing))
+
+            assertThatThrownBy { noticeService.deleteNotice(10L) }
+                .isInstanceOf(NoticePostNotFoundException::class.java)
         }
     }
 

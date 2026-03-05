@@ -30,3 +30,9 @@ class InvalidNoticeIdException : BusinessException(
     message = "유효하지 않은 요청입니다",
     httpStatus = HttpStatus.BAD_REQUEST
 )
+
+class BranchRequiredException : BusinessException(
+    errorCode = "BRANCH_REQUIRED",
+    message = "지점공지는 지점 정보가 필요합니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
