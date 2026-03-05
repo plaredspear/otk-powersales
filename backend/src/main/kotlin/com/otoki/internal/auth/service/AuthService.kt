@@ -8,10 +8,12 @@ import com.otoki.internal.auth.dto.request.RefreshTokenRequest
 import com.otoki.internal.auth.dto.request.VerifyPasswordRequest
 import com.otoki.internal.auth.dto.response.*
 import com.otoki.internal.common.dto.response.*
+import com.otoki.internal.common.entity.AgreementHistory
 import com.otoki.internal.common.entity.LoginHistory
 import com.otoki.internal.common.entity.User
 import com.otoki.internal.auth.exception.*
 import com.otoki.internal.common.exception.*
+import com.otoki.internal.common.repository.AgreementHistoryRepository
 import com.otoki.internal.common.repository.AgreementWordRepository
 import com.otoki.internal.common.repository.LoginHistoryRepository
 import com.otoki.internal.common.repository.UserRepository
@@ -20,6 +22,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDate
 import java.util.*
 
 /**
@@ -30,6 +33,7 @@ class AuthService(
     private val userRepository: UserRepository,
     private val loginHistoryRepository: LoginHistoryRepository,
     private val agreementWordRepository: AgreementWordRepository,
+    private val agreementHistoryRepository: AgreementHistoryRepository,
     private val passwordEncoder: PasswordEncoder,
     private val jwtTokenProvider: JwtTokenProvider,
     private val deviceBindingProperties: DeviceBindingProperties
@@ -259,13 +263,36 @@ class AuthService(
 
     /**
      * GPS 동의 기록 + 갱신된 access token 반환
+     * 1. 사용자 조회
+     * 2. 약관 조회 (agreementNumber 지정 시 해당 약관, 미지정 시 활성 약관)
+     * 3. 동의 이력 INSERT (agreementhistory__c)
+     * 4. User 플래그 업데이트 + 저장
+     * 5. 새 Access Token 발급
      */
     @Transactional
     fun recordGpsConsent(userId: Long, request: GpsConsentRequest? = null): GpsConsentRecordResponse {
         val user = userRepository.findById(userId)
             .orElseThrow { UserNotFoundException() }
 
-        user.recordGpsConsent(request?.agreementNumber)
+        val agreementNumber = request?.agreementNumber?.takeIf { it.isNotBlank() }
+        val terms = if (agreementNumber != null) {
+            agreementWordRepository.findByNameAndIsDeletedFalse(agreementNumber)
+                .orElseThrow { TermsNotFoundException() }
+        } else {
+            agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse()
+                .orElseThrow { TermsNotFoundException() }
+        }
+
+        agreementHistoryRepository.save(
+            AgreementHistory(
+                employeeId = user.id,
+                agreementFlag = true,
+                agreementDate = LocalDate.now(),
+                agreementWordId = terms.id.toLong()
+            )
+        )
+
+        user.recordGpsConsent(terms.name)
         userRepository.save(user)
 
         val accessToken = jwtTokenProvider.createAccessToken(user.id, user.role, true)

@@ -7,4 +7,6 @@ import java.util.Optional
 interface AgreementWordRepository : JpaRepository<AgreementWord, Int> {
 
     fun findFirstByActiveTrueAndIsDeletedFalse(): Optional<AgreementWord>
+
+    fun findByNameAndIsDeletedFalse(name: String): Optional<AgreementWord>
 }
