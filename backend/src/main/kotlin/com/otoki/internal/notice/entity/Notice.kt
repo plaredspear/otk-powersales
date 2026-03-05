@@ -15,7 +15,7 @@ class Notice(
     val sfid: String? = null,
 
     @Column(name = "name", length = 80)
-    val name: String? = null,
+    var name: String? = null,
 
     @Column(name = "employeeid__c", length = 18)
     val employeeId: String? = null,
@@ -24,25 +24,25 @@ class Notice(
     val scope: String? = null,
 
     @Column(name = "dkretail__category__c", length = 255)
-    val category: String? = null,
+    var category: String? = null,
 
     @Column(name = "dkretail__contents__c", columnDefinition = "TEXT")
-    val contents: String? = null,
+    var contents: String? = null,
 
     @Column(name = "dkretail__educategory__c", length = 255)
     val eduCategory: String? = null,
 
     @Column(name = "dkretail__jeejum__c", length = 255)
-    val branch: String? = null,
+    var branch: String? = null,
 
     @Column(name = "dkretail__jeejumcode__c", length = 255)
-    val branchCode: String? = null,
+    var branchCode: String? = null,
 
     @Column(name = "isdeleted")
-    val isDeleted: Boolean? = null,
+    var isDeleted: Boolean? = null,
 
     @Column(name = "createddate")
-    val createdDate: LocalDateTime? = null,
+    var createdDate: LocalDateTime? = null,
 
     @Column(name = "systemmodstamp")
     val systemModStamp: LocalDateTime? = null,

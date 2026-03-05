@@ -14,6 +14,12 @@ interface NoticeRepositoryCustom {
         pageable: Pageable
     ): Page<Notice>
 
+    fun findAllNotices(
+        category: String?,
+        search: String?,
+        pageable: Pageable
+    ): Page<Notice>
+
     fun findRecentNotices(
         branch: String,
         since: LocalDateTime,

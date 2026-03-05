@@ -43,6 +43,34 @@ class NoticeRepositoryCustomImpl(
         }
     }
 
+    override fun findAllNotices(
+        category: String?,
+        search: String?,
+        pageable: Pageable
+    ): Page<Notice> {
+        val where = BooleanBuilder()
+            .and(buildDeletedCondition())
+            .and(buildAdminCategoryCondition(category))
+            .and(buildSearchCondition(search))
+
+        val content = queryFactory
+            .selectFrom(notice)
+            .where(where)
+            .orderBy(notice.createdDate.desc())
+            .offset(pageable.offset)
+            .limit(pageable.pageSize.toLong())
+            .fetch()
+
+        val countQuery = queryFactory
+            .select(notice.count())
+            .from(notice)
+            .where(where)
+
+        return PageableExecutionUtils.getPage(content, pageable) {
+            countQuery.fetchOne() ?: 0L
+        }
+    }
+
     override fun findRecentNotices(
         branch: String,
         since: LocalDateTime,
@@ -63,6 +91,15 @@ class NoticeRepositoryCustomImpl(
 
     private fun buildDeletedCondition(): Predicate {
         return notice.isDeleted.isNull.or(notice.isDeleted.eq(false))
+    }
+
+    private fun buildAdminCategoryCondition(category: String?): Predicate? {
+        return when (category) {
+            null -> null
+            "COMPANY" -> notice.category.eq("ALL")
+            "BRANCH" -> notice.category.eq("BRANCH")
+            else -> notice.category.eq(category)
+        }
     }
 
     private fun buildCategoryCondition(category: String?, branch: String): Predicate {
