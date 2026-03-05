@@ -135,6 +135,29 @@
 
 ---
 
+## API 규칙 (B, W 공통)
+
+스펙에 API 엔드포인트나 JSON 예시를 작성할 때 아래 규칙을 따른다:
+
+### API 경로
+
+| 대상 | 경로 접두사 | 비고 |
+|------|-----------|------|
+| Mobile 사용자용 | `/api/v1/` | 기존 패턴 유지 |
+| Web Admin 관리자용 | `/api/v1/admin/` | `DomainGuardFilter`가 admin 도메인에서 이 접두사만 허용 |
+
+- Web Admin 전용 API는 반드시 `/api/v1/admin/` 경로를 사용한다
+- Mobile과 동일한 데이터를 조회하더라도 admin 도메인에서는 `/api/v1/` 경로가 차단되므로 별도 admin 엔드포인트가 필요하다
+
+### JSON 키 네이밍
+
+- Backend `application.yml`에 `property-naming-strategy: SNAKE_CASE`가 설정되어 있다
+- 모든 JSON 요청/응답 예시의 키는 **snake_case**로 작성한다
+- TypeScript 인터페이스(W 플랫폼)도 실제 JSON 키와 일치하도록 **snake_case**로 정의한다
+- 예: `branchCode` (X) → `branch_code` (O), `categoryName` (X) → `category_name` (O)
+
+---
+
 ## 플랫폼별 필수 섹션
 
 ### B (Backend)
