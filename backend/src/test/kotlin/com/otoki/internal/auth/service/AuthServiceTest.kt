@@ -6,12 +6,14 @@ import com.otoki.internal.common.dto.request.GpsConsentRequest
 import com.otoki.internal.auth.dto.request.LoginRequest
 import com.otoki.internal.auth.dto.request.RefreshTokenRequest
 import com.otoki.internal.auth.dto.request.VerifyPasswordRequest
+import com.otoki.internal.common.entity.AgreementHistory
 import com.otoki.internal.common.entity.AgreementWord
 import com.otoki.internal.common.entity.LoginHistory
 import com.otoki.internal.common.entity.User
 import com.otoki.internal.common.entity.UserRole
 import com.otoki.internal.auth.exception.*
 import com.otoki.internal.common.exception.*
+import com.otoki.internal.common.repository.AgreementHistoryRepository
 import com.otoki.internal.common.repository.AgreementWordRepository
 import com.otoki.internal.common.repository.LoginHistoryRepository
 import com.otoki.internal.common.repository.UserRepository
@@ -47,6 +49,9 @@ class AuthServiceTest {
 
     @Mock
     private lateinit var agreementWordRepository: AgreementWordRepository
+
+    @Mock
+    private lateinit var agreementHistoryRepository: AgreementHistoryRepository
 
     @Mock
     private lateinit var passwordEncoder: PasswordEncoder
@@ -486,61 +491,121 @@ class AuthServiceTest {
         assertThat(response.requiresGpsConsent).isFalse()
     }
 
-    @Test
-    @DisplayName("GPS 동의 기록 성공 - agreementFlag가 true로 업데이트, 새 토큰 반환")
-    fun recordGpsConsent_success() {
-        // Given
-        val userId = 1L
-        val user = createTestUser(id = userId, agreementFlag = null)
+    @Nested
+    @DisplayName("recordGpsConsent - GPS 동의 기록")
+    inner class RecordGpsConsentTests {
 
-        whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-        whenever(userRepository.save(any<User>())).thenAnswer { it.arguments[0] }
-        whenever(jwtTokenProvider.createAccessToken(userId, UserRole.USER, true)).thenReturn("new-token")
-        whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
+        private val activeTerms = AgreementWord(
+            id = 10, name = "AGR-2026-001", contents = "약관 본문", active = true, isDeleted = false
+        )
 
-        // When
-        val response = authService.recordGpsConsent(userId)
+        @Test
+        @DisplayName("성공 - agreementNumber 미전달 시 활성 약관으로 이력 저장 + 토큰 반환")
+        fun recordGpsConsent_success() {
+            // Given
+            val userId = 1L
+            val user = createTestUser(id = userId, agreementFlag = null)
 
-        // Then
-        verify(userRepository).save(userCaptor.capture())
-        val savedUser = userCaptor.value
-        assertThat(savedUser.agreementFlag).isTrue()
-        assertThat(response.accessToken).isEqualTo("new-token")
-        assertThat(response.expiresIn).isEqualTo(3600)
-    }
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
+                .thenReturn(Optional.of(activeTerms))
+            whenever(agreementHistoryRepository.save(any<AgreementHistory>())).thenAnswer { it.arguments[0] }
+            whenever(userRepository.save(any<User>())).thenAnswer { it.arguments[0] }
+            whenever(jwtTokenProvider.createAccessToken(userId, UserRole.USER, true)).thenReturn("new-token")
+            whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
-    @Test
-    @DisplayName("GPS 동의 기록 - 약관번호 포함 시 lastAgreementNumber 저장")
-    fun recordGpsConsent_withAgreementNumber() {
-        // Given
-        val userId = 1L
-        val user = createTestUser(id = userId, agreementFlag = null)
-        val request = GpsConsentRequest(agreementNumber = "AGR-2025-001")
+            // When
+            val response = authService.recordGpsConsent(userId)
 
-        whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-        whenever(userRepository.save(any<User>())).thenAnswer { it.arguments[0] }
-        whenever(jwtTokenProvider.createAccessToken(userId, UserRole.USER, true)).thenReturn("new-token")
-        whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
+            // Then
+            verify(userRepository).save(userCaptor.capture())
+            val savedUser = userCaptor.value
+            assertThat(savedUser.agreementFlag).isTrue()
+            assertThat(savedUser.lastAgreementNumber).isEqualTo("AGR-2026-001")
+            assertThat(response.accessToken).isEqualTo("new-token")
+            assertThat(response.expiresIn).isEqualTo(3600)
 
-        // When
-        authService.recordGpsConsent(userId, request)
+            val historyCaptor = ArgumentCaptor.forClass(AgreementHistory::class.java)
+            verify(agreementHistoryRepository).save(historyCaptor.capture())
+            val history = historyCaptor.value
+            assertThat(history.employeeId).isEqualTo(userId)
+            assertThat(history.agreementFlag).isTrue()
+            assertThat(history.agreementWordId).isEqualTo(10L)
+        }
 
-        // Then
-        verify(userRepository).save(userCaptor.capture())
-        val savedUser = userCaptor.value
-        assertThat(savedUser.agreementFlag).isTrue()
-        assertThat(savedUser.lastAgreementNumber).isEqualTo("AGR-2025-001")
-    }
+        @Test
+        @DisplayName("성공 - 약관번호 지정 시 해당 약관으로 이력 저장")
+        fun recordGpsConsent_withAgreementNumber() {
+            // Given
+            val userId = 1L
+            val user = createTestUser(id = userId, agreementFlag = null)
+            val namedTerms = AgreementWord(
+                id = 20, name = "AGR-CUSTOM", contents = "커스텀 약관", active = true, isDeleted = false
+            )
+            val request = GpsConsentRequest(agreementNumber = "AGR-CUSTOM")
 
-    @Test
-    @DisplayName("GPS 동의 기록 실패 - 존재하지 않는 사용자 ID로 요청 시 UserNotFoundException 발생")
-    fun recordGpsConsent_userNotFound() {
-        // Given
-        whenever(userRepository.findById(999L)).thenReturn(Optional.empty())
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(agreementWordRepository.findByNameAndIsDeletedFalse("AGR-CUSTOM"))
+                .thenReturn(Optional.of(namedTerms))
+            whenever(agreementHistoryRepository.save(any<AgreementHistory>())).thenAnswer { it.arguments[0] }
+            whenever(userRepository.save(any<User>())).thenAnswer { it.arguments[0] }
+            whenever(jwtTokenProvider.createAccessToken(userId, UserRole.USER, true)).thenReturn("new-token")
+            whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
-        // When & Then
-        assertThatThrownBy { authService.recordGpsConsent(999L) }
-            .isInstanceOf(UserNotFoundException::class.java)
+            // When
+            authService.recordGpsConsent(userId, request)
+
+            // Then
+            verify(userRepository).save(userCaptor.capture())
+            assertThat(userCaptor.value.lastAgreementNumber).isEqualTo("AGR-CUSTOM")
+
+            val historyCaptor = ArgumentCaptor.forClass(AgreementHistory::class.java)
+            verify(agreementHistoryRepository).save(historyCaptor.capture())
+            assertThat(historyCaptor.value.agreementWordId).isEqualTo(20L)
+        }
+
+        @Test
+        @DisplayName("실패 - 존재하지 않는 사용자 → UserNotFoundException")
+        fun recordGpsConsent_userNotFound() {
+            // Given
+            whenever(userRepository.findById(999L)).thenReturn(Optional.empty())
+
+            // When & Then
+            assertThatThrownBy { authService.recordGpsConsent(999L) }
+                .isInstanceOf(UserNotFoundException::class.java)
+        }
+
+        @Test
+        @DisplayName("실패 - 활성 약관 없음 → TermsNotFoundException")
+        fun recordGpsConsent_noActiveTerms() {
+            // Given
+            val userId = 1L
+            val user = createTestUser(id = userId)
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
+                .thenReturn(Optional.empty())
+
+            // When & Then
+            assertThatThrownBy { authService.recordGpsConsent(userId) }
+                .isInstanceOf(TermsNotFoundException::class.java)
+        }
+
+        @Test
+        @DisplayName("실패 - 존재하지 않는 약관번호 → TermsNotFoundException")
+        fun recordGpsConsent_invalidAgreementNumber() {
+            // Given
+            val userId = 1L
+            val user = createTestUser(id = userId)
+            val request = GpsConsentRequest(agreementNumber = "INVALID")
+
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(agreementWordRepository.findByNameAndIsDeletedFalse("INVALID"))
+                .thenReturn(Optional.empty())
+
+            // When & Then
+            assertThatThrownBy { authService.recordGpsConsent(userId, request) }
+                .isInstanceOf(TermsNotFoundException::class.java)
+        }
     }
 
     // ========== Logout Tests ==========
