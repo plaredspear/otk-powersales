@@ -188,13 +188,13 @@ class AdminDashboardService(
 
     private fun fetchScheduleData(scope: DataScope, monthStart: LocalDate, monthEnd: LocalDate): List<StoreSchedule> {
         return if (scope.isAllBranches) {
-            storeScheduleRepository.findConfirmedByMonth(monthStart, monthEnd)
+            storeScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(monthEnd, monthStart)
         } else {
             if (scope.branchCodes.isEmpty()) return emptyList()
             val accounts = accountRepository.findByBranchCodeIn(scope.branchCodes)
             val accountSfids = accounts.mapNotNull { it.sfid }
             if (accountSfids.isEmpty()) return emptyList()
-            storeScheduleRepository.findConfirmedByMonthAndAccountSfids(monthStart, monthEnd, accountSfids)
+            storeScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndAccountIn(monthEnd, monthStart, accountSfids)
         }
     }
 
@@ -322,7 +322,7 @@ class AdminDashboardService(
         val monthStart = ym.atDay(1)
         val monthEnd = ym.atEndOfMonth()
 
-        val schedules = storeScheduleRepository.findConfirmedByMonth(monthStart, monthEnd)
+        val schedules = storeScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(monthEnd, monthStart)
         val userSchedules = schedules.filter { it.fullName in userSfids }
 
         val byWorkType = userSchedules
