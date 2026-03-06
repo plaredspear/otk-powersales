@@ -51,6 +51,11 @@ class LocalDataInitializer(
                     appLoginActive = true,
                     orgName = "테스트지점",
                     appAuthority = "조장",
+                    birthDate = "19850315",
+                    homePhone = "02-1234-5678",
+                    workPhone = "02-9876-5432",
+                    startDate = LocalDate.of(2015, 3, 1),
+                    costCenterCode = "1111",
                     password = encodedPassword,
                     passwordChangeRequired = false
                 )
@@ -68,6 +73,11 @@ class LocalDataInitializer(
                     appLoginActive = true,
                     orgName = "테스트지점",
                     appAuthority = "여사원",
+                    birthDate = "19920820",
+                    homePhone = "02-2345-6789",
+                    workPhone = "02-8765-4321",
+                    startDate = LocalDate.of(2018, 7, 1),
+                    costCenterCode = "1111",
                     password = encodedPassword,
                     passwordChangeRequired = false
                 )
@@ -85,6 +95,11 @@ class LocalDataInitializer(
                     appLoginActive = true,
                     orgName = "테스트지점",
                     appAuthority = "지점장",
+                    birthDate = "19780105",
+                    homePhone = "02-3456-7890",
+                    workPhone = "02-7654-3210",
+                    startDate = LocalDate.of(2010, 1, 15),
+                    costCenterCode = "1111",
                     password = encodedPassword,
                     passwordChangeRequired = false
                 )
