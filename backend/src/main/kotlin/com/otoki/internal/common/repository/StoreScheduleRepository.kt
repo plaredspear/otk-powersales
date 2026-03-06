@@ -2,7 +2,6 @@ package com.otoki.internal.common.repository
 
 import com.otoki.internal.common.entity.StoreSchedule
 import org.springframework.data.jpa.repository.JpaRepository
-import org.springframework.data.jpa.repository.Query
 import java.time.LocalDate
 
 interface StoreScheduleRepository : JpaRepository<StoreSchedule, Long>, StoreScheduleRepositoryCustom {
@@ -50,24 +49,20 @@ interface StoreScheduleRepository : JpaRepository<StoreSchedule, Long>, StoreSch
 
     /**
      * 특정 월에 겹치는 확정 스케줄 조회 (전체)
+     * confirmed = true AND startDate <= monthEnd AND endDate >= monthStart
      */
-    @Query(
-        "SELECT s FROM StoreSchedule s WHERE s.confirmed = true " +
-        "AND s.startDate <= :monthEnd AND s.endDate >= :monthStart"
-    )
-    fun findConfirmedByMonth(monthStart: LocalDate, monthEnd: LocalDate): List<StoreSchedule>
+    fun findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+        monthEnd: LocalDate,
+        monthStart: LocalDate
+    ): List<StoreSchedule>
 
     /**
      * 특정 월에 겹치는 확정 스케줄 조회 (특정 거래처 sfid 목록)
+     * confirmed = true AND startDate <= monthEnd AND endDate >= monthStart AND account IN accountSfids
      */
-    @Query(
-        "SELECT s FROM StoreSchedule s WHERE s.confirmed = true " +
-        "AND s.startDate <= :monthEnd AND s.endDate >= :monthStart " +
-        "AND s.account IN :accountSfids"
-    )
-    fun findConfirmedByMonthAndAccountSfids(
-        monthStart: LocalDate,
+    fun findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndAccountIn(
         monthEnd: LocalDate,
+        monthStart: LocalDate,
         accountSfids: List<String>
     ): List<StoreSchedule>
 }

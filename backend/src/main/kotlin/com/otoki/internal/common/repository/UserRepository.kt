@@ -1,15 +1,13 @@
 package com.otoki.internal.common.repository
 
-import com.otoki.internal.branch.dto.response.BranchResponse
 import com.otoki.internal.common.entity.User
 import org.springframework.data.jpa.repository.JpaRepository
-import org.springframework.data.jpa.repository.Query
 import java.util.Optional
 
 /**
  * 사용자 Repository
  */
-interface UserRepository : JpaRepository<User, Long> {
+interface UserRepository : JpaRepository<User, Long>, UserRepositoryCustom {
 
     /**
      * 사번으로 사용자 조회
@@ -40,19 +38,4 @@ interface UserRepository : JpaRepository<User, Long> {
      * sfid 목록으로 사용자 조회
      */
     fun findBySfidIn(sfids: List<String>): List<User>
-
-    @Query("""
-        SELECT new com.otoki.internal.branch.dto.response.BranchResponse(
-            COALESCE(u.costCenterCode, u.orgName),
-            u.orgName
-        )
-        FROM User u
-        WHERE u.orgName IS NOT NULL AND u.isDeleted IS NOT TRUE
-        GROUP BY u.orgName, u.costCenterCode
-        ORDER BY u.orgName
-    """)
-    fun findDistinctBranches(): List<BranchResponse>
-
-    @Query("SELECT u.employeeId FROM User u")
-    fun findAllEmployeeIds(): List<String>
 }

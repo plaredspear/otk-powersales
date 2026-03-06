@@ -105,12 +105,12 @@ class AdminDashboardServiceTest {
             whenever(accountRepository.findAll()).thenReturn(accounts)
 
             // Schedules: current month
-            whenever(storeScheduleRepository.findConfirmedByMonth(
-                eq(LocalDate.of(2026, 3, 1)), eq(LocalDate.of(2026, 3, 31))
+            whenever(storeScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+                eq(LocalDate.of(2026, 3, 31)), eq(LocalDate.of(2026, 3, 1))
             )).thenReturn(schedules)
             // Schedules: previous month
-            whenever(storeScheduleRepository.findConfirmedByMonth(
-                eq(LocalDate.of(2026, 2, 1)), eq(LocalDate.of(2026, 2, 28))
+            whenever(storeScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+                eq(LocalDate.of(2026, 2, 28)), eq(LocalDate.of(2026, 2, 1))
             )).thenReturn(prevSchedules)
 
             // Account lookup for schedule accountSfids
@@ -195,11 +195,11 @@ class AdminDashboardServiceTest {
             whenever(accountRepository.findAll()).thenReturn(branchAccounts)
 
             // Schedules (filtered by accountSfids)
-            whenever(storeScheduleRepository.findConfirmedByMonthAndAccountSfids(
-                eq(LocalDate.of(2026, 3, 1)), eq(LocalDate.of(2026, 3, 31)), eq(listOf("ACC001"))
+            whenever(storeScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndAccountIn(
+                eq(LocalDate.of(2026, 3, 31)), eq(LocalDate.of(2026, 3, 1)), eq(listOf("ACC001"))
             )).thenReturn(schedules)
-            whenever(storeScheduleRepository.findConfirmedByMonthAndAccountSfids(
-                eq(LocalDate.of(2026, 2, 1)), eq(LocalDate.of(2026, 2, 28)), eq(listOf("ACC001"))
+            whenever(storeScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndAccountIn(
+                eq(LocalDate.of(2026, 2, 28)), eq(LocalDate.of(2026, 2, 1)), eq(listOf("ACC001"))
             )).thenReturn(emptyList())
 
             // Account lookup for schedule accountSfids
@@ -243,7 +243,7 @@ class AdminDashboardServiceTest {
                 .thenReturn(emptyList())
 
             // No schedule data
-            whenever(storeScheduleRepository.findConfirmedByMonth(any(), any()))
+            whenever(storeScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(any(), any()))
                 .thenReturn(emptyList())
 
             // No users
@@ -314,11 +314,11 @@ class AdminDashboardServiceTest {
             whenever(accountRepository.findAll()).thenReturn(filteredAccounts)
 
             // Schedules filtered by accountSfids
-            whenever(storeScheduleRepository.findConfirmedByMonthAndAccountSfids(
-                eq(LocalDate.of(2026, 3, 1)), eq(LocalDate.of(2026, 3, 31)), eq(listOf("ACC002"))
+            whenever(storeScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndAccountIn(
+                eq(LocalDate.of(2026, 3, 31)), eq(LocalDate.of(2026, 3, 1)), eq(listOf("ACC002"))
             )).thenReturn(emptyList())
-            whenever(storeScheduleRepository.findConfirmedByMonthAndAccountSfids(
-                eq(LocalDate.of(2026, 2, 1)), eq(LocalDate.of(2026, 2, 28)), eq(listOf("ACC002"))
+            whenever(storeScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndAccountIn(
+                eq(LocalDate.of(2026, 2, 28)), eq(LocalDate.of(2026, 2, 1)), eq(listOf("ACC002"))
             )).thenReturn(emptyList())
 
             // Users filtered by costCenterCode
@@ -364,11 +364,11 @@ class AdminDashboardServiceTest {
             )).thenReturn(emptyList())
 
             // Schedules
-            whenever(storeScheduleRepository.findConfirmedByMonthAndAccountSfids(
-                eq(LocalDate.of(2026, 3, 1)), eq(LocalDate.of(2026, 3, 31)), eq(listOf("ACC001"))
+            whenever(storeScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndAccountIn(
+                eq(LocalDate.of(2026, 3, 31)), eq(LocalDate.of(2026, 3, 1)), eq(listOf("ACC001"))
             )).thenReturn(emptyList())
-            whenever(storeScheduleRepository.findConfirmedByMonthAndAccountSfids(
-                eq(LocalDate.of(2026, 2, 1)), eq(LocalDate.of(2026, 2, 28)), eq(listOf("ACC001"))
+            whenever(storeScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndAccountIn(
+                eq(LocalDate.of(2026, 2, 28)), eq(LocalDate.of(2026, 2, 1)), eq(listOf("ACC001"))
             )).thenReturn(emptyList())
 
             // Users
@@ -419,7 +419,7 @@ class AdminDashboardServiceTest {
             whenever(accountRepository.findAll()).thenReturn(accounts)
 
             // Schedules
-            whenever(storeScheduleRepository.findConfirmedByMonth(any(), any()))
+            whenever(storeScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(any(), any()))
                 .thenReturn(emptyList())
 
             // Users
@@ -457,7 +457,7 @@ class AdminDashboardServiceTest {
 
             whenever(accountRepository.findAll()).thenReturn(emptyList())
 
-            whenever(storeScheduleRepository.findConfirmedByMonth(any(), any()))
+            whenever(storeScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(any(), any()))
                 .thenReturn(emptyList())
 
             whenever(userRepository.findByStatus("재직")).thenReturn(emptyList())
@@ -483,7 +483,7 @@ class AdminDashboardServiceTest {
             whenever(adminDataScopeService.resolve(userId)).thenReturn(scope)
             whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonth(any(), any()))
                 .thenReturn(emptyList())
-            whenever(storeScheduleRepository.findConfirmedByMonth(any(), any()))
+            whenever(storeScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(any(), any()))
                 .thenReturn(emptyList())
             whenever(userRepository.findByStatus("재직")).thenReturn(emptyList())
             whenever(userRepository.findByStatus("휴직")).thenReturn(emptyList())
@@ -529,7 +529,7 @@ class AdminDashboardServiceTest {
             whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonth("2025", "03"))
                 .thenReturn(emptyList())
             whenever(accountRepository.findAll()).thenReturn(accounts)
-            whenever(storeScheduleRepository.findConfirmedByMonth(any(), any()))
+            whenever(storeScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(any(), any()))
                 .thenReturn(emptyList())
             whenever(userRepository.findByStatus("재직")).thenReturn(emptyList())
             whenever(userRepository.findByStatus("휴직")).thenReturn(emptyList())
@@ -570,7 +570,7 @@ class AdminDashboardServiceTest {
             whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonth("2025", "03"))
                 .thenReturn(emptyList())
             whenever(accountRepository.findAll()).thenReturn(emptyList())
-            whenever(storeScheduleRepository.findConfirmedByMonth(any(), any()))
+            whenever(storeScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(any(), any()))
                 .thenReturn(emptyList())
             whenever(userRepository.findByStatus("재직")).thenReturn(emptyList())
             whenever(userRepository.findByStatus("휴직")).thenReturn(emptyList())
@@ -601,7 +601,7 @@ class AdminDashboardServiceTest {
             whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonth("2025", "03"))
                 .thenReturn(emptyList())
             whenever(accountRepository.findAll()).thenReturn(emptyList())
-            whenever(storeScheduleRepository.findConfirmedByMonth(any(), any()))
+            whenever(storeScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(any(), any()))
                 .thenReturn(emptyList())
             whenever(userRepository.findByStatus("재직")).thenReturn(emptyList())
             whenever(userRepository.findByStatus("휴직")).thenReturn(emptyList())
