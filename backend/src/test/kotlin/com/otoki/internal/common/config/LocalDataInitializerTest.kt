@@ -7,6 +7,8 @@ import com.otoki.internal.common.repository.AgreementWordRepository
 import com.otoki.internal.common.repository.UserRepository
 import com.otoki.internal.notice.entity.Notice
 import com.otoki.internal.notice.repository.NoticeRepository
+import com.otoki.internal.sap.entity.Org
+import com.otoki.internal.sap.repository.OrgRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -41,6 +43,9 @@ class LocalDataInitializerTest {
     @Mock
     private lateinit var noticeRepository: NoticeRepository
 
+    @Mock
+    private lateinit var orgRepository: OrgRepository
+
     @InjectMocks
     private lateinit var localDataInitializer: LocalDataInitializer
 
@@ -61,6 +66,7 @@ class LocalDataInitializerTest {
     private fun stubOtherSeedsExist() {
         whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
             .thenReturn(Optional.of(AgreementWord()))
+        whenever(orgRepository.count()).thenReturn(1L)
     }
 
     private fun captureAllSavedUsers(): List<User> {
@@ -447,6 +453,89 @@ class LocalDataInitializerTest {
                 val dates = notices.mapNotNull { it.createdDate }
                 assertThat(dates).hasSize(5)
                 assertThat(dates).isSorted()
+            })
+        }
+    }
+
+    @Nested
+    @DisplayName("run - 조직마스터 시드 생성")
+    inner class OrgSeedTests {
+
+        @Test
+        @DisplayName("정상 생성 - org 테이블 비어있음 -> Org 3건 생성")
+        fun run_createsOrgs_whenNotExists() {
+            // Given
+            stubAllUsersExist()
+            stubOtherSeedsExist()
+            whenever(orgRepository.count()).thenReturn(0L)
+
+            // When
+            localDataInitializer.run(null)
+
+            // Then
+            verify(orgRepository).saveAll(check<List<Org>> { orgs ->
+                assertThat(orgs).hasSize(3)
+            })
+        }
+
+        @Test
+        @DisplayName("멱등성 - org 테이블에 데이터 존재 -> 저장 skip")
+        fun run_skipsOrgs_whenAlreadyExists() {
+            // Given
+            stubAllUsersExist()
+            stubOtherSeedsExist()
+            whenever(orgRepository.count()).thenReturn(3L)
+
+            // When
+            localDataInitializer.run(null)
+
+            // Then
+            verify(orgRepository, never()).saveAll(any<List<Org>>())
+        }
+
+        @Test
+        @DisplayName("테스트지점 연결 확인 - orgNameLevel5에 테스트지점 포함")
+        fun run_createsOrgsWithTestBranch() {
+            // Given
+            stubAllUsersExist()
+            stubOtherSeedsExist()
+            whenever(orgRepository.count()).thenReturn(0L)
+
+            // When
+            localDataInitializer.run(null)
+
+            // Then
+            verify(orgRepository).saveAll(check<List<Org>> { orgs ->
+                val testBranch = orgs.filter { it.orgNameLevel5 == "테스트지점" }
+                assertThat(testBranch).hasSize(1)
+                assertThat(testBranch[0].costCenterLevel5).isEqualTo("1111")
+            })
+        }
+
+        @Test
+        @DisplayName("시드 데이터 필드 검증 - 3건의 계층 구조")
+        fun run_createsOrgsWithCorrectData() {
+            // Given
+            stubAllUsersExist()
+            stubOtherSeedsExist()
+            whenever(orgRepository.count()).thenReturn(0L)
+
+            // When
+            localDataInitializer.run(null)
+
+            // Then
+            verify(orgRepository).saveAll(check<List<Org>> { orgs ->
+                // 공통 Level2/3
+                orgs.forEach { org ->
+                    assertThat(org.costCenterLevel2).isEqualTo("1000")
+                    assertThat(org.orgNameLevel2).isEqualTo("오뚜기")
+                    assertThat(org.costCenterLevel3).isEqualTo("1100")
+                    assertThat(org.orgNameLevel3).isEqualTo("영업본부")
+                }
+
+                // Level5 이름 검증
+                val level5Names = orgs.map { it.orgNameLevel5 }
+                assertThat(level5Names).containsExactly("테스트지점", "강남지점", "대전지점")
             })
         }
     }
