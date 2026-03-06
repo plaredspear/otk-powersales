@@ -9,7 +9,7 @@ import com.otoki.internal.common.exception.*
 import com.otoki.internal.sales.repository.DailySalesRepository
 import com.otoki.internal.event.repository.EventProductRepository
 import com.otoki.internal.event.repository.EventRepository
-import com.otoki.internal.common.repository.UserRepository
+import com.otoki.internal.sap.repository.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate

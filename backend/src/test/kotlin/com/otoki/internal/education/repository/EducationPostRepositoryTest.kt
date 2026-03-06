@@ -2,6 +2,7 @@ package com.otoki.internal.education.repository
 
 import com.otoki.internal.education.entity.*
 import com.otoki.internal.common.entity.*
+import com.otoki.internal.sap.entity.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName

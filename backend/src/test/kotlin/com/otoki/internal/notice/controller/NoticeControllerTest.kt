@@ -1,6 +1,6 @@
 package com.otoki.internal.notice.controller
 
-import com.otoki.internal.common.entity.UserRole
+import com.otoki.internal.sap.entity.UserRole
 import com.otoki.internal.notice.dto.response.NoticeImageResponse
 import com.otoki.internal.notice.dto.response.NoticePostDetailResponse
 import com.otoki.internal.notice.dto.response.NoticePostListResponse

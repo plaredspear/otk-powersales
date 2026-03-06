@@ -1,10 +1,10 @@
 package com.otoki.internal.schedule.service
 
 import com.otoki.internal.auth.exception.UserNotFoundException
-import com.otoki.internal.common.entity.User
-import com.otoki.internal.common.repository.UserRepository
-import com.otoki.internal.entity.Account
-import com.otoki.internal.repository.AccountRepository
+import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.entity.Account
+import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.schedule.entity.Schedule
 import com.otoki.internal.schedule.exception.AlreadyRegisteredException
 import com.otoki.internal.schedule.exception.DistanceExceededException

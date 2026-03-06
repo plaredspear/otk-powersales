@@ -1,6 +1,6 @@
-package com.otoki.internal.repository
+package com.otoki.internal.sap.repository
 
-import com.otoki.internal.entity.Account
+import com.otoki.internal.sap.entity.Account
 import org.springframework.data.jpa.repository.JpaRepository
 
 /**

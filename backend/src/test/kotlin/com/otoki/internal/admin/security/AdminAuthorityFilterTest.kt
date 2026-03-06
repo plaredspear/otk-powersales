@@ -4,9 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.PropertyNamingStrategies
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.otoki.internal.common.entity.User
-import com.otoki.internal.common.entity.UserRole
-import com.otoki.internal.common.repository.UserRepository
+import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.entity.UserRole
+import com.otoki.internal.sap.repository.UserRepository
 import com.otoki.internal.common.security.UserPrincipal
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach

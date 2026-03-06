@@ -1,6 +1,7 @@
-package com.otoki.internal.common.repository
+package com.otoki.internal.sap.repository
 
-import com.otoki.internal.common.entity.User
+import com.otoki.internal.sap.entity.User
+import com.otoki.internal.common.repository.UserRepositoryCustom
 import org.springframework.data.jpa.repository.JpaRepository
 import java.util.Optional
 

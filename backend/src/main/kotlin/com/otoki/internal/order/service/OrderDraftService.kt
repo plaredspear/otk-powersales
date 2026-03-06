@@ -11,9 +11,9 @@ import com.otoki.internal.exception.DraftNotFoundException
 import com.otoki.internal.exception.InvalidDeliveryDateException
 import com.otoki.internal.exception.ProductNotFoundException
 import com.otoki.internal.order.repository.OrderDraftRepository
-import com.otoki.internal.product.repository.ProductRepository
+import com.otoki.internal.sap.repository.ProductRepository
 import com.otoki.internal.repository.StoreRepository
-import com.otoki.internal.common.repository.UserRepository
+import com.otoki.internal.sap.repository.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate

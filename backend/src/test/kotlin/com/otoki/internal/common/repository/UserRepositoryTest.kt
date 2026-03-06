@@ -1,7 +1,8 @@
 package com.otoki.internal.common.repository
 
-import com.otoki.internal.common.entity.User
-import com.otoki.internal.common.entity.UserRole
+import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.entity.UserRole
+import com.otoki.internal.sap.repository.UserRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName

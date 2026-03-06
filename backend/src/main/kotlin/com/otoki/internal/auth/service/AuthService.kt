@@ -10,13 +10,13 @@ import com.otoki.internal.auth.dto.response.*
 import com.otoki.internal.common.dto.response.*
 import com.otoki.internal.common.entity.AgreementHistory
 import com.otoki.internal.common.entity.LoginHistory
-import com.otoki.internal.common.entity.User
+import com.otoki.internal.sap.entity.User
 import com.otoki.internal.auth.exception.*
 import com.otoki.internal.common.exception.*
 import com.otoki.internal.common.repository.AgreementHistoryRepository
 import com.otoki.internal.common.repository.AgreementWordRepository
 import com.otoki.internal.common.repository.LoginHistoryRepository
-import com.otoki.internal.common.repository.UserRepository
+import com.otoki.internal.sap.repository.UserRepository
 import com.otoki.internal.common.security.JwtTokenProvider
 import org.slf4j.LoggerFactory
 import org.springframework.security.crypto.password.PasswordEncoder

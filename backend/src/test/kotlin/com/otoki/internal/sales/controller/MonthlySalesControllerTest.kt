@@ -2,7 +2,7 @@ package com.otoki.internal.sales.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.otoki.internal.sales.dto.response.MonthlySalesResponse
-import com.otoki.internal.common.entity.UserRole
+import com.otoki.internal.sap.entity.UserRole
 import com.otoki.internal.common.security.GpsConsentFilter
 import com.otoki.internal.common.security.JwtAuthenticationFilter
 import com.otoki.internal.admin.security.AdminAuthorityFilter

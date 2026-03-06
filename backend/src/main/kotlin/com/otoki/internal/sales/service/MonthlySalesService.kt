@@ -2,7 +2,7 @@ package com.otoki.internal.sales.service
 
 import com.otoki.internal.sales.dto.request.MonthlySalesRequest
 import com.otoki.internal.sales.dto.response.MonthlySalesResponse
-import com.otoki.internal.sales.repository.MonthlySalesHistoryRepository
+import com.otoki.internal.sap.repository.MonthlySalesHistoryRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 

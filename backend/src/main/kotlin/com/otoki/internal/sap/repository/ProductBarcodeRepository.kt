@@ -1,6 +1,6 @@
-package com.otoki.internal.repository
+package com.otoki.internal.sap.repository
 
-import com.otoki.internal.entity.ProductBarcode
+import com.otoki.internal.sap.entity.ProductBarcode
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 

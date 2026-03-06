@@ -1,7 +1,7 @@
 package com.otoki.internal.common.security
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.otoki.internal.common.entity.UserRole
+import com.otoki.internal.sap.entity.UserRole
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.ExpiredJwtException
 import io.jsonwebtoken.Jwts

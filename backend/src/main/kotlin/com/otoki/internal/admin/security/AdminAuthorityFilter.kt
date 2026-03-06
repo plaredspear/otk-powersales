@@ -2,7 +2,7 @@ package com.otoki.internal.admin.security
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.otoki.internal.common.dto.ApiResponse
-import com.otoki.internal.common.repository.UserRepository
+import com.otoki.internal.sap.repository.UserRepository
 import com.otoki.internal.common.security.UserPrincipal
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest

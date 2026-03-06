@@ -1,7 +1,7 @@
 package com.otoki.internal.sap.service
 
-import com.otoki.internal.sales.entity.MonthlySalesHistory
-import com.otoki.internal.sales.repository.MonthlySalesHistoryRepository
+import com.otoki.internal.sap.entity.MonthlySalesHistory
+import com.otoki.internal.sap.repository.MonthlySalesHistoryRepository
 import com.otoki.internal.sap.dto.SapMonthlySalesRequest
 import com.otoki.internal.sap.dto.SapSyncResult
 import org.assertj.core.api.Assertions.assertThat

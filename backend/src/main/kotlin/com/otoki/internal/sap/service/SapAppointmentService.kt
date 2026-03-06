@@ -1,6 +1,6 @@
 package com.otoki.internal.sap.service
 
-import com.otoki.internal.common.repository.UserRepository
+import com.otoki.internal.sap.repository.UserRepository
 import com.otoki.internal.sap.dto.SapAppointmentRequest
 import com.otoki.internal.sap.dto.SapSyncError
 import com.otoki.internal.sap.dto.SapSyncResult

@@ -9,14 +9,14 @@ import com.otoki.internal.auth.dto.request.VerifyPasswordRequest
 import com.otoki.internal.common.entity.AgreementHistory
 import com.otoki.internal.common.entity.AgreementWord
 import com.otoki.internal.common.entity.LoginHistory
-import com.otoki.internal.common.entity.User
-import com.otoki.internal.common.entity.UserRole
+import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.entity.UserRole
 import com.otoki.internal.auth.exception.*
 import com.otoki.internal.common.exception.*
 import com.otoki.internal.common.repository.AgreementHistoryRepository
 import com.otoki.internal.common.repository.AgreementWordRepository
 import com.otoki.internal.common.repository.LoginHistoryRepository
-import com.otoki.internal.common.repository.UserRepository
+import com.otoki.internal.sap.repository.UserRepository
 import com.otoki.internal.common.security.JwtTokenProvider
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy

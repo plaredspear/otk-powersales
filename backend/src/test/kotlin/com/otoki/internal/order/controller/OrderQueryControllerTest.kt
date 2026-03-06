@@ -4,7 +4,7 @@ package com.otoki.internal.order.controller
 import com.otoki.internal.dto.response.CreditBalanceResponse
 import com.otoki.internal.order.dto.response.OrderHistoryProductResponse
 import com.otoki.internal.order.dto.response.ProductOrderInfoResponse
-import com.otoki.internal.common.entity.UserRole
+import com.otoki.internal.sap.entity.UserRole
 import com.otoki.internal.exception.ClientNotFoundException
 import com.otoki.internal.exception.ProductNotFoundException
 import com.otoki.internal.common.security.GpsConsentFilter

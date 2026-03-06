@@ -1,7 +1,7 @@
 package com.otoki.internal.sap.service
 
-import com.otoki.internal.entity.Account
-import com.otoki.internal.repository.AccountRepository
+import com.otoki.internal.sap.entity.Account
+import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.sap.dto.SapClientMasterRequest.ReqItem
 import com.otoki.internal.sap.entity.Org
 import com.otoki.internal.sap.repository.OrgRepository

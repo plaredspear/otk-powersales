@@ -2,9 +2,10 @@ package com.otoki.internal.schedule.service
 
 import com.otoki.internal.schedule.entity.*
 import com.otoki.internal.common.entity.*
+import com.otoki.internal.sap.entity.*
 import com.otoki.internal.auth.exception.UserNotFoundException
 import com.otoki.internal.common.repository.StoreScheduleRepository
-import com.otoki.internal.common.repository.UserRepository
+import com.otoki.internal.sap.repository.UserRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested

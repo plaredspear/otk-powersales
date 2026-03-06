@@ -1,4 +1,4 @@
-package com.otoki.internal.sales.entity
+package com.otoki.internal.sap.entity
 
 import jakarta.persistence.*
 import java.time.LocalDateTime

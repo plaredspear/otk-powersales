@@ -2,7 +2,7 @@ package com.otoki.internal.education.controller
 
 import com.otoki.internal.education.dto.response.*
 import com.otoki.internal.common.dto.response.*
-import com.otoki.internal.common.entity.UserRole
+import com.otoki.internal.sap.entity.UserRole
 import com.otoki.internal.education.exception.EducationPostNotFoundException
 import com.otoki.internal.education.exception.InvalidEducationCategoryException
 import com.otoki.internal.common.security.GpsConsentFilter

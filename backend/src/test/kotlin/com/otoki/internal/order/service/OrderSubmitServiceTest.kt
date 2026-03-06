@@ -6,7 +6,9 @@ package com.otoki.internal.order.service
 import com.otoki.internal.dto.request.DraftItemRequest
 import com.otoki.internal.order.dto.request.OrderDraftRequest
 import com.otoki.internal.entity.*
+import com.otoki.internal.sap.entity.*
 import com.otoki.internal.common.entity.*
+import com.otoki.internal.sap.entity.*
 import com.otoki.internal.exception.ClientNotFoundException
 import com.otoki.internal.exception.InvalidDeliveryDateException
 import com.otoki.internal.order.exception.OrderValidationFailedException
@@ -15,6 +17,7 @@ import com.otoki.internal.order.integration.SapOrderClient
 import com.otoki.internal.order.integration.SapOrderResult
 import com.otoki.internal.repository.*
 import com.otoki.internal.common.repository.*
+import com.otoki.internal.sap.repository.*
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName

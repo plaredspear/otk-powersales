@@ -3,7 +3,7 @@ package com.otoki.internal.product.service
 import com.otoki.internal.product.dto.response.ProductDto
 import com.otoki.internal.product.exception.InvalidSearchParameterException
 import com.otoki.internal.product.exception.InvalidSearchTypeException
-import com.otoki.internal.product.repository.ProductRepository
+import com.otoki.internal.sap.repository.ProductRepository
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service

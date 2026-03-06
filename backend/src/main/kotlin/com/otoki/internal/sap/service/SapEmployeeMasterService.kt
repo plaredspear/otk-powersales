@@ -1,7 +1,7 @@
 package com.otoki.internal.sap.service
 
-import com.otoki.internal.common.entity.User
-import com.otoki.internal.common.repository.UserRepository
+import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.repository.UserRepository
 import com.otoki.internal.sap.dto.SapEmployeeMasterRequest
 import com.otoki.internal.sap.dto.SapSyncError
 import com.otoki.internal.sap.dto.SapSyncResult

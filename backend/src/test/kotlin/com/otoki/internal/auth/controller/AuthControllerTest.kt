@@ -7,7 +7,7 @@ import com.otoki.internal.auth.dto.request.RefreshTokenRequest
 import com.otoki.internal.auth.dto.request.VerifyPasswordRequest
 import com.otoki.internal.auth.dto.response.*
 import com.otoki.internal.common.dto.response.*
-import com.otoki.internal.common.entity.UserRole
+import com.otoki.internal.sap.entity.UserRole
 import com.otoki.internal.auth.exception.InvalidCredentialsException
 import com.otoki.internal.auth.exception.InvalidCurrentPasswordException
 import com.otoki.internal.auth.exception.InvalidTokenException

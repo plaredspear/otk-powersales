@@ -1,7 +1,7 @@
 package com.otoki.internal.sap.service
 
-import com.otoki.internal.product.entity.Product
-import com.otoki.internal.product.repository.ProductRepository
+import com.otoki.internal.sap.entity.Product
+import com.otoki.internal.sap.repository.ProductRepository
 import com.otoki.internal.sap.dto.SapProductMasterRequest
 import com.otoki.internal.sap.dto.SapSyncError
 import com.otoki.internal.sap.dto.SapSyncResult

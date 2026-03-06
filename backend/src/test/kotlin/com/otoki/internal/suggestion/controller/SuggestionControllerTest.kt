@@ -2,7 +2,7 @@
 package com.otoki.internal.suggestion.controller
 
 import com.otoki.internal.suggestion.dto.response.SuggestionCreateResponse
-import com.otoki.internal.common.entity.UserRole
+import com.otoki.internal.sap.entity.UserRole
 import com.otoki.internal.common.security.GpsConsentFilter
 import com.otoki.internal.common.security.JwtAuthenticationFilter
 import com.otoki.internal.admin.security.AdminAuthorityFilter

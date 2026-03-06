@@ -4,10 +4,12 @@ package com.otoki.internal.inspection.service
 import com.otoki.internal.inspection.dto.request.InspectionCreateRequest
 import com.otoki.internal.inspection.entity.*
 import com.otoki.internal.common.entity.*
+import com.otoki.internal.sap.entity.*
 import com.otoki.internal.inspection.exception.*
 import com.otoki.internal.common.exception.*
 import com.otoki.internal.inspection.repository.*
 import com.otoki.internal.common.repository.*
+import com.otoki.internal.sap.repository.*
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.springframework.data.repository.findByIdOrNull

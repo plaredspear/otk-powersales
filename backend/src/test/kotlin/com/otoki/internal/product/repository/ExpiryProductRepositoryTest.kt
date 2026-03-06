@@ -1,7 +1,7 @@
 package com.otoki.internal.product.repository
 
 import com.otoki.internal.product.entity.ExpiryProduct
-import com.otoki.internal.common.entity.User
+import com.otoki.internal.sap.entity.User
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName

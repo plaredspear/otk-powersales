@@ -1,15 +1,15 @@
 package com.otoki.internal.common.service
 
 import com.otoki.internal.common.dto.response.HomeResponse
-import com.otoki.internal.common.entity.User
-import com.otoki.internal.common.entity.UserRole
+import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.entity.UserRole
 import com.otoki.internal.auth.exception.UserNotFoundException
 import com.otoki.internal.notice.repository.NoticeRepository
-import com.otoki.internal.repository.AccountRepository
+import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.safetycheck.service.SafetyCheckService
 import com.otoki.internal.schedule.entity.Schedule
 import com.otoki.internal.schedule.repository.ScheduleRepository
-import com.otoki.internal.common.repository.UserRepository
+import com.otoki.internal.sap.repository.UserRepository
 import com.otoki.internal.shelflife.repository.ShelfLifeRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

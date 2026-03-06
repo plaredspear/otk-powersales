@@ -12,8 +12,8 @@ import com.otoki.internal.exception.FavoriteNotFoundException
 import com.otoki.internal.order.exception.InvalidOrderParameterException
 import com.otoki.internal.exception.ProductNotFoundException
 import com.otoki.internal.product.repository.FavoriteProductRepository
-import com.otoki.internal.product.repository.ProductRepository
-import com.otoki.internal.common.repository.UserRepository
+import com.otoki.internal.sap.repository.ProductRepository
+import com.otoki.internal.sap.repository.UserRepository
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service

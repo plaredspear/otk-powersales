@@ -1,9 +1,9 @@
 package com.otoki.internal.sap.service
 
-import com.otoki.internal.entity.ProductBarcode
-import com.otoki.internal.product.entity.Product
-import com.otoki.internal.product.repository.ProductRepository
-import com.otoki.internal.repository.ProductBarcodeRepository
+import com.otoki.internal.sap.entity.ProductBarcode
+import com.otoki.internal.sap.entity.Product
+import com.otoki.internal.sap.repository.ProductRepository
+import com.otoki.internal.sap.repository.ProductBarcodeRepository
 import com.otoki.internal.sap.dto.SapBarcodeMasterRequest.ReqItem
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
