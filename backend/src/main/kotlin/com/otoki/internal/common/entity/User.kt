@@ -29,16 +29,16 @@ class User(
     val employeeId: String,
 
     @Column(name = "name", length = 80)
-    val name: String,
+    var name: String,
 
     @Column(name = "dkretail__birthdate__c", length = 10)
-    val birthDate: String? = null,
+    var birthDate: String? = null,
 
     @Column(name = "dkretail__status__c", length = 40)
-    val status: String? = null,
+    var status: String? = null,
 
     @Column(name = "dkretail__apploginactive__c")
-    val appLoginActive: Boolean? = null,
+    var appLoginActive: Boolean? = null,
 
     @Column(name = "dkretail__appauthority__c", length = 255)
     val appAuthority: String? = null,
@@ -47,19 +47,19 @@ class User(
     val orgName: String? = null,
 
     @Column(name = "costcentercode__c", length = 10)
-    val costCenterCode: String? = null,
+    var costCenterCode: String? = null,
 
     @Column(name = "dkretail__workphone__c", length = 255)
-    val workPhone: String? = null,
+    var workPhone: String? = null,
 
     @Column(name = "phone__c", length = 40)
     val phone: String? = null,
 
     @Column(name = "dkretail__homephone__c", length = 255)
-    val homePhone: String? = null,
+    var homePhone: String? = null,
 
     @Column(name = "dkretail__startdate__c")
-    val startDate: LocalDate? = null,
+    var startDate: LocalDate? = null,
 
     @Column(name = "agreementflag__c")
     var agreementFlag: Boolean? = null,
