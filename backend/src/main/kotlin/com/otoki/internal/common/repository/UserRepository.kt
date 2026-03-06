@@ -52,4 +52,7 @@ interface UserRepository : JpaRepository<User, Long> {
         ORDER BY u.orgName
     """)
     fun findDistinctBranches(): List<BranchResponse>
+
+    @Query("SELECT u.employeeId FROM User u")
+    fun findAllEmployeeIds(): List<String>
 }
