@@ -41,10 +41,10 @@ class User(
     var appLoginActive: Boolean? = null,
 
     @Column(name = "dkretail__appauthority__c", length = 255)
-    val appAuthority: String? = null,
+    var appAuthority: String? = null,
 
     @Column(name = "dkretail__orgname__c", length = 100)
-    val orgName: String? = null,
+    var orgName: String? = null,
 
     @Column(name = "costcentercode__c", length = 10)
     var costCenterCode: String? = null,

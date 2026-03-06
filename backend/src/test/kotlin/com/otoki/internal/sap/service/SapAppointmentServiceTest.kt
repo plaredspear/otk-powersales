@@ -27,6 +27,9 @@ class SapAppointmentServiceTest {
     @Mock
     private lateinit var userRepository: UserRepository
 
+    @Mock
+    private lateinit var appointmentUserProfileUpdater: AppointmentUserProfileUpdater
+
     @InjectMocks
     private lateinit var sapAppointmentService: SapAppointmentService
 
