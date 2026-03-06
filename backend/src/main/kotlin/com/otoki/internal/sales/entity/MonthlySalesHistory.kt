@@ -22,7 +22,7 @@ class MonthlySalesHistory(
     val name: String? = null,
 
     @Column(name = "account_externalkey__c", length = 1300)
-    val accountExternalKey: String? = null,
+    var accountExternalKey: String? = null,
 
     @Column(name = "account_branchname__c", length = 1300)
     val accountBranchName: String? = null,
@@ -31,10 +31,10 @@ class MonthlySalesHistory(
     val accountType: String? = null,
 
     @Column(name = "salesyear__c", length = 255)
-    val salesYear: String? = null,
+    var salesYear: String? = null,
 
     @Column(name = "salesmonth__c", length = 255)
-    val salesMonth: String? = null,
+    var salesMonth: String? = null,
 
     @Column(name = "fm_year__c")
     val fmYear: Double? = null,
@@ -55,16 +55,16 @@ class MonthlySalesHistory(
     val lastMonthTargetAchievedRatio: Double? = null,
 
     @Column(name = "shipclosingamount__c")
-    val shipClosingAmount: Double? = null,
+    var shipClosingAmount: Double? = null,
 
     @Column(name = "abcclosingamount1__c")
-    val abcClosingAmount1: Double? = null,
+    var abcClosingAmount1: Double? = null,
 
     @Column(name = "abcclosingamount2__c")
-    val abcClosingAmount2: Double? = null,
+    var abcClosingAmount2: Double? = null,
 
     @Column(name = "abcclosingamount3__c")
-    val abcClosingAmount3: Double? = null,
+    var abcClosingAmount3: Double? = null,
 
     @Column(name = "ambientpurpose__c")
     val ambientPurpose: Double? = null,
@@ -85,5 +85,11 @@ class MonthlySalesHistory(
     val hcLastOp: String? = null,
 
     @Column(name = "_hc_err", columnDefinition = "TEXT")
-    val hcErr: String? = null
+    val hcErr: String? = null,
+
+    @Column(name = "externalkey__c", length = 30)
+    var externalkeyC: String? = null,
+
+    @Column(name = "rlsales__c")
+    var rlsalesC: Double? = null
 )
