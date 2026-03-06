@@ -5,8 +5,7 @@ import java.time.LocalDateTime
 
 /**
  * 거래처 마스터 Entity
- * Salesforce Account(거래처) 오브젝트 — Heroku Connect로 동기화되는 거래처 마스터 테이블.
- * StoreSchedule의 storeId를 통해 연결된다.
+ * Salesforce Account(거래처) 오브젝트 — SAP 거래처 마스터 동기화 대상 테이블.
  */
 @Entity
 @Table(name = "account")
@@ -20,43 +19,43 @@ class Account(
     val sfid: String? = null,
 
     @Column(name = "name", length = 255)
-    val name: String? = null,
+    var name: String? = null,
 
     @Column(name = "phone", length = 40)
-    val phone: String? = null,
+    var phone: String? = null,
 
     @Column(name = "mobilephone__c", length = 40)
-    val mobilePhone: String? = null,
+    var mobilePhone: String? = null,
 
     @Column(name = "address1__c", length = 120)
-    val address1: String? = null,
+    var address1: String? = null,
 
     @Column(name = "address2__c", length = 120)
-    val address2: String? = null,
+    var address2: String? = null,
 
     @Column(name = "representative__c", length = 100)
-    val representative: String? = null,
+    var representative: String? = null,
 
     @Column(name = "abctype__c", length = 20)
-    val abcType: String? = null,
+    var abcType: String? = null,
 
     @Column(name = "abctypecode__c", length = 40)
-    val abcTypeCode: String? = null,
+    var abcTypeCode: String? = null,
 
     @Column(name = "externalkey__c", length = 100)
-    val externalKey: String? = null,
+    var externalKey: String? = null,
 
     @Column(name = "accountgroup__c", length = 10)
-    val accountGroup: String? = null,
+    var accountGroup: String? = null,
 
     @Column(name = "branchcode__c", length = 100)
-    val branchCode: String? = null,
+    var branchCode: String? = null,
 
     @Column(name = "branchname__c", length = 250)
-    val branchName: String? = null,
+    var branchName: String? = null,
 
     @Column(name = "zipcode__c", length = 100)
-    val zipCode: String? = null,
+    var zipCode: String? = null,
 
     @Column(name = "latitude__c", length = 100)
     val latitude: String? = null,
@@ -65,25 +64,25 @@ class Account(
     val longitude: String? = null,
 
     @Column(name = "closingtime1__c", length = 50)
-    val closingTime1: String? = null,
+    var closingTime1: String? = null,
 
     @Column(name = "closingtime2__c", length = 50)
-    val closingTime2: String? = null,
+    var closingTime2: String? = null,
 
     @Column(name = "closingtime3__c", length = 50)
-    val closingTime3: String? = null,
+    var closingTime3: String? = null,
 
     @Column(name = "industry", length = 255)
-    val industry: String? = null,
+    var industry: String? = null,
 
     @Column(name = "werk1_tx__c", length = 255)
-    val werk1Tx: String? = null,
+    var werk1Tx: String? = null,
 
     @Column(name = "werk2_tx__c", length = 255)
-    val werk2Tx: String? = null,
+    var werk2Tx: String? = null,
 
     @Column(name = "werk3_tx__c", length = 255)
-    val werk3Tx: String? = null,
+    var werk3Tx: String? = null,
 
     @Column(name = "isdeleted")
     val isDeleted: Boolean? = null,
@@ -98,11 +97,73 @@ class Account(
     val hcLastOp: String? = null,
 
     @Column(name = "_hc_err", columnDefinition = "TEXT")
-    val hcErr: String? = null
+    val hcErr: String? = null,
 
-    // --- 주석 처리: V1에 없는 기존 필드 ---
-    // storeCode: V1에 없음 (externalKey로 대체)
-    // creditLimit: V1에 없음
-    // usedCredit: V1에 없음
-    // creditUpdatedAt: V1에 없음
+    // --- Spec #142: SAP 거래처 마스터 동기화 추가 컬럼 ---
+
+    @Column(name = "account_type__c", length = 20)
+    var accountType: String? = null,
+
+    @Column(name = "account_status_code__c", length = 20)
+    var accountStatusCode: String? = null,
+
+    @Column(name = "account_status_name__c", length = 40)
+    var accountStatusName: String? = null,
+
+    @Column(name = "email__c", length = 255)
+    var email: String? = null,
+
+    @Column(name = "business_type__c", length = 100)
+    var businessType: String? = null,
+
+    @Column(name = "business_category__c", length = 100)
+    var businessCategory: String? = null,
+
+    @Column(name = "employee_code__c", length = 20)
+    var employeeCode: String? = null,
+
+    @Column(name = "business_license_number__c", length = 20)
+    var businessLicenseNumber: String? = null,
+
+    @Column(name = "division_code__c", length = 20)
+    var divisionCode: String? = null,
+
+    @Column(name = "division_name__c", length = 100)
+    var divisionName: String? = null,
+
+    @Column(name = "sales_dept_code__c", length = 20)
+    var salesDeptCode: String? = null,
+
+    @Column(name = "sales_dept_name__c", length = 100)
+    var salesDeptName: String? = null,
+
+    @Column(name = "distribution__c", length = 1)
+    var distribution: String? = null,
+
+    @Column(name = "consignment_acc__c", length = 1)
+    var consignmentAcc: String? = null,
+
+    @Column(name = "werk1__c", length = 10)
+    var werk1: String? = null,
+
+    @Column(name = "werk2__c", length = 10)
+    var werk2: String? = null,
+
+    @Column(name = "werk3__c", length = 10)
+    var werk3: String? = null,
+
+    @Column(name = "org_cd3__c", length = 20)
+    var orgCd3: String? = null,
+
+    @Column(name = "org_cd4__c", length = 20)
+    var orgCd4: String? = null,
+
+    @Column(name = "org_cd5__c", length = 20)
+    var orgCd5: String? = null,
+
+    @Column(name = "created_at")
+    var createdAt: LocalDateTime? = null,
+
+    @Column(name = "updated_at")
+    var updatedAt: LocalDateTime? = null
 )
