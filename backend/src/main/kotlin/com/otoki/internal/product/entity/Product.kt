@@ -21,49 +21,49 @@ class Product(
     val sfid: String? = null,
 
     @Column(name = "name", length = 80)
-    val name: String? = null,
+    var name: String? = null,
 
     @Column(name = "dkretail__productcode__c", length = 100)
     val productCode: String? = null,
 
     @Column(name = "dkretail__producttype__c", length = 255)
-    val productType: String? = null,
+    var productType: String? = null,
 
     @Column(name = "dkretail__productstatus__c", length = 255)
-    val productStatus: String? = null,
+    var productStatus: String? = null,
 
     @Column(name = "dkretail__storecondition__c", length = 255)
-    val storageCondition: String? = null,
+    var storageCondition: String? = null,
 
     @Column(name = "dkretail__shelflife__c", length = 30)
-    val shelfLife: String? = null,
+    var shelfLife: String? = null,
 
     @Column(name = "dkretail__shelflifeunit__c", length = 40)
-    val shelfLifeUnit: String? = null,
+    var shelfLifeUnit: String? = null,
 
     @Column(name = "shelflifefull__c", length = 1300)
     val shelfLifeFull: String? = null,
 
     @Column(name = "dkretail__category1__c", length = 255)
-    val category1: String? = null,
+    var category1: String? = null,
 
     @Column(name = "dkretail__category2__c", length = 255)
-    val category2: String? = null,
+    var category2: String? = null,
 
     @Column(name = "dkretail__category3__c", length = 255)
-    val category3: String? = null,
+    var category3: String? = null,
 
     @Column(name = "dkretail__categorycode1__c", length = 100)
-    val categoryCode1: String? = null,
+    var categoryCode1: String? = null,
 
     @Column(name = "dkretail__categorycode2__c", length = 100)
-    val categoryCode2: String? = null,
+    var categoryCode2: String? = null,
 
     @Column(name = "dkretail__categorycode3__c", length = 100)
-    val categoryCode3: String? = null,
+    var categoryCode3: String? = null,
 
     @Column(name = "dkretail__unit__c", length = 40)
-    val unit: String? = null,
+    var unit: String? = null,
 
     @Column(name = "dkretail__orderingunit__c", length = 40)
     val orderingUnit: String? = null,
@@ -72,25 +72,25 @@ class Product(
     val conversionQuantity: Double? = null,
 
     @Column(name = "dkretail__boxreceivingquantity__c")
-    val boxReceivingQuantity: Double? = null,
+    var boxReceivingQuantity: Double? = null,
 
     @Column(name = "dkretail__standardunitprice__c")
     val standardUnitPrice: Double? = null,
 
     @Column(name = "standardprice__c")
-    val standardPrice: Double? = null,
+    var standardPrice: Double? = null,
 
     @Column(name = "supertax__c")
-    val superTax: Double? = null,
+    var superTax: Double? = null,
 
     @Column(name = "dkretail__launchdate__c")
-    val launchDate: LocalDate? = null,
+    var launchDate: LocalDate? = null,
 
     @Column(name = "dkretail__logisticsbarcode__c", length = 100)
-    val logisticsBarcode: String? = null,
+    var logisticsBarcode: String? = null,
 
     @Column(name = "tastegift__c", length = 1)
-    val tasteGift: String? = null,
+    var tasteGift: String? = null,
 
     @Column(name = "productfeatures__c", length = 255)
     val productFeatures: String? = null,

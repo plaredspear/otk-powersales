@@ -13,4 +13,6 @@ interface ProductBarcodeRepository : JpaRepository<ProductBarcode, Int> {
     fun findByProduct(product: String): List<ProductBarcode>
 
     fun findByProductBarcode(productBarcode: String): List<ProductBarcode>
+
+    fun findByCustomKey(customKey: String): ProductBarcode?
 }

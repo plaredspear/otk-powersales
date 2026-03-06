@@ -20,22 +20,25 @@ class ProductBarcode(
     val sfid: String? = null,
 
     @Column(name = "name", length = 80)
-    val name: String? = null,
+    var name: String? = null,
 
     @Column(name = "productname__c", length = 255)
-    val productName: String? = null,
+    var productName: String? = null,
 
     @Column(name = "productbarcode__c", length = 255)
-    val productBarcode: String? = null,
+    var productBarcode: String? = null,
 
     @Column(name = "productunit__c", length = 255)
-    val productUnit: String? = null,
+    var productUnit: String? = null,
 
     @Column(name = "productsequence__c", length = 255)
-    val productSequence: String? = null,
+    var productSequence: String? = null,
 
     @Column(name = "product__c", length = 18)
-    val product: String? = null,
+    var product: String? = null,
+
+    @Column(name = "custom_key__c", length = 255)
+    var customKey: String? = null,
 
     @Column(name = "isdeleted")
     val isDeleted: Boolean? = null,
