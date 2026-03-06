@@ -6,6 +6,8 @@ import com.otoki.internal.common.repository.AgreementWordRepository
 import com.otoki.internal.common.repository.UserRepository
 import com.otoki.internal.notice.entity.Notice
 import com.otoki.internal.notice.repository.NoticeRepository
+import com.otoki.internal.sap.entity.Org
+import com.otoki.internal.sap.repository.OrgRepository
 import org.slf4j.LoggerFactory
 import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner
@@ -22,7 +24,8 @@ class LocalDataInitializer(
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
     private val agreementWordRepository: AgreementWordRepository,
-    private val noticeRepository: NoticeRepository
+    private val noticeRepository: NoticeRepository,
+    private val orgRepository: OrgRepository
 ) : ApplicationRunner {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -32,6 +35,7 @@ class LocalDataInitializer(
         seedUser()
         seedAgreementWord()
         seedNotices()
+        seedOrg()
     }
 
     private fun seedUser() {
@@ -220,5 +224,36 @@ class LocalDataInitializer(
 
         agreementWordRepository.save(agreementWord)
         log.info("GPS 동의 약관 시드 데이터 생성 완료: name={}", agreementWord.name)
+    }
+
+    private fun seedOrg() {
+        if (orgRepository.count() > 0) {
+            log.info("조직마스터가 이미 존재합니다 — skip")
+            return
+        }
+
+        val orgs = listOf(
+            Org(
+                costCenterLevel2 = "1000", orgCodeLevel2 = "O100", orgNameLevel2 = "오뚜기",
+                costCenterLevel3 = "1100", orgCodeLevel3 = "O110", orgNameLevel3 = "영업본부",
+                costCenterLevel4 = "1110", orgCodeLevel4 = "O111", orgNameLevel4 = "수도권영업부",
+                costCenterLevel5 = "1111", orgCodeLevel5 = "O1111", orgNameLevel5 = "테스트지점"
+            ),
+            Org(
+                costCenterLevel2 = "1000", orgCodeLevel2 = "O100", orgNameLevel2 = "오뚜기",
+                costCenterLevel3 = "1100", orgCodeLevel3 = "O110", orgNameLevel3 = "영업본부",
+                costCenterLevel4 = "1110", orgCodeLevel4 = "O111", orgNameLevel4 = "수도권영업부",
+                costCenterLevel5 = "1112", orgCodeLevel5 = "O1112", orgNameLevel5 = "강남지점"
+            ),
+            Org(
+                costCenterLevel2 = "1000", orgCodeLevel2 = "O100", orgNameLevel2 = "오뚜기",
+                costCenterLevel3 = "1100", orgCodeLevel3 = "O110", orgNameLevel3 = "영업본부",
+                costCenterLevel4 = "1120", orgCodeLevel4 = "O112", orgNameLevel4 = "중부영업부",
+                costCenterLevel5 = "1121", orgCodeLevel5 = "O1121", orgNameLevel5 = "대전지점"
+            )
+        )
+
+        orgRepository.saveAll(orgs)
+        log.info("조직마스터 시드 데이터 생성 완료: {}건", orgs.size)
     }
 }
