@@ -16,7 +16,8 @@ class DomainGuardFilterTest {
 
     private val apiDomain = "dev-pwrs-api.codapt.kr"
     private val adminDomain = "dev-pwrs-admin.codapt.kr"
-    private val filter = DomainGuardFilter(apiDomain, adminDomain)
+    private val sapDomain = "dev-pwrs-sap.codapt.kr"
+    private val filter = DomainGuardFilter(apiDomain, adminDomain, sapDomain)
     private val filterChain = mock(FilterChain::class.java)
 
     @Nested
@@ -165,6 +166,46 @@ class DomainGuardFilterTest {
     }
 
     @Nested
+    @DisplayName("SAP 도메인 요청")
+    inner class SapDomainTests {
+
+        @Test
+        @DisplayName("SAP 도메인 + SAP API 경로 - 통과")
+        fun sapDomain_sapApiPath_passes() {
+            val request = createRequest(sapDomain, "/api/v1/sap/organize-master")
+            val response = MockHttpServletResponse()
+
+            filter.doFilter(request, response, filterChain)
+
+            verify(filterChain).doFilter(request, response)
+        }
+
+        @Test
+        @DisplayName("SAP 도메인 + 비SAP API 경로 - 404 차단")
+        fun sapDomain_nonSapApiPath_blocked() {
+            val request = createRequest(sapDomain, "/api/v1/health")
+            val response = MockHttpServletResponse()
+
+            filter.doFilter(request, response, filterChain)
+
+            assertThat(response.status).isEqualTo(404)
+            verifyNoInteractions(filterChain)
+        }
+
+        @Test
+        @DisplayName("SAP 도메인 미설정 시 API 도메인에서 SAP 경로 허용")
+        fun noSapDomain_apiDomainAllowsSapPath() {
+            val filterNoSap = DomainGuardFilter(apiDomain, adminDomain, "")
+            val request = createRequest(apiDomain, "/api/v1/sap/organize-master")
+            val response = MockHttpServletResponse()
+
+            filterNoSap.doFilter(request, response, filterChain)
+
+            verify(filterChain).doFilter(request, response)
+        }
+    }
+
+    @Nested
     @DisplayName("미인식 도메인 요청")
     inner class UnrecognizedDomainTests {
 
@@ -198,7 +239,7 @@ class DomainGuardFilterTest {
         @Test
         @DisplayName("도메인 미설정 시 모든 경로 통과")
         fun emptyDomain_allPaths_pass() {
-            val emptyFilter = DomainGuardFilter("", "")
+            val emptyFilter = DomainGuardFilter("", "", "")
             val request = createRequest("any-host.com", "/sales/monthly")
             val response = MockHttpServletResponse()
 

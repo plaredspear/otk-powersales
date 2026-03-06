@@ -17,3 +17,8 @@ jwt:
   secret: test-secret-key-that-is-at-least-256-bits-long-for-hmac-sha256-algorithm
   expiration: 3600000
   refresh-expiration: 604800000
+
+sap:
+  auth:
+    api-key: test-sap-api-key
+    allowed-ips: ""
