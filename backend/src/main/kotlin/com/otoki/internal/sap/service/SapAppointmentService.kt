@@ -13,7 +13,8 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class SapAppointmentService(
     private val appointmentRepository: AppointmentRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val appointmentUserProfileUpdater: AppointmentUserProfileUpdater
 ) : SapSyncService<SapAppointmentRequest.ReqItem> {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -23,10 +24,12 @@ class SapAppointmentService(
         val employeeIds = userRepository.findAllEmployeeIds().toSet()
         var successCount = 0
         val errors = mutableListOf<SapSyncError>()
+        val savedAppointments = mutableListOf<Appointment>()
 
         items.forEachIndexed { index, item ->
             try {
-                syncItem(item, employeeIds)
+                val appointment = syncItem(item, employeeIds)
+                savedAppointments.add(appointment)
                 successCount++
             } catch (e: Exception) {
                 log.warn("발령 동기화 실패: index={}, employeeCode={}, error={}",
@@ -42,6 +45,10 @@ class SapAppointmentService(
             }
         }
 
+        if (savedAppointments.isNotEmpty()) {
+            appointmentUserProfileUpdater.updateUserProfiles(savedAppointments)
+        }
+
         return SapSyncResult(
             successCount = successCount,
             failCount = errors.size,
@@ -49,7 +56,7 @@ class SapAppointmentService(
         )
     }
 
-    private fun syncItem(item: SapAppointmentRequest.ReqItem, employeeIds: Set<String>) {
+    private fun syncItem(item: SapAppointmentRequest.ReqItem, employeeIds: Set<String>): Appointment {
         val employeeCode = item.employeeCode
             ?: throw IllegalArgumentException("employee_code is required")
         val appointDate = item.appointDate
@@ -74,6 +81,6 @@ class SapAppointmentService(
             ordDetailNode = item.ordDetailNode
         )
 
-        appointmentRepository.save(appointment)
+        return appointmentRepository.save(appointment)
     }
 }
