@@ -7,7 +7,7 @@ import com.otoki.internal.order.exception.*
 import com.otoki.internal.order.repository.OrderProcessingRecordRepository
 import com.otoki.internal.order.repository.OrderRejectionRepository
 import com.otoki.internal.order.repository.OrderRepository
-import com.otoki.internal.common.repository.UserRepository
+import com.otoki.internal.sap.repository.UserRepository
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort

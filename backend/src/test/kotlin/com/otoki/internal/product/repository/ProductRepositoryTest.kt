@@ -1,6 +1,7 @@
 package com.otoki.internal.product.repository
 
-import com.otoki.internal.product.entity.Product
+import com.otoki.internal.sap.entity.Product
+import com.otoki.internal.sap.repository.ProductRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName

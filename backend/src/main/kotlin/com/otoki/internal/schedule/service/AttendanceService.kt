@@ -3,9 +3,9 @@ package com.otoki.internal.schedule.service
 import com.otoki.internal.common.dto.response.StoreInfo
 import com.otoki.internal.common.dto.response.StoreListResponse
 import com.otoki.internal.common.util.GeoUtils
-import com.otoki.internal.entity.Account
+import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.auth.exception.UserNotFoundException
-import com.otoki.internal.repository.AccountRepository
+import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.schedule.dto.response.CommuteResponse
 import com.otoki.internal.schedule.dto.response.CommuteStatusItem
 import com.otoki.internal.schedule.dto.response.CommuteStatusResponse
@@ -15,7 +15,7 @@ import com.otoki.internal.schedule.exception.DistanceExceededException
 import com.otoki.internal.schedule.exception.ScheduleNotFoundException
 import com.otoki.internal.schedule.integration.OroraApiService
 import com.otoki.internal.schedule.repository.ScheduleRepository
-import com.otoki.internal.common.repository.UserRepository
+import com.otoki.internal.sap.repository.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate

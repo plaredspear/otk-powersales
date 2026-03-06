@@ -1,7 +1,7 @@
 package com.otoki.internal.notice.service
 
-import com.otoki.internal.common.entity.User
-import com.otoki.internal.common.repository.UserRepository
+import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.repository.UserRepository
 import com.otoki.internal.notice.dto.request.NoticeCreateRequest
 import com.otoki.internal.notice.dto.request.NoticeUpdateRequest
 import com.otoki.internal.notice.entity.Notice

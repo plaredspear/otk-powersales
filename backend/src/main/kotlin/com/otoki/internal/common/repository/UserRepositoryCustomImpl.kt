@@ -1,7 +1,7 @@
 package com.otoki.internal.common.repository
 
 import com.otoki.internal.branch.dto.response.BranchResponse
-import com.otoki.internal.common.entity.QUser.user
+import com.otoki.internal.sap.entity.QUser.user
 import com.querydsl.core.types.Projections
 import com.querydsl.core.types.dsl.Expressions
 import com.querydsl.jpa.impl.JPAQueryFactory

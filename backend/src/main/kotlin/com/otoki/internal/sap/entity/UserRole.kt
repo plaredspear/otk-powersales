@@ -1,4 +1,4 @@
-package com.otoki.internal.common.entity
+package com.otoki.internal.sap.entity
 
 /**
  * 사용자 권한 Enum

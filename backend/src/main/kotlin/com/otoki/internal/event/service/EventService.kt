@@ -8,7 +8,7 @@ import com.otoki.internal.event.dto.response.EventListResponse
 import com.otoki.internal.event.exception.EventNotFoundException
 import com.otoki.internal.event.repository.EventProductRepository
 import com.otoki.internal.event.repository.EventRepository
-import com.otoki.internal.common.repository.UserRepository
+import com.otoki.internal.sap.repository.UserRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service

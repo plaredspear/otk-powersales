@@ -3,7 +3,7 @@ package com.otoki.internal.claim.controller
 
 import com.otoki.internal.dto.response.*
 import com.otoki.internal.common.dto.response.*
-import com.otoki.internal.common.entity.UserRole
+import com.otoki.internal.sap.entity.UserRole
 import com.otoki.internal.common.security.GpsConsentFilter
 import com.otoki.internal.common.security.JwtAuthenticationFilter
 import com.otoki.internal.admin.security.AdminAuthorityFilter

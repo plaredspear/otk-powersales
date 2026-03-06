@@ -1,7 +1,7 @@
 package com.otoki.internal.product.controller
 
 import com.otoki.internal.product.dto.response.ProductDto
-import com.otoki.internal.common.entity.UserRole
+import com.otoki.internal.sap.entity.UserRole
 import com.otoki.internal.product.exception.InvalidSearchParameterException
 import com.otoki.internal.product.exception.InvalidSearchTypeException
 import com.otoki.internal.common.security.GpsConsentFilter

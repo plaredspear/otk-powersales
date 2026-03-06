@@ -2,7 +2,7 @@ package com.otoki.internal.schedule.controller
 
 import com.otoki.internal.schedule.dto.response.*
 import com.otoki.internal.common.dto.response.*
-import com.otoki.internal.common.entity.UserRole
+import com.otoki.internal.sap.entity.UserRole
 import com.otoki.internal.common.security.GpsConsentFilter
 import com.otoki.internal.common.security.JwtAuthenticationFilter
 import com.otoki.internal.admin.security.AdminAuthorityFilter

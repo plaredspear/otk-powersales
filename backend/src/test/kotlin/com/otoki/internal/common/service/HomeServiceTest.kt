@@ -1,12 +1,12 @@
 package com.otoki.internal.common.service
 
 import com.otoki.internal.auth.exception.UserNotFoundException
-import com.otoki.internal.common.entity.User
-import com.otoki.internal.common.repository.UserRepository
-import com.otoki.internal.entity.Account
+import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.notice.entity.Notice
 import com.otoki.internal.notice.repository.NoticeRepository
-import com.otoki.internal.repository.AccountRepository
+import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.safetycheck.dto.response.SafetyCheckTodayResponse
 import com.otoki.internal.safetycheck.service.SafetyCheckService
 import com.otoki.internal.schedule.entity.Schedule

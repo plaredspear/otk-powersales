@@ -1,7 +1,7 @@
 package com.otoki.internal.shelflife.service
 
 import com.otoki.internal.auth.exception.UserNotFoundException
-import com.otoki.internal.common.repository.UserRepository
+import com.otoki.internal.sap.repository.UserRepository
 import com.otoki.internal.shelflife.dto.request.ShelfLifeBatchDeleteRequest
 import com.otoki.internal.shelflife.dto.request.ShelfLifeCreateRequest
 import com.otoki.internal.shelflife.dto.request.ShelfLifeUpdateRequest

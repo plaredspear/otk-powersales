@@ -4,7 +4,9 @@ package com.otoki.internal.order.service
 import com.otoki.internal.order.dto.response.ClientOrderDetailResponse
 import com.otoki.internal.order.dto.response.ClientOrderSummaryResponse
 import com.otoki.internal.entity.*
+import com.otoki.internal.sap.entity.*
 import com.otoki.internal.common.entity.*
+import com.otoki.internal.sap.entity.*
 import com.otoki.internal.exception.ClientNotFoundException
 import com.otoki.internal.exception.ForbiddenClientAccessException
 import com.otoki.internal.order.exception.InvalidOrderParameterException

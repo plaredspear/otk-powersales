@@ -8,7 +8,7 @@ import com.otoki.internal.order.entity.OrderItem
 import com.otoki.internal.order.entity.OrderProcessingRecord
 import com.otoki.internal.order.entity.OrderRejection
 import com.otoki.internal.entity.Store
-import com.otoki.internal.common.entity.User
+import com.otoki.internal.sap.entity.User
 import com.otoki.internal.order.dto.response.OrderCancelResponse
 import com.otoki.internal.exception.AlreadyCancelledException
 import com.otoki.internal.order.exception.ForbiddenOrderAccessException
@@ -22,7 +22,7 @@ import com.otoki.internal.order.repository.OrderItemRepository
 import com.otoki.internal.order.repository.OrderProcessingRecordRepository
 import com.otoki.internal.order.repository.OrderRejectionRepository
 import com.otoki.internal.order.repository.OrderRepository
-import com.otoki.internal.common.repository.UserRepository
+import com.otoki.internal.sap.repository.UserRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName

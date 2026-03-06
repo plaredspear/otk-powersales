@@ -1,14 +1,14 @@
 /* OrderItem 엔티티 비활성화로 인해 전체 주석 처리
 package com.otoki.internal.order.service
 
-import com.otoki.internal.product.entity.Product
+import com.otoki.internal.sap.entity.Product
 import com.otoki.internal.entity.Store
 import com.otoki.internal.exception.ClientNotFoundException
 import com.otoki.internal.order.exception.InvalidOrderDateRangeException
 import com.otoki.internal.order.exception.InvalidOrderParameterException
 import com.otoki.internal.exception.ProductNotFoundException
 import com.otoki.internal.order.repository.OrderItemRepository
-import com.otoki.internal.product.repository.ProductRepository
+import com.otoki.internal.sap.repository.ProductRepository
 import com.otoki.internal.repository.StoreRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy

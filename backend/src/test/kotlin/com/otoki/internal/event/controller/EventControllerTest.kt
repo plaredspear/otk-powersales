@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.otoki.internal.sales.dto.response.DailySalesListResponse
 import com.otoki.internal.event.dto.response.EventDetailResponse
 import com.otoki.internal.event.dto.response.EventListResponse
-import com.otoki.internal.common.entity.UserRole
+import com.otoki.internal.sap.entity.UserRole
 import com.otoki.internal.event.exception.EventNotFoundException
 import com.otoki.internal.common.security.GpsConsentFilter
 import com.otoki.internal.common.security.JwtAuthenticationFilter

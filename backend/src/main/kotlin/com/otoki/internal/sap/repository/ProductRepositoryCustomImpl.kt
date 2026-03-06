@@ -1,7 +1,7 @@
-package com.otoki.internal.product.repository
+package com.otoki.internal.sap.repository
 
-import com.otoki.internal.product.entity.Product
-import com.otoki.internal.product.entity.QProduct.product
+import com.otoki.internal.sap.entity.Product
+import com.otoki.internal.sap.entity.QProduct.product
 import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable

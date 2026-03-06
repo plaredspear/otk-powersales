@@ -7,7 +7,7 @@ import com.otoki.internal.order.dto.request.OrderDraftRequest
 import com.otoki.internal.dto.response.DraftItemResponse
 import com.otoki.internal.dto.response.DraftSavedResponse
 import com.otoki.internal.order.dto.response.OrderDraftResponse
-import com.otoki.internal.common.entity.UserRole
+import com.otoki.internal.sap.entity.UserRole
 import com.otoki.internal.exception.ClientNotFoundException
 import com.otoki.internal.exception.DraftNotFoundException
 import com.otoki.internal.exception.InvalidDeliveryDateException

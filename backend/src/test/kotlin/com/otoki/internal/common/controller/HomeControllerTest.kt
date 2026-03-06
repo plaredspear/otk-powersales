@@ -1,7 +1,7 @@
 package com.otoki.internal.common.controller
 
 import com.otoki.internal.common.dto.response.HomeResponse
-import com.otoki.internal.common.entity.UserRole
+import com.otoki.internal.sap.entity.UserRole
 import com.otoki.internal.auth.exception.UserNotFoundException
 import com.otoki.internal.common.security.GpsConsentFilter
 import com.otoki.internal.common.security.JwtAuthenticationFilter

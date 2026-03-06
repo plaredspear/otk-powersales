@@ -1,5 +1,6 @@
 package com.otoki.internal.sales.entity
 
+import com.otoki.internal.sap.entity.MonthlySalesHistory
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test

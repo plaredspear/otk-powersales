@@ -5,7 +5,7 @@ import com.otoki.internal.safetycheck.dto.request.SafetyCheckSubmitRequest
 import com.otoki.internal.safetycheck.dto.response.SafetyCheckItemsResponse
 import com.otoki.internal.safetycheck.dto.response.SafetyCheckSubmitResponse
 import com.otoki.internal.safetycheck.dto.response.SafetyCheckTodayResponse
-import com.otoki.internal.common.entity.UserRole
+import com.otoki.internal.sap.entity.UserRole
 import com.otoki.internal.safetycheck.exception.AlreadySubmittedException
 import com.otoki.internal.safetycheck.exception.RequiredItemsMissingException
 import com.otoki.internal.common.security.GpsConsentFilter

@@ -1,6 +1,6 @@
 package com.otoki.internal.product.dto.response
 
-import com.otoki.internal.product.entity.Product
+import com.otoki.internal.sap.entity.Product
 
 /**
  * 제품 검색 응답 DTO

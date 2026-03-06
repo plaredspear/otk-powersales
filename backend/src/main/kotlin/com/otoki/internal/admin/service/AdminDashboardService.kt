@@ -2,12 +2,12 @@ package com.otoki.internal.admin.service
 
 import com.otoki.internal.admin.dto.DataScope
 import com.otoki.internal.admin.dto.response.*
-import com.otoki.internal.common.entity.User
-import com.otoki.internal.common.repository.UserRepository
-import com.otoki.internal.entity.Account
-import com.otoki.internal.repository.AccountRepository
-import com.otoki.internal.sales.entity.MonthlySalesHistory
-import com.otoki.internal.sales.repository.MonthlySalesHistoryRepository
+import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.entity.Account
+import com.otoki.internal.sap.repository.AccountRepository
+import com.otoki.internal.sap.entity.MonthlySalesHistory
+import com.otoki.internal.sap.repository.MonthlySalesHistoryRepository
 import com.otoki.internal.common.entity.StoreSchedule
 import com.otoki.internal.common.repository.StoreScheduleRepository
 import org.springframework.stereotype.Service

@@ -4,7 +4,7 @@ package com.otoki.internal.order.repository
 import com.otoki.internal.order.entity.ApprovalStatus
 import com.otoki.internal.order.entity.Order
 import com.otoki.internal.entity.Store
-import com.otoki.internal.common.entity.User
+import com.otoki.internal.sap.entity.User
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName

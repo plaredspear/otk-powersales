@@ -3,11 +3,14 @@ package com.otoki.internal.suggestion.service
 
 import com.otoki.internal.suggestion.dto.request.SuggestionCreateRequest
 import com.otoki.internal.entity.*
+import com.otoki.internal.sap.entity.*
 import com.otoki.internal.common.entity.*
+import com.otoki.internal.sap.entity.*
 import com.otoki.internal.exception.*
 import com.otoki.internal.common.exception.*
 import com.otoki.internal.repository.*
 import com.otoki.internal.common.repository.*
+import com.otoki.internal.sap.repository.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested

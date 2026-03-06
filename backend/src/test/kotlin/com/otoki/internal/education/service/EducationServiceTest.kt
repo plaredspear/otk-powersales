@@ -2,6 +2,7 @@ package com.otoki.internal.education.service
 
 import com.otoki.internal.education.entity.*
 import com.otoki.internal.common.entity.*
+import com.otoki.internal.sap.entity.*
 import com.otoki.internal.education.exception.EducationPostNotFoundException
 import com.otoki.internal.education.exception.InvalidEducationCategoryException
 import com.otoki.internal.education.repository.EducationCodeRepository

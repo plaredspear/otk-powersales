@@ -1,7 +1,7 @@
 package com.otoki.internal.sap.service
 
-import com.otoki.internal.common.entity.User
-import com.otoki.internal.common.repository.UserRepository
+import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.repository.UserRepository
 import com.otoki.internal.sap.dto.SapEmployeeMasterRequest.ReqItem
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName

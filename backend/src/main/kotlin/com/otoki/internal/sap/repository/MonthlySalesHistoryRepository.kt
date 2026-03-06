@@ -1,6 +1,6 @@
-package com.otoki.internal.sales.repository
+package com.otoki.internal.sap.repository
 
-import com.otoki.internal.sales.entity.MonthlySalesHistory
+import com.otoki.internal.sap.entity.MonthlySalesHistory
 import org.springframework.data.jpa.repository.JpaRepository
 
 /**

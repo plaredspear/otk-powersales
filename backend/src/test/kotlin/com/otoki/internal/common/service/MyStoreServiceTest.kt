@@ -1,12 +1,12 @@
 package com.otoki.internal.common.service
 
-import com.otoki.internal.entity.Account
+import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.common.entity.StoreSchedule
-import com.otoki.internal.common.entity.User
+import com.otoki.internal.sap.entity.User
 import com.otoki.internal.auth.exception.UserNotFoundException
-import com.otoki.internal.repository.AccountRepository
+import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.common.repository.StoreScheduleRepository
-import com.otoki.internal.common.repository.UserRepository
+import com.otoki.internal.sap.repository.UserRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName

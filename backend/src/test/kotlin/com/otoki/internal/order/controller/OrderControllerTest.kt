@@ -3,7 +3,7 @@ package com.otoki.internal.order.controller
 
 import com.otoki.internal.dto.response.*
 import com.otoki.internal.common.dto.response.*
-import com.otoki.internal.common.entity.UserRole
+import com.otoki.internal.sap.entity.UserRole
 import com.otoki.internal.exception.*
 import com.otoki.internal.common.exception.*
 import com.otoki.internal.common.security.GpsConsentFilter

@@ -5,7 +5,7 @@ import com.otoki.internal.common.dto.response.*
 import com.otoki.internal.auth.exception.UserNotFoundException
 // import com.otoki.internal.schedule.repository.AttendanceRepository  // Phase2: PG 대응 테이블 없음
 import com.otoki.internal.common.repository.StoreScheduleRepository
-import com.otoki.internal.common.repository.UserRepository
+import com.otoki.internal.sap.repository.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.DayOfWeek

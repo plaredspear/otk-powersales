@@ -1,8 +1,8 @@
 package com.otoki.internal.sap.service
 
-import com.otoki.internal.entity.ProductBarcode
-import com.otoki.internal.product.repository.ProductRepository
-import com.otoki.internal.repository.ProductBarcodeRepository
+import com.otoki.internal.sap.entity.ProductBarcode
+import com.otoki.internal.sap.repository.ProductRepository
+import com.otoki.internal.sap.repository.ProductBarcodeRepository
 import com.otoki.internal.sap.dto.SapBarcodeMasterRequest
 import com.otoki.internal.sap.dto.SapSyncError
 import com.otoki.internal.sap.dto.SapSyncResult

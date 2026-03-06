@@ -1,10 +1,10 @@
 package com.otoki.internal.common.config
 
 import com.otoki.internal.common.entity.AgreementWord
-import com.otoki.internal.common.entity.User
-import com.otoki.internal.common.entity.UserRole
+import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.entity.UserRole
 import com.otoki.internal.common.repository.AgreementWordRepository
-import com.otoki.internal.common.repository.UserRepository
+import com.otoki.internal.sap.repository.UserRepository
 import com.otoki.internal.notice.entity.Notice
 import com.otoki.internal.notice.repository.NoticeRepository
 import com.otoki.internal.sap.entity.Org
