@@ -71,6 +71,12 @@ app:
   domain:
     api: ${API_DOMAIN:}
     admin: ${ADMIN_DOMAIN:}
+    sap: ${SAP_DOMAIN:}
+
+sap:
+  auth:
+    api-key: ${SAP_API_KEY:dev-sap-api-key-for-local-testing}
+    allowed-ips: ${SAP_ALLOWED_IPS:}
 
 device:
   binding:

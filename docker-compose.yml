@@ -31,6 +31,9 @@ services:
       JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-86400000}
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      SAP_API_KEY: ${SAP_API_KEY}
+      SAP_ALLOWED_IPS: ${SAP_ALLOWED_IPS:-}
+      SAP_DOMAIN: ${SAP_DOMAIN:-}
     ports:
       - "8080:8080"
     restart: unless-stopped

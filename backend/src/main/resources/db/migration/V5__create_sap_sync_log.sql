@@ -1,0 +1,15 @@
+CREATE TABLE salesforce2.sap_sync_log (
+    id              BIGSERIAL       PRIMARY KEY,
+    api_name        VARCHAR(100)    NOT NULL,
+    request_count   INTEGER         NOT NULL,
+    success_count   INTEGER         NOT NULL,
+    fail_count      INTEGER         NOT NULL,
+    error_detail    TEXT,
+    duration_ms     BIGINT          NOT NULL,
+    request_ip      VARCHAR(45),
+    requested_at    TIMESTAMP       NOT NULL,
+    completed_at    TIMESTAMP       NOT NULL
+);
+
+CREATE INDEX idx_sap_sync_log_api_name ON salesforce2.sap_sync_log (api_name);
+CREATE INDEX idx_sap_sync_log_requested_at ON salesforce2.sap_sync_log (requested_at);

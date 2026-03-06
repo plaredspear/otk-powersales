@@ -7,7 +7,8 @@ import org.springframework.web.filter.OncePerRequestFilter
 
 class DomainGuardFilter(
     private val apiDomain: String,
-    private val adminDomain: String
+    private val adminDomain: String,
+    private val sapDomain: String = ""
 ) : OncePerRequestFilter() {
 
     companion object {
@@ -21,6 +22,9 @@ class DomainGuardFilter(
             "/api/v1/auth/",
             "/api/v1/admin/"
         )
+        private val SAP_DOMAIN_ALLOWED_PREFIXES = listOf(
+            "/api/v1/sap/"
+        )
     }
 
     override fun doFilterInternal(
@@ -30,6 +34,16 @@ class DomainGuardFilter(
     ) {
         val host = (request.getHeader("Host") ?: "").substringBefore(":")
         val path = request.requestURI
+
+        // SAP 전용 도메인이 설정된 경우
+        if (sapDomain.isNotEmpty() && host == sapDomain) {
+            if (!SAP_DOMAIN_ALLOWED_PREFIXES.any { path.startsWith(it) }) {
+                response.status = HttpServletResponse.SC_NOT_FOUND
+                return
+            }
+            filterChain.doFilter(request, response)
+            return
+        }
 
         if (apiDomain.isNotEmpty() && host == apiDomain) {
             if (!API_DOMAIN_ALLOWED_PREFIXES.any { path.startsWith(it) }) {
