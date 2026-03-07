@@ -97,7 +97,7 @@ class NoticeCarousel extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    notice.typeDisplayName,
+                    notice.categoryName,
                     style: AppTypography.labelLarge.copyWith(
                       fontWeight: FontWeight.w700,
                       fontSize: 14,
