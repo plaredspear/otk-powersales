@@ -5,25 +5,25 @@ interface LoginRequest {
   password: string;
 }
 
-interface UserInfo {
+interface AdminUserInfo {
   id: number;
   employee_id: string;
   name: string;
   org_name: string | null;
   role: string;
+  app_authority: string | null;
+  cost_center_code: string | null;
 }
 
-interface TokenInfo {
+interface AdminTokenInfo {
   access_token: string;
   refresh_token: string;
   expires_in: number;
 }
 
 interface LoginData {
-  user: UserInfo;
-  token: TokenInfo;
-  requires_password_change: boolean;
-  requires_gps_consent: boolean;
+  user: AdminUserInfo;
+  token: AdminTokenInfo;
 }
 
 interface RefreshData {
@@ -40,7 +40,7 @@ interface ApiResponse<T> {
 }
 
 export async function login(request: LoginRequest): Promise<LoginData> {
-  const res = await axios.post<ApiResponse<LoginData>>('/api/v1/auth/login', request);
+  const res = await axios.post<ApiResponse<LoginData>>('/api/v1/admin/auth/login', request);
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.error?.message || '로그인에 실패했습니다');
   }
@@ -48,7 +48,7 @@ export async function login(request: LoginRequest): Promise<LoginData> {
 }
 
 export async function refreshToken(token: string): Promise<RefreshData> {
-  const res = await axios.post<ApiResponse<RefreshData>>('/api/v1/auth/refresh', {
+  const res = await axios.post<ApiResponse<RefreshData>>('/api/v1/admin/auth/refresh', {
     refresh_token: token,
   });
   if (!res.data.success || !res.data.data) {
