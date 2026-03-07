@@ -881,6 +881,99 @@ class AuthServiceTest {
         }
     }
 
+    // ========== Admin Login Tests ==========
+
+    @Nested
+    @DisplayName("adminLogin - 관리자 로그인")
+    inner class AdminLoginTests {
+
+        @Test
+        @DisplayName("성공 - 허용 권한(조장)으로 관리자 로그인 시 AdminLoginResponse 반환")
+        fun adminLogin_success() {
+            // Given
+            val user = createTestUser(id = 1L, appAuthority = "조장", costCenterCode = "CC001")
+            val request = LoginRequest("12345678", "password123")
+
+            whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(user))
+            whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
+            whenever(jwtTokenProvider.createAccessToken(1L, UserRole.LEADER, false)).thenReturn("admin-token")
+            whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("admin-refresh")
+            whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
+
+            // When
+            val response = authService.adminLogin(request)
+
+            // Then
+            assertThat(response.user.id).isEqualTo(1L)
+            assertThat(response.user.employeeId).isEqualTo("12345678")
+            assertThat(response.user.appAuthority).isEqualTo("조장")
+            assertThat(response.user.costCenterCode).isEqualTo("CC001")
+            assertThat(response.user.role).isEqualTo("LEADER")
+            assertThat(response.token.accessToken).isEqualTo("admin-token")
+            assertThat(response.token.refreshToken).isEqualTo("admin-refresh")
+            assertThat(response.token.expiresIn).isEqualTo(3600)
+            verify(loginHistoryRepository).save(any<LoginHistory>())
+            verify(jwtTokenProvider).storeRefreshToken(any(), eq(1L), any())
+        }
+
+        @Test
+        @DisplayName("실패 - 사번 불일치 시 InvalidCredentialsException")
+        fun adminLogin_userNotFound() {
+            // Given
+            val request = LoginRequest("99999999", "password123")
+            whenever(userRepository.findByEmployeeId("99999999")).thenReturn(Optional.empty())
+
+            // When & Then
+            assertThatThrownBy { authService.adminLogin(request) }
+                .isInstanceOf(InvalidCredentialsException::class.java)
+        }
+
+        @Test
+        @DisplayName("실패 - 비밀번호 불일치 시 InvalidCredentialsException")
+        fun adminLogin_passwordMismatch() {
+            // Given
+            val user = createTestUser(id = 1L, appAuthority = "조장")
+            val request = LoginRequest("12345678", "wrong")
+
+            whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(user))
+            whenever(passwordEncoder.matches("wrong", "encoded_password")).thenReturn(false)
+
+            // When & Then
+            assertThatThrownBy { authService.adminLogin(request) }
+                .isInstanceOf(InvalidCredentialsException::class.java)
+        }
+
+        @Test
+        @DisplayName("실패 - appAuthority가 허용 목록에 없으면 WebLoginNotAllowedException")
+        fun adminLogin_notAllowed() {
+            // Given
+            val user = createTestUser(id = 1L, appAuthority = "여사원")
+            val request = LoginRequest("12345678", "password123")
+
+            whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(user))
+            whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
+
+            // When & Then
+            assertThatThrownBy { authService.adminLogin(request) }
+                .isInstanceOf(WebLoginNotAllowedException::class.java)
+        }
+
+        @Test
+        @DisplayName("실패 - appAuthority가 null이면 WebLoginNotAllowedException")
+        fun adminLogin_nullAuthority() {
+            // Given
+            val user = createTestUser(id = 1L, appAuthority = null)
+            val request = LoginRequest("12345678", "password123")
+
+            whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(user))
+            whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
+
+            // When & Then
+            assertThatThrownBy { authService.adminLogin(request) }
+                .isInstanceOf(WebLoginNotAllowedException::class.java)
+        }
+    }
+
     // ========== Reset Device Tests ==========
 
     @Test
@@ -923,7 +1016,8 @@ class AuthServiceTest {
         appLoginActive: Boolean? = true,
         passwordChangeRequired: Boolean = true,
         agreementFlag: Boolean? = null,
-        deviceUuid: String? = null
+        deviceUuid: String? = null,
+        costCenterCode: String? = null
     ): User {
         return User(
             id = id,
@@ -935,7 +1029,8 @@ class AuthServiceTest {
             appLoginActive = appLoginActive,
             passwordChangeRequired = passwordChangeRequired,
             agreementFlag = agreementFlag,
-            deviceUuid = deviceUuid
+            deviceUuid = deviceUuid,
+            costCenterCode = costCenterCode
         )
     }
 }

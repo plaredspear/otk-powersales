@@ -6,6 +6,9 @@ import com.otoki.internal.common.dto.request.GpsConsentRequest
 import com.otoki.internal.auth.dto.request.LoginRequest
 import com.otoki.internal.auth.dto.request.RefreshTokenRequest
 import com.otoki.internal.auth.dto.request.VerifyPasswordRequest
+import com.otoki.internal.admin.dto.response.AdminLoginResponse
+import com.otoki.internal.admin.dto.response.AdminTokenInfo
+import com.otoki.internal.admin.dto.response.AdminUserInfo
 import com.otoki.internal.auth.dto.response.*
 import com.otoki.internal.common.dto.response.*
 import com.otoki.internal.common.entity.AgreementHistory
@@ -92,6 +95,52 @@ class AuthService(
             ),
             requiresPasswordChange = user.passwordChangeRequired ?: true,
             requiresGpsConsent = user.requiresGpsConsent()
+        )
+    }
+
+    /**
+     * 관리자 로그인
+     * 1. 사번으로 사용자 조회
+     * 2. BCrypt 비밀번호 검증
+     * 3. appAuthority 검증 (ALLOWED_AUTHORITIES)
+     * 4. 로그인 이력 기록
+     * 5. Access Token + Refresh Token 생성
+     * 6. AdminLoginResponse 반환
+     */
+    @Transactional
+    fun adminLogin(request: LoginRequest): AdminLoginResponse {
+        val user = userRepository.findByEmployeeId(request.employeeId)
+            .orElseThrow { InvalidCredentialsException() }
+
+        if (!passwordEncoder.matches(request.password, user.password)) {
+            throw InvalidCredentialsException()
+        }
+
+        if (user.appAuthority == null || user.appAuthority !in AdminAuthorityFilter.ALLOWED_AUTHORITIES) {
+            throw WebLoginNotAllowedException()
+        }
+
+        try {
+            loginHistoryRepository.save(LoginHistory(employeeId = user.employeeId))
+        } catch (e: Exception) {
+            log.warn("로그인 이력 기록 실패: employeeId={}", user.employeeId, e)
+        }
+
+        val accessToken = jwtTokenProvider.createAccessToken(user.id, user.role, user.agreementFlag == true)
+
+        val familyId = UUID.randomUUID().toString()
+        val tokenId = UUID.randomUUID().toString()
+        val refreshToken = jwtTokenProvider.createRefreshToken(user.id, familyId, tokenId)
+
+        jwtTokenProvider.storeRefreshToken(tokenId, user.id, familyId)
+
+        return AdminLoginResponse(
+            user = AdminUserInfo.from(user),
+            token = AdminTokenInfo(
+                accessToken = accessToken,
+                refreshToken = refreshToken,
+                expiresIn = jwtTokenProvider.getAccessTokenExpirationSeconds()
+            )
         )
     }
 
