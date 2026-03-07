@@ -120,6 +120,21 @@ class GpsConsentFilterTest {
     }
 
     @Test
+    @DisplayName("면제 엔드포인트 - /admin/ 경로 미동의여도 통과")
+    fun exemptPath_admin_passesThrough() {
+        // Given
+        val principal = UserPrincipal(userId = 1L, role = UserRole.USER, agreementFlag = false)
+        setAuthentication(principal)
+        request.requestURI = "/api/v1/admin/notices"
+
+        // When
+        filter.doFilter(request, response, filterChain)
+
+        // Then
+        verify(filterChain).doFilter(request, response)
+    }
+
+    @Test
     @DisplayName("미인증 요청 - 필터 스킵")
     fun unauthenticatedRequest_passesThrough() {
         // Given
