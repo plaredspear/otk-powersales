@@ -3,6 +3,7 @@ package com.otoki.internal.admin.controller
 import com.otoki.internal.common.dto.ApiResponse
 import com.otoki.internal.notice.dto.request.NoticeCreateRequest
 import com.otoki.internal.notice.dto.request.NoticeUpdateRequest
+import com.otoki.internal.notice.dto.response.NoticeFormMetaResponse
 import com.otoki.internal.notice.dto.response.NoticeMutationResponse
 import com.otoki.internal.notice.dto.response.NoticePostDetailResponse
 import com.otoki.internal.notice.dto.response.NoticePostListResponse
@@ -27,6 +28,12 @@ class AdminNoticeController(
         @RequestParam(required = false, defaultValue = "10") size: Int
     ): ResponseEntity<ApiResponse<NoticePostListResponse>> {
         val response = noticeService.getPostsForAdmin(category, search, page, size)
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    @GetMapping("/form-meta")
+    fun getNoticeFormMeta(): ResponseEntity<ApiResponse<NoticeFormMetaResponse>> {
+        val response = noticeService.getNoticeFormMeta()
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 

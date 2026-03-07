@@ -12,6 +12,8 @@ import com.otoki.internal.notice.exception.InvalidNoticeIdException
 import com.otoki.internal.notice.exception.NoticePostNotFoundException
 import com.otoki.internal.notice.repository.NoticeRepository
 import com.otoki.internal.notice.repository.UploadFileRepository
+import com.otoki.internal.sap.entity.Org
+import com.otoki.internal.sap.repository.OrgRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -42,11 +44,14 @@ class NoticeServiceTest {
     @Mock
     private lateinit var userRepository: UserRepository
 
+    @Mock
+    private lateinit var orgRepository: OrgRepository
+
     private lateinit var noticeService: NoticeService
 
     @BeforeEach
     fun setUp() {
-        noticeService = NoticeService(noticeRepository, uploadFileRepository, userRepository, "test-bucket")
+        noticeService = NoticeService(noticeRepository, uploadFileRepository, userRepository, orgRepository, "test-bucket")
     }
 
     @Nested
@@ -608,6 +613,105 @@ class NoticeServiceTest {
                 .isInstanceOf(NoticePostNotFoundException::class.java)
         }
     }
+
+    @Nested
+    @DisplayName("getNoticeFormMeta - 폼 메타데이터 조회")
+    inner class GetNoticeFormMetaTests {
+
+        @Test
+        @DisplayName("정상 조회 - 카테고리 2개 + 지점 목록 반환")
+        fun getNoticeFormMeta_success() {
+            val orgs = listOf(
+                createOrg(orgNameLevel3 = "제1사업부", orgNameLevel4 = "1영업부", orgNameLevel5 = "서울1지점", costCenterLevel4 = "1100", costCenterLevel5 = "1101"),
+                createOrg(orgNameLevel3 = "제1사업부", orgNameLevel4 = "1영업부", orgNameLevel5 = "서울2지점", costCenterLevel4 = "1100", costCenterLevel5 = "1102")
+            )
+            whenever(orgRepository.findAll()).thenReturn(orgs)
+
+            val result = noticeService.getNoticeFormMeta()
+
+            assertThat(result.categories).hasSize(2)
+            assertThat(result.categories[0].code).isEqualTo("COMPANY")
+            assertThat(result.categories[0].name).isEqualTo("전체공지")
+            assertThat(result.categories[1].code).isEqualTo("BRANCH")
+            assertThat(result.categories[1].name).isEqualTo("지점공지")
+
+            assertThat(result.branches).hasSize(2)
+            assertThat(result.branches[0].branchCode).isEqualTo("1101")
+            assertThat(result.branches[0].branchName).isEqualTo("[제1사업부] 1영업부-서울1지점")
+            assertThat(result.branches[1].branchCode).isEqualTo("1102")
+            assertThat(result.branches[1].branchName).isEqualTo("[제1사업부] 1영업부-서울2지점")
+        }
+
+        @Test
+        @DisplayName("5레벨 없는 조직 - orgNameLevel5 null -> '[사업부] 영업부' 형식")
+        fun getNoticeFormMeta_noLevel5() {
+            val orgs = listOf(
+                createOrg(orgNameLevel3 = "e-Biz", orgNameLevel4 = "영업지원", orgNameLevel5 = null, costCenterLevel4 = "2100", costCenterLevel5 = null)
+            )
+            whenever(orgRepository.findAll()).thenReturn(orgs)
+
+            val result = noticeService.getNoticeFormMeta()
+
+            assertThat(result.branches).hasSize(1)
+            assertThat(result.branches[0].branchName).isEqualTo("[e-Biz] 영업지원")
+            assertThat(result.branches[0].branchCode).isEqualTo("2100")
+        }
+
+        @Test
+        @DisplayName("불완전한 조직 제외 - orgNameLevel3 null -> 제외")
+        fun getNoticeFormMeta_filterIncomplete() {
+            val orgs = listOf(
+                createOrg(orgNameLevel3 = null, orgNameLevel4 = "영업부", orgNameLevel5 = "지점"),
+                createOrg(orgNameLevel3 = "사업부", orgNameLevel4 = null, orgNameLevel5 = "지점"),
+                createOrg(orgNameLevel3 = "사업부", orgNameLevel4 = "영업부", orgNameLevel5 = "지점", costCenterLevel5 = "3001")
+            )
+            whenever(orgRepository.findAll()).thenReturn(orgs)
+
+            val result = noticeService.getNoticeFormMeta()
+
+            assertThat(result.branches).hasSize(1)
+            assertThat(result.branches[0].branchCode).isEqualTo("3001")
+        }
+
+        @Test
+        @DisplayName("중복 제거 - 동일 branchCode -> 하나만 반환")
+        fun getNoticeFormMeta_dedup() {
+            val orgs = listOf(
+                createOrg(orgNameLevel3 = "사업부", orgNameLevel4 = "영업부", orgNameLevel5 = "지점A", costCenterLevel5 = "1001"),
+                createOrg(orgNameLevel3 = "사업부", orgNameLevel4 = "영업부", orgNameLevel5 = "지점A", costCenterLevel5 = "1001")
+            )
+            whenever(orgRepository.findAll()).thenReturn(orgs)
+
+            val result = noticeService.getNoticeFormMeta()
+
+            assertThat(result.branches).hasSize(1)
+        }
+
+        @Test
+        @DisplayName("빈 org 테이블 - branches 빈 배열")
+        fun getNoticeFormMeta_empty() {
+            whenever(orgRepository.findAll()).thenReturn(emptyList())
+
+            val result = noticeService.getNoticeFormMeta()
+
+            assertThat(result.categories).hasSize(2)
+            assertThat(result.branches).isEmpty()
+        }
+    }
+
+    private fun createOrg(
+        orgNameLevel3: String? = null,
+        orgNameLevel4: String? = null,
+        orgNameLevel5: String? = null,
+        costCenterLevel4: String? = null,
+        costCenterLevel5: String? = null
+    ): Org = Org(
+        orgNameLevel3 = orgNameLevel3,
+        orgNameLevel4 = orgNameLevel4,
+        orgNameLevel5 = orgNameLevel5,
+        costCenterLevel4 = costCenterLevel4,
+        costCenterLevel5 = costCenterLevel5
+    )
 
     private fun createNotice(
         id: Long = 1L,

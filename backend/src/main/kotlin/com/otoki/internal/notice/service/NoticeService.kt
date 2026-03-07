@@ -5,6 +5,9 @@ import com.otoki.internal.sap.repository.UserRepository
 import com.otoki.internal.notice.dto.request.NoticeCreateRequest
 import com.otoki.internal.notice.dto.request.NoticeUpdateRequest
 import com.otoki.internal.notice.dto.response.NoticeImageResponse
+import com.otoki.internal.notice.dto.response.BranchOption
+import com.otoki.internal.notice.dto.response.CategoryOption
+import com.otoki.internal.notice.dto.response.NoticeFormMetaResponse
 import com.otoki.internal.notice.dto.response.NoticeMutationResponse
 import com.otoki.internal.notice.dto.response.NoticePostDetailResponse
 import com.otoki.internal.notice.dto.response.NoticePostListResponse
@@ -17,6 +20,7 @@ import com.otoki.internal.notice.exception.InvalidNoticeIdException
 import com.otoki.internal.notice.exception.NoticePostNotFoundException
 import com.otoki.internal.notice.repository.NoticeRepository
 import com.otoki.internal.notice.repository.UploadFileRepository
+import com.otoki.internal.sap.repository.OrgRepository
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
@@ -30,6 +34,7 @@ class NoticeService(
     private val noticeRepository: NoticeRepository,
     private val uploadFileRepository: UploadFileRepository,
     private val userRepository: UserRepository,
+    private val orgRepository: OrgRepository,
     @Value("\${aws.s3.bucket.name:otoki-bucket}")
     private val s3BucketName: String
 ) {
@@ -192,6 +197,32 @@ class NoticeService(
         val notice = findActiveNotice(noticeId)
         notice.isDeleted = true
         noticeRepository.save(notice)
+    }
+
+    fun getNoticeFormMeta(): NoticeFormMetaResponse {
+        val categories = NoticeCategory.entries.map {
+            CategoryOption(code = it.name, name = it.displayName)
+        }
+
+        val branches = orgRepository.findAll()
+            .filter { !it.orgNameLevel3.isNullOrBlank() && !it.orgNameLevel4.isNullOrBlank() }
+            .map { org ->
+                val branchName = if (org.orgNameLevel5.isNullOrBlank()) {
+                    "[${org.orgNameLevel3}] ${org.orgNameLevel4}"
+                } else {
+                    "[${org.orgNameLevel3}] ${org.orgNameLevel4}-${org.orgNameLevel5}"
+                }
+                val branchCode = if (!org.costCenterLevel5.isNullOrBlank()) {
+                    org.costCenterLevel5!!
+                } else {
+                    org.costCenterLevel4 ?: ""
+                }
+                BranchOption(branchCode = branchCode, branchName = branchName)
+            }
+            .distinctBy { it.branchCode }
+            .sortedBy { it.branchName }
+
+        return NoticeFormMetaResponse(categories = categories, branches = branches)
     }
 
     private fun findActiveNotice(noticeId: Long): Notice {
