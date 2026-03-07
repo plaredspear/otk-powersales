@@ -6,13 +6,15 @@ import '../../domain/entities/notice.dart';
 class NoticeModel {
   final int id;
   final String title;
-  final String type;
+  final String category;
+  final String categoryName;
   final DateTime createdAt;
 
   const NoticeModel({
     required this.id,
     required this.title,
-    required this.type,
+    required this.category,
+    required this.categoryName,
     required this.createdAt,
   });
 
@@ -20,7 +22,8 @@ class NoticeModel {
     return NoticeModel(
       id: json['id'] as int,
       title: json['title'] as String,
-      type: json['type'] as String,
+      category: json['category'] as String,
+      categoryName: json['category_name'] as String,
       createdAt: DateTime.parse(json['created_at'] as String),
     );
   }
@@ -29,7 +32,8 @@ class NoticeModel {
     return {
       'id': id,
       'title': title,
-      'type': type,
+      'category': category,
+      'category_name': categoryName,
       'created_at': createdAt.toIso8601String(),
     };
   }
@@ -38,7 +42,8 @@ class NoticeModel {
     return Notice(
       id: id,
       title: title,
-      type: type,
+      category: category,
+      categoryName: categoryName,
       createdAt: createdAt,
     );
   }
@@ -47,7 +52,8 @@ class NoticeModel {
     return NoticeModel(
       id: entity.id,
       title: entity.title,
-      type: entity.type,
+      category: entity.category,
+      categoryName: entity.categoryName,
       createdAt: entity.createdAt,
     );
   }
@@ -58,7 +64,8 @@ class NoticeModel {
     return other is NoticeModel &&
         other.id == id &&
         other.title == title &&
-        other.type == type &&
+        other.category == category &&
+        other.categoryName == categoryName &&
         other.createdAt == createdAt;
   }
 
@@ -67,13 +74,14 @@ class NoticeModel {
     return Object.hash(
       id,
       title,
-      type,
+      category,
+      categoryName,
       createdAt,
     );
   }
 
   @override
   String toString() {
-    return 'NoticeModel(id: $id, title: $title, type: $type, createdAt: $createdAt)';
+    return 'NoticeModel(id: $id, title: $title, category: $category, categoryName: $categoryName, createdAt: $createdAt)';
   }
 }

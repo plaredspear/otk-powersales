@@ -139,13 +139,15 @@ final _sampleNotices = [
   Notice(
     id: 1,
     title: '테스트 공지 1',
-    type: 'ALL',
+    category: 'COMPANY',
+    categoryName: '회사공지',
     createdAt: DateTime(2026, 3, 1),
   ),
   Notice(
     id: 2,
     title: '테스트 공지 2',
-    type: 'BRANCH',
+    category: 'BRANCH',
+    categoryName: '지점공지',
     createdAt: DateTime(2026, 3, 2),
   ),
 ];

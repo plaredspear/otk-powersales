@@ -4,38 +4,30 @@
 class Notice {
   final int id;
   final String title;
-  final String type;
+  final String category;
+  final String categoryName;
   final DateTime createdAt;
 
   const Notice({
     required this.id,
     required this.title,
-    required this.type,
+    required this.category,
+    required this.categoryName,
     required this.createdAt,
   });
-
-  /// 공지 유형 표시 텍스트
-  String get typeDisplayName {
-    switch (type) {
-      case 'BRANCH':
-        return '지점공지';
-      case 'ALL':
-        return '전체공지';
-      default:
-        return type;
-    }
-  }
 
   Notice copyWith({
     int? id,
     String? title,
-    String? type,
+    String? category,
+    String? categoryName,
     DateTime? createdAt,
   }) {
     return Notice(
       id: id ?? this.id,
       title: title ?? this.title,
-      type: type ?? this.type,
+      category: category ?? this.category,
+      categoryName: categoryName ?? this.categoryName,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -44,8 +36,9 @@ class Notice {
     return {
       'id': id,
       'title': title,
-      'type': type,
-      'createdAt': createdAt.toIso8601String(),
+      'category': category,
+      'category_name': categoryName,
+      'created_at': createdAt.toIso8601String(),
     };
   }
 
@@ -53,8 +46,9 @@ class Notice {
     return Notice(
       id: json['id'] as int,
       title: json['title'] as String,
-      type: json['type'] as String,
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      category: json['category'] as String,
+      categoryName: json['category_name'] as String,
+      createdAt: DateTime.parse(json['created_at'] as String),
     );
   }
 
@@ -64,7 +58,8 @@ class Notice {
     return other is Notice &&
         other.id == id &&
         other.title == title &&
-        other.type == type &&
+        other.category == category &&
+        other.categoryName == categoryName &&
         other.createdAt == createdAt;
   }
 
@@ -73,13 +68,14 @@ class Notice {
     return Object.hash(
       id,
       title,
-      type,
+      category,
+      categoryName,
       createdAt,
     );
   }
 
   @override
   String toString() {
-    return 'Notice(id: $id, title: $title, type: $type, createdAt: $createdAt)';
+    return 'Notice(id: $id, title: $title, category: $category, categoryName: $categoryName, createdAt: $createdAt)';
   }
 }
