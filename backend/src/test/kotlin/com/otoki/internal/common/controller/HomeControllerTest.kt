@@ -100,13 +100,15 @@ class HomeControllerTest {
                     HomeResponse.NoticeInfo(
                         id = 1L,
                         title = "2월 영업 목표 달성 현황",
-                        type = "BRANCH",
+                        category = "BRANCH",
+                        categoryName = "지점공지",
                         createdAt = LocalDateTime.of(2026, 2, 5, 10, 0, 0)
                     ),
                     HomeResponse.NoticeInfo(
                         id = 2L,
                         title = "신제품 출시 안내",
-                        type = "ALL",
+                        category = "COMPANY",
+                        categoryName = "회사공지",
                         createdAt = LocalDateTime.of(2026, 2, 4, 9, 0, 0)
                     )
                 ),
@@ -150,10 +152,13 @@ class HomeControllerTest {
                 .andExpect(jsonPath("$.data.notices.length()").value(2))
                 .andExpect(jsonPath("$.data.notices[0].id").value(1))
                 .andExpect(jsonPath("$.data.notices[0].title").value("2월 영업 목표 달성 현황"))
-                .andExpect(jsonPath("$.data.notices[0].type").value("BRANCH"))
+                .andExpect(jsonPath("$.data.notices[0].category").value("BRANCH"))
+                .andExpect(jsonPath("$.data.notices[0].category_name").value("지점공지"))
+                .andExpect(jsonPath("$.data.notices[0].type").doesNotExist())
                 .andExpect(jsonPath("$.data.notices[1].id").value(2))
                 .andExpect(jsonPath("$.data.notices[1].title").value("신제품 출시 안내"))
-                .andExpect(jsonPath("$.data.notices[1].type").value("ALL"))
+                .andExpect(jsonPath("$.data.notices[1].category").value("COMPANY"))
+                .andExpect(jsonPath("$.data.notices[1].category_name").value("회사공지"))
                 // current_date
                 .andExpect(jsonPath("$.data.current_date").value("2026-02-25"))
         }
@@ -215,7 +220,8 @@ class HomeControllerTest {
                     HomeResponse.NoticeInfo(
                         id = 3L,
                         title = "3월 근태 관리 안내",
-                        type = "ALL",
+                        category = "COMPANY",
+                        categoryName = "회사공지",
                         createdAt = LocalDateTime.of(2026, 2, 24, 14, 0, 0)
                     )
                 ),

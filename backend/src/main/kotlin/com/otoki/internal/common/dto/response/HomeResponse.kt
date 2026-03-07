@@ -53,7 +53,8 @@ data class HomeResponse(
     data class NoticeInfo(
         val id: Long,
         val title: String,
-        val type: String,
+        val category: String,
+        val categoryName: String,
         val createdAt: LocalDateTime
     )
 }
