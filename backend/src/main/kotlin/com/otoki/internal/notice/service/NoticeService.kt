@@ -81,6 +81,8 @@ class NoticeService(
             categoryName = categoryName,
             title = notice.name ?: "",
             content = notice.contents ?: "",
+            branch = notice.branch,
+            branchCode = notice.branchCode,
             createdAt = notice.createdDate?.format(DATE_TIME_FORMATTER) ?: "",
             images = images
         )
