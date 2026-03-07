@@ -6,6 +6,7 @@ import com.otoki.internal.sap.entity.UserRole
 import com.otoki.internal.common.repository.AgreementWordRepository
 import com.otoki.internal.sap.repository.UserRepository
 import com.otoki.internal.notice.entity.Notice
+import com.otoki.internal.notice.entity.NoticeCategory
 import com.otoki.internal.notice.repository.NoticeRepository
 import com.otoki.internal.sap.entity.Org
 import com.otoki.internal.sap.repository.OrgRepository
@@ -428,9 +429,11 @@ class LocalDataInitializerTest {
 
             // Then
             verify(noticeRepository).saveAll(check<List<Notice>> { notices ->
-                val allNotices = notices.filter { it.category == "ALL" }
-                assertThat(allNotices).hasSize(3)
-                allNotices.forEach { notice ->
+                val companyNotices = notices.filter { it.category == NoticeCategory.COMPANY }
+                val educationNotices = notices.filter { it.category == NoticeCategory.EDUCATION }
+                assertThat(companyNotices).hasSize(2)
+                assertThat(educationNotices).hasSize(1)
+                (companyNotices + educationNotices).forEach { notice ->
                     assertThat(notice.scope).isEqualTo("전체")
                     assertThat(notice.branch).isNull()
                     assertThat(notice.branchCode).isNull()
@@ -438,7 +441,7 @@ class LocalDataInitializerTest {
                     assertThat(notice.contents).contains("[LOCAL 개발용]")
                 }
 
-                val branchNotices = notices.filter { it.category == "BRANCH" }
+                val branchNotices = notices.filter { it.category == NoticeCategory.BRANCH }
                 assertThat(branchNotices).hasSize(2)
                 branchNotices.forEach { notice ->
                     assertThat(notice.scope).isEqualTo("지점")

@@ -1,6 +1,7 @@
 package com.otoki.internal.notice.repository
 
 import com.otoki.internal.notice.entity.Notice
+import com.otoki.internal.notice.entity.NoticeCategory
 import com.otoki.internal.notice.entity.QNotice.notice
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.Predicate
@@ -15,7 +16,7 @@ class NoticeRepositoryCustomImpl(
 ) : NoticeRepositoryCustom {
 
     override fun findNotices(
-        category: String?,
+        category: NoticeCategory?,
         search: String?,
         branch: String,
         pageable: Pageable
@@ -44,7 +45,7 @@ class NoticeRepositoryCustomImpl(
     }
 
     override fun findAllNotices(
-        category: String?,
+        category: NoticeCategory?,
         search: String?,
         pageable: Pageable
     ): Page<Notice> {
@@ -73,16 +74,15 @@ class NoticeRepositoryCustomImpl(
 
     override fun findRecentNotices(
         branch: String,
-        since: LocalDateTime,
-        branchCategory: String,
-        allCategory: String
+        since: LocalDateTime
     ): List<Notice> {
         return queryFactory
             .selectFrom(notice)
             .where(
                 notice.createdDate.goe(since),
-                notice.category.eq(allCategory)
-                    .or(notice.category.eq(branchCategory).and(notice.branch.eq(branch)))
+                notice.category.eq(NoticeCategory.COMPANY)
+                    .or(notice.category.eq(NoticeCategory.BRANCH).and(notice.branch.eq(branch)))
+                    .or(notice.category.eq(NoticeCategory.EDUCATION))
             )
             .orderBy(notice.createdDate.desc())
             .limit(5)
@@ -93,22 +93,24 @@ class NoticeRepositoryCustomImpl(
         return notice.isDeleted.isNull.or(notice.isDeleted.eq(false))
     }
 
-    private fun buildAdminCategoryCondition(category: String?): Predicate? {
+    private fun buildAdminCategoryCondition(category: NoticeCategory?): Predicate? {
         return when (category) {
             null -> null
-            "COMPANY" -> notice.category.eq("ALL")
-            "BRANCH" -> notice.category.eq("BRANCH")
             else -> notice.category.eq(category)
         }
     }
 
-    private fun buildCategoryCondition(category: String?, branch: String): Predicate {
+    private fun buildCategoryCondition(category: NoticeCategory?, branch: String): Predicate {
         return when (category) {
-            null -> notice.category.eq("ALL")
-                .or(notice.category.eq("BRANCH").and(notice.branch.eq(branch)))
-            "COMPANY" -> notice.category.eq("ALL")
-            "BRANCH" -> notice.category.eq("BRANCH").and(notice.branch.eq(branch))
-            else -> notice.category.eq(category)
+            null -> notice.category.eq(NoticeCategory.COMPANY)
+                .or(notice.category.eq(NoticeCategory.BRANCH).and(notice.branch.eq(branch)))
+            else -> {
+                if (category == NoticeCategory.BRANCH) {
+                    notice.category.eq(NoticeCategory.BRANCH).and(notice.branch.eq(branch))
+                } else {
+                    notice.category.eq(category)
+                }
+            }
         }
     }
 

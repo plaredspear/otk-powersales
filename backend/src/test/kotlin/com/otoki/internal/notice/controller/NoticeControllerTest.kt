@@ -74,7 +74,7 @@ class NoticeControllerTest {
             // Given
             val response = NoticePostListResponse(
                 content = listOf(
-                    NoticePostSummaryResponse(id = 42L, category = "ALL", categoryName = "전체공지", title = "전체공지 제목", createdAt = "2026-02-28T10:30:00"),
+                    NoticePostSummaryResponse(id = 42L, category = "COMPANY", categoryName = "회사공지", title = "전체공지 제목", createdAt = "2026-02-28T10:30:00"),
                     NoticePostSummaryResponse(id = 41L, category = "BRANCH", categoryName = "지점공지", title = "지점공지 제목", createdAt = "2026-02-27T09:00:00")
                 ),
                 totalCount = 5,
@@ -93,8 +93,8 @@ class NoticeControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content").isArray)
                 .andExpect(jsonPath("$.data.content[0].id").value(42))
-                .andExpect(jsonPath("$.data.content[0].category").value("ALL"))
-                .andExpect(jsonPath("$.data.content[0].category_name").value("전체공지"))
+                .andExpect(jsonPath("$.data.content[0].category").value("COMPANY"))
+                .andExpect(jsonPath("$.data.content[0].category_name").value("회사공지"))
                 .andExpect(jsonPath("$.data.content[0].title").value("전체공지 제목"))
                 .andExpect(jsonPath("$.data.content[0].created_at").value("2026-02-28T10:30:00"))
                 .andExpect(jsonPath("$.data.content[1].id").value(41))
@@ -110,7 +110,7 @@ class NoticeControllerTest {
             // Given
             val response = NoticePostListResponse(
                 content = listOf(
-                    NoticePostSummaryResponse(id = 1L, category = "ALL", categoryName = "전체공지", title = "영업 목표", createdAt = "2026-02-28T10:30:00")
+                    NoticePostSummaryResponse(id = 1L, category = "COMPANY", categoryName = "회사공지", title = "영업 목표", createdAt = "2026-02-28T10:30:00")
                 ),
                 totalCount = 1,
                 totalPages = 1,
@@ -186,8 +186,8 @@ class NoticeControllerTest {
             // Given
             val response = NoticePostDetailResponse(
                 id = 42L,
-                category = "ALL",
-                categoryName = "전체공지",
+                category = "COMPANY",
+                categoryName = "회사공지",
                 title = "테스트 공지",
                 content = "본문 내용입니다.",
                 branch = null,
@@ -207,8 +207,8 @@ class NoticeControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(42))
-                .andExpect(jsonPath("$.data.category").value("ALL"))
-                .andExpect(jsonPath("$.data.category_name").value("전체공지"))
+                .andExpect(jsonPath("$.data.category").value("COMPANY"))
+                .andExpect(jsonPath("$.data.category_name").value("회사공지"))
                 .andExpect(jsonPath("$.data.title").value("테스트 공지"))
                 .andExpect(jsonPath("$.data.content").value("본문 내용입니다."))
                 .andExpect(jsonPath("$.data.created_at").value("2026-02-28T10:30:00"))

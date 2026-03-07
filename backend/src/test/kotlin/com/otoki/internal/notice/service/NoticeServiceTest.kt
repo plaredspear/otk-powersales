@@ -5,6 +5,7 @@ import com.otoki.internal.sap.repository.UserRepository
 import com.otoki.internal.notice.dto.request.NoticeCreateRequest
 import com.otoki.internal.notice.dto.request.NoticeUpdateRequest
 import com.otoki.internal.notice.entity.Notice
+import com.otoki.internal.notice.entity.NoticeCategory
 import com.otoki.internal.notice.entity.UploadFile
 import com.otoki.internal.notice.exception.BranchRequiredException
 import com.otoki.internal.notice.exception.InvalidNoticeCategoryException
@@ -66,7 +67,7 @@ class NoticeServiceTest {
                 id = 42L,
                 sfid = "a0B5g000001XXXAAA",
                 name = "2026년 상반기 영업 목표 안내",
-                category = "ALL",
+                category = NoticeCategory.COMPANY,
                 contents = "상반기 영업 목표가 확정되었습니다.",
                 createdDate = LocalDateTime.of(2026, 2, 28, 10, 30, 0)
             )
@@ -83,8 +84,8 @@ class NoticeServiceTest {
 
             // Then
             assertThat(result.id).isEqualTo(42L)
-            assertThat(result.category).isEqualTo("ALL")
-            assertThat(result.categoryName).isEqualTo("전체공지")
+            assertThat(result.category).isEqualTo("COMPANY")
+            assertThat(result.categoryName).isEqualTo("회사공지")
             assertThat(result.title).isEqualTo("2026년 상반기 영업 목표 안내")
             assertThat(result.content).isEqualTo("상반기 영업 목표가 확정되었습니다.")
             assertThat(result.createdAt).isEqualTo("2026-02-28T10:30:00")
@@ -99,7 +100,7 @@ class NoticeServiceTest {
         @DisplayName("이미지 없음 - sfid null -> images 빈 배열 반환")
         fun getNoticeDetail_noSfid() {
             // Given
-            val notice = createNotice(id = 10L, sfid = null, name = "공지", category = "BRANCH")
+            val notice = createNotice(id = 10L, sfid = null, name = "공지", category = NoticeCategory.BRANCH)
 
             whenever(noticeRepository.findById(10L)).thenReturn(Optional.of(notice))
 
@@ -117,7 +118,7 @@ class NoticeServiceTest {
         @DisplayName("이미지 없음 - sfid에 매칭 파일 없음 -> images 빈 배열 반환")
         fun getNoticeDetail_noMatchingFiles() {
             // Given
-            val notice = createNotice(id = 10L, sfid = "some-sfid", name = "공지", category = "ALL")
+            val notice = createNotice(id = 10L, sfid = "some-sfid", name = "공지", category = NoticeCategory.COMPANY)
 
             whenever(noticeRepository.findById(10L)).thenReturn(Optional.of(notice))
             whenever(uploadFileRepository.findByRecordIdAndIsDeletedFalse("some-sfid")).thenReturn(emptyList())
@@ -133,7 +134,7 @@ class NoticeServiceTest {
         @DisplayName("이미지 URL 무효 - uniqueKey null/빈 문자열인 이미지 제외")
         fun getNoticeDetail_filterInvalidImages() {
             // Given
-            val notice = createNotice(id = 10L, sfid = "sfid-1", category = "ALL")
+            val notice = createNotice(id = 10L, sfid = "sfid-1", category = NoticeCategory.COMPANY)
             val files = listOf(
                 createUploadFile(id = 1L, uniqueKey = "valid/img.jpg", createdDate = LocalDateTime.of(2026, 1, 1, 0, 0)),
                 createUploadFile(id = 2L, uniqueKey = null, createdDate = LocalDateTime.of(2026, 1, 2, 0, 0)),
@@ -178,25 +179,25 @@ class NoticeServiceTest {
         }
 
         @Test
-        @DisplayName("카테고리 매핑 - 한글 '회사공지' -> ALL/전체공지")
-        fun getNoticeDetail_categoryMapping_korean() {
+        @DisplayName("카테고리 매핑 - COMPANY -> COMPANY/회사공지")
+        fun getNoticeDetail_categoryMapping_company() {
             // Given
-            val notice = createNotice(id = 1L, category = "회사공지")
+            val notice = createNotice(id = 1L, category = NoticeCategory.COMPANY)
             whenever(noticeRepository.findById(1L)).thenReturn(Optional.of(notice))
 
             // When
             val result = noticeService.getNoticeDetail(1L)
 
             // Then
-            assertThat(result.category).isEqualTo("ALL")
-            assertThat(result.categoryName).isEqualTo("전체공지")
+            assertThat(result.category).isEqualTo("COMPANY")
+            assertThat(result.categoryName).isEqualTo("회사공지")
         }
 
         @Test
-        @DisplayName("카테고리 매핑 - 한글 '영업부/지점공지' -> BRANCH/지점공지")
+        @DisplayName("카테고리 매핑 - BRANCH -> BRANCH/지점공지")
         fun getNoticeDetail_categoryMapping_branch() {
             // Given
-            val notice = createNotice(id = 1L, category = "영업부/지점공지")
+            val notice = createNotice(id = 1L, category = NoticeCategory.BRANCH)
             whenever(noticeRepository.findById(1L)).thenReturn(Optional.of(notice))
 
             // When
@@ -208,18 +209,33 @@ class NoticeServiceTest {
         }
 
         @Test
-        @DisplayName("카테고리 매핑 - 미등록 값 -> 원본 값 유지")
-        fun getNoticeDetail_categoryMapping_unknown() {
+        @DisplayName("카테고리 매핑 - EDUCATION -> EDUCATION/교육")
+        fun getNoticeDetail_categoryMapping_education() {
             // Given
-            val notice = createNotice(id = 1L, category = "특별공지")
+            val notice = createNotice(id = 1L, category = NoticeCategory.EDUCATION)
             whenever(noticeRepository.findById(1L)).thenReturn(Optional.of(notice))
 
             // When
             val result = noticeService.getNoticeDetail(1L)
 
             // Then
-            assertThat(result.category).isEqualTo("특별공지")
-            assertThat(result.categoryName).isEqualTo("특별공지")
+            assertThat(result.category).isEqualTo("EDUCATION")
+            assertThat(result.categoryName).isEqualTo("교육")
+        }
+
+        @Test
+        @DisplayName("카테고리 null -> 빈 문자열 반환")
+        fun getNoticeDetail_categoryNull() {
+            // Given
+            val notice = createNotice(id = 1L, category = null)
+            whenever(noticeRepository.findById(1L)).thenReturn(Optional.of(notice))
+
+            // When
+            val result = noticeService.getNoticeDetail(1L)
+
+            // Then
+            assertThat(result.category).isEqualTo("")
+            assertThat(result.categoryName).isEqualTo("")
         }
     }
 
@@ -236,12 +252,12 @@ class NoticeServiceTest {
         }
 
         @Test
-        @DisplayName("전체 목록 조회 - category null -> ALL + 사용자 지점 BRANCH 공지 반환")
+        @DisplayName("전체 목록 조회 - category null -> COMPANY + 사용자 지점 BRANCH 공지 반환")
         fun getPosts_allCategories() {
             // Given
             val notices = listOf(
-                createNotice(id = 1L, category = "ALL", name = "전체공지 제목"),
-                createNotice(id = 2L, category = "BRANCH", name = "지점공지 제목", branch = "테스트지점")
+                createNotice(id = 1L, category = NoticeCategory.COMPANY, name = "전체공지 제목"),
+                createNotice(id = 2L, category = NoticeCategory.BRANCH, name = "지점공지 제목", branch = "테스트지점")
             )
             val page = PageImpl(notices, PageRequest.of(0, 10), 2)
             whenever(noticeRepository.findNotices(eq(null), eq(null), eq("테스트지점"), any())).thenReturn(page)
@@ -258,29 +274,29 @@ class NoticeServiceTest {
         }
 
         @Test
-        @DisplayName("회사공지만 조회 - category=COMPANY -> ALL 공지만 반환")
+        @DisplayName("회사공지만 조회 - category=COMPANY -> COMPANY 공지만 반환")
         fun getPosts_companyOnly() {
             // Given
-            val notices = listOf(createNotice(id = 1L, category = "ALL", name = "전체공지"))
+            val notices = listOf(createNotice(id = 1L, category = NoticeCategory.COMPANY, name = "전체공지"))
             val page = PageImpl(notices, PageRequest.of(0, 10), 1)
-            whenever(noticeRepository.findNotices(eq("COMPANY"), eq(null), eq("테스트지점"), any())).thenReturn(page)
+            whenever(noticeRepository.findNotices(eq(NoticeCategory.COMPANY), eq(null), eq("테스트지점"), any())).thenReturn(page)
 
             // When
             val result = noticeService.getPosts(userId, "COMPANY", null, 1, 10)
 
             // Then
             assertThat(result.content).hasSize(1)
-            assertThat(result.content[0].category).isEqualTo("ALL")
-            assertThat(result.content[0].categoryName).isEqualTo("전체공지")
+            assertThat(result.content[0].category).isEqualTo("COMPANY")
+            assertThat(result.content[0].categoryName).isEqualTo("회사공지")
         }
 
         @Test
         @DisplayName("지점공지만 조회 - category=BRANCH -> 사용자 지점 BRANCH 공지만 반환")
         fun getPosts_branchOnly() {
             // Given
-            val notices = listOf(createNotice(id = 2L, category = "BRANCH", name = "지점공지", branch = "테스트지점"))
+            val notices = listOf(createNotice(id = 2L, category = NoticeCategory.BRANCH, name = "지점공지", branch = "테스트지점"))
             val page = PageImpl(notices, PageRequest.of(0, 10), 1)
-            whenever(noticeRepository.findNotices(eq("BRANCH"), eq(null), eq("테스트지점"), any())).thenReturn(page)
+            whenever(noticeRepository.findNotices(eq(NoticeCategory.BRANCH), eq(null), eq("테스트지점"), any())).thenReturn(page)
 
             // When
             val result = noticeService.getPosts(userId, "BRANCH", null, 1, 10)
@@ -295,7 +311,7 @@ class NoticeServiceTest {
         @DisplayName("검색 조회 - search 키워드로 필터링")
         fun getPosts_withSearch() {
             // Given
-            val notices = listOf(createNotice(id = 1L, category = "ALL", name = "영업 목표 안내"))
+            val notices = listOf(createNotice(id = 1L, category = NoticeCategory.COMPANY, name = "영업 목표 안내"))
             val page = PageImpl(notices, PageRequest.of(0, 10), 1)
             whenever(noticeRepository.findNotices(eq(null), eq("영업"), eq("테스트지점"), any())).thenReturn(page)
 
@@ -311,7 +327,7 @@ class NoticeServiceTest {
         @DisplayName("페이지네이션 - page=2, size=2 -> 올바른 페이지 정보 반환")
         fun getPosts_pagination() {
             // Given
-            val notices = listOf(createNotice(id = 3L, category = "ALL"))
+            val notices = listOf(createNotice(id = 3L, category = NoticeCategory.COMPANY))
             val page = PageImpl(notices, PageRequest.of(1, 2), 5)
             whenever(noticeRepository.findNotices(eq(null), eq(null), eq("테스트지점"), any())).thenReturn(page)
 
@@ -349,22 +365,6 @@ class NoticeServiceTest {
         }
 
         @Test
-        @DisplayName("카테고리 매핑 - DB '회사공지' -> 응답 ALL/전체공지")
-        fun getPosts_categoryMapping_korean() {
-            // Given
-            val notices = listOf(createNotice(id = 1L, category = "회사공지", name = "공지"))
-            val page = PageImpl(notices, PageRequest.of(0, 10), 1)
-            whenever(noticeRepository.findNotices(eq(null), eq(null), eq("테스트지점"), any())).thenReturn(page)
-
-            // When
-            val result = noticeService.getPosts(userId, null, null, 1, 10)
-
-            // Then
-            assertThat(result.content[0].category).isEqualTo("ALL")
-            assertThat(result.content[0].categoryName).isEqualTo("전체공지")
-        }
-
-        @Test
         @DisplayName("검색 키워드 100자 제한 - 101자 -> 100자로 잘림")
         fun getPosts_searchTruncated() {
             // Given
@@ -389,8 +389,8 @@ class NoticeServiceTest {
         @DisplayName("전체 목록 조회 - category null -> 모든 카테고리 반환")
         fun getPostsForAdmin_allCategories() {
             val notices = listOf(
-                createNotice(id = 1L, category = "ALL", name = "전체공지"),
-                createNotice(id = 2L, category = "BRANCH", name = "지점공지", branch = "서울지점")
+                createNotice(id = 1L, category = NoticeCategory.COMPANY, name = "전체공지"),
+                createNotice(id = 2L, category = NoticeCategory.BRANCH, name = "지점공지", branch = "서울지점")
             )
             val page = PageImpl(notices, PageRequest.of(0, 10), 2)
             whenever(noticeRepository.findAllNotices(eq(null), eq(null), any())).thenReturn(page)
@@ -414,7 +414,7 @@ class NoticeServiceTest {
     inner class CreateNoticeTests {
 
         @Test
-        @DisplayName("회사공지 작성 성공 - category=COMPANY -> DB에 ALL로 저장")
+        @DisplayName("회사공지 작성 성공 - category=COMPANY -> DB에 회사공지로 저장")
         fun createNotice_company_success() {
             val request = NoticeCreateRequest(
                 title = "테스트 공지",
@@ -427,7 +427,7 @@ class NoticeServiceTest {
 
             assertThat(result.title).isEqualTo("테스트 공지")
             assertThat(result.category).isEqualTo("COMPANY")
-            assertThat(result.categoryName).isEqualTo("전체공지")
+            assertThat(result.categoryName).isEqualTo("회사공지")
             assertThat(result.branch).isNull()
             assertThat(result.branchCode).isNull()
         }
@@ -450,6 +450,24 @@ class NoticeServiceTest {
             assertThat(result.categoryName).isEqualTo("지점공지")
             assertThat(result.branch).isEqualTo("서울1지점")
             assertThat(result.branchCode).isEqualTo("1101")
+        }
+
+        @Test
+        @DisplayName("교육 공지 작성 성공 - category=EDUCATION")
+        fun createNotice_education_success() {
+            val request = NoticeCreateRequest(
+                title = "교육 공지",
+                category = "EDUCATION",
+                content = "<p>교육 내용</p>"
+            )
+            whenever(noticeRepository.save(any<Notice>())).thenAnswer { it.getArgument<Notice>(0) }
+
+            val result = noticeService.createNotice(request)
+
+            assertThat(result.category).isEqualTo("EDUCATION")
+            assertThat(result.categoryName).isEqualTo("교육")
+            assertThat(result.branch).isNull()
+            assertThat(result.branchCode).isNull()
         }
 
         @Test
@@ -502,7 +520,7 @@ class NoticeServiceTest {
         @Test
         @DisplayName("수정 성공 - 제목/내용 변경")
         fun updateNotice_success() {
-            val existing = createNotice(id = 10L, category = "ALL", name = "원래 제목")
+            val existing = createNotice(id = 10L, category = NoticeCategory.COMPANY, name = "원래 제목")
             whenever(noticeRepository.findById(10L)).thenReturn(Optional.of(existing))
             whenever(noticeRepository.save(any<Notice>())).thenAnswer { it.getArgument<Notice>(0) }
 
@@ -521,7 +539,7 @@ class NoticeServiceTest {
         @Test
         @DisplayName("카테고리 변경 - COMPANY -> BRANCH + branch/branchCode 포함")
         fun updateNotice_changeCategoryToBranch() {
-            val existing = createNotice(id = 10L, category = "ALL", name = "전체 공지")
+            val existing = createNotice(id = 10L, category = NoticeCategory.COMPANY, name = "전체 공지")
             whenever(noticeRepository.findById(10L)).thenReturn(Optional.of(existing))
             whenever(noticeRepository.save(any<Notice>())).thenAnswer { it.getArgument<Notice>(0) }
 
@@ -619,7 +637,7 @@ class NoticeServiceTest {
     inner class GetNoticeFormMetaTests {
 
         @Test
-        @DisplayName("정상 조회 - 카테고리 2개 + 지점 목록 반환")
+        @DisplayName("정상 조회 - 카테고리 3개 + 지점 목록 반환")
         fun getNoticeFormMeta_success() {
             val orgs = listOf(
                 createOrg(orgNameLevel3 = "제1사업부", orgNameLevel4 = "1영업부", orgNameLevel5 = "서울1지점", costCenterLevel4 = "1100", costCenterLevel5 = "1101"),
@@ -629,11 +647,13 @@ class NoticeServiceTest {
 
             val result = noticeService.getNoticeFormMeta()
 
-            assertThat(result.categories).hasSize(2)
+            assertThat(result.categories).hasSize(3)
             assertThat(result.categories[0].code).isEqualTo("COMPANY")
-            assertThat(result.categories[0].name).isEqualTo("전체공지")
+            assertThat(result.categories[0].name).isEqualTo("회사공지")
             assertThat(result.categories[1].code).isEqualTo("BRANCH")
             assertThat(result.categories[1].name).isEqualTo("지점공지")
+            assertThat(result.categories[2].code).isEqualTo("EDUCATION")
+            assertThat(result.categories[2].name).isEqualTo("교육")
 
             assertThat(result.branches).hasSize(2)
             assertThat(result.branches[0].branchCode).isEqualTo("1101")
@@ -694,7 +714,7 @@ class NoticeServiceTest {
 
             val result = noticeService.getNoticeFormMeta()
 
-            assertThat(result.categories).hasSize(2)
+            assertThat(result.categories).hasSize(3)
             assertThat(result.branches).isEmpty()
         }
     }
@@ -717,7 +737,7 @@ class NoticeServiceTest {
         id: Long = 1L,
         sfid: String? = null,
         name: String? = "테스트 공지",
-        category: String? = "ALL",
+        category: NoticeCategory? = NoticeCategory.COMPANY,
         contents: String? = "본문 내용",
         branch: String? = null,
         isDeleted: Boolean? = false,

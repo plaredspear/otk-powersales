@@ -17,18 +17,11 @@ data class NoticeMutationResponse(
         private val DATE_TIME_FORMATTER: DateTimeFormatter =
             DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")
 
-        private val CATEGORY_DISPLAY_MAP = mapOf(
-            "ALL" to ("COMPANY" to "전체공지"),
-            "BRANCH" to ("BRANCH" to "지점공지")
-        )
-
         fun from(entity: Notice): NoticeMutationResponse {
-            val (categoryCode, categoryName) = CATEGORY_DISPLAY_MAP[entity.category]
-                ?: (entity.category.orEmpty() to entity.category.orEmpty())
             return NoticeMutationResponse(
                 id = entity.id,
-                category = categoryCode,
-                categoryName = categoryName,
+                category = entity.category?.apiCode ?: "",
+                categoryName = entity.category?.displayName ?: "",
                 title = entity.name ?: "",
                 content = entity.contents ?: "",
                 branch = entity.branch,
