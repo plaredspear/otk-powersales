@@ -9,6 +9,9 @@ import com.otoki.internal.common.security.JwtTokenProvider
 import com.otoki.internal.common.security.UserPrincipal
 import com.otoki.internal.notice.dto.request.NoticeCreateRequest
 import com.otoki.internal.notice.dto.request.NoticeUpdateRequest
+import com.otoki.internal.notice.dto.response.BranchOption
+import com.otoki.internal.notice.dto.response.CategoryOption
+import com.otoki.internal.notice.dto.response.NoticeFormMetaResponse
 import com.otoki.internal.notice.dto.response.NoticeMutationResponse
 import com.otoki.internal.notice.dto.response.NoticePostDetailResponse
 import com.otoki.internal.notice.dto.response.NoticePostListResponse
@@ -92,6 +95,37 @@ class AdminNoticeControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content[0].title").value("테스트 공지"))
                 .andExpect(jsonPath("$.data.total_count").value(1))
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/admin/notices/form-meta - 폼 메타데이터 조회")
+    inner class GetNoticeFormMeta {
+
+        @Test
+        @DisplayName("성공 - 카테고리 + 지점 목록 반환")
+        fun getNoticeFormMeta_success() {
+            val response = NoticeFormMetaResponse(
+                categories = listOf(
+                    CategoryOption("COMPANY", "전체공지"),
+                    CategoryOption("BRANCH", "지점공지")
+                ),
+                branches = listOf(
+                    BranchOption("1101", "[제1사업부] 1영업부-서울1지점"),
+                    BranchOption("1102", "[제1사업부] 1영업부-서울2지점")
+                )
+            )
+            whenever(noticeService.getNoticeFormMeta()).thenReturn(response)
+
+            mockMvc.perform(get("/api/v1/admin/notices/form-meta"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.categories").isArray)
+                .andExpect(jsonPath("$.data.categories[0].code").value("COMPANY"))
+                .andExpect(jsonPath("$.data.categories[0].name").value("전체공지"))
+                .andExpect(jsonPath("$.data.branches").isArray)
+                .andExpect(jsonPath("$.data.branches[0].branch_code").value("1101"))
+                .andExpect(jsonPath("$.data.branches[0].branch_name").value("[제1사업부] 1영업부-서울1지점"))
         }
     }
 
