@@ -2,6 +2,7 @@ package com.otoki.internal.admin.config
 
 import com.otoki.internal.admin.security.AdminAuthorityFilter
 import com.otoki.internal.common.security.JwtAuthenticationFilter
+import org.springframework.boot.web.servlet.FilterRegistrationBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.annotation.Order
@@ -24,7 +25,12 @@ class AdminApiSecurityConfig(
             .csrf { it.disable() }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests { auth ->
-                auth.anyRequest().authenticated()
+                auth
+                    .requestMatchers(
+                        "/api/v1/admin/auth/login",
+                        "/api/v1/admin/auth/refresh"
+                    ).permitAll()
+                    .anyRequest().authenticated()
             }
             .headers { headers ->
                 headers.frameOptions { it.sameOrigin() }
@@ -33,5 +39,14 @@ class AdminApiSecurityConfig(
             .addFilterAfter(adminAuthorityFilter, JwtAuthenticationFilter::class.java)
 
         return http.build()
+    }
+
+    @Bean
+    fun adminAuthorityFilterRegistration(
+        adminAuthorityFilter: AdminAuthorityFilter
+    ): FilterRegistrationBean<AdminAuthorityFilter> {
+        val registration = FilterRegistrationBean(adminAuthorityFilter)
+        registration.isEnabled = false
+        return registration
     }
 }
