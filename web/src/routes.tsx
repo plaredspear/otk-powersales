@@ -19,6 +19,9 @@ const ProductPage = lazy(() => import('@/pages/ProductPage'));
 const EmployeePage = lazy(() => import('@/pages/EmployeePage'));
 const FieldInspectionPage = lazy(() => import('@/pages/FieldInspectionPage'));
 const ReportPage = lazy(() => import('@/pages/ReportPage'));
+const NoticeListPage = lazy(() => import('@/pages/notice/NoticeListPage'));
+const NoticeDetailPage = lazy(() => import('@/pages/notice/NoticeDetailPage'));
+const NoticeFormPage = lazy(() => import('@/pages/notice/NoticeFormPage'));
 
 function LazyWrapper({ children }: { children: React.ReactNode }) {
   return (
@@ -65,6 +68,10 @@ export const router = createBrowserRouter([
           { path: '/employee', element: <LazyWrapper><EmployeePage /></LazyWrapper> },
           { path: '/field-inspection', element: <LazyWrapper><FieldInspectionPage /></LazyWrapper> },
           { path: '/report', element: <LazyWrapper><ReportPage /></LazyWrapper> },
+          { path: '/notices', element: <LazyWrapper><NoticeListPage /></LazyWrapper> },
+          { path: '/notices/new', element: <LazyWrapper><NoticeFormPage /></LazyWrapper> },
+          { path: '/notices/:id', element: <LazyWrapper><NoticeDetailPage /></LazyWrapper> },
+          { path: '/notices/:id/edit', element: <LazyWrapper><NoticeFormPage /></LazyWrapper> },
           { path: '*', element: <Navigate to="/" replace /> },
         ],
       },
