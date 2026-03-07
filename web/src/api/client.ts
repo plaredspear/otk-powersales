@@ -1,4 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import { notification } from 'antd';
 import { refreshToken } from './auth';
 
 const client = axios.create({
@@ -37,8 +38,19 @@ client.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+    const status = error.response?.status;
 
-    if (error.response?.status !== 401 || originalRequest._retry) {
+    // 403: 권한 없음 — notification 표시 후 에러 전파 (로그아웃 안 함)
+    if (status === 403) {
+      notification.error({
+        message: '접근 권한 없음',
+        description: '해당 기능에 대한 접근 권한이 없습니다. 관리자에게 문의하세요.',
+      });
+      return Promise.reject(error);
+    }
+
+    // 401 이외의 에러는 그대로 전파
+    if (status !== 401 || originalRequest._retry) {
       return Promise.reject(error);
     }
 
