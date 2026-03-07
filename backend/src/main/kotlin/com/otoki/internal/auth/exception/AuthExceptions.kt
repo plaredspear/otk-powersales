@@ -78,3 +78,21 @@ class TokenReuseDetectedException : BusinessException(
     message = "보안 이상이 감지되었습니다. 다시 로그인해주세요",
     httpStatus = HttpStatus.UNAUTHORIZED
 )
+
+/**
+ * 앱 로그인 비활성 (Mobile)
+ */
+class AppLoginNotActiveException : BusinessException(
+    errorCode = "APP_LOGIN_NOT_ACTIVE",
+    message = "앱 로그인이 비활성화되어 있습니다",
+    httpStatus = HttpStatus.FORBIDDEN
+)
+
+/**
+ * 웹 관리자 로그인 권한 없음 (WEB)
+ */
+class WebLoginNotAllowedException : BusinessException(
+    errorCode = "WEB_LOGIN_NOT_ALLOWED",
+    message = "웹 관리자 로그인 권한이 없습니다",
+    httpStatus = HttpStatus.FORBIDDEN
+)

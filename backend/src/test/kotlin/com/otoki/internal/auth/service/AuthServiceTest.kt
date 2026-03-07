@@ -771,6 +771,116 @@ class AuthServiceTest {
         assertThat(response.token.accessToken).isEqualTo("token")
     }
 
+    // ========== Login Authority Tests ==========
+
+    @Nested
+    @DisplayName("validateLoginAuthority - 로그인 권한 검증")
+    inner class LoginAuthorityTests {
+
+        @Test
+        @DisplayName("WEB 로그인 성공 - 허용 권한(영업부장)으로 로그인 시 정상 반환")
+        fun webLogin_allowedAuthority_success() {
+            // Given
+            val user = createTestUser(id = 1L, appAuthority = "영업부장")
+            val request = LoginRequest("12345678", "password123")
+
+            whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(user))
+            whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
+            whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER, false)).thenReturn("token")
+            whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
+            whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
+
+            // When
+            val response = authService.login(request)
+
+            // Then
+            assertThat(response.token.accessToken).isEqualTo("token")
+        }
+
+        @Test
+        @DisplayName("Mobile 로그인 성공 - appLoginActive=true로 로그인 시 정상 반환")
+        fun mobileLogin_active_success() {
+            // Given
+            val user = createTestUser(id = 1L, appLoginActive = true, deviceUuid = null)
+            val request = LoginRequest("12345678", "password123", deviceId = "device-123")
+
+            whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(user))
+            whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
+            whenever(deviceBindingProperties.enabled).thenReturn(true)
+            whenever(deviceBindingProperties.isExcluded("12345678")).thenReturn(false)
+            whenever(userRepository.save(any<User>())).thenAnswer { it.arguments[0] }
+            whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER, false)).thenReturn("token")
+            whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
+            whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
+
+            // When
+            val response = authService.login(request)
+
+            // Then
+            assertThat(response.token.accessToken).isEqualTo("token")
+        }
+
+        @Test
+        @DisplayName("WEB 미허용 권한 - appAuthority가 허용 목록에 없으면 WebLoginNotAllowedException")
+        fun webLogin_notAllowedAuthority_throws() {
+            // Given
+            val user = createTestUser(id = 1L, appAuthority = "여사원")
+            val request = LoginRequest("12345678", "password123")
+
+            whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(user))
+            whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
+
+            // When & Then
+            assertThatThrownBy { authService.login(request) }
+                .isInstanceOf(WebLoginNotAllowedException::class.java)
+        }
+
+        @Test
+        @DisplayName("WEB 권한 null - appAuthority가 null이면 WebLoginNotAllowedException")
+        fun webLogin_nullAuthority_throws() {
+            // Given
+            val user = createTestUser(id = 1L, appAuthority = null)
+            val request = LoginRequest("12345678", "password123")
+
+            whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(user))
+            whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
+
+            // When & Then
+            assertThatThrownBy { authService.login(request) }
+                .isInstanceOf(WebLoginNotAllowedException::class.java)
+        }
+
+        @Test
+        @DisplayName("Mobile 비활성 - appLoginActive=false이면 AppLoginNotActiveException")
+        fun mobileLogin_inactive_throws() {
+            // Given
+            val user = createTestUser(id = 1L, appLoginActive = false)
+            val request = LoginRequest("12345678", "password123", deviceId = "device-123")
+
+            whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(user))
+            whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
+
+            // When & Then
+            assertThatThrownBy { authService.login(request) }
+                .isInstanceOf(AppLoginNotActiveException::class.java)
+        }
+
+        @Test
+        @DisplayName("Mobile null - appLoginActive=null이면 AppLoginNotActiveException")
+        fun mobileLogin_nullActive_throws() {
+            // Given
+            val user = createTestUser(id = 1L, appLoginActive = null)
+            val request = LoginRequest("12345678", "password123", deviceId = "device-123")
+
+            whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(user))
+            whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
+
+            // When & Then
+            assertThatThrownBy { authService.login(request) }
+                .isInstanceOf(AppLoginNotActiveException::class.java)
+        }
+    }
+
     // ========== Reset Device Tests ==========
 
     @Test
@@ -809,7 +919,8 @@ class AuthServiceTest {
         password: String = "encoded_password",
         name: String = "홍길동",
         orgName: String = "서울지점",
-        appAuthority: String? = null,
+        appAuthority: String? = "영업부장",
+        appLoginActive: Boolean? = true,
         passwordChangeRequired: Boolean = true,
         agreementFlag: Boolean? = null,
         deviceUuid: String? = null
@@ -821,6 +932,7 @@ class AuthServiceTest {
             name = name,
             orgName = orgName,
             appAuthority = appAuthority,
+            appLoginActive = appLoginActive,
             passwordChangeRequired = passwordChangeRequired,
             agreementFlag = agreementFlag,
             deviceUuid = deviceUuid

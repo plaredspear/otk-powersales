@@ -11,6 +11,7 @@ import com.otoki.internal.common.dto.response.*
 import com.otoki.internal.common.entity.AgreementHistory
 import com.otoki.internal.common.entity.LoginHistory
 import com.otoki.internal.sap.entity.User
+import com.otoki.internal.admin.security.AdminAuthorityFilter
 import com.otoki.internal.auth.exception.*
 import com.otoki.internal.common.exception.*
 import com.otoki.internal.common.repository.AgreementHistoryRepository
@@ -58,6 +59,9 @@ class AuthService(
         if (!passwordEncoder.matches(request.password, user.password)) {
             throw InvalidCredentialsException()
         }
+
+        // 로그인 권한 검증 (비밀번호 검증 이후, 단말기 바인딩 이전)
+        validateLoginAuthority(user, request.deviceId)
 
         // 단말기 바인딩 검증 (비밀번호 검증 이후)
         validateDeviceBinding(user, request.deviceId)
@@ -113,6 +117,25 @@ class AuthService(
 
         if (user.deviceUuid != deviceId) {
             throw DeviceMismatchException()
+        }
+    }
+
+    /**
+     * 로그인 권한 검증
+     * - WEB (deviceId 미전달): appAuthority가 허용 목록에 포함되어야 함
+     * - Mobile (deviceId 전달): appLoginActive가 true여야 함
+     */
+    private fun validateLoginAuthority(user: User, deviceId: String?) {
+        if (deviceId.isNullOrBlank()) {
+            // WEB 로그인
+            if (user.appAuthority == null || user.appAuthority !in AdminAuthorityFilter.ALLOWED_AUTHORITIES) {
+                throw WebLoginNotAllowedException()
+            }
+        } else {
+            // Mobile 로그인
+            if (user.appLoginActive != true) {
+                throw AppLoginNotActiveException()
+            }
         }
     }
 
