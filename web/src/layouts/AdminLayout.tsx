@@ -14,6 +14,7 @@ import {
   UserOutlined,
   SearchOutlined,
   FileTextOutlined,
+  NotificationOutlined,
   ScheduleOutlined,
 } from '@ant-design/icons';
 import { Button, Space, Typography } from 'antd';
@@ -60,6 +61,7 @@ const menuRoute = {
     { path: '/employee', name: '사원', icon: <UserOutlined /> },
     { path: '/field-inspection', name: '현장점검', icon: <SearchOutlined /> },
     { path: '/report', name: '보고서', icon: <FileTextOutlined /> },
+    { path: '/notices', name: '공지사항', icon: <NotificationOutlined /> },
   ],
 };
 

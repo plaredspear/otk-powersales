@@ -9,6 +9,8 @@ data class NoticePostDetailResponse(
     val categoryName: String,
     val title: String,
     val content: String,
+    val branch: String?,
+    val branchCode: String?,
     val createdAt: String,
     val images: List<NoticeImageResponse>
 )

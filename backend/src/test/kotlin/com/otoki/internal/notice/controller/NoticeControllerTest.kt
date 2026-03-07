@@ -190,6 +190,8 @@ class NoticeControllerTest {
                 categoryName = "전체공지",
                 title = "테스트 공지",
                 content = "본문 내용입니다.",
+                branch = null,
+                branchCode = null,
                 createdAt = "2026-02-28T10:30:00",
                 images = listOf(
                     NoticeImageResponse(id = 101L, url = "https://bucket.s3.ap-northeast-2.amazonaws.com/img.jpg", sortOrder = 0)
@@ -226,6 +228,8 @@ class NoticeControllerTest {
                 categoryName = "지점공지",
                 title = "지점 안내",
                 content = "지점 공지 본문",
+                branch = "서울1지점",
+                branchCode = "B001",
                 createdAt = "2026-01-01T00:00:00",
                 images = emptyList()
             )
