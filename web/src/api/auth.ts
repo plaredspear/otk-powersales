@@ -5,25 +5,31 @@ interface LoginRequest {
   password: string;
 }
 
-interface AuthUser {
+interface UserInfo {
   id: number;
   employee_id: string;
   name: string;
-  app_authority: string | null;
-  cost_center_code: string | null;
   org_name: string | null;
   role: string;
 }
 
-interface LoginData {
+interface TokenInfo {
   access_token: string;
   refresh_token: string;
-  user: AuthUser;
+  expires_in: number;
+}
+
+interface LoginData {
+  user: UserInfo;
+  token: TokenInfo;
+  requires_password_change: boolean;
+  requires_gps_consent: boolean;
 }
 
 interface RefreshData {
   access_token: string;
   refresh_token: string;
+  expires_in: number;
 }
 
 interface ApiResponse<T> {

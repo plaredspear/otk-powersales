@@ -5,8 +5,6 @@ export interface AuthUser {
   id: number;
   employeeId: string;
   name: string;
-  appAuthority: string | null;
-  costCenterCode: string | null;
   orgName: string | null;
   role: string;
 }
@@ -33,19 +31,17 @@ export const useAuthStore = create<AuthState>((set) => ({
       id: data.user.id,
       employeeId: data.user.employee_id,
       name: data.user.name,
-      appAuthority: data.user.app_authority,
-      costCenterCode: data.user.cost_center_code,
       orgName: data.user.org_name,
       role: data.user.role,
     };
 
-    localStorage.setItem('accessToken', data.access_token);
-    localStorage.setItem('refreshToken', data.refresh_token);
+    localStorage.setItem('accessToken', data.token.access_token);
+    localStorage.setItem('refreshToken', data.token.refresh_token);
     localStorage.setItem('user', JSON.stringify(user));
 
     set({
       user,
-      accessToken: data.access_token,
+      accessToken: data.token.access_token,
       isAuthenticated: true,
     });
   },

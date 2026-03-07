@@ -94,7 +94,6 @@ export default function AdminLayout() {
         <Space key="user" align="center">
           <Text>
             {user?.name}
-            {user?.appAuthority ? ` (${user.appAuthority})` : ''}
           </Text>
           <Button type="text" size="small" onClick={handleLogout}>
             로그아웃
