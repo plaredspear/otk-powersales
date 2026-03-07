@@ -81,7 +81,7 @@ class AdminNoticeControllerTest {
         fun getPosts_success() {
             val response = NoticePostListResponse(
                 content = listOf(
-                    NoticePostSummaryResponse(1L, "ALL", "전체공지", "테스트 공지", "2026-03-04T10:00:00")
+                    NoticePostSummaryResponse(1L, "COMPANY", "회사공지", "테스트 공지", "2026-03-04T10:00:00")
                 ),
                 totalCount = 1,
                 totalPages = 1,
@@ -107,8 +107,9 @@ class AdminNoticeControllerTest {
         fun getNoticeFormMeta_success() {
             val response = NoticeFormMetaResponse(
                 categories = listOf(
-                    CategoryOption("COMPANY", "전체공지"),
-                    CategoryOption("BRANCH", "지점공지")
+                    CategoryOption("COMPANY", "회사공지"),
+                    CategoryOption("BRANCH", "지점공지"),
+                    CategoryOption("EDUCATION", "교육")
                 ),
                 branches = listOf(
                     BranchOption("1101", "[제1사업부] 1영업부-서울1지점"),
@@ -122,7 +123,7 @@ class AdminNoticeControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.categories").isArray)
                 .andExpect(jsonPath("$.data.categories[0].code").value("COMPANY"))
-                .andExpect(jsonPath("$.data.categories[0].name").value("전체공지"))
+                .andExpect(jsonPath("$.data.categories[0].name").value("회사공지"))
                 .andExpect(jsonPath("$.data.branches").isArray)
                 .andExpect(jsonPath("$.data.branches[0].branch_code").value("1101"))
                 .andExpect(jsonPath("$.data.branches[0].branch_name").value("[제1사업부] 1영업부-서울1지점"))
@@ -138,8 +139,8 @@ class AdminNoticeControllerTest {
         fun getNoticeDetail_success() {
             val response = NoticePostDetailResponse(
                 id = 1L,
-                category = "ALL",
-                categoryName = "전체공지",
+                category = "COMPANY",
+                categoryName = "회사공지",
                 title = "공지 제목",
                 content = "<p>본문</p>",
                 branch = null,
@@ -173,7 +174,7 @@ class AdminNoticeControllerTest {
             val mutationResponse = NoticeMutationResponse(
                 id = 100L,
                 category = "COMPANY",
-                categoryName = "전체공지",
+                categoryName = "회사공지",
                 title = "새 공지",
                 content = "<p>내용</p>",
                 branch = null,
@@ -197,7 +198,7 @@ class AdminNoticeControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(100))
                 .andExpect(jsonPath("$.data.category").value("COMPANY"))
-                .andExpect(jsonPath("$.data.category_name").value("전체공지"))
+                .andExpect(jsonPath("$.data.category_name").value("회사공지"))
         }
 
         @Test
@@ -264,7 +265,7 @@ class AdminNoticeControllerTest {
             val mutationResponse = NoticeMutationResponse(
                 id = 10L,
                 category = "COMPANY",
-                categoryName = "전체공지",
+                categoryName = "회사공지",
                 title = "수정된 제목",
                 content = "<p>수정 내용</p>",
                 branch = null,

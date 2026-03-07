@@ -42,23 +42,12 @@ class NoticeService(
     companion object {
         private val DATE_TIME_FORMATTER: DateTimeFormatter =
             DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")
-
-        private val CATEGORY_MAP = mapOf(
-            "회사공지" to ("ALL" to "전체공지"),
-            "ALL" to ("ALL" to "전체공지"),
-            "영업부/지점공지" to ("BRANCH" to "지점공지"),
-            "BRANCH" to ("BRANCH" to "지점공지"),
-            "교육공지" to ("EDUCATION" to "교육공지"),
-            "EDUCATION" to ("EDUCATION" to "교육공지")
-        )
     }
 
     fun getNoticeDetail(noticeId: Long): NoticePostDetailResponse {
         val notice = noticeRepository.findById(noticeId)
             .filter { it.isDeleted != true }
             .orElseThrow { NoticePostNotFoundException() }
-
-        val (categoryCode, categoryName) = mapCategory(notice.category)
 
         val images = if (!notice.sfid.isNullOrBlank()) {
             uploadFileRepository.findByRecordIdAndIsDeletedFalse(notice.sfid!!)
@@ -77,8 +66,8 @@ class NoticeService(
 
         return NoticePostDetailResponse(
             id = notice.id,
-            category = categoryCode,
-            categoryName = categoryName,
+            category = notice.category?.apiCode ?: "",
+            categoryName = notice.category?.displayName ?: "",
             title = notice.name ?: "",
             content = notice.contents ?: "",
             branch = notice.branch,
@@ -93,24 +82,17 @@ class NoticeService(
             .orElseThrow { UserNotFoundException() }
         val branch = user.orgName ?: ""
 
-        if (category != null) {
-            try {
-                NoticeCategory.fromString(category)
-            } catch (_: IllegalArgumentException) {
-                throw InvalidNoticeCategoryException()
-            }
-        }
+        val parsedCategory = if (category != null) parseCategory(category) else null
 
         val truncatedSearch = search?.take(100)?.ifBlank { null }
         val pageable = PageRequest.of(page - 1, size)
-        val noticePage = noticeRepository.findNotices(category, truncatedSearch, branch, pageable)
+        val noticePage = noticeRepository.findNotices(parsedCategory, truncatedSearch, branch, pageable)
 
         val content = noticePage.content.map { notice ->
-            val (categoryCode, categoryName) = mapCategory(notice.category)
             NoticePostSummaryResponse(
                 id = notice.id,
-                category = categoryCode,
-                categoryName = categoryName,
+                category = notice.category?.apiCode ?: "",
+                categoryName = notice.category?.displayName ?: "",
                 title = notice.name ?: "",
                 createdAt = notice.createdDate?.format(DATE_TIME_FORMATTER) ?: ""
             )
@@ -126,24 +108,17 @@ class NoticeService(
     }
 
     fun getPostsForAdmin(category: String?, search: String?, page: Int, size: Int): NoticePostListResponse {
-        if (category != null) {
-            try {
-                NoticeCategory.fromString(category)
-            } catch (_: IllegalArgumentException) {
-                throw InvalidNoticeCategoryException()
-            }
-        }
+        val parsedCategory = if (category != null) parseCategory(category) else null
 
         val truncatedSearch = search?.take(100)?.ifBlank { null }
         val pageable = PageRequest.of(page - 1, size)
-        val noticePage = noticeRepository.findAllNotices(category, truncatedSearch, pageable)
+        val noticePage = noticeRepository.findAllNotices(parsedCategory, truncatedSearch, pageable)
 
         val content = noticePage.content.map { notice ->
-            val (categoryCode, categoryName) = mapCategory(notice.category)
             NoticePostSummaryResponse(
                 id = notice.id,
-                category = categoryCode,
-                categoryName = categoryName,
+                category = notice.category?.apiCode ?: "",
+                categoryName = notice.category?.displayName ?: "",
                 title = notice.name ?: "",
                 createdAt = notice.createdDate?.format(DATE_TIME_FORMATTER) ?: ""
             )
@@ -165,7 +140,7 @@ class NoticeService(
 
         val notice = Notice(
             name = request.title,
-            category = cat.dbValue,
+            category = cat,
             contents = request.content,
             branch = if (cat == NoticeCategory.BRANCH) request.branch else null,
             branchCode = if (cat == NoticeCategory.BRANCH) request.branchCode else null,
@@ -184,7 +159,7 @@ class NoticeService(
         validateBranch(cat, request.branch, request.branchCode)
 
         notice.name = request.title
-        notice.category = cat.dbValue
+        notice.category = cat
         notice.contents = request.content
         notice.branch = if (cat == NoticeCategory.BRANCH) request.branch else null
         notice.branchCode = if (cat == NoticeCategory.BRANCH) request.branchCode else null
@@ -203,7 +178,7 @@ class NoticeService(
 
     fun getNoticeFormMeta(): NoticeFormMetaResponse {
         val categories = NoticeCategory.entries.map {
-            CategoryOption(code = it.name, name = it.displayName)
+            CategoryOption(code = it.apiCode, name = it.displayName)
         }
 
         val branches = orgRepository.findAll()
@@ -236,7 +211,7 @@ class NoticeService(
 
     private fun parseCategory(category: String): NoticeCategory {
         return try {
-            NoticeCategory.fromString(category)
+            NoticeCategory.fromApiCode(category)
         } catch (_: IllegalArgumentException) {
             throw InvalidNoticeCategoryException()
         }
@@ -248,10 +223,5 @@ class NoticeService(
                 throw BranchRequiredException()
             }
         }
-    }
-
-    private fun mapCategory(category: String?): Pair<String, String> {
-        if (category.isNullOrBlank()) return "" to ""
-        return CATEGORY_MAP[category] ?: (category to category)
     }
 }

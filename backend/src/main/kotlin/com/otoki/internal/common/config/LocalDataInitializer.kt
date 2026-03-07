@@ -5,6 +5,7 @@ import com.otoki.internal.sap.entity.User
 import com.otoki.internal.common.repository.AgreementWordRepository
 import com.otoki.internal.sap.repository.UserRepository
 import com.otoki.internal.notice.entity.Notice
+import com.otoki.internal.notice.entity.NoticeCategory
 import com.otoki.internal.notice.repository.NoticeRepository
 import com.otoki.internal.sap.entity.Org
 import com.otoki.internal.sap.repository.OrgRepository
@@ -118,7 +119,7 @@ class LocalDataInitializer(
         val notices = listOf(
             Notice(
                 name = "NTC-LOCAL-001",
-                category = "ALL",
+                category = NoticeCategory.COMPANY,
                 scope = "전체",
                 contents = """
                     |[LOCAL 개발용] 2026년 상반기 영업 목표 안내
@@ -135,7 +136,7 @@ class LocalDataInitializer(
             ),
             Notice(
                 name = "NTC-LOCAL-002",
-                category = "ALL",
+                category = NoticeCategory.COMPANY,
                 scope = "전체",
                 contents = """
                     |[LOCAL 개발용] 모바일 앱 업데이트 안내
@@ -154,7 +155,7 @@ class LocalDataInitializer(
             ),
             Notice(
                 name = "NTC-LOCAL-003",
-                category = "ALL",
+                category = NoticeCategory.EDUCATION,
                 scope = "전체",
                 contents = """
                     |[LOCAL 개발용] 하계 안전 교육 일정 안내
@@ -172,7 +173,7 @@ class LocalDataInitializer(
             ),
             Notice(
                 name = "NTC-LOCAL-004",
-                category = "BRANCH",
+                category = NoticeCategory.BRANCH,
                 scope = "지점",
                 contents = """
                     |[LOCAL 개발용] 테스트지점 6월 회의 안내
@@ -190,7 +191,7 @@ class LocalDataInitializer(
             ),
             Notice(
                 name = "NTC-LOCAL-005",
-                category = "BRANCH",
+                category = NoticeCategory.BRANCH,
                 scope = "지점",
                 contents = """
                     |[LOCAL 개발용] 테스트지점 신제품 입고 안내

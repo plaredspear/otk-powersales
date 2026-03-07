@@ -106,7 +106,7 @@ class HomeService(
                 HomeResponse.NoticeInfo(
                     id = notice.id,
                     title = notice.name ?: "",
-                    type = notice.category ?: "",
+                    type = notice.category?.apiCode ?: "",
                     createdAt = notice.createdDate ?: LocalDateTime.MIN
                 )
             }

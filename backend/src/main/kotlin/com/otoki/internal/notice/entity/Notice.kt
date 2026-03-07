@@ -24,7 +24,8 @@ class Notice(
     val scope: String? = null,
 
     @Column(name = "dkretail__category__c", length = 255)
-    var category: String? = null,
+    @Convert(converter = NoticeCategoryConverter::class)
+    var category: NoticeCategory? = null,
 
     @Column(name = "dkretail__contents__c", columnDefinition = "TEXT")
     var contents: String? = null,
