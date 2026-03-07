@@ -7,6 +7,8 @@ export interface AuthUser {
   name: string;
   orgName: string | null;
   role: string;
+  appAuthority: string | null;
+  costCenterCode: string | null;
 }
 
 interface AuthState {
@@ -33,6 +35,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       name: data.user.name,
       orgName: data.user.org_name,
       role: data.user.role,
+      appAuthority: data.user.app_authority,
+      costCenterCode: data.user.cost_center_code,
     };
 
     localStorage.setItem('accessToken', data.token.access_token);
