@@ -49,7 +49,7 @@ function BasicStatsCard({ data }: BasicStatsCardProps) {
     <Card title="기본 현황" size="small">
       <Row gutter={24}>
         <Col xs={12} md={6}>
-          <Card size="small" title="판촉/OSC" bordered={false}>
+          <Card size="small" title="판촉/OSC" variant="borderless">
             <Row gutter={16}>
               <Col span={12}>
                 <Statistic title="판촉직" value={data.staffType.promotion} suffix="명" />
@@ -61,7 +61,7 @@ function BasicStatsCard({ data }: BasicStatsCardProps) {
           </Card>
         </Col>
         <Col xs={12} md={6}>
-          <Card size="small" title="총원" bordered={false}>
+          <Card size="small" title="총원" variant="borderless">
             <Row gutter={16}>
               <Col span={12}>
                 <Statistic title="재직" value={data.totalByPosition.active} suffix="명" />
@@ -73,12 +73,12 @@ function BasicStatsCard({ data }: BasicStatsCardProps) {
           </Card>
         </Col>
         <Col xs={24} md={6}>
-          <Card size="small" title="연령별" bordered={false}>
+          <Card size="small" title="연령별" variant="borderless">
             <ReactECharts option={ageBarOption} style={{ height: 160 }} />
           </Card>
         </Col>
         <Col xs={24} md={6}>
-          <Card size="small" title="근무형태별" bordered={false}>
+          <Card size="small" title="근무형태별" variant="borderless">
             <ReactECharts option={workTypeBarOption} style={{ height: 160 }} />
           </Card>
         </Col>
