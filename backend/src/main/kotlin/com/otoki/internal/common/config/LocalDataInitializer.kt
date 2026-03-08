@@ -42,7 +42,7 @@ class LocalDataInitializer(
     private fun seedUser() {
         val encodedPassword = passwordEncoder.encode("1234")
 
-        // 조장 (LEADER)
+        // 영업지원실 (ADMIN - 웹 관리자 전체 조회용)
         if (!userRepository.existsByEmployeeId("00000001")) {
             userRepository.save(
                 User(
@@ -51,7 +51,7 @@ class LocalDataInitializer(
                     status = "재직",
                     appLoginActive = true,
                     orgName = "테스트지점",
-                    appAuthority = "조장",
+                    appAuthority = "영업지원실",
                     birthDate = "19850315",
                     homePhone = "02-1234-5678",
                     workPhone = "02-9876-5432",
@@ -106,6 +106,50 @@ class LocalDataInitializer(
                 )
             )
             log.info("시드 계정 생성 완료: employeeId=00000003, name=지점장테스트, role=ADMIN")
+        }
+
+        // 강남지점 조장
+        if (!userRepository.existsByEmployeeId("00000004")) {
+            userRepository.save(
+                User(
+                    employeeId = "00000004",
+                    name = "강남조장",
+                    status = "재직",
+                    appLoginActive = true,
+                    orgName = "강남지점",
+                    appAuthority = "조장",
+                    birthDate = "19880510",
+                    homePhone = "02-4567-8901",
+                    workPhone = "02-6543-2109",
+                    startDate = LocalDate.of(2016, 5, 1),
+                    costCenterCode = "1112",
+                    password = encodedPassword,
+                    passwordChangeRequired = false
+                )
+            )
+            log.info("시드 계정 생성 완료: employeeId=00000004, name=강남조장, role=LEADER")
+        }
+
+        // 강남지점 여사원
+        if (!userRepository.existsByEmployeeId("00000005")) {
+            userRepository.save(
+                User(
+                    employeeId = "00000005",
+                    name = "강남여사원",
+                    status = "재직",
+                    appLoginActive = true,
+                    orgName = "강남지점",
+                    appAuthority = "여사원",
+                    birthDate = "19950320",
+                    homePhone = "02-5678-9012",
+                    workPhone = "02-5432-1098",
+                    startDate = LocalDate.of(2020, 3, 1),
+                    costCenterCode = "1112",
+                    password = encodedPassword,
+                    passwordChangeRequired = false
+                )
+            )
+            log.info("시드 계정 생성 완료: employeeId=00000005, name=강남여사원, role=USER")
         }
     }
 
