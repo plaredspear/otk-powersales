@@ -63,6 +63,33 @@ export function useBreadcrumb(
       ];
     }
 
+    // Dynamic routes for promotions
+    if (pathname === '/promotions/new') {
+      return [
+        { label: '행사마스터', path: '/promotions' },
+        { label: '행사마스터 등록', path: null },
+      ];
+    }
+
+    const promotionEditMatch = /^\/promotions\/(\d+)\/edit$/.exec(pathname);
+    if (promotionEditMatch) {
+      const promoId = promotionEditMatch[1];
+      return [
+        { label: '행사마스터', path: '/promotions' },
+        { label: dynamicTitle ?? promoId, path: `/promotions/${promoId}` },
+        { label: '수정', path: null },
+      ];
+    }
+
+    const promotionDetailMatch = /^\/promotions\/(\d+)$/.exec(pathname);
+    if (promotionDetailMatch) {
+      const promoId = promotionDetailMatch[1];
+      return [
+        { label: '행사마스터', path: '/promotions' },
+        { label: dynamicTitle ?? promoId, path: null },
+      ];
+    }
+
     // No mapping found
     return null;
   }, [pathname, dynamicTitle]);

@@ -17,6 +17,7 @@ interface ProductListRaw {
 }
 
 interface ProductItemRaw {
+  id: number;
   product_code: string | null;
   name: string | null;
   category1: string | null;
@@ -42,6 +43,7 @@ export interface FetchProductsParams {
 }
 
 export interface Product {
+  id: number;
   productCode: string | null;
   name: string | null;
   category1: string | null;
@@ -77,6 +79,7 @@ interface Category2Node {
 function mapProductList(raw: ProductListRaw): ProductListData {
   return {
     content: raw.content.map((item) => ({
+      id: item.id,
       productCode: item.product_code,
       name: item.name,
       category1: item.category1,
