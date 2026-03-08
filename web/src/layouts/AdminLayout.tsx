@@ -41,10 +41,15 @@ export default function AdminLayout() {
             </Button>
           </Space>,
         ]}
+        headerRender={(_props, defaultDom) => (
+          <>
+            {defaultDom}
+            <AppBreadcrumb />
+          </>
+        )}
         style={{ minHeight: '100vh' }}
         contentStyle={{ margin: 0 }}
       >
-        <AppBreadcrumb />
         <Outlet />
       </ProLayout>
     </BreadcrumbProvider>
