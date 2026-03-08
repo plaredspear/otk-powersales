@@ -1,6 +1,7 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { notification } from 'antd';
 import { refreshToken } from './auth';
+import queryClient from '@/lib/queryClient';
 
 const client = axios.create({
   baseURL: '',
@@ -92,6 +93,7 @@ client.interceptors.response.use(
 );
 
 function handleLogout() {
+  queryClient.clear();
   localStorage.removeItem('accessToken');
   localStorage.removeItem('refreshToken');
   localStorage.removeItem('user');
