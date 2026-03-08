@@ -67,6 +67,7 @@ class AdminAccountControllerTest {
             val response = AccountListResponse(
                 content = listOf(
                     AccountListItem(
+                        id = 1,
                         externalKey = "AC001234",
                         name = "GS25 역삼점",
                         abcType = "편의점",

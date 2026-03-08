@@ -11,6 +11,7 @@ data class ProductListResponse(
 )
 
 data class ProductListItem(
+    val id: Long,
     val productCode: String?,
     val name: String?,
     val category1: String?,
@@ -24,6 +25,7 @@ data class ProductListItem(
 ) {
     companion object {
         fun from(product: Product): ProductListItem = ProductListItem(
+            id = product.id,
             productCode = product.productCode,
             name = product.name,
             category1 = product.category1,

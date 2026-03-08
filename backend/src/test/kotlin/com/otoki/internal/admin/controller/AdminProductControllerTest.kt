@@ -68,6 +68,7 @@ class AdminProductControllerTest {
             val response = ProductListResponse(
                 content = listOf(
                     ProductListItem(
+                        id = 1L,
                         productCode = "P001",
                         name = "진라면 매운맛",
                         category1 = "면류",

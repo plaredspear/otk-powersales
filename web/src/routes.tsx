@@ -23,6 +23,9 @@ const ReportPage = lazy(() => import('@/pages/ReportPage'));
 const NoticeListPage = lazy(() => import('@/pages/notice/NoticeListPage'));
 const NoticeDetailPage = lazy(() => import('@/pages/notice/NoticeDetailPage'));
 const NoticeFormPage = lazy(() => import('@/pages/notice/NoticeFormPage'));
+const PromotionListPage = lazy(() => import('@/pages/promotion/PromotionListPage'));
+const PromotionDetailPage = lazy(() => import('@/pages/promotion/PromotionDetailPage'));
+const PromotionFormPage = lazy(() => import('@/pages/promotion/PromotionFormPage'));
 
 // eslint-disable-next-line react-refresh/only-export-components
 function LazyWrapper({ children }: { children: React.ReactNode }) {
@@ -76,6 +79,10 @@ export const router = createBrowserRouter(
             { path: '/notices/new', element: <LazyWrapper><NoticeFormPage /></LazyWrapper> },
             { path: '/notices/:id', element: <LazyWrapper><NoticeDetailPage /></LazyWrapper> },
             { path: '/notices/:id/edit', element: <LazyWrapper><NoticeFormPage /></LazyWrapper> },
+            { path: '/promotions', element: <LazyWrapper><PromotionListPage /></LazyWrapper> },
+            { path: '/promotions/new', element: <LazyWrapper><PromotionFormPage /></LazyWrapper> },
+            { path: '/promotions/:id', element: <LazyWrapper><PromotionDetailPage /></LazyWrapper> },
+            { path: '/promotions/:id/edit', element: <LazyWrapper><PromotionFormPage /></LazyWrapper> },
             { path: '*', element: <Navigate to="/" replace /> },
           ],
         },

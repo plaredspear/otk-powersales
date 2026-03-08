@@ -11,6 +11,7 @@ data class AccountListResponse(
 )
 
 data class AccountListItem(
+    val id: Int,
     val externalKey: String?,
     val name: String?,
     val abcType: String?,
@@ -23,6 +24,7 @@ data class AccountListItem(
 ) {
     companion object {
         fun from(account: Account): AccountListItem = AccountListItem(
+            id = account.id,
             externalKey = account.externalKey,
             name = account.name,
             abcType = account.abcType,

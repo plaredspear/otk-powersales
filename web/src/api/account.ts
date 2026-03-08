@@ -17,6 +17,7 @@ interface AccountListRaw {
 }
 
 interface AccountItemRaw {
+  id: number;
   external_key: string | null;
   name: string | null;
   abc_type: string | null;
@@ -40,6 +41,7 @@ export interface FetchAccountsParams {
 }
 
 export interface Account {
+  id: number;
   externalKey: string | null;
   name: string | null;
   abcType: string | null;
@@ -64,6 +66,7 @@ export interface AccountListData {
 function mapAccountList(raw: AccountListRaw): AccountListData {
   return {
     content: raw.content.map((item) => ({
+      id: item.id,
       externalKey: item.external_key,
       name: item.name,
       abcType: item.abc_type,
