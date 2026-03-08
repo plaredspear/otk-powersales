@@ -3,6 +3,7 @@ import ProLayout from '@ant-design/pro-layout';
 import { Button, Space, Typography } from 'antd';
 import { useAuthStore } from '@/stores/authStore';
 import { menuRoute } from '@/config/menuConfig';
+import queryClient from '@/lib/queryClient';
 import { BreadcrumbProvider } from '@/contexts/BreadcrumbContext';
 import AppBreadcrumb from '@/components/AppBreadcrumb';
 
@@ -14,6 +15,7 @@ export default function AdminLayout() {
   const { user, logout } = useAuthStore();
 
   const handleLogout = () => {
+    queryClient.clear();
     logout();
     navigate('/login', { replace: true });
   };
