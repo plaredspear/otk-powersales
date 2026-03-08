@@ -1,12 +1,13 @@
+import { useContext } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Breadcrumb } from 'antd';
 import { useBreadcrumb } from '@/hooks/useBreadcrumb';
-import { useBreadcrumbContext } from '@/contexts/BreadcrumbContext';
+import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
 
 export default function AppBreadcrumb() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { dynamicTitle } = useBreadcrumbContext();
+  const { dynamicTitle } = useContext(BreadcrumbContext);
   const items = useBreadcrumb(pathname, dynamicTitle);
 
   if (!items || items.length === 0) return null;

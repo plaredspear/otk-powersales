@@ -1,11 +1,12 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useState, type ReactNode } from 'react';
 
 interface BreadcrumbContextValue {
   dynamicTitle: string | null;
   setDynamicTitle: (title: string | null) => void;
 }
 
-const BreadcrumbContext = createContext<BreadcrumbContextValue>({
+// eslint-disable-next-line react-refresh/only-export-components
+export const BreadcrumbContext = createContext<BreadcrumbContextValue>({
   dynamicTitle: null,
   setDynamicTitle: () => {},
 });
@@ -18,8 +19,4 @@ export function BreadcrumbProvider({ children }: { children: ReactNode }) {
       {children}
     </BreadcrumbContext>
   );
-}
-
-export function useBreadcrumbContext() {
-  return useContext(BreadcrumbContext);
 }

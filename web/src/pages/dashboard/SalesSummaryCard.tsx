@@ -1,4 +1,3 @@
-import { memo } from 'react';
 import { Card, Col, Row, Statistic, Typography } from 'antd';
 import ReactECharts from 'echarts-for-react';
 import type { SalesSummary } from '@/api/dashboard';
@@ -138,4 +137,4 @@ function SalesSummaryCard({ data }: SalesSummaryCardProps) {
   );
 }
 
-export default memo(SalesSummaryCard);
+export default SalesSummaryCard;

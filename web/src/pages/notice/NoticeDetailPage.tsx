@@ -1,10 +1,10 @@
-import { useEffect } from 'react';
+import { useContext, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button, Descriptions, Modal, Space, Spin, Tag, Typography, message } from 'antd';
 import DOMPurify from 'dompurify';
 import { useNoticeDetail } from '@/hooks/notice/useNoticeDetail';
 import { useDeleteNotice } from '@/hooks/notice/useNoticeMutation';
-import { useBreadcrumbContext } from '@/contexts/BreadcrumbContext';
+import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
 
 const { Title } = Typography;
 
@@ -20,7 +20,7 @@ export default function NoticeDetailPage() {
 
   const { data: notice, isLoading, error } = useNoticeDetail(noticeId);
   const deleteMutation = useDeleteNotice();
-  const { setDynamicTitle } = useBreadcrumbContext();
+  const { setDynamicTitle } = useContext(BreadcrumbContext);
 
   useEffect(() => {
     setDynamicTitle(notice?.title ?? null);

@@ -1,4 +1,3 @@
-import { memo } from 'react';
 import { Card, Col, Row, Statistic } from 'antd';
 import ReactECharts from 'echarts-for-react';
 import type { BasicStats } from '@/api/dashboard';
@@ -88,4 +87,4 @@ function BasicStatsCard({ data }: BasicStatsCardProps) {
   );
 }
 
-export default memo(BasicStatsCard);
+export default BasicStatsCard;
