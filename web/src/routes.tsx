@@ -23,6 +23,7 @@ const NoticeListPage = lazy(() => import('@/pages/notice/NoticeListPage'));
 const NoticeDetailPage = lazy(() => import('@/pages/notice/NoticeDetailPage'));
 const NoticeFormPage = lazy(() => import('@/pages/notice/NoticeFormPage'));
 
+// eslint-disable-next-line react-refresh/only-export-components
 function LazyWrapper({ children }: { children: React.ReactNode }) {
   return (
     <Suspense
