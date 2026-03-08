@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 /**
  * 거래처 마스터 Repository
  */
-interface AccountRepository : JpaRepository<Account, Int> {
+interface AccountRepository : JpaRepository<Account, Int>, AccountRepositoryCustom {
 
     /**
      * 거래처 외부키(SAP 코드)로 조회
