@@ -59,7 +59,7 @@ export default function AdminLayout() {
     }
 
     return null;
-  }, [location.pathname]);
+  }, [location]);
 
   return (
     <ProLayout
