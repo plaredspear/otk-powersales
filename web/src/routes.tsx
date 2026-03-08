@@ -39,45 +39,56 @@ function LazyWrapper({ children }: { children: React.ReactNode }) {
   );
 }
 
-export const router = createBrowserRouter([
+export const router = createBrowserRouter(
+  [
+    {
+      path: '/login',
+      element: (
+        <LazyWrapper>
+          <LoginPage />
+        </LazyWrapper>
+      ),
+    },
+    {
+      element: <ProtectedRoute />,
+      children: [
+        {
+          element: <AdminLayout />,
+          children: [
+            { path: '/', element: <LazyWrapper><DashboardPage /></LazyWrapper> },
+            { path: '/sales/monthly', element: <LazyWrapper><SalesQueryPage /></LazyWrapper> },
+            { path: '/sales/electronic', element: <LazyWrapper><SalesQueryPage /></LazyWrapper> },
+            { path: '/sales/pos', element: <LazyWrapper><SalesQueryPage /></LazyWrapper> },
+            { path: '/schedule', element: <LazyWrapper><SchedulePage /></LazyWrapper> },
+            { path: '/deployment', element: <LazyWrapper><DeploymentPage /></LazyWrapper> },
+            { path: '/attendance', element: <LazyWrapper><AttendancePage /></LazyWrapper> },
+            { path: '/event-team', element: <LazyWrapper><EventTeamPage /></LazyWrapper> },
+            { path: '/claim', element: <LazyWrapper><ClaimPage /></LazyWrapper> },
+            { path: '/suggestion', element: <LazyWrapper><SuggestionPage /></LazyWrapper> },
+            { path: '/leave', element: <LazyWrapper><LeavePage /></LazyWrapper> },
+            { path: '/safety-check', element: <LazyWrapper><SafetyCheckPage /></LazyWrapper> },
+            { path: '/product', element: <LazyWrapper><ProductPage /></LazyWrapper> },
+            { path: '/account', element: <LazyWrapper><AccountPage /></LazyWrapper> },
+            { path: '/employee', element: <LazyWrapper><EmployeePage /></LazyWrapper> },
+            { path: '/field-inspection', element: <LazyWrapper><FieldInspectionPage /></LazyWrapper> },
+            { path: '/report', element: <LazyWrapper><ReportPage /></LazyWrapper> },
+            { path: '/notices', element: <LazyWrapper><NoticeListPage /></LazyWrapper> },
+            { path: '/notices/new', element: <LazyWrapper><NoticeFormPage /></LazyWrapper> },
+            { path: '/notices/:id', element: <LazyWrapper><NoticeDetailPage /></LazyWrapper> },
+            { path: '/notices/:id/edit', element: <LazyWrapper><NoticeFormPage /></LazyWrapper> },
+            { path: '*', element: <Navigate to="/" replace /> },
+          ],
+        },
+      ],
+    },
+  ],
   {
-    path: '/login',
-    element: (
-      <LazyWrapper>
-        <LoginPage />
-      </LazyWrapper>
-    ),
+    future: {
+      v7_relativeSplatPath: true,
+      v7_fetcherPersist: true,
+      v7_normalizeFormMethod: true,
+      v7_partialHydration: true,
+      v7_skipActionErrorRevalidation: true,
+    },
   },
-  {
-    element: <ProtectedRoute />,
-    children: [
-      {
-        element: <AdminLayout />,
-        children: [
-          { path: '/', element: <LazyWrapper><DashboardPage /></LazyWrapper> },
-          { path: '/sales/monthly', element: <LazyWrapper><SalesQueryPage /></LazyWrapper> },
-          { path: '/sales/electronic', element: <LazyWrapper><SalesQueryPage /></LazyWrapper> },
-          { path: '/sales/pos', element: <LazyWrapper><SalesQueryPage /></LazyWrapper> },
-          { path: '/schedule', element: <LazyWrapper><SchedulePage /></LazyWrapper> },
-          { path: '/deployment', element: <LazyWrapper><DeploymentPage /></LazyWrapper> },
-          { path: '/attendance', element: <LazyWrapper><AttendancePage /></LazyWrapper> },
-          { path: '/event-team', element: <LazyWrapper><EventTeamPage /></LazyWrapper> },
-          { path: '/claim', element: <LazyWrapper><ClaimPage /></LazyWrapper> },
-          { path: '/suggestion', element: <LazyWrapper><SuggestionPage /></LazyWrapper> },
-          { path: '/leave', element: <LazyWrapper><LeavePage /></LazyWrapper> },
-          { path: '/safety-check', element: <LazyWrapper><SafetyCheckPage /></LazyWrapper> },
-          { path: '/product', element: <LazyWrapper><ProductPage /></LazyWrapper> },
-          { path: '/account', element: <LazyWrapper><AccountPage /></LazyWrapper> },
-          { path: '/employee', element: <LazyWrapper><EmployeePage /></LazyWrapper> },
-          { path: '/field-inspection', element: <LazyWrapper><FieldInspectionPage /></LazyWrapper> },
-          { path: '/report', element: <LazyWrapper><ReportPage /></LazyWrapper> },
-          { path: '/notices', element: <LazyWrapper><NoticeListPage /></LazyWrapper> },
-          { path: '/notices/new', element: <LazyWrapper><NoticeFormPage /></LazyWrapper> },
-          { path: '/notices/:id', element: <LazyWrapper><NoticeDetailPage /></LazyWrapper> },
-          { path: '/notices/:id/edit', element: <LazyWrapper><NoticeFormPage /></LazyWrapper> },
-          { path: '*', element: <Navigate to="/" replace /> },
-        ],
-      },
-    ],
-  },
-]);
+);
