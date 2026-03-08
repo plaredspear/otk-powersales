@@ -6,6 +6,7 @@ import 'react-quill-new/dist/quill.snow.css';
 import { useNoticeDetail } from '@/hooks/notice/useNoticeDetail';
 import { useNoticeFormMeta } from '@/hooks/notice/useNoticeFormMeta';
 import { useCreateNotice, useUpdateNotice } from '@/hooks/notice/useNoticeMutation';
+import { useBreadcrumbContext } from '@/contexts/BreadcrumbContext';
 
 const { Title } = Typography;
 
@@ -34,10 +35,18 @@ export default function NoticeFormPage() {
   const [form] = Form.useForm<FormValues>();
   const categoryValue = Form.useWatch('category', form);
 
+  const { setDynamicTitle } = useBreadcrumbContext();
   const { data: formMeta, isLoading: metaLoading } = useNoticeFormMeta();
   const { data: notice, isLoading: detailLoading } = useNoticeDetail(isEdit ? noticeId : 0);
   const createMutation = useCreateNotice();
   const updateMutation = useUpdateNotice();
+
+  useEffect(() => {
+    if (isEdit) {
+      setDynamicTitle(notice?.title ?? null);
+    }
+    return () => setDynamicTitle(null);
+  }, [isEdit, notice?.title, setDynamicTitle]);
 
   useEffect(() => {
     if (isEdit && notice) {
