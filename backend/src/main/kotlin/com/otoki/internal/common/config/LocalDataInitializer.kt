@@ -1,8 +1,10 @@
 package com.otoki.internal.common.config
 
 import com.otoki.internal.common.entity.AgreementWord
+import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.sap.entity.User
 import com.otoki.internal.common.repository.AgreementWordRepository
+import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.sap.repository.UserRepository
 import com.otoki.internal.notice.entity.Notice
 import com.otoki.internal.notice.entity.NoticeCategory
@@ -26,7 +28,8 @@ class LocalDataInitializer(
     private val passwordEncoder: PasswordEncoder,
     private val agreementWordRepository: AgreementWordRepository,
     private val noticeRepository: NoticeRepository,
-    private val orgRepository: OrgRepository
+    private val orgRepository: OrgRepository,
+    private val accountRepository: AccountRepository
 ) : ApplicationRunner {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -37,6 +40,7 @@ class LocalDataInitializer(
         seedAgreementWord()
         seedNotices()
         seedOrg()
+        seedAccounts()
     }
 
     private fun seedUser() {
@@ -284,6 +288,95 @@ class LocalDataInitializer(
 
         agreementWordRepository.save(agreementWord)
         log.info("GPS 동의 약관 시드 데이터 생성 완료: name={}", agreementWord.name)
+    }
+
+    private fun seedAccounts() {
+        if (accountRepository.count() > 0) {
+            log.info("거래처 마스터가 이미 존재합니다 — skip")
+            return
+        }
+
+        val now = LocalDateTime.now()
+        val accounts = listOf(
+            Account(
+                name = "GS25 역삼점", sfid = "001LOCAL00001", externalKey = "EXT-LOCAL-001",
+                accountGroup = "CVS", industry = "편의점", abcType = "A",
+                branchCode = "1111", branchName = "테스트지점",
+                employeeCode = "00000002", accountStatusName = "거래중",
+                accountType = "10", accountStatusCode = "01",
+                businessType = "소매", businessCategory = "편의점",
+                divisionCode = "1000", divisionName = "식품사업부",
+                salesDeptCode = "1110", salesDeptName = "수도권영업부",
+                distribution = "Y", consignmentAcc = "N",
+                werk1 = "1000", werk1Tx = "오뚜기",
+                orgCd3 = "O110", orgCd4 = "O111", orgCd5 = "O1111",
+                isDeleted = false,
+                createdDate = now.minusDays(30), createdAt = now.minusDays(30), updatedAt = now
+            ),
+            Account(
+                name = "이마트 강남점", sfid = "001LOCAL00002", externalKey = "EXT-LOCAL-002",
+                accountGroup = "LMT", industry = "대형마트", abcType = "S",
+                branchCode = "1111", branchName = "테스트지점",
+                employeeCode = "00000002", accountStatusName = "거래중",
+                accountType = "20", accountStatusCode = "01",
+                businessType = "소매", businessCategory = "대형마트",
+                divisionCode = "1000", divisionName = "식품사업부",
+                salesDeptCode = "1110", salesDeptName = "수도권영업부",
+                distribution = "Y", consignmentAcc = "N",
+                werk1 = "1000", werk1Tx = "오뚜기",
+                orgCd3 = "O110", orgCd4 = "O111", orgCd5 = "O1111",
+                isDeleted = false,
+                createdDate = now.minusDays(25), createdAt = now.minusDays(25), updatedAt = now
+            ),
+            Account(
+                name = "CU 서초중앙점", sfid = "001LOCAL00003", externalKey = "EXT-LOCAL-003",
+                accountGroup = "CVS", industry = "편의점", abcType = "B",
+                branchCode = "1111", branchName = "테스트지점",
+                employeeCode = "00000001", accountStatusName = "거래중",
+                accountType = "10", accountStatusCode = "01",
+                businessType = "소매", businessCategory = "편의점",
+                divisionCode = "1000", divisionName = "식품사업부",
+                salesDeptCode = "1110", salesDeptName = "수도권영업부",
+                distribution = "Y", consignmentAcc = "N",
+                werk1 = "1000", werk1Tx = "오뚜기",
+                orgCd3 = "O110", orgCd4 = "O111", orgCd5 = "O1111",
+                isDeleted = false,
+                createdDate = now.minusDays(20), createdAt = now.minusDays(20), updatedAt = now
+            ),
+            Account(
+                name = "홈플러스 논현점", sfid = "001LOCAL00004", externalKey = "EXT-LOCAL-004",
+                accountGroup = "LMT", industry = "대형마트", abcType = "A",
+                branchCode = "1112", branchName = "강남지점",
+                employeeCode = "00000005", accountStatusName = "거래중",
+                accountType = "20", accountStatusCode = "01",
+                businessType = "소매", businessCategory = "대형마트",
+                divisionCode = "1000", divisionName = "식품사업부",
+                salesDeptCode = "1110", salesDeptName = "수도권영업부",
+                distribution = "Y", consignmentAcc = "N",
+                werk1 = "1000", werk1Tx = "오뚜기",
+                orgCd3 = "O110", orgCd4 = "O111", orgCd5 = "O1112",
+                isDeleted = false,
+                createdDate = now.minusDays(15), createdAt = now.minusDays(15), updatedAt = now
+            ),
+            Account(
+                name = "세븐일레븐 대전둔산점", sfid = "001LOCAL00005", externalKey = "EXT-LOCAL-005",
+                accountGroup = "CVS", industry = "편의점", abcType = "C",
+                branchCode = "1121", branchName = "대전지점",
+                employeeCode = "00000001", accountStatusName = "거래중지",
+                accountType = "10", accountStatusCode = "02",
+                businessType = "소매", businessCategory = "편의점",
+                divisionCode = "1000", divisionName = "식품사업부",
+                salesDeptCode = "1120", salesDeptName = "중부영업부",
+                distribution = "N", consignmentAcc = "N",
+                werk1 = "1000", werk1Tx = "오뚜기",
+                orgCd3 = "O110", orgCd4 = "O112", orgCd5 = "O1121",
+                isDeleted = false,
+                createdDate = now.minusDays(10), createdAt = now.minusDays(10), updatedAt = now
+            )
+        )
+
+        accountRepository.saveAll(accounts)
+        log.info("거래처 마스터 시드 데이터 생성 완료: {}건", accounts.size)
     }
 
     private fun seedOrg() {
