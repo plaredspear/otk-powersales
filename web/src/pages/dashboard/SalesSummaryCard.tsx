@@ -25,6 +25,21 @@ interface SalesSummaryCardProps {
 }
 
 function SalesSummaryCard({ data }: SalesSummaryCardProps) {
+  const axisLineColor: Array<[number, string]> = data.referenceProgressRate
+    ? (() => {
+        const boundary = data.referenceProgressRate / 100;
+        return [
+          [boundary * 0.77, '#ff4d4f'],
+          [boundary, '#faad14'],
+          [1, '#52c41a'],
+        ];
+      })()
+    : [
+        [0.5, '#ff4d4f'],
+        [0.8, '#faad14'],
+        [1, '#52c41a'],
+      ];
+
   const gaugeOption = {
     series: [
       {
@@ -37,11 +52,7 @@ function SalesSummaryCard({ data }: SalesSummaryCardProps) {
         axisLine: {
           lineStyle: {
             width: 20,
-            color: [
-              [0.5, '#ff4d4f'],
-              [0.8, '#faad14'],
-              [1, '#52c41a'],
-            ],
+            color: axisLineColor,
           },
         },
         pointer: { length: '60%', width: 6 },
@@ -57,13 +68,6 @@ function SalesSummaryCard({ data }: SalesSummaryCardProps) {
         },
         title: { show: false },
         data: [{ value: data.progressRate }],
-        markLine: data.referenceProgressRate
-          ? {
-              silent: true,
-              symbol: 'none',
-              data: [{ yAxis: data.referenceProgressRate }],
-            }
-          : undefined,
       },
     ],
   };
