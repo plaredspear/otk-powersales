@@ -1,12 +1,13 @@
-import { useEffect } from 'react';
+import { useContext, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button, Form, Input, Select, Space, Spin, Typography, message } from 'antd';
+import type { FormInstance } from 'antd';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import { useNoticeDetail } from '@/hooks/notice/useNoticeDetail';
 import { useNoticeFormMeta } from '@/hooks/notice/useNoticeFormMeta';
 import { useCreateNotice, useUpdateNotice } from '@/hooks/notice/useNoticeMutation';
-import { useBreadcrumbContext } from '@/contexts/BreadcrumbContext';
+import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
 
 const { Title } = Typography;
 
@@ -26,6 +27,36 @@ interface FormValues {
   content: string;
 }
 
+function BranchField({
+  form,
+  branches,
+}: {
+  form: FormInstance<FormValues>;
+  branches: Array<{ branchCode: string; branchName: string }>;
+}) {
+  const categoryValue = Form.useWatch('category', form);
+  if (categoryValue !== 'BRANCH') return null;
+
+  return (
+    <Form.Item
+      name="branch"
+      label="지점"
+      rules={[{ required: true, message: '지점을 선택해주세요' }]}
+    >
+      <Select
+        showSearch
+        labelInValue
+        placeholder="지점 선택"
+        optionFilterProp="label"
+        options={branches.map((b) => ({
+          value: b.branchCode,
+          label: b.branchName,
+        }))}
+      />
+    </Form.Item>
+  );
+}
+
 export default function NoticeFormPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -33,9 +64,8 @@ export default function NoticeFormPage() {
   const noticeId = Number(id);
 
   const [form] = Form.useForm<FormValues>();
-  const categoryValue = Form.useWatch('category', form);
 
-  const { setDynamicTitle } = useBreadcrumbContext();
+  const { setDynamicTitle } = useContext(BreadcrumbContext);
   const { data: formMeta, isLoading: metaLoading } = useNoticeFormMeta();
   const { data: notice, isLoading: detailLoading } = useNoticeDetail(isEdit ? noticeId : 0);
   const createMutation = useCreateNotice();
@@ -93,7 +123,6 @@ export default function NoticeFormPage() {
     );
   }
 
-  const isBranch = categoryValue === 'BRANCH';
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
   return (
@@ -117,24 +146,7 @@ export default function NoticeFormPage() {
           />
         </Form.Item>
 
-        {isBranch && (
-          <Form.Item
-            name="branch"
-            label="지점"
-            rules={[{ required: true, message: '지점을 선택해주세요' }]}
-          >
-            <Select
-              showSearch
-              labelInValue
-              placeholder="지점 선택"
-              optionFilterProp="label"
-              options={formMeta?.branches.map((b) => ({
-                value: b.branchCode,
-                label: b.branchName,
-              }))}
-            />
-          </Form.Item>
-        )}
+        <BranchField form={form} branches={formMeta?.branches ?? []} />
 
         <Form.Item
           name="title"

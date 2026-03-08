@@ -1,4 +1,3 @@
-import { memo } from 'react';
 import { Card, Col, Row, Typography } from 'antd';
 import ReactECharts from 'echarts-for-react';
 import type { StaffDeployment } from '@/api/dashboard';
@@ -129,4 +128,4 @@ function StaffDeploymentCard({ data }: StaffDeploymentCardProps) {
   );
 }
 
-export default memo(StaffDeploymentCard);
+export default StaffDeploymentCard;
