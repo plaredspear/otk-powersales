@@ -7,7 +7,7 @@ export function usePromotions(params: PromotionListParams) {
       'admin',
       'promotions',
       params.keyword,
-      params.promotionType,
+      params.promotionTypeId,
       params.category,
       params.startDate,
       params.endDate,

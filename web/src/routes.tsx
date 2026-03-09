@@ -26,6 +26,7 @@ const NoticeFormPage = lazy(() => import('@/pages/notice/NoticeFormPage'));
 const PromotionListPage = lazy(() => import('@/pages/promotion/PromotionListPage'));
 const PromotionDetailPage = lazy(() => import('@/pages/promotion/PromotionDetailPage'));
 const PromotionFormPage = lazy(() => import('@/pages/promotion/PromotionFormPage'));
+const PromotionTypesPage = lazy(() => import('@/pages/settings/PromotionTypesPage'));
 
 // eslint-disable-next-line react-refresh/only-export-components
 function LazyWrapper({ children }: { children: React.ReactNode }) {
@@ -83,6 +84,7 @@ export const router = createBrowserRouter(
             { path: '/promotions/new', element: <LazyWrapper><PromotionFormPage /></LazyWrapper> },
             { path: '/promotions/:id', element: <LazyWrapper><PromotionDetailPage /></LazyWrapper> },
             { path: '/promotions/:id/edit', element: <LazyWrapper><PromotionFormPage /></LazyWrapper> },
+            { path: '/settings/promotion-types', element: <LazyWrapper><PromotionTypesPage /></LazyWrapper> },
             { path: '*', element: <Navigate to="/" replace /> },
           ],
         },

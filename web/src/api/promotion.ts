@@ -20,12 +20,18 @@ interface PromotionListItemRaw {
   id: number;
   promotion_number: string;
   promotion_name: string;
-  promotion_type: string | null;
+  promotion_type_id: number | null;
+  promotion_type_name: string | null;
   account_name: string | null;
   start_date: string;
   end_date: string;
   target_amount: number | null;
+  actual_amount: number | null;
   category: string | null;
+  product_type: string | null;
+  branch_name: string | null;
+  professional_team: string | null;
+  is_closed: boolean;
   cost_center_code: string | null;
   is_deleted: boolean;
   created_at: string;
@@ -35,7 +41,8 @@ interface PromotionDetailRaw {
   id: number;
   promotion_number: string;
   promotion_name: string;
-  promotion_type: string | null;
+  promotion_type_id: number | null;
+  promotion_type_name: string | null;
   account_id: number;
   account_name: string | null;
   start_date: string;
@@ -46,8 +53,14 @@ interface PromotionDetailRaw {
   message: string | null;
   stand_location: string | null;
   target_amount: number | null;
+  actual_amount: number | null;
   cost_center_code: string | null;
   category: string | null;
+  product_type: string | null;
+  branch_name: string | null;
+  professional_team: string | null;
+  is_closed: boolean;
+  external_id: string | null;
   is_deleted: boolean;
   created_at: string;
   updated_at: string;
@@ -57,7 +70,7 @@ interface PromotionDetailRaw {
 
 export interface PromotionListParams {
   keyword?: string;
-  promotionType?: string;
+  promotionTypeId?: number;
   category?: string;
   startDate?: string;
   endDate?: string;
@@ -69,12 +82,18 @@ export interface PromotionListItem {
   id: number;
   promotionNumber: string;
   promotionName: string;
-  promotionType: string | null;
+  promotionTypeId: number | null;
+  promotionTypeName: string | null;
   accountName: string | null;
   startDate: string;
   endDate: string;
   targetAmount: number | null;
+  actualAmount: number | null;
   category: string | null;
+  productType: string | null;
+  branchName: string | null;
+  professionalTeam: string | null;
+  isClosed: boolean;
   costCenterCode: string | null;
   isDeleted: boolean;
   createdAt: string;
@@ -92,7 +111,8 @@ export interface PromotionDetail {
   id: number;
   promotionNumber: string;
   promotionName: string;
-  promotionType: string | null;
+  promotionTypeId: number | null;
+  promotionTypeName: string | null;
   accountId: number;
   accountName: string | null;
   startDate: string;
@@ -103,8 +123,14 @@ export interface PromotionDetail {
   message: string | null;
   standLocation: string | null;
   targetAmount: number | null;
+  actualAmount: number | null;
   costCenterCode: string | null;
   category: string | null;
+  productType: string | null;
+  branchName: string | null;
+  professionalTeam: string | null;
+  isClosed: boolean;
+  externalId: string | null;
   isDeleted: boolean;
   createdAt: string;
   updatedAt: string;
@@ -112,7 +138,7 @@ export interface PromotionDetail {
 
 export interface PromotionFormData {
   promotion_name: string;
-  promotion_type?: string | null;
+  promotion_type_id?: number | null;
   account_id: number;
   start_date: string;
   end_date: string;
@@ -121,6 +147,11 @@ export interface PromotionFormData {
   message?: string | null;
   stand_location?: string | null;
   target_amount?: number | null;
+  category?: string | null;
+  product_type?: string | null;
+  branch_name?: string | null;
+  professional_team?: string | null;
+  external_id?: string | null;
 }
 
 // --- Mappers ---
@@ -131,12 +162,18 @@ function mapPromotionList(raw: PromotionListRaw): PromotionListData {
       id: item.id,
       promotionNumber: item.promotion_number,
       promotionName: item.promotion_name,
-      promotionType: item.promotion_type,
+      promotionTypeId: item.promotion_type_id,
+      promotionTypeName: item.promotion_type_name,
       accountName: item.account_name,
       startDate: item.start_date,
       endDate: item.end_date,
       targetAmount: item.target_amount,
+      actualAmount: item.actual_amount,
       category: item.category,
+      productType: item.product_type,
+      branchName: item.branch_name,
+      professionalTeam: item.professional_team,
+      isClosed: item.is_closed,
       costCenterCode: item.cost_center_code,
       isDeleted: item.is_deleted,
       createdAt: item.created_at,
@@ -153,7 +190,8 @@ function mapPromotionDetail(raw: PromotionDetailRaw): PromotionDetail {
     id: raw.id,
     promotionNumber: raw.promotion_number,
     promotionName: raw.promotion_name,
-    promotionType: raw.promotion_type,
+    promotionTypeId: raw.promotion_type_id,
+    promotionTypeName: raw.promotion_type_name,
     accountId: raw.account_id,
     accountName: raw.account_name,
     startDate: raw.start_date,
@@ -164,8 +202,14 @@ function mapPromotionDetail(raw: PromotionDetailRaw): PromotionDetail {
     message: raw.message,
     standLocation: raw.stand_location,
     targetAmount: raw.target_amount,
+    actualAmount: raw.actual_amount,
     costCenterCode: raw.cost_center_code,
     category: raw.category,
+    productType: raw.product_type,
+    branchName: raw.branch_name,
+    professionalTeam: raw.professional_team,
+    isClosed: raw.is_closed,
+    externalId: raw.external_id,
     isDeleted: raw.is_deleted,
     createdAt: raw.created_at,
     updatedAt: raw.updated_at,
@@ -180,10 +224,10 @@ export async function fetchPromotions(params: PromotionListParams): Promise<Prom
     size: params.size,
   };
   if (params.keyword) queryParams.keyword = params.keyword;
-  if (params.promotionType) queryParams.promotion_type = params.promotionType;
+  if (params.promotionTypeId) queryParams.promotionTypeId = params.promotionTypeId;
   if (params.category) queryParams.category = params.category;
-  if (params.startDate) queryParams.start_date = params.startDate;
-  if (params.endDate) queryParams.end_date = params.endDate;
+  if (params.startDate) queryParams.startDate = params.startDate;
+  if (params.endDate) queryParams.endDate = params.endDate;
 
   const res = await client.get<ApiResponse<PromotionListRaw>>('/api/v1/admin/promotions', {
     params: queryParams,

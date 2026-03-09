@@ -4,10 +4,18 @@ import { Button, DatePicker, Input, Select, Table, Tag, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined } from '@ant-design/icons';
 import { usePromotions } from '@/hooks/promotion/usePromotions';
+import { usePromotionTypes } from '@/hooks/promotion/usePromotionTypes';
 import type { PromotionListItem } from '@/api/promotion';
 import dayjs from 'dayjs';
 
 const { Title } = Typography;
+
+const PROMOTION_TYPE_TAG: Record<string, string> = {
+  시식: 'blue',
+  시음: 'cyan',
+  판촉: 'green',
+  증정: 'gold',
+};
 
 const CATEGORY_TAG: Record<string, string> = {
   라면: 'red',
@@ -15,16 +23,6 @@ const CATEGORY_TAG: Record<string, string> = {
   냉동: 'cyan',
   만두: 'orange',
 };
-
-const PROMOTION_TYPE_TAG: Record<string, string> = {
-  특별행사: 'gold',
-};
-
-const PROMOTION_TYPE_OPTIONS = [
-  { value: '', label: '전체' },
-  { value: '일반행사', label: '일반행사' },
-  { value: '특별행사', label: '특별행사' },
-];
 
 const CATEGORY_OPTIONS = [
   { value: '', label: '전체' },
@@ -47,22 +45,29 @@ function formatDateRange(start: string, end: string): string {
 
 export default function PromotionListPage() {
   const navigate = useNavigate();
-  const [promotionType, setPromotionType] = useState<string | undefined>();
+  const [promotionTypeId, setPromotionTypeId] = useState<number | undefined>();
   const [category, setCategory] = useState<string | undefined>();
   const [startDate, setStartDate] = useState<string | undefined>();
   const [endDate, setEndDate] = useState<string | undefined>();
   const [keyword, setKeyword] = useState('');
   const [page, setPage] = useState(0);
 
+  const { data: promotionTypes } = usePromotionTypes();
   const { data, isLoading } = usePromotions({
     keyword: keyword || undefined,
-    promotionType,
+    promotionTypeId,
     category,
     startDate,
     endDate,
     page,
     size: 20,
   });
+
+  const promotionTypeOptions = [
+    { value: 0, label: '전체' },
+    ...(promotionTypes?.filter((t) => t.isActive).map((t) => ({ value: t.id, label: t.name })) ??
+      []),
+  ];
 
   const columns: ColumnsType<PromotionListItem> = [
     {
@@ -81,7 +86,7 @@ export default function PromotionListPage() {
     },
     {
       title: '유형',
-      dataIndex: 'promotionType',
+      dataIndex: 'promotionTypeName',
       width: 90,
       align: 'center',
       render: (val: string | null) => {
@@ -122,6 +127,34 @@ export default function PromotionListPage() {
       align: 'right',
       render: (val: number | null) => formatAmount(val),
     },
+    {
+      title: '실적금액',
+      dataIndex: 'actualAmount',
+      width: 110,
+      align: 'right',
+      render: (val: number | null) => formatAmount(val),
+    },
+    {
+      title: '제품유형',
+      dataIndex: 'productType',
+      width: 90,
+      align: 'center',
+      render: (val: string | null) => val ?? '-',
+    },
+    {
+      title: '지점명',
+      dataIndex: 'branchName',
+      width: 100,
+      ellipsis: true,
+      render: (val: string | null) => val ?? '-',
+    },
+    {
+      title: '마감',
+      dataIndex: 'isClosed',
+      width: 60,
+      align: 'center',
+      render: (val: boolean) => (val ? <Tag color="red">마감</Tag> : null),
+    },
   ];
 
   return (
@@ -145,10 +178,10 @@ export default function PromotionListPage() {
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         <Select
           style={{ width: 130 }}
-          value={promotionType ?? ''}
-          options={PROMOTION_TYPE_OPTIONS}
+          value={promotionTypeId ?? 0}
+          options={promotionTypeOptions}
           onChange={(val) => {
-            setPromotionType(val || undefined);
+            setPromotionTypeId(val || undefined);
             setPage(0);
           }}
         />
@@ -191,6 +224,7 @@ export default function PromotionListPage() {
         columns={columns}
         dataSource={data?.content}
         loading={isLoading}
+        scroll={{ x: 1300 }}
         pagination={{
           current: (data?.page ?? 0) + 1,
           total: data?.totalElements ?? 0,

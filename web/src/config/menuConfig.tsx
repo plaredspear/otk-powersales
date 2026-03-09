@@ -16,6 +16,7 @@ import {
   FileTextOutlined,
   NotificationOutlined,
   GiftOutlined,
+  SettingOutlined,
 } from '@ant-design/icons';
 
 export interface MenuItem {
@@ -72,5 +73,12 @@ export const menuRoute: MenuRoute = {
     { path: '/field-inspection', name: '현장점검', icon: <SearchOutlined /> },
     { path: '/report', name: '보고서', icon: <FileTextOutlined /> },
     { path: '/notices', name: '공지사항', icon: <NotificationOutlined /> },
+    {
+      name: '설정',
+      icon: <SettingOutlined />,
+      routes: [
+        { path: '/settings/promotion-types', name: '행사유형 관리' },
+      ],
+    },
   ],
 };

@@ -14,6 +14,13 @@ const CATEGORY_TAG: Record<string, string> = {
   만두: 'orange',
 };
 
+const PROMOTION_TYPE_TAG: Record<string, string> = {
+  시식: 'blue',
+  시음: 'cyan',
+  판촉: 'green',
+  증정: 'gold',
+};
+
 export default function PromotionDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -69,6 +76,9 @@ export default function PromotionDetailPage() {
   }
 
   const categoryColor = promotion.category ? CATEGORY_TAG[promotion.category] : undefined;
+  const typeColor = promotion.promotionTypeName
+    ? PROMOTION_TYPE_TAG[promotion.promotionTypeName]
+    : undefined;
 
   return (
     <div style={{ padding: 24 }}>
@@ -99,7 +109,11 @@ export default function PromotionDetailPage() {
         <Descriptions.Item label="행사번호">{promotion.promotionNumber}</Descriptions.Item>
         <Descriptions.Item label="행사명">{promotion.promotionName}</Descriptions.Item>
         <Descriptions.Item label="행사유형">
-          {promotion.promotionType ?? '-'}
+          {promotion.promotionTypeName ? (
+            <Tag color={typeColor}>{promotion.promotionTypeName}</Tag>
+          ) : (
+            '-'
+          )}
         </Descriptions.Item>
         <Descriptions.Item label="거래처">{promotion.accountName ?? '-'}</Descriptions.Item>
         <Descriptions.Item label="기간">
@@ -108,6 +122,7 @@ export default function PromotionDetailPage() {
         <Descriptions.Item label="대표상품">
           {promotion.primaryProductName ?? '-'}
         </Descriptions.Item>
+        <Descriptions.Item label="기타상품">{promotion.otherProduct ?? '-'}</Descriptions.Item>
         <Descriptions.Item label="카테고리">
           {promotion.category ? (
             <Tag color={categoryColor}>{promotion.category}</Tag>
@@ -115,17 +130,36 @@ export default function PromotionDetailPage() {
             '-'
           )}
         </Descriptions.Item>
-        <Descriptions.Item label="기타상품">{promotion.otherProduct ?? '-'}</Descriptions.Item>
+        <Descriptions.Item label="제품유형">{promotion.productType ?? '-'}</Descriptions.Item>
+        <Descriptions.Item label="지점명">{promotion.branchName ?? '-'}</Descriptions.Item>
+        <Descriptions.Item label="전문행사조">
+          {promotion.professionalTeam ?? '-'}
+        </Descriptions.Item>
         <Descriptions.Item label="매대위치">{promotion.standLocation ?? '-'}</Descriptions.Item>
-        <Descriptions.Item label="메시지">{promotion.message ?? '-'}</Descriptions.Item>
         <Descriptions.Item label="목표금액">
           {promotion.targetAmount != null
             ? `${promotion.targetAmount.toLocaleString()}원`
             : '-'}
         </Descriptions.Item>
+        <Descriptions.Item label="실적금액">
+          {promotion.actualAmount != null
+            ? `${promotion.actualAmount.toLocaleString()}원`
+            : '-'}
+        </Descriptions.Item>
+        <Descriptions.Item label="마감 여부">
+          {promotion.isClosed ? <Tag color="red">마감</Tag> : '미마감'}
+        </Descriptions.Item>
+        <Descriptions.Item label="외부 연동 ID">
+          {promotion.externalId ?? '-'}
+        </Descriptions.Item>
+        <Descriptions.Item label="메시지">{promotion.message ?? '-'}</Descriptions.Item>
         <Descriptions.Item label="CC코드">{promotion.costCenterCode ?? '-'}</Descriptions.Item>
-        <Descriptions.Item label="생성일">{promotion.createdAt?.substring(0, 16)}</Descriptions.Item>
-        <Descriptions.Item label="수정일">{promotion.updatedAt?.substring(0, 16)}</Descriptions.Item>
+        <Descriptions.Item label="생성일">
+          {promotion.createdAt?.substring(0, 16)}
+        </Descriptions.Item>
+        <Descriptions.Item label="수정일">
+          {promotion.updatedAt?.substring(0, 16)}
+        </Descriptions.Item>
       </Descriptions>
     </div>
   );
