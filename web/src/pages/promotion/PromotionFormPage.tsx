@@ -16,6 +16,7 @@ import {
 import dayjs from 'dayjs';
 import { usePromotion } from '@/hooks/promotion/usePromotion';
 import { useCreatePromotion, useUpdatePromotion } from '@/hooks/promotion/usePromotionMutation';
+import { usePromotionTypes } from '@/hooks/promotion/usePromotionTypes';
 import { fetchAccounts } from '@/api/account';
 import { fetchProducts } from '@/api/product';
 import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
@@ -31,9 +32,17 @@ const CATEGORY_TAG: Record<string, string> = {
   만두: 'orange',
 };
 
-const PROMOTION_TYPE_OPTIONS = [
-  { value: '일반행사', label: '일반행사' },
-  { value: '특별행사', label: '특별행사' },
+const CATEGORY_OPTIONS = [
+  { value: '라면', label: '라면' },
+  { value: '냉장', label: '냉장' },
+  { value: '냉동', label: '냉동' },
+  { value: '만두', label: '만두' },
+];
+
+const PRODUCT_TYPE_OPTIONS = [
+  { value: '냉장', label: '냉장' },
+  { value: '냉동', label: '냉동' },
+  { value: '냉장/냉동', label: '냉장/냉동' },
 ];
 
 interface AccountOption {
@@ -49,7 +58,7 @@ interface ProductOption {
 
 interface FormValues {
   promotionName: string;
-  promotionType?: string;
+  promotionTypeId?: number;
   accountId: number;
   startDate: dayjs.Dayjs;
   endDate: dayjs.Dayjs;
@@ -58,6 +67,11 @@ interface FormValues {
   message?: string;
   standLocation?: string;
   targetAmount?: number;
+  category?: string;
+  productType?: string;
+  branchName?: string;
+  professionalTeam?: string;
+  externalId?: string;
 }
 
 export default function PromotionFormPage() {
@@ -69,6 +83,7 @@ export default function PromotionFormPage() {
   const [form] = Form.useForm<FormValues>();
   const { setDynamicTitle } = useContext(BreadcrumbContext);
   const { data: promotion, isLoading: detailLoading } = usePromotion(isEdit ? promotionId : 0);
+  const { data: promotionTypes } = usePromotionTypes();
   const createMutation = useCreatePromotion();
   const updateMutation = useUpdatePromotion();
 
@@ -77,6 +92,9 @@ export default function PromotionFormPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [accountSearching, setAccountSearching] = useState(false);
   const [productSearching, setProductSearching] = useState(false);
+
+  const promotionTypeOptions =
+    promotionTypes?.filter((t) => t.isActive).map((t) => ({ value: t.id, label: t.name })) ?? [];
 
   useEffect(() => {
     if (isEdit) {
@@ -89,7 +107,7 @@ export default function PromotionFormPage() {
     if (isEdit && promotion) {
       form.setFieldsValue({
         promotionName: promotion.promotionName,
-        promotionType: promotion.promotionType ?? undefined,
+        promotionTypeId: promotion.promotionTypeId ?? undefined,
         accountId: promotion.accountId,
         startDate: dayjs(promotion.startDate),
         endDate: dayjs(promotion.endDate),
@@ -98,10 +116,14 @@ export default function PromotionFormPage() {
         message: promotion.message ?? undefined,
         standLocation: promotion.standLocation ?? undefined,
         targetAmount: promotion.targetAmount ?? undefined,
+        category: promotion.category ?? undefined,
+        productType: promotion.productType ?? undefined,
+        branchName: promotion.branchName ?? undefined,
+        professionalTeam: promotion.professionalTeam ?? undefined,
+        externalId: promotion.externalId ?? undefined,
       });
       setSelectedCategory(promotion.category ?? null);
 
-      // Set initial options for edit mode
       if (promotion.accountName) {
         setAccountOptions([{ value: promotion.accountId, label: promotion.accountName }]);
       }
@@ -158,18 +180,23 @@ export default function PromotionFormPage() {
     (value: number | undefined) => {
       if (!value) {
         setSelectedCategory(null);
+        form.setFieldValue('category', undefined);
         return;
       }
       const product = productOptions.find((p) => p.value === value);
-      setSelectedCategory(product?.category1 ?? null);
+      const cat = product?.category1 ?? null;
+      setSelectedCategory(cat);
+      if (cat) {
+        form.setFieldValue('category', cat);
+      }
     },
-    [productOptions],
+    [productOptions, form],
   );
 
   const handleSubmit = async (values: FormValues) => {
     const payload: PromotionFormData = {
       promotion_name: values.promotionName,
-      promotion_type: values.promotionType || null,
+      promotion_type_id: values.promotionTypeId || null,
       account_id: values.accountId,
       start_date: values.startDate.format('YYYY-MM-DD'),
       end_date: values.endDate.format('YYYY-MM-DD'),
@@ -178,6 +205,11 @@ export default function PromotionFormPage() {
       message: values.message || null,
       stand_location: values.standLocation || null,
       target_amount: values.targetAmount ?? null,
+      category: values.category || null,
+      product_type: values.productType || null,
+      branch_name: values.branchName || null,
+      professional_team: values.professionalTeam || null,
+      external_id: values.externalId || null,
     };
 
     try {
@@ -221,10 +253,6 @@ export default function PromotionFormPage() {
           <Input maxLength={200} />
         </Form.Item>
 
-        <Form.Item name="promotionType" label="행사유형">
-          <Select allowClear placeholder="행사유형 선택" options={PROMOTION_TYPE_OPTIONS} />
-        </Form.Item>
-
         <Form.Item
           name="accountId"
           label="거래처"
@@ -239,6 +267,10 @@ export default function PromotionFormPage() {
             options={accountOptions}
             notFoundContent={accountSearching ? <Spin size="small" /> : null}
           />
+        </Form.Item>
+
+        <Form.Item name="promotionTypeId" label="행사유형">
+          <Select allowClear placeholder="행사유형 선택" options={promotionTypeOptions} />
         </Form.Item>
 
         <Form.Item
@@ -283,12 +315,20 @@ export default function PromotionFormPage() {
           />
         </Form.Item>
 
-        <Form.Item label="카테고리">
+        <Form.Item label="카테고리 (상품 기반)">
           {selectedCategory ? (
             <Tag color={CATEGORY_TAG[selectedCategory]}>{selectedCategory}</Tag>
           ) : (
             <span style={{ color: '#999' }}>-</span>
           )}
+        </Form.Item>
+
+        <Form.Item name="category" label="카테고리">
+          <Select allowClear placeholder="카테고리 선택" options={CATEGORY_OPTIONS} />
+        </Form.Item>
+
+        <Form.Item name="productType" label="제품유형">
+          <Select allowClear placeholder="제품유형 선택" options={PRODUCT_TYPE_OPTIONS} />
         </Form.Item>
 
         <Form.Item
@@ -300,19 +340,27 @@ export default function PromotionFormPage() {
         </Form.Item>
 
         <Form.Item
+          name="branchName"
+          label="지점명"
+          rules={[{ max: 100, message: '100자 이하로 입력해주세요' }]}
+        >
+          <Input maxLength={100} />
+        </Form.Item>
+
+        <Form.Item
+          name="professionalTeam"
+          label="전문행사조"
+          rules={[{ max: 100, message: '100자 이하로 입력해주세요' }]}
+        >
+          <Input maxLength={100} />
+        </Form.Item>
+
+        <Form.Item
           name="standLocation"
           label="매대위치"
           rules={[{ max: 200, message: '200자 이하로 입력해주세요' }]}
         >
           <Input maxLength={200} />
-        </Form.Item>
-
-        <Form.Item
-          name="message"
-          label="메시지"
-          rules={[{ max: 1000, message: '1000자 이하로 입력해주세요' }]}
-        >
-          <TextArea rows={3} maxLength={1000} />
         </Form.Item>
 
         <Form.Item
@@ -326,6 +374,22 @@ export default function PromotionFormPage() {
             parser={(value) => Number(value?.replace(/,/g, '') ?? 0)}
             placeholder="원 단위"
           />
+        </Form.Item>
+
+        <Form.Item
+          name="message"
+          label="메시지"
+          rules={[{ max: 1000, message: '1000자 이하로 입력해주세요' }]}
+        >
+          <TextArea rows={3} maxLength={1000} />
+        </Form.Item>
+
+        <Form.Item
+          name="externalId"
+          label="외부 연동 ID"
+          rules={[{ max: 50, message: '50자 이하로 입력해주세요' }]}
+        >
+          <Input maxLength={50} />
         </Form.Item>
 
         <Form.Item style={{ marginTop: 24 }}>
