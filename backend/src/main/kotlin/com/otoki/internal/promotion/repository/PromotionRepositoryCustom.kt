@@ -8,7 +8,7 @@ interface PromotionRepositoryCustom {
 
     fun searchForAdmin(
         keyword: String?,
-        promotionType: String?,
+        promotionTypeId: Long?,
         category: String?,
         startDate: String?,
         endDate: String?,

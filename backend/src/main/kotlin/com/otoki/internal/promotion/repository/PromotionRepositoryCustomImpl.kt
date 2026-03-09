@@ -2,7 +2,6 @@ package com.otoki.internal.promotion.repository
 
 import com.otoki.internal.promotion.entity.Promotion
 import com.otoki.internal.promotion.entity.QPromotion.promotion
-import com.otoki.internal.sap.entity.QProduct.product
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.data.domain.Page
@@ -16,7 +15,7 @@ class PromotionRepositoryCustomImpl(
 
     override fun searchForAdmin(
         keyword: String?,
-        promotionType: String?,
+        promotionTypeId: Long?,
         category: String?,
         startDate: String?,
         endDate: String?,
@@ -35,8 +34,12 @@ class PromotionRepositoryCustomImpl(
             )
         }
 
-        if (!promotionType.isNullOrBlank()) {
-            builder.and(promotion.promotionType.eq(promotionType))
+        if (promotionTypeId != null) {
+            builder.and(promotion.promotionTypeId.eq(promotionTypeId))
+        }
+
+        if (!category.isNullOrBlank()) {
+            builder.and(promotion.category.eq(category))
         }
 
         if (!startDate.isNullOrBlank()) {
@@ -53,21 +56,8 @@ class PromotionRepositoryCustomImpl(
             builder.and(promotion.costCenterCode.`in`(branchCodes))
         }
 
-        // category 필터: Product 조인
-        val needsProductJoin = !category.isNullOrBlank()
-
-        if (needsProductJoin) {
-            builder.and(product.category1.eq(category))
-        }
-
-        val query = queryFactory
+        val content = queryFactory
             .selectFrom(promotion)
-
-        if (needsProductJoin) {
-            query.leftJoin(product).on(promotion.primaryProductId.eq(product.id))
-        }
-
-        val content = query
             .where(builder)
             .orderBy(promotion.createdAt.desc())
             .offset(pageable.offset)
@@ -77,12 +67,7 @@ class PromotionRepositoryCustomImpl(
         val countQuery = queryFactory
             .select(promotion.count())
             .from(promotion)
-
-        if (needsProductJoin) {
-            countQuery.leftJoin(product).on(promotion.primaryProductId.eq(product.id))
-        }
-
-        countQuery.where(builder)
+            .where(builder)
 
         return PageableExecutionUtils.getPage(content, pageable) {
             countQuery.fetchOne() ?: 0L

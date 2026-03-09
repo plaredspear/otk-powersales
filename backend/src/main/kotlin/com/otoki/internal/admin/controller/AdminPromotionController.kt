@@ -27,7 +27,7 @@ class AdminPromotionController(
     fun getPromotions(
         @AuthenticationPrincipal principal: UserPrincipal,
         @RequestParam(required = false) @Size(min = 1, max = 100) keyword: String?,
-        @RequestParam(required = false) promotionType: String?,
+        @RequestParam(required = false) promotionTypeId: Long?,
         @RequestParam(required = false) category: String?,
         @RequestParam(required = false) startDate: String?,
         @RequestParam(required = false) endDate: String?,
@@ -37,7 +37,7 @@ class AdminPromotionController(
         val response = adminPromotionService.getPromotions(
             userId = principal.userId,
             keyword = keyword,
-            promotionType = promotionType,
+            promotionTypeId = promotionTypeId,
             category = category,
             startDate = startDate,
             endDate = endDate,

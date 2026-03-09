@@ -5,7 +5,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 @Entity
-@Table(name = "promotion")
+@Table(name = "dkretail__promotion__c")
 class Promotion(
 
     @Id
@@ -18,8 +18,8 @@ class Promotion(
     @Column(name = "promotion_name", nullable = false, length = 200)
     var promotionName: String,
 
-    @Column(name = "promotion_type", length = 50)
-    var promotionType: String? = null,
+    @Column(name = "promotion_type_id")
+    var promotionTypeId: Long? = null,
 
     @Column(name = "account_id", nullable = false)
     var accountId: Int,
@@ -45,8 +45,29 @@ class Promotion(
     @Column(name = "target_amount")
     var targetAmount: Long? = null,
 
+    @Column(name = "actual_amount")
+    var actualAmount: Long? = 0,
+
     @Column(name = "cost_center_code", length = 10)
     val costCenterCode: String? = null,
+
+    @Column(name = "branch_name", length = 100)
+    var branchName: String? = null,
+
+    @Column(name = "category", length = 50)
+    var category: String? = null,
+
+    @Column(name = "product_type", length = 50)
+    var productType: String? = null,
+
+    @Column(name = "is_closed", nullable = false)
+    var isClosed: Boolean = false,
+
+    @Column(name = "professional_team", length = 100)
+    var professionalTeam: String? = null,
+
+    @Column(name = "external_id", length = 50)
+    var externalId: String? = null,
 
     @Column(name = "is_deleted", nullable = false)
     var isDeleted: Boolean = false,
@@ -59,7 +80,7 @@ class Promotion(
 ) {
     fun update(
         promotionName: String,
-        promotionType: String?,
+        promotionTypeId: Long?,
         accountId: Int,
         startDate: LocalDate,
         endDate: LocalDate,
@@ -67,10 +88,15 @@ class Promotion(
         otherProduct: String?,
         message: String?,
         standLocation: String?,
-        targetAmount: Long?
+        targetAmount: Long?,
+        category: String?,
+        productType: String?,
+        branchName: String?,
+        professionalTeam: String?,
+        externalId: String?
     ) {
         this.promotionName = promotionName
-        this.promotionType = promotionType
+        this.promotionTypeId = promotionTypeId
         this.accountId = accountId
         this.startDate = startDate
         this.endDate = endDate
@@ -79,6 +105,11 @@ class Promotion(
         this.message = message
         this.standLocation = standLocation
         this.targetAmount = targetAmount
+        this.category = category
+        this.productType = productType
+        this.branchName = branchName
+        this.professionalTeam = professionalTeam
+        this.externalId = externalId
         this.updatedAt = LocalDateTime.now()
     }
 
