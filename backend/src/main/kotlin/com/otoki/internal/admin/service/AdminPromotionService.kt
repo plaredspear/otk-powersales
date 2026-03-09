@@ -9,6 +9,7 @@ import com.otoki.internal.promotion.entity.PromotionProduct
 import com.otoki.internal.promotion.exception.*
 import com.otoki.internal.promotion.repository.PromotionProductRepository
 import com.otoki.internal.promotion.repository.PromotionRepository
+import com.otoki.internal.promotion.repository.PromotionTypeRepository
 import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.sap.repository.ProductRepository
 import com.otoki.internal.sap.repository.UserRepository
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional
 class AdminPromotionService(
     private val promotionRepository: PromotionRepository,
     private val promotionProductRepository: PromotionProductRepository,
+    private val promotionTypeRepository: PromotionTypeRepository,
     private val accountRepository: AccountRepository,
     private val productRepository: ProductRepository,
     private val userRepository: UserRepository,
@@ -31,7 +33,7 @@ class AdminPromotionService(
     fun getPromotions(
         userId: Long,
         keyword: String?,
-        promotionType: String?,
+        promotionTypeId: Long?,
         category: String?,
         startDate: String?,
         endDate: String?,
@@ -48,7 +50,7 @@ class AdminPromotionService(
         val pageable = PageRequest.of(page, size, Sort.by("createdAt").descending())
         val promotionPage = promotionRepository.searchForAdmin(
             keyword = keyword,
-            promotionType = promotionType,
+            promotionTypeId = promotionTypeId,
             category = category,
             startDate = startDate,
             endDate = endDate,
@@ -61,19 +63,19 @@ class AdminPromotionService(
             accountRepository.findByIdIn(accountIds).associateBy { it.id }
         } else emptyMap()
 
-        val productIds = promotionPage.content.mapNotNull { it.primaryProductId }.distinct()
-        val productMap = if (productIds.isNotEmpty()) {
-            productRepository.findAllById(productIds).associateBy { it.id }
+        val typeIds = promotionPage.content.mapNotNull { it.promotionTypeId }.distinct()
+        val typeMap = if (typeIds.isNotEmpty()) {
+            promotionTypeRepository.findAllById(typeIds).associateBy { it.id }
         } else emptyMap()
 
         return PromotionListResponse(
             content = promotionPage.content.map { promotion ->
                 val account = accountMap[promotion.accountId]
-                val product = promotion.primaryProductId?.let { productMap[it] }
+                val typeName = promotion.promotionTypeId?.let { typeMap[it]?.name }
                 PromotionListItem.from(
                     promotion = promotion,
                     accountName = account?.name,
-                    category = product?.category1
+                    promotionTypeName = typeName
                 )
             },
             page = page,
@@ -91,18 +93,22 @@ class AdminPromotionService(
 
         val account = accountRepository.findById(promotion.accountId).orElse(null)
         val product = promotion.primaryProductId?.let { productRepository.findById(it).orElse(null) }
+        val typeName = promotion.promotionTypeId?.let {
+            promotionTypeRepository.findById(it).orElse(null)?.name
+        }
 
         return PromotionDetailResponse.from(
             promotion = promotion,
             accountName = account?.name,
             primaryProductName = product?.name,
-            category = product?.category1
+            promotionTypeName = typeName
         )
     }
 
     @Transactional
     fun createPromotion(userId: Long, request: PromotionCreateRequest): PromotionDetailResponse {
         validateDateRange(request.startDate, request.endDate)
+        validatePromotionType(request.promotionTypeId)
 
         val account = accountRepository.findById(request.accountId)
             .orElseThrow { AccountNotFoundException() }
@@ -120,11 +126,15 @@ class AdminPromotionService(
         val seq = promotionRepository.getNextPromotionNumberSeq()
         val promotionNumber = "PM" + String.format("%08d", seq)
 
+        val typeName = request.promotionTypeId?.let {
+            promotionTypeRepository.findById(it).orElse(null)?.name
+        }
+
         val promotion = promotionRepository.save(
             Promotion(
                 promotionNumber = promotionNumber,
                 promotionName = request.promotionName,
-                promotionType = request.promotionType,
+                promotionTypeId = request.promotionTypeId,
                 accountId = request.accountId,
                 startDate = request.startDate,
                 endDate = request.endDate,
@@ -133,7 +143,12 @@ class AdminPromotionService(
                 message = request.message,
                 standLocation = request.standLocation,
                 targetAmount = request.targetAmount,
-                costCenterCode = costCenterCode
+                costCenterCode = costCenterCode,
+                category = request.category,
+                productType = request.productType,
+                branchName = request.branchName,
+                professionalTeam = request.professionalTeam,
+                externalId = request.externalId
             )
         )
 
@@ -150,7 +165,7 @@ class AdminPromotionService(
             promotion = promotion,
             accountName = account.name,
             primaryProductName = product?.name,
-            category = product?.category1
+            promotionTypeName = typeName
         )
     }
 
@@ -161,6 +176,7 @@ class AdminPromotionService(
         val promotion = findActivePromotion(id)
         validateDataScope(userId, promotion)
         validateDateRange(request.startDate, request.endDate)
+        validatePromotionType(request.promotionTypeId)
 
         accountRepository.findById(request.accountId)
             .orElseThrow { AccountNotFoundException() }
@@ -173,7 +189,7 @@ class AdminPromotionService(
 
         promotion.update(
             promotionName = request.promotionName,
-            promotionType = request.promotionType,
+            promotionTypeId = request.promotionTypeId,
             accountId = request.accountId,
             startDate = request.startDate,
             endDate = request.endDate,
@@ -181,7 +197,12 @@ class AdminPromotionService(
             otherProduct = request.otherProduct,
             message = request.message,
             standLocation = request.standLocation,
-            targetAmount = request.targetAmount
+            targetAmount = request.targetAmount,
+            category = request.category,
+            productType = request.productType,
+            branchName = request.branchName,
+            professionalTeam = request.professionalTeam,
+            externalId = request.externalId
         )
 
         promotionRepository.save(promotion)
@@ -210,12 +231,15 @@ class AdminPromotionService(
         }
 
         val account = accountRepository.findById(promotion.accountId).orElse(null)
+        val typeName = promotion.promotionTypeId?.let {
+            promotionTypeRepository.findById(it).orElse(null)?.name
+        }
 
         return PromotionDetailResponse.from(
             promotion = promotion,
             accountName = account?.name,
             primaryProductName = product?.name,
-            category = product?.category1
+            promotionTypeName = typeName
         )
     }
 
@@ -228,6 +252,15 @@ class AdminPromotionService(
 
         promotion.softDelete()
         promotionRepository.save(promotion)
+    }
+
+    private fun validatePromotionType(promotionTypeId: Long?) {
+        if (promotionTypeId != null) {
+            val type = promotionTypeRepository.findById(promotionTypeId).orElse(null)
+            if (type == null || !type.isActive) {
+                throw InvalidPromotionTypeException()
+            }
+        }
     }
 
     private fun findActivePromotion(id: Long): Promotion {
