@@ -17,6 +17,7 @@ export default function AppBreadcrumb() {
         height: 28,
         paddingLeft: 24,
         background: '#fff',
+        borderTop: `1px solid ${token.colorBorderSecondary}`,
         borderBottom: `1px solid ${token.colorBorderSecondary}`,
         display: 'flex',
         alignItems: 'center',
