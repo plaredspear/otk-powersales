@@ -11,4 +11,10 @@ interface EducationPostRepositoryCustom {
         search: String,
         pageable: Pageable
     ): Page<EducationPost>
+
+    fun findByOptionalEduCodeAndSearchWithPaging(
+        eduCode: String?,
+        search: String?,
+        pageable: Pageable
+    ): Page<EducationPost>
 }

@@ -41,4 +41,41 @@ class EducationPostRepositoryCustomImpl(
             countQuery.fetchOne() ?: 0L
         }
     }
+
+    override fun findByOptionalEduCodeAndSearchWithPaging(
+        eduCode: String?,
+        search: String?,
+        pageable: Pageable
+    ): Page<EducationPost> {
+        val where = com.querydsl.core.BooleanBuilder()
+
+        if (!eduCode.isNullOrBlank()) {
+            where.and(educationPost.eduCode.eq(eduCode))
+        }
+
+        if (!search.isNullOrBlank()) {
+            val pattern = "%${search.take(100)}%"
+            where.and(
+                educationPost.eduTitle.like(pattern)
+                    .or(educationPost.eduContent.like(pattern))
+            )
+        }
+
+        val content = queryFactory
+            .selectFrom(educationPost)
+            .where(where)
+            .orderBy(educationPost.instDate.desc())
+            .offset(pageable.offset)
+            .limit(pageable.pageSize.toLong())
+            .fetch()
+
+        val countQuery = queryFactory
+            .select(educationPost.count())
+            .from(educationPost)
+            .where(where)
+
+        return PageableExecutionUtils.getPage(content, pageable) {
+            countQuery.fetchOne() ?: 0L
+        }
+    }
 }
