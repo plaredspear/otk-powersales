@@ -62,3 +62,21 @@ class InvalidPromotionTypeException : BusinessException(
     message = "유효하지 않은 행사유형입니다",
     httpStatus = HttpStatus.BAD_REQUEST
 )
+
+class PromotionEmployeeNotFoundException : BusinessException(
+    errorCode = "NOT_FOUND",
+    message = "행사조원을 찾을 수 없습니다",
+    httpStatus = HttpStatus.NOT_FOUND
+)
+
+class InvalidWorkStatusException : BusinessException(
+    errorCode = "INVALID_WORK_STATUS",
+    message = "근무상태는 근무, 연차, 대휴 중 하나여야 합니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+class InvalidWorkType3Exception : BusinessException(
+    errorCode = "INVALID_WORK_TYPE3",
+    message = "근무유형3은 고정, 격고, 순회 중 하나여야 합니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
