@@ -2,6 +2,7 @@ package com.otoki.internal.admin.controller
 
 import com.otoki.internal.admin.dto.response.AccountListItem
 import com.otoki.internal.admin.dto.response.AccountListResponse
+import com.otoki.internal.admin.scope.DataScopeHolder
 import com.otoki.internal.admin.security.AdminAuthorityFilter
 import com.otoki.internal.admin.service.AdminAccountService
 import com.otoki.internal.common.security.GpsConsentFilter
@@ -50,6 +51,9 @@ class AdminAccountControllerTest {
     @MockitoBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
+    @MockitoBean
+    private lateinit var dataScopeHolder: DataScopeHolder
+
     @BeforeEach
     fun setUp() {
         val principal = UserPrincipal(userId = 1L, role = UserRole.ADMIN)
@@ -84,7 +88,7 @@ class AdminAccountControllerTest {
                 totalElements = 1,
                 totalPages = 1
             )
-            whenever(adminAccountService.getAccounts(eq(1L), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull()))
+            whenever(adminAccountService.getAccounts(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull()))
                 .thenReturn(response)
 
             mockMvc.perform(get("/api/v1/admin/accounts"))
@@ -116,7 +120,7 @@ class AdminAccountControllerTest {
                 totalElements = 0,
                 totalPages = 0
             )
-            whenever(adminAccountService.getAccounts(eq(1L), eq("GS25"), eq("편의점"), eq("A001"), eq("활성"), eq(0), eq(10)))
+            whenever(adminAccountService.getAccounts(eq("GS25"), eq("편의점"), eq("A001"), eq("활성"), eq(0), eq(10)))
                 .thenReturn(response)
 
             mockMvc.perform(
@@ -144,7 +148,7 @@ class AdminAccountControllerTest {
                 totalElements = 0,
                 totalPages = 0
             )
-            whenever(adminAccountService.getAccounts(eq(1L), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull()))
+            whenever(adminAccountService.getAccounts(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull()))
                 .thenReturn(response)
 
             mockMvc.perform(get("/api/v1/admin/accounts"))
