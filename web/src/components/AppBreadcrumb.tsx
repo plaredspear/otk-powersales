@@ -26,13 +26,24 @@ export default function AppBreadcrumb() {
     >
       {items && items.length > 0 && (
         <Breadcrumb
-          items={items.map((item) => ({
-            title: item.path ? (
-              <a onClick={() => navigate(item.path!)}>{item.label}</a>
-            ) : (
-              item.label
-            ),
-          }))}
+          items={items.map((item, index) => {
+            const label =
+              index === 0 && item.icon ? (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  {item.icon}
+                  {item.label}
+                </span>
+              ) : (
+                item.label
+              );
+            return {
+              title: item.path ? (
+                <a onClick={() => navigate(item.path!)}>{label}</a>
+              ) : (
+                label
+              ),
+            };
+          })}
         />
       )}
     </div>
