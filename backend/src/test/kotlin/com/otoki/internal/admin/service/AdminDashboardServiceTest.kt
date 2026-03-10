@@ -1,6 +1,7 @@
 package com.otoki.internal.admin.service
 
 import com.otoki.internal.admin.dto.DataScope
+import com.otoki.internal.admin.scope.DataScopeHolder
 import com.otoki.internal.sap.entity.User
 import com.otoki.internal.sap.repository.UserRepository
 import com.otoki.internal.sap.entity.Account
@@ -27,7 +28,7 @@ import java.time.LocalDate
 class AdminDashboardServiceTest {
 
     @Mock
-    private lateinit var adminDataScopeService: AdminDataScopeService
+    private lateinit var dataScopeHolder: DataScopeHolder
 
     @Mock
     private lateinit var monthlySalesHistoryRepository: MonthlySalesHistoryRepository
@@ -54,7 +55,6 @@ class AdminDashboardServiceTest {
         @DisplayName("전체 범위 - 영업본부장(isAllBranches=true) -> 전체 매출/인원 데이터 반환")
         fun allBranches_returnsAllData() {
             // Given
-            val userId = 1L
             val yearMonth = "2026-03"
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
 
@@ -92,7 +92,7 @@ class AdminDashboardServiceTest {
                 createUser(id = 12L, sfid = "EMP003", status = "휴직", costCenterCode = "B001")
             )
 
-            whenever(adminDataScopeService.resolve(userId)).thenReturn(scope)
+            whenever(dataScopeHolder.require()).thenReturn(scope)
 
             // Sales: current year
             whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonth("2026", "03"))
@@ -121,7 +121,7 @@ class AdminDashboardServiceTest {
             whenever(userRepository.findByStatus("휴직")).thenReturn(onLeaveUsers)
 
             // When
-            val result = adminDashboardService.getDashboard(userId, yearMonth, null)
+            val result = adminDashboardService.getDashboard(yearMonth, null)
 
             // Then - salesSummary
             assertThat(result.salesSummary.yearMonth).isEqualTo("2026-03")
@@ -152,7 +152,6 @@ class AdminDashboardServiceTest {
         @DisplayName("지점 범위 - 조장(branchCodes 제한) -> 해당 지점 데이터만 반환")
         fun branchScope_returnsFilteredData() {
             // Given
-            val userId = 2L
             val yearMonth = "2026-03"
             val scope = DataScope(branchCodes = listOf("B001"), isAllBranches = false)
 
@@ -178,7 +177,7 @@ class AdminDashboardServiceTest {
                     birthDate = "1992-07-10")
             )
 
-            whenever(adminDataScopeService.resolve(userId)).thenReturn(scope)
+            whenever(dataScopeHolder.require()).thenReturn(scope)
 
             // Branch name resolution
             whenever(accountRepository.findByBranchCodeIn(listOf("B001"))).thenReturn(branchAccounts)
@@ -212,7 +211,7 @@ class AdminDashboardServiceTest {
                 .thenReturn(emptyList())
 
             // When
-            val result = adminDashboardService.getDashboard(userId, yearMonth, null)
+            val result = adminDashboardService.getDashboard(yearMonth, null)
 
             // Then
             assertThat(result.salesSummary.branchName).isEqualTo("서울지점")
@@ -230,11 +229,10 @@ class AdminDashboardServiceTest {
         @DisplayName("데이터 없음 - 매출/스케줄 데이터 없음 -> 금액 0, 카운트 0")
         fun noData_returnsZeros() {
             // Given
-            val userId = 1L
             val yearMonth = "2026-03"
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
 
-            whenever(adminDataScopeService.resolve(userId)).thenReturn(scope)
+            whenever(dataScopeHolder.require()).thenReturn(scope)
 
             // No sales data
             whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonth("2026", "03"))
@@ -251,7 +249,7 @@ class AdminDashboardServiceTest {
             whenever(userRepository.findByStatus("휴직")).thenReturn(emptyList())
 
             // When
-            val result = adminDashboardService.getDashboard(userId, yearMonth, null)
+            val result = adminDashboardService.getDashboard(yearMonth, null)
 
             // Then - salesSummary
             assertThat(result.salesSummary.targetAmount).isEqualTo(0L)
@@ -282,7 +280,6 @@ class AdminDashboardServiceTest {
         @DisplayName("branchCode 파라미터 - 전체범위에서 특정 지점 필터 -> 해당 지점만 조회")
         fun branchCodeParam_filtersAllBranchesScope() {
             // Given
-            val userId = 1L
             val yearMonth = "2026-03"
             val allScope = DataScope(branchCodes = emptyList(), isAllBranches = true)
             // branchCode 파라미터로 "B002" 지정 -> effectiveScope = DataScope(listOf("B002"), false)
@@ -297,7 +294,7 @@ class AdminDashboardServiceTest {
                     accountExternalKey = "EK002")
             )
 
-            whenever(adminDataScopeService.resolve(userId)).thenReturn(allScope)
+            whenever(dataScopeHolder.require()).thenReturn(allScope)
 
             // Branch name resolution for effective scope
             whenever(accountRepository.findByBranchCodeIn(listOf("B002"))).thenReturn(filteredAccounts)
@@ -328,7 +325,7 @@ class AdminDashboardServiceTest {
                 .thenReturn(emptyList())
 
             // When
-            val result = adminDashboardService.getDashboard(userId, yearMonth, "B002")
+            val result = adminDashboardService.getDashboard(yearMonth, "B002")
 
             // Then
             assertThat(result.salesSummary.branchName).isEqualTo("부산지점")
@@ -340,7 +337,6 @@ class AdminDashboardServiceTest {
         @DisplayName("branchCode 파라미터 - 지점범위에서 권한 외 지점 요청 -> 원래 scope 유지")
         fun branchCodeParam_outsideScope_ignoresFilter() {
             // Given
-            val userId = 2L
             val yearMonth = "2026-03"
             val scope = DataScope(branchCodes = listOf("B001"), isAllBranches = false)
             // branchCode="B999" 요청하지만 scope에 없으므로 원래 scope 유지
@@ -350,7 +346,7 @@ class AdminDashboardServiceTest {
                     branchName = "서울지점", abcType = "대형마트")
             )
 
-            whenever(adminDataScopeService.resolve(userId)).thenReturn(scope)
+            whenever(dataScopeHolder.require()).thenReturn(scope)
 
             // Branch name: original scope branchCodes
             whenever(accountRepository.findByBranchCodeIn(listOf("B001"))).thenReturn(branchAccounts)
@@ -378,7 +374,7 @@ class AdminDashboardServiceTest {
                 .thenReturn(emptyList())
 
             // When
-            val result = adminDashboardService.getDashboard(userId, yearMonth, "B999")
+            val result = adminDashboardService.getDashboard(yearMonth, "B999")
 
             // Then - scope was not changed, still uses B001 (branchName = 서울지점)
             assertThat(result.salesSummary.branchName).isEqualTo("서울지점")
@@ -390,7 +386,6 @@ class AdminDashboardServiceTest {
         @DisplayName("전년 비교 - 전년 매출 있음 -> lastYearAmount, lastYearRatio 정확히 계산")
         fun lastYearComparison_calculatesRatio() {
             // Given
-            val userId = 1L
             val yearMonth = "2026-06"
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
 
@@ -406,7 +401,7 @@ class AdminDashboardServiceTest {
                 createAccount(sfid = "ACC001", externalKey = "EK001", abcType = "대형마트")
             )
 
-            whenever(adminDataScopeService.resolve(userId)).thenReturn(scope)
+            whenever(dataScopeHolder.require()).thenReturn(scope)
 
             // Current year sales
             whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonth("2026", "06"))
@@ -427,7 +422,7 @@ class AdminDashboardServiceTest {
             whenever(userRepository.findByStatus("휴직")).thenReturn(emptyList())
 
             // When
-            val result = adminDashboardService.getDashboard(userId, yearMonth, null)
+            val result = adminDashboardService.getDashboard(yearMonth, null)
 
             // Then
             assertThat(result.salesSummary.actualAmount).isEqualTo(8000L)
@@ -440,7 +435,6 @@ class AdminDashboardServiceTest {
         @DisplayName("전년 비교 - 전년 매출 0 -> lastYearRatio 0.0")
         fun lastYearComparison_zeroLastYear_ratioIsZero() {
             // Given
-            val userId = 1L
             val yearMonth = "2026-06"
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
 
@@ -449,7 +443,7 @@ class AdminDashboardServiceTest {
                     accountExternalKey = "EK001")
             )
 
-            whenever(adminDataScopeService.resolve(userId)).thenReturn(scope)
+            whenever(dataScopeHolder.require()).thenReturn(scope)
             whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonth("2026", "06"))
                 .thenReturn(currentSales)
             whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonth("2025", "06"))
@@ -464,7 +458,7 @@ class AdminDashboardServiceTest {
             whenever(userRepository.findByStatus("휴직")).thenReturn(emptyList())
 
             // When
-            val result = adminDashboardService.getDashboard(userId, yearMonth, null)
+            val result = adminDashboardService.getDashboard(yearMonth, null)
 
             // Then
             assertThat(result.salesSummary.lastYearAmount).isEqualTo(0L)
@@ -477,10 +471,9 @@ class AdminDashboardServiceTest {
         @DisplayName("yearMonth null - yearMonth 미지정 -> 현재 년월 사용")
         fun yearMonthNull_usesCurrentMonth() {
             // Given
-            val userId = 1L
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
 
-            whenever(adminDataScopeService.resolve(userId)).thenReturn(scope)
+            whenever(dataScopeHolder.require()).thenReturn(scope)
             whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonth(any(), any()))
                 .thenReturn(emptyList())
             whenever(storeScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(any(), any()))
@@ -489,7 +482,7 @@ class AdminDashboardServiceTest {
             whenever(userRepository.findByStatus("휴직")).thenReturn(emptyList())
 
             // When
-            val result = adminDashboardService.getDashboard(userId, null, null)
+            val result = adminDashboardService.getDashboard(null, null)
 
             // Then - yearMonth should match current year-month pattern
             assertThat(result.salesSummary.yearMonth).matches("\\d{4}-\\d{2}")
@@ -501,7 +494,6 @@ class AdminDashboardServiceTest {
         @DisplayName("채널별 매출 - 다양한 abcType -> 채널 분류 정확히 매핑")
         fun channelSales_classifiesCorrectly() {
             // Given
-            val userId = 1L
             val yearMonth = "2026-03"
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
 
@@ -523,7 +515,7 @@ class AdminDashboardServiceTest {
                 createAccount(sfid = "A3", externalKey = "EK003", abcType = "편의점")
             )
 
-            whenever(adminDataScopeService.resolve(userId)).thenReturn(scope)
+            whenever(dataScopeHolder.require()).thenReturn(scope)
             whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonth("2026", "03"))
                 .thenReturn(salesData)
             whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonth("2025", "03"))
@@ -535,7 +527,7 @@ class AdminDashboardServiceTest {
             whenever(userRepository.findByStatus("휴직")).thenReturn(emptyList())
 
             // When
-            val result = adminDashboardService.getDashboard(userId, yearMonth, null)
+            val result = adminDashboardService.getDashboard(yearMonth, null)
 
             // Then
             val channelMap = result.salesSummary.channelSales.associateBy { it.channelName }
@@ -555,7 +547,6 @@ class AdminDashboardServiceTest {
         @DisplayName("진행률 - 목표 대비 실적 비율 -> progressRate 정확히 계산")
         fun progressRate_calculatedCorrectly() {
             // Given
-            val userId = 1L
             val yearMonth = "2026-03"
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
 
@@ -564,7 +555,7 @@ class AdminDashboardServiceTest {
                     accountExternalKey = "EK001")
             )
 
-            whenever(adminDataScopeService.resolve(userId)).thenReturn(scope)
+            whenever(dataScopeHolder.require()).thenReturn(scope)
             whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonth("2026", "03"))
                 .thenReturn(salesData)
             whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonth("2025", "03"))
@@ -576,7 +567,7 @@ class AdminDashboardServiceTest {
             whenever(userRepository.findByStatus("휴직")).thenReturn(emptyList())
 
             // When
-            val result = adminDashboardService.getDashboard(userId, yearMonth, null)
+            val result = adminDashboardService.getDashboard(yearMonth, null)
 
             // Then - progressRate = 7500 / 10000 * 100 = 75.0
             assertThat(result.salesSummary.progressRate).isEqualTo(75.0)
@@ -586,7 +577,6 @@ class AdminDashboardServiceTest {
         @DisplayName("진행률 - 목표금액 0 -> progressRate 0.0")
         fun progressRate_zeroTarget_returnsZero() {
             // Given
-            val userId = 1L
             val yearMonth = "2026-03"
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
 
@@ -595,7 +585,7 @@ class AdminDashboardServiceTest {
                     accountExternalKey = "EK001")
             )
 
-            whenever(adminDataScopeService.resolve(userId)).thenReturn(scope)
+            whenever(dataScopeHolder.require()).thenReturn(scope)
             whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonth("2026", "03"))
                 .thenReturn(salesData)
             whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonth("2025", "03"))
@@ -607,7 +597,7 @@ class AdminDashboardServiceTest {
             whenever(userRepository.findByStatus("휴직")).thenReturn(emptyList())
 
             // When
-            val result = adminDashboardService.getDashboard(userId, yearMonth, null)
+            val result = adminDashboardService.getDashboard(yearMonth, null)
 
             // Then
             assertThat(result.salesSummary.progressRate).isEqualTo(0.0)

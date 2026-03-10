@@ -1,6 +1,8 @@
 package com.otoki.internal.admin.controller
 
 import com.otoki.internal.admin.dto.response.AccountListResponse
+import com.otoki.internal.admin.security.AdminPermission
+import com.otoki.internal.admin.security.RequiresPermission
 import com.otoki.internal.admin.service.AdminAccountService
 import com.otoki.internal.common.dto.ApiResponse
 import com.otoki.internal.common.security.UserPrincipal
@@ -23,6 +25,7 @@ class AdminAccountController(
 ) {
 
     @GetMapping
+    @RequiresPermission(AdminPermission.ACCOUNT_READ)
     fun getAccounts(
         @AuthenticationPrincipal principal: UserPrincipal,
         @RequestParam(required = false) @Size(min = 1, max = 50) keyword: String?,
@@ -33,7 +36,6 @@ class AdminAccountController(
         @RequestParam(required = false, defaultValue = "20") @Min(1) @Max(100) size: Int
     ): ResponseEntity<ApiResponse<AccountListResponse>> {
         val response = adminAccountService.getAccounts(
-            userId = principal.userId,
             keyword = keyword,
             abcType = abcType,
             branchCode = branchCode,

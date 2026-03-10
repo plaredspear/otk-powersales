@@ -2,6 +2,7 @@ package com.otoki.internal.admin.service
 
 import com.otoki.internal.admin.dto.DataScope
 import com.otoki.internal.admin.dto.response.*
+import com.otoki.internal.admin.scope.DataScopeHolder
 import com.otoki.internal.sap.entity.User
 import com.otoki.internal.sap.repository.UserRepository
 import com.otoki.internal.sap.entity.Account
@@ -20,15 +21,15 @@ import java.time.temporal.ChronoUnit
 @Service
 @Transactional(readOnly = true)
 class AdminDashboardService(
-    private val adminDataScopeService: AdminDataScopeService,
+    private val dataScopeHolder: DataScopeHolder,
     private val monthlySalesHistoryRepository: MonthlySalesHistoryRepository,
     private val storeScheduleRepository: StoreScheduleRepository,
     private val accountRepository: AccountRepository,
     private val userRepository: UserRepository
 ) {
 
-    fun getDashboard(userId: Long, yearMonth: String?, branchCode: String?): DashboardResponse {
-        val scope = adminDataScopeService.resolve(userId)
+    fun getDashboard(yearMonth: String?, branchCode: String?): DashboardResponse {
+        val scope = dataScopeHolder.require()
         val effectiveScope = applyBranchFilter(scope, branchCode)
         val ym = yearMonth ?: YearMonth.now().format(DateTimeFormatter.ofPattern("yyyy-MM"))
         val branchName = resolveBranchName(effectiveScope)

@@ -2,6 +2,7 @@ package com.otoki.internal.admin.controller
 
 import com.otoki.internal.admin.dto.response.EmployeeListItem
 import com.otoki.internal.admin.dto.response.EmployeeListResponse
+import com.otoki.internal.admin.scope.DataScopeHolder
 import com.otoki.internal.admin.security.AdminAuthorityFilter
 import com.otoki.internal.admin.service.AdminEmployeeService
 import com.otoki.internal.common.security.GpsConsentFilter
@@ -50,6 +51,9 @@ class AdminEmployeeControllerTest {
     @MockitoBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
+    @MockitoBean
+    private lateinit var dataScopeHolder: DataScopeHolder
+
     @BeforeEach
     fun setUp() {
         val principal = UserPrincipal(userId = 1L, role = UserRole.ADMIN)
@@ -83,7 +87,7 @@ class AdminEmployeeControllerTest {
                 totalElements = 1,
                 totalPages = 1
             )
-            whenever(adminEmployeeService.getEmployees(eq(1L), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull()))
+            whenever(adminEmployeeService.getEmployees(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull()))
                 .thenReturn(response)
 
             mockMvc.perform(get("/api/v1/admin/employees"))
@@ -112,7 +116,7 @@ class AdminEmployeeControllerTest {
                 totalElements = 0,
                 totalPages = 0
             )
-            whenever(adminEmployeeService.getEmployees(eq(1L), eq("재직"), eq("A001"), eq("홍"), eq("조장"), eq(0), eq(10)))
+            whenever(adminEmployeeService.getEmployees(eq("재직"), eq("A001"), eq("홍"), eq("조장"), eq(0), eq(10)))
                 .thenReturn(response)
 
             mockMvc.perform(
@@ -140,7 +144,7 @@ class AdminEmployeeControllerTest {
                 totalElements = 0,
                 totalPages = 0
             )
-            whenever(adminEmployeeService.getEmployees(eq(1L), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull()))
+            whenever(adminEmployeeService.getEmployees(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull()))
                 .thenReturn(response)
 
             mockMvc.perform(get("/api/v1/admin/employees"))

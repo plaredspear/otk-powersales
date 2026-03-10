@@ -1,6 +1,7 @@
 package com.otoki.internal.admin.controller
 
 import com.otoki.internal.admin.dto.response.*
+import com.otoki.internal.admin.scope.DataScopeHolder
 import com.otoki.internal.admin.security.AdminAuthorityFilter
 import com.otoki.internal.admin.service.AdminDashboardService
 import com.otoki.internal.sap.entity.UserRole
@@ -51,6 +52,9 @@ class AdminDashboardControllerTest {
 
     @MockitoBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
+
+    @MockitoBean
+    private lateinit var dataScopeHolder: DataScopeHolder
 
     private val testPrincipal = UserPrincipal(userId = 1L, role = UserRole.ADMIN)
 
@@ -143,7 +147,7 @@ class AdminDashboardControllerTest {
         fun getDashboard_success_noParams() {
             // Given
             val mockResponse = buildSampleDashboardResponse()
-            whenever(adminDashboardService.getDashboard(any(), isNull(), isNull()))
+            whenever(adminDashboardService.getDashboard(isNull(), isNull()))
                 .thenReturn(mockResponse)
 
             // When & Then
@@ -194,7 +198,7 @@ class AdminDashboardControllerTest {
         fun getDashboard_success_withYearMonth() {
             // Given
             val mockResponse = buildSampleDashboardResponse(yearMonth = "2026-01")
-            whenever(adminDashboardService.getDashboard(eq(1L), eq("2026-01"), isNull()))
+            whenever(adminDashboardService.getDashboard(eq("2026-01"), isNull()))
                 .thenReturn(mockResponse)
 
             // When & Then
@@ -214,7 +218,7 @@ class AdminDashboardControllerTest {
         fun getDashboard_success_withYearMonthAndBranchCode() {
             // Given
             val mockResponse = buildSampleDashboardResponse(yearMonth = "2026-02", branchName = "부산지점")
-            whenever(adminDashboardService.getDashboard(eq(1L), eq("2026-02"), eq("B001")))
+            whenever(adminDashboardService.getDashboard(eq("2026-02"), eq("B001")))
                 .thenReturn(mockResponse)
 
             // When & Then
@@ -261,7 +265,7 @@ class AdminDashboardControllerTest {
         fun getDashboard_verifyServiceCalledWithCorrectArgs() {
             // Given
             val mockResponse = buildSampleDashboardResponse()
-            whenever(adminDashboardService.getDashboard(eq(1L), eq("2026-03"), eq("S001")))
+            whenever(adminDashboardService.getDashboard(eq("2026-03"), eq("S001")))
                 .thenReturn(mockResponse)
 
             // When
@@ -275,7 +279,6 @@ class AdminDashboardControllerTest {
 
             // Then
             verify(adminDashboardService).getDashboard(
-                eq(1L),
                 eq("2026-03"),
                 eq("S001")
             )
@@ -286,7 +289,7 @@ class AdminDashboardControllerTest {
         fun getDashboard_verifyServiceCalledWithNulls() {
             // Given
             val mockResponse = buildSampleDashboardResponse()
-            whenever(adminDashboardService.getDashboard(eq(1L), isNull(), isNull()))
+            whenever(adminDashboardService.getDashboard(isNull(), isNull()))
                 .thenReturn(mockResponse)
 
             // When
@@ -298,7 +301,6 @@ class AdminDashboardControllerTest {
 
             // Then
             verify(adminDashboardService).getDashboard(
-                eq(1L),
                 isNull(),
                 isNull()
             )

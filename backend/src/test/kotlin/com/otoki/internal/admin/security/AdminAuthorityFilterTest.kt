@@ -4,6 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.PropertyNamingStrategies
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import com.otoki.internal.admin.dto.DataScope
+import com.otoki.internal.admin.scope.DataScopeHolder
+import com.otoki.internal.admin.service.AdminDataScopeService
 import com.otoki.internal.sap.entity.User
 import com.otoki.internal.sap.entity.UserRole
 import com.otoki.internal.sap.repository.UserRepository
@@ -22,6 +25,8 @@ import org.springframework.mock.web.MockHttpServletRequest
 import org.springframework.mock.web.MockHttpServletResponse
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.web.method.HandlerMethod
+import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping
 import java.util.*
 
 @ExtendWith(MockitoExtension::class)
@@ -31,6 +36,13 @@ class AdminAuthorityFilterTest {
     @Mock
     private lateinit var userRepository: UserRepository
 
+    @Mock
+    private lateinit var adminDataScopeService: AdminDataScopeService
+
+    @Mock
+    private lateinit var requestMappingHandlerMapping: RequestMappingHandlerMapping
+
+    private lateinit var dataScopeHolder: DataScopeHolder
     private lateinit var filter: AdminAuthorityFilter
     private lateinit var objectMapper: ObjectMapper
 
@@ -41,7 +53,8 @@ class AdminAuthorityFilterTest {
             registerModule(JavaTimeModule())
             disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
         }
-        filter = AdminAuthorityFilter(userRepository, objectMapper)
+        dataScopeHolder = DataScopeHolder()
+        filter = AdminAuthorityFilter(userRepository, objectMapper, adminDataScopeService, dataScopeHolder, requestMappingHandlerMapping)
         SecurityContextHolder.clearContext()
     }
 
@@ -50,10 +63,12 @@ class AdminAuthorityFilterTest {
     inner class AllowedAuthority {
 
         @Test
-        @DisplayName("조장 권한 - 정상 통과")
+        @DisplayName("조장 권한 - 정상 통과 + DataScope 설정")
         fun allowJojang() {
             setAuthentication(1L)
             whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser(1L, "조장")))
+            val scope = DataScope(branchCodes = listOf("A001"), isAllBranches = false)
+            whenever(adminDataScopeService.resolve(1L)).thenReturn(scope)
 
             val request = MockHttpServletRequest()
             val response = MockHttpServletResponse()
@@ -63,6 +78,7 @@ class AdminAuthorityFilterTest {
 
             assertThat(response.status).isEqualTo(200)
             assertThat(chain.request).isNotNull
+            assertThat(dataScopeHolder.dataScope).isEqualTo(scope)
         }
 
         @Test
@@ -70,6 +86,8 @@ class AdminAuthorityFilterTest {
         fun allowSalesSupport() {
             setAuthentication(2L)
             whenever(userRepository.findById(2L)).thenReturn(Optional.of(createUser(2L, "영업지원실")))
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            whenever(adminDataScopeService.resolve(2L)).thenReturn(scope)
 
             val request = MockHttpServletRequest()
             val response = MockHttpServletResponse()
@@ -79,6 +97,7 @@ class AdminAuthorityFilterTest {
 
             assertThat(response.status).isEqualTo(200)
             assertThat(chain.request).isNotNull
+            assertThat(dataScopeHolder.dataScope).isEqualTo(scope)
         }
     }
 
@@ -101,6 +120,7 @@ class AdminAuthorityFilterTest {
             assertThat(response.status).isEqualTo(403)
             assertThat(response.contentAsString).contains("FORBIDDEN")
             assertThat(chain.request).isNull()
+            assertThat(dataScopeHolder.dataScope).isNull()
         }
 
         @Test
@@ -152,6 +172,43 @@ class AdminAuthorityFilterTest {
 
             assertThat(response.status).isEqualTo(200)
             assertThat(chain.request).isNotNull
+        }
+    }
+
+    @Nested
+    @DisplayName("DataScope resolve 테스트")
+    inner class DataScopeResolveTests {
+
+        @Test
+        @DisplayName("정상 요청 시 DataScopeHolder에 저장")
+        fun dataScopeStoredInHolder() {
+            setAuthentication(1L)
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser(1L, "조장")))
+            val scope = DataScope(branchCodes = listOf("B001"), isAllBranches = false)
+            whenever(adminDataScopeService.resolve(1L)).thenReturn(scope)
+
+            val request = MockHttpServletRequest()
+            val response = MockHttpServletResponse()
+            val chain = MockFilterChain()
+
+            filter.doFilter(request, response, chain)
+
+            assertThat(dataScopeHolder.require()).isEqualTo(scope)
+        }
+
+        @Test
+        @DisplayName("권한 체크 실패 시 DataScope 미설정")
+        fun dataScopeNotSetOnForbidden() {
+            setAuthentication(1L)
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser(1L, "일반사원")))
+
+            val request = MockHttpServletRequest()
+            val response = MockHttpServletResponse()
+            val chain = MockFilterChain()
+
+            filter.doFilter(request, response, chain)
+
+            assertThat(dataScopeHolder.dataScope).isNull()
         }
     }
 

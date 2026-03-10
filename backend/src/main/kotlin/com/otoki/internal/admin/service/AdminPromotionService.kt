@@ -1,9 +1,11 @@
 package com.otoki.internal.admin.service
 
+import com.otoki.internal.admin.dto.EffectiveBranchResult
 import com.otoki.internal.admin.dto.request.PromotionCreateRequest
 import com.otoki.internal.admin.dto.response.PromotionDetailResponse
 import com.otoki.internal.admin.dto.response.PromotionListItem
 import com.otoki.internal.admin.dto.response.PromotionListResponse
+import com.otoki.internal.admin.scope.DataScopeHolder
 import com.otoki.internal.promotion.entity.Promotion
 import com.otoki.internal.promotion.entity.PromotionProduct
 import com.otoki.internal.promotion.exception.*
@@ -27,11 +29,10 @@ class AdminPromotionService(
     private val accountRepository: AccountRepository,
     private val productRepository: ProductRepository,
     private val userRepository: UserRepository,
-    private val adminDataScopeService: AdminDataScopeService
+    private val dataScopeHolder: DataScopeHolder
 ) {
 
     fun getPromotions(
-        userId: Long,
         keyword: String?,
         promotionTypeId: Long?,
         category: String?,
@@ -40,11 +41,12 @@ class AdminPromotionService(
         page: Int,
         size: Int
     ): PromotionListResponse {
-        val scope = adminDataScopeService.resolve(userId)
+        val scope = dataScopeHolder.require()
 
-        val effectiveBranchCodes: List<String>? = when {
-            scope.isAllBranches -> null
-            else -> scope.branchCodes.ifEmpty { return emptyResponse(page, size) }
+        val effectiveBranchCodes: List<String>? = when (val result = scope.effectiveBranchCodes(null)) {
+            is EffectiveBranchResult.All -> null
+            is EffectiveBranchResult.Filtered -> result.codes
+            is EffectiveBranchResult.NoAccess -> return emptyResponse(page, size)
         }
 
         val pageable = PageRequest.of(page, size, Sort.by("createdAt").descending())
@@ -85,11 +87,11 @@ class AdminPromotionService(
         )
     }
 
-    fun getPromotion(userId: Long, id: Long): PromotionDetailResponse {
+    fun getPromotion(id: Long): PromotionDetailResponse {
         if (id <= 0) throw PromotionInvalidParameterException()
 
         val promotion = findActivePromotion(id)
-        validateDataScope(userId, promotion)
+        validateDataScope(promotion)
 
         val account = accountRepository.findById(promotion.accountId).orElse(null)
         val product = promotion.primaryProductId?.let { productRepository.findById(it).orElse(null) }
@@ -170,11 +172,11 @@ class AdminPromotionService(
     }
 
     @Transactional
-    fun updatePromotion(userId: Long, id: Long, request: PromotionCreateRequest): PromotionDetailResponse {
+    fun updatePromotion(id: Long, request: PromotionCreateRequest): PromotionDetailResponse {
         if (id <= 0) throw PromotionInvalidParameterException()
 
         val promotion = findActivePromotion(id)
-        validateDataScope(userId, promotion)
+        validateDataScope(promotion)
         validateDateRange(request.startDate, request.endDate)
         validatePromotionType(request.promotionTypeId)
 
@@ -244,11 +246,11 @@ class AdminPromotionService(
     }
 
     @Transactional
-    fun deletePromotion(userId: Long, id: Long) {
+    fun deletePromotion(id: Long) {
         if (id <= 0) throw PromotionInvalidParameterException()
 
         val promotion = findActivePromotion(id)
-        validateDataScope(userId, promotion)
+        validateDataScope(promotion)
 
         promotion.softDelete()
         promotionRepository.save(promotion)
@@ -270,12 +272,10 @@ class AdminPromotionService(
         return promotion
     }
 
-    private fun validateDataScope(userId: Long, promotion: Promotion) {
-        val scope = adminDataScopeService.resolve(userId)
-        if (!scope.isAllBranches) {
-            if (promotion.costCenterCode == null || promotion.costCenterCode !in scope.branchCodes) {
-                throw PromotionForbiddenException()
-            }
+    private fun validateDataScope(promotion: Promotion) {
+        val scope = dataScopeHolder.require()
+        if (!scope.validateAccess(promotion.costCenterCode)) {
+            throw PromotionForbiddenException()
         }
     }
 

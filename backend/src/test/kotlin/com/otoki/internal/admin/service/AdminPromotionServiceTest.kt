@@ -1,6 +1,7 @@
 package com.otoki.internal.admin.service
 
 import com.otoki.internal.admin.dto.DataScope
+import com.otoki.internal.admin.scope.DataScopeHolder
 import com.otoki.internal.admin.dto.request.PromotionCreateRequest
 import com.otoki.internal.promotion.entity.Promotion
 import com.otoki.internal.promotion.entity.PromotionProduct
@@ -41,7 +42,7 @@ class AdminPromotionServiceTest {
     @Mock private lateinit var accountRepository: AccountRepository
     @Mock private lateinit var productRepository: ProductRepository
     @Mock private lateinit var userRepository: UserRepository
-    @Mock private lateinit var adminDataScopeService: AdminDataScopeService
+    @Mock private lateinit var dataScopeHolder: DataScopeHolder
 
     @InjectMocks private lateinit var adminPromotionService: AdminPromotionService
 
@@ -55,7 +56,7 @@ class AdminPromotionServiceTest {
         @DisplayName("정상 조회 - 전체 권한 사용자 -> 행사마스터 목록 반환")
         fun getPromotions_allBranches_success() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-            whenever(adminDataScopeService.resolve(userId)).thenReturn(scope)
+            whenever(dataScopeHolder.require()).thenReturn(scope)
 
             val promotion = createPromotion(promotionTypeId = 1L)
             val pageable = PageRequest.of(0, 20, Sort.by("createdAt").descending())
@@ -72,7 +73,7 @@ class AdminPromotionServiceTest {
             whenever(promotionTypeRepository.findAllById(listOf(1L))).thenReturn(listOf(promotionType))
 
             val result = adminPromotionService.getPromotions(
-                userId = userId, keyword = null, promotionTypeId = null, category = null,
+                keyword = null, promotionTypeId = null, category = null,
                 startDate = null, endDate = null, page = 0, size = 20
             )
 
@@ -88,10 +89,10 @@ class AdminPromotionServiceTest {
         @DisplayName("지점 제한 사용자 - branchCodes 비어있음 -> 빈 결과")
         fun getPromotions_emptyBranchCodes_emptyResult() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = false)
-            whenever(adminDataScopeService.resolve(userId)).thenReturn(scope)
+            whenever(dataScopeHolder.require()).thenReturn(scope)
 
             val result = adminPromotionService.getPromotions(
-                userId = userId, keyword = null, promotionTypeId = null, category = null,
+                keyword = null, promotionTypeId = null, category = null,
                 startDate = null, endDate = null, page = 0, size = 20
             )
 
@@ -108,7 +109,7 @@ class AdminPromotionServiceTest {
         @DisplayName("정상 조회 - 유효한 ID -> 상세 정보 반환")
         fun getPromotion_success() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-            whenever(adminDataScopeService.resolve(userId)).thenReturn(scope)
+            whenever(dataScopeHolder.require()).thenReturn(scope)
 
             val promotion = createPromotion(promotionTypeId = 1L)
             whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
@@ -122,7 +123,7 @@ class AdminPromotionServiceTest {
             val promotionType = createPromotionType()
             whenever(promotionTypeRepository.findById(1L)).thenReturn(Optional.of(promotionType))
 
-            val result = adminPromotionService.getPromotion(userId, 1L)
+            val result = adminPromotionService.getPromotion(1L)
 
             assertThat(result.promotionNumber).isEqualTo("PM00000001")
             assertThat(result.accountName).isEqualTo("GS25 역삼점")
@@ -134,7 +135,7 @@ class AdminPromotionServiceTest {
         @Test
         @DisplayName("음수 ID - id=-1 -> PromotionInvalidParameterException")
         fun getPromotion_negativeId() {
-            assertThatThrownBy { adminPromotionService.getPromotion(userId, -1L) }
+            assertThatThrownBy { adminPromotionService.getPromotion(-1L) }
                 .isInstanceOf(PromotionInvalidParameterException::class.java)
         }
 
@@ -143,7 +144,7 @@ class AdminPromotionServiceTest {
         fun getPromotion_notFound() {
             whenever(promotionRepository.findById(999L)).thenReturn(Optional.empty())
 
-            assertThatThrownBy { adminPromotionService.getPromotion(userId, 999L) }
+            assertThatThrownBy { adminPromotionService.getPromotion(999L) }
                 .isInstanceOf(PromotionNotFoundException::class.java)
         }
 
@@ -153,7 +154,7 @@ class AdminPromotionServiceTest {
             val promotion = createPromotion(isDeleted = true)
             whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
 
-            assertThatThrownBy { adminPromotionService.getPromotion(userId, 1L) }
+            assertThatThrownBy { adminPromotionService.getPromotion(1L) }
                 .isInstanceOf(PromotionNotFoundException::class.java)
         }
 
@@ -161,12 +162,12 @@ class AdminPromotionServiceTest {
         @DisplayName("권한 외 조회 - 지점장이 타 지점 행사 -> PromotionForbiddenException")
         fun getPromotion_forbidden() {
             val scope = DataScope(branchCodes = listOf("2202"), isAllBranches = false)
-            whenever(adminDataScopeService.resolve(userId)).thenReturn(scope)
+            whenever(dataScopeHolder.require()).thenReturn(scope)
 
             val promotion = createPromotion(costCenterCode = "1101")
             whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
 
-            assertThatThrownBy { adminPromotionService.getPromotion(userId, 1L) }
+            assertThatThrownBy { adminPromotionService.getPromotion(1L) }
                 .isInstanceOf(PromotionForbiddenException::class.java)
         }
     }
@@ -302,7 +303,7 @@ class AdminPromotionServiceTest {
         @DisplayName("정상 수정 - 유효한 요청 -> 수정된 데이터 반환")
         fun updatePromotion_success() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-            whenever(adminDataScopeService.resolve(userId)).thenReturn(scope)
+            whenever(dataScopeHolder.require()).thenReturn(scope)
 
             val promotion = createPromotion()
             whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
@@ -311,7 +312,7 @@ class AdminPromotionServiceTest {
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
 
             val request = createRequest(promotionName = "수정된 행사명")
-            val result = adminPromotionService.updatePromotion(userId, 1L, request)
+            val result = adminPromotionService.updatePromotion(1L, request)
 
             assertThat(result.promotionName).isEqualTo("수정된 행사명")
         }
@@ -320,7 +321,7 @@ class AdminPromotionServiceTest {
         @DisplayName("대표상품 변경 - 기존과 다른 product_id -> PromotionProduct 업데이트")
         fun updatePromotion_changePrimaryProduct() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-            whenever(adminDataScopeService.resolve(userId)).thenReturn(scope)
+            whenever(dataScopeHolder.require()).thenReturn(scope)
 
             val promotion = createPromotion(primaryProductId = 200L)
             whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
@@ -335,7 +336,7 @@ class AdminPromotionServiceTest {
             whenever(promotionProductRepository.save(any<PromotionProduct>())).thenAnswer { it.getArgument<PromotionProduct>(0) }
 
             val request = createRequest(primaryProductId = 300L)
-            adminPromotionService.updatePromotion(userId, 1L, request)
+            adminPromotionService.updatePromotion(1L, request)
 
             verify(promotionProductRepository).save(argThat<PromotionProduct> { productId == 300L })
         }
@@ -346,7 +347,7 @@ class AdminPromotionServiceTest {
             val promotion = createPromotion(isDeleted = true)
             whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
 
-            assertThatThrownBy { adminPromotionService.updatePromotion(userId, 1L, createRequest()) }
+            assertThatThrownBy { adminPromotionService.updatePromotion(1L, createRequest()) }
                 .isInstanceOf(PromotionNotFoundException::class.java)
         }
 
@@ -354,7 +355,7 @@ class AdminPromotionServiceTest {
         @DisplayName("비활성 유형으로 수정 -> InvalidPromotionTypeException")
         fun updatePromotion_inactivePromotionType() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-            whenever(adminDataScopeService.resolve(userId)).thenReturn(scope)
+            whenever(dataScopeHolder.require()).thenReturn(scope)
 
             val promotion = createPromotion()
             whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
@@ -364,7 +365,7 @@ class AdminPromotionServiceTest {
 
             val request = createRequest(promotionTypeId = 5L)
 
-            assertThatThrownBy { adminPromotionService.updatePromotion(userId, 1L, request) }
+            assertThatThrownBy { adminPromotionService.updatePromotion(1L, request) }
                 .isInstanceOf(InvalidPromotionTypeException::class.java)
         }
     }
@@ -377,13 +378,13 @@ class AdminPromotionServiceTest {
         @DisplayName("정상 삭제 - 유효한 ID -> soft delete")
         fun deletePromotion_success() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-            whenever(adminDataScopeService.resolve(userId)).thenReturn(scope)
+            whenever(dataScopeHolder.require()).thenReturn(scope)
 
             val promotion = createPromotion()
             whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
 
-            adminPromotionService.deletePromotion(userId, 1L)
+            adminPromotionService.deletePromotion(1L)
 
             assertThat(promotion.isDeleted).isTrue()
             verify(promotionRepository).save(promotion)
@@ -395,14 +396,14 @@ class AdminPromotionServiceTest {
             val promotion = createPromotion(isDeleted = true)
             whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
 
-            assertThatThrownBy { adminPromotionService.deletePromotion(userId, 1L) }
+            assertThatThrownBy { adminPromotionService.deletePromotion(1L) }
                 .isInstanceOf(PromotionNotFoundException::class.java)
         }
 
         @Test
         @DisplayName("음수 ID -> PromotionInvalidParameterException")
         fun deletePromotion_negativeId() {
-            assertThatThrownBy { adminPromotionService.deletePromotion(userId, -1L) }
+            assertThatThrownBy { adminPromotionService.deletePromotion(-1L) }
                 .isInstanceOf(PromotionInvalidParameterException::class.java)
         }
 
@@ -410,12 +411,12 @@ class AdminPromotionServiceTest {
         @DisplayName("권한 외 삭제 - 지점장이 타 지점 행사 -> PromotionForbiddenException")
         fun deletePromotion_forbidden() {
             val scope = DataScope(branchCodes = listOf("2202"), isAllBranches = false)
-            whenever(adminDataScopeService.resolve(userId)).thenReturn(scope)
+            whenever(dataScopeHolder.require()).thenReturn(scope)
 
             val promotion = createPromotion(costCenterCode = "1101")
             whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
 
-            assertThatThrownBy { adminPromotionService.deletePromotion(userId, 1L) }
+            assertThatThrownBy { adminPromotionService.deletePromotion(1L) }
                 .isInstanceOf(PromotionForbiddenException::class.java)
         }
     }

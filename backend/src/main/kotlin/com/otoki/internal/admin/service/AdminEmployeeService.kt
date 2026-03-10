@@ -1,7 +1,9 @@
 package com.otoki.internal.admin.service
 
+import com.otoki.internal.admin.dto.EffectiveBranchResult
 import com.otoki.internal.admin.dto.response.EmployeeListItem
 import com.otoki.internal.admin.dto.response.EmployeeListResponse
+import com.otoki.internal.admin.scope.DataScopeHolder
 import com.otoki.internal.sap.repository.UserRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
@@ -11,12 +13,11 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 @Transactional(readOnly = true)
 class AdminEmployeeService(
-    private val adminDataScopeService: AdminDataScopeService,
+    private val dataScopeHolder: DataScopeHolder,
     private val userRepository: UserRepository
 ) {
 
     fun getEmployees(
-        userId: Long,
         status: String?,
         costCenterCode: String?,
         keyword: String?,
@@ -24,16 +25,12 @@ class AdminEmployeeService(
         page: Int,
         size: Int
     ): EmployeeListResponse {
-        val scope = adminDataScopeService.resolve(userId)
+        val scope = dataScopeHolder.require()
 
-        val effectiveBranchCodes: List<String>? = when {
-            scope.isAllBranches && costCenterCode != null -> listOf(costCenterCode)
-            scope.isAllBranches -> null
-            costCenterCode != null -> {
-                if (costCenterCode in scope.branchCodes) listOf(costCenterCode)
-                else return emptyResponse(page, size)
-            }
-            else -> scope.branchCodes.ifEmpty { return emptyResponse(page, size) }
+        val effectiveBranchCodes: List<String>? = when (val result = scope.effectiveBranchCodes(costCenterCode)) {
+            is EffectiveBranchResult.All -> null
+            is EffectiveBranchResult.Filtered -> result.codes
+            is EffectiveBranchResult.NoAccess -> return emptyResponse(page, size)
         }
 
         val pageable = PageRequest.of(page, size, Sort.by("name").ascending())

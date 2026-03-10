@@ -3,6 +3,8 @@ package com.otoki.internal.admin.controller
 import com.otoki.internal.admin.dto.request.PromotionCreateRequest
 import com.otoki.internal.admin.dto.response.PromotionDetailResponse
 import com.otoki.internal.admin.dto.response.PromotionListResponse
+import com.otoki.internal.admin.security.AdminPermission
+import com.otoki.internal.admin.security.RequiresPermission
 import com.otoki.internal.admin.service.AdminPromotionService
 import com.otoki.internal.common.dto.ApiResponse
 import com.otoki.internal.common.security.UserPrincipal
@@ -24,6 +26,7 @@ class AdminPromotionController(
 ) {
 
     @GetMapping
+    @RequiresPermission(AdminPermission.PROMOTION_READ)
     fun getPromotions(
         @AuthenticationPrincipal principal: UserPrincipal,
         @RequestParam(required = false) @Size(min = 1, max = 100) keyword: String?,
@@ -35,7 +38,6 @@ class AdminPromotionController(
         @RequestParam(required = false, defaultValue = "20") @Min(1) @Max(100) size: Int
     ): ResponseEntity<ApiResponse<PromotionListResponse>> {
         val response = adminPromotionService.getPromotions(
-            userId = principal.userId,
             keyword = keyword,
             promotionTypeId = promotionTypeId,
             category = category,
@@ -48,15 +50,17 @@ class AdminPromotionController(
     }
 
     @GetMapping("/{id}")
+    @RequiresPermission(AdminPermission.PROMOTION_READ)
     fun getPromotion(
         @AuthenticationPrincipal principal: UserPrincipal,
         @PathVariable id: Long
     ): ResponseEntity<ApiResponse<PromotionDetailResponse>> {
-        val response = adminPromotionService.getPromotion(principal.userId, id)
+        val response = adminPromotionService.getPromotion(id)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
     @PostMapping
+    @RequiresPermission(AdminPermission.PROMOTION_WRITE)
     fun createPromotion(
         @AuthenticationPrincipal principal: UserPrincipal,
         @Valid @RequestBody request: PromotionCreateRequest
@@ -66,21 +70,23 @@ class AdminPromotionController(
     }
 
     @PutMapping("/{id}")
+    @RequiresPermission(AdminPermission.PROMOTION_WRITE)
     fun updatePromotion(
         @AuthenticationPrincipal principal: UserPrincipal,
         @PathVariable id: Long,
         @Valid @RequestBody request: PromotionCreateRequest
     ): ResponseEntity<ApiResponse<PromotionDetailResponse>> {
-        val response = adminPromotionService.updatePromotion(principal.userId, id, request)
+        val response = adminPromotionService.updatePromotion(id, request)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
     @DeleteMapping("/{id}")
+    @RequiresPermission(AdminPermission.PROMOTION_WRITE)
     fun deletePromotion(
         @AuthenticationPrincipal principal: UserPrincipal,
         @PathVariable id: Long
     ): ResponseEntity<ApiResponse<Any?>> {
-        adminPromotionService.deletePromotion(principal.userId, id)
+        adminPromotionService.deletePromotion(id)
         return ResponseEntity.ok(ApiResponse.success(null as Any?))
     }
 }

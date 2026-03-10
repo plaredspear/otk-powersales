@@ -6,6 +6,7 @@ import com.otoki.internal.common.dto.request.GpsConsentRequest
 import com.otoki.internal.auth.dto.request.LoginRequest
 import com.otoki.internal.auth.dto.request.RefreshTokenRequest
 import com.otoki.internal.auth.dto.request.VerifyPasswordRequest
+import com.otoki.internal.admin.security.AdminRolePermissions
 import com.otoki.internal.admin.dto.response.AdminLoginResponse
 import com.otoki.internal.admin.dto.response.AdminTokenInfo
 import com.otoki.internal.admin.dto.response.AdminUserInfo
@@ -14,7 +15,6 @@ import com.otoki.internal.common.dto.response.*
 import com.otoki.internal.common.entity.AgreementHistory
 import com.otoki.internal.common.entity.LoginHistory
 import com.otoki.internal.sap.entity.User
-import com.otoki.internal.admin.security.AdminAuthorityFilter
 import com.otoki.internal.auth.exception.*
 import com.otoki.internal.common.exception.*
 import com.otoki.internal.common.repository.AgreementHistoryRepository
@@ -116,7 +116,7 @@ class AuthService(
             throw InvalidCredentialsException()
         }
 
-        if (user.appAuthority == null || user.appAuthority !in AdminAuthorityFilter.ALLOWED_AUTHORITIES) {
+        if (user.appAuthority == null || AdminRolePermissions.getPermissions(user.appAuthority).isEmpty()) {
             throw WebLoginNotAllowedException()
         }
 
@@ -177,7 +177,7 @@ class AuthService(
     private fun validateLoginAuthority(user: User, deviceId: String?) {
         if (deviceId.isNullOrBlank()) {
             // WEB 로그인
-            if (user.appAuthority == null || user.appAuthority !in AdminAuthorityFilter.ALLOWED_AUTHORITIES) {
+            if (user.appAuthority == null || AdminRolePermissions.getPermissions(user.appAuthority).isEmpty()) {
                 throw WebLoginNotAllowedException()
             }
         } else {

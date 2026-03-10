@@ -1,6 +1,8 @@
 package com.otoki.internal.admin.controller
 
 import com.otoki.internal.admin.dto.response.DashboardResponse
+import com.otoki.internal.admin.security.AdminPermission
+import com.otoki.internal.admin.security.RequiresPermission
 import com.otoki.internal.admin.service.AdminDashboardService
 import com.otoki.internal.common.dto.ApiResponse
 import com.otoki.internal.common.exception.BusinessException
@@ -21,6 +23,7 @@ class AdminDashboardController(
 ) {
 
     @GetMapping
+    @RequiresPermission(AdminPermission.DASHBOARD_READ)
     fun getDashboard(
         @AuthenticationPrincipal principal: UserPrincipal,
         @RequestParam(required = false) yearMonth: String?,
@@ -30,7 +33,7 @@ class AdminDashboardController(
             throw InvalidYearMonthException()
         }
 
-        val response = adminDashboardService.getDashboard(principal.userId, yearMonth, branchCode)
+        val response = adminDashboardService.getDashboard(yearMonth, branchCode)
         return ResponseEntity.ok(ApiResponse.success(response, "대시보드 조회 성공"))
     }
 

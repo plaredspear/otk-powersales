@@ -1,6 +1,8 @@
 package com.otoki.internal.admin.controller
 
 import com.otoki.internal.admin.dto.response.EmployeeListResponse
+import com.otoki.internal.admin.security.AdminPermission
+import com.otoki.internal.admin.security.RequiresPermission
 import com.otoki.internal.admin.service.AdminEmployeeService
 import com.otoki.internal.common.dto.ApiResponse
 import com.otoki.internal.common.security.UserPrincipal
@@ -18,6 +20,7 @@ class AdminEmployeeController(
 ) {
 
     @GetMapping
+    @RequiresPermission(AdminPermission.EMPLOYEE_READ)
     fun getEmployees(
         @AuthenticationPrincipal principal: UserPrincipal,
         @RequestParam(required = false) status: String?,
@@ -28,7 +31,6 @@ class AdminEmployeeController(
         @RequestParam(required = false, defaultValue = "20") size: Int
     ): ResponseEntity<ApiResponse<EmployeeListResponse>> {
         val response = adminEmployeeService.getEmployees(
-            userId = principal.userId,
             status = status,
             costCenterCode = costCenterCode,
             keyword = keyword,

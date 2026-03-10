@@ -8,4 +8,26 @@ package com.otoki.internal.admin.dto
 data class DataScope(
     val branchCodes: List<String>,
     val isAllBranches: Boolean
-)
+) {
+
+    fun effectiveBranchCodes(requestedBranchCode: String?): EffectiveBranchResult {
+        return when {
+            isAllBranches && requestedBranchCode != null ->
+                EffectiveBranchResult.Filtered(listOf(requestedBranchCode))
+            isAllBranches ->
+                EffectiveBranchResult.All
+            !isAllBranches && requestedBranchCode != null ->
+                if (requestedBranchCode in branchCodes) EffectiveBranchResult.Filtered(listOf(requestedBranchCode))
+                else EffectiveBranchResult.NoAccess
+            else ->
+                if (branchCodes.isEmpty()) EffectiveBranchResult.NoAccess
+                else EffectiveBranchResult.Filtered(branchCodes)
+        }
+    }
+
+    fun validateAccess(costCenterCode: String?): Boolean {
+        if (isAllBranches) return true
+        if (costCenterCode == null) return false
+        return costCenterCode in branchCodes
+    }
+}
