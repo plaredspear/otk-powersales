@@ -6,7 +6,6 @@ import { menuRoute } from '@/config/menuConfig';
 import queryClient from '@/lib/queryClient';
 import { BreadcrumbProvider } from '@/contexts/BreadcrumbContext';
 import AppBreadcrumb from '@/components/AppBreadcrumb';
-import { useBreadcrumb } from '@/hooks/useBreadcrumb';
 
 const { Text } = Typography;
 
@@ -17,9 +16,6 @@ export default function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
-  const breadcrumbItems = useBreadcrumb(location.pathname, null);
-  const hasBreadcrumb = breadcrumbItems !== null && breadcrumbItems.length > 0;
-
   const handleLogout = () => {
     queryClient.clear();
     logout();
@@ -37,9 +33,7 @@ export default function AdminLayout() {
         layout="mix"
         token={{
           header: {
-            heightLayoutHeader: hasBreadcrumb
-              ? HEADER_HEIGHT + BREADCRUMB_HEIGHT
-              : HEADER_HEIGHT,
+            heightLayoutHeader: HEADER_HEIGHT + BREADCRUMB_HEIGHT,
           },
         }}
         onMenuHeaderClick={() => navigate('/')}
