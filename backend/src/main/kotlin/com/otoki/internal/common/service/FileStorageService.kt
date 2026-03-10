@@ -166,6 +166,51 @@ class FileStorageService(
     }
 
     /**
+     * 교육 자료 파일 업로드
+     *
+     * @param file 업로드 파일
+     * @param eduId 교육 자료 ID
+     * @return 파일 키 (UUID 파일명)
+     */
+    fun uploadEducationFile(file: MultipartFile, eduId: String): String {
+        val originalFilename = file.originalFilename ?: "unknown"
+        val extension = getFileExtension(originalFilename)
+        val filename = "${UUID.randomUUID()}${extension}"
+
+        val targetLocation = rootLocation
+            .resolve("education")
+            .resolve(eduId)
+
+        try {
+            Files.createDirectories(targetLocation)
+            val targetFile = targetLocation.resolve(filename)
+            Files.copy(file.inputStream, targetFile, StandardCopyOption.REPLACE_EXISTING)
+            return filename
+        } catch (e: IOException) {
+            throw FileStorageException("파일 저장 실패: ${file.originalFilename}", e)
+        }
+    }
+
+    /**
+     * 교육 자료 파일 삭제
+     *
+     * @param eduId 교육 자료 ID
+     * @param fileKey 파일 키
+     */
+    fun deleteEducationFile(eduId: String, fileKey: String) {
+        val filePath = rootLocation
+            .resolve("education")
+            .resolve(eduId)
+            .resolve(fileKey)
+
+        try {
+            Files.deleteIfExists(filePath)
+        } catch (_: IOException) {
+            // idempotent: 파일이 없거나 삭제 실패 시 무시
+        }
+    }
+
+    /**
      * 파일 유효성 검증
      */
     private fun validateFile(file: MultipartFile) {

@@ -104,7 +104,7 @@ sourceSets {
 				"**/ClaimServiceTest.kt",
 				"**/ClientOrderServiceTest.kt",
 				"**/DailySalesServiceTest.kt",
-				"**/EducationServiceTest.kt",
+				// "**/EducationServiceTest.kt", // re-enabled: test rewritten for admin CRUD
 				"**/EventServiceTest.kt",
 				// "**/HomeServiceTest.kt", // re-enabled: test rewritten for V1 schema
 				"**/InspectionServiceTest.kt",

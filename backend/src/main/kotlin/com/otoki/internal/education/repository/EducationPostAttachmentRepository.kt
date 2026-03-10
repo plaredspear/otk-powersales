@@ -14,6 +14,8 @@ interface EducationPostAttachmentRepository : JpaRepository<EducationPostAttachm
      */
     fun findByEduId(eduId: String): List<EducationPostAttachment>
 
+    fun deleteByEduId(eduId: String)
+
     // --- 주석 처리: V1 스키마 변경으로 불필요 ---
     // fun findByPostId(postId: Long): List<EducationPostAttachment>
 }
