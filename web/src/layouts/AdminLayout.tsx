@@ -9,8 +9,8 @@ import AppBreadcrumb from '@/components/AppBreadcrumb';
 
 const { Text } = Typography;
 
-const HEADER_HEIGHT = 56;
-const BREADCRUMB_HEIGHT = 40;
+const HEADER_HEIGHT = 48;
+const BREADCRUMB_HEIGHT = 28;
 
 export default function AdminLayout() {
   const location = useLocation();

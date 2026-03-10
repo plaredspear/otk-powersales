@@ -14,7 +14,7 @@ export default function AppBreadcrumb() {
   return (
     <div
       style={{
-        height: 40,
+        height: 28,
         paddingLeft: 24,
         background: '#fff',
         borderBottom: `1px solid ${token.colorBorderSecondary}`,
