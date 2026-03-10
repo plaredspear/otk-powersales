@@ -11,8 +11,6 @@ export default function AppBreadcrumb() {
   const items = useBreadcrumb(pathname, dynamicTitle);
   const { token } = theme.useToken();
 
-  if (!items || items.length === 0) return null;
-
   return (
     <div
       style={{
@@ -25,15 +23,17 @@ export default function AppBreadcrumb() {
         width: '100%',
       }}
     >
-      <Breadcrumb
-        items={items.map((item) => ({
-          title: item.path ? (
-            <a onClick={() => navigate(item.path!)}>{item.label}</a>
-          ) : (
-            item.label
-          ),
-        }))}
-      />
+      {items && items.length > 0 && (
+        <Breadcrumb
+          items={items.map((item) => ({
+            title: item.path ? (
+              <a onClick={() => navigate(item.path!)}>{item.label}</a>
+            ) : (
+              item.label
+            ),
+          }))}
+        />
+      )}
     </div>
   );
 }
