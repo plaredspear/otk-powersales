@@ -6,13 +6,19 @@ import { menuRoute } from '@/config/menuConfig';
 import queryClient from '@/lib/queryClient';
 import { BreadcrumbProvider } from '@/contexts/BreadcrumbContext';
 import AppBreadcrumb from '@/components/AppBreadcrumb';
+import { useBreadcrumb } from '@/hooks/useBreadcrumb';
 
 const { Text } = Typography;
+
+const HEADER_HEIGHT = 56;
+const BREADCRUMB_HEIGHT = 40;
 
 export default function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
+  const breadcrumbItems = useBreadcrumb(location.pathname, null);
+  const hasBreadcrumb = breadcrumbItems !== null && breadcrumbItems.length > 0;
 
   const handleLogout = () => {
     queryClient.clear();
@@ -29,6 +35,13 @@ export default function AdminLayout() {
         fixedHeader
         fixSiderbar
         layout="mix"
+        token={{
+          header: {
+            heightLayoutHeader: hasBreadcrumb
+              ? HEADER_HEIGHT + BREADCRUMB_HEIGHT
+              : HEADER_HEIGHT,
+          },
+        }}
         onMenuHeaderClick={() => navigate('/')}
         menuItemRender={(item, dom) => (
           <a onClick={() => item.path && navigate(item.path)}>{dom}</a>
