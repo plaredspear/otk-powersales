@@ -1,3 +1,4 @@
+import './AdminLayout.css';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import ProLayout from '@ant-design/pro-layout';
 import { Button, Space, Typography } from 'antd';
