@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import {
-  DashboardOutlined,
   BarChartOutlined,
   TeamOutlined,
   ClockCircleOutlined,
@@ -35,11 +34,6 @@ export interface MenuRoute {
 export const menuRoute: MenuRoute = {
   path: '/',
   routes: [
-    {
-      path: '/',
-      name: '대시보드',
-      icon: <DashboardOutlined />,
-    },
     {
       name: '매출조회',
       icon: <BarChartOutlined />,
