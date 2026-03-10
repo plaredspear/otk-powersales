@@ -80,3 +80,39 @@ class InvalidWorkType3Exception : BusinessException(
     message = "근무유형3은 고정, 격고, 순회 중 하나여야 합니다",
     httpStatus = HttpStatus.BAD_REQUEST
 )
+
+class TeamCategoryMismatchException(detail: String) : BusinessException(
+    errorCode = "TEAM_CATEGORY_MISMATCH",
+    message = detail,
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+class ClosedEmployeeModificationException : BusinessException(
+    errorCode = "CLOSED_EMPLOYEE_MODIFICATION",
+    message = "확정되었고 여사원이 마감한 행사조원은 수정할 수 없습니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+class ClosedEmployeeDeleteException : BusinessException(
+    errorCode = "CLOSED_EMPLOYEE_DELETE",
+    message = "확정되었고 여사원이 마감한 행사조원은 삭제할 수 없습니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+class ClosedPromotionModificationException : BusinessException(
+    errorCode = "CLOSED_PROMOTION_MODIFICATION",
+    message = "일마감이 하나라도 등록된 행사의 시작일, 종료일 및 거래처는 변경할 수 없습니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+class ClosedPromotionDeleteException : BusinessException(
+    errorCode = "CLOSED_PROMOTION_DELETE",
+    message = "일마감이 하나라도 등록된 행사는 삭제할 수 없습니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+class DateRangeConflictException(minDate: String, maxDate: String) : BusinessException(
+    errorCode = "DATE_RANGE_CONFLICT",
+    message = "행사 일정은 행사조원 할당일 범위(${minDate} ~ ${maxDate})보다 작을 수 없습니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)

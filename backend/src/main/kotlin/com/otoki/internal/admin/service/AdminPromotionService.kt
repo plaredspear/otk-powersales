@@ -9,12 +9,14 @@ import com.otoki.internal.admin.scope.DataScopeHolder
 import com.otoki.internal.promotion.entity.Promotion
 import com.otoki.internal.promotion.entity.PromotionProduct
 import com.otoki.internal.promotion.exception.*
+import com.otoki.internal.promotion.repository.PromotionEmployeeRepository
 import com.otoki.internal.promotion.repository.PromotionProductRepository
 import com.otoki.internal.promotion.repository.PromotionRepository
 import com.otoki.internal.promotion.repository.PromotionTypeRepository
 import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.sap.repository.ProductRepository
 import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.schedule.repository.ScheduleRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
@@ -26,10 +28,12 @@ class AdminPromotionService(
     private val promotionRepository: PromotionRepository,
     private val promotionProductRepository: PromotionProductRepository,
     private val promotionTypeRepository: PromotionTypeRepository,
+    private val promotionEmployeeRepository: PromotionEmployeeRepository,
     private val accountRepository: AccountRepository,
     private val productRepository: ProductRepository,
     private val userRepository: UserRepository,
-    private val dataScopeHolder: DataScopeHolder
+    private val dataScopeHolder: DataScopeHolder,
+    private val scheduleRepository: ScheduleRepository
 ) {
 
     fun getPromotions(
@@ -180,6 +184,32 @@ class AdminPromotionService(
         validateDateRange(request.startDate, request.endDate)
         validatePromotionType(request.promotionTypeId)
 
+        // 1-2-C: 마감 보호 — 거래처/날짜 변경 차단
+        val criticalFieldChanged = promotion.accountId != request.accountId ||
+            promotion.startDate != request.startDate ||
+            promotion.endDate != request.endDate
+        if (criticalFieldChanged) {
+            if (promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(id)) {
+                throw ClosedPromotionModificationException()
+            }
+        }
+
+        // 2: 날짜 축소 보호
+        if (promotion.startDate != request.startDate || promotion.endDate != request.endDate) {
+            val minDate = promotionEmployeeRepository.findMinScheduleDateByPromotionId(id)
+            val maxDate = promotionEmployeeRepository.findMaxScheduleDateByPromotionId(id)
+            if (minDate != null && maxDate != null) {
+                if (request.startDate.isAfter(minDate) || request.endDate.isBefore(maxDate)) {
+                    throw DateRangeConflictException(minDate.toString(), maxDate.toString())
+                }
+            }
+        }
+
+        // 1-3: 거래처 변경 시 스케줄 초기화
+        if (promotion.accountId != request.accountId) {
+            resetSchedulesForPromotion(id)
+        }
+
         accountRepository.findById(request.accountId)
             .orElseThrow { AccountNotFoundException() }
 
@@ -252,8 +282,35 @@ class AdminPromotionService(
         val promotion = findActivePromotion(id)
         validateDataScope(promotion)
 
+        // 1-2-D: 마감 보호 — 삭제 차단
+        if (promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(id)) {
+            throw ClosedPromotionDeleteException()
+        }
+
+        // 1-4-A: 연쇄 삭제 — 스케줄 + 조원
+        val employees = promotionEmployeeRepository.findByPromotionId(id)
+        val scheduleIds = employees.mapNotNull { it.scheduleId }
+        if (scheduleIds.isNotEmpty()) {
+            scheduleRepository.deleteAllByIdIn(scheduleIds)
+        }
+        promotionEmployeeRepository.deleteByPromotionId(id)
+
         promotion.softDelete()
         promotionRepository.save(promotion)
+    }
+
+    private fun resetSchedulesForPromotion(promotionId: Long) {
+        val employees = promotionEmployeeRepository.findByPromotionId(promotionId)
+        val scheduleIds = employees.mapNotNull { it.scheduleId }
+        if (scheduleIds.isNotEmpty()) {
+            scheduleRepository.deleteAllByIdIn(scheduleIds)
+        }
+        employees.forEach { pe ->
+            if (pe.scheduleId != null) {
+                pe.scheduleId = null
+                promotionEmployeeRepository.save(pe)
+            }
+        }
     }
 
     private fun validatePromotionType(promotionTypeId: Long?) {
