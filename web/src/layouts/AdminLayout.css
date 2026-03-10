@@ -1,0 +1,8 @@
+/*
+ * ProLayout sets GlobalHeader height to heightLayoutHeader (76px = 48 header + 28 breadcrumb).
+ * Override GlobalHeader to 48px so header content (logo, actions) is centered in 48px,
+ * leaving 28px for the breadcrumb rendered via headerRender.
+ */
+.ant-pro-global-header {
+  height: 48px !important;
+}
