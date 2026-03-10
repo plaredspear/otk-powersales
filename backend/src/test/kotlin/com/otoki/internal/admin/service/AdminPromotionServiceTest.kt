@@ -4,9 +4,11 @@ import com.otoki.internal.admin.dto.DataScope
 import com.otoki.internal.admin.scope.DataScopeHolder
 import com.otoki.internal.admin.dto.request.PromotionCreateRequest
 import com.otoki.internal.promotion.entity.Promotion
+import com.otoki.internal.promotion.entity.PromotionEmployee
 import com.otoki.internal.promotion.entity.PromotionProduct
 import com.otoki.internal.promotion.entity.PromotionType
 import com.otoki.internal.promotion.exception.*
+import com.otoki.internal.promotion.repository.PromotionEmployeeRepository
 import com.otoki.internal.promotion.repository.PromotionProductRepository
 import com.otoki.internal.promotion.repository.PromotionRepository
 import com.otoki.internal.promotion.repository.PromotionTypeRepository
@@ -16,6 +18,7 @@ import com.otoki.internal.sap.entity.User
 import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.sap.repository.ProductRepository
 import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.schedule.repository.ScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
@@ -39,10 +42,12 @@ class AdminPromotionServiceTest {
     @Mock private lateinit var promotionRepository: PromotionRepository
     @Mock private lateinit var promotionProductRepository: PromotionProductRepository
     @Mock private lateinit var promotionTypeRepository: PromotionTypeRepository
+    @Mock private lateinit var promotionEmployeeRepository: PromotionEmployeeRepository
     @Mock private lateinit var accountRepository: AccountRepository
     @Mock private lateinit var productRepository: ProductRepository
     @Mock private lateinit var userRepository: UserRepository
     @Mock private lateinit var dataScopeHolder: DataScopeHolder
+    @Mock private lateinit var scheduleRepository: ScheduleRepository
 
     @InjectMocks private lateinit var adminPromotionService: AdminPromotionService
 
@@ -368,6 +373,86 @@ class AdminPromotionServiceTest {
             assertThatThrownBy { adminPromotionService.updatePromotion(1L, request) }
                 .isInstanceOf(InvalidPromotionTypeException::class.java)
         }
+
+        @Test
+        @DisplayName("마감 조원 존재 + 거래처 변경 -> ClosedPromotionModificationException")
+        fun updatePromotion_closedEmployeeCriticalField() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            whenever(dataScopeHolder.require()).thenReturn(scope)
+
+            val promotion = createPromotion()
+            whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
+            whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(true)
+
+            val request = createRequest(accountId = 200)
+
+            assertThatThrownBy { adminPromotionService.updatePromotion(1L, request) }
+                .isInstanceOf(ClosedPromotionModificationException::class.java)
+        }
+
+        @Test
+        @DisplayName("마감 조원 존재 + 날짜 변경 -> ClosedPromotionModificationException")
+        fun updatePromotion_closedEmployeeDateChange() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            whenever(dataScopeHolder.require()).thenReturn(scope)
+
+            val promotion = createPromotion()
+            whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
+            whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(true)
+
+            val request = createRequest(startDate = LocalDate.of(2026, 3, 5))
+
+            assertThatThrownBy { adminPromotionService.updatePromotion(1L, request) }
+                .isInstanceOf(ClosedPromotionModificationException::class.java)
+        }
+
+        @Test
+        @DisplayName("날짜 축소 시 조원 범위 초과 -> DateRangeConflictException")
+        fun updatePromotion_dateRangeConflict() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            whenever(dataScopeHolder.require()).thenReturn(scope)
+
+            val promotion = createPromotion()
+            whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
+            whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(false)
+            whenever(promotionEmployeeRepository.findMinScheduleDateByPromotionId(1L)).thenReturn(LocalDate.of(2026, 3, 12))
+            whenever(promotionEmployeeRepository.findMaxScheduleDateByPromotionId(1L)).thenReturn(LocalDate.of(2026, 3, 18))
+
+            // startDate를 3/13으로 → minDate(3/12) 이후이므로 충돌
+            val request = createRequest(startDate = LocalDate.of(2026, 3, 13))
+
+            assertThatThrownBy { adminPromotionService.updatePromotion(1L, request) }
+                .isInstanceOf(DateRangeConflictException::class.java)
+        }
+
+        @Test
+        @DisplayName("거래처 변경 -> 스케줄 초기화")
+        fun updatePromotion_accountChange_resetSchedules() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            whenever(dataScopeHolder.require()).thenReturn(scope)
+
+            val promotion = createPromotion()
+            whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
+            whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(false)
+
+            val pe = PromotionEmployee(
+                id = 5L, promotionId = 1L, employeeSfid = "sfid1",
+                scheduleDate = LocalDate.of(2026, 3, 15), workStatus = "근무",
+                workType1 = "시식", workType3 = "고정", scheduleId = 100L
+            )
+            whenever(promotionEmployeeRepository.findByPromotionId(1L)).thenReturn(listOf(pe))
+
+            val newAccount = createAccount(id = 200, name = "GS25 강남점")
+            whenever(accountRepository.findById(200)).thenReturn(Optional.of(newAccount))
+            whenever(productRepository.findById(200L)).thenReturn(Optional.of(createProduct()))
+            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>())).thenAnswer { it.getArgument<PromotionEmployee>(0) }
+
+            adminPromotionService.updatePromotion(1L, createRequest(accountId = 200))
+
+            verify(scheduleRepository).deleteAllByIdIn(listOf(100L))
+            assertThat(pe.scheduleId).isNull()
+        }
     }
 
     @Nested
@@ -375,19 +460,43 @@ class AdminPromotionServiceTest {
     inner class DeletePromotionTests {
 
         @Test
-        @DisplayName("정상 삭제 - 유효한 ID -> soft delete")
+        @DisplayName("정상 삭제 - 유효한 ID -> soft delete + 연쇄 삭제")
         fun deletePromotion_success() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
             val promotion = createPromotion()
             whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
+            whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(false)
+
+            val pe = PromotionEmployee(
+                id = 5L, promotionId = 1L, employeeSfid = "sfid1",
+                scheduleDate = LocalDate.of(2026, 3, 15), workStatus = "근무",
+                workType1 = "시식", workType3 = "고정", scheduleId = 100L
+            )
+            whenever(promotionEmployeeRepository.findByPromotionId(1L)).thenReturn(listOf(pe))
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
 
             adminPromotionService.deletePromotion(1L)
 
             assertThat(promotion.isDeleted).isTrue()
+            verify(scheduleRepository).deleteAllByIdIn(listOf(100L))
+            verify(promotionEmployeeRepository).deleteByPromotionId(1L)
             verify(promotionRepository).save(promotion)
+        }
+
+        @Test
+        @DisplayName("마감 조원 존재 -> ClosedPromotionDeleteException")
+        fun deletePromotion_closedEmployee() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            whenever(dataScopeHolder.require()).thenReturn(scope)
+
+            val promotion = createPromotion()
+            whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
+            whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(true)
+
+            assertThatThrownBy { adminPromotionService.deletePromotion(1L) }
+                .isInstanceOf(ClosedPromotionDeleteException::class.java)
         }
 
         @Test

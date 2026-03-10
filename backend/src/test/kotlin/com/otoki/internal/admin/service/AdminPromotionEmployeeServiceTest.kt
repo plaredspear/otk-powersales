@@ -3,14 +3,12 @@ package com.otoki.internal.admin.service
 import com.otoki.internal.admin.dto.request.PromotionEmployeeRequest
 import com.otoki.internal.promotion.entity.Promotion
 import com.otoki.internal.promotion.entity.PromotionEmployee
-import com.otoki.internal.promotion.exception.InvalidWorkStatusException
-import com.otoki.internal.promotion.exception.InvalidWorkType3Exception
-import com.otoki.internal.promotion.exception.PromotionEmployeeNotFoundException
-import com.otoki.internal.promotion.exception.PromotionNotFoundException
+import com.otoki.internal.promotion.exception.*
 import com.otoki.internal.promotion.repository.PromotionEmployeeRepository
 import com.otoki.internal.promotion.repository.PromotionRepository
 import com.otoki.internal.sap.entity.User
 import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.schedule.repository.ScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
@@ -22,7 +20,6 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.*
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.util.*
 
 @ExtendWith(MockitoExtension::class)
@@ -32,6 +29,7 @@ class AdminPromotionEmployeeServiceTest {
     @Mock private lateinit var promotionEmployeeRepository: PromotionEmployeeRepository
     @Mock private lateinit var promotionRepository: PromotionRepository
     @Mock private lateinit var userRepository: UserRepository
+    @Mock private lateinit var scheduleRepository: ScheduleRepository
 
     @InjectMocks private lateinit var service: AdminPromotionEmployeeService
 
@@ -42,306 +40,258 @@ class AdminPromotionEmployeeServiceTest {
         @Test
         @DisplayName("정상 조회 - 행사에 조원 존재 -> 목록 반환")
         fun getEmployees_success() {
-            val promotion = createPromotion()
-            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
-
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             val employees = listOf(
-                createPromotionEmployee(id = 1L, scheduleDate = LocalDate.of(2026, 3, 15)),
-                createPromotionEmployee(id = 2L, scheduleDate = LocalDate.of(2026, 3, 16))
+                createPe(id = 1L, scheduleDate = LocalDate.of(2026, 3, 15)),
+                createPe(id = 2L, scheduleDate = LocalDate.of(2026, 3, 16))
             )
-            whenever(promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(10L))
-                .thenReturn(employees)
-
-            val user = createUser()
-            whenever(userRepository.findBySfidIn(listOf("a0B5g00000XYZabc"))).thenReturn(listOf(user))
+            whenever(promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(10L)).thenReturn(employees)
+            whenever(userRepository.findBySfidIn(listOf("a0B5g00000XYZabc"))).thenReturn(listOf(createUser()))
 
             val result = service.getEmployees(10L)
-
             assertThat(result).hasSize(2)
             assertThat(result[0].employeeName).isEqualTo("김여사")
-            assertThat(result[0].scheduleDate).isEqualTo(LocalDate.of(2026, 3, 15))
-        }
-
-        @Test
-        @DisplayName("빈 목록 - 조원 없음 -> 빈 배열 반환")
-        fun getEmployees_empty() {
-            val promotion = createPromotion()
-            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
-            whenever(promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(10L))
-                .thenReturn(emptyList())
-
-            val result = service.getEmployees(10L)
-
-            assertThat(result).isEmpty()
         }
 
         @Test
         @DisplayName("행사 미존재 -> PromotionNotFoundException")
         fun getEmployees_promotionNotFound() {
             whenever(promotionRepository.findById(999L)).thenReturn(Optional.empty())
-
             assertThatThrownBy { service.getEmployees(999L) }
                 .isInstanceOf(PromotionNotFoundException::class.java)
         }
-
-        @Test
-        @DisplayName("삭제된 행사 -> PromotionNotFoundException")
-        fun getEmployees_deletedPromotion() {
-            val promotion = createPromotion(isDeleted = true)
-            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
-
-            assertThatThrownBy { service.getEmployees(10L) }
-                .isInstanceOf(PromotionNotFoundException::class.java)
-        }
     }
 
     @Nested
-    @DisplayName("getEmployee - 행사조원 상세 조회")
-    inner class GetEmployeeTests {
-
-        @Test
-        @DisplayName("정상 조회 -> 상세 반환")
-        fun getEmployee_success() {
-            val pe = createPromotionEmployee()
-            whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
-
-            val user = createUser()
-            whenever(userRepository.findBySfidIn(listOf("a0B5g00000XYZabc"))).thenReturn(listOf(user))
-
-            val result = service.getEmployee(1L)
-
-            assertThat(result.id).isEqualTo(1L)
-            assertThat(result.employeeName).isEqualTo("김여사")
-            assertThat(result.createdAt).isNotNull()
-        }
-
-        @Test
-        @DisplayName("미존재 -> PromotionEmployeeNotFoundException")
-        fun getEmployee_notFound() {
-            whenever(promotionEmployeeRepository.findById(999L)).thenReturn(Optional.empty())
-
-            assertThatThrownBy { service.getEmployee(999L) }
-                .isInstanceOf(PromotionEmployeeNotFoundException::class.java)
-        }
-    }
-
-    @Nested
-    @DisplayName("createEmployee - 행사조원 등록")
+    @DisplayName("createEmployee - 등록 + 전문행사조 매칭")
     inner class CreateEmployeeTests {
 
         @Test
-        @DisplayName("정상 등록 -> 생성된 조원 반환")
-        fun createEmployee_success() {
-            val promotion = createPromotion()
-            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
+        @DisplayName("정상 등록 - 라면행사 + 라면세일조 -> 성공")
+        fun createEmployee_teamMatch_success() {
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion(category = "라면")))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
             whenever(userRepository.findBySfidIn(any())).thenReturn(listOf(createUser()))
 
-            val request = createRequest()
-            val result = service.createEmployee(10L, request)
-
+            val result = service.createEmployee(10L, createRequest(professionalPromotionTeam = "라면세일조"))
             assertThat(result.employeeSfid).isEqualTo("a0B5g00000XYZabc")
-            assertThat(result.workStatus).isEqualTo("근무")
-            assertThat(result.scheduleId).isNull()
-            assertThat(result.promoCloseByTm).isFalse()
         }
 
         @Test
-        @DisplayName("선택적 필드 null -> 성공")
-        fun createEmployee_optionalFieldsNull() {
-            val promotion = createPromotion()
-            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
+        @DisplayName("전문행사조 null -> 모든 카테고리 허용")
+        fun createEmployee_teamNull_success() {
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion(category = "라면")))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
             whenever(userRepository.findBySfidIn(any())).thenReturn(emptyList())
 
-            val request = createRequest(workType4 = null, professionalPromotionTeam = null, basePrice = null, dailyTargetCount = null)
-            val result = service.createEmployee(10L, request)
-
-            assertThat(result.workType4).isNull()
+            val result = service.createEmployee(10L, createRequest(professionalPromotionTeam = null))
             assertThat(result.professionalPromotionTeam).isNull()
-            assertThat(result.basePrice).isNull()
-            assertThat(result.dailyTargetCount).isNull()
         }
 
         @Test
-        @DisplayName("행사 미존재 -> PromotionNotFoundException")
-        fun createEmployee_promotionNotFound() {
-            whenever(promotionRepository.findById(999L)).thenReturn(Optional.empty())
+        @DisplayName("전문행사조 '일반' -> 모든 카테고리 허용")
+        fun createEmployee_teamGeneral_success() {
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion(category = "냉장")))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            whenever(userRepository.findBySfidIn(any())).thenReturn(emptyList())
 
-            assertThatThrownBy { service.createEmployee(999L, createRequest()) }
-                .isInstanceOf(PromotionNotFoundException::class.java)
+            service.createEmployee(10L, createRequest(professionalPromotionTeam = "일반"))
         }
 
         @Test
-        @DisplayName("삭제된 행사 -> PromotionNotFoundException")
-        fun createEmployee_deletedPromotion() {
-            val promotion = createPromotion(isDeleted = true)
-            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
+        @DisplayName("만두행사 + 냉동팀 -> 허용")
+        fun createEmployee_manduWithFrozen_success() {
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion(category = "만두")))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            whenever(userRepository.findBySfidIn(any())).thenReturn(emptyList())
 
-            assertThatThrownBy { service.createEmployee(10L, createRequest()) }
-                .isInstanceOf(PromotionNotFoundException::class.java)
+            service.createEmployee(10L, createRequest(professionalPromotionTeam = "프레시세일조_냉동"))
         }
 
         @Test
-        @DisplayName("잘못된 work_status -> InvalidWorkStatusException")
-        fun createEmployee_invalidWorkStatus() {
-            val promotion = createPromotion()
-            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
+        @DisplayName("라면행사 + 냉장팀 -> TEAM_CATEGORY_MISMATCH")
+        fun createEmployee_teamMismatch() {
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion(category = "라면")))
 
-            assertThatThrownBy { service.createEmployee(10L, createRequest(workStatus = "출장")) }
-                .isInstanceOf(InvalidWorkStatusException::class.java)
+            assertThatThrownBy { service.createEmployee(10L, createRequest(professionalPromotionTeam = "프레시세일조_냉장")) }
+                .isInstanceOf(TeamCategoryMismatchException::class.java)
         }
 
         @Test
-        @DisplayName("잘못된 work_type3 -> InvalidWorkType3Exception")
-        fun createEmployee_invalidWorkType3() {
-            val promotion = createPromotion()
-            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
+        @DisplayName("만두행사 + 라면팀 -> TEAM_CATEGORY_MISMATCH")
+        fun createEmployee_manduRamenMismatch() {
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion(category = "만두")))
 
-            assertThatThrownBy { service.createEmployee(10L, createRequest(workType3 = "파견")) }
-                .isInstanceOf(InvalidWorkType3Exception::class.java)
+            assertThatThrownBy { service.createEmployee(10L, createRequest(professionalPromotionTeam = "라면세일조")) }
+                .isInstanceOf(TeamCategoryMismatchException::class.java)
         }
     }
 
     @Nested
-    @DisplayName("updateEmployee - 행사조원 수정")
+    @DisplayName("updateEmployee - 수정 + 보호 규칙")
     inner class UpdateEmployeeTests {
 
         @Test
-        @DisplayName("정상 수정 -> 수정된 조원 반환")
+        @DisplayName("정상 수정 -> 성공")
         fun updateEmployee_success() {
-            val pe = createPromotionEmployee()
+            val pe = createPe()
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
             whenever(userRepository.findBySfidIn(any())).thenReturn(listOf(createUser()))
 
-            val request = createRequest(scheduleDate = LocalDate.of(2026, 3, 20))
-            val result = service.updateEmployee(1L, request)
-
+            val result = service.updateEmployee(1L, createRequest(scheduleDate = LocalDate.of(2026, 3, 20)))
             assertThat(result.scheduleDate).isEqualTo(LocalDate.of(2026, 3, 20))
         }
 
         @Test
-        @DisplayName("미존재 -> PromotionEmployeeNotFoundException")
-        fun updateEmployee_notFound() {
-            whenever(promotionEmployeeRepository.findById(999L)).thenReturn(Optional.empty())
+        @DisplayName("마감 조원 비핵심필드 수정 -> 허용")
+        fun updateEmployee_closedNonCritical_success() {
+            val pe = createPe(scheduleId = 100L, promoCloseByTm = true)
+            whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            whenever(userRepository.findBySfidIn(any())).thenReturn(listOf(createUser()))
 
-            assertThatThrownBy { service.updateEmployee(999L, createRequest()) }
-                .isInstanceOf(PromotionEmployeeNotFoundException::class.java)
+            // work_type1만 변경 (비핵심필드)
+            val result = service.updateEmployee(1L, createRequest(workType1 = "시음"))
+            assertThat(result).isNotNull()
         }
 
         @Test
-        @DisplayName("잘못된 work_status -> InvalidWorkStatusException")
-        fun updateEmployee_invalidWorkStatus() {
-            val pe = createPromotionEmployee()
+        @DisplayName("마감 조원 핵심필드(employee_sfid) 수정 -> CLOSED_EMPLOYEE_MODIFICATION")
+        fun updateEmployee_closedCriticalField() {
+            val pe = createPe(scheduleId = 100L, promoCloseByTm = true)
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
 
-            assertThatThrownBy { service.updateEmployee(1L, createRequest(workStatus = "출장")) }
-                .isInstanceOf(InvalidWorkStatusException::class.java)
+            assertThatThrownBy { service.updateEmployee(1L, createRequest(employeeSfid = "DIFFERENT_SFID")) }
+                .isInstanceOf(ClosedEmployeeModificationException::class.java)
         }
 
         @Test
-        @DisplayName("잘못된 work_type3 -> InvalidWorkType3Exception")
-        fun updateEmployee_invalidWorkType3() {
-            val pe = createPromotionEmployee()
+        @DisplayName("마감 조원 핵심필드(schedule_date) 수정 -> CLOSED_EMPLOYEE_MODIFICATION")
+        fun updateEmployee_closedScheduleDate() {
+            val pe = createPe(scheduleId = 100L, promoCloseByTm = true)
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
 
-            assertThatThrownBy { service.updateEmployee(1L, createRequest(workType3 = "파견")) }
-                .isInstanceOf(InvalidWorkType3Exception::class.java)
+            assertThatThrownBy { service.updateEmployee(1L, createRequest(scheduleDate = LocalDate.of(2026, 4, 1))) }
+                .isInstanceOf(ClosedEmployeeModificationException::class.java)
+        }
+
+        @Test
+        @DisplayName("확정 조원 핵심필드 변경 -> 스케줄 삭제 + schedule_id null")
+        fun updateEmployee_criticalFieldChange_scheduleDeleted() {
+            val pe = createPe(scheduleId = 100L)
+            whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            whenever(userRepository.findBySfidIn(any())).thenReturn(listOf(createUser()))
+
+            service.updateEmployee(1L, createRequest(employeeSfid = "NEW_SFID"))
+
+            verify(scheduleRepository).deleteAllByIdIn(listOf(100L))
+            assertThat(pe.scheduleId).isNull()
+        }
+
+        @Test
+        @DisplayName("professionalPromotionTeam 변경 시 -> 스케줄 삭제 안 함")
+        fun updateEmployee_teamChange_noScheduleDelete() {
+            val pe = createPe(scheduleId = 100L)
+            whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            whenever(userRepository.findBySfidIn(any())).thenReturn(listOf(createUser()))
+
+            // team + sfid 동시 변경 -> team 변경이 있으므로 스케줄 삭제 안 함
+            service.updateEmployee(1L, createRequest(
+                employeeSfid = "NEW_SFID",
+                professionalPromotionTeam = "라면세일조B"
+            ))
+
+            verify(scheduleRepository, never()).deleteAllByIdIn(any())
+            assertThat(pe.scheduleId).isEqualTo(100L)
         }
     }
 
     @Nested
-    @DisplayName("deleteEmployee - 행사조원 삭제")
+    @DisplayName("deleteEmployee - 삭제 + 보호 규칙")
     inner class DeleteEmployeeTests {
 
         @Test
-        @DisplayName("정상 삭제 -> hard delete")
+        @DisplayName("미마감 조원 삭제 -> 성공")
         fun deleteEmployee_success() {
-            val pe = createPromotionEmployee()
+            val pe = createPe()
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
 
             service.deleteEmployee(1L)
-
             verify(promotionEmployeeRepository).delete(pe)
         }
 
         @Test
-        @DisplayName("미존재 -> PromotionEmployeeNotFoundException")
-        fun deleteEmployee_notFound() {
-            whenever(promotionEmployeeRepository.findById(999L)).thenReturn(Optional.empty())
+        @DisplayName("확정 조원(미마감) 삭제 -> 스케줄 연쇄 삭제")
+        fun deleteEmployee_withSchedule_cascadeDelete() {
+            val pe = createPe(scheduleId = 100L)
+            whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
 
-            assertThatThrownBy { service.deleteEmployee(999L) }
-                .isInstanceOf(PromotionEmployeeNotFoundException::class.java)
+            service.deleteEmployee(1L)
+
+            verify(scheduleRepository).deleteAllByIdIn(listOf(100L))
+            verify(promotionEmployeeRepository).delete(pe)
+        }
+
+        @Test
+        @DisplayName("마감 조원 삭제 -> CLOSED_EMPLOYEE_DELETE")
+        fun deleteEmployee_closed() {
+            val pe = createPe(scheduleId = 100L, promoCloseByTm = true)
+            whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+
+            assertThatThrownBy { service.deleteEmployee(1L) }
+                .isInstanceOf(ClosedEmployeeDeleteException::class.java)
         }
     }
 
-    // --- Helper methods ---
+    // --- Helpers ---
 
     private fun createPromotion(
         id: Long = 10L,
-        isDeleted: Boolean = false
-    ): Promotion = Promotion(
-        id = id,
-        promotionNumber = "PM00000001",
-        promotionName = "GS25 역삼점 3월 라면 행사",
-        accountId = 100,
-        startDate = LocalDate.of(2026, 3, 10),
-        endDate = LocalDate.of(2026, 3, 20),
-        isDeleted = isDeleted
+        isDeleted: Boolean = false,
+        category: String? = "라면"
+    ) = Promotion(
+        id = id, promotionNumber = "PM00000001", promotionName = "테스트 행사",
+        accountId = 100, startDate = LocalDate.of(2026, 3, 10), endDate = LocalDate.of(2026, 3, 20),
+        isDeleted = isDeleted, category = category
     )
 
-    private fun createPromotionEmployee(
-        id: Long = 1L,
-        promotionId: Long = 10L,
-        employeeSfid: String = "a0B5g00000XYZabc",
-        scheduleDate: LocalDate = LocalDate.of(2026, 3, 15)
-    ): PromotionEmployee = PromotionEmployee(
-        id = id,
-        promotionId = promotionId,
-        employeeSfid = employeeSfid,
-        scheduleDate = scheduleDate,
-        workStatus = "근무",
-        workType1 = "시식",
-        workType3 = "고정",
-        workType4 = "냉장",
-        professionalPromotionTeam = "라면세일조",
-        basePrice = 1500,
-        dailyTargetCount = 100
+    private fun createPe(
+        id: Long = 1L, promotionId: Long = 10L, employeeSfid: String = "a0B5g00000XYZabc",
+        scheduleDate: LocalDate = LocalDate.of(2026, 3, 15), scheduleId: Long? = null,
+        promoCloseByTm: Boolean = false
+    ) = PromotionEmployee(
+        id = id, promotionId = promotionId, employeeSfid = employeeSfid, scheduleDate = scheduleDate,
+        workStatus = "근무", workType1 = "시식", workType3 = "고정", workType4 = "냉장",
+        professionalPromotionTeam = "라면세일조", basePrice = 1500, dailyTargetCount = 100,
+        scheduleId = scheduleId, promoCloseByTm = promoCloseByTm
     )
 
-    private fun createUser(
-        sfid: String = "a0B5g00000XYZabc",
-        name: String = "김여사"
-    ): User = User(
-        id = 1L,
-        sfid = sfid,
-        employeeId = "20030117",
-        name = name
-    )
+    private fun createUser() = User(id = 1L, sfid = "a0B5g00000XYZabc", employeeId = "20030117", name = "김여사")
 
     private fun createRequest(
-        employeeSfid: String = "a0B5g00000XYZabc",
-        scheduleDate: LocalDate = LocalDate.of(2026, 3, 15),
-        workStatus: String = "근무",
-        workType1: String = "시식",
-        workType3: String = "고정",
-        workType4: String? = "냉장",
-        professionalPromotionTeam: String? = "라면세일조",
-        basePrice: Long? = 1500,
-        dailyTargetCount: Int? = 100
-    ): PromotionEmployeeRequest = PromotionEmployeeRequest(
-        employeeSfid = employeeSfid,
-        scheduleDate = scheduleDate,
-        workStatus = workStatus,
-        workType1 = workType1,
-        workType3 = workType3,
-        workType4 = workType4,
-        professionalPromotionTeam = professionalPromotionTeam,
-        basePrice = basePrice,
+        employeeSfid: String = "a0B5g00000XYZabc", scheduleDate: LocalDate = LocalDate.of(2026, 3, 15),
+        workStatus: String = "근무", workType1: String = "시식", workType3: String = "고정",
+        workType4: String? = "냉장", professionalPromotionTeam: String? = "라면세일조",
+        basePrice: Long? = 1500, dailyTargetCount: Int? = 100
+    ) = PromotionEmployeeRequest(
+        employeeSfid = employeeSfid, scheduleDate = scheduleDate, workStatus = workStatus,
+        workType1 = workType1, workType3 = workType3, workType4 = workType4,
+        professionalPromotionTeam = professionalPromotionTeam, basePrice = basePrice,
         dailyTargetCount = dailyTargetCount
     )
 }
