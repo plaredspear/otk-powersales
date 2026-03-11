@@ -311,7 +311,7 @@ class LocalDataInitializer(
                 werk1 = "1000", werk1Tx = "오뚜기",
                 orgCd3 = "O110", orgCd4 = "O111", orgCd5 = "O1111",
                 isDeleted = false,
-                createdDate = now.minusDays(30), createdAt = now.minusDays(30), updatedAt = now
+                createdAt = now.minusDays(30), updatedAt = now
             ),
             Account(
                 name = "이마트 강남점", sfid = "001LOCAL00002", externalKey = "EXT-LOCAL-002",
@@ -326,7 +326,7 @@ class LocalDataInitializer(
                 werk1 = "1000", werk1Tx = "오뚜기",
                 orgCd3 = "O110", orgCd4 = "O111", orgCd5 = "O1111",
                 isDeleted = false,
-                createdDate = now.minusDays(25), createdAt = now.minusDays(25), updatedAt = now
+                createdAt = now.minusDays(25), updatedAt = now
             ),
             Account(
                 name = "CU 서초중앙점", sfid = "001LOCAL00003", externalKey = "EXT-LOCAL-003",
@@ -341,7 +341,7 @@ class LocalDataInitializer(
                 werk1 = "1000", werk1Tx = "오뚜기",
                 orgCd3 = "O110", orgCd4 = "O111", orgCd5 = "O1111",
                 isDeleted = false,
-                createdDate = now.minusDays(20), createdAt = now.minusDays(20), updatedAt = now
+                createdAt = now.minusDays(20), updatedAt = now
             ),
             Account(
                 name = "홈플러스 논현점", sfid = "001LOCAL00004", externalKey = "EXT-LOCAL-004",
@@ -356,7 +356,7 @@ class LocalDataInitializer(
                 werk1 = "1000", werk1Tx = "오뚜기",
                 orgCd3 = "O110", orgCd4 = "O111", orgCd5 = "O1112",
                 isDeleted = false,
-                createdDate = now.minusDays(15), createdAt = now.minusDays(15), updatedAt = now
+                createdAt = now.minusDays(15), updatedAt = now
             ),
             Account(
                 name = "세븐일레븐 대전둔산점", sfid = "001LOCAL00005", externalKey = "EXT-LOCAL-005",
@@ -371,7 +371,7 @@ class LocalDataInitializer(
                 werk1 = "1000", werk1Tx = "오뚜기",
                 orgCd3 = "O110", orgCd4 = "O112", orgCd5 = "O1121",
                 isDeleted = false,
-                createdDate = now.minusDays(10), createdAt = now.minusDays(10), updatedAt = now
+                createdAt = now.minusDays(10), updatedAt = now
             )
         )
 
