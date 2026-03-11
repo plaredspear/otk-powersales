@@ -9,9 +9,11 @@ import {
   Select,
   Space,
   Spin,
+  Tooltip,
   Typography,
   message,
 } from 'antd';
+import { InfoCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { usePromotion } from '@/hooks/promotion/usePromotion';
 import { useCreatePromotion, useUpdatePromotion } from '@/hooks/promotion/usePromotionMutation';
@@ -151,7 +153,6 @@ export default function PromotionFormPage() {
 
   const handleSubmit = async (values: FormValues) => {
     const payload: PromotionFormData = {
-      promotion_name: values.promotionName || null,
       promotion_type_id: values.promotionTypeId || null,
       account_id: values.accountId,
       start_date: values.startDate.format('YYYY-MM-DD'),
@@ -199,10 +200,16 @@ export default function PromotionFormPage() {
         <Card title="정보" style={{ marginBottom: 16 }}>
           <Form.Item
             name="promotionName"
-            label="행사명"
-            rules={[{ max: 200, message: '200자 이하로 입력해주세요' }]}
+            label={
+              <span>
+                행사명{' '}
+                <Tooltip title="행사명은 대표상품명으로 자동 지정됩니다">
+                  <InfoCircleOutlined style={{ color: '#999' }} />
+                </Tooltip>
+              </span>
+            }
           >
-            <Input maxLength={200} />
+            <Input disabled placeholder="대표상품을 선택하면 자동 설정됩니다" />
           </Form.Item>
 
           <Form.Item
@@ -305,6 +312,15 @@ export default function PromotionFormPage() {
               loading={productSearching}
               options={productOptions}
               notFoundContent={productSearching ? <Spin size="small" /> : null}
+              onChange={(value: number | undefined) => {
+                if (value) {
+                  const selected = productOptions.find((p) => p.value === value);
+                  const nameOnly = selected?.label?.replace(/\s*\(.*\)$/, '') ?? '';
+                  form.setFieldValue('promotionName', nameOnly);
+                } else {
+                  form.setFieldValue('promotionName', undefined);
+                }
+              }}
             />
           </Form.Item>
 

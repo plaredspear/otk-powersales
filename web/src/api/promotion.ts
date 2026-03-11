@@ -141,7 +141,6 @@ export interface PromotionDetail {
 }
 
 export interface PromotionFormData {
-  promotion_name?: string | null;
   promotion_type_id?: number | null;
   account_id: number;
   start_date: string;
