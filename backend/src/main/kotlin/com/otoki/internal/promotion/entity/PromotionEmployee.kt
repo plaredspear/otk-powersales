@@ -48,6 +48,12 @@ class PromotionEmployee(
     @Column(name = "daily_target_count")
     var dailyTargetCount: Int? = null,
 
+    @Column(name = "target_amount")
+    var targetAmount: Long? = 0,
+
+    @Column(name = "actual_amount")
+    var actualAmount: Long? = 0,
+
     @Column(name = "created_at", nullable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
 
@@ -63,7 +69,9 @@ class PromotionEmployee(
         workType4: String?,
         professionalPromotionTeam: String?,
         basePrice: Long?,
-        dailyTargetCount: Int?
+        dailyTargetCount: Int?,
+        targetAmount: Long?,
+        actualAmount: Long?
     ) {
         this.employeeSfid = employeeSfid
         this.scheduleDate = scheduleDate
@@ -74,6 +82,8 @@ class PromotionEmployee(
         this.professionalPromotionTeam = professionalPromotionTeam
         this.basePrice = basePrice
         this.dailyTargetCount = dailyTargetCount
+        this.targetAmount = targetAmount
+        this.actualAmount = actualAmount
         this.updatedAt = LocalDateTime.now()
     }
 }

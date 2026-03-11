@@ -18,7 +18,9 @@ data class PromotionEmployeeListResponse(
     val scheduleId: Long?,
     val promoCloseByTm: Boolean,
     val basePrice: Long?,
-    val dailyTargetCount: Int?
+    val dailyTargetCount: Int?,
+    val targetAmount: Long?,
+    val actualAmount: Long?
 ) {
     companion object {
         fun from(entity: PromotionEmployee, employeeName: String?): PromotionEmployeeListResponse =
@@ -36,7 +38,9 @@ data class PromotionEmployeeListResponse(
                 scheduleId = entity.scheduleId,
                 promoCloseByTm = entity.promoCloseByTm,
                 basePrice = entity.basePrice,
-                dailyTargetCount = entity.dailyTargetCount
+                dailyTargetCount = entity.dailyTargetCount,
+                targetAmount = entity.targetAmount,
+                actualAmount = entity.actualAmount
             )
     }
 }
@@ -56,6 +60,8 @@ data class PromotionEmployeeDetailResponse(
     val promoCloseByTm: Boolean,
     val basePrice: Long?,
     val dailyTargetCount: Int?,
+    val targetAmount: Long?,
+    val actualAmount: Long?,
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime
 ) {
@@ -76,6 +82,8 @@ data class PromotionEmployeeDetailResponse(
                 promoCloseByTm = entity.promoCloseByTm,
                 basePrice = entity.basePrice,
                 dailyTargetCount = entity.dailyTargetCount,
+                targetAmount = entity.targetAmount,
+                actualAmount = entity.actualAmount,
                 createdAt = entity.createdAt,
                 updatedAt = entity.updatedAt
             )

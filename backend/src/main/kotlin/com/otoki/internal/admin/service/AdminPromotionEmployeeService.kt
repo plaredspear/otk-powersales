@@ -76,9 +76,13 @@ class AdminPromotionEmployeeService(
                 workType4 = request.workType4,
                 professionalPromotionTeam = request.professionalPromotionTeam,
                 basePrice = request.basePrice,
-                dailyTargetCount = request.dailyTargetCount
+                dailyTargetCount = request.dailyTargetCount,
+                targetAmount = request.targetAmount,
+                actualAmount = request.actualAmount
             )
         )
+
+        recalculatePromotionAmounts(promotionId)
 
         val employeeName = resolveEmployeeName(pe.employeeSfid)
         return PromotionEmployeeDetailResponse.from(pe, employeeName)
@@ -109,10 +113,14 @@ class AdminPromotionEmployeeService(
             workType4 = request.workType4,
             professionalPromotionTeam = request.professionalPromotionTeam,
             basePrice = request.basePrice,
-            dailyTargetCount = request.dailyTargetCount
+            dailyTargetCount = request.dailyTargetCount,
+            targetAmount = request.targetAmount,
+            actualAmount = request.actualAmount
         )
 
         promotionEmployeeRepository.save(pe)
+
+        recalculatePromotionAmounts(pe.promotionId)
 
         val employeeName = resolveEmployeeName(pe.employeeSfid)
         return PromotionEmployeeDetailResponse.from(pe, employeeName)
@@ -121,6 +129,7 @@ class AdminPromotionEmployeeService(
     @Transactional
     fun deleteEmployee(id: Long) {
         val pe = findEmployeeById(id)
+        val promotionId = pe.promotionId
 
         // 1-2-B: 마감 보호 — 삭제 차단
         if (pe.scheduleId != null && pe.promoCloseByTm) {
@@ -133,6 +142,9 @@ class AdminPromotionEmployeeService(
         }
 
         promotionEmployeeRepository.delete(pe)
+        promotionEmployeeRepository.flush()
+
+        recalculatePromotionAmounts(promotionId)
     }
 
     // --- Private helpers ---
@@ -194,6 +206,15 @@ class AdminPromotionEmployeeService(
             scheduleRepository.deleteAllByIdIn(listOf(pe.scheduleId!!))
             pe.scheduleId = null
         }
+    }
+
+    private fun recalculatePromotionAmounts(promotionId: Long) {
+        val promotion = promotionRepository.findById(promotionId)
+            .orElseThrow { PromotionNotFoundException() }
+        val sumTarget = promotionEmployeeRepository.sumTargetAmountByPromotionId(promotionId)
+        val sumActual = promotionEmployeeRepository.sumActualAmountByPromotionId(promotionId)
+        promotion.updateAmounts(sumTarget, sumActual)
+        promotionRepository.save(promotion)
     }
 
     private fun resolveEmployeeNames(employees: List<PromotionEmployee>): Map<String, String> {

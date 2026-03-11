@@ -277,7 +277,9 @@ class AdminPromotionEmployeeControllerTest {
         scheduleId = null,
         promoCloseByTm = false,
         basePrice = 1500,
-        dailyTargetCount = 100
+        dailyTargetCount = 100,
+        targetAmount = 100000,
+        actualAmount = 80000
     )
 
     private fun createDetailResponse() = PromotionEmployeeDetailResponse(
@@ -295,6 +297,8 @@ class AdminPromotionEmployeeControllerTest {
         promoCloseByTm = false,
         basePrice = 1500,
         dailyTargetCount = 100,
+        targetAmount = 100000,
+        actualAmount = 80000,
         createdAt = LocalDateTime.of(2026, 3, 10, 10, 0, 0),
         updatedAt = LocalDateTime.of(2026, 3, 10, 10, 0, 0)
     )

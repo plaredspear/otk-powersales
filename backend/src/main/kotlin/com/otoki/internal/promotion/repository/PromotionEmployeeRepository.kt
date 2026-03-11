@@ -20,4 +20,10 @@ interface PromotionEmployeeRepository : JpaRepository<PromotionEmployee, Long> {
 
     @Query("SELECT MAX(pe.scheduleDate) FROM PromotionEmployee pe WHERE pe.promotionId = :promotionId")
     fun findMaxScheduleDateByPromotionId(promotionId: Long): LocalDate?
+
+    @Query("SELECT COALESCE(SUM(pe.targetAmount), 0) FROM PromotionEmployee pe WHERE pe.promotionId = :promotionId")
+    fun sumTargetAmountByPromotionId(promotionId: Long): Long
+
+    @Query("SELECT COALESCE(SUM(pe.actualAmount), 0) FROM PromotionEmployee pe WHERE pe.promotionId = :promotionId")
+    fun sumActualAmountByPromotionId(promotionId: Long): Long
 }
