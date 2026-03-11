@@ -1,6 +1,7 @@
 package com.otoki.internal.common.salesforce
 
 import com.otoki.internal.sap.entity.Account
+import com.otoki.internal.sap.entity.Product
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
@@ -25,6 +26,20 @@ class SFSchemaUtilsTest {
             assertThat(mapping["Industry"]).isEqualTo("industry")
             assertThat(mapping["WERK1_TX__c"]).isEqualTo("werk1_tx")
         }
+
+        @Test
+        @DisplayName("Product 엔티티 - 34개 SF Field 매핑 반환")
+        fun getSFMapping_product() {
+            val mapping = SFSchemaUtils.getSFMapping(Product::class.java)
+
+            assertThat(mapping).hasSize(34)
+            assertThat(mapping["Name"]).isEqualTo("name")
+            assertThat(mapping["DKRetail__ProductCode__c"]).isEqualTo("product_code")
+            assertThat(mapping["DKRetail__StoreCondition__c"]).isEqualTo("storage_condition")
+            assertThat(mapping["DKRetail__Category1__c"]).isEqualTo("category1")
+            assertThat(mapping["StandardPrice__c"]).isEqualTo("standard_price")
+            assertThat(mapping["ImgRefPath__c"]).isEqualTo("img_ref_path")
+        }
     }
 
     @Nested
@@ -40,6 +55,21 @@ class SFSchemaUtilsTest {
             assertThat(mapping["sfid"]).isEqualTo("sfid")
             assertThat(mapping["isdeleted"]).isEqualTo("is_deleted")
             assertThat(mapping["name"]).isEqualTo("name")
+        }
+
+        @Test
+        @DisplayName("Product 엔티티 - 41개 HC Column 매핑 반환")
+        fun getHCMapping_product() {
+            val mapping = SFSchemaUtils.getHCMapping(Product::class.java)
+
+            assertThat(mapping).hasSize(41)
+            assertThat(mapping["name"]).isEqualTo("name")
+            assertThat(mapping["sfid"]).isEqualTo("sfid")
+            assertThat(mapping["dkretail__productcode__c"]).isEqualTo("product_code")
+            assertThat(mapping["dkretail__storecondition__c"]).isEqualTo("storage_condition")
+            assertThat(mapping["isdeleted"]).isEqualTo("is_deleted")
+            assertThat(mapping["systemmodstamp"]).isEqualTo("system_mod_stamp")
+            assertThat(mapping["_hc_lastop"]).isEqualTo("_hc_lastop")
         }
     }
 
