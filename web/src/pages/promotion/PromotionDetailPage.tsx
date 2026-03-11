@@ -280,7 +280,16 @@ export default function PromotionDetailPage() {
 
       <Descriptions column={1} bordered>
         <Descriptions.Item label="행사번호">{promotion.promotionNumber}</Descriptions.Item>
-        <Descriptions.Item label="행사명">{promotion.promotionName ?? '-'}</Descriptions.Item>
+        <Descriptions.Item label="행사명">
+          {promotion.promotionName ? (
+            <>
+              {promotion.promotionName}
+              <Typography.Text type="secondary"> (자동)</Typography.Text>
+            </>
+          ) : (
+            '-'
+          )}
+        </Descriptions.Item>
         <Descriptions.Item label="행사유형">
           {promotion.promotionTypeName ? (
             <Tag color={typeColor}>{promotion.promotionTypeName}</Tag>
