@@ -64,19 +64,19 @@ class SapBarcodeMasterService(
 
         if (existing != null) {
             existing.productName = item.productName
-            existing.productBarcode = item.productBarcode
-            existing.productUnit = productUnit
-            existing.productSequence = productSequence
-            existing.product = productSfid
+            existing.barcode = item.productBarcode
+            existing.unit = productUnit
+            existing.sortOrder = productSequence
+            existing.productSfid = productSfid
             productBarcodeRepository.save(existing)
         } else {
             val barcode = ProductBarcode(
                 customKey = customKey,
-                productUnit = productUnit,
-                productSequence = productSequence,
+                unit = productUnit,
+                sortOrder = productSequence,
                 productName = item.productName,
-                productBarcode = item.productBarcode,
-                product = productSfid
+                barcode = item.productBarcode,
+                productSfid = productSfid
             )
             productBarcodeRepository.save(barcode)
         }
