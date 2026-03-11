@@ -20,7 +20,7 @@ import com.otoki.internal.notice.exception.InvalidNoticeIdException
 import com.otoki.internal.notice.exception.NoticePostNotFoundException
 import com.otoki.internal.notice.repository.NoticeRepository
 import com.otoki.internal.notice.repository.UploadFileRepository
-import com.otoki.internal.sap.repository.OrgRepository
+import com.otoki.internal.sap.repository.OrganizationRepository
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
@@ -34,7 +34,7 @@ class NoticeService(
     private val noticeRepository: NoticeRepository,
     private val uploadFileRepository: UploadFileRepository,
     private val userRepository: UserRepository,
-    private val orgRepository: OrgRepository,
+    private val organizationRepository: OrganizationRepository,
     @Value("\${aws.s3.bucket.name:otoki-bucket}")
     private val s3BucketName: String
 ) {
@@ -181,7 +181,7 @@ class NoticeService(
             CategoryOption(code = it.apiCode, name = it.displayName)
         }
 
-        val branches = orgRepository.findAll()
+        val branches = organizationRepository.findAll()
             .filter { !it.orgNameLevel3.isNullOrBlank() && !it.orgNameLevel4.isNullOrBlank() }
             .map { org ->
                 val branchName = if (org.orgNameLevel5.isNullOrBlank()) {

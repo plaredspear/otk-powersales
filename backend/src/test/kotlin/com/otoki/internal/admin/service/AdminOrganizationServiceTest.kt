@@ -2,8 +2,8 @@ package com.otoki.internal.admin.service
 
 import com.otoki.internal.admin.dto.DataScope
 import com.otoki.internal.admin.scope.DataScopeHolder
-import com.otoki.internal.sap.entity.Org
-import com.otoki.internal.sap.repository.OrgRepository
+import com.otoki.internal.sap.entity.Organization
+import com.otoki.internal.sap.repository.OrganizationRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -25,7 +25,7 @@ class AdminOrganizationServiceTest {
     private lateinit var dataScopeHolder: DataScopeHolder
 
     @Mock
-    private lateinit var orgRepository: OrgRepository
+    private lateinit var organizationRepository: OrganizationRepository
 
     @InjectMocks
     private lateinit var adminOrganizationService: AdminOrganizationService
@@ -41,7 +41,7 @@ class AdminOrganizationServiceTest {
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
             val orgs = listOf(createOrg(id = 1L, orgNameLevel4 = "강남지점"))
-            whenever(orgRepository.searchForAdmin(isNull(), isNull(), isNull())).thenReturn(orgs)
+            whenever(organizationRepository.searchForAdmin(isNull(), isNull(), isNull())).thenReturn(orgs)
 
             val result = adminOrganizationService.getOrganizations(null, null)
 
@@ -57,7 +57,7 @@ class AdminOrganizationServiceTest {
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
             val orgs = listOf(createOrg(orgNameLevel4 = "강남지점"))
-            whenever(orgRepository.searchForAdmin(eq("강남"), isNull(), isNull())).thenReturn(orgs)
+            whenever(organizationRepository.searchForAdmin(eq("강남"), isNull(), isNull())).thenReturn(orgs)
 
             val result = adminOrganizationService.getOrganizations("강남", null)
 
@@ -72,7 +72,7 @@ class AdminOrganizationServiceTest {
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
             val orgs = listOf(createOrg(orgNameLevel5 = "강남1조"))
-            whenever(orgRepository.searchForAdmin(isNull(), eq("L5"), isNull())).thenReturn(orgs)
+            whenever(organizationRepository.searchForAdmin(isNull(), eq("L5"), isNull())).thenReturn(orgs)
 
             val result = adminOrganizationService.getOrganizations(null, "L5")
 
@@ -87,7 +87,7 @@ class AdminOrganizationServiceTest {
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
             val orgs = listOf(createOrg(costCenterLevel4 = "1101", orgNameLevel4 = "강남지점"))
-            whenever(orgRepository.searchForAdmin(isNull(), isNull(), eq(listOf("1101")))).thenReturn(orgs)
+            whenever(organizationRepository.searchForAdmin(isNull(), isNull(), eq(listOf("1101")))).thenReturn(orgs)
 
             val result = adminOrganizationService.getOrganizations(null, null)
 
@@ -111,7 +111,7 @@ class AdminOrganizationServiceTest {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
-            whenever(orgRepository.searchForAdmin(eq("존재하지않는조직"), isNull(), isNull())).thenReturn(emptyList())
+            whenever(organizationRepository.searchForAdmin(eq("존재하지않는조직"), isNull(), isNull())).thenReturn(emptyList())
 
             val result = adminOrganizationService.getOrganizations("존재하지않는조직", null)
 
@@ -134,7 +134,7 @@ class AdminOrganizationServiceTest {
         orgCodeLevel5: String? = null,
         orgNameLevel5: String? = null,
         createdAt: LocalDateTime = LocalDateTime.of(2026, 1, 15, 9, 0)
-    ): Org = Org(
+    ): Organization = Organization(
         id = id,
         costCenterLevel2 = costCenterLevel2,
         orgCodeLevel2 = orgCodeLevel2,

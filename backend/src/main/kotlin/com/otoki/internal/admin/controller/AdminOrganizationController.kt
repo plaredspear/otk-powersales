@@ -1,6 +1,6 @@
 package com.otoki.internal.admin.controller
 
-import com.otoki.internal.admin.dto.response.OrgResponse
+import com.otoki.internal.admin.dto.response.OrganizationResponse
 import com.otoki.internal.admin.service.AdminOrganizationService
 import com.otoki.internal.common.dto.ApiResponse
 import org.springframework.http.ResponseEntity
@@ -19,7 +19,7 @@ class AdminOrganizationController(
     fun getOrganizations(
         @RequestParam(required = false) keyword: String?,
         @RequestParam(required = false) level: String?
-    ): ResponseEntity<ApiResponse<List<OrgResponse>>> {
+    ): ResponseEntity<ApiResponse<List<OrganizationResponse>>> {
         if (keyword != null && keyword.length > 50) {
             throw IllegalArgumentException("검색어는 50자 이하여야 합니다")
         }

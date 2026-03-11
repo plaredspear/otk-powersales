@@ -3,8 +3,8 @@ package com.otoki.internal.sap.service
 import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.sap.dto.SapClientMasterRequest.ReqItem
-import com.otoki.internal.sap.entity.Org
-import com.otoki.internal.sap.repository.OrgRepository
+import com.otoki.internal.sap.entity.Organization
+import com.otoki.internal.sap.repository.OrganizationRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -26,7 +26,7 @@ class SapClientMasterServiceTest {
     private lateinit var accountRepository: AccountRepository
 
     @Mock
-    private lateinit var orgRepository: OrgRepository
+    private lateinit var organizationRepository: OrganizationRepository
 
     @InjectMocks
     private lateinit var sapClientMasterService: SapClientMasterService
@@ -93,9 +93,9 @@ class SapClientMasterServiceTest {
                 werk1Tx = "안양물류"
             ))
             whenever(accountRepository.findByExternalKey("0001234567")).thenReturn(null)
-            whenever(orgRepository.findFirstByCostCenterLevel5("1111")).thenReturn(null)
-            whenever(orgRepository.findFirstByCostCenterLevel4("1111")).thenReturn(null)
-            whenever(orgRepository.findFirstByCostCenterLevel4("1110")).thenReturn(null)
+            whenever(organizationRepository.findFirstByCostCenterLevel5("1111")).thenReturn(null)
+            whenever(organizationRepository.findFirstByCostCenterLevel4("1111")).thenReturn(null)
+            whenever(organizationRepository.findFirstByCostCenterLevel4("1110")).thenReturn(null)
             whenever(accountRepository.save(any<Account>())).thenAnswer { it.getArgument<Account>(0) }
 
             sapClientMasterService.sync(items)
@@ -151,7 +151,7 @@ class SapClientMasterServiceTest {
             val items = listOf(createReqItem(sapAccountCode = "0001234567", name = "테스트", branchCode = "1111"))
 
             whenever(accountRepository.findByExternalKey("0001234567")).thenReturn(null)
-            whenever(orgRepository.findFirstByCostCenterLevel5("1111")).thenReturn(org)
+            whenever(organizationRepository.findFirstByCostCenterLevel5("1111")).thenReturn(org)
             whenever(accountRepository.save(any<Account>())).thenAnswer { it.getArgument<Account>(0) }
 
             sapClientMasterService.sync(items)
@@ -170,8 +170,8 @@ class SapClientMasterServiceTest {
             val items = listOf(createReqItem(sapAccountCode = "0001234567", name = "테스트", branchCode = "1111"))
 
             whenever(accountRepository.findByExternalKey("0001234567")).thenReturn(null)
-            whenever(orgRepository.findFirstByCostCenterLevel5("1111")).thenReturn(null)
-            whenever(orgRepository.findFirstByCostCenterLevel4("1111")).thenReturn(org)
+            whenever(organizationRepository.findFirstByCostCenterLevel5("1111")).thenReturn(null)
+            whenever(organizationRepository.findFirstByCostCenterLevel4("1111")).thenReturn(org)
             whenever(accountRepository.save(any<Account>())).thenAnswer { it.getArgument<Account>(0) }
 
             sapClientMasterService.sync(items)
@@ -192,9 +192,9 @@ class SapClientMasterServiceTest {
             ))
 
             whenever(accountRepository.findByExternalKey("0001234567")).thenReturn(null)
-            whenever(orgRepository.findFirstByCostCenterLevel5("1111")).thenReturn(null)
-            whenever(orgRepository.findFirstByCostCenterLevel4("1111")).thenReturn(null)
-            whenever(orgRepository.findFirstByCostCenterLevel4("1110")).thenReturn(org)
+            whenever(organizationRepository.findFirstByCostCenterLevel5("1111")).thenReturn(null)
+            whenever(organizationRepository.findFirstByCostCenterLevel4("1111")).thenReturn(null)
+            whenever(organizationRepository.findFirstByCostCenterLevel4("1110")).thenReturn(org)
             whenever(accountRepository.save(any<Account>())).thenAnswer { it.getArgument<Account>(0) }
 
             sapClientMasterService.sync(items)
@@ -213,9 +213,9 @@ class SapClientMasterServiceTest {
             ))
 
             whenever(accountRepository.findByExternalKey("0001234567")).thenReturn(null)
-            whenever(orgRepository.findFirstByCostCenterLevel5("9999")).thenReturn(null)
-            whenever(orgRepository.findFirstByCostCenterLevel4("9999")).thenReturn(null)
-            whenever(orgRepository.findFirstByCostCenterLevel4("9998")).thenReturn(null)
+            whenever(organizationRepository.findFirstByCostCenterLevel5("9999")).thenReturn(null)
+            whenever(organizationRepository.findFirstByCostCenterLevel4("9999")).thenReturn(null)
+            whenever(organizationRepository.findFirstByCostCenterLevel4("9998")).thenReturn(null)
             whenever(accountRepository.save(any<Account>())).thenAnswer { it.getArgument<Account>(0) }
 
             sapClientMasterService.sync(items)
@@ -358,7 +358,7 @@ class SapClientMasterServiceTest {
         orgCd3: String? = null,
         orgCd4: String? = null,
         orgCd5: String? = null
-    ) = Org(
+    ) = Organization(
         orgCodeLevel3 = orgCd3,
         orgCodeLevel4 = orgCd4,
         orgCodeLevel5 = orgCd5

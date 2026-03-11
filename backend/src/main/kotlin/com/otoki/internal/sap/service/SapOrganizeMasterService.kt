@@ -2,22 +2,22 @@ package com.otoki.internal.sap.service
 
 import com.otoki.internal.sap.dto.SapOrganizeMasterRequest
 import com.otoki.internal.sap.dto.SapSyncResult
-import com.otoki.internal.sap.entity.Org
-import com.otoki.internal.sap.repository.OrgRepository
+import com.otoki.internal.sap.entity.Organization
+import com.otoki.internal.sap.repository.OrganizationRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
 class SapOrganizeMasterService(
-    private val orgRepository: OrgRepository
+    private val organizationRepository: OrganizationRepository
 ) : SapSyncService<SapOrganizeMasterRequest.ReqItem> {
 
     @Transactional
     override fun sync(items: List<SapOrganizeMasterRequest.ReqItem>): SapSyncResult {
-        orgRepository.deleteAllInBatch()
+        organizationRepository.deleteAllInBatch()
 
         val entities = items.map { item ->
-            Org(
+            Organization(
                 costCenterLevel2 = item.ccCd2,
                 orgCodeLevel2 = item.orgCd2,
                 orgNameLevel2 = item.orgNm2,
@@ -33,7 +33,7 @@ class SapOrganizeMasterService(
             )
         }
 
-        orgRepository.saveAll(entities)
+        organizationRepository.saveAll(entities)
 
         return SapSyncResult(
             successCount = items.size,
