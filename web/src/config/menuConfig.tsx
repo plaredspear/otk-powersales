@@ -74,6 +74,7 @@ export const menuRoute: MenuRoute = {
       icon: <SettingOutlined />,
       routes: [
         { path: '/settings/promotion-types', name: '행사유형 관리' },
+        { path: '/settings/organizations', name: '조직마스터 조회' },
       ],
     },
   ],
