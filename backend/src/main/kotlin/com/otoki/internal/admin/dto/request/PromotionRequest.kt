@@ -5,9 +5,6 @@ import jakarta.validation.constraints.Size
 import java.time.LocalDate
 
 data class PromotionCreateRequest(
-    @field:Size(max = 200, message = "행사명은 200자 이하여야 합니다")
-    val promotionName: String? = null,
-
     val promotionTypeId: Long? = null,
 
     @field:NotNull(message = "거래처 ID는 필수입니다")

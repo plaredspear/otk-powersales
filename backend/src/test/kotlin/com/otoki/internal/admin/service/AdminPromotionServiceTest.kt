@@ -182,11 +182,11 @@ class AdminPromotionServiceTest {
     inner class CreatePromotionTests {
 
         @Test
-        @DisplayName("정상 생성 - 필수 필드 모두 포함 -> 201 + promotion_number 자동 생성")
+        @DisplayName("정상 생성 - 대표제품 지정 -> promotion_name 자동 설정")
         fun createPromotion_success() {
             val request = createRequest(promotionTypeId = 1L)
             val account = createAccount()
-            val product = createProduct()
+            val product = createProduct(name = "꿀배청 680G")
             val user = createUser(costCenterCode = "1101")
             val promotionType = createPromotionType()
 
@@ -201,6 +201,7 @@ class AdminPromotionServiceTest {
             val result = adminPromotionService.createPromotion(userId, request)
 
             assertThat(result.promotionNumber).isEqualTo("PM00000001")
+            assertThat(result.promotionName).isEqualTo("꿀배청 680G")
             assertThat(result.costCenterCode).isEqualTo("1101")
             assertThat(result.promotionTypeName).isEqualTo("시식")
             assertThat(result.category).isEqualTo("라면")
@@ -208,23 +209,22 @@ class AdminPromotionServiceTest {
         }
 
         @Test
-        @DisplayName("행사명 null로 생성 - promotionName=null -> 정상 생성")
-        fun createPromotion_nullPromotionName() {
-            val request = createRequest(promotionName = null, remark = "신규 매대 협의 필요")
+        @DisplayName("대표제품 없이 생성 - primaryProductId=null -> promotionName=null")
+        fun createPromotion_nullPrimaryProduct_nullPromotionName() {
+            val request = createRequest(primaryProductId = null, remark = "신규 매대 협의 필요")
             val account = createAccount()
             val user = createUser(costCenterCode = "1101")
 
             whenever(accountRepository.findById(100)).thenReturn(Optional.of(account))
-            whenever(productRepository.findById(200L)).thenReturn(Optional.of(createProduct()))
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
             whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(3L)
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
-            whenever(promotionProductRepository.save(any<PromotionProduct>())).thenAnswer { it.getArgument<PromotionProduct>(0) }
 
             val result = adminPromotionService.createPromotion(userId, request)
 
             assertThat(result.promotionName).isNull()
             assertThat(result.remark).isEqualTo("신규 매대 협의 필요")
+            verify(promotionProductRepository, never()).save(any())
         }
 
         @Test
@@ -278,7 +278,6 @@ class AdminPromotionServiceTest {
         @DisplayName("대표상품 없이 생성 - primaryProductId=null -> PromotionProduct 미생성")
         fun createPromotion_noPrimaryProduct() {
             val request = PromotionCreateRequest(
-                promotionName = "GS25 역삼점 3월 라면 행사",
                 accountId = 100,
                 startDate = LocalDate.of(2026, 3, 10),
                 endDate = LocalDate.of(2026, 3, 20),
@@ -325,7 +324,7 @@ class AdminPromotionServiceTest {
     inner class UpdatePromotionTests {
 
         @Test
-        @DisplayName("정상 수정 - 유효한 요청 -> 수정된 데이터 반환")
+        @DisplayName("정상 수정 - 대표제품 유지 -> promotionName 자동 설정")
         fun updatePromotion_success() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
             whenever(dataScopeHolder.require()).thenReturn(scope)
@@ -336,10 +335,54 @@ class AdminPromotionServiceTest {
             whenever(productRepository.findById(200L)).thenReturn(Optional.of(createProduct()))
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
 
-            val request = createRequest(promotionName = "수정된 행사명")
+            val request = createRequest()
             val result = adminPromotionService.updatePromotion(1L, request)
 
-            assertThat(result.promotionName).isEqualTo("수정된 행사명")
+            assertThat(result.promotionName).isEqualTo("진라면 매운맛 120g")
+        }
+
+        @Test
+        @DisplayName("대표제품 변경 수정 - 새 제품으로 변경 -> promotionName 갱신")
+        fun updatePromotion_changeProduct_promotionNameUpdated() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            whenever(dataScopeHolder.require()).thenReturn(scope)
+
+            val promotion = createPromotion(primaryProductId = 200L)
+            whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
+            whenever(accountRepository.findById(100)).thenReturn(Optional.of(createAccount()))
+
+            val newProduct = createProduct(id = 300L, name = "진라면 매운맛")
+            whenever(productRepository.findById(300L)).thenReturn(Optional.of(newProduct))
+            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
+
+            val existingPP = PromotionProduct(id = 10L, promotionId = 1L, productId = 200L)
+            whenever(promotionProductRepository.findByPromotionIdAndIsMainProduct(1L, true)).thenReturn(existingPP)
+            whenever(promotionProductRepository.save(any<PromotionProduct>())).thenAnswer { it.getArgument<PromotionProduct>(0) }
+
+            val request = createRequest(primaryProductId = 300L)
+            val result = adminPromotionService.updatePromotion(1L, request)
+
+            assertThat(result.promotionName).isEqualTo("진라면 매운맛")
+        }
+
+        @Test
+        @DisplayName("대표제품 제거 수정 - primaryProductId=null -> promotionName=null")
+        fun updatePromotion_removeProduct_promotionNameNull() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            whenever(dataScopeHolder.require()).thenReturn(scope)
+
+            val promotion = createPromotion(primaryProductId = 200L)
+            whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
+            whenever(accountRepository.findById(100)).thenReturn(Optional.of(createAccount()))
+            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
+
+            val existingPP = PromotionProduct(id = 10L, promotionId = 1L, productId = 200L)
+            whenever(promotionProductRepository.findByPromotionIdAndIsMainProduct(1L, true)).thenReturn(existingPP)
+
+            val request = createRequest(primaryProductId = null)
+            val result = adminPromotionService.updatePromotion(1L, request)
+
+            assertThat(result.promotionName).isNull()
         }
 
         @Test
@@ -611,7 +654,6 @@ class AdminPromotionServiceTest {
     }
 
     private fun createRequest(
-        promotionName: String? = "GS25 역삼점 3월 라면 행사",
         promotionTypeId: Long? = null,
         accountId: Int = 100,
         startDate: LocalDate = LocalDate.of(2026, 3, 10),
@@ -619,7 +661,6 @@ class AdminPromotionServiceTest {
         primaryProductId: Long? = 200L,
         remark: String? = null
     ) = PromotionCreateRequest(
-        promotionName = promotionName,
         promotionTypeId = promotionTypeId,
         accountId = accountId,
         startDate = startDate,

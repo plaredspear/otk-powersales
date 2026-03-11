@@ -194,14 +194,13 @@ class AdminPromotionControllerTest {
         }
 
         @Test
-        @DisplayName("성공 - 행사명 null로 생성")
-        fun createPromotion_nullPromotionName() {
+        @DisplayName("성공 - 대표제품 없이 생성 -> promotionName=null")
+        fun createPromotion_noPrimaryProduct() {
             val response = createDetailResponse(promotionName = null, remark = "신규 매대 협의 필요")
             whenever(adminPromotionService.createPromotion(eq(1L), any())).thenReturn(response)
 
             val json = """
                 {
-                    "promotion_name": null,
                     "account_id": 100,
                     "start_date": "2026-03-10",
                     "end_date": "2026-03-20",
@@ -359,7 +358,6 @@ class AdminPromotionControllerTest {
     )
 
     private fun createRequest() = PromotionCreateRequest(
-        promotionName = "GS25 역삼점 3월 라면 행사",
         promotionTypeId = 1L,
         accountId = 100,
         startDate = LocalDate.of(2026, 3, 10),
