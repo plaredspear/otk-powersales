@@ -23,28 +23,28 @@ class Schedule(
     val name: String? = null,
 
     @Column(name = "dkretail__employeeid__c", length = 18)
-    val employeeId: String? = null,
+    var employeeId: String? = null,
 
     @Column(name = "dkretail__workingdate__c")
-    val workingDate: LocalDate? = null,
+    var workingDate: LocalDate? = null,
 
     @Column(name = "dkretail__workingtype__c", length = 255)
-    val workingType: String? = null,
+    var workingType: String? = null,
 
     @Column(name = "dkretail__workingcategory1__c", length = 255)
-    val workingCategory1: String? = null,
+    var workingCategory1: String? = null,
 
     @Column(name = "dkretail__workingcategory2__c", length = 255)
     val workingCategory2: String? = null,
 
     @Column(name = "dkretail__workingcategory3__c", length = 255)
-    val workingCategory3: String? = null,
+    var workingCategory3: String? = null,
 
     @Column(name = "workingcategory4__c", length = 255)
-    val workingCategory4: String? = null,
+    var workingCategory4: String? = null,
 
     @Column(name = "accountid__c", length = 18)
-    val accountId: String? = null,
+    var accountId: String? = null,
 
     @Column(name = "teamleadersfid__c", length = 100)
     val teamLeaderSfid: String? = null,
@@ -56,7 +56,10 @@ class Schedule(
     var commuteLogId: String? = null,
 
     @Column(name = "dkretail__promotionempid__c", length = 18)
-    val promotionEmpId: String? = null,
+    var promotionEmpId: String? = null,
+
+    @Column(name = "dkretail__promotionempidext__c", length = 50)
+    var promotionEmpIdExt: String? = null,
 
     @Column(name = "commutereportdatetime__c")
     val commuteReportDatetime: LocalDateTime? = null,
@@ -125,7 +128,7 @@ class Schedule(
     val createdDate: LocalDateTime? = null,
 
     @Column(name = "systemmodstamp")
-    val systemModStamp: LocalDateTime? = null,
+    var systemModStamp: LocalDateTime? = null,
 
     @Column(name = "_hc_lastop", length = 32)
     val hcLastOp: String? = null,
@@ -140,4 +143,26 @@ class Schedule(
     // startTime: LocalTime — V1에서 startTime(LocalDateTime)으로 대체
     // endTime: LocalTime — V1에서 completeTime(LocalDateTime)으로 대체
     // type: String — V1에서 workingType으로 대체
-)
+) {
+    fun updateForPromotion(
+        employeeId: String,
+        accountId: String,
+        workingDate: LocalDate,
+        workingType: String,
+        workingCategory1: String,
+        workingCategory3: String,
+        workingCategory4: String?,
+        promotionEmpId: String
+    ) {
+        this.employeeId = employeeId
+        this.accountId = accountId
+        this.workingDate = workingDate
+        this.workingType = workingType
+        this.workingCategory1 = workingCategory1
+        this.workingCategory3 = workingCategory3
+        this.workingCategory4 = workingCategory4
+        this.promotionEmpId = promotionEmpId
+        this.promotionEmpIdExt = promotionEmpId
+        this.systemModStamp = LocalDateTime.now()
+    }
+}

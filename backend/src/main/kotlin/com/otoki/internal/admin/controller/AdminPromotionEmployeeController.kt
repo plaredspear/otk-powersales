@@ -1,10 +1,12 @@
 package com.otoki.internal.admin.controller
 
 import com.otoki.internal.admin.dto.request.PromotionEmployeeRequest
+import com.otoki.internal.admin.dto.response.PromotionConfirmResponse
 import com.otoki.internal.admin.dto.response.PromotionEmployeeDetailResponse
 import com.otoki.internal.admin.dto.response.PromotionEmployeeListResponse
 import com.otoki.internal.admin.security.AdminPermission
 import com.otoki.internal.admin.security.RequiresPermission
+import com.otoki.internal.admin.service.AdminPromotionConfirmService
 import com.otoki.internal.admin.service.AdminPromotionEmployeeService
 import com.otoki.internal.common.dto.ApiResponse
 import com.otoki.internal.common.security.UserPrincipal
@@ -16,7 +18,8 @@ import org.springframework.web.bind.annotation.*
 
 @RestController
 class AdminPromotionEmployeeController(
-    private val adminPromotionEmployeeService: AdminPromotionEmployeeService
+    private val adminPromotionEmployeeService: AdminPromotionEmployeeService,
+    private val adminPromotionConfirmService: AdminPromotionConfirmService
 ) {
 
     @GetMapping("/api/v1/admin/promotions/{promotionId}/employees")
@@ -69,5 +72,15 @@ class AdminPromotionEmployeeController(
     ): ResponseEntity<ApiResponse<Any?>> {
         adminPromotionEmployeeService.deleteEmployee(id)
         return ResponseEntity.ok(ApiResponse.success(null as Any?))
+    }
+
+    @PostMapping("/api/v1/admin/promotions/{promotionId}/confirm")
+    @RequiresPermission(AdminPermission.PROMOTION_WRITE)
+    fun confirmPromotion(
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @PathVariable promotionId: Long
+    ): ResponseEntity<ApiResponse<PromotionConfirmResponse>> {
+        val response = adminPromotionConfirmService.confirmPromotion(promotionId)
+        return ResponseEntity.ok(ApiResponse.success(response))
     }
 }

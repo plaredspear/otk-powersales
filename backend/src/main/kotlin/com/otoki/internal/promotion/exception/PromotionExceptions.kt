@@ -116,3 +116,59 @@ class DateRangeConflictException(minDate: String, maxDate: String) : BusinessExc
     message = "행사 일정은 행사조원 할당일 범위(${minDate} ~ ${maxDate})보다 작을 수 없습니다",
     httpStatus = HttpStatus.BAD_REQUEST
 )
+
+// --- 행사 확정 검증 예외 (#191) ---
+
+class PromotionDateRequiredException : BusinessException(
+    errorCode = "DATE_REQUIRED",
+    message = "행사마스터의 시작일과 종료일을 입력하세요",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+class NoEmployeesException : BusinessException(
+    errorCode = "NO_EMPLOYEES",
+    message = "확정할 행사조원이 없습니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+class ValuesRequiredException(detail: String) : BusinessException(
+    errorCode = "VALUES_REQUIRED",
+    message = detail,
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+class DateOutOfRangeException(detail: String) : BusinessException(
+    errorCode = "DATE_OUT_OF_RANGE",
+    message = detail,
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+class WorkType3LimitExceededException(detail: String) : BusinessException(
+    errorCode = "WORK_TYPE3_LIMIT_EXCEEDED",
+    message = detail,
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+class LeaveConflictException(detail: String) : BusinessException(
+    errorCode = "LEAVE_CONFLICT",
+    message = detail,
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+class DuplicateScheduleException(detail: String) : BusinessException(
+    errorCode = "DUPLICATE_SCHEDULE",
+    message = detail,
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+class EmployeeOnLeaveException(detail: String) : BusinessException(
+    errorCode = "EMPLOYEE_ON_LEAVE",
+    message = detail,
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+class EmployeeResignedException(detail: String) : BusinessException(
+    errorCode = "EMPLOYEE_RESIGNED",
+    message = detail,
+    httpStatus = HttpStatus.BAD_REQUEST
+)
