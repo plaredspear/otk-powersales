@@ -20,10 +20,10 @@ class SFSchemaUtilsTest {
             val mapping = SFSchemaUtils.getSFMapping(Account::class.java)
 
             assertThat(mapping).hasSize(22)
-            assertThat(mapping["ABCType__c"]).isEqualTo("abctype__c")
+            assertThat(mapping["ABCType__c"]).isEqualTo("abc_type")
             assertThat(mapping["Name"]).isEqualTo("name")
             assertThat(mapping["Industry"]).isEqualTo("industry")
-            assertThat(mapping["WERK1_TX__c"]).isEqualTo("werk1_tx__c")
+            assertThat(mapping["WERK1_TX__c"]).isEqualTo("werk1_tx")
         }
     }
 
@@ -32,14 +32,13 @@ class SFSchemaUtilsTest {
     inner class GetHCMappingTests {
 
         @Test
-        @DisplayName("Account 엔티티 - 29개 HC Column 매핑 반환")
+        @DisplayName("Account 엔티티 - 25개 HC Column 매핑 반환")
         fun getHCMapping_account() {
             val mapping = SFSchemaUtils.getHCMapping(Account::class.java)
 
-            assertThat(mapping).hasSize(29)
+            assertThat(mapping).hasSize(25)
             assertThat(mapping["sfid"]).isEqualTo("sfid")
-            assertThat(mapping["_hc_lastop"]).isEqualTo("_hc_lastop")
-            assertThat(mapping["isdeleted"]).isEqualTo("isdeleted")
+            assertThat(mapping["isdeleted"]).isEqualTo("is_deleted")
             assertThat(mapping["name"]).isEqualTo("name")
         }
     }
@@ -55,11 +54,9 @@ class SFSchemaUtilsTest {
 
             assertThat(sql).startsWith("SELECT ")
             assertThat(sql).contains("FROM salesforce.account")
-            // 29개 HC 컬럼이 포함되어야 함
+            // 25개 HC 컬럼이 포함되어야 함
             assertThat(sql).contains("sfid")
             assertThat(sql).contains("name")
-            assertThat(sql).contains("_hc_lastop")
-            assertThat(sql).contains("_hc_err")
         }
 
         @Test

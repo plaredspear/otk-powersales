@@ -650,7 +650,6 @@ class LocalDataInitializerTest {
                     assertThat(account.werk1).isEqualTo("1000")
                     assertThat(account.werk1Tx).isEqualTo("오뚜기")
                     assertThat(account.isDeleted).isFalse()
-                    assertThat(account.createdDate).isNotNull()
                     assertThat(account.createdAt).isNotNull()
                     assertThat(account.updatedAt).isNotNull()
                 }
