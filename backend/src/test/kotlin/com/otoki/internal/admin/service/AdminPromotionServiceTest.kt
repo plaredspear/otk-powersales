@@ -208,6 +208,26 @@ class AdminPromotionServiceTest {
         }
 
         @Test
+        @DisplayName("행사명 null로 생성 - promotionName=null -> 정상 생성")
+        fun createPromotion_nullPromotionName() {
+            val request = createRequest(promotionName = null, remark = "신규 매대 협의 필요")
+            val account = createAccount()
+            val user = createUser(costCenterCode = "1101")
+
+            whenever(accountRepository.findById(100)).thenReturn(Optional.of(account))
+            whenever(productRepository.findById(200L)).thenReturn(Optional.of(createProduct()))
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(3L)
+            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
+            whenever(promotionProductRepository.save(any<PromotionProduct>())).thenAnswer { it.getArgument<PromotionProduct>(0) }
+
+            val result = adminPromotionService.createPromotion(userId, request)
+
+            assertThat(result.promotionName).isNull()
+            assertThat(result.remark).isEqualTo("신규 매대 협의 필요")
+        }
+
+        @Test
         @DisplayName("날짜 범위 오류 - end < start -> InvalidDateRangeException")
         fun createPromotion_invalidDateRange() {
             val request = createRequest(
@@ -534,12 +554,13 @@ class AdminPromotionServiceTest {
     private fun createPromotion(
         id: Long = 1L,
         promotionNumber: String = "PM00000001",
-        promotionName: String = "GS25 역삼점 3월 라면 행사",
+        promotionName: String? = "GS25 역삼점 3월 라면 행사",
         promotionTypeId: Long? = null,
         accountId: Int = 100,
         primaryProductId: Long? = 200L,
         costCenterCode: String? = "1101",
-        isDeleted: Boolean = false
+        isDeleted: Boolean = false,
+        remark: String? = null
     ) = Promotion(
         id = id,
         promotionNumber = promotionNumber,
@@ -555,7 +576,8 @@ class AdminPromotionServiceTest {
         targetAmount = 5000000,
         costCenterCode = costCenterCode,
         category = "라면",
-        isDeleted = isDeleted
+        isDeleted = isDeleted,
+        remark = remark
     )
 
     private fun createPromotionType(
@@ -590,12 +612,13 @@ class AdminPromotionServiceTest {
     }
 
     private fun createRequest(
-        promotionName: String = "GS25 역삼점 3월 라면 행사",
+        promotionName: String? = "GS25 역삼점 3월 라면 행사",
         promotionTypeId: Long? = null,
         accountId: Int = 100,
         startDate: LocalDate = LocalDate.of(2026, 3, 10),
         endDate: LocalDate = LocalDate.of(2026, 3, 20),
-        primaryProductId: Long? = 200L
+        primaryProductId: Long? = 200L,
+        remark: String? = null
     ) = PromotionCreateRequest(
         promotionName = promotionName,
         promotionTypeId = promotionTypeId,
@@ -607,6 +630,7 @@ class AdminPromotionServiceTest {
         message = "3월 라면 프로모션 진행",
         standLocation = "매장 입구 좌측",
         targetAmount = 5000000,
-        category = "라면"
+        category = "라면",
+        remark = remark
     )
 }

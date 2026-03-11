@@ -154,7 +154,8 @@ class AdminPromotionService(
                 productType = request.productType,
                 branchName = request.branchName,
                 professionalTeam = request.professionalTeam,
-                externalId = request.externalId
+                externalId = request.externalId,
+                remark = request.remark
             )
         )
 
@@ -234,7 +235,8 @@ class AdminPromotionService(
             productType = request.productType,
             branchName = request.branchName,
             professionalTeam = request.professionalTeam,
-            externalId = request.externalId
+            externalId = request.externalId,
+            remark = request.remark
         )
 
         promotionRepository.save(promotion)

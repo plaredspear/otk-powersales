@@ -1,14 +1,12 @@
 package com.otoki.internal.admin.dto.request
 
-import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
 import java.time.LocalDate
 
 data class PromotionCreateRequest(
-    @field:NotBlank(message = "행사명은 필수입니다")
     @field:Size(max = 200, message = "행사명은 200자 이하여야 합니다")
-    val promotionName: String,
+    val promotionName: String? = null,
 
     val promotionTypeId: Long? = null,
 
@@ -23,10 +21,10 @@ data class PromotionCreateRequest(
 
     val primaryProductId: Long? = null,
 
-    @field:Size(max = 500, message = "기타상품은 500자 이하여야 합니다")
+    @field:Size(max = 200, message = "기타상품은 200자 이하여야 합니다")
     val otherProduct: String? = null,
 
-    @field:Size(max = 1000, message = "메시지는 1000자 이하여야 합니다")
+    @field:Size(max = 255, message = "메시지는 255자 이하여야 합니다")
     val message: String? = null,
 
     @field:Size(max = 200, message = "매대 위치는 200자 이하여야 합니다")
@@ -47,5 +45,8 @@ data class PromotionCreateRequest(
     val professionalTeam: String? = null,
 
     @field:Size(max = 50, message = "외부 연동 ID는 50자 이하여야 합니다")
-    val externalId: String? = null
+    val externalId: String? = null,
+
+    @field:Size(max = 200, message = "비고는 200자 이하여야 합니다")
+    val remark: String? = null
 )

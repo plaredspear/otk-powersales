@@ -15,8 +15,8 @@ class Promotion(
     @Column(name = "promotion_number", nullable = false, unique = true, length = 20)
     val promotionNumber: String,
 
-    @Column(name = "promotion_name", nullable = false, length = 200)
-    var promotionName: String,
+    @Column(name = "promotion_name", nullable = true, length = 200)
+    var promotionName: String? = null,
 
     @Column(name = "promotion_type_id")
     var promotionTypeId: Long? = null,
@@ -33,10 +33,10 @@ class Promotion(
     @Column(name = "primary_product_id")
     var primaryProductId: Long? = null,
 
-    @Column(name = "other_product", length = 500)
+    @Column(name = "other_product", length = 200)
     var otherProduct: String? = null,
 
-    @Column(name = "message", length = 1000)
+    @Column(name = "message", length = 255)
     var message: String? = null,
 
     @Column(name = "stand_location", length = 200)
@@ -48,8 +48,11 @@ class Promotion(
     @Column(name = "actual_amount")
     var actualAmount: Long? = 0,
 
-    @Column(name = "cost_center_code", length = 10)
+    @Column(name = "cost_center_code", length = 100)
     val costCenterCode: String? = null,
+
+    @Column(name = "remark", length = 200)
+    var remark: String? = null,
 
     @Column(name = "branch_name", length = 100)
     var branchName: String? = null,
@@ -79,7 +82,7 @@ class Promotion(
     var updatedAt: LocalDateTime = LocalDateTime.now()
 ) {
     fun update(
-        promotionName: String,
+        promotionName: String?,
         promotionTypeId: Long?,
         accountId: Int,
         startDate: LocalDate,
@@ -93,7 +96,8 @@ class Promotion(
         productType: String?,
         branchName: String?,
         professionalTeam: String?,
-        externalId: String?
+        externalId: String?,
+        remark: String?
     ) {
         this.promotionName = promotionName
         this.promotionTypeId = promotionTypeId
@@ -110,6 +114,7 @@ class Promotion(
         this.branchName = branchName
         this.professionalTeam = professionalTeam
         this.externalId = externalId
+        this.remark = remark
         this.updatedAt = LocalDateTime.now()
     }
 
