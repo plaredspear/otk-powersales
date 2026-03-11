@@ -194,24 +194,30 @@ class AdminPromotionControllerTest {
         }
 
         @Test
-        @DisplayName("실패 - 행사명 누락")
-        fun createPromotion_missingName() {
-            val invalidJson = """
+        @DisplayName("성공 - 행사명 null로 생성")
+        fun createPromotion_nullPromotionName() {
+            val response = createDetailResponse(promotionName = null, remark = "신규 매대 협의 필요")
+            whenever(adminPromotionService.createPromotion(eq(1L), any())).thenReturn(response)
+
+            val json = """
                 {
-                    "promotion_name": "",
+                    "promotion_name": null,
                     "account_id": 100,
                     "start_date": "2026-03-10",
-                    "end_date": "2026-03-20"
+                    "end_date": "2026-03-20",
+                    "remark": "신규 매대 협의 필요"
                 }
             """.trimIndent()
 
             mockMvc.perform(
                 post("/api/v1/admin/promotions")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(invalidJson)
+                    .content(json)
             )
-                .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(status().isCreated)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.promotion_name").doesNotExist())
+                .andExpect(jsonPath("$.data.remark").value("신규 매대 협의 필요"))
         }
 
         @Test
@@ -320,7 +326,8 @@ class AdminPromotionControllerTest {
 
     // Helpers
     private fun createDetailResponse(
-        promotionName: String = "GS25 역삼점 3월 라면 행사"
+        promotionName: String? = "GS25 역삼점 3월 라면 행사",
+        remark: String? = null
     ) = PromotionDetailResponse(
         id = 1L,
         promotionNumber = "PM00000001",
@@ -347,7 +354,8 @@ class AdminPromotionControllerTest {
         externalId = null,
         isDeleted = false,
         createdAt = LocalDateTime.of(2026, 3, 8, 10, 0, 0),
-        updatedAt = LocalDateTime.of(2026, 3, 8, 10, 0, 0)
+        updatedAt = LocalDateTime.of(2026, 3, 8, 10, 0, 0),
+        remark = remark
     )
 
     private fun createRequest() = PromotionCreateRequest(
@@ -361,6 +369,7 @@ class AdminPromotionControllerTest {
         message = "3월 라면 프로모션 진행",
         standLocation = "매장 입구 좌측",
         targetAmount = 5000000,
-        category = "라면"
+        category = "라면",
+        remark = null
     )
 }

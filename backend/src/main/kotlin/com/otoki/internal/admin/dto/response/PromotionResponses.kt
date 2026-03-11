@@ -15,7 +15,7 @@ data class PromotionListResponse(
 data class PromotionListItem(
     val id: Long,
     val promotionNumber: String,
-    val promotionName: String,
+    val promotionName: String?,
     val promotionTypeId: Long?,
     val promotionTypeName: String?,
     val accountName: String?,
@@ -30,7 +30,8 @@ data class PromotionListItem(
     val isClosed: Boolean,
     val costCenterCode: String?,
     val isDeleted: Boolean,
-    val createdAt: LocalDateTime
+    val createdAt: LocalDateTime,
+    val remark: String? = null
 ) {
     companion object {
         fun from(
@@ -55,7 +56,8 @@ data class PromotionListItem(
             isClosed = promotion.isClosed,
             costCenterCode = promotion.costCenterCode,
             isDeleted = promotion.isDeleted,
-            createdAt = promotion.createdAt
+            createdAt = promotion.createdAt,
+            remark = promotion.remark
         )
     }
 }
@@ -63,7 +65,7 @@ data class PromotionListItem(
 data class PromotionDetailResponse(
     val id: Long,
     val promotionNumber: String,
-    val promotionName: String,
+    val promotionName: String?,
     val promotionTypeId: Long?,
     val promotionTypeName: String?,
     val accountId: Int,
@@ -86,7 +88,8 @@ data class PromotionDetailResponse(
     val externalId: String?,
     val isDeleted: Boolean,
     val createdAt: LocalDateTime,
-    val updatedAt: LocalDateTime
+    val updatedAt: LocalDateTime,
+    val remark: String? = null
 ) {
     companion object {
         fun from(
@@ -120,7 +123,8 @@ data class PromotionDetailResponse(
             externalId = promotion.externalId,
             isDeleted = promotion.isDeleted,
             createdAt = promotion.createdAt,
-            updatedAt = promotion.updatedAt
+            updatedAt = promotion.updatedAt,
+            remark = promotion.remark
         )
     }
 }
