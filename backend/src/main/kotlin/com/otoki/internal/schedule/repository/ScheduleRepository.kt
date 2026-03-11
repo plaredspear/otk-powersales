@@ -28,4 +28,14 @@ interface ScheduleRepository : JpaRepository<Schedule, Long>, ScheduleRepository
      * ID 목록으로 스케줄 일괄 삭제 (행사 연쇄 삭제용)
      */
     fun deleteAllByIdIn(ids: List<Long>)
+
+    /**
+     * promotionEmpIdExt 목록으로 스케줄 일괄 조회 (행사 확정 Upsert용)
+     */
+    fun findByPromotionEmpIdExtIn(promotionEmpIdExts: List<String>): List<Schedule>
+
+    /**
+     * 복수 사원 + 복수 날짜 스케줄 일괄 조회 (행사 확정 검증용)
+     */
+    fun findByEmployeeIdInAndWorkingDateIn(employeeIds: List<String>, workingDates: List<LocalDate>): List<Schedule>
 }

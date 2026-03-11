@@ -6,6 +6,7 @@ import com.otoki.internal.admin.dto.response.PromotionEmployeeDetailResponse
 import com.otoki.internal.admin.dto.response.PromotionEmployeeListResponse
 import com.otoki.internal.admin.scope.DataScopeHolder
 import com.otoki.internal.admin.security.AdminAuthorityFilter
+import com.otoki.internal.admin.service.AdminPromotionConfirmService
 import com.otoki.internal.admin.service.AdminPromotionEmployeeService
 import com.otoki.internal.common.security.GpsConsentFilter
 import com.otoki.internal.common.security.JwtAuthenticationFilter
@@ -44,6 +45,7 @@ class AdminPromotionEmployeeControllerTest {
     @Autowired private lateinit var objectMapper: ObjectMapper
 
     @MockitoBean private lateinit var adminPromotionEmployeeService: AdminPromotionEmployeeService
+    @MockitoBean private lateinit var adminPromotionConfirmService: AdminPromotionConfirmService
     @MockitoBean private lateinit var jwtTokenProvider: JwtTokenProvider
     @MockitoBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
     @MockitoBean private lateinit var adminAuthorityFilter: AdminAuthorityFilter
