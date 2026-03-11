@@ -13,8 +13,8 @@ import com.otoki.internal.notice.exception.InvalidNoticeIdException
 import com.otoki.internal.notice.exception.NoticePostNotFoundException
 import com.otoki.internal.notice.repository.NoticeRepository
 import com.otoki.internal.notice.repository.UploadFileRepository
-import com.otoki.internal.sap.entity.Org
-import com.otoki.internal.sap.repository.OrgRepository
+import com.otoki.internal.sap.entity.Organization
+import com.otoki.internal.sap.repository.OrganizationRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -46,13 +46,13 @@ class NoticeServiceTest {
     private lateinit var userRepository: UserRepository
 
     @Mock
-    private lateinit var orgRepository: OrgRepository
+    private lateinit var organizationRepository: OrganizationRepository
 
     private lateinit var noticeService: NoticeService
 
     @BeforeEach
     fun setUp() {
-        noticeService = NoticeService(noticeRepository, uploadFileRepository, userRepository, orgRepository, "test-bucket")
+        noticeService = NoticeService(noticeRepository, uploadFileRepository, userRepository, organizationRepository, "test-bucket")
     }
 
     @Nested
@@ -643,7 +643,7 @@ class NoticeServiceTest {
                 createOrg(orgNameLevel3 = "제1사업부", orgNameLevel4 = "1영업부", orgNameLevel5 = "서울1지점", costCenterLevel4 = "1100", costCenterLevel5 = "1101"),
                 createOrg(orgNameLevel3 = "제1사업부", orgNameLevel4 = "1영업부", orgNameLevel5 = "서울2지점", costCenterLevel4 = "1100", costCenterLevel5 = "1102")
             )
-            whenever(orgRepository.findAll()).thenReturn(orgs)
+            whenever(organizationRepository.findAll()).thenReturn(orgs)
 
             val result = noticeService.getNoticeFormMeta()
 
@@ -668,7 +668,7 @@ class NoticeServiceTest {
             val orgs = listOf(
                 createOrg(orgNameLevel3 = "e-Biz", orgNameLevel4 = "영업지원", orgNameLevel5 = null, costCenterLevel4 = "2100", costCenterLevel5 = null)
             )
-            whenever(orgRepository.findAll()).thenReturn(orgs)
+            whenever(organizationRepository.findAll()).thenReturn(orgs)
 
             val result = noticeService.getNoticeFormMeta()
 
@@ -685,7 +685,7 @@ class NoticeServiceTest {
                 createOrg(orgNameLevel3 = "사업부", orgNameLevel4 = null, orgNameLevel5 = "지점"),
                 createOrg(orgNameLevel3 = "사업부", orgNameLevel4 = "영업부", orgNameLevel5 = "지점", costCenterLevel5 = "3001")
             )
-            whenever(orgRepository.findAll()).thenReturn(orgs)
+            whenever(organizationRepository.findAll()).thenReturn(orgs)
 
             val result = noticeService.getNoticeFormMeta()
 
@@ -700,7 +700,7 @@ class NoticeServiceTest {
                 createOrg(orgNameLevel3 = "사업부", orgNameLevel4 = "영업부", orgNameLevel5 = "지점A", costCenterLevel5 = "1001"),
                 createOrg(orgNameLevel3 = "사업부", orgNameLevel4 = "영업부", orgNameLevel5 = "지점A", costCenterLevel5 = "1001")
             )
-            whenever(orgRepository.findAll()).thenReturn(orgs)
+            whenever(organizationRepository.findAll()).thenReturn(orgs)
 
             val result = noticeService.getNoticeFormMeta()
 
@@ -710,7 +710,7 @@ class NoticeServiceTest {
         @Test
         @DisplayName("빈 org 테이블 - branches 빈 배열")
         fun getNoticeFormMeta_empty() {
-            whenever(orgRepository.findAll()).thenReturn(emptyList())
+            whenever(organizationRepository.findAll()).thenReturn(emptyList())
 
             val result = noticeService.getNoticeFormMeta()
 
@@ -725,7 +725,7 @@ class NoticeServiceTest {
         orgNameLevel5: String? = null,
         costCenterLevel4: String? = null,
         costCenterLevel5: String? = null
-    ): Org = Org(
+    ): Organization = Organization(
         orgNameLevel3 = orgNameLevel3,
         orgNameLevel4 = orgNameLevel4,
         orgNameLevel5 = orgNameLevel5,

@@ -8,8 +8,8 @@ import com.otoki.internal.sap.repository.UserRepository
 import com.otoki.internal.notice.entity.Notice
 import com.otoki.internal.notice.entity.NoticeCategory
 import com.otoki.internal.notice.repository.NoticeRepository
-import com.otoki.internal.sap.entity.Org
-import com.otoki.internal.sap.repository.OrgRepository
+import com.otoki.internal.sap.entity.Organization
+import com.otoki.internal.sap.repository.OrganizationRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -45,7 +45,7 @@ class LocalDataInitializerTest {
     private lateinit var noticeRepository: NoticeRepository
 
     @Mock
-    private lateinit var orgRepository: OrgRepository
+    private lateinit var organizationRepository: OrganizationRepository
 
     @InjectMocks
     private lateinit var localDataInitializer: LocalDataInitializer
@@ -71,7 +71,7 @@ class LocalDataInitializerTest {
     private fun stubOtherSeedsExist() {
         whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
             .thenReturn(Optional.of(AgreementWord()))
-        whenever(orgRepository.count()).thenReturn(1L)
+        whenever(organizationRepository.count()).thenReturn(1L)
     }
 
     private fun captureAllSavedUsers(): List<User> {
@@ -342,7 +342,7 @@ class LocalDataInitializerTest {
                 .thenReturn(Optional.empty())
             whenever(agreementWordRepository.save(any<AgreementWord>()))
                 .thenAnswer { it.getArgument<AgreementWord>(0) }
-            whenever(orgRepository.count()).thenReturn(1L)
+            whenever(organizationRepository.count()).thenReturn(1L)
 
             // When
             localDataInitializer.run(null)
@@ -374,7 +374,7 @@ class LocalDataInitializerTest {
                 .thenReturn(Optional.empty())
             whenever(agreementWordRepository.save(any<AgreementWord>()))
                 .thenAnswer { it.getArgument<AgreementWord>(0) }
-            whenever(orgRepository.count()).thenReturn(1L)
+            whenever(organizationRepository.count()).thenReturn(1L)
 
             // When
             localDataInitializer.run(null)
@@ -482,13 +482,13 @@ class LocalDataInitializerTest {
             // Given
             stubAllUsersExist()
             stubOtherSeedsExist()
-            whenever(orgRepository.count()).thenReturn(0L)
+            whenever(organizationRepository.count()).thenReturn(0L)
 
             // When
             localDataInitializer.run(null)
 
             // Then
-            verify(orgRepository).saveAll(check<List<Org>> { orgs ->
+            verify(organizationRepository).saveAll(check<List<Organization>> { orgs ->
                 assertThat(orgs).hasSize(3)
             })
         }
@@ -499,13 +499,13 @@ class LocalDataInitializerTest {
             // Given
             stubAllUsersExist()
             stubOtherSeedsExist()
-            whenever(orgRepository.count()).thenReturn(3L)
+            whenever(organizationRepository.count()).thenReturn(3L)
 
             // When
             localDataInitializer.run(null)
 
             // Then
-            verify(orgRepository, never()).saveAll(any<List<Org>>())
+            verify(organizationRepository, never()).saveAll(any<List<Organization>>())
         }
 
         @Test
@@ -514,13 +514,13 @@ class LocalDataInitializerTest {
             // Given
             stubAllUsersExist()
             stubOtherSeedsExist()
-            whenever(orgRepository.count()).thenReturn(0L)
+            whenever(organizationRepository.count()).thenReturn(0L)
 
             // When
             localDataInitializer.run(null)
 
             // Then
-            verify(orgRepository).saveAll(check<List<Org>> { orgs ->
+            verify(organizationRepository).saveAll(check<List<Organization>> { orgs ->
                 val testBranch = orgs.filter { it.orgNameLevel5 == "테스트지점" }
                 assertThat(testBranch).hasSize(1)
                 assertThat(testBranch[0].costCenterLevel5).isEqualTo("1111")
@@ -533,13 +533,13 @@ class LocalDataInitializerTest {
             // Given
             stubAllUsersExist()
             stubOtherSeedsExist()
-            whenever(orgRepository.count()).thenReturn(0L)
+            whenever(organizationRepository.count()).thenReturn(0L)
 
             // When
             localDataInitializer.run(null)
 
             // Then
-            verify(orgRepository).saveAll(check<List<Org>> { orgs ->
+            verify(organizationRepository).saveAll(check<List<Organization>> { orgs ->
                 // 공통 Level2/3
                 orgs.forEach { org ->
                     assertThat(org.costCenterLevel2).isEqualTo("1000")

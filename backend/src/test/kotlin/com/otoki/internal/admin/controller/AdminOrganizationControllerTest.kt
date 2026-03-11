@@ -1,6 +1,6 @@
 package com.otoki.internal.admin.controller
 
-import com.otoki.internal.admin.dto.response.OrgResponse
+import com.otoki.internal.admin.dto.response.OrganizationResponse
 import com.otoki.internal.admin.scope.DataScopeHolder
 import com.otoki.internal.admin.security.AdminAuthorityFilter
 import com.otoki.internal.admin.service.AdminOrganizationService
@@ -69,7 +69,7 @@ class AdminOrganizationControllerTest {
         @DisplayName("성공 - 기본 조회")
         fun getOrganizations_success() {
             val response = listOf(
-                OrgResponse(
+                OrganizationResponse(
                     id = 1L,
                     costCenterLevel2 = "1000",
                     orgCodeLevel2 = "A100",

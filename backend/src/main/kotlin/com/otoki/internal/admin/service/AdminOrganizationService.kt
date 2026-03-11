@@ -1,9 +1,9 @@
 package com.otoki.internal.admin.service
 
 import com.otoki.internal.admin.dto.EffectiveBranchResult
-import com.otoki.internal.admin.dto.response.OrgResponse
+import com.otoki.internal.admin.dto.response.OrganizationResponse
 import com.otoki.internal.admin.scope.DataScopeHolder
-import com.otoki.internal.sap.repository.OrgRepository
+import com.otoki.internal.sap.repository.OrganizationRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -11,10 +11,10 @@ import org.springframework.transaction.annotation.Transactional
 @Transactional(readOnly = true)
 class AdminOrganizationService(
     private val dataScopeHolder: DataScopeHolder,
-    private val orgRepository: OrgRepository
+    private val organizationRepository: OrganizationRepository
 ) {
 
-    fun getOrganizations(keyword: String?, level: String?): List<OrgResponse> {
+    fun getOrganizations(keyword: String?, level: String?): List<OrganizationResponse> {
         val scope = dataScopeHolder.require()
 
         val branchCodes: List<String>? = when (val result = scope.effectiveBranchCodes(null)) {
@@ -23,10 +23,10 @@ class AdminOrganizationService(
             is EffectiveBranchResult.NoAccess -> return emptyList()
         }
 
-        return orgRepository.searchForAdmin(
+        return organizationRepository.searchForAdmin(
             keyword = keyword,
             level = level,
             branchCodes = branchCodes
-        ).map { OrgResponse.from(it) }
+        ).map { OrganizationResponse.from(it) }
     }
 }

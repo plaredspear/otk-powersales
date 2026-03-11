@@ -5,8 +5,8 @@ import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.sap.dto.SapClientMasterRequest
 import com.otoki.internal.sap.dto.SapSyncError
 import com.otoki.internal.sap.dto.SapSyncResult
-import com.otoki.internal.sap.entity.Org
-import com.otoki.internal.sap.repository.OrgRepository
+import com.otoki.internal.sap.entity.Organization
+import com.otoki.internal.sap.repository.OrganizationRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -15,7 +15,7 @@ import java.time.LocalDateTime
 @Service
 class SapClientMasterService(
     private val accountRepository: AccountRepository,
-    private val orgRepository: OrgRepository
+    private val organizationRepository: OrganizationRepository
 ) : SapSyncService<SapClientMasterRequest.ReqItem> {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -80,7 +80,7 @@ class SapClientMasterService(
         account: Account,
         item: SapClientMasterRequest.ReqItem,
         name: String,
-        org: Org?
+        org: Organization?
     ) {
         account.name = name
         account.accountType = item.accountType
@@ -123,14 +123,14 @@ class SapClientMasterService(
         account.orgCd5 = org?.orgCodeLevel5
     }
 
-    internal fun resolveOrg(branchCode: String?, salesDeptCode: String?): Org? {
+    internal fun resolveOrg(branchCode: String?, salesDeptCode: String?): Organization? {
         if (branchCode.isNullOrBlank()) return null
 
-        orgRepository.findFirstByCostCenterLevel5(branchCode)?.let { return it }
-        orgRepository.findFirstByCostCenterLevel4(branchCode)?.let { return it }
+        organizationRepository.findFirstByCostCenterLevel5(branchCode)?.let { return it }
+        organizationRepository.findFirstByCostCenterLevel4(branchCode)?.let { return it }
 
         if (!salesDeptCode.isNullOrBlank()) {
-            orgRepository.findFirstByCostCenterLevel4(salesDeptCode)?.let { return it }
+            organizationRepository.findFirstByCostCenterLevel4(salesDeptCode)?.let { return it }
         }
 
         return null

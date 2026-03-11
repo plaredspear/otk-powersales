@@ -1,9 +1,9 @@
 package com.otoki.internal.admin.dto.response
 
-import com.otoki.internal.sap.entity.Org
+import com.otoki.internal.sap.entity.Organization
 import java.time.LocalDateTime
 
-data class OrgResponse(
+data class OrganizationResponse(
     val id: Long,
     val costCenterLevel2: String?,
     val orgCodeLevel2: String?,
@@ -20,7 +20,7 @@ data class OrgResponse(
     val createdAt: LocalDateTime
 ) {
     companion object {
-        fun from(entity: Org): OrgResponse = OrgResponse(
+        fun from(entity: Organization): OrganizationResponse = OrganizationResponse(
             id = entity.id,
             costCenterLevel2 = entity.costCenterLevel2,
             orgCodeLevel2 = entity.orgCodeLevel2,

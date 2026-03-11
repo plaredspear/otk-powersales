@@ -11,9 +11,9 @@ import java.time.LocalDateTime
  * Salesforce 조직(Organization) 커스텀 오브젝트 — SAP HR 조직 마스터 동기화 대상 테이블.
  */
 @Entity
-@Table(name = "org")
+@Table(name = "organization")
 @SFObject("Organization__c")
-class Org(
+class Organization(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,

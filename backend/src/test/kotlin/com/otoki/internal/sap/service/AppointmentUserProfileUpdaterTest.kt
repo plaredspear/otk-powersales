@@ -3,8 +3,8 @@ package com.otoki.internal.sap.service
 import com.otoki.internal.sap.entity.User
 import com.otoki.internal.sap.repository.UserRepository
 import com.otoki.internal.sap.entity.Appointment
-import com.otoki.internal.sap.entity.Org
-import com.otoki.internal.sap.repository.OrgRepository
+import com.otoki.internal.sap.entity.Organization
+import com.otoki.internal.sap.repository.OrganizationRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -24,7 +24,7 @@ class AppointmentUserProfileUpdaterTest {
     private lateinit var userRepository: UserRepository
 
     @Mock
-    private lateinit var orgRepository: OrgRepository
+    private lateinit var organizationRepository: OrganizationRepository
 
     @InjectMocks
     private lateinit var updater: AppointmentUserProfileUpdater
@@ -168,7 +168,7 @@ class AppointmentUserProfileUpdaterTest {
         @DisplayName("정상 갱신 - Org 매칭, User 존재 -> appAuthority, costCenterCode, orgName 갱신")
         fun normalUpdate() {
             val org = createOrg(costCenterLevel5 = "1111", orgCodeLevel3 = "5066")
-            whenever(orgRepository.findAll()).thenReturn(listOf(org))
+            whenever(organizationRepository.findAll()).thenReturn(listOf(org))
 
             val user = createUser(employeeId = "100234")
             whenever(userRepository.findByEmployeeId("100234")).thenReturn(Optional.of(user))
@@ -191,7 +191,7 @@ class AppointmentUserProfileUpdaterTest {
         @Test
         @DisplayName("User 미존재 - empCodeExist=false -> 건너뜀")
         fun skipWhenEmpCodeExistFalse() {
-            whenever(orgRepository.findAll()).thenReturn(emptyList())
+            whenever(organizationRepository.findAll()).thenReturn(emptyList())
 
             val appointment = createAppointment(
                 employeeCode = "100234",
@@ -206,7 +206,7 @@ class AppointmentUserProfileUpdaterTest {
         @Test
         @DisplayName("afterOrgCode null -> 건너뜀")
         fun skipWhenAfterOrgCodeNull() {
-            whenever(orgRepository.findAll()).thenReturn(emptyList())
+            whenever(organizationRepository.findAll()).thenReturn(emptyList())
 
             val appointment = createAppointment(
                 employeeCode = "100234",
@@ -220,7 +220,7 @@ class AppointmentUserProfileUpdaterTest {
         @Test
         @DisplayName("Org 미존재 - appAuthority 미변경, costCenterCode/orgName은 갱신")
         fun orgNotFound() {
-            whenever(orgRepository.findAll()).thenReturn(emptyList())
+            whenever(organizationRepository.findAll()).thenReturn(emptyList())
 
             val user = createUser(employeeId = "100234", appAuthority = "영업사원")
             whenever(userRepository.findByEmployeeId("100234")).thenReturn(Optional.of(user))
@@ -243,7 +243,7 @@ class AppointmentUserProfileUpdaterTest {
         @DisplayName("costCenterLevel4 매칭 - Level5 없으면 Level4로 검색")
         fun matchByCostCenterLevel4() {
             val org = createOrg(costCenterLevel4 = "2222", orgCodeLevel3 = "3472")
-            whenever(orgRepository.findAll()).thenReturn(listOf(org))
+            whenever(organizationRepository.findAll()).thenReturn(listOf(org))
 
             val user = createUser(employeeId = "100234")
             whenever(userRepository.findByEmployeeId("100234")).thenReturn(Optional.of(user))
@@ -265,7 +265,7 @@ class AppointmentUserProfileUpdaterTest {
         fun multipleAppointments() {
             val org1 = createOrg(costCenterLevel5 = "1111", orgCodeLevel3 = "5066")
             val org2 = createOrg(costCenterLevel5 = "2222", orgCodeLevel3 = "9999")
-            whenever(orgRepository.findAll()).thenReturn(listOf(org1, org2))
+            whenever(organizationRepository.findAll()).thenReturn(listOf(org1, org2))
 
             val user = createUser(employeeId = "100234")
             whenever(userRepository.findByEmployeeId("100234")).thenReturn(Optional.of(user))
@@ -307,7 +307,7 @@ class AppointmentUserProfileUpdaterTest {
         orgCodeLevel4: String? = null,
         costCenterLevel5: String? = null,
         orgCodeLevel5: String? = null
-    ): Org = Org(
+    ): Organization = Organization(
         id = id,
         costCenterLevel3 = costCenterLevel3,
         orgCodeLevel3 = orgCodeLevel3,

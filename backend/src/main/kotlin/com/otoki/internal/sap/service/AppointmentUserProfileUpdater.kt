@@ -3,21 +3,21 @@ package com.otoki.internal.sap.service
 import com.otoki.internal.sap.entity.User
 import com.otoki.internal.sap.repository.UserRepository
 import com.otoki.internal.sap.entity.Appointment
-import com.otoki.internal.sap.entity.Org
-import com.otoki.internal.sap.repository.OrgRepository
+import com.otoki.internal.sap.entity.Organization
+import com.otoki.internal.sap.repository.OrganizationRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
 class AppointmentUserProfileUpdater(
     private val userRepository: UserRepository,
-    private val orgRepository: OrgRepository
+    private val organizationRepository: OrganizationRepository
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
     fun updateUserProfiles(appointments: List<Appointment>) {
-        val allOrgs = orgRepository.findAll()
+        val allOrgs = organizationRepository.findAll()
         val orgByCC5 = allOrgs.filter { it.costCenterLevel5 != null }
             .associateBy { it.costCenterLevel5!! }
         val orgByCC4 = allOrgs.filter { it.costCenterLevel4 != null }

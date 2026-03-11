@@ -1,8 +1,8 @@
 package com.otoki.internal.sap.service
 
 import com.otoki.internal.sap.dto.SapOrganizeMasterRequest.ReqItem
-import com.otoki.internal.sap.entity.Org
-import com.otoki.internal.sap.repository.OrgRepository
+import com.otoki.internal.sap.entity.Organization
+import com.otoki.internal.sap.repository.OrganizationRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -20,7 +20,7 @@ import org.mockito.kotlin.whenever
 class SapOrganizeMasterServiceTest {
 
     @Mock
-    private lateinit var orgRepository: OrgRepository
+    private lateinit var organizationRepository: OrganizationRepository
 
     @InjectMocks
     private lateinit var sapOrganizeMasterService: SapOrganizeMasterService
@@ -36,12 +36,12 @@ class SapOrganizeMasterServiceTest {
                 createReqItem(ccCd2 = "1000", orgCd2 = "O100", orgNm2 = "오뚜기"),
                 createReqItem(ccCd2 = "1000", orgCd3 = "O110", orgNm3 = "영업본부")
             )
-            whenever(orgRepository.saveAll(any<List<Org>>())).thenAnswer { it.getArgument<List<Org>>(0) }
+            whenever(organizationRepository.saveAll(any<List<Organization>>())).thenAnswer { it.getArgument<List<Organization>>(0) }
 
             val result = sapOrganizeMasterService.sync(items)
 
-            verify(orgRepository).deleteAllInBatch()
-            verify(orgRepository).saveAll(any<List<Org>>())
+            verify(organizationRepository).deleteAllInBatch()
+            verify(organizationRepository).saveAll(any<List<Organization>>())
             assertThat(result.successCount).isEqualTo(2)
             assertThat(result.failCount).isEqualTo(0)
         }
@@ -50,7 +50,7 @@ class SapOrganizeMasterServiceTest {
         @DisplayName("단일 건 동기화 - 1건 Insert 성공")
         fun sync_singleItem() {
             val items = listOf(createReqItem(ccCd2 = "1000"))
-            whenever(orgRepository.saveAll(any<List<Org>>())).thenAnswer { it.getArgument<List<Org>>(0) }
+            whenever(organizationRepository.saveAll(any<List<Organization>>())).thenAnswer { it.getArgument<List<Organization>>(0) }
 
             val result = sapOrganizeMasterService.sync(items)
 
@@ -64,7 +64,7 @@ class SapOrganizeMasterServiceTest {
             val items = listOf(
                 ReqItem(ccCd2 = "1000", orgCd2 = "O100", orgNm2 = "오뚜기")
             )
-            whenever(orgRepository.saveAll(any<List<Org>>())).thenAnswer { it.getArgument<List<Org>>(0) }
+            whenever(organizationRepository.saveAll(any<List<Organization>>())).thenAnswer { it.getArgument<List<Organization>>(0) }
 
             val result = sapOrganizeMasterService.sync(items)
 

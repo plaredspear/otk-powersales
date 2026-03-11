@@ -1,12 +1,12 @@
 package com.otoki.internal.sap.repository
 
-import com.otoki.internal.sap.entity.Org
+import com.otoki.internal.sap.entity.Organization
 
-interface OrgRepositoryCustom {
+interface OrganizationRepositoryCustom {
 
     fun searchForAdmin(
         keyword: String?,
         level: String?,
         branchCodes: List<String>?
-    ): List<Org>
+    ): List<Organization>
 }
