@@ -1,4 +1,4 @@
--- V15: 행사조원(PromotionEmployee) 테이블 생성 (Spec #189)
+-- 행사조원(PromotionEmployee) 테이블 생성
 
 CREATE TABLE dkretail__promotion_employee__c (
     id              BIGSERIAL PRIMARY KEY,
@@ -14,6 +14,8 @@ CREATE TABLE dkretail__promotion_employee__c (
     promo_close_by_tm BOOLEAN NOT NULL DEFAULT FALSE,
     base_price      BIGINT,
     daily_target_count INTEGER,
+    target_amount   BIGINT,
+    actual_amount   BIGINT,
     created_at      TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at      TIMESTAMP NOT NULL DEFAULT NOW(),
 
