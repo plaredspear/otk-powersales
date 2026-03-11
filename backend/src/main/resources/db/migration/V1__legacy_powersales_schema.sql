@@ -1,5 +1,5 @@
 -- V1: Legacy PowerSales schema migration (refactored)
--- Original V1 + V2(employee_mng) + V3(bigint) + V7(account ALTER) + V8(productbarcode ALTER)
+-- Original V1 + V2(employee_mng) + V3(bigint) + V7(account ALTER) + V8(product_barcode ALTER)
 -- + V9(monthlysaleshistory ALTER) + V10(tmp_claim ALTER) + V16(teammemberschedule ALTER)
 
 CREATE EXTENSION IF NOT EXISTS hstore;
@@ -171,12 +171,11 @@ CREATE UNIQUE INDEX uq_monthly_sales_externalkey ON salesforce2.monthlysaleshist
 CREATE TABLE salesforce2.product_favorites ( employeecode varchar(80) NULL, productcode varchar(80) NULL, inst_date timestamp NULL, upd_date timestamp NULL);
 COMMENT ON TABLE salesforce2.product_favorites IS '즐겨찾기';
 
--- salesforce2.productbarcode__c definition (id: bigserial per V3, V8 custom_key__c integrated)
+-- salesforce2.product_barcode definition (id: bigserial per V3, V8 custom_key integrated)
 
-CREATE TABLE salesforce2.productbarcode__c ( productname__c varchar(255) NULL, "name" varchar(80) NULL, isdeleted bool NULL, productunit__c varchar(255) NULL, systemmodstamp timestamp NULL, productbarcode__c varchar(255) NULL, productsequence__c varchar(255) NULL, product__c varchar(18) NULL, createddate timestamp NULL, sfid varchar(18) NULL, id bigserial NOT NULL, _hc_lastop varchar(32) NULL, _hc_err text NULL, custom_key__c varchar(255) NULL, CONSTRAINT productbarcode__c_pkey PRIMARY KEY (id));
-CREATE INDEX hc_idx_productbarcode__c_systemmodstamp ON salesforce2.productbarcode__c USING btree (systemmodstamp);
-CREATE UNIQUE INDEX hcu_idx_productbarcode__c_sfid ON salesforce2.productbarcode__c USING btree (sfid);
-CREATE UNIQUE INDEX uq_productbarcode_custom_key ON salesforce2.productbarcode__c (custom_key__c);
+CREATE TABLE salesforce2.product_barcode ( product_name varchar(255) NULL, "name" varchar(80) NULL, is_deleted bool NULL, unit varchar(255) NULL, barcode varchar(255) NULL, sort_order varchar(255) NULL, product_sfid varchar(18) NULL, sfid varchar(18) NULL, id bigserial NOT NULL, custom_key varchar(255) NULL, CONSTRAINT product_barcode_pkey PRIMARY KEY (id));
+CREATE UNIQUE INDEX uq_product_barcode_sfid ON salesforce2.product_barcode USING btree (sfid);
+CREATE UNIQUE INDEX uq_product_barcode_custom_key ON salesforce2.product_barcode (custom_key);
 
 -- salesforce2.pushmessage__c definition (id: bigserial per V3)
 

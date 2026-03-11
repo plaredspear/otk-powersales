@@ -53,12 +53,12 @@ class SapBarcodeMasterServiceTest {
             val captor = argumentCaptor<ProductBarcode>()
             verify(productBarcodeRepository).save(captor.capture())
             assertThat(captor.firstValue.customKey).isEqualTo("12345678EA001")
-            assertThat(captor.firstValue.product).isEqualTo("a00000000000001")
-            assertThat(captor.firstValue.productBarcode).isEqualTo("8801045520001")
+            assertThat(captor.firstValue.productSfid).isEqualTo("a00000000000001")
+            assertThat(captor.firstValue.barcode).isEqualTo("8801045520001")
         }
 
         @Test
-        @DisplayName("Product 미매칭 - product__c=null, 에러 아님")
+        @DisplayName("Product 미매칭 - productSfid=null, 에러 아님")
         fun sync_newBarcode_noProduct() {
             val items = listOf(createReqItem(
                 productCode = "99999999", productUnit = "EA", productSequence = "001"
@@ -72,7 +72,7 @@ class SapBarcodeMasterServiceTest {
             assertThat(result.successCount).isEqualTo(1)
             val captor = argumentCaptor<ProductBarcode>()
             verify(productBarcodeRepository).save(captor.capture())
-            assertThat(captor.firstValue.product).isNull()
+            assertThat(captor.firstValue.productSfid).isNull()
         }
     }
 
@@ -95,7 +95,7 @@ class SapBarcodeMasterServiceTest {
             val result = sapBarcodeMasterService.sync(items)
 
             assertThat(result.successCount).isEqualTo(1)
-            assertThat(existing.productBarcode).isEqualTo("8801045520002")
+            assertThat(existing.barcode).isEqualTo("8801045520002")
             assertThat(existing.productName).isEqualTo("변경이름")
         }
     }
