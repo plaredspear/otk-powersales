@@ -139,7 +139,7 @@ class AdminPromotionService(
         val promotion = promotionRepository.save(
             Promotion(
                 promotionNumber = promotionNumber,
-                promotionName = request.promotionName,
+                promotionName = product?.name,
                 promotionTypeId = request.promotionTypeId,
                 accountId = request.accountId,
                 startDate = request.startDate,
@@ -222,7 +222,7 @@ class AdminPromotionService(
         val oldPrimaryProductId = promotion.primaryProductId
 
         promotion.update(
-            promotionName = request.promotionName,
+            promotionName = product?.name,
             promotionTypeId = request.promotionTypeId,
             accountId = request.accountId,
             startDate = request.startDate,
