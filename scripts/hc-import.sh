@@ -47,9 +47,10 @@ get_table_config() {
     account)
       local hc_schema="salesforce2"
       local dev_schema="salesforce2"
-      local select_expr="sfid, name, phone, mobilephone__c AS mobile_phone, address1__c AS address1, address2__c AS address2, representative__c AS representative, abctype__c AS abc_type, abctypecode__c AS abc_type_code, externalkey__c AS external_key, accountgroup__c AS account_group, branchcode__c AS branch_code, branchname__c AS branch_name, zipcode__c AS zip_code, latitude__c AS latitude, longitude__c AS longitude, closingtime1__c AS closing_time1, closingtime2__c AS closing_time2, closingtime3__c AS closing_time3, industry, werk1_tx__c AS werk1_tx, werk2_tx__c AS werk2_tx, werk3_tx__c AS werk3_tx, isdeleted AS is_deleted"
-      local dev_columns="sfid, name, phone, mobile_phone, address1, address2, representative, abc_type, abc_type_code, external_key, account_group, branch_code, branch_name, zip_code, latitude, longitude, closing_time1, closing_time2, closing_time3, industry, werk1_tx, werk2_tx, werk3_tx, is_deleted"
+      local select_expr="sfid, name, phone, mobilephone__c, address1__c, address2__c, representative__c, abctype__c, abctypecode__c, externalkey__c, accountgroup__c, branchcode__c, branchname__c, zipcode__c, latitude__c, longitude__c, closingtime1__c, closingtime2__c, closingtime3__c, industry, werk1_tx__c, werk2_tx__c, werk3_tx__c, isdeleted"
+      local dev_columns="sfid, name, phone, mobilephone__c, address1__c, address2__c, representative__c, abctype__c, abctypecode__c, externalkey__c, accountgroup__c, branchcode__c, branchname__c, zipcode__c, latitude__c, longitude__c, closingtime1__c, closingtime2__c, closingtime3__c, industry, werk1_tx__c, werk2_tx__c, werk3_tx__c, isdeleted"
       local conflict_key="sfid"
+      # HC/Dev DB 컬럼명이 동일 (DB에는 __c 접미사 유지, JPA 엔티티만 리매핑)
       echo "${hc_schema}|${dev_schema}|${select_expr}|${dev_columns}|${conflict_key}"
       ;;
     *)
@@ -229,16 +230,19 @@ import_table() {
     | psql -h "$DEV_HOST" -p "$DEV_PORT" -U "$DEV_USER" -d "$DEV_DB" \
       -c "COPY ${dev_schema}.${table}(${dev_columns}) FROM STDIN WITH (FORMAT csv, HEADER)"
   else
-    # UPSERT 모드: 임시 테이블 → INSERT ON CONFLICT
-    log "임시 테이블 생성 중..."
-    psql -h "$DEV_HOST" -p "$DEV_PORT" -U "$DEV_USER" -d "$DEV_DB" \
-      -c "DROP TABLE IF EXISTS _tmp_import; CREATE TEMP TABLE _tmp_import AS SELECT * FROM ${dev_schema}.${table} WHERE false;"
+    # UPSERT 모드: CSV 파일 → 임시 테이블 → INSERT ON CONFLICT
+    # 임시 테이블은 세션 내에서만 유효하므로 CSV 파일을 경유한다.
+    local tmp_csv
+    tmp_csv=$(mktemp /tmp/hc-import-XXXXXX.csv)
+    trap "rm -f '$tmp_csv'" RETURN
 
-    log "데이터 전송 중 (COPY → 임시 테이블)..."
+    log "HC DB에서 CSV 추출 중..."
     PGPASSWORD="$HC_PASS" PGSSLMODE=require psql -h "$HC_HOST" -p "$HC_PORT" -U "$HC_USER" -d "$HC_DB" \
-      -c "COPY (${select_sql}) TO STDOUT WITH (FORMAT csv, HEADER)" \
-    | psql -h "$DEV_HOST" -p "$DEV_PORT" -U "$DEV_USER" -d "$DEV_DB" \
-      -c "COPY _tmp_import(${dev_columns}) FROM STDIN WITH (FORMAT csv, HEADER)"
+      -c "COPY (${select_sql}) TO STDOUT WITH (FORMAT csv, HEADER)" > "$tmp_csv"
+
+    local csv_lines
+    csv_lines=$(wc -l < "$tmp_csv" | tr -d ' ')
+    log "CSV 추출 완료: $((csv_lines - 1)) rows (헤더 제외)"
 
     # UPSERT SQL 생성: dev_columns에서 conflict_key 제외한 SET 절
     local update_set=""
@@ -255,15 +259,19 @@ import_table() {
     done
     IFS="$OLD_IFS"
 
-    log "UPSERT 실행 중..."
-    psql -h "$DEV_HOST" -p "$DEV_PORT" -U "$DEV_USER" -d "$DEV_DB" -c \
-      "INSERT INTO ${dev_schema}.${table}(${dev_columns})
-       SELECT ${dev_columns} FROM _tmp_import
-       ON CONFLICT(${conflict_key}) DO UPDATE SET ${update_set};"
+    log "UPSERT 실행 중 (단일 세션)..."
+    psql -h "$DEV_HOST" -p "$DEV_PORT" -U "$DEV_USER" -d "$DEV_DB" <<EOSQL
+BEGIN;
+CREATE TEMP TABLE _tmp_import AS SELECT * FROM ${dev_schema}.${table} WHERE false;
+\copy _tmp_import(${dev_columns}) FROM '${tmp_csv}' WITH (FORMAT csv, HEADER)
+INSERT INTO ${dev_schema}.${table}(${dev_columns})
+  SELECT ${dev_columns} FROM _tmp_import
+  ON CONFLICT(${conflict_key}) DO UPDATE SET ${update_set};
+DROP TABLE _tmp_import;
+COMMIT;
+EOSQL
 
-    log "임시 테이블 정리..."
-    psql -h "$DEV_HOST" -p "$DEV_PORT" -U "$DEV_USER" -d "$DEV_DB" \
-      -c "DROP TABLE IF EXISTS _tmp_import;" 2>/dev/null || true
+    rm -f "$tmp_csv"
   fi
 
   # Import 후 행 수
