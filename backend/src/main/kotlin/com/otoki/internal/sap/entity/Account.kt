@@ -1,5 +1,9 @@
 package com.otoki.internal.sap.entity
 
+import com.otoki.internal.common.salesforce.HCColumn
+import com.otoki.internal.common.salesforce.HCTable
+import com.otoki.internal.common.salesforce.SFField
+import com.otoki.internal.common.salesforce.SFObject
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
@@ -9,94 +13,147 @@ import java.time.LocalDateTime
  */
 @Entity
 @Table(name = "account")
+@SFObject("Account")
+@HCTable("account")
 class Account(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @HCColumn("id")
     val id: Int = 0,
 
     @Column(name = "sfid", length = 18)
+    @HCColumn("sfid")
     val sfid: String? = null,
 
     @Column(name = "name", length = 255)
+    @SFField("Name")
+    @HCColumn("name")
     var name: String? = null,
 
     @Column(name = "phone", length = 40)
+    @SFField("Phone")
+    @HCColumn("phone")
     var phone: String? = null,
 
     @Column(name = "mobilephone__c", length = 40)
+    @SFField("MobilePhone__c")
+    @HCColumn("mobilephone__c")
     var mobilePhone: String? = null,
 
     @Column(name = "address1__c", length = 120)
+    @SFField("Address1__c")
+    @HCColumn("address1__c")
     var address1: String? = null,
 
     @Column(name = "address2__c", length = 120)
+    @SFField("Address2__c")
+    @HCColumn("address2__c")
     var address2: String? = null,
 
     @Column(name = "representative__c", length = 100)
+    @SFField("Representative__c")
+    @HCColumn("representative__c")
     var representative: String? = null,
 
     @Column(name = "abctype__c", length = 20)
+    @SFField("ABCType__c")
+    @HCColumn("abctype__c")
     var abcType: String? = null,
 
     @Column(name = "abctypecode__c", length = 40)
+    @SFField("ABCTypeCode__c")
+    @HCColumn("abctypecode__c")
     var abcTypeCode: String? = null,
 
     @Column(name = "externalkey__c", length = 100)
+    @SFField("ExternalKey__c")
+    @HCColumn("externalkey__c")
     var externalKey: String? = null,
 
     @Column(name = "accountgroup__c", length = 10)
+    @SFField("AccountGroup__c")
+    @HCColumn("accountgroup__c")
     var accountGroup: String? = null,
 
     @Column(name = "branchcode__c", length = 100)
+    @SFField("BranchCode__c")
+    @HCColumn("branchcode__c")
     var branchCode: String? = null,
 
     @Column(name = "branchname__c", length = 250)
+    @SFField("BranchName__c")
+    @HCColumn("branchname__c")
     var branchName: String? = null,
 
     @Column(name = "zipcode__c", length = 100)
+    @SFField("Zipcode__c")
+    @HCColumn("zipcode__c")
     var zipCode: String? = null,
 
     @Column(name = "latitude__c", length = 100)
+    @SFField("Latitude__c")
+    @HCColumn("latitude__c")
     val latitude: String? = null,
 
     @Column(name = "longitude__c", length = 100)
+    @SFField("Longitude__c")
+    @HCColumn("longitude__c")
     val longitude: String? = null,
 
     @Column(name = "closingtime1__c", length = 50)
+    @SFField("ClosingTime1__c")
+    @HCColumn("closingtime1__c")
     var closingTime1: String? = null,
 
     @Column(name = "closingtime2__c", length = 50)
+    @SFField("ClosingTime2__c")
+    @HCColumn("closingtime2__c")
     var closingTime2: String? = null,
 
     @Column(name = "closingtime3__c", length = 50)
+    @SFField("ClosingTime3__c")
+    @HCColumn("closingtime3__c")
     var closingTime3: String? = null,
 
     @Column(name = "industry", length = 255)
+    @SFField("Industry")
+    @HCColumn("industry")
     var industry: String? = null,
 
     @Column(name = "werk1_tx__c", length = 255)
+    @SFField("WERK1_TX__c")
+    @HCColumn("werk1_tx__c")
     var werk1Tx: String? = null,
 
     @Column(name = "werk2_tx__c", length = 255)
+    @SFField("WERK2_TX__c")
+    @HCColumn("werk2_tx__c")
     var werk2Tx: String? = null,
 
     @Column(name = "werk3_tx__c", length = 255)
+    @SFField("WERK3_TX__c")
+    @HCColumn("werk3_tx__c")
     var werk3Tx: String? = null,
 
     @Column(name = "isdeleted")
+    @HCColumn("isdeleted")
     val isDeleted: Boolean? = null,
 
     @Column(name = "createddate")
+    @HCColumn("createddate")
     val createdDate: LocalDateTime? = null,
 
     @Column(name = "systemmodstamp")
+    @HCColumn("systemmodstamp")
     val systemModStamp: LocalDateTime? = null,
 
     @Column(name = "_hc_lastop", length = 32)
+    @HCColumn("_hc_lastop")
     val hcLastOp: String? = null,
 
     @Column(name = "_hc_err", columnDefinition = "TEXT")
+    @HCColumn("_hc_err")
     val hcErr: String? = null,
 
     // --- Spec #142: SAP 거래처 마스터 동기화 추가 컬럼 ---
