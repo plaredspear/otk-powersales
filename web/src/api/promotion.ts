@@ -19,7 +19,7 @@ interface PromotionListRaw {
 interface PromotionListItemRaw {
   id: number;
   promotion_number: string;
-  promotion_name: string;
+  promotion_name: string | null;
   promotion_type_id: number | null;
   promotion_type_name: string | null;
   account_name: string | null;
@@ -33,6 +33,7 @@ interface PromotionListItemRaw {
   professional_team: string | null;
   is_closed: boolean;
   cost_center_code: string | null;
+  remark: string | null;
   is_deleted: boolean;
   created_at: string;
 }
@@ -40,7 +41,7 @@ interface PromotionListItemRaw {
 interface PromotionDetailRaw {
   id: number;
   promotion_number: string;
-  promotion_name: string;
+  promotion_name: string | null;
   promotion_type_id: number | null;
   promotion_type_name: string | null;
   account_id: number;
@@ -61,6 +62,7 @@ interface PromotionDetailRaw {
   professional_team: string | null;
   is_closed: boolean;
   external_id: string | null;
+  remark: string | null;
   is_deleted: boolean;
   created_at: string;
   updated_at: string;
@@ -81,7 +83,7 @@ export interface PromotionListParams {
 export interface PromotionListItem {
   id: number;
   promotionNumber: string;
-  promotionName: string;
+  promotionName: string | null;
   promotionTypeId: number | null;
   promotionTypeName: string | null;
   accountName: string | null;
@@ -95,6 +97,7 @@ export interface PromotionListItem {
   professionalTeam: string | null;
   isClosed: boolean;
   costCenterCode: string | null;
+  remark: string | null;
   isDeleted: boolean;
   createdAt: string;
 }
@@ -110,7 +113,7 @@ export interface PromotionListData {
 export interface PromotionDetail {
   id: number;
   promotionNumber: string;
-  promotionName: string;
+  promotionName: string | null;
   promotionTypeId: number | null;
   promotionTypeName: string | null;
   accountId: number;
@@ -131,13 +134,14 @@ export interface PromotionDetail {
   professionalTeam: string | null;
   isClosed: boolean;
   externalId: string | null;
+  remark: string | null;
   isDeleted: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface PromotionFormData {
-  promotion_name: string;
+  promotion_name?: string | null;
   promotion_type_id?: number | null;
   account_id: number;
   start_date: string;
@@ -146,9 +150,7 @@ export interface PromotionFormData {
   other_product?: string | null;
   message?: string | null;
   stand_location?: string | null;
-  target_amount?: number | null;
-  category?: string | null;
-  product_type?: string | null;
+  remark?: string | null;
   branch_name?: string | null;
   professional_team?: string | null;
   external_id?: string | null;
@@ -174,6 +176,7 @@ function mapPromotionList(raw: PromotionListRaw): PromotionListData {
       branchName: item.branch_name,
       professionalTeam: item.professional_team,
       isClosed: item.is_closed,
+      remark: item.remark,
       costCenterCode: item.cost_center_code,
       isDeleted: item.is_deleted,
       createdAt: item.created_at,
@@ -210,6 +213,7 @@ function mapPromotionDetail(raw: PromotionDetailRaw): PromotionDetail {
     professionalTeam: raw.professional_team,
     isClosed: raw.is_closed,
     externalId: raw.external_id,
+    remark: raw.remark,
     isDeleted: raw.is_deleted,
     createdAt: raw.created_at,
     updatedAt: raw.updated_at,
