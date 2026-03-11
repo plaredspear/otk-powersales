@@ -280,7 +280,7 @@ export default function PromotionDetailPage() {
 
       <Descriptions column={1} bordered>
         <Descriptions.Item label="행사번호">{promotion.promotionNumber}</Descriptions.Item>
-        <Descriptions.Item label="행사명">{promotion.promotionName}</Descriptions.Item>
+        <Descriptions.Item label="행사명">{promotion.promotionName ?? '-'}</Descriptions.Item>
         <Descriptions.Item label="행사유형">
           {promotion.promotionTypeName ? (
             <Tag color={typeColor}>{promotion.promotionTypeName}</Tag>
@@ -296,6 +296,7 @@ export default function PromotionDetailPage() {
           {promotion.primaryProductName ?? '-'}
         </Descriptions.Item>
         <Descriptions.Item label="기타상품">{promotion.otherProduct ?? '-'}</Descriptions.Item>
+        <Descriptions.Item label="비고">{promotion.remark ?? '-'}</Descriptions.Item>
         <Descriptions.Item label="카테고리">
           {promotion.category ? (
             <Tag color={categoryColor}>{promotion.category}</Tag>
