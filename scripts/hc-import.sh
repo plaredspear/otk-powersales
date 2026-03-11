@@ -47,10 +47,9 @@ get_table_config() {
     account)
       local hc_schema="salesforce2"
       local dev_schema="salesforce2"
-      local select_expr="sfid, name, phone, mobilephone__c, address1__c, address2__c, representative__c, abctype__c, abctypecode__c, externalkey__c, accountgroup__c, branchcode__c, branchname__c, zipcode__c, latitude__c, longitude__c, closingtime1__c, closingtime2__c, closingtime3__c, industry, werk1_tx__c, werk2_tx__c, werk3_tx__c, isdeleted"
-      local dev_columns="sfid, name, phone, mobilephone__c, address1__c, address2__c, representative__c, abctype__c, abctypecode__c, externalkey__c, accountgroup__c, branchcode__c, branchname__c, zipcode__c, latitude__c, longitude__c, closingtime1__c, closingtime2__c, closingtime3__c, industry, werk1_tx__c, werk2_tx__c, werk3_tx__c, isdeleted"
+      local select_expr="sfid, name, phone, mobilephone__c AS mobile_phone, address1__c AS address1, address2__c AS address2, representative__c AS representative, abctype__c AS abc_type, abctypecode__c AS abc_type_code, externalkey__c AS external_key, accountgroup__c AS account_group, branchcode__c AS branch_code, branchname__c AS branch_name, zipcode__c AS zip_code, latitude__c AS latitude, longitude__c AS longitude, closingtime1__c AS closing_time1, closingtime2__c AS closing_time2, closingtime3__c AS closing_time3, industry, werk1_tx__c AS werk1_tx, werk2_tx__c AS werk2_tx, werk3_tx__c AS werk3_tx, isdeleted AS is_deleted"
+      local dev_columns="sfid, name, phone, mobile_phone, address1, address2, representative, abc_type, abc_type_code, external_key, account_group, branch_code, branch_name, zip_code, latitude, longitude, closing_time1, closing_time2, closing_time3, industry, werk1_tx, werk2_tx, werk3_tx, is_deleted"
       local conflict_key="sfid"
-      # HC/Dev DB 컬럼명이 동일 (DB에는 __c 접미사 유지, JPA 엔티티만 리매핑)
       echo "${hc_schema}|${dev_schema}|${select_expr}|${dev_columns}|${conflict_key}"
       ;;
     *)
