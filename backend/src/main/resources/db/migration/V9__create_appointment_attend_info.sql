@@ -1,5 +1,3 @@
--- Spec #146: SAP 발령/출퇴근 동기화
-
 CREATE TABLE IF NOT EXISTS salesforce2.appointment (
     id              BIGSERIAL PRIMARY KEY,
     employee_code   VARCHAR(20)  NOT NULL,
