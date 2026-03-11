@@ -34,5 +34,11 @@ data class PromotionEmployeeRequest(
     val basePrice: Long? = null,
 
     @field:Min(value = 0, message = "일일 목표수량은 0 이상이어야 합니다")
-    val dailyTargetCount: Int? = null
+    val dailyTargetCount: Int? = null,
+
+    @field:Min(value = 0, message = "목표금액은 0 이상이어야 합니다")
+    val targetAmount: Long? = 0,
+
+    @field:Min(value = 0, message = "실적금액은 0 이상이어야 합니다")
+    val actualAmount: Long? = 0
 )

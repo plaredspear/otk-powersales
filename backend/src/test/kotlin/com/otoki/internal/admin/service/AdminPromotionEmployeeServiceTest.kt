@@ -73,6 +73,7 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
             whenever(userRepository.findBySfidIn(any())).thenReturn(listOf(createUser()))
+            stubRollup()
 
             val result = service.createEmployee(10L, createRequest(professionalPromotionTeam = "라면세일조"))
             assertThat(result.employeeSfid).isEqualTo("a0B5g00000XYZabc")
@@ -85,6 +86,7 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
             whenever(userRepository.findBySfidIn(any())).thenReturn(emptyList())
+            stubRollup()
 
             val result = service.createEmployee(10L, createRequest(professionalPromotionTeam = null))
             assertThat(result.professionalPromotionTeam).isNull()
@@ -97,6 +99,7 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
             whenever(userRepository.findBySfidIn(any())).thenReturn(emptyList())
+            stubRollup()
 
             service.createEmployee(10L, createRequest(professionalPromotionTeam = "일반"))
         }
@@ -108,6 +111,7 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
             whenever(userRepository.findBySfidIn(any())).thenReturn(emptyList())
+            stubRollup()
 
             service.createEmployee(10L, createRequest(professionalPromotionTeam = "프레시세일조_냉동"))
         }
@@ -144,6 +148,7 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
             whenever(userRepository.findBySfidIn(any())).thenReturn(listOf(createUser()))
+            stubRollup()
 
             val result = service.updateEmployee(1L, createRequest(scheduleDate = LocalDate.of(2026, 3, 20)))
             assertThat(result.scheduleDate).isEqualTo(LocalDate.of(2026, 3, 20))
@@ -158,6 +163,7 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
             whenever(userRepository.findBySfidIn(any())).thenReturn(listOf(createUser()))
+            stubRollup()
 
             // work_type1만 변경 (비핵심필드)
             val result = service.updateEmployee(1L, createRequest(workType1 = "시음"))
@@ -193,6 +199,7 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
             whenever(userRepository.findBySfidIn(any())).thenReturn(listOf(createUser()))
+            stubRollup()
 
             service.updateEmployee(1L, createRequest(employeeSfid = "NEW_SFID"))
 
@@ -209,6 +216,7 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
             whenever(userRepository.findBySfidIn(any())).thenReturn(listOf(createUser()))
+            stubRollup()
 
             // team + sfid 동시 변경 -> team 변경이 있으므로 스케줄 삭제 안 함
             service.updateEmployee(1L, createRequest(
@@ -222,6 +230,60 @@ class AdminPromotionEmployeeServiceTest {
     }
 
     @Nested
+    @DisplayName("롤업 자동계산 - 행사마스터 금액 갱신")
+    inner class RollupTests {
+
+        @Test
+        @DisplayName("조원 등록 후 행사마스터 합계 갱신")
+        fun createEmployee_updatesPromotionAmounts() {
+            val promotion = createPromotion()
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            whenever(userRepository.findBySfidIn(any())).thenReturn(emptyList())
+            stubRollup(targetSum = 100000, actualSum = 80000)
+
+            service.createEmployee(10L, createRequest(targetAmount = 100000, actualAmount = 80000))
+
+            assertThat(promotion.targetAmount).isEqualTo(100000)
+            assertThat(promotion.actualAmount).isEqualTo(80000)
+        }
+
+        @Test
+        @DisplayName("조원 수정 후 행사마스터 합계 갱신")
+        fun updateEmployee_updatesPromotionAmounts() {
+            val promotion = createPromotion()
+            val pe = createPe()
+            whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            whenever(userRepository.findBySfidIn(any())).thenReturn(emptyList())
+            stubRollup(targetSum = 150000, actualSum = 110000)
+
+            service.updateEmployee(1L, createRequest(targetAmount = 50000, actualAmount = 30000))
+
+            assertThat(promotion.targetAmount).isEqualTo(150000)
+            assertThat(promotion.actualAmount).isEqualTo(110000)
+        }
+
+        @Test
+        @DisplayName("조원 삭제 후 행사마스터 합계 갱신 (0으로)")
+        fun deleteEmployee_updatesPromotionAmounts() {
+            val promotion = createPromotion()
+            val pe = createPe()
+            whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
+            stubRollup(targetSum = 0, actualSum = 0)
+
+            service.deleteEmployee(1L)
+
+            assertThat(promotion.targetAmount).isEqualTo(0)
+            assertThat(promotion.actualAmount).isEqualTo(0)
+        }
+    }
+
+    @Nested
     @DisplayName("deleteEmployee - 삭제 + 보호 규칙")
     inner class DeleteEmployeeTests {
 
@@ -230,6 +292,8 @@ class AdminPromotionEmployeeServiceTest {
         fun deleteEmployee_success() {
             val pe = createPe()
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            stubRollup()
 
             service.deleteEmployee(1L)
             verify(promotionEmployeeRepository).delete(pe)
@@ -240,6 +304,8 @@ class AdminPromotionEmployeeServiceTest {
         fun deleteEmployee_withSchedule_cascadeDelete() {
             val pe = createPe(scheduleId = 100L)
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            stubRollup()
 
             service.deleteEmployee(1L)
 
@@ -259,6 +325,12 @@ class AdminPromotionEmployeeServiceTest {
     }
 
     // --- Helpers ---
+
+    private fun stubRollup(promotionId: Long = 10L, targetSum: Long = 0, actualSum: Long = 0) {
+        whenever(promotionEmployeeRepository.sumTargetAmountByPromotionId(promotionId)).thenReturn(targetSum)
+        whenever(promotionEmployeeRepository.sumActualAmountByPromotionId(promotionId)).thenReturn(actualSum)
+        whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
+    }
 
     private fun createPromotion(
         id: Long = 10L,
@@ -287,11 +359,12 @@ class AdminPromotionEmployeeServiceTest {
         employeeSfid: String = "a0B5g00000XYZabc", scheduleDate: LocalDate = LocalDate.of(2026, 3, 15),
         workStatus: String = "근무", workType1: String = "시식", workType3: String = "고정",
         workType4: String? = "냉장", professionalPromotionTeam: String? = "라면세일조",
-        basePrice: Long? = 1500, dailyTargetCount: Int? = 100
+        basePrice: Long? = 1500, dailyTargetCount: Int? = 100,
+        targetAmount: Long? = 0, actualAmount: Long? = 0
     ) = PromotionEmployeeRequest(
         employeeSfid = employeeSfid, scheduleDate = scheduleDate, workStatus = workStatus,
         workType1 = workType1, workType3 = workType3, workType4 = workType4,
         professionalPromotionTeam = professionalPromotionTeam, basePrice = basePrice,
-        dailyTargetCount = dailyTargetCount
+        dailyTargetCount = dailyTargetCount, targetAmount = targetAmount, actualAmount = actualAmount
     )
 }

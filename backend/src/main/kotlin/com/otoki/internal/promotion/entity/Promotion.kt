@@ -91,7 +91,6 @@ class Promotion(
         otherProduct: String?,
         message: String?,
         standLocation: String?,
-        targetAmount: Long?,
         category: String?,
         productType: String?,
         branchName: String?,
@@ -108,13 +107,18 @@ class Promotion(
         this.otherProduct = otherProduct
         this.message = message
         this.standLocation = standLocation
-        this.targetAmount = targetAmount
         this.category = category
         this.productType = productType
         this.branchName = branchName
         this.professionalTeam = professionalTeam
         this.externalId = externalId
         this.remark = remark
+        this.updatedAt = LocalDateTime.now()
+    }
+
+    fun updateAmounts(targetAmount: Long, actualAmount: Long) {
+        this.targetAmount = targetAmount
+        this.actualAmount = actualAmount
         this.updatedAt = LocalDateTime.now()
     }
 
