@@ -178,3 +178,9 @@ class EmployeeResignedException(detail: String) : BusinessException(
     message = detail,
     httpStatus = HttpStatus.BAD_REQUEST
 )
+
+class InvalidOtherProductException : BusinessException(
+    errorCode = "INVALID_OTHER_PRODUCT",
+    message = "기타상품에 작은따옴표(')를 사용할 수 없습니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)

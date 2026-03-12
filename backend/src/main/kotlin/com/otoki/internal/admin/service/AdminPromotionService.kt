@@ -129,6 +129,7 @@ class AdminPromotionService(
         validateDateRange(request.startDate, request.endDate)
         validatePromotionType(request.promotionTypeId)
         validateStandLocation(request.standLocation)
+        validateOtherProduct(request.otherProduct)
 
         val account = accountRepository.findById(request.accountId)
             .orElseThrow { AccountNotFoundException() }
@@ -195,6 +196,7 @@ class AdminPromotionService(
         validateDateRange(request.startDate, request.endDate)
         validatePromotionType(request.promotionTypeId)
         validateStandLocation(request.standLocation)
+        validateOtherProduct(request.otherProduct)
 
         // 1-2-C: 마감 보호 — 거래처/날짜 변경 차단
         val criticalFieldChanged = promotion.accountId != request.accountId ||
@@ -347,6 +349,12 @@ class AdminPromotionService(
 
     private fun validateDateRange(startDate: java.time.LocalDate, endDate: java.time.LocalDate) {
         if (endDate.isBefore(startDate)) throw InvalidDateRangeException()
+    }
+
+    private fun validateOtherProduct(otherProduct: String?) {
+        if (otherProduct != null && otherProduct.contains("'")) {
+            throw InvalidOtherProductException()
+        }
     }
 
     private fun emptyResponse(page: Int, size: Int) = PromotionListResponse(
