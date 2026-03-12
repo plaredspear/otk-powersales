@@ -168,7 +168,7 @@ class AdminPromotionService(
                 costCenterCode = costCenterCode,
                 category = request.category,
                 productType = request.productType,
-                branchName = request.branchName,
+                branchName = account.branchName,
                 remark = request.remark
             )
         )
@@ -229,7 +229,7 @@ class AdminPromotionService(
             resetSchedulesForPromotion(id)
         }
 
-        accountRepository.findById(request.accountId)
+        val account = accountRepository.findById(request.accountId)
             .orElseThrow { AccountNotFoundException() }
 
         val product = productRepository.findById(request.primaryProductId!!)
@@ -249,7 +249,7 @@ class AdminPromotionService(
             standLocation = request.standLocation,
             category = request.category,
             productType = request.productType,
-            branchName = request.branchName,
+            branchName = account.branchName,
             remark = request.remark
         )
 
@@ -272,7 +272,6 @@ class AdminPromotionService(
             }
         }
 
-        val account = accountRepository.findById(promotion.accountId).orElse(null)
         val typeName = promotion.promotionTypeId?.let {
             promotionTypeRepository.findById(it).orElse(null)?.name
         }

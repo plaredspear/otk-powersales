@@ -237,6 +237,50 @@ class AdminPromotionServiceTest {
         }
 
         @Test
+        @DisplayName("정상 생성 - 거래처 branchName 자동 파생")
+        fun createPromotion_branchNameFromAccount() {
+            val request = createRequest(promotionTypeId = 1L)
+            val account = createAccount(branchName = "서초21지점")
+            val product = createProduct(name = "진라면")
+            val user = createUser(costCenterCode = "1101")
+            val promotionType = createPromotionType()
+
+            whenever(promotionTypeRepository.findById(1L)).thenReturn(Optional.of(promotionType))
+            whenever(accountRepository.findById(100)).thenReturn(Optional.of(account))
+            whenever(productRepository.findById(200L)).thenReturn(Optional.of(product))
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(1L)
+            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
+            whenever(promotionProductRepository.save(any<PromotionProduct>())).thenAnswer { it.getArgument<PromotionProduct>(0) }
+
+            val result = adminPromotionService.createPromotion(userId, request)
+
+            assertThat(result.branchName).isEqualTo("서초21지점")
+        }
+
+        @Test
+        @DisplayName("거래처 branchName null -> Promotion branchName도 null")
+        fun createPromotion_nullBranchName() {
+            val request = createRequest(promotionTypeId = 1L)
+            val account = createAccount(branchName = null)
+            val product = createProduct(name = "진라면")
+            val user = createUser(costCenterCode = "1101")
+            val promotionType = createPromotionType()
+
+            whenever(promotionTypeRepository.findById(1L)).thenReturn(Optional.of(promotionType))
+            whenever(accountRepository.findById(100)).thenReturn(Optional.of(account))
+            whenever(productRepository.findById(200L)).thenReturn(Optional.of(product))
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(1L)
+            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
+            whenever(promotionProductRepository.save(any<PromotionProduct>())).thenAnswer { it.getArgument<PromotionProduct>(0) }
+
+            val result = adminPromotionService.createPromotion(userId, request)
+
+            assertThat(result.branchName).isNull()
+        }
+
+        @Test
         @DisplayName("날짜 범위 오류 - end < start -> InvalidDateRangeException")
         fun createPromotion_invalidDateRange() {
             val request = createRequest(
@@ -427,6 +471,28 @@ class AdminPromotionServiceTest {
             val result = adminPromotionService.updatePromotion(1L, userId, request)
 
             assertThat(result.promotionName).isEqualTo("진라면 매운맛 120g")
+        }
+
+        @Test
+        @DisplayName("정상 수정 - 거래처 변경 시 branchName 자동 갱신")
+        fun updatePromotion_branchNameFromAccount() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            whenever(dataScopeHolder.require()).thenReturn(scope)
+
+            val promotion = createPromotion()
+            whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
+
+            val newAccount = createAccount(id = 200, name = "GS25 강남점", branchName = "서초21지점")
+            whenever(accountRepository.findById(200)).thenReturn(Optional.of(newAccount))
+            whenever(productRepository.findById(200L)).thenReturn(Optional.of(createProduct()))
+            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
+            whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(false)
+            whenever(promotionEmployeeRepository.findByPromotionId(1L)).thenReturn(emptyList())
+
+            val request = createRequest(accountId = 200)
+            val result = adminPromotionService.updatePromotion(1L, userId, request)
+
+            assertThat(result.branchName).isEqualTo("서초21지점")
         }
 
         @Test
@@ -788,10 +854,10 @@ class AdminPromotionServiceTest {
         isActive = isActive
     )
 
-    private fun createAccount(id: Int = 100, name: String = "GS25 역삼점") = Account(
+    private fun createAccount(id: Int = 100, name: String = "GS25 역삼점", branchName: String? = "강남53지점") = Account(
         id = id,
         name = name
-    )
+    ).also { it.branchName = branchName }
 
     private fun createProduct(
         id: Long = 200L,
