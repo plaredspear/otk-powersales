@@ -22,45 +22,45 @@ class ProductBarcode(
     @HCColumn("id")
     val id: Int = 0,
 
-    @Column(name = "sfid", length = 18)
     @HCColumn("sfid")
+    @Column(name = "sfid", length = 18)
     val sfid: String? = null,
 
-    @Column(name = "name", length = 80)
     @SFField("Name")
     @HCColumn("name")
+    @Column(name = "name", length = 80)
     var name: String? = null,
 
-    @Column(name = "product_name", length = 255)
     @SFField("ProductName__c")
     @HCColumn("productname__c")
+    @Column(name = "product_name", length = 255)
     var productName: String? = null,
 
-    @Column(name = "barcode", length = 255)
     @SFField("ProductBarcode__c")
     @HCColumn("productbarcode__c")
+    @Column(name = "barcode", length = 255)
     var barcode: String? = null,
 
-    @Column(name = "unit", length = 255)
     @SFField("ProductUnit__c")
     @HCColumn("productunit__c")
+    @Column(name = "unit", length = 255)
     var unit: String? = null,
 
-    @Column(name = "sort_order", length = 255)
     @SFField("ProductSequence__c")
     @HCColumn("productsequence__c")
+    @Column(name = "sort_order", length = 255)
     var sortOrder: String? = null,
 
-    @Column(name = "product_sfid", length = 18)
     @SFField("Product__c")
     @HCColumn("product__c")
+    @Column(name = "product_sfid", length = 18)
     var productSfid: String? = null,
 
-    @Column(name = "custom_key", length = 255)
     @SFField("CustomKey__c")
+    @Column(name = "custom_key", length = 255)
     var customKey: String? = null,
 
-    @Column(name = "is_deleted")
     @HCColumn("isdeleted")
+    @Column(name = "is_deleted")
     val isDeleted: Boolean? = null
 )

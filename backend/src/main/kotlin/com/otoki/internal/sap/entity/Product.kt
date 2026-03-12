@@ -24,198 +24,198 @@ class Product(
     @HCColumn("id")
     val id: Long = 0,
 
-    @Column(name = "sfid", length = 18)
     @HCColumn("sfid")
+    @Column(name = "sfid", length = 18)
     val sfid: String? = null,
 
-    @Column(name = "name", length = 80)
     @SFField("Name")
     @HCColumn("name")
+    @Column(name = "name", length = 80)
     var name: String? = null,
 
-    @Column(name = "product_code", length = 100)
     @SFField("DKRetail__ProductCode__c")
     @HCColumn("dkretail__productcode__c")
+    @Column(name = "product_code", length = 100)
     val productCode: String? = null,
 
-    @Column(name = "product_type", length = 255)
     @SFField("DKRetail__ProductType__c")
     @HCColumn("dkretail__producttype__c")
+    @Column(name = "product_type", length = 255)
     var productType: String? = null,
 
-    @Column(name = "product_status", length = 255)
     @SFField("DKRetail__ProductStatus__c")
     @HCColumn("dkretail__productstatus__c")
+    @Column(name = "product_status", length = 255)
     var productStatus: String? = null,
 
-    @Column(name = "storage_condition", length = 255)
     @SFField("DKRetail__StoreCondition__c")
     @HCColumn("dkretail__storecondition__c")
+    @Column(name = "storage_condition", length = 255)
     var storageCondition: String? = null,
 
-    @Column(name = "shelf_life", length = 30)
     @SFField("DKRetail__ShelfLife__c")
     @HCColumn("dkretail__shelflife__c")
+    @Column(name = "shelf_life", length = 30)
     var shelfLife: String? = null,
 
-    @Column(name = "shelf_life_unit", length = 40)
     @SFField("DKRetail__ShelfLifeUnit__c")
     @HCColumn("dkretail__shelflifeunit__c")
+    @Column(name = "shelf_life_unit", length = 40)
     var shelfLifeUnit: String? = null,
 
-    @Column(name = "shelf_life_full", length = 1300)
     @SFField("ShelfLifeFull__c")
     @HCColumn("shelflifefull__c")
+    @Column(name = "shelf_life_full", length = 1300)
     val shelfLifeFull: String? = null,
 
-    @Column(name = "category1", length = 255)
     @SFField("DKRetail__Category1__c")
     @HCColumn("dkretail__category1__c")
+    @Column(name = "category1", length = 255)
     var category1: String? = null,
 
-    @Column(name = "category2", length = 255)
     @SFField("DKRetail__Category2__c")
     @HCColumn("dkretail__category2__c")
+    @Column(name = "category2", length = 255)
     var category2: String? = null,
 
-    @Column(name = "category3", length = 255)
     @SFField("DKRetail__Category3__c")
     @HCColumn("dkretail__category3__c")
+    @Column(name = "category3", length = 255)
     var category3: String? = null,
 
-    @Column(name = "category_code1", length = 100)
     @SFField("DKRetail__CategoryCode1__c")
     @HCColumn("dkretail__categorycode1__c")
+    @Column(name = "category_code1", length = 100)
     var categoryCode1: String? = null,
 
-    @Column(name = "category_code2", length = 100)
     @SFField("DKRetail__CategoryCode2__c")
     @HCColumn("dkretail__categorycode2__c")
+    @Column(name = "category_code2", length = 100)
     var categoryCode2: String? = null,
 
-    @Column(name = "category_code3", length = 100)
     @SFField("DKRetail__CategoryCode3__c")
     @HCColumn("dkretail__categorycode3__c")
+    @Column(name = "category_code3", length = 100)
     var categoryCode3: String? = null,
 
-    @Column(name = "unit", length = 40)
     @SFField("DKRetail__Unit__c")
     @HCColumn("dkretail__unit__c")
+    @Column(name = "unit", length = 40)
     var unit: String? = null,
 
-    @Column(name = "ordering_unit", length = 40)
     @SFField("DKRetail__OrderingUnit__c")
     @HCColumn("dkretail__orderingunit__c")
+    @Column(name = "ordering_unit", length = 40)
     val orderingUnit: String? = null,
 
-    @Column(name = "conversion_quantity")
     @SFField("DKRetail__ConversionQuantity__c")
     @HCColumn("dkretail__conversionquantity__c")
+    @Column(name = "conversion_quantity")
     val conversionQuantity: Double? = null,
 
-    @Column(name = "box_receiving_quantity")
     @SFField("DKRetail__BoxReceivingQuantity__c")
     @HCColumn("dkretail__boxreceivingquantity__c")
+    @Column(name = "box_receiving_quantity")
     var boxReceivingQuantity: Double? = null,
 
-    @Column(name = "standard_unit_price")
     @SFField("DKRetail__StandardUnitPrice__c")
     @HCColumn("dkretail__standardunitprice__c")
+    @Column(name = "standard_unit_price")
     val standardUnitPrice: Double? = null,
 
-    @Column(name = "standard_price")
     @SFField("StandardPrice__c")
     @HCColumn("standardprice__c")
+    @Column(name = "standard_price")
     var standardPrice: Double? = null,
 
-    @Column(name = "super_tax")
     @SFField("SuperTax__c")
     @HCColumn("supertax__c")
+    @Column(name = "super_tax")
     var superTax: Double? = null,
 
-    @Column(name = "launch_date")
     @SFField("DKRetail__LaunchDate__c")
     @HCColumn("dkretail__launchdate__c")
+    @Column(name = "launch_date")
     var launchDate: LocalDate? = null,
 
-    @Column(name = "logistics_barcode", length = 100)
     @SFField("DKRetail__LogisticsBarCode__c")
     @HCColumn("dkretail__logisticsbarcode__c")
+    @Column(name = "logistics_barcode", length = 100)
     var logisticsBarcode: String? = null,
 
-    @Column(name = "taste_gift", length = 1)
     @SFField("TasteGift__c")
     @HCColumn("tastegift__c")
+    @Column(name = "taste_gift", length = 1)
     var tasteGift: String? = null,
 
-    @Column(name = "product_features", length = 255)
     @SFField("ProductFeatures__c")
     @HCColumn("productfeatures__c")
+    @Column(name = "product_features", length = 255)
     val productFeatures: String? = null,
 
-    @Column(name = "selling_point", length = 255)
     @SFField("SellingPoint__c")
     @HCColumn("sellingpoint__c")
+    @Column(name = "selling_point", length = 255)
     val sellingPoint: String? = null,
 
-    @Column(name = "purpose", length = 255)
     @SFField("Purpose__c")
     @HCColumn("purpose__c")
+    @Column(name = "purpose", length = 255)
     val purpose: String? = null,
 
-    @Column(name = "target_account_type", length = 255)
     @SFField("TargetAccountType__c")
     @HCColumn("targetaccounttype__c")
+    @Column(name = "target_account_type", length = 255)
     val targetAccountType: String? = null,
 
-    @Column(name = "allergen", length = 255)
     @SFField("Allergen__c")
     @HCColumn("allergen__c")
+    @Column(name = "allergen", length = 255)
     val allergen: String? = null,
 
-    @Column(name = "cross_contamination", length = 255)
     @SFField("CrossContamination__c")
     @HCColumn("crosscontamination__c")
+    @Column(name = "cross_contamination", length = 255)
     val crossContamination: String? = null,
 
-    @Column(name = "img_ref_path", length = 255)
     @SFField("ImgRefPath__c")
     @HCColumn("imgrefpath__c")
+    @Column(name = "img_ref_path", length = 255)
     val imgRefPath: String? = null,
 
-    @Column(name = "img_ref_path_front", length = 255)
     @SFField("ImgRefPath_front__c")
     @HCColumn("imgrefpath_front__c")
+    @Column(name = "img_ref_path_front", length = 255)
     val imgRefPathFront: String? = null,
 
-    @Column(name = "img_ref_path_back", length = 255)
     @SFField("ImgRefPath_back__c")
     @HCColumn("imgrefpath_back__c")
+    @Column(name = "img_ref_path_back", length = 255)
     val imgRefPathBack: String? = null,
 
-    @Column(name = "img_ref_path_txt", length = 255)
     @SFField("ImgRefPathTXT__c")
     @HCColumn("imgrefpathtxt__c")
+    @Column(name = "img_ref_path_txt", length = 255)
     val imgRefPathTxt: String? = null,
 
-    @Column(name = "is_deleted")
     @HCColumn("isdeleted")
+    @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 
-    @Column(name = "created_date")
     @HCColumn("createddate")
+    @Column(name = "created_date")
     val createdDate: LocalDateTime? = null,
 
-    @Column(name = "system_mod_stamp")
     @HCColumn("systemmodstamp")
+    @Column(name = "system_mod_stamp")
     val systemModStamp: LocalDateTime? = null,
 
-    @Column(name = "_hc_lastop", length = 32)
     @HCColumn("_hc_lastop")
+    @Column(name = "_hc_lastop", length = 32)
     val hcLastOp: String? = null,
 
-    @Column(name = "_hc_err", columnDefinition = "TEXT")
     @HCColumn("_hc_err")
+    @Column(name = "_hc_err", columnDefinition = "TEXT")
     val hcErr: String? = null
 
     /* --- 주석 처리: V1에 없는 기존 필드 ---
