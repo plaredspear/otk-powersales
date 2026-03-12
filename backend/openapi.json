@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:49946",
+    "url" : "http://localhost:50192",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -2650,16 +2650,6 @@
             "maxLength" : 100,
             "minLength" : 0
           },
-          "professionalTeam" : {
-            "type" : "string",
-            "maxLength" : 100,
-            "minLength" : 0
-          },
-          "externalId" : {
-            "type" : "string",
-            "maxLength" : 50,
-            "minLength" : 0
-          },
           "remark" : {
             "type" : "string",
             "maxLength" : 200,
@@ -2761,14 +2751,8 @@
           "branchName" : {
             "type" : "string"
           },
-          "professionalTeam" : {
-            "type" : "string"
-          },
           "isClosed" : {
             "type" : "boolean"
-          },
-          "externalId" : {
-            "type" : "string"
           },
           "isDeleted" : {
             "type" : "boolean"
@@ -4038,6 +4022,9 @@
             "type" : "string",
             "pattern" : "^\\d{6}$"
           },
+          "previousYearMonth" : {
+            "type" : "string"
+          },
           "year" : {
             "type" : "integer",
             "format" : "int32"
@@ -4045,9 +4032,6 @@
           "month" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "previousYearMonth" : {
-            "type" : "string"
           }
         },
         "required" : [ "month", "previousYearMonth", "year", "yearMonth" ]
@@ -4314,6 +4298,19 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
+          },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
           "size" : {
             "type" : "integer",
             "format" : "int32"
@@ -4331,19 +4328,6 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "empty" : {
             "type" : "boolean"
           }
@@ -4352,26 +4336,26 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
-          "offset" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "pageSize" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
           },
           "paged" : {
             "type" : "boolean"
           },
+          "pageNumber" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "unpaged" : {
             "type" : "boolean"
+          },
+          "offset" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           }
         }
       },
@@ -4404,13 +4388,13 @@
       "SortObject" : {
         "type" : "object",
         "properties" : {
-          "empty" : {
-            "type" : "boolean"
-          },
           "unsorted" : {
             "type" : "boolean"
           },
           "sorted" : {
+            "type" : "boolean"
+          },
+          "empty" : {
             "type" : "boolean"
           }
         }
@@ -5305,9 +5289,6 @@
             "type" : "string"
           },
           "branchName" : {
-            "type" : "string"
-          },
-          "professionalTeam" : {
             "type" : "string"
           },
           "isClosed" : {
