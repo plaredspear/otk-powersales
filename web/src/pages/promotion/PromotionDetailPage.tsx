@@ -17,6 +17,7 @@ import {
   Typography,
   message,
 } from 'antd';
+import { CheckCircleFilled, CloseCircleFilled } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { usePromotion } from '@/hooks/promotion/usePromotion';
@@ -94,8 +95,8 @@ function toEditableRow(pe: PromotionEmployee): EditableRow {
     professionalPromotionTeam: pe.professionalPromotionTeam,
     basePrice: pe.basePrice,
     dailyTargetCount: pe.dailyTargetCount,
-    targetAmount: null,
-    actualAmount: null,
+    targetAmount: pe.targetAmount,
+    actualAmount: pe.actualAmount,
     employeeName: pe.employeeName,
     scheduleId: pe.scheduleId,
     promoCloseByTm: pe.promoCloseByTm,
@@ -327,24 +328,33 @@ export default function PromotionDetailPage() {
     }
   };
 
+  // --- 숫자 포맷 헬퍼 ---
+  const fmtNum = (v: number | null | undefined): string => {
+    if (v == null) return '';
+    return v.toLocaleString();
+  };
+
   // --- 확정 상태 표시 컬럼 (공통) ---
   const confirmColumn = useMemo(
     () => ({
       title: '확정',
       dataIndex: 'scheduleId',
-      width: 70,
+      width: 60,
+      align: 'center' as const,
       render: (v: number | null) =>
-        v != null ? <Tag color="blue">확정</Tag> : <Tag>미확정</Tag>,
+        v != null ? <CheckCircleFilled style={{ color: '#52c41a' }} /> : null,
     }),
     [],
   );
 
   const closeColumn = useMemo(
     () => ({
-      title: '마감',
+      title: '여사마감',
       dataIndex: 'promoCloseByTm',
-      width: 60,
-      render: (v: boolean) => (v ? <Tag color="red">마감</Tag> : '-'),
+      width: 70,
+      align: 'center' as const,
+      render: (v: boolean) =>
+        v ? <CloseCircleFilled style={{ color: '#ff4d4f' }} /> : null,
     }),
     [],
   );
@@ -352,41 +362,116 @@ export default function PromotionDetailPage() {
   // --- 읽기 모드 컬럼 ---
   const readColumns: ColumnsType<PromotionEmployee> = useMemo(
     () => [
+      { title: 'NO.', dataIndex: 'id', width: 70, align: 'center' as const },
       {
-        title: '사원명',
+        title: '행사사원',
         dataIndex: 'employeeName',
-        width: 100,
-        render: (name: string | null, record: PromotionEmployee) => name ?? record.employeeSfid ?? '-',
+        width: 120,
+        render: (name: string | null, record: PromotionEmployee) =>
+          name ?? record.employeeSfid ?? '-',
+      },
+      {
+        title: '전문행사조(현재)',
+        width: 130,
+        align: 'center' as const,
+        render: () => '-',
+      },
+      {
+        title: '전문행사조(투입당시)',
+        dataIndex: 'professionalPromotionTeam',
+        width: 130,
+        align: 'center' as const,
+        render: (v: string | null) => v ?? '-',
       },
       {
         title: '투입일',
         dataIndex: 'scheduleDate',
-        width: 120,
-        render: (v: string | null) => v ?? '-',
-      },
-      {
-        title: '근무상태',
-        dataIndex: 'workStatus',
-        width: 80,
-        render: (v: string | null) => v ?? '-',
-      },
-      {
-        title: '근무유형1',
-        dataIndex: 'workType1',
-        width: 100,
-        render: (v: string | null) => v ?? '-',
+        width: 110,
+        align: 'center' as const,
+        render: (v: string | null) => (v ? v.replace(/-/g, '/') : '-'),
       },
       {
         title: '근무유형3',
         dataIndex: 'workType3',
         width: 80,
+        align: 'center' as const,
         render: (v: string | null) => v ?? '-',
       },
       {
-        title: '전문행사조',
-        dataIndex: 'professionalPromotionTeam',
+        title: '기준단가',
+        dataIndex: 'basePrice',
+        width: 90,
+        align: 'right' as const,
+        render: (v: number | null) => fmtNum(v),
+      },
+      {
+        title: '목표수량',
+        dataIndex: 'dailyTargetCount',
+        width: 80,
+        align: 'right' as const,
+        render: (v: number | null) => fmtNum(v),
+      },
+      {
+        title: '목표금액',
+        dataIndex: 'targetAmount',
+        width: 110,
+        align: 'right' as const,
+        render: (v: number | null) => fmtNum(v),
+      },
+      {
+        title: '대표품목 매출',
+        dataIndex: 'primaryProductAmount',
+        width: 110,
+        align: 'right' as const,
+        render: (v: number | null) => fmtNum(v),
+      },
+      {
+        title: '진도율',
+        width: 70,
+        align: 'right' as const,
+        render: (_: unknown, record: PromotionEmployee) => {
+          if (!record.targetAmount || record.targetAmount === 0) return '0%';
+          if (record.primaryProductAmount == null) return '0%';
+          return `${Math.floor((record.primaryProductAmount / record.targetAmount) * 100)}%`;
+        },
+      },
+      {
+        title: '대표품목판매수량',
+        dataIndex: 'primarySalesQuantity',
         width: 120,
-        render: (v: string | null) => v ?? '-',
+        align: 'right' as const,
+        render: (v: number | null) => fmtNum(v),
+      },
+      {
+        title: '기타판매금액',
+        dataIndex: 'otherSalesAmount',
+        width: 100,
+        align: 'right' as const,
+        render: (v: number | null) => fmtNum(v),
+      },
+      {
+        title: '기타판매수량',
+        dataIndex: 'otherSalesQuantity',
+        width: 100,
+        align: 'right' as const,
+        render: (v: number | null) => fmtNum(v),
+      },
+      {
+        title: '총 실적',
+        width: 100,
+        align: 'right' as const,
+        render: (_: unknown, record: PromotionEmployee) => {
+          if (record.primaryProductAmount == null && record.otherSalesAmount == null) return '';
+          return fmtNum((record.primaryProductAmount ?? 0) + (record.otherSalesAmount ?? 0));
+        },
+      },
+      {
+        title: '현장사진',
+        dataIndex: 's3ImageUniqueKey',
+        width: 70,
+        align: 'center' as const,
+        render: (v: string | null) =>
+          v ? <CheckCircleFilled style={{ color: '#52c41a' }} /> : null,
       },
       confirmColumn,
       closeColumn,
@@ -738,6 +823,7 @@ export default function PromotionDetailPage() {
             loading={employeesLoading}
             locale={{ emptyText: '등록된 조원이 없습니다' }}
             footer={() => `총 ${employees?.length ?? 0}건`}
+            scroll={{ x: 1800 }}
           />
         )}
       </div>
