@@ -66,12 +66,6 @@ class Promotion(
     @Column(name = "is_closed", nullable = false)
     var isClosed: Boolean = false,
 
-    @Column(name = "professional_team", length = 100)
-    var professionalTeam: String? = null,
-
-    @Column(name = "external_id", length = 50)
-    var externalId: String? = null,
-
     @Column(name = "is_deleted", nullable = false)
     var isDeleted: Boolean = false,
 
@@ -94,8 +88,6 @@ class Promotion(
         category: String?,
         productType: String?,
         branchName: String?,
-        professionalTeam: String?,
-        externalId: String?,
         remark: String?
     ) {
         this.promotionName = promotionName
@@ -110,8 +102,6 @@ class Promotion(
         this.category = category
         this.productType = productType
         this.branchName = branchName
-        this.professionalTeam = professionalTeam
-        this.externalId = externalId
         this.remark = remark
         this.updatedAt = LocalDateTime.now()
     }

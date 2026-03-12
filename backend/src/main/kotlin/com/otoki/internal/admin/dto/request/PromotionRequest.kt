@@ -36,12 +36,6 @@ data class PromotionCreateRequest(
     @field:Size(max = 100, message = "지점명은 100자 이하여야 합니다")
     val branchName: String? = null,
 
-    @field:Size(max = 100, message = "전문행사조는 100자 이하여야 합니다")
-    val professionalTeam: String? = null,
-
-    @field:Size(max = 50, message = "외부 연동 ID는 50자 이하여야 합니다")
-    val externalId: String? = null,
-
     @field:Size(max = 200, message = "비고는 200자 이하여야 합니다")
     val remark: String? = null
 )

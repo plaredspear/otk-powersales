@@ -168,8 +168,6 @@ class AdminPromotionService(
                 category = request.category,
                 productType = request.productType,
                 branchName = request.branchName,
-                professionalTeam = request.professionalTeam,
-                externalId = request.externalId,
                 remark = request.remark
             )
         )
@@ -249,8 +247,6 @@ class AdminPromotionService(
             category = request.category,
             productType = request.productType,
             branchName = request.branchName,
-            professionalTeam = request.professionalTeam,
-            externalId = request.externalId,
             remark = request.remark
         )
 

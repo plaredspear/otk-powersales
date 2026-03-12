@@ -106,7 +106,6 @@ class AdminPromotionControllerTest {
                         category = "라면",
                         productType = "냉장/냉동",
                         branchName = "강남지점",
-                        professionalTeam = "라면세일조",
                         isClosed = false,
                         costCenterCode = "1101",
                         isDeleted = false,
@@ -171,7 +170,6 @@ class AdminPromotionControllerTest {
                 .andExpect(jsonPath("$.data.primary_product_name").value("진라면 매운맛 120g"))
                 .andExpect(jsonPath("$.data.actual_amount").value(3200000))
                 .andExpect(jsonPath("$.data.category").value("라면"))
-                .andExpect(jsonPath("$.data.external_id").doesNotExist())
         }
 
         @Test
@@ -388,9 +386,7 @@ class AdminPromotionControllerTest {
         category = "라면",
         productType = "냉장/냉동",
         branchName = "강남지점",
-        professionalTeam = "라면세일조",
         isClosed = false,
-        externalId = null,
         isDeleted = false,
         createdAt = LocalDateTime.of(2026, 3, 8, 10, 0, 0),
         updatedAt = LocalDateTime.of(2026, 3, 8, 10, 0, 0),
