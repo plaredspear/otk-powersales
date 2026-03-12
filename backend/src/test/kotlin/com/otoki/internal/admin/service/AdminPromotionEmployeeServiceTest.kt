@@ -1,5 +1,7 @@
 package com.otoki.internal.admin.service
 
+import com.otoki.internal.admin.dto.request.BatchUpdatePromotionEmployeeItem
+import com.otoki.internal.admin.dto.request.BatchUpdatePromotionEmployeeRequest
 import com.otoki.internal.admin.dto.request.PromotionEmployeeRequest
 import com.otoki.internal.promotion.entity.Promotion
 import com.otoki.internal.promotion.entity.PromotionEmployee
@@ -117,39 +119,56 @@ class AdminPromotionEmployeeServiceTest {
         }
 
         @Test
-        @DisplayName("라면행사 + 냉장팀 -> TEAM_CATEGORY_MISMATCH")
-        fun createEmployee_teamMismatch() {
+        @DisplayName("필드 검증 안 함 - 불일치 전문행사조로 등록 -> 검증 없이 저장 성공")
+        fun createEmployee_noValidation_teamMismatch() {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion(category = "라면")))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            whenever(userRepository.findBySfidIn(any())).thenReturn(emptyList())
+            stubRollup()
 
-            assertThatThrownBy { service.createEmployee(10L, createRequest(professionalPromotionTeam = "프레시세일조_냉장")) }
-                .isInstanceOf(TeamCategoryMismatchException::class.java)
+            val result = service.createEmployee(10L, createRequest(professionalPromotionTeam = "프레시세일조_냉장"))
+            assertThat(result.professionalPromotionTeam).isEqualTo("프레시세일조_냉장")
         }
 
         @Test
-        @DisplayName("만두행사 + 라면팀 -> TEAM_CATEGORY_MISMATCH")
-        fun createEmployee_manduRamenMismatch() {
-            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion(category = "만두")))
-
-            assertThatThrownBy { service.createEmployee(10L, createRequest(professionalPromotionTeam = "라면세일조")) }
-                .isInstanceOf(TeamCategoryMismatchException::class.java)
-        }
-
-        @Test
-        @DisplayName("투입일이 행사 시작일 이전 (등록) -> SCHEDULE_DATE_OUT_OF_RANGE")
-        fun createEmployee_scheduleDateBeforeStart() {
+        @DisplayName("필드 검증 안 함 - 잘못된 근무상태로 등록 -> 검증 없이 저장 성공")
+        fun createEmployee_noValidation_invalidWorkStatus() {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            whenever(userRepository.findBySfidIn(any())).thenReturn(emptyList())
+            stubRollup()
 
-            assertThatThrownBy { service.createEmployee(10L, createRequest(scheduleDate = LocalDate.of(2026, 3, 9))) }
-                .isInstanceOf(ScheduleDateOutOfRangeException::class.java)
+            val result = service.createEmployee(10L, createRequest(workStatus = "잘못된상태"))
+            assertThat(result.workStatus).isEqualTo("잘못된상태")
         }
 
         @Test
-        @DisplayName("투입일이 행사 종료일 이후 (등록) -> SCHEDULE_DATE_OUT_OF_RANGE")
-        fun createEmployee_scheduleDateAfterEnd() {
+        @DisplayName("빈 Body로 즉시 추가 - promotionId만 설정된 빈 레코드 생성")
+        fun createEmployee_emptyBody_success() {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            stubRollup()
 
-            assertThatThrownBy { service.createEmployee(10L, createRequest(scheduleDate = LocalDate.of(2026, 3, 21))) }
-                .isInstanceOf(ScheduleDateOutOfRangeException::class.java)
+            val result = service.createEmployee(10L, PromotionEmployeeRequest())
+            assertThat(result.promotionId).isEqualTo(10L)
+            assertThat(result.employeeSfid).isNull()
+            assertThat(result.scheduleDate).isNull()
+        }
+
+        @Test
+        @DisplayName("투입일 범위 초과로 등록 -> 검증 없이 저장 성공")
+        fun createEmployee_noValidation_scheduleDateOutOfRange() {
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            whenever(userRepository.findBySfidIn(any())).thenReturn(emptyList())
+            stubRollup()
+
+            val result = service.createEmployee(10L, createRequest(scheduleDate = LocalDate.of(2026, 3, 9)))
+            assertThat(result.scheduleDate).isEqualTo(LocalDate.of(2026, 3, 9))
         }
 
         @Test
@@ -431,6 +450,206 @@ class AdminPromotionEmployeeServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("batchUpdateEmployees - 일괄 수정")
+    inner class BatchUpdateEmployeesTests {
+
+        @Test
+        @DisplayName("정상 일괄 수정 - 2건 수정 성공")
+        fun batchUpdate_success() {
+            val pe1 = createPe(id = 1L)
+            val pe2 = createPe(id = 2L, scheduleDate = LocalDate.of(2026, 3, 16))
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
+            whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe1))
+            whenever(promotionEmployeeRepository.findById(2L)).thenReturn(Optional.of(pe2))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            whenever(promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(10L))
+                .thenReturn(listOf(pe1, pe2))
+            whenever(userRepository.findBySfidIn(any())).thenReturn(listOf(createUser()))
+            stubRollup()
+
+            val request = BatchUpdatePromotionEmployeeRequest(listOf(
+                createBatchItem(id = 1L, scheduleDate = LocalDate.of(2026, 3, 18)),
+                createBatchItem(id = 2L, scheduleDate = LocalDate.of(2026, 3, 19))
+            ))
+
+            val result = service.batchUpdateEmployees(10L, 1L, request)
+            assertThat(result.updatedCount).isEqualTo(2)
+        }
+
+        @Test
+        @DisplayName("items 빈 배열 -> INVALID_PARAMETER")
+        fun batchUpdate_emptyItems() {
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+
+            assertThatThrownBy {
+                service.batchUpdateEmployees(10L, 1L, BatchUpdatePromotionEmployeeRequest(emptyList()))
+            }.isInstanceOf(PromotionInvalidParameterException::class.java)
+        }
+
+        @Test
+        @DisplayName("items 내 id 중복 -> INVALID_PARAMETER")
+        fun batchUpdate_duplicateIds() {
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+
+            val request = BatchUpdatePromotionEmployeeRequest(listOf(
+                createBatchItem(id = 1L),
+                createBatchItem(id = 1L)
+            ))
+
+            assertThatThrownBy {
+                service.batchUpdateEmployees(10L, 1L, request)
+            }.isInstanceOf(PromotionInvalidParameterException::class.java)
+        }
+
+        @Test
+        @DisplayName("수정 대상 미존재 -> BATCH_VALIDATION_FAILED")
+        fun batchUpdate_notFound() {
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
+            whenever(promotionEmployeeRepository.findById(999L)).thenReturn(Optional.empty())
+
+            val request = BatchUpdatePromotionEmployeeRequest(listOf(createBatchItem(id = 999L)))
+
+            assertThatThrownBy {
+                service.batchUpdateEmployees(10L, 1L, request)
+            }.isInstanceOf(BatchValidationException::class.java)
+        }
+
+        @Test
+        @DisplayName("에러 일괄 반환 - 2건 모두 실패")
+        fun batchUpdate_multipleErrors() {
+            val pe1 = createPe(id = 1L)
+            val pe2 = createPe(id = 2L)
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
+            whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe1))
+            whenever(promotionEmployeeRepository.findById(2L)).thenReturn(Optional.of(pe2))
+
+            val request = BatchUpdatePromotionEmployeeRequest(listOf(
+                createBatchItem(id = 1L, scheduleDate = LocalDate.of(2026, 5, 1)),  // 범위 초과
+                createBatchItem(id = 2L, workStatus = "잘못된상태")  // 잘못된 근무상태
+            ))
+
+            val ex = org.junit.jupiter.api.assertThrows<BatchValidationException> {
+                service.batchUpdateEmployees(10L, 1L, request)
+            }
+            assertThat(ex.errors).hasSize(2)
+            assertThat(ex.errors[0].errorCode).isEqualTo("SCHEDULE_DATE_OUT_OF_RANGE")
+            assertThat(ex.errors[1].errorCode).isEqualTo("INVALID_WORK_STATUS")
+        }
+
+        @Test
+        @DisplayName("투입일 범위 초과 -> SCHEDULE_DATE_OUT_OF_RANGE 에러 수집")
+        fun batchUpdate_scheduleDateOutOfRange() {
+            val pe = createPe(id = 1L)
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
+            whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+
+            val request = BatchUpdatePromotionEmployeeRequest(listOf(
+                createBatchItem(id = 1L, scheduleDate = LocalDate.of(2026, 5, 1))
+            ))
+
+            val ex = org.junit.jupiter.api.assertThrows<BatchValidationException> {
+                service.batchUpdateEmployees(10L, 1L, request)
+            }
+            assertThat(ex.errors[0].errorCode).isEqualTo("SCHEDULE_DATE_OUT_OF_RANGE")
+            assertThat(ex.errors[0].itemIndex).isEqualTo(0)
+        }
+
+        @Test
+        @DisplayName("비관리자 마감 행사사원 핵심필드 수정 -> CLOSED_EMPLOYEE_MODIFICATION")
+        fun batchUpdate_closedEmployeeModification() {
+            val pe = createPe(id = 1L, scheduleId = 100L, promoCloseByTm = true)
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
+            whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+
+            val request = BatchUpdatePromotionEmployeeRequest(listOf(
+                createBatchItem(id = 1L, employeeSfid = "DIFFERENT_SFID")
+            ))
+
+            val ex = org.junit.jupiter.api.assertThrows<BatchValidationException> {
+                service.batchUpdateEmployees(10L, 1L, request)
+            }
+            assertThat(ex.errors[0].errorCode).isEqualTo("CLOSED_EMPLOYEE_MODIFICATION")
+        }
+
+        @Test
+        @DisplayName("관리자 마감 행사사원 핵심필드 수정 -> 수정 허용")
+        fun batchUpdate_adminClosedEmployeeModification_allowed() {
+            val pe = createPe(id = 1L, scheduleId = 100L, promoCloseByTm = true)
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser(appAuthority = "지점장")))
+            whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            whenever(promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(10L))
+                .thenReturn(listOf(pe))
+            whenever(userRepository.findBySfidIn(any())).thenReturn(listOf(createUser()))
+            stubRollup()
+
+            val request = BatchUpdatePromotionEmployeeRequest(listOf(
+                createBatchItem(id = 1L, employeeSfid = "DIFFERENT_SFID")
+            ))
+
+            val result = service.batchUpdateEmployees(10L, 1L, request)
+            assertThat(result.updatedCount).isEqualTo(1)
+        }
+
+        @Test
+        @DisplayName("핵심필드 변경 시 스케줄 삭제")
+        fun batchUpdate_criticalFieldChange_scheduleDeleted() {
+            val pe = createPe(id = 1L, scheduleId = 100L)
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
+            whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            whenever(promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(10L))
+                .thenReturn(listOf(pe))
+            whenever(userRepository.findBySfidIn(any())).thenReturn(listOf(createUser()))
+            stubRollup()
+
+            val request = BatchUpdatePromotionEmployeeRequest(listOf(
+                createBatchItem(id = 1L, employeeSfid = "NEW_SFID")
+            ))
+
+            service.batchUpdateEmployees(10L, 1L, request)
+
+            verify(scheduleRepository).deleteAllByIdIn(listOf(100L))
+            assertThat(pe.scheduleId).isNull()
+        }
+
+        @Test
+        @DisplayName("롤업 재계산 - 수정 후 행사마스터 합계 갱신")
+        fun batchUpdate_rollupRecalculation() {
+            val promotion = createPromotion()
+            val pe = createPe(id = 1L)
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
+            whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            whenever(promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(10L))
+                .thenReturn(listOf(pe))
+            whenever(userRepository.findBySfidIn(any())).thenReturn(emptyList())
+            stubRollup(targetSum = 200000, actualSum = 150000)
+
+            val request = BatchUpdatePromotionEmployeeRequest(listOf(
+                createBatchItem(id = 1L, targetAmount = 200000, actualAmount = 150000)
+            ))
+
+            service.batchUpdateEmployees(10L, 1L, request)
+
+            assertThat(promotion.targetAmount).isEqualTo(200000)
+            assertThat(promotion.actualAmount).isEqualTo(150000)
+        }
+    }
+
     // --- Helpers ---
 
     private fun stubRollup(promotionId: Long = 10L, targetSum: Long = 0, actualSum: Long = 0) {
@@ -463,6 +682,19 @@ class AdminPromotionEmployeeServiceTest {
     private fun createUser(appAuthority: String? = null) = User(id = 1L, sfid = "a0B5g00000XYZabc", employeeId = "20030117", name = "김여사").also {
         it.appAuthority = appAuthority
     }
+
+    private fun createBatchItem(
+        id: Long = 1L, employeeSfid: String = "a0B5g00000XYZabc", scheduleDate: LocalDate = LocalDate.of(2026, 3, 15),
+        workStatus: String = "근무", workType1: String = "시식", workType3: String = "고정",
+        workType4: String? = "냉장", professionalPromotionTeam: String? = "라면세일조",
+        basePrice: Long? = 1500, dailyTargetCount: Int? = 100,
+        targetAmount: Long? = 0, actualAmount: Long? = 0
+    ) = BatchUpdatePromotionEmployeeItem(
+        id = id, employeeSfid = employeeSfid, scheduleDate = scheduleDate, workStatus = workStatus,
+        workType1 = workType1, workType3 = workType3, workType4 = workType4,
+        professionalPromotionTeam = professionalPromotionTeam, basePrice = basePrice,
+        dailyTargetCount = dailyTargetCount, targetAmount = targetAmount, actualAmount = actualAmount
+    )
 
     private fun createRequest(
         employeeSfid: String = "a0B5g00000XYZabc", scheduleDate: LocalDate = LocalDate.of(2026, 3, 15),

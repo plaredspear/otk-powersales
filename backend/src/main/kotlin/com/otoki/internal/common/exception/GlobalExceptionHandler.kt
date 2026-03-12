@@ -2,6 +2,7 @@ package com.otoki.internal.common.exception
 
 import com.otoki.internal.common.dto.ApiResponse
 import com.otoki.internal.common.dto.ErrorDetail
+import com.otoki.internal.promotion.exception.BatchValidationException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.AccessDeniedException
@@ -135,6 +136,25 @@ class GlobalExceptionHandler {
         return ResponseEntity
             .status(HttpStatus.FORBIDDEN)
             .body(response)
+    }
+
+    /**
+     * 일괄 수정 검증 실패 예외 처리
+     */
+    @ExceptionHandler(BatchValidationException::class)
+    fun handleBatchValidationException(
+        ex: BatchValidationException,
+        request: WebRequest
+    ): ResponseEntity<Map<String, Any>> {
+        val body = mapOf(
+            "error_code" to ex.errorCode,
+            "message" to (ex.message ?: ""),
+            "detail" to mapOf("errors" to ex.errors)
+        )
+
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(body)
     }
 
     /**

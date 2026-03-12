@@ -35,8 +35,8 @@ class AdminPromotionConfirmService(
         }
 
         // 4. 검증에 필요한 데이터 사전 조회
-        val employeeSfids = employees.map { it.employeeSfid }.distinct()
-        val scheduleDates = employees.map { it.scheduleDate }.distinct()
+        val employeeSfids = employees.mapNotNull { it.employeeSfid }.distinct()
+        val scheduleDates = employees.mapNotNull { it.scheduleDate }.distinct()
         val peIdStrings = employees.map { it.id.toString() }
 
         // 기존 스케줄 조회 (검증 + Upsert용)
@@ -65,24 +65,24 @@ class AdminPromotionConfirmService(
 
             if (existing != null) {
                 existing.updateForPromotion(
-                    employeeId = pe.employeeSfid,
+                    employeeId = pe.employeeSfid!!,
                     accountId = accountIdStr,
-                    workingDate = pe.scheduleDate,
-                    workingType = pe.workStatus,
-                    workingCategory1 = pe.workType1,
-                    workingCategory3 = pe.workType3,
+                    workingDate = pe.scheduleDate!!,
+                    workingType = pe.workStatus!!,
+                    workingCategory1 = pe.workType1!!,
+                    workingCategory3 = pe.workType3!!,
                     workingCategory4 = pe.workType4,
                     promotionEmpId = peIdStr
                 )
                 schedulesToSave.add(existing)
             } else {
                 val newSchedule = Schedule(
-                    employeeId = pe.employeeSfid,
+                    employeeId = pe.employeeSfid!!,
                     accountId = accountIdStr,
-                    workingDate = pe.scheduleDate,
-                    workingType = pe.workStatus,
-                    workingCategory1 = pe.workType1,
-                    workingCategory3 = pe.workType3,
+                    workingDate = pe.scheduleDate!!,
+                    workingType = pe.workStatus!!,
+                    workingCategory1 = pe.workType1!!,
+                    workingCategory3 = pe.workType3!!,
                     workingCategory4 = pe.workType4,
                     promotionEmpId = peIdStr,
                     promotionEmpIdExt = peIdStr
@@ -121,14 +121,14 @@ class AdminPromotionConfirmService(
     ) {
         for (pe in employees) {
             val missingFields = mutableListOf<String>()
-            if (pe.employeeSfid.isBlank()) missingFields.add("employee_sfid")
-            // scheduleDate is non-null LocalDate, always present
-            if (pe.workStatus.isBlank()) missingFields.add("work_status")
-            if (pe.workType1.isBlank()) missingFields.add("work_type1")
-            if (pe.workType3.isBlank()) missingFields.add("work_type3")
+            if (pe.employeeSfid.isNullOrBlank()) missingFields.add("employee_sfid")
+            if (pe.scheduleDate == null) missingFields.add("schedule_date")
+            if (pe.workStatus.isNullOrBlank()) missingFields.add("work_status")
+            if (pe.workType1.isNullOrBlank()) missingFields.add("work_type1")
+            if (pe.workType3.isNullOrBlank()) missingFields.add("work_type3")
 
             if (missingFields.isNotEmpty()) {
-                val name = resolveEmployeeName(pe.employeeSfid, userMap)
+                val name = resolveEmployeeName(pe.employeeSfid ?: pe.id.toString(), userMap)
                 throw ValuesRequiredException(
                     "${name}의 필수 항목을 입력하세요 (${missingFields.joinToString(", ")})"
                 )
@@ -143,8 +143,9 @@ class AdminPromotionConfirmService(
         userMap: Map<String?, com.otoki.internal.sap.entity.User>
     ) {
         for (pe in employees) {
-            if (pe.scheduleDate < promotion.startDate || pe.scheduleDate > promotion.endDate) {
-                val name = resolveEmployeeName(pe.employeeSfid, userMap)
+            val scheduleDate = pe.scheduleDate!!
+            if (scheduleDate < promotion.startDate || scheduleDate > promotion.endDate) {
+                val name = resolveEmployeeName(pe.employeeSfid!!, userMap)
                 throw DateOutOfRangeException(
                     "${name}의 투입일이 행사 기간(${promotion.startDate} ~ ${promotion.endDate})을 벗어납니다"
                 )
@@ -176,9 +177,9 @@ class AdminPromotionConfirmService(
         // 신규 PE: 사원+날짜별 근무유형3 카운트
         val newCounts = mutableMapOf<EmpDateKey, MutableMap<String, Int>>()
         for (pe in employees) {
-            val key = EmpDateKey(pe.employeeSfid, pe.scheduleDate)
+            val key = EmpDateKey(pe.employeeSfid!!, pe.scheduleDate!!)
             newCounts.getOrPut(key) { mutableMapOf() }
-                .merge(pe.workType3, 1) { a, b -> a + b }
+                .merge(pe.workType3!!, 1) { a, b -> a + b }
         }
 
         // 모든 사원+날짜 조합 검증
@@ -231,9 +232,9 @@ class AdminPromotionConfirmService(
         }
 
         for (pe in employees) {
-            val key = EmpDateKey(pe.employeeSfid, pe.scheduleDate)
+            val key = EmpDateKey(pe.employeeSfid!!, pe.scheduleDate!!)
             val existing = existingByKey[key] ?: continue
-            val name = resolveEmployeeName(pe.employeeSfid, userMap)
+            val name = resolveEmployeeName(pe.employeeSfid!!, userMap)
 
             // 기존에 연차/대휴가 있으면 충돌
             val hasLeave = existing.any { it.workingType == "연차" || it.workingType == "대휴" }
@@ -264,12 +265,12 @@ class AdminPromotionConfirmService(
 
         for (pe in employees) {
             val duplicate = externalSchedules.any {
-                it.employeeId == pe.employeeSfid &&
-                    it.workingDate == pe.scheduleDate &&
+                it.employeeId == pe.employeeSfid!! &&
+                    it.workingDate == pe.scheduleDate!! &&
                     it.accountId == accountIdStr
             }
             if (duplicate) {
-                val name = resolveEmployeeName(pe.employeeSfid, userMap)
+                val name = resolveEmployeeName(pe.employeeSfid!!, userMap)
                 throw DuplicateScheduleException("${name}의 ${pe.scheduleDate}에 동일 거래처 근무 일정이 존재합니다")
             }
         }

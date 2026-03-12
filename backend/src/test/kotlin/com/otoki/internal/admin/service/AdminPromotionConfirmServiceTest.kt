@@ -382,7 +382,7 @@ class AdminPromotionConfirmServiceTest {
         whenever(scheduleRepository.findByPromotionEmpIdExtIn(any())).thenReturn(emptyList())
         whenever(scheduleRepository.findByEmployeeIdInAndWorkingDateIn(any(), any())).thenReturn(existingSchedules)
 
-        val sfids = employees.map { it.employeeSfid }.distinct()
+        val sfids = employees.mapNotNull { it.employeeSfid }.distinct()
         val users = sfids.map { createUser(it, "${it}이름", userStatus) }
         whenever(userRepository.findBySfidIn(any())).thenReturn(users)
     }

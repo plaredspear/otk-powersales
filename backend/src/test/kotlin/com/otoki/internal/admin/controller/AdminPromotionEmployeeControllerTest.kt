@@ -12,8 +12,6 @@ import com.otoki.internal.common.security.GpsConsentFilter
 import com.otoki.internal.common.security.JwtAuthenticationFilter
 import com.otoki.internal.common.security.JwtTokenProvider
 import com.otoki.internal.common.security.UserPrincipal
-import com.otoki.internal.promotion.exception.InvalidWorkStatusException
-import com.otoki.internal.promotion.exception.InvalidWorkType3Exception
 import com.otoki.internal.promotion.exception.PromotionEmployeeNotFoundException
 import com.otoki.internal.promotion.exception.PromotionNotFoundException
 import com.otoki.internal.sap.entity.UserRole
@@ -156,47 +154,35 @@ class AdminPromotionEmployeeControllerTest {
         }
 
         @Test
-        @DisplayName("실패 - employee_sfid 누락")
-        fun createEmployee_missingEmployeeSfid() {
-            val invalidJson = """{"schedule_date":"2026-03-15","work_status":"근무","work_type1":"시식","work_type3":"고정"}"""
+        @DisplayName("성공 - 빈 Body로 즉시 추가 (검증 없음)")
+        fun createEmployee_emptyBody_success() {
+            val response = createDetailResponse()
+            whenever(adminPromotionEmployeeService.createEmployee(eq(10L), any())).thenReturn(response)
 
             mockMvc.perform(
                 post("/api/v1/admin/promotions/10/employees")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(invalidJson)
+                    .content("{}")
             )
-                .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(status().isCreated)
+                .andExpect(jsonPath("$.success").value(true))
         }
 
         @Test
-        @DisplayName("실패 - 잘못된 work_status")
-        fun createEmployee_invalidWorkStatus() {
-            whenever(adminPromotionEmployeeService.createEmployee(eq(10L), any()))
-                .thenThrow(InvalidWorkStatusException())
+        @DisplayName("성공 - 일부 필드만 포함하여 추가 (검증 없음)")
+        fun createEmployee_partialFields_success() {
+            val response = createDetailResponse()
+            whenever(adminPromotionEmployeeService.createEmployee(eq(10L), any())).thenReturn(response)
+
+            val partialJson = """{"employee_sfid":"a0B5g00000XYZabc","work_status":"잘못된값"}"""
 
             mockMvc.perform(
                 post("/api/v1/admin/promotions/10/employees")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(createRequest()))
+                    .content(partialJson)
             )
-                .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.error.code").value("INVALID_WORK_STATUS"))
-        }
-
-        @Test
-        @DisplayName("실패 - 잘못된 work_type3")
-        fun createEmployee_invalidWorkType3() {
-            whenever(adminPromotionEmployeeService.createEmployee(eq(10L), any()))
-                .thenThrow(InvalidWorkType3Exception())
-
-            mockMvc.perform(
-                post("/api/v1/admin/promotions/10/employees")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(createRequest()))
-            )
-                .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.error.code").value("INVALID_WORK_TYPE3"))
+                .andExpect(status().isCreated)
+                .andExpect(jsonPath("$.success").value(true))
         }
     }
 

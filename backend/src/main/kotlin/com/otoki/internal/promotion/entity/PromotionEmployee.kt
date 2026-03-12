@@ -15,20 +15,20 @@ class PromotionEmployee(
     @Column(name = "promotion_id", nullable = false)
     val promotionId: Long,
 
-    @Column(name = "employee_sfid", nullable = false, length = 18)
-    var employeeSfid: String,
+    @Column(name = "employee_sfid", length = 18)
+    var employeeSfid: String? = null,
 
-    @Column(name = "schedule_date", nullable = false)
-    var scheduleDate: LocalDate,
+    @Column(name = "schedule_date")
+    var scheduleDate: LocalDate? = null,
 
-    @Column(name = "work_status", nullable = false, length = 20)
-    var workStatus: String,
+    @Column(name = "work_status", length = 20)
+    var workStatus: String? = null,
 
-    @Column(name = "work_type1", nullable = false, length = 100)
-    var workType1: String,
+    @Column(name = "work_type1", length = 100)
+    var workType1: String? = null,
 
-    @Column(name = "work_type3", nullable = false, length = 100)
-    var workType3: String,
+    @Column(name = "work_type3", length = 100)
+    var workType3: String? = null,
 
     @Column(name = "work_type4", length = 100)
     var workType4: String? = null,

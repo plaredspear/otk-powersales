@@ -185,6 +185,14 @@ class InvalidOtherProductException : BusinessException(
     httpStatus = HttpStatus.BAD_REQUEST
 )
 
+class BatchValidationException(
+    val errors: List<com.otoki.internal.admin.dto.response.BatchItemError>
+) : BusinessException(
+    errorCode = "BATCH_VALIDATION_FAILED",
+    message = "${errors.size}건의 항목에서 검증 오류가 발생했습니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
 class ScheduleDateOutOfRangeException(scheduleDate: String, startDate: String, endDate: String) : BusinessException(
     errorCode = "SCHEDULE_DATE_OUT_OF_RANGE",
     message = "투입일(${scheduleDate})이 행사 기간(${startDate} ~ ${endDate})을 벗어납니다",
