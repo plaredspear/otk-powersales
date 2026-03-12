@@ -2,12 +2,11 @@ package com.otoki.internal.admin.service
 
 import com.otoki.internal.admin.dto.EffectiveBranchResult
 import com.otoki.internal.admin.dto.request.PromotionCreateRequest
-import com.otoki.internal.admin.dto.response.PromotionDetailResponse
-import com.otoki.internal.admin.dto.response.PromotionListItem
-import com.otoki.internal.admin.dto.response.PromotionListResponse
+import com.otoki.internal.admin.dto.response.*
 import com.otoki.internal.admin.scope.DataScopeHolder
 import com.otoki.internal.promotion.entity.Promotion
 import com.otoki.internal.promotion.entity.PromotionProduct
+import com.otoki.internal.promotion.entity.StandLocation
 import com.otoki.internal.promotion.exception.*
 import com.otoki.internal.promotion.repository.PromotionEmployeeRepository
 import com.otoki.internal.promotion.repository.PromotionProductRepository
@@ -35,6 +34,20 @@ class AdminPromotionService(
     private val dataScopeHolder: DataScopeHolder,
     private val scheduleRepository: ScheduleRepository
 ) {
+
+    fun getPromotionFormMeta(): PromotionFormMetaResponse {
+        val promotionTypes = promotionTypeRepository.findByIsActiveTrueOrderByDisplayOrderAsc()
+            .map { PromotionTypeOption(id = it.id, name = it.name) }
+
+        val standLocations = StandLocation.entries
+            .sortedBy { it.displayOrder }
+            .map { StandLocationOption(value = it.name, name = it.displayName) }
+
+        return PromotionFormMetaResponse(
+            promotionTypes = promotionTypes,
+            standLocations = standLocations
+        )
+    }
 
     fun getPromotions(
         keyword: String?,
@@ -115,6 +128,7 @@ class AdminPromotionService(
     fun createPromotion(userId: Long, request: PromotionCreateRequest): PromotionDetailResponse {
         validateDateRange(request.startDate, request.endDate)
         validatePromotionType(request.promotionTypeId)
+        validateStandLocation(request.standLocation)
 
         val account = accountRepository.findById(request.accountId)
             .orElseThrow { AccountNotFoundException() }
@@ -185,6 +199,7 @@ class AdminPromotionService(
         validateDataScope(promotion)
         validateDateRange(request.startDate, request.endDate)
         validatePromotionType(request.promotionTypeId)
+        validateStandLocation(request.standLocation)
 
         // 1-2-C: 마감 보호 — 거래처/날짜 변경 차단
         val criticalFieldChanged = promotion.accountId != request.accountId ||
@@ -335,6 +350,12 @@ class AdminPromotionService(
         val scope = dataScopeHolder.require()
         if (!scope.validateAccess(promotion.costCenterCode)) {
             throw PromotionForbiddenException()
+        }
+    }
+
+    private fun validateStandLocation(standLocation: String?) {
+        if (standLocation != null && StandLocation.fromDisplayName(standLocation) == null) {
+            throw InvalidStandLocationException()
         }
     }
 
