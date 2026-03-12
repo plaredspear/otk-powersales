@@ -217,19 +217,15 @@ class AdminPromotionControllerTest {
         }
 
         @Test
-        @DisplayName("성공 - 대표제품 없이 생성 -> promotionName=null")
-        fun createPromotion_noPrimaryProduct() {
-            val response = createDetailResponse(promotionName = null, remark = "신규 매대 협의 필요")
-            whenever(adminPromotionService.createPromotion(eq(1L), any())).thenReturn(response)
-
+        @DisplayName("실패 - 대표상품 누락")
+        fun createPromotion_missingPrimaryProductId() {
             val json = """
                 {
                     "promotion_type_id": 1,
                     "account_id": 100,
                     "start_date": "2026-03-10",
                     "end_date": "2026-03-20",
-                    "stand_location": "매장 입구",
-                    "remark": "신규 매대 협의 필요"
+                    "stand_location": "매장 입구"
                 }
             """.trimIndent()
 
@@ -238,10 +234,31 @@ class AdminPromotionControllerTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(json)
             )
-                .andExpect(status().isCreated)
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.promotion_name").doesNotExist())
-                .andExpect(jsonPath("$.data.remark").value("신규 매대 협의 필요"))
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"))
+        }
+
+        @Test
+        @DisplayName("실패 - 대표상품 null")
+        fun createPromotion_nullPrimaryProductId() {
+            val json = """
+                {
+                    "promotion_type_id": 1,
+                    "account_id": 100,
+                    "start_date": "2026-03-10",
+                    "end_date": "2026-03-20",
+                    "primary_product_id": null,
+                    "stand_location": "매장 입구"
+                }
+            """.trimIndent()
+
+            mockMvc.perform(
+                post("/api/v1/admin/promotions")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(json)
+            )
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"))
         }
 
         @Test
@@ -394,6 +411,28 @@ class AdminPromotionControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.promotion_name").value("수정된 행사명"))
+        }
+
+        @Test
+        @DisplayName("실패 - 대표상품 누락 (수정)")
+        fun updatePromotion_missingPrimaryProductId() {
+            val json = """
+                {
+                    "promotion_type_id": 1,
+                    "account_id": 100,
+                    "start_date": "2026-03-10",
+                    "end_date": "2026-03-20",
+                    "stand_location": "매장 입구"
+                }
+            """.trimIndent()
+
+            mockMvc.perform(
+                put("/api/v1/admin/promotions/1")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(json)
+            )
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"))
         }
 
         @Test

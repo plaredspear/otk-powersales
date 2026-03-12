@@ -18,6 +18,7 @@ data class PromotionCreateRequest(
     @field:NotNull(message = "종료일은 필수입니다")
     val endDate: LocalDate,
 
+    @field:NotNull(message = "대표상품은 필수 항목입니다")
     val primaryProductId: Long? = null,
 
     @field:Size(max = 200, message = "기타상품은 200자 이하여야 합니다")
