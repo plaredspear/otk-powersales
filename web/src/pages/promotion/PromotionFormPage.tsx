@@ -39,14 +39,14 @@ interface ProductOption {
 
 interface FormValues {
   promotionName?: string;
-  promotionTypeId?: number;
+  promotionTypeId: number;
   accountId: number;
   startDate: dayjs.Dayjs;
   endDate: dayjs.Dayjs;
   primaryProductId?: number;
   otherProduct?: string;
   message?: string;
-  standLocation?: string;
+  standLocation: string;
   remark?: string;
   branchName?: string;
 }
@@ -152,14 +152,14 @@ export default function PromotionFormPage() {
 
   const handleSubmit = async (values: FormValues) => {
     const payload: PromotionFormData = {
-      promotion_type_id: values.promotionTypeId || null,
+      promotion_type_id: values.promotionTypeId,
       account_id: values.accountId,
       start_date: values.startDate.format('YYYY-MM-DD'),
       end_date: values.endDate.format('YYYY-MM-DD'),
       primary_product_id: values.primaryProductId || null,
       other_product: values.otherProduct || null,
       message: values.message || null,
-      stand_location: values.standLocation || null,
+      stand_location: values.standLocation,
       remark: values.remark || null,
       branch_name: values.branchName || null,
     };
@@ -275,13 +275,21 @@ export default function PromotionFormPage() {
 
           <Row gutter={24}>
             <Col xs={24} sm={12}>
-              <Form.Item name="promotionTypeId" label="행사유형">
-                <Select allowClear placeholder="행사유형 선택" options={promotionTypeOptions} />
+              <Form.Item
+                name="promotionTypeId"
+                label="행사유형"
+                rules={[{ required: true, message: '행사유형을 선택해주세요' }]}
+              >
+                <Select placeholder="행사유형 선택" options={promotionTypeOptions} />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
-              <Form.Item name="standLocation" label="매대위치">
-                <Select allowClear placeholder="매대위치 선택" options={standLocationOptions} />
+              <Form.Item
+                name="standLocation"
+                label="매대위치"
+                rules={[{ required: true, whitespace: true, message: '매대위치를 입력해주세요' }]}
+              >
+                <Select placeholder="매대위치 선택" options={standLocationOptions} />
               </Form.Item>
             </Col>
           </Row>
