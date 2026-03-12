@@ -208,7 +208,7 @@ class AdminPromotionEmployeeControllerTest {
         @DisplayName("성공 - 200 반환")
         fun updateEmployee_success() {
             val response = createDetailResponse()
-            whenever(adminPromotionEmployeeService.updateEmployee(eq(1L), any())).thenReturn(response)
+            whenever(adminPromotionEmployeeService.updateEmployee(eq(1L), eq(1L), any())).thenReturn(response)
 
             mockMvc.perform(
                 put("/api/v1/admin/promotion-employees/1")
@@ -223,7 +223,7 @@ class AdminPromotionEmployeeControllerTest {
         @Test
         @DisplayName("실패 - ID 미존재")
         fun updateEmployee_notFound() {
-            whenever(adminPromotionEmployeeService.updateEmployee(eq(999L), any()))
+            whenever(adminPromotionEmployeeService.updateEmployee(eq(999L), eq(1L), any()))
                 .thenThrow(PromotionEmployeeNotFoundException())
 
             mockMvc.perform(

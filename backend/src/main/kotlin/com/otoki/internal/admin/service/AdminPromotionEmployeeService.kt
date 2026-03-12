@@ -8,6 +8,7 @@ import com.otoki.internal.promotion.entity.PromotionEmployee
 import com.otoki.internal.promotion.exception.*
 import com.otoki.internal.promotion.repository.PromotionEmployeeRepository
 import com.otoki.internal.promotion.repository.PromotionRepository
+import com.otoki.internal.sap.entity.UserRole
 import com.otoki.internal.sap.repository.UserRepository
 import com.otoki.internal.schedule.repository.ScheduleRepository
 import org.springframework.stereotype.Service
@@ -61,6 +62,7 @@ class AdminPromotionEmployeeService(
     @Transactional
     fun createEmployee(promotionId: Long, request: PromotionEmployeeRequest): PromotionEmployeeDetailResponse {
         val promotion = findActivePromotion(promotionId)
+        validateScheduleDateRange(request.scheduleDate, promotion)
         validateWorkStatus(request.workStatus)
         validateWorkType3(request.workType3)
         validateTeamCategory(promotion, request.professionalPromotionTeam)
@@ -89,16 +91,19 @@ class AdminPromotionEmployeeService(
     }
 
     @Transactional
-    fun updateEmployee(id: Long, request: PromotionEmployeeRequest): PromotionEmployeeDetailResponse {
+    fun updateEmployee(id: Long, userId: Long, request: PromotionEmployeeRequest): PromotionEmployeeDetailResponse {
         val pe = findEmployeeById(id)
         validateWorkStatus(request.workStatus)
         validateWorkType3(request.workType3)
 
-        // 1-2-A: 마감 보호 — 핵심필드 수정 차단
-        validateClosedEmployeeModification(pe, request)
+        // 1-2-A: 마감 보호 — 핵심필드 수정 차단 (ADMIN 예외)
+        val user = userRepository.findById(userId)
+            .orElseThrow { IllegalStateException("사용자를 찾을 수 없습니다: $userId") }
+        validateClosedEmployeeModification(pe, request, user.role == UserRole.ADMIN)
 
         // 1-1: 전문행사조 매칭 검증
         val promotion = findActivePromotion(pe.promotionId)
+        validateScheduleDateRange(request.scheduleDate, promotion)
         validateTeamCategory(promotion, request.professionalPromotionTeam)
 
         // 1-5: 핵심필드 변경 시 스케줄 삭제
@@ -161,6 +166,16 @@ class AdminPromotionEmployeeService(
             .orElseThrow { PromotionEmployeeNotFoundException() }
     }
 
+    private fun validateScheduleDateRange(scheduleDate: java.time.LocalDate, promotion: Promotion) {
+        if (scheduleDate.isBefore(promotion.startDate) || scheduleDate.isAfter(promotion.endDate)) {
+            throw ScheduleDateOutOfRangeException(
+                scheduleDate.toString(),
+                promotion.startDate.toString(),
+                promotion.endDate.toString()
+            )
+        }
+    }
+
     private fun validateWorkStatus(workStatus: String) {
         if (workStatus !in VALID_WORK_STATUSES) throw InvalidWorkStatusException()
     }
@@ -182,7 +197,7 @@ class AdminPromotionEmployeeService(
         }
     }
 
-    private fun validateClosedEmployeeModification(pe: PromotionEmployee, request: PromotionEmployeeRequest) {
+    private fun validateClosedEmployeeModification(pe: PromotionEmployee, request: PromotionEmployeeRequest, isAdmin: Boolean) {
         if (pe.scheduleId == null || !pe.promoCloseByTm) return
 
         val criticalChanged = pe.employeeSfid != request.employeeSfid ||
@@ -191,7 +206,7 @@ class AdminPromotionEmployeeService(
             pe.basePrice != request.basePrice ||
             pe.dailyTargetCount != request.dailyTargetCount
 
-        if (criticalChanged) throw ClosedEmployeeModificationException()
+        if (criticalChanged && !isAdmin) throw ClosedEmployeeModificationException()
     }
 
     private fun removeScheduleOnCriticalFieldChange(pe: PromotionEmployee, request: PromotionEmployeeRequest) {

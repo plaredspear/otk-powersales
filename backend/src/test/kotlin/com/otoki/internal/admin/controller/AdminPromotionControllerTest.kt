@@ -401,7 +401,7 @@ class AdminPromotionControllerTest {
         @DisplayName("성공 - 행사마스터 수정")
         fun updatePromotion_success() {
             val response = createDetailResponse(promotionName = "수정된 행사명")
-            whenever(adminPromotionService.updatePromotion(eq(1L), any())).thenReturn(response)
+            whenever(adminPromotionService.updatePromotion(eq(1L), eq(1L), any())).thenReturn(response)
 
             mockMvc.perform(
                 put("/api/v1/admin/promotions/1")
@@ -480,7 +480,7 @@ class AdminPromotionControllerTest {
         @Test
         @DisplayName("실패 - 미존재 행사마스터 수정")
         fun updatePromotion_notFound() {
-            whenever(adminPromotionService.updatePromotion(eq(999L), any()))
+            whenever(adminPromotionService.updatePromotion(eq(999L), eq(1L), any()))
                 .thenThrow(PromotionNotFoundException())
 
             mockMvc.perform(

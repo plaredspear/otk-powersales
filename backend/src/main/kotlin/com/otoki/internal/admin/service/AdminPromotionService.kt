@@ -12,6 +12,7 @@ import com.otoki.internal.promotion.repository.PromotionEmployeeRepository
 import com.otoki.internal.promotion.repository.PromotionProductRepository
 import com.otoki.internal.promotion.repository.PromotionRepository
 import com.otoki.internal.promotion.repository.PromotionTypeRepository
+import com.otoki.internal.sap.entity.UserRole
 import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.sap.repository.ProductRepository
 import com.otoki.internal.sap.repository.UserRepository
@@ -188,7 +189,7 @@ class AdminPromotionService(
     }
 
     @Transactional
-    fun updatePromotion(id: Long, request: PromotionCreateRequest): PromotionDetailResponse {
+    fun updatePromotion(id: Long, userId: Long, request: PromotionCreateRequest): PromotionDetailResponse {
         if (id <= 0) throw PromotionInvalidParameterException()
 
         val promotion = findActivePromotion(id)
@@ -198,13 +199,17 @@ class AdminPromotionService(
         validateStandLocation(request.standLocation)
         validateOtherProduct(request.otherProduct)
 
-        // 1-2-C: 마감 보호 — 거래처/날짜 변경 차단
+        // 1-2-C: 마감 보호 — 거래처/날짜 변경 차단 (ADMIN 예외)
         val criticalFieldChanged = promotion.accountId != request.accountId ||
             promotion.startDate != request.startDate ||
             promotion.endDate != request.endDate
         if (criticalFieldChanged) {
             if (promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(id)) {
-                throw ClosedPromotionModificationException()
+                val user = userRepository.findById(userId)
+                    .orElseThrow { IllegalStateException("사용자를 찾을 수 없습니다: $userId") }
+                if (user.role != UserRole.ADMIN) {
+                    throw ClosedPromotionModificationException()
+                }
             }
         }
 

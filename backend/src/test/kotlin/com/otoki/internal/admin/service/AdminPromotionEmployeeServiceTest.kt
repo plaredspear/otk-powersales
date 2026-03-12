@@ -133,6 +133,50 @@ class AdminPromotionEmployeeServiceTest {
             assertThatThrownBy { service.createEmployee(10L, createRequest(professionalPromotionTeam = "라면세일조")) }
                 .isInstanceOf(TeamCategoryMismatchException::class.java)
         }
+
+        @Test
+        @DisplayName("투입일이 행사 시작일 이전 (등록) -> SCHEDULE_DATE_OUT_OF_RANGE")
+        fun createEmployee_scheduleDateBeforeStart() {
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+
+            assertThatThrownBy { service.createEmployee(10L, createRequest(scheduleDate = LocalDate.of(2026, 3, 9))) }
+                .isInstanceOf(ScheduleDateOutOfRangeException::class.java)
+        }
+
+        @Test
+        @DisplayName("투입일이 행사 종료일 이후 (등록) -> SCHEDULE_DATE_OUT_OF_RANGE")
+        fun createEmployee_scheduleDateAfterEnd() {
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+
+            assertThatThrownBy { service.createEmployee(10L, createRequest(scheduleDate = LocalDate.of(2026, 3, 21))) }
+                .isInstanceOf(ScheduleDateOutOfRangeException::class.java)
+        }
+
+        @Test
+        @DisplayName("투입일이 행사 시작일과 동일 (등록) -> 정상 등록")
+        fun createEmployee_scheduleDateEqualsStart() {
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            whenever(userRepository.findBySfidIn(any())).thenReturn(emptyList())
+            stubRollup()
+
+            val result = service.createEmployee(10L, createRequest(scheduleDate = LocalDate.of(2026, 3, 10)))
+            assertThat(result.scheduleDate).isEqualTo(LocalDate.of(2026, 3, 10))
+        }
+
+        @Test
+        @DisplayName("투입일이 행사 종료일과 동일 (등록) -> 정상 등록")
+        fun createEmployee_scheduleDateEqualsEnd() {
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            whenever(userRepository.findBySfidIn(any())).thenReturn(emptyList())
+            stubRollup()
+
+            val result = service.createEmployee(10L, createRequest(scheduleDate = LocalDate.of(2026, 3, 20)))
+            assertThat(result.scheduleDate).isEqualTo(LocalDate.of(2026, 3, 20))
+        }
     }
 
     @Nested
@@ -144,13 +188,14 @@ class AdminPromotionEmployeeServiceTest {
         fun updateEmployee_success() {
             val pe = createPe()
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
             whenever(userRepository.findBySfidIn(any())).thenReturn(listOf(createUser()))
             stubRollup()
 
-            val result = service.updateEmployee(1L, createRequest(scheduleDate = LocalDate.of(2026, 3, 20)))
+            val result = service.updateEmployee(1L, 1L, createRequest(scheduleDate = LocalDate.of(2026, 3, 20)))
             assertThat(result.scheduleDate).isEqualTo(LocalDate.of(2026, 3, 20))
         }
 
@@ -159,6 +204,7 @@ class AdminPromotionEmployeeServiceTest {
         fun updateEmployee_closedNonCritical_success() {
             val pe = createPe(scheduleId = 100L, promoCloseByTm = true)
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
@@ -166,28 +212,62 @@ class AdminPromotionEmployeeServiceTest {
             stubRollup()
 
             // work_type1만 변경 (비핵심필드)
-            val result = service.updateEmployee(1L, createRequest(workType1 = "시음"))
+            val result = service.updateEmployee(1L, 1L, createRequest(workType1 = "시음"))
             assertThat(result).isNotNull()
         }
 
         @Test
-        @DisplayName("마감 조원 핵심필드(employee_sfid) 수정 -> CLOSED_EMPLOYEE_MODIFICATION")
+        @DisplayName("USER가 마감 조원 핵심필드(employee_sfid) 수정 -> CLOSED_EMPLOYEE_MODIFICATION")
         fun updateEmployee_closedCriticalField() {
             val pe = createPe(scheduleId = 100L, promoCloseByTm = true)
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
 
-            assertThatThrownBy { service.updateEmployee(1L, createRequest(employeeSfid = "DIFFERENT_SFID")) }
+            assertThatThrownBy { service.updateEmployee(1L, 1L, createRequest(employeeSfid = "DIFFERENT_SFID")) }
                 .isInstanceOf(ClosedEmployeeModificationException::class.java)
         }
 
         @Test
-        @DisplayName("마감 조원 핵심필드(schedule_date) 수정 -> CLOSED_EMPLOYEE_MODIFICATION")
+        @DisplayName("USER가 마감 조원 핵심필드(schedule_date) 수정 -> CLOSED_EMPLOYEE_MODIFICATION")
         fun updateEmployee_closedScheduleDate() {
             val pe = createPe(scheduleId = 100L, promoCloseByTm = true)
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
 
-            assertThatThrownBy { service.updateEmployee(1L, createRequest(scheduleDate = LocalDate.of(2026, 4, 1))) }
+            assertThatThrownBy { service.updateEmployee(1L, 1L, createRequest(scheduleDate = LocalDate.of(2026, 4, 1))) }
                 .isInstanceOf(ClosedEmployeeModificationException::class.java)
+        }
+
+        @Test
+        @DisplayName("ADMIN이 마감 조원 핵심필드(employee_sfid) 수정 -> 수정 허용")
+        fun updateEmployee_adminClosedCriticalField_allowed() {
+            val pe = createPe(scheduleId = 100L, promoCloseByTm = true)
+            whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser(appAuthority = "지점장")))
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            whenever(userRepository.findBySfidIn(any())).thenReturn(listOf(createUser()))
+            stubRollup()
+
+            val result = service.updateEmployee(1L, 1L, createRequest(employeeSfid = "DIFFERENT_SFID"))
+            assertThat(result).isNotNull()
+        }
+
+        @Test
+        @DisplayName("ADMIN이 마감 조원 핵심필드(투입일) 수정 -> 수정 허용")
+        fun updateEmployee_adminClosedScheduleDate_allowed() {
+            val pe = createPe(scheduleId = 100L, promoCloseByTm = true)
+            whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser(appAuthority = "지점장")))
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            whenever(userRepository.findBySfidIn(any())).thenReturn(listOf(createUser()))
+            stubRollup()
+
+            val result = service.updateEmployee(1L, 1L, createRequest(scheduleDate = LocalDate.of(2026, 3, 18)))
+            assertThat(result).isNotNull()
         }
 
         @Test
@@ -195,13 +275,14 @@ class AdminPromotionEmployeeServiceTest {
         fun updateEmployee_criticalFieldChange_scheduleDeleted() {
             val pe = createPe(scheduleId = 100L)
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
             whenever(userRepository.findBySfidIn(any())).thenReturn(listOf(createUser()))
             stubRollup()
 
-            service.updateEmployee(1L, createRequest(employeeSfid = "NEW_SFID"))
+            service.updateEmployee(1L, 1L, createRequest(employeeSfid = "NEW_SFID"))
 
             verify(scheduleRepository).deleteAllByIdIn(listOf(100L))
             assertThat(pe.scheduleId).isNull()
@@ -212,6 +293,7 @@ class AdminPromotionEmployeeServiceTest {
         fun updateEmployee_teamChange_noScheduleDelete() {
             val pe = createPe(scheduleId = 100L)
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
@@ -219,13 +301,37 @@ class AdminPromotionEmployeeServiceTest {
             stubRollup()
 
             // team + sfid 동시 변경 -> team 변경이 있으므로 스케줄 삭제 안 함
-            service.updateEmployee(1L, createRequest(
+            service.updateEmployee(1L, 1L, createRequest(
                 employeeSfid = "NEW_SFID",
                 professionalPromotionTeam = "라면세일조B"
             ))
 
             verify(scheduleRepository, never()).deleteAllByIdIn(any())
             assertThat(pe.scheduleId).isEqualTo(100L)
+        }
+
+        @Test
+        @DisplayName("투입일이 행사 기간 이전 (수정) -> SCHEDULE_DATE_OUT_OF_RANGE")
+        fun updateEmployee_scheduleDateBeforeStart() {
+            val pe = createPe()
+            whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+
+            assertThatThrownBy { service.updateEmployee(1L, 1L, createRequest(scheduleDate = LocalDate.of(2026, 3, 5))) }
+                .isInstanceOf(ScheduleDateOutOfRangeException::class.java)
+        }
+
+        @Test
+        @DisplayName("투입일이 행사 기간 이후 (수정) -> SCHEDULE_DATE_OUT_OF_RANGE")
+        fun updateEmployee_scheduleDateAfterEnd() {
+            val pe = createPe()
+            whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+
+            assertThatThrownBy { service.updateEmployee(1L, 1L, createRequest(scheduleDate = LocalDate.of(2026, 3, 25))) }
+                .isInstanceOf(ScheduleDateOutOfRangeException::class.java)
         }
     }
 
@@ -255,13 +361,14 @@ class AdminPromotionEmployeeServiceTest {
             val promotion = createPromotion()
             val pe = createPe()
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
             whenever(userRepository.findBySfidIn(any())).thenReturn(emptyList())
             stubRollup(targetSum = 150000, actualSum = 110000)
 
-            service.updateEmployee(1L, createRequest(targetAmount = 50000, actualAmount = 30000))
+            service.updateEmployee(1L, 1L, createRequest(targetAmount = 50000, actualAmount = 30000))
 
             assertThat(promotion.targetAmount).isEqualTo(150000)
             assertThat(promotion.actualAmount).isEqualTo(110000)
@@ -353,7 +460,9 @@ class AdminPromotionEmployeeServiceTest {
         scheduleId = scheduleId, promoCloseByTm = promoCloseByTm
     )
 
-    private fun createUser() = User(id = 1L, sfid = "a0B5g00000XYZabc", employeeId = "20030117", name = "김여사")
+    private fun createUser(appAuthority: String? = null) = User(id = 1L, sfid = "a0B5g00000XYZabc", employeeId = "20030117", name = "김여사").also {
+        it.appAuthority = appAuthority
+    }
 
     private fun createRequest(
         employeeSfid: String = "a0B5g00000XYZabc", scheduleDate: LocalDate = LocalDate.of(2026, 3, 15),
