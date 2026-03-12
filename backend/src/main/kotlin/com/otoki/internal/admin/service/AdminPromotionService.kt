@@ -133,9 +133,8 @@ class AdminPromotionService(
         val account = accountRepository.findById(request.accountId)
             .orElseThrow { AccountNotFoundException() }
 
-        val product = request.primaryProductId?.let {
-            productRepository.findById(it).orElseThrow { ProductNotFoundException() }
-        }
+        val product = productRepository.findById(request.primaryProductId!!)
+            .orElseThrow { ProductNotFoundException() }
 
         val user = userRepository.findById(userId)
             .orElseThrow { IllegalStateException("사용자를 찾을 수 없습니다: $userId") }
@@ -153,7 +152,7 @@ class AdminPromotionService(
         val promotion = promotionRepository.save(
             Promotion(
                 promotionNumber = promotionNumber,
-                promotionName = product?.name,
+                promotionName = product.name,
                 promotionTypeId = request.promotionTypeId,
                 accountId = request.accountId,
                 startDate = request.startDate,
@@ -172,19 +171,17 @@ class AdminPromotionService(
             )
         )
 
-        if (request.primaryProductId != null) {
-            promotionProductRepository.save(
-                PromotionProduct(
-                    promotionId = promotion.id,
-                    productId = request.primaryProductId
-                )
+        promotionProductRepository.save(
+            PromotionProduct(
+                promotionId = promotion.id,
+                productId = request.primaryProductId
             )
-        }
+        )
 
         return PromotionDetailResponse.from(
             promotion = promotion,
             accountName = account.name,
-            primaryProductName = product?.name,
+            primaryProductName = product.name,
             promotionTypeName = typeName
         )
     }
@@ -228,14 +225,13 @@ class AdminPromotionService(
         accountRepository.findById(request.accountId)
             .orElseThrow { AccountNotFoundException() }
 
-        val product = request.primaryProductId?.let {
-            productRepository.findById(it).orElseThrow { ProductNotFoundException() }
-        }
+        val product = productRepository.findById(request.primaryProductId!!)
+            .orElseThrow { ProductNotFoundException() }
 
         val oldPrimaryProductId = promotion.primaryProductId
 
         promotion.update(
-            promotionName = product?.name,
+            promotionName = product.name,
             promotionTypeId = request.promotionTypeId,
             accountId = request.accountId,
             startDate = request.startDate,
@@ -256,22 +252,16 @@ class AdminPromotionService(
         if (oldPrimaryProductId != request.primaryProductId) {
             val existingPP = promotionProductRepository.findByPromotionIdAndIsMainProduct(promotion.id, true)
 
-            when {
-                request.primaryProductId != null && existingPP != null -> {
-                    existingPP.productId = request.primaryProductId
-                    promotionProductRepository.save(existingPP)
-                }
-                request.primaryProductId != null && existingPP == null -> {
-                    promotionProductRepository.save(
-                        PromotionProduct(
-                            promotionId = promotion.id,
-                            productId = request.primaryProductId
-                        )
+            if (existingPP != null) {
+                existingPP.productId = request.primaryProductId!!
+                promotionProductRepository.save(existingPP)
+            } else {
+                promotionProductRepository.save(
+                    PromotionProduct(
+                        promotionId = promotion.id,
+                        productId = request.primaryProductId!!
                     )
-                }
-                request.primaryProductId == null && existingPP != null -> {
-                    promotionProductRepository.delete(existingPP)
-                }
+                )
             }
         }
 
@@ -283,7 +273,7 @@ class AdminPromotionService(
         return PromotionDetailResponse.from(
             promotion = promotion,
             accountName = account?.name,
-            primaryProductName = product?.name,
+            primaryProductName = product.name,
             promotionTypeName = typeName
         )
     }

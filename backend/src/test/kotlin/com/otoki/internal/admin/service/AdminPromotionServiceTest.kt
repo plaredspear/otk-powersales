@@ -237,25 +237,6 @@ class AdminPromotionServiceTest {
         }
 
         @Test
-        @DisplayName("대표제품 없이 생성 - primaryProductId=null -> promotionName=null")
-        fun createPromotion_nullPrimaryProduct_nullPromotionName() {
-            val request = createRequest(primaryProductId = null, remark = "신규 매대 협의 필요")
-            val account = createAccount()
-            val user = createUser(costCenterCode = "1101")
-
-            whenever(accountRepository.findById(100)).thenReturn(Optional.of(account))
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(3L)
-            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
-
-            val result = adminPromotionService.createPromotion(userId, request)
-
-            assertThat(result.promotionName).isNull()
-            assertThat(result.remark).isEqualTo("신규 매대 협의 필요")
-            verify(promotionProductRepository, never()).save(any())
-        }
-
-        @Test
         @DisplayName("날짜 범위 오류 - end < start -> InvalidDateRangeException")
         fun createPromotion_invalidDateRange() {
             val request = createRequest(
@@ -300,29 +281,6 @@ class AdminPromotionServiceTest {
 
             assertThatThrownBy { adminPromotionService.createPromotion(userId, request) }
                 .isInstanceOf(CostCenterNotFoundException::class.java)
-        }
-
-        @Test
-        @DisplayName("대표상품 없이 생성 - primaryProductId=null -> PromotionProduct 미생성")
-        fun createPromotion_noPrimaryProduct() {
-            val request = PromotionCreateRequest(
-                accountId = 100,
-                startDate = LocalDate.of(2026, 3, 10),
-                endDate = LocalDate.of(2026, 3, 20),
-                primaryProductId = null
-            )
-            val user = createUser(costCenterCode = "1101")
-
-            whenever(accountRepository.findById(100)).thenReturn(Optional.of(createAccount()))
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(2L)
-            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
-
-            val result = adminPromotionService.createPromotion(userId, request)
-
-            assertThat(result.promotionNumber).isEqualTo("PM00000002")
-            assertThat(result.category).isNull()
-            verify(promotionProductRepository, never()).save(any())
         }
 
         @Test
@@ -440,26 +398,6 @@ class AdminPromotionServiceTest {
             val result = adminPromotionService.updatePromotion(1L, request)
 
             assertThat(result.promotionName).isEqualTo("진라면 매운맛")
-        }
-
-        @Test
-        @DisplayName("대표제품 제거 수정 - primaryProductId=null -> promotionName=null")
-        fun updatePromotion_removeProduct_promotionNameNull() {
-            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-            whenever(dataScopeHolder.require()).thenReturn(scope)
-
-            val promotion = createPromotion(primaryProductId = 200L)
-            whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
-            whenever(accountRepository.findById(100)).thenReturn(Optional.of(createAccount()))
-            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
-
-            val existingPP = PromotionProduct(id = 10L, promotionId = 1L, productId = 200L)
-            whenever(promotionProductRepository.findByPromotionIdAndIsMainProduct(1L, true)).thenReturn(existingPP)
-
-            val request = createRequest(primaryProductId = null)
-            val result = adminPromotionService.updatePromotion(1L, request)
-
-            assertThat(result.promotionName).isNull()
         }
 
         @Test
