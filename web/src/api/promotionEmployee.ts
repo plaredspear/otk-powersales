@@ -24,6 +24,14 @@ interface PromotionEmployeeRaw {
   promo_close_by_tm: boolean;
   base_price: number | null;
   daily_target_count: number | null;
+  target_amount: number | null;
+  actual_amount: number | null;
+  primary_product_amount: number | null;
+  primary_sales_quantity: number | null;
+  primary_sales_price: number | null;
+  other_sales_amount: number | null;
+  other_sales_quantity: number | null;
+  s3_image_unique_key: string | null;
 }
 
 // --- Frontend interfaces (camelCase) ---
@@ -43,6 +51,14 @@ export interface PromotionEmployee {
   promoCloseByTm: boolean;
   basePrice: number | null;
   dailyTargetCount: number | null;
+  targetAmount: number | null;
+  actualAmount: number | null;
+  primaryProductAmount: number | null;
+  primarySalesQuantity: number | null;
+  primarySalesPrice: number | null;
+  otherSalesAmount: number | null;
+  otherSalesQuantity: number | null;
+  s3ImageUniqueKey: string | null;
 }
 
 export interface PromotionEmployeeFormData {
@@ -130,6 +146,14 @@ function mapPromotionEmployee(raw: PromotionEmployeeRaw): PromotionEmployee {
     promoCloseByTm: raw.promo_close_by_tm,
     basePrice: raw.base_price,
     dailyTargetCount: raw.daily_target_count,
+    targetAmount: raw.target_amount,
+    actualAmount: raw.actual_amount,
+    primaryProductAmount: raw.primary_product_amount,
+    primarySalesQuantity: raw.primary_sales_quantity,
+    primarySalesPrice: raw.primary_sales_price,
+    otherSalesAmount: raw.other_sales_amount,
+    otherSalesQuantity: raw.other_sales_quantity,
+    s3ImageUniqueKey: raw.s3_image_unique_key,
   };
 }
 
