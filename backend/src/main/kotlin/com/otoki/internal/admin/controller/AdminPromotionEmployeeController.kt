@@ -1,6 +1,8 @@
 package com.otoki.internal.admin.controller
 
+import com.otoki.internal.admin.dto.request.BatchUpdatePromotionEmployeeRequest
 import com.otoki.internal.admin.dto.request.PromotionEmployeeRequest
+import com.otoki.internal.admin.dto.response.BatchUpdatePromotionEmployeeResponse
 import com.otoki.internal.admin.dto.response.PromotionConfirmResponse
 import com.otoki.internal.admin.dto.response.PromotionEmployeeDetailResponse
 import com.otoki.internal.admin.dto.response.PromotionEmployeeListResponse
@@ -51,6 +53,17 @@ class AdminPromotionEmployeeController(
     ): ResponseEntity<ApiResponse<PromotionEmployeeDetailResponse>> {
         val response = adminPromotionEmployeeService.createEmployee(promotionId, request)
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response))
+    }
+
+    @PutMapping("/api/v1/admin/promotions/{promotionId}/employees/batch")
+    @RequiresPermission(AdminPermission.PROMOTION_WRITE)
+    fun batchUpdateEmployees(
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @PathVariable promotionId: Long,
+        @Valid @RequestBody request: BatchUpdatePromotionEmployeeRequest
+    ): ResponseEntity<ApiResponse<BatchUpdatePromotionEmployeeResponse>> {
+        val response = adminPromotionEmployeeService.batchUpdateEmployees(promotionId, principal.userId, request)
+        return ResponseEntity.ok(ApiResponse.success(response))
     }
 
     @PutMapping("/api/v1/admin/promotion-employees/{id}")
