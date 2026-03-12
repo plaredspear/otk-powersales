@@ -135,14 +135,14 @@ export interface PromotionDetail {
 }
 
 export interface PromotionFormData {
-  promotion_type_id?: number | null;
+  promotion_type_id: number;
   account_id: number;
   start_date: string;
   end_date: string;
   primary_product_id?: number | null;
   other_product?: string | null;
   message?: string | null;
-  stand_location?: string | null;
+  stand_location: string;
   remark?: string | null;
   branch_name?: string | null;
 }
