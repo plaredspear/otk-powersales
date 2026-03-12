@@ -2,6 +2,7 @@ package com.otoki.internal.admin.controller
 
 import com.otoki.internal.admin.dto.request.PromotionCreateRequest
 import com.otoki.internal.admin.dto.response.PromotionDetailResponse
+import com.otoki.internal.admin.dto.response.PromotionFormMetaResponse
 import com.otoki.internal.admin.dto.response.PromotionListResponse
 import com.otoki.internal.admin.security.AdminPermission
 import com.otoki.internal.admin.security.RequiresPermission
@@ -24,6 +25,13 @@ import org.springframework.web.bind.annotation.*
 class AdminPromotionController(
     private val adminPromotionService: AdminPromotionService
 ) {
+
+    @GetMapping("/form-meta")
+    @RequiresPermission(AdminPermission.PROMOTION_READ)
+    fun getPromotionFormMeta(): ResponseEntity<ApiResponse<PromotionFormMetaResponse>> {
+        val response = adminPromotionService.getPromotionFormMeta()
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
 
     @GetMapping
     @RequiresPermission(AdminPermission.PROMOTION_READ)

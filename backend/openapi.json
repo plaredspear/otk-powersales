@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:54087",
+    "url" : "http://localhost:49946",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -2148,6 +2148,24 @@
         }
       }
     },
+    "/api/v1/admin/promotions/form-meta" : {
+      "get" : {
+        "tags" : [ "admin-promotion-controller" ],
+        "operationId" : "getPromotionFormMeta",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePromotionFormMetaResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/products" : {
       "get" : {
         "tags" : [ "admin-product-controller" ],
@@ -2268,7 +2286,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseListOrgResponse"
+                  "$ref" : "#/components/schemas/ApiResponseListOrganizationResponse"
                 }
               }
             }
@@ -4020,9 +4038,6 @@
             "type" : "string",
             "pattern" : "^\\d{6}$"
           },
-          "previousYearMonth" : {
-            "type" : "string"
-          },
           "year" : {
             "type" : "integer",
             "format" : "int32"
@@ -4030,6 +4045,9 @@
           "month" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "previousYearMonth" : {
+            "type" : "string"
           }
         },
         "required" : [ "month", "previousYearMonth", "year", "yearMonth" ]
@@ -4296,19 +4314,6 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "size" : {
             "type" : "integer",
             "format" : "int32"
@@ -4326,6 +4331,19 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
+          },
           "empty" : {
             "type" : "boolean"
           }
@@ -4334,26 +4352,26 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
-          "pageSize" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "paged" : {
-            "type" : "boolean"
-          },
-          "pageNumber" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "unpaged" : {
-            "type" : "boolean"
-          },
           "offset" : {
             "type" : "integer",
             "format" : "int64"
           },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
+          },
+          "pageSize" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "pageNumber" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "paged" : {
+            "type" : "boolean"
+          },
+          "unpaged" : {
+            "type" : "boolean"
           }
         }
       },
@@ -4386,13 +4404,13 @@
       "SortObject" : {
         "type" : "object",
         "properties" : {
+          "empty" : {
+            "type" : "boolean"
+          },
           "unsorted" : {
             "type" : "boolean"
           },
           "sorted" : {
-            "type" : "boolean"
-          },
-          "empty" : {
             "type" : "boolean"
           }
         }
@@ -5426,6 +5444,71 @@
         },
         "required" : [ "employeeSfid", "id", "promoCloseByTm", "promotionId", "scheduleDate", "workStatus", "workType1", "workType3" ]
       },
+      "ApiResponsePromotionFormMetaResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "$ref" : "#/components/schemas/PromotionFormMetaResponse"
+          },
+          "error" : {
+            "$ref" : "#/components/schemas/ErrorDetail"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "success", "timestamp" ]
+      },
+      "PromotionFormMetaResponse" : {
+        "type" : "object",
+        "properties" : {
+          "promotionTypes" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PromotionTypeOption"
+            }
+          },
+          "standLocations" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/StandLocationOption"
+            }
+          }
+        },
+        "required" : [ "promotionTypes", "standLocations" ]
+      },
+      "PromotionTypeOption" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "name" ]
+      },
+      "StandLocationOption" : {
+        "type" : "object",
+        "properties" : {
+          "value" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "name", "value" ]
+      },
       "ApiResponseListPromotionTypeResponse" : {
         "type" : "object",
         "properties" : {
@@ -5597,7 +5680,7 @@
         },
         "required" : [ "category1", "children" ]
       },
-      "ApiResponseListOrgResponse" : {
+      "ApiResponseListOrganizationResponse" : {
         "type" : "object",
         "properties" : {
           "success" : {
@@ -5606,7 +5689,7 @@
           "data" : {
             "type" : "array",
             "items" : {
-              "$ref" : "#/components/schemas/OrgResponse"
+              "$ref" : "#/components/schemas/OrganizationResponse"
             }
           },
           "error" : {
@@ -5622,7 +5705,7 @@
         },
         "required" : [ "success", "timestamp" ]
       },
-      "OrgResponse" : {
+      "OrganizationResponse" : {
         "type" : "object",
         "properties" : {
           "id" : {

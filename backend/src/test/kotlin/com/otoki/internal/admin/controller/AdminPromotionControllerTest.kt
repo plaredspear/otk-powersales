@@ -2,9 +2,7 @@ package com.otoki.internal.admin.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.otoki.internal.admin.dto.request.PromotionCreateRequest
-import com.otoki.internal.admin.dto.response.PromotionDetailResponse
-import com.otoki.internal.admin.dto.response.PromotionListItem
-import com.otoki.internal.admin.dto.response.PromotionListResponse
+import com.otoki.internal.admin.dto.response.*
 import com.otoki.internal.admin.scope.DataScopeHolder
 import com.otoki.internal.admin.security.AdminAuthorityFilter
 import com.otoki.internal.admin.service.AdminPromotionService
@@ -12,10 +10,7 @@ import com.otoki.internal.common.security.GpsConsentFilter
 import com.otoki.internal.common.security.JwtAuthenticationFilter
 import com.otoki.internal.common.security.JwtTokenProvider
 import com.otoki.internal.common.security.UserPrincipal
-import com.otoki.internal.promotion.exception.AccountNotFoundException
-import com.otoki.internal.promotion.exception.InvalidDateRangeException
-import com.otoki.internal.promotion.exception.PromotionForbiddenException
-import com.otoki.internal.promotion.exception.PromotionNotFoundException
+import com.otoki.internal.promotion.exception.*
 import com.otoki.internal.sap.entity.UserRole
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -56,6 +51,36 @@ class AdminPromotionControllerTest {
         val principal = UserPrincipal(userId = 1L, role = UserRole.ADMIN)
         SecurityContextHolder.getContext().authentication =
             UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/admin/promotions/form-meta - 폼 메타 조회")
+    inner class GetPromotionFormMeta {
+
+        @Test
+        @DisplayName("성공 - 행사유형 + 매대위치 반환")
+        fun getFormMeta_success() {
+            val response = PromotionFormMetaResponse(
+                promotionTypes = listOf(
+                    PromotionTypeOption(id = 1L, name = "시식"),
+                    PromotionTypeOption(id = 2L, name = "시음")
+                ),
+                standLocations = listOf(
+                    StandLocationOption(value = "FROZEN_EVENT", name = "냉동행사장"),
+                    StandLocationOption(value = "ISLAND", name = "아일랜드")
+                )
+            )
+            whenever(adminPromotionService.getPromotionFormMeta()).thenReturn(response)
+
+            mockMvc.perform(get("/api/v1/admin/promotions/form-meta"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.promotion_types[0].id").value(1))
+                .andExpect(jsonPath("$.data.promotion_types[0].name").value("시식"))
+                .andExpect(jsonPath("$.data.stand_locations[0].value").value("FROZEN_EVENT"))
+                .andExpect(jsonPath("$.data.stand_locations[0].name").value("냉동행사장"))
+                .andExpect(jsonPath("$.data.stand_locations[1].value").value("ISLAND"))
+        }
     }
 
     @Nested
@@ -232,6 +257,21 @@ class AdminPromotionControllerTest {
             )
                 .andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.error.code").value("INVALID_DATE_RANGE"))
+        }
+
+        @Test
+        @DisplayName("실패 - 유효하지 않은 매대위치")
+        fun createPromotion_invalidStandLocation() {
+            whenever(adminPromotionService.createPromotion(eq(1L), any()))
+                .thenThrow(InvalidStandLocationException())
+
+            mockMvc.perform(
+                post("/api/v1/admin/promotions")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(createRequest()))
+            )
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.error.code").value("INVALID_STAND_LOCATION"))
         }
 
         @Test

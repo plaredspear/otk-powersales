@@ -7,6 +7,7 @@ import com.otoki.internal.promotion.entity.Promotion
 import com.otoki.internal.promotion.entity.PromotionEmployee
 import com.otoki.internal.promotion.entity.PromotionProduct
 import com.otoki.internal.promotion.entity.PromotionType
+import com.otoki.internal.promotion.entity.StandLocation
 import com.otoki.internal.promotion.exception.*
 import com.otoki.internal.promotion.repository.PromotionEmployeeRepository
 import com.otoki.internal.promotion.repository.PromotionProductRepository
@@ -52,6 +53,33 @@ class AdminPromotionServiceTest {
     @InjectMocks private lateinit var adminPromotionService: AdminPromotionService
 
     private val userId = 1L
+
+    @Nested
+    @DisplayName("getPromotionFormMeta - 행사마스터 폼 메타 조회")
+    inner class GetPromotionFormMetaTests {
+
+        @Test
+        @DisplayName("정상 조회 - 활성 행사유형 + 매대위치 Enum 반환")
+        fun getPromotionFormMeta_success() {
+            val types = listOf(
+                createPromotionType(id = 1L, name = "시식", displayOrder = 1),
+                createPromotionType(id = 2L, name = "시음", displayOrder = 2)
+            )
+            whenever(promotionTypeRepository.findByIsActiveTrueOrderByDisplayOrderAsc()).thenReturn(types)
+
+            val result = adminPromotionService.getPromotionFormMeta()
+
+            assertThat(result.promotionTypes).hasSize(2)
+            assertThat(result.promotionTypes[0].id).isEqualTo(1L)
+            assertThat(result.promotionTypes[0].name).isEqualTo("시식")
+
+            assertThat(result.standLocations).hasSize(6)
+            assertThat(result.standLocations[0].value).isEqualTo("FROZEN_EVENT")
+            assertThat(result.standLocations[0].name).isEqualTo("냉동행사장")
+            assertThat(result.standLocations[5].value).isEqualTo("EVENT_STAND")
+            assertThat(result.standLocations[5].name).isEqualTo("행사매대")
+        }
+    }
 
     @Nested
     @DisplayName("getPromotions - 행사마스터 목록 조회")
@@ -316,6 +344,55 @@ class AdminPromotionServiceTest {
 
             assertThatThrownBy { adminPromotionService.createPromotion(userId, request) }
                 .isInstanceOf(InvalidPromotionTypeException::class.java)
+        }
+
+        @Test
+        @DisplayName("유효하지 않은 매대위치 -> InvalidStandLocationException")
+        fun createPromotion_invalidStandLocation() {
+            val request = createRequest(standLocation = "없는매대")
+
+            assertThatThrownBy { adminPromotionService.createPromotion(userId, request) }
+                .isInstanceOf(InvalidStandLocationException::class.java)
+        }
+
+        @Test
+        @DisplayName("유효한 매대위치 -> 정상 생성")
+        fun createPromotion_validStandLocation() {
+            val request = createRequest(standLocation = "냉동행사장")
+            val account = createAccount()
+            val product = createProduct()
+            val user = createUser(costCenterCode = "1101")
+
+            whenever(accountRepository.findById(100)).thenReturn(Optional.of(account))
+            whenever(productRepository.findById(200L)).thenReturn(Optional.of(product))
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(1L)
+            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
+            whenever(promotionProductRepository.save(any<PromotionProduct>())).thenAnswer { it.getArgument<PromotionProduct>(0) }
+
+            val result = adminPromotionService.createPromotion(userId, request)
+
+            assertThat(result.standLocation).isEqualTo("냉동행사장")
+        }
+
+        @Test
+        @DisplayName("매대위치 null -> 정상 생성 (nullable)")
+        fun createPromotion_nullStandLocation() {
+            val request = createRequest(standLocation = null)
+            val account = createAccount()
+            val product = createProduct()
+            val user = createUser(costCenterCode = "1101")
+
+            whenever(accountRepository.findById(100)).thenReturn(Optional.of(account))
+            whenever(productRepository.findById(200L)).thenReturn(Optional.of(product))
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(1L)
+            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
+            whenever(promotionProductRepository.save(any<PromotionProduct>())).thenAnswer { it.getArgument<PromotionProduct>(0) }
+
+            val result = adminPromotionService.createPromotion(userId, request)
+
+            assertThat(result.standLocation).isNull()
         }
     }
 
@@ -659,6 +736,7 @@ class AdminPromotionServiceTest {
         startDate: LocalDate = LocalDate.of(2026, 3, 10),
         endDate: LocalDate = LocalDate.of(2026, 3, 20),
         primaryProductId: Long? = 200L,
+        standLocation: String? = "냉동행사장",
         remark: String? = null
     ) = PromotionCreateRequest(
         promotionTypeId = promotionTypeId,
@@ -668,7 +746,7 @@ class AdminPromotionServiceTest {
         primaryProductId = primaryProductId,
         otherProduct = "너구리, 진짬뽕",
         message = "3월 라면 프로모션 진행",
-        standLocation = "매장 입구 좌측",
+        standLocation = standLocation,
         category = "라면",
         remark = remark
     )

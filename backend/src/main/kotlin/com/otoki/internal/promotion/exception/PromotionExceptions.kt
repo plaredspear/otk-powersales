@@ -63,6 +63,12 @@ class InvalidPromotionTypeException : BusinessException(
     httpStatus = HttpStatus.BAD_REQUEST
 )
 
+class InvalidStandLocationException : BusinessException(
+    errorCode = "INVALID_STAND_LOCATION",
+    message = "유효하지 않은 매대위치입니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
 class PromotionEmployeeNotFoundException : BusinessException(
     errorCode = "NOT_FOUND",
     message = "행사조원을 찾을 수 없습니다",
