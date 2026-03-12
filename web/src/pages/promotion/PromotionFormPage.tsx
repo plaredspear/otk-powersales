@@ -48,7 +48,6 @@ interface FormValues {
   message?: string;
   standLocation: string;
   remark?: string;
-  branchName?: string;
 }
 
 export default function PromotionFormPage() {
@@ -95,7 +94,6 @@ export default function PromotionFormPage() {
         message: promotion.message ?? undefined,
         standLocation: promotion.standLocation ?? undefined,
         remark: promotion.remark ?? undefined,
-        branchName: promotion.branchName ?? undefined,
       });
 
       if (promotion.accountName) {
@@ -161,7 +159,6 @@ export default function PromotionFormPage() {
       message: values.message || null,
       stand_location: values.standLocation,
       remark: values.remark || null,
-      branch_name: values.branchName || null,
     };
 
     try {
@@ -294,17 +291,6 @@ export default function PromotionFormPage() {
             </Col>
           </Row>
 
-          <Row gutter={24}>
-            <Col xs={24} sm={12}>
-              <Form.Item
-                name="branchName"
-                label="지점명"
-                rules={[{ max: 100, message: '100자 이하로 입력해주세요' }]}
-              >
-                <Input maxLength={100} />
-              </Form.Item>
-            </Col>
-          </Row>
         </Card>
 
         <Card title="행사품목" style={{ marginBottom: 16 }}>

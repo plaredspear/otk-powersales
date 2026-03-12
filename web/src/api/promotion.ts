@@ -144,7 +144,6 @@ export interface PromotionFormData {
   message?: string | null;
   stand_location: string;
   remark?: string | null;
-  branch_name?: string | null;
 }
 
 // --- Form-Meta interfaces ---
