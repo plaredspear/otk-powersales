@@ -139,7 +139,7 @@ export interface PromotionFormData {
   account_id: number;
   start_date: string;
   end_date: string;
-  primary_product_id?: number | null;
+  primary_product_id: number;
   other_product?: string | null;
   message?: string | null;
   stand_location: string;
