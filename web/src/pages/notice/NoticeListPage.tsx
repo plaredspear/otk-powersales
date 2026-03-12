@@ -1,13 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Input, Select, Table, Tag, Typography } from 'antd';
+import { Button, Input, Select, Table, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined } from '@ant-design/icons';
 import { useNotices } from '@/hooks/notice/useNotices';
 import { useNoticeFormMeta } from '@/hooks/notice/useNoticeFormMeta';
 import type { NoticeSummary } from '@/api/notice';
-
-const { Title } = Typography;
 
 const CATEGORY_TAG: Record<string, { color: string; label: string }> = {
   COMPANY: { color: 'blue', label: '전체공지' },
@@ -56,9 +54,8 @@ export default function NoticeListPage() {
   ];
 
   return (
-    <div style={{ padding: 24 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Title level={4} style={{ margin: 0 }}>공지사항</Title>
+    <div style={{ padding: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/notices/new')}>
           작성
         </Button>

@@ -1,12 +1,10 @@
 import { useContext, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, Descriptions, Modal, Space, Spin, Tag, Typography, message } from 'antd';
+import { Button, Descriptions, Modal, Space, Spin, Tag, message } from 'antd';
 import DOMPurify from 'dompurify';
 import { useNoticeDetail } from '@/hooks/notice/useNoticeDetail';
 import { useDeleteNotice } from '@/hooks/notice/useNoticeMutation';
 import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
-
-const { Title } = Typography;
 
 const CATEGORY_TAG: Record<string, { color: string; label: string }> = {
   COMPANY: { color: 'blue', label: '전체공지' },
@@ -68,7 +66,7 @@ export default function NoticeDetailPage() {
   const tag = CATEGORY_TAG[notice.category];
 
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ padding: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <Button type="link" onClick={() => navigate('/notices')} style={{ paddingLeft: 0 }}>
           ← 목록으로
@@ -82,8 +80,6 @@ export default function NoticeDetailPage() {
       <div style={{ marginBottom: 16 }}>
         {tag ? <Tag color={tag.color}>{tag.label}</Tag> : <Tag>{notice.categoryName}</Tag>}
       </div>
-
-      <Title level={3}>{notice.title}</Title>
 
       <Descriptions column={1} style={{ marginBottom: 24 }}>
         <Descriptions.Item label="등록일">{notice.createdAt?.substring(0, 10)}</Descriptions.Item>

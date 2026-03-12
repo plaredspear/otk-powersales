@@ -1,13 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Input, Select, Table, Tag, Typography } from 'antd';
+import { Button, Input, Select, Table, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined } from '@ant-design/icons';
 import { useEducationPosts } from '@/hooks/education/useEducationPosts';
 import { useEducationCategories } from '@/hooks/education/useEducationCategories';
 import type { EducationSummary } from '@/api/education';
-
-const { Title } = Typography;
 
 const CATEGORY_TAG: Record<string, { color: string; label: string }> = {
   c00001: { color: 'orange', label: '시식매뉴얼' },
@@ -65,9 +63,8 @@ export default function EducationListPage() {
   ];
 
   return (
-    <div style={{ padding: 24 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Title level={4} style={{ margin: 0 }}>교육</Title>
+    <div style={{ padding: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/education/new')}>
           교육 등록
         </Button>

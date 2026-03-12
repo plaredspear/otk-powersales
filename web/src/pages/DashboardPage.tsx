@@ -48,7 +48,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ padding: 16 }}>
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
         <DashboardFilter
           yearMonth={yearMonth}

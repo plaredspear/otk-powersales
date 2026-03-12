@@ -126,7 +126,7 @@ export default function EducationFormPage() {
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
   return (
-    <div style={{ padding: 24, maxWidth: 1200 }}>
+    <div style={{ padding: 16, maxWidth: 1200 }}>
       <Form form={form} layout="vertical" onFinish={handleSubmit}>
         <Row gutter={24}>
           <Col xs={24} sm={12}>

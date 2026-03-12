@@ -1,10 +1,8 @@
 import { useState } from 'react';
-import { Alert, Button, Input, Select, Table, Typography } from 'antd';
+import { Alert, Button, Input, Select, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useOrganizations } from '@/hooks/organization/useOrganizations';
 import type { Organization } from '@/api/organization';
-
-const { Title } = Typography;
 
 const LEVEL_OPTIONS = [
   { value: '', label: '레벨 전체' },
@@ -47,8 +45,7 @@ export default function OrganizationPage() {
   }
 
   return (
-    <div style={{ padding: 24 }}>
-      <Title level={4} style={{ marginBottom: 16 }}>조직마스터 조회</Title>
+    <div style={{ padding: 16 }}>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         <Select
