@@ -334,6 +334,59 @@ class AdminPromotionServiceTest {
         }
 
         @Test
+        @DisplayName("기타상품에 작은따옴표 포함 -> InvalidOtherProductException")
+        fun createPromotion_otherProductWithSingleQuote() {
+            val request = createRequest(otherProduct = "참깨라면 '소'")
+
+            assertThatThrownBy { adminPromotionService.createPromotion(userId, request) }
+                .isInstanceOf(InvalidOtherProductException::class.java)
+        }
+
+        @Test
+        @DisplayName("기타상품 null -> 정상 생성")
+        fun createPromotion_nullOtherProduct() {
+            val request = createRequest(otherProduct = null, promotionTypeId = 1L)
+            val account = createAccount()
+            val product = createProduct()
+            val user = createUser(costCenterCode = "1101")
+            val promotionType = createPromotionType()
+
+            whenever(promotionTypeRepository.findById(1L)).thenReturn(Optional.of(promotionType))
+            whenever(accountRepository.findById(100)).thenReturn(Optional.of(account))
+            whenever(productRepository.findById(200L)).thenReturn(Optional.of(product))
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(1L)
+            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
+            whenever(promotionProductRepository.save(any<PromotionProduct>())).thenAnswer { it.getArgument<PromotionProduct>(0) }
+
+            val result = adminPromotionService.createPromotion(userId, request)
+
+            assertThat(result.promotionNumber).isEqualTo("PM00000001")
+        }
+
+        @Test
+        @DisplayName("기타상품 쌍따옴표 포함 -> 정상 생성")
+        fun createPromotion_otherProductWithDoubleQuote() {
+            val request = createRequest(otherProduct = "참깨라면 \"대용량\"", promotionTypeId = 1L)
+            val account = createAccount()
+            val product = createProduct()
+            val user = createUser(costCenterCode = "1101")
+            val promotionType = createPromotionType()
+
+            whenever(promotionTypeRepository.findById(1L)).thenReturn(Optional.of(promotionType))
+            whenever(accountRepository.findById(100)).thenReturn(Optional.of(account))
+            whenever(productRepository.findById(200L)).thenReturn(Optional.of(product))
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(1L)
+            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
+            whenever(promotionProductRepository.save(any<PromotionProduct>())).thenAnswer { it.getArgument<PromotionProduct>(0) }
+
+            val result = adminPromotionService.createPromotion(userId, request)
+
+            assertThat(result.promotionNumber).isEqualTo("PM00000001")
+        }
+
+        @Test
         @DisplayName("매대위치 null -> 정상 생성 (nullable)")
         fun createPromotion_nullStandLocation() {
             val request = createRequest(standLocation = null)
@@ -422,6 +475,21 @@ class AdminPromotionServiceTest {
             adminPromotionService.updatePromotion(1L, request)
 
             verify(promotionProductRepository).save(argThat<PromotionProduct> { productId == 300L })
+        }
+
+        @Test
+        @DisplayName("기타상품에 작은따옴표 포함 -> InvalidOtherProductException")
+        fun updatePromotion_otherProductWithSingleQuote() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            whenever(dataScopeHolder.require()).thenReturn(scope)
+
+            val promotion = createPromotion()
+            whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
+
+            val request = createRequest(otherProduct = "라면's")
+
+            assertThatThrownBy { adminPromotionService.updatePromotion(1L, request) }
+                .isInstanceOf(InvalidOtherProductException::class.java)
         }
 
         @Test
@@ -675,6 +743,7 @@ class AdminPromotionServiceTest {
         endDate: LocalDate = LocalDate.of(2026, 3, 20),
         primaryProductId: Long? = 200L,
         standLocation: String? = "냉동행사장",
+        otherProduct: String? = "너구리, 진짬뽕",
         remark: String? = null
     ) = PromotionCreateRequest(
         promotionTypeId = promotionTypeId,
@@ -682,7 +751,7 @@ class AdminPromotionServiceTest {
         startDate = startDate,
         endDate = endDate,
         primaryProductId = primaryProductId,
-        otherProduct = "너구리, 진짬뽕",
+        otherProduct = otherProduct,
         message = "3월 라면 프로모션 진행",
         standLocation = standLocation,
         category = "라면",
