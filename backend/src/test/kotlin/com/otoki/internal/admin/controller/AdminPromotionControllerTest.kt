@@ -224,9 +224,11 @@ class AdminPromotionControllerTest {
 
             val json = """
                 {
+                    "promotion_type_id": 1,
                     "account_id": 100,
                     "start_date": "2026-03-10",
                     "end_date": "2026-03-20",
+                    "stand_location": "매장 입구",
                     "remark": "신규 매대 협의 필요"
                 }
             """.trimIndent()
@@ -240,6 +242,92 @@ class AdminPromotionControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.promotion_name").doesNotExist())
                 .andExpect(jsonPath("$.data.remark").value("신규 매대 협의 필요"))
+        }
+
+        @Test
+        @DisplayName("실패 - 행사유형 누락")
+        fun createPromotion_missingPromotionTypeId() {
+            val json = """
+                {
+                    "account_id": 100,
+                    "start_date": "2026-03-10",
+                    "end_date": "2026-03-20",
+                    "stand_location": "매장 입구"
+                }
+            """.trimIndent()
+
+            mockMvc.perform(
+                post("/api/v1/admin/promotions")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(json)
+            )
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"))
+        }
+
+        @Test
+        @DisplayName("실패 - 매대위치 누락")
+        fun createPromotion_missingStandLocation() {
+            val json = """
+                {
+                    "promotion_type_id": 1,
+                    "account_id": 100,
+                    "start_date": "2026-03-10",
+                    "end_date": "2026-03-20"
+                }
+            """.trimIndent()
+
+            mockMvc.perform(
+                post("/api/v1/admin/promotions")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(json)
+            )
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"))
+        }
+
+        @Test
+        @DisplayName("실패 - 매대위치 빈 문자열")
+        fun createPromotion_emptyStandLocation() {
+            val json = """
+                {
+                    "promotion_type_id": 1,
+                    "account_id": 100,
+                    "start_date": "2026-03-10",
+                    "end_date": "2026-03-20",
+                    "stand_location": ""
+                }
+            """.trimIndent()
+
+            mockMvc.perform(
+                post("/api/v1/admin/promotions")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(json)
+            )
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"))
+        }
+
+        @Test
+        @DisplayName("실패 - 매대위치 공백만")
+        fun createPromotion_blankStandLocation() {
+            val json = """
+                {
+                    "promotion_type_id": 1,
+                    "account_id": 100,
+                    "start_date": "2026-03-10",
+                    "end_date": "2026-03-20",
+                    "stand_location": "   "
+                }
+            """.trimIndent()
+
+            mockMvc.perform(
+                post("/api/v1/admin/promotions")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(json)
+            )
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"))
         }
 
         @Test
@@ -306,6 +394,48 @@ class AdminPromotionControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.promotion_name").value("수정된 행사명"))
+        }
+
+        @Test
+        @DisplayName("실패 - 행사유형 누락 (수정)")
+        fun updatePromotion_missingPromotionTypeId() {
+            val json = """
+                {
+                    "account_id": 100,
+                    "start_date": "2026-03-10",
+                    "end_date": "2026-03-20",
+                    "stand_location": "매장 입구"
+                }
+            """.trimIndent()
+
+            mockMvc.perform(
+                put("/api/v1/admin/promotions/1")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(json)
+            )
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"))
+        }
+
+        @Test
+        @DisplayName("실패 - 매대위치 누락 (수정)")
+        fun updatePromotion_missingStandLocation() {
+            val json = """
+                {
+                    "promotion_type_id": 1,
+                    "account_id": 100,
+                    "start_date": "2026-03-10",
+                    "end_date": "2026-03-20"
+                }
+            """.trimIndent()
+
+            mockMvc.perform(
+                put("/api/v1/admin/promotions/1")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(json)
+            )
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"))
         }
 
         @Test
