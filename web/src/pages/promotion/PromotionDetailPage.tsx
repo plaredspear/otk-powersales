@@ -311,9 +311,6 @@ export default function PromotionDetailPage() {
         </Descriptions.Item>
         <Descriptions.Item label="제품유형">{promotion.productType ?? '-'}</Descriptions.Item>
         <Descriptions.Item label="지점명">{promotion.branchName ?? '-'}</Descriptions.Item>
-        <Descriptions.Item label="전문행사조">
-          {promotion.professionalTeam ?? '-'}
-        </Descriptions.Item>
         <Descriptions.Item label="매대위치">{promotion.standLocation ?? '-'}</Descriptions.Item>
         <Descriptions.Item label="목표금액">
           {promotion.targetAmount != null
@@ -327,9 +324,6 @@ export default function PromotionDetailPage() {
         </Descriptions.Item>
         <Descriptions.Item label="마감 여부">
           {promotion.isClosed ? <Tag color="red">마감</Tag> : '미마감'}
-        </Descriptions.Item>
-        <Descriptions.Item label="외부 연동 ID">
-          {promotion.externalId ?? '-'}
         </Descriptions.Item>
         <Descriptions.Item label="메시지">{promotion.message ?? '-'}</Descriptions.Item>
         <Descriptions.Item label="CC코드">{promotion.costCenterCode ?? '-'}</Descriptions.Item>

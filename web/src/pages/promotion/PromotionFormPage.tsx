@@ -49,8 +49,6 @@ interface FormValues {
   standLocation?: string;
   remark?: string;
   branchName?: string;
-  professionalTeam?: string;
-  externalId?: string;
 }
 
 export default function PromotionFormPage() {
@@ -98,8 +96,6 @@ export default function PromotionFormPage() {
         standLocation: promotion.standLocation ?? undefined,
         remark: promotion.remark ?? undefined,
         branchName: promotion.branchName ?? undefined,
-        professionalTeam: promotion.professionalTeam ?? undefined,
-        externalId: promotion.externalId ?? undefined,
       });
 
       if (promotion.accountName) {
@@ -166,8 +162,6 @@ export default function PromotionFormPage() {
       stand_location: values.standLocation || null,
       remark: values.remark || null,
       branch_name: values.branchName || null,
-      professional_team: values.professionalTeam || null,
-      external_id: values.externalId || null,
     };
 
     try {
@@ -300,27 +294,6 @@ export default function PromotionFormPage() {
                 rules={[{ max: 100, message: '100자 이하로 입력해주세요' }]}
               >
                 <Input maxLength={100} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item
-                name="professionalTeam"
-                label="전문행사조"
-                rules={[{ max: 100, message: '100자 이하로 입력해주세요' }]}
-              >
-                <Input maxLength={100} />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={24}>
-            <Col xs={24} sm={12}>
-              <Form.Item
-                name="externalId"
-                label="외부 연동 ID"
-                rules={[{ max: 50, message: '50자 이하로 입력해주세요' }]}
-              >
-                <Input maxLength={50} />
               </Form.Item>
             </Col>
           </Row>
