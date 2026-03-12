@@ -1,4 +1,5 @@
 import client from './client';
+import { AxiosError } from 'axios';
 
 // --- Raw API response interfaces (snake_case from backend) ---
 
@@ -11,12 +12,12 @@ interface ApiResponse<T> {
 interface PromotionEmployeeRaw {
   id: number;
   promotion_id: number;
-  employee_sfid: string;
+  employee_sfid: string | null;
   employee_name: string | null;
-  schedule_date: string;
-  work_status: string;
-  work_type1: string;
-  work_type3: string;
+  schedule_date: string | null;
+  work_status: string | null;
+  work_type1: string | null;
+  work_type3: string | null;
   work_type4: string | null;
   professional_promotion_team: string | null;
   schedule_id: number | null;
@@ -30,12 +31,12 @@ interface PromotionEmployeeRaw {
 export interface PromotionEmployee {
   id: number;
   promotionId: number;
-  employeeSfid: string;
+  employeeSfid: string | null;
   employeeName: string | null;
-  scheduleDate: string;
-  workStatus: string;
-  workType1: string;
-  workType3: string;
+  scheduleDate: string | null;
+  workStatus: string | null;
+  workType1: string | null;
+  workType3: string | null;
   workType4: string | null;
   professionalPromotionTeam: string | null;
   scheduleId: number | null;
@@ -45,6 +46,21 @@ export interface PromotionEmployee {
 }
 
 export interface PromotionEmployeeFormData {
+  employee_sfid?: string | null;
+  schedule_date?: string | null;
+  work_status?: string | null;
+  work_type1?: string | null;
+  work_type3?: string | null;
+  work_type4?: string | null;
+  professional_promotion_team?: string | null;
+  base_price?: number | null;
+  daily_target_count?: number | null;
+}
+
+// --- Batch update interfaces ---
+
+export interface BatchUpdatePromotionEmployeeItem {
+  id: number;
   employee_sfid: string;
   schedule_date: string;
   work_status: string;
@@ -54,6 +70,46 @@ export interface PromotionEmployeeFormData {
   professional_promotion_team?: string | null;
   base_price?: number | null;
   daily_target_count?: number | null;
+  target_amount?: number | null;
+  actual_amount?: number | null;
+}
+
+export interface BatchUpdatePromotionEmployeeRequest {
+  items: BatchUpdatePromotionEmployeeItem[];
+}
+
+interface BatchUpdatePromotionEmployeeResponseRaw {
+  updated_count: number;
+  items: PromotionEmployeeRaw[];
+}
+
+export interface BatchUpdatePromotionEmployeeResponse {
+  updatedCount: number;
+  items: PromotionEmployee[];
+}
+
+export interface BatchItemError {
+  item_index: number;
+  employee_sfid: string;
+  error_code: string;
+  message: string;
+}
+
+export interface BatchValidationErrorResponse {
+  error_code: string;
+  message: string;
+  detail: {
+    errors: BatchItemError[];
+  };
+}
+
+export class BatchValidationError extends Error {
+  errors: BatchItemError[];
+
+  constructor(response: BatchValidationErrorResponse) {
+    super(response.message);
+    this.errors = response.detail.errors;
+  }
 }
 
 // --- Mapper ---
@@ -91,11 +147,11 @@ export async function fetchPromotionEmployees(promotionId: number): Promise<Prom
 
 export async function createPromotionEmployee(
   promotionId: number,
-  data: PromotionEmployeeFormData,
+  data?: PromotionEmployeeFormData,
 ): Promise<PromotionEmployee> {
   const res = await client.post<ApiResponse<PromotionEmployeeRaw>>(
     `/api/v1/admin/promotions/${promotionId}/employees`,
-    data,
+    data ?? {},
   );
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.message || '행사조원 등록에 실패했습니다');
@@ -121,5 +177,32 @@ export async function deletePromotionEmployee(id: number): Promise<void> {
   const res = await client.delete<ApiResponse<unknown>>(`/api/v1/admin/promotion-employees/${id}`);
   if (!res.data.success) {
     throw new Error(res.data.message || '행사조원 삭제에 실패했습니다');
+  }
+}
+
+export async function batchUpdatePromotionEmployees(
+  promotionId: number,
+  data: BatchUpdatePromotionEmployeeRequest,
+): Promise<BatchUpdatePromotionEmployeeResponse> {
+  try {
+    const res = await client.put<ApiResponse<BatchUpdatePromotionEmployeeResponseRaw>>(
+      `/api/v1/admin/promotions/${promotionId}/employees/batch`,
+      data,
+    );
+    if (!res.data.success || !res.data.data) {
+      throw new Error(res.data.message || '행사조원 일괄 수정에 실패했습니다');
+    }
+    return {
+      updatedCount: res.data.data.updated_count,
+      items: res.data.data.items.map(mapPromotionEmployee),
+    };
+  } catch (err) {
+    if (err instanceof AxiosError && err.response?.status === 400) {
+      const errData = err.response.data as BatchValidationErrorResponse;
+      if (errData.error_code === 'BATCH_VALIDATION_FAILED') {
+        throw new BatchValidationError(errData);
+      }
+    }
+    throw err;
   }
 }
