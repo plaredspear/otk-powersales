@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, Form, Input, Select, Space, Spin, Typography, Upload, message } from 'antd';
+import { Button, Col, Form, Input, Row, Select, Space, Spin, Upload, message } from 'antd';
 import type { UploadFile } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import ReactQuill from 'react-quill-new';
@@ -9,8 +9,6 @@ import { useEducationDetail } from '@/hooks/education/useEducationDetail';
 import { useEducationCategories } from '@/hooks/education/useEducationCategories';
 import { useCreateEducation, useUpdateEducation } from '@/hooks/education/useEducationMutation';
 import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
-
-const { Title } = Typography;
 
 const MAX_FILES = 20;
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
@@ -128,54 +126,65 @@ export default function EducationFormPage() {
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
   return (
-    <div style={{ padding: 24, maxWidth: 800 }}>
-      <Title level={4}>{isEdit ? '교육 수정' : '교육 등록'}</Title>
-
+    <div style={{ padding: 24, maxWidth: 1200 }}>
       <Form form={form} layout="vertical" onFinish={handleSubmit}>
-        <Form.Item
-          name="category"
-          label="카테고리"
-          rules={[{ required: true, message: '카테고리를 선택해주세요' }]}
-        >
-          <Select
-            placeholder="카테고리 선택"
-            options={categories?.map((c) => ({ value: c.eduCode, label: c.eduCodeNm }))}
-          />
-        </Form.Item>
+        <Row gutter={24}>
+          <Col xs={24} sm={12}>
+            <Form.Item
+              name="category"
+              label="카테고리"
+              rules={[{ required: true, message: '카테고리를 선택해주세요' }]}
+            >
+              <Select
+                placeholder="카테고리 선택"
+                options={categories?.map((c) => ({ value: c.eduCode, label: c.eduCodeNm }))}
+              />
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={12}>
+            <Form.Item
+              name="title"
+              label="제목"
+              rules={[{ required: true, message: '제목을 입력해주세요' }]}
+            >
+              <Input maxLength={150} />
+            </Form.Item>
+          </Col>
+        </Row>
 
-        <Form.Item
-          name="title"
-          label="제목"
-          rules={[{ required: true, message: '제목을 입력해주세요' }]}
-        >
-          <Input maxLength={150} />
-        </Form.Item>
+        <Row gutter={24}>
+          <Col span={24}>
+            <Form.Item
+              name="content"
+              label="내용"
+              rules={[{ required: true, message: '내용을 입력해주세요' }]}
+            >
+              <ReactQuill theme="snow" modules={QUILL_MODULES} style={{ minHeight: 200 }} />
+            </Form.Item>
+          </Col>
+        </Row>
 
-        <Form.Item
-          name="content"
-          label="내용"
-          rules={[{ required: true, message: '내용을 입력해주세요' }]}
-        >
-          <ReactQuill theme="snow" modules={QUILL_MODULES} style={{ minHeight: 200 }} />
-        </Form.Item>
-
-        <Form.Item label="첨부파일">
-          <Upload
-            multiple
-            maxCount={MAX_FILES}
-            fileList={fileList}
-            beforeUpload={handleBeforeUpload}
-            onChange={({ fileList: newList }) => setFileList(newList)}
-            onRemove={(file) => {
-              setFileList((prev) => prev.filter((f) => f.uid !== file.uid));
-            }}
-          >
-            <Button icon={<UploadOutlined />}>파일 선택</Button>
-          </Upload>
-          <div style={{ marginTop: 4, color: '#999', fontSize: 12 }}>
-            * 최대 20개, 개별 50MB 이하
-          </div>
-        </Form.Item>
+        <Row gutter={24}>
+          <Col span={24}>
+            <Form.Item label="첨부파일">
+              <Upload
+                multiple
+                maxCount={MAX_FILES}
+                fileList={fileList}
+                beforeUpload={handleBeforeUpload}
+                onChange={({ fileList: newList }) => setFileList(newList)}
+                onRemove={(file) => {
+                  setFileList((prev) => prev.filter((f) => f.uid !== file.uid));
+                }}
+              >
+                <Button icon={<UploadOutlined />}>파일 선택</Button>
+              </Upload>
+              <div style={{ marginTop: 4, color: '#999', fontSize: 12 }}>
+                * 최대 20개, 개별 50MB 이하
+              </div>
+            </Form.Item>
+          </Col>
+        </Row>
 
         <Form.Item style={{ marginTop: 24 }}>
           <Space>

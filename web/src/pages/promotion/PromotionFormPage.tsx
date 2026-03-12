@@ -3,14 +3,15 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   Button,
   Card,
+  Col,
   DatePicker,
   Form,
   Input,
+  Row,
   Select,
   Space,
   Spin,
   Tooltip,
-  Typography,
   message,
 } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
@@ -23,7 +24,6 @@ import { fetchProducts } from '@/api/product';
 import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
 import type { PromotionFormData } from '@/api/promotion';
 
-const { Title } = Typography;
 const { TextArea } = Input;
 
 interface AccountOption {
@@ -193,152 +193,187 @@ export default function PromotionFormPage() {
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
   return (
-    <div style={{ padding: 24, maxWidth: 800 }}>
-      <Title level={4}>{isEdit ? '행사마스터 수정' : '행사마스터 등록'}</Title>
-
+    <div style={{ padding: 24, maxWidth: 1200 }}>
       <Form form={form} layout="vertical" onFinish={handleSubmit}>
         <Card title="정보" style={{ marginBottom: 16 }}>
-          <Form.Item
-            name="promotionName"
-            label={
-              <span>
-                행사명{' '}
-                <Tooltip title="행사명은 대표상품명으로 자동 지정됩니다">
-                  <InfoCircleOutlined style={{ color: '#999' }} />
-                </Tooltip>
-              </span>
-            }
-          >
-            <Input disabled placeholder="대표상품을 선택하면 자동 설정됩니다" />
-          </Form.Item>
+          <Row gutter={24}>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="promotionName"
+                label={
+                  <span>
+                    행사명{' '}
+                    <Tooltip title="행사명은 대표상품명으로 자동 지정됩니다">
+                      <InfoCircleOutlined style={{ color: '#999' }} />
+                    </Tooltip>
+                  </span>
+                }
+              >
+                <Input disabled placeholder="대표상품을 선택하면 자동 설정됩니다" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="accountId"
+                label="거래처"
+                rules={[{ required: true, message: '거래처를 선택해주세요' }]}
+              >
+                <Select
+                  showSearch
+                  placeholder="거래처 검색 (2자 이상 입력)"
+                  filterOption={false}
+                  onSearch={handleAccountSearch}
+                  loading={accountSearching}
+                  options={accountOptions}
+                  notFoundContent={accountSearching ? <Spin size="small" /> : null}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
 
-          <Form.Item
-            name="accountId"
-            label="거래처"
-            rules={[{ required: true, message: '거래처를 선택해주세요' }]}
-          >
-            <Select
-              showSearch
-              placeholder="거래처 검색 (2자 이상 입력)"
-              filterOption={false}
-              onSearch={handleAccountSearch}
-              loading={accountSearching}
-              options={accountOptions}
-              notFoundContent={accountSearching ? <Spin size="small" /> : null}
-            />
-          </Form.Item>
+          <Row gutter={24}>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="startDate"
+                label="시작일"
+                rules={[{ required: true, message: '시작일을 선택해주세요' }]}
+              >
+                <DatePicker style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="endDate"
+                label="종료일"
+                dependencies={['startDate']}
+                rules={[
+                  { required: true, message: '종료일을 선택해주세요' },
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      const start = getFieldValue('startDate');
+                      if (!value || !start || !value.isBefore(start)) {
+                        return Promise.resolve();
+                      }
+                      return Promise.reject(new Error('종료일은 시작일 이후여야 합니다'));
+                    },
+                  }),
+                ]}
+              >
+                <DatePicker style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+          </Row>
 
-          <Form.Item
-            name="startDate"
-            label="시작일"
-            rules={[{ required: true, message: '시작일을 선택해주세요' }]}
-          >
-            <DatePicker style={{ width: '100%' }} />
-          </Form.Item>
+          <Row gutter={24}>
+            <Col span={24}>
+              <Form.Item
+                name="message"
+                label="메시지"
+                rules={[{ max: 255, message: '255자 이하로 입력해주세요' }]}
+              >
+                <TextArea rows={3} maxLength={255} />
+              </Form.Item>
+            </Col>
+          </Row>
 
-          <Form.Item
-            name="endDate"
-            label="종료일"
-            dependencies={['startDate']}
-            rules={[
-              { required: true, message: '종료일을 선택해주세요' },
-              ({ getFieldValue }) => ({
-                validator(_, value) {
-                  const start = getFieldValue('startDate');
-                  if (!value || !start || !value.isBefore(start)) {
-                    return Promise.resolve();
-                  }
-                  return Promise.reject(new Error('종료일은 시작일 이후여야 합니다'));
-                },
-              }),
-            ]}
-          >
-            <DatePicker style={{ width: '100%' }} />
-          </Form.Item>
+          <Row gutter={24}>
+            <Col xs={24} sm={12}>
+              <Form.Item name="promotionTypeId" label="행사유형">
+                <Select allowClear placeholder="행사유형 선택" options={promotionTypeOptions} />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="standLocation"
+                label="매대위치"
+                rules={[{ max: 200, message: '200자 이하로 입력해주세요' }]}
+              >
+                <Input maxLength={200} />
+              </Form.Item>
+            </Col>
+          </Row>
 
-          <Form.Item
-            name="message"
-            label="메시지"
-            rules={[{ max: 255, message: '255자 이하로 입력해주세요' }]}
-          >
-            <TextArea rows={3} maxLength={255} />
-          </Form.Item>
+          <Row gutter={24}>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="branchName"
+                label="지점명"
+                rules={[{ max: 100, message: '100자 이하로 입력해주세요' }]}
+              >
+                <Input maxLength={100} />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="professionalTeam"
+                label="전문행사조"
+                rules={[{ max: 100, message: '100자 이하로 입력해주세요' }]}
+              >
+                <Input maxLength={100} />
+              </Form.Item>
+            </Col>
+          </Row>
 
-          <Form.Item name="promotionTypeId" label="행사유형">
-            <Select allowClear placeholder="행사유형 선택" options={promotionTypeOptions} />
-          </Form.Item>
-
-          <Form.Item
-            name="standLocation"
-            label="매대위치"
-            rules={[{ max: 200, message: '200자 이하로 입력해주세요' }]}
-          >
-            <Input maxLength={200} />
-          </Form.Item>
-
-          <Form.Item
-            name="branchName"
-            label="지점명"
-            rules={[{ max: 100, message: '100자 이하로 입력해주세요' }]}
-          >
-            <Input maxLength={100} />
-          </Form.Item>
-
-          <Form.Item
-            name="professionalTeam"
-            label="전문행사조"
-            rules={[{ max: 100, message: '100자 이하로 입력해주세요' }]}
-          >
-            <Input maxLength={100} />
-          </Form.Item>
-
-          <Form.Item
-            name="externalId"
-            label="외부 연동 ID"
-            rules={[{ max: 50, message: '50자 이하로 입력해주세요' }]}
-          >
-            <Input maxLength={50} />
-          </Form.Item>
+          <Row gutter={24}>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="externalId"
+                label="외부 연동 ID"
+                rules={[{ max: 50, message: '50자 이하로 입력해주세요' }]}
+              >
+                <Input maxLength={50} />
+              </Form.Item>
+            </Col>
+          </Row>
         </Card>
 
         <Card title="행사품목" style={{ marginBottom: 16 }}>
-          <Form.Item name="primaryProductId" label="대표상품">
-            <Select
-              showSearch
-              allowClear
-              placeholder="상품 검색 (2자 이상 입력)"
-              filterOption={false}
-              onSearch={handleProductSearch}
-              loading={productSearching}
-              options={productOptions}
-              notFoundContent={productSearching ? <Spin size="small" /> : null}
-              onChange={(value: number | undefined) => {
-                if (value) {
-                  const selected = productOptions.find((p) => p.value === value);
-                  const nameOnly = selected?.label?.replace(/\s*\(.*\)$/, '') ?? '';
-                  form.setFieldValue('promotionName', nameOnly);
-                } else {
-                  form.setFieldValue('promotionName', undefined);
-                }
-              }}
-            />
-          </Form.Item>
+          <Row gutter={24}>
+            <Col xs={24} sm={12}>
+              <Form.Item name="primaryProductId" label="대표상품">
+                <Select
+                  showSearch
+                  allowClear
+                  placeholder="상품 검색 (2자 이상 입력)"
+                  filterOption={false}
+                  onSearch={handleProductSearch}
+                  loading={productSearching}
+                  options={productOptions}
+                  notFoundContent={productSearching ? <Spin size="small" /> : null}
+                  onChange={(value: number | undefined) => {
+                    if (value) {
+                      const selected = productOptions.find((p) => p.value === value);
+                      const nameOnly = selected?.label?.replace(/\s*\(.*\)$/, '') ?? '';
+                      form.setFieldValue('promotionName', nameOnly);
+                    } else {
+                      form.setFieldValue('promotionName', undefined);
+                    }
+                  }}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="otherProduct"
+                label="기타상품"
+                rules={[{ max: 200, message: '200자 이하로 입력해주세요' }]}
+              >
+                <Input maxLength={200} />
+              </Form.Item>
+            </Col>
+          </Row>
 
-          <Form.Item
-            name="otherProduct"
-            label="기타상품"
-            rules={[{ max: 200, message: '200자 이하로 입력해주세요' }]}
-          >
-            <Input maxLength={200} />
-          </Form.Item>
-
-          <Form.Item
-            name="remark"
-            label="비고"
-            rules={[{ max: 200, message: '200자 이하로 입력해주세요' }]}
-          >
-            <Input maxLength={200} />
-          </Form.Item>
+          <Row gutter={24}>
+            <Col span={24}>
+              <Form.Item
+                name="remark"
+                label="비고"
+                rules={[{ max: 200, message: '200자 이하로 입력해주세요' }]}
+              >
+                <Input maxLength={200} />
+              </Form.Item>
+            </Col>
+          </Row>
         </Card>
 
         <Form.Item style={{ marginTop: 24 }}>

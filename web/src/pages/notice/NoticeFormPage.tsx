@@ -1,6 +1,6 @@
 import { useContext, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, Form, Input, Select, Space, Spin, Typography, message } from 'antd';
+import { Button, Col, Form, Input, Row, Select, Space, Spin, message } from 'antd';
 import type { FormInstance } from 'antd';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
@@ -8,8 +8,6 @@ import { useNoticeDetail } from '@/hooks/notice/useNoticeDetail';
 import { useNoticeFormMeta } from '@/hooks/notice/useNoticeFormMeta';
 import { useCreateNotice, useUpdateNotice } from '@/hooks/notice/useNoticeMutation';
 import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
-
-const { Title } = Typography;
 
 const QUILL_MODULES = {
   toolbar: [
@@ -126,43 +124,54 @@ export default function NoticeFormPage() {
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
   return (
-    <div style={{ padding: 24, maxWidth: 800 }}>
-      <Title level={4}>{isEdit ? '공지사항 수정' : '공지사항 작성'}</Title>
-
+    <div style={{ padding: 24, maxWidth: 1200 }}>
       <Form
         form={form}
         layout="vertical"
         onFinish={handleSubmit}
         initialValues={{ category: 'COMPANY' }}
       >
-        <Form.Item
-          name="category"
-          label="카테고리"
-          rules={[{ required: true, message: '카테고리를 선택해주세요' }]}
-        >
-          <Select
-            options={formMeta?.categories.map((c) => ({ value: c.code, label: c.name }))}
-            onChange={() => form.setFieldValue('branch', undefined)}
-          />
-        </Form.Item>
+        <Row gutter={24}>
+          <Col xs={24} sm={12}>
+            <Form.Item
+              name="category"
+              label="카테고리"
+              rules={[{ required: true, message: '카테고리를 선택해주세요' }]}
+            >
+              <Select
+                options={formMeta?.categories.map((c) => ({ value: c.code, label: c.name }))}
+                onChange={() => form.setFieldValue('branch', undefined)}
+              />
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={12}>
+            <BranchField form={form} branches={formMeta?.branches ?? []} />
+          </Col>
+        </Row>
 
-        <BranchField form={form} branches={formMeta?.branches ?? []} />
+        <Row gutter={24}>
+          <Col span={24}>
+            <Form.Item
+              name="title"
+              label="제목"
+              rules={[{ required: true, message: '제목을 입력해주세요' }]}
+            >
+              <Input maxLength={200} />
+            </Form.Item>
+          </Col>
+        </Row>
 
-        <Form.Item
-          name="title"
-          label="제목"
-          rules={[{ required: true, message: '제목을 입력해주세요' }]}
-        >
-          <Input maxLength={200} />
-        </Form.Item>
-
-        <Form.Item
-          name="content"
-          label="내용"
-          rules={[{ required: true, message: '내용을 입력해주세요' }]}
-        >
-          <ReactQuill theme="snow" modules={QUILL_MODULES} style={{ minHeight: 200 }} />
-        </Form.Item>
+        <Row gutter={24}>
+          <Col span={24}>
+            <Form.Item
+              name="content"
+              label="내용"
+              rules={[{ required: true, message: '내용을 입력해주세요' }]}
+            >
+              <ReactQuill theme="snow" modules={QUILL_MODULES} style={{ minHeight: 200 }} />
+            </Form.Item>
+          </Col>
+        </Row>
 
         <Form.Item style={{ marginTop: 24 }}>
           <Space>
