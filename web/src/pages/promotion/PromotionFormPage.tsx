@@ -43,7 +43,7 @@ interface FormValues {
   accountId: number;
   startDate: dayjs.Dayjs;
   endDate: dayjs.Dayjs;
-  primaryProductId?: number;
+  primaryProductId: number;
   otherProduct?: string;
   message?: string;
   standLocation: string;
@@ -156,7 +156,7 @@ export default function PromotionFormPage() {
       account_id: values.accountId,
       start_date: values.startDate.format('YYYY-MM-DD'),
       end_date: values.endDate.format('YYYY-MM-DD'),
-      primary_product_id: values.primaryProductId || null,
+      primary_product_id: values.primaryProductId,
       other_product: values.otherProduct || null,
       message: values.message || null,
       stand_location: values.standLocation,
@@ -310,7 +310,11 @@ export default function PromotionFormPage() {
         <Card title="행사품목" style={{ marginBottom: 16 }}>
           <Row gutter={24}>
             <Col xs={24} sm={12}>
-              <Form.Item name="primaryProductId" label="대표상품">
+              <Form.Item
+                name="primaryProductId"
+                label="대표상품"
+                rules={[{ required: true, message: '대표상품을 선택해주세요' }]}
+              >
                 <Select
                   showSearch
                   allowClear
