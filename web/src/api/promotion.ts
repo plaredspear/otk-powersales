@@ -30,7 +30,6 @@ interface PromotionListItemRaw {
   category: string | null;
   product_type: string | null;
   branch_name: string | null;
-  professional_team: string | null;
   is_closed: boolean;
   cost_center_code: string | null;
   remark: string | null;
@@ -59,9 +58,7 @@ interface PromotionDetailRaw {
   category: string | null;
   product_type: string | null;
   branch_name: string | null;
-  professional_team: string | null;
   is_closed: boolean;
-  external_id: string | null;
   remark: string | null;
   is_deleted: boolean;
   created_at: string;
@@ -94,7 +91,6 @@ export interface PromotionListItem {
   category: string | null;
   productType: string | null;
   branchName: string | null;
-  professionalTeam: string | null;
   isClosed: boolean;
   costCenterCode: string | null;
   remark: string | null;
@@ -131,9 +127,7 @@ export interface PromotionDetail {
   category: string | null;
   productType: string | null;
   branchName: string | null;
-  professionalTeam: string | null;
   isClosed: boolean;
-  externalId: string | null;
   remark: string | null;
   isDeleted: boolean;
   createdAt: string;
@@ -151,8 +145,6 @@ export interface PromotionFormData {
   stand_location?: string | null;
   remark?: string | null;
   branch_name?: string | null;
-  professional_team?: string | null;
-  external_id?: string | null;
 }
 
 // --- Form-Meta interfaces ---
@@ -185,7 +177,6 @@ function mapPromotionList(raw: PromotionListRaw): PromotionListData {
       category: item.category,
       productType: item.product_type,
       branchName: item.branch_name,
-      professionalTeam: item.professional_team,
       isClosed: item.is_closed,
       remark: item.remark,
       costCenterCode: item.cost_center_code,
@@ -221,9 +212,7 @@ function mapPromotionDetail(raw: PromotionDetailRaw): PromotionDetail {
     category: raw.category,
     productType: raw.product_type,
     branchName: raw.branch_name,
-    professionalTeam: raw.professional_team,
     isClosed: raw.is_closed,
-    externalId: raw.external_id,
     remark: raw.remark,
     isDeleted: raw.is_deleted,
     createdAt: raw.created_at,
