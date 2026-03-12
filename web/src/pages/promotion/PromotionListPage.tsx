@@ -1,14 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, DatePicker, Input, Select, Table, Tag, Typography } from 'antd';
+import { Button, DatePicker, Input, Select, Table, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined } from '@ant-design/icons';
 import { usePromotions } from '@/hooks/promotion/usePromotions';
 import { usePromotionTypes } from '@/hooks/promotion/usePromotionTypes';
 import type { PromotionListItem } from '@/api/promotion';
 import dayjs from 'dayjs';
-
-const { Title } = Typography;
 
 const PROMOTION_TYPE_TAG: Record<string, string> = {
   시식: 'blue',
@@ -158,18 +156,14 @@ export default function PromotionListPage() {
   ];
 
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ padding: 16 }}>
       <div
         style={{
           display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
+          justifyContent: 'flex-end',
           marginBottom: 16,
         }}
       >
-        <Title level={4} style={{ margin: 0 }}>
-          행사마스터 관리
-        </Title>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/promotions/new')}>
           행사마스터 등록
         </Button>

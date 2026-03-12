@@ -1,10 +1,8 @@
 import { useMemo, useState } from 'react';
-import { Alert, Button, Input, Select, Table, Tag, Typography } from 'antd';
+import { Alert, Button, Input, Select, Table, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useProducts, useProductCategories } from '@/hooks/product/useProducts';
 import type { Product } from '@/api/product';
-
-const { Title } = Typography;
 
 const STATUS_TAG: Record<string, string> = {
   판매중: 'green',
@@ -111,8 +109,7 @@ export default function ProductPage() {
   }
 
   return (
-    <div style={{ padding: 24 }}>
-      <Title level={4} style={{ marginBottom: 16 }}>제품 관리</Title>
+    <div style={{ padding: 16 }}>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         <Select

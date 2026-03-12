@@ -1,10 +1,8 @@
 import { useState } from 'react';
-import { Alert, Button, Input, Select, Table, Tag, Typography } from 'antd';
+import { Alert, Button, Input, Select, Table, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useAccounts } from '@/hooks/account/useAccounts';
 import type { Account } from '@/api/account';
-
-const { Title } = Typography;
 
 const ABC_TYPE_TAG: Record<string, string> = {
   대형마트: 'blue',
@@ -87,8 +85,7 @@ export default function AccountPage() {
   }
 
   return (
-    <div style={{ padding: 24 }}>
-      <Title level={4} style={{ marginBottom: 16 }}>거래처 관리</Title>
+    <div style={{ padding: 16 }}>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         <Select

@@ -254,7 +254,7 @@ export default function PromotionDetailPage() {
     : undefined;
 
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ padding: 16 }}>
       <div
         style={{
           display: 'flex',
@@ -273,10 +273,6 @@ export default function PromotionDetailPage() {
           </Button>
         </Space>
       </div>
-
-      <Title level={4} style={{ marginBottom: 24 }}>
-        {promotion.promotionNumber}
-      </Title>
 
       <Descriptions column={1} bordered>
         <Descriptions.Item label="행사번호">{promotion.promotionNumber}</Descriptions.Item>

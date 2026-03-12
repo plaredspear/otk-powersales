@@ -91,7 +91,7 @@ export default function EducationDetailPage() {
   const tag = CATEGORY_TAG[education.category];
 
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ padding: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <Button type="link" onClick={() => navigate('/education')} style={{ paddingLeft: 0 }}>
           ← 목록으로
@@ -105,8 +105,6 @@ export default function EducationDetailPage() {
       <div style={{ marginBottom: 16 }}>
         {tag ? <Tag color={tag.color}>{tag.label}</Tag> : <Tag>{education.categoryName}</Tag>}
       </div>
-
-      <Title level={3}>{education.title}</Title>
 
       <Descriptions column={2} style={{ marginBottom: 24 }}>
         <Descriptions.Item label="등록일">{education.createdAt?.substring(0, 10)}</Descriptions.Item>

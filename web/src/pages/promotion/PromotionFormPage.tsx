@@ -193,7 +193,7 @@ export default function PromotionFormPage() {
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
   return (
-    <div style={{ padding: 24, maxWidth: 1200 }}>
+    <div style={{ padding: 16, maxWidth: 1200 }}>
       <Form form={form} layout="vertical" onFinish={handleSubmit}>
         <Card title="정보" style={{ marginBottom: 16 }}>
           <Row gutter={24}>
