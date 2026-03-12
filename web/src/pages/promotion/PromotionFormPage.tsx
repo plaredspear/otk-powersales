@@ -18,7 +18,7 @@ import { InfoCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { usePromotion } from '@/hooks/promotion/usePromotion';
 import { useCreatePromotion, useUpdatePromotion } from '@/hooks/promotion/usePromotionMutation';
-import { usePromotionTypes } from '@/hooks/promotion/usePromotionTypes';
+import { usePromotionFormMeta } from '@/hooks/promotion/usePromotionFormMeta';
 import { fetchAccounts } from '@/api/account';
 import { fetchProducts } from '@/api/product';
 import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
@@ -62,7 +62,7 @@ export default function PromotionFormPage() {
   const [form] = Form.useForm<FormValues>();
   const { setDynamicTitle } = useContext(BreadcrumbContext);
   const { data: promotion, isLoading: detailLoading } = usePromotion(isEdit ? promotionId : 0);
-  const { data: promotionTypes } = usePromotionTypes();
+  const { data: formMeta, isLoading: formMetaLoading } = usePromotionFormMeta();
   const createMutation = useCreatePromotion();
   const updateMutation = useUpdatePromotion();
 
@@ -72,7 +72,10 @@ export default function PromotionFormPage() {
   const [productSearching, setProductSearching] = useState(false);
 
   const promotionTypeOptions =
-    promotionTypes?.filter((t) => t.isActive).map((t) => ({ value: t.id, label: t.name })) ?? [];
+    formMeta?.promotionTypes.map((t) => ({ value: t.id, label: t.name })) ?? [];
+
+  const standLocationOptions =
+    formMeta?.standLocations.map((s) => ({ value: s.name, label: s.name })) ?? [];
 
   useEffect(() => {
     if (isEdit) {
@@ -182,7 +185,7 @@ export default function PromotionFormPage() {
     }
   };
 
-  if (isEdit && detailLoading) {
+  if ((isEdit && detailLoading) || formMetaLoading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
         <Spin size="large" />
@@ -283,12 +286,8 @@ export default function PromotionFormPage() {
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
-              <Form.Item
-                name="standLocation"
-                label="매대위치"
-                rules={[{ max: 200, message: '200자 이하로 입력해주세요' }]}
-              >
-                <Input maxLength={200} />
+              <Form.Item name="standLocation" label="매대위치">
+                <Select allowClear placeholder="매대위치 선택" options={standLocationOptions} />
               </Form.Item>
             </Col>
           </Row>
