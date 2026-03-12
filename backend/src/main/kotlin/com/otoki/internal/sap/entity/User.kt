@@ -29,93 +29,93 @@ class User(
     @HCColumn("id")
     val id: Long = 0,
 
-    @Column(name = "sfid", length = 18)
     @HCColumn("sfid")
+    @Column(name = "sfid", length = 18)
     val sfid: String? = null,
 
-    @Column(name = "dkretail__empcode__c", unique = true, length = 100)
     @SFField("DKRetail__EmpCode__c")
     @HCColumn("dkretail__empcode__c")
+    @Column(name = "dkretail__empcode__c", unique = true, length = 100)
     val employeeId: String,
 
-    @Column(name = "name", length = 80)
     @SFField("Name")
     @HCColumn("name")
+    @Column(name = "name", length = 80)
     var name: String,
 
-    @Column(name = "dkretail__birthdate__c", length = 10)
     @SFField("DKRetail__Birthdate__c")
     @HCColumn("dkretail__birthdate__c")
+    @Column(name = "dkretail__birthdate__c", length = 10)
     var birthDate: String? = null,
 
-    @Column(name = "dkretail__status__c", length = 40)
     @SFField("DKRetail__Status__c")
     @HCColumn("dkretail__status__c")
+    @Column(name = "dkretail__status__c", length = 40)
     var status: String? = null,
 
-    @Column(name = "dkretail__apploginactive__c")
     @SFField("DKRetail__APPLoginActive__c")
     @HCColumn("dkretail__apploginactive__c")
+    @Column(name = "dkretail__apploginactive__c")
     var appLoginActive: Boolean? = null,
 
-    @Column(name = "dkretail__appauthority__c", length = 255)
     @SFField("DKRetail__AppAuthority__c")
     @HCColumn("dkretail__appauthority__c")
+    @Column(name = "dkretail__appauthority__c", length = 255)
     var appAuthority: String? = null,
 
-    @Column(name = "dkretail__orgname__c", length = 100)
     @SFField("DKRetail__OrgName__c")
     @HCColumn("dkretail__orgname__c")
+    @Column(name = "dkretail__orgname__c", length = 100)
     var orgName: String? = null,
 
-    @Column(name = "costcentercode__c", length = 10)
     @SFField("CostCenterCode__c")
     @HCColumn("costcentercode__c")
+    @Column(name = "costcentercode__c", length = 10)
     var costCenterCode: String? = null,
 
-    @Column(name = "dkretail__workphone__c", length = 255)
     @SFField("DKRetail__WorkPhone__c")
     @HCColumn("dkretail__workphone__c")
+    @Column(name = "dkretail__workphone__c", length = 255)
     var workPhone: String? = null,
 
-    @Column(name = "phone__c", length = 40)
     @SFField("Phone__c")
     @HCColumn("phone__c")
+    @Column(name = "phone__c", length = 40)
     val phone: String? = null,
 
-    @Column(name = "dkretail__homephone__c", length = 255)
     @SFField("DKRetail__HomePhone__c")
     @HCColumn("dkretail__homephone__c")
+    @Column(name = "dkretail__homephone__c", length = 255)
     var homePhone: String? = null,
 
-    @Column(name = "dkretail__startdate__c")
     @SFField("DKRetail__StartDate__c")
     @HCColumn("dkretail__startdate__c")
+    @Column(name = "dkretail__startdate__c")
     var startDate: LocalDate? = null,
 
-    @Column(name = "agreementflag__c")
     @SFField("AgreementFlag__c")
     @HCColumn("agreementflag__c")
+    @Column(name = "agreementflag__c")
     var agreementFlag: Boolean? = null,
 
-    @Column(name = "isdeleted")
     @HCColumn("isdeleted")
+    @Column(name = "isdeleted")
     val isDeleted: Boolean? = null,
 
-    @Column(name = "systemmodstamp")
     @HCColumn("systemmodstamp")
+    @Column(name = "systemmodstamp")
     val systemModStamp: LocalDateTime? = null,
 
-    @Column(name = "createddate")
     @HCColumn("createddate")
+    @Column(name = "createddate")
     val createdDate: LocalDateTime? = null,
 
-    @Column(name = "_hc_lastop", length = 32)
     @HCColumn("_hc_lastop")
+    @Column(name = "_hc_lastop", length = 32)
     val hcLastOp: String? = null,
 
-    @Column(name = "_hc_err", columnDefinition = "TEXT")
     @HCColumn("_hc_err")
+    @Column(name = "_hc_err", columnDefinition = "TEXT")
     val hcErr: String? = null,
 
     // --- Secondary Table (employee_mng) 필드: constructor param only (JPA 미매핑) ---
