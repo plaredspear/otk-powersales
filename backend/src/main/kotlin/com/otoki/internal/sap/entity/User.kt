@@ -12,14 +12,14 @@ import java.time.LocalDateTime
  * 사용자 Entity
  *
  * 레거시 스키마 2개 테이블에 매핑:
- * - Primary: dkretail__employee__c (사원 마스터)
+ * - Primary: employee (사원 마스터)
  * - Secondary: employee_mng (인증/기기 정보) — @OneToOne 관계
  *
- * employee_mng 조인은 empcode__c = dkretail__empcode__c (non-PK 컬럼).
+ * employee_mng 조인은 employee_id = employee_id (non-PK 컬럼).
  * JPA @SecondaryTable은 PK 기반 조인만 지원하므로, @OneToOne + delegate property로 구현.
  */
 @Entity
-@Table(name = "dkretail__employee__c")
+@Table(name = "employee")
 @SFObject("DKRetail__Employee__c")
 @HCTable("dkretail__employee__c")
 class User(
@@ -35,7 +35,7 @@ class User(
 
     @SFField("DKRetail__EmpCode__c")
     @HCColumn("dkretail__empcode__c")
-    @Column(name = "dkretail__empcode__c", unique = true, length = 100)
+    @Column(name = "employee_id", unique = true, length = 100)
     val employeeId: String,
 
     @SFField("Name")
@@ -45,57 +45,57 @@ class User(
 
     @SFField("DKRetail__Birthdate__c")
     @HCColumn("dkretail__birthdate__c")
-    @Column(name = "dkretail__birthdate__c", length = 10)
+    @Column(name = "birth_date", length = 10)
     var birthDate: String? = null,
 
     @SFField("DKRetail__Status__c")
     @HCColumn("dkretail__status__c")
-    @Column(name = "dkretail__status__c", length = 40)
+    @Column(name = "status", length = 40)
     var status: String? = null,
 
     @SFField("DKRetail__APPLoginActive__c")
     @HCColumn("dkretail__apploginactive__c")
-    @Column(name = "dkretail__apploginactive__c")
+    @Column(name = "app_login_active")
     var appLoginActive: Boolean? = null,
 
     @SFField("DKRetail__AppAuthority__c")
     @HCColumn("dkretail__appauthority__c")
-    @Column(name = "dkretail__appauthority__c", length = 255)
+    @Column(name = "app_authority", length = 255)
     var appAuthority: String? = null,
 
     @SFField("DKRetail__OrgName__c")
     @HCColumn("dkretail__orgname__c")
-    @Column(name = "dkretail__orgname__c", length = 100)
+    @Column(name = "org_name", length = 100)
     var orgName: String? = null,
 
     @SFField("CostCenterCode__c")
     @HCColumn("costcentercode__c")
-    @Column(name = "costcentercode__c", length = 10)
+    @Column(name = "cost_center_code", length = 10)
     var costCenterCode: String? = null,
 
     @SFField("DKRetail__WorkPhone__c")
     @HCColumn("dkretail__workphone__c")
-    @Column(name = "dkretail__workphone__c", length = 255)
+    @Column(name = "work_phone", length = 255)
     var workPhone: String? = null,
 
     @SFField("Phone__c")
     @HCColumn("phone__c")
-    @Column(name = "phone__c", length = 40)
+    @Column(name = "phone", length = 40)
     val phone: String? = null,
 
     @SFField("DKRetail__HomePhone__c")
     @HCColumn("dkretail__homephone__c")
-    @Column(name = "dkretail__homephone__c", length = 255)
+    @Column(name = "home_phone", length = 255)
     var homePhone: String? = null,
 
     @SFField("DKRetail__StartDate__c")
     @HCColumn("dkretail__startdate__c")
-    @Column(name = "dkretail__startdate__c")
+    @Column(name = "start_date")
     var startDate: LocalDate? = null,
 
     @SFField("AgreementFlag__c")
     @HCColumn("agreementflag__c")
-    @Column(name = "agreementflag__c")
+    @Column(name = "agreement_flag")
     var agreementFlag: Boolean? = null,
 
     @HCColumn("isdeleted")
@@ -107,7 +107,7 @@ class User(
     val systemModStamp: LocalDateTime? = null,
 
     @HCColumn("createddate")
-    @Column(name = "createddate")
+    @Column(name = "created_date")
     val createdDate: LocalDateTime? = null,
 
     @HCColumn("_hc_lastop")
@@ -131,8 +131,8 @@ class User(
 
     @OneToOne(cascade = [CascadeType.ALL], fetch = FetchType.EAGER, optional = true)
     @JoinColumn(
-        name = "dkretail__empcode__c",
-        referencedColumnName = "empcode__c",
+        name = "employee_id",
+        referencedColumnName = "employee_id",
         insertable = false,
         updatable = false,
         foreignKey = ForeignKey(ConstraintMode.NO_CONSTRAINT)
