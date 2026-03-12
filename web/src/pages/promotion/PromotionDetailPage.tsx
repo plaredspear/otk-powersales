@@ -1,10 +1,9 @@
-import { useContext, useEffect, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Button,
   DatePicker,
   Descriptions,
-  Form,
   Input,
   InputNumber,
   Modal,
@@ -14,6 +13,7 @@ import {
   Spin,
   Table,
   Tag,
+  Tooltip,
   Typography,
   message,
 } from 'antd';
@@ -24,10 +24,14 @@ import { useDeletePromotion } from '@/hooks/promotion/usePromotionMutation';
 import { usePromotionEmployees } from '@/hooks/promotion/usePromotionEmployees';
 import {
   useCreatePromotionEmployee,
-  useUpdatePromotionEmployee,
   useDeletePromotionEmployee,
+  useBatchUpdatePromotionEmployees,
 } from '@/hooks/promotion/usePromotionEmployeeMutation';
 import type { PromotionEmployee } from '@/api/promotionEmployee';
+import {
+  BatchValidationError,
+  type BatchUpdatePromotionEmployeeItem,
+} from '@/api/promotionEmployee';
 import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
 
 const { Title } = Typography;
@@ -58,6 +62,54 @@ const WORK_TYPE3_OPTIONS = [
   { label: '순회', value: '순회' },
 ];
 
+// Editable row data during edit mode
+interface EditableRow {
+  id: number;
+  employeeSfid: string | null;
+  scheduleDate: string | null;
+  workStatus: string | null;
+  workType1: string | null;
+  workType3: string | null;
+  workType4: string | null;
+  professionalPromotionTeam: string | null;
+  basePrice: number | null;
+  dailyTargetCount: number | null;
+  targetAmount: number | null;
+  actualAmount: number | null;
+  // Read-only display fields
+  employeeName: string | null;
+  scheduleId: number | null;
+  promoCloseByTm: boolean;
+}
+
+function toEditableRow(pe: PromotionEmployee): EditableRow {
+  return {
+    id: pe.id,
+    employeeSfid: pe.employeeSfid,
+    scheduleDate: pe.scheduleDate,
+    workStatus: pe.workStatus,
+    workType1: pe.workType1,
+    workType3: pe.workType3,
+    workType4: pe.workType4,
+    professionalPromotionTeam: pe.professionalPromotionTeam,
+    basePrice: pe.basePrice,
+    dailyTargetCount: pe.dailyTargetCount,
+    targetAmount: null,
+    actualAmount: null,
+    employeeName: pe.employeeName,
+    scheduleId: pe.scheduleId,
+    promoCloseByTm: pe.promoCloseByTm,
+  };
+}
+
+const REQUIRED_FIELDS: (keyof EditableRow)[] = [
+  'employeeSfid',
+  'scheduleDate',
+  'workStatus',
+  'workType1',
+  'workType3',
+];
+
 export default function PromotionDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -70,17 +122,21 @@ export default function PromotionDetailPage() {
   // --- 행사조원 ---
   const { data: employees, isLoading: employeesLoading } = usePromotionEmployees(promotionId);
   const createPeMutation = useCreatePromotionEmployee();
-  const updatePeMutation = useUpdatePromotionEmployee();
   const deletePeMutation = useDeletePromotionEmployee();
+  const batchUpdateMutation = useBatchUpdatePromotionEmployees();
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editingEmployee, setEditingEmployee] = useState<PromotionEmployee | null>(null);
-  const [form] = Form.useForm();
+  // --- 편집 모드 상태 ---
+  const [editMode, setEditMode] = useState(false);
+  const [editRows, setEditRows] = useState<EditableRow[]>([]);
+  const [errorRowIds, setErrorRowIds] = useState<Set<number>>(new Set());
+  const [errorMessages, setErrorMessages] = useState<Map<number, string>>(new Map());
 
   useEffect(() => {
     setDynamicTitle(promotion?.promotionNumber ?? null);
     return () => setDynamicTitle(null);
   }, [promotion?.promotionNumber, setDynamicTitle]);
+
+  const hasDates = promotion?.startDate && promotion?.endDate;
 
   const handleDelete = () => {
     Modal.confirm({
@@ -101,120 +157,384 @@ export default function PromotionDetailPage() {
     });
   };
 
-  // --- 행사조원 핸들러 ---
-
-  const openCreateModal = () => {
-    setEditingEmployee(null);
-    form.resetFields();
-    setModalOpen(true);
-  };
-
-  const openEditModal = (record: PromotionEmployee) => {
-    setEditingEmployee(record);
-    form.setFieldsValue({
-      employee_sfid: record.employeeSfid,
-      schedule_date: dayjs(record.scheduleDate),
-      work_status: record.workStatus,
-      work_type1: record.workType1,
-      work_type3: record.workType3,
-      work_type4: record.workType4,
-      professional_promotion_team: record.professionalPromotionTeam,
-      base_price: record.basePrice,
-      daily_target_count: record.dailyTargetCount,
-    });
-    setModalOpen(true);
-  };
-
-  const handleModalOk = async () => {
+  // --- 즉시 추가 ---
+  const handleAddEmployee = async () => {
     try {
-      const values = await form.validateFields();
-      const formData = {
-        employee_sfid: values.employee_sfid,
-        schedule_date: values.schedule_date.format('YYYY-MM-DD'),
-        work_status: values.work_status,
-        work_type1: values.work_type1,
-        work_type3: values.work_type3,
-        work_type4: values.work_type4 || null,
-        professional_promotion_team: values.professional_promotion_team || null,
-        base_price: values.base_price ?? null,
-        daily_target_count: values.daily_target_count ?? null,
-      };
-
-      if (editingEmployee) {
-        await updatePeMutation.mutateAsync({ id: editingEmployee.id, data: formData });
-        message.success('조원이 수정되었습니다');
-      } else {
-        await createPeMutation.mutateAsync({ promotionId, data: formData });
-        message.success('조원이 추가되었습니다');
-      }
-      setModalOpen(false);
+      await createPeMutation.mutateAsync({ promotionId });
     } catch (err) {
-      if (err instanceof Error) {
-        message.error(err.message);
-      }
+      message.error(err instanceof Error ? err.message : '조원 추가에 실패했습니다');
     }
   };
 
-  const handleDeleteEmployee = async (peId: number) => {
+  // --- 편집 모드 진입 ---
+  const enterEditMode = useCallback(() => {
+    if (!employees) return;
+    setEditRows(employees.map(toEditableRow));
+    setErrorRowIds(new Set());
+    setErrorMessages(new Map());
+    setEditMode(true);
+  }, [employees]);
+
+  // --- 편집 모드 취소 ---
+  const cancelEditMode = () => {
+    setEditMode(false);
+    setEditRows([]);
+    setErrorRowIds(new Set());
+    setErrorMessages(new Map());
+  };
+
+  // --- 행 필드 변경 ---
+  const updateField = useCallback(
+    (rowId: number, field: keyof EditableRow, value: unknown) => {
+      setEditRows((prev) =>
+        prev.map((row) => (row.id === rowId ? { ...row, [field]: value } : row)),
+      );
+      // Clear error highlight for this row on change
+      setErrorRowIds((prev) => {
+        const next = new Set(prev);
+        next.delete(rowId);
+        return next;
+      });
+      setErrorMessages((prev) => {
+        const next = new Map(prev);
+        next.delete(rowId);
+        return next;
+      });
+    },
+    [],
+  );
+
+  // --- 편집 모드에서 삭제 ---
+  const handleDeleteInEditMode = async (peId: number) => {
     try {
       await deletePeMutation.mutateAsync(peId);
+      setEditRows((prev) => prev.filter((r) => r.id !== peId));
       message.success('조원이 삭제되었습니다');
     } catch {
-      message.error('조원 삭제에 실패했습니다');
+      message.error('삭제에 실패했습니다');
     }
   };
 
-  const employeeColumns: ColumnsType<PromotionEmployee> = [
-    {
-      title: '사원명',
-      dataIndex: 'employeeName',
-      width: 100,
-      render: (name: string | null, record) => name ?? record.employeeSfid,
-    },
-    { title: '투입일', dataIndex: 'scheduleDate', width: 120 },
-    { title: '근무상태', dataIndex: 'workStatus', width: 80 },
-    {
-      title: '근무유형1',
-      dataIndex: 'workType1',
-      width: 100,
-      render: (v: string | null) => v ?? '-',
-    },
-    {
-      title: '근무유형3',
-      dataIndex: 'workType3',
-      width: 80,
-      render: (v: string | null) => v ?? '-',
-    },
-    {
-      title: '전문행사조',
-      dataIndex: 'professionalPromotionTeam',
-      width: 120,
-      render: (v: string | null) => v ?? '-',
-    },
-    {
+  // --- Dirty check ---
+  const getChangedItems = useCallback((): BatchUpdatePromotionEmployeeItem[] | null => {
+    if (!employees) return null;
+    const originalMap = new Map(employees.map((e) => [e.id, e]));
+    const changed: BatchUpdatePromotionEmployeeItem[] = [];
+
+    for (const row of editRows) {
+      const orig = originalMap.get(row.id);
+      if (!orig) continue;
+
+      const isDirty =
+        row.employeeSfid !== orig.employeeSfid ||
+        row.scheduleDate !== orig.scheduleDate ||
+        row.workStatus !== orig.workStatus ||
+        row.workType1 !== orig.workType1 ||
+        row.workType3 !== orig.workType3 ||
+        row.workType4 !== orig.workType4 ||
+        row.professionalPromotionTeam !== orig.professionalPromotionTeam ||
+        row.basePrice !== orig.basePrice ||
+        row.dailyTargetCount !== orig.dailyTargetCount;
+
+      if (isDirty) {
+        changed.push({
+          id: row.id,
+          employee_sfid: row.employeeSfid ?? '',
+          schedule_date: row.scheduleDate ?? '',
+          work_status: row.workStatus ?? '',
+          work_type1: row.workType1 ?? '',
+          work_type3: row.workType3 ?? '',
+          work_type4: row.workType4,
+          professional_promotion_team: row.professionalPromotionTeam,
+          base_price: row.basePrice,
+          daily_target_count: row.dailyTargetCount,
+          target_amount: row.targetAmount,
+          actual_amount: row.actualAmount,
+        });
+      }
+    }
+
+    return changed;
+  }, [editRows, employees]);
+
+  // --- 클라이언트 검증 ---
+  const validateRequired = useCallback((): boolean => {
+    const invalidIds = new Set<number>();
+    const msgs = new Map<number, string>();
+
+    for (const row of editRows) {
+      for (const field of REQUIRED_FIELDS) {
+        const val = row[field];
+        if (val === null || val === undefined || val === '') {
+          invalidIds.add(row.id);
+          msgs.set(row.id, '필수 항목을 입력하세요');
+          break;
+        }
+      }
+    }
+
+    if (invalidIds.size > 0) {
+      setErrorRowIds(invalidIds);
+      setErrorMessages(msgs);
+      message.error('필수 항목을 입력하세요');
+      return false;
+    }
+    return true;
+  }, [editRows]);
+
+  // --- 저장 ---
+  const handleSave = async () => {
+    // Client validation
+    if (!validateRequired()) return;
+
+    const changedItems = getChangedItems();
+    if (!changedItems || changedItems.length === 0) {
+      message.info('변경사항이 없습니다');
+      return;
+    }
+
+    try {
+      await batchUpdateMutation.mutateAsync({
+        promotionId,
+        data: { items: changedItems },
+      });
+      message.success('저장되었습니다');
+      setEditMode(false);
+      setEditRows([]);
+      setErrorRowIds(new Set());
+      setErrorMessages(new Map());
+    } catch (err) {
+      if (err instanceof BatchValidationError) {
+        // Map errors to row IDs
+        const errorIds = new Set<number>();
+        const msgs = new Map<number, string>();
+
+        for (const itemErr of err.errors) {
+          // changedItems[itemErr.item_index] corresponds to the batch request item
+          const batchItem = changedItems[itemErr.item_index];
+          if (batchItem) {
+            errorIds.add(batchItem.id);
+            msgs.set(batchItem.id, itemErr.message);
+          }
+        }
+
+        setErrorRowIds(errorIds);
+        setErrorMessages(msgs);
+        message.error(err.message);
+      } else {
+        message.error(err instanceof Error ? err.message : '일괄 수정에 실패했습니다');
+      }
+    }
+  };
+
+  // --- 확정 상태 표시 컬럼 (공통) ---
+  const confirmColumn = useMemo(
+    () => ({
       title: '확정',
       dataIndex: 'scheduleId',
       width: 70,
       render: (v: number | null) =>
         v != null ? <Tag color="blue">확정</Tag> : <Tag>미확정</Tag>,
-    },
-    {
+    }),
+    [],
+  );
+
+  const closeColumn = useMemo(
+    () => ({
       title: '마감',
       dataIndex: 'promoCloseByTm',
       width: 60,
       render: (v: boolean) => (v ? <Tag color="red">마감</Tag> : '-'),
-    },
-    {
-      title: '관리',
-      width: 100,
-      render: (_, record) => (
-        <Space>
-          <Button type="link" size="small" onClick={() => openEditModal(record)}>
-            수정
-          </Button>
+    }),
+    [],
+  );
+
+  // --- 읽기 모드 컬럼 ---
+  const readColumns: ColumnsType<PromotionEmployee> = useMemo(
+    () => [
+      {
+        title: '사원명',
+        dataIndex: 'employeeName',
+        width: 100,
+        render: (name: string | null, record: PromotionEmployee) => name ?? record.employeeSfid ?? '-',
+      },
+      {
+        title: '투입일',
+        dataIndex: 'scheduleDate',
+        width: 120,
+        render: (v: string | null) => v ?? '-',
+      },
+      {
+        title: '근무상태',
+        dataIndex: 'workStatus',
+        width: 80,
+        render: (v: string | null) => v ?? '-',
+      },
+      {
+        title: '근무유형1',
+        dataIndex: 'workType1',
+        width: 100,
+        render: (v: string | null) => v ?? '-',
+      },
+      {
+        title: '근무유형3',
+        dataIndex: 'workType3',
+        width: 80,
+        render: (v: string | null) => v ?? '-',
+      },
+      {
+        title: '전문행사조',
+        dataIndex: 'professionalPromotionTeam',
+        width: 120,
+        render: (v: string | null) => v ?? '-',
+      },
+      confirmColumn,
+      closeColumn,
+    ],
+    [confirmColumn, closeColumn],
+  );
+
+  // --- 편집 모드 컬럼 ---
+  const editColumns: ColumnsType<EditableRow> = useMemo(
+    () => [
+      {
+        title: '여사원 SF ID',
+        dataIndex: 'employeeSfid',
+        width: 140,
+        render: (_, record) => (
+          <Input
+            size="small"
+            maxLength={18}
+            value={record.employeeSfid ?? ''}
+            onChange={(e) => updateField(record.id, 'employeeSfid', e.target.value || null)}
+          />
+        ),
+      },
+      {
+        title: '투입일',
+        dataIndex: 'scheduleDate',
+        width: 140,
+        render: (_, record) => (
+          <DatePicker
+            size="small"
+            format="YYYY-MM-DD"
+            value={record.scheduleDate ? dayjs(record.scheduleDate) : null}
+            onChange={(d) =>
+              updateField(record.id, 'scheduleDate', d ? d.format('YYYY-MM-DD') : null)
+            }
+            style={{ width: '100%' }}
+          />
+        ),
+      },
+      {
+        title: '근무상태',
+        dataIndex: 'workStatus',
+        width: 90,
+        render: (_, record) => (
+          <Select
+            size="small"
+            options={WORK_STATUS_OPTIONS}
+            value={record.workStatus}
+            onChange={(v) => updateField(record.id, 'workStatus', v)}
+            style={{ width: '100%' }}
+            allowClear={false}
+          />
+        ),
+      },
+      {
+        title: '근무유형1',
+        dataIndex: 'workType1',
+        width: 100,
+        render: (_, record) => (
+          <Input
+            size="small"
+            maxLength={100}
+            value={record.workType1 ?? ''}
+            onChange={(e) => updateField(record.id, 'workType1', e.target.value || null)}
+          />
+        ),
+      },
+      {
+        title: '근무유형3',
+        dataIndex: 'workType3',
+        width: 90,
+        render: (_, record) => (
+          <Select
+            size="small"
+            options={WORK_TYPE3_OPTIONS}
+            value={record.workType3}
+            onChange={(v) => updateField(record.id, 'workType3', v)}
+            style={{ width: '100%' }}
+            allowClear={false}
+          />
+        ),
+      },
+      {
+        title: '근무유형4',
+        dataIndex: 'workType4',
+        width: 100,
+        render: (_, record) => (
+          <Input
+            size="small"
+            maxLength={100}
+            value={record.workType4 ?? ''}
+            onChange={(e) => updateField(record.id, 'workType4', e.target.value || null)}
+          />
+        ),
+      },
+      {
+        title: '전문행사조',
+        dataIndex: 'professionalPromotionTeam',
+        width: 120,
+        render: (_, record) => (
+          <Input
+            size="small"
+            maxLength={100}
+            value={record.professionalPromotionTeam ?? ''}
+            onChange={(e) =>
+              updateField(record.id, 'professionalPromotionTeam', e.target.value || null)
+            }
+          />
+        ),
+      },
+      {
+        title: '판매단가',
+        dataIndex: 'basePrice',
+        width: 100,
+        render: (_, record) => (
+          <InputNumber
+            size="small"
+            min={0}
+            value={record.basePrice}
+            onChange={(v) => updateField(record.id, 'basePrice', v)}
+            style={{ width: '100%' }}
+          />
+        ),
+      },
+      {
+        title: '목표수량',
+        dataIndex: 'dailyTargetCount',
+        width: 90,
+        render: (_, record) => (
+          <InputNumber
+            size="small"
+            min={0}
+            precision={0}
+            value={record.dailyTargetCount}
+            onChange={(v) => updateField(record.id, 'dailyTargetCount', v)}
+            style={{ width: '100%' }}
+          />
+        ),
+      },
+      confirmColumn,
+      closeColumn,
+      {
+        title: '',
+        width: 60,
+        render: (_, record) => (
           <Popconfirm
-            title="이 조원을 삭제하시겠습니까?"
-            onConfirm={() => handleDeleteEmployee(record.id)}
+            title="삭제하시겠습니까?"
+            onConfirm={() => handleDeleteInEditMode(record.id)}
             okText="확인"
             cancelText="취소"
           >
@@ -222,10 +542,11 @@ export default function PromotionDetailPage() {
               삭제
             </Button>
           </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
+        ),
+      },
+    ],
+    [confirmColumn, closeColumn, updateField],
+  );
 
   if (isLoading) {
     return (
@@ -252,6 +573,15 @@ export default function PromotionDetailPage() {
   const typeColor = promotion.promotionTypeName
     ? PROMOTION_TYPE_TAG[promotion.promotionTypeName]
     : undefined;
+
+  const employeeCount = employees?.length ?? 0;
+  const canEdit = hasDates && employeeCount > 0;
+  const editDisabledTooltip = !hasDates
+    ? '행사 시작일과 종료일을 먼저 입력하세요'
+    : employeeCount === 0
+      ? '조원을 먼저 추가하세요'
+      : '';
+  const addDisabledTooltip = !hasDates ? '행사 시작일과 종료일을 먼저 입력하세요' : '';
 
   return (
     <div style={{ padding: 16 }}>
@@ -348,104 +678,76 @@ export default function PromotionDetailPage() {
           <Title level={5} style={{ margin: 0 }}>
             행사조원
           </Title>
-          <Space>
-            <Button disabled title="Spec #191에서 구현 예정">
-              일정 확정
-            </Button>
-            <Button type="primary" onClick={openCreateModal}>
-              + 조원 추가
-            </Button>
-          </Space>
+          {editMode ? (
+            <Space>
+              <Button onClick={cancelEditMode}>취소</Button>
+              <Button
+                type="primary"
+                onClick={handleSave}
+                loading={batchUpdateMutation.isPending}
+              >
+                저장
+              </Button>
+            </Space>
+          ) : (
+            <Space>
+              <Button disabled title="Spec #191에서 구현 예정">
+                일정 확정
+              </Button>
+              <Tooltip title={addDisabledTooltip}>
+                <Button
+                  type="primary"
+                  onClick={handleAddEmployee}
+                  loading={createPeMutation.isPending}
+                  disabled={!hasDates}
+                >
+                  + 조원 추가
+                </Button>
+              </Tooltip>
+              <Tooltip title={editDisabledTooltip}>
+                <Button onClick={enterEditMode} disabled={!canEdit}>
+                  편집
+                </Button>
+              </Tooltip>
+            </Space>
+          )}
         </div>
 
-        <Table<PromotionEmployee>
-          columns={employeeColumns}
-          dataSource={employees ?? []}
-          rowKey="id"
-          size="small"
-          pagination={false}
-          loading={employeesLoading}
-          locale={{ emptyText: '등록된 조원이 없습니다' }}
-          footer={() => `총 ${employees?.length ?? 0}건`}
-        />
+        {editMode ? (
+          <Table<EditableRow>
+            columns={editColumns}
+            dataSource={editRows}
+            rowKey="id"
+            size="small"
+            pagination={false}
+            locale={{ emptyText: '등록된 조원이 없습니다' }}
+            footer={() => `총 ${editRows.length}건`}
+            rowClassName={(record) => (errorRowIds.has(record.id) ? 'ant-table-row-error' : '')}
+            onRow={(record) => ({
+              title: errorMessages.get(record.id) || undefined,
+            })}
+            scroll={{ x: 1200 }}
+          />
+        ) : (
+          <Table<PromotionEmployee>
+            columns={readColumns}
+            dataSource={employees ?? []}
+            rowKey="id"
+            size="small"
+            pagination={false}
+            loading={employeesLoading}
+            locale={{ emptyText: '등록된 조원이 없습니다' }}
+            footer={() => `총 ${employees?.length ?? 0}건`}
+          />
+        )}
       </div>
 
-      {/* 조원 추가/수정 Modal */}
-      <Modal
-        title={editingEmployee ? '조원 수정' : '조원 추가'}
-        open={modalOpen}
-        onOk={handleModalOk}
-        onCancel={() => setModalOpen(false)}
-        okText="저장"
-        cancelText="취소"
-        confirmLoading={createPeMutation.isPending || updatePeMutation.isPending}
-        width={520}
-        destroyOnClose
-      >
-        <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
-          <Form.Item
-            label="여사원 SF ID"
-            name="employee_sfid"
-            rules={[
-              { required: true, message: '여사원 SF ID는 필수입니다' },
-              { max: 18, message: '최대 18자입니다' },
-            ]}
-          >
-            <Input placeholder="a0B5g00000XYZabc" maxLength={18} />
-          </Form.Item>
-
-          <Form.Item
-            label="투입일"
-            name="schedule_date"
-            rules={[{ required: true, message: '투입일은 필수입니다' }]}
-          >
-            <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} />
-          </Form.Item>
-
-          <Form.Item
-            label="근무상태"
-            name="work_status"
-            rules={[{ required: true, message: '근무상태는 필수입니다' }]}
-          >
-            <Select options={WORK_STATUS_OPTIONS} placeholder="선택" />
-          </Form.Item>
-
-          <Form.Item
-            label="근무유형1"
-            name="work_type1"
-            rules={[
-              { required: true, message: '근무유형1은 필수입니다' },
-              { max: 100, message: '최대 100자입니다' },
-            ]}
-          >
-            <Input placeholder="시식, 시음 등" maxLength={100} />
-          </Form.Item>
-
-          <Form.Item
-            label="근무유형3"
-            name="work_type3"
-            rules={[{ required: true, message: '근무유형3은 필수입니다' }]}
-          >
-            <Select options={WORK_TYPE3_OPTIONS} placeholder="선택" />
-          </Form.Item>
-
-          <Form.Item label="근무유형4" name="work_type4">
-            <Input placeholder="제품유형 (선택)" maxLength={100} />
-          </Form.Item>
-
-          <Form.Item label="전문행사조" name="professional_promotion_team">
-            <Input placeholder="전문행사조명 (선택)" maxLength={100} />
-          </Form.Item>
-
-          <Form.Item label="판매단가" name="base_price">
-            <InputNumber min={0} style={{ width: '100%' }} placeholder="0" />
-          </Form.Item>
-
-          <Form.Item label="일일목표수량" name="daily_target_count">
-            <InputNumber min={0} precision={0} style={{ width: '100%' }} placeholder="0" />
-          </Form.Item>
-        </Form>
-      </Modal>
+      {/* Error row highlight style */}
+      <style>{`
+        .ant-table-row-error td {
+          background-color: #fff2f0 !important;
+        }
+      `}</style>
     </div>
   );
 }
