@@ -81,7 +81,13 @@ class AdminPromotionEmployeeService(
                 basePrice = request.basePrice,
                 dailyTargetCount = request.dailyTargetCount,
                 targetAmount = request.targetAmount,
-                actualAmount = request.actualAmount
+                actualAmount = request.actualAmount,
+                primaryProductAmount = request.primaryProductAmount,
+                primarySalesQuantity = request.primarySalesQuantity,
+                primarySalesPrice = request.primarySalesPrice,
+                otherSalesAmount = request.otherSalesAmount,
+                otherSalesQuantity = request.otherSalesQuantity,
+                s3ImageUniqueKey = request.s3ImageUniqueKey
             )
         )
 
@@ -127,7 +133,13 @@ class AdminPromotionEmployeeService(
             basePrice = request.basePrice,
             dailyTargetCount = request.dailyTargetCount,
             targetAmount = request.targetAmount,
-            actualAmount = request.actualAmount
+            actualAmount = request.actualAmount,
+            primaryProductAmount = request.primaryProductAmount,
+            primarySalesQuantity = request.primarySalesQuantity,
+            primarySalesPrice = request.primarySalesPrice,
+            otherSalesAmount = request.otherSalesAmount,
+            otherSalesQuantity = request.otherSalesQuantity,
+            s3ImageUniqueKey = request.s3ImageUniqueKey
         )
 
         promotionEmployeeRepository.save(pe)
@@ -204,7 +216,13 @@ class AdminPromotionEmployeeService(
                 basePrice = item.basePrice,
                 dailyTargetCount = item.dailyTargetCount,
                 targetAmount = item.targetAmount,
-                actualAmount = item.actualAmount
+                actualAmount = item.actualAmount,
+                primaryProductAmount = item.primaryProductAmount,
+                primarySalesQuantity = item.primarySalesQuantity,
+                primarySalesPrice = item.primarySalesPrice,
+                otherSalesAmount = item.otherSalesAmount,
+                otherSalesQuantity = item.otherSalesQuantity,
+                s3ImageUniqueKey = item.s3ImageUniqueKey
             )
 
             promotionEmployeeRepository.save(pe)

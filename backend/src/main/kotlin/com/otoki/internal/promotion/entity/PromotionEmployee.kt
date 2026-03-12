@@ -85,6 +85,36 @@ class PromotionEmployee(
     @Column(name = "actual_amount")
     var actualAmount: Long? = 0,
 
+    @SFField("PrimaryProductAmount__c")
+    @HCColumn("primaryproductamount__c")
+    @Column(name = "primary_product_amount")
+    var primaryProductAmount: Long? = null,
+
+    @SFField("DKRetail__PrimarySalesQuantity__c")
+    @HCColumn("dkretail__primarysalesquantity__c")
+    @Column(name = "primary_sales_quantity")
+    var primarySalesQuantity: Int? = null,
+
+    @SFField("DKRetail__PrimarySalesPrice__c")
+    @HCColumn("dkretail__primarysalesprice__c")
+    @Column(name = "primary_sales_price")
+    var primarySalesPrice: Long? = null,
+
+    @SFField("DKRetail__OtherSalesAmount__c")
+    @HCColumn("dkretail__othersalesamount__c")
+    @Column(name = "other_sales_amount")
+    var otherSalesAmount: Long? = null,
+
+    @SFField("DKRetail__OtherSalesQuantity__c")
+    @HCColumn("dkretail__othersalesquantity__c")
+    @Column(name = "other_sales_quantity")
+    var otherSalesQuantity: Int? = null,
+
+    @SFField("S3ImageUniqueKey__c")
+    @HCColumn("s3imageuniquekey__c")
+    @Column(name = "s3_image_unique_key", length = 255)
+    var s3ImageUniqueKey: String? = null,
+
     @Column(name = "created_at", nullable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
 
@@ -102,7 +132,13 @@ class PromotionEmployee(
         basePrice: Long?,
         dailyTargetCount: Int?,
         targetAmount: Long?,
-        actualAmount: Long?
+        actualAmount: Long?,
+        primaryProductAmount: Long? = null,
+        primarySalesQuantity: Int? = null,
+        primarySalesPrice: Long? = null,
+        otherSalesAmount: Long? = null,
+        otherSalesQuantity: Int? = null,
+        s3ImageUniqueKey: String? = null
     ) {
         this.employeeSfid = employeeSfid
         this.scheduleDate = scheduleDate
@@ -115,6 +151,12 @@ class PromotionEmployee(
         this.dailyTargetCount = dailyTargetCount
         this.targetAmount = targetAmount
         this.actualAmount = actualAmount
+        this.primaryProductAmount = primaryProductAmount
+        this.primarySalesQuantity = primarySalesQuantity
+        this.primarySalesPrice = primarySalesPrice
+        this.otherSalesAmount = otherSalesAmount
+        this.otherSalesQuantity = otherSalesQuantity
+        this.s3ImageUniqueKey = s3ImageUniqueKey
         this.updatedAt = LocalDateTime.now()
     }
 }

@@ -20,7 +20,13 @@ data class PromotionEmployeeListResponse(
     val basePrice: Long?,
     val dailyTargetCount: Int?,
     val targetAmount: Long?,
-    val actualAmount: Long?
+    val actualAmount: Long?,
+    val primaryProductAmount: Long?,
+    val primarySalesQuantity: Int?,
+    val primarySalesPrice: Long?,
+    val otherSalesAmount: Long?,
+    val otherSalesQuantity: Int?,
+    val s3ImageUniqueKey: String?
 ) {
     companion object {
         fun from(entity: PromotionEmployee, employeeName: String?): PromotionEmployeeListResponse =
@@ -40,7 +46,13 @@ data class PromotionEmployeeListResponse(
                 basePrice = entity.basePrice,
                 dailyTargetCount = entity.dailyTargetCount,
                 targetAmount = entity.targetAmount,
-                actualAmount = entity.actualAmount
+                actualAmount = entity.actualAmount,
+                primaryProductAmount = entity.primaryProductAmount,
+                primarySalesQuantity = entity.primarySalesQuantity,
+                primarySalesPrice = entity.primarySalesPrice,
+                otherSalesAmount = entity.otherSalesAmount,
+                otherSalesQuantity = entity.otherSalesQuantity,
+                s3ImageUniqueKey = entity.s3ImageUniqueKey
             )
     }
 }
@@ -62,6 +74,12 @@ data class PromotionEmployeeDetailResponse(
     val dailyTargetCount: Int?,
     val targetAmount: Long?,
     val actualAmount: Long?,
+    val primaryProductAmount: Long?,
+    val primarySalesQuantity: Int?,
+    val primarySalesPrice: Long?,
+    val otherSalesAmount: Long?,
+    val otherSalesQuantity: Int?,
+    val s3ImageUniqueKey: String?,
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime
 ) {
@@ -84,6 +102,12 @@ data class PromotionEmployeeDetailResponse(
                 dailyTargetCount = entity.dailyTargetCount,
                 targetAmount = entity.targetAmount,
                 actualAmount = entity.actualAmount,
+                primaryProductAmount = entity.primaryProductAmount,
+                primarySalesQuantity = entity.primarySalesQuantity,
+                primarySalesPrice = entity.primarySalesPrice,
+                otherSalesAmount = entity.otherSalesAmount,
+                otherSalesQuantity = entity.otherSalesQuantity,
+                s3ImageUniqueKey = entity.s3ImageUniqueKey,
                 createdAt = entity.createdAt,
                 updatedAt = entity.updatedAt
             )

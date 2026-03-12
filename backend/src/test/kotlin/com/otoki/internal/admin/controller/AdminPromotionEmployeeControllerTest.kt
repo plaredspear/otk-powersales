@@ -265,7 +265,13 @@ class AdminPromotionEmployeeControllerTest {
         basePrice = 1500,
         dailyTargetCount = 100,
         targetAmount = 100000,
-        actualAmount = 80000
+        actualAmount = 80000,
+        primaryProductAmount = null,
+        primarySalesQuantity = null,
+        primarySalesPrice = null,
+        otherSalesAmount = null,
+        otherSalesQuantity = null,
+        s3ImageUniqueKey = null
     )
 
     private fun createDetailResponse() = PromotionEmployeeDetailResponse(
@@ -285,6 +291,12 @@ class AdminPromotionEmployeeControllerTest {
         dailyTargetCount = 100,
         targetAmount = 100000,
         actualAmount = 80000,
+        primaryProductAmount = null,
+        primarySalesQuantity = null,
+        primarySalesPrice = null,
+        otherSalesAmount = null,
+        otherSalesQuantity = null,
+        s3ImageUniqueKey = null,
         createdAt = LocalDateTime.of(2026, 3, 10, 10, 0, 0),
         updatedAt = LocalDateTime.of(2026, 3, 10, 10, 0, 0)
     )
