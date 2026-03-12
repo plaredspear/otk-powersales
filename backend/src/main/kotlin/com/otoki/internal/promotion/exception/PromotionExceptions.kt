@@ -184,3 +184,9 @@ class InvalidOtherProductException : BusinessException(
     message = "기타상품에 작은따옴표(')를 사용할 수 없습니다",
     httpStatus = HttpStatus.BAD_REQUEST
 )
+
+class ScheduleDateOutOfRangeException(scheduleDate: String, startDate: String, endDate: String) : BusinessException(
+    errorCode = "SCHEDULE_DATE_OUT_OF_RANGE",
+    message = "투입일(${scheduleDate})이 행사 기간(${startDate} ~ ${endDate})을 벗어납니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)

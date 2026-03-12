@@ -60,7 +60,7 @@ class AdminPromotionEmployeeController(
         @PathVariable id: Long,
         @Valid @RequestBody request: PromotionEmployeeRequest
     ): ResponseEntity<ApiResponse<PromotionEmployeeDetailResponse>> {
-        val response = adminPromotionEmployeeService.updateEmployee(id, request)
+        val response = adminPromotionEmployeeService.updateEmployee(id, principal.userId, request)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 

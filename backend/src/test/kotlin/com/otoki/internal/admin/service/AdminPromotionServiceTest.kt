@@ -424,7 +424,7 @@ class AdminPromotionServiceTest {
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
 
             val request = createRequest()
-            val result = adminPromotionService.updatePromotion(1L, request)
+            val result = adminPromotionService.updatePromotion(1L, userId, request)
 
             assertThat(result.promotionName).isEqualTo("진라면 매운맛 120g")
         }
@@ -448,7 +448,7 @@ class AdminPromotionServiceTest {
             whenever(promotionProductRepository.save(any<PromotionProduct>())).thenAnswer { it.getArgument<PromotionProduct>(0) }
 
             val request = createRequest(primaryProductId = 300L)
-            val result = adminPromotionService.updatePromotion(1L, request)
+            val result = adminPromotionService.updatePromotion(1L, userId, request)
 
             assertThat(result.promotionName).isEqualTo("진라면 매운맛")
         }
@@ -472,7 +472,7 @@ class AdminPromotionServiceTest {
             whenever(promotionProductRepository.save(any<PromotionProduct>())).thenAnswer { it.getArgument<PromotionProduct>(0) }
 
             val request = createRequest(primaryProductId = 300L)
-            adminPromotionService.updatePromotion(1L, request)
+            adminPromotionService.updatePromotion(1L, userId, request)
 
             verify(promotionProductRepository).save(argThat<PromotionProduct> { productId == 300L })
         }
@@ -488,7 +488,7 @@ class AdminPromotionServiceTest {
 
             val request = createRequest(otherProduct = "라면's")
 
-            assertThatThrownBy { adminPromotionService.updatePromotion(1L, request) }
+            assertThatThrownBy { adminPromotionService.updatePromotion(1L, userId, request) }
                 .isInstanceOf(InvalidOtherProductException::class.java)
         }
 
@@ -498,7 +498,7 @@ class AdminPromotionServiceTest {
             val promotion = createPromotion(isDeleted = true)
             whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
 
-            assertThatThrownBy { adminPromotionService.updatePromotion(1L, createRequest()) }
+            assertThatThrownBy { adminPromotionService.updatePromotion(1L, userId, createRequest()) }
                 .isInstanceOf(PromotionNotFoundException::class.java)
         }
 
@@ -516,12 +516,12 @@ class AdminPromotionServiceTest {
 
             val request = createRequest(promotionTypeId = 5L)
 
-            assertThatThrownBy { adminPromotionService.updatePromotion(1L, request) }
+            assertThatThrownBy { adminPromotionService.updatePromotion(1L, userId, request) }
                 .isInstanceOf(InvalidPromotionTypeException::class.java)
         }
 
         @Test
-        @DisplayName("마감 조원 존재 + 거래처 변경 -> ClosedPromotionModificationException")
+        @DisplayName("USER가 마감 조원 존재 + 거래처 변경 -> ClosedPromotionModificationException")
         fun updatePromotion_closedEmployeeCriticalField() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
             whenever(dataScopeHolder.require()).thenReturn(scope)
@@ -529,15 +529,16 @@ class AdminPromotionServiceTest {
             val promotion = createPromotion()
             whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
             whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(true)
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(createUser()))
 
             val request = createRequest(accountId = 200)
 
-            assertThatThrownBy { adminPromotionService.updatePromotion(1L, request) }
+            assertThatThrownBy { adminPromotionService.updatePromotion(1L, userId, request) }
                 .isInstanceOf(ClosedPromotionModificationException::class.java)
         }
 
         @Test
-        @DisplayName("마감 조원 존재 + 날짜 변경 -> ClosedPromotionModificationException")
+        @DisplayName("USER가 마감 조원 존재 + 날짜 변경 -> ClosedPromotionModificationException")
         fun updatePromotion_closedEmployeeDateChange() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
             whenever(dataScopeHolder.require()).thenReturn(scope)
@@ -545,10 +546,80 @@ class AdminPromotionServiceTest {
             val promotion = createPromotion()
             whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
             whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(true)
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(createUser()))
 
             val request = createRequest(startDate = LocalDate.of(2026, 3, 5))
 
-            assertThatThrownBy { adminPromotionService.updatePromotion(1L, request) }
+            assertThatThrownBy { adminPromotionService.updatePromotion(1L, userId, request) }
+                .isInstanceOf(ClosedPromotionModificationException::class.java)
+        }
+
+        @Test
+        @DisplayName("ADMIN이 마감 조원 존재 + 거래처 변경 -> 수정 허용")
+        fun updatePromotion_adminClosedEmployeeCriticalField_allowed() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            whenever(dataScopeHolder.require()).thenReturn(scope)
+
+            val promotion = createPromotion()
+            whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
+            whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(true)
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(createUser(appAuthority = "지점장")))
+
+            val newAccount = createAccount(id = 200, name = "GS25 강남점")
+            whenever(accountRepository.findById(200)).thenReturn(Optional.of(newAccount))
+            whenever(productRepository.findById(200L)).thenReturn(Optional.of(createProduct()))
+            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
+
+            val pe = PromotionEmployee(
+                id = 5L, promotionId = 1L, employeeSfid = "sfid1",
+                scheduleDate = LocalDate.of(2026, 3, 15), workStatus = "근무",
+                workType1 = "시식", workType3 = "고정", scheduleId = 100L
+            )
+            whenever(promotionEmployeeRepository.findByPromotionId(1L)).thenReturn(listOf(pe))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>())).thenAnswer { it.getArgument<PromotionEmployee>(0) }
+
+            val request = createRequest(accountId = 200)
+            val result = adminPromotionService.updatePromotion(1L, userId, request)
+
+            assertThat(result).isNotNull()
+        }
+
+        @Test
+        @DisplayName("ADMIN이 마감 조원 존재 + 시작일 변경 -> 수정 허용")
+        fun updatePromotion_adminClosedEmployeeDateChange_allowed() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            whenever(dataScopeHolder.require()).thenReturn(scope)
+
+            val promotion = createPromotion()
+            whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
+            whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(true)
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(createUser(appAuthority = "지점장")))
+            whenever(promotionEmployeeRepository.findMinScheduleDateByPromotionId(1L)).thenReturn(LocalDate.of(2026, 3, 10))
+            whenever(promotionEmployeeRepository.findMaxScheduleDateByPromotionId(1L)).thenReturn(LocalDate.of(2026, 3, 18))
+            whenever(accountRepository.findById(100)).thenReturn(Optional.of(createAccount()))
+            whenever(productRepository.findById(200L)).thenReturn(Optional.of(createProduct()))
+            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
+
+            val request = createRequest(startDate = LocalDate.of(2026, 3, 5))
+            val result = adminPromotionService.updatePromotion(1L, userId, request)
+
+            assertThat(result).isNotNull()
+        }
+
+        @Test
+        @DisplayName("LEADER가 마감 조원 존재 + 시작일 변경 -> ClosedPromotionModificationException")
+        fun updatePromotion_leaderClosedEmployeeDateChange() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            whenever(dataScopeHolder.require()).thenReturn(scope)
+
+            val promotion = createPromotion()
+            whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
+            whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(true)
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(createUser(appAuthority = "조장")))
+
+            val request = createRequest(startDate = LocalDate.of(2026, 3, 5))
+
+            assertThatThrownBy { adminPromotionService.updatePromotion(1L, userId, request) }
                 .isInstanceOf(ClosedPromotionModificationException::class.java)
         }
 
@@ -567,7 +638,7 @@ class AdminPromotionServiceTest {
             // startDate를 3/13으로 → minDate(3/12) 이후이므로 충돌
             val request = createRequest(startDate = LocalDate.of(2026, 3, 13))
 
-            assertThatThrownBy { adminPromotionService.updatePromotion(1L, request) }
+            assertThatThrownBy { adminPromotionService.updatePromotion(1L, userId, request) }
                 .isInstanceOf(DateRangeConflictException::class.java)
         }
 
@@ -594,7 +665,7 @@ class AdminPromotionServiceTest {
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>())).thenAnswer { it.getArgument<PromotionEmployee>(0) }
 
-            adminPromotionService.updatePromotion(1L, createRequest(accountId = 200))
+            adminPromotionService.updatePromotion(1L, userId, createRequest(accountId = 200))
 
             verify(scheduleRepository).deleteAllByIdIn(listOf(100L))
             assertThat(pe.scheduleId).isNull()
@@ -731,9 +802,11 @@ class AdminPromotionServiceTest {
     private fun createUser(
         id: Long = 1L,
         employeeId: String = "20030117",
-        costCenterCode: String? = "1101"
+        costCenterCode: String? = "1101",
+        appAuthority: String? = null
     ) = User(id = id, employeeId = employeeId, name = "테스트 사용자").also {
         it.costCenterCode = costCenterCode
+        it.appAuthority = appAuthority
     }
 
     private fun createRequest(

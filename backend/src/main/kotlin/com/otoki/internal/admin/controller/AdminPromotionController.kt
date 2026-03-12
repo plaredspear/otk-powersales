@@ -84,7 +84,7 @@ class AdminPromotionController(
         @PathVariable id: Long,
         @Valid @RequestBody request: PromotionCreateRequest
     ): ResponseEntity<ApiResponse<PromotionDetailResponse>> {
-        val response = adminPromotionService.updatePromotion(id, request)
+        val response = adminPromotionService.updatePromotion(id, principal.userId, request)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
