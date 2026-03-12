@@ -155,6 +155,18 @@ export interface PromotionFormData {
   external_id?: string | null;
 }
 
+// --- Form-Meta interfaces ---
+
+interface PromotionFormMetaRaw {
+  promotion_types: { id: number; name: string }[];
+  stand_locations: { value: string; name: string }[];
+}
+
+export interface PromotionFormMeta {
+  promotionTypes: { id: number; name: string }[];
+  standLocations: { value: string; name: string }[];
+}
+
 // --- Mappers ---
 
 function mapPromotionList(raw: PromotionListRaw): PromotionListData {
@@ -219,7 +231,22 @@ function mapPromotionDetail(raw: PromotionDetailRaw): PromotionDetail {
   };
 }
 
+function mapFormMeta(raw: PromotionFormMetaRaw): PromotionFormMeta {
+  return {
+    promotionTypes: raw.promotion_types,
+    standLocations: raw.stand_locations,
+  };
+}
+
 // --- API functions ---
+
+export async function fetchPromotionFormMeta(): Promise<PromotionFormMeta> {
+  const res = await client.get<ApiResponse<PromotionFormMetaRaw>>('/api/v1/admin/promotions/form-meta');
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '행사마스터 폼 메타 조회에 실패했습니다');
+  }
+  return mapFormMeta(res.data.data);
+}
 
 export async function fetchPromotions(params: PromotionListParams): Promise<PromotionListData> {
   const queryParams: Record<string, string | number> = {
