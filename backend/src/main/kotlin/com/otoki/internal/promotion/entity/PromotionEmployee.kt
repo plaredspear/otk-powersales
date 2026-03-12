@@ -9,7 +9,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 @Entity
-@Table(name = "dkretail__promotion_employee__c")
+@Table(name = "promotion_employee")
 @SFObject("DKRetail__PromotionEmployee__c")
 @HCTable("dkretail__promotionemployee__c")
 class PromotionEmployee(
