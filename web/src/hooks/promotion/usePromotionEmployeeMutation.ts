@@ -4,6 +4,7 @@ import {
   updatePromotionEmployee,
   deletePromotionEmployee,
   batchUpdatePromotionEmployees,
+  confirmPromotionSchedule,
   type PromotionEmployeeFormData,
   type BatchUpdatePromotionEmployeeRequest,
 } from '@/api/promotionEmployee';
@@ -34,6 +35,16 @@ export function useDeletePromotionEmployee() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: number) => deletePromotionEmployee(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'promotions'] });
+    },
+  });
+}
+
+export function useConfirmPromotionSchedule() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (promotionId: number) => confirmPromotionSchedule(promotionId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'promotions'] });
     },
