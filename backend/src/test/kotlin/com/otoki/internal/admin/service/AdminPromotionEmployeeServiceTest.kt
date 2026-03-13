@@ -342,6 +342,78 @@ class AdminPromotionEmployeeServiceTest {
         }
 
         @Test
+        @DisplayName("workType3 null 수정 -> null로 저장 성공")
+        fun updateEmployee_workType3Null_success() {
+            val pe = createPe()
+            whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            whenever(userRepository.findBySfidIn(any())).thenReturn(listOf(createUser()))
+            stubRollup()
+
+            val result = service.updateEmployee(1L, 1L, createRequest(workType3 = null))
+            assertThat(result.workType3).isNull()
+        }
+
+        @Test
+        @DisplayName("workType3 빈 문자열 수정 -> null로 변환되어 저장")
+        fun updateEmployee_workType3Empty_savedAsNull() {
+            val pe = createPe()
+            whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            whenever(userRepository.findBySfidIn(any())).thenReturn(listOf(createUser()))
+            stubRollup()
+
+            val result = service.updateEmployee(1L, 1L, createRequest(workType3 = ""))
+            assertThat(result.workType3).isNull()
+        }
+
+        @Test
+        @DisplayName("employeeSfid null 수정 -> null로 저장 성공")
+        fun updateEmployee_employeeSfidNull_success() {
+            val pe = createPe()
+            whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            stubRollup()
+
+            val result = service.updateEmployee(1L, 1L, createRequest(employeeSfid = null))
+            assertThat(result.employeeSfid).isNull()
+        }
+
+        @Test
+        @DisplayName("employeeSfid 빈 문자열 수정 -> null로 변환되어 저장")
+        fun updateEmployee_employeeSfidEmpty_savedAsNull() {
+            val pe = createPe()
+            whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            stubRollup()
+
+            val result = service.updateEmployee(1L, 1L, createRequest(employeeSfid = ""))
+            assertThat(result.employeeSfid).isNull()
+        }
+
+        @Test
+        @DisplayName("workType3 무효값 수정 -> InvalidWorkType3Exception")
+        fun updateEmployee_workType3Invalid() {
+            val pe = createPe()
+            whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+
+            assertThatThrownBy { service.updateEmployee(1L, 1L, createRequest(workType3 = "잘못된값")) }
+                .isInstanceOf(InvalidWorkType3Exception::class.java)
+        }
+
+        @Test
         @DisplayName("투입일이 행사 기간 이후 (수정) -> SCHEDULE_DATE_OUT_OF_RANGE")
         fun updateEmployee_scheduleDateAfterEnd() {
             val pe = createPe()
@@ -625,6 +697,114 @@ class AdminPromotionEmployeeServiceTest {
         }
 
         @Test
+        @DisplayName("workType3 null 일괄 수정 -> null로 저장 성공")
+        fun batchUpdate_workType3Null_success() {
+            val pe = createPe(id = 1L)
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
+            whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            whenever(promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(10L))
+                .thenReturn(listOf(pe))
+            whenever(userRepository.findBySfidIn(any())).thenReturn(listOf(createUser()))
+            stubRollup()
+
+            val request = BatchUpdatePromotionEmployeeRequest(listOf(
+                createBatchItem(id = 1L, workType3 = null)
+            ))
+
+            val result = service.batchUpdateEmployees(10L, 1L, request)
+            assertThat(result.updatedCount).isEqualTo(1)
+            assertThat(pe.workType3).isNull()
+        }
+
+        @Test
+        @DisplayName("workType3 빈 문자열 일괄 수정 -> null로 변환되어 저장")
+        fun batchUpdate_workType3Empty_savedAsNull() {
+            val pe = createPe(id = 1L)
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
+            whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            whenever(promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(10L))
+                .thenReturn(listOf(pe))
+            whenever(userRepository.findBySfidIn(any())).thenReturn(listOf(createUser()))
+            stubRollup()
+
+            val request = BatchUpdatePromotionEmployeeRequest(listOf(
+                createBatchItem(id = 1L, workType3 = "")
+            ))
+
+            val result = service.batchUpdateEmployees(10L, 1L, request)
+            assertThat(result.updatedCount).isEqualTo(1)
+            assertThat(pe.workType3).isNull()
+        }
+
+        @Test
+        @DisplayName("employeeSfid null 일괄 수정 -> null로 저장 성공")
+        fun batchUpdate_employeeSfidNull_success() {
+            val pe = createPe(id = 1L)
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
+            whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            whenever(promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(10L))
+                .thenReturn(listOf(pe))
+            stubRollup()
+
+            val request = BatchUpdatePromotionEmployeeRequest(listOf(
+                createBatchItem(id = 1L, employeeSfid = null)
+            ))
+
+            val result = service.batchUpdateEmployees(10L, 1L, request)
+            assertThat(result.updatedCount).isEqualTo(1)
+            assertThat(pe.employeeSfid).isNull()
+        }
+
+        @Test
+        @DisplayName("employeeSfid 빈 문자열 일괄 수정 -> null로 변환되어 저장")
+        fun batchUpdate_employeeSfidEmpty_savedAsNull() {
+            val pe = createPe(id = 1L)
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
+            whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            whenever(promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(10L))
+                .thenReturn(listOf(pe))
+            stubRollup()
+
+            val request = BatchUpdatePromotionEmployeeRequest(listOf(
+                createBatchItem(id = 1L, employeeSfid = "")
+            ))
+
+            val result = service.batchUpdateEmployees(10L, 1L, request)
+            assertThat(result.updatedCount).isEqualTo(1)
+            assertThat(pe.employeeSfid).isNull()
+        }
+
+        @Test
+        @DisplayName("workType3 무효값 일괄 수정 -> INVALID_WORK_TYPE3 에러")
+        fun batchUpdate_workType3Invalid() {
+            val pe = createPe(id = 1L)
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
+            whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+
+            val request = BatchUpdatePromotionEmployeeRequest(listOf(
+                createBatchItem(id = 1L, workType3 = "잘못된값")
+            ))
+
+            val ex = org.junit.jupiter.api.assertThrows<BatchValidationException> {
+                service.batchUpdateEmployees(10L, 1L, request)
+            }
+            assertThat(ex.errors[0].errorCode).isEqualTo("INVALID_WORK_TYPE3")
+        }
+
+        @Test
         @DisplayName("롤업 재계산 - 수정 후 행사마스터 합계 갱신")
         fun batchUpdate_rollupRecalculation() {
             val promotion = createPromotion()
@@ -684,8 +864,8 @@ class AdminPromotionEmployeeServiceTest {
     }
 
     private fun createBatchItem(
-        id: Long = 1L, employeeSfid: String = "a0B5g00000XYZabc", scheduleDate: LocalDate = LocalDate.of(2026, 3, 15),
-        workStatus: String = "근무", workType1: String = "시식", workType3: String = "고정",
+        id: Long = 1L, employeeSfid: String? = "a0B5g00000XYZabc", scheduleDate: LocalDate = LocalDate.of(2026, 3, 15),
+        workStatus: String = "근무", workType1: String = "시식", workType3: String? = "고정",
         workType4: String? = "냉장", professionalPromotionTeam: String? = "라면세일조",
         basePrice: Long? = 1500, dailyTargetCount: Int? = 100,
         targetAmount: Long? = 0, actualAmount: Long? = 0
@@ -697,8 +877,8 @@ class AdminPromotionEmployeeServiceTest {
     )
 
     private fun createRequest(
-        employeeSfid: String = "a0B5g00000XYZabc", scheduleDate: LocalDate = LocalDate.of(2026, 3, 15),
-        workStatus: String = "근무", workType1: String = "시식", workType3: String = "고정",
+        employeeSfid: String? = "a0B5g00000XYZabc", scheduleDate: LocalDate = LocalDate.of(2026, 3, 15),
+        workStatus: String = "근무", workType1: String = "시식", workType3: String? = "고정",
         workType4: String? = "냉장", professionalPromotionTeam: String? = "라면세일조",
         basePrice: Long? = 1500, dailyTargetCount: Int? = 100,
         targetAmount: Long? = 0, actualAmount: Long? = 0

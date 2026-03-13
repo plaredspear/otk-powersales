@@ -122,11 +122,11 @@ class PromotionEmployee(
     var updatedAt: LocalDateTime = LocalDateTime.now()
 ) {
     fun update(
-        employeeSfid: String,
+        employeeSfid: String?,
         scheduleDate: LocalDate,
         workStatus: String,
         workType1: String,
-        workType3: String,
+        workType3: String?,
         workType4: String?,
         professionalPromotionTeam: String?,
         basePrice: Long?,

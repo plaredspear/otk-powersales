@@ -100,14 +100,19 @@ class AdminPromotionEmployeeService(
     @Transactional
     fun updateEmployee(id: Long, userId: Long, request: PromotionEmployeeRequest): PromotionEmployeeDetailResponse {
         val pe = findEmployeeById(id)
+
+        // 빈 문자열 → null 정규화
+        val normalizedEmployeeSfid = request.employeeSfid?.takeIf { it.isNotBlank() }
+        val normalizedWorkType3 = request.workType3?.takeIf { it.isNotBlank() }
+
         validateWorkStatus(request.workStatus!!)
-        validateWorkType3(request.workType3!!)
+        validateWorkType3(normalizedWorkType3)
 
         // 1-2-A: 마감 보호 — 핵심필드 수정 차단 (ADMIN 예외)
         val user = userRepository.findById(userId)
             .orElseThrow { IllegalStateException("사용자를 찾을 수 없습니다: $userId") }
         validateClosedEmployeeModification(
-            pe, request.employeeSfid!!, request.scheduleDate!!, request.workType3!!,
+            pe, normalizedEmployeeSfid, request.scheduleDate!!, normalizedWorkType3,
             request.basePrice, request.dailyTargetCount, user.role == UserRole.ADMIN
         )
 
@@ -118,16 +123,16 @@ class AdminPromotionEmployeeService(
 
         // 1-5: 핵심필드 변경 시 스케줄 삭제
         removeScheduleOnCriticalFieldChange(
-            pe, request.employeeSfid!!, request.scheduleDate!!, request.workType3!!,
+            pe, normalizedEmployeeSfid, request.scheduleDate!!, normalizedWorkType3,
             request.professionalPromotionTeam
         )
 
         pe.update(
-            employeeSfid = request.employeeSfid!!,
+            employeeSfid = normalizedEmployeeSfid,
             scheduleDate = request.scheduleDate!!,
             workStatus = request.workStatus!!,
             workType1 = request.workType1!!,
-            workType3 = request.workType3!!,
+            workType3 = normalizedWorkType3,
             workType4 = request.workType4,
             professionalPromotionTeam = request.professionalPromotionTeam,
             basePrice = request.basePrice,
@@ -200,17 +205,21 @@ class AdminPromotionEmployeeService(
         for (item in request.items) {
             val pe = employeeMap[item.id]!!
 
+            // 빈 문자열 → null 정규화
+            val normalizedEmployeeSfid = item.employeeSfid?.takeIf { it.isNotBlank() }
+            val normalizedWorkType3 = item.workType3?.takeIf { it.isNotBlank() }
+
             removeScheduleOnCriticalFieldChange(
-                pe, item.employeeSfid, item.scheduleDate, item.workType3,
+                pe, normalizedEmployeeSfid, item.scheduleDate, normalizedWorkType3,
                 item.professionalPromotionTeam
             )
 
             pe.update(
-                employeeSfid = item.employeeSfid,
+                employeeSfid = normalizedEmployeeSfid,
                 scheduleDate = item.scheduleDate,
                 workStatus = item.workStatus,
                 workType1 = item.workType1,
-                workType3 = item.workType3,
+                workType3 = normalizedWorkType3,
                 workType4 = item.workType4,
                 professionalPromotionTeam = item.professionalPromotionTeam,
                 basePrice = item.basePrice,
@@ -275,6 +284,10 @@ class AdminPromotionEmployeeService(
         isAdmin: Boolean,
         employeeMap: MutableMap<Long, PromotionEmployee>
     ): BatchItemError? {
+        // 빈 문자열 → null 정규화 (비교 시 일관성)
+        val normalizedEmployeeSfid = item.employeeSfid?.takeIf { it.isNotBlank() }
+        val normalizedWorkType3 = item.workType3?.takeIf { it.isNotBlank() }
+
         // 1. 존재 여부
         val pe = promotionEmployeeRepository.findById(item.id).orElse(null)
             ?: return BatchItemError(index, item.employeeSfid, "NOT_FOUND", "행사조원을 찾을 수 없습니다")
@@ -298,8 +311,8 @@ class AdminPromotionEmployeeService(
             return BatchItemError(index, item.employeeSfid, "INVALID_WORK_STATUS", "근무상태는 근무, 연차, 대휴 중 하나여야 합니다")
         }
 
-        // 5. 근무유형3
-        if (item.workType3 !in VALID_WORK_TYPE3) {
+        // 5. 근무유형3 (null 허용)
+        if (normalizedWorkType3 != null && normalizedWorkType3 !in VALID_WORK_TYPE3) {
             return BatchItemError(index, item.employeeSfid, "INVALID_WORK_TYPE3", "근무유형3은 고정, 격고, 순회 중 하나여야 합니다")
         }
 
@@ -323,9 +336,9 @@ class AdminPromotionEmployeeService(
 
         // 7. 마감 보호
         if (pe.scheduleId != null && pe.promoCloseByTm) {
-            val criticalChanged = pe.employeeSfid != item.employeeSfid ||
+            val criticalChanged = pe.employeeSfid != normalizedEmployeeSfid ||
                 pe.scheduleDate != item.scheduleDate ||
-                pe.workType3 != item.workType3 ||
+                pe.workType3 != normalizedWorkType3 ||
                 pe.basePrice != item.basePrice ||
                 pe.dailyTargetCount != item.dailyTargetCount
 
@@ -366,7 +379,8 @@ class AdminPromotionEmployeeService(
         if (workStatus !in VALID_WORK_STATUSES) throw InvalidWorkStatusException()
     }
 
-    private fun validateWorkType3(workType3: String) {
+    private fun validateWorkType3(workType3: String?) {
+        if (workType3 == null) return
         if (workType3 !in VALID_WORK_TYPE3) throw InvalidWorkType3Exception()
     }
 
@@ -385,9 +399,9 @@ class AdminPromotionEmployeeService(
 
     private fun validateClosedEmployeeModification(
         pe: PromotionEmployee,
-        employeeSfid: String,
+        employeeSfid: String?,
         scheduleDate: java.time.LocalDate,
-        workType3: String,
+        workType3: String?,
         basePrice: Long?,
         dailyTargetCount: Int?,
         isAdmin: Boolean
@@ -405,9 +419,9 @@ class AdminPromotionEmployeeService(
 
     private fun removeScheduleOnCriticalFieldChange(
         pe: PromotionEmployee,
-        employeeSfid: String,
+        employeeSfid: String?,
         scheduleDate: java.time.LocalDate,
-        workType3: String,
+        workType3: String?,
         professionalPromotionTeam: String?
     ) {
         if (pe.scheduleId == null) return
