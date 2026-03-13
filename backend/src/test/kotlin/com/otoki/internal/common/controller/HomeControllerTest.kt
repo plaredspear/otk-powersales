@@ -73,7 +73,7 @@ class HomeControllerTest {
             val commuteTime = LocalDateTime.of(2026, 2, 25, 8, 30, 0)
             val mockResponse = HomeResponse(
                 todaySchedules = listOf(
-                    HomeResponse.ScheduleInfo(
+                    HomeResponse.TeamMemberScheduleInfo(
                         scheduleId = "SCH-20260225-001",
                         employeeName = "최금주",
                         employeeSfid = "20030117",
@@ -176,7 +176,7 @@ class HomeControllerTest {
             val commuteTime1 = LocalDateTime.of(2026, 2, 25, 8, 15, 0)
             val mockResponse = HomeResponse(
                 todaySchedules = listOf(
-                    HomeResponse.ScheduleInfo(
+                    HomeResponse.TeamMemberScheduleInfo(
                         scheduleId = "SCH-20260225-010",
                         employeeName = "최금주",
                         employeeSfid = "20030117",
@@ -187,7 +187,7 @@ class HomeControllerTest {
                         isCommuteRegistered = true,
                         commuteRegisteredAt = commuteTime1
                     ),
-                    HomeResponse.ScheduleInfo(
+                    HomeResponse.TeamMemberScheduleInfo(
                         scheduleId = "SCH-20260225-011",
                         employeeName = "김영희",
                         employeeSfid = "20190523",
@@ -198,7 +198,7 @@ class HomeControllerTest {
                         isCommuteRegistered = false,
                         commuteRegisteredAt = null
                     ),
-                    HomeResponse.ScheduleInfo(
+                    HomeResponse.TeamMemberScheduleInfo(
                         scheduleId = "SCH-20260225-012",
                         employeeName = "박소현",
                         employeeSfid = "20210812",

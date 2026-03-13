@@ -10,7 +10,7 @@ import com.otoki.internal.promotion.repository.PromotionEmployeeRepository
 import com.otoki.internal.promotion.repository.PromotionRepository
 import com.otoki.internal.sap.entity.User
 import com.otoki.internal.sap.repository.UserRepository
-import com.otoki.internal.schedule.repository.ScheduleRepository
+import com.otoki.internal.teammemberschedule.repository.TeamMemberScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
@@ -31,7 +31,7 @@ class AdminPromotionEmployeeServiceTest {
     @Mock private lateinit var promotionEmployeeRepository: PromotionEmployeeRepository
     @Mock private lateinit var promotionRepository: PromotionRepository
     @Mock private lateinit var userRepository: UserRepository
-    @Mock private lateinit var scheduleRepository: ScheduleRepository
+    @Mock private lateinit var teamMemberScheduleRepository: TeamMemberScheduleRepository
 
     @InjectMocks private lateinit var service: AdminPromotionEmployeeService
 
@@ -303,7 +303,7 @@ class AdminPromotionEmployeeServiceTest {
 
             service.updateEmployee(1L, 1L, createRequest(employeeSfid = "NEW_SFID"))
 
-            verify(scheduleRepository).deleteAllByIdIn(listOf(100L))
+            verify(teamMemberScheduleRepository).deleteAllByIdIn(listOf(100L))
             assertThat(pe.scheduleId).isNull()
         }
 
@@ -325,7 +325,7 @@ class AdminPromotionEmployeeServiceTest {
                 professionalPromotionTeam = "라면세일조B"
             ))
 
-            verify(scheduleRepository, never()).deleteAllByIdIn(any())
+            verify(teamMemberScheduleRepository, never()).deleteAllByIdIn(any())
             assertThat(pe.scheduleId).isEqualTo(100L)
         }
 
@@ -507,7 +507,7 @@ class AdminPromotionEmployeeServiceTest {
 
             service.deleteEmployee(1L)
 
-            verify(scheduleRepository).deleteAllByIdIn(listOf(100L))
+            verify(teamMemberScheduleRepository).deleteAllByIdIn(listOf(100L))
             verify(promotionEmployeeRepository).delete(pe)
         }
 
@@ -692,7 +692,7 @@ class AdminPromotionEmployeeServiceTest {
 
             service.batchUpdateEmployees(10L, 1L, request)
 
-            verify(scheduleRepository).deleteAllByIdIn(listOf(100L))
+            verify(teamMemberScheduleRepository).deleteAllByIdIn(listOf(100L))
             assertThat(pe.scheduleId).isNull()
         }
 

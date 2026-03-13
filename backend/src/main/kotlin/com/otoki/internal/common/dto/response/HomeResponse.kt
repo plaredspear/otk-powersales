@@ -6,7 +6,7 @@ import java.time.LocalDateTime
  * 홈 화면 통합 응답 DTO
  */
 data class HomeResponse(
-    val todaySchedules: List<ScheduleInfo>,
+    val todaySchedules: List<TeamMemberScheduleInfo>,
     val attendanceSummary: AttendanceSummaryInfo,
     val safetyCheckRequired: Boolean,
     val expiryAlert: ExpiryAlertInfo?,
@@ -17,7 +17,7 @@ data class HomeResponse(
     /**
      * 일정 정보 (역할별 스케줄 항목)
      */
-    data class ScheduleInfo(
+    data class TeamMemberScheduleInfo(
         val scheduleId: String,
         val employeeName: String,
         val employeeSfid: String,

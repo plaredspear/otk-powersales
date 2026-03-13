@@ -16,7 +16,7 @@ import com.otoki.internal.sap.entity.UserRole
 import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.sap.repository.ProductRepository
 import com.otoki.internal.sap.repository.UserRepository
-import com.otoki.internal.schedule.repository.ScheduleRepository
+import com.otoki.internal.teammemberschedule.repository.TeamMemberScheduleRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
@@ -33,7 +33,7 @@ class AdminPromotionService(
     private val productRepository: ProductRepository,
     private val userRepository: UserRepository,
     private val dataScopeHolder: DataScopeHolder,
-    private val scheduleRepository: ScheduleRepository
+    private val teamMemberScheduleRepository: TeamMemberScheduleRepository
 ) {
 
     fun getPromotionFormMeta(): PromotionFormMetaResponse {
@@ -300,7 +300,7 @@ class AdminPromotionService(
         val employees = promotionEmployeeRepository.findByPromotionId(id)
         val scheduleIds = employees.mapNotNull { it.scheduleId }
         if (scheduleIds.isNotEmpty()) {
-            scheduleRepository.deleteAllByIdIn(scheduleIds)
+            teamMemberScheduleRepository.deleteAllByIdIn(scheduleIds)
         }
         promotionEmployeeRepository.deleteByPromotionId(id)
 
@@ -312,7 +312,7 @@ class AdminPromotionService(
         val employees = promotionEmployeeRepository.findByPromotionId(promotionId)
         val scheduleIds = employees.mapNotNull { it.scheduleId }
         if (scheduleIds.isNotEmpty()) {
-            scheduleRepository.deleteAllByIdIn(scheduleIds)
+            teamMemberScheduleRepository.deleteAllByIdIn(scheduleIds)
         }
         employees.forEach { pe ->
             if (pe.scheduleId != null) {

@@ -58,7 +58,7 @@ class AdminPromotionConfirmControllerTest {
             val response = PromotionConfirmResponse(
                 promotionId = 10L,
                 totalEmployees = 3,
-                upsertedSchedules = 3
+                upsertedTeamMemberSchedules = 3
             )
             whenever(adminPromotionConfirmService.confirmPromotion(10L)).thenReturn(response)
 
