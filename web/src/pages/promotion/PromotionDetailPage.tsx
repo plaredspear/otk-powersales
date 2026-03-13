@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Button,
@@ -34,8 +34,6 @@ import {
   BatchValidationError,
   type BatchUpdatePromotionEmployeeItem,
 } from '@/api/promotionEmployee';
-import { fetchEmployees } from '@/api/employee';
-import type { Employee } from '@/api/employee';
 import type { PromotionFormData } from '@/api/promotion';
 import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
 import PromotionDetailSection, {
@@ -47,12 +45,6 @@ import PromotionProductSection, {
 import PromotionAmountSection from './sections/PromotionAmountSection';
 
 const { Title } = Typography;
-
-const WORK_STATUS_OPTIONS = [
-  { label: '근무', value: '근무' },
-  { label: '연차', value: '연차' },
-  { label: '대휴', value: '대휴' },
-];
 
 const WORK_TYPE3_OPTIONS = [
   { label: '--None--', value: '' },
@@ -113,8 +105,6 @@ function toEditableRow(pe: PromotionEmployee): EditableRow {
 
 const REQUIRED_FIELDS: (keyof EditableRow)[] = [
   'scheduleDate',
-  'workStatus',
-  'workType1',
 ];
 
 export default function PromotionDetailPage() {
@@ -160,9 +150,6 @@ export default function PromotionDetailPage() {
   const [errorMessages, setErrorMessages] = useState<Map<number, string>>(new Map());
 
   // --- 사원 Lookup 검색 상태 ---
-  const [employeeSearchResults, setEmployeeSearchResults] = useState<Employee[]>([]);
-  const [employeeSearching, setEmployeeSearching] = useState(false);
-  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setDynamicTitle(promotion?.promotionNumber ?? null);
@@ -354,29 +341,6 @@ export default function PromotionDetailPage() {
       },
     });
   };
-
-  // --- 사원 Lookup 검색 ---
-  const handleEmployeeSearch = useCallback((keyword: string) => {
-    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-
-    if (keyword.length < 2) {
-      setEmployeeSearchResults([]);
-      setEmployeeSearching(false);
-      return;
-    }
-
-    setEmployeeSearching(true);
-    searchTimerRef.current = setTimeout(async () => {
-      try {
-        const result = await fetchEmployees({ keyword, size: 10 });
-        setEmployeeSearchResults(result.content);
-      } catch {
-        setEmployeeSearchResults([]);
-      } finally {
-        setEmployeeSearching(false);
-      }
-    }, 300);
-  }, []);
 
   // --- 행 필드 변경 ---
   const updateField = useCallback(
@@ -702,7 +666,7 @@ export default function PromotionDetailPage() {
         ),
       },
       {
-        title: '투입일',
+        title: <span>투입일<span style={{ color: '#ff4d4f', marginLeft: 2 }}>*</span></span>,
         dataIndex: 'scheduleDate',
         width: 140,
         render: (_: unknown, record: EditableRow) => (
@@ -828,86 +792,6 @@ export default function PromotionDetailPage() {
       },
       confirmColumn,
       closeColumn,
-      // --- 편집 모드에서만 추가 표시되는 컬럼 ---
-      {
-        title: '여사원 SF ID',
-        dataIndex: 'employeeSfid',
-        width: 200,
-        render: (_: unknown, record: EditableRow) => (
-          <Select
-            size="small"
-            showSearch
-            filterOption={false}
-            placeholder="사원 검색..."
-            value={record.employeeSfid ? { value: record.employeeSfid, label: record.employeeName ?? record.employeeSfid } : undefined}
-            labelInValue
-            allowClear
-            onSearch={handleEmployeeSearch}
-            onChange={(option) => {
-              if (option) {
-                const selected = employeeSearchResults.find((e) => e.sfid === option.value);
-                updateField(record.id, 'employeeSfid', option.value);
-                updateField(record.id, 'employeeName', selected?.name ?? option.label);
-              }
-            }}
-            onClear={() => {
-              updateField(record.id, 'employeeSfid', null);
-              updateField(record.id, 'employeeName', null);
-            }}
-            notFoundContent={
-              employeeSearching ? <Spin size="small" /> : '검색 결과 없음'
-            }
-            options={employeeSearchResults
-              .filter((e) => e.sfid)
-              .map((e) => ({
-                value: e.sfid!,
-                label: `${e.name} (${e.employeeId})`,
-              }))}
-            style={{ width: '100%' }}
-          />
-        ),
-      },
-      {
-        title: '근무상태',
-        dataIndex: 'workStatus',
-        width: 90,
-        render: (_: unknown, record: EditableRow) => (
-          <Select
-            size="small"
-            options={WORK_STATUS_OPTIONS}
-            value={record.workStatus}
-            onChange={(v) => updateField(record.id, 'workStatus', v)}
-            style={{ width: '100%' }}
-            allowClear={false}
-          />
-        ),
-      },
-      {
-        title: '근무유형1',
-        dataIndex: 'workType1',
-        width: 100,
-        render: (_: unknown, record: EditableRow) => (
-          <Input
-            size="small"
-            maxLength={100}
-            value={record.workType1 ?? ''}
-            onChange={(e) => updateField(record.id, 'workType1', e.target.value || null)}
-          />
-        ),
-      },
-      {
-        title: '근무유형4',
-        dataIndex: 'workType4',
-        width: 100,
-        render: (_: unknown, record: EditableRow) => (
-          <Input
-            size="small"
-            maxLength={100}
-            value={record.workType4 ?? ''}
-            onChange={(e) => updateField(record.id, 'workType4', e.target.value || null)}
-          />
-        ),
-      },
       {
         title: '삭제',
         width: 60,
@@ -925,7 +809,7 @@ export default function PromotionDetailPage() {
         ),
       },
     ],
-    [confirmColumn, closeColumn, updateField, handleEmployeeSearch, employeeSearchResults, employeeSearching],
+    [confirmColumn, closeColumn, updateField],
   );
 
   if (isLoading) {
@@ -1079,7 +963,21 @@ export default function PromotionDetailPage() {
             size="small"
             pagination={false}
             locale={{ emptyText: '등록된 행사사원이 없습니다' }}
-            footer={() => `총 ${editRows.length}건`}
+            footer={() => (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>총 {editRows.length}건</span>
+                <Tooltip title={addDisabledTooltip}>
+                  <Button
+                    type="primary"
+                    onClick={handleAddEmployee}
+                    loading={createPeMutation.isPending}
+                    disabled={!hasDates}
+                  >
+                    + 행사사원 추가
+                  </Button>
+                </Tooltip>
+              </div>
+            )}
             rowClassName={(record) => {
               const classes: string[] = [];
               if (errorRowIds.has(record.id)) classes.push('ant-table-row-error');
@@ -1089,7 +987,7 @@ export default function PromotionDetailPage() {
             onRow={(record) => ({
               title: errorMessages.get(record.id) || undefined,
             })}
-            scroll={{ x: 2400 }}
+            scroll={{ x: 1910 }}
           />
         ) : (
           <Table<PromotionEmployee>
@@ -1103,21 +1001,7 @@ export default function PromotionDetailPage() {
             rowClassName={(record) =>
               record.scheduleId != null ? 'ant-table-row-confirmed' : ''
             }
-            footer={() => (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span>총 {employees?.length ?? 0}건</span>
-                <Tooltip title={addDisabledTooltip}>
-                  <Button
-                    type="primary"
-                    onClick={handleAddEmployee}
-                    loading={createPeMutation.isPending}
-                    disabled={!hasDates}
-                  >
-                    + 행사사원 추가
-                  </Button>
-                </Tooltip>
-              </div>
-            )}
+            footer={() => `총 ${employees?.length ?? 0}건`}
             scroll={{ x: 1800 }}
           />
         )}
