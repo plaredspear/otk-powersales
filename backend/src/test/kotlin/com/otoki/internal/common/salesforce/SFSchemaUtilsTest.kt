@@ -3,6 +3,7 @@ package com.otoki.internal.common.salesforce
 import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.sap.entity.Product
 import com.otoki.internal.sap.entity.User
+import com.otoki.internal.teammemberschedule.entity.TeamMemberSchedule
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
@@ -47,6 +48,47 @@ class SFSchemaUtilsTest {
             assertThat(mapping["DKRetail__HomePhone__c"]).isEqualTo("home_phone")
             assertThat(mapping["DKRetail__StartDate__c"]).isEqualTo("start_date")
             assertThat(mapping["AgreementFlag__c"]).isEqualTo("agreement_flag")
+        }
+
+        @Test
+        @DisplayName("TeamMemberSchedule 엔티티 - 33개 SF Field 매핑 반환")
+        fun getSFMapping_teamMemberSchedule() {
+            val mapping = SFSchemaUtils.getSFMapping(TeamMemberSchedule::class.java)
+
+            assertThat(mapping).hasSize(33)
+            assertThat(mapping["DKRetail__EmployeeId__c"]).isEqualTo("employee_id")
+            assertThat(mapping["Name"]).isEqualTo("name")
+            assertThat(mapping["DKRetail__WorkingDate__c"]).isEqualTo("working_date")
+            assertThat(mapping["DKRetail__WorkingType__c"]).isEqualTo("working_type")
+            assertThat(mapping["DKRetail__WorkingCategory1__c"]).isEqualTo("working_category1")
+            assertThat(mapping["DKRetail__WorkingCategory2__c"]).isEqualTo("working_category2")
+            assertThat(mapping["DKRetail__WorkingCategory3__c"]).isEqualTo("working_category3")
+            assertThat(mapping["WorkingCategory4__c"]).isEqualTo("working_category4")
+            assertThat(mapping["AccountId__c"]).isEqualTo("account_id")
+            assertThat(mapping["teamleadersfid__c"]).isEqualTo("team_leader_sfid")
+            assertThat(mapping["DKRetail__AltHolidayId__c"]).isEqualTo("alt_holiday_id")
+            assertThat(mapping["DKRetail__CommuteLogId__c"]).isEqualTo("commute_log_id")
+            assertThat(mapping["DKRetail__PromotionEmpId__c"]).isEqualTo("promotion_emp_id")
+            assertThat(mapping["DKRetail__PromotionEmpIdExt__c"]).isEqualTo("promotion_emp_id_ext")
+            assertThat(mapping["CommuteReportDateTime__c"]).isEqualTo("commute_report_datetime")
+            assertThat(mapping["ID__c"]).isEqualTo("id_field")
+            assertThat(mapping["TraversalFlag__c"]).isEqualTo("traversal_flag")
+            assertThat(mapping["Equipment1__c"]).isEqualTo("equipment1")
+            assertThat(mapping["Equipment2__c"]).isEqualTo("equipment2")
+            assertThat(mapping["Equipment3__c"]).isEqualTo("equipment3")
+            assertThat(mapping["Equipment4__c"]).isEqualTo("equipment4")
+            assertThat(mapping["Equipment5__c"]).isEqualTo("equipment5")
+            assertThat(mapping["Equipment6__c"]).isEqualTo("equipment6")
+            assertThat(mapping["Equipment7__c"]).isEqualTo("equipment7")
+            assertThat(mapping["Equipment8__c"]).isEqualTo("equipment8")
+            assertThat(mapping["Equipment9__c"]).isEqualTo("equipment9")
+            assertThat(mapping["Equipment10__c"]).isEqualTo("equipment10")
+            assertThat(mapping["Yes_ChkCnt__c"]).isEqualTo("yes_chk_cnt")
+            assertThat(mapping["No_ChkCnt__c"]).isEqualTo("no_chk_cnt")
+            assertThat(mapping["precaution_chk__c"]).isEqualTo("precaution_chk")
+            assertThat(mapping["precaution__c"]).isEqualTo("precaution")
+            assertThat(mapping["StartTime__c"]).isEqualTo("start_time")
+            assertThat(mapping["CompleteTime__c"]).isEqualTo("complete_time")
         }
 
         @Test
@@ -103,6 +145,46 @@ class SFSchemaUtilsTest {
             assertThat(mapping["isdeleted"]).isEqualTo("isdeleted")
             assertThat(mapping["systemmodstamp"]).isEqualTo("systemmodstamp")
             assertThat(mapping["createddate"]).isEqualTo("created_date")
+            assertThat(mapping["_hc_lastop"]).isEqualTo("_hc_lastop")
+            assertThat(mapping["_hc_err"]).isEqualTo("_hc_err")
+        }
+
+        @Test
+        @DisplayName("TeamMemberSchedule 엔티티 - 40개 HC Column 매핑 반환")
+        fun getHCMapping_teamMemberSchedule() {
+            val mapping = SFSchemaUtils.getHCMapping(TeamMemberSchedule::class.java)
+
+            assertThat(mapping).hasSize(40)
+            assertThat(mapping["id"]).isEqualTo("id")
+            assertThat(mapping["sfid"]).isEqualTo("sfid")
+            assertThat(mapping["name"]).isEqualTo("name")
+            assertThat(mapping["dkretail__employeeid__c"]).isEqualTo("employee_id")
+            assertThat(mapping["dkretail__workingdate__c"]).isEqualTo("working_date")
+            assertThat(mapping["dkretail__workingtype__c"]).isEqualTo("working_type")
+            assertThat(mapping["dkretail__workingcategory1__c"]).isEqualTo("working_category1")
+            assertThat(mapping["dkretail__workingcategory2__c"]).isEqualTo("working_category2")
+            assertThat(mapping["dkretail__workingcategory3__c"]).isEqualTo("working_category3")
+            assertThat(mapping["workingcategory4__c"]).isEqualTo("working_category4")
+            assertThat(mapping["accountid__c"]).isEqualTo("account_id")
+            assertThat(mapping["teamleadersfid__c"]).isEqualTo("team_leader_sfid")
+            assertThat(mapping["dkretail__altholidayid__c"]).isEqualTo("alt_holiday_id")
+            assertThat(mapping["dkretail__commutelogid__c"]).isEqualTo("commute_log_id")
+            assertThat(mapping["dkretail__promotionempid__c"]).isEqualTo("promotion_emp_id")
+            assertThat(mapping["commutereportdatetime__c"]).isEqualTo("commute_report_datetime")
+            assertThat(mapping["id__c"]).isEqualTo("id_field")
+            assertThat(mapping["traversalflag__c"]).isEqualTo("traversal_flag")
+            assertThat(mapping["isworkreport__c"]).isEqualTo("is_work_report")
+            assertThat(mapping["equipment1__c"]).isEqualTo("equipment1")
+            assertThat(mapping["equipment10__c"]).isEqualTo("equipment10")
+            assertThat(mapping["yes_chkcnt__c"]).isEqualTo("yes_chk_cnt")
+            assertThat(mapping["no_chkcnt__c"]).isEqualTo("no_chk_cnt")
+            assertThat(mapping["precaution_chk__c"]).isEqualTo("precaution_chk")
+            assertThat(mapping["precaution__c"]).isEqualTo("precaution")
+            assertThat(mapping["starttime__c"]).isEqualTo("start_time")
+            assertThat(mapping["completetime__c"]).isEqualTo("complete_time")
+            assertThat(mapping["isdeleted"]).isEqualTo("isdeleted")
+            assertThat(mapping["createddate"]).isEqualTo("created_date")
+            assertThat(mapping["systemmodstamp"]).isEqualTo("systemmodstamp")
             assertThat(mapping["_hc_lastop"]).isEqualTo("_hc_lastop")
             assertThat(mapping["_hc_err"]).isEqualTo("_hc_err")
         }
