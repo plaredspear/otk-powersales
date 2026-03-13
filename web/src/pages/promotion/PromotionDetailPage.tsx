@@ -968,6 +968,7 @@ export default function PromotionDetailPage() {
 
       {/* 3개 섹션: Collapse */}
       <Collapse
+        className="promotion-detail-collapse"
         defaultActiveKey={['detail', 'product', 'amount']}
         items={[
           {
@@ -1050,7 +1051,12 @@ export default function PromotionDetailPage() {
             pagination={false}
             locale={{ emptyText: '등록된 행사사원이 없습니다' }}
             footer={() => `총 ${editRows.length}건`}
-            rowClassName={(record) => (errorRowIds.has(record.id) ? 'ant-table-row-error' : '')}
+            rowClassName={(record) => {
+              const classes: string[] = [];
+              if (errorRowIds.has(record.id)) classes.push('ant-table-row-error');
+              if (record.scheduleId != null) classes.push('ant-table-row-confirmed');
+              return classes.join(' ');
+            }}
             onRow={(record) => ({
               title: errorMessages.get(record.id) || undefined,
             })}
@@ -1065,6 +1071,9 @@ export default function PromotionDetailPage() {
             pagination={false}
             loading={employeesLoading}
             locale={{ emptyText: '등록된 행사사원이 없습니다' }}
+            rowClassName={(record) =>
+              record.scheduleId != null ? 'ant-table-row-confirmed' : ''
+            }
             footer={() => (
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>총 {employees?.length ?? 0}건</span>
@@ -1085,10 +1094,19 @@ export default function PromotionDetailPage() {
         )}
       </div>
 
-      {/* Error row highlight style */}
+      {/* Scoped styles for promotion detail page */}
       <style>{`
         .ant-table-row-error td {
           background-color: #fff2f0 !important;
+        }
+        .ant-table-row-confirmed td {
+          background-color: #f6ffed !important;
+        }
+        .promotion-detail-collapse .ant-collapse-content-box {
+          padding: 0 !important;
+        }
+        .promotion-detail-collapse .ant-descriptions-view {
+          table-layout: fixed;
         }
       `}</style>
     </div>
