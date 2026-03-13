@@ -3,6 +3,7 @@ package com.otoki.internal.common.salesforce
 import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.sap.entity.Product
 import com.otoki.internal.sap.entity.User
+import com.otoki.internal.teammemberschedule.entity.DisplayWorkSchedule
 import com.otoki.internal.teammemberschedule.entity.TeamMemberSchedule
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -89,6 +90,23 @@ class SFSchemaUtilsTest {
             assertThat(mapping["precaution__c"]).isEqualTo("precaution")
             assertThat(mapping["StartTime__c"]).isEqualTo("start_time")
             assertThat(mapping["CompleteTime__c"]).isEqualTo("complete_time")
+        }
+
+        @Test
+        @DisplayName("DisplayWorkSchedule 엔티티 - 9개 SF Field 매핑 반환")
+        fun getSFMapping_displayWorkSchedule() {
+            val mapping = SFSchemaUtils.getSFMapping(DisplayWorkSchedule::class.java)
+
+            assertThat(mapping).hasSize(9)
+            assertThat(mapping["Account__c"]).isEqualTo("account")
+            assertThat(mapping["FullName__c"]).isEqualTo("full_name")
+            assertThat(mapping["StartDate__c"]).isEqualTo("start_date")
+            assertThat(mapping["EndDate__c"]).isEqualTo("end_date")
+            assertThat(mapping["Confirmed__c"]).isEqualTo("confirmed")
+            assertThat(mapping["TypeOfWork1__c"]).isEqualTo("type_of_work1")
+            assertThat(mapping["TypeOfWork3__c"]).isEqualTo("type_of_work3")
+            assertThat(mapping["TypeOfWork5__c"]).isEqualTo("type_of_work5")
+            assertThat(mapping["Name"]).isEqualTo("name")
         }
 
         @Test
@@ -182,6 +200,32 @@ class SFSchemaUtilsTest {
             assertThat(mapping["precaution__c"]).isEqualTo("precaution")
             assertThat(mapping["starttime__c"]).isEqualTo("start_time")
             assertThat(mapping["completetime__c"]).isEqualTo("complete_time")
+            assertThat(mapping["isdeleted"]).isEqualTo("isdeleted")
+            assertThat(mapping["createddate"]).isEqualTo("created_date")
+            assertThat(mapping["systemmodstamp"]).isEqualTo("systemmodstamp")
+            assertThat(mapping["_hc_lastop"]).isEqualTo("_hc_lastop")
+            assertThat(mapping["_hc_err"]).isEqualTo("_hc_err")
+        }
+
+        @Test
+        @DisplayName("DisplayWorkSchedule 엔티티 - 18개 HC Column 매핑 반환")
+        fun getHCMapping_displayWorkSchedule() {
+            val mapping = SFSchemaUtils.getHCMapping(DisplayWorkSchedule::class.java)
+
+            assertThat(mapping).hasSize(18)
+            assertThat(mapping["id"]).isEqualTo("id")
+            assertThat(mapping["sfid"]).isEqualTo("sfid")
+            assertThat(mapping["name"]).isEqualTo("name")
+            assertThat(mapping["account__c"]).isEqualTo("account")
+            assertThat(mapping["fullname__c"]).isEqualTo("full_name")
+            assertThat(mapping["startdate__c"]).isEqualTo("start_date")
+            assertThat(mapping["enddate__c"]).isEqualTo("end_date")
+            assertThat(mapping["confirmed__c"]).isEqualTo("confirmed")
+            assertThat(mapping["typeofwork1__c"]).isEqualTo("type_of_work1")
+            assertThat(mapping["typeofwork3__c"]).isEqualTo("type_of_work3")
+            assertThat(mapping["typeofwork5__c"]).isEqualTo("type_of_work5")
+            assertThat(mapping["createdbyid"]).isEqualTo("created_by_id")
+            assertThat(mapping["ownerid"]).isEqualTo("owner_id")
             assertThat(mapping["isdeleted"]).isEqualTo("isdeleted")
             assertThat(mapping["createddate"]).isEqualTo("created_date")
             assertThat(mapping["systemmodstamp"]).isEqualTo("systemmodstamp")
