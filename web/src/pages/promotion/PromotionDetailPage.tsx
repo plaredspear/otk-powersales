@@ -2,8 +2,8 @@ import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'r
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Button,
+  Collapse,
   DatePicker,
-  Descriptions,
   Input,
   InputNumber,
   Modal,
@@ -12,7 +12,6 @@ import {
   Space,
   Spin,
   Table,
-  Tag,
   Tooltip,
   Typography,
   message,
@@ -21,7 +20,8 @@ import { CheckCircleFilled, CloseCircleFilled } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { usePromotion } from '@/hooks/promotion/usePromotion';
-import { useDeletePromotion } from '@/hooks/promotion/usePromotionMutation';
+import { useDeletePromotion, useUpdatePromotion } from '@/hooks/promotion/usePromotionMutation';
+import { usePromotionFormMeta } from '@/hooks/promotion/usePromotionFormMeta';
 import { usePromotionEmployees } from '@/hooks/promotion/usePromotionEmployees';
 import {
   useCreatePromotionEmployee,
@@ -35,23 +35,17 @@ import {
 } from '@/api/promotionEmployee';
 import { fetchEmployees } from '@/api/employee';
 import type { Employee } from '@/api/employee';
+import type { PromotionFormData } from '@/api/promotion';
 import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
+import PromotionDetailSection, {
+  type DetailFormValues,
+} from './sections/PromotionDetailSection';
+import PromotionProductSection, {
+  type ProductFormValues,
+} from './sections/PromotionProductSection';
+import PromotionAmountSection from './sections/PromotionAmountSection';
 
 const { Title } = Typography;
-
-const CATEGORY_TAG: Record<string, string> = {
-  라면: 'red',
-  냉장: 'blue',
-  냉동: 'cyan',
-  만두: 'orange',
-};
-
-const PROMOTION_TYPE_TAG: Record<string, string> = {
-  시식: 'blue',
-  시음: 'cyan',
-  판촉: 'green',
-  증정: 'gold',
-};
 
 const WORK_STATUS_OPTIONS = [
   { label: '근무', value: '근무' },
@@ -129,7 +123,27 @@ export default function PromotionDetailPage() {
 
   const { data: promotion, isLoading, error } = usePromotion(promotionId);
   const deleteMutation = useDeletePromotion();
+  const updateMutation = useUpdatePromotion();
+  const { data: formMeta } = usePromotionFormMeta();
   const { setDynamicTitle } = useContext(BreadcrumbContext);
+
+  // --- 행사 인라인 편집 상태 ---
+  const [promotionEditing, setPromotionEditing] = useState(false);
+  const [detailForm, setDetailForm] = useState<DetailFormValues>({
+    accountId: 0,
+    accountName: null,
+    startDate: '',
+    endDate: '',
+    promotionTypeId: null,
+    standLocation: null,
+    message: null,
+  });
+  const [productForm, setProductForm] = useState<ProductFormValues>({
+    primaryProductId: null,
+    primaryProductName: null,
+    otherProduct: null,
+    remark: null,
+  });
 
   // --- 행사조원 ---
   const { data: employees, isLoading: employeesLoading } = usePromotionEmployees(promotionId);
@@ -137,8 +151,8 @@ export default function PromotionDetailPage() {
   const deletePeMutation = useDeletePromotionEmployee();
   const batchUpdateMutation = useBatchUpdatePromotionEmployees();
 
-  // --- 편집 모드 상태 ---
-  const [editMode, setEditMode] = useState(false);
+  // --- 행사사원 편집 모드 상태 ---
+  const [empEditMode, setEmpEditMode] = useState(false);
   const [editRows, setEditRows] = useState<EditableRow[]>([]);
   const [errorRowIds, setErrorRowIds] = useState<Set<number>>(new Set());
   const [errorMessages, setErrorMessages] = useState<Map<number, string>>(new Map());
@@ -155,6 +169,104 @@ export default function PromotionDetailPage() {
 
   const hasDates = promotion?.startDate && promotion?.endDate;
 
+  // --- 행사 인라인 편집: 진입 ---
+  const enterPromotionEdit = useCallback(() => {
+    if (!promotion) return;
+    setDetailForm({
+      accountId: promotion.accountId,
+      accountName: promotion.accountName,
+      startDate: promotion.startDate,
+      endDate: promotion.endDate,
+      promotionTypeId: promotion.promotionTypeId,
+      standLocation: promotion.standLocation,
+      message: promotion.message,
+    });
+    setProductForm({
+      primaryProductId: promotion.primaryProductId,
+      primaryProductName: promotion.primaryProductName,
+      otherProduct: promotion.otherProduct,
+      remark: promotion.remark,
+    });
+    setPromotionEditing(true);
+  }, [promotion]);
+
+  // --- 행사 인라인 편집: 취소 ---
+  const cancelPromotionEdit = useCallback(() => {
+    const hasDetailChange = promotion && (
+      detailForm.accountId !== promotion.accountId ||
+      detailForm.startDate !== promotion.startDate ||
+      detailForm.endDate !== promotion.endDate ||
+      detailForm.promotionTypeId !== promotion.promotionTypeId ||
+      detailForm.standLocation !== promotion.standLocation ||
+      detailForm.message !== promotion.message
+    );
+    const hasProductChange = promotion && (
+      productForm.primaryProductId !== promotion.primaryProductId ||
+      productForm.otherProduct !== promotion.otherProduct ||
+      productForm.remark !== promotion.remark
+    );
+
+    if (hasDetailChange || hasProductChange) {
+      Modal.confirm({
+        title: '편집 취소',
+        content: '수정 내용이 저장되지 않습니다. 취소하시겠습니까?',
+        okText: '확인',
+        cancelText: '계속 편집',
+        onOk: () => setPromotionEditing(false),
+      });
+    } else {
+      setPromotionEditing(false);
+    }
+  }, [promotion, detailForm, productForm]);
+
+  // --- 행사 인라인 편집: 저장 ---
+  const savePromotionEdit = useCallback(async () => {
+    if (!promotion) return;
+
+    // Client validation
+    if (!detailForm.accountId) {
+      message.error('거래처를 선택하세요');
+      return;
+    }
+    if (!detailForm.startDate) {
+      message.error('시작일을 입력하세요');
+      return;
+    }
+    if (!detailForm.endDate) {
+      message.error('종료일을 입력하세요');
+      return;
+    }
+    if (detailForm.endDate < detailForm.startDate) {
+      message.error('종료일은 시작일 이후여야 합니다');
+      return;
+    }
+    if (!productForm.primaryProductId) {
+      message.error('대표제품을 선택하세요');
+      return;
+    }
+
+    const data: PromotionFormData = {
+      promotion_type_id: detailForm.promotionTypeId ?? promotion.promotionTypeId ?? 0,
+      account_id: detailForm.accountId,
+      start_date: detailForm.startDate,
+      end_date: detailForm.endDate,
+      primary_product_id: productForm.primaryProductId,
+      other_product: productForm.otherProduct,
+      message: detailForm.message,
+      stand_location: detailForm.standLocation ?? '',
+      remark: productForm.remark,
+    };
+
+    try {
+      await updateMutation.mutateAsync({ id: promotionId, data });
+      message.success('저장되었습니다');
+      setPromotionEditing(false);
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : '수정에 실패했습니다');
+    }
+  }, [promotion, promotionId, detailForm, productForm, updateMutation]);
+
+  // --- 행사 삭제 ---
   const handleDelete = () => {
     Modal.confirm({
       title: '행사마스터 삭제',
@@ -203,18 +315,18 @@ export default function PromotionDetailPage() {
     }
   };
 
-  // --- 편집 모드 진입 ---
-  const enterEditMode = useCallback(() => {
+  // --- 행사사원 편집 모드 진입 ---
+  const enterEmpEditMode = useCallback(() => {
     if (!employees) return;
     setEditRows(employees.map(toEditableRow));
     setErrorRowIds(new Set());
     setErrorMessages(new Map());
-    setEditMode(true);
+    setEmpEditMode(true);
   }, [employees]);
 
-  // --- 편집 모드 취소 ---
-  const cancelEditMode = () => {
-    setEditMode(false);
+  // --- 행사사원 편집 모드 취소 ---
+  const cancelEmpEditMode = () => {
+    setEmpEditMode(false);
     setEditRows([]);
     setErrorRowIds(new Set());
     setErrorMessages(new Map());
@@ -249,7 +361,6 @@ export default function PromotionDetailPage() {
       setEditRows((prev) =>
         prev.map((row) => (row.id === rowId ? { ...row, [field]: value } : row)),
       );
-      // Clear error highlight for this row on change
       setErrorRowIds((prev) => {
         const next = new Set(prev);
         next.delete(rowId);
@@ -342,9 +453,8 @@ export default function PromotionDetailPage() {
     return true;
   }, [editRows]);
 
-  // --- 저장 ---
-  const handleSave = async () => {
-    // Client validation
+  // --- 행사사원 저장 ---
+  const handleEmpSave = async () => {
     if (!validateRequired()) return;
 
     const changedItems = getChangedItems();
@@ -359,18 +469,16 @@ export default function PromotionDetailPage() {
         data: { items: changedItems },
       });
       message.success('저장되었습니다');
-      setEditMode(false);
+      setEmpEditMode(false);
       setEditRows([]);
       setErrorRowIds(new Set());
       setErrorMessages(new Map());
     } catch (err) {
       if (err instanceof BatchValidationError) {
-        // Map errors to row IDs
         const errorIds = new Set<number>();
         const msgs = new Map<number, string>();
 
         for (const itemErr of err.errors) {
-          // changedItems[itemErr.item_index] corresponds to the batch request item
           const batchItem = changedItems[itemErr.item_index];
           if (batchItem) {
             errorIds.add(batchItem.id);
@@ -538,7 +646,7 @@ export default function PromotionDetailPage() {
     [confirmColumn, closeColumn],
   );
 
-  // --- 편집 모드 컬럼 (읽기 모드 컬럼 구조 유지 + 편집 가능 필드만 인라인 입력) ---
+  // --- 편집 모드 컬럼 ---
   const editColumns: ColumnsType<EditableRow> = useMemo(
     () => [
       { title: 'NO.', dataIndex: 'id', width: 70, align: 'center' as const },
@@ -818,14 +926,9 @@ export default function PromotionDetailPage() {
     );
   }
 
-  const categoryColor = promotion.category ? CATEGORY_TAG[promotion.category] : undefined;
-  const typeColor = promotion.promotionTypeName
-    ? PROMOTION_TYPE_TAG[promotion.promotionTypeName]
-    : undefined;
-
   const employeeCount = employees?.length ?? 0;
-  const canEdit = hasDates && employeeCount > 0;
-  const editDisabledTooltip = !hasDates
+  const canEmpEdit = hasDates && employeeCount > 0;
+  const empEditDisabledTooltip = !hasDates
     ? '행사 시작일과 종료일을 먼저 입력하세요'
     : employeeCount === 0
       ? '행사사원을 먼저 추가하세요'
@@ -834,6 +937,7 @@ export default function PromotionDetailPage() {
 
   return (
     <div style={{ padding: 16 }}>
+      {/* 상단 헤더: 목록으로 + 수정/삭제 or 취소/저장 */}
       <div
         style={{
           display: 'flex',
@@ -845,74 +949,59 @@ export default function PromotionDetailPage() {
         <Button type="link" onClick={() => navigate('/promotions')} style={{ paddingLeft: 0 }}>
           ← 목록으로
         </Button>
-        <Space>
-          <Button onClick={() => navigate(`/promotions/${promotionId}/edit`)}>수정</Button>
-          <Button danger onClick={handleDelete}>
-            삭제
-          </Button>
-        </Space>
+        {promotionEditing ? (
+          <Space>
+            <Button onClick={cancelPromotionEdit}>취소</Button>
+            <Button type="primary" onClick={savePromotionEdit} loading={updateMutation.isPending}>
+              저장
+            </Button>
+          </Space>
+        ) : (
+          <Space>
+            <Button onClick={enterPromotionEdit}>수정</Button>
+            <Button danger onClick={handleDelete}>
+              삭제
+            </Button>
+          </Space>
+        )}
       </div>
 
-      <Descriptions column={1} bordered>
-        <Descriptions.Item label="행사번호">{promotion.promotionNumber}</Descriptions.Item>
-        <Descriptions.Item label="행사명">
-          {promotion.promotionName ? (
-            <>
-              {promotion.promotionName}
-              <Typography.Text type="secondary"> (자동)</Typography.Text>
-            </>
-          ) : (
-            '-'
-          )}
-        </Descriptions.Item>
-        <Descriptions.Item label="행사유형">
-          {promotion.promotionTypeName ? (
-            <Tag color={typeColor}>{promotion.promotionTypeName}</Tag>
-          ) : (
-            '-'
-          )}
-        </Descriptions.Item>
-        <Descriptions.Item label="거래처">{promotion.accountName ?? '-'}</Descriptions.Item>
-        <Descriptions.Item label="기간">
-          {promotion.startDate} ~ {promotion.endDate}
-        </Descriptions.Item>
-        <Descriptions.Item label="대표상품">
-          {promotion.primaryProductName ?? '-'}
-        </Descriptions.Item>
-        <Descriptions.Item label="기타상품">{promotion.otherProduct ?? '-'}</Descriptions.Item>
-        <Descriptions.Item label="비고">{promotion.remark ?? '-'}</Descriptions.Item>
-        <Descriptions.Item label="카테고리">
-          {promotion.category ? (
-            <Tag color={categoryColor}>{promotion.category}</Tag>
-          ) : (
-            '-'
-          )}
-        </Descriptions.Item>
-        <Descriptions.Item label="제품유형">{promotion.productType ?? '-'}</Descriptions.Item>
-        <Descriptions.Item label="지점명">{promotion.branchName ?? '-'}</Descriptions.Item>
-        <Descriptions.Item label="매대위치">{promotion.standLocation ?? '-'}</Descriptions.Item>
-        <Descriptions.Item label="목표금액">
-          {promotion.targetAmount != null
-            ? `${promotion.targetAmount.toLocaleString()}원`
-            : '-'}
-        </Descriptions.Item>
-        <Descriptions.Item label="실적금액">
-          {promotion.actualAmount != null
-            ? `${promotion.actualAmount.toLocaleString()}원`
-            : '-'}
-        </Descriptions.Item>
-        <Descriptions.Item label="마감 여부">
-          {promotion.isClosed ? <Tag color="red">마감</Tag> : '미마감'}
-        </Descriptions.Item>
-        <Descriptions.Item label="메시지">{promotion.message ?? '-'}</Descriptions.Item>
-        <Descriptions.Item label="CC코드">{promotion.costCenterCode ?? '-'}</Descriptions.Item>
-        <Descriptions.Item label="생성일">
-          {promotion.createdAt?.substring(0, 16)}
-        </Descriptions.Item>
-        <Descriptions.Item label="수정일">
-          {promotion.updatedAt?.substring(0, 16)}
-        </Descriptions.Item>
-      </Descriptions>
+      {/* 3개 섹션: Collapse */}
+      <Collapse
+        defaultActiveKey={['detail', 'product', 'amount']}
+        items={[
+          {
+            key: 'detail',
+            label: '세부 사항',
+            children: (
+              <PromotionDetailSection
+                promotion={promotion}
+                editing={promotionEditing}
+                formValues={detailForm}
+                onFormChange={(v) => setDetailForm((prev) => ({ ...prev, ...v }))}
+                formMeta={formMeta}
+              />
+            ),
+          },
+          {
+            key: 'product',
+            label: '행사품목',
+            children: (
+              <PromotionProductSection
+                promotion={promotion}
+                editing={promotionEditing}
+                formValues={productForm}
+                onFormChange={(v) => setProductForm((prev) => ({ ...prev, ...v }))}
+              />
+            ),
+          },
+          {
+            key: 'amount',
+            label: '목표/실적',
+            children: <PromotionAmountSection promotion={promotion} />,
+          },
+        ]}
+      />
 
       {/* 행사사원 섹션 */}
       <div style={{ marginTop: 32 }}>
@@ -927,12 +1016,12 @@ export default function PromotionDetailPage() {
           <Title level={5} style={{ margin: 0 }}>
             행사사원
           </Title>
-          {editMode ? (
+          {empEditMode ? (
             <Space>
-              <Button onClick={cancelEditMode}>취소</Button>
+              <Button onClick={cancelEmpEditMode}>취소</Button>
               <Button
                 type="primary"
-                onClick={handleSave}
+                onClick={handleEmpSave}
                 loading={batchUpdateMutation.isPending}
               >
                 저장
@@ -943,8 +1032,8 @@ export default function PromotionDetailPage() {
               <Button disabled title="Spec #191에서 구현 예정">
                 일정 확정
               </Button>
-              <Tooltip title={editDisabledTooltip}>
-                <Button onClick={enterEditMode} disabled={!canEdit}>
+              <Tooltip title={empEditDisabledTooltip}>
+                <Button onClick={enterEmpEditMode} disabled={!canEmpEdit}>
                   편집
                 </Button>
               </Tooltip>
@@ -952,7 +1041,7 @@ export default function PromotionDetailPage() {
           )}
         </div>
 
-        {editMode ? (
+        {empEditMode ? (
           <Table<EditableRow>
             columns={editColumns}
             dataSource={editRows}
