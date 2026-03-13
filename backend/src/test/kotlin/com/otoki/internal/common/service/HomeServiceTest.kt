@@ -9,8 +9,8 @@ import com.otoki.internal.notice.repository.NoticeRepository
 import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.safetycheck.dto.response.SafetyCheckTodayResponse
 import com.otoki.internal.safetycheck.service.SafetyCheckService
-import com.otoki.internal.schedule.entity.Schedule
-import com.otoki.internal.schedule.repository.ScheduleRepository
+import com.otoki.internal.teammemberschedule.entity.TeamMemberSchedule
+import com.otoki.internal.teammemberschedule.repository.TeamMemberScheduleRepository
 import com.otoki.internal.shelflife.repository.ShelfLifeRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -36,7 +36,7 @@ class HomeServiceTest {
     private lateinit var userRepository: UserRepository
 
     @Mock
-    private lateinit var scheduleRepository: ScheduleRepository
+    private lateinit var teamMemberScheduleRepository: TeamMemberScheduleRepository
 
     @Mock
     private lateinit var noticeRepository: NoticeRepository
@@ -68,14 +68,14 @@ class HomeServiceTest {
             val user = createUser(id = userId, sfid = userSfid, appAuthority = null)
             val account = createAccount(sfid = "ACC001", name = "이마트 부산점")
 
-            val schedules = listOf(
-                createSchedule(sfid = "SCH001", employeeId = userSfid, accountId = "ACC001", workingCategory1 = "진열"),
-                createSchedule(sfid = "SCH002", employeeId = userSfid, accountId = "ACC001", workingCategory1 = "행사")
+            val teamMemberSchedules = listOf(
+                createTeamMemberSchedule(sfid = "SCH001", employeeId = userSfid, accountId = "ACC001", workingCategory1 = "진열"),
+                createTeamMemberSchedule(sfid = "SCH002", employeeId = userSfid, accountId = "ACC001", workingCategory1 = "행사")
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(scheduleRepository.findByEmployeeIdAndWorkingDate(eq(userSfid), any()))
-                .thenReturn(schedules)
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(eq(userSfid), any()))
+                .thenReturn(teamMemberSchedules)
             whenever(accountRepository.findBySfidIn(any())).thenReturn(listOf(account))
             whenever(safetyCheckService.getTodayStatus(any()))
                 .thenReturn(SafetyCheckTodayResponse(completed = false))
@@ -106,10 +106,10 @@ class HomeServiceTest {
             val member2 = createUser(id = 3L, sfid = member2Sfid, orgName = orgName, name = "박미나")
             val teamUsers = listOf(leader, member1, member2)
 
-            val schedules = listOf(
-                createSchedule(sfid = "SCH001", employeeId = member1Sfid, accountId = "ACC001", workingCategory1 = "진열"),
-                createSchedule(sfid = "SCH002", employeeId = member2Sfid, accountId = "ACC002", workingCategory1 = "행사"),
-                createSchedule(sfid = "SCH003", employeeId = leaderSfid, accountId = "ACC001", workingCategory1 = "진열")
+            val teamMemberSchedules = listOf(
+                createTeamMemberSchedule(sfid = "SCH001", employeeId = member1Sfid, accountId = "ACC001", workingCategory1 = "진열"),
+                createTeamMemberSchedule(sfid = "SCH002", employeeId = member2Sfid, accountId = "ACC002", workingCategory1 = "행사"),
+                createTeamMemberSchedule(sfid = "SCH003", employeeId = leaderSfid, accountId = "ACC001", workingCategory1 = "진열")
             )
 
             val accounts = listOf(
@@ -119,8 +119,8 @@ class HomeServiceTest {
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(leader))
             whenever(userRepository.findByOrgName(orgName)).thenReturn(teamUsers)
-            whenever(scheduleRepository.findByWorkingDateAndEmployeeIdIn(any(), any()))
-                .thenReturn(schedules)
+            whenever(teamMemberScheduleRepository.findByWorkingDateAndEmployeeIdIn(any(), any()))
+                .thenReturn(teamMemberSchedules)
             whenever(accountRepository.findBySfidIn(any())).thenReturn(accounts)
             whenever(noticeRepository.findRecentNotices(any(), any()))
                 .thenReturn(emptyList())
@@ -144,7 +144,7 @@ class HomeServiceTest {
             val user = createUser(id = userId, sfid = "a0B000000012345", appAuthority = null)
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(scheduleRepository.findByEmployeeIdAndWorkingDate(any(), any()))
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(any(), any()))
                 .thenReturn(emptyList())
             whenever(safetyCheckService.getTodayStatus(userId))
                 .thenReturn(SafetyCheckTodayResponse(completed = false))
@@ -166,7 +166,7 @@ class HomeServiceTest {
             val user = createUser(id = userId, sfid = "a0B000000012345", appAuthority = null)
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(scheduleRepository.findByEmployeeIdAndWorkingDate(any(), any()))
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(any(), any()))
                 .thenReturn(emptyList())
             whenever(safetyCheckService.getTodayStatus(userId))
                 .thenReturn(SafetyCheckTodayResponse(completed = true, submittedAt = LocalDateTime.now()))
@@ -189,7 +189,7 @@ class HomeServiceTest {
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(leader))
             whenever(userRepository.findByOrgName("부산1지점")).thenReturn(listOf(leader))
-            whenever(scheduleRepository.findByWorkingDateAndEmployeeIdIn(any(), any()))
+            whenever(teamMemberScheduleRepository.findByWorkingDateAndEmployeeIdIn(any(), any()))
                 .thenReturn(emptyList())
             whenever(noticeRepository.findRecentNotices(any(), any()))
                 .thenReturn(emptyList())
@@ -212,7 +212,7 @@ class HomeServiceTest {
             val user = createUser(id = userId, sfid = userSfid, appAuthority = null)
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(scheduleRepository.findByEmployeeIdAndWorkingDate(any(), any()))
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(any(), any()))
                 .thenReturn(emptyList())
             whenever(safetyCheckService.getTodayStatus(any()))
                 .thenReturn(SafetyCheckTodayResponse(completed = true))
@@ -241,7 +241,7 @@ class HomeServiceTest {
             val user = createUser(id = userId, sfid = userSfid, appAuthority = null)
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(scheduleRepository.findByEmployeeIdAndWorkingDate(any(), any()))
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(any(), any()))
                 .thenReturn(emptyList())
             whenever(safetyCheckService.getTodayStatus(any()))
                 .thenReturn(SafetyCheckTodayResponse(completed = true))
@@ -266,7 +266,7 @@ class HomeServiceTest {
             val user = createUser(id = userId, sfid = null, appAuthority = null)
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(scheduleRepository.findByEmployeeIdAndWorkingDate(any(), any()))
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(any(), any()))
                 .thenReturn(emptyList())
             whenever(safetyCheckService.getTodayStatus(any()))
                 .thenReturn(SafetyCheckTodayResponse(completed = true))
@@ -290,7 +290,7 @@ class HomeServiceTest {
             val user = createUser(id = userId, sfid = userSfid, orgName = null, appAuthority = null)
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(scheduleRepository.findByEmployeeIdAndWorkingDate(any(), any()))
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(any(), any()))
                 .thenReturn(emptyList())
             whenever(safetyCheckService.getTodayStatus(any()))
                 .thenReturn(SafetyCheckTodayResponse(completed = true))
@@ -318,7 +318,7 @@ class HomeServiceTest {
             val user = createUser(id = userId, sfid = userSfid, appAuthority = null)
 
             // 진열 (priority 3)
-            val displaySchedule = createSchedule(
+            val displaySchedule = createTeamMemberSchedule(
                 sfid = "SCH_DISPLAY",
                 employeeId = userSfid,
                 accountId = "ACC001",
@@ -327,7 +327,7 @@ class HomeServiceTest {
                 commuteLogId = null
             )
             // 행사 (priority 2)
-            val eventSchedule = createSchedule(
+            val eventSchedule = createTeamMemberSchedule(
                 sfid = "SCH_EVENT",
                 employeeId = userSfid,
                 accountId = "ACC002",
@@ -336,7 +336,7 @@ class HomeServiceTest {
                 commuteLogId = null
             )
             // 임시배정 (priority 1)
-            val tempSchedule = createSchedule(
+            val tempSchedule = createTeamMemberSchedule(
                 sfid = "SCH_TEMP",
                 employeeId = userSfid,
                 accountId = "ACC003",
@@ -345,7 +345,7 @@ class HomeServiceTest {
                 commuteLogId = null
             )
             // 출근완료 (priority 0)
-            val commuteSchedule = createSchedule(
+            val commuteSchedule = createTeamMemberSchedule(
                 sfid = "SCH_COMMUTE",
                 employeeId = userSfid,
                 accountId = "ACC004",
@@ -355,11 +355,11 @@ class HomeServiceTest {
             )
 
             // 의도적으로 역순 전달 (진열 -> 행사 -> 임시 -> 출근완료)
-            val schedules = listOf(displaySchedule, eventSchedule, tempSchedule, commuteSchedule)
+            val teamMemberSchedules = listOf(displaySchedule, eventSchedule, tempSchedule, commuteSchedule)
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(scheduleRepository.findByEmployeeIdAndWorkingDate(eq(userSfid), any()))
-                .thenReturn(schedules)
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(eq(userSfid), any()))
+                .thenReturn(teamMemberSchedules)
             whenever(accountRepository.findBySfidIn(any())).thenReturn(emptyList())
             whenever(safetyCheckService.getTodayStatus(any()))
                 .thenReturn(SafetyCheckTodayResponse(completed = true))
@@ -388,21 +388,21 @@ class HomeServiceTest {
             val user = createUser(id = userId, sfid = userSfid, appAuthority = null)
 
             // 같은 sfid로 진열(priority 3)과 행사(priority 2) 스케줄 존재
-            val displaySchedule = createSchedule(
+            val displaySchedule = createTeamMemberSchedule(
                 sfid = "SCH_SAME",
                 employeeId = userSfid,
                 accountId = "ACC001",
                 workingCategory1 = "진열",
                 commuteLogId = null
             )
-            val eventSchedule = createSchedule(
+            val eventSchedule = createTeamMemberSchedule(
                 sfid = "SCH_SAME",
                 employeeId = userSfid,
                 accountId = "ACC002",
                 workingCategory1 = "행사",
                 commuteLogId = null
             )
-            val otherSchedule = createSchedule(
+            val otherSchedule = createTeamMemberSchedule(
                 sfid = "SCH_OTHER",
                 employeeId = userSfid,
                 accountId = "ACC003",
@@ -410,11 +410,11 @@ class HomeServiceTest {
                 commuteLogId = null
             )
 
-            val schedules = listOf(displaySchedule, eventSchedule, otherSchedule)
+            val teamMemberSchedules = listOf(displaySchedule, eventSchedule, otherSchedule)
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(scheduleRepository.findByEmployeeIdAndWorkingDate(eq(userSfid), any()))
-                .thenReturn(schedules)
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(eq(userSfid), any()))
+                .thenReturn(teamMemberSchedules)
             whenever(accountRepository.findBySfidIn(any())).thenReturn(emptyList())
             whenever(safetyCheckService.getTodayStatus(any()))
                 .thenReturn(SafetyCheckTodayResponse(completed = true))
@@ -440,15 +440,15 @@ class HomeServiceTest {
             val userSfid = "a0B000000012345"
             val user = createUser(id = userId, sfid = userSfid, appAuthority = null)
 
-            val schedules = listOf(
-                createSchedule(sfid = "SCH001", employeeId = userSfid, accountId = "ACC001", commuteLogId = "CLG001"),
-                createSchedule(sfid = "SCH002", employeeId = userSfid, accountId = "ACC002", commuteLogId = "CLG002"),
-                createSchedule(sfid = "SCH003", employeeId = userSfid, accountId = "ACC003", commuteLogId = null)
+            val teamMemberSchedules = listOf(
+                createTeamMemberSchedule(sfid = "SCH001", employeeId = userSfid, accountId = "ACC001", commuteLogId = "CLG001"),
+                createTeamMemberSchedule(sfid = "SCH002", employeeId = userSfid, accountId = "ACC002", commuteLogId = "CLG002"),
+                createTeamMemberSchedule(sfid = "SCH003", employeeId = userSfid, accountId = "ACC003", commuteLogId = null)
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(scheduleRepository.findByEmployeeIdAndWorkingDate(eq(userSfid), any()))
-                .thenReturn(schedules)
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(eq(userSfid), any()))
+                .thenReturn(teamMemberSchedules)
             whenever(accountRepository.findBySfidIn(any())).thenReturn(emptyList())
             whenever(safetyCheckService.getTodayStatus(any()))
                 .thenReturn(SafetyCheckTodayResponse(completed = true))
@@ -498,7 +498,7 @@ class HomeServiceTest {
         )
     }
 
-    private fun createSchedule(
+    private fun createTeamMemberSchedule(
         id: Long = 0L,
         sfid: String? = null,
         employeeId: String? = null,
@@ -509,8 +509,8 @@ class HomeServiceTest {
         workingCategory2: String? = null,
         commuteLogId: String? = null,
         commuteReportDatetime: LocalDateTime? = null
-    ): Schedule {
-        return Schedule(
+    ): TeamMemberSchedule {
+        return TeamMemberSchedule(
             id = id,
             sfid = sfid,
             employeeId = employeeId,

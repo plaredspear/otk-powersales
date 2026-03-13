@@ -14,7 +14,7 @@ import com.otoki.internal.promotion.repository.PromotionEmployeeRepository
 import com.otoki.internal.promotion.repository.PromotionRepository
 import com.otoki.internal.sap.entity.UserRole
 import com.otoki.internal.sap.repository.UserRepository
-import com.otoki.internal.schedule.repository.ScheduleRepository
+import com.otoki.internal.teammemberschedule.repository.TeamMemberScheduleRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -24,7 +24,7 @@ class AdminPromotionEmployeeService(
     private val promotionEmployeeRepository: PromotionEmployeeRepository,
     private val promotionRepository: PromotionRepository,
     private val userRepository: UserRepository,
-    private val scheduleRepository: ScheduleRepository
+    private val teamMemberScheduleRepository: TeamMemberScheduleRepository
 ) {
 
     companion object {
@@ -265,7 +265,7 @@ class AdminPromotionEmployeeService(
 
         // 1-4-B: 연쇄 삭제 — 스케줄 삭제
         if (pe.scheduleId != null) {
-            scheduleRepository.deleteAllByIdIn(listOf(pe.scheduleId!!))
+            teamMemberScheduleRepository.deleteAllByIdIn(listOf(pe.scheduleId!!))
         }
 
         promotionEmployeeRepository.delete(pe)
@@ -432,7 +432,7 @@ class AdminPromotionEmployeeService(
             pe.workType3 != workType3
 
         if (criticalChanged) {
-            scheduleRepository.deleteAllByIdIn(listOf(pe.scheduleId!!))
+            teamMemberScheduleRepository.deleteAllByIdIn(listOf(pe.scheduleId!!))
             pe.scheduleId = null
         }
     }

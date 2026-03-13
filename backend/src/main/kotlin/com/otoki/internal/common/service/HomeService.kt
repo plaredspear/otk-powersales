@@ -7,8 +7,8 @@ import com.otoki.internal.auth.exception.UserNotFoundException
 import com.otoki.internal.notice.repository.NoticeRepository
 import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.safetycheck.service.SafetyCheckService
-import com.otoki.internal.schedule.entity.Schedule
-import com.otoki.internal.schedule.repository.ScheduleRepository
+import com.otoki.internal.teammemberschedule.entity.TeamMemberSchedule
+import com.otoki.internal.teammemberschedule.repository.TeamMemberScheduleRepository
 import com.otoki.internal.sap.repository.UserRepository
 import com.otoki.internal.shelflife.repository.ShelfLifeRepository
 import org.springframework.stereotype.Service
@@ -25,7 +25,7 @@ import java.time.format.DateTimeFormatter
 @Transactional(readOnly = true)
 class HomeService(
     private val userRepository: UserRepository,
-    private val scheduleRepository: ScheduleRepository,
+    private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
     private val noticeRepository: NoticeRepository,
     private val accountRepository: AccountRepository,
     private val safetyCheckService: SafetyCheckService,
@@ -37,11 +37,11 @@ class HomeService(
         private val DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
         /** 정렬 우선순위: 출근완료(0) → 임시배정(1) → 행사(2) → 진열(3) */
-        private fun sortPriority(schedule: Schedule): Int {
+        private fun sortPriority(teamMemberSchedule: TeamMemberSchedule): Int {
             return when {
-                schedule.commuteLogId != null -> 0
-                schedule.workingCategory2?.contains("임시") == true -> 1
-                schedule.workingCategory1 != "진열" -> 2
+                teamMemberSchedule.commuteLogId != null -> 0
+                teamMemberSchedule.workingCategory2?.contains("임시") == true -> 1
+                teamMemberSchedule.workingCategory1 != "진열" -> 2
                 else -> 3
             }
         }
@@ -61,16 +61,16 @@ class HomeService(
         val today = LocalDate.now()
 
         // 역할별 스케줄 조회
-        val (schedules, userMap) = fetchSchedulesByRole(user, today)
+        val (teamMemberSchedules, userMap) = fetchSchedulesByRole(user, today)
 
         // 스케줄 → 거래처명 매핑 (batch fetch)
-        val accountMap = fetchAccountMap(schedules)
+        val accountMap = fetchAccountMap(teamMemberSchedules)
 
         // 정렬 + 중복 제거 + DTO 변환
-        val todaySchedules = schedules
+        val todaySchedules = teamMemberSchedules
             .sortedBy { sortPriority(it) }
             .distinctBy { it.sfid }
-            .map { schedule -> toScheduleInfo(schedule, userMap, accountMap) }
+            .map { teamMemberSchedule -> toTeamMemberScheduleInfo(teamMemberSchedule, userMap, accountMap) }
 
         // 출근 현황 집계
         val attendanceSummary = HomeResponse.AttendanceSummaryInfo(
@@ -126,24 +126,24 @@ class HomeService(
      * 역할별 스케줄 조회
      * @return Pair(스케줄 목록, sfid→User 매핑)
      */
-    private fun fetchSchedulesByRole(user: User, today: LocalDate): Pair<List<Schedule>, Map<String, User>> {
+    private fun fetchSchedulesByRole(user: User, today: LocalDate): Pair<List<TeamMemberSchedule>, Map<String, User>> {
         return when (user.role) {
             UserRole.LEADER -> {
                 val teamUsers = userRepository.findByOrgName(user.orgName ?: "")
                 val sfids = teamUsers.mapNotNull { it.sfid }
-                val schedules = if (sfids.isNotEmpty()) {
-                    scheduleRepository.findByWorkingDateAndEmployeeIdIn(today, sfids)
+                val teamMemberSchedules = if (sfids.isNotEmpty()) {
+                    teamMemberScheduleRepository.findByWorkingDateAndEmployeeIdIn(today, sfids)
                 } else {
                     emptyList()
                 }
                 val userMap = teamUsers.associateBy { it.sfid ?: "" }
-                Pair(schedules, userMap)
+                Pair(teamMemberSchedules, userMap)
             }
             else -> {
                 val userSfid = user.sfid ?: ""
-                val schedules = scheduleRepository.findByEmployeeIdAndWorkingDate(userSfid, today)
+                val teamMemberSchedules = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userSfid, today)
                 val userMap = mapOf(userSfid to user)
-                Pair(schedules, userMap)
+                Pair(teamMemberSchedules, userMap)
             }
         }
     }
@@ -151,33 +151,33 @@ class HomeService(
     /**
      * 스케줄의 accountId → Account 이름 매핑 (batch fetch)
      */
-    private fun fetchAccountMap(schedules: List<Schedule>): Map<String, String> {
-        val accountSfids = schedules.mapNotNull { it.accountId }.distinct()
+    private fun fetchAccountMap(teamMemberSchedules: List<TeamMemberSchedule>): Map<String, String> {
+        val accountSfids = teamMemberSchedules.mapNotNull { it.accountId }.distinct()
         if (accountSfids.isEmpty()) return emptyMap()
         return accountRepository.findBySfidIn(accountSfids)
             .associate { (it.sfid ?: "") to (it.name ?: "") }
     }
 
     /**
-     * Schedule entity → ScheduleInfo DTO 변환
+     * TeamMemberSchedule entity → TeamMemberScheduleInfo DTO 변환
      */
-    private fun toScheduleInfo(
-        schedule: Schedule,
+    private fun toTeamMemberScheduleInfo(
+        teamMemberSchedule: TeamMemberSchedule,
         userMap: Map<String, User>,
         accountMap: Map<String, String>
-    ): HomeResponse.ScheduleInfo {
-        val employeeSfid = schedule.employeeId ?: ""
+    ): HomeResponse.TeamMemberScheduleInfo {
+        val employeeSfid = teamMemberSchedule.employeeId ?: ""
         val matchedUser = userMap[employeeSfid]
-        return HomeResponse.ScheduleInfo(
-            scheduleId = schedule.sfid ?: "",
+        return HomeResponse.TeamMemberScheduleInfo(
+            scheduleId = teamMemberSchedule.sfid ?: "",
             employeeName = matchedUser?.name ?: "",
             employeeSfid = employeeSfid,
-            storeName = schedule.accountId?.let { accountMap[it] },
-            storeSfid = schedule.accountId,
-            workCategory = schedule.workingCategory1 ?: "",
-            workType = schedule.workingType,
-            isCommuteRegistered = schedule.commuteLogId != null,
-            commuteRegisteredAt = schedule.commuteReportDatetime
+            storeName = teamMemberSchedule.accountId?.let { accountMap[it] },
+            storeSfid = teamMemberSchedule.accountId,
+            workCategory = teamMemberSchedule.workingCategory1 ?: "",
+            workType = teamMemberSchedule.workingType,
+            isCommuteRegistered = teamMemberSchedule.commuteLogId != null,
+            commuteRegisteredAt = teamMemberSchedule.commuteReportDatetime
         )
     }
 }

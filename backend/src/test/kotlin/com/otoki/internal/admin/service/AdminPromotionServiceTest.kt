@@ -19,7 +19,7 @@ import com.otoki.internal.sap.entity.User
 import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.sap.repository.ProductRepository
 import com.otoki.internal.sap.repository.UserRepository
-import com.otoki.internal.schedule.repository.ScheduleRepository
+import com.otoki.internal.teammemberschedule.repository.TeamMemberScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
@@ -48,7 +48,7 @@ class AdminPromotionServiceTest {
     @Mock private lateinit var productRepository: ProductRepository
     @Mock private lateinit var userRepository: UserRepository
     @Mock private lateinit var dataScopeHolder: DataScopeHolder
-    @Mock private lateinit var scheduleRepository: ScheduleRepository
+    @Mock private lateinit var teamMemberScheduleRepository: TeamMemberScheduleRepository
 
     @InjectMocks private lateinit var adminPromotionService: AdminPromotionService
 
@@ -733,7 +733,7 @@ class AdminPromotionServiceTest {
 
             adminPromotionService.updatePromotion(1L, userId, createRequest(accountId = 200))
 
-            verify(scheduleRepository).deleteAllByIdIn(listOf(100L))
+            verify(teamMemberScheduleRepository).deleteAllByIdIn(listOf(100L))
             assertThat(pe.scheduleId).isNull()
         }
     }
@@ -763,7 +763,7 @@ class AdminPromotionServiceTest {
             adminPromotionService.deletePromotion(1L)
 
             assertThat(promotion.isDeleted).isTrue()
-            verify(scheduleRepository).deleteAllByIdIn(listOf(100L))
+            verify(teamMemberScheduleRepository).deleteAllByIdIn(listOf(100L))
             verify(promotionEmployeeRepository).deleteByPromotionId(1L)
             verify(promotionRepository).save(promotion)
         }
