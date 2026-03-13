@@ -936,7 +936,7 @@ export default function PromotionDetailPage() {
   const addDisabledTooltip = !hasDates ? '행사 시작일과 종료일을 먼저 입력하세요' : '';
 
   return (
-    <div style={{ padding: 16 }}>
+    <div style={{ padding: '0 16px 16px 16px' }}>
       {/* 상단 헤더: 목록으로 + 수정/삭제 or 취소/저장 */}
       <div
         style={{
@@ -1107,6 +1107,9 @@ export default function PromotionDetailPage() {
         }
         .promotion-detail-collapse .ant-descriptions-view {
           table-layout: fixed;
+        }
+        .promotion-detail-collapse .ant-descriptions-view col {
+          width: 25%;
         }
       `}</style>
     </div>
