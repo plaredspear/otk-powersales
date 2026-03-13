@@ -81,6 +81,11 @@ interface EditableRow {
   employeeName: string | null;
   scheduleId: number | null;
   promoCloseByTm: boolean;
+  primaryProductAmount: number | null;
+  primarySalesQuantity: number | null;
+  otherSalesAmount: number | null;
+  otherSalesQuantity: number | null;
+  s3ImageUniqueKey: string | null;
 }
 
 function toEditableRow(pe: PromotionEmployee): EditableRow {
@@ -100,6 +105,11 @@ function toEditableRow(pe: PromotionEmployee): EditableRow {
     employeeName: pe.employeeName,
     scheduleId: pe.scheduleId,
     promoCloseByTm: pe.promoCloseByTm,
+    primaryProductAmount: pe.primaryProductAmount,
+    primarySalesQuantity: pe.primarySalesQuantity,
+    otherSalesAmount: pe.otherSalesAmount,
+    otherSalesQuantity: pe.otherSalesQuantity,
+    s3ImageUniqueKey: pe.s3ImageUniqueKey,
   };
 }
 
@@ -163,7 +173,7 @@ export default function PromotionDetailPage() {
     try {
       await createPeMutation.mutateAsync({ promotionId });
     } catch (err) {
-      message.error(err instanceof Error ? err.message : '조원 추가에 실패했습니다');
+      message.error(err instanceof Error ? err.message : '행사사원 추가에 실패했습니다');
     }
   };
 
@@ -479,19 +489,35 @@ export default function PromotionDetailPage() {
     [confirmColumn, closeColumn],
   );
 
-  // --- 편집 모드 컬럼 ---
+  // --- 편집 모드 컬럼 (읽기 모드 컬럼 구조 유지 + 편집 가능 필드만 인라인 입력) ---
   const editColumns: ColumnsType<EditableRow> = useMemo(
     () => [
+      { title: 'NO.', dataIndex: 'id', width: 70, align: 'center' as const },
       {
-        title: '여사원 SF ID',
-        dataIndex: 'employeeSfid',
-        width: 140,
-        render: (_, record) => (
+        title: '행사사원',
+        dataIndex: 'employeeName',
+        width: 120,
+        render: (name: string | null, record: EditableRow) =>
+          name ?? record.employeeSfid ?? '-',
+      },
+      {
+        title: '전문행사조(현재)',
+        width: 130,
+        align: 'center' as const,
+        render: () => '-',
+      },
+      {
+        title: '전문행사조(투입당시)',
+        dataIndex: 'professionalPromotionTeam',
+        width: 130,
+        render: (_: unknown, record: EditableRow) => (
           <Input
             size="small"
-            maxLength={18}
-            value={record.employeeSfid ?? ''}
-            onChange={(e) => updateField(record.id, 'employeeSfid', e.target.value || null)}
+            maxLength={100}
+            value={record.professionalPromotionTeam ?? ''}
+            onChange={(e) =>
+              updateField(record.id, 'professionalPromotionTeam', e.target.value || null)
+            }
           />
         ),
       },
@@ -499,7 +525,7 @@ export default function PromotionDetailPage() {
         title: '투입일',
         dataIndex: 'scheduleDate',
         width: 140,
-        render: (_, record) => (
+        render: (_: unknown, record: EditableRow) => (
           <DatePicker
             size="small"
             format="YYYY-MM-DD"
@@ -512,10 +538,135 @@ export default function PromotionDetailPage() {
         ),
       },
       {
+        title: '근무유형3',
+        dataIndex: 'workType3',
+        width: 90,
+        render: (_: unknown, record: EditableRow) => (
+          <Select
+            size="small"
+            options={WORK_TYPE3_OPTIONS}
+            value={record.workType3}
+            onChange={(v) => updateField(record.id, 'workType3', v)}
+            style={{ width: '100%' }}
+            allowClear={false}
+          />
+        ),
+      },
+      {
+        title: '기준단가',
+        dataIndex: 'basePrice',
+        width: 100,
+        render: (_: unknown, record: EditableRow) => (
+          <InputNumber
+            size="small"
+            min={0}
+            value={record.basePrice}
+            onChange={(v) => updateField(record.id, 'basePrice', v)}
+            style={{ width: '100%' }}
+          />
+        ),
+      },
+      {
+        title: '목표수량',
+        dataIndex: 'dailyTargetCount',
+        width: 90,
+        render: (_: unknown, record: EditableRow) => (
+          <InputNumber
+            size="small"
+            min={0}
+            precision={0}
+            value={record.dailyTargetCount}
+            onChange={(v) => updateField(record.id, 'dailyTargetCount', v)}
+            style={{ width: '100%' }}
+          />
+        ),
+      },
+      {
+        title: '목표금액',
+        width: 110,
+        align: 'right' as const,
+        render: (_: unknown, record: EditableRow) => {
+          const computed = (record.basePrice ?? 0) * (record.dailyTargetCount ?? 0);
+          return computed ? fmtNum(computed) : '';
+        },
+      },
+      {
+        title: '대표품목 매출',
+        dataIndex: 'primaryProductAmount',
+        width: 110,
+        align: 'right' as const,
+        render: (v: number | null) => fmtNum(v),
+      },
+      {
+        title: '진도율',
+        width: 70,
+        align: 'right' as const,
+        render: (_: unknown, record: EditableRow) => {
+          const target = (record.basePrice ?? 0) * (record.dailyTargetCount ?? 0);
+          if (!target) return '0%';
+          if (record.primaryProductAmount == null) return '0%';
+          return `${Math.floor((record.primaryProductAmount / target) * 100)}%`;
+        },
+      },
+      {
+        title: '대표품목판매수량',
+        dataIndex: 'primarySalesQuantity',
+        width: 120,
+        align: 'right' as const,
+        render: (v: number | null) => fmtNum(v),
+      },
+      {
+        title: '기타판매금액',
+        dataIndex: 'otherSalesAmount',
+        width: 100,
+        align: 'right' as const,
+        render: (v: number | null) => fmtNum(v),
+      },
+      {
+        title: '기타판매수량',
+        dataIndex: 'otherSalesQuantity',
+        width: 100,
+        align: 'right' as const,
+        render: (v: number | null) => fmtNum(v),
+      },
+      {
+        title: '총 실적',
+        width: 100,
+        align: 'right' as const,
+        render: (_: unknown, record: EditableRow) => {
+          if (record.primaryProductAmount == null && record.otherSalesAmount == null) return '';
+          return fmtNum((record.primaryProductAmount ?? 0) + (record.otherSalesAmount ?? 0));
+        },
+      },
+      {
+        title: '현장사진',
+        dataIndex: 's3ImageUniqueKey',
+        width: 70,
+        align: 'center' as const,
+        render: (v: string | null) =>
+          v ? <CheckCircleFilled style={{ color: '#52c41a' }} /> : null,
+      },
+      confirmColumn,
+      closeColumn,
+      // --- 편집 모드에서만 추가 표시되는 컬럼 ---
+      {
+        title: '여사원 SF ID',
+        dataIndex: 'employeeSfid',
+        width: 140,
+        render: (_: unknown, record: EditableRow) => (
+          <Input
+            size="small"
+            maxLength={18}
+            value={record.employeeSfid ?? ''}
+            onChange={(e) => updateField(record.id, 'employeeSfid', e.target.value || null)}
+          />
+        ),
+      },
+      {
         title: '근무상태',
         dataIndex: 'workStatus',
         width: 90,
-        render: (_, record) => (
+        render: (_: unknown, record: EditableRow) => (
           <Select
             size="small"
             options={WORK_STATUS_OPTIONS}
@@ -530,7 +681,7 @@ export default function PromotionDetailPage() {
         title: '근무유형1',
         dataIndex: 'workType1',
         width: 100,
-        render: (_, record) => (
+        render: (_: unknown, record: EditableRow) => (
           <Input
             size="small"
             maxLength={100}
@@ -540,25 +691,10 @@ export default function PromotionDetailPage() {
         ),
       },
       {
-        title: '근무유형3',
-        dataIndex: 'workType3',
-        width: 90,
-        render: (_, record) => (
-          <Select
-            size="small"
-            options={WORK_TYPE3_OPTIONS}
-            value={record.workType3}
-            onChange={(v) => updateField(record.id, 'workType3', v)}
-            style={{ width: '100%' }}
-            allowClear={false}
-          />
-        ),
-      },
-      {
         title: '근무유형4',
         dataIndex: 'workType4',
         width: 100,
-        render: (_, record) => (
+        render: (_: unknown, record: EditableRow) => (
           <Input
             size="small"
             maxLength={100}
@@ -568,55 +704,9 @@ export default function PromotionDetailPage() {
         ),
       },
       {
-        title: '전문행사조',
-        dataIndex: 'professionalPromotionTeam',
-        width: 120,
-        render: (_, record) => (
-          <Input
-            size="small"
-            maxLength={100}
-            value={record.professionalPromotionTeam ?? ''}
-            onChange={(e) =>
-              updateField(record.id, 'professionalPromotionTeam', e.target.value || null)
-            }
-          />
-        ),
-      },
-      {
-        title: '판매단가',
-        dataIndex: 'basePrice',
-        width: 100,
-        render: (_, record) => (
-          <InputNumber
-            size="small"
-            min={0}
-            value={record.basePrice}
-            onChange={(v) => updateField(record.id, 'basePrice', v)}
-            style={{ width: '100%' }}
-          />
-        ),
-      },
-      {
-        title: '목표수량',
-        dataIndex: 'dailyTargetCount',
-        width: 90,
-        render: (_, record) => (
-          <InputNumber
-            size="small"
-            min={0}
-            precision={0}
-            value={record.dailyTargetCount}
-            onChange={(v) => updateField(record.id, 'dailyTargetCount', v)}
-            style={{ width: '100%' }}
-          />
-        ),
-      },
-      confirmColumn,
-      closeColumn,
-      {
-        title: '',
+        title: '삭제',
         width: 60,
-        render: (_, record) => (
+        render: (_: unknown, record: EditableRow) => (
           <Popconfirm
             title="삭제하시겠습니까?"
             onConfirm={() => handleDeleteInEditMode(record.id)}
@@ -664,7 +754,7 @@ export default function PromotionDetailPage() {
   const editDisabledTooltip = !hasDates
     ? '행사 시작일과 종료일을 먼저 입력하세요'
     : employeeCount === 0
-      ? '조원을 먼저 추가하세요'
+      ? '행사사원을 먼저 추가하세요'
       : '';
   const addDisabledTooltip = !hasDates ? '행사 시작일과 종료일을 먼저 입력하세요' : '';
 
@@ -750,7 +840,7 @@ export default function PromotionDetailPage() {
         </Descriptions.Item>
       </Descriptions>
 
-      {/* 행사조원 섹션 */}
+      {/* 행사사원 섹션 */}
       <div style={{ marginTop: 32 }}>
         <div
           style={{
@@ -761,7 +851,7 @@ export default function PromotionDetailPage() {
           }}
         >
           <Title level={5} style={{ margin: 0 }}>
-            행사조원
+            행사사원
           </Title>
           {editMode ? (
             <Space>
@@ -779,16 +869,6 @@ export default function PromotionDetailPage() {
               <Button disabled title="Spec #191에서 구현 예정">
                 일정 확정
               </Button>
-              <Tooltip title={addDisabledTooltip}>
-                <Button
-                  type="primary"
-                  onClick={handleAddEmployee}
-                  loading={createPeMutation.isPending}
-                  disabled={!hasDates}
-                >
-                  + 조원 추가
-                </Button>
-              </Tooltip>
               <Tooltip title={editDisabledTooltip}>
                 <Button onClick={enterEditMode} disabled={!canEdit}>
                   편집
@@ -805,13 +885,13 @@ export default function PromotionDetailPage() {
             rowKey="id"
             size="small"
             pagination={false}
-            locale={{ emptyText: '등록된 조원이 없습니다' }}
+            locale={{ emptyText: '등록된 행사사원이 없습니다' }}
             footer={() => `총 ${editRows.length}건`}
             rowClassName={(record) => (errorRowIds.has(record.id) ? 'ant-table-row-error' : '')}
             onRow={(record) => ({
               title: errorMessages.get(record.id) || undefined,
             })}
-            scroll={{ x: 1200 }}
+            scroll={{ x: 2400 }}
           />
         ) : (
           <Table<PromotionEmployee>
@@ -821,8 +901,22 @@ export default function PromotionDetailPage() {
             size="small"
             pagination={false}
             loading={employeesLoading}
-            locale={{ emptyText: '등록된 조원이 없습니다' }}
-            footer={() => `총 ${employees?.length ?? 0}건`}
+            locale={{ emptyText: '등록된 행사사원이 없습니다' }}
+            footer={() => (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>총 {employees?.length ?? 0}건</span>
+                <Tooltip title={addDisabledTooltip}>
+                  <Button
+                    type="primary"
+                    onClick={handleAddEmployee}
+                    loading={createPeMutation.isPending}
+                    disabled={!hasDates}
+                  >
+                    + 행사사원 추가
+                  </Button>
+                </Tooltip>
+              </div>
+            )}
             scroll={{ x: 1800 }}
           />
         )}
