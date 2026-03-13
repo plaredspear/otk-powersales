@@ -157,6 +157,20 @@ function mapPromotionEmployee(raw: PromotionEmployeeRaw): PromotionEmployee {
   };
 }
 
+// --- Confirm response interfaces ---
+
+interface PromotionConfirmResponseRaw {
+  promotion_id: number;
+  total_employees: number;
+  upserted_schedules: number;
+}
+
+export interface PromotionConfirmResponse {
+  promotionId: number;
+  totalEmployees: number;
+  upsertedSchedules: number;
+}
+
 // --- API functions ---
 
 export async function fetchPromotionEmployees(promotionId: number): Promise<PromotionEmployee[]> {
@@ -202,6 +216,23 @@ export async function deletePromotionEmployee(id: number): Promise<void> {
   if (!res.data.success) {
     throw new Error(res.data.message || '행사조원 삭제에 실패했습니다');
   }
+}
+
+export async function confirmPromotionSchedule(
+  promotionId: number,
+): Promise<PromotionConfirmResponse> {
+  const res = await client.post<ApiResponse<PromotionConfirmResponseRaw>>(
+    `/api/v1/admin/promotions/${promotionId}/confirm`,
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '스케줄 확정에 실패했습니다');
+  }
+  const raw = res.data.data;
+  return {
+    promotionId: raw.promotion_id,
+    totalEmployees: raw.total_employees,
+    upsertedSchedules: raw.upserted_schedules,
+  };
 }
 
 export async function batchUpdatePromotionEmployees(

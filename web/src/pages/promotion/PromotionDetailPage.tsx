@@ -27,6 +27,7 @@ import {
   useCreatePromotionEmployee,
   useDeletePromotionEmployee,
   useBatchUpdatePromotionEmployees,
+  useConfirmPromotionSchedule,
 } from '@/hooks/promotion/usePromotionEmployeeMutation';
 import type { PromotionEmployee, PromotionEmployeeFormData } from '@/api/promotionEmployee';
 import {
@@ -150,6 +151,7 @@ export default function PromotionDetailPage() {
   const createPeMutation = useCreatePromotionEmployee();
   const deletePeMutation = useDeletePromotionEmployee();
   const batchUpdateMutation = useBatchUpdatePromotionEmployees();
+  const confirmMutation = useConfirmPromotionSchedule();
 
   // --- 행사사원 편집 모드 상태 ---
   const [empEditMode, setEmpEditMode] = useState(false);
@@ -330,6 +332,27 @@ export default function PromotionDetailPage() {
     setEditRows([]);
     setErrorRowIds(new Set());
     setErrorMessages(new Map());
+  };
+
+  // --- 스케줄 확정 ---
+  const handleConfirmSchedule = () => {
+    const count = employees?.length ?? 0;
+    Modal.confirm({
+      title: '스케줄 확정',
+      content: `스케줄을 확정하시겠습니까? 행사사원 ${count}명의 여사원일정이 생성/갱신됩니다.`,
+      okText: '확인',
+      cancelText: '취소',
+      onOk: async () => {
+        try {
+          const result = await confirmMutation.mutateAsync(promotionId);
+          message.success(`스케줄 확정 완료 (${result.upsertedSchedules}건)`);
+        } catch (err) {
+          const errorMessage =
+            err instanceof Error ? err.message : '스케줄 확정에 실패했습니다';
+          message.error(errorMessage);
+        }
+      },
+    });
   };
 
   // --- 사원 Lookup 검색 ---
@@ -1030,9 +1053,15 @@ export default function PromotionDetailPage() {
             </Space>
           ) : (
             <Space>
-              <Button disabled title="Spec #191에서 구현 예정">
-                일정 확정
-              </Button>
+              <Tooltip title={!canEmpEdit ? empEditDisabledTooltip : ''}>
+                <Button
+                  onClick={handleConfirmSchedule}
+                  disabled={!canEmpEdit}
+                  loading={confirmMutation.isPending}
+                >
+                  일정 확정
+                </Button>
+              </Tooltip>
               <Tooltip title={empEditDisabledTooltip}>
                 <Button onClick={enterEmpEditMode} disabled={!canEmpEdit}>
                   편집
