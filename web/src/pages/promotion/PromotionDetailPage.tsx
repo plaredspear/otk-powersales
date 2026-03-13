@@ -28,7 +28,7 @@ import {
   useDeletePromotionEmployee,
   useBatchUpdatePromotionEmployees,
 } from '@/hooks/promotion/usePromotionEmployeeMutation';
-import type { PromotionEmployee } from '@/api/promotionEmployee';
+import type { PromotionEmployee, PromotionEmployeeFormData } from '@/api/promotionEmployee';
 import {
   BatchValidationError,
   type BatchUpdatePromotionEmployeeItem,
@@ -168,10 +168,30 @@ export default function PromotionDetailPage() {
     });
   };
 
-  // --- 즉시 추가 ---
+  // --- 즉시 추가 (마지막 행 복사) ---
   const handleAddEmployee = async () => {
     try {
-      await createPeMutation.mutateAsync({ promotionId });
+      let data: PromotionEmployeeFormData | undefined;
+
+      if (employees && employees.length > 0) {
+        const lastRow = employees[employees.length - 1];
+        const body: PromotionEmployeeFormData = {};
+
+        if (lastRow.employeeSfid != null) body.employee_sfid = lastRow.employeeSfid;
+        if (lastRow.scheduleDate != null) {
+          body.schedule_date = dayjs(lastRow.scheduleDate).add(1, 'day').format('YYYY-MM-DD');
+        }
+        if (lastRow.workStatus != null) body.work_status = lastRow.workStatus;
+        if (lastRow.workType1 != null) body.work_type1 = lastRow.workType1;
+        if (lastRow.workType3 != null) body.work_type3 = lastRow.workType3;
+        if (lastRow.professionalPromotionTeam != null) {
+          body.professional_promotion_team = lastRow.professionalPromotionTeam;
+        }
+
+        if (Object.keys(body).length > 0) data = body;
+      }
+
+      await createPeMutation.mutateAsync({ promotionId, data });
     } catch (err) {
       message.error(err instanceof Error ? err.message : '행사사원 추가에 실패했습니다');
     }
