@@ -1,4 +1,4 @@
-package com.otoki.internal.common.entity
+package com.otoki.internal.teammemberschedule.entity
 
 import com.otoki.internal.common.salesforce.HCColumn
 import com.otoki.internal.common.salesforce.HCTable
@@ -16,7 +16,7 @@ import java.time.LocalDateTime
 @Table(name = "displayworkschedulemaster__c")
 @SFObject("DKRetail__DisplayWorkScheduleMaster__c")
 @HCTable("displayworkschedulemaster__c")
-class StoreSchedule(
+class DisplayWorkSchedule(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

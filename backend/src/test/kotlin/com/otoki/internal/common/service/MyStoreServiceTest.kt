@@ -1,11 +1,11 @@
 package com.otoki.internal.common.service
 
 import com.otoki.internal.sap.entity.Account
-import com.otoki.internal.common.entity.StoreSchedule
+import com.otoki.internal.teammemberschedule.entity.DisplayWorkSchedule
 import com.otoki.internal.sap.entity.User
 import com.otoki.internal.auth.exception.UserNotFoundException
 import com.otoki.internal.sap.repository.AccountRepository
-import com.otoki.internal.common.repository.StoreScheduleRepository
+import com.otoki.internal.teammemberschedule.repository.DisplayWorkScheduleRepository
 import com.otoki.internal.sap.repository.UserRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -30,7 +30,7 @@ class MyStoreServiceTest {
     private lateinit var userRepository: UserRepository
 
     @Mock
-    private lateinit var storeScheduleRepository: StoreScheduleRepository
+    private lateinit var displayWorkScheduleRepository: DisplayWorkScheduleRepository
 
     @Mock
     private lateinit var accountRepository: AccountRepository
@@ -65,15 +65,15 @@ class MyStoreServiceTest {
                     address1 = "서울시 강남구", representative = "이영희", phone = "02-111-2222")
             )
             val schedules = listOf(
-                createStoreSchedule(account = "SF_ACC001", startDate = now),
-                createStoreSchedule(account = "SF_ACC002", startDate = now)
+                createDisplayWorkSchedule(account = "SF_ACC001", startDate = now),
+                createDisplayWorkSchedule(account = "SF_ACC002", startDate = now)
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(storeScheduleRepository.findDistinctAccountsByFullNameAndStartDateBetween(testUserSfid, startDate, endDate))
+            whenever(displayWorkScheduleRepository.findDistinctAccountsByFullNameAndStartDateBetween(testUserSfid, startDate, endDate))
                 .thenReturn(distinctAccountSfids)
             whenever(accountRepository.findAll()).thenReturn(accounts)
-            whenever(storeScheduleRepository.findByFullNameAndStartDateBetween(testUserSfid, startDate, endDate))
+            whenever(displayWorkScheduleRepository.findByFullNameAndStartDateBetween(testUserSfid, startDate, endDate))
                 .thenReturn(schedules)
 
             // When
@@ -99,7 +99,7 @@ class MyStoreServiceTest {
             val endDate = yearMonth.atEndOfMonth()
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(storeScheduleRepository.findDistinctAccountsByFullNameAndStartDateBetween(testUserSfid, startDate, endDate))
+            whenever(displayWorkScheduleRepository.findDistinctAccountsByFullNameAndStartDateBetween(testUserSfid, startDate, endDate))
                 .thenReturn(emptyList())
 
             // When
@@ -140,15 +140,15 @@ class MyStoreServiceTest {
                 createAccount(id = 2, sfid = "SF_ACC002", name = "(주)대한식품", externalKey = "1025173")
             )
             val schedules = listOf(
-                createStoreSchedule(account = "SF_ACC001", startDate = now),
-                createStoreSchedule(account = "SF_ACC002", startDate = now)
+                createDisplayWorkSchedule(account = "SF_ACC001", startDate = now),
+                createDisplayWorkSchedule(account = "SF_ACC002", startDate = now)
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(storeScheduleRepository.findDistinctAccountsByFullNameAndStartDateBetween(testUserSfid, startDate, endDate))
+            whenever(displayWorkScheduleRepository.findDistinctAccountsByFullNameAndStartDateBetween(testUserSfid, startDate, endDate))
                 .thenReturn(distinctAccountSfids)
             whenever(accountRepository.findAll()).thenReturn(accounts)
-            whenever(storeScheduleRepository.findByFullNameAndStartDateBetween(testUserSfid, startDate, endDate))
+            whenever(displayWorkScheduleRepository.findByFullNameAndStartDateBetween(testUserSfid, startDate, endDate))
                 .thenReturn(schedules)
 
             // When
@@ -177,16 +177,16 @@ class MyStoreServiceTest {
                 createAccount(id = 3, sfid = "SF_ACC003", name = "나라마트", externalKey = "1025174")
             )
             val schedules = listOf(
-                createStoreSchedule(account = "SF_ACC001", startDate = now),
-                createStoreSchedule(account = "SF_ACC002", startDate = now),
-                createStoreSchedule(account = "SF_ACC003", startDate = now)
+                createDisplayWorkSchedule(account = "SF_ACC001", startDate = now),
+                createDisplayWorkSchedule(account = "SF_ACC002", startDate = now),
+                createDisplayWorkSchedule(account = "SF_ACC003", startDate = now)
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(storeScheduleRepository.findDistinctAccountsByFullNameAndStartDateBetween(testUserSfid, startDate, endDate))
+            whenever(displayWorkScheduleRepository.findDistinctAccountsByFullNameAndStartDateBetween(testUserSfid, startDate, endDate))
                 .thenReturn(distinctAccountSfids)
             whenever(accountRepository.findAll()).thenReturn(accounts)
-            whenever(storeScheduleRepository.findByFullNameAndStartDateBetween(testUserSfid, startDate, endDate))
+            whenever(displayWorkScheduleRepository.findByFullNameAndStartDateBetween(testUserSfid, startDate, endDate))
                 .thenReturn(schedules)
 
             // When
@@ -238,12 +238,12 @@ class MyStoreServiceTest {
         )
     }
 
-    private fun createStoreSchedule(
+    private fun createDisplayWorkSchedule(
         account: String = "SF_ACC001",
         typeOfWork1: String = "진열",
         startDate: LocalDate = LocalDate.now()
-    ): StoreSchedule {
-        return StoreSchedule(
+    ): DisplayWorkSchedule {
+        return DisplayWorkSchedule(
             fullName = testUserSfid,
             account = account,
             typeOfWork1 = typeOfWork1,

@@ -15,7 +15,7 @@ data class DailyScheduleResponse(
     val employeeNumber: String,
     @JsonProperty("report_progress")
     val reportProgress: ReportProgressDto,
-    val stores: List<StoreScheduleItemDto>
+    val stores: List<DisplayWorkScheduleItemDto>
 )
 
 /**
@@ -31,7 +31,7 @@ data class ReportProgressDto(
 /**
  * 거래처 일정 항목 DTO
  */
-data class StoreScheduleItemDto(
+data class DisplayWorkScheduleItemDto(
     @JsonProperty("store_id")
     val storeId: Long,
     @JsonProperty("store_name")

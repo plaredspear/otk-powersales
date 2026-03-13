@@ -13,7 +13,7 @@ import com.otoki.internal.order.exception.InvalidOrderParameterException
 import com.otoki.internal.order.exception.OrderNotFoundException
 import com.otoki.internal.order.repository.OrderProcessingRecordRepository
 import com.otoki.internal.repository.StoreRepository
-import com.otoki.internal.common.repository.StoreScheduleRepository
+import com.otoki.internal.teammemberschedule.repository.DisplayWorkScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -40,7 +40,7 @@ class ClientOrderServiceTest {
     private lateinit var storeRepository: StoreRepository
 
     @Mock
-    private lateinit var storeScheduleRepository: StoreScheduleRepository
+    private lateinit var displayWorkScheduleRepository: DisplayWorkScheduleRepository
 
     private lateinit var clientOrderService: ClientOrderService
 
