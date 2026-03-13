@@ -9,8 +9,8 @@ import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.sap.entity.MonthlySalesHistory
 import com.otoki.internal.sap.repository.MonthlySalesHistoryRepository
-import com.otoki.internal.common.entity.StoreSchedule
-import com.otoki.internal.common.repository.StoreScheduleRepository
+import com.otoki.internal.teammemberschedule.entity.DisplayWorkSchedule
+import com.otoki.internal.teammemberschedule.repository.DisplayWorkScheduleRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -23,7 +23,7 @@ import java.time.temporal.ChronoUnit
 class AdminDashboardService(
     private val dataScopeHolder: DataScopeHolder,
     private val monthlySalesHistoryRepository: MonthlySalesHistoryRepository,
-    private val storeScheduleRepository: StoreScheduleRepository,
+    private val displayWorkScheduleRepository: DisplayWorkScheduleRepository,
     private val accountRepository: AccountRepository,
     private val userRepository: UserRepository
 ) {
@@ -187,19 +187,19 @@ class AdminDashboardService(
         )
     }
 
-    private fun fetchScheduleData(scope: DataScope, monthStart: LocalDate, monthEnd: LocalDate): List<StoreSchedule> {
+    private fun fetchScheduleData(scope: DataScope, monthStart: LocalDate, monthEnd: LocalDate): List<DisplayWorkSchedule> {
         return if (scope.isAllBranches) {
-            storeScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(monthEnd, monthStart)
+            displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(monthEnd, monthStart)
         } else {
             if (scope.branchCodes.isEmpty()) return emptyList()
             val accounts = accountRepository.findByBranchCodeIn(scope.branchCodes)
             val accountSfids = accounts.mapNotNull { it.sfid }
             if (accountSfids.isEmpty()) return emptyList()
-            storeScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndAccountIn(monthEnd, monthStart, accountSfids)
+            displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndAccountIn(monthEnd, monthStart, accountSfids)
         }
     }
 
-    private fun buildByAccountType(schedules: List<StoreSchedule>, accountMap: Map<String?, Account>): List<AccountTypeCount> {
+    private fun buildByAccountType(schedules: List<DisplayWorkSchedule>, accountMap: Map<String?, Account>): List<AccountTypeCount> {
         val employeesByAccountType = schedules
             .groupBy { schedule ->
                 val account = schedule.account?.let { accountMap[it] }
@@ -212,7 +212,7 @@ class AdminDashboardService(
         }.sortedBy { it.accountType }
     }
 
-    private fun buildByWorkType(schedules: List<StoreSchedule>): List<WorkTypeCount> {
+    private fun buildByWorkType(schedules: List<DisplayWorkSchedule>): List<WorkTypeCount> {
         val employeesByWorkType = schedules
             .groupBy { normalizeWorkType(it.typeOfWork1) }
             .mapValues { (_, records) -> records.mapNotNull { it.fullName }.distinct().size }
@@ -223,7 +223,7 @@ class AdminDashboardService(
     }
 
     private fun buildByChannelAndWorkType(
-        schedules: List<StoreSchedule>,
+        schedules: List<DisplayWorkSchedule>,
         accountMap: Map<String?, Account>
     ): List<ChannelWorkTypeItem> {
         val grouped = schedules.groupBy { schedule ->
@@ -323,7 +323,7 @@ class AdminDashboardService(
         val monthStart = ym.atDay(1)
         val monthEnd = ym.atEndOfMonth()
 
-        val schedules = storeScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(monthEnd, monthStart)
+        val schedules = displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(monthEnd, monthStart)
         val userSchedules = schedules.filter { it.fullName in userSfids }
 
         val byWorkType = userSchedules

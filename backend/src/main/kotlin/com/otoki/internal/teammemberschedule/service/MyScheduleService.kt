@@ -4,7 +4,7 @@ import com.otoki.internal.teammemberschedule.dto.response.*
 import com.otoki.internal.common.dto.response.*
 import com.otoki.internal.auth.exception.UserNotFoundException
 // import com.otoki.internal.teammemberschedule.repository.AttendanceRepository  // Phase2: PG 대응 테이블 없음
-import com.otoki.internal.common.repository.StoreScheduleRepository
+import com.otoki.internal.teammemberschedule.repository.DisplayWorkScheduleRepository
 import com.otoki.internal.sap.repository.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -15,7 +15,7 @@ import java.time.YearMonth
 @Service
 class MyScheduleService(
     private val userRepository: UserRepository,
-    private val storeScheduleRepository: StoreScheduleRepository
+    private val displayWorkScheduleRepository: DisplayWorkScheduleRepository
     // private val attendanceRepository: AttendanceRepository  // Phase2: PG 대응 테이블 없음
 ) {
 
@@ -48,7 +48,7 @@ class MyScheduleService(
         val endDate = yearMonth.atEndOfMonth()
 
         // 해당 기간 내 일정이 있는 날짜 목록 조회
-        val workDates = storeScheduleRepository
+        val workDates = displayWorkScheduleRepository
             .findDistinctStartDatesByFullNameAndDateBetween(userSfid, startDate, endDate)
             .toSet()
 
@@ -84,7 +84,7 @@ class MyScheduleService(
         val userSfid = user.sfid ?: ""
 
         // 해당 날짜의 거래처 일정 목록 조회
-        val schedules = storeScheduleRepository.findByFullNameAndStartDate(userSfid, date)
+        val schedules = displayWorkScheduleRepository.findByFullNameAndStartDate(userSfid, date)
 
         // Phase2: Attendance PG 대응 테이블 없음 - 주석 처리
         // val attendances = attendanceRepository.findByUserIdAndAttendanceDate(userId, date)
@@ -93,7 +93,7 @@ class MyScheduleService(
         // 거래처 목록 매핑 (등록 여부 - Attendance 비활성화로 항상 false)
         // Note: V1 리매핑으로 storeId(Long)→account(String sfid) 변경, DTO는 Long 유지 → 0L 대체
         val storeItems = schedules.map { schedule ->
-            StoreScheduleItemDto(
+            DisplayWorkScheduleItemDto(
                 storeId = 0L,  // V1: account(String sfid)로 변경됨, DTO Long 타입 유지
                 storeName = "",  // V1에서 storeName 삭제됨
                 workType1 = schedule.typeOfWork1 ?: "",

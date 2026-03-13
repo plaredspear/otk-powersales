@@ -140,7 +140,7 @@ class MyScheduleControllerTest {
                 workType = "진열"
             ),
             stores = listOf(
-                StoreScheduleItemDto(
+                DisplayWorkScheduleItemDto(
                     storeId = 1L,
                     storeName = "(주)이마트트레이더스명지점",
                     workType1 = "진열",

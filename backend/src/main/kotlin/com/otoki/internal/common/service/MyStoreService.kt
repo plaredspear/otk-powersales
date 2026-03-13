@@ -3,10 +3,10 @@ package com.otoki.internal.common.service
 import com.otoki.internal.common.dto.response.MyStoreInfo
 import com.otoki.internal.common.dto.response.MyStoreListResponse
 import com.otoki.internal.sap.entity.Account
-import com.otoki.internal.common.entity.StoreSchedule
+import com.otoki.internal.teammemberschedule.entity.DisplayWorkSchedule
 import com.otoki.internal.auth.exception.UserNotFoundException
 import com.otoki.internal.sap.repository.AccountRepository
-import com.otoki.internal.common.repository.StoreScheduleRepository
+import com.otoki.internal.teammemberschedule.repository.DisplayWorkScheduleRepository
 import com.otoki.internal.sap.repository.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -24,7 +24,7 @@ import java.time.YearMonth
 @Service
 class MyStoreService(
     private val userRepository: UserRepository,
-    private val storeScheduleRepository: StoreScheduleRepository,
+    private val displayWorkScheduleRepository: DisplayWorkScheduleRepository,
     private val accountRepository: AccountRepository
 ) {
 
@@ -50,7 +50,7 @@ class MyStoreService(
         val endDate = yearMonth.atEndOfMonth()
 
         // 1. 월별 스케줄에서 중복 제거된 거래처 account(sfid) 조회
-        val distinctAccountSfids = storeScheduleRepository
+        val distinctAccountSfids = displayWorkScheduleRepository
             .findDistinctAccountsByFullNameAndStartDateBetween(userSfid, startDate, endDate)
 
         if (distinctAccountSfids.isEmpty()) {
@@ -62,13 +62,13 @@ class MyStoreService(
             .filter { it.sfid != null && it.sfid in distinctAccountSfids }
             .associateBy { it.sfid }
 
-        // 3. StoreSchedule에서 기본 정보 조회 (Account 마스터에 없는 거래처용 fallback)
-        val scheduleMap = storeScheduleRepository
+        // 3. DisplayWorkSchedule에서 기본 정보 조회 (Account 마스터에 없는 거래처용 fallback)
+        val scheduleMap = displayWorkScheduleRepository
             .findByFullNameAndStartDateBetween(userSfid, startDate, endDate)
             .distinctBy { it.account }
             .associateBy { it.account }
 
-        // 4. Account 마스터 + StoreSchedule fallback 으로 정보 구성
+        // 4. Account 마스터 + DisplayWorkSchedule fallback 으로 정보 구성
         val storeInfoList = distinctAccountSfids.mapNotNull { accountSfid ->
             buildMyStoreInfo(accountSfid, accountMap, scheduleMap)
         }
@@ -104,7 +104,7 @@ class MyStoreService(
     private fun buildMyStoreInfo(
         accountSfid: String,
         accountMap: Map<String?, Account>,
-        scheduleMap: Map<String?, StoreSchedule>
+        scheduleMap: Map<String?, DisplayWorkSchedule>
     ): MyStoreInfo? {
         val account = accountMap[accountSfid]
         val schedule = scheduleMap[accountSfid]

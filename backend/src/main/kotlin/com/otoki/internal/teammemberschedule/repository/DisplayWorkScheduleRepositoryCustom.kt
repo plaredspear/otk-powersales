@@ -1,8 +1,8 @@
-package com.otoki.internal.common.repository
+package com.otoki.internal.teammemberschedule.repository
 
 import java.time.LocalDate
 
-interface StoreScheduleRepositoryCustom {
+interface DisplayWorkScheduleRepositoryCustom {
 
     fun findDistinctAccountsByFullNameAndStartDateBetween(
         fullName: String,

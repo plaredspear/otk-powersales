@@ -4,7 +4,7 @@ import com.otoki.internal.teammemberschedule.entity.*
 import com.otoki.internal.common.entity.*
 import com.otoki.internal.sap.entity.*
 import com.otoki.internal.auth.exception.UserNotFoundException
-import com.otoki.internal.common.repository.StoreScheduleRepository
+import com.otoki.internal.teammemberschedule.repository.DisplayWorkScheduleRepository
 import com.otoki.internal.sap.repository.UserRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
@@ -27,7 +27,7 @@ class MyScheduleServiceTest {
     private lateinit var userRepository: UserRepository
 
     @Mock
-    private lateinit var storeScheduleRepository: StoreScheduleRepository
+    private lateinit var displayWorkScheduleRepository: DisplayWorkScheduleRepository
 
     @InjectMocks
     private lateinit var myScheduleService: MyScheduleService
@@ -53,7 +53,7 @@ class MyScheduleServiceTest {
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(storeScheduleRepository.findDistinctStartDatesByFullNameAndDateBetween(
+            whenever(displayWorkScheduleRepository.findDistinctStartDatesByFullNameAndDateBetween(
                 eq("a0B000000012345"),
                 eq(LocalDate.of(2020, 8, 1)),
                 eq(LocalDate.of(2020, 8, 31))
@@ -84,7 +84,7 @@ class MyScheduleServiceTest {
             val mockUser = createMockUser(userId, "최금주", "20030117", sfid = "a0B000000012345")
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(storeScheduleRepository.findDistinctStartDatesByFullNameAndDateBetween(
+            whenever(displayWorkScheduleRepository.findDistinctStartDatesByFullNameAndDateBetween(
                 eq("a0B000000012345"),
                 any(),
                 any()
@@ -110,7 +110,7 @@ class MyScheduleServiceTest {
             val mockUser = createMockUser(userId, "최금주", "20030117", sfid = "a0B000000012345")
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(storeScheduleRepository.findDistinctStartDatesByFullNameAndDateBetween(
+            whenever(displayWorkScheduleRepository.findDistinctStartDatesByFullNameAndDateBetween(
                 eq("a0B000000012345"),
                 any(),
                 any()
@@ -157,7 +157,7 @@ class MyScheduleServiceTest {
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(storeScheduleRepository.findByFullNameAndStartDate("a0B000000012345", date))
+            whenever(displayWorkScheduleRepository.findByFullNameAndStartDate("a0B000000012345", date))
                 .thenReturn(mockSchedules)
 
             // When
@@ -184,7 +184,7 @@ class MyScheduleServiceTest {
             val mockUser = createMockUser(userId, "최금주", "20030117", sfid = "a0B000000012345")
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(storeScheduleRepository.findByFullNameAndStartDate("a0B000000012345", date))
+            whenever(displayWorkScheduleRepository.findByFullNameAndStartDate("a0B000000012345", date))
                 .thenReturn(emptyList())
 
             // When
@@ -231,8 +231,8 @@ class MyScheduleServiceTest {
         account: String = "ACC001",
         typeOfWork1: String = "진열",
         startDate: LocalDate = LocalDate.now()
-    ): StoreSchedule {
-        return StoreSchedule(
+    ): DisplayWorkSchedule {
+        return DisplayWorkSchedule(
             id = id,
             fullName = "a0B000000012345",
             account = account,
