@@ -77,11 +77,11 @@ export interface PromotionEmployeeFormData {
 
 export interface BatchUpdatePromotionEmployeeItem {
   id: number;
-  employee_sfid: string;
+  employee_sfid: string | null;
   schedule_date: string;
   work_status: string;
   work_type1: string;
-  work_type3: string;
+  work_type3: string | null;
   work_type4?: string | null;
   professional_promotion_team?: string | null;
   base_price?: number | null;
@@ -106,7 +106,7 @@ export interface BatchUpdatePromotionEmployeeResponse {
 
 export interface BatchItemError {
   item_index: number;
-  employee_sfid: string;
+  employee_sfid: string | null;
   error_code: string;
   message: string;
 }

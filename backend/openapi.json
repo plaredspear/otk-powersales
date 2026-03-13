@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:50192",
+    "url" : "http://localhost:50130",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -68,6 +68,43 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseObject"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/promotions/{promotionId}/employees/batch" : {
+      "put" : {
+        "tags" : [ "admin-promotion-employee-controller" ],
+        "operationId" : "batchUpdateEmployees",
+        "parameters" : [ {
+          "name" : "promotionId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/BatchUpdatePromotionEmployeeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseBatchUpdatePromotionEmployeeResponse"
                 }
               }
             }
@@ -2597,6 +2634,231 @@
         },
         "required" : [ "accountCode", "accountName", "alarmDate", "dday", "expirationDate", "isExpired", "productCode", "productName", "seq" ]
       },
+      "BatchUpdatePromotionEmployeeItem" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "employeeSfid" : {
+            "type" : "string",
+            "maxLength" : 18,
+            "minLength" : 0
+          },
+          "scheduleDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "workStatus" : {
+            "type" : "string"
+          },
+          "workType1" : {
+            "type" : "string",
+            "maxLength" : 100,
+            "minLength" : 0
+          },
+          "workType3" : {
+            "type" : "string"
+          },
+          "workType4" : {
+            "type" : "string",
+            "maxLength" : 100,
+            "minLength" : 0
+          },
+          "professionalPromotionTeam" : {
+            "type" : "string",
+            "maxLength" : 100,
+            "minLength" : 0
+          },
+          "basePrice" : {
+            "type" : "integer",
+            "format" : "int64",
+            "minimum" : 0
+          },
+          "dailyTargetCount" : {
+            "type" : "integer",
+            "format" : "int32",
+            "minimum" : 0
+          },
+          "targetAmount" : {
+            "type" : "integer",
+            "format" : "int64",
+            "minimum" : 0
+          },
+          "actualAmount" : {
+            "type" : "integer",
+            "format" : "int64",
+            "minimum" : 0
+          },
+          "primaryProductAmount" : {
+            "type" : "integer",
+            "format" : "int64",
+            "minimum" : 0
+          },
+          "primarySalesQuantity" : {
+            "type" : "integer",
+            "format" : "int32",
+            "minimum" : 0
+          },
+          "primarySalesPrice" : {
+            "type" : "integer",
+            "format" : "int64",
+            "minimum" : 0
+          },
+          "otherSalesAmount" : {
+            "type" : "integer",
+            "format" : "int64",
+            "minimum" : 0
+          },
+          "otherSalesQuantity" : {
+            "type" : "integer",
+            "format" : "int32",
+            "minimum" : 0
+          },
+          "s3ImageUniqueKey" : {
+            "type" : "string",
+            "maxLength" : 255,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "id", "scheduleDate", "workStatus", "workType1" ]
+      },
+      "BatchUpdatePromotionEmployeeRequest" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/BatchUpdatePromotionEmployeeItem"
+            }
+          }
+        },
+        "required" : [ "items" ]
+      },
+      "ApiResponseBatchUpdatePromotionEmployeeResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "$ref" : "#/components/schemas/BatchUpdatePromotionEmployeeResponse"
+          },
+          "error" : {
+            "$ref" : "#/components/schemas/ErrorDetail"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "success", "timestamp" ]
+      },
+      "BatchUpdatePromotionEmployeeResponse" : {
+        "type" : "object",
+        "properties" : {
+          "updatedCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PromotionEmployeeListResponse"
+            }
+          }
+        },
+        "required" : [ "items", "updatedCount" ]
+      },
+      "PromotionEmployeeListResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "promotionId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "employeeSfid" : {
+            "type" : "string"
+          },
+          "employeeName" : {
+            "type" : "string"
+          },
+          "scheduleDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "workStatus" : {
+            "type" : "string"
+          },
+          "workType1" : {
+            "type" : "string"
+          },
+          "workType3" : {
+            "type" : "string"
+          },
+          "workType4" : {
+            "type" : "string"
+          },
+          "professionalPromotionTeam" : {
+            "type" : "string"
+          },
+          "scheduleId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "promoCloseByTm" : {
+            "type" : "boolean"
+          },
+          "basePrice" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "dailyTargetCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "targetAmount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "actualAmount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "primaryProductAmount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "primarySalesQuantity" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "primarySalesPrice" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "otherSalesAmount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "otherSalesQuantity" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "s3ImageUniqueKey" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "promoCloseByTm", "promotionId" ]
+      },
       "PromotionCreateRequest" : {
         "type" : "object",
         "properties" : {
@@ -2645,18 +2907,13 @@
             "maxLength" : 50,
             "minLength" : 0
           },
-          "branchName" : {
-            "type" : "string",
-            "maxLength" : 100,
-            "minLength" : 0
-          },
           "remark" : {
             "type" : "string",
             "maxLength" : 200,
             "minLength" : 0
           }
         },
-        "required" : [ "accountId", "endDate", "startDate" ]
+        "required" : [ "accountId", "endDate", "primaryProductId", "promotionTypeId", "standLocation", "startDate" ]
       },
       "ApiResponsePromotionDetailResponse" : {
         "type" : "object",
@@ -2881,9 +3138,38 @@
             "type" : "integer",
             "format" : "int64",
             "minimum" : 0
+          },
+          "primaryProductAmount" : {
+            "type" : "integer",
+            "format" : "int64",
+            "minimum" : 0
+          },
+          "primarySalesQuantity" : {
+            "type" : "integer",
+            "format" : "int32",
+            "minimum" : 0
+          },
+          "primarySalesPrice" : {
+            "type" : "integer",
+            "format" : "int64",
+            "minimum" : 0
+          },
+          "otherSalesAmount" : {
+            "type" : "integer",
+            "format" : "int64",
+            "minimum" : 0
+          },
+          "otherSalesQuantity" : {
+            "type" : "integer",
+            "format" : "int32",
+            "minimum" : 0
+          },
+          "s3ImageUniqueKey" : {
+            "type" : "string",
+            "maxLength" : 255,
+            "minLength" : 0
           }
-        },
-        "required" : [ "employeeSfid", "scheduleDate", "workStatus", "workType1", "workType3" ]
+        }
       },
       "ApiResponsePromotionEmployeeDetailResponse" : {
         "type" : "object",
@@ -2966,6 +3252,29 @@
             "type" : "integer",
             "format" : "int64"
           },
+          "primaryProductAmount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "primarySalesQuantity" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "primarySalesPrice" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "otherSalesAmount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "otherSalesQuantity" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "s3ImageUniqueKey" : {
+            "type" : "string"
+          },
           "createdAt" : {
             "type" : "string",
             "format" : "date-time"
@@ -2975,7 +3284,7 @@
             "format" : "date-time"
           }
         },
-        "required" : [ "createdAt", "employeeSfid", "id", "promoCloseByTm", "promotionId", "scheduleDate", "updatedAt", "workStatus", "workType1", "workType3" ]
+        "required" : [ "createdAt", "id", "promoCloseByTm", "promotionId", "updatedAt" ]
       },
       "NoticeUpdateRequest" : {
         "type" : "object",
@@ -4298,18 +4607,18 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "size" : {
             "type" : "integer",
@@ -4340,14 +4649,14 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "paged" : {
-            "type" : "boolean"
-          },
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
           },
           "unpaged" : {
+            "type" : "boolean"
+          },
+          "paged" : {
             "type" : "boolean"
           },
           "offset" : {
@@ -5363,68 +5672,6 @@
         },
         "required" : [ "success", "timestamp" ]
       },
-      "PromotionEmployeeListResponse" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "promotionId" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "employeeSfid" : {
-            "type" : "string"
-          },
-          "employeeName" : {
-            "type" : "string"
-          },
-          "scheduleDate" : {
-            "type" : "string",
-            "format" : "date"
-          },
-          "workStatus" : {
-            "type" : "string"
-          },
-          "workType1" : {
-            "type" : "string"
-          },
-          "workType3" : {
-            "type" : "string"
-          },
-          "workType4" : {
-            "type" : "string"
-          },
-          "professionalPromotionTeam" : {
-            "type" : "string"
-          },
-          "scheduleId" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "promoCloseByTm" : {
-            "type" : "boolean"
-          },
-          "basePrice" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "dailyTargetCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "targetAmount" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "actualAmount" : {
-            "type" : "integer",
-            "format" : "int64"
-          }
-        },
-        "required" : [ "employeeSfid", "id", "promoCloseByTm", "promotionId", "scheduleDate", "workStatus", "workType1", "workType3" ]
-      },
       "ApiResponsePromotionFormMetaResponse" : {
         "type" : "object",
         "properties" : {
@@ -5825,6 +6072,9 @@
       "EmployeeListItem" : {
         "type" : "object",
         "properties" : {
+          "sfid" : {
+            "type" : "string"
+          },
           "employeeId" : {
             "type" : "string"
           },
