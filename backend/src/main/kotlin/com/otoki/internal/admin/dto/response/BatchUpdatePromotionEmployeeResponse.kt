@@ -7,7 +7,7 @@ data class BatchUpdatePromotionEmployeeResponse(
 
 data class BatchItemError(
     val itemIndex: Int,
-    val employeeSfid: String,
+    val employeeSfid: String?,
     val errorCode: String,
     val message: String
 )
