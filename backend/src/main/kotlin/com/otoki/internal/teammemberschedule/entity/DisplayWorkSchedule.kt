@@ -13,7 +13,7 @@ import java.time.LocalDateTime
  * V1 스키마: displayworkschedulemaster__c
  */
 @Entity
-@Table(name = "displayworkschedulemaster__c")
+@Table(name = "display_work_schedule")
 @SFObject("DKRetail__DisplayWorkScheduleMaster__c")
 @HCTable("displayworkschedulemaster__c")
 class DisplayWorkSchedule(
@@ -34,50 +34,50 @@ class DisplayWorkSchedule(
 
     @SFField("Account__c")
     @HCColumn("account__c")
-    @Column(name = "account__c", length = 18)
+    @Column(name = "account", length = 18)
     val account: String? = null,
 
     @SFField("FullName__c")
     @HCColumn("fullname__c")
-    @Column(name = "fullname__c", length = 18)
+    @Column(name = "full_name", length = 18)
     val fullName: String? = null,
 
     @SFField("StartDate__c")
     @HCColumn("startdate__c")
-    @Column(name = "startdate__c")
+    @Column(name = "start_date")
     val startDate: LocalDate? = null,
 
     @SFField("EndDate__c")
     @HCColumn("enddate__c")
-    @Column(name = "enddate__c")
+    @Column(name = "end_date")
     val endDate: LocalDate? = null,
 
     @SFField("Confirmed__c")
     @HCColumn("confirmed__c")
-    @Column(name = "confirmed__c")
+    @Column(name = "confirmed")
     val confirmed: Boolean? = null,
 
     @SFField("TypeOfWork1__c")
     @HCColumn("typeofwork1__c")
-    @Column(name = "typeofwork1__c", length = 255)
+    @Column(name = "type_of_work1", length = 255)
     val typeOfWork1: String? = null,
 
     @SFField("TypeOfWork3__c")
     @HCColumn("typeofwork3__c")
-    @Column(name = "typeofwork3__c", length = 255)
+    @Column(name = "type_of_work3", length = 255)
     val typeOfWork3: String? = null,
 
     @SFField("TypeOfWork5__c")
     @HCColumn("typeofwork5__c")
-    @Column(name = "typeofwork5__c", length = 255)
+    @Column(name = "type_of_work5", length = 255)
     val typeOfWork5: String? = null,
 
     @HCColumn("createdbyid")
-    @Column(name = "createdbyid", length = 18)
+    @Column(name = "created_by_id", length = 18)
     val createdById: String? = null,
 
     @HCColumn("ownerid")
-    @Column(name = "ownerid", length = 18)
+    @Column(name = "owner_id", length = 18)
     val ownerId: String? = null,
 
     @HCColumn("isdeleted")
@@ -85,7 +85,7 @@ class DisplayWorkSchedule(
     val isDeleted: Boolean? = null,
 
     @HCColumn("createddate")
-    @Column(name = "createddate")
+    @Column(name = "created_date")
     val createdDate: LocalDateTime? = null,
 
     @HCColumn("systemmodstamp")
