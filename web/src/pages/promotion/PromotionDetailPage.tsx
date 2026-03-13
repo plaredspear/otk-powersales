@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Button,
@@ -33,6 +33,8 @@ import {
   BatchValidationError,
   type BatchUpdatePromotionEmployeeItem,
 } from '@/api/promotionEmployee';
+import { fetchEmployees } from '@/api/employee';
+import type { Employee } from '@/api/employee';
 import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
 
 const { Title } = Typography;
@@ -58,6 +60,7 @@ const WORK_STATUS_OPTIONS = [
 ];
 
 const WORK_TYPE3_OPTIONS = [
+  { label: '--None--', value: '' },
   { label: '고정', value: '고정' },
   { label: '격고', value: '격고' },
   { label: '순회', value: '순회' },
@@ -114,11 +117,9 @@ function toEditableRow(pe: PromotionEmployee): EditableRow {
 }
 
 const REQUIRED_FIELDS: (keyof EditableRow)[] = [
-  'employeeSfid',
   'scheduleDate',
   'workStatus',
   'workType1',
-  'workType3',
 ];
 
 export default function PromotionDetailPage() {
@@ -141,6 +142,11 @@ export default function PromotionDetailPage() {
   const [editRows, setEditRows] = useState<EditableRow[]>([]);
   const [errorRowIds, setErrorRowIds] = useState<Set<number>>(new Set());
   const [errorMessages, setErrorMessages] = useState<Map<number, string>>(new Map());
+
+  // --- 사원 Lookup 검색 상태 ---
+  const [employeeSearchResults, setEmployeeSearchResults] = useState<Employee[]>([]);
+  const [employeeSearching, setEmployeeSearching] = useState(false);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setDynamicTitle(promotion?.promotionNumber ?? null);
@@ -214,6 +220,29 @@ export default function PromotionDetailPage() {
     setErrorMessages(new Map());
   };
 
+  // --- 사원 Lookup 검색 ---
+  const handleEmployeeSearch = useCallback((keyword: string) => {
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+
+    if (keyword.length < 2) {
+      setEmployeeSearchResults([]);
+      setEmployeeSearching(false);
+      return;
+    }
+
+    setEmployeeSearching(true);
+    searchTimerRef.current = setTimeout(async () => {
+      try {
+        const result = await fetchEmployees({ keyword, size: 10 });
+        setEmployeeSearchResults(result.content);
+      } catch {
+        setEmployeeSearchResults([]);
+      } finally {
+        setEmployeeSearching(false);
+      }
+    }, 300);
+  }, []);
+
   // --- 행 필드 변경 ---
   const updateField = useCallback(
     (rowId: number, field: keyof EditableRow, value: unknown) => {
@@ -270,11 +299,11 @@ export default function PromotionDetailPage() {
       if (isDirty) {
         changed.push({
           id: row.id,
-          employee_sfid: row.employeeSfid ?? '',
+          employee_sfid: row.employeeSfid || null,
           schedule_date: row.scheduleDate ?? '',
           work_status: row.workStatus ?? '',
           work_type1: row.workType1 ?? '',
-          work_type3: row.workType3 ?? '',
+          work_type3: row.workType3 || null,
           work_type4: row.workType4,
           professional_promotion_team: row.professionalPromotionTeam,
           base_price: row.basePrice,
@@ -565,8 +594,8 @@ export default function PromotionDetailPage() {
           <Select
             size="small"
             options={WORK_TYPE3_OPTIONS}
-            value={record.workType3}
-            onChange={(v) => updateField(record.id, 'workType3', v)}
+            value={record.workType3 ?? ''}
+            onChange={(v) => updateField(record.id, 'workType3', v || null)}
             style={{ width: '100%' }}
             allowClear={false}
           />
@@ -672,13 +701,38 @@ export default function PromotionDetailPage() {
       {
         title: '여사원 SF ID',
         dataIndex: 'employeeSfid',
-        width: 140,
+        width: 200,
         render: (_: unknown, record: EditableRow) => (
-          <Input
+          <Select
             size="small"
-            maxLength={18}
-            value={record.employeeSfid ?? ''}
-            onChange={(e) => updateField(record.id, 'employeeSfid', e.target.value || null)}
+            showSearch
+            filterOption={false}
+            placeholder="사원 검색..."
+            value={record.employeeSfid ? { value: record.employeeSfid, label: record.employeeName ?? record.employeeSfid } : undefined}
+            labelInValue
+            allowClear
+            onSearch={handleEmployeeSearch}
+            onChange={(option) => {
+              if (option) {
+                const selected = employeeSearchResults.find((e) => e.sfid === option.value);
+                updateField(record.id, 'employeeSfid', option.value);
+                updateField(record.id, 'employeeName', selected?.name ?? option.label);
+              }
+            }}
+            onClear={() => {
+              updateField(record.id, 'employeeSfid', null);
+              updateField(record.id, 'employeeName', null);
+            }}
+            notFoundContent={
+              employeeSearching ? <Spin size="small" /> : '검색 결과 없음'
+            }
+            options={employeeSearchResults
+              .filter((e) => e.sfid)
+              .map((e) => ({
+                value: e.sfid!,
+                label: `${e.name} (${e.employeeId})`,
+              }))}
+            style={{ width: '100%' }}
           />
         ),
       },
@@ -740,7 +794,7 @@ export default function PromotionDetailPage() {
         ),
       },
     ],
-    [confirmColumn, closeColumn, updateField],
+    [confirmColumn, closeColumn, updateField, handleEmployeeSearch, employeeSearchResults, employeeSearching],
   );
 
   if (isLoading) {
