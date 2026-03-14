@@ -16,7 +16,7 @@ import com.otoki.internal.sap.entity.UserRole
 import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.sap.repository.ProductRepository
 import com.otoki.internal.sap.repository.UserRepository
-import com.otoki.internal.teammemberschedule.repository.TeamMemberScheduleRepository
+import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service

@@ -8,8 +8,8 @@ import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.sap.entity.MonthlySalesHistory
 import com.otoki.internal.sap.repository.MonthlySalesHistoryRepository
-import com.otoki.internal.teammemberschedule.entity.DisplayWorkSchedule
-import com.otoki.internal.teammemberschedule.repository.DisplayWorkScheduleRepository
+import com.otoki.internal.schedule.entity.DisplayWorkSchedule
+import com.otoki.internal.schedule.repository.DisplayWorkScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested

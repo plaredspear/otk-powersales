@@ -19,7 +19,7 @@ import com.otoki.internal.sap.entity.User
 import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.sap.repository.ProductRepository
 import com.otoki.internal.sap.repository.UserRepository
-import com.otoki.internal.teammemberschedule.repository.TeamMemberScheduleRepository
+import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName

@@ -9,8 +9,8 @@ import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.sap.entity.MonthlySalesHistory
 import com.otoki.internal.sap.repository.MonthlySalesHistoryRepository
-import com.otoki.internal.teammemberschedule.entity.DisplayWorkSchedule
-import com.otoki.internal.teammemberschedule.repository.DisplayWorkScheduleRepository
+import com.otoki.internal.schedule.entity.DisplayWorkSchedule
+import com.otoki.internal.schedule.repository.DisplayWorkScheduleRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
