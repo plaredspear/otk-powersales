@@ -121,11 +121,11 @@ class AdminPromotionConfirmService(
     ) {
         for (pe in employees) {
             val missingFields = mutableListOf<String>()
-            if (pe.employeeSfid.isNullOrBlank()) missingFields.add("employee_sfid")
-            if (pe.scheduleDate == null) missingFields.add("schedule_date")
-            if (pe.workStatus.isNullOrBlank()) missingFields.add("work_status")
-            if (pe.workType1.isNullOrBlank()) missingFields.add("work_type1")
-            if (pe.workType3.isNullOrBlank()) missingFields.add("work_type3")
+            if (pe.employeeSfid.isNullOrBlank()) missingFields.add("행사사원")
+            if (pe.scheduleDate == null) missingFields.add("투입일")
+            if (pe.workStatus.isNullOrBlank()) missingFields.add("근무상태")
+            if (pe.workType1.isNullOrBlank()) missingFields.add("근무유형1")
+            if (pe.workType3.isNullOrBlank()) missingFields.add("근무유형3")
 
             if (missingFields.isNotEmpty()) {
                 val name = resolveEmployeeName(pe.employeeSfid ?: pe.id.toString(), userMap)
