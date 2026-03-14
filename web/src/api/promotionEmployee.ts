@@ -88,6 +88,12 @@ export interface BatchUpdatePromotionEmployeeItem {
   daily_target_count?: number | null;
   target_amount?: number | null;
   actual_amount?: number | null;
+  primary_product_amount?: number | null;
+  primary_sales_quantity?: number | null;
+  other_sales_amount?: number | null;
+  other_sales_quantity?: number | null;
+  s3_image_unique_key?: string | null;
+  promo_close_by_tm?: boolean;
 }
 
 export interface BatchUpdatePromotionEmployeeRequest {

@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Button,
@@ -16,7 +16,7 @@ import {
   Typography,
   message,
 } from 'antd';
-import { CheckCircleFilled, CloseCircleFilled } from '@ant-design/icons';
+import { CheckCircleFilled, CloseCircleFilled, CloseOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { usePromotion } from '@/hooks/promotion/usePromotion';
@@ -35,6 +35,7 @@ import {
   type BatchUpdatePromotionEmployeeItem,
 } from '@/api/promotionEmployee';
 import type { PromotionFormData } from '@/api/promotion';
+import { fetchEmployees, type Employee } from '@/api/employee';
 import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
 import PromotionDetailSection, {
   type DetailFormValues,
@@ -67,15 +68,15 @@ interface EditableRow {
   dailyTargetCount: number | null;
   targetAmount: number | null;
   actualAmount: number | null;
-  // Read-only display fields
-  employeeName: string | null;
-  scheduleId: number | null;
-  promoCloseByTm: boolean;
   primaryProductAmount: number | null;
   primarySalesQuantity: number | null;
   otherSalesAmount: number | null;
   otherSalesQuantity: number | null;
   s3ImageUniqueKey: string | null;
+  promoCloseByTm: boolean;
+  // Read-only display fields
+  employeeName: string | null;
+  scheduleId: number | null;
 }
 
 function toEditableRow(pe: PromotionEmployee): EditableRow {
@@ -150,6 +151,36 @@ export default function PromotionDetailPage() {
   const [errorMessages, setErrorMessages] = useState<Map<number, string>>(new Map());
 
   // --- 사원 Lookup 검색 상태 ---
+  const [employeeOptions, setEmployeeOptions] = useState<Map<number, Employee[]>>(new Map());
+  const [employeeSearchLoading, setEmployeeSearchLoading] = useState<Map<number, boolean>>(new Map());
+  const searchTimerRef = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
+
+  const handleEmployeeSearch = useCallback((rowId: number, keyword: string) => {
+    // Clear previous timer for this row
+    const timers = searchTimerRef.current;
+    const prevTimer = timers.get(rowId);
+    if (prevTimer) clearTimeout(prevTimer);
+
+    if (keyword.length < 2) {
+      setEmployeeOptions((prev) => { const next = new Map(prev); next.delete(rowId); return next; });
+      return;
+    }
+
+    setEmployeeSearchLoading((prev) => new Map(prev).set(rowId, true));
+
+    const timer = setTimeout(async () => {
+      try {
+        const result = await fetchEmployees({ status: '재직', keyword, size: 5 });
+        setEmployeeOptions((prev) => new Map(prev).set(rowId, result.content));
+      } catch {
+        setEmployeeOptions((prev) => { const next = new Map(prev); next.delete(rowId); return next; });
+      } finally {
+        setEmployeeSearchLoading((prev) => { const next = new Map(prev); next.delete(rowId); return next; });
+      }
+    }, 300);
+
+    timers.set(rowId, timer);
+  }, []);
 
   useEffect(() => {
     setDynamicTitle(promotion?.promotionNumber ?? null);
@@ -392,7 +423,14 @@ export default function PromotionDetailPage() {
         row.workType4 !== orig.workType4 ||
         row.professionalPromotionTeam !== orig.professionalPromotionTeam ||
         row.basePrice !== orig.basePrice ||
-        row.dailyTargetCount !== orig.dailyTargetCount;
+        row.dailyTargetCount !== orig.dailyTargetCount ||
+        row.targetAmount !== orig.targetAmount ||
+        row.primaryProductAmount !== orig.primaryProductAmount ||
+        row.primarySalesQuantity !== orig.primarySalesQuantity ||
+        row.otherSalesAmount !== orig.otherSalesAmount ||
+        row.otherSalesQuantity !== orig.otherSalesQuantity ||
+        row.s3ImageUniqueKey !== orig.s3ImageUniqueKey ||
+        row.promoCloseByTm !== orig.promoCloseByTm;
 
       if (isDirty) {
         changed.push({
@@ -408,6 +446,12 @@ export default function PromotionDetailPage() {
           daily_target_count: row.dailyTargetCount,
           target_amount: row.targetAmount,
           actual_amount: row.actualAmount,
+          primary_product_amount: row.primaryProductAmount,
+          primary_sales_quantity: row.primarySalesQuantity,
+          other_sales_amount: row.otherSalesAmount,
+          other_sales_quantity: row.otherSalesQuantity,
+          s3_image_unique_key: row.s3ImageUniqueKey,
+          promo_close_by_tm: row.promoCloseByTm,
         });
       }
     }
@@ -639,10 +683,41 @@ export default function PromotionDetailPage() {
       { title: 'NO.', dataIndex: 'id', width: 70, align: 'center' as const },
       {
         title: '행사사원',
-        dataIndex: 'employeeName',
-        width: 120,
-        render: (name: string | null, record: EditableRow) =>
-          name ?? record.employeeSfid ?? '-',
+        width: 160,
+        render: (_: unknown, record: EditableRow) => {
+          const options = employeeOptions.get(record.id) ?? [];
+          const loading = employeeSearchLoading.get(record.id) ?? false;
+          return (
+            <Select
+              size="small"
+              showSearch
+              filterOption={false}
+              placeholder="사원 검색"
+              value={record.employeeSfid ? { value: record.employeeSfid, label: record.employeeName ?? record.employeeSfid } : undefined}
+              labelInValue
+              loading={loading}
+              onSearch={(val) => handleEmployeeSearch(record.id, val)}
+              onChange={(opt: { value: string; label: string }) => {
+                const selected = options.find((e) => e.sfid === opt.value);
+                updateField(record.id, 'employeeSfid', opt.value);
+                updateField(record.id, 'employeeName', selected?.name ?? opt.label);
+              }}
+              notFoundContent={loading ? <Spin size="small" /> : '검색 결과 없음'}
+              style={{ width: '100%' }}
+              allowClear
+              onClear={() => {
+                updateField(record.id, 'employeeSfid', null);
+                updateField(record.id, 'employeeName', null);
+              }}
+            >
+              {options.map((emp) => (
+                <Select.Option key={emp.sfid} value={emp.sfid}>
+                  {emp.name} ({emp.employeeId})
+                </Select.Option>
+              ))}
+            </Select>
+          );
+        },
       },
       {
         title: '전문행사조(현재)',
@@ -727,51 +802,85 @@ export default function PromotionDetailPage() {
       },
       {
         title: '목표금액',
+        dataIndex: 'targetAmount',
         width: 110,
-        align: 'right' as const,
-        render: (_: unknown, record: EditableRow) => {
-          const computed = (record.basePrice ?? 0) * (record.dailyTargetCount ?? 0);
-          return computed ? fmtNum(computed) : '';
-        },
+        render: (_: unknown, record: EditableRow) => (
+          <InputNumber
+            size="small"
+            min={0}
+            value={record.targetAmount}
+            onChange={(v) => updateField(record.id, 'targetAmount', v)}
+            style={{ width: '100%' }}
+          />
+        ),
       },
       {
         title: '대표품목 매출',
         dataIndex: 'primaryProductAmount',
         width: 110,
-        align: 'right' as const,
-        render: (v: number | null) => fmtNum(v),
+        render: (_: unknown, record: EditableRow) => (
+          <InputNumber
+            size="small"
+            min={0}
+            value={record.primaryProductAmount}
+            onChange={(v) => updateField(record.id, 'primaryProductAmount', v)}
+            style={{ width: '100%' }}
+          />
+        ),
       },
       {
         title: '진도율',
         width: 70,
         align: 'right' as const,
         render: (_: unknown, record: EditableRow) => {
-          const target = (record.basePrice ?? 0) * (record.dailyTargetCount ?? 0);
-          if (!target) return '0%';
+          if (!record.targetAmount || record.targetAmount === 0) return '0%';
           if (record.primaryProductAmount == null) return '0%';
-          return `${Math.floor((record.primaryProductAmount / target) * 100)}%`;
+          return `${Math.floor((record.primaryProductAmount / record.targetAmount) * 100)}%`;
         },
       },
       {
         title: '대표품목판매수량',
         dataIndex: 'primarySalesQuantity',
         width: 120,
-        align: 'right' as const,
-        render: (v: number | null) => fmtNum(v),
+        render: (_: unknown, record: EditableRow) => (
+          <InputNumber
+            size="small"
+            min={0}
+            precision={0}
+            value={record.primarySalesQuantity}
+            onChange={(v) => updateField(record.id, 'primarySalesQuantity', v)}
+            style={{ width: '100%' }}
+          />
+        ),
       },
       {
         title: '기타판매금액',
         dataIndex: 'otherSalesAmount',
         width: 100,
-        align: 'right' as const,
-        render: (v: number | null) => fmtNum(v),
+        render: (_: unknown, record: EditableRow) => (
+          <InputNumber
+            size="small"
+            min={0}
+            value={record.otherSalesAmount}
+            onChange={(v) => updateField(record.id, 'otherSalesAmount', v)}
+            style={{ width: '100%' }}
+          />
+        ),
       },
       {
         title: '기타판매수량',
         dataIndex: 'otherSalesQuantity',
         width: 100,
-        align: 'right' as const,
-        render: (v: number | null) => fmtNum(v),
+        render: (_: unknown, record: EditableRow) => (
+          <InputNumber
+            size="small"
+            min={0}
+            precision={0}
+            value={record.otherSalesQuantity}
+            onChange={(v) => updateField(record.id, 'otherSalesQuantity', v)}
+            style={{ width: '100%' }}
+          />
+        ),
       },
       {
         title: '총 실적',
@@ -785,13 +894,44 @@ export default function PromotionDetailPage() {
       {
         title: '현장사진',
         dataIndex: 's3ImageUniqueKey',
-        width: 70,
+        width: 90,
         align: 'center' as const,
-        render: (v: string | null) =>
-          v ? <CheckCircleFilled style={{ color: '#52c41a' }} /> : null,
+        render: (v: string | null, record: EditableRow) =>
+          v ? (
+            <Space size={4}>
+              <CheckCircleFilled style={{ color: '#52c41a' }} />
+              <Button
+                type="text"
+                size="small"
+                danger
+                icon={<CloseOutlined />}
+                onClick={() => updateField(record.id, 's3ImageUniqueKey', null)}
+                style={{ minWidth: 0, padding: '0 4px' }}
+              />
+            </Space>
+          ) : null,
       },
       confirmColumn,
-      closeColumn,
+      {
+        title: '여사마감',
+        dataIndex: 'promoCloseByTm',
+        width: 90,
+        align: 'center' as const,
+        render: (v: boolean, record: EditableRow) =>
+          v ? (
+            <Space size={4}>
+              <CloseCircleFilled style={{ color: '#ff4d4f' }} />
+              <Button
+                type="text"
+                size="small"
+                danger
+                icon={<CloseOutlined />}
+                onClick={() => updateField(record.id, 'promoCloseByTm', false)}
+                style={{ minWidth: 0, padding: '0 4px' }}
+              />
+            </Space>
+          ) : null,
+      },
       {
         title: '삭제',
         width: 60,
@@ -809,7 +949,7 @@ export default function PromotionDetailPage() {
         ),
       },
     ],
-    [confirmColumn, closeColumn, updateField],
+    [confirmColumn, updateField, employeeOptions, employeeSearchLoading, handleEmployeeSearch],
   );
 
   if (isLoading) {
@@ -987,7 +1127,7 @@ export default function PromotionDetailPage() {
             onRow={(record) => ({
               title: errorMessages.get(record.id) || undefined,
             })}
-            scroll={{ x: 1910 }}
+            scroll={{ x: 2100 }}
           />
         ) : (
           <Table<PromotionEmployee>
