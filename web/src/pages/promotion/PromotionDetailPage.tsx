@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Button,
@@ -156,7 +156,7 @@ export default function PromotionDetailPage() {
   const [employeeSearchLoading, setEmployeeSearchLoading] = useState<Map<number, boolean>>(new Map());
   const searchTimerRef = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
 
-  const handleEmployeeSearch = useCallback((rowId: number, keyword: string) => {
+  const handleEmployeeSearch = (rowId: number, keyword: string) => {
     // Clear previous timer for this row
     const timers = searchTimerRef.current;
     const prevTimer = timers.get(rowId);
@@ -181,7 +181,7 @@ export default function PromotionDetailPage() {
     }, 300);
 
     timers.set(rowId, timer);
-  }, []);
+  };
 
   useEffect(() => {
     setDynamicTitle(promotion?.promotionNumber ?? null);
@@ -191,7 +191,7 @@ export default function PromotionDetailPage() {
   const hasDates = promotion?.startDate && promotion?.endDate;
 
   // --- 행사 인라인 편집: 진입 ---
-  const enterPromotionEdit = useCallback(() => {
+  const enterPromotionEdit = () => {
     if (!promotion) return;
     setDetailForm({
       accountId: promotion.accountId,
@@ -209,10 +209,10 @@ export default function PromotionDetailPage() {
       remark: promotion.remark,
     });
     setPromotionEditing(true);
-  }, [promotion]);
+  };
 
   // --- 행사 인라인 편집: 취소 ---
-  const cancelPromotionEdit = useCallback(() => {
+  const cancelPromotionEdit = () => {
     const hasDetailChange = promotion && (
       detailForm.accountId !== promotion.accountId ||
       detailForm.startDate !== promotion.startDate ||
@@ -238,10 +238,10 @@ export default function PromotionDetailPage() {
     } else {
       setPromotionEditing(false);
     }
-  }, [promotion, detailForm, productForm]);
+  };
 
   // --- 행사 인라인 편집: 저장 ---
-  const savePromotionEdit = useCallback(async () => {
+  const savePromotionEdit = async () => {
     if (!promotion) return;
 
     // Client validation
@@ -285,7 +285,7 @@ export default function PromotionDetailPage() {
     } catch (err) {
       message.error(err instanceof Error ? err.message : '수정에 실패했습니다');
     }
-  }, [promotion, promotionId, detailForm, productForm, updateMutation]);
+  };
 
   // --- 행사 삭제 ---
   const handleDelete = () => {
@@ -344,13 +344,13 @@ export default function PromotionDetailPage() {
   };
 
   // --- 행사사원 편집 모드 진입 ---
-  const enterEmpEditMode = useCallback(() => {
+  const enterEmpEditMode = () => {
     if (!employees) return;
     setEditRows(employees.map(toEditableRow));
     setErrorRowIds(new Set());
     setErrorMessages(new Map());
     setEmpEditMode(true);
-  }, [employees]);
+  };
 
   // --- 행사사원 편집 모드 취소 ---
   const cancelEmpEditMode = () => {
@@ -382,24 +382,21 @@ export default function PromotionDetailPage() {
   };
 
   // --- 행 필드 변경 ---
-  const updateField = useCallback(
-    (rowId: number, field: keyof EditableRow, value: unknown) => {
-      setEditRows((prev) =>
-        prev.map((row) => (row.id === rowId ? { ...row, [field]: value } : row)),
-      );
-      setErrorRowIds((prev) => {
-        const next = new Set(prev);
-        next.delete(rowId);
-        return next;
-      });
-      setErrorMessages((prev) => {
-        const next = new Map(prev);
-        next.delete(rowId);
-        return next;
-      });
-    },
-    [],
-  );
+  const updateField = (rowId: number, field: keyof EditableRow, value: unknown) => {
+    setEditRows((prev) =>
+      prev.map((row) => (row.id === rowId ? { ...row, [field]: value } : row)),
+    );
+    setErrorRowIds((prev) => {
+      const next = new Set(prev);
+      next.delete(rowId);
+      return next;
+    });
+    setErrorMessages((prev) => {
+      const next = new Map(prev);
+      next.delete(rowId);
+      return next;
+    });
+  };
 
   // --- 편집 모드에서 삭제 ---
   const handleDeleteInEditMode = async (peId: number) => {
@@ -413,7 +410,7 @@ export default function PromotionDetailPage() {
   };
 
   // --- Dirty check ---
-  const getChangedItems = useCallback((): BatchUpdatePromotionEmployeeItem[] | null => {
+  const getChangedItems = (): BatchUpdatePromotionEmployeeItem[] | null => {
     if (!employees) return null;
     const originalMap = new Map(employees.map((e) => [e.id, e]));
     const changed: BatchUpdatePromotionEmployeeItem[] = [];
@@ -462,10 +459,10 @@ export default function PromotionDetailPage() {
     }
 
     return changed;
-  }, [editRows, employees]);
+  };
 
   // --- 클라이언트 검증 ---
-  const validateRequired = useCallback((): boolean => {
+  const validateRequired = (): boolean => {
     const invalidIds = new Set<number>();
     const msgs = new Map<number, string>();
 
@@ -487,7 +484,7 @@ export default function PromotionDetailPage() {
       return false;
     }
     return true;
-  }, [editRows]);
+  };
 
   // --- 행사사원 저장 ---
   const handleEmpSave = async () => {
@@ -555,21 +552,17 @@ export default function PromotionDetailPage() {
     return v.toLocaleString();
   };
 
-  const closeColumn = useMemo(
-    () => ({
-      title: '여사마감',
-      dataIndex: 'promoCloseByTm',
-      width: 70,
-      align: 'center' as const,
-      render: (v: boolean) =>
-        v ? <CloseCircleFilled style={{ color: '#ff4d4f' }} /> : null,
-    }),
-    [],
-  );
+  const closeColumn = {
+    title: '여사마감',
+    dataIndex: 'promoCloseByTm',
+    width: 70,
+    align: 'center' as const,
+    render: (v: boolean) =>
+      v ? <CloseCircleFilled style={{ color: '#ff4d4f' }} /> : null,
+  };
 
   // --- 읽기 모드 컬럼 ---
-  const readColumns: ColumnsType<PromotionEmployee> = useMemo(
-    () => [
+  const readColumns: ColumnsType<PromotionEmployee> = [
       { title: 'NO.', dataIndex: 'id', width: 70, align: 'center' as const },
       {
         title: <span>행사사원<span style={{ color: '#fa8c16', marginLeft: 2 }}>**</span></span>,
@@ -682,13 +675,10 @@ export default function PromotionDetailPage() {
           v ? <CheckCircleFilled style={{ color: '#52c41a' }} /> : null,
       },
       closeColumn,
-    ],
-    [closeColumn],
-  );
+  ];
 
   // --- 편집 모드 컬럼 ---
-  const editColumns: ColumnsType<EditableRow> = useMemo(
-    () => [
+  const editColumns: ColumnsType<EditableRow> = [
       { title: 'NO.', dataIndex: 'id', width: 70, align: 'center' as const },
       {
         title: <span>행사사원<span style={{ color: '#fa8c16', marginLeft: 2 }}>**</span></span>,
@@ -958,9 +948,7 @@ export default function PromotionDetailPage() {
           </Popconfirm>
         ),
       },
-    ],
-    [updateField, employeeOptions, employeeSearchLoading, handleEmployeeSearch],
-  );
+  ];
 
   if (isLoading) {
     return (

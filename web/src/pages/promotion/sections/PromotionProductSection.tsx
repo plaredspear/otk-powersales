@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Descriptions, Input, Select, Spin, Tag } from 'antd';
 import type { PromotionDetail } from '@/api/promotion';
 import type { Product } from '@/api/product';
@@ -35,7 +35,7 @@ export default function PromotionProductSection({
   const [productSearching, setProductSearching] = useState(false);
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleProductSearch = useCallback((keyword: string) => {
+  const handleProductSearch = (keyword: string) => {
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
     if (keyword.length < 2) {
       setProductOptions([]);
@@ -53,7 +53,7 @@ export default function PromotionProductSection({
         setProductSearching(false);
       }
     }, 300);
-  }, []);
+  };
 
   const categoryColor = promotion.category ? CATEGORY_TAG[promotion.category] : undefined;
 

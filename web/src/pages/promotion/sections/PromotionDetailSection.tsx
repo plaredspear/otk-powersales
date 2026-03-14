@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { DatePicker, Descriptions, Input, Select, Spin, Tag } from 'antd';
 import dayjs from 'dayjs';
 import type { PromotionDetail, PromotionFormMeta } from '@/api/promotion';
@@ -41,7 +41,7 @@ export default function PromotionDetailSection({
   const [accountSearching, setAccountSearching] = useState(false);
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleAccountSearch = useCallback((keyword: string) => {
+  const handleAccountSearch = (keyword: string) => {
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
     if (keyword.length < 2) {
       setAccountOptions([]);
@@ -59,7 +59,7 @@ export default function PromotionDetailSection({
         setAccountSearching(false);
       }
     }, 300);
-  }, []);
+  };
 
   const typeColor = promotion.promotionTypeName
     ? PROMOTION_TYPE_TAG[promotion.promotionTypeName]
