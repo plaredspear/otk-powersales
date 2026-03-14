@@ -127,7 +127,7 @@ class PromotionEmployee(
     fun update(
         employeeSfid: String?,
         employeeId: String?,
-        scheduleDate: LocalDate,
+        scheduleDate: LocalDate?,
         workStatus: String?,
         workType1: String?,
         workType3: String?,
