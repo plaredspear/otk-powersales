@@ -425,7 +425,6 @@ export default function PromotionDetailPage() {
         row.professionalPromotionTeam !== orig.professionalPromotionTeam ||
         row.basePrice !== orig.basePrice ||
         row.dailyTargetCount !== orig.dailyTargetCount ||
-        row.targetAmount !== orig.targetAmount ||
         row.primaryProductAmount !== orig.primaryProductAmount ||
         row.primarySalesQuantity !== orig.primarySalesQuantity ||
         row.otherSalesAmount !== orig.otherSalesAmount ||
@@ -445,8 +444,6 @@ export default function PromotionDetailPage() {
           professional_promotion_team: row.professionalPromotionTeam,
           base_price: row.basePrice,
           daily_target_count: row.dailyTargetCount,
-          target_amount: row.targetAmount,
-          actual_amount: row.actualAmount,
           primary_product_amount: row.primaryProductAmount,
           primary_sales_quantity: row.primarySalesQuantity,
           other_sales_amount: row.otherSalesAmount,
@@ -809,10 +806,14 @@ export default function PromotionDetailPage() {
       },
       {
         title: '목표금액',
-        dataIndex: 'targetAmount',
         width: 110,
         align: 'right' as const,
-        render: (v: number | null) => fmtNum(v),
+        render: (_: unknown, record: EditableRow) => {
+          if (record.basePrice != null && record.dailyTargetCount != null) {
+            return fmtNum(record.basePrice * record.dailyTargetCount);
+          }
+          return '';
+        },
       },
       {
         title: '대표품목 매출',
@@ -833,9 +834,12 @@ export default function PromotionDetailPage() {
         width: 70,
         align: 'right' as const,
         render: (_: unknown, record: EditableRow) => {
-          if (!record.targetAmount || record.targetAmount === 0) return '0%';
+          const targetAmount = (record.basePrice != null && record.dailyTargetCount != null)
+            ? record.basePrice * record.dailyTargetCount
+            : null;
+          if (!targetAmount || targetAmount === 0) return '0%';
           if (record.primaryProductAmount == null) return '0%';
-          return `${Math.floor((record.primaryProductAmount / record.targetAmount) * 100)}%`;
+          return `${Math.floor((record.primaryProductAmount / targetAmount) * 100)}%`;
         },
       },
       {
