@@ -4,7 +4,6 @@ import {
   Button,
   Collapse,
   DatePicker,
-  Input,
   InputNumber,
   Modal,
   Popconfirm,
@@ -648,15 +647,15 @@ export default function PromotionDetailPage() {
         render: (v: number | null) => fmtNum(v),
       },
       {
-        title: '기타판매금액',
-        dataIndex: 'otherSalesAmount',
+        title: '기타판매수량',
+        dataIndex: 'otherSalesQuantity',
         width: 100,
         align: 'right' as const,
         render: (v: number | null) => fmtNum(v),
       },
       {
-        title: '기타판매수량',
-        dataIndex: 'otherSalesQuantity',
+        title: '기타판매금액',
+        dataIndex: 'otherSalesAmount',
         width: 100,
         align: 'right' as const,
         render: (v: number | null) => fmtNum(v),
@@ -689,7 +688,7 @@ export default function PromotionDetailPage() {
       { title: 'NO.', dataIndex: 'id', width: 70, align: 'center' as const },
       {
         title: <span>행사사원<span style={{ color: '#fa8c16', marginLeft: 2 }}>**</span></span>,
-        width: 160,
+        width: 220,
         render: (_: unknown, record: EditableRow) => {
           const options = employeeOptions.get(record.id) ?? [];
           const loading = employeeSearchLoading.get(record.id) ?? false;
@@ -706,6 +705,8 @@ export default function PromotionDetailPage() {
               showSearch
               filterOption={false}
               placeholder="사원 검색"
+              popupMatchSelectWidth={false}
+              dropdownStyle={{ minWidth: 250 }}
               value={record.employeeSfid ? { value: record.employeeSfid, label: record.employeeName ?? record.employeeSfid } : undefined}
               labelInValue
               loading={loading}
@@ -743,16 +744,8 @@ export default function PromotionDetailPage() {
         title: '전문행사조(투입당시)',
         dataIndex: 'professionalPromotionTeam',
         width: 130,
-        render: (_: unknown, record: EditableRow) => (
-          <Input
-            size="small"
-            maxLength={100}
-            value={record.professionalPromotionTeam ?? ''}
-            onChange={(e) =>
-              updateField(record.id, 'professionalPromotionTeam', e.target.value || null)
-            }
-          />
-        ),
+        align: 'center' as const,
+        render: (v: string | null) => v ?? '-',
       },
       {
         title: <span>투입일<span style={{ color: '#ff4d4f', marginLeft: 2 }}>*</span></span>,
@@ -818,15 +811,8 @@ export default function PromotionDetailPage() {
         title: '목표금액',
         dataIndex: 'targetAmount',
         width: 110,
-        render: (_: unknown, record: EditableRow) => (
-          <InputNumber
-            size="small"
-            min={0}
-            value={record.targetAmount}
-            onChange={(v) => updateField(record.id, 'targetAmount', v)}
-            style={{ width: '100%' }}
-          />
-        ),
+        align: 'right' as const,
+        render: (v: number | null) => fmtNum(v),
       },
       {
         title: '대표품목 매출',
@@ -868,20 +854,6 @@ export default function PromotionDetailPage() {
         ),
       },
       {
-        title: '기타판매금액',
-        dataIndex: 'otherSalesAmount',
-        width: 100,
-        render: (_: unknown, record: EditableRow) => (
-          <InputNumber
-            size="small"
-            min={0}
-            value={record.otherSalesAmount}
-            onChange={(v) => updateField(record.id, 'otherSalesAmount', v)}
-            style={{ width: '100%' }}
-          />
-        ),
-      },
-      {
         title: '기타판매수량',
         dataIndex: 'otherSalesQuantity',
         width: 100,
@@ -892,6 +864,20 @@ export default function PromotionDetailPage() {
             precision={0}
             value={record.otherSalesQuantity}
             onChange={(v) => updateField(record.id, 'otherSalesQuantity', v)}
+            style={{ width: '100%' }}
+          />
+        ),
+      },
+      {
+        title: '기타판매금액',
+        dataIndex: 'otherSalesAmount',
+        width: 100,
+        render: (_: unknown, record: EditableRow) => (
+          <InputNumber
+            size="small"
+            min={0}
+            value={record.otherSalesAmount}
+            onChange={(v) => updateField(record.id, 'otherSalesAmount', v)}
             style={{ width: '100%' }}
           />
         ),
@@ -1127,6 +1113,7 @@ export default function PromotionDetailPage() {
 
         {empEditMode ? (
           <Table<EditableRow>
+            className="promo-emp-table"
             columns={editColumns}
             dataSource={editRows}
             rowKey="id"
@@ -1161,6 +1148,7 @@ export default function PromotionDetailPage() {
           />
         ) : (
           <Table<PromotionEmployee>
+            className="promo-emp-table"
             columns={readColumns}
             dataSource={employees ?? []}
             rowKey="id"
@@ -1179,6 +1167,9 @@ export default function PromotionDetailPage() {
 
       {/* Scoped styles for promotion detail page */}
       <style>{`
+        .promo-emp-table .ant-table-thead th {
+          font-size: 12px !important;
+        }
         .ant-table-row-error td {
           background-color: #fff2f0 !important;
         }
