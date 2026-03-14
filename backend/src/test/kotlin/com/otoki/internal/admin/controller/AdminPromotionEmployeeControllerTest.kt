@@ -154,15 +154,18 @@ class AdminPromotionEmployeeControllerTest {
         }
 
         @Test
-        @DisplayName("실패 - 빈 Body로 추가 시 scheduleDate 필수 검증")
-        fun createEmployee_emptyBody_scheduleDateRequired() {
+        @DisplayName("성공 - 빈 Body로 추가 시 scheduleDate null로 생성")
+        fun createEmployee_emptyBody_success() {
+            val response = createDetailResponse()
+            whenever(adminPromotionEmployeeService.createEmployee(eq(10L), any())).thenReturn(response)
+
             mockMvc.perform(
                 post("/api/v1/admin/promotions/10/employees")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("{}")
             )
-                .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(status().isCreated)
+                .andExpect(jsonPath("$.success").value(true))
         }
 
         @Test

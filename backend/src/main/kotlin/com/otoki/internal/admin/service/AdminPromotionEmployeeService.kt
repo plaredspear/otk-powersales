@@ -401,7 +401,8 @@ class AdminPromotionEmployeeService(
             .orElseThrow { PromotionEmployeeNotFoundException() }
     }
 
-    private fun validateScheduleDateRange(scheduleDate: java.time.LocalDate, promotion: Promotion) {
+    private fun validateScheduleDateRange(scheduleDate: java.time.LocalDate?, promotion: Promotion) {
+        if (scheduleDate == null) return
         if (scheduleDate.isBefore(promotion.startDate) || scheduleDate.isAfter(promotion.endDate)) {
             throw ScheduleDateOutOfRangeException(
                 scheduleDate.toString(),
@@ -436,7 +437,7 @@ class AdminPromotionEmployeeService(
     private fun validateClosedEmployeeModification(
         pe: PromotionEmployee,
         employeeId: String?,
-        scheduleDate: java.time.LocalDate,
+        scheduleDate: java.time.LocalDate?,
         workType3: String?,
         basePrice: Long?,
         dailyTargetCount: Int?,
@@ -456,7 +457,7 @@ class AdminPromotionEmployeeService(
     private fun removeScheduleOnCriticalFieldChange(
         pe: PromotionEmployee,
         employeeId: String?,
-        scheduleDate: java.time.LocalDate,
+        scheduleDate: java.time.LocalDate?,
         workType3: String?,
         professionalPromotionTeam: String?
     ) {

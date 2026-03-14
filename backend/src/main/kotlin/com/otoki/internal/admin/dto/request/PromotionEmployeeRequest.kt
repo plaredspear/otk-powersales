@@ -1,6 +1,5 @@
 package com.otoki.internal.admin.dto.request
 
-import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
 import jakarta.validation.constraints.Min
 import java.time.LocalDate
@@ -9,8 +8,7 @@ data class PromotionEmployeeRequest(
     @field:Size(max = 8, message = "여사원 사번은 최대 8자입니다")
     val employeeId: String? = null,
 
-    @field:NotNull(message = "투입일은 필수입니다")
-    val scheduleDate: LocalDate,
+    val scheduleDate: LocalDate? = null,
 
     val workStatus: String? = null,
 
