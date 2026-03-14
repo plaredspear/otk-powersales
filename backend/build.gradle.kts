@@ -39,6 +39,9 @@ dependencies {
 	implementation("com.querydsl:querydsl-jpa:5.1.0:jakarta")
 	kapt("com.querydsl:querydsl-apt:5.1.0:jakarta")
 
+	// Apache POI (Excel)
+	implementation("org.apache.poi:poi-ooxml:5.3.0")
+
 	// JWT
 	implementation("io.jsonwebtoken:jjwt-api:0.12.6")
 	runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")
