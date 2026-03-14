@@ -96,7 +96,7 @@ class AdminPromotionConfirmControllerTest {
         @DisplayName("실패 - 필수값 누락 -> 400")
         fun confirm_valuesRequired() {
             whenever(adminPromotionConfirmService.confirmPromotion(10L))
-                .thenThrow(ValuesRequiredException("김철수의 필수 항목을 입력하세요 (work_type1)"))
+                .thenThrow(ValuesRequiredException("김철수의 필수 항목을 입력하세요 (근무유형1)"))
 
             mockMvc.perform(post("/api/v1/admin/promotions/10/confirm"))
                 .andExpect(status().isBadRequest)

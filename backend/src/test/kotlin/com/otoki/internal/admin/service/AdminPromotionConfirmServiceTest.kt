@@ -166,7 +166,7 @@ class AdminPromotionConfirmServiceTest {
 
             assertThatThrownBy { service.confirmPromotion(10L) }
                 .isInstanceOf(ValuesRequiredException::class.java)
-                .hasMessageContaining("work_type1")
+                .hasMessageContaining("근무유형1")
         }
     }
 
