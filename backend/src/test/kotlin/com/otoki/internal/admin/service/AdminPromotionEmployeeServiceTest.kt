@@ -796,7 +796,7 @@ class AdminPromotionEmployeeServiceTest {
             val pe2 = createPe(id = 2L, scheduleDate = LocalDate.of(2026, 3, 16))
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeIdIn(any())).thenReturn(listOf(createUser()))
+
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe1))
             whenever(promotionEmployeeRepository.findById(2L)).thenReturn(Optional.of(pe2))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
@@ -844,7 +844,7 @@ class AdminPromotionEmployeeServiceTest {
         fun batchUpdate_notFound() {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeIdIn(any())).thenReturn(listOf(createUser()))
+
             whenever(promotionEmployeeRepository.findById(999L)).thenReturn(Optional.empty())
 
             val request = BatchUpdatePromotionEmployeeRequest(listOf(createBatchItem(id = 999L)))
@@ -861,7 +861,7 @@ class AdminPromotionEmployeeServiceTest {
             val pe2 = createPe(id = 2L)
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeIdIn(any())).thenReturn(listOf(createUser()))
+
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe1))
             whenever(promotionEmployeeRepository.findById(2L)).thenReturn(Optional.of(pe2))
 
@@ -884,7 +884,7 @@ class AdminPromotionEmployeeServiceTest {
             val pe = createPe(id = 1L, workStatus = "연차", workType1 = "시음")
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeIdIn(any())).thenReturn(listOf(createUser()))
+
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
@@ -908,7 +908,7 @@ class AdminPromotionEmployeeServiceTest {
             val pe = createPe(id = 1L)
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeIdIn(any())).thenReturn(listOf(createUser()))
+
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
 
             val request = BatchUpdatePromotionEmployeeRequest(listOf(
@@ -927,7 +927,7 @@ class AdminPromotionEmployeeServiceTest {
             val pe = createPe(id = 1L)
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeIdIn(any())).thenReturn(listOf(createUser()))
+
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
 
             val request = BatchUpdatePromotionEmployeeRequest(listOf(
@@ -947,7 +947,7 @@ class AdminPromotionEmployeeServiceTest {
             val pe = createPe(id = 1L, scheduleId = 100L, promoCloseByTm = true)
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeIdIn(any())).thenReturn(emptyList())
+
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
 
             val request = BatchUpdatePromotionEmployeeRequest(listOf(
@@ -966,7 +966,7 @@ class AdminPromotionEmployeeServiceTest {
             val pe = createPe(id = 1L, scheduleId = 100L, promoCloseByTm = true)
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser(appAuthority = "지점장")))
-            whenever(userRepository.findByEmployeeIdIn(any())).thenReturn(emptyList())
+
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
@@ -988,7 +988,7 @@ class AdminPromotionEmployeeServiceTest {
             val pe = createPe(id = 1L, scheduleId = 100L)
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeIdIn(any())).thenReturn(emptyList())
+
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
@@ -1012,7 +1012,7 @@ class AdminPromotionEmployeeServiceTest {
             val pe = createPe(id = 1L)
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeIdIn(any())).thenReturn(listOf(createUser()))
+
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
@@ -1035,7 +1035,7 @@ class AdminPromotionEmployeeServiceTest {
             val pe = createPe(id = 1L)
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeIdIn(any())).thenReturn(listOf(createUser()))
+
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
@@ -1058,7 +1058,7 @@ class AdminPromotionEmployeeServiceTest {
             val pe = createPe(id = 1L, workType1 = null)
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeIdIn(any())).thenReturn(listOf(createUser()))
+
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
@@ -1080,7 +1080,7 @@ class AdminPromotionEmployeeServiceTest {
             val pe = createPe(id = 1L, workStatus = null)
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeIdIn(any())).thenReturn(listOf(createUser()))
+
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
@@ -1115,7 +1115,7 @@ class AdminPromotionEmployeeServiceTest {
 
             val result = service.batchUpdateEmployees(10L, 1L, request)
             assertThat(result.updatedCount).isEqualTo(1)
-            assertThat(pe.employeeSfid).isNull()
+            assertThat(pe.employeeSfid).isEqualTo("a0B5g00000XYZabc")  // employeeSfid는 불변
             assertThat(pe.employeeId).isNull()
         }
 
@@ -1125,7 +1125,7 @@ class AdminPromotionEmployeeServiceTest {
             val pe = createPe(id = 1L)
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeIdIn(any())).thenReturn(listOf(createUser()))
+
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
 
             val request = BatchUpdatePromotionEmployeeRequest(listOf(
@@ -1144,7 +1144,7 @@ class AdminPromotionEmployeeServiceTest {
             val pe = createPe(id = 1L)
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeIdIn(any())).thenReturn(listOf(createUser()))
+
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
@@ -1172,7 +1172,7 @@ class AdminPromotionEmployeeServiceTest {
             val pe = createPe(id = 1L)
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
             whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeIdIn(any())).thenReturn(listOf(createUser()))
+
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
