@@ -124,25 +124,25 @@ class HomeService(
 
     /**
      * 역할별 스케줄 조회
-     * @return Pair(스케줄 목록, sfid→User 매핑)
+     * @return Pair(스케줄 목록, employeeId→User 매핑)
      */
     private fun fetchSchedulesByRole(user: User, today: LocalDate): Pair<List<TeamMemberSchedule>, Map<String, User>> {
         return when (user.role) {
             UserRole.LEADER -> {
                 val teamUsers = userRepository.findByOrgName(user.orgName ?: "")
-                val sfids = teamUsers.mapNotNull { it.sfid }
-                val teamMemberSchedules = if (sfids.isNotEmpty()) {
-                    teamMemberScheduleRepository.findByWorkingDateAndEmployeeIdIn(today, sfids)
+                val employeeIds = teamUsers.map { it.employeeId }
+                val teamMemberSchedules = if (employeeIds.isNotEmpty()) {
+                    teamMemberScheduleRepository.findByWorkingDateAndEmployeeIdIn(today, employeeIds)
                 } else {
                     emptyList()
                 }
-                val userMap = teamUsers.associateBy { it.sfid ?: "" }
+                val userMap = teamUsers.associateBy { it.employeeId }
                 Pair(teamMemberSchedules, userMap)
             }
             else -> {
-                val userSfid = user.sfid ?: ""
-                val teamMemberSchedules = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userSfid, today)
-                val userMap = mapOf(userSfid to user)
+                val employeeId = user.employeeId
+                val teamMemberSchedules = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(employeeId, today)
+                val userMap = mapOf(employeeId to user)
                 Pair(teamMemberSchedules, userMap)
             }
         }
@@ -166,12 +166,12 @@ class HomeService(
         userMap: Map<String, User>,
         accountMap: Map<String, String>
     ): HomeResponse.TeamMemberScheduleInfo {
-        val employeeSfid = teamMemberSchedule.employeeId ?: ""
-        val matchedUser = userMap[employeeSfid]
+        val employeeId = teamMemberSchedule.employeeId ?: ""
+        val matchedUser = userMap[employeeId]
         return HomeResponse.TeamMemberScheduleInfo(
             scheduleId = teamMemberSchedule.sfid ?: "",
             employeeName = matchedUser?.name ?: "",
-            employeeSfid = employeeSfid,
+            employeeId = employeeId,
             storeName = teamMemberSchedule.accountId?.let { accountMap[it] },
             storeSfid = teamMemberSchedule.accountId,
             workCategory = teamMemberSchedule.workingCategory1 ?: "",

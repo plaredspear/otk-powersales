@@ -51,10 +51,10 @@ class AttendanceService(
             .orElseThrow { UserNotFoundException() }
 
         val today = LocalDate.now()
-        val userSfid = user.sfid ?: ""
+        val employeeId = user.employeeId
 
         // 오늘 스케줄 조회
-        val teamMemberSchedules = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userSfid, today)
+        val teamMemberSchedules = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(employeeId, today)
 
         // Account 정보 batch fetch
         val accountSfids = teamMemberSchedules.mapNotNull { it.accountId }.distinct()
@@ -128,9 +128,9 @@ class AttendanceService(
         ororaApiService.sendWorkReport(teamMemberScheduleSfid)
 
         // 5. 출근 현황 집계 (commuteLogId 업데이트 후)
-        val userSfid = user.sfid ?: ""
+        val employeeId = user.employeeId
         val today = LocalDate.now()
-        val todayTeamMemberSchedules = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userSfid, today)
+        val todayTeamMemberSchedules = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(employeeId, today)
         val totalCount = todayTeamMemberSchedules.size
         val registeredCount = todayTeamMemberSchedules.count { it.commuteLogId != null || it.sfid == teamMemberScheduleSfid }
 
@@ -152,9 +152,9 @@ class AttendanceService(
             .orElseThrow { UserNotFoundException() }
 
         val today = LocalDate.now()
-        val userSfid = user.sfid ?: ""
+        val employeeId = user.employeeId
 
-        val teamMemberSchedules = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userSfid, today)
+        val teamMemberSchedules = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(employeeId, today)
 
         // Account 정보 batch fetch
         val accountSfids = teamMemberSchedules.mapNotNull { it.accountId }.distinct()

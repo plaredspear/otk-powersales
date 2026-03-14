@@ -76,7 +76,7 @@ class HomeControllerTest {
                     HomeResponse.TeamMemberScheduleInfo(
                         scheduleId = "SCH-20260225-001",
                         employeeName = "최금주",
-                        employeeSfid = "20030117",
+                        employeeId = "20030117",
                         storeName = "이마트 부산점",
                         storeSfid = "ST-001",
                         workCategory = "순회",
@@ -130,7 +130,7 @@ class HomeControllerTest {
                 .andExpect(jsonPath("$.data.today_schedules.length()").value(1))
                 .andExpect(jsonPath("$.data.today_schedules[0].schedule_id").value("SCH-20260225-001"))
                 .andExpect(jsonPath("$.data.today_schedules[0].employee_name").value("최금주"))
-                .andExpect(jsonPath("$.data.today_schedules[0].employee_sfid").value("20030117"))
+                .andExpect(jsonPath("$.data.today_schedules[0].employee_id").value("20030117"))
                 .andExpect(jsonPath("$.data.today_schedules[0].store_name").value("이마트 부산점"))
                 .andExpect(jsonPath("$.data.today_schedules[0].store_sfid").value("ST-001"))
                 .andExpect(jsonPath("$.data.today_schedules[0].work_category").value("순회"))
@@ -179,7 +179,7 @@ class HomeControllerTest {
                     HomeResponse.TeamMemberScheduleInfo(
                         scheduleId = "SCH-20260225-010",
                         employeeName = "최금주",
-                        employeeSfid = "20030117",
+                        employeeId = "20030117",
                         storeName = "이마트 부산점",
                         storeSfid = "ST-001",
                         workCategory = "순회",
@@ -190,7 +190,7 @@ class HomeControllerTest {
                     HomeResponse.TeamMemberScheduleInfo(
                         scheduleId = "SCH-20260225-011",
                         employeeName = "김영희",
-                        employeeSfid = "20190523",
+                        employeeId = "20190523",
                         storeName = "홈플러스 서면점",
                         storeSfid = "ST-002",
                         workCategory = "전담",
@@ -201,7 +201,7 @@ class HomeControllerTest {
                     HomeResponse.TeamMemberScheduleInfo(
                         scheduleId = "SCH-20260225-012",
                         employeeName = "박소현",
-                        employeeSfid = "20210812",
+                        employeeId = "20210812",
                         storeName = null,
                         storeSfid = null,
                         workCategory = "내근",
@@ -244,7 +244,7 @@ class HomeControllerTest {
                 // 첫 번째 팀원 (출근 등록됨)
                 .andExpect(jsonPath("$.data.today_schedules[0].schedule_id").value("SCH-20260225-010"))
                 .andExpect(jsonPath("$.data.today_schedules[0].employee_name").value("최금주"))
-                .andExpect(jsonPath("$.data.today_schedules[0].employee_sfid").value("20030117"))
+                .andExpect(jsonPath("$.data.today_schedules[0].employee_id").value("20030117"))
                 .andExpect(jsonPath("$.data.today_schedules[0].store_name").value("이마트 부산점"))
                 .andExpect(jsonPath("$.data.today_schedules[0].store_sfid").value("ST-001"))
                 .andExpect(jsonPath("$.data.today_schedules[0].work_category").value("순회"))
@@ -254,7 +254,7 @@ class HomeControllerTest {
                 // 두 번째 팀원 (출근 미등록, work_type null)
                 .andExpect(jsonPath("$.data.today_schedules[1].schedule_id").value("SCH-20260225-011"))
                 .andExpect(jsonPath("$.data.today_schedules[1].employee_name").value("김영희"))
-                .andExpect(jsonPath("$.data.today_schedules[1].employee_sfid").value("20190523"))
+                .andExpect(jsonPath("$.data.today_schedules[1].employee_id").value("20190523"))
                 .andExpect(jsonPath("$.data.today_schedules[1].store_name").value("홈플러스 서면점"))
                 .andExpect(jsonPath("$.data.today_schedules[1].work_category").value("전담"))
                 .andExpect(jsonPath("$.data.today_schedules[1].work_type").doesNotExist())
@@ -263,7 +263,7 @@ class HomeControllerTest {
                 // 세 번째 팀원 (내근, store null)
                 .andExpect(jsonPath("$.data.today_schedules[2].schedule_id").value("SCH-20260225-012"))
                 .andExpect(jsonPath("$.data.today_schedules[2].employee_name").value("박소현"))
-                .andExpect(jsonPath("$.data.today_schedules[2].employee_sfid").value("20210812"))
+                .andExpect(jsonPath("$.data.today_schedules[2].employee_id").value("20210812"))
                 .andExpect(jsonPath("$.data.today_schedules[2].store_name").doesNotExist())
                 .andExpect(jsonPath("$.data.today_schedules[2].store_sfid").doesNotExist())
                 .andExpect(jsonPath("$.data.today_schedules[2].work_category").value("내근"))

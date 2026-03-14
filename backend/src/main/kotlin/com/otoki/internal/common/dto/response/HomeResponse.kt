@@ -20,7 +20,7 @@ data class HomeResponse(
     data class TeamMemberScheduleInfo(
         val scheduleId: String,
         val employeeName: String,
-        val employeeSfid: String,
+        val employeeId: String,
         val storeName: String?,
         val storeSfid: String?,
         val workCategory: String,

@@ -7,7 +7,6 @@ import java.time.LocalDateTime
 data class PromotionEmployeeListResponse(
     val id: Long,
     val promotionId: Long,
-    val employeeSfid: String?,
     val employeeId: String?,
     val employeeName: String?,
     val scheduleDate: LocalDate?,
@@ -34,7 +33,6 @@ data class PromotionEmployeeListResponse(
             PromotionEmployeeListResponse(
                 id = entity.id,
                 promotionId = entity.promotionId,
-                employeeSfid = entity.employeeSfid,
                 employeeId = entity.employeeId,
                 employeeName = employeeName,
                 scheduleDate = entity.scheduleDate,
@@ -62,7 +60,6 @@ data class PromotionEmployeeListResponse(
 data class PromotionEmployeeDetailResponse(
     val id: Long,
     val promotionId: Long,
-    val employeeSfid: String?,
     val employeeId: String?,
     val employeeName: String?,
     val scheduleDate: LocalDate?,
@@ -91,7 +88,6 @@ data class PromotionEmployeeDetailResponse(
             PromotionEmployeeDetailResponse(
                 id = entity.id,
                 promotionId = entity.promotionId,
-                employeeSfid = entity.employeeSfid,
                 employeeId = entity.employeeId,
                 employeeName = employeeName,
                 scheduleDate = entity.scheduleDate,

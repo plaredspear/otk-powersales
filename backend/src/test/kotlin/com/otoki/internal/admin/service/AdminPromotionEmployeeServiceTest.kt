@@ -78,7 +78,6 @@ class AdminPromotionEmployeeServiceTest {
             stubRollup()
 
             val result = service.createEmployee(10L, createRequest(professionalPromotionTeam = "라면세일조"))
-            assertThat(result.employeeSfid).isEqualTo("a0B5g00000XYZabc")
             assertThat(result.employeeId).isEqualTo("20030117")
         }
 
@@ -207,7 +206,6 @@ class AdminPromotionEmployeeServiceTest {
 
             val result = service.createEmployee(10L, PromotionEmployeeRequest(scheduleDate = LocalDate.of(2026, 3, 15)))
             assertThat(result.promotionId).isEqualTo(10L)
-            assertThat(result.employeeSfid).isNull()
             assertThat(result.employeeId).isNull()
             assertThat(result.scheduleDate).isEqualTo(LocalDate.of(2026, 3, 15))
             assertThat(result.workType1).isEqualTo("행사")
@@ -362,7 +360,6 @@ class AdminPromotionEmployeeServiceTest {
             stubRollup()
 
             val result = service.createEmployee(10L, createRequest(employeeId = "20030117"))
-            assertThat(result.employeeSfid).isEqualTo("a0B5g00000XYZabc")
             assertThat(result.employeeId).isEqualTo("20030117")
             assertThat(result.employeeName).isEqualTo("김여사")
         }
@@ -377,7 +374,6 @@ class AdminPromotionEmployeeServiceTest {
             stubRollup()
 
             val result = service.createEmployee(10L, createRequest(employeeId = "99999999"))
-            assertThat(result.employeeSfid).isNull()
             assertThat(result.employeeId).isEqualTo("99999999")
             assertThat(result.employeeName).isNull()
         }
@@ -391,7 +387,6 @@ class AdminPromotionEmployeeServiceTest {
             stubRollup()
 
             val result = service.createEmployee(10L, createRequest(employeeId = null))
-            assertThat(result.employeeSfid).isNull()
             assertThat(result.employeeId).isNull()
         }
 
@@ -406,7 +401,6 @@ class AdminPromotionEmployeeServiceTest {
             stubRollup()
 
             val result = service.createEmployee(10L, createRequest(employeeId = "00000002"))
-            assertThat(result.employeeSfid).isNull()
             assertThat(result.employeeId).isEqualTo("00000002")
             assertThat(result.employeeName).isEqualTo("여사원테스트")
         }
@@ -600,7 +594,6 @@ class AdminPromotionEmployeeServiceTest {
             stubRollup()
 
             val result = service.updateEmployee(1L, 1L, createRequest(employeeId = null))
-            assertThat(result.employeeSfid).isNull()
             assertThat(result.employeeId).isNull()
         }
 
