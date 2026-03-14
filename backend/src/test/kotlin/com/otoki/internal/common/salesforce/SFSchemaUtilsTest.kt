@@ -3,8 +3,8 @@ package com.otoki.internal.common.salesforce
 import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.sap.entity.Product
 import com.otoki.internal.sap.entity.User
-import com.otoki.internal.teammemberschedule.entity.DisplayWorkSchedule
-import com.otoki.internal.teammemberschedule.entity.TeamMemberSchedule
+import com.otoki.internal.schedule.entity.DisplayWorkSchedule
+import com.otoki.internal.schedule.entity.TeamMemberSchedule
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName

@@ -7,8 +7,8 @@ import com.otoki.internal.auth.exception.UserNotFoundException
 import com.otoki.internal.notice.repository.NoticeRepository
 import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.safetycheck.service.SafetyCheckService
-import com.otoki.internal.teammemberschedule.entity.TeamMemberSchedule
-import com.otoki.internal.teammemberschedule.repository.TeamMemberScheduleRepository
+import com.otoki.internal.schedule.entity.TeamMemberSchedule
+import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.internal.sap.repository.UserRepository
 import com.otoki.internal.shelflife.repository.ShelfLifeRepository
 import org.springframework.stereotype.Service

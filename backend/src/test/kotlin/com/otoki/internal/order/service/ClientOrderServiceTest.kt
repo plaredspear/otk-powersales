@@ -13,7 +13,7 @@ import com.otoki.internal.order.exception.InvalidOrderParameterException
 import com.otoki.internal.order.exception.OrderNotFoundException
 import com.otoki.internal.order.repository.OrderProcessingRecordRepository
 import com.otoki.internal.repository.StoreRepository
-import com.otoki.internal.teammemberschedule.repository.DisplayWorkScheduleRepository
+import com.otoki.internal.schedule.repository.DisplayWorkScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach

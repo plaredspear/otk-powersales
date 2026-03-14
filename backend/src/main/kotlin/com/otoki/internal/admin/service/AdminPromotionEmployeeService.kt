@@ -14,7 +14,7 @@ import com.otoki.internal.promotion.repository.PromotionEmployeeRepository
 import com.otoki.internal.promotion.repository.PromotionRepository
 import com.otoki.internal.sap.entity.UserRole
 import com.otoki.internal.sap.repository.UserRepository
-import com.otoki.internal.teammemberschedule.repository.TeamMemberScheduleRepository
+import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
