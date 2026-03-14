@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Alert, Button, Input, Select, Table, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useProducts, useProductCategories } from '@/hooks/product/useProducts';
@@ -37,26 +37,25 @@ export default function ProductPage() {
 
   const { data: categories } = useProductCategories();
 
-  const category1Options = useMemo(() => {
-    if (!categories) return [];
-    return categories.map((c) => ({ value: c.category1, label: c.category1 }));
-  }, [categories]);
+  const category1Options = categories
+    ? categories.map((c) => ({ value: c.category1, label: c.category1 }))
+    : [];
 
-  const category2Options = useMemo(() => {
+  const category2Options = (() => {
     if (!categories || !category1) return [];
     const node = categories.find((c) => c.category1 === category1);
     if (!node) return [];
     return node.children.map((c) => ({ value: c.category2, label: c.category2 }));
-  }, [categories, category1]);
+  })();
 
-  const category3Options = useMemo(() => {
+  const category3Options = (() => {
     if (!categories || !category1 || !category2) return [];
     const node1 = categories.find((c) => c.category1 === category1);
     if (!node1) return [];
     const node2 = node1.children.find((c) => c.category2 === category2);
     if (!node2) return [];
     return node2.children.map((v) => ({ value: v, label: v }));
-  }, [categories, category1, category2]);
+  })();
 
   const handleCategory1Change = (val: string) => {
     setCategory1(val || undefined);

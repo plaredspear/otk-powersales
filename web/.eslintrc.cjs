@@ -15,5 +15,18 @@ module.exports = {
       { allowConstantExport: true },
     ],
     'react-compiler/react-compiler': 'error',
+    'no-restricted-imports': [
+      'warn',
+      {
+        paths: [
+          {
+            name: 'react',
+            importNames: ['useMemo', 'useCallback'],
+            message: 'React Compiler가 메모이제이션을 자동 처리합니다. 서드파티 라이브러리 연동 등 예외적으로 필요한 경우 eslint-disable 주석으로 허용하세요.',
+          },
+        ],
+      },
+    ],
+    'react-hooks/exhaustive-deps': 'off',
   },
 }

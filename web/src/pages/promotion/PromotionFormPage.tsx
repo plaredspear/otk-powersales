@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Button,
@@ -111,7 +111,7 @@ export default function PromotionFormPage() {
     }
   }, [isEdit, promotion, form]);
 
-  const handleAccountSearch = useCallback(async (keyword: string) => {
+  const handleAccountSearch = async (keyword: string) => {
     if (keyword.length < 2) return;
     setAccountSearching(true);
     try {
@@ -127,9 +127,9 @@ export default function PromotionFormPage() {
     } finally {
       setAccountSearching(false);
     }
-  }, []);
+  };
 
-  const handleProductSearch = useCallback(async (keyword: string) => {
+  const handleProductSearch = async (keyword: string) => {
     if (keyword.length < 2) return;
     setProductSearching(true);
     try {
@@ -146,7 +146,7 @@ export default function PromotionFormPage() {
     } finally {
       setProductSearching(false);
     }
-  }, []);
+  };
 
   const handleSubmit = async (values: FormValues) => {
     const payload: PromotionFormData = {
