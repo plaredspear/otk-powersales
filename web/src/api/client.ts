@@ -6,6 +6,7 @@ import queryClient from '@/lib/queryClient';
 const client = axios.create({
   baseURL: '',
   headers: { 'Content-Type': 'application/json' },
+  timeout: 30000,
 });
 
 // Request interceptor: attach access token
@@ -46,6 +47,39 @@ client.interceptors.response.use(
       notification.error({
         message: '접근 권한 없음',
         description: '해당 기능에 대한 접근 권한이 없습니다. 관리자에게 문의하세요.',
+      });
+      return Promise.reject(error);
+    }
+
+    // 500번대: 서버 오류
+    if (status && status >= 500 && status <= 504) {
+      notification.error({
+        key: 'api-server-error',
+        message: '서버 오류',
+        description: '요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.',
+        duration: 5,
+      });
+      return Promise.reject(error);
+    }
+
+    // 타임아웃
+    if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+      notification.error({
+        key: 'api-timeout-error',
+        message: '요청 시간 초과',
+        description: '서버 응답이 지연되고 있습니다. 잠시 후 다시 시도해 주세요.',
+        duration: 5,
+      });
+      return Promise.reject(error);
+    }
+
+    // 네트워크 에러 (응답 없음)
+    if (!error.response) {
+      notification.error({
+        key: 'api-network-error',
+        message: '네트워크 오류',
+        description: '네트워크 연결을 확인해 주세요.',
+        duration: 5,
       });
       return Promise.reject(error);
     }
