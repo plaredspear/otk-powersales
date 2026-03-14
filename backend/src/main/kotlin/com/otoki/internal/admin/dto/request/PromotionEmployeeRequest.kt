@@ -6,8 +6,8 @@ import jakarta.validation.constraints.Min
 import java.time.LocalDate
 
 data class PromotionEmployeeRequest(
-    @field:Size(max = 18, message = "여사원 SF ID는 최대 18자입니다")
-    val employeeSfid: String? = null,
+    @field:Size(max = 8, message = "여사원 사번은 최대 8자입니다")
+    val employeeId: String? = null,
 
     @field:NotNull(message = "투입일은 필수입니다")
     val scheduleDate: LocalDate,

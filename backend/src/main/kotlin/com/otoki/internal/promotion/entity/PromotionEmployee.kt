@@ -29,6 +29,9 @@ class PromotionEmployee(
     @Column(name = "employee_sfid", length = 18)
     var employeeSfid: String? = null,
 
+    @Column(name = "employee_id", length = 8)
+    var employeeId: String? = null,
+
     @SFField("DKRetail__ScheduleDate__c")
     @HCColumn("dkretail__scheduledate__c")
     @Column(name = "schedule_date")
@@ -123,6 +126,7 @@ class PromotionEmployee(
 ) {
     fun update(
         employeeSfid: String?,
+        employeeId: String?,
         scheduleDate: LocalDate,
         workStatus: String?,
         workType1: String?,
@@ -141,6 +145,7 @@ class PromotionEmployee(
         s3ImageUniqueKey: String? = null
     ) {
         this.employeeSfid = employeeSfid
+        this.employeeId = employeeId
         this.scheduleDate = scheduleDate
         this.workStatus = workStatus
         this.workType1 = workType1
