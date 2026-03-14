@@ -80,8 +80,8 @@ class AdminPromotionEmployeeService(
                 professionalPromotionTeam = request.professionalPromotionTeam,
                 basePrice = request.basePrice,
                 dailyTargetCount = request.dailyTargetCount,
-                targetAmount = request.targetAmount,
-                actualAmount = request.actualAmount,
+                targetAmount = calculateTargetAmount(request.basePrice, request.dailyTargetCount),
+                actualAmount = calculateActualAmount(request.primaryProductAmount, request.otherSalesAmount),
                 primaryProductAmount = request.primaryProductAmount,
                 primarySalesQuantity = request.primarySalesQuantity,
                 primarySalesPrice = request.primarySalesPrice,
@@ -137,8 +137,8 @@ class AdminPromotionEmployeeService(
             professionalPromotionTeam = request.professionalPromotionTeam,
             basePrice = request.basePrice,
             dailyTargetCount = request.dailyTargetCount,
-            targetAmount = request.targetAmount,
-            actualAmount = request.actualAmount,
+            targetAmount = calculateTargetAmount(request.basePrice, request.dailyTargetCount),
+            actualAmount = calculateActualAmount(request.primaryProductAmount, request.otherSalesAmount),
             primaryProductAmount = request.primaryProductAmount,
             primarySalesQuantity = request.primarySalesQuantity,
             primarySalesPrice = request.primarySalesPrice,
@@ -224,8 +224,8 @@ class AdminPromotionEmployeeService(
                 professionalPromotionTeam = item.professionalPromotionTeam,
                 basePrice = item.basePrice,
                 dailyTargetCount = item.dailyTargetCount,
-                targetAmount = item.targetAmount,
-                actualAmount = item.actualAmount,
+                targetAmount = calculateTargetAmount(item.basePrice, item.dailyTargetCount),
+                actualAmount = calculateActualAmount(item.primaryProductAmount, item.otherSalesAmount),
                 primaryProductAmount = item.primaryProductAmount,
                 primarySalesQuantity = item.primarySalesQuantity,
                 primarySalesPrice = item.primarySalesPrice,
@@ -275,6 +275,15 @@ class AdminPromotionEmployeeService(
     }
 
     // --- Private helpers ---
+
+    private fun calculateTargetAmount(basePrice: Long?, dailyTargetCount: Int?): Long? {
+        return if (basePrice != null && dailyTargetCount != null) basePrice * dailyTargetCount else null
+    }
+
+    private fun calculateActualAmount(primaryProductAmount: Long?, otherSalesAmount: Long?): Long? {
+        return if (primaryProductAmount == null && otherSalesAmount == null) null
+        else (primaryProductAmount ?: 0) + (otherSalesAmount ?: 0)
+    }
 
     private fun validateBatchItem(
         index: Int,
