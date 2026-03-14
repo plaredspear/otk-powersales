@@ -32,4 +32,9 @@ interface AccountRepository : JpaRepository<Account, Int>, AccountRepositoryCust
      * 지점 코드 목록으로 거래처 일괄 조회 (관리자 대시보드 범위 필터)
      */
     fun findByBranchCodeIn(branchCodes: List<String>): List<Account>
+
+    /**
+     * 거래처 외부키 목록으로 일괄 조회 (Excel 업로드 검증용)
+     */
+    fun findByExternalKeyIn(externalKeys: List<String>): List<Account>
 }

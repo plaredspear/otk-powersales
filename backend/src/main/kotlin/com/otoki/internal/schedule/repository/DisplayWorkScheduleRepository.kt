@@ -2,6 +2,8 @@ package com.otoki.internal.schedule.repository
 
 import com.otoki.internal.schedule.entity.DisplayWorkSchedule
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Query
+import org.springframework.data.repository.query.Param
 import java.time.LocalDate
 
 interface DisplayWorkScheduleRepository : JpaRepository<DisplayWorkSchedule, Long>, DisplayWorkScheduleRepositoryCustom {
@@ -65,4 +67,16 @@ interface DisplayWorkScheduleRepository : JpaRepository<DisplayWorkSchedule, Lon
         monthStart: LocalDate,
         accountSfids: List<String>
     ): List<DisplayWorkSchedule>
+
+    /**
+     * 특정 사원 SFID 목록의 모든 스케줄 조회 (Excel 업로드 중복 검증용)
+     */
+    @Query(
+        """
+        SELECT s FROM DisplayWorkSchedule s
+        WHERE s.fullName IN :fullNames
+        AND (s.isDeleted IS NULL OR s.isDeleted = false)
+        """
+    )
+    fun findByFullNameInAndNotDeleted(@Param("fullNames") fullNames: List<String>): List<DisplayWorkSchedule>
 }
