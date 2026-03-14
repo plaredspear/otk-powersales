@@ -47,6 +47,8 @@ class AdminPromotionEmployeeService(
         )
     }
 
+    private data class ResolvedEmployee(val sfid: String?, val name: String?)
+
     fun getEmployees(promotionId: Long): List<PromotionEmployeeListResponse> {
         findActivePromotion(promotionId)
 
@@ -54,13 +56,14 @@ class AdminPromotionEmployeeService(
         val employeeNameMap = resolveEmployeeNames(employees)
 
         return employees.map { pe ->
-            PromotionEmployeeListResponse.from(pe, employeeNameMap[pe.employeeSfid])
+            PromotionEmployeeListResponse.from(pe, employeeNameMap[pe.id])
         }
     }
 
     fun getEmployee(id: Long): PromotionEmployeeDetailResponse {
         val pe = findEmployeeById(id)
-        val employeeName = resolveEmployeeName(pe.employeeSfid)
+        val resolved = resolveEmployee(pe.employeeId)
+        val employeeName = resolved?.name ?: resolveEmployeeNameBySfid(pe.employeeSfid)
         return PromotionEmployeeDetailResponse.from(pe, employeeName)
     }
 
@@ -68,10 +71,13 @@ class AdminPromotionEmployeeService(
     fun createEmployee(promotionId: Long, request: PromotionEmployeeRequest): PromotionEmployeeDetailResponse {
         findActivePromotion(promotionId)
 
+        val resolved = resolveEmployee(request.employeeId)
+
         val pe = promotionEmployeeRepository.save(
             PromotionEmployee(
                 promotionId = promotionId,
-                employeeSfid = request.employeeSfid,
+                employeeSfid = resolved?.sfid,
+                employeeId = request.employeeId,
                 scheduleDate = request.scheduleDate,
                 workStatus = request.workStatus,
                 workType1 = request.workType1,
@@ -93,16 +99,18 @@ class AdminPromotionEmployeeService(
 
         recalculatePromotionAmounts(promotionId)
 
-        val employeeName = resolveEmployeeName(pe.employeeSfid)
-        return PromotionEmployeeDetailResponse.from(pe, employeeName)
+        return PromotionEmployeeDetailResponse.from(pe, resolved?.name)
     }
 
     @Transactional
     fun updateEmployee(id: Long, userId: Long, request: PromotionEmployeeRequest): PromotionEmployeeDetailResponse {
         val pe = findEmployeeById(id)
 
+        // employeeId로 사원 해소
+        val resolved = resolveEmployee(request.employeeId)
+        val resolvedSfid = resolved?.sfid
+
         // 빈 문자열 → null 정규화
-        val normalizedEmployeeSfid = request.employeeSfid?.takeIf { it.isNotBlank() }
         val normalizedWorkType3 = request.workType3?.takeIf { it.isNotBlank() }
 
         if (request.workStatus != null) validateWorkStatus(request.workStatus)
@@ -112,7 +120,7 @@ class AdminPromotionEmployeeService(
         val user = userRepository.findById(userId)
             .orElseThrow { IllegalStateException("사용자를 찾을 수 없습니다: $userId") }
         validateClosedEmployeeModification(
-            pe, normalizedEmployeeSfid, request.scheduleDate, normalizedWorkType3,
+            pe, request.employeeId, request.scheduleDate, normalizedWorkType3,
             request.basePrice, request.dailyTargetCount, user.role == UserRole.ADMIN
         )
 
@@ -123,12 +131,13 @@ class AdminPromotionEmployeeService(
 
         // 1-5: 핵심필드 변경 시 스케줄 삭제
         removeScheduleOnCriticalFieldChange(
-            pe, normalizedEmployeeSfid, request.scheduleDate, normalizedWorkType3,
+            pe, request.employeeId, request.scheduleDate, normalizedWorkType3,
             request.professionalPromotionTeam
         )
 
         pe.update(
-            employeeSfid = normalizedEmployeeSfid,
+            employeeSfid = resolvedSfid,
+            employeeId = request.employeeId,
             scheduleDate = request.scheduleDate,
             workStatus = request.workStatus ?: pe.workStatus,
             workType1 = request.workType1 ?: pe.workType1,
@@ -151,8 +160,7 @@ class AdminPromotionEmployeeService(
 
         recalculatePromotionAmounts(pe.promotionId)
 
-        val employeeName = resolveEmployeeName(pe.employeeSfid)
-        return PromotionEmployeeDetailResponse.from(pe, employeeName)
+        return PromotionEmployeeDetailResponse.from(pe, resolved?.name)
     }
 
     @Transactional
@@ -185,6 +193,12 @@ class AdminPromotionEmployeeService(
             .orElseThrow { IllegalStateException("사용자를 찾을 수 없습니다: $userId") }
         val isAdmin = user.role == UserRole.ADMIN
 
+        // employeeId 일괄 해소
+        val employeeIds = request.items.mapNotNull { it.employeeId }.distinct()
+        val resolvedUserMap = if (employeeIds.isNotEmpty()) {
+            userRepository.findByEmployeeIdIn(employeeIds).associateBy { it.employeeId }
+        } else emptyMap()
+
         // 전체 항목 검증 (에러 수집)
         val errors = mutableListOf<BatchItemError>()
 
@@ -205,17 +219,21 @@ class AdminPromotionEmployeeService(
         for (item in request.items) {
             val pe = employeeMap[item.id]!!
 
+            // employeeId로 sfid 해소
+            val resolvedUser = item.employeeId?.let { resolvedUserMap[it] }
+            val resolvedSfid = resolvedUser?.sfid
+
             // 빈 문자열 → null 정규화
-            val normalizedEmployeeSfid = item.employeeSfid?.takeIf { it.isNotBlank() }
             val normalizedWorkType3 = item.workType3?.takeIf { it.isNotBlank() }
 
             removeScheduleOnCriticalFieldChange(
-                pe, normalizedEmployeeSfid, item.scheduleDate, normalizedWorkType3,
+                pe, item.employeeId, item.scheduleDate, normalizedWorkType3,
                 item.professionalPromotionTeam
             )
 
             pe.update(
-                employeeSfid = normalizedEmployeeSfid,
+                employeeSfid = resolvedSfid,
+                employeeId = item.employeeId,
                 scheduleDate = item.scheduleDate,
                 workStatus = item.workStatus ?: pe.workStatus,
                 workType1 = item.workType1 ?: pe.workType1,
@@ -244,7 +262,7 @@ class AdminPromotionEmployeeService(
         val allEmployees = promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(promotionId)
         val employeeNameMap = resolveEmployeeNames(allEmployees)
         val responseItems = allEmployees.map { pe ->
-            PromotionEmployeeListResponse.from(pe, employeeNameMap[pe.employeeSfid])
+            PromotionEmployeeListResponse.from(pe, employeeNameMap[pe.id])
         }
 
         return BatchUpdatePromotionEmployeeResponse(
@@ -276,6 +294,13 @@ class AdminPromotionEmployeeService(
 
     // --- Private helpers ---
 
+    private fun resolveEmployee(employeeId: String?): ResolvedEmployee? {
+        if (employeeId == null) return null
+        val user = userRepository.findByEmployeeId(employeeId).orElse(null)
+            ?: return ResolvedEmployee(sfid = null, name = null)
+        return ResolvedEmployee(sfid = user.sfid, name = user.name)
+    }
+
     private fun calculateTargetAmount(basePrice: Long?, dailyTargetCount: Int?): Long? {
         return if (basePrice != null && dailyTargetCount != null) basePrice * dailyTargetCount else null
     }
@@ -294,35 +319,35 @@ class AdminPromotionEmployeeService(
         employeeMap: MutableMap<Long, PromotionEmployee>
     ): BatchItemError? {
         // 빈 문자열 → null 정규화 (비교 시 일관성)
-        val normalizedEmployeeSfid = item.employeeSfid?.takeIf { it.isNotBlank() }
+        val normalizedEmployeeId = item.employeeId?.takeIf { it.isNotBlank() }
         val normalizedWorkType3 = item.workType3?.takeIf { it.isNotBlank() }
 
         // 1. 존재 여부
         val pe = promotionEmployeeRepository.findById(item.id).orElse(null)
-            ?: return BatchItemError(index, item.employeeSfid, "NOT_FOUND", "행사조원을 찾을 수 없습니다")
+            ?: return BatchItemError(index, item.employeeId, "NOT_FOUND", "행사조원을 찾을 수 없습니다")
         employeeMap[item.id] = pe
 
         // 2. 소속 행사 일치
         if (pe.promotionId != promotionId) {
-            return BatchItemError(index, item.employeeSfid, "INVALID_PARAMETER", "유효하지 않은 파라미터")
+            return BatchItemError(index, item.employeeId, "INVALID_PARAMETER", "유효하지 않은 파라미터")
         }
 
         // 3. 투입일 범위
         if (item.scheduleDate.isBefore(promotion.startDate) || item.scheduleDate.isAfter(promotion.endDate)) {
             return BatchItemError(
-                index, item.employeeSfid, "SCHEDULE_DATE_OUT_OF_RANGE",
+                index, item.employeeId, "SCHEDULE_DATE_OUT_OF_RANGE",
                 "투입일(${item.scheduleDate})이 행사 기간(${promotion.startDate} ~ ${promotion.endDate})을 벗어납니다"
             )
         }
 
         // 4. 근무상태 (null 허용)
         if (item.workStatus != null && item.workStatus.isNotBlank() && item.workStatus !in VALID_WORK_STATUSES) {
-            return BatchItemError(index, item.employeeSfid, "INVALID_WORK_STATUS", "근무상태는 근무, 연차, 대휴 중 하나여야 합니다")
+            return BatchItemError(index, item.employeeId, "INVALID_WORK_STATUS", "근무상태는 근무, 연차, 대휴 중 하나여야 합니다")
         }
 
         // 5. 근무유형3 (null 허용)
         if (normalizedWorkType3 != null && normalizedWorkType3 !in VALID_WORK_TYPE3) {
-            return BatchItemError(index, item.employeeSfid, "INVALID_WORK_TYPE3", "근무유형3은 고정, 격고, 순회 중 하나여야 합니다")
+            return BatchItemError(index, item.employeeId, "INVALID_WORK_TYPE3", "근무유형3은 고정, 격고, 순회 중 하나여야 합니다")
         }
 
         // 6. 전문행사조-카테고리 매칭
@@ -335,7 +360,7 @@ class AdminPromotionEmployeeService(
                     val matches = allowedKeywords.any { keyword -> team.contains(keyword) }
                     if (!matches) {
                         return BatchItemError(
-                            index, item.employeeSfid, "TEAM_CATEGORY_MISMATCH",
+                            index, item.employeeId, "TEAM_CATEGORY_MISMATCH",
                             CATEGORY_TEAM_MESSAGES[category] ?: "전문행사조가 행사 카테고리와 일치하지 않습니다"
                         )
                     }
@@ -345,7 +370,7 @@ class AdminPromotionEmployeeService(
 
         // 7. 마감 보호
         if (pe.scheduleId != null && pe.promoCloseByTm) {
-            val criticalChanged = pe.employeeSfid != normalizedEmployeeSfid ||
+            val criticalChanged = pe.employeeId != normalizedEmployeeId ||
                 pe.scheduleDate != item.scheduleDate ||
                 pe.workType3 != normalizedWorkType3 ||
                 pe.basePrice != item.basePrice ||
@@ -353,7 +378,7 @@ class AdminPromotionEmployeeService(
 
             if (criticalChanged && !isAdmin) {
                 return BatchItemError(
-                    index, item.employeeSfid, "CLOSED_EMPLOYEE_MODIFICATION",
+                    index, item.employeeId, "CLOSED_EMPLOYEE_MODIFICATION",
                     "확정되었고 여사원이 마감한 행사조원은 수정할 수 없습니다"
                 )
             }
@@ -408,7 +433,7 @@ class AdminPromotionEmployeeService(
 
     private fun validateClosedEmployeeModification(
         pe: PromotionEmployee,
-        employeeSfid: String?,
+        employeeId: String?,
         scheduleDate: java.time.LocalDate,
         workType3: String?,
         basePrice: Long?,
@@ -417,7 +442,7 @@ class AdminPromotionEmployeeService(
     ) {
         if (pe.scheduleId == null || !pe.promoCloseByTm) return
 
-        val criticalChanged = pe.employeeSfid != employeeSfid ||
+        val criticalChanged = pe.employeeId != employeeId ||
             pe.scheduleDate != scheduleDate ||
             pe.workType3 != workType3 ||
             pe.basePrice != basePrice ||
@@ -428,7 +453,7 @@ class AdminPromotionEmployeeService(
 
     private fun removeScheduleOnCriticalFieldChange(
         pe: PromotionEmployee,
-        employeeSfid: String?,
+        employeeId: String?,
         scheduleDate: java.time.LocalDate,
         workType3: String?,
         professionalPromotionTeam: String?
@@ -436,7 +461,7 @@ class AdminPromotionEmployeeService(
         if (pe.scheduleId == null) return
         if (pe.professionalPromotionTeam != professionalPromotionTeam) return
 
-        val criticalChanged = pe.employeeSfid != employeeSfid ||
+        val criticalChanged = pe.employeeId != employeeId ||
             pe.scheduleDate != scheduleDate ||
             pe.workType3 != workType3
 
@@ -455,13 +480,28 @@ class AdminPromotionEmployeeService(
         promotionRepository.save(promotion)
     }
 
-    private fun resolveEmployeeNames(employees: List<PromotionEmployee>): Map<String?, String> {
-        val sfids = employees.mapNotNull { it.employeeSfid }.distinct()
-        if (sfids.isEmpty()) return emptyMap()
-        return userRepository.findBySfidIn(sfids).associate { it.sfid!! to it.name }
+    private fun resolveEmployeeNames(employees: List<PromotionEmployee>): Map<Long, String> {
+        // employeeId 기반 조회
+        val employeeIds = employees.mapNotNull { it.employeeId }.distinct()
+        val employeeIdNameMap = if (employeeIds.isNotEmpty()) {
+            userRepository.findByEmployeeIdIn(employeeIds).associate { it.employeeId to it.name }
+        } else emptyMap()
+
+        // sfid 기반 fallback (employeeId가 null인 레코드)
+        val sfidFallbackNeeded = employees.filter { it.employeeId == null && it.employeeSfid != null }
+        val sfids = sfidFallbackNeeded.mapNotNull { it.employeeSfid }.distinct()
+        val sfidNameMap = if (sfids.isNotEmpty()) {
+            userRepository.findBySfidIn(sfids).associate { it.sfid!! to it.name }
+        } else emptyMap()
+
+        return employees.mapNotNull { pe ->
+            val name = pe.employeeId?.let { employeeIdNameMap[it] }
+                ?: pe.employeeSfid?.let { sfidNameMap[it] }
+            if (name != null) pe.id to name else null
+        }.toMap()
     }
 
-    private fun resolveEmployeeName(sfid: String?): String? {
+    private fun resolveEmployeeNameBySfid(sfid: String?): String? {
         if (sfid == null) return null
         return userRepository.findBySfidIn(listOf(sfid)).firstOrNull()?.name
     }

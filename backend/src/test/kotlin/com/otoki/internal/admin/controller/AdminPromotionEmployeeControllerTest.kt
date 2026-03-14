@@ -250,6 +250,7 @@ class AdminPromotionEmployeeControllerTest {
         id = 1L,
         promotionId = 10L,
         employeeSfid = "a0B5g00000XYZabc",
+        employeeId = "20030117",
         employeeName = "김여사",
         scheduleDate = LocalDate.of(2026, 3, 15),
         workStatus = "근무",
@@ -275,6 +276,7 @@ class AdminPromotionEmployeeControllerTest {
         id = 1L,
         promotionId = 10L,
         employeeSfid = "a0B5g00000XYZabc",
+        employeeId = "20030117",
         employeeName = "김여사",
         scheduleDate = LocalDate.of(2026, 3, 15),
         workStatus = "근무",
@@ -299,7 +301,7 @@ class AdminPromotionEmployeeControllerTest {
     )
 
     private fun createRequest() = PromotionEmployeeRequest(
-        employeeSfid = "a0B5g00000XYZabc",
+        employeeId = "20030117",
         scheduleDate = LocalDate.of(2026, 3, 15),
         workStatus = "근무",
         workType1 = "시식",
