@@ -30,6 +30,7 @@ const PromotionTypesPage = lazy(() => import('@/pages/settings/PromotionTypesPag
 const EducationListPage = lazy(() => import('@/pages/education/EducationListPage'));
 const EducationDetailPage = lazy(() => import('@/pages/education/EducationDetailPage'));
 const EducationFormPage = lazy(() => import('@/pages/education/EducationFormPage'));
+const DisplaySchedulePage = lazy(() => import('@/pages/DisplaySchedulePage'));
 const OrganizationPage = lazy(() => import('@/pages/settings/OrganizationPage'));
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -88,6 +89,7 @@ export const router = createBrowserRouter(
             { path: '/promotions/new', element: <LazyWrapper><PromotionFormPage /></LazyWrapper> },
             { path: '/promotions/:id', element: <LazyWrapper><PromotionDetailPage /></LazyWrapper> },
             { path: '/promotions/:id/edit', element: <LazyWrapper><PromotionFormPage /></LazyWrapper> },
+            { path: '/display-schedules', element: <LazyWrapper><DisplaySchedulePage /></LazyWrapper> },
             { path: '/education', element: <LazyWrapper><EducationListPage /></LazyWrapper> },
             { path: '/education/new', element: <LazyWrapper><EducationFormPage /></LazyWrapper> },
             { path: '/education/:id', element: <LazyWrapper><EducationDetailPage /></LazyWrapper> },

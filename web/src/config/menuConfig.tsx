@@ -57,6 +57,7 @@ export const menuRoute: MenuRoute = {
       routes: [{ path: '/attendance', name: '등록현황' }],
     },
     { path: '/promotions', name: '행사마스터', icon: <GiftOutlined /> },
+    { path: '/display-schedules', name: '진열스케줄마스터', icon: <CalendarOutlined /> },
     { path: '/event-team', name: '전문행사조', icon: <CalendarOutlined /> },
     { path: '/claim', name: '클레임 현황', icon: <ExclamationCircleOutlined /> },
     { path: '/suggestion', name: '제안사항', icon: <BulbOutlined /> },
