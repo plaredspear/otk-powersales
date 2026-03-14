@@ -53,7 +53,7 @@ class AdminPromotionConfirmServiceTest {
             whenever(promotionEmployeeRepository.findByPromotionId(10L)).thenReturn(employees)
             whenever(teamMemberScheduleRepository.findByPromotionEmpIdExtIn(any())).thenReturn(emptyList())
             whenever(teamMemberScheduleRepository.findByEmployeeIdInAndWorkingDateIn(any(), any())).thenReturn(emptyList())
-            whenever(userRepository.findBySfidIn(any())).thenReturn(listOf(
+            whenever(userRepository.findByEmployeeIdIn(any())).thenReturn(listOf(
                 createUser("EMP001", "김철수"),
                 createUser("EMP002", "이영희"),
                 createUser("EMP003", "박민수")
@@ -110,7 +110,7 @@ class AdminPromotionConfirmServiceTest {
             whenever(promotionEmployeeRepository.findByPromotionId(10L)).thenReturn(employees)
             whenever(teamMemberScheduleRepository.findByPromotionEmpIdExtIn(listOf("1"))).thenReturn(listOf(existingTeamMemberSchedule))
             whenever(teamMemberScheduleRepository.findByEmployeeIdInAndWorkingDateIn(any(), any())).thenReturn(listOf(existingTeamMemberSchedule))
-            whenever(userRepository.findBySfidIn(any())).thenReturn(listOf(createUser("EMP001", "김철수")))
+            whenever(userRepository.findByEmployeeIdIn(any())).thenReturn(listOf(createUser("EMP001", "김철수")))
             whenever(teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>())).thenAnswer { it.getArgument<List<TeamMemberSchedule>>(0) }
             whenever(promotionEmployeeRepository.saveAll(any<List<PromotionEmployee>>())).thenAnswer { it.getArgument<List<PromotionEmployee>>(0) }
 
@@ -152,21 +152,116 @@ class AdminPromotionConfirmServiceTest {
     }
 
     @Nested
-    @DisplayName("검증 1: 필수값 검증")
-    inner class RequiredValuesTests {
+    @DisplayName("기본값 보정")
+    inner class DefaultCorrectionTests {
 
         @Test
-        @DisplayName("work_type1 누락 -> 400 VALUES_REQUIRED")
-        fun confirm_missingWorkType1() {
+        @DisplayName("workType1 null -> '행사'로 보정 후 확정 성공")
+        fun confirm_workType1Null_correctedToDefault() {
             val promotion = createPromotion()
             val employees = listOf(
-                createPE(id = 1L, employeeSfid = "EMP001", workType1 = "")
+                createPE(id = 1L, employeeSfid = "EMP001", workType1 = null)
+            )
+            setupMocksForSuccess(promotion, employees)
+
+            val result = service.confirmPromotion(10L)
+            assertThat(result.upsertedTeamMemberSchedules).isEqualTo(1)
+            assertThat(employees[0].workType1).isEqualTo("행사")
+        }
+
+        @Test
+        @DisplayName("workStatus null -> '근무'로 보정 후 확정 성공")
+        fun confirm_workStatusNull_correctedToDefault() {
+            val promotion = createPromotion()
+            val employees = listOf(
+                createPE(id = 1L, employeeSfid = "EMP001", workStatus = null)
+            )
+            setupMocksForSuccess(promotion, employees)
+
+            val result = service.confirmPromotion(10L)
+            assertThat(result.upsertedTeamMemberSchedules).isEqualTo(1)
+            assertThat(employees[0].workStatus).isEqualTo("근무")
+        }
+
+        @Test
+        @DisplayName("workType1/workStatus 모두 null -> 둘 다 보정 후 확정 성공")
+        fun confirm_bothNull_correctedToDefaults() {
+            val promotion = createPromotion()
+            val employees = listOf(
+                createPE(id = 1L, employeeSfid = "EMP001", workType1 = null, workStatus = null)
+            )
+            setupMocksForSuccess(promotion, employees)
+
+            val result = service.confirmPromotion(10L)
+            assertThat(result.upsertedTeamMemberSchedules).isEqualTo(1)
+            assertThat(employees[0].workType1).isEqualTo("행사")
+            assertThat(employees[0].workStatus).isEqualTo("근무")
+        }
+
+        @Test
+        @DisplayName("기존값 존재 -> 기존값 유지")
+        fun confirm_existingValues_notOverridden() {
+            val promotion = createPromotion()
+            val employees = listOf(
+                createPE(id = 1L, employeeSfid = "EMP001", workType1 = "진열", workStatus = "연차")
+            )
+            setupMocksForSuccess(promotion, employees)
+
+            val result = service.confirmPromotion(10L)
+            assertThat(result.upsertedTeamMemberSchedules).isEqualTo(1)
+            assertThat(employees[0].workType1).isEqualTo("진열")
+            assertThat(employees[0].workStatus).isEqualTo("연차")
+        }
+    }
+
+    @Nested
+    @DisplayName("employeeId 기반 확정")
+    inner class EmployeeIdConfirmTests {
+
+        @Test
+        @DisplayName("employeeId 기반 사원 확정 -> employeeSfid null이어도 성공")
+        fun confirm_employeeIdOnly_success() {
+            val promotion = createPromotion()
+            val employees = listOf(
+                createPE(id = 1L, employeeSfid = null, employeeId = "123456", scheduleDate = startDate)
+            )
+            setupMocksForSuccess(promotion, employees)
+
+            val result = service.confirmPromotion(10L)
+            assertThat(result.upsertedTeamMemberSchedules).isEqualTo(1)
+        }
+
+        @Test
+        @DisplayName("employeeId null + employeeSfid null -> 행사사원 누락 에러")
+        fun confirm_noIdentifier_missingEmployee() {
+            val promotion = createPromotion()
+            val employees = listOf(
+                createPE(id = 1L, employeeSfid = null, employeeId = null)
             )
             setupMocks(promotion, employees)
 
             assertThatThrownBy { service.confirmPromotion(10L) }
                 .isInstanceOf(ValuesRequiredException::class.java)
-                .hasMessageContaining("근무유형1")
+                .hasMessageContaining("행사사원")
+        }
+    }
+
+    @Nested
+    @DisplayName("검증 1: 필수값 검증")
+    inner class RequiredValuesTests {
+
+        @Test
+        @DisplayName("workType3 누락 -> 400 VALUES_REQUIRED (workType1은 보정됨)")
+        fun confirm_missingWorkType3() {
+            val promotion = createPromotion()
+            val employees = listOf(
+                createPE(id = 1L, employeeSfid = "EMP001", workType1 = "", workType3 = "")
+            )
+            setupMocks(promotion, employees)
+
+            assertThatThrownBy { service.confirmPromotion(10L) }
+                .isInstanceOf(ValuesRequiredException::class.java)
+                .hasMessageContaining("근무유형3")
         }
     }
 
@@ -379,12 +474,13 @@ class AdminPromotionConfirmServiceTest {
     ) {
         whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
         whenever(promotionEmployeeRepository.findByPromotionId(10L)).thenReturn(employees)
+        org.mockito.Mockito.lenient().`when`(promotionEmployeeRepository.saveAll(any<List<PromotionEmployee>>())).thenAnswer { it.getArgument<List<PromotionEmployee>>(0) }
         whenever(teamMemberScheduleRepository.findByPromotionEmpIdExtIn(any())).thenReturn(emptyList())
         whenever(teamMemberScheduleRepository.findByEmployeeIdInAndWorkingDateIn(any(), any())).thenReturn(existingTeamMemberSchedules)
 
-        val sfids = employees.mapNotNull { it.employeeSfid }.distinct()
-        val users = sfids.map { createUser(it, "${it}이름", userStatus) }
-        whenever(userRepository.findBySfidIn(any())).thenReturn(users)
+        val employeeIds = employees.mapNotNull { it.employeeId }.distinct()
+        val users = employeeIds.map { createUser(it, "${it}이름", userStatus) }
+        whenever(userRepository.findByEmployeeIdIn(any())).thenReturn(users)
     }
 
     private fun setupMocksForSuccess(
@@ -429,16 +525,18 @@ class AdminPromotionConfirmServiceTest {
     private fun createPE(
         id: Long = 1L,
         promotionId: Long = 10L,
-        employeeSfid: String = "EMP001",
+        employeeSfid: String? = "EMP001",
+        employeeId: String? = employeeSfid,
         scheduleDate: LocalDate = startDate,
-        workStatus: String = "근무",
-        workType1: String = "행사",
+        workStatus: String? = "근무",
+        workType1: String? = "행사",
         workType3: String = "고정",
         workType4: String? = null
     ): PromotionEmployee = PromotionEmployee(
         id = id,
         promotionId = promotionId,
         employeeSfid = employeeSfid,
+        employeeId = employeeId,
         scheduleDate = scheduleDate,
         workStatus = workStatus,
         workType1 = workType1,
@@ -452,7 +550,7 @@ class AdminPromotionConfirmServiceTest {
         status: String? = null
     ): User = User(
         sfid = sfid,
-        employeeId = sfid.takeLast(8).padStart(8, '0'),
+        employeeId = sfid,
         name = name,
         status = status
     )
