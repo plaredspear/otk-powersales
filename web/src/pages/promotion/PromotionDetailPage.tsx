@@ -972,7 +972,8 @@ export default function PromotionDetailPage() {
   }
 
   const employeeCount = employees?.length ?? 0;
-  const canEmpEdit = hasDates && employeeCount > 0;
+  const canEmpEdit = hasDates;
+  const canConfirmSchedule = hasDates && employeeCount > 0;
   const empEditDisabledTooltip = !hasDates
     ? '행사 시작일과 종료일을 먼저 입력하세요'
     : employeeCount === 0
@@ -1092,16 +1093,16 @@ export default function PromotionDetailPage() {
             </Space>
           ) : (
             <Space>
-              <Tooltip title={!canEmpEdit ? empEditDisabledTooltip : ''}>
+              <Tooltip title={!canConfirmSchedule ? empEditDisabledTooltip : ''}>
                 <Button
                   onClick={handleConfirmSchedule}
-                  disabled={!canEmpEdit}
+                  disabled={!canConfirmSchedule}
                   loading={confirmMutation.isPending}
                 >
                   일정 확정
                 </Button>
               </Tooltip>
-              <Tooltip title={empEditDisabledTooltip}>
+              <Tooltip title={!canEmpEdit ? addDisabledTooltip : ''}>
                 <Button onClick={enterEmpEditMode} disabled={!canEmpEdit}>
                   편집
                 </Button>
