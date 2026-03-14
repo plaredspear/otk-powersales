@@ -7,6 +7,10 @@ interface ApiResponse<T> {
   success: boolean;
   data: T | null;
   message?: string;
+  error?: {
+    code: string;
+    message: string;
+  };
 }
 
 interface PromotionEmployeeRaw {
@@ -227,18 +231,26 @@ export async function deletePromotionEmployee(id: number): Promise<void> {
 export async function confirmPromotionSchedule(
   promotionId: number,
 ): Promise<PromotionConfirmResponse> {
-  const res = await client.post<ApiResponse<PromotionConfirmResponseRaw>>(
-    `/api/v1/admin/promotions/${promotionId}/confirm`,
-  );
-  if (!res.data.success || !res.data.data) {
-    throw new Error(res.data.message || '스케줄 확정에 실패했습니다');
+  try {
+    const res = await client.post<ApiResponse<PromotionConfirmResponseRaw>>(
+      `/api/v1/admin/promotions/${promotionId}/confirm`,
+    );
+    if (!res.data.success || !res.data.data) {
+      throw new Error(res.data.message || '스케줄 확정에 실패했습니다');
+    }
+    const raw = res.data.data;
+    return {
+      promotionId: raw.promotion_id,
+      totalEmployees: raw.total_employees,
+      upsertedSchedules: raw.upserted_schedules,
+    };
+  } catch (err) {
+    if (err instanceof AxiosError && err.response?.status === 400) {
+      const errorMessage = (err.response.data as ApiResponse<unknown>)?.error?.message;
+      throw new Error(errorMessage || '스케줄 확정에 실패했습니다');
+    }
+    throw err;
   }
-  const raw = res.data.data;
-  return {
-    promotionId: raw.promotion_id,
-    totalEmployees: raw.total_employees,
-    upsertedSchedules: raw.upserted_schedules,
-  };
 }
 
 export async function batchUpdatePromotionEmployees(
