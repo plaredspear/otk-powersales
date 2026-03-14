@@ -31,6 +31,8 @@ class AdminPromotionEmployeeService(
         private val VALID_WORK_STATUSES = setOf("근무", "연차", "대휴")
         private val VALID_WORK_TYPE3 = setOf("고정", "격고", "순회")
         private const val BATCH_MAX_SIZE = 200
+        private const val DEFAULT_WORK_TYPE1 = "행사"
+        private const val DEFAULT_WORK_STATUS = "근무"
 
         private val CATEGORY_TEAM_RULES: Map<String, List<String>> = mapOf(
             "라면" to listOf("라면"),
@@ -79,8 +81,8 @@ class AdminPromotionEmployeeService(
                 employeeSfid = resolved?.sfid,
                 employeeId = request.employeeId,
                 scheduleDate = request.scheduleDate,
-                workStatus = request.workStatus,
-                workType1 = request.workType1,
+                workStatus = request.workStatus ?: DEFAULT_WORK_STATUS,
+                workType1 = request.workType1 ?: DEFAULT_WORK_TYPE1,
                 workType3 = request.workType3,
                 workType4 = request.workType4,
                 professionalPromotionTeam = request.professionalPromotionTeam,
@@ -235,8 +237,8 @@ class AdminPromotionEmployeeService(
                 employeeSfid = resolvedSfid,
                 employeeId = item.employeeId,
                 scheduleDate = item.scheduleDate,
-                workStatus = item.workStatus ?: pe.workStatus,
-                workType1 = item.workType1 ?: pe.workType1,
+                workStatus = item.workStatus ?: pe.workStatus ?: DEFAULT_WORK_STATUS,
+                workType1 = item.workType1 ?: pe.workType1 ?: DEFAULT_WORK_TYPE1,
                 workType3 = normalizedWorkType3,
                 workType4 = item.workType4,
                 professionalPromotionTeam = item.professionalPromotionTeam,

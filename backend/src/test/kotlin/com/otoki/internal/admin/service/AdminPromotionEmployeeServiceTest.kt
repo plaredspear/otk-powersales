@@ -146,6 +146,58 @@ class AdminPromotionEmployeeServiceTest {
         }
 
         @Test
+        @DisplayName("workType1 null -> 기본값 '행사' 자동 세팅")
+        fun createEmployee_workType1Null_defaultApplied() {
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            whenever(userRepository.findByEmployeeId("20030117")).thenReturn(Optional.of(createUser()))
+            stubRollup()
+
+            val result = service.createEmployee(10L, createRequest(workType1 = null))
+            assertThat(result.workType1).isEqualTo("행사")
+        }
+
+        @Test
+        @DisplayName("workType1 전달 -> 기존 값 유지")
+        fun createEmployee_workType1Provided_notOverridden() {
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            whenever(userRepository.findByEmployeeId("20030117")).thenReturn(Optional.of(createUser()))
+            stubRollup()
+
+            val result = service.createEmployee(10L, createRequest(workType1 = "진열"))
+            assertThat(result.workType1).isEqualTo("진열")
+        }
+
+        @Test
+        @DisplayName("workStatus null -> 기본값 '근무' 자동 세팅")
+        fun createEmployee_workStatusNull_defaultApplied() {
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            whenever(userRepository.findByEmployeeId("20030117")).thenReturn(Optional.of(createUser()))
+            stubRollup()
+
+            val result = service.createEmployee(10L, createRequest(workStatus = null))
+            assertThat(result.workStatus).isEqualTo("근무")
+        }
+
+        @Test
+        @DisplayName("workStatus 전달 -> 기존 값 유지")
+        fun createEmployee_workStatusProvided_notOverridden() {
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            whenever(userRepository.findByEmployeeId("20030117")).thenReturn(Optional.of(createUser()))
+            stubRollup()
+
+            val result = service.createEmployee(10L, createRequest(workStatus = "연차"))
+            assertThat(result.workStatus).isEqualTo("연차")
+        }
+
+        @Test
         @DisplayName("투입일만으로 즉시 추가 - 최소 필수 필드(scheduleDate)만 설정된 레코드 생성")
         fun createEmployee_scheduleDateOnly_success() {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
@@ -158,6 +210,8 @@ class AdminPromotionEmployeeServiceTest {
             assertThat(result.employeeSfid).isNull()
             assertThat(result.employeeId).isNull()
             assertThat(result.scheduleDate).isEqualTo(LocalDate.of(2026, 3, 15))
+            assertThat(result.workType1).isEqualTo("행사")
+            assertThat(result.workStatus).isEqualTo("근무")
         }
 
         @Test
@@ -1003,6 +1057,50 @@ class AdminPromotionEmployeeServiceTest {
             val result = service.batchUpdateEmployees(10L, 1L, request)
             assertThat(result.updatedCount).isEqualTo(1)
             assertThat(pe.workType3).isNull()
+        }
+
+        @Test
+        @DisplayName("일괄수정 - 기존값도 null이면 workType1 '행사' 보정")
+        fun batchUpdate_workType1BothNull_defaultApplied() {
+            val pe = createPe(id = 1L, workType1 = null)
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
+            whenever(userRepository.findByEmployeeIdIn(any())).thenReturn(listOf(createUser()))
+            whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            whenever(promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(10L))
+                .thenReturn(listOf(pe))
+            stubRollup()
+
+            val request = BatchUpdatePromotionEmployeeRequest(listOf(
+                createBatchItem(id = 1L, workType1 = null)
+            ))
+
+            service.batchUpdateEmployees(10L, 1L, request)
+            assertThat(pe.workType1).isEqualTo("행사")
+        }
+
+        @Test
+        @DisplayName("일괄수정 - 기존값도 null이면 workStatus '근무' 보정")
+        fun batchUpdate_workStatusBothNull_defaultApplied() {
+            val pe = createPe(id = 1L, workStatus = null)
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
+            whenever(userRepository.findByEmployeeIdIn(any())).thenReturn(listOf(createUser()))
+            whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            whenever(promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(10L))
+                .thenReturn(listOf(pe))
+            stubRollup()
+
+            val request = BatchUpdatePromotionEmployeeRequest(listOf(
+                createBatchItem(id = 1L, workStatus = null)
+            ))
+
+            service.batchUpdateEmployees(10L, 1L, request)
+            assertThat(pe.workStatus).isEqualTo("근무")
         }
 
         @Test
