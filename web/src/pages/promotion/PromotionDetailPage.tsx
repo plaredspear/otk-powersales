@@ -58,7 +58,7 @@ const WORK_TYPE3_OPTIONS = [
 // Editable row data during edit mode
 interface EditableRow {
   id: number;
-  employeeSfid: string | null;
+  employeeId: string | null;
   scheduleDate: string | null;
   workStatus: string | null;
   workType1: string | null;
@@ -83,7 +83,7 @@ interface EditableRow {
 function toEditableRow(pe: PromotionEmployee): EditableRow {
   return {
     id: pe.id,
-    employeeSfid: pe.employeeSfid,
+    employeeId: pe.employeeId,
     scheduleDate: pe.scheduleDate,
     workStatus: pe.workStatus,
     workType1: pe.workType1,
@@ -318,7 +318,7 @@ export default function PromotionDetailPage() {
         const lastRow = sourceRows[sourceRows.length - 1];
         const body: PromotionEmployeeFormData = {};
 
-        if (lastRow.employeeSfid != null) body.employee_sfid = lastRow.employeeSfid;
+        if (lastRow.employeeId != null) body.employee_id = lastRow.employeeId;
         if (lastRow.scheduleDate != null) {
           body.schedule_date = dayjs(lastRow.scheduleDate).add(1, 'day').format('YYYY-MM-DD');
         }
@@ -420,7 +420,7 @@ export default function PromotionDetailPage() {
 
       // 신규 행 (employees 리페치 미완료 또는 방금 생성된 행): 무조건 dirty 처리
       const isDirty = !orig ||
-        row.employeeSfid !== orig.employeeSfid ||
+        row.employeeId !== orig.employeeId ||
         row.scheduleDate !== orig.scheduleDate ||
         row.workStatus !== orig.workStatus ||
         row.workType1 !== orig.workType1 ||
@@ -439,7 +439,7 @@ export default function PromotionDetailPage() {
       if (isDirty) {
         changed.push({
           id: row.id,
-          employee_sfid: row.employeeSfid || null,
+          employee_id: row.employeeId || null,
           schedule_date: row.scheduleDate ?? '',
           work_status: row.workStatus ?? '',
           work_type1: row.workType1 ?? '',
@@ -569,7 +569,7 @@ export default function PromotionDetailPage() {
         dataIndex: 'employeeName',
         width: 120,
         render: (name: string | null, record: PromotionEmployee) =>
-          name ?? record.employeeSfid ?? '-',
+          name ?? record.employeeId ?? '-',
       },
       {
         title: '전문행사조(현재)',
@@ -701,25 +701,25 @@ export default function PromotionDetailPage() {
               placeholder="사원 검색"
               popupMatchSelectWidth={false}
               dropdownStyle={{ minWidth: 250 }}
-              value={record.employeeSfid ? { value: record.employeeSfid, label: record.employeeName ?? record.employeeSfid } : undefined}
+              value={record.employeeId ? { value: record.employeeId, label: record.employeeName ? `${record.employeeName} (${record.employeeId})` : record.employeeId } : undefined}
               labelInValue
               loading={loading}
               onSearch={(val) => handleEmployeeSearch(record.id, val)}
               onChange={(opt: { value: string; label: string }) => {
-                const selected = options.find((e) => e.sfid === opt.value);
-                updateField(record.id, 'employeeSfid', opt.value);
+                const selected = options.find((e) => e.employeeId === opt.value);
+                updateField(record.id, 'employeeId', opt.value);
                 updateField(record.id, 'employeeName', selected?.name ?? opt.label);
               }}
               notFoundContent={loading ? <Spin size="small" /> : '검색 결과 없음'}
               style={{ width: '100%' }}
               allowClear
               onClear={() => {
-                updateField(record.id, 'employeeSfid', null);
+                updateField(record.id, 'employeeId', null);
                 updateField(record.id, 'employeeName', null);
               }}
             >
               {options.map((emp) => (
-                <Select.Option key={emp.sfid} value={emp.sfid}>
+                <Select.Option key={emp.employeeId} value={emp.employeeId}>
                   {emp.name} ({emp.employeeId})
                 </Select.Option>
               ))}
