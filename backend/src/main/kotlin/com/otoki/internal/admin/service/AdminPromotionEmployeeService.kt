@@ -109,7 +109,6 @@ class AdminPromotionEmployeeService(
 
         // employeeId로 사원 해소
         val resolved = resolveEmployee(request.employeeId)
-        val resolvedSfid = resolved?.sfid
 
         // 빈 문자열 → null 정규화
         val normalizedWorkType3 = request.workType3?.takeIf { it.isNotBlank() }
@@ -137,7 +136,6 @@ class AdminPromotionEmployeeService(
         )
 
         pe.update(
-            employeeSfid = resolvedSfid,
             employeeId = request.employeeId,
             scheduleDate = request.scheduleDate,
             workStatus = request.workStatus ?: pe.workStatus,
@@ -194,12 +192,6 @@ class AdminPromotionEmployeeService(
             .orElseThrow { IllegalStateException("사용자를 찾을 수 없습니다: $userId") }
         val isAdmin = user.role == UserRole.ADMIN
 
-        // employeeId 일괄 해소
-        val employeeIds = request.items.mapNotNull { it.employeeId }.distinct()
-        val resolvedUserMap = if (employeeIds.isNotEmpty()) {
-            userRepository.findByEmployeeIdIn(employeeIds).associateBy { it.employeeId }
-        } else emptyMap()
-
         // 전체 항목 검증 (에러 수집)
         val errors = mutableListOf<BatchItemError>()
 
@@ -220,10 +212,6 @@ class AdminPromotionEmployeeService(
         for (item in request.items) {
             val pe = employeeMap[item.id]!!
 
-            // employeeId로 sfid 해소
-            val resolvedUser = item.employeeId?.let { resolvedUserMap[it] }
-            val resolvedSfid = resolvedUser?.sfid
-
             // 빈 문자열 → null 정규화
             val normalizedWorkType3 = item.workType3?.takeIf { it.isNotBlank() }
 
@@ -233,7 +221,6 @@ class AdminPromotionEmployeeService(
             )
 
             pe.update(
-                employeeSfid = resolvedSfid,
                 employeeId = item.employeeId,
                 scheduleDate = item.scheduleDate,
                 workStatus = item.workStatus ?: pe.workStatus ?: DEFAULT_WORK_STATUS,

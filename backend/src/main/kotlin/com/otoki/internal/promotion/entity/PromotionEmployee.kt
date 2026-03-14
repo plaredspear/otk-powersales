@@ -125,7 +125,6 @@ class PromotionEmployee(
     var updatedAt: LocalDateTime = LocalDateTime.now()
 ) {
     fun update(
-        employeeSfid: String?,
         employeeId: String?,
         scheduleDate: LocalDate?,
         workStatus: String?,
@@ -144,7 +143,6 @@ class PromotionEmployee(
         otherSalesQuantity: Int? = null,
         s3ImageUniqueKey: String? = null
     ) {
-        this.employeeSfid = employeeSfid
         this.employeeId = employeeId
         this.scheduleDate = scheduleDate
         this.workStatus = workStatus
