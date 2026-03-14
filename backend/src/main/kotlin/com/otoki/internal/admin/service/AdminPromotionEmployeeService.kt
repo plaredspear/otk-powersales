@@ -105,33 +105,33 @@ class AdminPromotionEmployeeService(
         val normalizedEmployeeSfid = request.employeeSfid?.takeIf { it.isNotBlank() }
         val normalizedWorkType3 = request.workType3?.takeIf { it.isNotBlank() }
 
-        validateWorkStatus(request.workStatus!!)
+        if (request.workStatus != null) validateWorkStatus(request.workStatus)
         validateWorkType3(normalizedWorkType3)
 
         // 1-2-A: 마감 보호 — 핵심필드 수정 차단 (ADMIN 예외)
         val user = userRepository.findById(userId)
             .orElseThrow { IllegalStateException("사용자를 찾을 수 없습니다: $userId") }
         validateClosedEmployeeModification(
-            pe, normalizedEmployeeSfid, request.scheduleDate!!, normalizedWorkType3,
+            pe, normalizedEmployeeSfid, request.scheduleDate, normalizedWorkType3,
             request.basePrice, request.dailyTargetCount, user.role == UserRole.ADMIN
         )
 
         // 1-1: 전문행사조 매칭 검증
         val promotion = findActivePromotion(pe.promotionId)
-        validateScheduleDateRange(request.scheduleDate!!, promotion)
+        validateScheduleDateRange(request.scheduleDate, promotion)
         validateTeamCategory(promotion, request.professionalPromotionTeam)
 
         // 1-5: 핵심필드 변경 시 스케줄 삭제
         removeScheduleOnCriticalFieldChange(
-            pe, normalizedEmployeeSfid, request.scheduleDate!!, normalizedWorkType3,
+            pe, normalizedEmployeeSfid, request.scheduleDate, normalizedWorkType3,
             request.professionalPromotionTeam
         )
 
         pe.update(
             employeeSfid = normalizedEmployeeSfid,
-            scheduleDate = request.scheduleDate!!,
-            workStatus = request.workStatus!!,
-            workType1 = request.workType1!!,
+            scheduleDate = request.scheduleDate,
+            workStatus = request.workStatus ?: pe.workStatus,
+            workType1 = request.workType1 ?: pe.workType1,
             workType3 = normalizedWorkType3,
             workType4 = request.workType4,
             professionalPromotionTeam = request.professionalPromotionTeam,
@@ -217,8 +217,8 @@ class AdminPromotionEmployeeService(
             pe.update(
                 employeeSfid = normalizedEmployeeSfid,
                 scheduleDate = item.scheduleDate,
-                workStatus = item.workStatus,
-                workType1 = item.workType1,
+                workStatus = item.workStatus ?: pe.workStatus,
+                workType1 = item.workType1 ?: pe.workType1,
                 workType3 = normalizedWorkType3,
                 workType4 = item.workType4,
                 professionalPromotionTeam = item.professionalPromotionTeam,
@@ -306,8 +306,8 @@ class AdminPromotionEmployeeService(
             )
         }
 
-        // 4. 근무상태
-        if (item.workStatus !in VALID_WORK_STATUSES) {
+        // 4. 근무상태 (null 허용)
+        if (item.workStatus != null && item.workStatus.isNotBlank() && item.workStatus !in VALID_WORK_STATUSES) {
             return BatchItemError(index, item.employeeSfid, "INVALID_WORK_STATUS", "근무상태는 근무, 연차, 대휴 중 하나여야 합니다")
         }
 

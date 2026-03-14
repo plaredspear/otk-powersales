@@ -154,27 +154,24 @@ class AdminPromotionEmployeeControllerTest {
         }
 
         @Test
-        @DisplayName("성공 - 빈 Body로 즉시 추가 (검증 없음)")
-        fun createEmployee_emptyBody_success() {
-            val response = createDetailResponse()
-            whenever(adminPromotionEmployeeService.createEmployee(eq(10L), any())).thenReturn(response)
-
+        @DisplayName("실패 - 빈 Body로 추가 시 scheduleDate 필수 검증")
+        fun createEmployee_emptyBody_scheduleDateRequired() {
             mockMvc.perform(
                 post("/api/v1/admin/promotions/10/employees")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("{}")
             )
-                .andExpect(status().isCreated)
-                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.success").value(false))
         }
 
         @Test
-        @DisplayName("성공 - 일부 필드만 포함하여 추가 (검증 없음)")
-        fun createEmployee_partialFields_success() {
+        @DisplayName("성공 - 투입일 포함, 나머지 필드 없이 추가")
+        fun createEmployee_scheduleDateOnly_success() {
             val response = createDetailResponse()
             whenever(adminPromotionEmployeeService.createEmployee(eq(10L), any())).thenReturn(response)
 
-            val partialJson = """{"employee_sfid":"a0B5g00000XYZabc","work_status":"잘못된값"}"""
+            val partialJson = """{"schedule_date":"2026-03-15"}"""
 
             mockMvc.perform(
                 post("/api/v1/admin/promotions/10/employees")

@@ -2,7 +2,6 @@ package com.otoki.internal.admin.dto.request
 
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotEmpty
-import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
 import jakarta.validation.constraints.Min
@@ -24,12 +23,10 @@ data class BatchUpdatePromotionEmployeeItem(
     @field:NotNull(message = "투입일은 필수입니다")
     val scheduleDate: LocalDate,
 
-    @field:NotBlank(message = "근무상태는 필수입니다")
-    val workStatus: String,
+    val workStatus: String? = null,
 
-    @field:NotBlank(message = "근무유형1은 필수입니다")
     @field:Size(max = 100, message = "근무유형1은 최대 100자입니다")
-    val workType1: String,
+    val workType1: String? = null,
 
     val workType3: String? = null,
 

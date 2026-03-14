@@ -145,17 +145,17 @@ class AdminPromotionEmployeeServiceTest {
         }
 
         @Test
-        @DisplayName("빈 Body로 즉시 추가 - promotionId만 설정된 빈 레코드 생성")
-        fun createEmployee_emptyBody_success() {
+        @DisplayName("투입일만으로 즉시 추가 - 최소 필수 필드(scheduleDate)만 설정된 레코드 생성")
+        fun createEmployee_scheduleDateOnly_success() {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
             stubRollup()
 
-            val result = service.createEmployee(10L, PromotionEmployeeRequest())
+            val result = service.createEmployee(10L, PromotionEmployeeRequest(scheduleDate = LocalDate.of(2026, 3, 15)))
             assertThat(result.promotionId).isEqualTo(10L)
             assertThat(result.employeeSfid).isNull()
-            assertThat(result.scheduleDate).isNull()
+            assertThat(result.scheduleDate).isEqualTo(LocalDate.of(2026, 3, 15))
         }
 
         @Test
@@ -414,6 +414,38 @@ class AdminPromotionEmployeeServiceTest {
         }
 
         @Test
+        @DisplayName("workStatus null 수정 -> 기존 workStatus 값 유지")
+        fun updateEmployee_workStatusNull_keepsExisting() {
+            val pe = createPe(workStatus = "연차")
+            whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            whenever(userRepository.findBySfidIn(any())).thenReturn(listOf(createUser()))
+            stubRollup()
+
+            val result = service.updateEmployee(1L, 1L, createRequest(workStatus = null))
+            assertThat(result.workStatus).isEqualTo("연차")
+        }
+
+        @Test
+        @DisplayName("workType1 null 수정 -> 기존 workType1 값 유지")
+        fun updateEmployee_workType1Null_keepsExisting() {
+            val pe = createPe(workType1 = "시음")
+            whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            whenever(userRepository.findBySfidIn(any())).thenReturn(listOf(createUser()))
+            stubRollup()
+
+            val result = service.updateEmployee(1L, 1L, createRequest(workType1 = null))
+            assertThat(result.workType1).isEqualTo("시음")
+        }
+
+        @Test
         @DisplayName("투입일이 행사 기간 이후 (수정) -> SCHEDULE_DATE_OUT_OF_RANGE")
         fun updateEmployee_scheduleDateAfterEnd() {
             val pe = createPe()
@@ -611,6 +643,48 @@ class AdminPromotionEmployeeServiceTest {
             assertThat(ex.errors).hasSize(2)
             assertThat(ex.errors[0].errorCode).isEqualTo("SCHEDULE_DATE_OUT_OF_RANGE")
             assertThat(ex.errors[1].errorCode).isEqualTo("INVALID_WORK_STATUS")
+        }
+
+        @Test
+        @DisplayName("일괄 수정 - workStatus/workType1 null -> 기존값 유지")
+        fun batchUpdate_nullWorkStatusAndType1_keepsExisting() {
+            val pe = createPe(id = 1L, workStatus = "연차", workType1 = "시음")
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
+            whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            whenever(promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(10L))
+                .thenReturn(listOf(pe))
+            whenever(userRepository.findBySfidIn(any())).thenReturn(listOf(createUser()))
+            stubRollup()
+
+            val request = BatchUpdatePromotionEmployeeRequest(listOf(
+                createBatchItem(id = 1L, workStatus = null, workType1 = null)
+            ))
+
+            val result = service.batchUpdateEmployees(10L, 1L, request)
+            assertThat(result.updatedCount).isEqualTo(1)
+            assertThat(pe.workStatus).isEqualTo("연차")
+            assertThat(pe.workType1).isEqualTo("시음")
+        }
+
+        @Test
+        @DisplayName("일괄 수정 - workStatus 무효값 -> INVALID_WORK_STATUS (null은 허용)")
+        fun batchUpdate_invalidWorkStatusButNullAllowed() {
+            val pe = createPe(id = 1L)
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
+            whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+
+            val request = BatchUpdatePromotionEmployeeRequest(listOf(
+                createBatchItem(id = 1L, workStatus = "출장")
+            ))
+
+            val ex = org.junit.jupiter.api.assertThrows<BatchValidationException> {
+                service.batchUpdateEmployees(10L, 1L, request)
+            }
+            assertThat(ex.errors[0].errorCode).isEqualTo("INVALID_WORK_STATUS")
         }
 
         @Test
@@ -851,10 +925,10 @@ class AdminPromotionEmployeeServiceTest {
     private fun createPe(
         id: Long = 1L, promotionId: Long = 10L, employeeSfid: String = "a0B5g00000XYZabc",
         scheduleDate: LocalDate = LocalDate.of(2026, 3, 15), scheduleId: Long? = null,
-        promoCloseByTm: Boolean = false
+        promoCloseByTm: Boolean = false, workStatus: String? = "근무", workType1: String? = "시식"
     ) = PromotionEmployee(
         id = id, promotionId = promotionId, employeeSfid = employeeSfid, scheduleDate = scheduleDate,
-        workStatus = "근무", workType1 = "시식", workType3 = "고정", workType4 = "냉장",
+        workStatus = workStatus, workType1 = workType1, workType3 = "고정", workType4 = "냉장",
         professionalPromotionTeam = "라면세일조", basePrice = 1500, dailyTargetCount = 100,
         scheduleId = scheduleId, promoCloseByTm = promoCloseByTm
     )
@@ -865,7 +939,7 @@ class AdminPromotionEmployeeServiceTest {
 
     private fun createBatchItem(
         id: Long = 1L, employeeSfid: String? = "a0B5g00000XYZabc", scheduleDate: LocalDate = LocalDate.of(2026, 3, 15),
-        workStatus: String = "근무", workType1: String = "시식", workType3: String? = "고정",
+        workStatus: String? = "근무", workType1: String? = "시식", workType3: String? = "고정",
         workType4: String? = "냉장", professionalPromotionTeam: String? = "라면세일조",
         basePrice: Long? = 1500, dailyTargetCount: Int? = 100,
         targetAmount: Long? = 0, actualAmount: Long? = 0
@@ -878,7 +952,7 @@ class AdminPromotionEmployeeServiceTest {
 
     private fun createRequest(
         employeeSfid: String? = "a0B5g00000XYZabc", scheduleDate: LocalDate = LocalDate.of(2026, 3, 15),
-        workStatus: String = "근무", workType1: String = "시식", workType3: String? = "고정",
+        workStatus: String? = "근무", workType1: String? = "시식", workType3: String? = "고정",
         workType4: String? = "냉장", professionalPromotionTeam: String? = "라면세일조",
         basePrice: Long? = 1500, dailyTargetCount: Int? = 100,
         targetAmount: Long? = 0, actualAmount: Long? = 0
