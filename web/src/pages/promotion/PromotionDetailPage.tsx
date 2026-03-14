@@ -8,6 +8,7 @@ import {
   InputNumber,
   Modal,
   Popconfirm,
+  Popover,
   Select,
   Space,
   Spin,
@@ -16,7 +17,7 @@ import {
   Typography,
   message,
 } from 'antd';
-import { CheckCircleFilled, CloseCircleFilled, CloseOutlined } from '@ant-design/icons';
+import { CheckCircleFilled, CloseCircleFilled, CloseOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { usePromotion } from '@/hooks/promotion/usePromotion';
@@ -532,19 +533,6 @@ export default function PromotionDetailPage() {
     return v.toLocaleString();
   };
 
-  // --- 확정 상태 표시 컬럼 (공통) ---
-  const confirmColumn = useMemo(
-    () => ({
-      title: '확정',
-      dataIndex: 'scheduleId',
-      width: 60,
-      align: 'center' as const,
-      render: (v: number | null) =>
-        v != null ? <CheckCircleFilled style={{ color: '#52c41a' }} /> : null,
-    }),
-    [],
-  );
-
   const closeColumn = useMemo(
     () => ({
       title: '여사마감',
@@ -562,7 +550,7 @@ export default function PromotionDetailPage() {
     () => [
       { title: 'NO.', dataIndex: 'id', width: 70, align: 'center' as const },
       {
-        title: '행사사원',
+        title: <span>행사사원<span style={{ color: '#fa8c16', marginLeft: 2 }}>**</span></span>,
         dataIndex: 'employeeName',
         width: 120,
         render: (name: string | null, record: PromotionEmployee) =>
@@ -582,14 +570,14 @@ export default function PromotionDetailPage() {
         render: (v: string | null) => v ?? '-',
       },
       {
-        title: '투입일',
+        title: <span>투입일<span style={{ color: '#ff4d4f', marginLeft: 2 }}>*</span></span>,
         dataIndex: 'scheduleDate',
         width: 110,
         align: 'center' as const,
         render: (v: string | null) => (v ? v.replace(/-/g, '/') : '-'),
       },
       {
-        title: '근무유형3',
+        title: <span>근무유형3<span style={{ color: '#fa8c16', marginLeft: 2 }}>**</span></span>,
         dataIndex: 'workType3',
         width: 80,
         align: 'center' as const,
@@ -671,10 +659,9 @@ export default function PromotionDetailPage() {
         render: (v: string | null) =>
           v ? <CheckCircleFilled style={{ color: '#52c41a' }} /> : null,
       },
-      confirmColumn,
       closeColumn,
     ],
-    [confirmColumn, closeColumn],
+    [closeColumn],
   );
 
   // --- 편집 모드 컬럼 ---
@@ -682,7 +669,7 @@ export default function PromotionDetailPage() {
     () => [
       { title: 'NO.', dataIndex: 'id', width: 70, align: 'center' as const },
       {
-        title: '행사사원',
+        title: <span>행사사원<span style={{ color: '#fa8c16', marginLeft: 2 }}>**</span></span>,
         width: 160,
         render: (_: unknown, record: EditableRow) => {
           const options = employeeOptions.get(record.id) ?? [];
@@ -757,7 +744,7 @@ export default function PromotionDetailPage() {
         ),
       },
       {
-        title: '근무유형3',
+        title: <span>근무유형3<span style={{ color: '#fa8c16', marginLeft: 2 }}>**</span></span>,
         dataIndex: 'workType3',
         width: 90,
         render: (_: unknown, record: EditableRow) => (
@@ -911,7 +898,6 @@ export default function PromotionDetailPage() {
             </Space>
           ) : null,
       },
-      confirmColumn,
       {
         title: '여사마감',
         dataIndex: 'promoCloseByTm',
@@ -949,7 +935,7 @@ export default function PromotionDetailPage() {
         ),
       },
     ],
-    [confirmColumn, updateField, employeeOptions, employeeSearchLoading, handleEmployeeSearch],
+    [updateField, employeeOptions, employeeSearchLoading, handleEmployeeSearch],
   );
 
   if (isLoading) {
@@ -1061,9 +1047,26 @@ export default function PromotionDetailPage() {
             marginBottom: 16,
           }}
         >
-          <Title level={5} style={{ margin: 0 }}>
-            행사사원
-          </Title>
+          <Space>
+            <Title level={5} style={{ margin: 0 }}>
+              행사사원
+            </Title>
+            <Popover
+              trigger="click"
+              content={
+                <div style={{ fontSize: 13 }}>
+                  <div><span style={{ color: '#ff4d4f', fontWeight: 'bold' }}>*</span> 저장시 필수</div>
+                  <div><span style={{ color: '#fa8c16', fontWeight: 'bold' }}>**</span> 일정확정시 필수</div>
+                  <div>
+                    <span style={{ display: 'inline-block', width: 12, height: 12, backgroundColor: '#f6ffed', border: '1px solid #b7eb8f', verticalAlign: 'middle', marginRight: 4 }} />
+                    일정이 확정된 행
+                  </div>
+                </div>
+              }
+            >
+              <InfoCircleOutlined style={{ color: '#999', cursor: 'pointer' }} />
+            </Popover>
+          </Space>
           {empEditMode ? (
             <Space>
               <Button onClick={cancelEmpEditMode}>취소</Button>
