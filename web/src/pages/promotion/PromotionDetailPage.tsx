@@ -16,8 +16,9 @@ import {
   Tooltip,
   Typography,
   message,
+  notification,
 } from 'antd';
-import { CheckCircleFilled, CloseCircleFilled, CloseOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { CheckCircleFilled, CloseCircleFilled, CloseOutlined, ExclamationCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { usePromotion } from '@/hooks/promotion/usePromotion';
@@ -520,7 +521,25 @@ export default function PromotionDetailPage() {
 
         setErrorRowIds(errorIds);
         setErrorMessages(msgs);
-        message.error(err.message);
+
+        // notification으로 항목별 상세 에러 표시
+        const maxDisplay = 5;
+        const displayErrors = err.errors.slice(0, maxDisplay);
+        const remaining = err.errors.length - maxDisplay;
+        notification.error({
+          message: `검증 오류 (${err.errors.length}건)`,
+          description: (
+            <ul style={{ margin: 0, paddingLeft: 16 }}>
+              {displayErrors.map((itemErr, idx) => {
+                const rowNum = itemErr.item_index + 1;
+                return <li key={idx}>행 {rowNum}: {itemErr.message}</li>;
+              })}
+              {remaining > 0 && <li>외 {remaining}건</li>}
+            </ul>
+          ),
+          placement: 'topRight',
+          duration: 0,
+        });
       } else {
         message.error(err instanceof Error ? err.message : '일괄 수정에 실패했습니다');
       }
@@ -674,7 +693,14 @@ export default function PromotionDetailPage() {
         render: (_: unknown, record: EditableRow) => {
           const options = employeeOptions.get(record.id) ?? [];
           const loading = employeeSearchLoading.get(record.id) ?? false;
+          const errMsg = errorMessages.get(record.id);
           return (
+            <Space size={4} style={{ width: '100%' }}>
+              {errMsg && (
+                <Tooltip title={errMsg}>
+                  <ExclamationCircleOutlined style={{ color: '#ff4d4f', flexShrink: 0 }} />
+                </Tooltip>
+              )}
             <Select
               size="small"
               showSearch
@@ -703,6 +729,7 @@ export default function PromotionDetailPage() {
                 </Select.Option>
               ))}
             </Select>
+            </Space>
           );
         },
       },
