@@ -48,4 +48,9 @@ interface UserRepository : JpaRepository<User, Long>, UserRepositoryCustom {
         costCenterCode: String,
         status: String
     ): List<User>
+
+    /**
+     * 사원번호 목록으로 일괄 조회 (Excel 업로드 검증용)
+     */
+    fun findByEmployeeIdIn(employeeIds: List<String>): List<User>
 }
