@@ -65,8 +65,7 @@ class AdminPromotionEmployeeService(
     fun getEmployee(id: Long): PromotionEmployeeDetailResponse {
         val pe = findEmployeeById(id)
         val resolved = resolveEmployee(pe.employeeId)
-        val employeeName = resolved?.name ?: resolveEmployeeNameBySfid(pe.employeeSfid)
-        return PromotionEmployeeDetailResponse.from(pe, employeeName)
+        return PromotionEmployeeDetailResponse.from(pe, resolved?.name)
     }
 
     @Transactional
@@ -484,28 +483,14 @@ class AdminPromotionEmployeeService(
     }
 
     private fun resolveEmployeeNames(employees: List<PromotionEmployee>): Map<Long, String> {
-        // employeeId 기반 조회
         val employeeIds = employees.mapNotNull { it.employeeId }.distinct()
         val employeeIdNameMap = if (employeeIds.isNotEmpty()) {
             userRepository.findByEmployeeIdIn(employeeIds).associate { it.employeeId to it.name }
         } else emptyMap()
 
-        // sfid 기반 fallback (employeeId가 null인 레코드)
-        val sfidFallbackNeeded = employees.filter { it.employeeId == null && it.employeeSfid != null }
-        val sfids = sfidFallbackNeeded.mapNotNull { it.employeeSfid }.distinct()
-        val sfidNameMap = if (sfids.isNotEmpty()) {
-            userRepository.findBySfidIn(sfids).associate { it.sfid!! to it.name }
-        } else emptyMap()
-
         return employees.mapNotNull { pe ->
             val name = pe.employeeId?.let { employeeIdNameMap[it] }
-                ?: pe.employeeSfid?.let { sfidNameMap[it] }
             if (name != null) pe.id to name else null
         }.toMap()
-    }
-
-    private fun resolveEmployeeNameBySfid(sfid: String?): String? {
-        if (sfid == null) return null
-        return userRepository.findBySfidIn(listOf(sfid)).firstOrNull()?.name
     }
 }

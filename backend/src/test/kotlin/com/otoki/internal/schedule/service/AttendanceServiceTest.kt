@@ -670,7 +670,7 @@ class AttendanceServiceTest {
     private fun createUser(
         id: Long = 1L,
         sfid: String? = "USR001",
-        employeeId: String = "12345678",
+        employeeId: String = "USR001",
         name: String = "테스트 사용자",
         orgName: String? = "서울지점",
         appAuthority: String? = null
