@@ -312,8 +312,10 @@ export default function PromotionDetailPage() {
     try {
       let data: PromotionEmployeeFormData | undefined;
 
-      if (employees && employees.length > 0) {
-        const lastRow = employees[employees.length - 1];
+      // 편집 모드이면 editRows에서, 아니면 employees에서 마지막 행 복사
+      const sourceRows = empEditMode && editRows.length > 0 ? editRows : employees;
+      if (sourceRows && sourceRows.length > 0) {
+        const lastRow = sourceRows[sourceRows.length - 1];
         const body: PromotionEmployeeFormData = {};
 
         if (lastRow.employeeSfid != null) body.employee_sfid = lastRow.employeeSfid;
@@ -330,7 +332,12 @@ export default function PromotionDetailPage() {
         if (Object.keys(body).length > 0) data = body;
       }
 
-      await createPeMutation.mutateAsync({ promotionId, data });
+      const newEmployee = await createPeMutation.mutateAsync({ promotionId, data });
+
+      // 편집 모드이면 서버 응답을 editRows에 즉시 추가
+      if (empEditMode) {
+        setEditRows((prev) => [...prev, toEditableRow(newEmployee)]);
+      }
     } catch (err) {
       message.error(err instanceof Error ? err.message : '행사사원 추가에 실패했습니다');
     }
@@ -413,9 +420,9 @@ export default function PromotionDetailPage() {
 
     for (const row of editRows) {
       const orig = originalMap.get(row.id);
-      if (!orig) continue;
 
-      const isDirty =
+      // 신규 행 (employees 리페치 미완료 또는 방금 생성된 행): 무조건 dirty 처리
+      const isDirty = !orig ||
         row.employeeSfid !== orig.employeeSfid ||
         row.scheduleDate !== orig.scheduleDate ||
         row.workStatus !== orig.workStatus ||
