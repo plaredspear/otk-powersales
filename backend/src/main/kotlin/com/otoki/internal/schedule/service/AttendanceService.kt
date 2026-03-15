@@ -57,16 +57,16 @@ class AttendanceService(
         val teamMemberSchedules = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(employeeId, today)
 
         // Account 정보 batch fetch
-        val accountSfids = teamMemberSchedules.mapNotNull { it.accountId }.distinct()
-        val accountMap = if (accountSfids.isNotEmpty()) {
-            accountRepository.findBySfidIn(accountSfids).associateBy { it.sfid }
+        val accountIds = teamMemberSchedules.mapNotNull { it.accountId?.toIntOrNull() }.distinct()
+        val accountMap = if (accountIds.isNotEmpty()) {
+            accountRepository.findByIdIn(accountIds).associateBy { it.id }
         } else {
             emptyMap()
         }
 
         // DTO 변환 + 키워드 필터링
         val storeInfos = teamMemberSchedules.mapNotNull { teamMemberSchedule ->
-            val account = teamMemberSchedule.accountId?.let { accountMap[it] }
+            val account = teamMemberSchedule.accountId?.toIntOrNull()?.let { accountMap[it] }
             val storeName = account?.name ?: ""
 
             // 키워드 필터링
@@ -121,7 +121,7 @@ class AttendanceService(
         }
 
         // 3. 거래처 정보 조회 + GPS 거리 검증
-        val account = teamMemberSchedule.accountId?.let { accountRepository.findBySfid(it) }
+        val account = teamMemberSchedule.accountId?.toIntOrNull()?.let { accountRepository.findById(it).orElse(null) }
         val distanceKm = validateDistance(latitude, longitude, account)
 
         // 4. Orora WorkReport 전송
@@ -157,15 +157,15 @@ class AttendanceService(
         val teamMemberSchedules = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(employeeId, today)
 
         // Account 정보 batch fetch
-        val accountSfids = teamMemberSchedules.mapNotNull { it.accountId }.distinct()
-        val accountMap = if (accountSfids.isNotEmpty()) {
-            accountRepository.findBySfidIn(accountSfids).associateBy { it.sfid }
+        val accountIds = teamMemberSchedules.mapNotNull { it.accountId?.toIntOrNull() }.distinct()
+        val accountMap = if (accountIds.isNotEmpty()) {
+            accountRepository.findByIdIn(accountIds).associateBy { it.id }
         } else {
             emptyMap()
         }
 
         val statusList = teamMemberSchedules.map { teamMemberSchedule ->
-            val account = teamMemberSchedule.accountId?.let { accountMap[it] }
+            val account = teamMemberSchedule.accountId?.toIntOrNull()?.let { accountMap[it] }
             CommuteStatusItem(
                 scheduleId = teamMemberSchedule.id,
                 storeName = account?.name ?: "",

@@ -150,10 +150,10 @@ class HomeService(
      * 스케줄의 accountId → Account 이름 매핑 (batch fetch)
      */
     private fun fetchAccountMap(teamMemberSchedules: List<TeamMemberSchedule>): Map<String, String> {
-        val accountSfids = teamMemberSchedules.mapNotNull { it.accountId }.distinct()
-        if (accountSfids.isEmpty()) return emptyMap()
-        return accountRepository.findBySfidIn(accountSfids)
-            .associate { (it.sfid ?: "") to (it.name ?: "") }
+        val accountIds = teamMemberSchedules.mapNotNull { it.accountId?.toIntOrNull() }.distinct()
+        if (accountIds.isEmpty()) return emptyMap()
+        return accountRepository.findByIdIn(accountIds)
+            .associate { it.id.toString() to (it.name ?: "") }
     }
 
     /**
