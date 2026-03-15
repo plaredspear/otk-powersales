@@ -165,7 +165,7 @@ class AdminScheduleServiceTest {
             whenever(excelParser.parse(any())).thenReturn(parseResult)
             whenever(userRepository.findByEmployeeIdIn(listOf("20030001"))).thenReturn(listOf(user))
             whenever(accountRepository.findByExternalKeyIn(listOf("ACC001"))).thenReturn(listOf(account))
-            whenever(scheduleRepository.findByFullNameInAndNotDeleted(listOf("USR001"))).thenReturn(emptyList())
+            whenever(scheduleRepository.findByFullNameInAndNotDeleted(listOf("20030001"))).thenReturn(emptyList())
             whenever(uploadValidator.validate(eq(parsedRows), any(), any(), any())).thenReturn(
                 ScheduleUploadValidator.ValidationResult(
                     errors = emptyList(),
@@ -173,7 +173,7 @@ class AdminScheduleServiceTest {
                         RowPreview(4, "20030001", "홍길동", "ACC001", "이마트 강남점", "고정", "상시", "2026-04-01", null)
                     ),
                     validRows = listOf(
-                        ScheduleUploadValidator.ValidatedRow("USR001", "ACC_SFID_001", "고정", "상시", LocalDate.of(2026, 4, 1), null)
+                        ScheduleUploadValidator.ValidatedRow("20030001", "ACC_SFID_001", "고정", "상시", LocalDate.of(2026, 4, 1), null)
                     )
                 )
             )
@@ -251,7 +251,7 @@ class AdminScheduleServiceTest {
             val uploadId = "test-upload-id"
             val cacheData = AdminScheduleService.UploadCacheData(
                 validRows = listOf(
-                    ScheduleUploadValidator.ValidatedRow("USR001", "ACC001", "고정", "상시", LocalDate.of(2026, 4, 1), null)
+                    ScheduleUploadValidator.ValidatedRow("20030001", "ACC001", "고정", "상시", LocalDate.of(2026, 4, 1), null)
                 ),
                 errorCount = 0
             )
@@ -269,7 +269,7 @@ class AdminScheduleServiceTest {
             assertThat(result.insertedCount).isEqualTo(1)
             verify(scheduleRepository).saveAll(argThat<List<DisplayWorkSchedule>> { list ->
                 list.size == 1 &&
-                    list[0].fullName == "USR001" &&
+                    list[0].fullName == "20030001" &&
                     list[0].account == "ACC001" &&
                     list[0].typeOfWork1 == "진열" &&
                     list[0].confirmed == false

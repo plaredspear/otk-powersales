@@ -54,7 +54,7 @@ class MyScheduleServiceTest {
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
             whenever(displayWorkScheduleRepository.findDistinctStartDatesByFullNameAndDateBetween(
-                eq("a0B000000012345"),
+                eq("20030117"),
                 eq(LocalDate.of(2020, 8, 1)),
                 eq(LocalDate.of(2020, 8, 31))
             )).thenReturn(workDates)
@@ -85,7 +85,7 @@ class MyScheduleServiceTest {
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
             whenever(displayWorkScheduleRepository.findDistinctStartDatesByFullNameAndDateBetween(
-                eq("a0B000000012345"),
+                eq("20030117"),
                 any(),
                 any()
             )).thenReturn(emptyList())
@@ -111,7 +111,7 @@ class MyScheduleServiceTest {
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
             whenever(displayWorkScheduleRepository.findDistinctStartDatesByFullNameAndDateBetween(
-                eq("a0B000000012345"),
+                eq("20030117"),
                 any(),
                 any()
             )).thenReturn(emptyList())
@@ -157,7 +157,7 @@ class MyScheduleServiceTest {
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(displayWorkScheduleRepository.findByFullNameAndStartDate("a0B000000012345", date))
+            whenever(displayWorkScheduleRepository.findByFullNameAndStartDate("20030117", date))
                 .thenReturn(mockSchedules)
 
             // When
@@ -184,7 +184,7 @@ class MyScheduleServiceTest {
             val mockUser = createMockUser(userId, "최금주", "20030117", sfid = "a0B000000012345")
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(displayWorkScheduleRepository.findByFullNameAndStartDate("a0B000000012345", date))
+            whenever(displayWorkScheduleRepository.findByFullNameAndStartDate("20030117", date))
                 .thenReturn(emptyList())
 
             // When

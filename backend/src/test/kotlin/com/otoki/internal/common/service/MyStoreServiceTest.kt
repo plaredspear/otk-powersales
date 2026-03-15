@@ -38,7 +38,7 @@ class MyStoreServiceTest {
     @InjectMocks
     private lateinit var myStoreService: MyStoreService
 
-    private val testUserSfid = "a0B000000012345"
+    private val testEmployeeId = "20030117"
 
     // ========== getMyStores Tests ==========
 
@@ -51,7 +51,7 @@ class MyStoreServiceTest {
         fun getMyStores_withAccountMaster() {
             // Given
             val userId = 1L
-            val mockUser = createUser(id = userId, sfid = testUserSfid)
+            val mockUser = createUser(id = userId, employeeId = testEmployeeId)
             val now = LocalDate.now()
             val yearMonth = YearMonth.from(now)
             val startDate = yearMonth.atDay(1)
@@ -70,10 +70,10 @@ class MyStoreServiceTest {
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(displayWorkScheduleRepository.findDistinctAccountsByFullNameAndStartDateBetween(testUserSfid, startDate, endDate))
+            whenever(displayWorkScheduleRepository.findDistinctAccountsByFullNameAndStartDateBetween(testEmployeeId, startDate, endDate))
                 .thenReturn(distinctAccountSfids)
             whenever(accountRepository.findAll()).thenReturn(accounts)
-            whenever(displayWorkScheduleRepository.findByFullNameAndStartDateBetween(testUserSfid, startDate, endDate))
+            whenever(displayWorkScheduleRepository.findByFullNameAndStartDateBetween(testEmployeeId, startDate, endDate))
                 .thenReturn(schedules)
 
             // When
@@ -92,14 +92,14 @@ class MyStoreServiceTest {
         fun getMyStores_noSchedules() {
             // Given
             val userId = 1L
-            val mockUser = createUser(id = userId, sfid = testUserSfid)
+            val mockUser = createUser(id = userId, employeeId = testEmployeeId)
             val now = LocalDate.now()
             val yearMonth = YearMonth.from(now)
             val startDate = yearMonth.atDay(1)
             val endDate = yearMonth.atEndOfMonth()
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(displayWorkScheduleRepository.findDistinctAccountsByFullNameAndStartDateBetween(testUserSfid, startDate, endDate))
+            whenever(displayWorkScheduleRepository.findDistinctAccountsByFullNameAndStartDateBetween(testEmployeeId, startDate, endDate))
                 .thenReturn(emptyList())
 
             // When
@@ -128,7 +128,7 @@ class MyStoreServiceTest {
             // Given
             val userId = 1L
             val keyword = "경산"
-            val mockUser = createUser(id = userId, sfid = testUserSfid)
+            val mockUser = createUser(id = userId, employeeId = testEmployeeId)
             val now = LocalDate.now()
             val yearMonth = YearMonth.from(now)
             val startDate = yearMonth.atDay(1)
@@ -145,10 +145,10 @@ class MyStoreServiceTest {
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(displayWorkScheduleRepository.findDistinctAccountsByFullNameAndStartDateBetween(testUserSfid, startDate, endDate))
+            whenever(displayWorkScheduleRepository.findDistinctAccountsByFullNameAndStartDateBetween(testEmployeeId, startDate, endDate))
                 .thenReturn(distinctAccountSfids)
             whenever(accountRepository.findAll()).thenReturn(accounts)
-            whenever(displayWorkScheduleRepository.findByFullNameAndStartDateBetween(testUserSfid, startDate, endDate))
+            whenever(displayWorkScheduleRepository.findByFullNameAndStartDateBetween(testEmployeeId, startDate, endDate))
                 .thenReturn(schedules)
 
             // When
@@ -164,7 +164,7 @@ class MyStoreServiceTest {
         fun getMyStores_sortedByStoreName() {
             // Given
             val userId = 1L
-            val mockUser = createUser(id = userId, sfid = testUserSfid)
+            val mockUser = createUser(id = userId, employeeId = testEmployeeId)
             val now = LocalDate.now()
             val yearMonth = YearMonth.from(now)
             val startDate = yearMonth.atDay(1)
@@ -183,10 +183,10 @@ class MyStoreServiceTest {
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(displayWorkScheduleRepository.findDistinctAccountsByFullNameAndStartDateBetween(testUserSfid, startDate, endDate))
+            whenever(displayWorkScheduleRepository.findDistinctAccountsByFullNameAndStartDateBetween(testEmployeeId, startDate, endDate))
                 .thenReturn(distinctAccountSfids)
             whenever(accountRepository.findAll()).thenReturn(accounts)
-            whenever(displayWorkScheduleRepository.findByFullNameAndStartDateBetween(testUserSfid, startDate, endDate))
+            whenever(displayWorkScheduleRepository.findByFullNameAndStartDateBetween(testEmployeeId, startDate, endDate))
                 .thenReturn(schedules)
 
             // When
@@ -244,7 +244,7 @@ class MyStoreServiceTest {
         startDate: LocalDate = LocalDate.now()
     ): DisplayWorkSchedule {
         return DisplayWorkSchedule(
-            fullName = testUserSfid,
+            fullName = testEmployeeId,
             account = account,
             typeOfWork1 = typeOfWork1,
             startDate = startDate

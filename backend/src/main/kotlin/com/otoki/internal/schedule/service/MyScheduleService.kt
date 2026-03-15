@@ -37,10 +37,9 @@ class MyScheduleService(
      */
     @Transactional(readOnly = true)
     fun getMonthlySchedule(userId: Long, year: Int, month: Int): MonthlyScheduleResponse {
-        // 사용자 sfid 조회 (V1 StoreSchedule은 fullName(sfid)로 조회)
         val user = userRepository.findById(userId)
             .orElseThrow { UserNotFoundException() }
-        val userSfid = user.sfid ?: ""
+        val employeeId = user.employeeId
 
         // YearMonth로 해당 월의 시작일/종료일 계산
         val yearMonth = YearMonth.of(year, month)
@@ -49,7 +48,7 @@ class MyScheduleService(
 
         // 해당 기간 내 일정이 있는 날짜 목록 조회
         val workDates = displayWorkScheduleRepository
-            .findDistinctStartDatesByFullNameAndDateBetween(userSfid, startDate, endDate)
+            .findDistinctStartDatesByFullNameAndDateBetween(employeeId, startDate, endDate)
             .toSet()
 
         // 해당 월의 모든 날짜에 대해 근무 여부 판정
@@ -78,13 +77,12 @@ class MyScheduleService(
      */
     @Transactional(readOnly = true)
     fun getDailySchedule(userId: Long, date: LocalDate): DailyScheduleResponse {
-        // 사용자 정보 조회
         val user = userRepository.findById(userId)
             .orElseThrow { UserNotFoundException() }
-        val userSfid = user.sfid ?: ""
+        val employeeId = user.employeeId
 
         // 해당 날짜의 거래처 일정 목록 조회
-        val schedules = displayWorkScheduleRepository.findByFullNameAndStartDate(userSfid, date)
+        val schedules = displayWorkScheduleRepository.findByFullNameAndStartDate(employeeId, date)
 
         // Phase2: Attendance PG 대응 테이블 없음 - 주석 처리
         // val attendances = attendanceRepository.findByUserIdAndAttendanceDate(userId, date)
