@@ -28,6 +28,7 @@ import 'presentation/pages/change_password_page.dart';
 import 'presentation/pages/verify_password_page.dart';
 import 'presentation/pages/my_schedule_calendar_page.dart';
 import 'presentation/pages/my_schedule_detail_page.dart';
+import 'presentation/pages/safety_check_page.dart';
 import 'presentation/screens/change_password_screen.dart';
 import 'presentation/screens/gps_consent_screen.dart';
 import 'presentation/screens/login_screen.dart';
@@ -71,6 +72,7 @@ class AppRouter {
   static const String notices = '/notices';
   static const String noticeDetail = '/notices/detail';
   static const String salesOverview = '/sales-overview';
+  static const String safetyCheck = '/safety-check';
   static const String myScheduleCalendar = '/my-schedule'; // F56: 마이페이지 일정 캘린더
   static const String myScheduleDetail = '/my-schedule/detail'; // F56: 일정 상세
 
@@ -149,6 +151,7 @@ class AppRouter {
               ModalRoute.of(context)?.settings.arguments as int?;
           return SalesOverviewScreen(initialTabIndex: initialTabIndex);
         },
+        safetyCheck: (context) => const SafetyCheckPage(),
         myScheduleCalendar: (context) => const MyScheduleCalendarPage(), // F56: 일정 캘린더
         myScheduleDetail: (context) {
           // F56: 일정 상세

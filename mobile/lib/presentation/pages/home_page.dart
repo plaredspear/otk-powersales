@@ -15,6 +15,7 @@ import '../widgets/home/product_search_bar.dart';
 import '../widgets/home/quick_menu_grid.dart';
 import '../widgets/home/activity_registration_popup.dart';
 import '../../app_router.dart';
+import '../providers/safety_check_provider.dart';
 
 /// 홈 화면
 ///
@@ -125,7 +126,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   AppRouter.navigateTo(context, AppRouter.myScheduleCalendar);
                 },
                 onRegisterTap: () async {
-                  await AppRouter.navigateTo(context, AppRouter.attendance);
+                  await _handleRegisterTap(userRole);
                   if (mounted) {
                     ref.read(homeProvider.notifier).refresh();
                   }
@@ -234,6 +235,38 @@ class _HomePageState extends ConsumerState<HomePage> {
         ),
       ),
     );
+  }
+
+  /// 등록 버튼 탭 핸들러: 조장이면 바로 출근등록, 그 외 안전점검 상태 확인 후 분기
+  Future<void> _handleRegisterTap(String userRole) async {
+    // 조장(LEADER)/지점장(ADMIN)은 안전점검 없이 바로 출근등록
+    if (userRole == 'LEADER' || userRole == 'ADMIN') {
+      await AppRouter.navigateTo(context, AppRouter.attendance);
+      return;
+    }
+
+    // 안전점검 상태 확인
+    try {
+      final todayStatus = await ref
+          .read(getSafetyCheckTodayStatusUseCaseProvider)
+          .call();
+
+      if (!mounted) return;
+
+      if (todayStatus.completed) {
+        await AppRouter.navigateTo(context, AppRouter.attendance);
+      } else {
+        await AppRouter.navigateTo(context, AppRouter.safetyCheck);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('안전점검 상태를 확인할 수 없습니다: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   /// 빠른 메뉴 탭 핸들러
