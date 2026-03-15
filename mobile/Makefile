@@ -1,4 +1,4 @@
-.PHONY: run run-ios run-android test setup clean
+.PHONY: run run-local run-ios run-android test setup clean
 
 CONFIG ?= config/dev.json
 
@@ -15,6 +15,10 @@ setup:
 ## 앱 실행 (자동 디바이스 선택)
 run: setup
 	flutter run --dart-define-from-file=$(CONFIG)
+
+## 로컬 백엔드(localhost:8080) + iOS 시뮬레이터 실행
+run-local: setup
+	flutter run -d ios --dart-define-from-file=config/local.json
 
 ## iOS 시뮬레이터에서 실행
 run-ios: setup
