@@ -2,7 +2,7 @@
 ///
 /// 출근등록 API 호출 후 반환되는 등록 결과 정보입니다.
 class AttendanceResult {
-  final String scheduleSfid;
+  final int scheduleId;
   final String storeName;
   final String workType;
   final double distanceKm;
@@ -10,7 +10,7 @@ class AttendanceResult {
   final int registeredCount;
 
   const AttendanceResult({
-    required this.scheduleSfid,
+    required this.scheduleId,
     required this.storeName,
     required this.workType,
     required this.distanceKm,
@@ -19,7 +19,7 @@ class AttendanceResult {
   });
 
   AttendanceResult copyWith({
-    String? scheduleSfid,
+    int? scheduleId,
     String? storeName,
     String? workType,
     double? distanceKm,
@@ -27,7 +27,7 @@ class AttendanceResult {
     int? registeredCount,
   }) {
     return AttendanceResult(
-      scheduleSfid: scheduleSfid ?? this.scheduleSfid,
+      scheduleId: scheduleId ?? this.scheduleId,
       storeName: storeName ?? this.storeName,
       workType: workType ?? this.workType,
       distanceKm: distanceKm ?? this.distanceKm,
@@ -38,7 +38,7 @@ class AttendanceResult {
 
   Map<String, dynamic> toJson() {
     return {
-      'scheduleSfid': scheduleSfid,
+      'scheduleId': scheduleId,
       'storeName': storeName,
       'workType': workType,
       'distanceKm': distanceKm,
@@ -49,7 +49,7 @@ class AttendanceResult {
 
   factory AttendanceResult.fromJson(Map<String, dynamic> json) {
     return AttendanceResult(
-      scheduleSfid: json['scheduleSfid'] as String,
+      scheduleId: json['scheduleId'] as int,
       storeName: json['storeName'] as String,
       workType: json['workType'] as String,
       distanceKm: (json['distanceKm'] as num).toDouble(),
@@ -68,7 +68,7 @@ class AttendanceResult {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is AttendanceResult &&
-        other.scheduleSfid == scheduleSfid &&
+        other.scheduleId == scheduleId &&
         other.storeName == storeName &&
         other.workType == workType &&
         other.distanceKm == distanceKm &&
@@ -79,7 +79,7 @@ class AttendanceResult {
   @override
   int get hashCode {
     return Object.hash(
-      scheduleSfid,
+      scheduleId,
       storeName,
       workType,
       distanceKm,
@@ -90,7 +90,7 @@ class AttendanceResult {
 
   @override
   String toString() {
-    return 'AttendanceResult(scheduleSfid: $scheduleSfid, '
+    return 'AttendanceResult(scheduleId: $scheduleId, '
         'storeName: $storeName, workType: $workType, '
         'distanceKm: $distanceKm, totalCount: $totalCount, '
         'registeredCount: $registeredCount)';

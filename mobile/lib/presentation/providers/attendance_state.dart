@@ -23,8 +23,8 @@ class AttendanceState {
   /// 선택된 근무유형 ('ROOM_TEMP' 또는 'REFRIGERATED')
   final String selectedWorkType;
 
-  /// 선택된 스케줄 SFID
-  final String? selectedScheduleSfid;
+  /// 선택된 스케줄 ID
+  final int? selectedScheduleId;
 
   /// 검색 키워드
   final String searchKeyword;
@@ -44,7 +44,7 @@ class AttendanceState {
     this.totalCount = 0,
     this.registeredCount = 0,
     this.selectedWorkType = 'ROOM_TEMP',
-    this.selectedScheduleSfid,
+    this.selectedScheduleId,
     this.searchKeyword = '',
     this.registrationResult,
     this.statusList = const [],
@@ -93,7 +93,7 @@ class AttendanceState {
     int? totalCount,
     int? registeredCount,
     String? selectedWorkType,
-    String? selectedScheduleSfid,
+    int? selectedScheduleId,
     String? searchKeyword,
     AttendanceResult? registrationResult,
     List<AttendanceStatus>? statusList,
@@ -107,7 +107,7 @@ class AttendanceState {
       totalCount: totalCount ?? this.totalCount,
       registeredCount: registeredCount ?? this.registeredCount,
       selectedWorkType: selectedWorkType ?? this.selectedWorkType,
-      selectedScheduleSfid: selectedScheduleSfid ?? this.selectedScheduleSfid,
+      selectedScheduleId: selectedScheduleId ?? this.selectedScheduleId,
       searchKeyword: searchKeyword ?? this.searchKeyword,
       registrationResult: registrationResult ?? this.registrationResult,
       statusList: statusList ?? this.statusList,

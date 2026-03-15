@@ -4,7 +4,7 @@ import '../../domain/entities/store_schedule_item.dart';
 ///
 /// Backend API의 snake_case JSON을 파싱하여 StoreScheduleItem 엔티티로 변환합니다.
 class StoreScheduleItemModel {
-  final String scheduleSfid;
+  final int scheduleId;
   final String? storeSfid;
   final String storeName;
   final String? storeTypeCode;
@@ -15,7 +15,7 @@ class StoreScheduleItemModel {
   final bool isRegistered;
 
   const StoreScheduleItemModel({
-    required this.scheduleSfid,
+    required this.scheduleId,
     this.storeSfid,
     required this.storeName,
     this.storeTypeCode,
@@ -29,7 +29,7 @@ class StoreScheduleItemModel {
   /// snake_case JSON에서 파싱
   factory StoreScheduleItemModel.fromJson(Map<String, dynamic> json) {
     return StoreScheduleItemModel(
-      scheduleSfid: json['schedule_sfid'] as String,
+      scheduleId: json['schedule_id'] as int,
       storeSfid: json['store_sfid'] as String?,
       storeName: json['store_name'] as String,
       storeTypeCode: json['store_type_code'] as String?,
@@ -44,7 +44,7 @@ class StoreScheduleItemModel {
   /// Domain Entity로 변환
   StoreScheduleItem toEntity() {
     return StoreScheduleItem(
-      scheduleSfid: scheduleSfid,
+      scheduleId: scheduleId,
       storeSfid: storeSfid,
       storeName: storeName,
       storeTypeCode: storeTypeCode,

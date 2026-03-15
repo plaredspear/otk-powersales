@@ -19,13 +19,13 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
 
   @override
   Future<AttendanceResult> registerAttendance({
-    required String scheduleSfid,
+    required int scheduleId,
     required double latitude,
     required double longitude,
     String? workType,
   }) {
     return _dataSource.registerAttendance(
-      scheduleSfid: scheduleSfid,
+      scheduleId: scheduleId,
       latitude: latitude,
       longitude: longitude,
       workType: workType,

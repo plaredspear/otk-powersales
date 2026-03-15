@@ -11,22 +11,22 @@ class RegisterAttendance {
 
   /// 출근등록 실행
   ///
-  /// [scheduleSfid]: 스케줄 SFID
+  /// [scheduleId]: 스케줄 ID
   /// [latitude]: GPS 위도
   /// [longitude]: GPS 경도
   /// [workType]: 근무유형 (optional)
   Future<AttendanceResult> call({
-    required String scheduleSfid,
+    required int scheduleId,
     required double latitude,
     required double longitude,
     String? workType,
   }) async {
-    if (scheduleSfid.isEmpty) {
+    if (scheduleId <= 0) {
       throw ArgumentError('유효하지 않은 거래처입니다');
     }
 
     return await _repository.registerAttendance(
-      scheduleSfid: scheduleSfid,
+      scheduleId: scheduleId,
       latitude: latitude,
       longitude: longitude,
       workType: workType,

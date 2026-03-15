@@ -166,10 +166,10 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
                     return StoreListItem(
                       store: store,
                       isSelected:
-                          store.scheduleSfid == state.selectedScheduleSfid,
+                          store.scheduleId == state.selectedScheduleId,
                       onTap: () {
                         if (!store.isRegistered) {
-                          notifier.selectStore(store.scheduleSfid);
+                          notifier.selectStore(store.scheduleId);
                         }
                       },
                     );
@@ -237,7 +237,7 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
   }
 
   Widget? _buildBottomBar(dynamic state, AttendanceNotifier notifier) {
-    final canRegister = state.selectedScheduleSfid != null;
+    final canRegister = state.selectedScheduleId != null;
 
     if (state.allStores.isEmpty) return null;
 

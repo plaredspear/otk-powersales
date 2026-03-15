@@ -4,14 +4,14 @@ import '../../domain/entities/attendance_status.dart';
 ///
 /// Backend API의 snake_case JSON을 파싱하여 AttendanceStatus 엔티티로 변환합니다.
 class AttendanceStatusModel {
-  final String scheduleSfid;
+  final int scheduleId;
   final String storeName;
   final String workCategory;
   final String status;
   final String? workType;
 
   const AttendanceStatusModel({
-    required this.scheduleSfid,
+    required this.scheduleId,
     required this.storeName,
     required this.workCategory,
     required this.status,
@@ -21,7 +21,7 @@ class AttendanceStatusModel {
   /// snake_case JSON에서 파싱
   factory AttendanceStatusModel.fromJson(Map<String, dynamic> json) {
     return AttendanceStatusModel(
-      scheduleSfid: json['schedule_sfid'] as String,
+      scheduleId: json['schedule_id'] as int,
       storeName: json['store_name'] as String,
       workCategory: json['work_category'] as String,
       status: json['status'] as String,
@@ -32,7 +32,7 @@ class AttendanceStatusModel {
   /// Domain Entity로 변환
   AttendanceStatus toEntity() {
     return AttendanceStatus(
-      scheduleSfid: scheduleSfid,
+      scheduleId: scheduleId,
       storeName: storeName,
       workCategory: workCategory,
       status: status,

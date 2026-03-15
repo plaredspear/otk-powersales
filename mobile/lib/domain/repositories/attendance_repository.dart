@@ -39,7 +39,7 @@ abstract class AttendanceRepository {
 
   /// 출근등록
   Future<AttendanceResult> registerAttendance({
-    required String scheduleSfid,
+    required int scheduleId,
     required double latitude,
     required double longitude,
     String? workType,

@@ -46,13 +46,13 @@ class AttendanceApiDataSource {
 
   /// 출근 등록
   Future<AttendanceResult> registerAttendance({
-    required String scheduleSfid,
+    required int scheduleId,
     required double latitude,
     required double longitude,
     String? workType,
   }) async {
     final body = <String, dynamic>{
-      'scheduleSfid': scheduleSfid,
+      'schedule_id': scheduleId,
       'latitude': latitude,
       'longitude': longitude,
     };

@@ -44,7 +44,7 @@ void main() {
 
       // 첫 번째 거래처 확인
       final firstStore = notifier.state.allStores.first;
-      expect(firstStore.scheduleSfid, 'a0xXX0000012345');
+      expect(firstStore.scheduleId, 12345);
       expect(firstStore.storeName, '이마트 해운대점');
       expect(firstStore.isRegistered, false);
     });
@@ -99,22 +99,22 @@ void main() {
     });
 
     test('selectStore 거래처 선택', () {
-      notifier.selectStore('a0xXX0000012345');
+      notifier.selectStore(12345);
 
-      expect(notifier.state.selectedScheduleSfid, 'a0xXX0000012345');
+      expect(notifier.state.selectedScheduleId, 12345);
     });
 
     test('register 출근등록 성공', () async {
       await notifier.loadStores();
-      notifier.selectStore('a0xXX0000012345');
+      notifier.selectStore(12345);
       notifier.selectWorkType('ROOM_TEMP');
 
       await notifier.register(latitude: 35.1696, longitude: 129.1318);
 
       expect(notifier.state.isRegistering, false);
       expect(notifier.state.registrationResult, isNotNull);
-      expect(notifier.state.registrationResult?.scheduleSfid,
-          'a0xXX0000012345');
+      expect(notifier.state.registrationResult?.scheduleId,
+          12345);
       expect(notifier.state.registrationResult?.storeName, '이마트 해운대점');
       expect(notifier.state.registrationResult?.workType, 'ROOM_TEMP');
       expect(notifier.state.registrationResult?.distanceKm, 0.12);
@@ -124,7 +124,7 @@ void main() {
       expect(notifier.state.errorMessage, null);
     });
 
-    test('register selectedScheduleSfid 없이 호출 시 아무 작업 안함', () async {
+    test('register selectedScheduleId 없이 호출 시 아무 작업 안함', () async {
       await notifier.loadStores();
 
       // 거래처를 선택하지 않음
@@ -136,7 +136,7 @@ void main() {
 
     test('register GPS 좌표 없이 호출 시 에러', () async {
       await notifier.loadStores();
-      notifier.selectStore('a0xXX0000012345');
+      notifier.selectStore(12345);
 
       await notifier.register();
 
@@ -147,13 +147,13 @@ void main() {
       await notifier.loadStores();
 
       // 첫 번째 등록
-      notifier.selectStore('a0xXX0000012345');
+      notifier.selectStore(12345);
       await notifier.register(latitude: 35.0, longitude: 129.0);
       expect(notifier.state.registrationResult, isNotNull);
 
       // 동일한 거래처 재등록 시도
       repository.exceptionToThrow = Exception('이미 출근 등록된 스케줄입니다');
-      notifier.selectStore('a0xXX0000012345');
+      notifier.selectStore(12345);
       await notifier.register(latitude: 35.0, longitude: 129.0);
 
       expect(notifier.state.isRegistering, false);
@@ -162,10 +162,10 @@ void main() {
 
     test('prepareNextRegistration 선택 초기화 및 목록 새로고침', () async {
       await notifier.loadStores();
-      notifier.selectStore('a0xXX0000012345');
+      notifier.selectStore(12345);
       notifier.searchStores('이마트');
 
-      expect(notifier.state.selectedScheduleSfid, 'a0xXX0000012345');
+      expect(notifier.state.selectedScheduleId, 12345);
       expect(notifier.state.searchKeyword, '이마트');
 
       await notifier.prepareNextRegistration();
@@ -177,7 +177,7 @@ void main() {
     test('clearRegistrationResult 등록 결과 초기화하지만 거래처 정보 유지',
         () async {
       await notifier.loadStores();
-      notifier.selectStore('a0xXX0000012345');
+      notifier.selectStore(12345);
       await notifier.register(latitude: 35.0, longitude: 129.0);
 
       // 등록 완료 상태
@@ -188,7 +188,7 @@ void main() {
 
       // 등록 결과는 초기화되지만 기본 정보는 유지
       expect(notifier.state.registrationResult, null);
-      expect(notifier.state.selectedScheduleSfid, null);
+      expect(notifier.state.selectedScheduleId, null);
       expect(notifier.state.searchKeyword, '');
       expect(notifier.state.allStores.length, 5);
       expect(notifier.state.filteredStores.length, 5);
@@ -205,13 +205,13 @@ void main() {
 
       // 첫 번째 거래처는 등록 완료 상태
       final firstStatus = notifier.state.statusList.first;
-      expect(firstStatus.scheduleSfid, 'a0xXX0000012345');
+      expect(firstStatus.scheduleId, 12345);
       expect(firstStatus.status, 'REGISTERED');
       expect(firstStatus.isCompleted, true);
 
       // 두 번째 거래처는 대기 상태
       final secondStatus = notifier.state.statusList[1];
-      expect(secondStatus.scheduleSfid, 'a0xXX0000012346');
+      expect(secondStatus.scheduleId, 12346);
       expect(secondStatus.status, 'PENDING');
       expect(secondStatus.isPending, true);
     });
@@ -219,7 +219,7 @@ void main() {
     test('clearError 에러 메시지 초기화', () async {
       // 에러 발생 시키기
       repository.exceptionToThrow = Exception('테스트 에러');
-      notifier.selectStore('test');
+      notifier.selectStore(99999);
       await notifier.register(latitude: 35.0, longitude: 129.0);
 
       expect(notifier.state.errorMessage, isNotNull);
@@ -239,8 +239,8 @@ void main() {
       expect(notifier.state.filteredStores.length, 2);
 
       // 3. 거래처 선택
-      notifier.selectStore('a0xXX0000012345');
-      expect(notifier.state.selectedScheduleSfid, 'a0xXX0000012345');
+      notifier.selectStore(12345);
+      expect(notifier.state.selectedScheduleId, 12345);
 
       // 4. 근무유형 선택
       notifier.selectWorkType('REFRIGERATED');
@@ -270,7 +270,7 @@ void main() {
 
 class FakeAttendanceRepository implements AttendanceRepository {
   Exception? exceptionToThrow;
-  final Set<String> _registeredSfids = {};
+  final Set<int> _registeredIds = {};
 
   @override
   Future<StoreListResult> getStoreList({String? keyword}) async {
@@ -286,7 +286,7 @@ class FakeAttendanceRepository implements AttendanceRepository {
 
   @override
   Future<AttendanceResult> registerAttendance({
-    required String scheduleSfid,
+    required int scheduleId,
     required double latitude,
     required double longitude,
     String? workType,
@@ -296,17 +296,17 @@ class FakeAttendanceRepository implements AttendanceRepository {
       exceptionToThrow = null;
       throw e;
     }
-    _registeredSfids.add(scheduleSfid);
+    _registeredIds.add(scheduleId);
     final store = _mockStores.firstWhere(
-      (s) => s.scheduleSfid == scheduleSfid,
+      (s) => s.scheduleId == scheduleId,
     );
     return AttendanceResult(
-      scheduleSfid: scheduleSfid,
+      scheduleId: scheduleId,
       storeName: store.storeName,
       workType: workType ?? 'ROOM_TEMP',
       distanceKm: 0.12,
       totalCount: _mockStores.length,
-      registeredCount: _registeredSfids.length,
+      registeredCount: _registeredIds.length,
     );
   }
 
@@ -324,35 +324,35 @@ class FakeAttendanceRepository implements AttendanceRepository {
 
 final _mockStores = [
   const StoreScheduleItem(
-    scheduleSfid: 'a0xXX0000012345',
+    scheduleId: 12345,
     storeName: '이마트 해운대점',
     workCategory: '진열',
     address: '부산시 해운대구 센텀2로 25',
     isRegistered: false,
   ),
   const StoreScheduleItem(
-    scheduleSfid: 'a0xXX0000012346',
+    scheduleId: 12346,
     storeName: '홈플러스 서면점',
     workCategory: '순회',
     address: '부산시 부산진구 서면로 68번길 9',
     isRegistered: false,
   ),
   const StoreScheduleItem(
-    scheduleSfid: 'a0xXX0000012347',
+    scheduleId: 12347,
     storeName: '롯데마트 광복점',
     workCategory: '진열',
     address: '부산시 중구 중앙대로 2',
     isRegistered: false,
   ),
   const StoreScheduleItem(
-    scheduleSfid: 'a0xXX0000012348',
+    scheduleId: 12348,
     storeName: '이마트 사상점',
     workCategory: '순회',
     address: '부산시 사상구 학감대로 272',
     isRegistered: false,
   ),
   const StoreScheduleItem(
-    scheduleSfid: 'a0xXX0000012349',
+    scheduleId: 12349,
     storeName: '홈플러스 센텀시티점',
     workCategory: '진열',
     address: '부산시 해운대구 센텀남대로 59',
@@ -362,32 +362,32 @@ final _mockStores = [
 
 final _mockStatusList = [
   const AttendanceStatus(
-    scheduleSfid: 'a0xXX0000012345',
+    scheduleId: 12345,
     storeName: '이마트 해운대점',
     workCategory: '진열',
     status: 'REGISTERED',
     workType: 'ROOM_TEMP',
   ),
   const AttendanceStatus(
-    scheduleSfid: 'a0xXX0000012346',
+    scheduleId: 12346,
     storeName: '홈플러스 서면점',
     workCategory: '순회',
     status: 'PENDING',
   ),
   const AttendanceStatus(
-    scheduleSfid: 'a0xXX0000012347',
+    scheduleId: 12347,
     storeName: '롯데마트 광복점',
     workCategory: '진열',
     status: 'PENDING',
   ),
   const AttendanceStatus(
-    scheduleSfid: 'a0xXX0000012348',
+    scheduleId: 12348,
     storeName: '이마트 사상점',
     workCategory: '순회',
     status: 'PENDING',
   ),
   const AttendanceStatus(
-    scheduleSfid: 'a0xXX0000012349',
+    scheduleId: 12349,
     storeName: '홈플러스 센텀시티점',
     workCategory: '진열',
     status: 'PENDING',
