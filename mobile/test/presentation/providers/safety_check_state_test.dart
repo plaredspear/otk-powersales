@@ -39,6 +39,7 @@ void main() {
         expect(state.categories, isNull);
         expect(state.equipmentAnswers, isEmpty);
         expect(state.precautionChecks, isEmpty);
+        expect(state.expandedItemIndex, isNull);
         expect(state.startTime, isNotNull);
         expect(state.isLoading, false);
         expect(state.isSubmitting, false);
@@ -110,6 +111,27 @@ void main() {
             .togglePrecaution(1);
 
         expect(state.precautionChecks[1], false);
+      });
+    });
+
+    group('expandedItemIndex (아코디언)', () {
+      test('copyWith으로 expandedItemIndex를 설정한다', () {
+        final state = SafetyCheckState.initial().copyWith(expandedItemIndex: 3);
+        expect(state.expandedItemIndex, 3);
+      });
+
+      test('clearExpandedItemIndex로 null로 초기화한다', () {
+        final state = SafetyCheckState.initial()
+            .copyWith(expandedItemIndex: 3)
+            .copyWith(clearExpandedItemIndex: true);
+        expect(state.expandedItemIndex, isNull);
+      });
+
+      test('다른 상태 전환 시 expandedItemIndex가 유지된다', () {
+        final state = SafetyCheckState.initial()
+            .copyWith(expandedItemIndex: 5)
+            .setEquipmentAnswer(1, '예');
+        expect(state.expandedItemIndex, 5);
       });
     });
 
