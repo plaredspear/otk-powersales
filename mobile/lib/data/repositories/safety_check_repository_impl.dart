@@ -5,9 +5,6 @@ import '../../domain/repositories/safety_check_repository.dart';
 import '../datasources/safety_check_remote_datasource.dart';
 
 /// 안전점검 Repository 구현체
-///
-/// 실제 API DataSource를 사용하여 안전점검 기능을 구현합니다.
-/// Backend API 연동 시점에 SafetyCheckMockRepository를 대체합니다.
 class SafetyCheckRepositoryImpl implements SafetyCheckRepository {
   final SafetyCheckRemoteDataSource _remoteDataSource;
 
@@ -28,8 +25,18 @@ class SafetyCheckRepositoryImpl implements SafetyCheckRepository {
   }
 
   @override
-  Future<SafetyCheckSubmitResult> submit(List<int> checkedItemIds) async {
-    final model = await _remoteDataSource.submit(checkedItemIds);
+  Future<SafetyCheckSubmitResult> submit({
+    required DateTime startTime,
+    required DateTime completeTime,
+    required List<EquipmentAnswer> equipments,
+    List<String>? precautions,
+  }) async {
+    final model = await _remoteDataSource.submit(
+      startTime: startTime,
+      completeTime: completeTime,
+      equipments: equipments.map((e) => e.toJson()).toList(),
+      precautions: precautions,
+    );
     return model.toEntity();
   }
 }

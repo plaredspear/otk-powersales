@@ -16,102 +16,108 @@ void main() {
     });
 
     test('Returns submit result on success', () async {
-      // Arrange
-      final submittedTime = DateTime(2025, 2, 8, 9, 30);
+      final submittedTime = DateTime(2026, 3, 15, 9, 2, 30);
       final expectedResult = SafetyCheckSubmitResult(
-        submissionId: 123,
         submittedAt: submittedTime,
         safetyCheckCompleted: true,
       );
       repository.submitResultToReturn = expectedResult;
 
-      // Act
-      final result = await useCase.call(checkedItemIds: [1, 2, 3]);
+      final result = await useCase.call(
+        startTime: DateTime(2026, 3, 15, 9, 0, 0),
+        completeTime: submittedTime,
+        equipments: [
+          const EquipmentAnswer(seqNum: 1, answer: '예'),
+          const EquipmentAnswer(seqNum: 2, answer: '해당없음'),
+        ],
+        precautions: ['예방사항 1'],
+      );
 
-      // Assert
       expect(result, expectedResult);
-      expect(result.submissionId, 123);
       expect(result.submittedAt, submittedTime);
       expect(result.safetyCheckCompleted, true);
     });
 
-    test('Throws ArgumentError when checkedItemIds is empty', () async {
-      // Act & Assert
+    test('Throws ArgumentError when equipments is empty', () async {
       expect(
-        () => useCase.call(checkedItemIds: []),
-        throwsA(isA<ArgumentError>().having(
-          (e) => e.message,
-          'message',
-          '체크된 항목이 없습니다. 모든 필수 항목을 체크해주세요.',
-        )),
+        () => useCase.call(
+          startTime: DateTime.now(),
+          completeTime: DateTime.now(),
+          equipments: [],
+        ),
+        throwsA(isA<ArgumentError>()),
       );
     });
 
-    test('Passes correct checkedItemIds to repository', () async {
-      // Arrange
-      final checkedIds = [1, 2, 3, 4, 5];
+    test('Passes correct parameters to repository', () async {
+      final equipments = [
+        const EquipmentAnswer(seqNum: 1, answer: '예'),
+        const EquipmentAnswer(seqNum: 2, answer: '해당없음'),
+      ];
+      final startTime = DateTime(2026, 3, 15, 9, 0);
+      final completeTime = DateTime(2026, 3, 15, 9, 2);
 
-      // Act
-      await useCase.call(checkedItemIds: checkedIds);
+      await useCase.call(
+        startTime: startTime,
+        completeTime: completeTime,
+        equipments: equipments,
+        precautions: ['예방사항 1', '예방사항 3'],
+      );
 
-      // Assert
-      expect(repository.lastSubmittedIds, checkedIds);
+      expect(repository.lastStartTime, startTime);
+      expect(repository.lastCompleteTime, completeTime);
+      expect(repository.lastEquipments, equipments);
+      expect(repository.lastPrecautions, ['예방사항 1', '예방사항 3']);
     });
 
     test('Propagates repository exception', () async {
-      // Arrange
       final expectedException = Exception('이미 안전점검을 완료하였습니다.');
       repository.exceptionToThrow = expectedException;
 
-      // Act & Assert
       expect(
-        () => useCase.call(checkedItemIds: [1, 2, 3]),
+        () => useCase.call(
+          startTime: DateTime.now(),
+          completeTime: DateTime.now(),
+          equipments: [const EquipmentAnswer(seqNum: 1, answer: '예')],
+        ),
         throwsA(expectedException),
       );
     });
   });
 }
 
-/// Test implementation of SafetyCheckRepository
 class _TestSafetyCheckRepository implements SafetyCheckRepository {
-  List<SafetyCheckCategory>? categoriesToReturn;
-  SafetyCheckTodayStatus? statusToReturn;
   SafetyCheckSubmitResult? submitResultToReturn;
   Exception? exceptionToThrow;
-  List<int>? lastSubmittedIds;
+  DateTime? lastStartTime;
+  DateTime? lastCompleteTime;
+  List<EquipmentAnswer>? lastEquipments;
+  List<String>? lastPrecautions;
 
   @override
-  Future<List<SafetyCheckCategory>> getItems() async {
-    if (exceptionToThrow != null) {
-      throw exceptionToThrow!;
-    }
-    return categoriesToReturn ?? [];
-  }
+  Future<List<SafetyCheckCategory>> getItems() async => [];
 
   @override
-  Future<SafetyCheckTodayStatus> getTodayStatus() async {
-    if (exceptionToThrow != null) {
-      throw exceptionToThrow!;
-    }
-    return statusToReturn ??
-        const SafetyCheckTodayStatus(
-          completed: false,
-          submittedAt: null,
-        );
-  }
+  Future<SafetyCheckTodayStatus> getTodayStatus() async =>
+      const SafetyCheckTodayStatus(completed: false, submittedAt: null);
 
   @override
-  Future<SafetyCheckSubmitResult> submit(List<int> checkedItemIds) async {
-    lastSubmittedIds = checkedItemIds;
+  Future<SafetyCheckSubmitResult> submit({
+    required DateTime startTime,
+    required DateTime completeTime,
+    required List<EquipmentAnswer> equipments,
+    List<String>? precautions,
+  }) async {
+    lastStartTime = startTime;
+    lastCompleteTime = completeTime;
+    lastEquipments = equipments;
+    lastPrecautions = precautions;
 
-    if (exceptionToThrow != null) {
-      throw exceptionToThrow!;
-    }
+    if (exceptionToThrow != null) throw exceptionToThrow!;
 
     return submitResultToReturn ??
         SafetyCheckSubmitResult(
-          submissionId: 1,
-          submittedAt: DateTime.now(),
+          submittedAt: completeTime,
           safetyCheckCompleted: true,
         );
   }

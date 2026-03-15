@@ -1,123 +1,96 @@
 import '../../domain/entities/safety_check_category.dart';
 
-/// 안전점검 화면 상태
-///
-/// 안전점검 화면의 데이터 로딩, 체크 상태, 제출 상태를 관리한다.
-/// - initial: 데이터 요청 전 초기 상태
-/// - loading: 체크리스트 항목 API 호출 중
-/// - loaded: 체크리스트 항목 로딩 완료
-/// - submitting: 제출 API 호출 중
-/// - submitted: 제출 완료
-/// - error: API 호출 실패
+/// 안전점검 화면 상태 (V1: 라디오 + 체크박스 2섹션)
 class SafetyCheckState {
-  /// 카테고리 목록 (loaded 상태에서만 값이 있음)
   final List<SafetyCheckCategory>? categories;
 
-  /// 각 항목의 체크 상태 (항목 ID → 체크 여부)
-  final Map<int, bool> checkedItems;
+  /// 섹션 1: 장비 라디오 응답 (seqNum → "예"/"해당없음")
+  final Map<int, String> equipmentAnswers;
 
-  /// 로딩 상태
+  /// 섹션 2: 예방사항 체크박스 (seqNum → checked)
+  final Map<int, bool> precautionChecks;
+
+  /// 화면 진입 시각
+  final DateTime? startTime;
+
   final bool isLoading;
-
-  /// 제출 중 상태
   final bool isSubmitting;
-
-  /// 제출 완료 여부
   final bool isSubmitted;
-
-  /// 에러 메시지 (error 상태에서만 값이 있음)
   final String? errorMessage;
 
   const SafetyCheckState({
     this.categories,
-    this.checkedItems = const {},
+    this.equipmentAnswers = const {},
+    this.precautionChecks = const {},
+    this.startTime,
     this.isLoading = false,
     this.isSubmitting = false,
     this.isSubmitted = false,
     this.errorMessage,
   });
 
-  /// 초기 상태
   factory SafetyCheckState.initial() {
-    return const SafetyCheckState();
+    return SafetyCheckState(startTime: DateTime.now());
   }
 
-  /// 로딩 상태로 전환
   SafetyCheckState toLoading() {
     return SafetyCheckState(
       categories: categories,
-      checkedItems: checkedItems,
+      equipmentAnswers: equipmentAnswers,
+      precautionChecks: precautionChecks,
+      startTime: startTime,
       isLoading: true,
-      isSubmitting: false,
-      isSubmitted: false,
-      errorMessage: null,
     );
   }
 
-  /// 데이터 로딩 완료 상태로 전환
   SafetyCheckState toLoaded(List<SafetyCheckCategory> data) {
-    // 모든 항목을 unchecked로 초기화
-    final initialChecks = <int, bool>{};
-    for (final category in data) {
-      for (final item in category.items) {
-        initialChecks[item.id] = false;
-      }
-    }
-
     return SafetyCheckState(
       categories: data,
-      checkedItems: initialChecks,
-      isLoading: false,
-      isSubmitting: false,
-      isSubmitted: false,
-      errorMessage: null,
+      equipmentAnswers: const {},
+      precautionChecks: const {},
+      startTime: startTime,
     );
   }
 
-  /// 에러 상태로 전환
   SafetyCheckState toError(String message) {
     return SafetyCheckState(
       categories: categories,
-      checkedItems: checkedItems,
-      isLoading: false,
-      isSubmitting: false,
-      isSubmitted: false,
+      equipmentAnswers: equipmentAnswers,
+      precautionChecks: precautionChecks,
+      startTime: startTime,
       errorMessage: message,
     );
   }
 
-  /// 제출 중 상태로 전환
   SafetyCheckState toSubmitting() {
     return SafetyCheckState(
       categories: categories,
-      checkedItems: checkedItems,
-      isLoading: false,
+      equipmentAnswers: equipmentAnswers,
+      precautionChecks: precautionChecks,
+      startTime: startTime,
       isSubmitting: true,
-      isSubmitted: false,
-      errorMessage: null,
     );
   }
 
-  /// 제출 완료 상태로 전환
   SafetyCheckState toSubmitted() {
     return SafetyCheckState(
       categories: categories,
-      checkedItems: checkedItems,
-      isLoading: false,
-      isSubmitting: false,
+      equipmentAnswers: equipmentAnswers,
+      precautionChecks: precautionChecks,
+      startTime: startTime,
       isSubmitted: true,
-      errorMessage: null,
     );
   }
 
-  /// 항목 체크 상태 토글
-  SafetyCheckState toggleItem(int itemId) {
-    final newCheckedItems = Map<int, bool>.from(checkedItems);
-    newCheckedItems[itemId] = !(newCheckedItems[itemId] ?? false);
-
+  /// 섹션 1: 장비 라디오 응답 설정
+  SafetyCheckState setEquipmentAnswer(int seqNum, String answer) {
+    final newAnswers = Map<int, String>.from(equipmentAnswers);
+    newAnswers[seqNum] = answer;
     return SafetyCheckState(
       categories: categories,
-      checkedItems: newCheckedItems,
+      equipmentAnswers: newAnswers,
+      precautionChecks: precautionChecks,
+      startTime: startTime,
       isLoading: isLoading,
       isSubmitting: isSubmitting,
       isSubmitted: isSubmitted,
@@ -125,38 +98,45 @@ class SafetyCheckState {
     );
   }
 
-  /// 데이터 로딩 완료 여부
+  /// 섹션 2: 예방사항 체크박스 토글
+  SafetyCheckState togglePrecaution(int seqNum) {
+    final newChecks = Map<int, bool>.from(precautionChecks);
+    newChecks[seqNum] = !(newChecks[seqNum] ?? false);
+    return SafetyCheckState(
+      categories: categories,
+      equipmentAnswers: equipmentAnswers,
+      precautionChecks: newChecks,
+      startTime: startTime,
+      isLoading: isLoading,
+      isSubmitting: isSubmitting,
+      isSubmitted: isSubmitted,
+      errorMessage: errorMessage,
+    );
+  }
+
   bool get isLoaded =>
       categories != null && !isLoading && !isSubmitting && errorMessage == null;
 
-  /// 에러 상태 여부
   bool get isError => errorMessage != null;
 
-  /// 모든 필수 항목이 체크되었는지 확인
+  /// 섹션 1(RADIO, required)의 모든 항목에 응답했는지 확인
   bool get allRequiredChecked {
     if (categories == null) return false;
-
     for (final category in categories!) {
-      for (final item in category.items) {
-        if (item.required && !(checkedItems[item.id] ?? false)) {
-          return false;
+      if (category.required && category.inputType == 'RADIO') {
+        for (final item in category.items) {
+          if (!equipmentAnswers.containsKey(item.seqNum)) return false;
         }
       }
     }
     return true;
   }
 
-  /// 체크된 항목 ID 목록
-  List<int> get checkedItemIds {
-    return checkedItems.entries
-        .where((entry) => entry.value)
-        .map((entry) => entry.key)
-        .toList();
-  }
-
   SafetyCheckState copyWith({
     List<SafetyCheckCategory>? categories,
-    Map<int, bool>? checkedItems,
+    Map<int, String>? equipmentAnswers,
+    Map<int, bool>? precautionChecks,
+    DateTime? startTime,
     bool? isLoading,
     bool? isSubmitting,
     bool? isSubmitted,
@@ -164,7 +144,9 @@ class SafetyCheckState {
   }) {
     return SafetyCheckState(
       categories: categories ?? this.categories,
-      checkedItems: checkedItems ?? this.checkedItems,
+      equipmentAnswers: equipmentAnswers ?? this.equipmentAnswers,
+      precautionChecks: precautionChecks ?? this.precautionChecks,
+      startTime: startTime ?? this.startTime,
       isLoading: isLoading ?? this.isLoading,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       isSubmitted: isSubmitted ?? this.isSubmitted,
