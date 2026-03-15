@@ -3,16 +3,16 @@
 
 -- 1. display_work_schedule.full_name: sfid → employee_id
 UPDATE display_work_schedule dws
-SET full_name = u.employee_id
-FROM users u
-WHERE dws.full_name = u.sfid
-  AND u.sfid IS NOT NULL
-  AND u.employee_id IS NOT NULL;
+SET full_name = e.employee_id
+FROM employee e
+WHERE dws.full_name = e.sfid
+  AND e.sfid IS NOT NULL
+  AND e.employee_id IS NOT NULL;
 
 -- 2. expirationdate__mng.employee_id: sfid → employee_id
 UPDATE expirationdate__mng em
-SET employee_id = u.employee_id
-FROM users u
-WHERE em.employee_id = u.sfid
-  AND u.sfid IS NOT NULL
-  AND u.employee_id IS NOT NULL;
+SET employee_id = e.employee_id
+FROM employee e
+WHERE em.employee_id = e.sfid
+  AND e.sfid IS NOT NULL
+  AND e.employee_id IS NOT NULL;
