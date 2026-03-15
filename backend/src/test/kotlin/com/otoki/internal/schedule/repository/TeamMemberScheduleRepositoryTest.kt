@@ -209,9 +209,9 @@ class TeamMemberScheduleRepositoryTest {
             testEntityManager.clear()
 
             // Then
-            val updated = teamMemberScheduleRepository.findBySfid("SF001")
-            assertThat(updated).isNotNull
-            assertThat(updated!!.commuteLogId).isEqualTo("OK")
+            val updated = teamMemberScheduleRepository.findById(teamMemberSchedule.id)
+            assertThat(updated).isPresent
+            assertThat(updated.get().commuteLogId).isEqualTo("OK")
         }
 
         @Test

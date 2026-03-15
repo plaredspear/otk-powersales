@@ -20,11 +20,6 @@ interface TeamMemberScheduleRepository : JpaRepository<TeamMemberSchedule, Long>
     fun findByWorkingDateAndEmployeeIdIn(workingDate: LocalDate, employeeIds: List<String>): List<TeamMemberSchedule>
 
     /**
-     * sfid로 스케줄 단건 조회 (출근 등록용)
-     */
-    fun findBySfid(sfid: String): TeamMemberSchedule?
-
-    /**
      * ID 목록으로 스케줄 일괄 삭제 (행사 연쇄 삭제용)
      */
     fun deleteAllByIdIn(ids: List<Long>)

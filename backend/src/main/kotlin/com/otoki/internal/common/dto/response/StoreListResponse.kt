@@ -14,7 +14,7 @@ data class StoreListResponse(
  * 거래처 정보 (GPS 좌표 포함)
  */
 data class StoreInfo(
-    val scheduleSfid: String,
+    val scheduleId: Long,
     val storeSfid: String?,
     val storeName: String,
     val storeTypeCode: String?,

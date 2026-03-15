@@ -45,7 +45,7 @@ class AttendanceController(
     ): ResponseEntity<ApiResponse<CommuteResponse>> {
         val response = attendanceService.registerCommute(
             userId = principal.userId,
-            teamMemberScheduleSfid = request.teamMemberScheduleSfid,
+            scheduleId = request.scheduleId!!,
             latitude = request.latitude!!,
             longitude = request.longitude!!,
             workType = request.workType

@@ -62,9 +62,9 @@ class AttendanceServiceTest {
             val today = LocalDate.now()
 
             val teamMemberSchedules = listOf(
-                createTeamMemberSchedule(sfid = "SCH001", employeeId = "USR001", accountId = "ACC001", workingCategory1 = "진열"),
-                createTeamMemberSchedule(sfid = "SCH002", employeeId = "USR001", accountId = "ACC002", workingCategory1 = "납품"),
-                createTeamMemberSchedule(sfid = "SCH003", employeeId = "USR001", accountId = "ACC003", workingCategory1 = "진열")
+                createTeamMemberSchedule(id = 1L, sfid = "SCH001", employeeId = "USR001", accountId = "ACC001", workingCategory1 = "진열"),
+                createTeamMemberSchedule(id = 2L, sfid = "SCH002", employeeId = "USR001", accountId = "ACC002", workingCategory1 = "납품"),
+                createTeamMemberSchedule(id = 3L, sfid = "SCH003", employeeId = "USR001", accountId = "ACC003", workingCategory1 = "진열")
             )
 
             val accounts = listOf(
@@ -88,7 +88,7 @@ class AttendanceServiceTest {
 
             // GPS 좌표 포함 확인
             val store1 = result.stores[0]
-            assertThat(store1.scheduleSfid).isEqualTo("SCH001")
+            assertThat(store1.scheduleId).isEqualTo(1L)
             assertThat(store1.storeName).isEqualTo("이마트 강남점")
             assertThat(store1.latitude).isEqualTo(37.4979)
             assertThat(store1.longitude).isEqualTo(127.0276)
@@ -217,12 +217,12 @@ class AttendanceServiceTest {
         fun registerCommute_withinDistance_success() {
             // Given
             val userId = 1L
-            val teamMemberScheduleSfid = "SCH001"
+            val scheduleId = 10L
             val user = createUser(id = userId, sfid = "USR001")
             val today = LocalDate.now()
 
             val teamMemberSchedule = createTeamMemberSchedule(
-                sfid = teamMemberScheduleSfid, employeeId = "USR001", accountId = "ACC001",
+                id = scheduleId, sfid = "SCH001", employeeId = "USR001", accountId = "ACC001",
                 workingType = "상온", commuteLogId = null
             )
             val account = createAccount(
@@ -232,7 +232,7 @@ class AttendanceServiceTest {
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(teamMemberScheduleRepository.findBySfid(teamMemberScheduleSfid)).thenReturn(teamMemberSchedule)
+            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
             whenever(accountRepository.findBySfid("ACC001")).thenReturn(account)
             doReturn(OroraWorkReportResult("200", "SUCCESS"))
                 .whenever(ororaApiService).sendWorkReport(any(), anyOrNull())
@@ -240,10 +240,10 @@ class AttendanceServiceTest {
                 .thenReturn(listOf(teamMemberSchedule))
 
             // When
-            val result = attendanceService.registerCommute(userId, teamMemberScheduleSfid, nearUserLat, nearUserLon, null)
+            val result = attendanceService.registerCommute(userId, scheduleId, nearUserLat, nearUserLon, null)
 
             // Then
-            assertThat(result.teamMemberScheduleSfid).isEqualTo(teamMemberScheduleSfid)
+            assertThat(result.scheduleId).isEqualTo(scheduleId)
             assertThat(result.storeName).isEqualTo("이마트 강남점")
             assertThat(result.distanceKm).isLessThan(0.5)
             assertThat(result.distanceKm).isEqualTo(0.277)
@@ -255,11 +255,11 @@ class AttendanceServiceTest {
         fun registerCommute_exceedsDistance_throwsException() {
             // Given
             val userId = 1L
-            val teamMemberScheduleSfid = "SCH001"
+            val scheduleId = 10L
             val user = createUser(id = userId, sfid = "USR001")
 
             val teamMemberSchedule = createTeamMemberSchedule(
-                sfid = teamMemberScheduleSfid, employeeId = "USR001", accountId = "ACC001",
+                id = scheduleId, sfid = "SCH001", employeeId = "USR001", accountId = "ACC001",
                 commuteLogId = null
             )
             val account = createAccount(
@@ -269,12 +269,12 @@ class AttendanceServiceTest {
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(teamMemberScheduleRepository.findBySfid(teamMemberScheduleSfid)).thenReturn(teamMemberSchedule)
+            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
             whenever(accountRepository.findBySfid("ACC001")).thenReturn(account)
 
             // When & Then
             assertThatThrownBy {
-                attendanceService.registerCommute(userId, teamMemberScheduleSfid, farUserLat, farUserLon, null)
+                attendanceService.registerCommute(userId, scheduleId, farUserLat, farUserLon, null)
             }.isInstanceOf(DistanceExceededException::class.java)
         }
 
@@ -283,12 +283,12 @@ class AttendanceServiceTest {
         fun registerCommute_exemptCode1110_success() {
             // Given
             val userId = 1L
-            val teamMemberScheduleSfid = "SCH001"
+            val scheduleId = 10L
             val user = createUser(id = userId, sfid = "USR001")
             val today = LocalDate.now()
 
             val teamMemberSchedule = createTeamMemberSchedule(
-                sfid = teamMemberScheduleSfid, employeeId = "USR001", accountId = "ACC001",
+                id = scheduleId, sfid = "SCH001", employeeId = "USR001", accountId = "ACC001",
                 workingType = "상온", commuteLogId = null
             )
             val account = createAccount(
@@ -298,7 +298,7 @@ class AttendanceServiceTest {
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(teamMemberScheduleRepository.findBySfid(teamMemberScheduleSfid)).thenReturn(teamMemberSchedule)
+            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
             whenever(accountRepository.findBySfid("ACC001")).thenReturn(account)
             doReturn(OroraWorkReportResult("200", "SUCCESS"))
                 .whenever(ororaApiService).sendWorkReport(any(), anyOrNull())
@@ -310,10 +310,10 @@ class AttendanceServiceTest {
             val farLon = 127.0276
 
             // When
-            val result = attendanceService.registerCommute(userId, teamMemberScheduleSfid, farLat, farLon, null)
+            val result = attendanceService.registerCommute(userId, scheduleId, farLat, farLon, null)
 
             // Then
-            assertThat(result.teamMemberScheduleSfid).isEqualTo(teamMemberScheduleSfid)
+            assertThat(result.scheduleId).isEqualTo(scheduleId)
             assertThat(result.distanceKm).isEqualTo(0.0)
             assertThat(result.storeName).isEqualTo("대리점A")
         }
@@ -323,12 +323,12 @@ class AttendanceServiceTest {
         fun registerCommute_exemptCode1900_success() {
             // Given
             val userId = 1L
-            val teamMemberScheduleSfid = "SCH001"
+            val scheduleId = 10L
             val user = createUser(id = userId, sfid = "USR001")
             val today = LocalDate.now()
 
             val teamMemberSchedule = createTeamMemberSchedule(
-                sfid = teamMemberScheduleSfid, employeeId = "USR001", accountId = "ACC001",
+                id = scheduleId, sfid = "SCH001", employeeId = "USR001", accountId = "ACC001",
                 workingType = "냉장", commuteLogId = null
             )
             val account = createAccount(
@@ -338,7 +338,7 @@ class AttendanceServiceTest {
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(teamMemberScheduleRepository.findBySfid(teamMemberScheduleSfid)).thenReturn(teamMemberSchedule)
+            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
             whenever(accountRepository.findBySfid("ACC001")).thenReturn(account)
             doReturn(OroraWorkReportResult("200", "SUCCESS"))
                 .whenever(ororaApiService).sendWorkReport(any(), anyOrNull())
@@ -350,10 +350,10 @@ class AttendanceServiceTest {
             val veryFarLon = 127.0276
 
             // When
-            val result = attendanceService.registerCommute(userId, teamMemberScheduleSfid, veryFarLat, veryFarLon, null)
+            val result = attendanceService.registerCommute(userId, scheduleId, veryFarLat, veryFarLon, null)
 
             // Then
-            assertThat(result.teamMemberScheduleSfid).isEqualTo(teamMemberScheduleSfid)
+            assertThat(result.scheduleId).isEqualTo(scheduleId)
             assertThat(result.distanceKm).isEqualTo(0.0)
             assertThat(result.storeName).isEqualTo("특수거래처B")
         }
@@ -363,11 +363,11 @@ class AttendanceServiceTest {
         fun registerCommute_nonExemptCode2110_exceedsDistance_throwsException() {
             // Given
             val userId = 1L
-            val teamMemberScheduleSfid = "SCH001"
+            val scheduleId = 10L
             val user = createUser(id = userId, sfid = "USR001")
 
             val teamMemberSchedule = createTeamMemberSchedule(
-                sfid = teamMemberScheduleSfid, employeeId = "USR001", accountId = "ACC001",
+                id = scheduleId, sfid = "SCH001", employeeId = "USR001", accountId = "ACC001",
                 commuteLogId = null
             )
             val account = createAccount(
@@ -377,12 +377,12 @@ class AttendanceServiceTest {
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(teamMemberScheduleRepository.findBySfid(teamMemberScheduleSfid)).thenReturn(teamMemberSchedule)
+            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
             whenever(accountRepository.findBySfid("ACC001")).thenReturn(account)
 
             // When & Then
             assertThatThrownBy {
-                attendanceService.registerCommute(userId, teamMemberScheduleSfid, farUserLat, farUserLon, null)
+                attendanceService.registerCommute(userId, scheduleId, farUserLat, farUserLon, null)
             }.isInstanceOf(DistanceExceededException::class.java)
         }
 
@@ -391,20 +391,20 @@ class AttendanceServiceTest {
         fun registerCommute_alreadyRegistered_throwsException() {
             // Given
             val userId = 1L
-            val teamMemberScheduleSfid = "SCH001"
+            val scheduleId = 10L
             val user = createUser(id = userId, sfid = "USR001")
 
             val teamMemberSchedule = createTeamMemberSchedule(
-                sfid = teamMemberScheduleSfid, employeeId = "USR001", accountId = "ACC001",
+                id = scheduleId, sfid = "SCH001", employeeId = "USR001", accountId = "ACC001",
                 commuteLogId = "OK"
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(teamMemberScheduleRepository.findBySfid(teamMemberScheduleSfid)).thenReturn(teamMemberSchedule)
+            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
 
             // When & Then
             assertThatThrownBy {
-                attendanceService.registerCommute(userId, teamMemberScheduleSfid, nearUserLat, nearUserLon, null)
+                attendanceService.registerCommute(userId, scheduleId, nearUserLat, nearUserLon, null)
             }.isInstanceOf(AlreadyRegisteredException::class.java)
         }
 
@@ -413,15 +413,15 @@ class AttendanceServiceTest {
         fun registerCommute_scheduleNotFound_throwsException() {
             // Given
             val userId = 1L
-            val teamMemberScheduleSfid = "NONEXISTENT"
+            val scheduleId = 99999L
             val user = createUser(id = userId, sfid = "USR001")
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(teamMemberScheduleRepository.findBySfid(teamMemberScheduleSfid)).thenReturn(null)
+            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.empty())
 
             // When & Then
             assertThatThrownBy {
-                attendanceService.registerCommute(userId, teamMemberScheduleSfid, nearUserLat, nearUserLon, null)
+                attendanceService.registerCommute(userId, scheduleId, nearUserLat, nearUserLon, null)
             }.isInstanceOf(TeamMemberScheduleNotFoundException::class.java)
         }
 
@@ -434,7 +434,7 @@ class AttendanceServiceTest {
 
             // When & Then
             assertThatThrownBy {
-                attendanceService.registerCommute(userId, "SCH001", nearUserLat, nearUserLon, null)
+                attendanceService.registerCommute(userId, 10L, nearUserLat, nearUserLon, null)
             }.isInstanceOf(UserNotFoundException::class.java)
         }
 
@@ -443,12 +443,12 @@ class AttendanceServiceTest {
         fun registerCommute_withWorkType_returnsProvidedWorkType() {
             // Given
             val userId = 1L
-            val teamMemberScheduleSfid = "SCH001"
+            val scheduleId = 10L
             val user = createUser(id = userId, sfid = "USR001")
             val today = LocalDate.now()
 
             val teamMemberSchedule = createTeamMemberSchedule(
-                sfid = teamMemberScheduleSfid, employeeId = "USR001", accountId = "ACC001",
+                id = scheduleId, sfid = "SCH001", employeeId = "USR001", accountId = "ACC001",
                 workingType = "상온", commuteLogId = null
             )
             val account = createAccount(
@@ -458,7 +458,7 @@ class AttendanceServiceTest {
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(teamMemberScheduleRepository.findBySfid(teamMemberScheduleSfid)).thenReturn(teamMemberSchedule)
+            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
             whenever(accountRepository.findBySfid("ACC001")).thenReturn(account)
             doReturn(OroraWorkReportResult("200", "SUCCESS"))
                 .whenever(ororaApiService).sendWorkReport(any(), anyOrNull())
@@ -466,7 +466,7 @@ class AttendanceServiceTest {
                 .thenReturn(listOf(teamMemberSchedule))
 
             // When
-            val result = attendanceService.registerCommute(userId, teamMemberScheduleSfid, nearUserLat, nearUserLon, "냉장")
+            val result = attendanceService.registerCommute(userId, scheduleId, nearUserLat, nearUserLon, "냉장")
 
             // Then
             assertThat(result.workType).isEqualTo("냉장")
@@ -477,12 +477,12 @@ class AttendanceServiceTest {
         fun registerCommute_success_returnsCorrectCounts() {
             // Given
             val userId = 1L
-            val teamMemberScheduleSfid = "SCH001"
+            val scheduleId = 10L
             val user = createUser(id = userId, sfid = "USR001")
             val today = LocalDate.now()
 
             val targetTeamMemberSchedule = createTeamMemberSchedule(
-                sfid = teamMemberScheduleSfid, employeeId = "USR001", accountId = "ACC001",
+                id = scheduleId, sfid = "SCH001", employeeId = "USR001", accountId = "ACC001",
                 workingType = "상온", commuteLogId = null
             )
             val account = createAccount(
@@ -494,12 +494,12 @@ class AttendanceServiceTest {
             // 오늘 전체 스케줄 3건 (1건 이미 등록, 1건 지금 등록, 1건 미등록)
             val allTeamMemberSchedules = listOf(
                 targetTeamMemberSchedule,
-                createTeamMemberSchedule(sfid = "SCH002", employeeId = "USR001", accountId = "ACC002", commuteLogId = "OK"),
-                createTeamMemberSchedule(sfid = "SCH003", employeeId = "USR001", accountId = "ACC003", commuteLogId = null)
+                createTeamMemberSchedule(id = 20L, sfid = "SCH002", employeeId = "USR001", accountId = "ACC002", commuteLogId = "OK"),
+                createTeamMemberSchedule(id = 30L, sfid = "SCH003", employeeId = "USR001", accountId = "ACC003", commuteLogId = null)
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(teamMemberScheduleRepository.findBySfid(teamMemberScheduleSfid)).thenReturn(targetTeamMemberSchedule)
+            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(targetTeamMemberSchedule))
             whenever(accountRepository.findBySfid("ACC001")).thenReturn(account)
             doReturn(OroraWorkReportResult("200", "SUCCESS"))
                 .whenever(ororaApiService).sendWorkReport(any(), anyOrNull())
@@ -507,11 +507,11 @@ class AttendanceServiceTest {
                 .thenReturn(allTeamMemberSchedules)
 
             // When
-            val result = attendanceService.registerCommute(userId, teamMemberScheduleSfid, nearUserLat, nearUserLon, null)
+            val result = attendanceService.registerCommute(userId, scheduleId, nearUserLat, nearUserLon, null)
 
             // Then
             assertThat(result.totalCount).isEqualTo(3)
-            // SCH002 has commuteLogId="OK", SCH001 matches teamMemberScheduleSfid => 2 registered
+            // id=20 has commuteLogId="OK", id=10 matches scheduleId => 2 registered
             assertThat(result.registeredCount).isEqualTo(2)
         }
     }
@@ -531,9 +531,9 @@ class AttendanceServiceTest {
             val today = LocalDate.now()
 
             val teamMemberSchedules = listOf(
-                createTeamMemberSchedule(sfid = "SCH001", employeeId = "USR001", accountId = "ACC001", commuteLogId = "OK", workingCategory1 = "진열"),
-                createTeamMemberSchedule(sfid = "SCH002", employeeId = "USR001", accountId = "ACC002", commuteLogId = "OK", workingCategory1 = "납품"),
-                createTeamMemberSchedule(sfid = "SCH003", employeeId = "USR001", accountId = "ACC003", commuteLogId = null, workingCategory1 = "진열")
+                createTeamMemberSchedule(id = 1L, sfid = "SCH001", employeeId = "USR001", accountId = "ACC001", commuteLogId = "OK", workingCategory1 = "진열"),
+                createTeamMemberSchedule(id = 2L, sfid = "SCH002", employeeId = "USR001", accountId = "ACC002", commuteLogId = "OK", workingCategory1 = "납품"),
+                createTeamMemberSchedule(id = 3L, sfid = "SCH003", employeeId = "USR001", accountId = "ACC003", commuteLogId = null, workingCategory1 = "진열")
             )
 
             val accounts = listOf(
@@ -556,16 +556,16 @@ class AttendanceServiceTest {
             assertThat(result.statusList).hasSize(3)
 
             // 등록 완료 항목
-            assertThat(result.statusList[0].scheduleSfid).isEqualTo("SCH001")
+            assertThat(result.statusList[0].scheduleId).isEqualTo(1L)
             assertThat(result.statusList[0].storeName).isEqualTo("이마트 강남점")
             assertThat(result.statusList[0].workCategory).isEqualTo("진열")
             assertThat(result.statusList[0].status).isEqualTo("REGISTERED")
 
-            assertThat(result.statusList[1].scheduleSfid).isEqualTo("SCH002")
+            assertThat(result.statusList[1].scheduleId).isEqualTo(2L)
             assertThat(result.statusList[1].status).isEqualTo("REGISTERED")
 
             // 미등록 항목
-            assertThat(result.statusList[2].scheduleSfid).isEqualTo("SCH003")
+            assertThat(result.statusList[2].scheduleId).isEqualTo(3L)
             assertThat(result.statusList[2].storeName).isEqualTo("롯데마트 송파점")
             assertThat(result.statusList[2].status).isEqualTo("PENDING")
         }
