@@ -87,9 +87,7 @@ class HomeService(
             else -> false
         }
 
-        val expiryCount = user.sfid?.let { sfid ->
-            shelfLifeRepository.countByEmployeeIdAndAlarmDate(sfid, today)
-        } ?: 0L
+        val expiryCount = shelfLifeRepository.countByEmployeeIdAndAlarmDate(user.employeeId, today)
 
         val expiryAlert = HomeResponse.ExpiryAlertInfo(
             branchName = user.orgName ?: "",

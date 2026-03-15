@@ -97,9 +97,9 @@ class AdminScheduleService(
         }
 
         // 기존 스케줄 조회 (중복 검증용)
-        val userSfids = usersByEmployeeId.values.mapNotNull { it.sfid }
-        val existingSchedules = if (userSfids.isNotEmpty()) {
-            scheduleRepository.findByFullNameInAndNotDeleted(userSfids)
+        val userEmployeeIds = usersByEmployeeId.values.map { it.employeeId }
+        val existingSchedules = if (userEmployeeIds.isNotEmpty()) {
+            scheduleRepository.findByFullNameInAndNotDeleted(userEmployeeIds)
         } else {
             emptyList()
         }
@@ -144,7 +144,7 @@ class AdminScheduleService(
 
         val entities = cacheData.validRows.map { row ->
             DisplayWorkSchedule(
-                fullName = row.userSfid,
+                fullName = row.userEmployeeId,
                 account = row.accountSfid,
                 typeOfWork1 = "진열",
                 typeOfWork3 = row.typeOfWork3,

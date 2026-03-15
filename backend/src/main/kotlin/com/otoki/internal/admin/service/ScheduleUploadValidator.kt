@@ -23,7 +23,7 @@ class ScheduleUploadValidator {
     )
 
     data class ValidatedRow(
-        val userSfid: String,
+        val userEmployeeId: String,
         val accountSfid: String,
         val typeOfWork3: String,
         val typeOfWork5: String,
@@ -124,12 +124,12 @@ class ScheduleUploadValidator {
                 continue
             }
 
-            val userSfid = user!!.sfid!!
+            val userEmployeeId = user!!.employeeId
             val accountSfid = account!!.sfid!!
 
             // V8: DB 기존 레코드와 기간 중복 검사
             val overlappingDb = existingSchedules.filter { schedule ->
-                schedule.fullName == userSfid &&
+                schedule.fullName == userEmployeeId &&
                     schedule.account == accountSfid &&
                     periodsOverlap(schedule.startDate, schedule.endDate, startDate, endDate)
             }
@@ -144,7 +144,7 @@ class ScheduleUploadValidator {
 
             // V9: 파일 내 행 간 중복 검사
             val overlappingFile = validatedInFile.filter { prev ->
-                prev.userSfid == userSfid &&
+                prev.userEmployeeId == userEmployeeId &&
                     prev.accountSfid == accountSfid &&
                     periodsOverlap(prev.startDate, prev.endDate, startDate, endDate)
             }
@@ -160,10 +160,10 @@ class ScheduleUploadValidator {
             // C1~C3: 근무유형 조합 규칙 (DB + 파일 내 선행 행)
             if (rowErrors.isEmpty()) {
                 val sameEmployeeSamePeriod = existingSchedules.filter { schedule ->
-                    schedule.fullName == userSfid &&
+                    schedule.fullName == userEmployeeId &&
                         periodsOverlap(schedule.startDate, schedule.endDate, startDate, endDate)
                 } + validatedInFile.filter { prev ->
-                    prev.userSfid == userSfid &&
+                    prev.userEmployeeId == userEmployeeId &&
                         periodsOverlap(prev.startDate, prev.endDate, startDate, endDate)
                 }.map { toScheduleLike(it) }
 
@@ -177,7 +177,7 @@ class ScheduleUploadValidator {
                 errors.addAll(rowErrors)
             } else {
                 val validatedRow = ValidatedRow(
-                    userSfid = userSfid,
+                    userEmployeeId = userEmployeeId,
                     accountSfid = accountSfid,
                     typeOfWork3 = typeOfWork3,
                     typeOfWork5 = typeOfWork5,
@@ -188,7 +188,7 @@ class ScheduleUploadValidator {
                 validatedInFile.add(
                     FileRowData(
                         rowNumber = row.rowNumber,
-                        userSfid = userSfid,
+                        userEmployeeId = userEmployeeId,
                         accountSfid = accountSfid,
                         typeOfWork3 = typeOfWork3,
                         typeOfWork5 = typeOfWork5,
@@ -231,7 +231,7 @@ class ScheduleUploadValidator {
 
     private data class FileRowData(
         val rowNumber: Int,
-        val userSfid: String,
+        val userEmployeeId: String,
         val accountSfid: String,
         val typeOfWork3: String,
         val typeOfWork5: String,

@@ -41,15 +41,15 @@ class ShelfLifeServiceTest {
     private lateinit var shelfLifeService: ShelfLifeService
 
     private val userId = 1L
-    private val sfid = "EMP_SFID_001"
+    private val employeeIdVal = "20030117"
 
-    private fun createUser(id: Long = userId, sfid: String? = this.sfid): User {
-        return User(id = id, sfid = sfid, employeeId = "20030117", name = "테스트사원")
+    private fun createUser(id: Long = userId, sfid: String? = "EMP_SFID_001"): User {
+        return User(id = id, sfid = sfid, employeeId = employeeIdVal, name = "테스트사원")
     }
 
     private fun createShelfLife(
         seq: Int = 1,
-        employeeId: String = sfid,
+        employeeId: String = employeeIdVal,
         accountCode: String = "1025172",
         accountId: String = "(유)경산식품",
         productCode: String = "30310009",
@@ -71,8 +71,8 @@ class ShelfLifeServiceTest {
         )
     }
 
-    private fun stubUser(id: Long = userId, sfid: String? = this.sfid) {
-        whenever(userRepository.findById(id)).thenReturn(Optional.of(createUser(id = id, sfid = sfid)))
+    private fun stubUser(id: Long = userId) {
+        whenever(userRepository.findById(id)).thenReturn(Optional.of(createUser(id = id)))
     }
 
     @Nested
@@ -86,7 +86,7 @@ class ShelfLifeServiceTest {
             val items = listOf(createShelfLife(seq = 1), createShelfLife(seq = 2))
             whenever(
                 shelfLifeRepository.findByEmployeeIdAndExpirationDateBetweenOrderByExpirationDateAsc(
-                    eq(sfid), any(), any()
+                    eq(employeeIdVal), any(), any()
                 )
             ).thenReturn(items)
 
@@ -102,7 +102,7 @@ class ShelfLifeServiceTest {
             val items = listOf(createShelfLife(seq = 1))
             whenever(
                 shelfLifeRepository.findByEmployeeIdAndAccountCodeAndExpirationDateBetweenOrderByExpirationDateAsc(
-                    eq(sfid), eq("1025172"), any(), any()
+                    eq(employeeIdVal), eq("1025172"), any(), any()
                 )
             ).thenReturn(items)
 
@@ -118,7 +118,7 @@ class ShelfLifeServiceTest {
             stubUser()
             whenever(
                 shelfLifeRepository.findByEmployeeIdAndExpirationDateBetweenOrderByExpirationDateAsc(
-                    eq(sfid), any(), any()
+                    eq(employeeIdVal), any(), any()
                 )
             ).thenReturn(emptyList())
 
@@ -128,9 +128,14 @@ class ShelfLifeServiceTest {
         }
 
         @Test
-        @DisplayName("sfid null - sfid가 null인 사용자 -> 빈 리스트 반환")
-        fun getList_nullSfid_returnsEmpty() {
-            stubUser(sfid = null)
+        @DisplayName("데이터 없음 - employeeId로 조회 결과 없음 -> 빈 리스트 반환")
+        fun getList_noData_returnsEmpty() {
+            stubUser()
+            whenever(
+                shelfLifeRepository.findByEmployeeIdAndExpirationDateBetweenOrderByExpirationDateAsc(
+                    eq(employeeIdVal), any(), any()
+                )
+            ).thenReturn(emptyList())
 
             val result = shelfLifeService.getShelfLifeList(userId, null, "2026-03-01", "2026-03-31")
 
@@ -333,7 +338,7 @@ class ShelfLifeServiceTest {
                 createShelfLife(seq = 2),
                 createShelfLife(seq = 3)
             )
-            whenever(shelfLifeRepository.findBySeqInAndEmployeeId(eq(listOf(1, 2, 3)), eq(sfid)))
+            whenever(shelfLifeRepository.findBySeqInAndEmployeeId(eq(listOf(1, 2, 3)), eq(employeeIdVal)))
                 .thenReturn(items)
 
             val request = ShelfLifeBatchDeleteRequest(ids = listOf(1, 2, 3))
@@ -347,7 +352,7 @@ class ShelfLifeServiceTest {
         fun batchDelete_forbidden() {
             stubUser()
             val myItem = createShelfLife(seq = 1)
-            whenever(shelfLifeRepository.findBySeqInAndEmployeeId(eq(listOf(1, 2)), eq(sfid)))
+            whenever(shelfLifeRepository.findBySeqInAndEmployeeId(eq(listOf(1, 2)), eq(employeeIdVal)))
                 .thenReturn(listOf(myItem))
             whenever(shelfLifeRepository.findAllById(listOf(2)))
                 .thenReturn(listOf(createShelfLife(seq = 2, employeeId = "OTHER_EMP")))

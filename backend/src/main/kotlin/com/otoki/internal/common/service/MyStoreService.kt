@@ -38,10 +38,9 @@ class MyStoreService(
      */
     @Transactional(readOnly = true)
     fun getMyStores(userId: Long, keyword: String?): MyStoreListResponse {
-        // 사용자 존재 확인 및 sfid 조회
         val user = userRepository.findById(userId)
             .orElseThrow { UserNotFoundException() }
-        val userSfid = user.sfid ?: ""
+        val employeeId = user.employeeId
 
         // 현재 월의 시작일과 종료일
         val now = LocalDate.now()
@@ -51,7 +50,7 @@ class MyStoreService(
 
         // 1. 월별 스케줄에서 중복 제거된 거래처 account(sfid) 조회
         val distinctAccountSfids = displayWorkScheduleRepository
-            .findDistinctAccountsByFullNameAndStartDateBetween(userSfid, startDate, endDate)
+            .findDistinctAccountsByFullNameAndStartDateBetween(employeeId, startDate, endDate)
 
         if (distinctAccountSfids.isEmpty()) {
             return MyStoreListResponse(stores = emptyList(), totalCount = 0)
@@ -64,7 +63,7 @@ class MyStoreService(
 
         // 3. DisplayWorkSchedule에서 기본 정보 조회 (Account 마스터에 없는 거래처용 fallback)
         val scheduleMap = displayWorkScheduleRepository
-            .findByFullNameAndStartDateBetween(userSfid, startDate, endDate)
+            .findByFullNameAndStartDateBetween(employeeId, startDate, endDate)
             .distinctBy { it.account }
             .associateBy { it.account }
 

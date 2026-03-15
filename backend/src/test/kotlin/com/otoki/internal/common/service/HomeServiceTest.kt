@@ -204,12 +204,11 @@ class HomeServiceTest {
         // ========== 유통기한 임박 알림 ==========
 
         @Test
-        @DisplayName("유통기한 알림 - sfid로 오늘 알람 3건 -> expiryCount=3, 프로필 정보 포함")
+        @DisplayName("유통기한 알림 - employeeId로 오늘 알람 3건 -> expiryCount=3, 프로필 정보 포함")
         fun expiryAlert_withCount() {
             // Given
             val userId = 1L
-            val userSfid = "a0B000000012345"
-            val user = createUser(id = userId, sfid = userSfid, appAuthority = null)
+            val user = createUser(id = userId, appAuthority = null)
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(eq("20030117"), any()))
@@ -218,7 +217,7 @@ class HomeServiceTest {
                 .thenReturn(SafetyCheckTodayResponse(completed = true))
             whenever(noticeRepository.findRecentNotices(any(), any()))
                 .thenReturn(emptyList())
-            whenever(shelfLifeRepository.countByEmployeeIdAndAlarmDate(eq(userSfid), any()))
+            whenever(shelfLifeRepository.countByEmployeeIdAndAlarmDate(eq("20030117"), any()))
                 .thenReturn(3L)
 
             // When
@@ -237,8 +236,7 @@ class HomeServiceTest {
         fun expiryAlert_zeroCount() {
             // Given
             val userId = 1L
-            val userSfid = "a0B000000012345"
-            val user = createUser(id = userId, sfid = userSfid, appAuthority = null)
+            val user = createUser(id = userId, appAuthority = null)
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(eq("20030117"), any()))
@@ -247,7 +245,7 @@ class HomeServiceTest {
                 .thenReturn(SafetyCheckTodayResponse(completed = true))
             whenever(noticeRepository.findRecentNotices(any(), any()))
                 .thenReturn(emptyList())
-            whenever(shelfLifeRepository.countByEmployeeIdAndAlarmDate(eq(userSfid), any()))
+            whenever(shelfLifeRepository.countByEmployeeIdAndAlarmDate(eq("20030117"), any()))
                 .thenReturn(0L)
 
             // When
@@ -259,11 +257,11 @@ class HomeServiceTest {
         }
 
         @Test
-        @DisplayName("유통기한 알림 sfid null - sfid 없는 사용자 -> expiryCount=0")
-        fun expiryAlert_sfidNull() {
+        @DisplayName("유통기한 알림 - employeeId로 건수 조회 성공")
+        fun expiryAlert_employeeId() {
             // Given
             val userId = 1L
-            val user = createUser(id = userId, sfid = null, appAuthority = null)
+            val user = createUser(id = userId, appAuthority = null)
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(eq("20030117"), any()))
@@ -272,13 +270,15 @@ class HomeServiceTest {
                 .thenReturn(SafetyCheckTodayResponse(completed = true))
             whenever(noticeRepository.findRecentNotices(any(), any()))
                 .thenReturn(emptyList())
+            whenever(shelfLifeRepository.countByEmployeeIdAndAlarmDate(eq("20030117"), any()))
+                .thenReturn(5L)
 
             // When
             val result = homeService.getHomeData(userId)
 
             // Then
             assertThat(result.expiryAlert).isNotNull
-            assertThat(result.expiryAlert!!.expiryCount).isEqualTo(0)
+            assertThat(result.expiryAlert!!.expiryCount).isEqualTo(5)
         }
 
         @Test
@@ -286,8 +286,7 @@ class HomeServiceTest {
         fun expiryAlert_orgNameNull() {
             // Given
             val userId = 1L
-            val userSfid = "a0B000000012345"
-            val user = createUser(id = userId, sfid = userSfid, orgName = null, appAuthority = null)
+            val user = createUser(id = userId, orgName = null, appAuthority = null)
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(eq("20030117"), any()))
@@ -296,7 +295,7 @@ class HomeServiceTest {
                 .thenReturn(SafetyCheckTodayResponse(completed = true))
             whenever(noticeRepository.findRecentNotices(any(), any()))
                 .thenReturn(emptyList())
-            whenever(shelfLifeRepository.countByEmployeeIdAndAlarmDate(eq(userSfid), any()))
+            whenever(shelfLifeRepository.countByEmployeeIdAndAlarmDate(eq("20030117"), any()))
                 .thenReturn(1L)
 
             // When
@@ -314,9 +313,8 @@ class HomeServiceTest {
         fun schedules_sortedByPriority() {
             // Given
             val userId = 1L
-            val userSfid = "a0B000000012345"
             val employeeId = "20030117"
-            val user = createUser(id = userId, sfid = userSfid, appAuthority = null)
+            val user = createUser(id = userId, appAuthority = null)
 
             // 진열 (priority 3)
             val displaySchedule = createTeamMemberSchedule(

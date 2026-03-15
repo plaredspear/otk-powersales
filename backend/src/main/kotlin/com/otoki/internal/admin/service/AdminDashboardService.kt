@@ -315,8 +315,8 @@ class AdminDashboardService(
     }
 
     private fun buildUserWorkTypeStats(users: List<User>): WorkTypeStats {
-        val userSfids = users.mapNotNull { it.sfid }
-        if (userSfids.isEmpty()) return WorkTypeStats(fixed = 0, alternating = 0, visiting = 0)
+        val employeeIds = users.map { it.employeeId }
+        if (employeeIds.isEmpty()) return WorkTypeStats(fixed = 0, alternating = 0, visiting = 0)
 
         val today = LocalDate.now()
         val ym = YearMonth.from(today)
@@ -324,7 +324,7 @@ class AdminDashboardService(
         val monthEnd = ym.atEndOfMonth()
 
         val schedules = displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(monthEnd, monthStart)
-        val userSchedules = schedules.filter { it.fullName in userSfids }
+        val userSchedules = schedules.filter { it.fullName in employeeIds }
 
         val byWorkType = userSchedules
             .groupBy { normalizeWorkType(it.typeOfWork1) }

@@ -129,7 +129,7 @@ class ShelfLifeService(
     private fun getEmployeeId(userId: Long): String? {
         val user = userRepository.findById(userId)
             .orElseThrow { UserNotFoundException() }
-        return user.sfid
+        return user.employeeId
     }
 
     private fun findBySeq(seq: Int): ShelfLife {
