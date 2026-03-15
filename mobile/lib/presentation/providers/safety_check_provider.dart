@@ -58,9 +58,23 @@ class SafetyCheckNotifier extends StateNotifier<SafetyCheckState> {
     }
   }
 
-  /// 섹션 1: 장비 라디오 응답 설정
+  /// 아코디언 토글: 항목 탭 시 펼침/접힘
+  void toggleExpand(int seqNum) {
+    if (state.expandedItemIndex == seqNum) {
+      state = state.copyWith(clearExpandedItemIndex: true);
+    } else {
+      state = state.copyWith(expandedItemIndex: seqNum);
+    }
+  }
+
+  /// 섹션 1: 장비 라디오 응답 설정 + 300ms 후 자동 접힘
   void setEquipmentAnswer(int seqNum, String answer) {
     state = state.setEquipmentAnswer(seqNum, answer);
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted && state.expandedItemIndex == seqNum) {
+        state = state.copyWith(clearExpandedItemIndex: true);
+      }
+    });
   }
 
   /// 섹션 2: 예방사항 체크박스 토글

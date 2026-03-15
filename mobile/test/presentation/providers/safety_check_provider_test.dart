@@ -140,6 +140,53 @@ void main() {
       expect(notifier.state.precautionChecks[1], false);
     });
 
+    group('toggleExpand (아코디언)', () {
+      test('접힌 항목을 펼친다', () async {
+        mockRepository.categoriesToReturn = testCategories;
+        await notifier.fetchItems();
+
+        notifier.toggleExpand(1);
+        expect(notifier.state.expandedItemIndex, 1);
+      });
+
+      test('펼쳐진 항목을 다시 탭하면 접는다', () async {
+        mockRepository.categoriesToReturn = testCategories;
+        await notifier.fetchItems();
+
+        notifier.toggleExpand(1);
+        notifier.toggleExpand(1);
+        expect(notifier.state.expandedItemIndex, isNull);
+      });
+
+      test('다른 항목을 탭하면 기존 항목이 접히고 새 항목이 펼쳐진다', () async {
+        mockRepository.categoriesToReturn = testCategories;
+        await notifier.fetchItems();
+
+        notifier.toggleExpand(1);
+        expect(notifier.state.expandedItemIndex, 1);
+
+        notifier.toggleExpand(3);
+        expect(notifier.state.expandedItemIndex, 3);
+      });
+    });
+
+    test('setEquipmentAnswer 후 300ms 뒤 자동 접힘', () async {
+      mockRepository.categoriesToReturn = testCategories;
+      await notifier.fetchItems();
+
+      notifier.toggleExpand(1);
+      expect(notifier.state.expandedItemIndex, 1);
+
+      notifier.setEquipmentAnswer(1, '예');
+      expect(notifier.state.equipmentAnswers[1], '예');
+      // 아직 펼쳐진 상태
+      expect(notifier.state.expandedItemIndex, 1);
+
+      // 300ms 후 접힘
+      await Future.delayed(const Duration(milliseconds: 350));
+      expect(notifier.state.expandedItemIndex, isNull);
+    });
+
     test('submit 성공 시 제출 완료 상태', () async {
       mockRepository.categoriesToReturn = testCategories;
       mockRepository.submitResultToReturn = testSubmitResult;

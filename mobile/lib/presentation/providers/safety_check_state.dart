@@ -10,6 +10,9 @@ class SafetyCheckState {
   /// 섹션 2: 예방사항 체크박스 (seqNum → checked)
   final Map<int, bool> precautionChecks;
 
+  /// 현재 펼쳐진 질문1 항목의 seqNum (null이면 모두 접힘)
+  final int? expandedItemIndex;
+
   /// 화면 진입 시각
   final DateTime? startTime;
 
@@ -22,6 +25,7 @@ class SafetyCheckState {
     this.categories,
     this.equipmentAnswers = const {},
     this.precautionChecks = const {},
+    this.expandedItemIndex,
     this.startTime,
     this.isLoading = false,
     this.isSubmitting = false,
@@ -90,6 +94,7 @@ class SafetyCheckState {
       categories: categories,
       equipmentAnswers: newAnswers,
       precautionChecks: precautionChecks,
+      expandedItemIndex: expandedItemIndex,
       startTime: startTime,
       isLoading: isLoading,
       isSubmitting: isSubmitting,
@@ -106,6 +111,7 @@ class SafetyCheckState {
       categories: categories,
       equipmentAnswers: equipmentAnswers,
       precautionChecks: newChecks,
+      expandedItemIndex: expandedItemIndex,
       startTime: startTime,
       isLoading: isLoading,
       isSubmitting: isSubmitting,
@@ -136,6 +142,8 @@ class SafetyCheckState {
     List<SafetyCheckCategory>? categories,
     Map<int, String>? equipmentAnswers,
     Map<int, bool>? precautionChecks,
+    int? expandedItemIndex,
+    bool clearExpandedItemIndex = false,
     DateTime? startTime,
     bool? isLoading,
     bool? isSubmitting,
@@ -146,6 +154,9 @@ class SafetyCheckState {
       categories: categories ?? this.categories,
       equipmentAnswers: equipmentAnswers ?? this.equipmentAnswers,
       precautionChecks: precautionChecks ?? this.precautionChecks,
+      expandedItemIndex: clearExpandedItemIndex
+          ? null
+          : (expandedItemIndex ?? this.expandedItemIndex),
       startTime: startTime ?? this.startTime,
       isLoading: isLoading ?? this.isLoading,
       isSubmitting: isSubmitting ?? this.isSubmitting,
