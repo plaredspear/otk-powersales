@@ -1,67 +1,61 @@
 package com.otoki.internal.safetycheck.service
 
-// Phase2: Entity V1 리매핑으로 인해 비즈니스 로직 전체 주석 처리
-// V1 비즈니스 로직 복원은 후속 스펙에서 별도 진행
-
-/*
+import com.otoki.internal.auth.exception.UserNotFoundException
+import com.otoki.internal.safetycheck.dto.request.SafetyCheckSubmitRequest
+import com.otoki.internal.safetycheck.dto.response.SafetyCheckItemsResponse
+import com.otoki.internal.safetycheck.dto.response.SafetyCheckSubmitResponse
+import com.otoki.internal.safetycheck.dto.response.SafetyCheckTodayResponse
 import com.otoki.internal.safetycheck.entity.SafetyCheckSubmission
 import com.otoki.internal.safetycheck.exception.AlreadySubmittedException
 import com.otoki.internal.safetycheck.exception.RequiredItemsMissingException
 import com.otoki.internal.safetycheck.repository.SafetyCheckItemRepository
 import com.otoki.internal.safetycheck.repository.SafetyCheckSubmissionRepository
+import com.otoki.internal.sap.repository.UserRepository
+import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
 
 @Service
+@Transactional(readOnly = true)
 class SafetyCheckService(
     private val itemRepository: SafetyCheckItemRepository,
-    private val submissionRepository: SafetyCheckSubmissionRepository
+    private val submissionRepository: SafetyCheckSubmissionRepository,
+    private val userRepository: UserRepository
 ) {
 
-    @Transactional
-    fun submitSafetyCheck(userId: Long, request: SafetyCheckSubmitRequest): SafetyCheckSubmitResponse {
-        val today = LocalDate.now()
+    fun getChecklistItems(): SafetyCheckItemsResponse {
+        val items = itemRepository.findByUseYnOrderByQuestionNumAscSeqNumAsc("Y")
+        val grouped = items.groupBy { it.questionNum }
 
-        if (submissionRepository.existsByUserIdAndSubmissionDate(userId, today)) {
-            throw AlreadySubmittedException()
+        val categories = grouped.map { (questionNum, groupItems) ->
+            SafetyCheckItemsResponse.CategoryInfo(
+                questionNum = questionNum,
+                title = if (questionNum == 1) "안전예방 장비 착용" else "안전사고 예방사항",
+                inputType = if (questionNum == 1) "RADIO" else "CHECKBOX",
+                required = questionNum == 1,
+                options = if (questionNum == 1) listOf("예", "해당없음") else null,
+                items = groupItems.map { item ->
+                    SafetyCheckItemsResponse.CheckItemInfo(
+                        seqNum = item.seqNum,
+                        contents = item.contents
+                    )
+                }
+            )
         }
 
-        val requiredItems = itemRepository.findByRequiredTrueAndActiveTrue()
-        val requiredItemIds = requiredItems.map { it.id }.toSet()
-        val checkedItemIds = request.checkedItemIds.toSet()
-
-        if (!checkedItemIds.containsAll(requiredItemIds)) {
-            throw RequiredItemsMissingException()
-        }
-
-        val checkedItems = itemRepository.findAllById(request.checkedItemIds)
-
-        val submission = SafetyCheckSubmission(
-            userId = userId,
-            submissionDate = today
-        )
-
-        checkedItems.forEach { item ->
-            submission.addItem(item)
-        }
-
-        val saved = submissionRepository.save(submission)
-
-        return SafetyCheckSubmitResponse(
-            submissionId = saved.id,
-            submittedAt = saved.submittedAt,
-            safetyCheckCompleted = true
-        )
+        return SafetyCheckItemsResponse(categories = categories)
     }
 
-    @Transactional(readOnly = true)
     fun getTodayStatus(userId: Long): SafetyCheckTodayResponse {
+        val user = userRepository.findById(userId)
+            .orElseThrow { UserNotFoundException() }
         val today = LocalDate.now()
-        val submission = submissionRepository.findByUserIdAndSubmissionDate(userId, today)
+        val submission = submissionRepository.findByEmployeeIdAndWorkingDate(user.employeeId, today)
 
         return if (submission.isPresent) {
             SafetyCheckTodayResponse(
                 completed = true,
-                submittedAt = submission.get().submittedAt
+                submittedAt = submission.get().completeTime
             )
         } else {
             SafetyCheckTodayResponse(
@@ -70,39 +64,64 @@ class SafetyCheckService(
             )
         }
     }
-}
-*/
-
-import com.otoki.internal.safetycheck.dto.request.SafetyCheckSubmitRequest
-import com.otoki.internal.safetycheck.dto.response.SafetyCheckItemsResponse
-import com.otoki.internal.safetycheck.dto.response.SafetyCheckSubmitResponse
-import com.otoki.internal.safetycheck.dto.response.SafetyCheckTodayResponse
-import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDateTime
-
-@Service
-class SafetyCheckService {
-
-    // Phase2: 최소 스텁 — Controller 컴파일 유지용
-
-    @Transactional(readOnly = true)
-    fun getChecklistItems(): SafetyCheckItemsResponse {
-        return SafetyCheckItemsResponse(categories = emptyList())
-    }
 
     @Transactional
     fun submitSafetyCheck(userId: Long, request: SafetyCheckSubmitRequest): SafetyCheckSubmitResponse {
-        // Phase2: Entity 리매핑 완료 후 V1 로직 복원 예정
-        return SafetyCheckSubmitResponse(
-            submissionId = 0L,
-            submittedAt = LocalDateTime.now(),
-            safetyCheckCompleted = false
-        )
-    }
+        val user = userRepository.findById(userId)
+            .orElseThrow { UserNotFoundException() }
+        val today = LocalDate.now()
 
-    @Transactional(readOnly = true)
-    fun getTodayStatus(userId: Long): SafetyCheckTodayResponse {
-        return SafetyCheckTodayResponse(completed = false, submittedAt = null)
+        if (submissionRepository.existsByEmployeeIdAndWorkingDate(user.employeeId, today)) {
+            throw AlreadySubmittedException()
+        }
+
+        val activeEquipmentCount = itemRepository.countByQuestionNumAndUseYn(1, "Y")
+        if (request.equipments.size.toLong() != activeEquipmentCount) {
+            throw RequiredItemsMissingException()
+        }
+
+        val validAnswers = setOf("예", "해당없음")
+        if (request.equipments.any { it.answer !in validAnswers }) {
+            throw RequiredItemsMissingException()
+        }
+
+        val sortedEquipments = request.equipments.sortedBy { it.seqNum }
+        val yesCount = sortedEquipments.count { it.answer == "예" }.toDouble()
+        val noCount = sortedEquipments.count { it.answer == "해당없음" }.toDouble()
+
+        val precautionText = request.precautions
+            ?.takeIf { it.isNotEmpty() }
+            ?.joinToString(";")
+        val precautionCount = (request.precautions?.size ?: 0).toDouble()
+
+        val submission = SafetyCheckSubmission(
+            masterId = "",
+            employeeId = user.employeeId,
+            workingDate = today,
+            startTime = request.startTime,
+            completeTime = request.completeTime,
+            yesChkCnt = yesCount,
+            noChkCnt = noCount,
+            equipment1 = sortedEquipments.getOrNull(0)?.answer,
+            equipment2 = sortedEquipments.getOrNull(1)?.answer,
+            equipment3 = sortedEquipments.getOrNull(2)?.answer,
+            equipment4 = sortedEquipments.getOrNull(3)?.answer,
+            equipment5 = sortedEquipments.getOrNull(4)?.answer,
+            equipment6 = sortedEquipments.getOrNull(5)?.answer,
+            equipment7 = sortedEquipments.getOrNull(6)?.answer,
+            equipment8 = sortedEquipments.getOrNull(7)?.answer,
+            equipment9 = sortedEquipments.getOrNull(8)?.answer,
+            precaution = precautionText,
+            precautionChkCnt = precautionCount,
+            traversalFlag = "O",
+            completeWorkYn = "N"
+        )
+
+        submissionRepository.save(submission)
+
+        return SafetyCheckSubmitResponse(
+            submittedAt = request.completeTime,
+            safetyCheckCompleted = true
+        )
     }
 }
