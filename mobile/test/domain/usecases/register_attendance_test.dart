@@ -16,13 +16,13 @@ void main() {
     group('정상 등록', () {
       test('출근 등록 성공', () async {
         final result = await useCase.call(
-          scheduleSfid: 'a0xXX0000012345',
+          scheduleId: 12345,
           latitude: 35.1696,
           longitude: 129.1318,
           workType: 'ROOM_TEMP',
         );
 
-        expect(result.scheduleSfid, 'a0xXX0000012345');
+        expect(result.scheduleId, 12345);
         expect(result.storeName, '이마트 해운대점');
         expect(result.workType, 'ROOM_TEMP');
         expect(result.distanceKm, 0.12);
@@ -32,18 +32,18 @@ void main() {
 
       test('workType 없이 출근 등록 성공', () async {
         final result = await useCase.call(
-          scheduleSfid: 'a0xXX0000012345',
+          scheduleId: 12345,
           latitude: 35.1696,
           longitude: 129.1318,
         );
 
-        expect(result.scheduleSfid, 'a0xXX0000012345');
+        expect(result.scheduleId, 12345);
         expect(result.storeName, '이마트 해운대점');
       });
 
       test('AttendanceResult 계산 getter 동작', () async {
         final result = await useCase.call(
-          scheduleSfid: 'a0xXX0000012345',
+          scheduleId: 12345,
           latitude: 35.0,
           longitude: 129.0,
           workType: 'ROOM_TEMP',
@@ -55,10 +55,10 @@ void main() {
     });
 
     group('입력값 검증', () {
-      test('빈 scheduleSfid는 ArgumentError 발생', () {
+      test('유효하지 않은 scheduleId는 ArgumentError 발생', () {
         expect(
           () => useCase.call(
-            scheduleSfid: '',
+            scheduleId: 0,
             latitude: 35.0,
             longitude: 129.0,
           ),
@@ -77,7 +77,7 @@ void main() {
 
         expect(
           () => useCase.call(
-            scheduleSfid: 'a0xXX0000012345',
+            scheduleId: 12345,
             latitude: 35.0,
             longitude: 129.0,
           ),
@@ -104,14 +104,14 @@ class FakeAttendanceRepository implements AttendanceRepository {
 
   @override
   Future<AttendanceResult> registerAttendance({
-    required String scheduleSfid,
+    required int scheduleId,
     required double latitude,
     required double longitude,
     String? workType,
   }) async {
     if (exceptionToThrow != null) throw exceptionToThrow!;
     return AttendanceResult(
-      scheduleSfid: scheduleSfid,
+      scheduleId: scheduleId,
       storeName: '이마트 해운대점',
       workType: workType ?? '진열',
       distanceKm: 0.12,

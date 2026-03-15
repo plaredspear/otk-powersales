@@ -2,7 +2,7 @@
 ///
 /// 오늘 출근해야 할 거래처 정보를 나타냅니다.
 class StoreScheduleItem {
-  final String scheduleSfid;
+  final int scheduleId;
   final String? storeSfid;
   final String storeName;
   final String? storeTypeCode;
@@ -14,7 +14,7 @@ class StoreScheduleItem {
   final String? registeredWorkType;
 
   const StoreScheduleItem({
-    required this.scheduleSfid,
+    required this.scheduleId,
     this.storeSfid,
     required this.storeName,
     this.storeTypeCode,
@@ -27,7 +27,7 @@ class StoreScheduleItem {
   });
 
   StoreScheduleItem copyWith({
-    String? scheduleSfid,
+    int? scheduleId,
     String? storeSfid,
     String? storeName,
     String? storeTypeCode,
@@ -39,7 +39,7 @@ class StoreScheduleItem {
     String? registeredWorkType,
   }) {
     return StoreScheduleItem(
-      scheduleSfid: scheduleSfid ?? this.scheduleSfid,
+      scheduleId: scheduleId ?? this.scheduleId,
       storeSfid: storeSfid ?? this.storeSfid,
       storeName: storeName ?? this.storeName,
       storeTypeCode: storeTypeCode ?? this.storeTypeCode,
@@ -54,7 +54,7 @@ class StoreScheduleItem {
 
   Map<String, dynamic> toJson() {
     return {
-      'scheduleSfid': scheduleSfid,
+      'scheduleId': scheduleId,
       'storeSfid': storeSfid,
       'storeName': storeName,
       'storeTypeCode': storeTypeCode,
@@ -69,7 +69,7 @@ class StoreScheduleItem {
 
   factory StoreScheduleItem.fromJson(Map<String, dynamic> json) {
     return StoreScheduleItem(
-      scheduleSfid: json['scheduleSfid'] as String,
+      scheduleId: json['scheduleId'] as int,
       storeSfid: json['storeSfid'] as String?,
       storeName: json['storeName'] as String,
       storeTypeCode: json['storeTypeCode'] as String?,
@@ -86,7 +86,7 @@ class StoreScheduleItem {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is StoreScheduleItem &&
-        other.scheduleSfid == scheduleSfid &&
+        other.scheduleId == scheduleId &&
         other.storeName == storeName &&
         other.workCategory == workCategory &&
         other.address == address &&
@@ -96,7 +96,7 @@ class StoreScheduleItem {
   @override
   int get hashCode {
     return Object.hash(
-      scheduleSfid,
+      scheduleId,
       storeName,
       workCategory,
       address,
@@ -106,7 +106,7 @@ class StoreScheduleItem {
 
   @override
   String toString() {
-    return 'StoreScheduleItem(scheduleSfid: $scheduleSfid, storeName: $storeName, '
+    return 'StoreScheduleItem(scheduleId: $scheduleId, storeName: $storeName, '
         'workCategory: $workCategory, address: $address, '
         'isRegistered: $isRegistered)';
   }

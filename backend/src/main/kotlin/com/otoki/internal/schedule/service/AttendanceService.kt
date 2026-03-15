@@ -76,7 +76,7 @@ class AttendanceService(
             }
 
             StoreInfo(
-                scheduleSfid = teamMemberSchedule.sfid ?: "",
+                scheduleId = teamMemberSchedule.id,
                 storeSfid = teamMemberSchedule.accountId,
                 storeName = storeName,
                 storeTypeCode = account?.abcTypeCode,
@@ -107,13 +107,13 @@ class AttendanceService(
      * 4. 응답 반환
      */
     @Transactional
-    fun registerCommute(userId: Long, teamMemberScheduleSfid: String, latitude: Double, longitude: Double, workType: String?): CommuteResponse {
+    fun registerCommute(userId: Long, scheduleId: Long, latitude: Double, longitude: Double, workType: String?): CommuteResponse {
         val user = userRepository.findById(userId)
             .orElseThrow { UserNotFoundException() }
 
         // 1. 스케줄 조회
-        val teamMemberSchedule = teamMemberScheduleRepository.findBySfid(teamMemberScheduleSfid)
-            ?: throw TeamMemberScheduleNotFoundException()
+        val teamMemberSchedule = teamMemberScheduleRepository.findById(scheduleId)
+            .orElseThrow { TeamMemberScheduleNotFoundException() }
 
         // 2. 중복 등록 검증
         if (teamMemberSchedule.commuteLogId != null) {
@@ -125,17 +125,17 @@ class AttendanceService(
         val distanceKm = validateDistance(latitude, longitude, account)
 
         // 4. Orora WorkReport 전송
-        ororaApiService.sendWorkReport(teamMemberScheduleSfid)
+        ororaApiService.sendWorkReport(teamMemberSchedule.sfid ?: "")
 
         // 5. 출근 현황 집계 (commuteLogId 업데이트 후)
         val employeeId = user.employeeId
         val today = LocalDate.now()
         val todayTeamMemberSchedules = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(employeeId, today)
         val totalCount = todayTeamMemberSchedules.size
-        val registeredCount = todayTeamMemberSchedules.count { it.commuteLogId != null || it.sfid == teamMemberScheduleSfid }
+        val registeredCount = todayTeamMemberSchedules.count { it.commuteLogId != null || it.id == scheduleId }
 
         return CommuteResponse(
-            teamMemberScheduleSfid = teamMemberScheduleSfid,
+            scheduleId = scheduleId,
             storeName = account?.name ?: "",
             workType = workType ?: teamMemberSchedule.workingType,
             distanceKm = distanceKm,
@@ -167,7 +167,7 @@ class AttendanceService(
         val statusList = teamMemberSchedules.map { teamMemberSchedule ->
             val account = teamMemberSchedule.accountId?.let { accountMap[it] }
             CommuteStatusItem(
-                scheduleSfid = teamMemberSchedule.sfid ?: "",
+                scheduleId = teamMemberSchedule.id,
                 storeName = account?.name ?: "",
                 workCategory = teamMemberSchedule.workingCategory1 ?: "",
                 status = if (teamMemberSchedule.commuteLogId != null) "REGISTERED" else "PENDING"

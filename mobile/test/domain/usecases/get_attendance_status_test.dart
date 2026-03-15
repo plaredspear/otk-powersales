@@ -64,7 +64,7 @@ class FakeAttendanceRepository implements AttendanceRepository {
 
   @override
   Future<AttendanceResult> registerAttendance({
-    required String scheduleSfid,
+    required int scheduleId,
     required double latitude,
     required double longitude,
     String? workType,
@@ -86,32 +86,32 @@ class FakeAttendanceRepository implements AttendanceRepository {
 
 const _mockStatusList = [
   AttendanceStatus(
-    scheduleSfid: 'a0xXX0000012345',
+    scheduleId: 12345,
     storeName: '이마트 해운대점',
     workCategory: '진열',
     status: 'REGISTERED',
     workType: 'ROOM_TEMP',
   ),
   AttendanceStatus(
-    scheduleSfid: 'a0xXX0000012346',
+    scheduleId: 12346,
     storeName: '홈플러스 서면점',
     workCategory: '순회',
     status: 'PENDING',
   ),
   AttendanceStatus(
-    scheduleSfid: 'a0xXX0000012347',
+    scheduleId: 12347,
     storeName: '롯데마트 광복점',
     workCategory: '진열',
     status: 'PENDING',
   ),
   AttendanceStatus(
-    scheduleSfid: 'a0xXX0000012348',
+    scheduleId: 12348,
     storeName: '이마트 사상점',
     workCategory: '순회',
     status: 'PENDING',
   ),
   AttendanceStatus(
-    scheduleSfid: 'a0xXX0000012349',
+    scheduleId: 12349,
     storeName: '홈플러스 센텀시티점',
     workCategory: '진열',
     status: 'PENDING',

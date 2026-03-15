@@ -78,11 +78,11 @@ class AttendanceControllerTest {
     inner class RegisterCommuteTests {
 
         @Test
-        @DisplayName("출근 등록 성공 - 200 OK, schedule_sfid 포함")
+        @DisplayName("출근 등록 성공 - 200 OK, schedule_id 포함")
         fun registerCommute_success() {
             // Given
             val mockResponse = CommuteResponse(
-                teamMemberScheduleSfid = "SCH-001",
+                scheduleId = 10L,
                 storeName = "이마트 부산점",
                 workType = "ROOM_TEMP",
                 distanceKm = 0.12,
@@ -92,13 +92,13 @@ class AttendanceControllerTest {
 
             whenever(
                 attendanceService.registerCommute(
-                    eq(1L), eq("SCH-001"), eq(35.1234), eq(129.0567), eq("ROOM_TEMP")
+                    eq(1L), eq(10L), eq(35.1234), eq(129.0567), eq("ROOM_TEMP")
                 )
             ).thenReturn(mockResponse)
 
             val requestJson = """
                 {
-                    "schedule_sfid": "SCH-001",
+                    "schedule_id": 10,
                     "latitude": 35.1234,
                     "longitude": 129.0567,
                     "work_type": "ROOM_TEMP"
@@ -114,7 +114,7 @@ class AttendanceControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("출근등록 완료"))
-                .andExpect(jsonPath("$.data.schedule_sfid").value("SCH-001"))
+                .andExpect(jsonPath("$.data.schedule_id").value(10))
                 .andExpect(jsonPath("$.data.store_name").value("이마트 부산점"))
                 .andExpect(jsonPath("$.data.work_type").value("ROOM_TEMP"))
                 .andExpect(jsonPath("$.data.distance_km").value(0.12))
@@ -128,13 +128,13 @@ class AttendanceControllerTest {
             // Given
             whenever(
                 attendanceService.registerCommute(
-                    eq(1L), eq("SCH-001"), eq(35.1234), eq(129.0567), anyOrNull()
+                    eq(1L), eq(10L), eq(35.1234), eq(129.0567), anyOrNull()
                 )
             ).thenThrow(DistanceExceededException(1.5))
 
             val requestJson = """
                 {
-                    "schedule_sfid": "SCH-001",
+                    "schedule_id": 10,
                     "latitude": 35.1234,
                     "longitude": 129.0567
                 }
@@ -152,9 +152,9 @@ class AttendanceControllerTest {
         }
 
         @Test
-        @DisplayName("필수 필드 누락 (schedule_sfid 없음) - 400 INVALID_PARAMETER")
-        fun registerCommute_missingScheduleSfid() {
-            // Given - schedule_sfid 누락
+        @DisplayName("필수 필드 누락 (schedule_id 없음) - 400 INVALID_PARAMETER")
+        fun registerCommute_missingScheduleId() {
+            // Given - schedule_id 누락
             val requestJson = """
                 {
                     "latitude": 35.1234,
@@ -179,13 +179,13 @@ class AttendanceControllerTest {
             // Given
             whenever(
                 attendanceService.registerCommute(
-                    eq(1L), eq("SCH-001"), eq(35.1234), eq(129.0567), anyOrNull()
+                    eq(1L), eq(10L), eq(35.1234), eq(129.0567), anyOrNull()
                 )
             ).thenThrow(AlreadyRegisteredException())
 
             val requestJson = """
                 {
-                    "schedule_sfid": "SCH-001",
+                    "schedule_id": 10,
                     "latitude": 35.1234,
                     "longitude": 129.0567
                 }
@@ -208,13 +208,13 @@ class AttendanceControllerTest {
             // Given
             whenever(
                 attendanceService.registerCommute(
-                    eq(1L), eq("SCH-999"), eq(35.1234), eq(129.0567), anyOrNull()
+                    eq(1L), eq(99999L), eq(35.1234), eq(129.0567), anyOrNull()
                 )
             ).thenThrow(TeamMemberScheduleNotFoundException())
 
             val requestJson = """
                 {
-                    "schedule_sfid": "SCH-999",
+                    "schedule_id": 99999,
                     "latitude": 35.1234,
                     "longitude": 129.0567
                 }
@@ -245,7 +245,7 @@ class AttendanceControllerTest {
             val mockResponse = StoreListResponse(
                 stores = listOf(
                     StoreInfo(
-                        scheduleSfid = "SCH-001",
+                        scheduleId = 1L,
                         storeSfid = "ACC-001",
                         storeName = "이마트 부산점",
                         storeTypeCode = "2110",
@@ -256,7 +256,7 @@ class AttendanceControllerTest {
                         isRegistered = false
                     ),
                     StoreInfo(
-                        scheduleSfid = "SCH-002",
+                        scheduleId = 2L,
                         storeSfid = "ACC-002",
                         storeName = "홈플러스 서면점",
                         storeTypeCode = "2120",
@@ -283,7 +283,7 @@ class AttendanceControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("조회 성공"))
                 .andExpect(jsonPath("$.data.stores").isArray)
-                .andExpect(jsonPath("$.data.stores[0].schedule_sfid").value("SCH-001"))
+                .andExpect(jsonPath("$.data.stores[0].schedule_id").value(1))
                 .andExpect(jsonPath("$.data.stores[0].store_sfid").value("ACC-001"))
                 .andExpect(jsonPath("$.data.stores[0].store_name").value("이마트 부산점"))
                 .andExpect(jsonPath("$.data.stores[0].store_type_code").value("2110"))
@@ -304,7 +304,7 @@ class AttendanceControllerTest {
             val mockResponse = StoreListResponse(
                 stores = listOf(
                     StoreInfo(
-                        scheduleSfid = "SCH-001",
+                        scheduleId = 1L,
                         storeSfid = "ACC-001",
                         storeName = "이마트 부산점",
                         storeTypeCode = "2110",
@@ -352,19 +352,19 @@ class AttendanceControllerTest {
                 registeredCount = 1,
                 statusList = listOf(
                     CommuteStatusItem(
-                        scheduleSfid = "SCH-001",
+                        scheduleId = 1L,
                         storeName = "이마트 부산점",
                         workCategory = "진열",
                         status = "REGISTERED"
                     ),
                     CommuteStatusItem(
-                        scheduleSfid = "SCH-002",
+                        scheduleId = 2L,
                         storeName = "홈플러스 서면점",
                         workCategory = "상시",
                         status = "PENDING"
                     ),
                     CommuteStatusItem(
-                        scheduleSfid = "SCH-003",
+                        scheduleId = 3L,
                         storeName = "롯데마트 동래점",
                         workCategory = "상시",
                         status = "PENDING"
@@ -386,11 +386,11 @@ class AttendanceControllerTest {
                 .andExpect(jsonPath("$.data.total_count").value(3))
                 .andExpect(jsonPath("$.data.registered_count").value(1))
                 .andExpect(jsonPath("$.data.status_list").isArray)
-                .andExpect(jsonPath("$.data.status_list[0].schedule_sfid").value("SCH-001"))
+                .andExpect(jsonPath("$.data.status_list[0].schedule_id").value(1))
                 .andExpect(jsonPath("$.data.status_list[0].store_name").value("이마트 부산점"))
                 .andExpect(jsonPath("$.data.status_list[0].work_category").value("진열"))
                 .andExpect(jsonPath("$.data.status_list[0].status").value("REGISTERED"))
-                .andExpect(jsonPath("$.data.status_list[1].schedule_sfid").value("SCH-002"))
+                .andExpect(jsonPath("$.data.status_list[1].schedule_id").value(2))
                 .andExpect(jsonPath("$.data.status_list[1].store_name").value("홈플러스 서면점"))
                 .andExpect(jsonPath("$.data.status_list[1].status").value("PENDING"))
                 .andExpect(jsonPath("$.data.current_date").value("2026-02-25"))

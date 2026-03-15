@@ -2,14 +2,14 @@
 ///
 /// 거래처별 출근등록 상태 (완료/대기) 정보입니다.
 class AttendanceStatus {
-  final String scheduleSfid;
+  final int scheduleId;
   final String storeName;
   final String workCategory;
   final String status;
   final String? workType;
 
   const AttendanceStatus({
-    required this.scheduleSfid,
+    required this.scheduleId,
     required this.storeName,
     required this.workCategory,
     required this.status,
@@ -23,14 +23,14 @@ class AttendanceStatus {
   bool get isPending => status == 'PENDING';
 
   AttendanceStatus copyWith({
-    String? scheduleSfid,
+    int? scheduleId,
     String? storeName,
     String? workCategory,
     String? status,
     String? workType,
   }) {
     return AttendanceStatus(
-      scheduleSfid: scheduleSfid ?? this.scheduleSfid,
+      scheduleId: scheduleId ?? this.scheduleId,
       storeName: storeName ?? this.storeName,
       workCategory: workCategory ?? this.workCategory,
       status: status ?? this.status,
@@ -40,7 +40,7 @@ class AttendanceStatus {
 
   Map<String, dynamic> toJson() {
     return {
-      'scheduleSfid': scheduleSfid,
+      'scheduleId': scheduleId,
       'storeName': storeName,
       'workCategory': workCategory,
       'status': status,
@@ -50,7 +50,7 @@ class AttendanceStatus {
 
   factory AttendanceStatus.fromJson(Map<String, dynamic> json) {
     return AttendanceStatus(
-      scheduleSfid: json['scheduleSfid'] as String,
+      scheduleId: json['scheduleId'] as int,
       storeName: json['storeName'] as String,
       workCategory: json['workCategory'] as String,
       status: json['status'] as String,
@@ -62,7 +62,7 @@ class AttendanceStatus {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is AttendanceStatus &&
-        other.scheduleSfid == scheduleSfid &&
+        other.scheduleId == scheduleId &&
         other.storeName == storeName &&
         other.workCategory == workCategory &&
         other.status == status &&
@@ -72,7 +72,7 @@ class AttendanceStatus {
   @override
   int get hashCode {
     return Object.hash(
-      scheduleSfid,
+      scheduleId,
       storeName,
       workCategory,
       status,
@@ -82,7 +82,7 @@ class AttendanceStatus {
 
   @override
   String toString() {
-    return 'AttendanceStatus(scheduleSfid: $scheduleSfid, storeName: $storeName, '
+    return 'AttendanceStatus(scheduleId: $scheduleId, storeName: $storeName, '
         'workCategory: $workCategory, status: $status, workType: $workType)';
   }
 }

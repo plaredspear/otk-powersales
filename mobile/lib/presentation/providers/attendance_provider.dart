@@ -84,7 +84,7 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
     state = state.copyWith(
       searchKeyword: keyword,
       filteredStores: filtered,
-      selectedScheduleSfid: null,
+      selectedScheduleId: null,
     );
   }
 
@@ -94,14 +94,14 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
   }
 
   /// 거래처 선택
-  void selectStore(String scheduleSfid) {
-    state = state.copyWith(selectedScheduleSfid: scheduleSfid);
+  void selectStore(int scheduleId) {
+    state = state.copyWith(selectedScheduleId: scheduleId);
   }
 
   /// 출근등록
   Future<void> register({double? latitude, double? longitude}) async {
-    final scheduleSfid = state.selectedScheduleSfid;
-    if (scheduleSfid == null) return;
+    final scheduleId = state.selectedScheduleId;
+    if (scheduleId == null) return;
 
     if (latitude == null || longitude == null) {
       state = state.toError('GPS 좌표를 가져올 수 없습니다');
@@ -112,7 +112,7 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
 
     try {
       final result = await _registerAttendance.call(
-        scheduleSfid: scheduleSfid,
+        scheduleId: scheduleId,
         latitude: latitude,
         longitude: longitude,
         workType: state.selectedWorkType,
@@ -137,7 +137,7 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
   /// 다음 등록 (등록 완료 후 목록으로 복귀)
   Future<void> prepareNextRegistration() async {
     state = state.copyWith(
-      selectedScheduleSfid: null,
+      selectedScheduleId: null,
       searchKeyword: '',
     );
 
