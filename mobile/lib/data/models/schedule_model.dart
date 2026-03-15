@@ -30,7 +30,7 @@ class ScheduleModel {
     return ScheduleModel(
       scheduleId: json['schedule_id'] as String,
       employeeName: json['employee_name'] as String,
-      employeeSfid: json['employee_sfid'] as String,
+      employeeSfid: json['employee_id'] as String,
       storeName: json['store_name'] as String?,
       storeSfid: json['store_sfid'] as String?,
       workCategory: json['work_category'] as String,
@@ -46,7 +46,7 @@ class ScheduleModel {
     return {
       'schedule_id': scheduleId,
       'employee_name': employeeName,
-      'employee_sfid': employeeSfid,
+      'employee_id': employeeSfid,
       'store_name': storeName,
       'store_sfid': storeSfid,
       'work_category': workCategory,
