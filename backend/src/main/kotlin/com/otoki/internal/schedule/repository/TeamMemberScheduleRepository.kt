@@ -10,7 +10,7 @@ import java.time.LocalDate
 interface TeamMemberScheduleRepository : JpaRepository<TeamMemberSchedule, Long>, TeamMemberScheduleRepositoryCustom {
 
     /**
-     * 사원 sfid와 근무 날짜로 일정 조회
+     * 사번 employeeId 와 근무 날짜로 일정 조회
      */
     fun findByEmployeeIdAndWorkingDate(employeeId: String, workingDate: LocalDate): List<TeamMemberSchedule>
 
