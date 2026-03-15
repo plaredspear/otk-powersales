@@ -492,7 +492,7 @@ export default function PromotionDetailPage() {
 
     const changedItems = getChangedItems();
     if (!changedItems || changedItems.length === 0) {
-      message.info('변경사항이 없습니다');
+      cancelEmpEditMode();
       return;
     }
 
@@ -553,7 +553,7 @@ export default function PromotionDetailPage() {
   };
 
   const closeColumn = {
-    title: '여사마감',
+    title: '여사원마감',
     dataIndex: 'promoCloseByTm',
     width: 70,
     align: 'center' as const,
@@ -913,7 +913,7 @@ export default function PromotionDetailPage() {
           ) : null,
       },
       {
-        title: '여사마감',
+        title: '여사원마감',
         dataIndex: 'promoCloseByTm',
         width: 90,
         align: 'center' as const,
