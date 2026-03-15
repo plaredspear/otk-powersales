@@ -1,7 +1,6 @@
 package com.otoki.internal.safetycheck.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.otoki.internal.safetycheck.dto.request.SafetyCheckSubmitRequest
 import com.otoki.internal.safetycheck.dto.response.SafetyCheckItemsResponse
 import com.otoki.internal.safetycheck.dto.response.SafetyCheckSubmitResponse
 import com.otoki.internal.safetycheck.dto.response.SafetyCheckTodayResponse
@@ -54,7 +53,9 @@ class SafetyCheckControllerTest {
 
     @MockitoBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-    @MockitoBean private lateinit var adminAuthorityFilter: AdminAuthorityFilter
+
+    @MockitoBean
+    private lateinit var adminAuthorityFilter: AdminAuthorityFilter
 
     @MockitoBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
@@ -69,39 +70,35 @@ class SafetyCheckControllerTest {
         SecurityContextHolder.getContext().authentication = authentication
     }
 
-    // ========== GET /api/v1/safety-check/items ==========
-
     @Nested
     @DisplayName("GET /api/v1/safety-check/items - 항목 조회")
     inner class GetChecklistItemsTests {
 
         @Test
-        @DisplayName("항목 조회 정상 - 200 OK, 카테고리 + 항목 목록 반환")
+        @DisplayName("정상 조회 - 200 OK, 카테고리별 항목 반환")
         fun getChecklistItems_success() {
             // Given
             val mockResponse = SafetyCheckItemsResponse(
                 categories = listOf(
                     SafetyCheckItemsResponse.CategoryInfo(
-                        id = 1L,
-                        name = "안전예방 장비 착용",
-                        description = "아래 항목을 모두 체크하세요",
+                        questionNum = 1,
+                        title = "안전예방 장비 착용",
+                        inputType = "RADIO",
+                        required = true,
+                        options = listOf("예", "해당없음"),
                         items = listOf(
-                            SafetyCheckItemsResponse.CheckItemInfo(
-                                id = 1L, label = "손목보호대", sortOrder = 1, required = true
-                            ),
-                            SafetyCheckItemsResponse.CheckItemInfo(
-                                id = 2L, label = "안전화", sortOrder = 2, required = true
-                            )
+                            SafetyCheckItemsResponse.CheckItemInfo(seqNum = 1, contents = "손목보호대를 착용했습니다"),
+                            SafetyCheckItemsResponse.CheckItemInfo(seqNum = 2, contents = "숨수건을 소지하고 있습니다")
                         )
                     ),
                     SafetyCheckItemsResponse.CategoryInfo(
-                        id = 2L,
-                        name = "사고 예방",
-                        description = "아래 항목을 모두 체크하세요",
+                        questionNum = 2,
+                        title = "안전사고 예방사항",
+                        inputType = "CHECKBOX",
+                        required = false,
+                        options = null,
                         items = listOf(
-                            SafetyCheckItemsResponse.CheckItemInfo(
-                                id = 3L, label = "지게차 근접 금지", sortOrder = 1, required = true
-                            )
+                            SafetyCheckItemsResponse.CheckItemInfo(seqNum = 1, contents = "예방사항 항목 1")
                         )
                     )
                 )
@@ -118,67 +115,85 @@ class SafetyCheckControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("조회 성공"))
                 .andExpect(jsonPath("$.data.categories").isArray)
-                .andExpect(jsonPath("$.data.categories[0].id").value(1))
-                .andExpect(jsonPath("$.data.categories[0].name").value("안전예방 장비 착용"))
-                .andExpect(jsonPath("$.data.categories[0].description").value("아래 항목을 모두 체크하세요"))
-                .andExpect(jsonPath("$.data.categories[0].items").isArray)
-                .andExpect(jsonPath("$.data.categories[0].items[0].id").value(1))
-                .andExpect(jsonPath("$.data.categories[0].items[0].label").value("손목보호대"))
-                .andExpect(jsonPath("$.data.categories[0].items[0].sort_order").value(1))
-                .andExpect(jsonPath("$.data.categories[0].items[0].required").value(true))
-                .andExpect(jsonPath("$.data.categories[1].id").value(2))
-                .andExpect(jsonPath("$.data.categories[1].name").value("사고 예방"))
-                .andExpect(jsonPath("$.data.categories[1].items[0].label").value("지게차 근접 금지"))
+                .andExpect(jsonPath("$.data.categories[0].question_num").value(1))
+                .andExpect(jsonPath("$.data.categories[0].title").value("안전예방 장비 착용"))
+                .andExpect(jsonPath("$.data.categories[0].input_type").value("RADIO"))
+                .andExpect(jsonPath("$.data.categories[0].required").value(true))
+                .andExpect(jsonPath("$.data.categories[0].options[0]").value("예"))
+                .andExpect(jsonPath("$.data.categories[0].options[1]").value("해당없음"))
+                .andExpect(jsonPath("$.data.categories[0].items[0].seq_num").value(1))
+                .andExpect(jsonPath("$.data.categories[0].items[0].contents").value("손목보호대를 착용했습니다"))
+                .andExpect(jsonPath("$.data.categories[1].question_num").value(2))
+                .andExpect(jsonPath("$.data.categories[1].input_type").value("CHECKBOX"))
+                .andExpect(jsonPath("$.data.categories[1].required").value(false))
+                .andExpect(jsonPath("$.data.categories[1].options").doesNotExist())
         }
     }
-
-    // ========== POST /api/v1/safety-check/submit ==========
 
     @Nested
     @DisplayName("POST /api/v1/safety-check/submit - 제출")
     inner class SubmitTests {
 
         @Test
-        @DisplayName("제출 정상 - 200 OK, submissionId 반환")
+        @DisplayName("정상 제출 - 200 OK")
         fun submit_success() {
             // Given
-            val submittedAt = LocalDateTime.of(2026, 2, 8, 8, 30, 0)
+            val submittedAt = LocalDateTime.of(2026, 3, 15, 9, 2, 30)
             val mockResponse = SafetyCheckSubmitResponse(
-                submissionId = 123L,
                 submittedAt = submittedAt,
                 safetyCheckCompleted = true
             )
 
             whenever(safetyCheckService.submitSafetyCheck(eq(1L), any())).thenReturn(mockResponse)
 
-            val request = SafetyCheckSubmitRequest(
-                checkedItemIds = listOf(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, 11L, 12L, 13L, 14L, 15L)
-            )
+            val requestJson = """
+            {
+                "start_time": "2026-03-15T09:00:00",
+                "complete_time": "2026-03-15T09:02:30",
+                "equipments": [
+                    {"seq_num": 1, "answer": "예"},
+                    {"seq_num": 2, "answer": "해당없음"},
+                    {"seq_num": 3, "answer": "예"},
+                    {"seq_num": 4, "answer": "예"},
+                    {"seq_num": 5, "answer": "해당없음"},
+                    {"seq_num": 6, "answer": "해당없음"},
+                    {"seq_num": 7, "answer": "예"},
+                    {"seq_num": 8, "answer": "예"},
+                    {"seq_num": 9, "answer": "예"}
+                ],
+                "precautions": ["예방사항 1", "예방사항 3"]
+            }
+            """.trimIndent()
 
             // When & Then
             mockMvc.perform(
                 post("/api/v1/safety-check/submit")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request))
+                    .content(requestJson)
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("안전점검이 완료되었습니다."))
-                .andExpect(jsonPath("$.data.submission_id").value(123))
                 .andExpect(jsonPath("$.data.safety_check_completed").value(true))
+                .andExpect(jsonPath("$.data.submitted_at").exists())
         }
 
         @Test
-        @DisplayName("제출 빈 항목 - 400 INVALID_PARAMETER")
-        fun submit_emptyItems() {
-            // Given
-            val request = SafetyCheckSubmitRequest(checkedItemIds = emptyList())
+        @DisplayName("장비 항목 누락 - 400 INVALID_PARAMETER")
+        fun submit_emptyEquipments() {
+            val requestJson = """
+            {
+                "start_time": "2026-03-15T09:00:00",
+                "complete_time": "2026-03-15T09:02:30",
+                "equipments": [],
+                "precautions": []
+            }
+            """.trimIndent()
 
-            // When & Then
             mockMvc.perform(
                 post("/api/v1/safety-check/submit")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request))
+                    .content(requestJson)
             )
                 .andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.success").value(false))
@@ -186,19 +201,24 @@ class SafetyCheckControllerTest {
         }
 
         @Test
-        @DisplayName("제출 필수 항목 누락 - 400 REQUIRED_ITEMS_MISSING")
+        @DisplayName("필수 항목 누락 - 400 REQUIRED_ITEMS_MISSING")
         fun submit_requiredItemsMissing() {
-            // Given
             whenever(safetyCheckService.submitSafetyCheck(eq(1L), any()))
                 .thenThrow(RequiredItemsMissingException())
 
-            val request = SafetyCheckSubmitRequest(checkedItemIds = listOf(1L, 2L))
+            val requestJson = """
+            {
+                "start_time": "2026-03-15T09:00:00",
+                "complete_time": "2026-03-15T09:02:30",
+                "equipments": [{"seq_num": 1, "answer": "예"}, {"seq_num": 2, "answer": "예"}],
+                "precautions": []
+            }
+            """.trimIndent()
 
-            // When & Then
             mockMvc.perform(
                 post("/api/v1/safety-check/submit")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request))
+                    .content(requestJson)
             )
                 .andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.success").value(false))
@@ -206,27 +226,30 @@ class SafetyCheckControllerTest {
         }
 
         @Test
-        @DisplayName("제출 중복 - 409 ALREADY_SUBMITTED")
+        @DisplayName("중복 제출 - 409 ALREADY_SUBMITTED")
         fun submit_alreadySubmitted() {
-            // Given
             whenever(safetyCheckService.submitSafetyCheck(eq(1L), any()))
                 .thenThrow(AlreadySubmittedException())
 
-            val request = SafetyCheckSubmitRequest(checkedItemIds = listOf(1L, 2L, 3L))
+            val requestJson = """
+            {
+                "start_time": "2026-03-15T09:00:00",
+                "complete_time": "2026-03-15T09:02:30",
+                "equipments": [{"seq_num": 1, "answer": "예"}],
+                "precautions": []
+            }
+            """.trimIndent()
 
-            // When & Then
             mockMvc.perform(
                 post("/api/v1/safety-check/submit")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request))
+                    .content(requestJson)
             )
                 .andExpect(status().isConflict)
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error.code").value("ALREADY_SUBMITTED"))
         }
     }
-
-    // ========== GET /api/v1/safety-check/today ==========
 
     @Nested
     @DisplayName("GET /api/v1/safety-check/today - 오늘 여부 조회")
@@ -235,8 +258,7 @@ class SafetyCheckControllerTest {
         @Test
         @DisplayName("오늘 완료 - 200 OK, completed=true")
         fun getTodayStatus_completed() {
-            // Given
-            val submittedAt = LocalDateTime.of(2026, 2, 8, 8, 30, 0)
+            val submittedAt = LocalDateTime.of(2026, 3, 15, 9, 2, 30)
             val mockResponse = SafetyCheckTodayResponse(
                 completed = true,
                 submittedAt = submittedAt
@@ -244,7 +266,6 @@ class SafetyCheckControllerTest {
 
             whenever(safetyCheckService.getTodayStatus(1L)).thenReturn(mockResponse)
 
-            // When & Then
             mockMvc.perform(
                 get("/api/v1/safety-check/today")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -258,7 +279,6 @@ class SafetyCheckControllerTest {
         @Test
         @DisplayName("오늘 미완료 - 200 OK, completed=false")
         fun getTodayStatus_notCompleted() {
-            // Given
             val mockResponse = SafetyCheckTodayResponse(
                 completed = false,
                 submittedAt = null
@@ -266,7 +286,6 @@ class SafetyCheckControllerTest {
 
             whenever(safetyCheckService.getTodayStatus(1L)).thenReturn(mockResponse)
 
-            // When & Then
             mockMvc.perform(
                 get("/api/v1/safety-check/today")
                     .contentType(MediaType.APPLICATION_JSON)

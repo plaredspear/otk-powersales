@@ -4,16 +4,16 @@ data class SafetyCheckItemsResponse(
     val categories: List<CategoryInfo>
 ) {
     data class CategoryInfo(
-        val id: Long,
-        val name: String,
-        val description: String?,
+        val questionNum: Int,
+        val title: String,
+        val inputType: String,
+        val required: Boolean,
+        val options: List<String>?,
         val items: List<CheckItemInfo>
     )
 
     data class CheckItemInfo(
-        val id: Long,
-        val label: String,
-        val sortOrder: Int,
-        val required: Boolean
+        val seqNum: Int,
+        val contents: String
     )
 }
