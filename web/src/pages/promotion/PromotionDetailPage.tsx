@@ -486,16 +486,49 @@ export default function PromotionDetailPage() {
     return true;
   };
 
-  // --- 행사사원 저장 ---
-  const handleEmpSave = async () => {
-    if (!validateRequired()) return;
+  // --- 일정 해제 대상 판별 ---
+  interface ScheduleReleaseTarget {
+    employeeName: string;
+    scheduleDate: string;
+    changedFields: string[];
+  }
 
-    const changedItems = getChangedItems();
-    if (!changedItems || changedItems.length === 0) {
-      cancelEmpEditMode();
-      return;
+  const getScheduleReleaseTargets = (
+    changedItems: BatchUpdatePromotionEmployeeItem[],
+  ): ScheduleReleaseTarget[] => {
+    if (!employees) return [];
+    const originalMap = new Map(employees.map((e) => [e.id, e]));
+    const targets: ScheduleReleaseTarget[] = [];
+
+    for (const item of changedItems) {
+      const orig = originalMap.get(item.id);
+      if (!orig || !orig.scheduleId) continue; // 미확정 → 스킵
+
+      const changedFields: string[] = [];
+      if (item.employee_id !== orig.employeeId) changedFields.push('행사사원');
+      if (item.schedule_date !== (orig.scheduleDate ?? '')) changedFields.push('투입일');
+      if (item.work_type3 !== orig.workType3) changedFields.push('근무유형3');
+
+      if (changedFields.length === 0) continue; // 핵심 필드 변경 없음
+
+      // 전문행사조만 변경된 경우 스킵
+      const onlyProfTeamChanged =
+        item.professional_promotion_team !== orig.professionalPromotionTeam &&
+        changedFields.length === 0;
+      if (onlyProfTeamChanged) continue;
+
+      targets.push({
+        employeeName: orig.employeeName ?? orig.employeeId ?? '-',
+        scheduleDate: orig.scheduleDate ?? '-',
+        changedFields,
+      });
     }
 
+    return targets;
+  };
+
+  // --- 저장 실행 (API 호출) ---
+  const executeSave = async (changedItems: BatchUpdatePromotionEmployeeItem[]) => {
     try {
       await batchUpdateMutation.mutateAsync({
         promotionId,
@@ -543,6 +576,52 @@ export default function PromotionDetailPage() {
       } else {
         message.error(err instanceof Error ? err.message : '일괄 수정에 실패했습니다');
       }
+    }
+  };
+
+  // --- 행사사원 저장 ---
+  const handleEmpSave = async () => {
+    if (!validateRequired()) return;
+
+    const changedItems = getChangedItems();
+    if (!changedItems || changedItems.length === 0) {
+      cancelEmpEditMode();
+      return;
+    }
+
+    // 일정 해제 대상 판별
+    const releaseTargets = getScheduleReleaseTargets(changedItems);
+
+    if (releaseTargets.length > 0) {
+      const maxDisplay = 5;
+      const displayTargets = releaseTargets.slice(0, maxDisplay);
+      const remaining = releaseTargets.length - maxDisplay;
+
+      Modal.confirm({
+        title: '일정 확정 변경 안내',
+        icon: <InfoCircleOutlined style={{ color: '#1677ff' }} />,
+        content: (
+          <div>
+            <p>아래 행사사원의 확정된 여사원일정이 해제됩니다.</p>
+            <ul style={{ margin: '8px 0', paddingLeft: 20 }}>
+              {displayTargets.map((t, idx) => (
+                <li key={idx}>
+                  {t.employeeName} ({t.scheduleDate}) — {t.changedFields.join(', ')} 변경
+                </li>
+              ))}
+              {remaining > 0 && <li>외 {remaining}명</li>}
+            </ul>
+            <p style={{ color: '#666', fontSize: 13 }}>
+              해제된 일정은 &quot;일정 확정&quot; 버튼을 다시 눌러 재확정할 수 있습니다.
+            </p>
+          </div>
+        ),
+        okText: '확인 후 저장',
+        cancelText: '취소',
+        onOk: () => executeSave(changedItems),
+      });
+    } else {
+      await executeSave(changedItems);
     }
   };
 
