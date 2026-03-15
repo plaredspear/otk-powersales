@@ -38,9 +38,9 @@ class AttendanceApiDataSource {
 
     return StoreListResult(
       stores: stores,
-      totalCount: data['totalCount'] as int,
-      registeredCount: data['registeredCount'] as int,
-      currentDate: data['currentDate'] as String,
+      totalCount: data['total_count'] as int,
+      registeredCount: data['registered_count'] as int,
+      currentDate: data['current_date'] as String,
     );
   }
 
@@ -74,7 +74,7 @@ class AttendanceApiDataSource {
     final response = await _dio.get('/api/v1/attendance/status');
 
     final data = response.data['data'] as Map<String, dynamic>;
-    final statusListJson = data['statusList'] as List<dynamic>;
+    final statusListJson = data['status_list'] as List<dynamic>;
     final statusList = statusListJson
         .map((json) =>
             AttendanceStatusModel.fromJson(json as Map<String, dynamic>)
@@ -82,10 +82,10 @@ class AttendanceApiDataSource {
         .toList();
 
     return AttendanceStatusResult(
-      totalCount: data['totalCount'] as int,
-      registeredCount: data['registeredCount'] as int,
+      totalCount: data['total_count'] as int,
+      registeredCount: data['registered_count'] as int,
       statusList: statusList,
-      currentDate: data['currentDate'] as String,
+      currentDate: data['current_date'] as String,
     );
   }
 }
