@@ -7,7 +7,7 @@ import AdminLayout from '@/layouts/AdminLayout';
 const LoginPage = lazy(() => import('@/pages/LoginPage'));
 const DashboardPage = lazy(() => import('@/pages/DashboardPage'));
 const SalesQueryPage = lazy(() => import('@/pages/SalesQueryPage'));
-const SchedulePage = lazy(() => import('@/pages/SchedulePage'));
+const SchedulePage = lazy(() => import('@/pages/schedule/SchedulePage'));
 const DeploymentPage = lazy(() => import('@/pages/DeploymentPage'));
 const AttendancePage = lazy(() => import('@/pages/AttendancePage'));
 const EventTeamPage = lazy(() => import('@/pages/EventTeamPage'));
