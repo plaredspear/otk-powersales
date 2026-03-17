@@ -31,7 +31,7 @@ export default function AdminLayout() {
         location={{ pathname: location.pathname }}
         fixedHeader
         fixSiderbar
-        layout="mix"
+        layout="side"
         token={{
           header: {
             heightLayoutHeader: HEADER_HEIGHT + BREADCRUMB_HEIGHT,
