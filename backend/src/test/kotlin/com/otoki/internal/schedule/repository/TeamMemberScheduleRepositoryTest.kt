@@ -31,7 +31,7 @@ class TeamMemberScheduleRepositoryTest {
     @Autowired
     private lateinit var testEntityManager: TestEntityManager
 
-    private val testEmployeeId = "a0B000000012345"
+    private val testEmployeeId = "00000001"
 
     @BeforeEach
     fun setUp() {
@@ -92,7 +92,7 @@ class TeamMemberScheduleRepositoryTest {
     fun findByEmployeeIdAndWorkingDate_differentEmployee() {
         // Given
         val today = LocalDate.now()
-        val otherEmployeeId = "a0B000000099999"
+        val otherEmployeeId = "00000099"
         val teamMemberSchedule = TeamMemberSchedule(
             employeeId = otherEmployeeId,
             workingDate = today,
@@ -127,9 +127,9 @@ class TeamMemberScheduleRepositoryTest {
         fun findByWorkingDateAndEmployeeIdIn_threeEmployees() {
             // Given
             val today = LocalDate.now()
-            val employeeId1 = "a0B000000011111"
-            val employeeId2 = "a0B000000022222"
-            val employeeId3 = "a0B000000033333"
+            val employeeId1 = "00000011"
+            val employeeId2 = "00000022"
+            val employeeId3 = "00000033"
 
             val teamMemberSchedule1 = TeamMemberSchedule(
                 employeeId = employeeId1,
@@ -169,7 +169,7 @@ class TeamMemberScheduleRepositoryTest {
             // Given
             val today = LocalDate.now()
             val teamMemberSchedule = TeamMemberSchedule(
-                employeeId = "a0B000000099999",
+                employeeId = "00000099",
                 workingDate = today,
                 workingType = "순회"
             )
@@ -179,7 +179,7 @@ class TeamMemberScheduleRepositoryTest {
             // When
             val result = teamMemberScheduleRepository.findByWorkingDateAndEmployeeIdIn(
                 today,
-                listOf("a0B000000011111", "a0B000000022222")
+                listOf("00000011", "00000022")
             )
 
             // Then

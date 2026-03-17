@@ -34,7 +34,7 @@ class TeamMemberSchedule(
 
     @SFField("DKRetail__EmployeeId__c")
     @HCColumn("dkretail__employeeid__c")
-    @Column(name = "employee_id", length = 18)
+    @Column(name = "employee_id", length = 100)
     var employeeId: String? = null,
 
     @SFField("DKRetail__WorkingDate__c")

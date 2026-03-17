@@ -12,7 +12,7 @@ data class TeamMemberDto(
 ) {
     companion object {
         fun from(user: User): TeamMemberDto = TeamMemberDto(
-            employeeId = user.sfid ?: "",
+            employeeId = user.employeeId,
             empCode = user.employeeId,
             name = user.name
         )
