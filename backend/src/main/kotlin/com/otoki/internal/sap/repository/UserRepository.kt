@@ -63,4 +63,9 @@ interface UserRepository : JpaRepository<User, Long>, UserRepositoryCustom {
      * sfid로 사용자 단건 조회 (여사원 일정관리 - 일정 등록 시 사원 검증)
      */
     fun findBySfid(sfid: String): User?
+
+    /**
+     * 조직 목록(costCenterCode IN) + 권한(appAuthority)으로 사용자 일괄 조회 (진열스케줄 업로드 - 조장 조회)
+     */
+    fun findByCostCenterCodeInAndAppAuthority(costCenterCodes: List<String>, appAuthority: String): List<User>
 }

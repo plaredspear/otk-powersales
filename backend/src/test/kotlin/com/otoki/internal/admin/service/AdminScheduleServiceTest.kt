@@ -8,7 +8,9 @@ import com.otoki.internal.auth.exception.UserNotFoundException
 import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.sap.entity.Organization
 import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.entity.MonthlySalesHistory
 import com.otoki.internal.sap.repository.AccountRepository
+import com.otoki.internal.sap.repository.MonthlySalesHistoryRepository
 import com.otoki.internal.sap.repository.OrganizationRepository
 import com.otoki.internal.sap.repository.UserRepository
 import com.otoki.internal.schedule.entity.DisplayWorkSchedule
@@ -54,6 +56,9 @@ class AdminScheduleServiceTest {
 
     @Mock
     private lateinit var scheduleRepository: DisplayWorkScheduleRepository
+
+    @Mock
+    private lateinit var monthlySalesHistoryRepository: MonthlySalesHistoryRepository
 
     @Mock
     private lateinit var redisTemplate: RedisTemplate<String, String>
@@ -324,6 +329,202 @@ class AdminScheduleServiceTest {
             assertThatThrownBy { adminScheduleService.confirmUpload("error-upload-id") }
                 .isInstanceOf(ScheduleHasValidationErrorsException::class.java)
         }
+
+        @Test
+        @DisplayName("costCenterCode 자동 설정 - 사원의 costCenterCode가 저장된다")
+        fun confirmUpload_costCenterCode() {
+            val uploadId = "test-cost-center"
+            val cacheData = AdminScheduleService.UploadCacheData(
+                validRows = listOf(
+                    ScheduleUploadValidator.ValidatedRow(
+                        "20030001", "ACC001", "고정", "상시",
+                        LocalDate.of(2026, 4, 1), null,
+                        costCenterCode = "A10010", accountExternalKey = "EXT001"
+                    )
+                ),
+                errorCount = 0
+            )
+            val json = objectMapper.writeValueAsString(cacheData)
+
+            whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
+            whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
+            whenever(userRepository.findByCostCenterCodeInAndAppAuthority(listOf("A10010"), "조장"))
+                .thenReturn(emptyList())
+            whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountExternalKeyIn(any(), any(), any()))
+                .thenReturn(emptyList())
+            whenever(scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>())).thenAnswer { it.getArgument<List<DisplayWorkSchedule>>(0) }
+            whenever(redisTemplate.delete(any<String>())).thenReturn(true)
+
+            adminScheduleService.confirmUpload(uploadId)
+
+            verify(scheduleRepository).saveAll(argThat<List<DisplayWorkSchedule>> { list ->
+                list.size == 1 && list[0].costCenterCode == "A10010"
+            })
+        }
+
+        @Test
+        @DisplayName("ownerId 자동 설정 - 조장이 존재하면 조장의 employeeId 저장")
+        fun confirmUpload_ownerIdWithManager() {
+            val uploadId = "test-owner"
+            val cacheData = AdminScheduleService.UploadCacheData(
+                validRows = listOf(
+                    ScheduleUploadValidator.ValidatedRow(
+                        "20030001", "ACC001", "고정", "상시",
+                        LocalDate.of(2026, 4, 1), null,
+                        costCenterCode = "A10010", accountExternalKey = "EXT001"
+                    )
+                ),
+                errorCount = 0
+            )
+            val json = objectMapper.writeValueAsString(cacheData)
+            val manager = createUser(employeeId = "20030099", name = "조장사원", costCenterCode = "A10010", appAuthority = "조장")
+
+            whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
+            whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
+            whenever(userRepository.findByCostCenterCodeInAndAppAuthority(listOf("A10010"), "조장"))
+                .thenReturn(listOf(manager))
+            whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountExternalKeyIn(any(), any(), any()))
+                .thenReturn(emptyList())
+            whenever(scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>())).thenAnswer { it.getArgument<List<DisplayWorkSchedule>>(0) }
+            whenever(redisTemplate.delete(any<String>())).thenReturn(true)
+
+            adminScheduleService.confirmUpload(uploadId)
+
+            verify(scheduleRepository).saveAll(argThat<List<DisplayWorkSchedule>> { list ->
+                list.size == 1 && list[0].ownerId == "20030099"
+            })
+        }
+
+        @Test
+        @DisplayName("ownerId 자동 설정 - 조장 미존재 시 null")
+        fun confirmUpload_ownerIdWithoutManager() {
+            val uploadId = "test-no-manager"
+            val cacheData = AdminScheduleService.UploadCacheData(
+                validRows = listOf(
+                    ScheduleUploadValidator.ValidatedRow(
+                        "20030001", "ACC001", "고정", "상시",
+                        LocalDate.of(2026, 4, 1), null,
+                        costCenterCode = "A10010", accountExternalKey = "EXT001"
+                    )
+                ),
+                errorCount = 0
+            )
+            val json = objectMapper.writeValueAsString(cacheData)
+
+            whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
+            whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
+            whenever(userRepository.findByCostCenterCodeInAndAppAuthority(listOf("A10010"), "조장"))
+                .thenReturn(emptyList())
+            whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountExternalKeyIn(any(), any(), any()))
+                .thenReturn(emptyList())
+            whenever(scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>())).thenAnswer { it.getArgument<List<DisplayWorkSchedule>>(0) }
+            whenever(redisTemplate.delete(any<String>())).thenReturn(true)
+
+            adminScheduleService.confirmUpload(uploadId)
+
+            verify(scheduleRepository).saveAll(argThat<List<DisplayWorkSchedule>> { list ->
+                list.size == 1 && list[0].ownerId == null
+            })
+        }
+
+        @Test
+        @DisplayName("lastMonthRevenue 자동 설정 - 전월 매출 존재 시 Long 변환 저장")
+        fun confirmUpload_lastMonthRevenue() {
+            val uploadId = "test-revenue"
+            val cacheData = AdminScheduleService.UploadCacheData(
+                validRows = listOf(
+                    ScheduleUploadValidator.ValidatedRow(
+                        "20030001", "ACC001", "고정", "상시",
+                        LocalDate.of(2026, 4, 1), null,
+                        costCenterCode = "A10010", accountExternalKey = "EXT001"
+                    )
+                ),
+                errorCount = 0
+            )
+            val json = objectMapper.writeValueAsString(cacheData)
+            val salesHistory = MonthlySalesHistory(
+                id = 1,
+                accountExternalKey = "EXT001",
+                lastMonthResults = 5000000.0
+            )
+
+            whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
+            whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
+            whenever(userRepository.findByCostCenterCodeInAndAppAuthority(listOf("A10010"), "조장"))
+                .thenReturn(emptyList())
+            whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountExternalKeyIn(any(), any(), eq(listOf("EXT001"))))
+                .thenReturn(listOf(salesHistory))
+            whenever(scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>())).thenAnswer { it.getArgument<List<DisplayWorkSchedule>>(0) }
+            whenever(redisTemplate.delete(any<String>())).thenReturn(true)
+
+            adminScheduleService.confirmUpload(uploadId)
+
+            verify(scheduleRepository).saveAll(argThat<List<DisplayWorkSchedule>> { list ->
+                list.size == 1 && list[0].lastMonthRevenue == 5000000L
+            })
+        }
+
+        @Test
+        @DisplayName("lastMonthRevenue 자동 설정 - 매출 데이터 없으면 null")
+        fun confirmUpload_lastMonthRevenueNull() {
+            val uploadId = "test-no-revenue"
+            val cacheData = AdminScheduleService.UploadCacheData(
+                validRows = listOf(
+                    ScheduleUploadValidator.ValidatedRow(
+                        "20030001", "ACC001", "고정", "상시",
+                        LocalDate.of(2026, 4, 1), null,
+                        costCenterCode = "A10010", accountExternalKey = "EXT001"
+                    )
+                ),
+                errorCount = 0
+            )
+            val json = objectMapper.writeValueAsString(cacheData)
+
+            whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
+            whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
+            whenever(userRepository.findByCostCenterCodeInAndAppAuthority(listOf("A10010"), "조장"))
+                .thenReturn(emptyList())
+            whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountExternalKeyIn(any(), any(), eq(listOf("EXT001"))))
+                .thenReturn(emptyList())
+            whenever(scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>())).thenAnswer { it.getArgument<List<DisplayWorkSchedule>>(0) }
+            whenever(redisTemplate.delete(any<String>())).thenReturn(true)
+
+            adminScheduleService.confirmUpload(uploadId)
+
+            verify(scheduleRepository).saveAll(argThat<List<DisplayWorkSchedule>> { list ->
+                list.size == 1 && list[0].lastMonthRevenue == null
+            })
+        }
+
+        @Test
+        @DisplayName("costCenterCode가 null인 사원 - ownerId null, costCenterCode null")
+        fun confirmUpload_nullCostCenterCode() {
+            val uploadId = "test-null-cc"
+            val cacheData = AdminScheduleService.UploadCacheData(
+                validRows = listOf(
+                    ScheduleUploadValidator.ValidatedRow(
+                        "20030001", "ACC001", "고정", "상시",
+                        LocalDate.of(2026, 4, 1), null,
+                        costCenterCode = null, accountExternalKey = "EXT001"
+                    )
+                ),
+                errorCount = 0
+            )
+            val json = objectMapper.writeValueAsString(cacheData)
+
+            whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
+            whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
+            whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountExternalKeyIn(any(), any(), eq(listOf("EXT001"))))
+                .thenReturn(emptyList())
+            whenever(scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>())).thenAnswer { it.getArgument<List<DisplayWorkSchedule>>(0) }
+            whenever(redisTemplate.delete(any<String>())).thenReturn(true)
+
+            adminScheduleService.confirmUpload(uploadId)
+
+            verify(scheduleRepository).saveAll(argThat<List<DisplayWorkSchedule>> { list ->
+                list.size == 1 && list[0].ownerId == null && list[0].costCenterCode == null
+            })
+        }
     }
 
     private fun createUser(
@@ -333,14 +534,15 @@ class AdminScheduleServiceTest {
         costCenterCode: String? = "1234",
         orgName: String = "테스트팀",
         sfid: String? = "USR_SFID_001",
-        status: String = "재직"
+        status: String = "재직",
+        appAuthority: String? = null
     ): User = User(
         id = id,
         employeeId = employeeId,
         name = name,
         costCenterCode = costCenterCode,
         orgName = orgName,
-        appAuthority = null,
+        appAuthority = appAuthority,
         appLoginActive = true,
         status = status,
         sfid = sfid

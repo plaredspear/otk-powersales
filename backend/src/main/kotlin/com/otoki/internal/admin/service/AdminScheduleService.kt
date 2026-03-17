@@ -13,9 +13,11 @@ import com.otoki.internal.schedule.entity.DisplayWorkSchedule
 import com.otoki.internal.schedule.repository.DisplayWorkScheduleRepository
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.http.HttpStatus
+import com.otoki.internal.sap.repository.MonthlySalesHistoryRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
@@ -31,6 +33,7 @@ class AdminScheduleService(
     private val excelParser: ScheduleExcelParser,
     private val uploadValidator: ScheduleUploadValidator,
     private val scheduleRepository: DisplayWorkScheduleRepository,
+    private val monthlySalesHistoryRepository: MonthlySalesHistoryRepository,
     private val redisTemplate: RedisTemplate<String, String>,
     private val objectMapper: ObjectMapper
 ) {
@@ -144,7 +147,40 @@ class AdminScheduleService(
             throw ScheduleHasValidationErrorsException()
         }
 
+        // 조장 일괄 조회: costCenterCode 목록 → appAuthority="조장" 사원
+        val costCenterCodes = cacheData.validRows.mapNotNull { it.costCenterCode }.distinct()
+        val managersByCostCenter = if (costCenterCodes.isNotEmpty()) {
+            userRepository.findByCostCenterCodeInAndAppAuthority(costCenterCodes, "조장")
+                .groupBy { it.costCenterCode }
+        } else {
+            emptyMap()
+        }
+
+        // 전월 매출 일괄 조회
+        val today = LocalDate.now()
+        val lastMonth = today.minusMonths(1)
+        val salesYear = lastMonth.year.toString()
+        val salesMonth = String.format("%02d", lastMonth.monthValue)
+        val accountExternalKeys = cacheData.validRows.mapNotNull { it.accountExternalKey }.distinct()
+        val revenueByAccountKey = if (accountExternalKeys.isNotEmpty()) {
+            monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountExternalKeyIn(
+                salesYear, salesMonth, accountExternalKeys
+            ).associateBy { it.accountExternalKey }
+        } else {
+            emptyMap()
+        }
+
         val entities = cacheData.validRows.map { row ->
+            val costCenterCode = row.costCenterCode
+            val ownerId = if (!costCenterCode.isNullOrBlank()) {
+                managersByCostCenter[costCenterCode]?.firstOrNull()?.employeeId
+            } else {
+                null
+            }
+            val lastMonthRevenue = row.accountExternalKey?.let { key ->
+                revenueByAccountKey[key]?.lastMonthResults?.toLong()
+            }
+
             DisplayWorkSchedule(
                 fullName = row.userEmployeeId,
                 account = row.accountSfid,
@@ -153,7 +189,10 @@ class AdminScheduleService(
                 typeOfWork5 = row.typeOfWork5,
                 startDate = row.startDate,
                 endDate = row.endDate,
-                confirmed = false
+                confirmed = false,
+                costCenterCode = costCenterCode,
+                lastMonthRevenue = lastMonthRevenue,
+                ownerId = ownerId
             )
         }
 
