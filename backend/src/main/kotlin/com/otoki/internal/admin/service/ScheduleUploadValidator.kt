@@ -28,7 +28,9 @@ class ScheduleUploadValidator {
         val typeOfWork3: String,
         val typeOfWork5: String,
         val startDate: LocalDate,
-        val endDate: LocalDate?
+        val endDate: LocalDate?,
+        val costCenterCode: String? = null,
+        val accountExternalKey: String? = null
     )
 
     fun validate(
@@ -182,7 +184,9 @@ class ScheduleUploadValidator {
                     typeOfWork3 = typeOfWork3,
                     typeOfWork5 = typeOfWork5,
                     startDate = startDate,
-                    endDate = endDate
+                    endDate = endDate,
+                    costCenterCode = user.costCenterCode,
+                    accountExternalKey = accountCode
                 )
                 validRows.add(validatedRow)
                 validatedInFile.add(

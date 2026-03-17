@@ -93,11 +93,11 @@ class SFSchemaUtilsTest {
         }
 
         @Test
-        @DisplayName("DisplayWorkSchedule 엔티티 - 9개 SF Field 매핑 반환")
+        @DisplayName("DisplayWorkSchedule 엔티티 - 12개 SF Field 매핑 반환")
         fun getSFMapping_displayWorkSchedule() {
             val mapping = SFSchemaUtils.getSFMapping(DisplayWorkSchedule::class.java)
 
-            assertThat(mapping).hasSize(9)
+            assertThat(mapping).hasSize(12)
             assertThat(mapping["Account__c"]).isEqualTo("account")
             assertThat(mapping["FullName__c"]).isEqualTo("full_name")
             assertThat(mapping["StartDate__c"]).isEqualTo("start_date")
@@ -107,6 +107,9 @@ class SFSchemaUtilsTest {
             assertThat(mapping["TypeOfWork3__c"]).isEqualTo("type_of_work3")
             assertThat(mapping["TypeOfWork5__c"]).isEqualTo("type_of_work5")
             assertThat(mapping["Name"]).isEqualTo("name")
+            assertThat(mapping["OwnerId"]).isEqualTo("owner_id")
+            assertThat(mapping["CostCenterCode__c"]).isEqualTo("cost_center_code")
+            assertThat(mapping["LastMonthRevenue__c"]).isEqualTo("last_month_revenue")
         }
 
         @Test
@@ -208,11 +211,11 @@ class SFSchemaUtilsTest {
         }
 
         @Test
-        @DisplayName("DisplayWorkSchedule 엔티티 - 18개 HC Column 매핑 반환")
+        @DisplayName("DisplayWorkSchedule 엔티티 - 20개 HC Column 매핑 반환")
         fun getHCMapping_displayWorkSchedule() {
             val mapping = SFSchemaUtils.getHCMapping(DisplayWorkSchedule::class.java)
 
-            assertThat(mapping).hasSize(18)
+            assertThat(mapping).hasSize(20)
             assertThat(mapping["id"]).isEqualTo("id")
             assertThat(mapping["sfid"]).isEqualTo("sfid")
             assertThat(mapping["name"]).isEqualTo("name")
@@ -231,6 +234,8 @@ class SFSchemaUtilsTest {
             assertThat(mapping["systemmodstamp"]).isEqualTo("systemmodstamp")
             assertThat(mapping["_hc_lastop"]).isEqualTo("_hc_lastop")
             assertThat(mapping["_hc_err"]).isEqualTo("_hc_err")
+            assertThat(mapping["costcentercode__c"]).isEqualTo("cost_center_code")
+            assertThat(mapping["lastmonthrevenue__c"]).isEqualTo("last_month_revenue")
         }
 
         @Test
