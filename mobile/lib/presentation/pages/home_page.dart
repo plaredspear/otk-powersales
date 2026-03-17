@@ -122,9 +122,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                 currentDate: homeData.currentDate,
                 attendanceSummary: homeData.attendanceSummary,
                 userRole: userRole,
-                onHeaderTap: () {
-                  AppRouter.navigateTo(context, AppRouter.myScheduleCalendar);
-                },
                 onRegisterTap: () async {
                   await _handleRegisterTap(userRole);
                   if (mounted) {
