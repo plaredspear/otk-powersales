@@ -41,19 +41,16 @@ export default function AdminLayout() {
         menuItemRender={(item, dom) => (
           <a onClick={() => item.path && navigate(item.path)}>{dom}</a>
         )}
-        actionsRender={() => [
-          <Space key="user" align="center">
-            <Text>
-              {user?.name}
-            </Text>
-            <Button type="text" size="small" onClick={handleLogout}>
-              로그아웃
-            </Button>
-          </Space>,
-        ]}
-        headerRender={(_props, defaultDom) => (
+        headerRender={() => (
           <>
-            {defaultDom}
+            <div className="admin-header">
+              <Space align="center">
+                <Text>{user?.name}</Text>
+                <Button type="text" size="small" onClick={handleLogout}>
+                  로그아웃
+                </Button>
+              </Space>
+            </div>
             <AppBreadcrumb />
           </>
         )}
