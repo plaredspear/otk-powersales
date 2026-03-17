@@ -2,15 +2,16 @@
 #
 # hc-import.sh
 #
-# Heroku Connect DB → Dev DB 데이터 Import 스크립트
-# HC DB(salesforce 스키마)에서 데이터를 추출하여 Dev DB(salesforce2 스키마)에 import한다.
+# Heroku Connect DB → 타겟 DB 데이터 Import 스크립트
+# HC DB(salesforce 스키마)에서 데이터를 추출하여 타겟 DB(salesforce2 스키마)에 import한다.
 #
 # Usage:
-#   ./scripts/hc-import.sh                         # account 테이블 UPSERT (기본)
+#   ./scripts/hc-import.sh                         # account 테이블 UPSERT (기본, dev 환경)
 #   ./scripts/hc-import.sh --dry-run                # SQL/행 수만 확인
 #   ./scripts/hc-import.sh --truncate               # TRUNCATE 후 COPY
 #   ./scripts/hc-import.sh --table account           # 테이블 지정
 #   ./scripts/hc-import.sh --all                     # 모든 테이블 순차 import
+#   ./scripts/hc-import.sh --env prod --all          # prod 환경으로 전체 import
 #
 set -euo pipefail
 
@@ -37,7 +38,7 @@ confirm() {
 ################################################################################
 # 새 테이블 추가 시: get_table_config 함수에 case 블록을 추가하면 됨.
 
-SUPPORTED_TABLES="account product product_barcode"
+SUPPORTED_TABLES="account product product_barcode safetycheck_list safetycheck_member"
 
 # 테이블 설정을 반환하는 함수
 # 출력: hc_schema|hc_table|dev_schema|dev_table|select_expr|dev_columns|conflict_key
@@ -74,6 +75,26 @@ get_table_config() {
       local conflict_key="sfid"
       echo "${hc_schema}|${hc_table}|${dev_schema}|${dev_table}|${select_expr}|${dev_columns}|${conflict_key}"
       ;;
+    safetycheck_list)
+      local hc_schema="salesforce2"
+      local hc_table="safetycheck_list"
+      local dev_schema="salesforce2"
+      local dev_table="safetycheck_list"
+      local select_expr="question_num, seq_num, contents, use_yn"
+      local dev_columns="question_num, seq_num, contents, use_yn"
+      local conflict_key="question_num, seq_num"
+      echo "${hc_schema}|${hc_table}|${dev_schema}|${dev_table}|${select_expr}|${dev_columns}|${conflict_key}"
+      ;;
+    safetycheck_member)
+      local hc_schema="salesforce2"
+      local hc_table="safetycheck__workschedule__member"
+      local dev_schema="salesforce2"
+      local dev_table="safetycheck__workschedule__member"
+      local select_expr="\"masterId\", employeeid__c, working__date, starttime, completetime, yes_chkcnt, no_chkcnt, equipment1, equipment2, equipment3, equipment4, equipment5, equipment6, equipment7, equipment8, equipment9, precaution, precaution_chkcnt, traversalflag, eventmasterid, completeworkyn"
+      local dev_columns="\"masterId\", employeeid__c, working__date, starttime, completetime, yes_chkcnt, no_chkcnt, equipment1, equipment2, equipment3, equipment4, equipment5, equipment6, equipment7, equipment8, equipment9, precaution, precaution_chkcnt, traversalflag, eventmasterid, completeworkyn"
+      local conflict_key=""
+      echo "${hc_schema}|${hc_table}|${dev_schema}|${dev_table}|${select_expr}|${dev_columns}|${conflict_key}"
+      ;;
     *)
       return 1
       ;;
@@ -88,6 +109,7 @@ TABLE="account"
 DRY_RUN=false
 TRUNCATE=false
 ALL=false
+ENV="dev"
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -99,17 +121,21 @@ while [[ $# -gt 0 ]]; do
       TRUNCATE=true; shift ;;
     --all)
       ALL=true; shift ;;
+    --env)
+      ENV="$2"; shift 2 ;;
     --help|-h)
       echo "Usage: $0 [options]"
       echo ""
       echo "Options:"
       echo "  --table <name>  Import 대상 테이블 (기본: account)"
+      echo "  --env <name>    타겟 DB 환경 (기본: dev) — dev, prod"
       echo "  --dry-run       실제 INSERT 없이 SQL/행 수만 출력"
-      echo "  --truncate      Import 전 Dev DB 테이블 TRUNCATE (기본: UPSERT)"
+      echo "  --truncate      Import 전 타겟 DB 테이블 TRUNCATE (기본: UPSERT)"
       echo "  --all           등록된 모든 테이블 순차 import"
       echo "  --help          사용법 출력"
       echo ""
       echo "지원 테이블: $SUPPORTED_TABLES"
+      echo "지원 환경:   dev, prod"
       exit 0
       ;;
     *) err "Unknown option: $1"; exit 1 ;;
@@ -151,11 +177,35 @@ HC_DB=$(jq -r '.["dev-heroku-db"].DATABASE' "$ACCOUNTS_FILE")
 HC_USER=$(jq -r '.["dev-heroku-db"].USER' "$ACCOUNTS_FILE")
 HC_PASS=$(jq -r '.["dev-heroku-db"].PASSWORD' "$ACCOUNTS_FILE")
 
-# Dev DB 접속 정보
-DEV_HOST="dev-db.codapt.kr"
-DEV_PORT="5432"
-DEV_DB="otoki"
-DEV_USER="otoki_admin"
+# 타겟 DB 접속 정보 (--env 기반)
+case "$ENV" in
+  dev)
+    TARGET_HOST="dev-db.codapt.kr"
+    TARGET_PORT="5432"
+    TARGET_DB="otoki"
+    TARGET_USER="otoki_admin"
+    ;;
+  prod)
+    TARGET_HOST="${PROD_DB_HOST:?PROD_DB_HOST 환경변수를 설정하세요}"
+    TARGET_PORT="${PROD_DB_PORT:-5432}"
+    TARGET_DB="${PROD_DB_NAME:?PROD_DB_NAME 환경변수를 설정하세요}"
+    TARGET_USER="${PROD_DB_USER:?PROD_DB_USER 환경변수를 설정하세요}"
+    ;;
+  *)
+    err "지원하지 않는 환경: $ENV (dev, prod)"
+    exit 1
+    ;;
+esac
+log "타겟 환경: $ENV ($TARGET_HOST:$TARGET_PORT/$TARGET_DB)"
+
+# prod 환경 안전 확인
+if [[ "$ENV" == "prod" && "$DRY_RUN" != "true" ]]; then
+  warn "⚠️  운영(prod) DB에 데이터를 import합니다!"
+  if ! confirm "정말 진행하시겠습니까?"; then
+    log "사용자에 의해 취소되었습니다."
+    exit 0
+  fi
+fi
 
 ################################################################################
 # DB 접속 테스트
@@ -170,12 +220,12 @@ if ! PGPASSWORD="$HC_PASS" PGSSLMODE=require psql -h "$HC_HOST" -p "$HC_PORT" -U
 fi
 log "HC DB 접속 성공"
 
-if ! psql -h "$DEV_HOST" -p "$DEV_PORT" -U "$DEV_USER" -d "$DEV_DB" \
+if ! psql -h "$TARGET_HOST" -p "$TARGET_PORT" -U "$TARGET_USER" -d "$TARGET_DB" \
   -c "SELECT 1;" &>/dev/null; then
-  err "Dev DB 접속 실패: $DEV_HOST:$DEV_PORT/$DEV_DB"
+  err "타겟 DB 접속 실패: $TARGET_HOST:$TARGET_PORT/$TARGET_DB"
   exit 1
 fi
-log "Dev DB 접속 성공"
+log "타겟 DB 접속 성공"
 
 ################################################################################
 # Import 함수
@@ -204,11 +254,11 @@ import_table() {
     -t -A -c "SELECT count(*) FROM ${hc_schema}.${hc_table};")
   log "HC DB 소스 행 수: $hc_count"
 
-  # Dev DB 기존 행 수
+  # 타겟 DB 기존 행 수
   local dev_count_before
-  dev_count_before=$(psql -h "$DEV_HOST" -p "$DEV_PORT" -U "$DEV_USER" -d "$DEV_DB" \
+  dev_count_before=$(psql -h "$TARGET_HOST" -p "$TARGET_PORT" -U "$TARGET_USER" -d "$TARGET_DB" \
     -t -A -c "SELECT count(*) FROM ${dev_schema}.${dev_table};")
-  log "Dev DB 기존 행 수: $dev_count_before"
+  log "타겟 DB 기존 행 수: $dev_count_before"
 
   # Import 모드
   local mode="UPSERT"
@@ -239,16 +289,22 @@ import_table() {
     exit 0
   fi
 
+  # conflict_key가 없는 테이블은 TRUNCATE 모드 강제
+  if [[ -z "$conflict_key" && "$TRUNCATE" != "true" ]]; then
+    log "PK/유니크 키 없음 — TRUNCATE 모드로 전환: ${dev_schema}.${dev_table}"
+    TRUNCATE=true
+  fi
+
   if [[ "$TRUNCATE" == "true" ]]; then
     # TRUNCATE 모드: TRUNCATE + COPY
-    log "Dev DB 테이블 TRUNCATE: ${dev_schema}.${dev_table}"
-    psql -h "$DEV_HOST" -p "$DEV_PORT" -U "$DEV_USER" -d "$DEV_DB" \
+    log "타겟 DB 테이블 TRUNCATE: ${dev_schema}.${dev_table}"
+    psql -h "$TARGET_HOST" -p "$TARGET_PORT" -U "$TARGET_USER" -d "$TARGET_DB" \
       -c "TRUNCATE ${dev_schema}.${dev_table} CASCADE;"
 
     log "데이터 전송 중 (COPY)..."
     PGPASSWORD="$HC_PASS" PGSSLMODE=require psql -h "$HC_HOST" -p "$HC_PORT" -U "$HC_USER" -d "$HC_DB" \
       -c "COPY (${select_sql}) TO STDOUT WITH (FORMAT csv, HEADER)" \
-    | psql -h "$DEV_HOST" -p "$DEV_PORT" -U "$DEV_USER" -d "$DEV_DB" \
+    | psql -h "$TARGET_HOST" -p "$TARGET_PORT" -U "$TARGET_USER" -d "$TARGET_DB" \
       -c "COPY ${dev_schema}.${dev_table}(${dev_columns}) FROM STDIN WITH (FORMAT csv, HEADER)"
   else
     # UPSERT 모드: CSV 파일 → 임시 테이블 → INSERT ON CONFLICT
@@ -281,7 +337,7 @@ import_table() {
     IFS="$OLD_IFS"
 
     log "UPSERT 실행 중 (단일 세션)..."
-    psql -h "$DEV_HOST" -p "$DEV_PORT" -U "$DEV_USER" -d "$DEV_DB" <<EOSQL
+    psql -h "$TARGET_HOST" -p "$TARGET_PORT" -U "$TARGET_USER" -d "$TARGET_DB" <<EOSQL
 BEGIN;
 CREATE TEMP TABLE _tmp_import AS SELECT * FROM ${dev_schema}.${dev_table} WHERE false;
 \copy _tmp_import(${dev_columns}) FROM '${tmp_csv}' WITH (FORMAT csv, HEADER)
@@ -297,7 +353,7 @@ EOSQL
 
   # Import 후 행 수
   local dev_count_after
-  dev_count_after=$(psql -h "$DEV_HOST" -p "$DEV_PORT" -U "$DEV_USER" -d "$DEV_DB" \
+  dev_count_after=$(psql -h "$TARGET_HOST" -p "$TARGET_PORT" -U "$TARGET_USER" -d "$TARGET_DB" \
     -t -A -c "SELECT count(*) FROM ${dev_schema}.${dev_table};")
 
   local diff=$((dev_count_after - dev_count_before))
