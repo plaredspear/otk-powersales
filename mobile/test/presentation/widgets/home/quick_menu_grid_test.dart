@@ -50,7 +50,7 @@ void main() {
       expect(items[2].label, '주문 관리');
       expect(items[3].label, '활동 등록');
       expect(items[4].label, '교육');
-      expect(items[5].label, '행사매출\n등록');
+      expect(items[5].label, '행사 현황');
     });
 
     testWidgets('6개 Image 위젯이 렌더링되어야 한다', (tester) async {
