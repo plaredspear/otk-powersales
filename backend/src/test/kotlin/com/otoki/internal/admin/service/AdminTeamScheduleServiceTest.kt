@@ -1,0 +1,581 @@
+package com.otoki.internal.admin.service
+
+import com.otoki.internal.admin.dto.request.TeamScheduleCreateRequest
+import com.otoki.internal.admin.dto.request.TeamScheduleUpdateRequest
+import com.otoki.internal.admin.exception.*
+import com.otoki.internal.branch.dto.response.BranchResponse
+import com.otoki.internal.schedule.entity.TeamMemberSchedule
+import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
+import com.otoki.internal.sap.entity.Account
+import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.repository.AccountRepository
+import com.otoki.internal.sap.repository.UserRepository
+import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.InjectMocks
+import org.mockito.Mock
+import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.kotlin.*
+import java.time.LocalDate
+import java.util.*
+
+@ExtendWith(MockitoExtension::class)
+@DisplayName("AdminTeamScheduleService 테스트")
+class AdminTeamScheduleServiceTest {
+
+    @Mock
+    private lateinit var teamMemberScheduleRepository: TeamMemberScheduleRepository
+
+    @Mock
+    private lateinit var userRepository: UserRepository
+
+    @Mock
+    private lateinit var accountRepository: AccountRepository
+
+    @InjectMocks
+    private lateinit var service: AdminTeamScheduleService
+
+    // --- Helper factories ---
+
+    private fun createUser(
+        id: Long = 1L,
+        sfid: String? = "USR_SFID_001",
+        employeeId: String = "20030001",
+        name: String = "테스트사원",
+        status: String? = "재직",
+        appAuthority: String? = null,
+        costCenterCode: String? = "1234",
+        isDeleted: Boolean? = false
+    ): User = User(
+        id = id,
+        sfid = sfid,
+        employeeId = employeeId,
+        name = name,
+        status = status,
+        appAuthority = appAuthority,
+        costCenterCode = costCenterCode,
+        isDeleted = isDeleted
+    )
+
+    private fun createAccount(
+        id: Int = 1,
+        sfid: String? = "ACC_SFID_001",
+        name: String = "테스트거래처",
+        externalKey: String? = "ACC001",
+        accountGroup: String? = "1010",
+        branchCode: String? = "1234",
+        isDeleted: Boolean? = false
+    ): Account = Account(
+        id = id,
+        sfid = sfid,
+        name = name,
+        externalKey = externalKey,
+        accountGroup = accountGroup,
+        branchCode = branchCode,
+        isDeleted = isDeleted
+    )
+
+    private fun createSchedule(
+        id: Long = 1L,
+        employeeId: String? = "USR_SFID_001",
+        workingDate: LocalDate? = LocalDate.of(2026, 4, 1),
+        workingType: String? = "근무",
+        workingCategory1: String? = "진열",
+        workingCategory2: String? = null,
+        workingCategory3: String? = "고정",
+        accountId: String? = "ACC_SFID_001",
+        teamLeaderSfid: String? = "LEADER_SFID",
+        commuteLogId: String? = null
+    ): TeamMemberSchedule = TeamMemberSchedule(
+        id = id,
+        employeeId = employeeId,
+        workingDate = workingDate,
+        workingType = workingType,
+        workingCategory1 = workingCategory1,
+        workingCategory2 = workingCategory2,
+        workingCategory3 = workingCategory3,
+        accountId = accountId,
+        teamLeaderSfid = teamLeaderSfid,
+        commuteLogId = commuteLogId
+    )
+
+    // ========== getMembers ==========
+
+    @Nested
+    @DisplayName("getMembers - 여사원 목록 조회")
+    inner class GetMembersTests {
+
+        @Test
+        @DisplayName("정상 조회 - 조장의 costCenterCode에 속한 여사원 목록 반환")
+        fun getMembers_success() {
+            // Given
+            val leader = createUser(id = 10L, costCenterCode = "1234", appAuthority = "조장")
+            val member1 = createUser(id = 2L, sfid = "USR_002", employeeId = "20030002", name = "김영희", appAuthority = "여사원")
+            val member2 = createUser(id = 3L, sfid = "USR_003", employeeId = "20030003", name = "이수진", appAuthority = "여사원")
+
+            whenever(userRepository.findById(10L)).thenReturn(Optional.of(leader))
+            whenever(userRepository.findByCostCenterCodeAndAppAuthority("1234", "여사원"))
+                .thenReturn(listOf(member1, member2))
+
+            // When
+            val result = service.getMembers(10L)
+
+            // Then
+            assertThat(result).hasSize(2)
+            assertThat(result[0].employeeId).isEqualTo("USR_002")
+            assertThat(result[0].name).isEqualTo("김영희")
+            assertThat(result[1].employeeId).isEqualTo("USR_003")
+            assertThat(result[1].name).isEqualTo("이수진")
+        }
+
+        @Test
+        @DisplayName("빈 결과 - costCenterCode가 null인 경우 빈 목록 반환")
+        fun getMembers_costCenterCodeNull_returnsEmpty() {
+            // Given
+            val leader = createUser(id = 10L, costCenterCode = null)
+            whenever(userRepository.findById(10L)).thenReturn(Optional.of(leader))
+
+            // When
+            val result = service.getMembers(10L)
+
+            // Then
+            assertThat(result).isEmpty()
+            verify(userRepository, never()).findByCostCenterCodeAndAppAuthority(any(), any())
+        }
+    }
+
+    // ========== getAccounts ==========
+
+    @Nested
+    @DisplayName("getAccounts - 거래처 목록 조회")
+    inner class GetAccountsTests {
+
+        @Test
+        @DisplayName("정상 조회 - 사용자 branchCode로 거래처 목록 반환")
+        fun getAccounts_success() {
+            // Given
+            val user = createUser(id = 10L, costCenterCode = "1234")
+            val account1 = createAccount(id = 1, sfid = "ACC_001", name = "이마트 강남점", branchCode = "1234")
+            val account2 = createAccount(id = 2, sfid = "ACC_002", name = "홈플러스 역삼점", branchCode = "1234")
+
+            whenever(userRepository.findById(10L)).thenReturn(Optional.of(user))
+            whenever(accountRepository.findByBranchCodeAndAccountGroupIn("1234", listOf("1010", "1000")))
+                .thenReturn(listOf(account1, account2))
+
+            // When
+            val result = service.getAccounts(10L, null)
+
+            // Then
+            assertThat(result).hasSize(2)
+            assertThat(result[0].accountSfid).isEqualTo("ACC_001")
+            assertThat(result[1].accountSfid).isEqualTo("ACC_002")
+        }
+
+        @Test
+        @DisplayName("branch_code 파라미터 지정 - 지정 지점의 거래처 반환")
+        fun getAccounts_withBranchCode() {
+            // Given
+            val account = createAccount(id = 1, sfid = "ACC_001", name = "롯데마트 잠실점", branchCode = "5678")
+
+            whenever(accountRepository.findByBranchCodeAndAccountGroupIn("5678", listOf("1010", "1000")))
+                .thenReturn(listOf(account))
+
+            // When
+            val result = service.getAccounts(10L, "5678")
+
+            // Then
+            assertThat(result).hasSize(1)
+            assertThat(result[0].accountSfid).isEqualTo("ACC_001")
+            verify(userRepository, never()).findById(any())
+        }
+    }
+
+    // ========== getMonthlySchedules ==========
+
+    @Nested
+    @DisplayName("getMonthlySchedules - 월간 일정 조회")
+    inner class GetMonthlySchedulesTests {
+
+        @Test
+        @DisplayName("정상 조회 - employee_ids 지정 시 해당 사원의 일정 반환")
+        fun getMonthlySchedules_byEmployeeIds() {
+            // Given
+            val schedule = createSchedule(id = 1L, employeeId = "USR_001")
+            val user = createUser(sfid = "USR_001", employeeId = "20030001", name = "홍길동")
+
+            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(
+                eq(listOf("USR_001")),
+                eq(LocalDate.of(2026, 4, 1)),
+                eq(LocalDate.of(2026, 4, 30))
+            )).thenReturn(listOf(schedule))
+            whenever(userRepository.findBySfidIn(listOf("USR_001"))).thenReturn(listOf(user))
+            whenever(accountRepository.findBySfidIn(listOf("ACC_SFID_001"))).thenReturn(
+                listOf(createAccount(sfid = "ACC_SFID_001"))
+            )
+
+            // When
+            val result = service.getMonthlySchedules(1L, 2026, 4, listOf("USR_001"), null)
+
+            // Then
+            assertThat(result).hasSize(1)
+            assertThat(result[0].employeeId).isEqualTo("USR_001")
+            assertThat(result[0].employeeName).isEqualTo("홍길동")
+        }
+
+        @Test
+        @DisplayName("account_sfids 지정 - 거래처 필터로 일정 반환")
+        fun getMonthlySchedules_byAccountSfids() {
+            // Given
+            val schedule = createSchedule(id = 1L, accountId = "ACC_001")
+            val user = createUser(sfid = "USR_SFID_001")
+
+            whenever(teamMemberScheduleRepository.findMonthlyByAccountIds(
+                eq(listOf("ACC_001")),
+                eq(LocalDate.of(2026, 4, 1)),
+                eq(LocalDate.of(2026, 4, 30))
+            )).thenReturn(listOf(schedule))
+            whenever(userRepository.findBySfidIn(listOf("USR_SFID_001"))).thenReturn(listOf(user))
+            whenever(accountRepository.findBySfidIn(listOf("ACC_001"))).thenReturn(
+                listOf(createAccount(sfid = "ACC_001"))
+            )
+
+            // When
+            val result = service.getMonthlySchedules(1L, 2026, 4, null, listOf("ACC_001"))
+
+            // Then
+            assertThat(result).hasSize(1)
+            assertThat(result[0].accountSfid).isEqualTo("ACC_001")
+        }
+
+        @Test
+        @DisplayName("필터 없이 조회 - 빈 배열 반환")
+        fun getMonthlySchedules_noFilter_returnsEmpty() {
+            // When
+            val result = service.getMonthlySchedules(1L, 2026, 4, null, null)
+
+            // Then
+            assertThat(result).isEmpty()
+            verifyNoInteractions(teamMemberScheduleRepository)
+        }
+    }
+
+    // ========== getDailySummary ==========
+
+    @Nested
+    @DisplayName("getDailySummary - 일별 요약 조회")
+    inner class GetDailySummaryTests {
+
+        @Test
+        @DisplayName("정상 조회 - 일별 진열/행사 예정 실적 + 연차 대휴 건수 반환")
+        fun getDailySummary_success() {
+            // Given
+            val date = LocalDate.of(2026, 4, 1)
+            val displaySchedule = createSchedule(id = 1L, workingDate = date, workingType = "근무", workingCategory1 = "진열")
+            val displayWithCommute = createSchedule(id = 2L, workingDate = date, workingType = "근무", workingCategory1 = "진열", commuteLogId = "CL001")
+            val promotionSchedule = createSchedule(id = 3L, workingDate = date, workingType = "근무", workingCategory1 = "행사")
+            val promotionWithCommute = createSchedule(id = 4L, workingDate = date, workingType = "근무", workingCategory1 = "행사", commuteLogId = "CL002")
+            val annualLeave = createSchedule(id = 5L, workingDate = date, workingType = "연차", workingCategory1 = null)
+            val compensatoryLeave = createSchedule(id = 6L, workingDate = date, workingType = "대휴", workingCategory1 = null)
+
+            val allSchedules = listOf(displaySchedule, displayWithCommute, promotionSchedule, promotionWithCommute, annualLeave, compensatoryLeave)
+
+            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(
+                eq(listOf("EMP1")),
+                eq(LocalDate.of(2026, 4, 1)),
+                eq(LocalDate.of(2026, 4, 30))
+            )).thenReturn(allSchedules)
+
+            // When
+            val result = service.getDailySummary(1L, 2026, 4, listOf("EMP1"), null)
+
+            // Then
+            assertThat(result).hasSize(1)
+            val summary = result[0]
+            assertThat(summary.date).isEqualTo("2026-04-01")
+            assertThat(summary.displayExpected).isEqualTo(2)
+            assertThat(summary.displayActual).isEqualTo(1)
+            assertThat(summary.promotionExpected).isEqualTo(2)
+            assertThat(summary.promotionActual).isEqualTo(1)
+            assertThat(summary.annualLeave).isEqualTo(1)
+            assertThat(summary.compensatoryLeave).isEqualTo(1)
+        }
+    }
+
+    // ========== createSchedule ==========
+
+    @Nested
+    @DisplayName("createSchedule - 일정 등록")
+    inner class CreateScheduleTests {
+
+        @Test
+        @DisplayName("정상 등록 - 유효한 요청 -> 일정 ID 반환")
+        fun createSchedule_success() {
+            // Given
+            val employee = createUser(sfid = "EMP_SFID_001", status = "재직")
+            val leader = createUser(id = 10L, sfid = "LEADER_SFID")
+            val account = createAccount(sfid = "ACC_SFID_001")
+            val savedSchedule = createSchedule(id = 100L)
+
+            val request = TeamScheduleCreateRequest(
+                employeeId = "EMP_SFID_001",
+                workingDate = "2026-04-01",
+                workingType = "근무",
+                workingCategory1 = "진열",
+                workingCategory3 = "고정",
+                accountSfid = "ACC_SFID_001"
+            )
+
+            whenever(userRepository.findBySfid("EMP_SFID_001")).thenReturn(employee)
+            whenever(teamMemberScheduleRepository.findActiveByEmployeeIdAndDate("EMP_SFID_001", LocalDate.of(2026, 4, 1)))
+                .thenReturn(emptyList())
+            whenever(accountRepository.findBySfid("ACC_SFID_001")).thenReturn(account)
+            whenever(userRepository.findById(10L)).thenReturn(Optional.of(leader))
+            whenever(teamMemberScheduleRepository.save(any<TeamMemberSchedule>())).thenReturn(savedSchedule)
+
+            // When
+            val result = service.createSchedule(10L, request)
+
+            // Then
+            assertThat(result.id).isEqualTo(100L)
+            verify(teamMemberScheduleRepository).save(any<TeamMemberSchedule>())
+        }
+
+        @Test
+        @DisplayName("휴직 사원 등록 - EMPLOYEE_ON_LEAVE")
+        fun createSchedule_employeeOnLeave() {
+            // Given
+            val employee = createUser(sfid = "EMP_SFID_001", status = "휴직")
+            val request = TeamScheduleCreateRequest(
+                employeeId = "EMP_SFID_001",
+                workingDate = "2026-04-01",
+                workingType = "근무"
+            )
+
+            whenever(userRepository.findBySfid("EMP_SFID_001")).thenReturn(employee)
+
+            // When & Then
+            assertThatThrownBy { service.createSchedule(10L, request) }
+                .isInstanceOf(TeamScheduleEmployeeOnLeaveException::class.java)
+        }
+
+        @Test
+        @DisplayName("퇴직 사원 등록 - EMPLOYEE_RESIGNED")
+        fun createSchedule_employeeResigned() {
+            // Given
+            val employee = createUser(sfid = "EMP_SFID_001", status = "퇴직")
+            val request = TeamScheduleCreateRequest(
+                employeeId = "EMP_SFID_001",
+                workingDate = "2026-04-01",
+                workingType = "근무"
+            )
+
+            whenever(userRepository.findBySfid("EMP_SFID_001")).thenReturn(employee)
+
+            // When & Then
+            assertThatThrownBy { service.createSchedule(10L, request) }
+                .isInstanceOf(TeamScheduleEmployeeResignedException::class.java)
+        }
+
+        @Test
+        @DisplayName("고정 중복 등록 (D1) - SCHEDULE_CONFLICT")
+        fun createSchedule_fixedDuplicate() {
+            // Given
+            val employee = createUser(sfid = "EMP_SFID_001", status = "재직")
+            val existingSchedule = createSchedule(id = 50L, workingCategory3 = "고정")
+
+            val request = TeamScheduleCreateRequest(
+                employeeId = "EMP_SFID_001",
+                workingDate = "2026-04-01",
+                workingType = "근무",
+                workingCategory1 = "진열",
+                workingCategory3 = "고정"
+            )
+
+            whenever(userRepository.findBySfid("EMP_SFID_001")).thenReturn(employee)
+            whenever(teamMemberScheduleRepository.findActiveByEmployeeIdAndDate("EMP_SFID_001", LocalDate.of(2026, 4, 1)))
+                .thenReturn(listOf(existingSchedule))
+
+            // When & Then
+            assertThatThrownBy { service.createSchedule(10L, request) }
+                .isInstanceOf(TeamScheduleConflictException::class.java)
+        }
+
+        @Test
+        @DisplayName("고정과 격고/순회 공존 불가 (D2/D3) - SCHEDULE_CONFLICT")
+        fun createSchedule_fixedWithOtherTypes() {
+            // Given
+            val employee = createUser(sfid = "EMP_SFID_001", status = "재직")
+            val existingSchedule = createSchedule(id = 50L, workingCategory3 = "격고")
+
+            val request = TeamScheduleCreateRequest(
+                employeeId = "EMP_SFID_001",
+                workingDate = "2026-04-01",
+                workingType = "근무",
+                workingCategory1 = "진열",
+                workingCategory3 = "고정"
+            )
+
+            whenever(userRepository.findBySfid("EMP_SFID_001")).thenReturn(employee)
+            whenever(teamMemberScheduleRepository.findActiveByEmployeeIdAndDate("EMP_SFID_001", LocalDate.of(2026, 4, 1)))
+                .thenReturn(listOf(existingSchedule))
+
+            // When & Then
+            assertThatThrownBy { service.createSchedule(10L, request) }
+                .isInstanceOf(TeamScheduleConflictException::class.java)
+        }
+
+        @Test
+        @DisplayName("격고 3건 초과 (D4) - SCHEDULE_CONFLICT")
+        fun createSchedule_alternateExceedsLimit() {
+            // Given
+            val employee = createUser(sfid = "EMP_SFID_001", status = "재직")
+            val existing1 = createSchedule(id = 50L, workingCategory3 = "격고")
+            val existing2 = createSchedule(id = 51L, workingCategory3 = "격고")
+
+            val request = TeamScheduleCreateRequest(
+                employeeId = "EMP_SFID_001",
+                workingDate = "2026-04-01",
+                workingType = "근무",
+                workingCategory1 = "진열",
+                workingCategory3 = "격고"
+            )
+
+            whenever(userRepository.findBySfid("EMP_SFID_001")).thenReturn(employee)
+            whenever(teamMemberScheduleRepository.findActiveByEmployeeIdAndDate("EMP_SFID_001", LocalDate.of(2026, 4, 1)))
+                .thenReturn(listOf(existing1, existing2))
+
+            // When & Then
+            assertThatThrownBy { service.createSchedule(10L, request) }
+                .isInstanceOf(TeamScheduleConflictException::class.java)
+        }
+
+        @Test
+        @DisplayName("미존재 사원 등록 - NOT_FOUND")
+        fun createSchedule_employeeNotFound() {
+            // Given
+            val request = TeamScheduleCreateRequest(
+                employeeId = "NONEXISTENT",
+                workingDate = "2026-04-01",
+                workingType = "근무"
+            )
+
+            whenever(userRepository.findBySfid("NONEXISTENT")).thenReturn(null)
+
+            // When & Then
+            assertThatThrownBy { service.createSchedule(10L, request) }
+                .isInstanceOf(TeamScheduleEmployeeNotFoundException::class.java)
+        }
+    }
+
+    // ========== updateSchedule ==========
+
+    @Nested
+    @DisplayName("updateSchedule - 일정 수정")
+    inner class UpdateScheduleTests {
+
+        @Test
+        @DisplayName("정상 수정 - 거래처 변경")
+        fun updateSchedule_success() {
+            // Given
+            val schedule = createSchedule(
+                id = 100L,
+                employeeId = "EMP_SFID_001",
+                workingDate = LocalDate.of(2026, 4, 1),
+                workingType = "근무",
+                workingCategory1 = "진열",
+                workingCategory3 = "고정",
+                accountId = "ACC_OLD"
+            )
+            val employee = createUser(sfid = "EMP_SFID_001", status = "재직")
+            val newAccount = createAccount(sfid = "ACC_NEW")
+
+            val request = TeamScheduleUpdateRequest(
+                workingDate = "2026-04-01",
+                workingType = "근무",
+                workingCategory1 = "진열",
+                workingCategory3 = "고정",
+                accountSfid = "ACC_NEW"
+            )
+
+            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+            whenever(userRepository.findBySfid("EMP_SFID_001")).thenReturn(employee)
+            whenever(accountRepository.findBySfid("ACC_NEW")).thenReturn(newAccount)
+
+            // When
+            service.updateSchedule(1L, 100L, request)
+
+            // Then
+            assertThat(schedule.accountId).isEqualTo("ACC_NEW")
+        }
+
+        @Test
+        @DisplayName("미존재 일정 수정 - NOT_FOUND")
+        fun updateSchedule_notFound() {
+            // Given
+            val request = TeamScheduleUpdateRequest(
+                workingDate = "2026-04-01",
+                workingType = "근무"
+            )
+
+            whenever(teamMemberScheduleRepository.findById(999L)).thenReturn(Optional.empty())
+
+            // When & Then
+            assertThatThrownBy { service.updateSchedule(1L, 999L, request) }
+                .isInstanceOf(TeamScheduleNotFoundException::class.java)
+        }
+    }
+
+    // ========== deleteSchedule ==========
+
+    @Nested
+    @DisplayName("deleteSchedule - 일정 삭제")
+    inner class DeleteScheduleTests {
+
+        @Test
+        @DisplayName("정상 삭제 - 조장 계정으로 삭제 성공")
+        fun deleteSchedule_success() {
+            // Given
+            val leader = createUser(id = 10L, appAuthority = "조장")
+            val schedule = createSchedule(id = 100L)
+
+            whenever(userRepository.findById(10L)).thenReturn(Optional.of(leader))
+            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+
+            // When
+            service.deleteSchedule(10L, 100L)
+
+            // Then
+            verify(teamMemberScheduleRepository).delete(schedule)
+        }
+
+        @Test
+        @DisplayName("지점장 삭제 시도 - FORBIDDEN")
+        fun deleteSchedule_forbiddenForBranchManager() {
+            // Given
+            val branchManager = createUser(id = 10L, appAuthority = "지점장")
+            whenever(userRepository.findById(10L)).thenReturn(Optional.of(branchManager))
+
+            // When & Then
+            assertThatThrownBy { service.deleteSchedule(10L, 100L) }
+                .isInstanceOf(TeamScheduleDeleteForbiddenException::class.java)
+            verify(teamMemberScheduleRepository, never()).delete(any())
+        }
+
+        @Test
+        @DisplayName("미존재 일정 삭제 - NOT_FOUND")
+        fun deleteSchedule_notFound() {
+            // Given
+            val leader = createUser(id = 10L, appAuthority = "조장")
+            whenever(userRepository.findById(10L)).thenReturn(Optional.of(leader))
+            whenever(teamMemberScheduleRepository.findById(999L)).thenReturn(Optional.empty())
+
+            // When & Then
+            assertThatThrownBy { service.deleteSchedule(10L, 999L) }
+                .isInstanceOf(TeamScheduleNotFoundException::class.java)
+        }
+    }
+}

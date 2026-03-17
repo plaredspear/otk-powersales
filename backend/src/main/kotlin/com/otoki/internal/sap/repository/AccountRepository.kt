@@ -37,4 +37,9 @@ interface AccountRepository : JpaRepository<Account, Int>, AccountRepositoryCust
      * 거래처 외부키 목록으로 일괄 조회 (Excel 업로드 검증용)
      */
     fun findByExternalKeyIn(externalKeys: List<String>): List<Account>
+
+    /**
+     * 지점 코드 + 거래처 그룹으로 거래처 조회 (여사원 일정관리)
+     */
+    fun findByBranchCodeAndAccountGroupIn(branchCode: String, accountGroups: List<String>): List<Account>
 }
