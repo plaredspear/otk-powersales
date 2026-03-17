@@ -53,4 +53,14 @@ interface UserRepository : JpaRepository<User, Long>, UserRepositoryCustom {
      * 사원번호 목록으로 일괄 조회 (Excel 업로드 검증용)
      */
     fun findByEmployeeIdIn(employeeIds: List<String>): List<User>
+
+    /**
+     * 조직(costCenterCode) + 권한(appAuthority)으로 사용자 조회 (여사원 일정관리)
+     */
+    fun findByCostCenterCodeAndAppAuthority(costCenterCode: String, appAuthority: String): List<User>
+
+    /**
+     * sfid로 사용자 단건 조회 (여사원 일정관리 - 일정 등록 시 사원 검증)
+     */
+    fun findBySfid(sfid: String): User?
 }
