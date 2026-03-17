@@ -2,7 +2,10 @@ package com.otoki.internal.promotion.repository
 
 import com.otoki.internal.promotion.entity.Promotion
 import com.otoki.internal.promotion.entity.QPromotion.promotion
+import com.otoki.internal.promotion.entity.QPromotionEmployee.promotionEmployee
+import com.otoki.internal.sap.entity.QAccount.account
 import com.querydsl.core.BooleanBuilder
+import com.querydsl.jpa.JPAExpressions
 import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -60,6 +63,81 @@ class PromotionRepositoryCustomImpl(
             .selectFrom(promotion)
             .where(builder)
             .orderBy(promotion.createdAt.desc())
+            .offset(pageable.offset)
+            .limit(pageable.pageSize.toLong())
+            .fetch()
+
+        val countQuery = queryFactory
+            .select(promotion.count())
+            .from(promotion)
+            .where(builder)
+
+        return PageableExecutionUtils.getPage(content, pageable) {
+            countQuery.fetchOne() ?: 0L
+        }
+    }
+
+    override fun searchForMobile(
+        employeeId: String?,
+        costCenterCode: String?,
+        isWoman: Boolean,
+        keyword: String?,
+        startDate: String?,
+        endDate: String?,
+        pageable: Pageable
+    ): Page<Promotion> {
+        val builder = BooleanBuilder()
+
+        builder.and(promotion.isDeleted.eq(false))
+
+        // 권한 기반 필터
+        if (isWoman) {
+            // 여사원: 본인이 배정된 행사만 (PromotionEmployee.employeeId = 사번)
+            builder.and(
+                promotion.id.`in`(
+                    JPAExpressions
+                        .select(promotionEmployee.promotionId)
+                        .from(promotionEmployee)
+                        .where(promotionEmployee.employeeId.eq(employeeId))
+                )
+            )
+        } else {
+            // 조장/팀장: 같은 지점 행사 전체
+            builder.and(promotion.costCenterCode.eq(costCenterCode))
+        }
+
+        // 키워드 검색 (행사명, 행사번호, 거래처명)
+        if (!keyword.isNullOrBlank()) {
+            val lowerPattern = "%${keyword.lowercase()}%"
+            builder.and(
+                promotion.promotionName.lower().like(lowerPattern)
+                    .or(promotion.promotionNumber.lower().like(lowerPattern))
+                    .or(
+                        promotion.accountId.`in`(
+                            JPAExpressions
+                                .select(account.id)
+                                .from(account)
+                                .where(account.name.lower().like(lowerPattern))
+                        )
+                    )
+            )
+        }
+
+        // 날짜 필터 (기간 겹침)
+        if (!startDate.isNullOrBlank()) {
+            val date = LocalDate.parse(startDate)
+            builder.and(promotion.endDate.goe(date))
+        }
+
+        if (!endDate.isNullOrBlank()) {
+            val date = LocalDate.parse(endDate)
+            builder.and(promotion.startDate.loe(date))
+        }
+
+        val content = queryFactory
+            .selectFrom(promotion)
+            .where(builder)
+            .orderBy(promotion.startDate.desc(), promotion.promotionNumber.desc())
             .offset(pageable.offset)
             .limit(pageable.pageSize.toLong())
             .fetch()

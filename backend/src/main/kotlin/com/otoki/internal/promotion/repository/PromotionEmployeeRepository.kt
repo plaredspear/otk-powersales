@@ -26,4 +26,15 @@ interface PromotionEmployeeRepository : JpaRepository<PromotionEmployee, Long> {
 
     @Query("SELECT COALESCE(SUM(pe.actualAmount), 0) FROM PromotionEmployee pe WHERE pe.promotionId = :promotionId")
     fun sumActualAmountByPromotionId(promotionId: Long): Long
+
+    /**
+     * 행사별 + 사번별 최초 투입일 조회 (모바일 행사 목록용)
+     */
+    @Query("SELECT MIN(pe.scheduleDate) FROM PromotionEmployee pe WHERE pe.promotionId = :promotionId AND pe.employeeId = :employeeId")
+    fun findMinScheduleDateByPromotionIdAndEmployeeId(promotionId: Long, employeeId: String): LocalDate?
+
+    /**
+     * 사번으로 배정된 행사의 PromotionEmployee 존재 여부 확인 (모바일 상세 접근 검증용)
+     */
+    fun existsByPromotionIdAndEmployeeId(promotionId: Long, employeeId: String): Boolean
 }
