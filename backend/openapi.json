@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:50130",
+    "url" : "http://localhost:56215",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -59,6 +59,68 @@
           "schema" : {
             "type" : "integer",
             "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseObject"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/team-schedule/{id}" : {
+      "put" : {
+        "tags" : [ "admin-team-schedule-controller" ],
+        "operationId" : "updateSchedule",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TeamScheduleUpdateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseObject"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "admin-team-schedule-controller" ],
+        "operationId" : "deleteSchedule",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
           }
         } ],
         "responses" : {
@@ -1241,6 +1303,142 @@
         }
       }
     },
+    "/api/v1/admin/team-schedule" : {
+      "get" : {
+        "tags" : [ "admin-team-schedule-controller" ],
+        "operationId" : "getMonthlySchedules",
+        "parameters" : [ {
+          "name" : "year",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "month",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "employeeIds",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "accountSfids",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListTeamScheduleDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "admin-team-schedule-controller" ],
+        "operationId" : "createSchedule",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TeamScheduleCreateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseTeamScheduleCreateResultDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/schedule/upload" : {
+      "post" : {
+        "tags" : [ "admin-schedule-controller" ],
+        "operationId" : "uploadExcel",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "file" : {
+                    "type" : "string",
+                    "format" : "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseScheduleUploadResultDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/schedule/upload/confirm" : {
+      "post" : {
+        "tags" : [ "admin-schedule-controller" ],
+        "operationId" : "confirmUpload",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ScheduleConfirmRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseScheduleConfirmResultDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/promotions" : {
       "get" : {
         "tags" : [ "admin-promotion-controller" ],
@@ -1801,6 +1999,91 @@
         }
       }
     },
+    "/api/v1/promotions" : {
+      "get" : {
+        "tags" : [ "promotion-controller" ],
+        "operationId" : "getPromotions_1",
+        "parameters" : [ {
+          "name" : "startDate",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "endDate",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "keyword",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 20
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseMobilePromotionListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/promotions/{id}" : {
+      "get" : {
+        "tags" : [ "promotion-controller" ],
+        "operationId" : "getPromotion_1",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseMobilePromotionDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/products/search" : {
       "get" : {
         "tags" : [ "product-controller" ],
@@ -2185,6 +2468,136 @@
         }
       }
     },
+    "/api/v1/admin/team-schedule/summary" : {
+      "get" : {
+        "tags" : [ "admin-team-schedule-controller" ],
+        "operationId" : "getDailySummary",
+        "parameters" : [ {
+          "name" : "year",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "month",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "employeeIds",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "accountSfids",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListDailySummaryDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/team-schedule/members" : {
+      "get" : {
+        "tags" : [ "admin-team-schedule-controller" ],
+        "operationId" : "getMembers",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListTeamMemberDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/team-schedule/branches" : {
+      "get" : {
+        "tags" : [ "admin-team-schedule-controller" ],
+        "operationId" : "getBranches",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListBranchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/team-schedule/accounts" : {
+      "get" : {
+        "tags" : [ "admin-team-schedule-controller" ],
+        "operationId" : "getAccounts",
+        "parameters" : [ {
+          "name" : "branchCode",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListTeamScheduleAccountDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/schedule/template" : {
+      "get" : {
+        "tags" : [ "admin-schedule-controller" ],
+        "operationId" : "downloadTemplate",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "byte"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/promotions/form-meta" : {
       "get" : {
         "tags" : [ "admin-promotion-controller" ],
@@ -2468,7 +2881,7 @@
     "/api/v1/admin/accounts" : {
       "get" : {
         "tags" : [ "admin-account-controller" ],
-        "operationId" : "getAccounts",
+        "operationId" : "getAccounts_1",
         "parameters" : [ {
           "name" : "keyword",
           "in" : "query",
@@ -2634,6 +3047,52 @@
         },
         "required" : [ "accountCode", "accountName", "alarmDate", "dday", "expirationDate", "isExpired", "productCode", "productName", "seq" ]
       },
+      "TeamScheduleUpdateRequest" : {
+        "type" : "object",
+        "properties" : {
+          "workingDate" : {
+            "type" : "string"
+          },
+          "workingType" : {
+            "type" : "string"
+          },
+          "workingCategory1" : {
+            "type" : "string"
+          },
+          "workingCategory2" : {
+            "type" : "string"
+          },
+          "workingCategory3" : {
+            "type" : "string"
+          },
+          "accountSfid" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "workingDate", "workingType" ]
+      },
+      "ApiResponseObject" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "type" : "object"
+          },
+          "error" : {
+            "$ref" : "#/components/schemas/ErrorDetail"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "success", "timestamp" ]
+      },
       "BatchUpdatePromotionEmployeeItem" : {
         "type" : "object",
         "properties" : {
@@ -2641,9 +3100,9 @@
             "type" : "integer",
             "format" : "int64"
           },
-          "employeeSfid" : {
+          "employeeId" : {
             "type" : "string",
-            "maxLength" : 18,
+            "maxLength" : 8,
             "minLength" : 0
           },
           "scheduleDate" : {
@@ -2722,7 +3181,7 @@
             "minLength" : 0
           }
         },
-        "required" : [ "id", "scheduleDate", "workStatus", "workType1" ]
+        "required" : [ "id", "scheduleDate" ]
       },
       "BatchUpdatePromotionEmployeeRequest" : {
         "type" : "object",
@@ -2785,7 +3244,7 @@
             "type" : "integer",
             "format" : "int64"
           },
-          "employeeSfid" : {
+          "employeeId" : {
             "type" : "string"
           },
           "employeeName" : {
@@ -3089,9 +3548,9 @@
       "PromotionEmployeeRequest" : {
         "type" : "object",
         "properties" : {
-          "employeeSfid" : {
+          "employeeId" : {
             "type" : "string",
-            "maxLength" : 18,
+            "maxLength" : 8,
             "minLength" : 0
           },
           "scheduleDate" : {
@@ -3204,7 +3663,7 @@
             "type" : "integer",
             "format" : "int64"
           },
-          "employeeSfid" : {
+          "employeeId" : {
             "type" : "string"
           },
           "employeeName" : {
@@ -3736,18 +4195,44 @@
         },
         "required" : [ "reqItemList" ]
       },
+      "EquipmentAnswer" : {
+        "type" : "object",
+        "properties" : {
+          "seqNum" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "answer" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "answer", "seqNum" ]
+      },
       "SafetyCheckSubmitRequest" : {
         "type" : "object",
         "properties" : {
-          "checkedItemIds" : {
+          "startTime" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "completeTime" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "equipments" : {
             "type" : "array",
             "items" : {
-              "type" : "integer",
-              "format" : "int64"
+              "$ref" : "#/components/schemas/EquipmentAnswer"
+            }
+          },
+          "precautions" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
             }
           }
         },
-        "required" : [ "checkedItemIds" ]
+        "required" : [ "completeTime", "equipments", "startTime" ]
       },
       "ApiResponseSafetyCheckSubmitResponse" : {
         "type" : "object",
@@ -3774,10 +4259,6 @@
       "SafetyCheckSubmitResponse" : {
         "type" : "object",
         "properties" : {
-          "submissionId" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
           "submittedAt" : {
             "type" : "string",
             "format" : "date-time"
@@ -3786,7 +4267,7 @@
             "type" : "boolean"
           }
         },
-        "required" : [ "safetyCheckCompleted", "submissionId", "submittedAt" ]
+        "required" : [ "safetyCheckCompleted", "submittedAt" ]
       },
       "VerifyPasswordRequest" : {
         "type" : "object",
@@ -3796,28 +4277,6 @@
           }
         },
         "required" : [ "password" ]
-      },
-      "ApiResponseObject" : {
-        "type" : "object",
-        "properties" : {
-          "success" : {
-            "type" : "boolean"
-          },
-          "data" : {
-            "type" : "object"
-          },
-          "error" : {
-            "$ref" : "#/components/schemas/ErrorDetail"
-          },
-          "message" : {
-            "type" : "string"
-          },
-          "timestamp" : {
-            "type" : "string",
-            "format" : "date-time"
-          }
-        },
-        "required" : [ "success", "timestamp" ]
       },
       "RefreshTokenRequest" : {
         "type" : "object",
@@ -4022,8 +4481,9 @@
       "CommuteRequest" : {
         "type" : "object",
         "properties" : {
-          "scheduleSfid" : {
-            "type" : "string"
+          "scheduleId" : {
+            "type" : "integer",
+            "format" : "int64"
           },
           "latitude" : {
             "type" : "number",
@@ -4041,7 +4501,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "latitude", "longitude", "scheduleSfid" ]
+        "required" : [ "latitude", "longitude", "scheduleId" ]
       },
       "ApiResponseCommuteResponse" : {
         "type" : "object",
@@ -4068,8 +4528,9 @@
       "CommuteResponse" : {
         "type" : "object",
         "properties" : {
-          "scheduleSfid" : {
-            "type" : "string"
+          "scheduleId" : {
+            "type" : "integer",
+            "format" : "int64"
           },
           "storeName" : {
             "type" : "string"
@@ -4090,7 +4551,218 @@
             "format" : "int32"
           }
         },
-        "required" : [ "distanceKm", "registeredCount", "scheduleSfid", "storeName", "totalCount" ]
+        "required" : [ "distanceKm", "registeredCount", "scheduleId", "storeName", "totalCount" ]
+      },
+      "TeamScheduleCreateRequest" : {
+        "type" : "object",
+        "properties" : {
+          "employeeId" : {
+            "type" : "string"
+          },
+          "workingDate" : {
+            "type" : "string"
+          },
+          "workingType" : {
+            "type" : "string"
+          },
+          "workingCategory1" : {
+            "type" : "string"
+          },
+          "workingCategory2" : {
+            "type" : "string"
+          },
+          "workingCategory3" : {
+            "type" : "string"
+          },
+          "accountSfid" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "employeeId", "workingDate", "workingType" ]
+      },
+      "ApiResponseTeamScheduleCreateResultDto" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "$ref" : "#/components/schemas/TeamScheduleCreateResultDto"
+          },
+          "error" : {
+            "$ref" : "#/components/schemas/ErrorDetail"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "success", "timestamp" ]
+      },
+      "TeamScheduleCreateResultDto" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "id" ]
+      },
+      "ApiResponseScheduleUploadResultDto" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "$ref" : "#/components/schemas/ScheduleUploadResultDto"
+          },
+          "error" : {
+            "$ref" : "#/components/schemas/ErrorDetail"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "success", "timestamp" ]
+      },
+      "RowError" : {
+        "type" : "object",
+        "properties" : {
+          "row" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "column" : {
+            "type" : "string"
+          },
+          "field" : {
+            "type" : "string"
+          },
+          "value" : {
+            "type" : "string"
+          },
+          "message" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "column", "field", "message", "row" ]
+      },
+      "RowPreview" : {
+        "type" : "object",
+        "properties" : {
+          "row" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "employeeCode" : {
+            "type" : "string"
+          },
+          "employeeName" : {
+            "type" : "string"
+          },
+          "accountCode" : {
+            "type" : "string"
+          },
+          "accountName" : {
+            "type" : "string"
+          },
+          "typeOfWork3" : {
+            "type" : "string"
+          },
+          "typeOfWork5" : {
+            "type" : "string"
+          },
+          "startDate" : {
+            "type" : "string"
+          },
+          "endDate" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "accountCode", "accountName", "employeeCode", "employeeName", "row", "startDate", "typeOfWork3", "typeOfWork5" ]
+      },
+      "ScheduleUploadResultDto" : {
+        "type" : "object",
+        "properties" : {
+          "uploadId" : {
+            "type" : "string"
+          },
+          "totalRows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "successRows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "errorRows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "errors" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/RowError"
+            }
+          },
+          "previews" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/RowPreview"
+            }
+          }
+        },
+        "required" : [ "errorRows", "errors", "previews", "successRows", "totalRows", "uploadId" ]
+      },
+      "ScheduleConfirmRequest" : {
+        "type" : "object",
+        "properties" : {
+          "uploadId" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "uploadId" ]
+      },
+      "ApiResponseScheduleConfirmResultDto" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "$ref" : "#/components/schemas/ScheduleConfirmResultDto"
+          },
+          "error" : {
+            "$ref" : "#/components/schemas/ErrorDetail"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "success", "timestamp" ]
+      },
+      "ScheduleConfirmResultDto" : {
+        "type" : "object",
+        "properties" : {
+          "insertedCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "insertedCount" ]
       },
       "ApiResponsePromotionConfirmResponse" : {
         "type" : "object",
@@ -4125,12 +4797,12 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "upsertedSchedules" : {
+          "upserted_schedules" : {
             "type" : "integer",
             "format" : "int32"
           }
         },
-        "required" : [ "promotionId", "totalEmployees", "upsertedSchedules" ]
+        "required" : [ "promotionId", "totalEmployees", "upserted_schedules" ]
       },
       "NoticeCreateRequest" : {
         "type" : "object",
@@ -4331,9 +5003,6 @@
             "type" : "string",
             "pattern" : "^\\d{6}$"
           },
-          "previousYearMonth" : {
-            "type" : "string"
-          },
           "year" : {
             "type" : "integer",
             "format" : "int32"
@@ -4341,6 +5010,9 @@
           "month" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "previousYearMonth" : {
+            "type" : "string"
           }
         },
         "required" : [ "month", "previousYearMonth", "year", "yearMonth" ]
@@ -4523,15 +5195,24 @@
       "CategoryInfo" : {
         "type" : "object",
         "properties" : {
-          "id" : {
+          "questionNum" : {
             "type" : "integer",
-            "format" : "int64"
+            "format" : "int32"
           },
-          "name" : {
+          "title" : {
             "type" : "string"
           },
-          "description" : {
+          "inputType" : {
             "type" : "string"
+          },
+          "required" : {
+            "type" : "boolean"
+          },
+          "options" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
           },
           "items" : {
             "type" : "array",
@@ -4540,27 +5221,20 @@
             }
           }
         },
-        "required" : [ "id", "items", "name" ]
+        "required" : [ "inputType", "items", "questionNum", "required", "title" ]
       },
       "CheckItemInfo" : {
         "type" : "object",
         "properties" : {
-          "id" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "label" : {
-            "type" : "string"
-          },
-          "sortOrder" : {
+          "seqNum" : {
             "type" : "integer",
             "format" : "int32"
           },
-          "required" : {
-            "type" : "boolean"
+          "contents" : {
+            "type" : "string"
           }
         },
-        "required" : [ "id", "label", "required", "sortOrder" ]
+        "required" : [ "contents", "seqNum" ]
       },
       "SafetyCheckItemsResponse" : {
         "type" : "object",
@@ -4573,6 +5247,235 @@
           }
         },
         "required" : [ "categories" ]
+      },
+      "ApiResponseMobilePromotionListResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "$ref" : "#/components/schemas/MobilePromotionListResponse"
+          },
+          "error" : {
+            "$ref" : "#/components/schemas/ErrorDetail"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "success", "timestamp" ]
+      },
+      "MobilePromotionListItem" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "promotionNumber" : {
+            "type" : "string"
+          },
+          "promotionName" : {
+            "type" : "string"
+          },
+          "promotionTypeName" : {
+            "type" : "string"
+          },
+          "accountName" : {
+            "type" : "string"
+          },
+          "startDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "endDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "category" : {
+            "type" : "string"
+          },
+          "standLocation" : {
+            "type" : "string"
+          },
+          "targetAmount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "actualAmount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "isClosed" : {
+            "type" : "boolean"
+          },
+          "myScheduleDate" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        },
+        "required" : [ "endDate", "id", "isClosed", "promotionNumber", "startDate" ]
+      },
+      "MobilePromotionListResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/MobilePromotionListItem"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "content", "page", "size", "totalElements", "totalPages" ]
+      },
+      "ApiResponseMobilePromotionDetailResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "$ref" : "#/components/schemas/MobilePromotionDetailResponse"
+          },
+          "error" : {
+            "$ref" : "#/components/schemas/ErrorDetail"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "success", "timestamp" ]
+      },
+      "MobilePromotionDetailResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "promotionNumber" : {
+            "type" : "string"
+          },
+          "promotionName" : {
+            "type" : "string"
+          },
+          "promotionTypeName" : {
+            "type" : "string"
+          },
+          "accountId" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "accountName" : {
+            "type" : "string"
+          },
+          "startDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "endDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "primaryProductName" : {
+            "type" : "string"
+          },
+          "otherProduct" : {
+            "type" : "string"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "standLocation" : {
+            "type" : "string"
+          },
+          "category" : {
+            "type" : "string"
+          },
+          "productType" : {
+            "type" : "string"
+          },
+          "targetAmount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "actualAmount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "isClosed" : {
+            "type" : "boolean"
+          },
+          "remark" : {
+            "type" : "string"
+          },
+          "employees" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/MobilePromotionEmployeeItem"
+            }
+          }
+        },
+        "required" : [ "accountId", "employees", "endDate", "id", "isClosed", "promotionNumber", "startDate" ]
+      },
+      "MobilePromotionEmployeeItem" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "employeeName" : {
+            "type" : "string"
+          },
+          "scheduleDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "workStatus" : {
+            "type" : "string"
+          },
+          "workType3" : {
+            "type" : "string"
+          },
+          "professionalPromotionTeam" : {
+            "type" : "string"
+          },
+          "targetAmount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "actualAmount" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "id" ]
       },
       "ApiResponsePageProductDto" : {
         "type" : "object",
@@ -4607,19 +5510,6 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "size" : {
             "type" : "integer",
             "format" : "int32"
@@ -4637,6 +5527,19 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
+          },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
           "empty" : {
             "type" : "boolean"
           }
@@ -4645,9 +5548,19 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
+          "offset" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
+          },
           "pageSize" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "paged" : {
+            "type" : "boolean"
           },
           "pageNumber" : {
             "type" : "integer",
@@ -4655,16 +5568,6 @@
           },
           "unpaged" : {
             "type" : "boolean"
-          },
-          "paged" : {
-            "type" : "boolean"
-          },
-          "offset" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
           }
         }
       },
@@ -4697,13 +5600,13 @@
       "SortObject" : {
         "type" : "object",
         "properties" : {
+          "empty" : {
+            "type" : "boolean"
+          },
           "unsorted" : {
             "type" : "boolean"
           },
           "sorted" : {
-            "type" : "boolean"
-          },
-          "empty" : {
             "type" : "boolean"
           }
         }
@@ -4953,30 +5856,13 @@
           "stores" : {
             "type" : "array",
             "items" : {
-              "$ref" : "#/components/schemas/StoreScheduleItemDto"
+              "$ref" : "#/components/schemas/DisplayWorkScheduleItemDto"
             }
           }
         },
         "required" : [ "date", "day_of_week", "employee_number", "member_name", "report_progress", "stores" ]
       },
-      "ReportProgressDto" : {
-        "type" : "object",
-        "properties" : {
-          "completed" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "total" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "work_type" : {
-            "type" : "string"
-          }
-        },
-        "required" : [ "completed", "total", "work_type" ]
-      },
-      "StoreScheduleItemDto" : {
+      "DisplayWorkScheduleItemDto" : {
         "type" : "object",
         "properties" : {
           "store_id" : {
@@ -5000,6 +5886,23 @@
           }
         },
         "required" : [ "is_registered", "store_id", "store_name", "work_type_1", "work_type_2", "work_type_3" ]
+      },
+      "ReportProgressDto" : {
+        "type" : "object",
+        "properties" : {
+          "completed" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "total" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "work_type" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "completed", "total", "work_type" ]
       },
       "ApiResponseHomeResponse" : {
         "type" : "object",
@@ -5062,7 +5965,7 @@
           "todaySchedules" : {
             "type" : "array",
             "items" : {
-              "$ref" : "#/components/schemas/ScheduleInfo"
+              "$ref" : "#/components/schemas/TeamMemberScheduleInfo"
             }
           },
           "attendanceSummary" : {
@@ -5109,7 +6012,7 @@
         },
         "required" : [ "category", "categoryName", "createdAt", "id", "title" ]
       },
-      "ScheduleInfo" : {
+      "TeamMemberScheduleInfo" : {
         "type" : "object",
         "properties" : {
           "scheduleId" : {
@@ -5118,7 +6021,7 @@
           "employeeName" : {
             "type" : "string"
           },
-          "employeeSfid" : {
+          "employeeId" : {
             "type" : "string"
           },
           "storeName" : {
@@ -5141,7 +6044,7 @@
             "format" : "date-time"
           }
         },
-        "required" : [ "employeeName", "employeeSfid", "isCommuteRegistered", "scheduleId", "workCategory" ]
+        "required" : [ "employeeId", "employeeName", "isCommuteRegistered", "scheduleId", "workCategory" ]
       },
       "ApiResponseHealthStatus" : {
         "type" : "object",
@@ -5412,8 +6315,9 @@
       "StoreInfo" : {
         "type" : "object",
         "properties" : {
-          "scheduleSfid" : {
-            "type" : "string"
+          "scheduleId" : {
+            "type" : "integer",
+            "format" : "int64"
           },
           "storeSfid" : {
             "type" : "string"
@@ -5442,7 +6346,7 @@
             "type" : "boolean"
           }
         },
-        "required" : [ "isRegistered", "scheduleSfid", "storeName", "workCategory" ]
+        "required" : [ "isRegistered", "scheduleId", "storeName", "workCategory" ]
       },
       "StoreListResponse" : {
         "type" : "object",
@@ -5492,8 +6396,9 @@
       "CommuteStatusItem" : {
         "type" : "object",
         "properties" : {
-          "scheduleSfid" : {
-            "type" : "string"
+          "scheduleId" : {
+            "type" : "integer",
+            "format" : "int64"
           },
           "storeName" : {
             "type" : "string"
@@ -5505,7 +6410,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "scheduleSfid", "status", "storeName", "workCategory" ]
+        "required" : [ "scheduleId", "status", "storeName", "workCategory" ]
       },
       "CommuteStatusResponse" : {
         "type" : "object",
@@ -5529,6 +6434,252 @@
           }
         },
         "required" : [ "currentDate", "registeredCount", "statusList", "totalCount" ]
+      },
+      "ApiResponseListTeamScheduleDto" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TeamScheduleDto"
+            }
+          },
+          "error" : {
+            "$ref" : "#/components/schemas/ErrorDetail"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "success", "timestamp" ]
+      },
+      "TeamScheduleDto" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "employeeId" : {
+            "type" : "string"
+          },
+          "employeeName" : {
+            "type" : "string"
+          },
+          "empCode" : {
+            "type" : "string"
+          },
+          "workingDate" : {
+            "type" : "string"
+          },
+          "workingType" : {
+            "type" : "string"
+          },
+          "workingCategory1" : {
+            "type" : "string"
+          },
+          "workingCategory2" : {
+            "type" : "string"
+          },
+          "workingCategory3" : {
+            "type" : "string"
+          },
+          "accountSfid" : {
+            "type" : "string"
+          },
+          "accountName" : {
+            "type" : "string"
+          },
+          "accountExternalKey" : {
+            "type" : "string"
+          },
+          "isClockIn" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "empCode", "employeeId", "employeeName", "id", "isClockIn", "workingDate", "workingType" ]
+      },
+      "ApiResponseListDailySummaryDto" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DailySummaryDto"
+            }
+          },
+          "error" : {
+            "$ref" : "#/components/schemas/ErrorDetail"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "success", "timestamp" ]
+      },
+      "DailySummaryDto" : {
+        "type" : "object",
+        "properties" : {
+          "date" : {
+            "type" : "string"
+          },
+          "displayExpected" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "displayActual" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "promotionExpected" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "promotionActual" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "annualLeave" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "compensatoryLeave" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "annualLeave", "compensatoryLeave", "date", "displayActual", "displayExpected", "promotionActual", "promotionExpected" ]
+      },
+      "ApiResponseListTeamMemberDto" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TeamMemberDto"
+            }
+          },
+          "error" : {
+            "$ref" : "#/components/schemas/ErrorDetail"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "success", "timestamp" ]
+      },
+      "TeamMemberDto" : {
+        "type" : "object",
+        "properties" : {
+          "employeeId" : {
+            "type" : "string"
+          },
+          "empCode" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "empCode", "employeeId", "name" ]
+      },
+      "ApiResponseListBranchResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/BranchResponse"
+            }
+          },
+          "error" : {
+            "$ref" : "#/components/schemas/ErrorDetail"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "success", "timestamp" ]
+      },
+      "BranchResponse" : {
+        "type" : "object",
+        "properties" : {
+          "branchCode" : {
+            "type" : "string"
+          },
+          "branchName" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "branchCode", "branchName" ]
+      },
+      "ApiResponseListTeamScheduleAccountDto" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TeamScheduleAccountDto"
+            }
+          },
+          "error" : {
+            "$ref" : "#/components/schemas/ErrorDetail"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "success", "timestamp" ]
+      },
+      "TeamScheduleAccountDto" : {
+        "type" : "object",
+        "properties" : {
+          "accountSfid" : {
+            "type" : "string"
+          },
+          "externalKey" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "accountSfid", "externalKey", "name" ]
       },
       "ApiResponsePromotionListResponse" : {
         "type" : "object",
