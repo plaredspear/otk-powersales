@@ -7,41 +7,41 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 @Entity
-@Table(name = "safetycheck__workschedule__member")
+@Table(name = "safety_check_submission")
 @HCTable("safetycheck__workschedule__member")
 @IdClass(SafetyCheckMemberId::class)
 class SafetyCheckSubmission(
 
     @Id
-    @Column(name = "\"masterId\"", length = 18)
+    @Column(name = "master_id", length = 18)
     @HCColumn("masterId")
     val masterId: String = "",
 
     @Id
-    @Column(name = "employeeid__c", length = 18)
+    @Column(name = "employee_id", length = 18)
     @HCColumn("employeeid__c")
     val employeeId: String = "",
 
     @Id
-    @Column(name = "working__date")
+    @Column(name = "working_date")
     @HCColumn("working__date")
     val workingDate: LocalDate? = null,
 
-    @Column(name = "starttime")
+    @Column(name = "start_time")
     @HCColumn("starttime")
     val startTime: LocalDateTime? = null,
 
-    @Column(name = "completetime")
+    @Column(name = "complete_time")
     @HCColumn("completetime")
     val completeTime: LocalDateTime? = null,
 
-    @Column(name = "yes_chkcnt")
+    @Column(name = "yes_check_count")
     @HCColumn("yes_chkcnt")
-    val yesChkCnt: Double? = null,
+    val yesCheckCount: Int? = null,
 
-    @Column(name = "no_chkcnt")
+    @Column(name = "no_check_count")
     @HCColumn("no_chkcnt")
-    val noChkCnt: Double? = null,
+    val noCheckCount: Int? = null,
 
     @Column(name = "equipment1", length = 10)
     @HCColumn("equipment1")
@@ -83,27 +83,19 @@ class SafetyCheckSubmission(
     @HCColumn("precaution")
     val precaution: String? = null,
 
-    @Column(name = "precaution_chkcnt")
+    @Column(name = "precaution_check_count")
     @HCColumn("precaution_chkcnt")
-    val precautionChkCnt: Double? = null,
+    val precautionCheckCount: Int? = null,
 
-    @Column(name = "traversalflag", length = 255)
+    @Column(name = "traversal_flag", length = 255)
     @HCColumn("traversalflag")
     val traversalFlag: String? = null,
 
-    @Column(name = "eventmasterid", length = 18)
+    @Column(name = "event_master_id", length = 18)
     @HCColumn("eventmasterid")
     val eventMasterId: String? = null,
 
-    @Column(name = "completeworkyn", length = 18)
+    @Column(name = "complete_work_yn", length = 18)
     @HCColumn("completeworkyn")
     val completeWorkYn: String? = null
-
-    // Phase2: 기존 V2 필드 주석 처리
-    // val id: Long = 0,                    // auto-increment PK → 복합 키로 대체
-    // val userId: Long,                    // → employeeId (String)로 대체
-    // val submissionDate: LocalDate,       // → workingDate로 대체
-    // val submittedAt: LocalDateTime,      // → completeTime으로 대체
-    // @UniqueConstraint(name = "uq_safety_check_user_date", columnNames = ["user_id", "submission_date"])
 )
-// Phase2: addItem 메서드 제거 — SafetyCheckSubmissionItem 주석 처리됨

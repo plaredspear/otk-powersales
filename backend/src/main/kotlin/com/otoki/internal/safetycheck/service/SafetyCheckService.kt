@@ -86,13 +86,13 @@ class SafetyCheckService(
         }
 
         val sortedEquipments = request.equipments.sortedBy { it.seqNum }
-        val yesCount = sortedEquipments.count { it.answer == "예" }.toDouble()
-        val noCount = sortedEquipments.count { it.answer == "해당없음" }.toDouble()
+        val yesCount = sortedEquipments.count { it.answer == "예" }
+        val noCount = sortedEquipments.count { it.answer == "해당없음" }
 
         val precautionText = request.precautions
             ?.takeIf { it.isNotEmpty() }
             ?.joinToString(";")
-        val precautionCount = (request.precautions?.size ?: 0).toDouble()
+        val precautionCount = request.precautions?.size ?: 0
 
         val submission = SafetyCheckSubmission(
             masterId = "",
@@ -100,8 +100,8 @@ class SafetyCheckService(
             workingDate = today,
             startTime = request.startTime,
             completeTime = request.completeTime,
-            yesChkCnt = yesCount,
-            noChkCnt = noCount,
+            yesCheckCount = yesCount,
+            noCheckCount = noCount,
             equipment1 = sortedEquipments.getOrNull(0)?.answer,
             equipment2 = sortedEquipments.getOrNull(1)?.answer,
             equipment3 = sortedEquipments.getOrNull(2)?.answer,
@@ -112,7 +112,7 @@ class SafetyCheckService(
             equipment8 = sortedEquipments.getOrNull(7)?.answer,
             equipment9 = sortedEquipments.getOrNull(8)?.answer,
             precaution = precautionText,
-            precautionChkCnt = precautionCount,
+            precautionCheckCount = precautionCount,
             traversalFlag = "O",
             completeWorkYn = "N"
         )
