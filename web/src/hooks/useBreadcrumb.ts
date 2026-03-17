@@ -13,9 +13,9 @@ const dashboardIcon = createElement(DashboardOutlined);
 
 // Build path → breadcrumb trail mapping from menuRoute
 const breadcrumbMap: Record<string, BreadcrumbItem[]> = {};
-for (const item of menuRoute.routes) {
-  if (item.routes) {
-    for (const child of item.routes) {
+for (const item of menuRoute.children) {
+  if (item.children) {
+    for (const child of item.children) {
       if (child.path) {
         breadcrumbMap[child.path] = [
           { label: item.name, path: null, icon: item.icon },

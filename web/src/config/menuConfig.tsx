@@ -23,21 +23,21 @@ export interface MenuItem {
   path?: string;
   name: string;
   icon?: ReactNode;
-  routes?: MenuItem[];
+  children?: MenuItem[];
 }
 
 export interface MenuRoute {
   path: string;
-  routes: MenuItem[];
+  children: MenuItem[];
 }
 
 export const menuRoute: MenuRoute = {
   path: '/',
-  routes: [
+  children: [
     {
       name: '매출조회',
       icon: <BarChartOutlined />,
-      routes: [
+      children: [
         { path: '/sales/monthly', name: '물류배부' },
         { path: '/sales/electronic', name: '전산실적' },
         { path: '/sales/pos', name: 'POS매출' },
@@ -46,7 +46,7 @@ export const menuRoute: MenuRoute = {
     {
       name: '여사원',
       icon: <TeamOutlined />,
-      routes: [
+      children: [
         { path: '/schedule', name: '일정관리' },
         { path: '/deployment', name: '배치' },
       ],
@@ -54,7 +54,7 @@ export const menuRoute: MenuRoute = {
     {
       name: '근무',
       icon: <ClockCircleOutlined />,
-      routes: [{ path: '/attendance', name: '등록현황' }],
+      children: [{ path: '/attendance', name: '등록현황' }],
     },
     { path: '/promotions', name: '행사마스터', icon: <GiftOutlined /> },
     { path: '/display-schedules', name: '진열스케줄마스터', icon: <CalendarOutlined /> },
@@ -73,7 +73,7 @@ export const menuRoute: MenuRoute = {
     {
       name: '설정',
       icon: <SettingOutlined />,
-      routes: [
+      children: [
         { path: '/settings/promotion-types', name: '행사유형 관리' },
         { path: '/settings/organizations', name: '조직마스터 조회' },
       ],
