@@ -12,7 +12,6 @@ void main() {
     String userRole = 'USER',
     VoidCallback? onRegisterTap,
     void Function(Schedule)? onScheduleTap,
-    VoidCallback? onHeaderTap,
   }) {
     return MaterialApp(
       home: Scaffold(
@@ -25,7 +24,6 @@ void main() {
             userRole: userRole,
             onRegisterTap: onRegisterTap,
             onScheduleTap: onScheduleTap,
-            onHeaderTap: onHeaderTap,
           ),
         ),
       ),
@@ -40,22 +38,11 @@ void main() {
         expect(find.text('03월 01일 (일)'), findsOneWidget);
       });
 
-      testWidgets('"내 일정" 링크가 표시되어야 한다', (tester) async {
+      testWidgets('"내 일정" 링크가 표시되지 않아야 한다', (tester) async {
         await tester.pumpWidget(buildTestWidget());
 
-        expect(find.text('내 일정'), findsOneWidget);
-        expect(find.byIcon(Icons.chevron_right), findsOneWidget);
-      });
-
-      testWidgets('"내 일정" 탭 시 onHeaderTap 콜백이 호출되어야 한다',
-          (tester) async {
-        var tapped = false;
-        await tester.pumpWidget(buildTestWidget(
-          onHeaderTap: () => tapped = true,
-        ));
-
-        await tester.tap(find.text('내 일정'));
-        expect(tapped, isTrue);
+        expect(find.text('내 일정'), findsNothing);
+        expect(find.text('일정 관리'), findsNothing);
       });
     });
 
@@ -207,14 +194,14 @@ void main() {
     });
 
     group('조장(LEADER) 뷰', () {
-      testWidgets('헤더에 "일정 관리" 텍스트가 표시되어야 한다', (tester) async {
+      testWidgets('헤더에 "일정 관리" 텍스트가 표시되지 않아야 한다', (tester) async {
         await tester.pumpWidget(buildTestWidget(
           userRole: 'LEADER',
           attendanceSummary:
               const AttendanceSummary(totalCount: 5, registeredCount: 3),
         ));
 
-        expect(find.text('일정 관리'), findsOneWidget);
+        expect(find.text('일정 관리'), findsNothing);
         expect(find.text('내 일정'), findsNothing);
       });
 
@@ -321,18 +308,6 @@ void main() {
         expect(find.text('1/3'), findsNothing);
       });
 
-      testWidgets('"일정 관리" 탭 시 onHeaderTap 콜백이 호출되어야 한다',
-          (tester) async {
-        var tapped = false;
-        await tester.pumpWidget(buildTestWidget(
-          userRole: 'LEADER',
-          onHeaderTap: () => tapped = true,
-        ));
-
-        await tester.tap(find.text('일정 관리'));
-        expect(tapped, isTrue);
-      });
-
       testWidgets('동일 팀원의 복수 스케줄이 독립 표시되어야 한다', (tester) async {
         await tester.pumpWidget(buildTestWidget(
           userRole: 'LEADER',
@@ -375,7 +350,7 @@ void main() {
               const AttendanceSummary(totalCount: 3, registeredCount: 1),
         ));
 
-        expect(find.text('일정 관리'), findsOneWidget);
+        expect(find.text('일정 관리'), findsNothing);
         expect(find.text('팀 출근 현황: 3명 중 1명 등록 완료'), findsOneWidget);
         expect(find.text('내 일정'), findsNothing);
         expect(find.byType(ElevatedButton), findsNothing);
@@ -383,12 +358,12 @@ void main() {
     });
 
     group('일반 사원(USER) 뷰 (기존 동작 확인)', () {
-      testWidgets('USER는 "내 일정" 링크가 표시되어야 한다', (tester) async {
+      testWidgets('USER는 "내 일정" 링크가 표시되지 않아야 한다', (tester) async {
         await tester.pumpWidget(buildTestWidget(
           userRole: 'USER',
         ));
 
-        expect(find.text('내 일정'), findsOneWidget);
+        expect(find.text('내 일정'), findsNothing);
         expect(find.text('일정 관리'), findsNothing);
       });
 

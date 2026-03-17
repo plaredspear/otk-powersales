@@ -36,9 +36,6 @@ class ScheduleCard extends StatelessWidget {
   /// 일정 아이템 탭 콜백
   final void Function(Schedule schedule)? onScheduleTap;
 
-  /// "내 일정 >" / "일정 관리 >" 헤더 링크 탭 콜백
-  final VoidCallback? onHeaderTap;
-
   const ScheduleCard({
     super.key,
     required this.schedules,
@@ -47,7 +44,6 @@ class ScheduleCard extends StatelessWidget {
     this.userRole = 'USER',
     this.onRegisterTap,
     this.onScheduleTap,
-    this.onHeaderTap,
   });
 
   /// 조장/지점장 뷰 여부
@@ -82,27 +78,6 @@ class ScheduleCard extends StatelessWidget {
                 const Spacer(),
                 if (!_isLeaderView && totalCount > 0)
                   _buildAttendanceBadge(registeredCount, totalCount),
-                if (!_isLeaderView && totalCount > 0)
-                  const SizedBox(width: AppSpacing.sm),
-                GestureDetector(
-                  onTap: onHeaderTap,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _isLeaderView ? '일정 관리' : '내 일정',
-                        style: AppTypography.labelMedium.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      Icon(
-                        Icons.chevron_right,
-                        size: 16,
-                        color: AppColors.textSecondary,
-                      ),
-                    ],
-                  ),
-                ),
               ],
             ),
 
