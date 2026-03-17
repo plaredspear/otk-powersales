@@ -1,14 +1,13 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Spin } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
-import { useTeamMembers } from '@/hooks/team-schedule/useTeamMembers';
 import { useTeamScheduleAccounts } from '@/hooks/team-schedule/useTeamScheduleAccounts';
 import { useTeamSchedules } from '@/hooks/team-schedule/useTeamSchedules';
 import { useTeamScheduleSummary } from '@/hooks/team-schedule/useTeamScheduleSummary';
 import type { TeamSchedule } from '@/api/team-schedule';
 import { ScheduleFilterPanel } from './components/ScheduleFilterPanel';
 import { ScheduleCalendar } from './components/ScheduleCalendar';
-import { ScheduleCreateModal } from './components/ScheduleCreateModal';
+import { DayScheduleListModal } from './components/DayScheduleListModal';
 import { ScheduleEditModal } from './components/ScheduleEditModal';
 
 type FilterTab = 'member' | 'account';
@@ -38,8 +37,8 @@ export default function SchedulePage() {
   }, []);
 
   // Modal state
-  const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [createModalDate, setCreateModalDate] = useState('');
+  const [dayListModalOpen, setDayListModalOpen] = useState(false);
+  const [dayListModalDate, setDayListModalDate] = useState('');
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editSchedule, setEditSchedule] = useState<TeamSchedule | null>(null);
 
@@ -58,15 +57,19 @@ export default function SchedulePage() {
 
   const { data: schedules = [], isLoading: schedulesLoading } = useTeamSchedules(queryParams);
   const { data: summaries = [] } = useTeamScheduleSummary(queryParams);
-  const { data: members = [] } = useTeamMembers();
   const { data: accounts = [] } = useTeamScheduleAccounts(selectedBranchCode);
 
   const handleDateClick = useCallback((date: string) => {
-    setCreateModalDate(date);
-    setCreateModalOpen(true);
+    setDayListModalDate(date);
+    setDayListModalOpen(true);
   }, []);
 
   const handleEventClick = useCallback((schedule: TeamSchedule) => {
+    setEditSchedule(schedule);
+    setEditModalOpen(true);
+  }, []);
+
+  const handleScheduleClickFromList = useCallback((schedule: TeamSchedule) => {
     setEditSchedule(schedule);
     setEditModalOpen(true);
   }, []);
@@ -99,12 +102,12 @@ export default function SchedulePage() {
         </Spin>
       </div>
 
-      <ScheduleCreateModal
-        open={createModalOpen}
-        onClose={() => setCreateModalOpen(false)}
-        date={createModalDate}
-        members={members}
-        accounts={accounts}
+      <DayScheduleListModal
+        open={dayListModalOpen}
+        onClose={() => setDayListModalOpen(false)}
+        date={dayListModalDate}
+        schedules={schedules}
+        onScheduleClick={handleScheduleClickFromList}
       />
 
       <ScheduleEditModal

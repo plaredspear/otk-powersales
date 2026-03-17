@@ -97,16 +97,6 @@ export interface DailySummary {
   compensatoryLeave: number;
 }
 
-export interface TeamScheduleCreateRequest {
-  employee_id: string;
-  working_date: string;
-  working_type: string;
-  working_category1?: string;
-  working_category2?: string;
-  working_category3?: string;
-  account_sfid?: string;
-}
-
 export interface TeamScheduleUpdateRequest {
   working_date: string;
   working_type: string;
@@ -248,17 +238,6 @@ export async function fetchTeamScheduleSummary(params: {
     throw new Error(res.data.message || '일별 요약 조회에 실패했습니다');
   }
   return mapSummaries(res.data.data);
-}
-
-export async function createTeamSchedule(data: TeamScheduleCreateRequest): Promise<number> {
-  const res = await client.post<ApiResponse<{ id: number }>>(
-    '/api/v1/admin/team-schedule',
-    data,
-  );
-  if (!res.data.success || !res.data.data) {
-    throw new Error(res.data.message || '일정 등록에 실패했습니다');
-  }
-  return res.data.data.id;
 }
 
 export async function updateTeamSchedule(id: number, data: TeamScheduleUpdateRequest): Promise<void> {
