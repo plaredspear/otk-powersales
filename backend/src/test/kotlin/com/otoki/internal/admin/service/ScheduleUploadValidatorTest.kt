@@ -96,6 +96,69 @@ class ScheduleUploadValidatorTest {
     }
 
     @Nested
+    @DisplayName("V2a - 사원 앱 로그인 활성화")
+    inner class V2aTests {
+
+        @Test
+        @DisplayName("appLoginActive가 false인 사원 - 에러")
+        fun v2a_inactiveEmployee() {
+            val inactiveUserMap = mapOf(
+                "20030001" to createUser("20030001", "홍길동", "USR001", "재직", appLoginActive = false)
+            )
+            val rows = listOf(
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상시", "2026-04-01", null)
+            )
+
+            val result = validator.validate(rows, inactiveUserMap, accountMap, emptyList())
+
+            assertThat(result.errors).hasSize(1)
+            assertThat(result.errors[0].message).contains("앱 로그인이 비활성화된 사원입니다")
+        }
+
+        @Test
+        @DisplayName("appLoginActive가 null인 사원 - 에러")
+        fun v2a_nullAppLoginActive() {
+            val nullActiveUserMap = mapOf(
+                "20030001" to createUser("20030001", "홍길동", "USR001", "재직", appLoginActive = null)
+            )
+            val rows = listOf(
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상시", "2026-04-01", null)
+            )
+
+            val result = validator.validate(rows, nullActiveUserMap, accountMap, emptyList())
+
+            assertThat(result.errors).hasSize(1)
+            assertThat(result.errors[0].message).contains("앱 로그인이 비활성화된 사원입니다")
+        }
+
+        @Test
+        @DisplayName("appLoginActive가 true인 사원 - 정상")
+        fun v2a_activeEmployee() {
+            val rows = listOf(
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상시", "2026-04-01", null)
+            )
+
+            val result = validator.validate(rows, userMap, accountMap, emptyList())
+
+            assertThat(result.errors).isEmpty()
+        }
+
+        @Test
+        @DisplayName("퇴직 사원은 V2에서 이미 실패 - V2a 미실행")
+        fun v2a_resignedEmployeeSkipped() {
+            val rows = listOf(
+                createParsedRow(4, "99999999", "퇴직자", "ACC001", null, "고정", "상시", "2026-04-01", null)
+            )
+
+            val result = validator.validate(rows, userMap, accountMap, emptyList())
+
+            assertThat(result.errors).hasSize(1)
+            assertThat(result.errors[0].message).contains("퇴직한 사원")
+            assertThat(result.errors[0].message).doesNotContain("앱 로그인")
+        }
+    }
+
+    @Nested
     @DisplayName("V3 - 거래처코드 존재")
     inner class V3Tests {
 
@@ -110,6 +173,119 @@ class ScheduleUploadValidatorTest {
 
             assertThat(result.errors).hasSize(1)
             assertThat(result.errors[0].message).contains("존재하지 않는 거래처")
+        }
+    }
+
+    @Nested
+    @DisplayName("V3a - 거래처 폐업 상태")
+    inner class V3aTests {
+
+        @Test
+        @DisplayName("폐업 거래처 (예외 미충족) - 에러")
+        fun v3a_closedAccount() {
+            val closedAccountMap = mapOf(
+                "ACC001" to createAccount("ACC001", "ACC_SFID_001", "이마트 강남점", accountStatusName = "폐업", accountGroup = "2000")
+            )
+            val rows = listOf(
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상시", "2026-04-01", null)
+            )
+
+            val result = validator.validate(rows, userMap, closedAccountMap, emptyList())
+
+            assertThat(result.errors).hasSize(1)
+            assertThat(result.errors[0].message).contains("폐업 상태의 거래처입니다")
+        }
+
+        @Test
+        @DisplayName("폐업 거래처 예외 허용 (배포처) - 정상")
+        fun v3a_closedAccountExemptByDistribution() {
+            val exemptAccountMap = mapOf(
+                "ACC001" to createAccount("ACC001", "ACC_SFID_001", "이마트 강남점", accountStatusName = "폐업", accountGroup = "1000", distribution = "X")
+            )
+            val rows = listOf(
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상시", "2026-04-01", null)
+            )
+
+            val result = validator.validate(rows, userMap, exemptAccountMap, emptyList())
+
+            assertThat(result.errors).isEmpty()
+        }
+
+        @Test
+        @DisplayName("폐업 거래처 예외 허용 (ABCTypeCode 3062) - 정상")
+        fun v3a_closedAccountExemptByAbcTypeCode() {
+            val exemptAccountMap = mapOf(
+                "ACC001" to createAccount("ACC001", "ACC_SFID_001", "이마트 강남점", accountStatusName = "폐업", accountGroup = "1010", abcTypeCode = "3062")
+            )
+            val rows = listOf(
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상시", "2026-04-01", null)
+            )
+
+            val result = validator.validate(rows, userMap, exemptAccountMap, emptyList())
+
+            assertThat(result.errors).isEmpty()
+        }
+
+        @Test
+        @DisplayName("폐업 거래처 - 그룹 맞지만 배포처+ABCType 모두 미충족 - 에러")
+        fun v3a_closedAccountGroupMatchButNoDistributionOrAbcType() {
+            val accountMap = mapOf(
+                "ACC001" to createAccount("ACC001", "ACC_SFID_001", "이마트 강남점", accountStatusName = "폐업", accountGroup = "1000", distribution = null, abcTypeCode = "1000")
+            )
+            val rows = listOf(
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상시", "2026-04-01", null)
+            )
+
+            val result = validator.validate(rows, userMap, accountMap, emptyList())
+
+            assertThat(result.errors).hasSize(1)
+            assertThat(result.errors[0].message).contains("폐업 상태의 거래처입니다")
+        }
+
+        @Test
+        @DisplayName("미존재 거래처는 V3에서 이미 실패 - V3a 미실행")
+        fun v3a_nonExistentAccountSkipped() {
+            val rows = listOf(
+                createParsedRow(4, "20030001", "홍길동", "INVALID", null, "고정", "상시", "2026-04-01", null)
+            )
+
+            val result = validator.validate(rows, userMap, accountMap, emptyList())
+
+            assertThat(result.errors).hasSize(1)
+            assertThat(result.errors[0].message).contains("존재하지 않는 거래처")
+            assertThat(result.errors[0].message).doesNotContain("폐업")
+        }
+
+        @Test
+        @DisplayName("비활성 사원 + 폐업 거래처 동시 - 에러 2건")
+        fun v3a_inactiveEmployeeAndClosedAccountBothErrors() {
+            val inactiveUserMap = mapOf(
+                "20030001" to createUser("20030001", "홍길동", "USR001", "재직", appLoginActive = false)
+            )
+            val closedAccountMap = mapOf(
+                "ACC001" to createAccount("ACC001", "ACC_SFID_001", "이마트 강남점", accountStatusName = "폐업", accountGroup = "2000")
+            )
+            val rows = listOf(
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상시", "2026-04-01", null)
+            )
+
+            val result = validator.validate(rows, inactiveUserMap, closedAccountMap, emptyList())
+
+            assertThat(result.errors).hasSize(2)
+            assertThat(result.errors.map { it.message }).anySatisfy { assertThat(it).contains("앱 로그인이 비활성화된 사원입니다") }
+            assertThat(result.errors.map { it.message }).anySatisfy { assertThat(it).contains("폐업 상태의 거래처입니다") }
+        }
+
+        @Test
+        @DisplayName("활성 거래처 - 정상 (V3a 해당 없음)")
+        fun v3a_activeAccount() {
+            val rows = listOf(
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상시", "2026-04-01", null)
+            )
+
+            val result = validator.validate(rows, userMap, accountMap, emptyList())
+
+            assertThat(result.errors).isEmpty()
         }
     }
 
@@ -336,7 +512,8 @@ class ScheduleUploadValidatorTest {
         employeeId: String,
         name: String,
         sfid: String,
-        status: String
+        status: String,
+        appLoginActive: Boolean? = true
     ): User = User(
         id = 1L,
         employeeId = employeeId,
@@ -344,17 +521,25 @@ class ScheduleUploadValidatorTest {
         sfid = sfid,
         status = status,
         appAuthority = null,
-        appLoginActive = true
+        appLoginActive = appLoginActive
     )
 
     private fun createAccount(
         externalKey: String,
         sfid: String,
-        name: String
+        name: String,
+        accountStatusName: String? = null,
+        accountGroup: String? = null,
+        distribution: String? = null,
+        abcTypeCode: String? = null
     ): Account = Account(
         id = 1,
         externalKey = externalKey,
         sfid = sfid,
-        name = name
+        name = name,
+        accountStatusName = accountStatusName,
+        accountGroup = accountGroup,
+        distribution = distribution,
+        abcTypeCode = abcTypeCode
     )
 }
