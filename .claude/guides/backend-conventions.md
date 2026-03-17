@@ -329,6 +329,49 @@ interface UserRepository : JpaRepository<User, Long> {
 }
 ```
 
+### 쿼리 방식 선택 기준
+
+| 조건 | 방식 |
+|------|------|
+| 단순 조건 조회 (1~2개 필드) | Spring Data 메서드 네이밍 (`findByXxx`) |
+| 동적 조건, 검색, 페이징, 복합 조건 | **QueryDSL** (Custom Repository) |
+| DB 전용 함수/시퀀스 (Spring Data/QueryDSL로 불가) | `@Query(nativeQuery = true)` |
+
+> **`@Query` JPQL 사용 금지**: 동적 조건이나 복합 조건이 필요한 경우 `@Query` 대신 QueryDSL을 사용한다. `@Query`는 네이티브 쿼리가 반드시 필요한 경우에만 허용.
+
+---
+
+## QueryDSL (Custom Repository)
+
+### 구조: Custom Repository 패턴 (3파일)
+
+```
+<domain>/repository/
+├── XxxRepository.kt              # JpaRepository + XxxRepositoryCustom 상속
+├── XxxRepositoryCustom.kt        # Custom 인터페이스
+└── XxxRepositoryCustomImpl.kt    # QueryDSL 구현체 (JPAQueryFactory 주입)
+```
+
+- 구현체 클래스명은 반드시 Custom 인터페이스명 + `Impl` (Spring Data 규약)
+- `JPAQueryFactory`는 생성자 주입 (`QueryDslConfig`에 Bean 등록 완료)
+
+### 규칙
+
+- Q클래스는 `Q<Entity>.<entity>` 형태로 static import (예: `QNotice.notice`)
+- 동적 조건: `BooleanBuilder` + `build*Condition()` private 메서드 분리
+- nullable 파라미터 조건: `null` 반환 시 BooleanBuilder가 무시
+- 페이징: `PageableExecutionUtils.getPage()` + count 쿼리 분리 (지연 실행)
+- 벌크 연산: `queryFactory.update()` / `queryFactory.delete()`
+
+### 레퍼런스
+
+| 패턴 | 참조 파일 |
+|------|----------|
+| 기본 조회 + 동적 조건 + 페이징 | `notice/repository/NoticeRepositoryCustomImpl.kt` |
+| 검색 + 페이징 | `education/repository/EducationPostRepositoryCustomImpl.kt` |
+| 벌크 업데이트 | `schedule/repository/TeamMemberScheduleRepositoryCustomImpl.kt` |
+| 관리자 검색 (다중 조건) | `sap/repository/ProductRepositoryCustomImpl.kt` |
+
 ---
 
 ## Service Test (Mockito)
