@@ -9,11 +9,6 @@ interface ApiResponse<T> {
   error?: { code: string; message: string };
 }
 
-interface ScheduleBranchRaw {
-  cost_center_code: string;
-  branch_name: string;
-}
-
 interface ScheduleUploadResultRaw {
   upload_id: string;
   total_rows: number;
@@ -48,11 +43,6 @@ interface ScheduleConfirmResultRaw {
 }
 
 // --- Frontend interfaces (camelCase) ---
-
-export interface ScheduleBranch {
-  costCenterCode: string;
-  branchName: string;
-}
 
 export interface ScheduleUploadResult {
   uploadId: string;
@@ -89,13 +79,6 @@ export interface ScheduleConfirmResult {
 
 // --- Mappers ---
 
-function mapBranches(raw: ScheduleBranchRaw[]): ScheduleBranch[] {
-  return raw.map((b) => ({
-    costCenterCode: b.cost_center_code,
-    branchName: b.branch_name,
-  }));
-}
-
 function mapUploadResult(raw: ScheduleUploadResultRaw): ScheduleUploadResult {
   return {
     uploadId: raw.upload_id,
@@ -125,23 +108,14 @@ function mapUploadResult(raw: ScheduleUploadResultRaw): ScheduleUploadResult {
 
 // --- API functions ---
 
-export async function fetchScheduleBranches(): Promise<ScheduleBranch[]> {
-  const res = await client.get<ApiResponse<ScheduleBranchRaw[]>>('/api/v1/admin/schedule/branches');
-  if (!res.data.success || !res.data.data) {
-    throw new Error(res.data.message || '지점 목록 조회에 실패했습니다');
-  }
-  return mapBranches(res.data.data);
-}
-
-export async function downloadScheduleTemplate(costCenterCode: string): Promise<void> {
+export async function downloadScheduleTemplate(): Promise<void> {
   const res = await client.get('/api/v1/admin/schedule/template', {
-    params: { costCenterCode },
     responseType: 'blob',
   });
 
   // Content-Disposition 헤더에서 파일명 추출
   const contentDisposition = res.headers['content-disposition'] as string | undefined;
-  let filename = `진열스케줄_양식_${costCenterCode}.xlsx`;
+  let filename = '진열스케줄_양식.xlsx';
   if (contentDisposition) {
     const match = contentDisposition.match(/filename="?([^";\n]+)"?/);
     if (match) {

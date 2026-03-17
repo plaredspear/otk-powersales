@@ -1,9 +1,8 @@
 import { useState } from 'react';
-import { Button, Card, message, Select, Space, Table, Typography, Upload, Alert, Statistic, Row, Col, Divider } from 'antd';
+import { Button, Card, message, Space, Table, Typography, Upload, Alert, Statistic, Row, Col, Divider } from 'antd';
 import { DownloadOutlined, UploadOutlined } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { useScheduleBranches } from '@/hooks/schedule/useScheduleBranches';
 import { useScheduleUpload, useScheduleConfirm } from '@/hooks/schedule/useScheduleUpload';
 import { downloadScheduleTemplate } from '@/api/schedule';
 import type { ScheduleUploadResult, RowError, RowPreview } from '@/api/schedule';
@@ -30,22 +29,15 @@ const previewColumns: ColumnsType<RowPreview> = [
 ];
 
 export default function DisplaySchedulePage() {
-  const [selectedBranch, setSelectedBranch] = useState<string | undefined>(undefined);
   const [downloading, setDownloading] = useState(false);
   const [uploadResult, setUploadResult] = useState<ScheduleUploadResult | null>(null);
-  const { data: branches, isLoading: branchesLoading } = useScheduleBranches();
   const uploadMutation = useScheduleUpload();
   const confirmMutation = useScheduleConfirm();
 
   const handleDownload = async () => {
-    if (!selectedBranch) {
-      message.warning('지점을 선택해주세요');
-      return;
-    }
-
     setDownloading(true);
     try {
-      await downloadScheduleTemplate(selectedBranch);
+      await downloadScheduleTemplate();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '양식 다운로드에 실패했습니다';
       message.error(errorMessage);
@@ -89,11 +81,6 @@ export default function DisplaySchedulePage() {
     });
   };
 
-  const branchOptions = (branches ?? []).map((b) => ({
-    label: b.branchName,
-    value: b.costCenterCode,
-  }));
-
   const hasErrors = uploadResult != null && uploadResult.errorRows > 0;
   const canConfirm = uploadResult != null && uploadResult.errorRows === 0 && uploadResult.successRows > 0;
 
@@ -101,21 +88,6 @@ export default function DisplaySchedulePage() {
     <div>
       <Card title="진열스케줄마스터">
         <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-          <div>
-            <Text strong>지점 선택: </Text>
-            <Select
-              showSearch
-              placeholder="지점을 선택해주세요"
-              style={{ width: 250 }}
-              value={selectedBranch}
-              onChange={setSelectedBranch}
-              options={branchOptions}
-              loading={branchesLoading}
-              filterOption={(input, option) =>
-                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-              }
-            />
-          </div>
           <Space>
             <Button
               type="primary"
