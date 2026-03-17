@@ -1,17 +1,17 @@
 package com.otoki.internal.admin.controller
 
 import com.otoki.internal.admin.dto.request.ScheduleConfirmRequest
-import com.otoki.internal.admin.dto.response.BranchDto
 import com.otoki.internal.admin.dto.response.ScheduleConfirmResultDto
 import com.otoki.internal.admin.dto.response.ScheduleUploadResultDto
 import com.otoki.internal.admin.exception.ScheduleFileRequiredException
 import com.otoki.internal.admin.service.AdminScheduleService
-import com.otoki.internal.admin.service.MissingCostCenterCodeException
 import com.otoki.internal.common.dto.ApiResponse
+import com.otoki.internal.common.security.UserPrincipal
 import jakarta.validation.Valid
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
 
@@ -21,21 +21,11 @@ class AdminScheduleController(
     private val adminScheduleService: AdminScheduleService
 ) {
 
-    @GetMapping("/branches")
-    fun getBranches(): ResponseEntity<ApiResponse<List<BranchDto>>> {
-        val branches = adminScheduleService.getBranches()
-        return ResponseEntity.ok(ApiResponse.success(branches))
-    }
-
     @GetMapping("/template")
     fun downloadTemplate(
-        @RequestParam(required = false) costCenterCode: String?
+        @AuthenticationPrincipal principal: UserPrincipal
     ): ResponseEntity<ByteArray> {
-        if (costCenterCode.isNullOrBlank()) {
-            throw MissingCostCenterCodeException()
-        }
-
-        val result = adminScheduleService.generateTemplate(costCenterCode)
+        val result = adminScheduleService.generateTemplate(principal.userId)
 
         val headers = HttpHeaders()
         headers.contentType = MediaType.parseMediaType(

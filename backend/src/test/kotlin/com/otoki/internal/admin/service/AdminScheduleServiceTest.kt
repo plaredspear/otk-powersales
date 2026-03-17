@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.otoki.internal.admin.dto.response.RowError
 import com.otoki.internal.admin.dto.response.RowPreview
 import com.otoki.internal.admin.exception.*
-import com.otoki.internal.branch.dto.response.BranchResponse
+import com.otoki.internal.auth.exception.UserNotFoundException
 import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.sap.entity.Organization
 import com.otoki.internal.sap.entity.User
@@ -28,6 +28,7 @@ import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.ValueOperations
 import org.springframework.mock.web.MockMultipartFile
 import java.time.LocalDate
+import java.util.*
 
 @ExtendWith(MockitoExtension::class)
 @DisplayName("AdminScheduleService 테스트")
@@ -69,56 +70,22 @@ class AdminScheduleServiceTest {
     private lateinit var adminScheduleService: AdminScheduleService
 
     @Nested
-    @DisplayName("getBranches - 지점 목록 조회")
-    inner class GetBranchesTests {
-
-        @Test
-        @DisplayName("정상 조회 - 지점 목록 반환")
-        fun getBranches_success() {
-            val branches = listOf(
-                BranchResponse("1234", "서울지점"),
-                BranchResponse("5678", "부산지점")
-            )
-            whenever(userRepository.findDistinctBranches()).thenReturn(branches)
-
-            val result = adminScheduleService.getBranches()
-
-            assertThat(result).hasSize(2)
-            assertThat(result[0].costCenterCode).isEqualTo("1234")
-            assertThat(result[0].branchName).isEqualTo("서울지점")
-        }
-
-        @Test
-        @DisplayName("빈 지점 필터링 - branchCode 또는 branchName이 빈 문자열인 경우 제외")
-        fun getBranches_filtersEmpty() {
-            val branches = listOf(
-                BranchResponse("", "빈코드지점"),
-                BranchResponse("1234", ""),
-                BranchResponse("5678", "부산지점")
-            )
-            whenever(userRepository.findDistinctBranches()).thenReturn(branches)
-
-            val result = adminScheduleService.getBranches()
-
-            assertThat(result).hasSize(1)
-            assertThat(result[0].costCenterCode).isEqualTo("5678")
-        }
-    }
-
-    @Nested
     @DisplayName("generateTemplate - 양식 다운로드")
     inner class GenerateTemplateTests {
 
         @Test
         @DisplayName("정상 생성 - 사원이 있는 지점의 템플릿")
         fun generateTemplate_success() {
+            val userId = 1L
             val costCenterCode = "1234"
+            val user = createUser(id = userId, costCenterCode = costCenterCode)
             val org = Organization(id = 1, costCenterLevel5 = costCenterCode)
             val employees = listOf(
                 createUser(employeeId = "20030001", name = "홍길동", orgName = "A팀"),
                 createUser(employeeId = "20030002", name = "김철수", orgName = "B팀")
             )
 
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
             whenever(organizationRepository.findFirstByCostCenterLevel5(costCenterCode)).thenReturn(org)
             whenever(
                 userRepository.findByCostCenterCodeAndAppAuthorityIsNullAndAppLoginActiveTrueAndStatus(
@@ -127,22 +94,77 @@ class AdminScheduleServiceTest {
             ).thenReturn(employees)
             whenever(templateGenerator.generate(employees)).thenReturn(ByteArray(100))
 
-            val result = adminScheduleService.generateTemplate(costCenterCode)
+            val result = adminScheduleService.generateTemplate(userId)
 
             assertThat(result.bytes).hasSize(100)
-            assertThat(result.filename).startsWith("진열스케줄_양식_1234_")
+            assertThat(result.filename).startsWith("진열스케줄_양식_")
+            assertThat(result.filename).doesNotContain("1234")
             assertThat(result.filename).endsWith(".xlsx")
+        }
+
+        @Test
+        @DisplayName("사용자 미존재 - UserNotFoundException")
+        fun generateTemplate_userNotFound() {
+            whenever(userRepository.findById(999L)).thenReturn(Optional.empty())
+
+            assertThatThrownBy { adminScheduleService.generateTemplate(999L) }
+                .isInstanceOf(UserNotFoundException::class.java)
+        }
+
+        @Test
+        @DisplayName("소속 지점 미설정 - MissingCostCenterException")
+        fun generateTemplate_missingCostCenter() {
+            val user = createUser(costCenterCode = null)
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(user))
+
+            assertThatThrownBy { adminScheduleService.generateTemplate(1L) }
+                .isInstanceOf(MissingCostCenterException::class.java)
+        }
+
+        @Test
+        @DisplayName("소속 지점 빈 문자열 - MissingCostCenterException")
+        fun generateTemplate_emptyCostCenter() {
+            val user = createUser(costCenterCode = "")
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(user))
+
+            assertThatThrownBy { adminScheduleService.generateTemplate(1L) }
+                .isInstanceOf(MissingCostCenterException::class.java)
         }
 
         @Test
         @DisplayName("존재하지 않는 지점 - OrganizationNotFoundException")
         fun generateTemplate_orgNotFound() {
             val costCenterCode = "0000"
+            val user = createUser(costCenterCode = costCenterCode)
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(user))
             whenever(organizationRepository.findFirstByCostCenterLevel5(costCenterCode)).thenReturn(null)
             whenever(organizationRepository.findFirstByCostCenterLevel4(costCenterCode)).thenReturn(null)
 
-            assertThatThrownBy { adminScheduleService.generateTemplate(costCenterCode) }
+            assertThatThrownBy { adminScheduleService.generateTemplate(1L) }
                 .isInstanceOf(OrganizationNotFoundException::class.java)
+        }
+
+        @Test
+        @DisplayName("소속 사원 0명 - 빈 템플릿 반환")
+        fun generateTemplate_noEmployees() {
+            val userId = 1L
+            val costCenterCode = "1234"
+            val user = createUser(id = userId, costCenterCode = costCenterCode)
+            val org = Organization(id = 1, costCenterLevel5 = costCenterCode)
+
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(organizationRepository.findFirstByCostCenterLevel5(costCenterCode)).thenReturn(org)
+            whenever(
+                userRepository.findByCostCenterCodeAndAppAuthorityIsNullAndAppLoginActiveTrueAndStatus(
+                    costCenterCode, "재직"
+                )
+            ).thenReturn(emptyList())
+            whenever(templateGenerator.generate(emptyList())).thenReturn(ByteArray(50))
+
+            val result = adminScheduleService.generateTemplate(userId)
+
+            assertThat(result.bytes).hasSize(50)
+            assertThat(result.filename).startsWith("진열스케줄_양식_")
         }
     }
 
@@ -308,7 +330,7 @@ class AdminScheduleServiceTest {
         id: Long = 1L,
         employeeId: String = "20030001",
         name: String = "테스트사원",
-        costCenterCode: String = "1234",
+        costCenterCode: String? = "1234",
         orgName: String = "테스트팀",
         sfid: String? = "USR_SFID_001",
         status: String = "재직"

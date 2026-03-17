@@ -1,10 +1,10 @@
 package com.otoki.internal.admin.service
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.otoki.internal.admin.dto.response.BranchDto
 import com.otoki.internal.admin.dto.response.ScheduleConfirmResultDto
 import com.otoki.internal.admin.dto.response.ScheduleUploadResultDto
 import com.otoki.internal.admin.exception.*
+import com.otoki.internal.auth.exception.UserNotFoundException
 import com.otoki.internal.common.exception.BusinessException
 import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.sap.repository.OrganizationRepository
@@ -42,13 +42,15 @@ class AdminScheduleService(
         private const val MAX_ROWS = 500
     }
 
-    fun getBranches(): List<BranchDto> {
-        return userRepository.findDistinctBranches()
-            .filter { it.branchCode.isNotBlank() && it.branchName.isNotBlank() }
-            .map { BranchDto(costCenterCode = it.branchCode, branchName = it.branchName) }
-    }
+    fun generateTemplate(userId: Long): TemplateResult {
+        val user = userRepository.findById(userId)
+            .orElseThrow { UserNotFoundException() }
 
-    fun generateTemplate(costCenterCode: String): TemplateResult {
+        val costCenterCode = user.costCenterCode
+        if (costCenterCode.isNullOrBlank()) {
+            throw MissingCostCenterException()
+        }
+
         organizationRepository.findFirstByCostCenterLevel5(costCenterCode)
             ?: organizationRepository.findFirstByCostCenterLevel4(costCenterCode)
             ?: throw OrganizationNotFoundException()
@@ -59,7 +61,7 @@ class AdminScheduleService(
 
         val excelBytes = templateGenerator.generate(employees)
         val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
-        val filename = "진열스케줄_양식_${costCenterCode}_${timestamp}.xlsx"
+        val filename = "진열스케줄_양식_${timestamp}.xlsx"
 
         return TemplateResult(excelBytes, filename)
     }
@@ -193,8 +195,8 @@ class OrganizationNotFoundException : BusinessException(
     httpStatus = HttpStatus.NOT_FOUND
 )
 
-class MissingCostCenterCodeException : BusinessException(
-    errorCode = "MISSING_PARAMETER",
-    message = "cost_center_code는 필수입니다",
+class MissingCostCenterException : BusinessException(
+    errorCode = "MISSING_COST_CENTER",
+    message = "소속 지점이 설정되지 않았습니다",
     httpStatus = HttpStatus.BAD_REQUEST
 )
