@@ -141,14 +141,14 @@ class AdminTeamScheduleService(
 
     @Transactional
     fun createSchedule(userId: Long, request: TeamScheduleCreateRequest): TeamScheduleCreateResultDto {
-        val employee = userRepository.findBySfid(request.employeeId)
-            ?: throw TeamScheduleEmployeeNotFoundException()
+        val employee = userRepository.findByEmployeeId(request.employeeId)
+            .orElseThrow { TeamScheduleEmployeeNotFoundException() }
 
         validateEmployeeStatus(employee)
         val workingDate = LocalDate.parse(request.workingDate, DateTimeFormatter.ISO_LOCAL_DATE)
 
         if (request.workingType == "근무" && request.workingCategory1 == "진열") {
-            validateScheduleConflict(request.employeeId, workingDate, request.workingCategory3, null)
+            validateScheduleConflict(employee.employeeId, workingDate, request.workingCategory3, null)
         }
 
         if (request.accountSfid != null) {
@@ -158,7 +158,7 @@ class AdminTeamScheduleService(
 
         val currentUser = findUserById(userId)
         val schedule = TeamMemberSchedule(
-            employeeId = request.employeeId,
+            employeeId = employee.employeeId,
             workingDate = workingDate,
             workingType = request.workingType,
             workingCategory1 = request.workingCategory1,
@@ -176,7 +176,7 @@ class AdminTeamScheduleService(
         val schedule = teamMemberScheduleRepository.findById(scheduleId)
             .orElseThrow { TeamScheduleNotFoundException() }
 
-        val employee = schedule.employeeId?.let { userRepository.findBySfid(it) }
+        val employee = schedule.employeeId?.let { userRepository.findByEmployeeId(it).orElse(null) }
         if (employee != null) {
             validateEmployeeStatus(employee)
         }
@@ -265,9 +265,9 @@ class AdminTeamScheduleService(
     }
 
     private fun buildUserMap(schedules: List<TeamMemberSchedule>): Map<String, User> {
-        val employeeSfids = schedules.mapNotNull { it.employeeId }.distinct()
-        if (employeeSfids.isEmpty()) return emptyMap()
-        return userRepository.findBySfidIn(employeeSfids).associateBy { it.sfid ?: "" }
+        val employeeIds = schedules.mapNotNull { it.employeeId }.distinct()
+        if (employeeIds.isEmpty()) return emptyMap()
+        return userRepository.findByEmployeeIdIn(employeeIds).associateBy { it.employeeId }
     }
 
     private fun buildAccountMap(schedules: List<TeamMemberSchedule>): Map<String, Account> {
