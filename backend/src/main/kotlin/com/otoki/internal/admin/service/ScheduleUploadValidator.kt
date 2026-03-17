@@ -94,10 +94,24 @@ class ScheduleUploadValidator {
                 rowErrors.add(RowError(row.rowNumber, "A", "사원번호", employeeCode, "사원번호 $employeeCode: 퇴직한 사원"))
             }
 
+            // V2a: 사원 앱 로그인 활성화
+            if (user != null && user.status == "재직" && user.appLoginActive != true) {
+                rowErrors.add(RowError(row.rowNumber, "A", "사원번호", employeeCode, "사원번호 $employeeCode: 앱 로그인이 비활성화된 사원입니다"))
+            }
+
             // V3: 거래처코드 존재
             val account = accountsByExternalKey[accountCode]
             if (account == null) {
                 rowErrors.add(RowError(row.rowNumber, "C", "거래처코드", accountCode, "거래처코드 $accountCode: 존재하지 않는 거래처"))
+            }
+
+            // V3a: 거래처 폐업 상태
+            if (account != null && account.accountStatusName == "폐업") {
+                val isExempt = (account.accountGroup == "1000" || account.accountGroup == "1010") &&
+                    (!account.distribution.isNullOrBlank() || account.abcTypeCode == "3062")
+                if (!isExempt) {
+                    rowErrors.add(RowError(row.rowNumber, "C", "거래처코드", accountCode, "거래처코드 $accountCode: 폐업 상태의 거래처입니다"))
+                }
             }
 
             // V5: 근무유형3 유효성
