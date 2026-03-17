@@ -18,11 +18,11 @@ run: setup
 
 ## 로컬 백엔드(localhost:8080) + iOS 시뮬레이터 실행
 run-local: setup
-	flutter run -d ios --dart-define-from-file=config/local.json
+	flutter run -d iPhone --dart-define-from-file=config/local.json
 
 ## iOS 시뮬레이터에서 실행
 run-ios: setup
-	flutter run -d ios --dart-define-from-file=$(CONFIG)
+	flutter run -d iPhone --dart-define-from-file=$(CONFIG)
 
 ## Android 에뮬레이터에서 실행
 run-android: setup
