@@ -1,5 +1,6 @@
 package com.otoki.internal.schedule.repository
 
+import com.otoki.internal.schedule.entity.DisplayWorkSchedule
 import java.time.LocalDate
 
 interface DisplayWorkScheduleRepositoryCustom {
@@ -15,4 +16,6 @@ interface DisplayWorkScheduleRepositoryCustom {
         startDate: LocalDate,
         endDate: LocalDate
     ): List<LocalDate>
+
+    fun findByFullNameInAndNotDeleted(fullNames: List<String>): List<DisplayWorkSchedule>
 }
