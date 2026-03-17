@@ -1,10 +1,5 @@
 package com.otoki.internal.admin.dto.response
 
-data class BranchDto(
-    val costCenterCode: String,
-    val branchName: String
-)
-
 data class ScheduleUploadResultDto(
     val uploadId: String,
     val totalRows: Int,
