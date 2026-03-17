@@ -5,11 +5,9 @@ import com.otoki.internal.admin.dto.request.PromotionCreateRequest
 import com.otoki.internal.admin.dto.response.*
 import com.otoki.internal.admin.scope.DataScopeHolder
 import com.otoki.internal.promotion.entity.Promotion
-import com.otoki.internal.promotion.entity.PromotionProduct
 import com.otoki.internal.promotion.entity.StandLocation
 import com.otoki.internal.promotion.exception.*
 import com.otoki.internal.promotion.repository.PromotionEmployeeRepository
-import com.otoki.internal.promotion.repository.PromotionProductRepository
 import com.otoki.internal.promotion.repository.PromotionRepository
 import com.otoki.internal.promotion.repository.PromotionTypeRepository
 import com.otoki.internal.sap.entity.UserRole
@@ -26,7 +24,6 @@ import org.springframework.transaction.annotation.Transactional
 @Transactional(readOnly = true)
 class AdminPromotionService(
     private val promotionRepository: PromotionRepository,
-    private val promotionProductRepository: PromotionProductRepository,
     private val promotionTypeRepository: PromotionTypeRepository,
     private val promotionEmployeeRepository: PromotionEmployeeRepository,
     private val accountRepository: AccountRepository,
@@ -173,13 +170,6 @@ class AdminPromotionService(
             )
         )
 
-        promotionProductRepository.save(
-            PromotionProduct(
-                promotionId = promotion.id,
-                productId = request.primaryProductId
-            )
-        )
-
         return PromotionDetailResponse.from(
             promotion = promotion,
             accountName = account.name,
@@ -235,8 +225,6 @@ class AdminPromotionService(
         val product = productRepository.findById(request.primaryProductId!!)
             .orElseThrow { ProductNotFoundException() }
 
-        val oldPrimaryProductId = promotion.primaryProductId
-
         promotion.update(
             promotionName = product.name,
             promotionTypeId = request.promotionTypeId,
@@ -254,23 +242,6 @@ class AdminPromotionService(
         )
 
         promotionRepository.save(promotion)
-
-        // 대표상품 변경 처리
-        if (oldPrimaryProductId != request.primaryProductId) {
-            val existingPP = promotionProductRepository.findByPromotionIdAndIsMainProduct(promotion.id, true)
-
-            if (existingPP != null) {
-                existingPP.productId = request.primaryProductId!!
-                promotionProductRepository.save(existingPP)
-            } else {
-                promotionProductRepository.save(
-                    PromotionProduct(
-                        promotionId = promotion.id,
-                        productId = request.primaryProductId!!
-                    )
-                )
-            }
-        }
 
         val typeName = promotion.promotionTypeId?.let {
             promotionTypeRepository.findById(it).orElse(null)?.name

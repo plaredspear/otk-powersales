@@ -5,12 +5,10 @@ import com.otoki.internal.admin.scope.DataScopeHolder
 import com.otoki.internal.admin.dto.request.PromotionCreateRequest
 import com.otoki.internal.promotion.entity.Promotion
 import com.otoki.internal.promotion.entity.PromotionEmployee
-import com.otoki.internal.promotion.entity.PromotionProduct
 import com.otoki.internal.promotion.entity.PromotionType
 import com.otoki.internal.promotion.entity.StandLocation
 import com.otoki.internal.promotion.exception.*
 import com.otoki.internal.promotion.repository.PromotionEmployeeRepository
-import com.otoki.internal.promotion.repository.PromotionProductRepository
 import com.otoki.internal.promotion.repository.PromotionRepository
 import com.otoki.internal.promotion.repository.PromotionTypeRepository
 import com.otoki.internal.sap.entity.Account
@@ -41,7 +39,6 @@ import java.util.*
 class AdminPromotionServiceTest {
 
     @Mock private lateinit var promotionRepository: PromotionRepository
-    @Mock private lateinit var promotionProductRepository: PromotionProductRepository
     @Mock private lateinit var promotionTypeRepository: PromotionTypeRepository
     @Mock private lateinit var promotionEmployeeRepository: PromotionEmployeeRepository
     @Mock private lateinit var accountRepository: AccountRepository
@@ -224,7 +221,7 @@ class AdminPromotionServiceTest {
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
             whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(1L)
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
-            whenever(promotionProductRepository.save(any<PromotionProduct>())).thenAnswer { it.getArgument<PromotionProduct>(0) }
+
 
             val result = adminPromotionService.createPromotion(userId, request)
 
@@ -233,7 +230,7 @@ class AdminPromotionServiceTest {
             assertThat(result.costCenterCode).isEqualTo("1101")
             assertThat(result.promotionTypeName).isEqualTo("시식")
             assertThat(result.category).isEqualTo("라면")
-            verify(promotionProductRepository).save(any<PromotionProduct>())
+
         }
 
         @Test
@@ -251,7 +248,7 @@ class AdminPromotionServiceTest {
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
             whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(1L)
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
-            whenever(promotionProductRepository.save(any<PromotionProduct>())).thenAnswer { it.getArgument<PromotionProduct>(0) }
+
 
             val result = adminPromotionService.createPromotion(userId, request)
 
@@ -273,7 +270,7 @@ class AdminPromotionServiceTest {
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
             whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(1L)
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
-            whenever(promotionProductRepository.save(any<PromotionProduct>())).thenAnswer { it.getArgument<PromotionProduct>(0) }
+
 
             val result = adminPromotionService.createPromotion(userId, request)
 
@@ -370,7 +367,7 @@ class AdminPromotionServiceTest {
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
             whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(1L)
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
-            whenever(promotionProductRepository.save(any<PromotionProduct>())).thenAnswer { it.getArgument<PromotionProduct>(0) }
+
 
             val result = adminPromotionService.createPromotion(userId, request)
 
@@ -401,7 +398,7 @@ class AdminPromotionServiceTest {
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
             whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(1L)
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
-            whenever(promotionProductRepository.save(any<PromotionProduct>())).thenAnswer { it.getArgument<PromotionProduct>(0) }
+
 
             val result = adminPromotionService.createPromotion(userId, request)
 
@@ -423,7 +420,7 @@ class AdminPromotionServiceTest {
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
             whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(1L)
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
-            whenever(promotionProductRepository.save(any<PromotionProduct>())).thenAnswer { it.getArgument<PromotionProduct>(0) }
+
 
             val result = adminPromotionService.createPromotion(userId, request)
 
@@ -443,7 +440,7 @@ class AdminPromotionServiceTest {
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
             whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(1L)
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
-            whenever(promotionProductRepository.save(any<PromotionProduct>())).thenAnswer { it.getArgument<PromotionProduct>(0) }
+
 
             val result = adminPromotionService.createPromotion(userId, request)
 
@@ -509,10 +506,6 @@ class AdminPromotionServiceTest {
             whenever(productRepository.findById(300L)).thenReturn(Optional.of(newProduct))
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
 
-            val existingPP = PromotionProduct(id = 10L, promotionId = 1L, productId = 200L)
-            whenever(promotionProductRepository.findByPromotionIdAndIsMainProduct(1L, true)).thenReturn(existingPP)
-            whenever(promotionProductRepository.save(any<PromotionProduct>())).thenAnswer { it.getArgument<PromotionProduct>(0) }
-
             val request = createRequest(primaryProductId = 300L)
             val result = adminPromotionService.updatePromotion(1L, userId, request)
 
@@ -520,7 +513,7 @@ class AdminPromotionServiceTest {
         }
 
         @Test
-        @DisplayName("대표상품 변경 - 기존과 다른 product_id -> PromotionProduct 업데이트")
+        @DisplayName("대표상품 변경 - 기존과 다른 product_id -> Promotion.primaryProductId 업데이트")
         fun updatePromotion_changePrimaryProduct() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
             whenever(dataScopeHolder.require()).thenReturn(scope)
@@ -533,14 +526,10 @@ class AdminPromotionServiceTest {
             whenever(productRepository.findById(300L)).thenReturn(Optional.of(newProduct))
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
 
-            val existingPP = PromotionProduct(id = 10L, promotionId = 1L, productId = 200L)
-            whenever(promotionProductRepository.findByPromotionIdAndIsMainProduct(1L, true)).thenReturn(existingPP)
-            whenever(promotionProductRepository.save(any<PromotionProduct>())).thenAnswer { it.getArgument<PromotionProduct>(0) }
-
             val request = createRequest(primaryProductId = 300L)
-            adminPromotionService.updatePromotion(1L, userId, request)
+            val result = adminPromotionService.updatePromotion(1L, userId, request)
 
-            verify(promotionProductRepository).save(argThat<PromotionProduct> { productId == 300L })
+            assertThat(result.primaryProductId).isEqualTo(300L)
         }
 
         @Test
