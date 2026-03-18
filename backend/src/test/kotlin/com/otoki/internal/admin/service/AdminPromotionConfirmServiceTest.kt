@@ -97,7 +97,7 @@ class AdminPromotionConfirmServiceTest {
             val existingTeamMemberSchedule = TeamMemberSchedule(
                 id = 50L,
                 employeeId = "EMP001",
-                accountId = "100",
+                accountId = 100,
                 workingDate = startDate,
                 workingType = "근무",
                 workingCategory1 = "행사",
@@ -424,7 +424,7 @@ class AdminPromotionConfirmServiceTest {
                 createPE(id = 1L, employeeSfid = "EMP001", scheduleDate = startDate, workType3 = "순회")
             )
             val existingTeamMemberSchedules = listOf(
-                createTeamMemberSchedule(employeeId = "EMP001", workingDate = startDate, accountId = "100", workingCategory3 = "순회")
+                createTeamMemberSchedule(employeeId = "EMP001", workingDate = startDate, accountId = 100, workingCategory3 = "순회")
             )
             setupMocks(promotion, employees, existingTeamMemberSchedules = existingTeamMemberSchedules)
 
@@ -561,7 +561,7 @@ class AdminPromotionConfirmServiceTest {
         workingDate: LocalDate = startDate,
         workingType: String = "근무",
         workingCategory3: String = "고정",
-        accountId: String = "999",
+        accountId: Int? = 999,
         promotionEmpIdExt: String? = null
     ): TeamMemberSchedule = TeamMemberSchedule(
         id = id,

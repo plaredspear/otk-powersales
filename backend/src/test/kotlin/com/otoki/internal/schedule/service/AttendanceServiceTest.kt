@@ -62,9 +62,9 @@ class AttendanceServiceTest {
             val today = LocalDate.now()
 
             val teamMemberSchedules = listOf(
-                createTeamMemberSchedule(id = 1L, sfid = "SCH001", employeeId = "USR001", accountId = "8938", workingCategory1 = "진열"),
-                createTeamMemberSchedule(id = 2L, sfid = "SCH002", employeeId = "USR001", accountId = "8939", workingCategory1 = "납품"),
-                createTeamMemberSchedule(id = 3L, sfid = "SCH003", employeeId = "USR001", accountId = "8940", workingCategory1 = "진열")
+                createTeamMemberSchedule(id = 1L, sfid = "SCH001", employeeId = "USR001", accountId = 8938, workingCategory1 = "진열"),
+                createTeamMemberSchedule(id = 2L, sfid = "SCH002", employeeId = "USR001", accountId = 8939, workingCategory1 = "납품"),
+                createTeamMemberSchedule(id = 3L, sfid = "SCH003", employeeId = "USR001", accountId = 8940, workingCategory1 = "진열")
             )
 
             val accounts = listOf(
@@ -105,9 +105,9 @@ class AttendanceServiceTest {
             val today = LocalDate.now()
 
             val teamMemberSchedules = listOf(
-                createTeamMemberSchedule(sfid = "SCH001", employeeId = "USR001", accountId = "8938"),
-                createTeamMemberSchedule(sfid = "SCH002", employeeId = "USR001", accountId = "8939"),
-                createTeamMemberSchedule(sfid = "SCH003", employeeId = "USR001", accountId = "8940")
+                createTeamMemberSchedule(sfid = "SCH001", employeeId = "USR001", accountId = 8938),
+                createTeamMemberSchedule(sfid = "SCH002", employeeId = "USR001", accountId = 8939),
+                createTeamMemberSchedule(sfid = "SCH003", employeeId = "USR001", accountId = 8940)
             )
 
             val accounts = listOf(
@@ -170,8 +170,8 @@ class AttendanceServiceTest {
             val today = LocalDate.now()
 
             val teamMemberSchedules = listOf(
-                createTeamMemberSchedule(sfid = "SCH001", employeeId = "USR001", accountId = "8938", commuteLogId = "OK"),
-                createTeamMemberSchedule(sfid = "SCH002", employeeId = "USR001", accountId = "8939", commuteLogId = null)
+                createTeamMemberSchedule(sfid = "SCH001", employeeId = "USR001", accountId = 8938, commuteLogId = "OK"),
+                createTeamMemberSchedule(sfid = "SCH002", employeeId = "USR001", accountId = 8939, commuteLogId = null)
             )
 
             val accounts = listOf(
@@ -222,7 +222,7 @@ class AttendanceServiceTest {
             val today = LocalDate.now()
 
             val teamMemberSchedule = createTeamMemberSchedule(
-                id = scheduleId, sfid = "SCH001", employeeId = "USR001", accountId = "8938",
+                id = scheduleId, sfid = "SCH001", employeeId = "USR001", accountId = 8938,
                 workingType = "상온", commuteLogId = null
             )
             val account = createAccount(
@@ -259,7 +259,7 @@ class AttendanceServiceTest {
             val user = createUser(id = userId, sfid = "USR001")
 
             val teamMemberSchedule = createTeamMemberSchedule(
-                id = scheduleId, sfid = "SCH001", employeeId = "USR001", accountId = "8938",
+                id = scheduleId, sfid = "SCH001", employeeId = "USR001", accountId = 8938,
                 commuteLogId = null
             )
             val account = createAccount(
@@ -288,7 +288,7 @@ class AttendanceServiceTest {
             val today = LocalDate.now()
 
             val teamMemberSchedule = createTeamMemberSchedule(
-                id = scheduleId, sfid = "SCH001", employeeId = "USR001", accountId = "8938",
+                id = scheduleId, sfid = "SCH001", employeeId = "USR001", accountId = 8938,
                 workingType = "상온", commuteLogId = null
             )
             val account = createAccount(
@@ -328,7 +328,7 @@ class AttendanceServiceTest {
             val today = LocalDate.now()
 
             val teamMemberSchedule = createTeamMemberSchedule(
-                id = scheduleId, sfid = "SCH001", employeeId = "USR001", accountId = "8938",
+                id = scheduleId, sfid = "SCH001", employeeId = "USR001", accountId = 8938,
                 workingType = "냉장", commuteLogId = null
             )
             val account = createAccount(
@@ -367,7 +367,7 @@ class AttendanceServiceTest {
             val user = createUser(id = userId, sfid = "USR001")
 
             val teamMemberSchedule = createTeamMemberSchedule(
-                id = scheduleId, sfid = "SCH001", employeeId = "USR001", accountId = "8938",
+                id = scheduleId, sfid = "SCH001", employeeId = "USR001", accountId = 8938,
                 commuteLogId = null
             )
             val account = createAccount(
@@ -395,7 +395,7 @@ class AttendanceServiceTest {
             val user = createUser(id = userId, sfid = "USR001")
 
             val teamMemberSchedule = createTeamMemberSchedule(
-                id = scheduleId, sfid = "SCH001", employeeId = "USR001", accountId = "8938",
+                id = scheduleId, sfid = "SCH001", employeeId = "USR001", accountId = 8938,
                 commuteLogId = "OK"
             )
 
@@ -448,7 +448,7 @@ class AttendanceServiceTest {
             val today = LocalDate.now()
 
             val teamMemberSchedule = createTeamMemberSchedule(
-                id = scheduleId, sfid = "SCH001", employeeId = "USR001", accountId = "8938",
+                id = scheduleId, sfid = "SCH001", employeeId = "USR001", accountId = 8938,
                 workingType = "상온", commuteLogId = null
             )
             val account = createAccount(
@@ -482,7 +482,7 @@ class AttendanceServiceTest {
             val today = LocalDate.now()
 
             val targetTeamMemberSchedule = createTeamMemberSchedule(
-                id = scheduleId, sfid = "SCH001", employeeId = "USR001", accountId = "8938",
+                id = scheduleId, sfid = "SCH001", employeeId = "USR001", accountId = 8938,
                 workingType = "상온", commuteLogId = null
             )
             val account = createAccount(
@@ -494,8 +494,8 @@ class AttendanceServiceTest {
             // 오늘 전체 스케줄 3건 (1건 이미 등록, 1건 지금 등록, 1건 미등록)
             val allTeamMemberSchedules = listOf(
                 targetTeamMemberSchedule,
-                createTeamMemberSchedule(id = 20L, sfid = "SCH002", employeeId = "USR001", accountId = "8939", commuteLogId = "OK"),
-                createTeamMemberSchedule(id = 30L, sfid = "SCH003", employeeId = "USR001", accountId = "8940", commuteLogId = null)
+                createTeamMemberSchedule(id = 20L, sfid = "SCH002", employeeId = "USR001", accountId = 8939, commuteLogId = "OK"),
+                createTeamMemberSchedule(id = 30L, sfid = "SCH003", employeeId = "USR001", accountId = 8940, commuteLogId = null)
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
@@ -531,9 +531,9 @@ class AttendanceServiceTest {
             val today = LocalDate.now()
 
             val teamMemberSchedules = listOf(
-                createTeamMemberSchedule(id = 1L, sfid = "SCH001", employeeId = "USR001", accountId = "8938", commuteLogId = "OK", workingCategory1 = "진열"),
-                createTeamMemberSchedule(id = 2L, sfid = "SCH002", employeeId = "USR001", accountId = "8939", commuteLogId = "OK", workingCategory1 = "납품"),
-                createTeamMemberSchedule(id = 3L, sfid = "SCH003", employeeId = "USR001", accountId = "8940", commuteLogId = null, workingCategory1 = "진열")
+                createTeamMemberSchedule(id = 1L, sfid = "SCH001", employeeId = "USR001", accountId = 8938, commuteLogId = "OK", workingCategory1 = "진열"),
+                createTeamMemberSchedule(id = 2L, sfid = "SCH002", employeeId = "USR001", accountId = 8939, commuteLogId = "OK", workingCategory1 = "납품"),
+                createTeamMemberSchedule(id = 3L, sfid = "SCH003", employeeId = "USR001", accountId = 8940, commuteLogId = null, workingCategory1 = "진열")
             )
 
             val accounts = listOf(
@@ -579,8 +579,8 @@ class AttendanceServiceTest {
             val today = LocalDate.now()
 
             val teamMemberSchedules = listOf(
-                createTeamMemberSchedule(sfid = "SCH001", employeeId = "USR001", accountId = "8938", commuteLogId = "OK"),
-                createTeamMemberSchedule(sfid = "SCH002", employeeId = "USR001", accountId = "8939", commuteLogId = "OK")
+                createTeamMemberSchedule(sfid = "SCH001", employeeId = "USR001", accountId = 8938, commuteLogId = "OK"),
+                createTeamMemberSchedule(sfid = "SCH002", employeeId = "USR001", accountId = 8939, commuteLogId = "OK")
             )
 
             val accounts = listOf(
@@ -610,8 +610,8 @@ class AttendanceServiceTest {
             val today = LocalDate.now()
 
             val teamMemberSchedules = listOf(
-                createTeamMemberSchedule(sfid = "SCH001", employeeId = "USR001", accountId = "8938", commuteLogId = null),
-                createTeamMemberSchedule(sfid = "SCH002", employeeId = "USR001", accountId = "8939", commuteLogId = null)
+                createTeamMemberSchedule(sfid = "SCH001", employeeId = "USR001", accountId = 8938, commuteLogId = null),
+                createTeamMemberSchedule(sfid = "SCH002", employeeId = "USR001", accountId = 8939, commuteLogId = null)
             )
 
             val accounts = listOf(
@@ -694,7 +694,7 @@ class AttendanceServiceTest {
         workingDate: LocalDate = LocalDate.now(),
         workingType: String? = "상온",
         workingCategory1: String? = "진열",
-        accountId: String? = "ACC001",
+        accountId: Int? = 1,
         commuteLogId: String? = null
     ): TeamMemberSchedule {
         return TeamMemberSchedule(

@@ -24,7 +24,7 @@ class ScheduleUploadValidator {
 
     data class ValidatedRow(
         val userEmployeeId: String,
-        val accountSfid: String,
+        val accountId: Int,
         val typeOfWork3: String,
         val typeOfWork5: String,
         val startDate: LocalDate,
@@ -141,12 +141,12 @@ class ScheduleUploadValidator {
             }
 
             val userEmployeeId = user!!.employeeId
-            val accountSfid = account!!.sfid!!
+            val accountIdVal = account!!.id
 
             // V8: DB 기존 레코드와 기간 중복 검사
             val overlappingDb = existingSchedules.filter { schedule ->
                 schedule.fullName == userEmployeeId &&
-                    schedule.account == accountSfid &&
+                    schedule.accountId == accountIdVal &&
                     periodsOverlap(schedule.startDate, schedule.endDate, startDate, endDate)
             }
             if (overlappingDb.isNotEmpty()) {
@@ -161,7 +161,7 @@ class ScheduleUploadValidator {
             // V9: 파일 내 행 간 중복 검사
             val overlappingFile = validatedInFile.filter { prev ->
                 prev.userEmployeeId == userEmployeeId &&
-                    prev.accountSfid == accountSfid &&
+                    prev.accountId == accountIdVal &&
                     periodsOverlap(prev.startDate, prev.endDate, startDate, endDate)
             }
             if (overlappingFile.isNotEmpty()) {
@@ -194,7 +194,7 @@ class ScheduleUploadValidator {
             } else {
                 val validatedRow = ValidatedRow(
                     userEmployeeId = userEmployeeId,
-                    accountSfid = accountSfid,
+                    accountId = accountIdVal,
                     typeOfWork3 = typeOfWork3,
                     typeOfWork5 = typeOfWork5,
                     startDate = startDate,
@@ -207,7 +207,7 @@ class ScheduleUploadValidator {
                     FileRowData(
                         rowNumber = row.rowNumber,
                         userEmployeeId = userEmployeeId,
-                        accountSfid = accountSfid,
+                        accountId = accountIdVal,
                         typeOfWork3 = typeOfWork3,
                         typeOfWork5 = typeOfWork5,
                         startDate = startDate,
@@ -250,7 +250,7 @@ class ScheduleUploadValidator {
     private data class FileRowData(
         val rowNumber: Int,
         val userEmployeeId: String,
-        val accountSfid: String,
+        val accountId: Int,
         val typeOfWork3: String,
         val typeOfWork5: String,
         val startDate: LocalDate,

@@ -5,11 +5,11 @@ import java.time.LocalDate
 
 interface DisplayWorkScheduleRepositoryCustom {
 
-    fun findDistinctAccountsByFullNameAndStartDateBetween(
+    fun findDistinctAccountIdsByFullNameAndStartDateBetween(
         fullName: String,
         startDate: LocalDate,
         endDate: LocalDate
-    ): List<String>
+    ): List<Int>
 
     fun findDistinctStartDatesByFullNameAndDateBetween(
         fullName: String,

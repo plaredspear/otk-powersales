@@ -16,10 +16,6 @@ import java.time.YearMonth
 /**
  * 내 거래처 서비스
  * 한 달 일정에 등록된 거래처 목록을 중복 제거하여 조회한다.
- *
- * Note: V1 리매핑으로 StoreSchedule의 userId(Long)→fullName(String sfid),
- * storeId(Long)→account(String sfid) 변경. storeName/storeCode/address 삭제됨.
- * Account 마스터 조회는 sfid 기반으로 전환 필요 (후속 스펙).
  */
 @Service
 class MyStoreService(
@@ -31,8 +27,8 @@ class MyStoreService(
     /**
      * 내 거래처 목록 조회
      *
-     * 1. 현재 월(1일~말일) StoreSchedule에서 해당 사용자의 거래처(account sfid)를 중복 제거하여 조회
-     * 2. Account 마스터에서 sfid로 추가 정보 병합
+     * 1. 현재 월(1일~말일) 스케줄에서 해당 사용자의 거래처(accountId)를 중복 제거하여 조회
+     * 2. Account 마스터에서 id로 추가 정보 병합
      * 3. keyword가 있으면 거래처명/거래처코드로 필터링
      * 4. 거래처명 기준 오름차순 정렬
      */
@@ -48,28 +44,27 @@ class MyStoreService(
         val startDate = yearMonth.atDay(1)
         val endDate = yearMonth.atEndOfMonth()
 
-        // 1. 월별 스케줄에서 중복 제거된 거래처 account(sfid) 조회
-        val distinctAccountSfids = displayWorkScheduleRepository
-            .findDistinctAccountsByFullNameAndStartDateBetween(employeeId, startDate, endDate)
+        // 1. 월별 스케줄에서 중복 제거된 거래처 accountId 조회
+        val distinctAccountIds = displayWorkScheduleRepository
+            .findDistinctAccountIdsByFullNameAndStartDateBetween(employeeId, startDate, endDate)
 
-        if (distinctAccountSfids.isEmpty()) {
+        if (distinctAccountIds.isEmpty()) {
             return MyStoreListResponse(stores = emptyList(), totalCount = 0)
         }
 
-        // 2. Account 마스터에서 sfid 기반 추가 정보 조회
-        val accountMap = accountRepository.findAll()
-            .filter { it.sfid != null && it.sfid in distinctAccountSfids }
-            .associateBy { it.sfid }
+        // 2. Account 마스터에서 id 기반 추가 정보 조회
+        val accountMap = accountRepository.findByIdIn(distinctAccountIds)
+            .associateBy { it.id }
 
         // 3. DisplayWorkSchedule에서 기본 정보 조회 (Account 마스터에 없는 거래처용 fallback)
         val scheduleMap = displayWorkScheduleRepository
             .findByFullNameAndStartDateBetween(employeeId, startDate, endDate)
-            .distinctBy { it.account }
-            .associateBy { it.account }
+            .distinctBy { it.accountId }
+            .associateBy { it.accountId }
 
         // 4. Account 마스터 + DisplayWorkSchedule fallback 으로 정보 구성
-        val storeInfoList = distinctAccountSfids.mapNotNull { accountSfid ->
-            buildMyStoreInfo(accountSfid, accountMap, scheduleMap)
+        val storeInfoList = distinctAccountIds.mapNotNull { accountId ->
+            buildMyStoreInfo(accountId, accountMap, scheduleMap)
         }
 
         // 5. keyword 필터링 (대소문자 무시)
@@ -95,18 +90,15 @@ class MyStoreService(
     /**
      * 개별 거래처 정보를 구성한다.
      * Account 마스터가 있으면 대표자명/전화번호 포함,
-     * 없으면 StoreSchedule의 기본 정보를 사용한다.
-     *
-     * Note: V1 리매핑으로 StoreSchedule에서 storeName/storeCode/address 삭제됨.
-     * Account 마스터를 sfid로 조회하여 정보 구성. fallback 시 빈 문자열.
+     * 없으면 스케줄의 기본 정보를 사용한다.
      */
     private fun buildMyStoreInfo(
-        accountSfid: String,
-        accountMap: Map<String?, Account>,
-        scheduleMap: Map<String?, DisplayWorkSchedule>
+        accountId: Int,
+        accountMap: Map<Int, Account>,
+        scheduleMap: Map<Int?, DisplayWorkSchedule>
     ): MyStoreInfo? {
-        val account = accountMap[accountSfid]
-        val schedule = scheduleMap[accountSfid]
+        val account = accountMap[accountId]
+        val schedule = scheduleMap[accountId]
 
         return when {
             account != null -> MyStoreInfo(

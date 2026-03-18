@@ -149,11 +149,11 @@ class HomeService(
     /**
      * 스케줄의 accountId → Account 이름 매핑 (batch fetch)
      */
-    private fun fetchAccountMap(teamMemberSchedules: List<TeamMemberSchedule>): Map<String, String> {
-        val accountIds = teamMemberSchedules.mapNotNull { it.accountId?.toIntOrNull() }.distinct()
+    private fun fetchAccountMap(teamMemberSchedules: List<TeamMemberSchedule>): Map<Int, String> {
+        val accountIds = teamMemberSchedules.mapNotNull { it.accountId }.distinct()
         if (accountIds.isEmpty()) return emptyMap()
         return accountRepository.findByIdIn(accountIds)
-            .associate { it.id.toString() to (it.name ?: "") }
+            .associate { it.id to (it.name ?: "") }
     }
 
     /**
@@ -162,7 +162,7 @@ class HomeService(
     private fun toTeamMemberScheduleInfo(
         teamMemberSchedule: TeamMemberSchedule,
         userMap: Map<String, User>,
-        accountMap: Map<String, String>
+        accountMap: Map<Int, String>
     ): HomeResponse.TeamMemberScheduleInfo {
         val employeeId = teamMemberSchedule.employeeId ?: ""
         val matchedUser = userMap[employeeId]
@@ -171,7 +171,7 @@ class HomeService(
             employeeName = matchedUser?.name ?: "",
             employeeId = employeeId,
             storeName = teamMemberSchedule.accountId?.let { accountMap[it] },
-            storeSfid = teamMemberSchedule.accountId,
+            storeSfid = teamMemberSchedule.accountId?.toString(),
             workCategory = teamMemberSchedule.workingCategory1 ?: "",
             workType = teamMemberSchedule.workingType,
             isCommuteRegistered = teamMemberSchedule.commuteLogId != null,

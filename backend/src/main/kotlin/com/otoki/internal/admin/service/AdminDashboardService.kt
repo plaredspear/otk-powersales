@@ -160,9 +160,9 @@ class AdminDashboardService(
         val monthEnd = ym.atEndOfMonth()
 
         val schedules = fetchScheduleData(scope, monthStart, monthEnd)
-        val accountSfids = schedules.mapNotNull { it.account }.distinct()
-        val accountMap = if (accountSfids.isNotEmpty()) {
-            accountRepository.findBySfidIn(accountSfids).associateBy { it.sfid }
+        val accountIds = schedules.mapNotNull { it.accountId }.distinct()
+        val accountMap = if (accountIds.isNotEmpty()) {
+            accountRepository.findByIdIn(accountIds).associateBy { it.id }
         } else {
             emptyMap()
         }
@@ -193,16 +193,16 @@ class AdminDashboardService(
         } else {
             if (scope.branchCodes.isEmpty()) return emptyList()
             val accounts = accountRepository.findByBranchCodeIn(scope.branchCodes)
-            val accountSfids = accounts.mapNotNull { it.sfid }
-            if (accountSfids.isEmpty()) return emptyList()
-            displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndAccountIn(monthEnd, monthStart, accountSfids)
+            val accountIds = accounts.map { it.id }
+            if (accountIds.isEmpty()) return emptyList()
+            displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndAccountIdIn(monthEnd, monthStart, accountIds)
         }
     }
 
-    private fun buildByAccountType(schedules: List<DisplayWorkSchedule>, accountMap: Map<String?, Account>): List<AccountTypeCount> {
+    private fun buildByAccountType(schedules: List<DisplayWorkSchedule>, accountMap: Map<Int, Account>): List<AccountTypeCount> {
         val employeesByAccountType = schedules
             .groupBy { schedule ->
-                val account = schedule.account?.let { accountMap[it] }
+                val account = schedule.accountId?.let { accountMap[it] }
                 classifyChannel(account?.abcType)
             }
             .mapValues { (_, records) -> records.mapNotNull { it.fullName }.distinct().size }
@@ -224,10 +224,10 @@ class AdminDashboardService(
 
     private fun buildByChannelAndWorkType(
         schedules: List<DisplayWorkSchedule>,
-        accountMap: Map<String?, Account>
+        accountMap: Map<Int, Account>
     ): List<ChannelWorkTypeItem> {
         val grouped = schedules.groupBy { schedule ->
-            val account = schedule.account?.let { accountMap[it] }
+            val account = schedule.accountId?.let { accountMap[it] }
             classifyChannel(account?.abcType)
         }
 

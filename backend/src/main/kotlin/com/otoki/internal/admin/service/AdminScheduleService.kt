@@ -183,7 +183,7 @@ class AdminScheduleService(
 
             DisplayWorkSchedule(
                 fullName = row.userEmployeeId,
-                account = row.accountSfid,
+                accountId = row.accountId,
                 typeOfWork1 = "진열",
                 typeOfWork3 = row.typeOfWork3,
                 typeOfWork5 = row.typeOfWork5,

@@ -14,12 +14,12 @@ interface DisplayWorkScheduleRepository : JpaRepository<DisplayWorkSchedule, Lon
     /**
      * 사원의 특정 날짜, 특정 거래처 스케줄 존재 여부
      */
-    fun existsByFullNameAndAccountAndStartDate(fullName: String, account: String, startDate: LocalDate): Boolean
+    fun existsByFullNameAndAccountIdAndStartDate(fullName: String, accountId: Int, startDate: LocalDate): Boolean
 
     /**
      * 사원의 특정 날짜, 특정 거래처 스케줄 조회
      */
-    fun findByFullNameAndAccountAndStartDate(fullName: String, account: String, startDate: LocalDate): DisplayWorkSchedule?
+    fun findByFullNameAndAccountIdAndStartDate(fullName: String, accountId: Int, startDate: LocalDate): DisplayWorkSchedule?
 
     // Phase2: 키워드 검색 — 삭제된 필드(storeName, storeCode, address) 참조로 비활성화
     // @Query("""
@@ -57,13 +57,13 @@ interface DisplayWorkScheduleRepository : JpaRepository<DisplayWorkSchedule, Lon
     ): List<DisplayWorkSchedule>
 
     /**
-     * 특정 월에 겹치는 확정 스케줄 조회 (특정 거래처 sfid 목록)
-     * confirmed = true AND startDate <= monthEnd AND endDate >= monthStart AND account IN accountSfids
+     * 특정 월에 겹치는 확정 스케줄 조회 (특정 거래처 ID 목록)
+     * confirmed = true AND startDate <= monthEnd AND endDate >= monthStart AND accountId IN accountIds
      */
-    fun findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndAccountIn(
+    fun findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndAccountIdIn(
         monthEnd: LocalDate,
         monthStart: LocalDate,
-        accountSfids: List<String>
+        accountIds: List<Int>
     ): List<DisplayWorkSchedule>
 
 }

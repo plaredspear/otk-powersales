@@ -9,7 +9,7 @@ interface TeamMemberScheduleRepositoryCustom {
 
     fun findMonthlyByEmployeeIds(employeeIds: List<String>, from: LocalDate, to: LocalDate): List<TeamMemberSchedule>
 
-    fun findMonthlyByAccountIds(accountIds: List<String>, from: LocalDate, to: LocalDate): List<TeamMemberSchedule>
+    fun findMonthlyByAccountIds(accountIds: List<Int>, from: LocalDate, to: LocalDate): List<TeamMemberSchedule>
 
     fun findActiveByEmployeeIdAndDate(employeeId: String, workingDate: LocalDate): List<TeamMemberSchedule>
 }

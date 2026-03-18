@@ -200,7 +200,7 @@ class AdminScheduleServiceTest {
                         RowPreview(4, "20030001", "홍길동", "ACC001", "이마트 강남점", "고정", "상시", "2026-04-01", null)
                     ),
                     validRows = listOf(
-                        ScheduleUploadValidator.ValidatedRow("20030001", "ACC_SFID_001", "고정", "상시", LocalDate.of(2026, 4, 1), null)
+                        ScheduleUploadValidator.ValidatedRow("20030001", 1, "고정", "상시", LocalDate.of(2026, 4, 1), null)
                     )
                 )
             )
@@ -278,7 +278,7 @@ class AdminScheduleServiceTest {
             val uploadId = "test-upload-id"
             val cacheData = AdminScheduleService.UploadCacheData(
                 validRows = listOf(
-                    ScheduleUploadValidator.ValidatedRow("20030001", "ACC001", "고정", "상시", LocalDate.of(2026, 4, 1), null)
+                    ScheduleUploadValidator.ValidatedRow("20030001", 1, "고정", "상시", LocalDate.of(2026, 4, 1), null)
                 ),
                 errorCount = 0
             )
@@ -297,7 +297,7 @@ class AdminScheduleServiceTest {
             verify(scheduleRepository).saveAll(argThat<List<DisplayWorkSchedule>> { list ->
                 list.size == 1 &&
                     list[0].fullName == "20030001" &&
-                    list[0].account == "ACC001" &&
+                    list[0].accountId == 1 &&
                     list[0].typeOfWork1 == "진열" &&
                     list[0].confirmed == false
             })
@@ -337,7 +337,7 @@ class AdminScheduleServiceTest {
             val cacheData = AdminScheduleService.UploadCacheData(
                 validRows = listOf(
                     ScheduleUploadValidator.ValidatedRow(
-                        "20030001", "ACC001", "고정", "상시",
+                        "20030001", 1, "고정", "상시",
                         LocalDate.of(2026, 4, 1), null,
                         costCenterCode = "A10010", accountExternalKey = "EXT001"
                     )
@@ -369,7 +369,7 @@ class AdminScheduleServiceTest {
             val cacheData = AdminScheduleService.UploadCacheData(
                 validRows = listOf(
                     ScheduleUploadValidator.ValidatedRow(
-                        "20030001", "ACC001", "고정", "상시",
+                        "20030001", 1, "고정", "상시",
                         LocalDate.of(2026, 4, 1), null,
                         costCenterCode = "A10010", accountExternalKey = "EXT001"
                     )
@@ -402,7 +402,7 @@ class AdminScheduleServiceTest {
             val cacheData = AdminScheduleService.UploadCacheData(
                 validRows = listOf(
                     ScheduleUploadValidator.ValidatedRow(
-                        "20030001", "ACC001", "고정", "상시",
+                        "20030001", 1, "고정", "상시",
                         LocalDate.of(2026, 4, 1), null,
                         costCenterCode = "A10010", accountExternalKey = "EXT001"
                     )
@@ -434,7 +434,7 @@ class AdminScheduleServiceTest {
             val cacheData = AdminScheduleService.UploadCacheData(
                 validRows = listOf(
                     ScheduleUploadValidator.ValidatedRow(
-                        "20030001", "ACC001", "고정", "상시",
+                        "20030001", 1, "고정", "상시",
                         LocalDate.of(2026, 4, 1), null,
                         costCenterCode = "A10010", accountExternalKey = "EXT001"
                     )
@@ -471,7 +471,7 @@ class AdminScheduleServiceTest {
             val cacheData = AdminScheduleService.UploadCacheData(
                 validRows = listOf(
                     ScheduleUploadValidator.ValidatedRow(
-                        "20030001", "ACC001", "고정", "상시",
+                        "20030001", 1, "고정", "상시",
                         LocalDate.of(2026, 4, 1), null,
                         costCenterCode = "A10010", accountExternalKey = "EXT001"
                     )
@@ -503,7 +503,7 @@ class AdminScheduleServiceTest {
             val cacheData = AdminScheduleService.UploadCacheData(
                 validRows = listOf(
                     ScheduleUploadValidator.ValidatedRow(
-                        "20030001", "ACC001", "고정", "상시",
+                        "20030001", 1, "고정", "상시",
                         LocalDate.of(2026, 4, 1), null,
                         costCenterCode = null, accountExternalKey = "EXT001"
                     )

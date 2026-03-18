@@ -34,8 +34,8 @@ class DisplayWorkSchedule(
 
     @SFField("Account__c")
     @HCColumn("account__c")
-    @Column(name = "account", length = 18)
-    val account: String? = null,
+    @Column(name = "account_id")
+    val accountId: Int? = null,
 
     @SFField("FullName__c")
     @HCColumn("fullname__c")

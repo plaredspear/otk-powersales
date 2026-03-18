@@ -36,7 +36,7 @@ open class TeamMemberScheduleRepositoryCustomImpl(
     }
 
     override fun findMonthlyByAccountIds(
-        accountIds: List<String>,
+        accountIds: List<Int>,
         from: LocalDate,
         to: LocalDate
     ): List<TeamMemberSchedule> {

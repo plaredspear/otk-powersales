@@ -98,7 +98,7 @@ class SFSchemaUtilsTest {
             val mapping = SFSchemaUtils.getSFMapping(DisplayWorkSchedule::class.java)
 
             assertThat(mapping).hasSize(12)
-            assertThat(mapping["Account__c"]).isEqualTo("account")
+            assertThat(mapping["Account__c"]).isEqualTo("account_id")
             assertThat(mapping["FullName__c"]).isEqualTo("full_name")
             assertThat(mapping["StartDate__c"]).isEqualTo("start_date")
             assertThat(mapping["EndDate__c"]).isEqualTo("end_date")
@@ -219,7 +219,7 @@ class SFSchemaUtilsTest {
             assertThat(mapping["id"]).isEqualTo("id")
             assertThat(mapping["sfid"]).isEqualTo("sfid")
             assertThat(mapping["name"]).isEqualTo("name")
-            assertThat(mapping["account__c"]).isEqualTo("account")
+            assertThat(mapping["account__c"]).isEqualTo("account_id")
             assertThat(mapping["fullname__c"]).isEqualTo("full_name")
             assertThat(mapping["startdate__c"]).isEqualTo("start_date")
             assertThat(mapping["enddate__c"]).isEqualTo("end_date")

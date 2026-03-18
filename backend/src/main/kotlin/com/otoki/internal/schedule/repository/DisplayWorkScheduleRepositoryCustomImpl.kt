@@ -10,13 +10,13 @@ class DisplayWorkScheduleRepositoryCustomImpl(
     private val queryFactory: JPAQueryFactory
 ) : DisplayWorkScheduleRepositoryCustom {
 
-    override fun findDistinctAccountsByFullNameAndStartDateBetween(
+    override fun findDistinctAccountIdsByFullNameAndStartDateBetween(
         fullName: String,
         startDate: LocalDate,
         endDate: LocalDate
-    ): List<String> {
+    ): List<Int> {
         return queryFactory
-            .select(displayWorkSchedule.account).distinct()
+            .select(displayWorkSchedule.accountId).distinct()
             .from(displayWorkSchedule)
             .where(
                 displayWorkSchedule.fullName.eq(fullName),
