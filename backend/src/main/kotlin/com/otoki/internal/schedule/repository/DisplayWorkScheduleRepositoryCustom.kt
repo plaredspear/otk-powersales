@@ -21,6 +21,8 @@ interface DisplayWorkScheduleRepositoryCustom {
 
     fun findByEmployeeIdInAndNotDeleted(employeeIds: List<String>): List<DisplayWorkSchedule>
 
+    fun findDistinctAccountIdsBySfidAndDateRange(sfid: String, fromDate: LocalDate, toDate: LocalDate): List<Int>
+
     fun findScheduleList(
         employeeCode: String?,
         accountIds: List<Int>?,

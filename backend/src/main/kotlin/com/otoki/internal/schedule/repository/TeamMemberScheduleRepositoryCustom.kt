@@ -18,4 +18,6 @@ interface TeamMemberScheduleRepositoryCustom {
     fun findAnnualLeaveByDateRange(from: LocalDate, to: LocalDate): List<TeamMemberSchedule>
 
     fun findAnnualLeaveByDateRangeAndEmployeeIds(from: LocalDate, to: LocalDate, employeeIds: List<String>): List<TeamMemberSchedule>
+
+    fun findDistinctAccountIdsByEmployeeIdAndDateRange(employeeId: String, fromDate: LocalDate, toDate: LocalDate): List<Int>
 }

@@ -103,6 +103,25 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             .fetch()
     }
 
+    override fun findDistinctAccountIdsByEmployeeIdAndDateRange(
+        employeeId: String,
+        fromDate: LocalDate,
+        toDate: LocalDate
+    ): List<Int> {
+        return queryFactory
+            .select(teamMemberSchedule.accountId).distinct()
+            .from(teamMemberSchedule)
+            .where(
+                teamMemberSchedule.employeeId.eq(employeeId),
+                teamMemberSchedule.workingDate.goe(fromDate),
+                teamMemberSchedule.workingDate.lt(toDate),
+                teamMemberSchedule.accountId.isNotNull,
+                isNotDeleted()
+            )
+            .fetch()
+            .filterNotNull()
+    }
+
     private fun isNotDeleted(): BooleanExpression {
         return teamMemberSchedule.isDeleted.isNull.or(teamMemberSchedule.isDeleted.eq(false))
     }

@@ -47,6 +47,32 @@ class DisplayWorkScheduleRepositoryCustomImpl(
             .filterNotNull()
     }
 
+    override fun findDistinctAccountIdsBySfidAndDateRange(
+        sfid: String,
+        fromDate: LocalDate,
+        toDate: LocalDate
+    ): List<Int> {
+        val dateCondition = BooleanBuilder()
+            // startDate가 범위 이내
+            .or(displayWorkSchedule.startDate.goe(fromDate).and(displayWorkSchedule.startDate.lt(toDate)))
+            // endDate가 범위 이내
+            .or(displayWorkSchedule.endDate.goe(fromDate).and(displayWorkSchedule.endDate.lt(toDate)))
+            // endDate IS NULL이고 startDate가 범위 종료 전
+            .or(displayWorkSchedule.endDate.isNull.and(displayWorkSchedule.startDate.lt(toDate)))
+
+        return queryFactory
+            .select(displayWorkSchedule.accountId).distinct()
+            .from(displayWorkSchedule)
+            .where(
+                displayWorkSchedule.employeeId.eq(sfid),
+                dateCondition,
+                displayWorkSchedule.accountId.isNotNull,
+                isNotDeleted()
+            )
+            .fetch()
+            .filterNotNull()
+    }
+
     override fun findByEmployeeIdInAndNotDeleted(employeeIds: List<String>): List<DisplayWorkSchedule> {
         return queryFactory
             .selectFrom(displayWorkSchedule)

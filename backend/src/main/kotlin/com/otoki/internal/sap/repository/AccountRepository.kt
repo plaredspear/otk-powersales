@@ -37,4 +37,18 @@ interface AccountRepository : JpaRepository<Account, Int>, AccountRepositoryCust
      * 거래처명 부분 일치 조회 (진열스케줄 목록 필터)
      */
     fun findByNameContainingIgnoreCase(name: String): List<Account>
+
+    /**
+     * 지점 코드 + 거래처 그룹 + 삭제되지 않은 거래처 조회 (조장용)
+     */
+    fun findByBranchCodeAndAccountGroupInAndIsDeletedNot(
+        branchCode: String,
+        accountGroups: List<String>,
+        isDeleted: Boolean
+    ): List<Account>
+
+    /**
+     * 거래처 ID 목록 + 삭제되지 않은 거래처 조회 (일반사원용)
+     */
+    fun findByIdInAndIsDeletedNot(ids: List<Int>, isDeleted: Boolean): List<Account>
 }
