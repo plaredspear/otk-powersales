@@ -364,7 +364,7 @@ class ScheduleUploadValidatorTest {
         fun v8_dbOverlap() {
             val existingSchedules = listOf(
                 DisplayWorkSchedule(
-                    fullName = "20030001",
+                    employeeId = "20030001",
                     accountId = 1,
                     startDate = LocalDate.of(2026, 3, 1),
                     endDate = LocalDate.of(2026, 5, 1),
@@ -414,7 +414,7 @@ class ScheduleUploadValidatorTest {
             // 신규: USR001이 ACC_SFID_001에 순회 → 같은 사원/기간에 고정 존재 → C1 위반
             val existingSchedules = listOf(
                 DisplayWorkSchedule(
-                    fullName = "20030001",
+                    employeeId = "20030001",
                     accountId = 2,
                     startDate = LocalDate.of(2026, 3, 1),
                     endDate = LocalDate.of(2026, 5, 1),
@@ -443,8 +443,8 @@ class ScheduleUploadValidatorTest {
             // 기존: USR001이 다른 거래처 2곳에 격고 배치
             // 신규: USR001이 ACC001에 격고 → C2 위반 (이미 2개)
             val existingSchedules = listOf(
-                DisplayWorkSchedule(fullName = "20030001", accountId = 101, startDate = LocalDate.of(2026, 3, 1), endDate = LocalDate.of(2026, 5, 1), typeOfWork3 = "격고", typeOfWork5 = "상시"),
-                DisplayWorkSchedule(fullName = "20030001", accountId = 102, startDate = LocalDate.of(2026, 3, 1), endDate = LocalDate.of(2026, 5, 1), typeOfWork3 = "격고", typeOfWork5 = "상시")
+                DisplayWorkSchedule(employeeId = "20030001", accountId = 101, startDate = LocalDate.of(2026, 3, 1), endDate = LocalDate.of(2026, 5, 1), typeOfWork3 = "격고", typeOfWork5 = "상시"),
+                DisplayWorkSchedule(employeeId = "20030001", accountId = 102, startDate = LocalDate.of(2026, 3, 1), endDate = LocalDate.of(2026, 5, 1), typeOfWork3 = "격고", typeOfWork5 = "상시")
             )
             val rows = listOf(
                 createParsedRow(4, "20030001", "홍길동", "ACC001", null, "격고", "상시", "2026-04-01", "2026-04-30")
@@ -467,7 +467,7 @@ class ScheduleUploadValidatorTest {
             // 기존: USR001이 다른 거래처에 임시 배치
             // 신규: USR001이 ACC001에 임시 → C3 위반
             val existingSchedules = listOf(
-                DisplayWorkSchedule(fullName = "20030001", accountId = 101, startDate = LocalDate.of(2026, 3, 1), endDate = LocalDate.of(2026, 5, 1), typeOfWork3 = "순회", typeOfWork5 = "임시")
+                DisplayWorkSchedule(employeeId = "20030001", accountId = 101, startDate = LocalDate.of(2026, 3, 1), endDate = LocalDate.of(2026, 5, 1), typeOfWork3 = "순회", typeOfWork5 = "임시")
             )
             val rows = listOf(
                 createParsedRow(4, "20030001", "홍길동", "ACC001", null, "순회", "임시", "2026-04-01", "2026-04-30")

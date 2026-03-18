@@ -39,8 +39,8 @@ class DisplayWorkSchedule(
 
     @SFField("FullName__c")
     @HCColumn("fullname__c")
-    @Column(name = "full_name", length = 18)
-    val fullName: String? = null,
+    @Column(name = "employee_id", length = 100)
+    val employeeId: String? = null,
 
     @SFField("StartDate__c")
     @HCColumn("startdate__c")
@@ -112,7 +112,7 @@ class DisplayWorkSchedule(
     val hcErr: String? = null
 
     // --- 주석 처리: V2 기존 필드 ---
-    // userId: Long — V1에서 fullName(String sfid)로 대체
+    // userId: Long — V1에서 employeeId(String)로 대체
     // storeId: Long — V1에서 account(String sfid)로 대체
     // storeName: String — V1에 없음
     // storeCode: String — V1에 없음

@@ -194,7 +194,7 @@ class AdminScheduleServiceTest {
             whenever(excelParser.parse(any())).thenReturn(parseResult)
             whenever(userRepository.findByEmployeeIdIn(listOf("20030001"))).thenReturn(listOf(user))
             whenever(accountRepository.findByExternalKeyIn(listOf("ACC001"))).thenReturn(listOf(account))
-            whenever(scheduleRepository.findByFullNameInAndNotDeleted(listOf("20030001"))).thenReturn(emptyList())
+            whenever(scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf("20030001"))).thenReturn(emptyList())
             whenever(uploadValidator.validate(eq(parsedRows), any(), any(), any())).thenReturn(
                 ScheduleUploadValidator.ValidationResult(
                     errors = emptyList(),
@@ -298,7 +298,7 @@ class AdminScheduleServiceTest {
             assertThat(result.insertedCount).isEqualTo(1)
             verify(scheduleRepository).saveAll(argThat<List<DisplayWorkSchedule>> { list ->
                 list.size == 1 &&
-                    list[0].fullName == "20030001" &&
+                    list[0].employeeId == "20030001" &&
                     list[0].accountId == 1 &&
                     list[0].typeOfWork1 == "진열" &&
                     list[0].confirmed == false
@@ -536,7 +536,7 @@ class AdminScheduleServiceTest {
         @Test
         @DisplayName("정상 조회 - 필터 없이 전체 목록 반환")
         fun listSchedules_success() {
-            val schedule = createSchedule(id = 1L, fullName = "20030001", accountId = 100, confirmed = false)
+            val schedule = createSchedule(id = 1L, employeeId = "20030001", accountId = 100, confirmed = false)
             val page = PageImpl(listOf(schedule), PageRequest.of(0, 20), 1)
             val user = createUser(employeeId = "20030001", name = "홍길동")
             val account = createAccount(id = 100, externalKey = "SAP001", name = "이마트 성수점")
@@ -716,13 +716,13 @@ class AdminScheduleServiceTest {
 
     private fun createSchedule(
         id: Long = 1L,
-        fullName: String = "20030001",
+        employeeId: String = "20030001",
         accountId: Int = 1,
         confirmed: Boolean? = false,
         isDeleted: Boolean? = null
     ): DisplayWorkSchedule = DisplayWorkSchedule(
         id = id,
-        fullName = fullName,
+        employeeId = employeeId,
         accountId = accountId,
         typeOfWork1 = "진열",
         typeOfWork3 = "고정",

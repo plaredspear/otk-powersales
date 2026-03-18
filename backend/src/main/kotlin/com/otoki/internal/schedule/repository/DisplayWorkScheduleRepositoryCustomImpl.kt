@@ -14,8 +14,8 @@ class DisplayWorkScheduleRepositoryCustomImpl(
     private val queryFactory: JPAQueryFactory
 ) : DisplayWorkScheduleRepositoryCustom {
 
-    override fun findDistinctAccountIdsByFullNameAndStartDateBetween(
-        fullName: String,
+    override fun findDistinctAccountIdsByEmployeeIdAndStartDateBetween(
+        employeeId: String,
         startDate: LocalDate,
         endDate: LocalDate
     ): List<Int> {
@@ -23,15 +23,15 @@ class DisplayWorkScheduleRepositoryCustomImpl(
             .select(displayWorkSchedule.accountId).distinct()
             .from(displayWorkSchedule)
             .where(
-                displayWorkSchedule.fullName.eq(fullName),
+                displayWorkSchedule.employeeId.eq(employeeId),
                 displayWorkSchedule.startDate.between(startDate, endDate)
             )
             .fetch()
             .filterNotNull()
     }
 
-    override fun findDistinctStartDatesByFullNameAndDateBetween(
-        fullName: String,
+    override fun findDistinctStartDatesByEmployeeIdAndDateBetween(
+        employeeId: String,
         startDate: LocalDate,
         endDate: LocalDate
     ): List<LocalDate> {
@@ -39,7 +39,7 @@ class DisplayWorkScheduleRepositoryCustomImpl(
             .select(displayWorkSchedule.startDate).distinct()
             .from(displayWorkSchedule)
             .where(
-                displayWorkSchedule.fullName.eq(fullName),
+                displayWorkSchedule.employeeId.eq(employeeId),
                 displayWorkSchedule.startDate.between(startDate, endDate)
             )
             .orderBy(displayWorkSchedule.startDate.asc())
@@ -47,11 +47,11 @@ class DisplayWorkScheduleRepositoryCustomImpl(
             .filterNotNull()
     }
 
-    override fun findByFullNameInAndNotDeleted(fullNames: List<String>): List<DisplayWorkSchedule> {
+    override fun findByEmployeeIdInAndNotDeleted(employeeIds: List<String>): List<DisplayWorkSchedule> {
         return queryFactory
             .selectFrom(displayWorkSchedule)
             .where(
-                displayWorkSchedule.fullName.`in`(fullNames),
+                displayWorkSchedule.employeeId.`in`(employeeIds),
                 isNotDeleted()
             )
             .fetch()
@@ -95,7 +95,7 @@ class DisplayWorkScheduleRepositoryCustomImpl(
 
     private fun buildEmployeeCodeCondition(employeeCode: String?): BooleanExpression? {
         if (employeeCode.isNullOrBlank()) return null
-        return displayWorkSchedule.fullName.containsIgnoreCase(employeeCode)
+        return displayWorkSchedule.employeeId.containsIgnoreCase(employeeCode)
     }
 
     private fun buildAccountIdsCondition(accountIds: List<Int>?): BooleanExpression? {

@@ -70,10 +70,10 @@ class MyAccountServiceTest {
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(displayWorkScheduleRepository.findDistinctAccountIdsByFullNameAndStartDateBetween(testEmployeeId, startDate, endDate))
+            whenever(displayWorkScheduleRepository.findDistinctAccountIdsByEmployeeIdAndStartDateBetween(testEmployeeId, startDate, endDate))
                 .thenReturn(distinctAccountIds)
             whenever(accountRepository.findByIdIn(distinctAccountIds)).thenReturn(accounts)
-            whenever(displayWorkScheduleRepository.findByFullNameAndStartDateBetween(testEmployeeId, startDate, endDate))
+            whenever(displayWorkScheduleRepository.findByEmployeeIdAndStartDateBetween(testEmployeeId, startDate, endDate))
                 .thenReturn(schedules)
 
             // When
@@ -99,7 +99,7 @@ class MyAccountServiceTest {
             val endDate = yearMonth.atEndOfMonth()
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(displayWorkScheduleRepository.findDistinctAccountIdsByFullNameAndStartDateBetween(testEmployeeId, startDate, endDate))
+            whenever(displayWorkScheduleRepository.findDistinctAccountIdsByEmployeeIdAndStartDateBetween(testEmployeeId, startDate, endDate))
                 .thenReturn(emptyList())
 
             // When
@@ -145,10 +145,10 @@ class MyAccountServiceTest {
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(displayWorkScheduleRepository.findDistinctAccountIdsByFullNameAndStartDateBetween(testEmployeeId, startDate, endDate))
+            whenever(displayWorkScheduleRepository.findDistinctAccountIdsByEmployeeIdAndStartDateBetween(testEmployeeId, startDate, endDate))
                 .thenReturn(distinctAccountIds)
             whenever(accountRepository.findByIdIn(distinctAccountIds)).thenReturn(accounts)
-            whenever(displayWorkScheduleRepository.findByFullNameAndStartDateBetween(testEmployeeId, startDate, endDate))
+            whenever(displayWorkScheduleRepository.findByEmployeeIdAndStartDateBetween(testEmployeeId, startDate, endDate))
                 .thenReturn(schedules)
 
             // When
@@ -183,10 +183,10 @@ class MyAccountServiceTest {
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(displayWorkScheduleRepository.findDistinctAccountIdsByFullNameAndStartDateBetween(testEmployeeId, startDate, endDate))
+            whenever(displayWorkScheduleRepository.findDistinctAccountIdsByEmployeeIdAndStartDateBetween(testEmployeeId, startDate, endDate))
                 .thenReturn(distinctAccountIds)
             whenever(accountRepository.findByIdIn(distinctAccountIds)).thenReturn(accounts)
-            whenever(displayWorkScheduleRepository.findByFullNameAndStartDateBetween(testEmployeeId, startDate, endDate))
+            whenever(displayWorkScheduleRepository.findByEmployeeIdAndStartDateBetween(testEmployeeId, startDate, endDate))
                 .thenReturn(schedules)
 
             // When
@@ -244,7 +244,7 @@ class MyAccountServiceTest {
         startDate: LocalDate = LocalDate.now()
     ): DisplayWorkSchedule {
         return DisplayWorkSchedule(
-            fullName = testEmployeeId,
+            employeeId = testEmployeeId,
             accountId = accountId,
             typeOfWork1 = typeOfWork1,
             startDate = startDate

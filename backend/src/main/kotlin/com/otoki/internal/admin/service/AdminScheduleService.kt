@@ -108,7 +108,7 @@ class AdminScheduleService(
         // 기존 스케줄 조회 (중복 검증용)
         val userEmployeeIds = usersByEmployeeId.values.map { it.employeeId }
         val existingSchedules = if (userEmployeeIds.isNotEmpty()) {
-            scheduleRepository.findByFullNameInAndNotDeleted(userEmployeeIds)
+            scheduleRepository.findByEmployeeIdInAndNotDeleted(userEmployeeIds)
         } else {
             emptyList()
         }
@@ -186,7 +186,7 @@ class AdminScheduleService(
             }
 
             DisplayWorkSchedule(
-                fullName = row.userEmployeeId,
+                employeeId = row.userEmployeeId,
                 accountId = row.accountId,
                 typeOfWork1 = "진열",
                 typeOfWork3 = row.typeOfWork3,
@@ -229,11 +229,11 @@ class AdminScheduleService(
             employeeCode, accountIds, confirmed, typeOfWork3, startDateFrom, startDateTo, pageable
         )
 
-        val fullNames = schedulePage.content.mapNotNull { it.fullName }.distinct()
+        val employeeIds = schedulePage.content.mapNotNull { it.employeeId }.distinct()
         val scheduleAccountIds = schedulePage.content.mapNotNull { it.accountId }.distinct()
 
-        val userMap = if (fullNames.isNotEmpty()) {
-            userRepository.findByEmployeeIdIn(fullNames).associateBy { it.employeeId }
+        val userMap = if (employeeIds.isNotEmpty()) {
+            userRepository.findByEmployeeIdIn(employeeIds).associateBy { it.employeeId }
         } else {
             emptyMap()
         }
@@ -245,11 +245,11 @@ class AdminScheduleService(
         }
 
         return schedulePage.map { schedule ->
-            val user = schedule.fullName?.let { userMap[it] }
+            val user = schedule.employeeId?.let { userMap[it] }
             val account = schedule.accountId?.let { accountMap[it] }
             ScheduleListItemDto(
                 id = schedule.id,
-                employeeCode = schedule.fullName ?: "",
+                employeeCode = schedule.employeeId ?: "",
                 employeeName = user?.name ?: "",
                 accountCode = account?.externalKey,
                 accountName = account?.name,

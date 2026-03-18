@@ -46,7 +46,7 @@ class MyAccountService(
 
         // 1. 월별 스케줄에서 중복 제거된 거래처 accountId 조회
         val distinctAccountIds = displayWorkScheduleRepository
-            .findDistinctAccountIdsByFullNameAndStartDateBetween(employeeId, startDate, endDate)
+            .findDistinctAccountIdsByEmployeeIdAndStartDateBetween(employeeId, startDate, endDate)
 
         if (distinctAccountIds.isEmpty()) {
             return MyAccountListResponse(stores = emptyList(), totalCount = 0)
@@ -58,7 +58,7 @@ class MyAccountService(
 
         // 3. DisplayWorkSchedule에서 기본 정보 조회 (Account 마스터에 없는 거래처용 fallback)
         val scheduleMap = displayWorkScheduleRepository
-            .findByFullNameAndStartDateBetween(employeeId, startDate, endDate)
+            .findByEmployeeIdAndStartDateBetween(employeeId, startDate, endDate)
             .distinctBy { it.accountId }
             .associateBy { it.accountId }
 

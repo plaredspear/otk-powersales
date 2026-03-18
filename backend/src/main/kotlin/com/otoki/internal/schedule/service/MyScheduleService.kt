@@ -48,7 +48,7 @@ class MyScheduleService(
 
         // 해당 기간 내 일정이 있는 날짜 목록 조회
         val workDates = displayWorkScheduleRepository
-            .findDistinctStartDatesByFullNameAndDateBetween(employeeId, startDate, endDate)
+            .findDistinctStartDatesByEmployeeIdAndDateBetween(employeeId, startDate, endDate)
             .toSet()
 
         // 해당 월의 모든 날짜에 대해 근무 여부 판정
@@ -82,7 +82,7 @@ class MyScheduleService(
         val employeeId = user.employeeId
 
         // 해당 날짜의 거래처 일정 목록 조회
-        val schedules = displayWorkScheduleRepository.findByFullNameAndStartDate(employeeId, date)
+        val schedules = displayWorkScheduleRepository.findByEmployeeIdAndStartDate(employeeId, date)
 
         // Phase2: Attendance PG 대응 테이블 없음 - 주석 처리
         // val attendances = attendanceRepository.findByUserIdAndAttendanceDate(userId, date)
