@@ -5,10 +5,10 @@ import 'package:mobile/domain/entities/inspection_field_type.dart';
 import 'package:mobile/domain/entities/inspection_form.dart';
 import 'package:mobile/domain/entities/inspection_list_item.dart';
 import 'package:mobile/domain/entities/inspection_theme.dart';
-import 'package:mobile/domain/entities/my_store.dart';
-import 'package:mobile/domain/repositories/my_store_repository.dart';
+import 'package:mobile/domain/entities/my_account.dart';
+import 'package:mobile/domain/repositories/my_account_repository.dart';
 import 'package:mobile/domain/usecases/get_field_types_usecase.dart';
-import 'package:mobile/domain/usecases/get_my_stores.dart';
+import 'package:mobile/domain/usecases/get_my_accounts.dart';
 import 'package:mobile/domain/usecases/get_themes_usecase.dart';
 import 'package:mobile/domain/usecases/register_inspection_usecase.dart';
 import 'package:mobile/presentation/providers/inspection_register_provider.dart';
@@ -39,16 +39,16 @@ class MockGetFieldTypesUseCase implements GetFieldTypesUseCase {
   }
 }
 
-class MockGetMyStores implements GetMyStores {
+class MockGetMyAccounts implements GetMyAccounts {
   @override
-  Future<MyStoreListResult> call() async {
+  Future<MyAccountListResult> call() async {
     await Future.delayed(const Duration(milliseconds: 100));
-    return const MyStoreListResult(
-      stores: [
-        MyStore(
-          storeId: 100,
-          storeName: '이마트 죽전점',
-          storeCode: 'S100',
+    return const MyAccountListResult(
+      accounts: [
+        MyAccount(
+          accountId: 100,
+          accountName: '이마트 죽전점',
+          accountCode: 'S100',
           address: '서울시 강남구',
           representativeName: '홍길동',
         ),
@@ -90,7 +90,7 @@ void main() {
       notifier = InspectionRegisterNotifier(
         getThemes: MockGetThemesUseCase(),
         getFieldTypes: MockGetFieldTypesUseCase(),
-        getMyStores: MockGetMyStores(),
+        getMyAccounts: MockGetMyAccounts(),
         registerInspection: mockRegisterUseCase,
       );
     });

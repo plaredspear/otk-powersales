@@ -1,17 +1,17 @@
-import '../../domain/entities/my_store.dart';
+import '../../domain/entities/my_account.dart';
 
 /// 내 거래처 API 모델 (DTO)
 ///
-/// Backend API의 snake_case JSON을 파싱하여 MyStore 엔티티로 변환합니다.
-class MyStoreModel {
+/// Backend API의 snake_case JSON을 파싱하여 MyAccount 엔티티로 변환합니다.
+class MyAccountModel {
   /// 거래처 고유 ID
-  final int storeId;
+  final int accountId;
 
   /// 거래처명
-  final String storeName;
+  final String accountName;
 
   /// 거래처 코드
-  final String storeCode;
+  final String accountCode;
 
   /// 주소
   final String address;
@@ -22,21 +22,21 @@ class MyStoreModel {
   /// 대표자 전화번호
   final String? phoneNumber;
 
-  const MyStoreModel({
-    required this.storeId,
-    required this.storeName,
-    required this.storeCode,
+  const MyAccountModel({
+    required this.accountId,
+    required this.accountName,
+    required this.accountCode,
     required this.address,
     required this.representativeName,
     this.phoneNumber,
   });
 
   /// snake_case JSON에서 파싱
-  factory MyStoreModel.fromJson(Map<String, dynamic> json) {
-    return MyStoreModel(
-      storeId: json['store_id'] as int,
-      storeName: json['store_name'] as String,
-      storeCode: json['store_code'] as String,
+  factory MyAccountModel.fromJson(Map<String, dynamic> json) {
+    return MyAccountModel(
+      accountId: json['account_id'] as int,
+      accountName: json['account_name'] as String,
+      accountCode: json['account_code'] as String,
       address: json['address'] as String,
       representativeName: json['representative_name'] as String,
       phoneNumber: json['phone_number'] as String?,
@@ -46,9 +46,9 @@ class MyStoreModel {
   /// snake_case JSON으로 직렬화
   Map<String, dynamic> toJson() {
     return {
-      'store_id': storeId,
-      'store_name': storeName,
-      'store_code': storeCode,
+      'account_id': accountId,
+      'account_name': accountName,
+      'account_code': accountCode,
       'address': address,
       'representative_name': representativeName,
       'phone_number': phoneNumber,
@@ -56,11 +56,11 @@ class MyStoreModel {
   }
 
   /// Domain Entity로 변환
-  MyStore toEntity() {
-    return MyStore(
-      storeId: storeId,
-      storeName: storeName,
-      storeCode: storeCode,
+  MyAccount toEntity() {
+    return MyAccount(
+      accountId: accountId,
+      accountName: accountName,
+      accountCode: accountCode,
       address: address,
       representativeName: representativeName,
       phoneNumber: phoneNumber,
@@ -68,11 +68,11 @@ class MyStoreModel {
   }
 
   /// Domain Entity에서 생성
-  factory MyStoreModel.fromEntity(MyStore entity) {
-    return MyStoreModel(
-      storeId: entity.storeId,
-      storeName: entity.storeName,
-      storeCode: entity.storeCode,
+  factory MyAccountModel.fromEntity(MyAccount entity) {
+    return MyAccountModel(
+      accountId: entity.accountId,
+      accountName: entity.accountName,
+      accountCode: entity.accountCode,
       address: entity.address,
       representativeName: entity.representativeName,
       phoneNumber: entity.phoneNumber,
@@ -82,10 +82,10 @@ class MyStoreModel {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is MyStoreModel &&
-        other.storeId == storeId &&
-        other.storeName == storeName &&
-        other.storeCode == storeCode &&
+    return other is MyAccountModel &&
+        other.accountId == accountId &&
+        other.accountName == accountName &&
+        other.accountCode == accountCode &&
         other.address == address &&
         other.representativeName == representativeName &&
         other.phoneNumber == phoneNumber;
@@ -94,9 +94,9 @@ class MyStoreModel {
   @override
   int get hashCode {
     return Object.hash(
-      storeId,
-      storeName,
-      storeCode,
+      accountId,
+      accountName,
+      accountCode,
       address,
       representativeName,
       phoneNumber,
@@ -105,8 +105,8 @@ class MyStoreModel {
 
   @override
   String toString() {
-    return 'MyStoreModel(storeId: $storeId, storeName: $storeName, '
-        'storeCode: $storeCode, address: $address, '
+    return 'MyAccountModel(accountId: $accountId, accountName: $accountName, '
+        'accountCode: $accountCode, address: $address, '
         'representativeName: $representativeName, '
         'phoneNumber: $phoneNumber)';
   }

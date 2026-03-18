@@ -8,7 +8,7 @@ import '../../domain/entities/inspection_form.dart';
 import '../../domain/entities/inspection_list_item.dart';
 import '../../domain/entities/inspection_theme.dart';
 import '../../domain/usecases/get_field_types_usecase.dart';
-import '../../domain/usecases/get_my_stores.dart';
+import '../../domain/usecases/get_my_accounts.dart';
 import '../../domain/usecases/get_themes_usecase.dart';
 import '../../domain/usecases/register_inspection_usecase.dart';
 import 'inspection_register_state.dart';
@@ -18,17 +18,17 @@ class InspectionRegisterNotifier
     extends StateNotifier<InspectionRegisterState> {
   final GetThemesUseCase _getThemes;
   final GetFieldTypesUseCase _getFieldTypes;
-  final GetMyStores _getMyStores;
+  final GetMyAccounts _getMyAccounts;
   final RegisterInspectionUseCase _registerInspection;
 
   InspectionRegisterNotifier({
     required GetThemesUseCase getThemes,
     required GetFieldTypesUseCase getFieldTypes,
-    required GetMyStores getMyStores,
+    required GetMyAccounts getMyAccounts,
     required RegisterInspectionUseCase registerInspection,
   })  : _getThemes = getThemes,
         _getFieldTypes = getFieldTypes,
-        _getMyStores = getMyStores,
+        _getMyAccounts = getMyAccounts,
         _registerInspection = registerInspection,
         super(InspectionRegisterState.initial());
 
@@ -39,11 +39,11 @@ class InspectionRegisterNotifier
     try {
       final themes = await _getThemes.call();
       final fieldTypes = await _getFieldTypes.call();
-      final storeResult = await _getMyStores.call();
+      final accountResult = await _getMyAccounts.call();
 
       // 거래처 목록을 Map<int, String>으로 변환
       final storeMap = <int, String>{
-        for (var store in storeResult.stores) store.storeId: store.storeName,
+        for (var store in accountResult.accounts) store.accountId: store.accountName,
       };
 
       state = state.toLoaded(

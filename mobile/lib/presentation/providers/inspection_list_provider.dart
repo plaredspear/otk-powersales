@@ -1,7 +1,7 @@
 import '../../core/utils/error_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/repositories/mock/my_store_mock_repository.dart';
+import '../../data/repositories/mock/my_account_mock_repository.dart';
 import '../../domain/entities/inspection_list_item.dart';
 import '../../domain/repositories/inspection_repository.dart';
 import '../../domain/usecases/get_inspection_list_usecase.dart';
@@ -40,11 +40,11 @@ class InspectionListNotifier extends StateNotifier<InspectionListState> {
   /// 초기 데이터 로딩 (거래처 목록 + 자동 검색)
   Future<void> initialize() async {
     // 거래처 목록 로드
-    final mockStoreRepo = MyStoreMockRepository();
-    final storeResult = await mockStoreRepo.getMyStores();
+    final mockAccountRepo = MyAccountMockRepository();
+    final accountResult = await mockAccountRepo.getMyAccounts();
     final storesMap = <int, String>{};
-    for (final store in storeResult.stores) {
-      storesMap[store.storeId] = store.storeName;
+    for (final store in accountResult.accounts) {
+      storesMap[store.accountId] = store.accountName;
     }
     state = state.copyWith(stores: storesMap);
 

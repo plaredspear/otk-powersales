@@ -50,7 +50,7 @@ void main() {
       expect(AppRouter.posSales, '/pos-sales');
       expect(AppRouter.attendance, '/attendance');
       expect(AppRouter.attendanceComplete, '/attendance/complete');
-      expect(AppRouter.myStores, '/my-stores');
+      expect(AppRouter.myAccounts, '/my-accounts');
     });
 
     test('orderList 라우트 상수가 올바르다', () {
@@ -84,7 +84,7 @@ void main() {
       expect(routes.containsKey(AppRouter.attendanceComplete), true);
       expect(routes.containsKey(AppRouter.productSearch), true);
       expect(routes.containsKey(AppRouter.productSearchResult), true);
-      expect(routes.containsKey(AppRouter.myStores), true);
+      expect(routes.containsKey(AppRouter.myAccounts), true);
       expect(routes.containsKey(AppRouter.orderList), true);
       expect(routes.containsKey(AppRouter.orderDetail), true);
       expect(routes.containsKey(AppRouter.orderCancel), true);

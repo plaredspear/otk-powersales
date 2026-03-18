@@ -3,15 +3,15 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../domain/entities/my_store.dart';
+import '../../../domain/entities/my_account.dart';
 
 /// 거래처 상세 팝업 위젯
 ///
 /// 거래처 선택 시 노출되는 팝업.
 /// 거래처명/코드 표시 + 주문서 현황 / 매출 현황 이동 옵션.
-class StoreDetailPopup extends StatelessWidget {
+class AccountDetailPopup extends StatelessWidget {
   /// 거래처 정보
-  final MyStore store;
+  final MyAccount store;
 
   /// 주문서 현황 탭 콜백
   final VoidCallback? onOrderStatusTap;
@@ -19,7 +19,7 @@ class StoreDetailPopup extends StatelessWidget {
   /// 매출 현황 탭 콜백
   final VoidCallback? onSalesStatusTap;
 
-  const StoreDetailPopup({
+  const AccountDetailPopup({
     super.key,
     required this.store,
     this.onOrderStatusTap,
@@ -29,7 +29,7 @@ class StoreDetailPopup extends StatelessWidget {
   /// 팝업 표시
   static Future<void> show(
     BuildContext context, {
-    required MyStore store,
+    required MyAccount store,
     VoidCallback? onOrderStatusTap,
     VoidCallback? onSalesStatusTap,
   }) {
@@ -39,7 +39,7 @@ class StoreDetailPopup extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
         ),
-        child: StoreDetailPopup(
+        child: AccountDetailPopup(
           store: store,
           onOrderStatusTap: () {
             Navigator.of(dialogContext).pop();
@@ -78,14 +78,14 @@ class StoreDetailPopup extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           // 거래처명
           Text(
-            store.storeName,
+            store.accountName,
             style: AppTypography.headlineMedium,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSpacing.xs),
           // 거래처 코드
           Text(
-            '(${store.storeCode})',
+            '(${store.accountCode})',
             style: AppTypography.bodyMedium.copyWith(
               color: AppColors.textSecondary,
             ),

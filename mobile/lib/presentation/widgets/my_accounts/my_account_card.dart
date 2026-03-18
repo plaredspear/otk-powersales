@@ -3,15 +3,15 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../domain/entities/my_store.dart';
+import '../../../domain/entities/my_account.dart';
 
 /// 내 거래처 카드 위젯
 ///
 /// 거래처명(코드), 주소, 대표자, 전화 버튼을 표시합니다.
 /// 카드를 탭하면 거래처 상세 팝업이 열립니다.
-class MyStoreCard extends StatelessWidget {
+class MyAccountCard extends StatelessWidget {
   /// 거래처 정보
-  final MyStore store;
+  final MyAccount store;
 
   /// 카드 탭 콜백 (거래처 선택)
   final VoidCallback onTap;
@@ -19,7 +19,7 @@ class MyStoreCard extends StatelessWidget {
   /// 전화 버튼 탭 콜백
   final VoidCallback? onPhoneTap;
 
-  const MyStoreCard({
+  const MyAccountCard({
     super.key,
     required this.store,
     required this.onTap,
@@ -53,7 +53,7 @@ class MyStoreCard extends StatelessWidget {
                   children: [
                     // 거래처명(코드)
                     Text(
-                      '${store.storeName}(${store.storeCode})',
+                      '${store.accountName}(${store.accountCode})',
                       style: AppTypography.headlineSmall,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

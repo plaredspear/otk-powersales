@@ -1,7 +1,7 @@
-import '../../domain/entities/my_store.dart';
+import '../../domain/entities/my_account.dart';
 
 /// 내 거래처 화면 상태
-class MyStoresState {
+class MyAccountsState {
   /// 로딩 상태
   final bool isLoading;
 
@@ -9,38 +9,38 @@ class MyStoresState {
   final String? errorMessage;
 
   /// 전체 거래처 목록 (필터 전)
-  final List<MyStore> allStores;
+  final List<MyAccount> allAccounts;
 
   /// 검색 결과 거래처 목록
-  final List<MyStore> filteredStores;
+  final List<MyAccount> filteredAccounts;
 
   /// 현재 검색어
   final String searchKeyword;
 
-  /// 총 거래처 수 (= allStores.length)
+  /// 총 거래처 수 (= allAccounts.length)
   final int totalCount;
 
-  const MyStoresState({
+  const MyAccountsState({
     this.isLoading = false,
     this.errorMessage,
-    this.allStores = const [],
-    this.filteredStores = const [],
+    this.allAccounts = const [],
+    this.filteredAccounts = const [],
     this.searchKeyword = '',
     this.totalCount = 0,
   });
 
   /// 초기 상태
-  factory MyStoresState.initial() {
-    return const MyStoresState();
+  factory MyAccountsState.initial() {
+    return const MyAccountsState();
   }
 
   /// 로딩 상태로 전환
-  MyStoresState toLoading() {
+  MyAccountsState toLoading() {
     return copyWith(isLoading: true, errorMessage: null);
   }
 
   /// 에러 상태로 전환
-  MyStoresState toError(String message) {
+  MyAccountsState toError(String message) {
     return copyWith(
       isLoading: false,
       errorMessage: message,
@@ -48,29 +48,29 @@ class MyStoresState {
   }
 
   /// 표시할 거래처 수 (검색 전: 전체, 검색 후: 필터 결과)
-  int get displayCount => filteredStores.length;
+  int get displayCount => filteredAccounts.length;
 
   /// 검색 결과가 없는지 (검색 후)
   bool get isSearchEmpty =>
-      searchKeyword.isNotEmpty && filteredStores.isEmpty;
+      searchKeyword.isNotEmpty && filteredAccounts.isEmpty;
 
   /// 거래처 목록이 비어있는지 (API 결과 자체가 빈 경우)
-  bool get isStoresEmpty =>
-      !isLoading && allStores.isEmpty && errorMessage == null;
+  bool get isAccountsEmpty =>
+      !isLoading && allAccounts.isEmpty && errorMessage == null;
 
-  MyStoresState copyWith({
+  MyAccountsState copyWith({
     bool? isLoading,
     String? errorMessage,
-    List<MyStore>? allStores,
-    List<MyStore>? filteredStores,
+    List<MyAccount>? allAccounts,
+    List<MyAccount>? filteredAccounts,
     String? searchKeyword,
     int? totalCount,
   }) {
-    return MyStoresState(
+    return MyAccountsState(
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage,
-      allStores: allStores ?? this.allStores,
-      filteredStores: filteredStores ?? this.filteredStores,
+      allAccounts: allAccounts ?? this.allAccounts,
+      filteredAccounts: filteredAccounts ?? this.filteredAccounts,
       searchKeyword: searchKeyword ?? this.searchKeyword,
       totalCount: totalCount ?? this.totalCount,
     );
