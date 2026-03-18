@@ -41,7 +41,7 @@ class MockGetFieldTypesUseCase implements GetFieldTypesUseCase {
 
 class MockGetMyAccounts implements GetMyAccounts {
   @override
-  Future<MyAccountListResult> call() async {
+  Future<MyAccountListResult> call({String? keyword}) async {
     await Future.delayed(const Duration(milliseconds: 100));
     return const MyAccountListResult(
       accounts: [

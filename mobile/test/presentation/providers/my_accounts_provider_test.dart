@@ -5,21 +5,20 @@ import 'package:mobile/domain/usecases/get_my_accounts.dart';
 import 'package:mobile/presentation/providers/my_accounts_provider.dart';
 import 'package:mobile/presentation/providers/my_accounts_state.dart';
 
-/// 테스트용 Mock Repository
-class _MockMyAccountRepository implements MyAccountRepository {
-  final MyAccountListResult? _result;
-  final Exception? _error;
+/// 테스트용 Fake Repository
+class _FakeMyAccountRepository implements MyAccountRepository {
+  MyAccountListResult? resultToReturn;
+  Exception? exceptionToThrow;
+  String? lastKeyword;
 
-  _MockMyAccountRepository({MyAccountListResult? result, Exception? error})
-      : _result = result,
-        _error = error;
+  _FakeMyAccountRepository({this.resultToReturn, this.exceptionToThrow});
 
   @override
-  Future<MyAccountListResult> getMyAccounts() async {
-    // 비동기 딜레이를 추가하여 로딩 상태를 테스트에서 캡처할 수 있게 함
+  Future<MyAccountListResult> getMyAccounts({String? keyword}) async {
     await Future<void>.delayed(Duration.zero);
-    if (_error != null) throw _error;
-    return _result!;
+    lastKeyword = keyword;
+    if (exceptionToThrow != null) throw exceptionToThrow!;
+    return resultToReturn!;
   }
 }
 
@@ -56,12 +55,23 @@ void main() {
       totalCount: mockAccounts.length,
     );
 
+    late _FakeMyAccountRepository fakeRepository;
     late MyAccountsNotifier notifier;
 
     setUp(() {
-      final repository = _MockMyAccountRepository(result: mockResult);
-      final useCase = GetMyAccounts(repository);
+      fakeRepository = _FakeMyAccountRepository(resultToReturn: mockResult);
+      final useCase = GetMyAccounts(fakeRepository);
       notifier = MyAccountsNotifier(getMyAccounts: useCase);
+    });
+
+    group('초기 상태', () {
+      test('초기 상태가 올바르게 설정되어야 한다', () {
+        expect(notifier.state.isLoading, false);
+        expect(notifier.state.accounts, isEmpty);
+        expect(notifier.state.searchKeyword, '');
+        expect(notifier.state.totalCount, 0);
+        expect(notifier.state.errorMessage, isNull);
+      });
     });
 
     group('loadAccounts', () {
@@ -69,29 +79,25 @@ void main() {
         await notifier.loadAccounts();
 
         expect(notifier.state.isLoading, false);
-        expect(notifier.state.allAccounts.length, 3);
-        expect(notifier.state.filteredAccounts.length, 3);
+        expect(notifier.state.accounts.length, 3);
         expect(notifier.state.totalCount, 3);
         expect(notifier.state.errorMessage, isNull);
       });
 
       test('로딩 중 상태를 거친다', () async {
-        // loadAccounts 호출 후 await 전에 로딩 상태를 확인
         final future = notifier.loadAccounts();
 
-        // loadAccounts 내부에서 state = state.toLoading()이 동기적으로 실행됨
         expect(notifier.state.isLoading, true);
 
         await future;
 
-        // 완료 후 로딩 해제
         expect(notifier.state.isLoading, false);
-        expect(notifier.state.allAccounts.length, 3);
+        expect(notifier.state.accounts.length, 3);
       });
 
       test('에러 발생 시 에러 상태로 전환한다', () async {
-        final errorRepo = _MockMyAccountRepository(
-          error: Exception('네트워크 오류'),
+        final errorRepo = _FakeMyAccountRepository(
+          exceptionToThrow: Exception('네트워크 오류'),
         );
         final errorNotifier = MyAccountsNotifier(
           getMyAccounts: GetMyAccounts(errorRepo),
@@ -103,77 +109,40 @@ void main() {
         expect(errorNotifier.state.errorMessage, isNotNull);
         expect(errorNotifier.state.errorMessage, contains('네트워크 오류'));
       });
-    });
 
-    group('searchAccounts', () {
-      test('거래처명으로 검색한다', () async {
-        await notifier.loadAccounts();
-        notifier.searchAccounts('경산');
+      test('keyword를 전달하면 Repository에 keyword가 전달된다', () async {
+        await notifier.loadAccounts(keyword: '경산');
 
-        expect(notifier.state.filteredAccounts.length, 1);
-        expect(
-            notifier.state.filteredAccounts[0].accountName, '(유)경산식품');
+        expect(fakeRepository.lastKeyword, '경산');
         expect(notifier.state.searchKeyword, '경산');
       });
 
-      test('거래처 코드로 검색한다', () async {
+      test('keyword 없이 호출하면 searchKeyword가 빈 문자열이 된다', () async {
+        await notifier.loadAccounts(keyword: '경산');
         await notifier.loadAccounts();
-        notifier.searchAccounts('1030456');
 
-        expect(notifier.state.filteredAccounts.length, 1);
-        expect(notifier.state.filteredAccounts[0].accountName, '대성마트');
-      });
-
-      test('대소문자 구분 없이 검색한다', () async {
-        await notifier.loadAccounts();
-        notifier.searchAccounts('경산');
-
-        expect(notifier.state.filteredAccounts.length, 1);
-      });
-
-      test('검색 결과가 없으면 빈 목록을 반환한다', () async {
-        await notifier.loadAccounts();
-        notifier.searchAccounts('존재하지않는거래처');
-
-        expect(notifier.state.filteredAccounts, isEmpty);
-        expect(notifier.state.isSearchEmpty, true);
-      });
-
-      test('빈 검색어는 전체 목록을 복원한다', () async {
-        await notifier.loadAccounts();
-        notifier.searchAccounts('경산');
-        notifier.searchAccounts('');
-
-        expect(notifier.state.filteredAccounts.length, 3);
+        expect(fakeRepository.lastKeyword, isNull);
         expect(notifier.state.searchKeyword, '');
-      });
-
-      test('경 키워드로 여러 거래처가 검색된다', () async {
-        await notifier.loadAccounts();
-        notifier.searchAccounts('경');
-
-        // '경산식품', '경남식품' 모두 매칭
-        expect(notifier.state.filteredAccounts.length, 2);
       });
     });
 
     group('clearSearch', () {
-      test('검색을 초기화하면 전체 목록이 복원된다', () async {
-        await notifier.loadAccounts();
-        notifier.searchAccounts('경산');
-        expect(notifier.state.filteredAccounts.length, 1);
+      test('검색을 초기화하면 keyword 없이 API를 재호출한다', () async {
+        await notifier.loadAccounts(keyword: '경산');
+        expect(notifier.state.searchKeyword, '경산');
 
-        notifier.clearSearch();
+        await notifier.clearSearch();
 
-        expect(notifier.state.filteredAccounts.length, 3);
+        expect(fakeRepository.lastKeyword, isNull);
         expect(notifier.state.searchKeyword, '');
+        expect(notifier.state.accounts.length, 3);
       });
     });
 
     group('clearError', () {
       test('에러를 초기화한다', () async {
-        final errorRepo = _MockMyAccountRepository(
-          error: Exception('오류'),
+        final errorRepo = _FakeMyAccountRepository(
+          exceptionToThrow: Exception('오류'),
         );
         final errorNotifier = MyAccountsNotifier(
           getMyAccounts: GetMyAccounts(errorRepo),
@@ -184,6 +153,36 @@ void main() {
 
         errorNotifier.clearError();
         expect(errorNotifier.state.errorMessage, isNull);
+      });
+    });
+
+    group('State computed getters', () {
+      test('displayCount는 accounts 길이를 반환한다', () async {
+        await notifier.loadAccounts();
+        expect(notifier.state.displayCount, 3);
+      });
+
+      test('isSearchEmpty는 검색어가 있고 결과가 비었을 때 true', () {
+        final emptyState = MyAccountsState(
+          searchKeyword: '없는검색어',
+          accounts: const [],
+        );
+        expect(emptyState.isSearchEmpty, true);
+      });
+
+      test('isAccountsEmpty는 로딩 완료 후 결과가 비었을 때 true', () {
+        final emptyState = MyAccountsState(
+          accounts: const [],
+        );
+        expect(emptyState.isAccountsEmpty, true);
+      });
+
+      test('isAccountsEmpty는 검색어가 있으면 false', () {
+        final emptyState = MyAccountsState(
+          searchKeyword: '검색어',
+          accounts: const [],
+        );
+        expect(emptyState.isAccountsEmpty, false);
       });
     });
   });

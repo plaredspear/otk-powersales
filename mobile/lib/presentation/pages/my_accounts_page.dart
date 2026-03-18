@@ -45,7 +45,20 @@ class _MyAccountsPageState extends ConsumerState<MyAccountsPage> {
   /// 검색 실행
   void _onSearch() {
     final keyword = _searchController.text.trim();
-    ref.read(myAccountsProvider.notifier).searchAccounts(keyword);
+    if (keyword.isEmpty) {
+      ref.read(myAccountsProvider.notifier).clearSearch();
+      return;
+    }
+    if (keyword.length < 2) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('2자 이상 입력해주세요'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+    ref.read(myAccountsProvider.notifier).loadAccounts(keyword: keyword);
   }
 
   /// 전화 걸기
@@ -125,6 +138,9 @@ class _MyAccountsPageState extends ConsumerState<MyAccountsPage> {
           MyAccountSearchBar(
             controller: _searchController,
             onSearch: _onSearch,
+            onClear: () {
+              ref.read(myAccountsProvider.notifier).clearSearch();
+            },
           ),
           // 건수 헤더
           AccountCountHeader(count: state.displayCount),
@@ -221,9 +237,9 @@ class _MyAccountsPageState extends ConsumerState<MyAccountsPage> {
 
     // 거래처 카드 리스트
     return ListView.builder(
-      itemCount: myAccountsState.filteredAccounts.length,
+      itemCount: myAccountsState.accounts.length,
       itemBuilder: (context, index) {
-        final account = myAccountsState.filteredAccounts[index];
+        final account = myAccountsState.accounts[index];
         return MyAccountCard(
           account: account,
           onTap: () => _onAccountTap(account),
