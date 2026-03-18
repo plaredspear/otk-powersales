@@ -52,8 +52,8 @@ void main() {
 
     ClaimRegisterForm createValidForm() {
       return ClaimRegisterForm(
-        storeId: 1025,
-        storeName: '미광종합물류',
+        accountId: 1025,
+        accountName: '미광종합물류',
         productCode: '12345678',
         productName: '맛있는부대찌개라양념140G',
         dateType: ClaimDateType.expiryDate,
@@ -74,8 +74,8 @@ void main() {
       final form = createValidForm();
       final expectedResult = ClaimRegisterResult(
         id: 100,
-        storeName: '미광종합물류',
-        storeId: 1025,
+        accountName: '미광종합물류',
+        accountId: 1025,
         productName: '맛있는부대찌개라양념140G',
         productCode: '12345678',
         createdAt: DateTime(2026, 2, 11, 10, 30),
@@ -90,10 +90,10 @@ void main() {
     });
 
     test('유효하지 않은 폼은 ClaimValidationException을 발생시킨다', () async {
-      // Given: storeId가 0인 유효하지 않은 폼
+      // Given: accountId가 0인 유효하지 않은 폼
       final invalidForm = ClaimRegisterForm(
-        storeId: 0, // 유효하지 않음
-        storeName: '미광종합물류',
+        accountId: 0, // 유효하지 않음
+        accountName: '미광종합물류',
         productCode: '12345678',
         productName: '맛있는부대찌개라양념140G',
         dateType: ClaimDateType.expiryDate,
@@ -118,8 +118,8 @@ void main() {
     test('여러 필드가 유효하지 않으면 모든 에러를 포함한다', () async {
       // Given: 여러 필드가 유효하지 않은 폼
       final invalidForm = ClaimRegisterForm(
-        storeId: 0, // 유효하지 않음
-        storeName: '', // 유효하지 않음
+        accountId: 0, // 유효하지 않음
+        accountName: '', // 유효하지 않음
         productCode: '', // 유효하지 않음
         productName: '',
         dateType: ClaimDateType.expiryDate,
@@ -151,8 +151,8 @@ void main() {
     test('구매 정보가 있지만 구매 방법이 없으면 예외를 발생시킨다', () async {
       // Given
       final invalidForm = ClaimRegisterForm(
-        storeId: 1025,
-        storeName: '미광종합물류',
+        accountId: 1025,
+        accountName: '미광종합물류',
         productCode: '12345678',
         productName: '맛있는부대찌개라양념140G',
         dateType: ClaimDateType.expiryDate,

@@ -1,24 +1,24 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../domain/entities/store_schedule_item.dart';
+import '../../../domain/entities/account_schedule_item.dart';
 
 /// 거래처 리스트 아이템 위젯
-class StoreListItem extends StatelessWidget {
-  final StoreScheduleItem store;
+class AccountListItem extends StatelessWidget {
+  final AccountScheduleItem account;
   final bool isSelected;
   final VoidCallback onTap;
 
-  const StoreListItem({
+  const AccountListItem({
     super.key,
-    required this.store,
+    required this.account,
     required this.isSelected,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    if (store.isRegistered) {
+    if (account.isRegistered) {
       return _buildRegisteredItem();
     }
 
@@ -48,7 +48,7 @@ class StoreListItem extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      store.storeName,
+                      account.accountName,
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
@@ -61,7 +61,7 @@ class StoreListItem extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  store.address,
+                  account.address,
                   style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.textTertiary,
@@ -110,7 +110,7 @@ class StoreListItem extends StatelessWidget {
                     children: [
                       Flexible(
                         child: Text(
-                          store.storeName,
+                          account.accountName,
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: isSelected
@@ -127,17 +127,17 @@ class StoreListItem extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    store.address,
+                    account.address,
                     style: const TextStyle(
                       fontSize: 12,
                       color: AppColors.textSecondary,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (store.storeTypeCode != null) ...[
+                  if (account.accountTypeCode != null) ...[
                     const SizedBox(height: 2),
                     Text(
-                      store.storeTypeCode!,
+                      account.accountTypeCode!,
                       style: const TextStyle(
                         fontSize: 11,
                         color: AppColors.textTertiary,
@@ -161,7 +161,7 @@ class StoreListItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
-        store.workCategory,
+        account.workCategory,
         style: const TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w500,
@@ -172,10 +172,10 @@ class StoreListItem extends StatelessWidget {
   }
 
   Widget _buildRegisteredWorkTypeBadge() {
-    if (store.registeredWorkType == null) return const SizedBox.shrink();
+    if (account.registeredWorkType == null) return const SizedBox.shrink();
 
     final label =
-        store.registeredWorkType == 'ROOM_TEMP' ? '상온' : '냉장/냉동';
+        account.registeredWorkType == 'ROOM_TEMP' ? '상온' : '냉장/냉동';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

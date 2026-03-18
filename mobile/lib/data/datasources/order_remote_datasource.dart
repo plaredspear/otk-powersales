@@ -86,7 +86,7 @@ abstract class OrderRemoteDataSource {
 
   // ─── 주문서 작성 관련 API (F22) ─────────────────────────────
 
-  /// GET /api/v1/stores/{storeId}/credit
+  /// GET /api/v1/accounts/{accountId}/credit
   ///
   /// 거래처 여신 잔액을 조회합니다.
   Future<int> getCreditBalance({required int clientId});

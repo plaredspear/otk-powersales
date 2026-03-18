@@ -71,8 +71,8 @@ class MockRegisterInspectionUseCase implements RegisterInspectionUseCase {
     return InspectionListItem(
       id: 1,
       category: form.category,
-      storeName: '이마트 죽전점',
-      storeId: form.storeId,
+      accountName: '이마트 죽전점',
+      accountId: form.accountId,
       inspectionDate: form.inspectionDate,
       fieldType: '본매대',
       fieldTypeCode: form.fieldTypeCode,
@@ -104,7 +104,7 @@ void main() {
       expect(state.form, isNotNull);
       expect(state.themes, isEmpty);
       expect(state.fieldTypes, isEmpty);
-      expect(state.stores, isEmpty);
+      expect(state.accounts, isEmpty);
     });
 
     test('initialize()는 데이터를 로드한다', () async {
@@ -115,8 +115,8 @@ void main() {
       expect(notifier.state.isLoading, false);
       expect(notifier.state.themes.length, 1);
       expect(notifier.state.fieldTypes.length, 1);
-      expect(notifier.state.stores.length, 1);
-      expect(notifier.state.stores[100], '이마트 죽전점');
+      expect(notifier.state.accounts.length, 1);
+      expect(notifier.state.accounts[100], '이마트 죽전점');
     });
 
     test('selectTheme()는 테마를 선택한다', () async {
@@ -146,16 +146,16 @@ void main() {
       expect(notifier.state.selectedProductName, null);
     });
 
-    test('selectStore()는 거래처를 선택한다', () async {
+    test('selectAccount()는 거래처를 선택한다', () async {
       // Given
       await notifier.initialize();
 
       // When
-      notifier.selectStore(100, '이마트 죽전점');
+      notifier.selectAccount(100, '이마트 죽전점');
 
       // Then
-      expect(notifier.state.form!.storeId, 100);
-      expect(notifier.state.selectedStoreName, '이마트 죽전점');
+      expect(notifier.state.form!.accountId, 100);
+      expect(notifier.state.selectedAccountName, '이마트 죽전점');
     });
 
     test('updateInspectionDate()는 점검일을 변경한다', () async {
@@ -359,7 +359,7 @@ void main() {
       // Given
       await notifier.initialize();
       notifier.selectTheme(notifier.state.themes.first);
-      notifier.selectStore(100, '이마트 죽전점');
+      notifier.selectAccount(100, '이마트 죽전점');
       notifier.selectFieldType(notifier.state.fieldTypes.first);
       notifier.selectProduct('P001', '진라면');
       notifier.addPhoto(File('test.jpg'));
@@ -377,7 +377,7 @@ void main() {
       mockRegisterUseCase.shouldFail = true;
       await notifier.initialize();
       notifier.selectTheme(notifier.state.themes.first);
-      notifier.selectStore(100, '이마트 죽전점');
+      notifier.selectAccount(100, '이마트 죽전점');
       notifier.selectFieldType(notifier.state.fieldTypes.first);
       notifier.selectProduct('P001', '진라면');
       notifier.addPhoto(File('test.jpg'));

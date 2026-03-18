@@ -7,8 +7,8 @@ import 'claim_code.dart';
 /// 클레임 등록 시 사용자가 입력한 모든 정보를 담습니다.
 class ClaimRegisterForm {
   const ClaimRegisterForm({
-    required this.storeId,
-    required this.storeName,
+    required this.accountId,
+    required this.accountName,
     required this.productCode,
     required this.productName,
     required this.dateType,
@@ -29,8 +29,8 @@ class ClaimRegisterForm {
     this.requestTypeName,
   });
 
-  final int storeId;
-  final String storeName;
+  final int accountId;
+  final String accountName;
   final String productCode;
   final String productName;
   final ClaimDateType dateType;
@@ -66,10 +66,10 @@ class ClaimRegisterForm {
     final errors = <String>[];
 
     // 필수 필드 검증
-    if (storeId <= 0) {
+    if (accountId <= 0) {
       errors.add('거래처를 선택해주세요');
     }
-    if (storeName.isEmpty) {
+    if (accountName.isEmpty) {
       errors.add('거래처명이 비어있습니다');
     }
     if (productCode.isEmpty) {
@@ -118,8 +118,8 @@ class ClaimRegisterForm {
 
   /// copyWith
   ClaimRegisterForm copyWith({
-    int? storeId,
-    String? storeName,
+    int? accountId,
+    String? accountName,
     String? productCode,
     String? productName,
     ClaimDateType? dateType,
@@ -140,8 +140,8 @@ class ClaimRegisterForm {
     String? requestTypeName,
   }) {
     return ClaimRegisterForm(
-      storeId: storeId ?? this.storeId,
-      storeName: storeName ?? this.storeName,
+      accountId: accountId ?? this.accountId,
+      accountName: accountName ?? this.accountName,
       productCode: productCode ?? this.productCode,
       productName: productName ?? this.productName,
       dateType: dateType ?? this.dateType,
@@ -167,8 +167,8 @@ class ClaimRegisterForm {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is ClaimRegisterForm &&
-        other.storeId == storeId &&
-        other.storeName == storeName &&
+        other.accountId == accountId &&
+        other.accountName == accountName &&
         other.productCode == productCode &&
         other.productName == productName &&
         other.dateType == dateType &&
@@ -191,8 +191,8 @@ class ClaimRegisterForm {
 
   @override
   int get hashCode => Object.hash(
-        storeId,
-        storeName,
+        accountId,
+        accountName,
         productCode,
         productName,
         dateType,
@@ -216,8 +216,8 @@ class ClaimRegisterForm {
   @override
   String toString() {
     return 'ClaimRegisterForm('
-        'storeId: $storeId, '
-        'storeName: $storeName, '
+        'accountId: $accountId, '
+        'accountName: $accountName, '
         'productCode: $productCode, '
         'productName: $productName, '
         'categoryId: $categoryId, '

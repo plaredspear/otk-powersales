@@ -80,12 +80,12 @@ void main() {
       test('거래처를 선택한다', () {
         final notifier = container.read(claimRegisterProvider.notifier);
 
-        notifier.selectStore(1025, '미광종합물류');
+        notifier.selectAccount(1025, '미광종합물류');
 
         final state = container.read(claimRegisterProvider);
         expect(state.form, isNotNull);
-        expect(state.form!.storeId, 1025);
-        expect(state.form!.storeName, '미광종합물류');
+        expect(state.form!.accountId, 1025);
+        expect(state.form!.accountName, '미광종합물류');
       });
 
       test('제품을 선택한다', () {
@@ -230,7 +230,7 @@ void main() {
         final notifier = container.read(claimRegisterProvider.notifier);
 
         // 필수 필드 모두 입력
-        notifier.selectStore(1025, '미광종합물류');
+        notifier.selectAccount(1025, '미광종합물류');
         notifier.selectProduct('12345678', '맛있는부대찌개라양념140G');
         notifier.selectDateType(ClaimDateType.expiryDate);
         notifier.selectDate(DateTime(2026, 2, 20));
@@ -271,7 +271,7 @@ void main() {
         final notifier = container.read(claimRegisterProvider.notifier);
 
         // Given: 일부 필수 항목만 입력 (거래처, 제품만)
-        notifier.selectStore(1025, '미광종합물류');
+        notifier.selectAccount(1025, '미광종합물류');
         notifier.selectProduct('12345678', '맛있는부대찌개라양념140G');
 
         // When
@@ -290,7 +290,7 @@ void main() {
         final notifier = container.read(claimRegisterProvider.notifier);
 
         // 모든 필수 필드 입력
-        notifier.selectStore(1025, '미광종합물류');
+        notifier.selectAccount(1025, '미광종합물류');
         notifier.selectProduct('12345678', '맛있는부대찌개라양념140G');
         notifier.selectDateType(ClaimDateType.expiryDate);
         notifier.selectDate(DateTime(2026, 2, 20));
@@ -316,7 +316,7 @@ void main() {
       final notifier = container.read(claimRegisterProvider.notifier);
 
       // Given: 폼 데이터 입력
-      notifier.selectStore(1025, '미광종합물류');
+      notifier.selectAccount(1025, '미광종합물류');
       notifier.selectProduct('12345678', '맛있는부대찌개라양념140G');
 
       // When
@@ -400,8 +400,8 @@ final _sampleFormData = ClaimFormData(
 
 final _sampleRegisterResult = ClaimRegisterResult(
   id: 100,
-  storeName: '미광종합물류',
-  storeId: 1025,
+  accountName: '미광종합물류',
+  accountId: 1025,
   productName: '맛있는부대찌개라양념140G',
   productCode: '12345678',
   createdAt: DateTime(2026, 2, 11, 10, 30),

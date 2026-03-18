@@ -1,16 +1,16 @@
 import '../entities/attendance_result.dart';
 import '../entities/attendance_status.dart';
-import '../entities/store_schedule_item.dart';
+import '../entities/account_schedule_item.dart';
 
 /// 거래처 목록 조회 결과
-class StoreListResult {
-  final List<StoreScheduleItem> stores;
+class AccountListResult {
+  final List<AccountScheduleItem> accounts;
   final int totalCount;
   final int registeredCount;
   final String currentDate;
 
-  const StoreListResult({
-    required this.stores,
+  const AccountListResult({
+    required this.accounts,
     required this.totalCount,
     required this.registeredCount,
     required this.currentDate,
@@ -35,7 +35,7 @@ class AttendanceStatusResult {
 /// 출근등록 Repository 인터페이스
 abstract class AttendanceRepository {
   /// 오늘 출근 거래처 목록 조회
-  Future<StoreListResult> getStoreList({String? keyword});
+  Future<AccountListResult> getAccountList({String? keyword});
 
   /// 출근등록
   Future<AttendanceResult> registerAttendance({

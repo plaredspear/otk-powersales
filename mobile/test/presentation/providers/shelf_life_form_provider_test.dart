@@ -56,9 +56,9 @@ void main() {
       });
     });
 
-    group('selectStore', () {
+    group('selectAccount', () {
       test('거래처를 선택하면 state에 반영되어야 한다', () {
-        notifier.selectStore('ACC001', '이마트');
+        notifier.selectAccount('ACC001', '이마트');
 
         expect(notifier.state.selectedAccountCode, 'ACC001');
         expect(notifier.state.selectedAccountName, '이마트');
@@ -106,7 +106,7 @@ void main() {
     group('register', () {
       test('등록 성공 시 isSaved가 true여야 한다', () async {
         fakeRepository.registerResult = _sampleItem;
-        notifier.selectStore('ACC001', '이마트');
+        notifier.selectAccount('ACC001', '이마트');
         notifier.selectProduct('P001', '진라면');
 
         await notifier.register();
@@ -126,7 +126,7 @@ void main() {
 
       test('등록 실패 시 에러 메시지를 설정해야 한다', () async {
         fakeRepository.exceptionToThrow = Exception('이미 등록된 유통기한입니다');
-        notifier.selectStore('ACC001', '이마트');
+        notifier.selectAccount('ACC001', '이마트');
         notifier.selectProduct('P001', '진라면');
 
         await notifier.register();
@@ -138,7 +138,7 @@ void main() {
 
       test('등록 시 올바른 폼 데이터가 전달되어야 한다', () async {
         fakeRepository.registerResult = _sampleItem;
-        notifier.selectStore('ACC001', '이마트');
+        notifier.selectAccount('ACC001', '이마트');
         notifier.selectProduct('P001', '진라면');
         notifier.updateDescription('3층 선반');
 
@@ -247,7 +247,7 @@ void main() {
     group('clearError', () {
       test('에러 메시지를 초기화해야 한다', () async {
         fakeRepository.exceptionToThrow = Exception('에러');
-        notifier.selectStore('ACC001', '이마트');
+        notifier.selectAccount('ACC001', '이마트');
         notifier.selectProduct('P001', '진라면');
         await notifier.register();
 

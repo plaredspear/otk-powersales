@@ -82,10 +82,10 @@ void main() {
             total: 3,
             workType: '진열',
           ),
-          stores: const [
-            ScheduleStoreDetailModel(
-              storeId: 1,
-              storeName: '이마트',
+          accounts: const [
+            ScheduleAccountDetailModel(
+              accountId: 1,
+              accountName: '이마트',
               workType1: '진열',
               workType2: '전담',
               workType3: '순회',
@@ -104,8 +104,8 @@ void main() {
         expect(result.date, '2026년 02월 04일(화)');
         expect(result.memberName, '최금주');
         expect(result.employeeNumber, '20030117');
-        expect(result.stores.length, 1);
-        expect(result.stores[0].storeName, '이마트');
+        expect(result.accounts.length, 1);
+        expect(result.accounts[0].accountName, '이마트');
       });
 
       test('DateTime을 YYYY-MM-DD 형식 문자열로 변환한다', () async {
@@ -120,7 +120,7 @@ void main() {
             total: 0,
             workType: '순회',
           ),
-          stores: const [],
+          accounts: const [],
         );
         fakeRemoteDataSource.dailyScheduleResult = mockModel;
 
@@ -143,7 +143,7 @@ void main() {
             total: 0,
             workType: '순회',
           ),
-          stores: const [],
+          accounts: const [],
         );
         fakeRemoteDataSource.dailyScheduleResult = mockModel;
 

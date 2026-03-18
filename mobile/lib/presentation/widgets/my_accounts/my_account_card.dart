@@ -11,7 +11,7 @@ import '../../../domain/entities/my_account.dart';
 /// 카드를 탭하면 거래처 상세 팝업이 열립니다.
 class MyAccountCard extends StatelessWidget {
   /// 거래처 정보
-  final MyAccount store;
+  final MyAccount account;
 
   /// 카드 탭 콜백 (거래처 선택)
   final VoidCallback onTap;
@@ -21,7 +21,7 @@ class MyAccountCard extends StatelessWidget {
 
   const MyAccountCard({
     super.key,
-    required this.store,
+    required this.account,
     required this.onTap,
     this.onPhoneTap,
   });
@@ -53,7 +53,7 @@ class MyAccountCard extends StatelessWidget {
                   children: [
                     // 거래처명(코드)
                     Text(
-                      '${store.accountName}(${store.accountCode})',
+                      '${account.accountName}(${account.accountCode})',
                       style: AppTypography.headlineSmall,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -61,7 +61,7 @@ class MyAccountCard extends StatelessWidget {
                     const SizedBox(height: AppSpacing.xs),
                     // 주소
                     Text(
-                      store.address,
+                      account.address,
                       style: AppTypography.bodySmall.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -71,7 +71,7 @@ class MyAccountCard extends StatelessWidget {
                     const SizedBox(height: AppSpacing.xxs),
                     // 대표자
                     Text(
-                      '대표자: ${store.representativeName}',
+                      '대표자: ${account.representativeName}',
                       style: AppTypography.bodySmall.copyWith(
                         color: AppColors.textTertiary,
                       ),
@@ -80,7 +80,7 @@ class MyAccountCard extends StatelessWidget {
                 ),
               ),
               // 전화 버튼
-              if (store.phoneNumber != null && store.phoneNumber!.isNotEmpty)
+              if (account.phoneNumber != null && account.phoneNumber!.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(left: AppSpacing.sm),
                   child: IconButton(

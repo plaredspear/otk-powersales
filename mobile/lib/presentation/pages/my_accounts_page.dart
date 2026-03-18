@@ -49,10 +49,10 @@ class _MyAccountsPageState extends ConsumerState<MyAccountsPage> {
   }
 
   /// 전화 걸기
-  Future<void> _onPhoneTap(MyAccount store) async {
-    if (store.phoneNumber == null || store.phoneNumber!.isEmpty) return;
+  Future<void> _onPhoneTap(MyAccount account) async {
+    if (account.phoneNumber == null || account.phoneNumber!.isEmpty) return;
 
-    final uri = Uri(scheme: 'tel', path: store.phoneNumber);
+    final uri = Uri(scheme: 'tel', path: account.phoneNumber);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     } else {
@@ -68,10 +68,10 @@ class _MyAccountsPageState extends ConsumerState<MyAccountsPage> {
   }
 
   /// 거래처 카드 탭 (상세 팝업)
-  void _onAccountTap(MyAccount store) {
+  void _onAccountTap(MyAccount account) {
     AccountDetailPopup.show(
       context,
-      store: store,
+      account: account,
       onOrderStatusTap: () {
         // 주문서 현황 - 미구현 시 안내
         ScaffoldMessenger.of(context).showSnackBar(
@@ -223,12 +223,12 @@ class _MyAccountsPageState extends ConsumerState<MyAccountsPage> {
     return ListView.builder(
       itemCount: myAccountsState.filteredAccounts.length,
       itemBuilder: (context, index) {
-        final store = myAccountsState.filteredAccounts[index];
+        final account = myAccountsState.filteredAccounts[index];
         return MyAccountCard(
-          store: store,
-          onTap: () => _onAccountTap(store),
-          onPhoneTap: store.phoneNumber != null
-              ? () => _onPhoneTap(store)
+          account: account,
+          onTap: () => _onAccountTap(account),
+          onPhoneTap: account.phoneNumber != null
+              ? () => _onPhoneTap(account)
               : null,
         );
       },

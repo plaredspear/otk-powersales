@@ -66,9 +66,9 @@ class MyAccountsNotifier extends StateNotifier<MyAccountsState> {
     }
 
     final lowerKeyword = keyword.toLowerCase();
-    final filtered = state.allAccounts.where((store) {
-      return store.accountName.toLowerCase().contains(lowerKeyword) ||
-          store.accountCode.toLowerCase().contains(lowerKeyword);
+    final filtered = state.allAccounts.where((account) {
+      return account.accountName.toLowerCase().contains(lowerKeyword) ||
+          account.accountCode.toLowerCase().contains(lowerKeyword);
     }).toList();
 
     state = state.copyWith(

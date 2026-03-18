@@ -34,10 +34,10 @@ class ClientOrderListState {
   // --- 필터 조건 ---
 
   /// 선택된 거래처 ID (null이면 선택 안 함)
-  final int? selectedStoreId;
+  final int? selectedAccountId;
 
   /// 선택된 거래처명 (드롭다운 표시용)
-  final String? selectedStoreName;
+  final String? selectedAccountName;
 
   /// 선택된 납기일 (YYYY-MM-DD)
   final String selectedDeliveryDate;
@@ -45,7 +45,7 @@ class ClientOrderListState {
   // --- 거래처 목록 (필터 드롭다운용) ---
 
   /// 거래처 목록 (id -> name)
-  final Map<int, String> stores;
+  final Map<int, String> accounts;
 
   const ClientOrderListState({
     this.isLoading = false,
@@ -57,10 +57,10 @@ class ClientOrderListState {
     this.isFirst = true,
     this.isLast = true,
     this.hasSearched = false,
-    this.selectedStoreId,
-    this.selectedStoreName,
+    this.selectedAccountId,
+    this.selectedAccountName,
     required this.selectedDeliveryDate,
-    this.stores = const {},
+    this.accounts = const {},
   });
 
   /// 초기 상태
@@ -104,7 +104,7 @@ class ClientOrderListState {
   bool get hasPreviousPage => !isFirst;
 
   /// 검색 가능 여부 (거래처 선택 필수)
-  bool get canSearch => selectedStoreId != null;
+  bool get canSearch => selectedAccountId != null;
 
   ClientOrderListState copyWith({
     bool? isLoading,
@@ -116,11 +116,11 @@ class ClientOrderListState {
     bool? isFirst,
     bool? isLast,
     bool? hasSearched,
-    int? selectedStoreId,
-    String? selectedStoreName,
+    int? selectedAccountId,
+    String? selectedAccountName,
     String? selectedDeliveryDate,
-    Map<int, String>? stores,
-    bool clearStoreFilter = false,
+    Map<int, String>? accounts,
+    bool clearAccountFilter = false,
   }) {
     return ClientOrderListState(
       isLoading: isLoading ?? this.isLoading,
@@ -132,13 +132,13 @@ class ClientOrderListState {
       isFirst: isFirst ?? this.isFirst,
       isLast: isLast ?? this.isLast,
       hasSearched: hasSearched ?? this.hasSearched,
-      selectedStoreId:
-          clearStoreFilter ? null : (selectedStoreId ?? this.selectedStoreId),
-      selectedStoreName: clearStoreFilter
+      selectedAccountId:
+          clearAccountFilter ? null : (selectedAccountId ?? this.selectedAccountId),
+      selectedAccountName: clearAccountFilter
           ? null
-          : (selectedStoreName ?? this.selectedStoreName),
+          : (selectedAccountName ?? this.selectedAccountName),
       selectedDeliveryDate: selectedDeliveryDate ?? this.selectedDeliveryDate,
-      stores: stores ?? this.stores,
+      accounts: accounts ?? this.accounts,
     );
   }
 }

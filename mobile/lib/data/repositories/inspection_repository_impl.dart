@@ -21,7 +21,7 @@ class InspectionRepositoryImpl implements InspectionRepository {
     InspectionFilter filter,
   ) async {
     final models = await _remoteDataSource.getInspectionList(
-      storeId: filter.storeId,
+      accountId: filter.accountId,
       category: filter.category?.toJson(),
       fromDate: filter.fromDate.toIso8601String().substring(0, 10),
       toDate: filter.toDate.toIso8601String().substring(0, 10),

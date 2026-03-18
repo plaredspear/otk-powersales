@@ -7,8 +7,8 @@ import '../../core/theme/app_colors.dart';
 import '../providers/attendance_provider.dart';
 import '../widgets/attendance/attendance_status_counter.dart';
 import '../widgets/attendance/attendance_status_popup.dart';
-import '../widgets/attendance/store_list_item.dart';
-import '../widgets/attendance/store_search_bar.dart';
+import '../widgets/attendance/account_list_item.dart';
+import '../widgets/attendance/account_search_bar.dart';
 import '../widgets/attendance/work_type_selector.dart';
 import '../widgets/common/primary_button.dart';
 import '../../app_router.dart';
@@ -29,7 +29,7 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
     super.initState();
     // 화면 진입 시 거래처 목록 로딩
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(attendanceProvider.notifier).loadStores();
+      ref.read(attendanceProvider.notifier).loadAccounts();
     });
   }
 
@@ -125,7 +125,7 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
   }
 
   Widget _buildBody(dynamic state, AttendanceNotifier notifier) {
-    if (state.allStores.isEmpty && !state.isLoading) {
+    if (state.allAccounts.isEmpty && !state.isLoading) {
       return _buildEmptyState();
     }
 
@@ -143,9 +143,9 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
               const SizedBox(height: 12),
 
               // #2 검색 바
-              StoreSearchBar(
+              AccountSearchBar(
                 controller: _searchController,
-                onChanged: notifier.searchStores,
+                onChanged: notifier.searchAccounts,
               ),
             ],
           ),
@@ -153,23 +153,23 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
 
         // 거래처 리스트
         Expanded(
-          child: state.filteredStores.isEmpty
+          child: state.filteredAccounts.isEmpty
               ? _buildNoSearchResult()
               : ListView.separated(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: state.filteredStores.length,
+                  itemCount: state.filteredAccounts.length,
                   separatorBuilder: (_, _) =>
                       const SizedBox(height: 8),
                   itemBuilder: (context, index) {
-                    final store = state.filteredStores[index];
-                    return StoreListItem(
-                      store: store,
+                    final account = state.filteredAccounts[index];
+                    return AccountListItem(
+                      account: account,
                       isSelected:
-                          store.scheduleId == state.selectedScheduleId,
+                          account.scheduleId == state.selectedScheduleId,
                       onTap: () {
-                        if (!store.isRegistered) {
-                          notifier.selectStore(store.scheduleId);
+                        if (!account.isRegistered) {
+                          notifier.selectAccount(account.scheduleId);
                         }
                       },
                     );
@@ -239,7 +239,7 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
   Widget? _buildBottomBar(dynamic state, AttendanceNotifier notifier) {
     final canRegister = state.selectedScheduleId != null;
 
-    if (state.allStores.isEmpty) return null;
+    if (state.allAccounts.isEmpty) return null;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),

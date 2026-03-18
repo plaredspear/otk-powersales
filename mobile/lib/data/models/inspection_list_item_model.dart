@@ -6,8 +6,8 @@ import '../../domain/entities/inspection_list_item.dart';
 class InspectionListItemModel {
   final int id;
   final String category;
-  final String storeName;
-  final int storeId;
+  final String accountName;
+  final int accountId;
   final String inspectionDate;
   final String fieldType;
   final String fieldTypeCode;
@@ -15,8 +15,8 @@ class InspectionListItemModel {
   const InspectionListItemModel({
     required this.id,
     required this.category,
-    required this.storeName,
-    required this.storeId,
+    required this.accountName,
+    required this.accountId,
     required this.inspectionDate,
     required this.fieldType,
     required this.fieldTypeCode,
@@ -27,8 +27,8 @@ class InspectionListItemModel {
     return InspectionListItemModel(
       id: json['id'] as int,
       category: json['category'] as String,
-      storeName: json['store_name'] as String,
-      storeId: json['store_id'] as int,
+      accountName: json['account_name'] as String,
+      accountId: json['account_id'] as int,
       inspectionDate: json['inspection_date'] as String,
       fieldType: json['field_type'] as String,
       fieldTypeCode: json['field_type_code'] as String,
@@ -40,8 +40,8 @@ class InspectionListItemModel {
     return {
       'id': id,
       'category': category,
-      'store_name': storeName,
-      'store_id': storeId,
+      'account_name': accountName,
+      'account_id': accountId,
       'inspection_date': inspectionDate,
       'field_type': fieldType,
       'field_type_code': fieldTypeCode,
@@ -53,8 +53,8 @@ class InspectionListItemModel {
     return InspectionListItem(
       id: id,
       category: InspectionCategoryExtension.fromJson(category),
-      storeName: storeName,
-      storeId: storeId,
+      accountName: accountName,
+      accountId: accountId,
       inspectionDate: DateTime.parse(inspectionDate),
       fieldType: fieldType,
       fieldTypeCode: fieldTypeCode,
@@ -66,8 +66,8 @@ class InspectionListItemModel {
     return InspectionListItemModel(
       id: entity.id,
       category: entity.category.toJson(),
-      storeName: entity.storeName,
-      storeId: entity.storeId,
+      accountName: entity.accountName,
+      accountId: entity.accountId,
       inspectionDate: entity.inspectionDate.toIso8601String().substring(0, 10),
       fieldType: entity.fieldType,
       fieldTypeCode: entity.fieldTypeCode,
@@ -80,8 +80,8 @@ class InspectionListItemModel {
     return other is InspectionListItemModel &&
         other.id == id &&
         other.category == category &&
-        other.storeName == storeName &&
-        other.storeId == storeId &&
+        other.accountName == accountName &&
+        other.accountId == accountId &&
         other.inspectionDate == inspectionDate &&
         other.fieldType == fieldType &&
         other.fieldTypeCode == fieldTypeCode;
@@ -92,8 +92,8 @@ class InspectionListItemModel {
     return Object.hash(
       id,
       category,
-      storeName,
-      storeId,
+      accountName,
+      accountId,
       inspectionDate,
       fieldType,
       fieldTypeCode,
@@ -103,7 +103,7 @@ class InspectionListItemModel {
   @override
   String toString() {
     return 'InspectionListItemModel(id: $id, category: $category, '
-        'storeName: $storeName, storeId: $storeId, '
+        'accountName: $accountName, accountId: $accountId, '
         'inspectionDate: $inspectionDate, fieldType: $fieldType, '
         'fieldTypeCode: $fieldTypeCode)';
   }

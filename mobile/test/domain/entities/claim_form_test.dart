@@ -11,8 +11,8 @@ void main() {
     final testReceiptPhoto = File('test_receipt.jpg');
 
     ClaimRegisterForm createValidForm({
-      int? storeId,
-      String? storeName,
+      int? accountId,
+      String? accountName,
       String? productCode,
       String? productName,
       ClaimDateType? dateType,
@@ -33,8 +33,8 @@ void main() {
       String? requestTypeName,
     }) {
       return ClaimRegisterForm(
-        storeId: storeId ?? 1025,
-        storeName: storeName ?? '미광종합물류',
+        accountId: accountId ?? 1025,
+        accountName: accountName ?? '미광종합물류',
         productCode: productCode ?? '12345678',
         productName: productName ?? '맛있는부대찌개라양념140G',
         dateType: dateType ?? ClaimDateType.expiryDate,
@@ -62,8 +62,8 @@ void main() {
         final form = createValidForm();
 
         // Then
-        expect(form.storeId, 1025);
-        expect(form.storeName, '미광종합물류');
+        expect(form.accountId, 1025);
+        expect(form.accountName, '미광종합물류');
         expect(form.productCode, '12345678');
         expect(form.productName, '맛있는부대찌개라양념140G');
         expect(form.dateType, ClaimDateType.expiryDate);
@@ -113,18 +113,18 @@ void main() {
         expect(form.validate(), isEmpty);
       });
 
-      test('storeId가 0 이하면 유효하지 않다', () {
+      test('accountId가 0 이하면 유효하지 않다', () {
         // Given
-        final form = createValidForm(storeId: 0);
+        final form = createValidForm(accountId: 0);
 
         // Then
         expect(form.isValid, false);
         expect(form.validate(), contains('거래처를 선택해주세요'));
       });
 
-      test('storeName이 비어있으면 유효하지 않다', () {
+      test('accountName이 비어있으면 유효하지 않다', () {
         // Given
-        final form = createValidForm(storeName: '');
+        final form = createValidForm(accountName: '');
 
         // Then
         expect(form.isValid, false);
@@ -234,7 +234,7 @@ void main() {
       test('여러 필드가 유효하지 않으면 모든 에러를 반환한다', () {
         // Given
         final form = createValidForm(
-          storeId: 0,
+          accountId: 0,
           productCode: '',
           defectQuantity: 0,
         );
@@ -315,7 +315,7 @@ void main() {
         // Then
         expect(copied.defectQuantity, 5);
         expect(copied.defectDescription, '변경된 불량 내역');
-        expect(copied.storeId, original.storeId);
+        expect(copied.accountId, original.accountId);
         expect(original.defectQuantity, 1); // 원본 불변성 확인
       });
     });
@@ -350,8 +350,8 @@ void main() {
 
       // Then
       expect(str, contains('ClaimRegisterForm'));
-      expect(str, contains('storeId: 1025'));
-      expect(str, contains('storeName: 미광종합물류'));
+      expect(str, contains('accountId: 1025'));
+      expect(str, contains('accountName: 미광종합물류'));
     });
   });
 }

@@ -4,8 +4,8 @@
 class ClaimRegisterResult {
   const ClaimRegisterResult({
     required this.id,
-    required this.storeName,
-    required this.storeId,
+    required this.accountName,
+    required this.accountId,
     required this.productName,
     required this.productCode,
     required this.createdAt,
@@ -15,10 +15,10 @@ class ClaimRegisterResult {
   final int id;
 
   /// 거래처명
-  final String storeName;
+  final String accountName;
 
   /// 거래처 ID
-  final int storeId;
+  final int accountId;
 
   /// 제품명
   final String productName;
@@ -33,8 +33,8 @@ class ClaimRegisterResult {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'storeName': storeName,
-      'storeId': storeId,
+      'accountName': accountName,
+      'accountId': accountId,
       'productName': productName,
       'productCode': productCode,
       'createdAt': createdAt.toIso8601String(),
@@ -45,8 +45,8 @@ class ClaimRegisterResult {
   factory ClaimRegisterResult.fromJson(Map<String, dynamic> json) {
     return ClaimRegisterResult(
       id: json['id'] as int,
-      storeName: json['storeName'] as String,
-      storeId: json['storeId'] as int,
+      accountName: json['accountName'] as String,
+      accountId: json['accountId'] as int,
       productName: json['productName'] as String,
       productCode: json['productCode'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
@@ -56,16 +56,16 @@ class ClaimRegisterResult {
   /// copyWith
   ClaimRegisterResult copyWith({
     int? id,
-    String? storeName,
-    int? storeId,
+    String? accountName,
+    int? accountId,
     String? productName,
     String? productCode,
     DateTime? createdAt,
   }) {
     return ClaimRegisterResult(
       id: id ?? this.id,
-      storeName: storeName ?? this.storeName,
-      storeId: storeId ?? this.storeId,
+      accountName: accountName ?? this.accountName,
+      accountId: accountId ?? this.accountId,
       productName: productName ?? this.productName,
       productCode: productCode ?? this.productCode,
       createdAt: createdAt ?? this.createdAt,
@@ -77,8 +77,8 @@ class ClaimRegisterResult {
     if (identical(this, other)) return true;
     return other is ClaimRegisterResult &&
         other.id == id &&
-        other.storeName == storeName &&
-        other.storeId == storeId &&
+        other.accountName == accountName &&
+        other.accountId == accountId &&
         other.productName == productName &&
         other.productCode == productCode &&
         other.createdAt == createdAt;
@@ -87,8 +87,8 @@ class ClaimRegisterResult {
   @override
   int get hashCode => Object.hash(
         id,
-        storeName,
-        storeId,
+        accountName,
+        accountId,
         productName,
         productCode,
         createdAt,
@@ -98,8 +98,8 @@ class ClaimRegisterResult {
   String toString() {
     return 'ClaimRegisterResult('
         'id: $id, '
-        'storeName: $storeName, '
-        'storeId: $storeId, '
+        'accountName: $accountName, '
+        'accountId: $accountId, '
         'productName: $productName, '
         'productCode: $productCode, '
         'createdAt: $createdAt'

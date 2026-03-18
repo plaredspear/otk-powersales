@@ -8,20 +8,20 @@ import '../../../core/theme/app_typography.dart';
 ///
 /// 거래처 선택 드롭다운, 납기일 선택, 검색 버튼으로 구성됩니다.
 class ClientOrderFilterBar extends StatelessWidget {
-  final Map<int, String> stores; // storeId -> storeName
-  final int? selectedStoreId;
+  final Map<int, String> accounts; // accountId -> accountName
+  final int? selectedAccountId;
   final String selectedDeliveryDate; // YYYY-MM-DD
-  final ValueChanged<MapEntry<int, String>?> onStoreChanged; // null = clear
+  final ValueChanged<MapEntry<int, String>?> onAccountChanged; // null = clear
   final ValueChanged<String> onDeliveryDateChanged;
   final VoidCallback onSearch;
-  final bool canSearch; // false if no store selected
+  final bool canSearch; // false if no account selected
 
   const ClientOrderFilterBar({
     super.key,
-    required this.stores,
-    this.selectedStoreId,
+    required this.accounts,
+    this.selectedAccountId,
     required this.selectedDeliveryDate,
-    required this.onStoreChanged,
+    required this.onAccountChanged,
     required this.onDeliveryDateChanged,
     required this.onSearch,
     this.canSearch = false,
@@ -29,7 +29,7 @@ class ClientOrderFilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sortedStores = stores.entries.toList()
+    final sortedAccounts = accounts.entries.toList()
       ..sort((a, b) => a.value.compareTo(b.value));
 
     return Container(
@@ -38,13 +38,13 @@ class ClientOrderFilterBar extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           DropdownButtonFormField<int>(
-            value: selectedStoreId,
+            value: selectedAccountId,
             decoration: const InputDecoration(
               labelText: '거래처 선택',
               border: OutlineInputBorder(),
             ),
             hint: const Text('거래처 선택'),
-            items: sortedStores.map((entry) {
+            items: sortedAccounts.map((entry) {
               return DropdownMenuItem<int>(
                 value: entry.key,
                 child: Text(entry.value),
@@ -52,16 +52,16 @@ class ClientOrderFilterBar extends StatelessWidget {
             }).toList(),
             onChanged: (value) {
               if (value == null) {
-                onStoreChanged(null);
+                onAccountChanged(null);
               } else {
-                final storeName = stores[value];
-                if (storeName != null) {
-                  onStoreChanged(MapEntry(value, storeName));
+                final accountName = accounts[value];
+                if (accountName != null) {
+                  onAccountChanged(MapEntry(value, accountName));
                 }
               }
             },
           ),
-          if (!canSearch && selectedStoreId == null) ...[
+          if (!canSearch && selectedAccountId == null) ...[
             const SizedBox(height: AppSpacing.xs),
             Text(
               '거래처를 선택해주세요',

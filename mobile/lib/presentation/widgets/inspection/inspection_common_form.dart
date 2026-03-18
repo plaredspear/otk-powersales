@@ -21,7 +21,7 @@ class InspectionCommonForm extends StatelessWidget {
   final InspectionCategory category;
 
   /// 선택된 거래처명
-  final String? selectedStoreName;
+  final String? selectedAccountName;
 
   /// 선택된 점검일
   final DateTime inspectionDate;
@@ -36,7 +36,7 @@ class InspectionCommonForm extends StatelessWidget {
   final ValueChanged<InspectionCategory> onCategoryChanged;
 
   /// 거래처 선택 콜백
-  final VoidCallback onStoreTap;
+  final VoidCallback onAccountTap;
 
   /// 점검일 변경 콜백
   final ValueChanged<DateTime> onDateChanged;
@@ -48,12 +48,12 @@ class InspectionCommonForm extends StatelessWidget {
     super.key,
     required this.selectedTheme,
     required this.category,
-    required this.selectedStoreName,
+    required this.selectedAccountName,
     required this.inspectionDate,
     required this.selectedFieldType,
     required this.onThemeTap,
     required this.onCategoryChanged,
-    required this.onStoreTap,
+    required this.onAccountTap,
     required this.onDateChanged,
     required this.onFieldTypeTap,
   });
@@ -72,7 +72,7 @@ class InspectionCommonForm extends StatelessWidget {
         const Divider(height: 1),
 
         // 거래처 선택 (필수)
-        _buildStoreField(context),
+        _buildAccountField(context),
         const Divider(height: 1),
 
         // 점검일 선택
@@ -181,7 +181,7 @@ class InspectionCommonForm extends StatelessWidget {
   }
 
   /// 거래처 선택 필드
-  Widget _buildStoreField(BuildContext context) {
+  Widget _buildAccountField(BuildContext context) {
     return ListTile(
       title: RichText(
         text: const TextSpan(
@@ -204,14 +204,14 @@ class InspectionCommonForm extends StatelessWidget {
         ),
       ),
       subtitle: Text(
-        selectedStoreName ?? '거래처 선택',
+        selectedAccountName ?? '거래처 선택',
         style: TextStyle(
           fontSize: 14,
-          color: selectedStoreName != null ? Colors.black : Colors.grey,
+          color: selectedAccountName != null ? Colors.black : Colors.grey,
         ),
       ),
       trailing: const Icon(Icons.chevron_right),
-      onTap: onStoreTap,
+      onTap: onAccountTap,
     );
   }
 

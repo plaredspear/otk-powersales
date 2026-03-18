@@ -1,6 +1,6 @@
 import '../../domain/entities/attendance_result.dart';
 import '../../domain/entities/attendance_status.dart';
-import '../../domain/entities/store_schedule_item.dart';
+import '../../domain/entities/account_schedule_item.dart';
 
 /// 출근등록 화면 상태
 class AttendanceState {
@@ -9,10 +9,10 @@ class AttendanceState {
   final String? errorMessage;
 
   /// 거래처 목록 (전체)
-  final List<StoreScheduleItem> allStores;
+  final List<AccountScheduleItem> allAccounts;
 
   /// 필터링된 거래처 목록 (검색 적용)
-  final List<StoreScheduleItem> filteredStores;
+  final List<AccountScheduleItem> filteredAccounts;
 
   /// 총 거래처 수
   final int totalCount;
@@ -39,8 +39,8 @@ class AttendanceState {
     this.isLoading = false,
     this.isRegistering = false,
     this.errorMessage,
-    this.allStores = const [],
-    this.filteredStores = const [],
+    this.allAccounts = const [],
+    this.filteredAccounts = const [],
     this.totalCount = 0,
     this.registeredCount = 0,
     this.selectedWorkType = 'ROOM_TEMP',
@@ -81,15 +81,15 @@ class AttendanceState {
   int get remainingCount => totalCount - registeredCount;
 
   /// 미등록 거래처 목록
-  List<StoreScheduleItem> get unregisteredStores =>
-      filteredStores.where((s) => !s.isRegistered).toList();
+  List<AccountScheduleItem> get unregisteredAccounts =>
+      filteredAccounts.where((s) => !s.isRegistered).toList();
 
   AttendanceState copyWith({
     bool? isLoading,
     bool? isRegistering,
     String? errorMessage,
-    List<StoreScheduleItem>? allStores,
-    List<StoreScheduleItem>? filteredStores,
+    List<AccountScheduleItem>? allAccounts,
+    List<AccountScheduleItem>? filteredAccounts,
     int? totalCount,
     int? registeredCount,
     String? selectedWorkType,
@@ -102,8 +102,8 @@ class AttendanceState {
       isLoading: isLoading ?? this.isLoading,
       isRegistering: isRegistering ?? this.isRegistering,
       errorMessage: errorMessage,
-      allStores: allStores ?? this.allStores,
-      filteredStores: filteredStores ?? this.filteredStores,
+      allAccounts: allAccounts ?? this.allAccounts,
+      filteredAccounts: filteredAccounts ?? this.filteredAccounts,
       totalCount: totalCount ?? this.totalCount,
       registeredCount: registeredCount ?? this.registeredCount,
       selectedWorkType: selectedWorkType ?? this.selectedWorkType,

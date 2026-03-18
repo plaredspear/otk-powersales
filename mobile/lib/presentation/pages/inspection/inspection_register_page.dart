@@ -61,7 +61,7 @@ class _InspectionRegisterPageState
                   InspectionCommonForm(
                     selectedTheme: state.selectedTheme,
                     category: state.category,
-                    selectedStoreName: state.selectedStoreName,
+                    selectedAccountName: state.selectedAccountName,
                     inspectionDate: state.form?.inspectionDate ?? DateTime.now(),
                     selectedFieldType: state.selectedFieldType,
                     onThemeTap: () => _showThemeSelector(context),
@@ -70,7 +70,7 @@ class _InspectionRegisterPageState
                           .read(inspectionRegisterProvider.notifier)
                           .changeCategory(category);
                     },
-                    onStoreTap: () => _showStoreSelector(context),
+                    onAccountTap: () => _showAccountSelector(context),
                     onDateChanged: (date) {
                       ref
                           .read(inspectionRegisterProvider.notifier)
@@ -238,20 +238,20 @@ class _InspectionRegisterPageState
   }
 
   /// 거래처 선택 다이얼로그
-  void _showStoreSelector(BuildContext context) {
-    final stores = ref.read(inspectionRegisterProvider).stores;
-    if (stores.isEmpty) return;
+  void _showAccountSelector(BuildContext context) {
+    final accounts = ref.read(inspectionRegisterProvider).accounts;
+    if (accounts.isEmpty) return;
 
     showModalBottomSheet(
       context: context,
       builder: (context) => ListView(
-        children: stores.entries.map((entry) {
+        children: accounts.entries.map((entry) {
           return ListTile(
             title: Text(entry.value),
             onTap: () {
               ref
                   .read(inspectionRegisterProvider.notifier)
-                  .selectStore(entry.key, entry.value);
+                  .selectAccount(entry.key, entry.value);
               Navigator.pop(context);
             },
           );

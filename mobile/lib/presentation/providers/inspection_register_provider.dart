@@ -42,14 +42,14 @@ class InspectionRegisterNotifier
       final accountResult = await _getMyAccounts.call();
 
       // 거래처 목록을 Map<int, String>으로 변환
-      final storeMap = <int, String>{
-        for (var store in accountResult.accounts) store.accountId: store.accountName,
+      final accountMap = <int, String>{
+        for (var account in accountResult.accounts) account.accountId: account.accountName,
       };
 
       state = state.toLoaded(
         themes: themes,
         fieldTypes: fieldTypes,
-        stores: storeMap,
+        accounts: accountMap,
       );
     } catch (e) {
       state = state.toError(extractErrorMessage(e));
@@ -72,7 +72,7 @@ class InspectionRegisterNotifier
     final updatedForm = InspectionRegisterForm(
       themeId: state.form!.themeId,
       category: category,
-      storeId: state.form!.storeId,
+      accountId: state.form!.accountId,
       inspectionDate: state.form!.inspectionDate,
       fieldTypeCode: state.form!.fieldTypeCode,
       photos: state.form!.photos,
@@ -86,10 +86,10 @@ class InspectionRegisterNotifier
   }
 
   /// 거래처 선택
-  void selectStore(int storeId, String storeName) {
+  void selectAccount(int accountId, String accountName) {
     if (state.form == null) return;
 
-    final updatedForm = state.form!.copyWith(storeId: storeId);
+    final updatedForm = state.form!.copyWith(accountId: accountId);
     state = state.copyWith(form: updatedForm);
   }
 
@@ -155,7 +155,7 @@ class InspectionRegisterNotifier
         : InspectionRegisterForm(
             themeId: state.form!.themeId,
             category: state.form!.category,
-            storeId: state.form!.storeId,
+            accountId: state.form!.accountId,
             inspectionDate: state.form!.inspectionDate,
             fieldTypeCode: state.form!.fieldTypeCode,
             photos: state.form!.photos,

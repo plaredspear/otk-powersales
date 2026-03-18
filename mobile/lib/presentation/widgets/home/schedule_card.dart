@@ -226,7 +226,7 @@ class ScheduleCard extends StatelessWidget {
               const SizedBox(width: AppSpacing.sm), // 배지 인덴트 정렬
               Expanded(
                 child: Text(
-                  schedule.storeName ?? '(미지정)',
+                  schedule.accountName ?? '(미지정)',
                   style: AppTypography.bodySmall.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -337,7 +337,7 @@ class ScheduleCard extends StatelessWidget {
             // 매장명
             Expanded(
               child: Text(
-                schedule.storeName ?? '(미지정)',
+                schedule.accountName ?? '(미지정)',
                 style: AppTypography.bodyMedium,
                 overflow: TextOverflow.ellipsis,
               ),

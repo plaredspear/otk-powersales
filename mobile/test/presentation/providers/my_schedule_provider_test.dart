@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/domain/entities/daily_schedule_info.dart';
 import 'package:mobile/domain/entities/monthly_schedule_day.dart';
-import 'package:mobile/domain/entities/schedule_store_detail.dart';
+import 'package:mobile/domain/entities/schedule_account_detail.dart';
 import 'package:mobile/domain/repositories/my_schedule_repository.dart';
 import 'package:mobile/domain/usecases/get_daily_schedule.dart';
 import 'package:mobile/domain/usecases/get_monthly_schedule.dart';
@@ -106,7 +106,7 @@ void main() {
       expect(toggledAgain.showOnlyUnregistered, false);
     });
 
-    test('filteredStores가 필터 적용 없이 전체 목록을 반환한다', () {
+    test('filteredAccounts가 필터 적용 없이 전체 목록을 반환한다', () {
       final scheduleInfo = DailyScheduleInfo(
         date: '2026년 02월 04일(수)',
         memberName: '최금주',
@@ -116,18 +116,18 @@ void main() {
           total: 2,
           workType: '진열',
         ),
-        stores: const [
-          ScheduleStoreDetail(
-            storeId: 1,
-            storeName: '이마트',
+        accounts: const [
+          ScheduleAccountDetail(
+            accountId: 1,
+            accountName: '이마트',
             workType1: '진열',
             workType2: '전담',
             workType3: '순회',
             isRegistered: true,
           ),
-          ScheduleStoreDetail(
-            storeId: 2,
-            storeName: '롯데마트',
+          ScheduleAccountDetail(
+            accountId: 2,
+            accountName: '롯데마트',
             workType1: '진열',
             workType2: '전담',
             workType3: '격고',
@@ -138,10 +138,10 @@ void main() {
 
       final state = MyScheduleDetailState.initial().toData(scheduleInfo);
 
-      expect(state.filteredStores.length, 2);
+      expect(state.filteredAccounts.length, 2);
     });
 
-    test('filteredStores가 등록 전 항목만 필터링한다', () {
+    test('filteredAccounts가 등록 전 항목만 필터링한다', () {
       final scheduleInfo = DailyScheduleInfo(
         date: '2026년 02월 04일(수)',
         memberName: '최금주',
@@ -151,18 +151,18 @@ void main() {
           total: 2,
           workType: '진열',
         ),
-        stores: const [
-          ScheduleStoreDetail(
-            storeId: 1,
-            storeName: '이마트',
+        accounts: const [
+          ScheduleAccountDetail(
+            accountId: 1,
+            accountName: '이마트',
             workType1: '진열',
             workType2: '전담',
             workType3: '순회',
             isRegistered: true,
           ),
-          ScheduleStoreDetail(
-            storeId: 2,
-            storeName: '롯데마트',
+          ScheduleAccountDetail(
+            accountId: 2,
+            accountName: '롯데마트',
             workType1: '진열',
             workType2: '전담',
             workType3: '격고',
@@ -175,8 +175,8 @@ void main() {
           .toData(scheduleInfo)
           .toggleFilter();
 
-      expect(state.filteredStores.length, 1);
-      expect(state.filteredStores[0].storeName, '롯데마트');
+      expect(state.filteredAccounts.length, 1);
+      expect(state.filteredAccounts[0].accountName, '롯데마트');
     });
 
     test('unregisteredCount가 미등록 거래처 수를 반환한다', () {
@@ -189,18 +189,18 @@ void main() {
           total: 2,
           workType: '진열',
         ),
-        stores: const [
-          ScheduleStoreDetail(
-            storeId: 1,
-            storeName: '이마트',
+        accounts: const [
+          ScheduleAccountDetail(
+            accountId: 1,
+            accountName: '이마트',
             workType1: '진열',
             workType2: '전담',
             workType3: '순회',
             isRegistered: true,
           ),
-          ScheduleStoreDetail(
-            storeId: 2,
-            storeName: '롯데마트',
+          ScheduleAccountDetail(
+            accountId: 2,
+            accountName: '롯데마트',
             workType1: '진열',
             workType2: '전담',
             workType3: '격고',

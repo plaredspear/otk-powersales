@@ -15,10 +15,10 @@ class InspectionListState {
   final bool hasSearched;
 
   /// 거래처 필터 (null이면 전체)
-  final int? selectedStoreId;
+  final int? selectedAccountId;
 
   /// 선택된 거래처명
-  final String? selectedStoreName;
+  final String? selectedAccountName;
 
   /// 분류 필터 (null이면 전체)
   final InspectionCategory? selectedCategory;
@@ -29,20 +29,20 @@ class InspectionListState {
   /// 검색 종료일
   final DateTime toDate;
 
-  /// 내 거래처 목록 (드롭다운용) - {storeId: storeName}
-  final Map<int, String> stores;
+  /// 내 거래처 목록 (드롭다운용) - {accountId: accountName}
+  final Map<int, String> accounts;
 
   const InspectionListState({
     this.isLoading = false,
     this.errorMessage,
     this.items = const [],
     this.hasSearched = false,
-    this.selectedStoreId,
-    this.selectedStoreName,
+    this.selectedAccountId,
+    this.selectedAccountName,
     this.selectedCategory,
     required this.fromDate,
     required this.toDate,
-    this.stores = const {},
+    this.accounts = const {},
   });
 
   /// 초기 상태 (기본 필터: 오늘 기준 앞 7일 ~ 오늘)
@@ -87,13 +87,13 @@ class InspectionListState {
     String? errorMessage,
     List<InspectionListItem>? items,
     bool? hasSearched,
-    int? selectedStoreId,
-    String? selectedStoreName,
+    int? selectedAccountId,
+    String? selectedAccountName,
     InspectionCategory? selectedCategory,
     DateTime? fromDate,
     DateTime? toDate,
-    Map<int, String>? stores,
-    bool clearStoreFilter = false,
+    Map<int, String>? accounts,
+    bool clearAccountFilter = false,
     bool clearCategoryFilter = false,
   }) {
     return InspectionListState(
@@ -101,15 +101,15 @@ class InspectionListState {
       errorMessage: errorMessage,
       items: items ?? this.items,
       hasSearched: hasSearched ?? this.hasSearched,
-      selectedStoreId:
-          clearStoreFilter ? null : (selectedStoreId ?? this.selectedStoreId),
-      selectedStoreName:
-          clearStoreFilter ? null : (selectedStoreName ?? this.selectedStoreName),
+      selectedAccountId:
+          clearAccountFilter ? null : (selectedAccountId ?? this.selectedAccountId),
+      selectedAccountName:
+          clearAccountFilter ? null : (selectedAccountName ?? this.selectedAccountName),
       selectedCategory:
           clearCategoryFilter ? null : (selectedCategory ?? this.selectedCategory),
       fromDate: fromDate ?? this.fromDate,
       toDate: toDate ?? this.toDate,
-      stores: stores ?? this.stores,
+      accounts: accounts ?? this.accounts,
     );
   }
 }

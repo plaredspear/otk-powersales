@@ -1,6 +1,6 @@
 import '../../../domain/entities/daily_schedule_info.dart';
 import '../../../domain/entities/monthly_schedule_day.dart';
-import '../../../domain/entities/schedule_store_detail.dart';
+import '../../../domain/entities/schedule_account_detail.dart';
 import '../../../domain/repositories/my_schedule_repository.dart';
 
 /// 마이페이지 일정 Mock Repository
@@ -85,26 +85,26 @@ class MyScheduleMockRepository implements MyScheduleRepository {
         '${date.year}년 ${date.month.toString().padLeft(2, '0')}월 ${date.day.toString().padLeft(2, '0')}일($dayOfWeek)';
 
     // Mock 거래처 데이터
-    final stores = [
-      const ScheduleStoreDetail(
-        storeId: 1,
-        storeName: '(주)이마트트레이더스명지점',
+    final accounts = [
+      const ScheduleAccountDetail(
+        accountId: 1,
+        accountName: '(주)이마트트레이더스명지점',
         workType1: '진열',
         workType2: '전담',
         workType3: '순회',
         isRegistered: false,
       ),
-      const ScheduleStoreDetail(
-        storeId: 2,
-        storeName: '롯데마트 사상',
+      const ScheduleAccountDetail(
+        accountId: 2,
+        accountName: '롯데마트 사상',
         workType1: '진열',
         workType2: '전담',
         workType3: '격고',
         isRegistered: false,
       ),
-      const ScheduleStoreDetail(
-        storeId: 3,
-        storeName: '미광종합물류',
+      const ScheduleAccountDetail(
+        accountId: 3,
+        accountName: '미광종합물류',
         workType1: '진열',
         workType2: '전담',
         workType3: '고정',
@@ -121,7 +121,7 @@ class MyScheduleMockRepository implements MyScheduleRepository {
         total: 3,
         workType: '진열',
       ),
-      stores: stores,
+      accounts: accounts,
     );
   }
 }

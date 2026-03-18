@@ -27,8 +27,8 @@ void main() {
       test('클레임 등록이 성공한다', () async {
         // Given
         final form = ClaimRegisterForm(
-          storeId: 1025,
-          storeName: '미광종합물류',
+          accountId: 1025,
+          accountName: '미광종합물류',
           productCode: '12345678',
           productName: '맛있는부대찌개라양념140G',
           dateType: ClaimDateType.expiryDate,
@@ -45,8 +45,8 @@ void main() {
 
         fakeDataSource.registerResultToReturn = const ClaimRegisterResultModel(
           id: 100,
-          storeName: '미광종합물류',
-          storeId: 1025,
+          accountName: '미광종합물류',
+          accountId: 1025,
           productName: '맛있는부대찌개라양념140G',
           productCode: '12345678',
           createdAt: '2026-02-11T10:30:00',
@@ -59,8 +59,8 @@ void main() {
         expect(fakeDataSource.registerClaimCalls, 1);
         expect(result, isA<ClaimRegisterResult>());
         expect(result.id, 100);
-        expect(result.storeName, '미광종합물류');
-        expect(result.storeId, 1025);
+        expect(result.accountName, '미광종합물류');
+        expect(result.accountId, 1025);
         expect(result.productName, '맛있는부대찌개라양념140G');
         expect(result.productCode, '12345678');
         expect(result.createdAt, DateTime(2026, 2, 11, 10, 30));
@@ -69,8 +69,8 @@ void main() {
       test('DataSource로 올바른 요청이 전달된다', () async {
         // Given
         final form = ClaimRegisterForm(
-          storeId: 1025,
-          storeName: '미광종합물류',
+          accountId: 1025,
+          accountName: '미광종합물류',
           productCode: '12345678',
           productName: '맛있는부대찌개라양념140G',
           dateType: ClaimDateType.manufactureDate,
@@ -93,8 +93,8 @@ void main() {
 
         fakeDataSource.registerResultToReturn = const ClaimRegisterResultModel(
           id: 200,
-          storeName: '미광종합물류',
-          storeId: 1025,
+          accountName: '미광종합물류',
+          accountId: 1025,
           productName: '맛있는부대찌개라양념140G',
           productCode: '12345678',
           createdAt: '2026-02-11T14:20:30',
@@ -105,7 +105,7 @@ void main() {
 
         // Then
         final captured = fakeDataSource.lastRegisterRequest!;
-        expect(captured.storeId, 1025);
+        expect(captured.accountId, 1025);
         expect(captured.productCode, '12345678');
         expect(captured.dateType, 'MANUFACTURE_DATE');
         expect(captured.date, '2026-01-15');

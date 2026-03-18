@@ -56,7 +56,7 @@ InspectionRegisterForm _createValidOwnForm() {
   return InspectionRegisterForm(
     themeId: 10,
     category: InspectionCategory.OWN,
-    storeId: 3001,
+    accountId: 3001,
     inspectionDate: DateTime(2020, 8, 19),
     fieldTypeCode: 'FT01',
     productCode: '12345678',
@@ -68,7 +68,7 @@ InspectionRegisterForm _createValidCompetitorForm() {
   return InspectionRegisterForm(
     themeId: 11,
     category: InspectionCategory.COMPETITOR,
-    storeId: 2001,
+    accountId: 2001,
     inspectionDate: DateTime(2020, 8, 25),
     fieldTypeCode: 'FT02',
     competitorName: '경쟁사1',
@@ -94,8 +94,8 @@ void main() {
       final expectedResult = InspectionListItem(
         id: 1,
         category: InspectionCategory.OWN,
-        storeName: '이마트',
-        storeId: 3001,
+        accountName: '이마트',
+        accountId: 3001,
         inspectionDate: DateTime(2020, 8, 19),
         fieldType: '본매대',
         fieldTypeCode: 'FT01',
@@ -116,8 +116,8 @@ void main() {
       final expectedResult = InspectionListItem(
         id: 2,
         category: InspectionCategory.COMPETITOR,
-        storeName: '롯데마트',
-        storeId: 2001,
+        accountName: '롯데마트',
+        accountId: 2001,
         inspectionDate: DateTime(2020, 8, 25),
         fieldType: '시식',
         fieldTypeCode: 'FT02',
@@ -137,7 +137,7 @@ void main() {
       final form = InspectionRegisterForm(
         themeId: 0, // Invalid
         category: InspectionCategory.OWN,
-        storeId: 0, // Invalid
+        accountId: 0, // Invalid
         inspectionDate: DateTime(2020, 8, 19),
         fieldTypeCode: '', // Invalid
         photos: [], // Invalid
@@ -155,7 +155,7 @@ void main() {
       final form = InspectionRegisterForm(
         themeId: 10,
         category: InspectionCategory.OWN,
-        storeId: 3001,
+        accountId: 3001,
         inspectionDate: DateTime(2020, 8, 19),
         fieldTypeCode: 'FT01',
         // productCode missing
@@ -174,7 +174,7 @@ void main() {
       final form = InspectionRegisterForm(
         themeId: 11,
         category: InspectionCategory.COMPETITOR,
-        storeId: 2001,
+        accountId: 2001,
         inspectionDate: DateTime(2020, 8, 25),
         fieldTypeCode: 'FT02',
         // competitorName, competitorActivity, competitorTasting missing

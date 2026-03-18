@@ -6,8 +6,8 @@ class Schedule {
   final int scheduleId;
   final String employeeName;
   final String employeeSfid;
-  final String? storeName;
-  final String? storeSfid;
+  final String? accountName;
+  final String? accountSfid;
   final String workCategory;
   final String? workType;
   final bool isCommuteRegistered;
@@ -17,8 +17,8 @@ class Schedule {
     required this.scheduleId,
     required this.employeeName,
     required this.employeeSfid,
-    this.storeName,
-    this.storeSfid,
+    this.accountName,
+    this.accountSfid,
     required this.workCategory,
     this.workType,
     required this.isCommuteRegistered,
@@ -29,14 +29,14 @@ class Schedule {
     int? scheduleId,
     String? employeeName,
     String? employeeSfid,
-    String? storeName,
-    String? storeSfid,
+    String? accountName,
+    String? accountSfid,
     String? workCategory,
     String? workType,
     bool? isCommuteRegistered,
     DateTime? commuteRegisteredAt,
-    bool clearStoreName = false,
-    bool clearStoreSfid = false,
+    bool clearAccountName = false,
+    bool clearAccountSfid = false,
     bool clearWorkType = false,
     bool clearCommuteRegisteredAt = false,
   }) {
@@ -44,8 +44,8 @@ class Schedule {
       scheduleId: scheduleId ?? this.scheduleId,
       employeeName: employeeName ?? this.employeeName,
       employeeSfid: employeeSfid ?? this.employeeSfid,
-      storeName: clearStoreName ? null : (storeName ?? this.storeName),
-      storeSfid: clearStoreSfid ? null : (storeSfid ?? this.storeSfid),
+      accountName: clearAccountName ? null : (accountName ?? this.accountName),
+      accountSfid: clearAccountSfid ? null : (accountSfid ?? this.accountSfid),
       workCategory: workCategory ?? this.workCategory,
       workType: clearWorkType ? null : (workType ?? this.workType),
       isCommuteRegistered: isCommuteRegistered ?? this.isCommuteRegistered,
@@ -62,8 +62,8 @@ class Schedule {
         other.scheduleId == scheduleId &&
         other.employeeName == employeeName &&
         other.employeeSfid == employeeSfid &&
-        other.storeName == storeName &&
-        other.storeSfid == storeSfid &&
+        other.accountName == accountName &&
+        other.accountSfid == accountSfid &&
         other.workCategory == workCategory &&
         other.workType == workType &&
         other.isCommuteRegistered == isCommuteRegistered &&
@@ -76,8 +76,8 @@ class Schedule {
       scheduleId,
       employeeName,
       employeeSfid,
-      storeName,
-      storeSfid,
+      accountName,
+      accountSfid,
       workCategory,
       workType,
       isCommuteRegistered,
@@ -87,6 +87,6 @@ class Schedule {
 
   @override
   String toString() {
-    return 'Schedule(scheduleId: $scheduleId, employeeName: $employeeName, storeName: $storeName, workCategory: $workCategory, isCommuteRegistered: $isCommuteRegistered)';
+    return 'Schedule(scheduleId: $scheduleId, employeeName: $employeeName, accountName: $accountName, workCategory: $workCategory, isCommuteRegistered: $isCommuteRegistered)';
   }
 }

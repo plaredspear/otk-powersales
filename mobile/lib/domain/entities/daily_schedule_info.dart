@@ -1,4 +1,4 @@
-import 'schedule_store_detail.dart';
+import 'schedule_account_detail.dart';
 
 /// 보고 진행 상황
 class ReportProgress {
@@ -78,14 +78,14 @@ class DailyScheduleInfo {
   final ReportProgress reportProgress;
 
   /// 거래처 목록
-  final List<ScheduleStoreDetail> stores;
+  final List<ScheduleAccountDetail> accounts;
 
   const DailyScheduleInfo({
     required this.date,
     required this.memberName,
     required this.employeeNumber,
     required this.reportProgress,
-    required this.stores,
+    required this.accounts,
   });
 
   DailyScheduleInfo copyWith({
@@ -93,14 +93,14 @@ class DailyScheduleInfo {
     String? memberName,
     String? employeeNumber,
     ReportProgress? reportProgress,
-    List<ScheduleStoreDetail>? stores,
+    List<ScheduleAccountDetail>? accounts,
   }) {
     return DailyScheduleInfo(
       date: date ?? this.date,
       memberName: memberName ?? this.memberName,
       employeeNumber: employeeNumber ?? this.employeeNumber,
       reportProgress: reportProgress ?? this.reportProgress,
-      stores: stores ?? this.stores,
+      accounts: accounts ?? this.accounts,
     );
   }
 
@@ -110,7 +110,7 @@ class DailyScheduleInfo {
       'memberName': memberName,
       'employeeNumber': employeeNumber,
       'reportProgress': reportProgress.toJson(),
-      'stores': stores.map((store) => store.toJson()).toList(),
+      'accounts': accounts.map((account) => account.toJson()).toList(),
     };
   }
 
@@ -122,9 +122,9 @@ class DailyScheduleInfo {
       reportProgress: ReportProgress.fromJson(
         json['reportProgress'] as Map<String, dynamic>,
       ),
-      stores: (json['stores'] as List<dynamic>)
-          .map((store) => ScheduleStoreDetail.fromJson(
-                store as Map<String, dynamic>,
+      accounts: (json['accounts'] as List<dynamic>)
+          .map((account) => ScheduleAccountDetail.fromJson(
+                account as Map<String, dynamic>,
               ))
           .toList(),
     );
@@ -138,7 +138,7 @@ class DailyScheduleInfo {
         other.memberName == memberName &&
         other.employeeNumber == employeeNumber &&
         other.reportProgress == reportProgress &&
-        _listEquals(other.stores, stores);
+        _listEquals(other.accounts, accounts);
   }
 
   bool _listEquals<T>(List<T> a, List<T> b) {
@@ -156,7 +156,7 @@ class DailyScheduleInfo {
       memberName,
       employeeNumber,
       reportProgress,
-      Object.hashAll(stores),
+      Object.hashAll(accounts),
     );
   }
 
@@ -164,6 +164,6 @@ class DailyScheduleInfo {
   String toString() {
     return 'DailyScheduleInfo(date: $date, memberName: $memberName, '
         'employeeNumber: $employeeNumber, reportProgress: $reportProgress, '
-        'stores: $stores)';
+        'accounts: $accounts)';
   }
 }

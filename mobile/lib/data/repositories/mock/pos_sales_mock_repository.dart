@@ -11,16 +11,16 @@ class PosSalesMockRepository implements PosSalesRepository {
   Future<List<PosSales>> getPosSales({
     required DateTime startDate,
     required DateTime endDate,
-    String? storeName,
+    String? accountName,
     String? productName,
   }) async {
     // Mock 데이터에서 날짜 범위로 필터링
     var results = PosSalesMockData.getByDateRange(startDate, endDate);
 
     // 매장명 필터링 (선택적)
-    if (storeName != null && storeName.isNotEmpty) {
+    if (accountName != null && accountName.isNotEmpty) {
       results = results
-          .where((sales) => sales.storeName.contains(storeName))
+          .where((sales) => sales.accountName.contains(accountName))
           .toList();
     }
 
@@ -64,8 +64,8 @@ class PosSalesMockRepository implements PosSalesRepository {
   }
 
   @override
-  Future<List<PosSales>> getPosSalesByStore({
-    required String storeName,
+  Future<List<PosSales>> getPosSalesByAccount({
+    required String accountName,
     required DateTime startDate,
     required DateTime endDate,
   }) async {
@@ -74,7 +74,7 @@ class PosSalesMockRepository implements PosSalesRepository {
 
     // 매장명으로 필터링
     results = results
-        .where((sales) => sales.storeName == storeName)
+        .where((sales) => sales.accountName == accountName)
         .toList();
 
     // 실제 API 호출을 시뮬레이션하기 위한 딜레이

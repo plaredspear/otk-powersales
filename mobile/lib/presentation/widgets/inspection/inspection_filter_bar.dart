@@ -10,11 +10,11 @@ import '../../../domain/entities/inspection_list_item.dart';
 ///
 /// 거래처 드롭다운 + 분류 드롭다운 + 점검일 날짜 범위 + 검색 버튼
 class InspectionFilterBar extends StatelessWidget {
-  /// 거래처 목록 {storeId: storeName}
-  final Map<int, String> stores;
+  /// 거래처 목록 {accountId: accountName}
+  final Map<int, String> accounts;
 
   /// 선택된 거래처 ID
-  final int? selectedStoreId;
+  final int? selectedAccountId;
 
   /// 선택된 분류
   final InspectionCategory? selectedCategory;
@@ -26,7 +26,7 @@ class InspectionFilterBar extends StatelessWidget {
   final DateTime toDate;
 
   /// 거래처 선택 콜백
-  final void Function(int? storeId, String? storeName) onStoreChanged;
+  final void Function(int? accountId, String? accountName) onAccountChanged;
 
   /// 분류 선택 콜백
   final void Function(InspectionCategory? category) onCategoryChanged;
@@ -42,12 +42,12 @@ class InspectionFilterBar extends StatelessWidget {
 
   const InspectionFilterBar({
     super.key,
-    required this.stores,
-    this.selectedStoreId,
+    required this.accounts,
+    this.selectedAccountId,
     this.selectedCategory,
     required this.fromDate,
     required this.toDate,
-    required this.onStoreChanged,
+    required this.onAccountChanged,
     required this.onCategoryChanged,
     required this.onFromDateChanged,
     required this.onToDateChanged,
@@ -65,7 +65,7 @@ class InspectionFilterBar extends StatelessWidget {
           // 거래처 + 분류 드롭다운 (한 줄에 배치)
           Row(
             children: [
-              Expanded(child: _buildStoreDropdown()),
+              Expanded(child: _buildAccountDropdown()),
               const SizedBox(width: AppSpacing.sm),
               Expanded(child: _buildCategoryDropdown()),
             ],
@@ -96,7 +96,7 @@ class InspectionFilterBar extends StatelessWidget {
     );
   }
 
-  Widget _buildStoreDropdown() {
+  Widget _buildAccountDropdown() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
       decoration: BoxDecoration(
@@ -106,7 +106,7 @@ class InspectionFilterBar extends StatelessWidget {
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<int?>(
-          value: selectedStoreId,
+          value: selectedAccountId,
           isExpanded: true,
           hint: Text(
             '거래처 전체',
@@ -121,7 +121,7 @@ class InspectionFilterBar extends StatelessWidget {
                 style: AppTypography.bodyMedium,
               ),
             ),
-            ...stores.entries.map((entry) {
+            ...accounts.entries.map((entry) {
               return DropdownMenuItem<int?>(
                 value: entry.key,
                 child: Text(
@@ -133,7 +133,7 @@ class InspectionFilterBar extends StatelessWidget {
             }),
           ],
           onChanged: (value) {
-            onStoreChanged(value, value != null ? stores[value] : null);
+            onAccountChanged(value, value != null ? accounts[value] : null);
           },
         ),
       ),

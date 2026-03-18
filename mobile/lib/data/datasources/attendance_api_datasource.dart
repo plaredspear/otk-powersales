@@ -1,12 +1,12 @@
 import 'package:dio/dio.dart';
 
 import '../../domain/entities/attendance_result.dart';
-import '../../domain/entities/store_schedule_item.dart';
+import '../../domain/entities/account_schedule_item.dart';
 import '../../domain/entities/attendance_status.dart';
 import '../../domain/repositories/attendance_repository.dart';
 import '../models/attendance_result_model.dart';
 import '../models/attendance_status_model.dart';
-import '../models/store_schedule_item_model.dart';
+import '../models/account_schedule_item_model.dart';
 
 /// 출근등록 API DataSource
 ///
@@ -17,27 +17,27 @@ class AttendanceApiDataSource {
   AttendanceApiDataSource(this._dio);
 
   /// 거래처 목록 조회
-  Future<StoreListResult> getStoreList({String? keyword}) async {
+  Future<AccountListResult> getAccountList({String? keyword}) async {
     final queryParameters = <String, dynamic>{};
     if (keyword != null && keyword.isNotEmpty) {
       queryParameters['keyword'] = keyword;
     }
 
     final response = await _dio.get(
-      '/api/v1/attendance/stores',
+      '/api/v1/attendance/accounts',
       queryParameters: queryParameters.isNotEmpty ? queryParameters : null,
     );
 
     final data = response.data['data'] as Map<String, dynamic>;
-    final storesJson = data['stores'] as List<dynamic>;
-    final stores = storesJson
+    final accountsJson = data['accounts'] as List<dynamic>;
+    final accounts = accountsJson
         .map((json) =>
-            StoreScheduleItemModel.fromJson(json as Map<String, dynamic>)
+            AccountScheduleItemModel.fromJson(json as Map<String, dynamic>)
                 .toEntity())
         .toList();
 
-    return StoreListResult(
-      stores: stores,
+    return AccountListResult(
+      accounts: accounts,
       totalCount: data['total_count'] as int,
       registeredCount: data['registered_count'] as int,
       currentDate: data['current_date'] as String,

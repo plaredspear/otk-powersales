@@ -70,7 +70,7 @@ class AttendanceCompletePage extends ConsumerWidget {
 
               // 거래처명
               Text(
-                result.storeName,
+                result.accountName,
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,

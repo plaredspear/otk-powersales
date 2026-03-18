@@ -33,32 +33,32 @@ class ClientOrderListNotifier extends StateNotifier<ClientOrderListState> {
 
   /// 초기 데이터 로딩
   ///
-  /// GET /api/v1/stores/my 에서 거래처 목록 로딩
+  /// GET /api/v1/accounts/my 에서 거래처 목록 로딩
   Future<void> initialize() async {
     try {
-      final response = await _dio.get('/api/v1/stores/my');
+      final response = await _dio.get('/api/v1/accounts/my');
       final data = response.data['data'] as Map<String, dynamic>;
-      final storesJson = data['stores'] as List<dynamic>;
-      final storeMap = <int, String>{};
-      for (final store in storesJson) {
-        final json = store as Map<String, dynamic>;
-        storeMap[json['store_id'] as int] = json['store_name'] as String;
+      final accountsJson = data['accounts'] as List<dynamic>;
+      final accountMap = <int, String>{};
+      for (final account in accountsJson) {
+        final json = account as Map<String, dynamic>;
+        accountMap[json['account_id'] as int] = json['account_name'] as String;
       }
-      state = state.copyWith(stores: storeMap);
+      state = state.copyWith(accounts: accountMap);
     } catch (e) {
       // 거래처 목록 로드 실패: 빈 맵으로 설정
-      state = state.copyWith(stores: const {});
+      state = state.copyWith(accounts: const {});
     }
   }
 
   /// 거래처 선택
-  void selectStore(int? storeId, String? storeName) {
-    if (storeId == null) {
-      state = state.copyWith(clearStoreFilter: true);
+  void selectAccount(int? accountId, String? accountName) {
+    if (accountId == null) {
+      state = state.copyWith(clearAccountFilter: true);
     } else {
       state = state.copyWith(
-        selectedStoreId: storeId,
-        selectedStoreName: storeName,
+        selectedAccountId: accountId,
+        selectedAccountName: accountName,
       );
     }
   }
@@ -73,13 +73,13 @@ class ClientOrderListNotifier extends StateNotifier<ClientOrderListState> {
   /// 선택된 거래처와 납기일로 첫 페이지부터 검색합니다.
   /// 거래처 선택은 필수입니다.
   Future<void> searchOrders() async {
-    if (state.selectedStoreId == null) return;
+    if (state.selectedAccountId == null) return;
 
     state = state.toLoading();
 
     try {
       final result = await _getClientOrders.call(
-        clientId: state.selectedStoreId!,
+        clientId: state.selectedAccountId!,
         deliveryDate: state.selectedDeliveryDate,
         page: 0,
       );
@@ -104,13 +104,13 @@ class ClientOrderListNotifier extends StateNotifier<ClientOrderListState> {
 
   /// 특정 페이지로 이동
   Future<void> goToPage(int page) async {
-    if (state.selectedStoreId == null) return;
+    if (state.selectedAccountId == null) return;
 
     state = state.toLoading();
 
     try {
       final result = await _getClientOrders.call(
-        clientId: state.selectedStoreId!,
+        clientId: state.selectedAccountId!,
         deliveryDate: state.selectedDeliveryDate,
         page: page,
       );

@@ -11,10 +11,10 @@ class InspectionDetail {
   final InspectionCategory category;
 
   /// 거래처명
-  final String storeName;
+  final String accountName;
 
   /// 거래처 ID
-  final int storeId;
+  final int accountId;
 
   /// 테마명
   final String themeName;
@@ -67,8 +67,8 @@ class InspectionDetail {
   const InspectionDetail({
     required this.id,
     required this.category,
-    required this.storeName,
-    required this.storeId,
+    required this.accountName,
+    required this.accountId,
     required this.themeName,
     required this.themeId,
     required this.inspectionDate,
@@ -96,8 +96,8 @@ class InspectionDetail {
   InspectionDetail copyWith({
     int? id,
     InspectionCategory? category,
-    String? storeName,
-    int? storeId,
+    String? accountName,
+    int? accountId,
     String? themeName,
     int? themeId,
     DateTime? inspectionDate,
@@ -118,8 +118,8 @@ class InspectionDetail {
     return InspectionDetail(
       id: id ?? this.id,
       category: category ?? this.category,
-      storeName: storeName ?? this.storeName,
-      storeId: storeId ?? this.storeId,
+      accountName: accountName ?? this.accountName,
+      accountId: accountId ?? this.accountId,
       themeName: themeName ?? this.themeName,
       themeId: themeId ?? this.themeId,
       inspectionDate: inspectionDate ?? this.inspectionDate,
@@ -146,8 +146,8 @@ class InspectionDetail {
     return {
       'id': id,
       'category': category.toJson(),
-      'storeName': storeName,
-      'storeId': storeId,
+      'accountName': accountName,
+      'accountId': accountId,
       'themeName': themeName,
       'themeId': themeId,
       'inspectionDate': inspectionDate.toIso8601String().substring(0, 10),
@@ -174,8 +174,8 @@ class InspectionDetail {
     return InspectionDetail(
       id: json['id'] as int,
       category: InspectionCategoryExtension.fromJson(json['category'] as String),
-      storeName: json['storeName'] as String,
-      storeId: json['storeId'] as int,
+      accountName: json['accountName'] as String,
+      accountId: json['accountId'] as int,
       themeName: json['themeName'] as String,
       themeId: json['themeId'] as int,
       inspectionDate: DateTime.parse(json['inspectionDate'] as String),
@@ -203,8 +203,8 @@ class InspectionDetail {
     if (other is! InspectionDetail) return false;
     return other.id == id &&
         other.category == category &&
-        other.storeName == storeName &&
-        other.storeId == storeId &&
+        other.accountName == accountName &&
+        other.accountId == accountId &&
         other.themeName == themeName &&
         other.themeId == themeId &&
         other.inspectionDate == inspectionDate &&
@@ -236,8 +236,8 @@ class InspectionDetail {
     return Object.hash(
       id,
       category,
-      storeName,
-      storeId,
+      accountName,
+      accountId,
       themeName,
       themeId,
       inspectionDate,
@@ -260,7 +260,7 @@ class InspectionDetail {
   @override
   String toString() {
     return 'InspectionDetail(id: $id, category: $category, '
-        'storeName: $storeName, storeId: $storeId, '
+        'accountName: $accountName, accountId: $accountId, '
         'themeName: $themeName, themeId: $themeId, '
         'inspectionDate: $inspectionDate, fieldType: $fieldType, '
         'fieldTypeCode: $fieldTypeCode, description: $description, '

@@ -10,7 +10,7 @@ import '../../domain/entities/inspection_list_item.dart';
 class InspectionRegisterRequest {
   final int themeId;
   final String category;
-  final int storeId;
+  final int accountId;
   final String inspectionDate;
   final String fieldTypeCode;
   final String? description;
@@ -26,7 +26,7 @@ class InspectionRegisterRequest {
   const InspectionRegisterRequest({
     required this.themeId,
     required this.category,
-    required this.storeId,
+    required this.accountId,
     required this.inspectionDate,
     required this.fieldTypeCode,
     this.description,
@@ -45,7 +45,7 @@ class InspectionRegisterRequest {
     return InspectionRegisterRequest(
       themeId: entity.themeId,
       category: entity.category.toJson(),
-      storeId: entity.storeId,
+      accountId: entity.accountId,
       inspectionDate: entity.inspectionDate.toIso8601String().substring(0, 10),
       fieldTypeCode: entity.fieldTypeCode,
       description: entity.description,
@@ -67,7 +67,7 @@ class InspectionRegisterRequest {
     return {
       'themeId': themeId,
       'category': category,
-      'storeId': storeId,
+      'accountId': accountId,
       'inspectionDate': inspectionDate,
       'fieldTypeCode': fieldTypeCode,
       if (description != null) 'description': description,
@@ -90,7 +90,7 @@ class InspectionRegisterRequest {
     return other is InspectionRegisterRequest &&
         other.themeId == themeId &&
         other.category == category &&
-        other.storeId == storeId &&
+        other.accountId == accountId &&
         other.inspectionDate == inspectionDate &&
         other.fieldTypeCode == fieldTypeCode &&
         other.description == description &&
@@ -117,7 +117,7 @@ class InspectionRegisterRequest {
     return Object.hash(
       themeId,
       category,
-      storeId,
+      accountId,
       inspectionDate,
       fieldTypeCode,
       description,
@@ -135,7 +135,7 @@ class InspectionRegisterRequest {
   @override
   String toString() {
     return 'InspectionRegisterRequest(themeId: $themeId, category: $category, '
-        'storeId: $storeId, inspectionDate: $inspectionDate, '
+        'accountId: $accountId, inspectionDate: $inspectionDate, '
         'fieldTypeCode: $fieldTypeCode, description: $description, '
         'productCode: $productCode, competitorName: $competitorName, '
         'competitorActivity: $competitorActivity, competitorTasting: $competitorTasting, '

@@ -58,20 +58,20 @@ class _ShelfLifeRegisterPageState
           onPressed: () => AppRouter.goBack(context),
         ),
       ),
-      body: state.isLoading && !state.hasStore
+      body: state.isLoading && !state.hasAccount
           ? const Center(child: CircularProgressIndicator())
           : ShelfLifeRegisterForm(
-              stores: state.stores,
+              accounts: state.accounts,
               selectedAccountCode: state.selectedAccountCode,
               selectedProductCode: state.selectedProductCode,
               selectedProductName: state.selectedProductName,
               expiryDate: state.expiryDate,
               alertDate: state.alertDate,
               description: state.description,
-              onStoreChanged: (accountCode, accountName) {
+              onAccountChanged: (accountCode, accountName) {
                 ref
                     .read(shelfLifeFormProvider.notifier)
-                    .selectStore(accountCode, accountName);
+                    .selectAccount(accountCode, accountName);
               },
               onSelectProduct: () async {
                 final result =

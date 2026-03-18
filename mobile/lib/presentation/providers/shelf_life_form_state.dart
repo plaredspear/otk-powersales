@@ -46,7 +46,7 @@ class ShelfLifeFormState {
   final bool isDeleted;
 
   /// 거래처 목록 (드롭다운용)
-  final Map<String, String> stores;
+  final Map<String, String> accounts;
 
   const ShelfLifeFormState({
     required this.isLoading,
@@ -61,7 +61,7 @@ class ShelfLifeFormState {
     this.editSeq,
     this.isSaved = false,
     this.isDeleted = false,
-    this.stores = const {},
+    this.accounts = const {},
   });
 
   /// 등록 모드 초기 상태
@@ -87,7 +87,7 @@ class ShelfLifeFormState {
   bool get isEditMode => editSeq != null;
 
   /// 거래처가 선택되었는지
-  bool get hasStore => selectedAccountCode != null && selectedAccountCode!.isNotEmpty;
+  bool get hasAccount => selectedAccountCode != null && selectedAccountCode!.isNotEmpty;
 
   /// 제품이 선택되었는지
   bool get hasProduct =>
@@ -96,7 +96,7 @@ class ShelfLifeFormState {
   /// 폼 유효성 (등록 모드: 거래처 + 제품 필수, 수정 모드: 항상 유효)
   bool get isValid {
     if (isRegisterMode) {
-      return hasStore && hasProduct;
+      return hasAccount && hasProduct;
     }
     return true; // 수정 모드는 유통기한/알림이 이미 설정됨
   }
@@ -124,7 +124,7 @@ class ShelfLifeFormState {
     bool clearError = false,
     String? selectedAccountCode,
     String? selectedAccountName,
-    bool clearStore = false,
+    bool clearAccount = false,
     String? selectedProductCode,
     String? selectedProductName,
     bool clearProduct = false,
@@ -134,15 +134,15 @@ class ShelfLifeFormState {
     int? editSeq,
     bool? isSaved,
     bool? isDeleted,
-    Map<String, String>? stores,
+    Map<String, String>? accounts,
   }) {
     return ShelfLifeFormState(
       isLoading: isLoading ?? this.isLoading,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       selectedAccountCode:
-          clearStore ? null : (selectedAccountCode ?? this.selectedAccountCode),
+          clearAccount ? null : (selectedAccountCode ?? this.selectedAccountCode),
       selectedAccountName:
-          clearStore ? null : (selectedAccountName ?? this.selectedAccountName),
+          clearAccount ? null : (selectedAccountName ?? this.selectedAccountName),
       selectedProductCode:
           clearProduct ? null : (selectedProductCode ?? this.selectedProductCode),
       selectedProductName:
@@ -153,7 +153,7 @@ class ShelfLifeFormState {
       editSeq: editSeq ?? this.editSeq,
       isSaved: isSaved ?? this.isSaved,
       isDeleted: isDeleted ?? this.isDeleted,
-      stores: stores ?? this.stores,
+      accounts: accounts ?? this.accounts,
     );
   }
 }
