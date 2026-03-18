@@ -42,6 +42,33 @@ interface ScheduleConfirmResultRaw {
   inserted_count: number;
 }
 
+interface ScheduleListItemRaw {
+  id: number;
+  employee_code: string;
+  employee_name: string;
+  account_code: string | null;
+  account_name: string | null;
+  type_of_work3: string | null;
+  type_of_work5: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  confirmed: boolean | null;
+  cost_center_code: string | null;
+  last_month_revenue: number | null;
+}
+
+interface PageRaw<T> {
+  content: T[];
+  total_elements: number;
+  total_pages: number;
+  number: number;
+  size: number;
+}
+
+interface ScheduleBatchConfirmResultRaw {
+  updated_count: number;
+}
+
 // --- Frontend interfaces (camelCase) ---
 
 export interface ScheduleUploadResult {
@@ -77,7 +104,72 @@ export interface ScheduleConfirmResult {
   insertedCount: number;
 }
 
+export interface ScheduleListItem {
+  id: number;
+  employeeCode: string;
+  employeeName: string;
+  accountCode: string | null;
+  accountName: string | null;
+  typeOfWork3: string | null;
+  typeOfWork5: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  confirmed: boolean | null;
+  costCenterCode: string | null;
+  lastMonthRevenue: number | null;
+}
+
+export interface ScheduleListResponse {
+  content: ScheduleListItem[];
+  totalElements: number;
+  totalPages: number;
+  page: number;
+  size: number;
+}
+
+export interface ScheduleListParams {
+  page?: number;
+  size?: number;
+  employeeCode?: string;
+  accountName?: string;
+  confirmed?: boolean;
+  typeOfWork3?: string;
+  startDateFrom?: string;
+  startDateTo?: string;
+}
+
+export interface ScheduleBatchConfirmResult {
+  updatedCount: number;
+}
+
 // --- Mappers ---
+
+function mapScheduleListItem(raw: ScheduleListItemRaw): ScheduleListItem {
+  return {
+    id: raw.id,
+    employeeCode: raw.employee_code,
+    employeeName: raw.employee_name,
+    accountCode: raw.account_code,
+    accountName: raw.account_name,
+    typeOfWork3: raw.type_of_work3,
+    typeOfWork5: raw.type_of_work5,
+    startDate: raw.start_date,
+    endDate: raw.end_date,
+    confirmed: raw.confirmed,
+    costCenterCode: raw.cost_center_code,
+    lastMonthRevenue: raw.last_month_revenue,
+  };
+}
+
+function mapScheduleListResponse(raw: PageRaw<ScheduleListItemRaw>): ScheduleListResponse {
+  return {
+    content: raw.content.map(mapScheduleListItem),
+    totalElements: raw.total_elements,
+    totalPages: raw.total_pages,
+    page: raw.number,
+    size: raw.size,
+  };
+}
 
 function mapUploadResult(raw: ScheduleUploadResultRaw): ScheduleUploadResult {
   return {
@@ -165,4 +257,53 @@ export async function confirmScheduleUpload(uploadId: string): Promise<ScheduleC
   }
 
   return { insertedCount: res.data.data.inserted_count };
+}
+
+export async function fetchScheduleList(params: ScheduleListParams): Promise<ScheduleListResponse> {
+  const queryParams: Record<string, string> = {};
+  if (params.page != null) queryParams.page = String(params.page);
+  if (params.size != null) queryParams.size = String(params.size);
+  if (params.employeeCode) queryParams.employeeCode = params.employeeCode;
+  if (params.accountName) queryParams.accountName = params.accountName;
+  if (params.confirmed != null) queryParams.confirmed = String(params.confirmed);
+  if (params.typeOfWork3) queryParams.typeOfWork3 = params.typeOfWork3;
+  if (params.startDateFrom) queryParams.startDateFrom = params.startDateFrom;
+  if (params.startDateTo) queryParams.startDateTo = params.startDateTo;
+
+  const res = await client.get<ApiResponse<PageRaw<ScheduleListItemRaw>>>(
+    '/api/v1/admin/schedule/list',
+    { params: queryParams },
+  );
+
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.error?.message || res.data.message || '목록 조회에 실패했습니다');
+  }
+
+  return mapScheduleListResponse(res.data.data);
+}
+
+export async function batchConfirmSchedules(ids: number[]): Promise<ScheduleBatchConfirmResult> {
+  const res = await client.patch<ApiResponse<ScheduleBatchConfirmResultRaw>>(
+    '/api/v1/admin/schedule/confirm',
+    { ids },
+  );
+
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.error?.message || res.data.message || '일괄 확정에 실패했습니다');
+  }
+
+  return { updatedCount: res.data.data.updated_count };
+}
+
+export async function batchUnconfirmSchedules(ids: number[]): Promise<ScheduleBatchConfirmResult> {
+  const res = await client.patch<ApiResponse<ScheduleBatchConfirmResultRaw>>(
+    '/api/v1/admin/schedule/unconfirm',
+    { ids },
+  );
+
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.error?.message || res.data.message || '확정 해제에 실패했습니다');
+  }
+
+  return { updatedCount: res.data.data.updated_count };
 }
