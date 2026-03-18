@@ -49,7 +49,14 @@ export const menuRoute: MenuRoute = {
     { path: '/event-team', name: '전문행사조', icon: <CalendarOutlined /> },
     { path: '/claim', name: '클레임 현황', icon: <ExclamationCircleOutlined /> },
     { path: '/suggestion', name: '제안사항', icon: <BulbOutlined /> },
-    { path: '/leave', name: '휴무관리', icon: <RestOutlined /> },
+    {
+      name: '휴무관리',
+      icon: <RestOutlined />,
+      children: [
+        { path: '/leave', name: '휴무관리' },
+        { path: '/alternative-holidays', name: '대체휴무' },
+      ],
+    },
     {
       name: '매출조회',
       icon: <BarChartOutlined />,
