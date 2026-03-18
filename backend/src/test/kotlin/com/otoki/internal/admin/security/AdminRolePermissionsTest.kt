@@ -25,7 +25,8 @@ class AdminRolePermissionsTest {
                 AdminPermission.EMPLOYEE_READ,
                 AdminPermission.ACCOUNT_READ,
                 AdminPermission.PROMOTION_READ,
-                AdminPermission.PROMOTION_WRITE
+                AdminPermission.PROMOTION_WRITE,
+                AdminPermission.SAFETY_CHECK_READ
             )
         }
 
