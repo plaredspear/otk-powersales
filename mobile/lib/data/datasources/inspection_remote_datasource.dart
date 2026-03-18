@@ -14,12 +14,12 @@ abstract class InspectionRemoteDataSource {
   ///
   /// 현장 점검 목록을 조회합니다.
   ///
-  /// [storeId] 거래처 ID (null이면 전체)
+  /// [accountId] 거래처 ID (null이면 전체)
   /// [category] 분류 (OWN/COMPETITOR, null이면 전체)
   /// [fromDate] 점검일 시작 (YYYY-MM-DD)
   /// [toDate] 점검일 종료 (YYYY-MM-DD)
   Future<List<InspectionListItemModel>> getInspectionList({
-    int? storeId,
+    int? accountId,
     String? category,
     required String fromDate,
     required String toDate,

@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/domain/entities/attendance_result.dart';
 import 'package:mobile/domain/entities/attendance_status.dart';
-import 'package:mobile/domain/entities/store_schedule_item.dart';
+import 'package:mobile/domain/entities/account_schedule_item.dart';
 import 'package:mobile/domain/repositories/attendance_repository.dart';
 import 'package:mobile/domain/usecases/get_attendance_status.dart';
-import 'package:mobile/domain/usecases/get_store_list.dart';
+import 'package:mobile/domain/usecases/get_account_list.dart';
 import 'package:mobile/domain/usecases/register_attendance.dart';
 import 'package:mobile/presentation/providers/attendance_provider.dart';
 
@@ -16,7 +16,7 @@ void main() {
     setUp(() {
       repository = FakeAttendanceRepository();
       notifier = AttendanceNotifier(
-        getStoreList: GetStoreList(repository),
+        getAccountList: GetAccountList(repository),
         registerAttendance: RegisterAttendance(repository),
         getAttendanceStatus: GetAttendanceStatus(repository),
       );
@@ -26,70 +26,70 @@ void main() {
       expect(notifier.state.isLoading, false);
       expect(notifier.state.isRegistering, false);
       expect(notifier.state.errorMessage, null);
-      expect(notifier.state.allStores, isEmpty);
-      expect(notifier.state.filteredStores, isEmpty);
+      expect(notifier.state.allAccounts, isEmpty);
+      expect(notifier.state.filteredAccounts, isEmpty);
       expect(notifier.state.totalCount, 0);
       expect(notifier.state.registeredCount, 0);
     });
 
-    test('loadStores 거래처 목록 로딩', () async {
-      await notifier.loadStores();
+    test('loadAccounts 거래처 목록 로딩', () async {
+      await notifier.loadAccounts();
 
       expect(notifier.state.isLoading, false);
-      expect(notifier.state.allStores.length, 5);
-      expect(notifier.state.filteredStores.length, 5);
+      expect(notifier.state.allAccounts.length, 5);
+      expect(notifier.state.filteredAccounts.length, 5);
       expect(notifier.state.totalCount, 5);
       expect(notifier.state.registeredCount, 0);
       expect(notifier.state.errorMessage, null);
 
       // 첫 번째 거래처 확인
-      final firstStore = notifier.state.allStores.first;
-      expect(firstStore.scheduleId, 12345);
-      expect(firstStore.storeName, '이마트 해운대점');
-      expect(firstStore.isRegistered, false);
+      final firstAccount = notifier.state.allAccounts.first;
+      expect(firstAccount.scheduleId, 12345);
+      expect(firstAccount.accountName, '이마트 해운대점');
+      expect(firstAccount.isRegistered, false);
     });
 
-    test('searchStores 거래처명으로 검색', () async {
-      await notifier.loadStores();
+    test('searchAccounts 거래처명으로 검색', () async {
+      await notifier.loadAccounts();
 
-      notifier.searchStores('이마트');
+      notifier.searchAccounts('이마트');
 
       expect(notifier.state.searchKeyword, '이마트');
-      expect(notifier.state.filteredStores.length, 2);
+      expect(notifier.state.filteredAccounts.length, 2);
       expect(
-        notifier.state.filteredStores
-            .every((s) => s.storeName.contains('이마트')),
+        notifier.state.filteredAccounts
+            .every((s) => s.accountName.contains('이마트')),
         true,
       );
     });
 
-    test('searchStores 주소로 검색', () async {
-      await notifier.loadStores();
+    test('searchAccounts 주소로 검색', () async {
+      await notifier.loadAccounts();
 
-      notifier.searchStores('해운대');
+      notifier.searchAccounts('해운대');
 
       expect(notifier.state.searchKeyword, '해운대');
-      expect(notifier.state.filteredStores.length, 2);
+      expect(notifier.state.filteredAccounts.length, 2);
       expect(
-        notifier.state.filteredStores
+        notifier.state.filteredAccounts
             .every((s) => s.address.contains('해운대')),
         true,
       );
     });
 
-    test('searchStores 빈 문자열로 검색 시 전체 목록 표시', () async {
-      await notifier.loadStores();
+    test('searchAccounts 빈 문자열로 검색 시 전체 목록 표시', () async {
+      await notifier.loadAccounts();
 
       // 먼저 검색
-      notifier.searchStores('이마트');
-      expect(notifier.state.filteredStores.length, 2);
+      notifier.searchAccounts('이마트');
+      expect(notifier.state.filteredAccounts.length, 2);
 
       // 검색어 초기화
-      notifier.searchStores('');
+      notifier.searchAccounts('');
 
       expect(notifier.state.searchKeyword, '');
-      expect(notifier.state.filteredStores.length, 5);
-      expect(notifier.state.filteredStores, notifier.state.allStores);
+      expect(notifier.state.filteredAccounts.length, 5);
+      expect(notifier.state.filteredAccounts, notifier.state.allAccounts);
     });
 
     test('selectWorkType 근무유형 선택', () {
@@ -98,15 +98,15 @@ void main() {
       expect(notifier.state.selectedWorkType, 'REFRIGERATED');
     });
 
-    test('selectStore 거래처 선택', () {
-      notifier.selectStore(12345);
+    test('selectAccount 거래처 선택', () {
+      notifier.selectAccount(12345);
 
       expect(notifier.state.selectedScheduleId, 12345);
     });
 
     test('register 출근등록 성공', () async {
-      await notifier.loadStores();
-      notifier.selectStore(12345);
+      await notifier.loadAccounts();
+      notifier.selectAccount(12345);
       notifier.selectWorkType('ROOM_TEMP');
 
       await notifier.register(latitude: 35.1696, longitude: 129.1318);
@@ -115,7 +115,7 @@ void main() {
       expect(notifier.state.registrationResult, isNotNull);
       expect(notifier.state.registrationResult?.scheduleId,
           12345);
-      expect(notifier.state.registrationResult?.storeName, '이마트 해운대점');
+      expect(notifier.state.registrationResult?.accountName, '이마트 해운대점');
       expect(notifier.state.registrationResult?.workType, 'ROOM_TEMP');
       expect(notifier.state.registrationResult?.distanceKm, 0.12);
       expect(notifier.state.registrationResult?.totalCount, 5);
@@ -125,7 +125,7 @@ void main() {
     });
 
     test('register selectedScheduleId 없이 호출 시 아무 작업 안함', () async {
-      await notifier.loadStores();
+      await notifier.loadAccounts();
 
       // 거래처를 선택하지 않음
       await notifier.register(latitude: 35.0, longitude: 129.0);
@@ -135,8 +135,8 @@ void main() {
     });
 
     test('register GPS 좌표 없이 호출 시 에러', () async {
-      await notifier.loadStores();
-      notifier.selectStore(12345);
+      await notifier.loadAccounts();
+      notifier.selectAccount(12345);
 
       await notifier.register();
 
@@ -144,16 +144,16 @@ void main() {
     });
 
     test('register 이미 등록된 거래처 등록 시 에러', () async {
-      await notifier.loadStores();
+      await notifier.loadAccounts();
 
       // 첫 번째 등록
-      notifier.selectStore(12345);
+      notifier.selectAccount(12345);
       await notifier.register(latitude: 35.0, longitude: 129.0);
       expect(notifier.state.registrationResult, isNotNull);
 
       // 동일한 거래처 재등록 시도
       repository.exceptionToThrow = Exception('이미 출근 등록된 스케줄입니다');
-      notifier.selectStore(12345);
+      notifier.selectAccount(12345);
       await notifier.register(latitude: 35.0, longitude: 129.0);
 
       expect(notifier.state.isRegistering, false);
@@ -161,9 +161,9 @@ void main() {
     });
 
     test('prepareNextRegistration 선택 초기화 및 목록 새로고침', () async {
-      await notifier.loadStores();
-      notifier.selectStore(12345);
-      notifier.searchStores('이마트');
+      await notifier.loadAccounts();
+      notifier.selectAccount(12345);
+      notifier.searchAccounts('이마트');
 
       expect(notifier.state.selectedScheduleId, 12345);
       expect(notifier.state.searchKeyword, '이마트');
@@ -171,18 +171,18 @@ void main() {
       await notifier.prepareNextRegistration();
 
       expect(notifier.state.searchKeyword, '');
-      expect(notifier.state.filteredStores.length, 5);
+      expect(notifier.state.filteredAccounts.length, 5);
     });
 
     test('clearRegistrationResult 등록 결과 초기화하지만 거래처 정보 유지',
         () async {
-      await notifier.loadStores();
-      notifier.selectStore(12345);
+      await notifier.loadAccounts();
+      notifier.selectAccount(12345);
       await notifier.register(latitude: 35.0, longitude: 129.0);
 
       // 등록 완료 상태
       expect(notifier.state.registrationResult, isNotNull);
-      expect(notifier.state.allStores.length, 5);
+      expect(notifier.state.allAccounts.length, 5);
 
       notifier.clearRegistrationResult();
 
@@ -190,8 +190,8 @@ void main() {
       expect(notifier.state.registrationResult, null);
       expect(notifier.state.selectedScheduleId, null);
       expect(notifier.state.searchKeyword, '');
-      expect(notifier.state.allStores.length, 5);
-      expect(notifier.state.filteredStores.length, 5);
+      expect(notifier.state.allAccounts.length, 5);
+      expect(notifier.state.filteredAccounts.length, 5);
       expect(notifier.state.totalCount, 5);
       expect(notifier.state.registeredCount, 1);
     });
@@ -219,7 +219,7 @@ void main() {
     test('clearError 에러 메시지 초기화', () async {
       // 에러 발생 시키기
       repository.exceptionToThrow = Exception('테스트 에러');
-      notifier.selectStore(99999);
+      notifier.selectAccount(99999);
       await notifier.register(latitude: 35.0, longitude: 129.0);
 
       expect(notifier.state.errorMessage, isNotNull);
@@ -231,15 +231,15 @@ void main() {
 
     test('전체 워크플로우: 로딩 → 검색 → 선택 → 등록 → 현황 조회', () async {
       // 1. 거래처 목록 로딩
-      await notifier.loadStores();
-      expect(notifier.state.allStores.length, 5);
+      await notifier.loadAccounts();
+      expect(notifier.state.allAccounts.length, 5);
 
       // 2. 거래처 검색
-      notifier.searchStores('이마트');
-      expect(notifier.state.filteredStores.length, 2);
+      notifier.searchAccounts('이마트');
+      expect(notifier.state.filteredAccounts.length, 2);
 
       // 3. 거래처 선택
-      notifier.selectStore(12345);
+      notifier.selectAccount(12345);
       expect(notifier.state.selectedScheduleId, 12345);
 
       // 4. 근무유형 선택
@@ -273,13 +273,13 @@ class FakeAttendanceRepository implements AttendanceRepository {
   final Set<int> _registeredIds = {};
 
   @override
-  Future<StoreListResult> getStoreList({String? keyword}) async {
+  Future<AccountListResult> getAccountList({String? keyword}) async {
     if (exceptionToThrow != null) throw exceptionToThrow!;
-    return StoreListResult(
-      stores: _mockStores,
-      totalCount: _mockStores.length,
+    return AccountListResult(
+      accounts: _mockAccounts,
+      totalCount: _mockAccounts.length,
       registeredCount:
-          _mockStores.where((s) => s.isRegistered).length,
+          _mockAccounts.where((s) => s.isRegistered).length,
       currentDate: '2026-03-01',
     );
   }
@@ -297,15 +297,15 @@ class FakeAttendanceRepository implements AttendanceRepository {
       throw e;
     }
     _registeredIds.add(scheduleId);
-    final store = _mockStores.firstWhere(
+    final account = _mockAccounts.firstWhere(
       (s) => s.scheduleId == scheduleId,
     );
     return AttendanceResult(
       scheduleId: scheduleId,
-      storeName: store.storeName,
+      accountName: account.accountName,
       workType: workType ?? 'ROOM_TEMP',
       distanceKm: 0.12,
-      totalCount: _mockStores.length,
+      totalCount: _mockAccounts.length,
       registeredCount: _registeredIds.length,
     );
   }
@@ -322,38 +322,38 @@ class FakeAttendanceRepository implements AttendanceRepository {
   }
 }
 
-final _mockStores = [
-  const StoreScheduleItem(
+final _mockAccounts = [
+  const AccountScheduleItem(
     scheduleId: 12345,
-    storeName: '이마트 해운대점',
+    accountName: '이마트 해운대점',
     workCategory: '진열',
     address: '부산시 해운대구 센텀2로 25',
     isRegistered: false,
   ),
-  const StoreScheduleItem(
+  const AccountScheduleItem(
     scheduleId: 12346,
-    storeName: '홈플러스 서면점',
+    accountName: '홈플러스 서면점',
     workCategory: '순회',
     address: '부산시 부산진구 서면로 68번길 9',
     isRegistered: false,
   ),
-  const StoreScheduleItem(
+  const AccountScheduleItem(
     scheduleId: 12347,
-    storeName: '롯데마트 광복점',
+    accountName: '롯데마트 광복점',
     workCategory: '진열',
     address: '부산시 중구 중앙대로 2',
     isRegistered: false,
   ),
-  const StoreScheduleItem(
+  const AccountScheduleItem(
     scheduleId: 12348,
-    storeName: '이마트 사상점',
+    accountName: '이마트 사상점',
     workCategory: '순회',
     address: '부산시 사상구 학감대로 272',
     isRegistered: false,
   ),
-  const StoreScheduleItem(
+  const AccountScheduleItem(
     scheduleId: 12349,
-    storeName: '홈플러스 센텀시티점',
+    accountName: '홈플러스 센텀시티점',
     workCategory: '진열',
     address: '부산시 해운대구 센텀남대로 59',
     isRegistered: false,
@@ -363,32 +363,32 @@ final _mockStores = [
 final _mockStatusList = [
   const AttendanceStatus(
     scheduleId: 12345,
-    storeName: '이마트 해운대점',
+    accountName: '이마트 해운대점',
     workCategory: '진열',
     status: 'REGISTERED',
     workType: 'ROOM_TEMP',
   ),
   const AttendanceStatus(
     scheduleId: 12346,
-    storeName: '홈플러스 서면점',
+    accountName: '홈플러스 서면점',
     workCategory: '순회',
     status: 'PENDING',
   ),
   const AttendanceStatus(
     scheduleId: 12347,
-    storeName: '롯데마트 광복점',
+    accountName: '롯데마트 광복점',
     workCategory: '진열',
     status: 'PENDING',
   ),
   const AttendanceStatus(
     scheduleId: 12348,
-    storeName: '이마트 사상점',
+    accountName: '이마트 사상점',
     workCategory: '순회',
     status: 'PENDING',
   ),
   const AttendanceStatus(
     scheduleId: 12349,
-    storeName: '홈플러스 센텀시티점',
+    accountName: '홈플러스 센텀시티점',
     workCategory: '진열',
     status: 'PENDING',
   ),

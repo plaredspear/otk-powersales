@@ -25,7 +25,7 @@ class PosSalesNotifier extends StateNotifier<PosSalesState> {
   Future<void> fetchSales({
     DateTime? startDate,
     DateTime? endDate,
-    String? storeName,
+    String? accountName,
     String? productName,
   }) async {
     // 로딩 상태로 전환
@@ -39,7 +39,7 @@ class PosSalesNotifier extends StateNotifier<PosSalesState> {
       final filter = PosSalesFilter(
         startDate: startDate ?? state.filter.startDate,
         endDate: endDate ?? state.filter.endDate,
-        storeName: storeName,
+        accountName: accountName,
         productName: productName,
       );
 
@@ -47,7 +47,7 @@ class PosSalesNotifier extends StateNotifier<PosSalesState> {
       final sales = await _getPosSales.call(
         startDate: filter.startDate,
         endDate: filter.endDate,
-        storeName: filter.storeName,
+        accountName: filter.accountName,
         productName: filter.productName,
       );
 
@@ -73,18 +73,18 @@ class PosSalesNotifier extends StateNotifier<PosSalesState> {
   }
 
   /// 매장별 POS 매출 조회
-  Future<void> fetchSalesByStore({
+  Future<void> fetchSalesByAccount({
     required DateTime startDate,
     required DateTime endDate,
-    required String storeName,
+    required String accountName,
   }) async {
     state = state.copyWith(isLoading: true, errorMessage: null);
 
     try {
-      final sales = await _getPosSales.getByStore(
+      final sales = await _getPosSales.getByAccount(
         startDate: startDate,
         endDate: endDate,
-        storeName: storeName,
+        accountName: accountName,
       );
 
       final totalAmount = _getPosSales.calculateTotalAmount(sales);
@@ -95,7 +95,7 @@ class PosSalesNotifier extends StateNotifier<PosSalesState> {
         filter: PosSalesFilter(
           startDate: startDate,
           endDate: endDate,
-          storeName: storeName,
+          accountName: accountName,
         ),
         isLoading: false,
         totalAmount: totalAmount,
@@ -151,7 +151,7 @@ class PosSalesNotifier extends StateNotifier<PosSalesState> {
     await fetchSales(
       startDate: filter.startDate,
       endDate: filter.endDate,
-      storeName: filter.storeName,
+      accountName: filter.accountName,
       productName: filter.productName,
     );
   }

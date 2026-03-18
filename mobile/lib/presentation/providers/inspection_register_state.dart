@@ -23,7 +23,7 @@ class InspectionRegisterState {
   final List<InspectionFieldType> fieldTypes;
 
   /// 거래처 목록 (ID -> 이름)
-  final Map<int, String> stores;
+  final Map<int, String> accounts;
 
   /// 선택된 제품명 (자사 점검 시)
   final String? selectedProductName;
@@ -37,7 +37,7 @@ class InspectionRegisterState {
     this.form,
     this.themes = const [],
     this.fieldTypes = const [],
-    this.stores = const {},
+    this.accounts = const {},
     this.selectedProductName,
     this.hasDraft = false,
   });
@@ -48,7 +48,7 @@ class InspectionRegisterState {
       form: InspectionRegisterForm(
         themeId: 0,
         category: InspectionCategory.OWN,
-        storeId: 0,
+        accountId: 0,
         inspectionDate: DateTime.now(),
         fieldTypeCode: '',
         photos: const [],
@@ -70,14 +70,14 @@ class InspectionRegisterState {
   InspectionRegisterState toLoaded({
     required List<InspectionTheme> themes,
     required List<InspectionFieldType> fieldTypes,
-    required Map<int, String> stores,
+    required Map<int, String> accounts,
   }) {
     return copyWith(
       isLoading: false,
       errorMessage: null,
       themes: themes,
       fieldTypes: fieldTypes,
-      stores: stores,
+      accounts: accounts,
     );
   }
 
@@ -107,9 +107,9 @@ class InspectionRegisterState {
   }
 
   /// 선택된 거래처명
-  String? get selectedStoreName {
-    if (form == null || form!.storeId <= 0) return null;
-    return stores[form!.storeId];
+  String? get selectedAccountName {
+    if (form == null || form!.accountId <= 0) return null;
+    return accounts[form!.accountId];
   }
 
   /// 선택된 현장 유형
@@ -146,7 +146,7 @@ class InspectionRegisterState {
     InspectionRegisterForm? form,
     List<InspectionTheme>? themes,
     List<InspectionFieldType>? fieldTypes,
-    Map<int, String>? stores,
+    Map<int, String>? accounts,
     String? selectedProductName,
     bool clearProductName = false,
     bool? hasDraft,
@@ -157,7 +157,7 @@ class InspectionRegisterState {
       form: form ?? this.form,
       themes: themes ?? this.themes,
       fieldTypes: fieldTypes ?? this.fieldTypes,
-      stores: stores ?? this.stores,
+      accounts: accounts ?? this.accounts,
       selectedProductName: clearProductName
           ? null
           : (selectedProductName ?? this.selectedProductName),
@@ -174,7 +174,7 @@ class InspectionRegisterState {
         other.form == form &&
         _listEquals(other.themes, themes) &&
         _listEquals(other.fieldTypes, fieldTypes) &&
-        _mapEquals(other.stores, stores) &&
+        _mapEquals(other.accounts, accounts) &&
         other.selectedProductName == selectedProductName &&
         other.hasDraft == hasDraft;
   }
@@ -203,7 +203,7 @@ class InspectionRegisterState {
       form,
       Object.hashAll(themes),
       Object.hashAll(fieldTypes),
-      Object.hashAll(stores.entries),
+      Object.hashAll(accounts.entries),
       selectedProductName,
       hasDraft,
     );
@@ -214,7 +214,7 @@ class InspectionRegisterState {
     return 'InspectionRegisterState(isLoading: $isLoading, '
         'errorMessage: $errorMessage, form: $form, '
         'themes: ${themes.length}, fieldTypes: ${fieldTypes.length}, '
-        'stores: ${stores.length}, selectedProductName: $selectedProductName, '
+        'accounts: ${accounts.length}, selectedProductName: $selectedProductName, '
         'hasDraft: $hasDraft)';
   }
 }

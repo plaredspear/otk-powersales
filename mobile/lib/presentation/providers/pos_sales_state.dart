@@ -4,13 +4,13 @@ import '../../domain/entities/pos_sales.dart';
 class PosSalesFilter {
   final DateTime startDate;
   final DateTime endDate;
-  final String? storeName;
+  final String? accountName;
   final String? productName;
 
   const PosSalesFilter({
     required this.startDate,
     required this.endDate,
-    this.storeName,
+    this.accountName,
     this.productName,
   });
 
@@ -26,13 +26,13 @@ class PosSalesFilter {
   PosSalesFilter copyWith({
     DateTime? startDate,
     DateTime? endDate,
-    String? storeName,
+    String? accountName,
     String? productName,
   }) {
     return PosSalesFilter(
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
-      storeName: storeName ?? this.storeName,
+      accountName: accountName ?? this.accountName,
       productName: productName ?? this.productName,
     );
   }

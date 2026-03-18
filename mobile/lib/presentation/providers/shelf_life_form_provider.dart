@@ -58,17 +58,17 @@ class ShelfLifeFormNotifier extends StateNotifier<ShelfLifeFormState> {
   /// 등록 모드 초기화 (거래처 목록 로드)
   Future<void> initializeForRegister() async {
     try {
-      final response = await _dio.get('/api/v1/stores/my');
+      final response = await _dio.get('/api/v1/accounts/my');
       final data = response.data['data'] as Map<String, dynamic>;
-      final storesList = data['stores'] as List<dynamic>;
-      final storesMap = <String, String>{};
-      for (final store in storesList) {
-        final storeMap = store as Map<String, dynamic>;
-        final code = storeMap['store_code'] as String;
-        final name = storeMap['store_name'] as String;
-        storesMap[code] = name;
+      final accountsList = data['accounts'] as List<dynamic>;
+      final accountsMap = <String, String>{};
+      for (final account in accountsList) {
+        final accountMap = account as Map<String, dynamic>;
+        final code = accountMap['account_code'] as String;
+        final name = accountMap['account_name'] as String;
+        accountsMap[code] = name;
       }
-      state = ShelfLifeFormState.initial().copyWith(stores: storesMap);
+      state = ShelfLifeFormState.initial().copyWith(accounts: accountsMap);
     } catch (e) {
       // 거래처 로딩 실패 시 빈 목록으로 초기화
       state = ShelfLifeFormState.initial();
@@ -91,7 +91,7 @@ class ShelfLifeFormNotifier extends StateNotifier<ShelfLifeFormState> {
   }
 
   /// 거래처 선택
-  void selectStore(String accountCode, String accountName) {
+  void selectAccount(String accountCode, String accountName) {
     state = state.copyWith(
       selectedAccountCode: accountCode,
       selectedAccountName: accountName,

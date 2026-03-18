@@ -42,24 +42,24 @@ class InspectionListNotifier extends StateNotifier<InspectionListState> {
     // 거래처 목록 로드
     final mockAccountRepo = MyAccountMockRepository();
     final accountResult = await mockAccountRepo.getMyAccounts();
-    final storesMap = <int, String>{};
-    for (final store in accountResult.accounts) {
-      storesMap[store.accountId] = store.accountName;
+    final accountsMap = <int, String>{};
+    for (final account in accountResult.accounts) {
+      accountsMap[account.accountId] = account.accountName;
     }
-    state = state.copyWith(stores: storesMap);
+    state = state.copyWith(accounts: accountsMap);
 
     // 기본 필터로 자동 검색
     await searchInspections();
   }
 
   /// 거래처 선택
-  void selectStore(int? storeId, String? storeName) {
-    if (storeId == null) {
-      state = state.copyWith(clearStoreFilter: true);
+  void selectAccount(int? accountId, String? accountName) {
+    if (accountId == null) {
+      state = state.copyWith(clearAccountFilter: true);
     } else {
       state = state.copyWith(
-        selectedStoreId: storeId,
-        selectedStoreName: storeName,
+        selectedAccountId: accountId,
+        selectedAccountName: accountName,
       );
     }
   }
@@ -86,7 +86,7 @@ class InspectionListNotifier extends StateNotifier<InspectionListState> {
   /// 현장점검 목록 검색
   Future<void> searchInspections() async {
     final filter = InspectionFilter(
-      storeId: state.selectedStoreId,
+      accountId: state.selectedAccountId,
       category: state.selectedCategory,
       fromDate: state.fromDate,
       toDate: state.toDate,

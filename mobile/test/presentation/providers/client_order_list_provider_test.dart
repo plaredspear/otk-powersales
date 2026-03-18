@@ -19,20 +19,20 @@ Dio _createMockDio() {
   final dio = Dio(BaseOptions(baseUrl: 'http://localhost'));
   dio.interceptors.add(InterceptorsWrapper(
     onRequest: (options, handler) {
-      if (options.path == '/api/v1/stores/my') {
+      if (options.path == '/api/v1/accounts/my') {
         handler.resolve(Response(
           data: {
             'success': true,
             'data': {
-              'stores': [
-                {'store_id': 1, 'store_name': '천사푸드', 'store_code': 'S001', 'address': '', 'representative_name': ''},
-                {'store_id': 2, 'store_name': '(유)경산식품', 'store_code': 'S002', 'address': '', 'representative_name': ''},
-                {'store_id': 3, 'store_name': '대한식품유통', 'store_code': 'S003', 'address': '', 'representative_name': ''},
-                {'store_id': 4, 'store_name': '행복마트', 'store_code': 'S004', 'address': '', 'representative_name': ''},
-                {'store_id': 5, 'store_name': '명품식자재', 'store_code': 'S005', 'address': '', 'representative_name': ''},
-                {'store_id': 6, 'store_name': '서울종합식품', 'store_code': 'S006', 'address': '', 'representative_name': ''},
-                {'store_id': 7, 'store_name': '그린유통', 'store_code': 'S007', 'address': '', 'representative_name': ''},
-                {'store_id': 8, 'store_name': '삼성식품', 'store_code': 'S008', 'address': '', 'representative_name': ''},
+              'accounts': [
+                {'account_id': 1, 'account_name': '천사푸드', 'account_code': 'S001', 'address': '', 'representative_name': ''},
+                {'account_id': 2, 'account_name': '(유)경산식품', 'account_code': 'S002', 'address': '', 'representative_name': ''},
+                {'account_id': 3, 'account_name': '대한식품유통', 'account_code': 'S003', 'address': '', 'representative_name': ''},
+                {'account_id': 4, 'account_name': '행복마트', 'account_code': 'S004', 'address': '', 'representative_name': ''},
+                {'account_id': 5, 'account_name': '명품식자재', 'account_code': 'S005', 'address': '', 'representative_name': ''},
+                {'account_id': 6, 'account_name': '서울종합식품', 'account_code': 'S006', 'address': '', 'representative_name': ''},
+                {'account_id': 7, 'account_name': '그린유통', 'account_code': 'S007', 'address': '', 'representative_name': ''},
+                {'account_id': 8, 'account_name': '삼성식품', 'account_code': 'S008', 'address': '', 'representative_name': ''},
               ]
             }
           },
@@ -78,49 +78,49 @@ void main() {
       expect(state.isFirst, true);
       expect(state.isLast, true);
       expect(state.hasSearched, false);
-      expect(state.selectedStoreId, isNull);
-      expect(state.selectedStoreName, isNull);
+      expect(state.selectedAccountId, isNull);
+      expect(state.selectedAccountName, isNull);
       expect(state.selectedDeliveryDate, isNotNull);
-      expect(state.stores, isEmpty);
+      expect(state.accounts, isEmpty);
       expect(state.canSearch, false);
     });
 
-    test('initialize() loads store data', () async {
+    test('initialize() loads account data', () async {
       final notifier = container.read(clientOrderListProvider.notifier);
 
       await notifier.initialize();
 
       final state = container.read(clientOrderListProvider);
-      expect(state.stores, isNotEmpty);
-      expect(state.stores.length, 8); // mockClients has 8 stores
-      expect(state.stores[1], '천사푸드');
-      expect(state.stores[2], '(유)경산식품');
+      expect(state.accounts, isNotEmpty);
+      expect(state.accounts.length, 8); // mockClients has 8 accounts
+      expect(state.accounts[1], '천사푸드');
+      expect(state.accounts[2], '(유)경산식품');
     });
 
-    test('selectStore() sets store filter', () {
+    test('selectAccount() sets account filter', () {
       final notifier = container.read(clientOrderListProvider.notifier);
 
-      notifier.selectStore(2, '(유)경산식품');
+      notifier.selectAccount(2, '(유)경산식품');
 
       final state = container.read(clientOrderListProvider);
-      expect(state.selectedStoreId, 2);
-      expect(state.selectedStoreName, '(유)경산식품');
+      expect(state.selectedAccountId, 2);
+      expect(state.selectedAccountName, '(유)경산식품');
       expect(state.canSearch, true);
     });
 
-    test('selectStore(null) clears store filter', () {
+    test('selectAccount(null) clears account filter', () {
       final notifier = container.read(clientOrderListProvider.notifier);
 
       // Set filter first
-      notifier.selectStore(2, '(유)경산식품');
-      expect(container.read(clientOrderListProvider).selectedStoreId, 2);
+      notifier.selectAccount(2, '(유)경산식품');
+      expect(container.read(clientOrderListProvider).selectedAccountId, 2);
 
       // Clear filter
-      notifier.selectStore(null, null);
+      notifier.selectAccount(null, null);
 
       final state = container.read(clientOrderListProvider);
-      expect(state.selectedStoreId, isNull);
-      expect(state.selectedStoreName, isNull);
+      expect(state.selectedAccountId, isNull);
+      expect(state.selectedAccountName, isNull);
       expect(state.canSearch, false);
     });
 
@@ -133,7 +133,7 @@ void main() {
       expect(state.selectedDeliveryDate, '2026-02-15');
     });
 
-    test('searchOrders() skips if no store selected', () async {
+    test('searchOrders() skips if no account selected', () async {
       final notifier = container.read(clientOrderListProvider.notifier);
 
       // Should skip without throwing error
@@ -144,14 +144,14 @@ void main() {
       expect(state.orders, isEmpty);
     });
 
-    test('searchOrders() loads orders for selected store', () async {
+    test('searchOrders() loads orders for selected account', () async {
       final notifier = container.read(clientOrderListProvider.notifier);
 
-      // Initialize to get stores
+      // Initialize to get accounts
       await notifier.initialize();
 
-      // Select store 2 ((유)경산식품)
-      notifier.selectStore(2, '(유)경산식품');
+      // Select account 2 ((유)경산식품)
+      notifier.selectAccount(2, '(유)경산식품');
       notifier.updateDeliveryDate('2026-02-08');
 
       await notifier.searchOrders();
@@ -171,9 +171,9 @@ void main() {
     test('searchOrders() sets hasSearched true', () async {
       final notifier = container.read(clientOrderListProvider.notifier);
 
-      // Initialize and select a store
+      // Initialize and select an account
       await notifier.initialize();
-      notifier.selectStore(1, '천사푸드');
+      notifier.selectAccount(1, '천사푸드');
 
       expect(container.read(clientOrderListProvider).hasSearched, false);
 
@@ -186,9 +186,9 @@ void main() {
     test('goToPage() navigates to specific page', () async {
       final notifier = container.read(clientOrderListProvider.notifier);
 
-      // Initialize and select store
+      // Initialize and select account
       await notifier.initialize();
-      notifier.selectStore(1, '천사푸드');
+      notifier.selectAccount(1, '천사푸드');
       await notifier.searchOrders();
 
       final firstPageState = container.read(clientOrderListProvider);
@@ -204,7 +204,7 @@ void main() {
       }
     });
 
-    test('goToPage() skips if no store selected', () async {
+    test('goToPage() skips if no account selected', () async {
       final notifier = container.read(clientOrderListProvider.notifier);
 
       // Should skip without throwing error
@@ -234,15 +234,15 @@ void main() {
     test('canSearch getter', () {
       final notifier = container.read(clientOrderListProvider.notifier);
 
-      // Initially false (no store selected)
+      // Initially false (no account selected)
       expect(container.read(clientOrderListProvider).canSearch, false);
 
-      // True after selecting store
-      notifier.selectStore(1, '천사푸드');
+      // True after selecting account
+      notifier.selectAccount(1, '천사푸드');
       expect(container.read(clientOrderListProvider).canSearch, true);
 
-      // False after clearing store
-      notifier.selectStore(null, null);
+      // False after clearing account
+      notifier.selectAccount(null, null);
       expect(container.read(clientOrderListProvider).canSearch, false);
     });
 
@@ -259,8 +259,8 @@ void main() {
 
       final notifier = errorContainer.read(clientOrderListProvider.notifier);
 
-      // Select a store to trigger search
-      notifier.selectStore(1, '천사푸드');
+      // Select an account to trigger search
+      notifier.selectAccount(1, '천사푸드');
       await notifier.searchOrders();
 
       final state = errorContainer.read(clientOrderListProvider);
@@ -271,21 +271,21 @@ void main() {
       errorContainer.dispose();
     });
 
-    test('full workflow: initialize → selectStore → search → goToPage → clearStore',
+    test('full workflow: initialize → selectAccount → search → goToPage → clearAccount',
         () async {
       final notifier = container.read(clientOrderListProvider.notifier);
 
       // Step 1: Initialize
       await notifier.initialize();
       var state = container.read(clientOrderListProvider);
-      expect(state.stores, isNotEmpty);
-      expect(state.stores.length, 8);
+      expect(state.accounts, isNotEmpty);
+      expect(state.accounts.length, 8);
 
-      // Step 2: Select store
-      notifier.selectStore(2, '(유)경산식품');
+      // Step 2: Select account
+      notifier.selectAccount(2, '(유)경산식품');
       state = container.read(clientOrderListProvider);
-      expect(state.selectedStoreId, 2);
-      expect(state.selectedStoreName, '(유)경산식품');
+      expect(state.selectedAccountId, 2);
+      expect(state.selectedAccountName, '(유)경산식품');
       expect(state.canSearch, true);
 
       // Step 3: Update delivery date
@@ -312,11 +312,11 @@ void main() {
         expect(state.orders, isNotEmpty);
       }
 
-      // Step 6: Clear store filter
-      notifier.selectStore(null, null);
+      // Step 6: Clear account filter
+      notifier.selectAccount(null, null);
       state = container.read(clientOrderListProvider);
-      expect(state.selectedStoreId, isNull);
-      expect(state.selectedStoreName, isNull);
+      expect(state.selectedAccountId, isNull);
+      expect(state.selectedAccountName, isNull);
       expect(state.canSearch, false);
     });
 
@@ -328,7 +328,7 @@ void main() {
 
       // After search, has results
       await notifier.initialize();
-      notifier.selectStore(1, '천사푸드');
+      notifier.selectAccount(1, '천사푸드');
       await notifier.searchOrders();
 
       final state = container.read(clientOrderListProvider);
@@ -345,7 +345,7 @@ void main() {
 
       // After search with results, not isEmpty
       await notifier.initialize();
-      notifier.selectStore(1, '천사푸드');
+      notifier.selectAccount(1, '천사푸드');
       await notifier.searchOrders();
 
       var state = container.read(clientOrderListProvider);
@@ -366,7 +366,7 @@ void main() {
       final notifier = container.read(clientOrderListProvider.notifier);
 
       await notifier.initialize();
-      notifier.selectStore(1, '천사푸드');
+      notifier.selectAccount(1, '천사푸드');
       await notifier.searchOrders();
 
       final state = container.read(clientOrderListProvider);

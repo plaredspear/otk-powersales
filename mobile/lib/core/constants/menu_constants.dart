@@ -24,7 +24,7 @@ abstract final class MenuConstants {
       label: '주문',
       items: [
         MenuItem(id: 'orders', label: '내 주문 현황'),
-        MenuItem(id: 'orders-by-store', label: '거래처별 주문 현황'),
+        MenuItem(id: 'orders-by-account', label: '거래처별 주문 현황'),
       ],
     ),
     // 3. 제품

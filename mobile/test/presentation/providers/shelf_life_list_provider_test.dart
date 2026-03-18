@@ -16,7 +16,7 @@ void main() {
       fakeRepository = FakeShelfLifeRepository();
       useCase = GetShelfLifeList(fakeRepository);
       // Constructor now requires Dio. Tests that don't call initialize() can
-      // safely pass a plain Dio() with no baseUrl — _loadStores() won't be
+      // safely pass a plain Dio() with no baseUrl — _loadAccounts() won't be
       // triggered and the instance is never actually used for network calls.
       notifier = ShelfLifeListNotifier(
         getShelfLifeList: useCase,
@@ -30,17 +30,17 @@ void main() {
       expect(notifier.state.hasSearched, false);
     });
 
-    group('selectStore', () {
+    group('selectAccount', () {
       test('거래처를 선택하면 state에 반영되어야 한다', () {
-        notifier.selectStore('ACC001', '이마트');
+        notifier.selectAccount('ACC001', '이마트');
 
         expect(notifier.state.selectedAccountCode, 'ACC001');
         expect(notifier.state.selectedAccountName, '이마트');
       });
 
       test('null을 전달하면 거래처 필터가 초기화되어야 한다', () {
-        notifier.selectStore('ACC001', '이마트');
-        notifier.selectStore(null, null);
+        notifier.selectAccount('ACC001', '이마트');
+        notifier.selectAccount(null, null);
 
         expect(notifier.state.selectedAccountCode, isNull);
         expect(notifier.state.selectedAccountName, isNull);

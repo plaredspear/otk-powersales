@@ -8,7 +8,7 @@ import '../../domain/entities/claim_form.dart';
 /// 클레임 등록 요청 Model (multipart/form-data)
 class ClaimRegisterRequest {
   const ClaimRegisterRequest({
-    required this.storeId,
+    required this.accountId,
     required this.productCode,
     required this.dateType,
     required this.date,
@@ -24,7 +24,7 @@ class ClaimRegisterRequest {
     this.requestTypeCode,
   });
 
-  final int storeId;
+  final int accountId;
   final String productCode;
   final String dateType;
   final String date;
@@ -42,7 +42,7 @@ class ClaimRegisterRequest {
   /// Entity에서 변환
   factory ClaimRegisterRequest.fromEntity(ClaimRegisterForm form) {
     return ClaimRegisterRequest(
-      storeId: form.storeId,
+      accountId: form.accountId,
       productCode: form.productCode,
       dateType: form.dateType.toJson(),
       date: form.date.toIso8601String().substring(0, 10), // YYYY-MM-DD
@@ -62,7 +62,7 @@ class ClaimRegisterRequest {
   /// FormData로 변환 (Dio multipart/form-data)
   Future<FormData> toFormData() async {
     final Map<String, dynamic> fields = {
-      'storeId': storeId.toString(),
+      'accountId': accountId.toString(),
       'productCode': productCode,
       'dateType': dateType,
       'date': date,

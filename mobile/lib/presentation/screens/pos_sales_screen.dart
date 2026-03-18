@@ -19,7 +19,7 @@ class PosSalesScreen extends ConsumerStatefulWidget {
 class _PosSalesScreenState extends ConsumerState<PosSalesScreen> {
   DateTime? _startDate;
   DateTime? _endDate;
-  String? _storeName;
+  String? _accountName;
   String? _productName;
 
   @override
@@ -36,7 +36,7 @@ class _PosSalesScreenState extends ConsumerState<PosSalesScreen> {
     ref.read(posSalesProvider.notifier).fetchSales(
           startDate: _startDate,
           endDate: _endDate,
-          storeName: _storeName,
+          accountName: _accountName,
           productName: _productName,
         );
   }
@@ -46,7 +46,7 @@ class _PosSalesScreenState extends ConsumerState<PosSalesScreen> {
     setState(() {
       _startDate = null;
       _endDate = null;
-      _storeName = null;
+      _accountName = null;
       _productName = null;
     });
     ref.read(posSalesProvider.notifier).resetFilter();
@@ -116,7 +116,7 @@ class _PosSalesScreenState extends ConsumerState<PosSalesScreen> {
             filterType: FilterType.textInput,
             onChanged: (value) {
               setState(() {
-                _storeName = value.isEmpty ? null : value;
+                _accountName = value.isEmpty ? null : value;
               });
             },
           ),

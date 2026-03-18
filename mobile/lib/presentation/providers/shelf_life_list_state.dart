@@ -27,10 +27,10 @@ class ShelfLifeListState {
   final DateTime toDate;
 
   /// 내 거래처 목록 (드롭다운용) - {accountCode: accountName}
-  final Map<String, String> stores;
+  final Map<String, String> accounts;
 
   /// 거래처 목록 로딩 중 여부
-  final bool isStoresLoading;
+  final bool isAccountsLoading;
 
   const ShelfLifeListState({
     this.isLoading = false,
@@ -41,8 +41,8 @@ class ShelfLifeListState {
     this.selectedAccountName,
     required this.fromDate,
     required this.toDate,
-    this.stores = const {},
-    this.isStoresLoading = false,
+    this.accounts = const {},
+    this.isAccountsLoading = false,
   });
 
   /// 초기 상태 (시작: 오늘 - 7일, 종료: 오늘 + 3개월)
@@ -93,9 +93,9 @@ class ShelfLifeListState {
     String? selectedAccountName,
     DateTime? fromDate,
     DateTime? toDate,
-    Map<String, String>? stores,
-    bool? isStoresLoading,
-    bool clearStoreFilter = false,
+    Map<String, String>? accounts,
+    bool? isAccountsLoading,
+    bool clearAccountFilter = false,
   }) {
     return ShelfLifeListState(
       isLoading: isLoading ?? this.isLoading,
@@ -103,13 +103,13 @@ class ShelfLifeListState {
       items: items ?? this.items,
       hasSearched: hasSearched ?? this.hasSearched,
       selectedAccountCode:
-          clearStoreFilter ? null : (selectedAccountCode ?? this.selectedAccountCode),
+          clearAccountFilter ? null : (selectedAccountCode ?? this.selectedAccountCode),
       selectedAccountName:
-          clearStoreFilter ? null : (selectedAccountName ?? this.selectedAccountName),
+          clearAccountFilter ? null : (selectedAccountName ?? this.selectedAccountName),
       fromDate: fromDate ?? this.fromDate,
       toDate: toDate ?? this.toDate,
-      stores: stores ?? this.stores,
-      isStoresLoading: isStoresLoading ?? this.isStoresLoading,
+      accounts: accounts ?? this.accounts,
+      isAccountsLoading: isAccountsLoading ?? this.isAccountsLoading,
     );
   }
 }

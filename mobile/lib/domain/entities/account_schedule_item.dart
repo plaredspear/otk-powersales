@@ -1,11 +1,11 @@
 /// 거래처 일정 엔티티
 ///
 /// 오늘 출근해야 할 거래처 정보를 나타냅니다.
-class StoreScheduleItem {
+class AccountScheduleItem {
   final int scheduleId;
-  final String? storeSfid;
-  final String storeName;
-  final String? storeTypeCode;
+  final String? accountSfid;
+  final String accountName;
+  final String? accountTypeCode;
   final String workCategory;
   final String address;
   final double? latitude;
@@ -13,11 +13,11 @@ class StoreScheduleItem {
   final bool isRegistered;
   final String? registeredWorkType;
 
-  const StoreScheduleItem({
+  const AccountScheduleItem({
     required this.scheduleId,
-    this.storeSfid,
-    required this.storeName,
-    this.storeTypeCode,
+    this.accountSfid,
+    required this.accountName,
+    this.accountTypeCode,
     required this.workCategory,
     required this.address,
     this.latitude,
@@ -26,11 +26,11 @@ class StoreScheduleItem {
     this.registeredWorkType,
   });
 
-  StoreScheduleItem copyWith({
+  AccountScheduleItem copyWith({
     int? scheduleId,
-    String? storeSfid,
-    String? storeName,
-    String? storeTypeCode,
+    String? accountSfid,
+    String? accountName,
+    String? accountTypeCode,
     String? workCategory,
     String? address,
     double? latitude,
@@ -38,11 +38,11 @@ class StoreScheduleItem {
     bool? isRegistered,
     String? registeredWorkType,
   }) {
-    return StoreScheduleItem(
+    return AccountScheduleItem(
       scheduleId: scheduleId ?? this.scheduleId,
-      storeSfid: storeSfid ?? this.storeSfid,
-      storeName: storeName ?? this.storeName,
-      storeTypeCode: storeTypeCode ?? this.storeTypeCode,
+      accountSfid: accountSfid ?? this.accountSfid,
+      accountName: accountName ?? this.accountName,
+      accountTypeCode: accountTypeCode ?? this.accountTypeCode,
       workCategory: workCategory ?? this.workCategory,
       address: address ?? this.address,
       latitude: latitude ?? this.latitude,
@@ -55,9 +55,9 @@ class StoreScheduleItem {
   Map<String, dynamic> toJson() {
     return {
       'scheduleId': scheduleId,
-      'storeSfid': storeSfid,
-      'storeName': storeName,
-      'storeTypeCode': storeTypeCode,
+      'accountSfid': accountSfid,
+      'accountName': accountName,
+      'accountTypeCode': accountTypeCode,
       'workCategory': workCategory,
       'address': address,
       'latitude': latitude,
@@ -67,12 +67,12 @@ class StoreScheduleItem {
     };
   }
 
-  factory StoreScheduleItem.fromJson(Map<String, dynamic> json) {
-    return StoreScheduleItem(
+  factory AccountScheduleItem.fromJson(Map<String, dynamic> json) {
+    return AccountScheduleItem(
       scheduleId: json['scheduleId'] as int,
-      storeSfid: json['storeSfid'] as String?,
-      storeName: json['storeName'] as String,
-      storeTypeCode: json['storeTypeCode'] as String?,
+      accountSfid: json['accountSfid'] as String?,
+      accountName: json['accountName'] as String,
+      accountTypeCode: json['accountTypeCode'] as String?,
       workCategory: json['workCategory'] as String,
       address: json['address'] as String? ?? '',
       latitude: (json['latitude'] as num?)?.toDouble(),
@@ -85,9 +85,9 @@ class StoreScheduleItem {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is StoreScheduleItem &&
+    return other is AccountScheduleItem &&
         other.scheduleId == scheduleId &&
-        other.storeName == storeName &&
+        other.accountName == accountName &&
         other.workCategory == workCategory &&
         other.address == address &&
         other.isRegistered == isRegistered;
@@ -97,7 +97,7 @@ class StoreScheduleItem {
   int get hashCode {
     return Object.hash(
       scheduleId,
-      storeName,
+      accountName,
       workCategory,
       address,
       isRegistered,
@@ -106,7 +106,7 @@ class StoreScheduleItem {
 
   @override
   String toString() {
-    return 'StoreScheduleItem(scheduleId: $scheduleId, storeName: $storeName, '
+    return 'AccountScheduleItem(scheduleId: $scheduleId, accountName: $accountName, '
         'workCategory: $workCategory, address: $address, '
         'isRegistered: $isRegistered)';
   }

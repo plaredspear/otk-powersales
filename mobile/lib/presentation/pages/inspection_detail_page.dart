@@ -164,7 +164,7 @@ class InspectionDetailPage extends ConsumerWidget {
           const SizedBox(height: AppSpacing.md),
 
           // 거래처명
-          _buildInfoRow('거래처', detail.storeName),
+          _buildInfoRow('거래처', detail.accountName),
 
           const SizedBox(height: AppSpacing.sm),
 

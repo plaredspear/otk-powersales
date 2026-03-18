@@ -341,19 +341,19 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
           children: [
             // 필터 바
             ClientOrderFilterBar(
-              stores: state.stores,
-              selectedStoreId: state.selectedStoreId,
+              accounts: state.accounts,
+              selectedAccountId: state.selectedAccountId,
               selectedDeliveryDate: state.selectedDeliveryDate,
               canSearch: state.canSearch,
-              onStoreChanged: (entry) {
+              onAccountChanged: (entry) {
                 if (entry == null) {
                   ref
                       .read(clientOrderListProvider.notifier)
-                      .selectStore(null, null);
+                      .selectAccount(null, null);
                 } else {
                   ref
                       .read(clientOrderListProvider.notifier)
-                      .selectStore(entry.key, entry.value);
+                      .selectAccount(entry.key, entry.value);
                 }
               },
               onDeliveryDateChanged: (date) {

@@ -13,14 +13,14 @@ class GetPosSalesUseCase {
   ///
   /// [startDate]: 조회 시작일 (필수)
   /// [endDate]: 조회 종료일 (필수)
-  /// [storeName]: 매장명 (선택)
+  /// [accountName]: 매장명 (선택)
   /// [productName]: 제품명 (선택)
   ///
   /// Returns: POS 매출 목록 (날짜순 최신순 정렬)
   Future<List<PosSales>> call({
     required DateTime startDate,
     required DateTime endDate,
-    String? storeName,
+    String? accountName,
     String? productName,
   }) async {
     // 날짜 범위 검증
@@ -32,7 +32,7 @@ class GetPosSalesUseCase {
     final sales = await _repository.getPosSales(
       startDate: startDate,
       endDate: endDate,
-      storeName: storeName,
+      accountName: accountName,
       productName: productName,
     );
 
@@ -46,22 +46,22 @@ class GetPosSalesUseCase {
   ///
   /// [startDate]: 조회 시작일
   /// [endDate]: 조회 종료일
-  /// [storeName]: 매장명 (필수)
+  /// [accountName]: 매장명 (필수)
   ///
   /// Returns: 해당 매장의 POS 매출 목록
-  Future<List<PosSales>> getByStore({
+  Future<List<PosSales>> getByAccount({
     required DateTime startDate,
     required DateTime endDate,
-    required String storeName,
+    required String accountName,
   }) async {
-    if (storeName.isEmpty) {
+    if (accountName.isEmpty) {
       throw ArgumentError('매장명은 필수입니다.');
     }
 
     return call(
       startDate: startDate,
       endDate: endDate,
-      storeName: storeName,
+      accountName: accountName,
     );
   }
 
@@ -96,17 +96,17 @@ class GetPosSalesUseCase {
   ///
   /// [startDate]: 조회 시작일
   /// [endDate]: 조회 종료일
-  /// [storeName]: 매장명 (필수)
+  /// [accountName]: 매장명 (필수)
   /// [productName]: 제품명 (필수)
   ///
   /// Returns: 해당 매장/제품의 POS 매출 목록
-  Future<List<PosSales>> getByStoreAndProduct({
+  Future<List<PosSales>> getByAccountAndProduct({
     required DateTime startDate,
     required DateTime endDate,
-    required String storeName,
+    required String accountName,
     required String productName,
   }) async {
-    if (storeName.isEmpty) {
+    if (accountName.isEmpty) {
       throw ArgumentError('매장명은 필수입니다.');
     }
     if (productName.isEmpty) {
@@ -116,7 +116,7 @@ class GetPosSalesUseCase {
     return call(
       startDate: startDate,
       endDate: endDate,
-      storeName: storeName,
+      accountName: accountName,
       productName: productName,
     );
   }

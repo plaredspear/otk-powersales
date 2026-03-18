@@ -76,35 +76,35 @@ void main() {
       expect(state.isLoading, false);
       expect(state.items, isEmpty);
       expect(state.hasSearched, false);
-      expect(state.selectedStoreId, null);
+      expect(state.selectedAccountId, null);
       expect(state.selectedCategory, null);
     });
 
-    test('selectStore는 거래처를 선택한다', () {
+    test('selectAccount는 거래처를 선택한다', () {
       // Given
       final notifier = container.read(inspectionListProvider.notifier);
 
       // When
-      notifier.selectStore(100, '이마트 죽전점');
+      notifier.selectAccount(100, '이마트 죽전점');
 
       // Then
       final state = container.read(inspectionListProvider);
-      expect(state.selectedStoreId, 100);
-      expect(state.selectedStoreName, '이마트 죽전점');
+      expect(state.selectedAccountId, 100);
+      expect(state.selectedAccountName, '이마트 죽전점');
     });
 
-    test('selectStore에 null을 전달하면 거래처 필터가 초기화된다', () {
+    test('selectAccount에 null을 전달하면 거래처 필터가 초기화된다', () {
       // Given
       final notifier = container.read(inspectionListProvider.notifier);
-      notifier.selectStore(100, '이마트 죽전점');
+      notifier.selectAccount(100, '이마트 죽전점');
 
       // When
-      notifier.selectStore(null, null);
+      notifier.selectAccount(null, null);
 
       // Then
       final state = container.read(inspectionListProvider);
-      expect(state.selectedStoreId, null);
-      expect(state.selectedStoreName, null);
+      expect(state.selectedAccountId, null);
+      expect(state.selectedAccountName, null);
     });
 
     test('selectCategory는 분류를 선택한다', () {
@@ -164,8 +164,8 @@ void main() {
         InspectionListItem(
           id: 1,
           category: InspectionCategory.OWN,
-          storeName: '이마트 죽전점',
-          storeId: 100,
+          accountName: '이마트 죽전점',
+          accountId: 100,
           inspectionDate: DateTime(2020, 8, 13),
           fieldType: '본매대',
           fieldTypeCode: 'FT01',
@@ -189,7 +189,7 @@ void main() {
       // Given
       mockRepository.mockItems = [];
       final notifier = container.read(inspectionListProvider.notifier);
-      notifier.selectStore(100, '이마트');
+      notifier.selectAccount(100, '이마트');
       notifier.selectCategory(InspectionCategory.OWN);
       notifier.updateFromDate(DateTime(2020, 8, 1));
       notifier.updateToDate(DateTime(2020, 8, 31));
@@ -199,7 +199,7 @@ void main() {
 
       // Then
       expect(mockRepository.lastFilter, isNotNull);
-      expect(mockRepository.lastFilter!.storeId, 100);
+      expect(mockRepository.lastFilter!.accountId, 100);
       expect(mockRepository.lastFilter!.category, InspectionCategory.OWN);
       expect(mockRepository.lastFilter!.fromDate, DateTime(2020, 8, 1));
       expect(mockRepository.lastFilter!.toDate, DateTime(2020, 8, 31));

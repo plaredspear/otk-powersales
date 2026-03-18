@@ -7,7 +7,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../providers/my_schedule_provider.dart';
 import '../widgets/common/loading_indicator.dart';
-import '../widgets/my_schedule/schedule_store_item.dart';
+import '../widgets/my_schedule/schedule_account_item.dart';
 
 /// 마이페이지 일정 상세 화면
 ///
@@ -175,18 +175,18 @@ class _MyScheduleDetailPageState extends ConsumerState<MyScheduleDetailPage>
         // 거래처 목록
         Expanded(
           child: ListView.separated(
-            itemCount: info.stores.length,
+            itemCount: info.accounts.length,
             separatorBuilder: (context, index) => Divider(
               height: 1,
               color: AppColors.divider,
             ),
             itemBuilder: (context, index) {
-              final store = info.stores[index];
-              return ScheduleStoreItem(
-                storeName: store.storeName,
-                workType1: store.workType1,
-                workType2: store.workType2,
-                workType3: store.workType3,
+              final account = info.accounts[index];
+              return ScheduleAccountItem(
+                accountName: account.accountName,
+                workType1: account.workType1,
+                workType2: account.workType2,
+                workType3: account.workType3,
               );
             },
           ),
@@ -284,7 +284,7 @@ class _MyScheduleDetailPageState extends ConsumerState<MyScheduleDetailPage>
 
         // 거래처 목록 (필터 적용)
         Expanded(
-          child: state.filteredStores.isEmpty
+          child: state.filteredAccounts.isEmpty
               ? Center(
                   child: Text(
                     state.showOnlyUnregistered
@@ -296,19 +296,19 @@ class _MyScheduleDetailPageState extends ConsumerState<MyScheduleDetailPage>
                   ),
                 )
               : ListView.separated(
-                  itemCount: state.filteredStores.length,
+                  itemCount: state.filteredAccounts.length,
                   separatorBuilder: (context, index) => Divider(
                     height: 1,
                     color: AppColors.divider,
                   ),
                   itemBuilder: (context, index) {
-                    final store = state.filteredStores[index];
-                    return ScheduleStoreItem(
-                      storeName: store.storeName,
-                      workType1: store.workType1,
-                      workType2: store.workType2,
-                      workType3: store.workType3,
-                      isRegistered: store.isRegistered,
+                    final account = state.filteredAccounts[index];
+                    return ScheduleAccountItem(
+                      accountName: account.accountName,
+                      workType1: account.workType1,
+                      workType2: account.workType2,
+                      workType3: account.workType3,
+                      isRegistered: account.isRegistered,
                       showRegistrationStatus: true,
                     );
                   },

@@ -67,9 +67,9 @@ class _ClaimRegisterPageState extends ConsumerState<ClaimRegisterPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // 거래처 선택
-                  _StoreField(
-                    storeName: state.form?.storeName,
-                    onTap: () => _showStoreSelector(context),
+                  _AccountField(
+                    accountName: state.form?.accountName,
+                    onTap: () => _showAccountSelector(context),
                   ),
                   const SizedBox(height: 16),
 
@@ -249,11 +249,11 @@ class _ClaimRegisterPageState extends ConsumerState<ClaimRegisterPage> {
   }
 
   /// 거래처 선택 다이얼로그
-  void _showStoreSelector(BuildContext context) {
+  void _showAccountSelector(BuildContext context) {
     // TODO: 실제 거래처 목록 조회 및 선택
     // 임시로 샘플 데이터 사용
     final notifier = ref.read(claimRegisterProvider.notifier);
-    notifier.selectStore(1, '샘플 거래처');
+    notifier.selectAccount(1, '샘플 거래처');
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('거래처 선택 기능은 추후 구현 예정입니다')),
@@ -374,13 +374,13 @@ class _ClaimRegisterPageState extends ConsumerState<ClaimRegisterPage> {
 }
 
 /// 거래처 선택 필드
-class _StoreField extends StatelessWidget {
-  const _StoreField({
-    required this.storeName,
+class _AccountField extends StatelessWidget {
+  const _AccountField({
+    required this.accountName,
     required this.onTap,
   });
 
-  final String? storeName;
+  final String? accountName;
   final VoidCallback onTap;
 
   @override
@@ -403,10 +403,10 @@ class _StoreField extends StatelessWidget {
             side: BorderSide(color: Colors.grey.shade300),
           ),
           title: Text(
-            storeName ?? '거래처 선택',
+            accountName ?? '거래처 선택',
             style: TextStyle(
               fontSize: 14,
-              color: storeName == null ? Colors.grey.shade600 : Colors.black87,
+              color: accountName == null ? Colors.grey.shade600 : Colors.black87,
             ),
           ),
           trailing: const Icon(Icons.arrow_forward_ios, size: 16),

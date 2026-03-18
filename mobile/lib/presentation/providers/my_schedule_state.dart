@@ -173,16 +173,16 @@ class MyScheduleDetailState {
   }
 
   /// 필터 적용된 거래처 목록
-  List<dynamic> get filteredStores {
+  List<dynamic> get filteredAccounts {
     if (scheduleInfo == null) return [];
-    if (!showOnlyUnregistered) return scheduleInfo!.stores;
-    return scheduleInfo!.stores.where((store) => !store.isRegistered).toList();
+    if (!showOnlyUnregistered) return scheduleInfo!.accounts;
+    return scheduleInfo!.accounts.where((account) => !account.isRegistered).toList();
   }
 
   /// 미등록 거래처 수
   int get unregisteredCount {
     if (scheduleInfo == null) return 0;
-    return scheduleInfo!.stores.where((store) => !store.isRegistered).length;
+    return scheduleInfo!.accounts.where((account) => !account.isRegistered).length;
   }
 
   /// 데이터 로딩 완료 여부

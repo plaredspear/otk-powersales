@@ -7,9 +7,9 @@ import '../../../core/theme/app_typography.dart';
 ///
 /// 거래처명과 근무 유형(3종)을 표시하며,
 /// 등록 탭에서는 등록 상태도 함께 표시합니다.
-class ScheduleStoreItem extends StatelessWidget {
+class ScheduleAccountItem extends StatelessWidget {
   /// 거래처명
-  final String storeName;
+  final String accountName;
 
   /// 근무 유형 1
   final String workType1;
@@ -26,9 +26,9 @@ class ScheduleStoreItem extends StatelessWidget {
   /// 등록 상태 표시 여부
   final bool showRegistrationStatus;
 
-  const ScheduleStoreItem({
+  const ScheduleAccountItem({
     super.key,
-    required this.storeName,
+    required this.accountName,
     required this.workType1,
     required this.workType2,
     required this.workType3,
@@ -52,7 +52,7 @@ class ScheduleStoreItem extends StatelessWidget {
               children: [
                 // 거래처명
                 Text(
-                  storeName,
+                  accountName,
                   style: AppTypography.bodyMedium.copyWith(
                     fontWeight: FontWeight.w500,
                   ),

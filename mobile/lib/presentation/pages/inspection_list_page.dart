@@ -75,13 +75,13 @@ class _InspectionListPageState extends ConsumerState<InspectionListPage> {
         children: [
           // 검색 필터
           InspectionFilterBar(
-            stores: state.stores,
-            selectedStoreId: state.selectedStoreId,
+            accounts: state.accounts,
+            selectedAccountId: state.selectedAccountId,
             selectedCategory: state.selectedCategory,
             fromDate: state.fromDate,
             toDate: state.toDate,
-            onStoreChanged: (id, name) {
-              ref.read(inspectionListProvider.notifier).selectStore(id, name);
+            onAccountChanged: (id, name) {
+              ref.read(inspectionListProvider.notifier).selectAccount(id, name);
             },
             onCategoryChanged: (category) {
               ref.read(inspectionListProvider.notifier).selectCategory(category);

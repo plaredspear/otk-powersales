@@ -75,8 +75,8 @@ void main() {
       final mockDetail = InspectionDetail(
         id: 1,
         category: InspectionCategory.OWN,
-        storeName: '이마트 죽전점',
-        storeId: 100,
+        accountName: '이마트 죽전점',
+        accountId: 100,
         themeName: '8월 테마',
         themeId: 10,
         inspectionDate: DateTime(2020, 8, 13),
@@ -119,8 +119,8 @@ void main() {
       mockRepository.mockDetail = InspectionDetail(
         id: 1,
         category: InspectionCategory.OWN,
-        storeName: '이마트',
-        storeId: 100,
+        accountName: '이마트',
+        accountId: 100,
         themeName: '8월 테마',
         themeId: 10,
         inspectionDate: DateTime(2020, 8, 13),
@@ -160,8 +160,8 @@ void main() {
       final mockDetail = InspectionDetail(
         id: 1,
         category: InspectionCategory.OWN,
-        storeName: '이마트 죽전점',
-        storeId: 100,
+        accountName: '이마트 죽전점',
+        accountId: 100,
         themeName: '8월 테마',
         themeId: 10,
         inspectionDate: DateTime(2020, 8, 13),
@@ -190,8 +190,8 @@ void main() {
       final mockDetail = InspectionDetail(
         id: 2,
         category: InspectionCategory.COMPETITOR,
-        storeName: '홈플러스',
-        storeId: 200,
+        accountName: '홈플러스',
+        accountId: 200,
         themeName: '8월 테마',
         themeId: 10,
         inspectionDate: DateTime(2020, 8, 14),

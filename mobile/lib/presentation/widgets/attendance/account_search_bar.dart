@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 
 /// 거래처 검색 바 위젯
-class StoreSearchBar extends StatelessWidget {
+class AccountSearchBar extends StatelessWidget {
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
 
-  const StoreSearchBar({
+  const AccountSearchBar({
     super.key,
     required this.controller,
     required this.onChanged,

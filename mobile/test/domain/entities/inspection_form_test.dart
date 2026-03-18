@@ -45,7 +45,7 @@ void main() {
         final form = InspectionRegisterForm(
           themeId: 10,
           category: InspectionCategory.OWN,
-          storeId: 3001,
+          accountId: 3001,
           inspectionDate: DateTime(2020, 8, 19),
           fieldTypeCode: 'FT01',
           description: '자사 설명',
@@ -55,7 +55,7 @@ void main() {
 
         expect(form.themeId, 10);
         expect(form.category, InspectionCategory.OWN);
-        expect(form.storeId, 3001);
+        expect(form.accountId, 3001);
         expect(form.inspectionDate, DateTime(2020, 8, 19));
         expect(form.fieldTypeCode, 'FT01');
         expect(form.description, '자사 설명');
@@ -67,7 +67,7 @@ void main() {
         final form = InspectionRegisterForm(
           themeId: 10,
           category: InspectionCategory.OWN,
-          storeId: 3001,
+          accountId: 3001,
           inspectionDate: DateTime(2020, 8, 19),
           fieldTypeCode: 'FT01',
           productCode: '12345678',
@@ -84,7 +84,7 @@ void main() {
         final form = InspectionRegisterForm(
           themeId: 11,
           category: InspectionCategory.COMPETITOR,
-          storeId: 2001,
+          accountId: 2001,
           inspectionDate: DateTime(2020, 8, 25),
           fieldTypeCode: 'FT02',
           competitorName: '경쟁사1',
@@ -110,7 +110,7 @@ void main() {
         final form = InspectionRegisterForm(
           themeId: 11,
           category: InspectionCategory.COMPETITOR,
-          storeId: 2001,
+          accountId: 2001,
           inspectionDate: DateTime(2020, 8, 25),
           fieldTypeCode: 'FT02',
           competitorName: '경쟁사1',
@@ -129,7 +129,7 @@ void main() {
         final original = InspectionRegisterForm(
           themeId: 10,
           category: InspectionCategory.OWN,
-          storeId: 3001,
+          accountId: 3001,
           inspectionDate: DateTime(2020, 8, 19),
           fieldTypeCode: 'FT01',
           productCode: '12345678',
@@ -137,13 +137,13 @@ void main() {
         );
 
         final copied = original.copyWith(
-          storeId: 2001,
+          accountId: 2001,
           fieldTypeCode: 'FT02',
         );
 
         expect(copied.themeId, original.themeId);
         expect(copied.category, original.category);
-        expect(copied.storeId, 2001);
+        expect(copied.accountId, 2001);
         expect(copied.fieldTypeCode, 'FT02');
         expect(copied.productCode, original.productCode);
       });
@@ -152,17 +152,17 @@ void main() {
         final original = InspectionRegisterForm(
           themeId: 10,
           category: InspectionCategory.OWN,
-          storeId: 3001,
+          accountId: 3001,
           inspectionDate: DateTime(2020, 8, 19),
           fieldTypeCode: 'FT01',
           productCode: '12345678',
           photos: [createMockFile('/path/to/photo1.jpg')],
         );
 
-        final copied = original.copyWith(storeId: 2001);
+        final copied = original.copyWith(accountId: 2001);
 
-        expect(original.storeId, 3001);
-        expect(copied.storeId, 2001);
+        expect(original.accountId, 3001);
+        expect(copied.accountId, 2001);
       });
     });
 
@@ -171,7 +171,7 @@ void main() {
         final form = InspectionRegisterForm(
           themeId: 10,
           category: InspectionCategory.OWN,
-          storeId: 3001,
+          accountId: 3001,
           inspectionDate: DateTime(2020, 8, 19),
           fieldTypeCode: 'FT01',
           productCode: '12345678',
@@ -188,7 +188,7 @@ void main() {
         final form = InspectionRegisterForm(
           themeId: 0,
           category: InspectionCategory.OWN,
-          storeId: 3001,
+          accountId: 3001,
           inspectionDate: DateTime(2020, 8, 19),
           fieldTypeCode: 'FT01',
           productCode: '12345678',
@@ -201,11 +201,11 @@ void main() {
         expect(result.errors, contains('테마를 선택해주세요'));
       });
 
-      test('storeId가 0 이하면 검증 실패', () {
+      test('accountId가 0 이하면 검증 실패', () {
         final form = InspectionRegisterForm(
           themeId: 10,
           category: InspectionCategory.OWN,
-          storeId: 0,
+          accountId: 0,
           inspectionDate: DateTime(2020, 8, 19),
           fieldTypeCode: 'FT01',
           productCode: '12345678',
@@ -222,7 +222,7 @@ void main() {
         final form = InspectionRegisterForm(
           themeId: 10,
           category: InspectionCategory.OWN,
-          storeId: 3001,
+          accountId: 3001,
           inspectionDate: DateTime(2020, 8, 19),
           fieldTypeCode: '',
           productCode: '12345678',
@@ -239,7 +239,7 @@ void main() {
         final form = InspectionRegisterForm(
           themeId: 10,
           category: InspectionCategory.OWN,
-          storeId: 3001,
+          accountId: 3001,
           inspectionDate: DateTime(2020, 8, 19),
           fieldTypeCode: 'FT01',
           productCode: '12345678',
@@ -256,7 +256,7 @@ void main() {
         final form = InspectionRegisterForm(
           themeId: 10,
           category: InspectionCategory.OWN,
-          storeId: 3001,
+          accountId: 3001,
           inspectionDate: DateTime(2020, 8, 19),
           fieldTypeCode: 'FT01',
           productCode: '12345678',
@@ -277,7 +277,7 @@ void main() {
         final form = InspectionRegisterForm(
           themeId: 10,
           category: InspectionCategory.OWN,
-          storeId: 3001,
+          accountId: 3001,
           inspectionDate: DateTime(2020, 8, 19),
           fieldTypeCode: 'FT01',
           productCode: '12345678',
@@ -298,7 +298,7 @@ void main() {
         final form = InspectionRegisterForm(
           themeId: 10,
           category: InspectionCategory.OWN,
-          storeId: 3001,
+          accountId: 3001,
           inspectionDate: DateTime(2020, 8, 19),
           fieldTypeCode: 'FT01',
           photos: [createMockFile('/path/to/photo1.jpg')],
@@ -314,7 +314,7 @@ void main() {
         final form = InspectionRegisterForm(
           themeId: 10,
           category: InspectionCategory.OWN,
-          storeId: 3001,
+          accountId: 3001,
           inspectionDate: DateTime(2020, 8, 19),
           fieldTypeCode: 'FT01',
           productCode: '',
@@ -331,7 +331,7 @@ void main() {
         final form = InspectionRegisterForm(
           themeId: 10,
           category: InspectionCategory.OWN,
-          storeId: 3001,
+          accountId: 3001,
           inspectionDate: DateTime(2020, 8, 19),
           fieldTypeCode: 'FT01',
           description: '자사 설명',
@@ -351,7 +351,7 @@ void main() {
         final form = InspectionRegisterForm(
           themeId: 11,
           category: InspectionCategory.COMPETITOR,
-          storeId: 2001,
+          accountId: 2001,
           inspectionDate: DateTime(2020, 8, 25),
           fieldTypeCode: 'FT02',
           competitorActivity: '활동1',
@@ -369,7 +369,7 @@ void main() {
         final form = InspectionRegisterForm(
           themeId: 11,
           category: InspectionCategory.COMPETITOR,
-          storeId: 2001,
+          accountId: 2001,
           inspectionDate: DateTime(2020, 8, 25),
           fieldTypeCode: 'FT02',
           competitorName: '경쟁사1',
@@ -387,7 +387,7 @@ void main() {
         final form = InspectionRegisterForm(
           themeId: 11,
           category: InspectionCategory.COMPETITOR,
-          storeId: 2001,
+          accountId: 2001,
           inspectionDate: DateTime(2020, 8, 25),
           fieldTypeCode: 'FT02',
           competitorName: '경쟁사1',
@@ -405,7 +405,7 @@ void main() {
         final form = InspectionRegisterForm(
           themeId: 11,
           category: InspectionCategory.COMPETITOR,
-          storeId: 2001,
+          accountId: 2001,
           inspectionDate: DateTime(2020, 8, 25),
           fieldTypeCode: 'FT02',
           competitorName: '경쟁사1',
@@ -426,7 +426,7 @@ void main() {
         final form = InspectionRegisterForm(
           themeId: 11,
           category: InspectionCategory.COMPETITOR,
-          storeId: 2001,
+          accountId: 2001,
           inspectionDate: DateTime(2020, 8, 25),
           fieldTypeCode: 'FT02',
           competitorName: '경쟁사1',
@@ -447,7 +447,7 @@ void main() {
         final form = InspectionRegisterForm(
           themeId: 11,
           category: InspectionCategory.COMPETITOR,
-          storeId: 2001,
+          accountId: 2001,
           inspectionDate: DateTime(2020, 8, 25),
           fieldTypeCode: 'FT02',
           competitorName: '경쟁사1',
@@ -468,7 +468,7 @@ void main() {
         final form = InspectionRegisterForm(
           themeId: 11,
           category: InspectionCategory.COMPETITOR,
-          storeId: 2001,
+          accountId: 2001,
           inspectionDate: DateTime(2020, 8, 25),
           fieldTypeCode: 'FT02',
           competitorName: '경쟁사1',
@@ -490,7 +490,7 @@ void main() {
         final form = InspectionRegisterForm(
           themeId: 11,
           category: InspectionCategory.COMPETITOR,
-          storeId: 2001,
+          accountId: 2001,
           inspectionDate: DateTime(2020, 8, 25),
           fieldTypeCode: 'FT02',
           competitorName: '경쟁사1',
@@ -511,7 +511,7 @@ void main() {
         final form = InspectionRegisterForm(
           themeId: 11,
           category: InspectionCategory.COMPETITOR,
-          storeId: 2001,
+          accountId: 2001,
           inspectionDate: DateTime(2020, 8, 25),
           fieldTypeCode: 'FT02',
           competitorName: '경쟁사1',
@@ -533,7 +533,7 @@ void main() {
         final form = InspectionRegisterForm(
           themeId: 11,
           category: InspectionCategory.COMPETITOR,
-          storeId: 2001,
+          accountId: 2001,
           inspectionDate: DateTime(2020, 8, 25),
           fieldTypeCode: 'FT02',
           competitorName: '경쟁사1',
@@ -555,7 +555,7 @@ void main() {
         final form = InspectionRegisterForm(
           themeId: 0,
           category: InspectionCategory.COMPETITOR,
-          storeId: 0,
+          accountId: 0,
           inspectionDate: DateTime(2020, 8, 25),
           fieldTypeCode: '',
           competitorName: '',
@@ -577,7 +577,7 @@ void main() {
         final form1 = InspectionRegisterForm(
           themeId: 10,
           category: InspectionCategory.OWN,
-          storeId: 3001,
+          accountId: 3001,
           inspectionDate: DateTime(2020, 8, 19),
           fieldTypeCode: 'FT01',
           productCode: '12345678',
@@ -587,7 +587,7 @@ void main() {
         final form2 = InspectionRegisterForm(
           themeId: 10,
           category: InspectionCategory.OWN,
-          storeId: 3001,
+          accountId: 3001,
           inspectionDate: DateTime(2020, 8, 19),
           fieldTypeCode: 'FT01',
           productCode: '12345678',
@@ -602,7 +602,7 @@ void main() {
         final form1 = InspectionRegisterForm(
           themeId: 10,
           category: InspectionCategory.OWN,
-          storeId: 3001,
+          accountId: 3001,
           inspectionDate: DateTime(2020, 8, 19),
           fieldTypeCode: 'FT01',
           productCode: '12345678',
@@ -612,7 +612,7 @@ void main() {
         final form2 = InspectionRegisterForm(
           themeId: 11,
           category: InspectionCategory.COMPETITOR,
-          storeId: 2001,
+          accountId: 2001,
           inspectionDate: DateTime(2020, 8, 25),
           fieldTypeCode: 'FT02',
           competitorName: '경쟁사1',
@@ -630,7 +630,7 @@ void main() {
         final form = InspectionRegisterForm(
           themeId: 10,
           category: InspectionCategory.OWN,
-          storeId: 3001,
+          accountId: 3001,
           inspectionDate: DateTime(2020, 8, 19),
           fieldTypeCode: 'FT01',
           description: '자사 설명',

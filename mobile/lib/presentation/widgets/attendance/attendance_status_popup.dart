@@ -161,7 +161,7 @@ class AttendanceStatusPopup extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              status.storeName,
+              status.accountName,
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,

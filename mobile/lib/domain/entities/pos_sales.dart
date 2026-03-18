@@ -2,7 +2,7 @@
 /// 대형마트 3대 (이마트, 홈플러스, 롯데마트) EDI 연동 데이터
 class PosSales {
   /// 매장명
-  final String storeName;
+  final String accountName;
 
   /// 제품명
   final String productName;
@@ -23,7 +23,7 @@ class PosSales {
   final String? category;
 
   const PosSales({
-    required this.storeName,
+    required this.accountName,
     required this.productName,
     required this.salesDate,
     required this.quantity,
@@ -34,7 +34,7 @@ class PosSales {
 
   /// 엔티티 복사 (불변성 유지)
   PosSales copyWith({
-    String? storeName,
+    String? accountName,
     String? productName,
     DateTime? salesDate,
     int? quantity,
@@ -43,7 +43,7 @@ class PosSales {
     String? category,
   }) {
     return PosSales(
-      storeName: storeName ?? this.storeName,
+      accountName: accountName ?? this.accountName,
       productName: productName ?? this.productName,
       salesDate: salesDate ?? this.salesDate,
       quantity: quantity ?? this.quantity,
@@ -56,7 +56,7 @@ class PosSales {
   /// JSON으로 직렬화
   Map<String, dynamic> toJson() {
     return {
-      'storeName': storeName,
+      'accountName': accountName,
       'productName': productName,
       'salesDate': salesDate.toIso8601String(),
       'quantity': quantity,
@@ -69,7 +69,7 @@ class PosSales {
   /// JSON에서 역직렬화
   factory PosSales.fromJson(Map<String, dynamic> json) {
     return PosSales(
-      storeName: json['storeName'] as String,
+      accountName: json['accountName'] as String,
       productName: json['productName'] as String,
       salesDate: DateTime.parse(json['salesDate'] as String),
       quantity: json['quantity'] as int,
@@ -84,7 +84,7 @@ class PosSales {
     if (identical(this, other)) return true;
 
     return other is PosSales &&
-        other.storeName == storeName &&
+        other.accountName == accountName &&
         other.productName == productName &&
         other.salesDate == salesDate &&
         other.quantity == quantity &&
@@ -96,7 +96,7 @@ class PosSales {
   @override
   int get hashCode {
     return Object.hash(
-      storeName,
+      accountName,
       productName,
       salesDate,
       quantity,
@@ -108,7 +108,7 @@ class PosSales {
 
   @override
   String toString() {
-    return 'PosSales(storeName: $storeName, productName: $productName, '
+    return 'PosSales(accountName: $accountName, productName: $productName, '
         'salesDate: $salesDate, quantity: $quantity, amount: $amount, '
         'productCode: $productCode, category: $category)';
   }

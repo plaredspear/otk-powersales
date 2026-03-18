@@ -50,7 +50,7 @@ class PosSalesItem extends ConsumerWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        sales.storeName,
+                        sales.accountName,
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,

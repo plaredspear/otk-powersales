@@ -1,10 +1,10 @@
 /// 일정 거래처 상세 정보
-class ScheduleStoreDetail {
+class ScheduleAccountDetail {
   /// 거래처 ID
-  final int storeId;
+  final int accountId;
 
   /// 거래처명
-  final String storeName;
+  final String accountName;
 
   /// 근무 유형 1 (예: "진열")
   final String workType1;
@@ -18,26 +18,26 @@ class ScheduleStoreDetail {
   /// 등록 완료 여부
   final bool isRegistered;
 
-  const ScheduleStoreDetail({
-    required this.storeId,
-    required this.storeName,
+  const ScheduleAccountDetail({
+    required this.accountId,
+    required this.accountName,
     required this.workType1,
     required this.workType2,
     required this.workType3,
     required this.isRegistered,
   });
 
-  ScheduleStoreDetail copyWith({
-    int? storeId,
-    String? storeName,
+  ScheduleAccountDetail copyWith({
+    int? accountId,
+    String? accountName,
     String? workType1,
     String? workType2,
     String? workType3,
     bool? isRegistered,
   }) {
-    return ScheduleStoreDetail(
-      storeId: storeId ?? this.storeId,
-      storeName: storeName ?? this.storeName,
+    return ScheduleAccountDetail(
+      accountId: accountId ?? this.accountId,
+      accountName: accountName ?? this.accountName,
       workType1: workType1 ?? this.workType1,
       workType2: workType2 ?? this.workType2,
       workType3: workType3 ?? this.workType3,
@@ -47,8 +47,8 @@ class ScheduleStoreDetail {
 
   Map<String, dynamic> toJson() {
     return {
-      'storeId': storeId,
-      'storeName': storeName,
+      'accountId': accountId,
+      'accountName': accountName,
       'workType1': workType1,
       'workType2': workType2,
       'workType3': workType3,
@@ -56,10 +56,10 @@ class ScheduleStoreDetail {
     };
   }
 
-  factory ScheduleStoreDetail.fromJson(Map<String, dynamic> json) {
-    return ScheduleStoreDetail(
-      storeId: json['storeId'] as int,
-      storeName: json['storeName'] as String,
+  factory ScheduleAccountDetail.fromJson(Map<String, dynamic> json) {
+    return ScheduleAccountDetail(
+      accountId: json['accountId'] as int,
+      accountName: json['accountName'] as String,
       workType1: json['workType1'] as String,
       workType2: json['workType2'] as String,
       workType3: json['workType3'] as String,
@@ -70,9 +70,9 @@ class ScheduleStoreDetail {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is ScheduleStoreDetail &&
-        other.storeId == storeId &&
-        other.storeName == storeName &&
+    return other is ScheduleAccountDetail &&
+        other.accountId == accountId &&
+        other.accountName == accountName &&
         other.workType1 == workType1 &&
         other.workType2 == workType2 &&
         other.workType3 == workType3 &&
@@ -82,8 +82,8 @@ class ScheduleStoreDetail {
   @override
   int get hashCode {
     return Object.hash(
-      storeId,
-      storeName,
+      accountId,
+      accountName,
       workType1,
       workType2,
       workType3,
@@ -93,7 +93,7 @@ class ScheduleStoreDetail {
 
   @override
   String toString() {
-    return 'ScheduleStoreDetail(storeId: $storeId, storeName: $storeName, '
+    return 'ScheduleAccountDetail(accountId: $accountId, accountName: $accountName, '
         'workType1: $workType1, workType2: $workType2, workType3: $workType3, '
         'isRegistered: $isRegistered)';
   }

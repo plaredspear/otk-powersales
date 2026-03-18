@@ -18,20 +18,20 @@ Dio _createMockDio() {
   final dio = Dio(BaseOptions(baseUrl: 'http://localhost'));
   dio.interceptors.add(InterceptorsWrapper(
     onRequest: (options, handler) {
-      if (options.path == '/api/v1/stores/my') {
+      if (options.path == '/api/v1/accounts/my') {
         handler.resolve(Response(
           data: {
             'success': true,
             'data': {
-              'stores': [
-                {'store_id': 1, 'store_name': '천사푸드', 'store_code': 'S001', 'address': '', 'representative_name': ''},
-                {'store_id': 2, 'store_name': '(유)경산식품', 'store_code': 'S002', 'address': '', 'representative_name': ''},
-                {'store_id': 3, 'store_name': '대한식품유통', 'store_code': 'S003', 'address': '', 'representative_name': ''},
-                {'store_id': 4, 'store_name': '행복마트', 'store_code': 'S004', 'address': '', 'representative_name': ''},
-                {'store_id': 5, 'store_name': '명품식자재', 'store_code': 'S005', 'address': '', 'representative_name': ''},
-                {'store_id': 6, 'store_name': '서울종합식품', 'store_code': 'S006', 'address': '', 'representative_name': ''},
-                {'store_id': 7, 'store_name': '그린유통', 'store_code': 'S007', 'address': '', 'representative_name': ''},
-                {'store_id': 8, 'store_name': '삼성식품', 'store_code': 'S008', 'address': '', 'representative_name': ''},
+              'accounts': [
+                {'account_id': 1, 'account_name': '천사푸드', 'account_code': 'S001', 'address': '', 'representative_name': ''},
+                {'account_id': 2, 'account_name': '(유)경산식품', 'account_code': 'S002', 'address': '', 'representative_name': ''},
+                {'account_id': 3, 'account_name': '대한식품유통', 'account_code': 'S003', 'address': '', 'representative_name': ''},
+                {'account_id': 4, 'account_name': '행복마트', 'account_code': 'S004', 'address': '', 'representative_name': ''},
+                {'account_id': 5, 'account_name': '명품식자재', 'account_code': 'S005', 'address': '', 'representative_name': ''},
+                {'account_id': 6, 'account_name': '서울종합식품', 'account_code': 'S006', 'address': '', 'representative_name': ''},
+                {'account_id': 7, 'account_name': '그린유통', 'account_code': 'S007', 'address': '', 'representative_name': ''},
+                {'account_id': 8, 'account_name': '삼성식품', 'account_code': 'S008', 'address': '', 'representative_name': ''},
               ]
             }
           },

@@ -81,12 +81,12 @@ class ClaimRegisterNotifier extends StateNotifier<ClaimRegisterState> {
   // ──────────────────────────────────────────────────────────────────
 
   /// 거래처 선택
-  void selectStore(int storeId, String storeName) {
+  void selectAccount(int accountId, String accountName) {
     final currentForm = state.form ?? _createInitialForm();
     state = state.copyWith(
       form: currentForm.copyWith(
-        storeId: storeId,
-        storeName: storeName,
+        accountId: accountId,
+        accountName: accountName,
       ),
     );
   }
@@ -288,8 +288,8 @@ class ClaimRegisterNotifier extends StateNotifier<ClaimRegisterState> {
   /// 초기 폼 생성 (빈 값)
   ClaimRegisterForm _createInitialForm() {
     return ClaimRegisterForm(
-      storeId: 0,
-      storeName: '',
+      accountId: 0,
+      accountName: '',
       productCode: '',
       productName: '',
       dateType: ClaimDateType.expiryDate,

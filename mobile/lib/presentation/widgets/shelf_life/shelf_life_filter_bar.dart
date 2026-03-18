@@ -10,13 +10,13 @@ import '../../../core/theme/app_typography.dart';
 /// 거래처 드롭다운 + 유통기한 날짜 범위 + 검색 버튼
 class ShelfLifeFilterBar extends StatelessWidget {
   /// 거래처 목록 {accountCode: accountName}
-  final Map<String, String> stores;
+  final Map<String, String> accounts;
 
   /// 선택된 거래처 코드
   final String? selectedAccountCode;
 
   /// 거래처 목록 로딩 중 여부
-  final bool isStoresLoading;
+  final bool isAccountsLoading;
 
   /// 검색 시작일
   final DateTime fromDate;
@@ -25,7 +25,7 @@ class ShelfLifeFilterBar extends StatelessWidget {
   final DateTime toDate;
 
   /// 거래처 선택 콜백
-  final void Function(String? accountCode, String? accountName) onStoreChanged;
+  final void Function(String? accountCode, String? accountName) onAccountChanged;
 
   /// 시작일 변경 콜백
   final void Function(DateTime date) onFromDateChanged;
@@ -38,12 +38,12 @@ class ShelfLifeFilterBar extends StatelessWidget {
 
   const ShelfLifeFilterBar({
     super.key,
-    required this.stores,
+    required this.accounts,
     this.selectedAccountCode,
-    this.isStoresLoading = false,
+    this.isAccountsLoading = false,
     required this.fromDate,
     required this.toDate,
-    required this.onStoreChanged,
+    required this.onAccountChanged,
     required this.onFromDateChanged,
     required this.onToDateChanged,
     required this.onSearch,
@@ -58,7 +58,7 @@ class ShelfLifeFilterBar extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // 거래처 드롭다운
-          _buildStoreDropdown(),
+          _buildAccountDropdown(),
           const SizedBox(height: AppSpacing.sm),
 
           // 유통기한 날짜 범위
@@ -85,7 +85,7 @@ class ShelfLifeFilterBar extends StatelessWidget {
     );
   }
 
-  Widget _buildStoreDropdown() {
+  Widget _buildAccountDropdown() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
       decoration: BoxDecoration(
@@ -93,7 +93,7 @@ class ShelfLifeFilterBar extends StatelessWidget {
         borderRadius: AppSpacing.inputBorderRadius,
         border: Border.all(color: AppColors.border),
       ),
-      child: isStoresLoading
+      child: isAccountsLoading
           ? const Padding(
               padding: EdgeInsets.symmetric(vertical: 12),
               child: Row(
@@ -125,7 +125,7 @@ class ShelfLifeFilterBar extends StatelessWidget {
                       style: AppTypography.bodyMedium,
                     ),
                   ),
-                  ...stores.entries.map((entry) {
+                  ...accounts.entries.map((entry) {
                     return DropdownMenuItem<String?>(
                       value: entry.key,
                       child: Text(
@@ -137,7 +137,7 @@ class ShelfLifeFilterBar extends StatelessWidget {
                   }),
                 ],
                 onChanged: (value) {
-                  onStoreChanged(value, value != null ? stores[value] : null);
+                  onAccountChanged(value, value != null ? accounts[value] : null);
                 },
               ),
             ),

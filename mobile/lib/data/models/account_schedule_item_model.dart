@@ -1,24 +1,24 @@
-import '../../domain/entities/store_schedule_item.dart';
+import '../../domain/entities/account_schedule_item.dart';
 
 /// 거래처 일정 API 모델 (DTO)
 ///
-/// Backend API의 snake_case JSON을 파싱하여 StoreScheduleItem 엔티티로 변환합니다.
-class StoreScheduleItemModel {
+/// Backend API의 snake_case JSON을 파싱하여 AccountScheduleItem 엔티티로 변환합니다.
+class AccountScheduleItemModel {
   final int scheduleId;
-  final String? storeSfid;
-  final String storeName;
-  final String? storeTypeCode;
+  final String? accountSfid;
+  final String accountName;
+  final String? accountTypeCode;
   final String workCategory;
   final String? address;
   final double? latitude;
   final double? longitude;
   final bool isRegistered;
 
-  const StoreScheduleItemModel({
+  const AccountScheduleItemModel({
     required this.scheduleId,
-    this.storeSfid,
-    required this.storeName,
-    this.storeTypeCode,
+    this.accountSfid,
+    required this.accountName,
+    this.accountTypeCode,
     required this.workCategory,
     this.address,
     this.latitude,
@@ -27,12 +27,12 @@ class StoreScheduleItemModel {
   });
 
   /// snake_case JSON에서 파싱
-  factory StoreScheduleItemModel.fromJson(Map<String, dynamic> json) {
-    return StoreScheduleItemModel(
+  factory AccountScheduleItemModel.fromJson(Map<String, dynamic> json) {
+    return AccountScheduleItemModel(
       scheduleId: json['schedule_id'] as int,
-      storeSfid: json['store_sfid'] as String?,
-      storeName: json['store_name'] as String,
-      storeTypeCode: json['store_type_code'] as String?,
+      accountSfid: json['account_sfid'] as String?,
+      accountName: json['account_name'] as String,
+      accountTypeCode: json['account_type_code'] as String?,
       workCategory: json['work_category'] as String,
       address: json['address'] as String?,
       latitude: (json['latitude'] as num?)?.toDouble(),
@@ -42,12 +42,12 @@ class StoreScheduleItemModel {
   }
 
   /// Domain Entity로 변환
-  StoreScheduleItem toEntity() {
-    return StoreScheduleItem(
+  AccountScheduleItem toEntity() {
+    return AccountScheduleItem(
       scheduleId: scheduleId,
-      storeSfid: storeSfid,
-      storeName: storeName,
-      storeTypeCode: storeTypeCode,
+      accountSfid: accountSfid,
+      accountName: accountName,
+      accountTypeCode: accountTypeCode,
       workCategory: workCategory,
       address: address ?? '',
       latitude: latitude,

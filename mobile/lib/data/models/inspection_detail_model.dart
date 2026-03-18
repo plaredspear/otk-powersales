@@ -7,8 +7,8 @@ import '../../domain/entities/inspection_list_item.dart';
 class InspectionDetailModel {
   final int id;
   final String category;
-  final String storeName;
-  final int storeId;
+  final String accountName;
+  final int accountId;
   final String themeName;
   final int themeId;
   final String inspectionDate;
@@ -29,8 +29,8 @@ class InspectionDetailModel {
   const InspectionDetailModel({
     required this.id,
     required this.category,
-    required this.storeName,
-    required this.storeId,
+    required this.accountName,
+    required this.accountId,
     required this.themeName,
     required this.themeId,
     required this.inspectionDate,
@@ -54,8 +54,8 @@ class InspectionDetailModel {
     return InspectionDetailModel(
       id: json['id'] as int,
       category: json['category'] as String,
-      storeName: json['store_name'] as String,
-      storeId: json['store_id'] as int,
+      accountName: json['account_name'] as String,
+      accountId: json['account_id'] as int,
       themeName: json['theme_name'] as String,
       themeId: json['theme_id'] as int,
       inspectionDate: json['inspection_date'] as String,
@@ -82,8 +82,8 @@ class InspectionDetailModel {
     return {
       'id': id,
       'category': category,
-      'store_name': storeName,
-      'store_id': storeId,
+      'account_name': accountName,
+      'account_id': accountId,
       'theme_name': themeName,
       'theme_id': themeId,
       'inspection_date': inspectionDate,
@@ -111,8 +111,8 @@ class InspectionDetailModel {
     return InspectionDetail(
       id: id,
       category: InspectionCategoryExtension.fromJson(category),
-      storeName: storeName,
-      storeId: storeId,
+      accountName: accountName,
+      accountId: accountId,
       themeName: themeName,
       themeId: themeId,
       inspectionDate: DateTime.parse(inspectionDate),
@@ -137,8 +137,8 @@ class InspectionDetailModel {
     return InspectionDetailModel(
       id: entity.id,
       category: entity.category.toJson(),
-      storeName: entity.storeName,
-      storeId: entity.storeId,
+      accountName: entity.accountName,
+      accountId: entity.accountId,
       themeName: entity.themeName,
       themeId: entity.themeId,
       inspectionDate: entity.inspectionDate.toIso8601String().substring(0, 10),
@@ -166,8 +166,8 @@ class InspectionDetailModel {
     return other is InspectionDetailModel &&
         other.id == id &&
         other.category == category &&
-        other.storeName == storeName &&
-        other.storeId == storeId &&
+        other.accountName == accountName &&
+        other.accountId == accountId &&
         other.themeName == themeName &&
         other.themeId == themeId &&
         other.inspectionDate == inspectionDate &&
@@ -199,8 +199,8 @@ class InspectionDetailModel {
     return Object.hash(
       id,
       category,
-      storeName,
-      storeId,
+      accountName,
+      accountId,
       themeName,
       themeId,
       inspectionDate,
@@ -223,7 +223,7 @@ class InspectionDetailModel {
   @override
   String toString() {
     return 'InspectionDetailModel(id: $id, category: $category, '
-        'storeName: $storeName, storeId: $storeId, '
+        'accountName: $accountName, accountId: $accountId, '
         'themeName: $themeName, themeId: $themeId, '
         'inspectionDate: $inspectionDate, fieldType: $fieldType, '
         'fieldTypeCode: $fieldTypeCode, description: $description, '

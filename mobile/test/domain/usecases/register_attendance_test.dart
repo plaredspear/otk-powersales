@@ -23,7 +23,7 @@ void main() {
         );
 
         expect(result.scheduleId, 12345);
-        expect(result.storeName, '이마트 해운대점');
+        expect(result.accountName, '이마트 해운대점');
         expect(result.workType, 'ROOM_TEMP');
         expect(result.distanceKm, 0.12);
         expect(result.totalCount, 5);
@@ -38,7 +38,7 @@ void main() {
         );
 
         expect(result.scheduleId, 12345);
-        expect(result.storeName, '이마트 해운대점');
+        expect(result.accountName, '이마트 해운대점');
       });
 
       test('AttendanceResult 계산 getter 동작', () async {
@@ -98,7 +98,7 @@ class FakeAttendanceRepository implements AttendanceRepository {
   Exception? exceptionToThrow;
 
   @override
-  Future<StoreListResult> getStoreList({String? keyword}) async {
+  Future<AccountListResult> getAccountList({String? keyword}) async {
     throw UnimplementedError();
   }
 
@@ -112,7 +112,7 @@ class FakeAttendanceRepository implements AttendanceRepository {
     if (exceptionToThrow != null) throw exceptionToThrow!;
     return AttendanceResult(
       scheduleId: scheduleId,
-      storeName: '이마트 해운대점',
+      accountName: '이마트 해운대점',
       workType: workType ?? '진열',
       distanceKm: 0.12,
       totalCount: 5,

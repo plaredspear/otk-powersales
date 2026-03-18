@@ -9,8 +9,8 @@ void main() {
           'schedule_id': 12345,
           'employee_name': '홍길동',
           'employee_id': '005xxxxxxxxx',
-          'store_name': '이마트 부산점',
-          'store_sfid': '001xxxxxxxxx',
+          'account_name': '이마트 부산점',
+          'account_sfid': '001xxxxxxxxx',
           'work_category': '방판',
           'work_type': '정기',
           'is_commute_registered': true,
@@ -22,8 +22,8 @@ void main() {
         expect(model.scheduleId, 12345);
         expect(model.employeeName, '홍길동');
         expect(model.employeeSfid, '005xxxxxxxxx');
-        expect(model.storeName, '이마트 부산점');
-        expect(model.storeSfid, '001xxxxxxxxx');
+        expect(model.accountName, '이마트 부산점');
+        expect(model.accountSfid, '001xxxxxxxxx');
         expect(model.workCategory, '방판');
         expect(model.workType, '정기');
         expect(model.isCommuteRegistered, true);
@@ -35,8 +35,8 @@ void main() {
           'schedule_id': 12345,
           'employee_name': '홍길동',
           'employee_id': '005xxxxxxxxx',
-          'store_name': null,
-          'store_sfid': null,
+          'account_name': null,
+          'account_sfid': null,
           'work_category': '방판',
           'work_type': null,
           'is_commute_registered': false,
@@ -45,8 +45,8 @@ void main() {
 
         final model = ScheduleModel.fromJson(json);
 
-        expect(model.storeName, isNull);
-        expect(model.storeSfid, isNull);
+        expect(model.accountName, isNull);
+        expect(model.accountSfid, isNull);
         expect(model.workType, isNull);
         expect(model.isCommuteRegistered, false);
         expect(model.commuteRegisteredAt, isNull);
@@ -59,8 +59,8 @@ void main() {
           scheduleId: 12345,
           employeeName: '홍길동',
           employeeSfid: '005x',
-          storeName: '이마트 부산점',
-          storeSfid: '001x',
+          accountName: '이마트 부산점',
+          accountSfid: '001x',
           workCategory: '방판',
           workType: '정기',
           isCommuteRegistered: false,
@@ -71,7 +71,7 @@ void main() {
 
         expect(entity.scheduleId, 12345);
         expect(entity.employeeName, '홍길동');
-        expect(entity.storeName, '이마트 부산점');
+        expect(entity.accountName, '이마트 부산점');
         expect(entity.workCategory, '방판');
         expect(entity.isCommuteRegistered, false);
         expect(entity.commuteRegisteredAt, isNull);

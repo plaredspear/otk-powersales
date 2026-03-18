@@ -11,7 +11,7 @@ import '../../../domain/entities/my_account.dart';
 /// 거래처명/코드 표시 + 주문서 현황 / 매출 현황 이동 옵션.
 class AccountDetailPopup extends StatelessWidget {
   /// 거래처 정보
-  final MyAccount store;
+  final MyAccount account;
 
   /// 주문서 현황 탭 콜백
   final VoidCallback? onOrderStatusTap;
@@ -21,7 +21,7 @@ class AccountDetailPopup extends StatelessWidget {
 
   const AccountDetailPopup({
     super.key,
-    required this.store,
+    required this.account,
     this.onOrderStatusTap,
     this.onSalesStatusTap,
   });
@@ -29,7 +29,7 @@ class AccountDetailPopup extends StatelessWidget {
   /// 팝업 표시
   static Future<void> show(
     BuildContext context, {
-    required MyAccount store,
+    required MyAccount account,
     VoidCallback? onOrderStatusTap,
     VoidCallback? onSalesStatusTap,
   }) {
@@ -40,7 +40,7 @@ class AccountDetailPopup extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
         ),
         child: AccountDetailPopup(
-          store: store,
+          account: account,
           onOrderStatusTap: () {
             Navigator.of(dialogContext).pop();
             onOrderStatusTap?.call();
@@ -78,14 +78,14 @@ class AccountDetailPopup extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           // 거래처명
           Text(
-            store.accountName,
+            account.accountName,
             style: AppTypography.headlineMedium,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSpacing.xs),
           // 거래처 코드
           Text(
-            '(${store.accountCode})',
+            '(${account.accountCode})',
             style: AppTypography.bodyMedium.copyWith(
               color: AppColors.textSecondary,
             ),

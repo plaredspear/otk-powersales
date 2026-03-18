@@ -10,7 +10,7 @@ import '../../../core/theme/app_typography.dart';
 /// 거래처 선택, 제품 선택, 유통기한, 알림일, 설명 입력을 제공합니다.
 class ShelfLifeRegisterForm extends StatelessWidget {
   /// 거래처 목록
-  final Map<String, String> stores;
+  final Map<String, String> accounts;
 
   /// 선택된 거래처 코드
   final String? selectedAccountCode;
@@ -31,7 +31,7 @@ class ShelfLifeRegisterForm extends StatelessWidget {
   final String description;
 
   /// 거래처 선택 콜백
-  final void Function(String accountCode, String accountName) onStoreChanged;
+  final void Function(String accountCode, String accountName) onAccountChanged;
 
   /// 제품 선택 버튼 콜백
   final VoidCallback onSelectProduct;
@@ -50,14 +50,14 @@ class ShelfLifeRegisterForm extends StatelessWidget {
 
   const ShelfLifeRegisterForm({
     super.key,
-    required this.stores,
+    required this.accounts,
     this.selectedAccountCode,
     this.selectedProductCode,
     this.selectedProductName,
     required this.expiryDate,
     required this.alertDate,
     required this.description,
-    required this.onStoreChanged,
+    required this.onAccountChanged,
     required this.onSelectProduct,
     required this.onScanBarcode,
     required this.onExpiryDateChanged,
@@ -75,7 +75,7 @@ class ShelfLifeRegisterForm extends StatelessWidget {
         // 거래처 선택
         _buildLabel('거래처', required: true),
         const SizedBox(height: AppSpacing.xs),
-        _buildStoreDropdown(),
+        _buildAccountDropdown(),
 
         const SizedBox(height: AppSpacing.lg),
 
@@ -132,8 +132,8 @@ class ShelfLifeRegisterForm extends StatelessWidget {
     );
   }
 
-  Widget _buildStoreDropdown() {
-    final sortedEntries = stores.entries.toList()
+  Widget _buildAccountDropdown() {
+    final sortedEntries = accounts.entries.toList()
       ..sort((a, b) => a.value.compareTo(b.value));
 
     return Container(
@@ -155,7 +155,7 @@ class ShelfLifeRegisterForm extends StatelessWidget {
           }).toList(),
           onChanged: (accountCode) {
             if (accountCode != null) {
-              onStoreChanged(accountCode, stores[accountCode]!);
+              onAccountChanged(accountCode, accounts[accountCode]!);
             }
           },
         ),

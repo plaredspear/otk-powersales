@@ -58,7 +58,7 @@ class FakeAttendanceRepository implements AttendanceRepository {
   Exception? exceptionToThrow;
 
   @override
-  Future<StoreListResult> getStoreList({String? keyword}) async {
+  Future<AccountListResult> getAccountList({String? keyword}) async {
     throw UnimplementedError();
   }
 
@@ -87,32 +87,32 @@ class FakeAttendanceRepository implements AttendanceRepository {
 const _mockStatusList = [
   AttendanceStatus(
     scheduleId: 12345,
-    storeName: '이마트 해운대점',
+    accountName: '이마트 해운대점',
     workCategory: '진열',
     status: 'REGISTERED',
     workType: 'ROOM_TEMP',
   ),
   AttendanceStatus(
     scheduleId: 12346,
-    storeName: '홈플러스 서면점',
+    accountName: '홈플러스 서면점',
     workCategory: '순회',
     status: 'PENDING',
   ),
   AttendanceStatus(
     scheduleId: 12347,
-    storeName: '롯데마트 광복점',
+    accountName: '롯데마트 광복점',
     workCategory: '진열',
     status: 'PENDING',
   ),
   AttendanceStatus(
     scheduleId: 12348,
-    storeName: '이마트 사상점',
+    accountName: '이마트 사상점',
     workCategory: '순회',
     status: 'PENDING',
   ),
   AttendanceStatus(
     scheduleId: 12349,
-    storeName: '홈플러스 센텀시티점',
+    accountName: '홈플러스 센텀시티점',
     workCategory: '진열',
     status: 'PENDING',
   ),

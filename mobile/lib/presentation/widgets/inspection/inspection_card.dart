@@ -50,7 +50,7 @@ class InspectionCard extends StatelessWidget {
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Text(
-                      item.storeName,
+                      item.accountName,
                       style: AppTypography.headlineSmall,
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,

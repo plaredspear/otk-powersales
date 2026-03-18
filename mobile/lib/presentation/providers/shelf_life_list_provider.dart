@@ -47,37 +47,37 @@ class ShelfLifeListNotifier extends StateNotifier<ShelfLifeListState> {
   /// 초기 데이터 로딩 (거래처 목록 + 자동 검색)
   Future<void> initialize() async {
     // 거래처 목록 로드
-    await _loadStores();
+    await _loadAccounts();
 
     // 기본 필터로 자동 검색
     await searchShelfLife();
   }
 
-  /// GET /api/v1/stores/my 호출하여 거래처 목록 로드
-  Future<void> _loadStores() async {
-    state = state.copyWith(isStoresLoading: true);
+  /// GET /api/v1/accounts/my 호출하여 거래처 목록 로드
+  Future<void> _loadAccounts() async {
+    state = state.copyWith(isAccountsLoading: true);
     try {
-      final response = await _dio.get('/api/v1/stores/my');
+      final response = await _dio.get('/api/v1/accounts/my');
       final data = response.data['data'] as Map<String, dynamic>;
-      final storesList = data['stores'] as List<dynamic>;
-      final storesMap = <String, String>{};
-      for (final store in storesList) {
-        final storeMap = store as Map<String, dynamic>;
-        final code = storeMap['store_code'] as String;
-        final name = storeMap['store_name'] as String;
-        storesMap[code] = name;
+      final accountsList = data['accounts'] as List<dynamic>;
+      final accountsMap = <String, String>{};
+      for (final account in accountsList) {
+        final accountMap = account as Map<String, dynamic>;
+        final code = accountMap['account_code'] as String;
+        final name = accountMap['account_name'] as String;
+        accountsMap[code] = name;
       }
-      state = state.copyWith(stores: storesMap, isStoresLoading: false);
+      state = state.copyWith(accounts: accountsMap, isAccountsLoading: false);
     } catch (e) {
       // 거래처 로딩 실패 시 빈 목록 유지, "전체" 상태 유지
-      state = state.copyWith(isStoresLoading: false);
+      state = state.copyWith(isAccountsLoading: false);
     }
   }
 
   /// 거래처 선택
-  void selectStore(String? accountCode, String? accountName) {
+  void selectAccount(String? accountCode, String? accountName) {
     if (accountCode == null) {
-      state = state.copyWith(clearStoreFilter: true);
+      state = state.copyWith(clearAccountFilter: true);
     } else {
       state = state.copyWith(
         selectedAccountCode: accountCode,

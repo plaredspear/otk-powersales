@@ -13,8 +13,8 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
   }) : _dataSource = dataSource;
 
   @override
-  Future<StoreListResult> getStoreList({String? keyword}) {
-    return _dataSource.getStoreList(keyword: keyword);
+  Future<AccountListResult> getAccountList({String? keyword}) {
+    return _dataSource.getAccountList(keyword: keyword);
   }
 
   @override

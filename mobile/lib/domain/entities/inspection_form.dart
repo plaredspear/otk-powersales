@@ -13,7 +13,7 @@ class InspectionRegisterForm {
   final InspectionCategory category;
 
   /// 거래처 ID
-  final int storeId;
+  final int accountId;
 
   /// 점검일
   final DateTime inspectionDate;
@@ -51,7 +51,7 @@ class InspectionRegisterForm {
   const InspectionRegisterForm({
     required this.themeId,
     required this.category,
-    required this.storeId,
+    required this.accountId,
     required this.inspectionDate,
     required this.fieldTypeCode,
     this.description,
@@ -74,7 +74,7 @@ class InspectionRegisterForm {
   InspectionRegisterForm copyWith({
     int? themeId,
     InspectionCategory? category,
-    int? storeId,
+    int? accountId,
     DateTime? inspectionDate,
     String? fieldTypeCode,
     String? description,
@@ -90,7 +90,7 @@ class InspectionRegisterForm {
     return InspectionRegisterForm(
       themeId: themeId ?? this.themeId,
       category: category ?? this.category,
-      storeId: storeId ?? this.storeId,
+      accountId: accountId ?? this.accountId,
       inspectionDate: inspectionDate ?? this.inspectionDate,
       fieldTypeCode: fieldTypeCode ?? this.fieldTypeCode,
       description: description ?? this.description,
@@ -111,7 +111,7 @@ class InspectionRegisterForm {
   /// 폼 유효성 검증
   ///
   /// 검증 규칙:
-  /// 1. 공통 필수: themeId, category, storeId, inspectionDate, fieldTypeCode, photos(최소 1장)
+  /// 1. 공통 필수: themeId, category, accountId, inspectionDate, fieldTypeCode, photos(최소 1장)
   /// 2. 자사 필수: productCode
   /// 3. 경쟁사 필수: competitorName, competitorActivity, competitorTasting
   /// 4. 시식=예 조건부 필수: competitorProductName, competitorProductPrice, competitorSalesQuantity
@@ -123,7 +123,7 @@ class InspectionRegisterForm {
     if (themeId <= 0) {
       errors.add('테마를 선택해주세요');
     }
-    if (storeId <= 0) {
+    if (accountId <= 0) {
       errors.add('거래처를 선택해주세요');
     }
     if (fieldTypeCode.isEmpty) {
@@ -187,7 +187,7 @@ class InspectionRegisterForm {
     if (other is! InspectionRegisterForm) return false;
     return other.themeId == themeId &&
         other.category == category &&
-        other.storeId == storeId &&
+        other.accountId == accountId &&
         other.inspectionDate == inspectionDate &&
         other.fieldTypeCode == fieldTypeCode &&
         other.description == description &&
@@ -214,7 +214,7 @@ class InspectionRegisterForm {
     return Object.hash(
       themeId,
       category,
-      storeId,
+      accountId,
       inspectionDate,
       fieldTypeCode,
       description,
@@ -232,7 +232,7 @@ class InspectionRegisterForm {
   @override
   String toString() {
     return 'InspectionRegisterForm(themeId: $themeId, category: $category, '
-        'storeId: $storeId, inspectionDate: $inspectionDate, '
+        'accountId: $accountId, inspectionDate: $inspectionDate, '
         'fieldTypeCode: $fieldTypeCode, description: $description, '
         'productCode: $productCode, competitorName: $competitorName, '
         'competitorActivity: $competitorActivity, competitorTasting: $competitorTasting, '

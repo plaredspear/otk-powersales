@@ -7,8 +7,8 @@ class ScheduleModel {
   final int scheduleId;
   final String employeeName;
   final String employeeSfid;
-  final String? storeName;
-  final String? storeSfid;
+  final String? accountName;
+  final String? accountSfid;
   final String workCategory;
   final String? workType;
   final bool isCommuteRegistered;
@@ -18,8 +18,8 @@ class ScheduleModel {
     required this.scheduleId,
     required this.employeeName,
     required this.employeeSfid,
-    this.storeName,
-    this.storeSfid,
+    this.accountName,
+    this.accountSfid,
     required this.workCategory,
     this.workType,
     required this.isCommuteRegistered,
@@ -31,8 +31,8 @@ class ScheduleModel {
       scheduleId: json['schedule_id'] as int,
       employeeName: json['employee_name'] as String,
       employeeSfid: json['employee_id'] as String,
-      storeName: json['store_name'] as String?,
-      storeSfid: json['store_sfid'] as String?,
+      accountName: json['account_name'] as String?,
+      accountSfid: json['account_sfid'] as String?,
       workCategory: json['work_category'] as String,
       workType: json['work_type'] as String?,
       isCommuteRegistered: json['is_commute_registered'] as bool,
@@ -47,8 +47,8 @@ class ScheduleModel {
       'schedule_id': scheduleId,
       'employee_name': employeeName,
       'employee_id': employeeSfid,
-      'store_name': storeName,
-      'store_sfid': storeSfid,
+      'account_name': accountName,
+      'account_sfid': accountSfid,
       'work_category': workCategory,
       'work_type': workType,
       'is_commute_registered': isCommuteRegistered,
@@ -61,8 +61,8 @@ class ScheduleModel {
       scheduleId: scheduleId,
       employeeName: employeeName,
       employeeSfid: employeeSfid,
-      storeName: storeName,
-      storeSfid: storeSfid,
+      accountName: accountName,
+      accountSfid: accountSfid,
       workCategory: workCategory,
       workType: workType,
       isCommuteRegistered: isCommuteRegistered,
@@ -75,8 +75,8 @@ class ScheduleModel {
       scheduleId: entity.scheduleId,
       employeeName: entity.employeeName,
       employeeSfid: entity.employeeSfid,
-      storeName: entity.storeName,
-      storeSfid: entity.storeSfid,
+      accountName: entity.accountName,
+      accountSfid: entity.accountSfid,
       workCategory: entity.workCategory,
       workType: entity.workType,
       isCommuteRegistered: entity.isCommuteRegistered,
@@ -91,8 +91,8 @@ class ScheduleModel {
         other.scheduleId == scheduleId &&
         other.employeeName == employeeName &&
         other.employeeSfid == employeeSfid &&
-        other.storeName == storeName &&
-        other.storeSfid == storeSfid &&
+        other.accountName == accountName &&
+        other.accountSfid == accountSfid &&
         other.workCategory == workCategory &&
         other.workType == workType &&
         other.isCommuteRegistered == isCommuteRegistered &&
@@ -105,8 +105,8 @@ class ScheduleModel {
       scheduleId,
       employeeName,
       employeeSfid,
-      storeName,
-      storeSfid,
+      accountName,
+      accountSfid,
       workCategory,
       workType,
       isCommuteRegistered,
@@ -116,6 +116,6 @@ class ScheduleModel {
 
   @override
   String toString() {
-    return 'ScheduleModel(scheduleId: $scheduleId, employeeName: $employeeName, storeName: $storeName, workCategory: $workCategory, isCommuteRegistered: $isCommuteRegistered)';
+    return 'ScheduleModel(scheduleId: $scheduleId, employeeName: $employeeName, accountName: $accountName, workCategory: $workCategory, isCommuteRegistered: $isCommuteRegistered)';
   }
 }

@@ -24,7 +24,7 @@ class _MockInspectionRemoteDataSource implements InspectionRemoteDataSource {
   Exception? error;
 
   // Capture method call parameters
-  int? storeIdParam;
+  int? accountIdParam;
   String? categoryParam;
   String? fromDateParam;
   String? toDateParam;
@@ -33,12 +33,12 @@ class _MockInspectionRemoteDataSource implements InspectionRemoteDataSource {
 
   @override
   Future<List<InspectionListItemModel>> getInspectionList({
-    int? storeId,
+    int? accountId,
     String? category,
     required String fromDate,
     required String toDate,
   }) async {
-    storeIdParam = storeId;
+    accountIdParam = accountId;
     categoryParam = category;
     fromDateParam = fromDate;
     toDateParam = toDate;
@@ -92,7 +92,7 @@ void main() {
       test('필터를 API 파라미터로 변환하여 목록을 조회한다', () async {
         // Given
         final filter = InspectionFilter(
-          storeId: 100,
+          accountId: 100,
           category: InspectionCategory.OWN,
           fromDate: DateTime(2020, 8, 1),
           toDate: DateTime(2020, 8, 31),
@@ -101,8 +101,8 @@ void main() {
           const InspectionListItemModel(
             id: 1,
             category: 'OWN',
-            storeName: '이마트 죽전점',
-            storeId: 100,
+            accountName: '이마트 죽전점',
+            accountId: 100,
             inspectionDate: '2020-08-13',
             fieldType: '본매대',
             fieldTypeCode: 'FT01',
@@ -116,14 +116,14 @@ void main() {
         expect(result.length, 1);
         expect(result[0].id, 1);
         expect(result[0].category, InspectionCategory.OWN);
-        expect(result[0].storeName, '이마트 죽전점');
-        expect(mockDataSource.storeIdParam, 100);
+        expect(result[0].accountName, '이마트 죽전점');
+        expect(mockDataSource.accountIdParam, 100);
         expect(mockDataSource.categoryParam, 'OWN');
         expect(mockDataSource.fromDateParam, '2020-08-01');
         expect(mockDataSource.toDateParam, '2020-08-31');
       });
 
-      test('storeId와 category가 null인 필터를 처리한다', () async {
+      test('accountId와 category가 null인 필터를 처리한다', () async {
         // Given
         final filter = InspectionFilter(
           fromDate: DateTime(2020, 8, 1),
@@ -135,7 +135,7 @@ void main() {
         await repository.getInspectionList(filter);
 
         // Then
-        expect(mockDataSource.storeIdParam, null);
+        expect(mockDataSource.accountIdParam, null);
         expect(mockDataSource.categoryParam, null);
       });
 
@@ -176,8 +176,8 @@ void main() {
         const mockModel = InspectionDetailModel(
           id: 1,
           category: 'OWN',
-          storeName: '이마트 죽전점',
-          storeId: 100,
+          accountName: '이마트 죽전점',
+          accountId: 100,
           themeName: '8월 테마',
           themeId: 10,
           inspectionDate: '2020-08-13',
@@ -197,7 +197,7 @@ void main() {
         // Then
         expect(result.id, 1);
         expect(result.category, InspectionCategory.OWN);
-        expect(result.storeName, '이마트 죽전점');
+        expect(result.accountName, '이마트 죽전점');
         expect(result.description, '냉장고 앞 본매대');
         expect(mockDataSource.inspectionIdParam, 1);
       });
@@ -220,7 +220,7 @@ void main() {
         final form = InspectionRegisterForm(
           themeId: 10,
           category: InspectionCategory.OWN,
-          storeId: 100,
+          accountId: 100,
           inspectionDate: DateTime(2020, 8, 13),
           fieldTypeCode: 'FT01',
           description: '냉장고 앞 본매대',
@@ -230,8 +230,8 @@ void main() {
         const mockModel = InspectionListItemModel(
           id: 1,
           category: 'OWN',
-          storeName: '이마트 죽전점',
-          storeId: 100,
+          accountName: '이마트 죽전점',
+          accountId: 100,
           inspectionDate: '2020-08-13',
           fieldType: '본매대',
           fieldTypeCode: 'FT01',
@@ -244,11 +244,11 @@ void main() {
         // Then
         expect(result.id, 1);
         expect(result.category, InspectionCategory.OWN);
-        expect(result.storeName, '이마트 죽전점');
+        expect(result.accountName, '이마트 죽전점');
         expect(mockDataSource.requestParam, isNotNull);
         expect(mockDataSource.requestParam!.themeId, 10);
         expect(mockDataSource.requestParam!.category, 'OWN');
-        expect(mockDataSource.requestParam!.storeId, 100);
+        expect(mockDataSource.requestParam!.accountId, 100);
         expect(mockDataSource.requestParam!.inspectionDate, '2020-08-13');
       });
 
@@ -257,7 +257,7 @@ void main() {
         final form = InspectionRegisterForm(
           themeId: 20,
           category: InspectionCategory.COMPETITOR,
-          storeId: 200,
+          accountId: 200,
           inspectionDate: DateTime(2020, 8, 14),
           fieldTypeCode: 'FT02',
           competitorName: '농심',
@@ -271,8 +271,8 @@ void main() {
         const mockModel = InspectionListItemModel(
           id: 2,
           category: 'COMPETITOR',
-          storeName: '홈플러스 강남점',
-          storeId: 200,
+          accountName: '홈플러스 강남점',
+          accountId: 200,
           inspectionDate: '2020-08-14',
           fieldType: '시식',
           fieldTypeCode: 'FT02',
@@ -295,7 +295,7 @@ void main() {
         final form = InspectionRegisterForm(
           themeId: 10,
           category: InspectionCategory.OWN,
-          storeId: 100,
+          accountId: 100,
           inspectionDate: DateTime(2020, 8, 13),
           fieldTypeCode: 'FT01',
           productCode: 'P001',

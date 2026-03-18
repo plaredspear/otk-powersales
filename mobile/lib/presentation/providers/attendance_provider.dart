@@ -6,7 +6,7 @@ import '../../data/datasources/attendance_api_datasource.dart';
 import '../../data/repositories/attendance_repository_impl.dart';
 import '../../domain/repositories/attendance_repository.dart';
 import '../../domain/usecases/get_attendance_status.dart';
-import '../../domain/usecases/get_store_list.dart';
+import '../../domain/usecases/get_account_list.dart';
 import '../../domain/usecases/register_attendance.dart';
 import 'attendance_state.dart';
 
@@ -18,9 +18,9 @@ final attendanceRepositoryProvider = Provider<AttendanceRepository>((ref) {
   return AttendanceRepositoryImpl(dataSource: dataSource);
 });
 
-final getStoreListUseCaseProvider = Provider<GetStoreList>((ref) {
+final getAccountListUseCaseProvider = Provider<GetAccountList>((ref) {
   final repository = ref.watch(attendanceRepositoryProvider);
-  return GetStoreList(repository);
+  return GetAccountList(repository);
 });
 
 final registerAttendanceUseCaseProvider = Provider<RegisterAttendance>((ref) {
@@ -37,30 +37,30 @@ final getAttendanceStatusUseCaseProvider =
 // --- AttendanceNotifier ---
 
 class AttendanceNotifier extends StateNotifier<AttendanceState> {
-  final GetStoreList _getStoreList;
+  final GetAccountList _getAccountList;
   final RegisterAttendance _registerAttendance;
   final GetAttendanceStatus _getAttendanceStatus;
 
   AttendanceNotifier({
-    required GetStoreList getStoreList,
+    required GetAccountList getAccountList,
     required RegisterAttendance registerAttendance,
     required GetAttendanceStatus getAttendanceStatus,
-  })  : _getStoreList = getStoreList,
+  })  : _getAccountList = getAccountList,
         _registerAttendance = registerAttendance,
         _getAttendanceStatus = getAttendanceStatus,
         super(AttendanceState.initial());
 
   /// 거래처 목록 로딩
-  Future<void> loadStores() async {
+  Future<void> loadAccounts() async {
     state = state.toLoading();
 
     try {
-      final result = await _getStoreList.call();
+      final result = await _getAccountList.call();
 
       state = state.copyWith(
         isLoading: false,
-        allStores: result.stores,
-        filteredStores: result.stores,
+        allAccounts: result.accounts,
+        filteredAccounts: result.accounts,
         totalCount: result.totalCount,
         registeredCount: result.registeredCount,
         errorMessage: null,
@@ -73,17 +73,17 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
   }
 
   /// 거래처 검색
-  void searchStores(String keyword) {
+  void searchAccounts(String keyword) {
     final lowerKeyword = keyword.toLowerCase();
-    final filtered = state.allStores.where((store) {
+    final filtered = state.allAccounts.where((account) {
       if (keyword.isEmpty) return true;
-      return store.storeName.toLowerCase().contains(lowerKeyword) ||
-          store.address.toLowerCase().contains(lowerKeyword);
+      return account.accountName.toLowerCase().contains(lowerKeyword) ||
+          account.address.toLowerCase().contains(lowerKeyword);
     }).toList();
 
     state = state.copyWith(
       searchKeyword: keyword,
-      filteredStores: filtered,
+      filteredAccounts: filtered,
       selectedScheduleId: null,
     );
   }
@@ -94,7 +94,7 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
   }
 
   /// 거래처 선택
-  void selectStore(int scheduleId) {
+  void selectAccount(int scheduleId) {
     state = state.copyWith(selectedScheduleId: scheduleId);
   }
 
@@ -142,14 +142,14 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
     );
 
     // 거래처 목록 새로고침
-    await loadStores();
+    await loadAccounts();
   }
 
   /// 등록 결과 초기화
   void clearRegistrationResult() {
     state = AttendanceState(
-      allStores: state.allStores,
-      filteredStores: state.allStores,
+      allAccounts: state.allAccounts,
+      filteredAccounts: state.allAccounts,
       totalCount: state.totalCount,
       registeredCount: state.registeredCount,
       selectedWorkType: state.selectedWorkType,
@@ -183,7 +183,7 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
 final attendanceProvider =
     StateNotifierProvider<AttendanceNotifier, AttendanceState>((ref) {
   return AttendanceNotifier(
-    getStoreList: ref.watch(getStoreListUseCaseProvider),
+    getAccountList: ref.watch(getAccountListUseCaseProvider),
     registerAttendance: ref.watch(registerAttendanceUseCaseProvider),
     getAttendanceStatus: ref.watch(getAttendanceStatusUseCaseProvider),
   );

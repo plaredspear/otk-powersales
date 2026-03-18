@@ -9,14 +9,14 @@ abstract class PosSalesRepository {
   ///
   /// [startDate]: 조회 시작일
   /// [endDate]: 조회 종료일
-  /// [storeName]: 매장명 필터 (선택적)
+  /// [accountName]: 매장명 필터 (선택적)
   /// [productName]: 제품명 필터 (선택적)
   ///
   /// Returns: 조건에 맞는 POS 매출 목록
   Future<List<PosSales>> getPosSales({
     required DateTime startDate,
     required DateTime endDate,
-    String? storeName,
+    String? accountName,
     String? productName,
   });
 
@@ -35,13 +35,13 @@ abstract class PosSalesRepository {
 
   /// 특정 매장의 POS 매출 조회
   ///
-  /// [storeName]: 매장명
+  /// [accountName]: 매장명
   /// [startDate]: 조회 시작일
   /// [endDate]: 조회 종료일
   ///
   /// Returns: 매장별 POS 매출 목록
-  Future<List<PosSales>> getPosSalesByStore({
-    required String storeName,
+  Future<List<PosSales>> getPosSalesByAccount({
+    required String accountName,
     required DateTime startDate,
     required DateTime endDate,
   });
