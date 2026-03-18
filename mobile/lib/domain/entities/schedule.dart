@@ -3,7 +3,7 @@
 /// 홈화면에 표시되는 오늘의 스케줄 정보를 나타낸다.
 /// Backend ScheduleInfo DTO에 맞춘 필드 구조.
 class Schedule {
-  final String scheduleId;
+  final int scheduleId;
   final String employeeName;
   final String employeeSfid;
   final String? storeName;
@@ -26,7 +26,7 @@ class Schedule {
   });
 
   Schedule copyWith({
-    String? scheduleId,
+    int? scheduleId,
     String? employeeName,
     String? employeeSfid,
     String? storeName,

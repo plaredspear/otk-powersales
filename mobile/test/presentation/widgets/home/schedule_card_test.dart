@@ -258,7 +258,7 @@ void main() {
           userRole: 'LEADER',
           schedules: [
             Schedule(
-              scheduleId: 'SCH-1',
+              scheduleId: 1,
               employeeName: '김영미',
               employeeSfid: 'EMP-001',
               storeName: '이마트 강남점',
@@ -280,7 +280,7 @@ void main() {
           userRole: 'LEADER',
           schedules: [
             const Schedule(
-              scheduleId: 'SCH-1',
+              scheduleId: 1,
               employeeName: '박수진',
               employeeSfid: 'EMP-002',
               storeName: '홈플러스 잠실점',
@@ -313,7 +313,7 @@ void main() {
           userRole: 'LEADER',
           schedules: const [
             Schedule(
-              scheduleId: 'SCH-1',
+              scheduleId: 1,
               employeeName: '김영미',
               employeeSfid: 'EMP-001',
               storeName: '이마트 강남점',
@@ -322,7 +322,7 @@ void main() {
               commuteRegisteredAt: null,
             ),
             Schedule(
-              scheduleId: 'SCH-2',
+              scheduleId: 2,
               employeeName: '김영미',
               employeeSfid: 'EMP-001',
               storeName: '롯데마트 서초점',
@@ -428,7 +428,7 @@ void main() {
 List<Schedule> _makeSchedules(int count, {required int registered}) {
   return List.generate(count, (i) {
     return Schedule(
-      scheduleId: 'SCH-$i',
+      scheduleId: i + 1,
       employeeName: '테스트',
       employeeSfid: 'EMP-001',
       storeName: '매장 $i',
@@ -442,7 +442,7 @@ List<Schedule> _makeSchedules(int count, {required int registered}) {
 List<Schedule> _makeLeaderSchedules() {
   return [
     Schedule(
-      scheduleId: 'SCH-1',
+      scheduleId: 1,
       employeeName: '김영미',
       employeeSfid: 'EMP-001',
       storeName: '이마트 강남점',
@@ -451,7 +451,7 @@ List<Schedule> _makeLeaderSchedules() {
       commuteRegisteredAt: DateTime(2026, 3, 3, 9, 30),
     ),
     const Schedule(
-      scheduleId: 'SCH-2',
+      scheduleId: 2,
       employeeName: '박수진',
       employeeSfid: 'EMP-002',
       storeName: '홈플러스 잠실점',
@@ -459,7 +459,7 @@ List<Schedule> _makeLeaderSchedules() {
       isCommuteRegistered: false,
     ),
     Schedule(
-      scheduleId: 'SCH-3',
+      scheduleId: 3,
       employeeName: '이지현',
       employeeSfid: 'EMP-003',
       storeName: '롯데마트 서초점',
