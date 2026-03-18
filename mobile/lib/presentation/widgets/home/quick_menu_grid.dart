@@ -15,10 +15,14 @@ class QuickMenuItem {
   /// 이동 라우트
   final String? route;
 
+  /// Material 아이콘 (에셋이 없는 경우 대체)
+  final IconData? iconData;
+
   const QuickMenuItem({
-    required this.assetPath,
+    this.assetPath = '',
     required this.label,
     this.route,
+    this.iconData,
   });
 }
 
@@ -51,8 +55,22 @@ class QuickMenuGrid extends StatelessWidget {
     QuickMenuItem(assetPath: 'assets/images/ico_quick6.png', label: '행사 현황', route: AppRouter.promotionList),
   ];
 
+  /// 관리자 전용 메뉴 목록
+  static const List<QuickMenuItem> adminMenuItems = [
+    QuickMenuItem(iconData: Icons.fact_check_outlined, label: '안전점검\n현황', route: AppRouter.safetyCheckStatus),
+  ];
+
+  List<QuickMenuItem> get _menuItems {
+    final isLeaderOrAdmin = userRole == 'LEADER' || userRole == 'ADMIN';
+    if (isLeaderOrAdmin) {
+      return [...defaultMenuItems, ...adminMenuItems];
+    }
+    return defaultMenuItems;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final items = _menuItems;
     return GridView.count(
       crossAxisCount: 3,
       shrinkWrap: true,
@@ -60,7 +78,7 @@ class QuickMenuGrid extends StatelessWidget {
       mainAxisSpacing: AppSpacing.lg,
       crossAxisSpacing: AppSpacing.md,
       childAspectRatio: 1.1,
-      children: defaultMenuItems.map((item) {
+      children: items.map((item) {
         return _buildMenuItem(item);
       }).toList(),
     );
@@ -74,11 +92,18 @@ class QuickMenuGrid extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.asset(
-            item.assetPath,
-            width: AppSpacing.iconSizeMenu,
-            height: AppSpacing.iconSizeMenu,
-          ),
+          if (item.iconData != null)
+            Icon(
+              item.iconData,
+              size: AppSpacing.iconSizeMenu,
+              color: AppColors.secondary,
+            )
+          else
+            Image.asset(
+              item.assetPath,
+              width: AppSpacing.iconSizeMenu,
+              height: AppSpacing.iconSizeMenu,
+            ),
           const SizedBox(height: AppSpacing.sm),
           Text(
             item.label,

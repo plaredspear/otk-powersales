@@ -31,6 +31,7 @@ import 'presentation/pages/my_schedule_detail_page.dart';
 import 'presentation/pages/promotion_list_page.dart';
 import 'presentation/pages/promotion_detail_page.dart';
 import 'presentation/pages/safety_check_page.dart';
+import 'presentation/pages/safety_check_status_page.dart';
 import 'presentation/screens/change_password_screen.dart';
 import 'presentation/screens/gps_consent_screen.dart';
 import 'presentation/screens/login_screen.dart';
@@ -77,6 +78,7 @@ class AppRouter {
   static const String safetyCheck = '/safety-check';
   static const String promotionList = '/promotions';
   static const String promotionDetail = '/promotions/detail';
+  static const String safetyCheckStatus = '/safety-check-status'; // #278: 안전점검 현황
   static const String myScheduleCalendar = '/my-schedule'; // F56: 마이페이지 일정 캘린더
   static const String myScheduleDetail = '/my-schedule/detail'; // F56: 일정 상세
 
@@ -156,6 +158,7 @@ class AppRouter {
           return SalesOverviewScreen(initialTabIndex: initialTabIndex);
         },
         safetyCheck: (context) => const SafetyCheckPage(),
+        safetyCheckStatus: (context) => const SafetyCheckStatusPage(),
         promotionList: (context) => const PromotionListPage(),
         promotionDetail: (context) {
           final promotionId =
