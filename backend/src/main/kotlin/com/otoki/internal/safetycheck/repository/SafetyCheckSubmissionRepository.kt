@@ -11,4 +11,6 @@ interface SafetyCheckSubmissionRepository : JpaRepository<SafetyCheckSubmission,
     fun existsByEmployeeIdAndWorkingDate(employeeId: String, workingDate: LocalDate): Boolean
 
     fun findByEmployeeIdAndWorkingDate(employeeId: String, workingDate: LocalDate): Optional<SafetyCheckSubmission>
+
+    fun findByEmployeeIdInAndWorkingDate(employeeIds: List<String>, workingDate: LocalDate): List<SafetyCheckSubmission>
 }

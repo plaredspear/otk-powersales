@@ -5,5 +5,6 @@ enum class AdminPermission {
     EMPLOYEE_READ,
     ACCOUNT_READ,
     PROMOTION_READ,
-    PROMOTION_WRITE
+    PROMOTION_WRITE,
+    SAFETY_CHECK_READ
 }
