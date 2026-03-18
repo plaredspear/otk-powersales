@@ -8,8 +8,8 @@ import com.otoki.internal.claim.entity.Claim
  * /
 data class ClaimCreateResponse(
     val id: Long,
-    val storeName: String,
-    val storeId: Long,
+    val accountName: String,
+    val accountId: Long,
     val productName: String,
     val productCode: String,
     val createdAt: String
@@ -18,8 +18,8 @@ data class ClaimCreateResponse(
         fun from(claim: Claim): ClaimCreateResponse {
             return ClaimCreateResponse(
                 id = claim.id,
-                storeName = claim.storeName,
-                storeId = claim.store.id,
+                accountName = claim.accountName,
+                accountId = claim.account.id,
                 productName = claim.productName,
                 productCode = claim.productCode,
                 createdAt = claim.createdAt.toString()

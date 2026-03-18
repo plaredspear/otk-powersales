@@ -12,7 +12,7 @@ import com.otoki.internal.exception.InvalidDeliveryDateException
 import com.otoki.internal.exception.ProductNotFoundException
 import com.otoki.internal.order.repository.OrderDraftRepository
 import com.otoki.internal.sap.repository.ProductRepository
-import com.otoki.internal.repository.StoreRepository
+import com.otoki.internal.repository.AccountRepository
 import com.otoki.internal.sap.repository.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -29,7 +29,7 @@ import java.time.format.DateTimeParseException
 class OrderDraftService(
     private val orderDraftRepository: OrderDraftRepository,
     private val productRepository: ProductRepository,
-    private val storeRepository: StoreRepository,
+    private val accountRepository: AccountRepository,
     private val userRepository: UserRepository
 ) {
 
@@ -65,7 +65,7 @@ class OrderDraftService(
         }
 
         // 2. 거래처 확인
-        val store = storeRepository.findById(clientId)
+        val account = accountRepository.findById(clientId)
             .orElseThrow { ClientNotFoundException() }
 
         // 3. 사용자 확인
@@ -92,7 +92,7 @@ class OrderDraftService(
 
         val draft = OrderDraft(
             user = user,
-            store = store,
+            account = account,
             deliveryDate = deliveryDate,
             totalAmount = 0 // 아래에서 계산 후 업데이트
         )
@@ -123,7 +123,7 @@ class OrderDraftService(
         // 8. totalAmount가 있는 새 OrderDraft 생성 (val이므로 재생성)
         val draftWithTotal = OrderDraft(
             user = user,
-            store = store,
+            account = account,
             deliveryDate = deliveryDate,
             totalAmount = totalAmount
         )

@@ -13,7 +13,7 @@ import jakarta.validation.constraints.Size
 data class ClaimCreateRequest(
     @field:NotNull(message = "거래처 ID는 필수입니다")
     @field:Positive(message = "거래처 ID는 양수여야 합니다")
-    val storeId: Long?,
+    val accountId: Long?,
 
     @field:NotBlank(message = "제품 코드는 필수입니다")
     val productCode: String?,

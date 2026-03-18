@@ -90,10 +90,10 @@ class MyScheduleService(
 
         // 거래처 목록 매핑 (등록 여부 - Attendance 비활성화로 항상 false)
         // Note: V1 리매핑으로 storeId(Long)→account(String sfid) 변경, DTO는 Long 유지 → 0L 대체
-        val storeItems = schedules.map { schedule ->
+        val accountItems = schedules.map { schedule ->
             DisplayWorkScheduleItemDto(
-                storeId = 0L,  // V1: account(String sfid)로 변경됨, DTO Long 타입 유지
-                storeName = "",  // V1에서 storeName 삭제됨
+                accountId = 0L,  // V1: account(String sfid)로 변경됨, DTO Long 타입 유지
+                accountName = "",  // V1에서 accountName 삭제됨
                 workType1 = schedule.typeOfWork1 ?: "",
                 workType2 = "",
                 workType3 = "",
@@ -102,8 +102,8 @@ class MyScheduleService(
         }
 
         // 보고 진행 상황 계산
-        val completed = storeItems.count { it.isRegistered }
-        val total = storeItems.size
+        val completed = accountItems.count { it.isRegistered }
+        val total = accountItems.size
         val workType = schedules.firstOrNull()?.typeOfWork1 ?: ""
 
         // 요일 계산
@@ -119,7 +119,7 @@ class MyScheduleService(
                 total = total,
                 workType = workType
             ),
-            stores = storeItems
+            accounts = accountItems
         )
     }
 }

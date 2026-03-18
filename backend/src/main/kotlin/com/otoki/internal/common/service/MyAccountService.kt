@@ -1,7 +1,7 @@
 package com.otoki.internal.common.service
 
-import com.otoki.internal.common.dto.response.MyStoreInfo
-import com.otoki.internal.common.dto.response.MyStoreListResponse
+import com.otoki.internal.common.dto.response.MyAccountInfo
+import com.otoki.internal.common.dto.response.MyAccountListResponse
 import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.schedule.entity.DisplayWorkSchedule
 import com.otoki.internal.auth.exception.UserNotFoundException
@@ -18,7 +18,7 @@ import java.time.YearMonth
  * 한 달 일정에 등록된 거래처 목록을 중복 제거하여 조회한다.
  */
 @Service
-class MyStoreService(
+class MyAccountService(
     private val userRepository: UserRepository,
     private val displayWorkScheduleRepository: DisplayWorkScheduleRepository,
     private val accountRepository: AccountRepository
@@ -33,7 +33,7 @@ class MyStoreService(
      * 4. 거래처명 기준 오름차순 정렬
      */
     @Transactional(readOnly = true)
-    fun getMyStores(userId: Long, keyword: String?): MyStoreListResponse {
+    fun getMyAccounts(userId: Long, keyword: String?): MyAccountListResponse {
         val user = userRepository.findById(userId)
             .orElseThrow { UserNotFoundException() }
         val employeeId = user.employeeId
@@ -49,7 +49,7 @@ class MyStoreService(
             .findDistinctAccountIdsByFullNameAndStartDateBetween(employeeId, startDate, endDate)
 
         if (distinctAccountIds.isEmpty()) {
-            return MyStoreListResponse(stores = emptyList(), totalCount = 0)
+            return MyAccountListResponse(stores = emptyList(), totalCount = 0)
         }
 
         // 2. Account 마스터에서 id 기반 추가 정보 조회
@@ -63,25 +63,25 @@ class MyStoreService(
             .associateBy { it.accountId }
 
         // 4. Account 마스터 + DisplayWorkSchedule fallback 으로 정보 구성
-        val storeInfoList = distinctAccountIds.mapNotNull { accountId ->
-            buildMyStoreInfo(accountId, accountMap, scheduleMap)
+        val accountInfoList = distinctAccountIds.mapNotNull { accountId ->
+            buildMyAccountInfo(accountId, accountMap, scheduleMap)
         }
 
         // 5. keyword 필터링 (대소문자 무시)
         val filteredList = if (!keyword.isNullOrBlank()) {
             val lowerKeyword = keyword.lowercase()
-            storeInfoList.filter { store ->
-                store.storeName.lowercase().contains(lowerKeyword) ||
-                    store.storeCode.lowercase().contains(lowerKeyword)
+            accountInfoList.filter { account ->
+                account.accountName.lowercase().contains(lowerKeyword) ||
+                    account.accountCode.lowercase().contains(lowerKeyword)
             }
         } else {
-            storeInfoList
+            accountInfoList
         }
 
         // 6. 거래처명 기준 오름차순 정렬
-        val sortedList = filteredList.sortedBy { it.storeName }
+        val sortedList = filteredList.sortedBy { it.accountName }
 
-        return MyStoreListResponse(
+        return MyAccountListResponse(
             stores = sortedList,
             totalCount = sortedList.size
         )
@@ -92,28 +92,28 @@ class MyStoreService(
      * Account 마스터가 있으면 대표자명/전화번호 포함,
      * 없으면 스케줄의 기본 정보를 사용한다.
      */
-    private fun buildMyStoreInfo(
+    private fun buildMyAccountInfo(
         accountId: Int,
         accountMap: Map<Int, Account>,
         scheduleMap: Map<Int?, DisplayWorkSchedule>
-    ): MyStoreInfo? {
+    ): MyAccountInfo? {
         val account = accountMap[accountId]
         val schedule = scheduleMap[accountId]
 
         return when {
-            account != null -> MyStoreInfo(
-                storeId = account.id.toLong(),
-                storeName = account.name ?: "",
-                storeCode = account.externalKey ?: "",
+            account != null -> MyAccountInfo(
+                accountId = account.id.toLong(),
+                accountName = account.name ?: "",
+                accountCode = account.externalKey ?: "",
                 address = account.address1,
                 representativeName = account.representative,
                 phoneNumber = account.phone
             )
-            schedule != null -> MyStoreInfo(
-                storeId = 0L,  // V1: account(String sfid)로 변경됨, DTO Long 타입 유지
-                storeName = "",  // V1에서 storeName 삭제됨
-                storeCode = "",  // V1에서 storeCode 삭제됨
-                address = null,  // V1에서 address 삭제됨
+            schedule != null -> MyAccountInfo(
+                accountId = 0L,
+                accountName = "",
+                accountCode = "",
+                address = null,
                 representativeName = null,
                 phoneNumber = null
             )

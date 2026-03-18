@@ -88,7 +88,7 @@ class HomeServiceTest {
             // Then
             assertThat(result.todaySchedules).hasSize(2)
             assertThat(result.todaySchedules).allMatch { it.employeeId == employeeId }
-            assertThat(result.todaySchedules[0].storeName).isEqualTo("이마트 부산점")
+            assertThat(result.todaySchedules[0].accountName).isEqualTo("이마트 부산점")
         }
 
         @Test

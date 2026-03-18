@@ -5,7 +5,7 @@ import com.otoki.internal.order.dto.response.ClientOrderSummaryResponse
 import com.otoki.internal.order.exception.ClientNotFoundException
 import com.otoki.internal.order.exception.InvalidOrderParameterException
 import com.otoki.internal.order.repository.OrderProcessingRecordRepository
-import com.otoki.internal.order.repository.StoreRepository
+import com.otoki.internal.order.repository.AccountRepository
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
@@ -21,7 +21,7 @@ import java.time.LocalDate
 @Transactional(readOnly = true)
 class ClientOrderService(
     private val orderProcessingRecordRepository: OrderProcessingRecordRepository,
-    private val storeRepository: StoreRepository
+    private val accountRepository: AccountRepository
 ) {
 
     companion object {
@@ -54,13 +54,13 @@ class ClientOrderService(
         val resolvedDeliveryDate = deliveryDate ?: LocalDate.now()
 
         // 2. 거래처 존재 여부 확인
-        if (!storeRepository.existsById(clientId)) {
+        if (!accountRepository.existsById(clientId)) {
             throw ClientNotFoundException()
         }
 
         // 3. SAP 주문번호별 그룹핑 조회
         val summaries = orderProcessingRecordRepository.findClientOrderSummaries(
-            storeId = clientId,
+            accountId = clientId,
             deliveryDate = resolvedDeliveryDate
         )
 

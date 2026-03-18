@@ -28,7 +28,7 @@ class InspectionController(
      * GET /api/v1/inspections
      *
      * @param principal 인증된 사용자
-     * @param storeId 거래처 ID (선택)
+     * @param accountId 거래처 ID (선택)
      * @param category 분류 (선택: OWN, COMPETITOR)
      * @param fromDate 점검일 시작 (YYYY-MM-DD)
      * @param toDate 점검일 종료 (YYYY-MM-DD)
@@ -36,7 +36,7 @@ class InspectionController(
     @GetMapping
     fun getInspectionList(
         @AuthenticationPrincipal principal: UserPrincipal,
-        @RequestParam(required = false) storeId: Long?,
+        @RequestParam(required = false) accountId: Long?,
         @RequestParam(required = false) category: String?,
         @RequestParam fromDate: String,
         @RequestParam toDate: String
@@ -45,7 +45,7 @@ class InspectionController(
             userId = principal.userId,
             fromDate = fromDate,
             toDate = toDate,
-            storeId = storeId,
+            accountId = accountId,
             category = category
         )
         return ResponseEntity.ok(ApiResponse.success(result, "조회 성공"))

@@ -9,8 +9,8 @@ import com.otoki.internal.inspection.entity.Inspection
 data class InspectionListItemResponse(
     val id: Long,
     val category: String,
-    val storeName: String,
-    val storeId: Long,
+    val accountName: String,
+    val accountId: Long,
     val inspectionDate: String,
     val fieldType: String,
     val fieldTypeCode: String
@@ -20,8 +20,8 @@ data class InspectionListItemResponse(
             return InspectionListItemResponse(
                 id = inspection.id,
                 category = inspection.category.name,
-                storeName = inspection.storeName,
-                storeId = inspection.store.id,
+                accountName = inspection.accountName,
+                accountId = inspection.account.id,
                 inspectionDate = inspection.inspectionDate.toString(),
                 fieldType = inspection.fieldTypeName,
                 fieldTypeCode = inspection.fieldTypeCode

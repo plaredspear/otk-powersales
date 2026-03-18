@@ -27,7 +27,7 @@ class InspectionService(
     // private val inspectionFieldTypeRepository: InspectionFieldTypeRepository,  // Phase2: PG 대응 테이블 없음
     // private val inspectionPhotoRepository: InspectionPhotoRepository,  // Phase2: PG 대응 테이블 없음
     private val userRepository: UserRepository,
-    private val storeRepository: StoreRepository,
+    private val accountRepository: AccountRepository,
     private val productRepository: ProductRepository,
     private val fileStorageService: FileStorageService
 ) {
@@ -46,7 +46,7 @@ class InspectionService(
         userId: Long,
         fromDate: String,
         toDate: String,
-        storeId: Long?,
+        accountId: Long?,
         category: String?
     ): InspectionListResponse {
         // 날짜 파싱 및 검증
@@ -71,7 +71,7 @@ class InspectionService(
             userId = userId,
             fromDate = from,
             toDate = to,
-            storeId = storeId,
+            accountId = accountId,
             category = categoryEnum
         )
 
@@ -123,8 +123,8 @@ class InspectionService(
             ?: throw ThemeNotFoundException()
 
         // 거래처 검증
-        val store = storeRepository.findByIdOrNull(request.storeId!!)
-            ?: throw StoreNotFoundException()
+        val account = accountRepository.findByIdOrNull(request.accountId!!)
+            ?: throw AccountNotFoundException()
 
         // Phase2: InspectionFieldType PG 대응 테이블 없음 - 검증 생략
         // val fieldType = inspectionFieldTypeRepository.findById(request.fieldTypeCode!!)
@@ -147,10 +147,10 @@ class InspectionService(
         // 점검 엔티티 생성
         val inspection = Inspection(
             user = user,
-            store = store,
+            account = account,
             theme = theme,
             category = category,
-            storeName = store.storeName,
+            accountName = account.accountName,
             inspectionDate = parseDate(request.inspectionDate!!),
             fieldTypeCode = request.fieldTypeCode ?: "",
             fieldTypeName = "",  // Phase2: fieldType 검증 비활성화

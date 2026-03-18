@@ -29,7 +29,7 @@ class ClaimService(
     private val claimPurchaseMethodRepository: ClaimPurchaseMethodRepository,
     private val claimRequestTypeRepository: ClaimRequestTypeRepository,
     private val userRepository: UserRepository,
-    private val storeRepository: StoreRepository,
+    private val accountRepository: AccountRepository,
     private val productRepository: ProductRepository,
     private val fileStorageService: FileStorageService
 ) {
@@ -57,8 +57,8 @@ class ClaimService(
             ?: throw InvalidParameterException("사용자를 찾을 수 없습니다")
 
         // 2. 거래처 존재 여부 확인
-        val store = storeRepository.findByIdOrNull(request.storeId!!)
-            ?: throw StoreNotFoundException()
+        val account = accountRepository.findByIdOrNull(request.accountId!!)
+            ?: throw AccountNotFoundException()
 
         // 3. 제품 존재 여부 확인
         val product = productRepository.findByProductCode(request.productCode!!)
@@ -134,8 +134,8 @@ class ClaimService(
         // 11. Claim 엔티티 생성 및 저장
         val claim = Claim(
             user = user,
-            store = store,
-            storeName = store.storeName,
+            account = account,
+            accountName = account.accountName,
             productCode = product.productCode,
             productName = product.productName,
             dateType = dateType,

@@ -15,7 +15,7 @@ import java.time.LocalDateTime
     name = "orders",
     indexes = [
         Index(name = "idx_orders_user_id", columnList = "user_id"),
-        Index(name = "idx_orders_store_id", columnList = "store_id"),
+        Index(name = "idx_orders_account_id", columnList = "account_id"),
         Index(name = "idx_orders_order_date", columnList = "order_date"),
         Index(name = "idx_orders_delivery_date", columnList = "delivery_date"),
         Index(name = "idx_orders_approval_status", columnList = "approval_status")
@@ -35,8 +35,8 @@ class Order(
     val user: User,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "store_id", nullable = false)
-    val store: Store,
+    @JoinColumn(name = "account_id", nullable = false)
+    val account: Account,
 
     @Column(name = "order_date", nullable = false)
     val orderDate: LocalDate,

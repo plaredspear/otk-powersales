@@ -21,6 +21,6 @@ interface ClaimRepository : JpaRepository<Claim, Long> {
      * 거래처별 클레임 목록 조회
      * 최신순으로 정렬
      * /
-    fun findByStoreIdOrderByCreatedAtDesc(storeId: Long): List<Claim>
+    fun findByAccountIdOrderByCreatedAtDesc(accountId: Long): List<Claim>
 }
 */

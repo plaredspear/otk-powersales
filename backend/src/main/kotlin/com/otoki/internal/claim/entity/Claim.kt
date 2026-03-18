@@ -29,10 +29,10 @@ class Claim(
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "store_id", nullable = false)
-    val store: Store,
+    val account: Account,
 
     @Column(name = "store_name", nullable = false, length = 100)
-    val storeName: String,
+    val accountName: String,
 
     @Column(name = "product_code", nullable = false, length = 20)
     val productCode: String,

@@ -20,7 +20,7 @@ data class InspectionCreateRequest(
 
     @field:NotNull(message = "거래처 ID는 필수입니다")
     @field:Positive(message = "거래처 ID는 양수여야 합니다")
-    val storeId: Long?,
+    val accountId: Long?,
 
     @field:NotBlank(message = "점검일은 필수입니다")
     val inspectionDate: String?,

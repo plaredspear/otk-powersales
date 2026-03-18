@@ -1,7 +1,7 @@
 package com.otoki.internal.schedule.service
 
-import com.otoki.internal.common.dto.response.StoreInfo
-import com.otoki.internal.common.dto.response.StoreListResponse
+import com.otoki.internal.common.dto.response.AccountInfo
+import com.otoki.internal.common.dto.response.AccountListResponse
 import com.otoki.internal.common.util.GeoUtils
 import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.auth.exception.UserNotFoundException
@@ -35,7 +35,7 @@ class AttendanceService(
         private const val DEFAULT_ALLOWED_DISTANCE_KM = 0.5
 
         /** 대리점 유형코드 면제 목록 — GPS 거리 검증 생략 */
-        private val EXEMPT_STORE_TYPE_CODES = setOf(
+        private val EXEMPT_ACCOUNT_TYPE_CODES = setOf(
             "1110", "1120", "1130", "1140",
             "1210", "1220",
             "1510", "1530",
@@ -46,7 +46,7 @@ class AttendanceService(
     /**
      * 오늘 출근 거래처 목록 조회
      */
-    fun getStoreList(userId: Long, keyword: String?): StoreListResponse {
+    fun getAccountList(userId: Long, keyword: String?): AccountListResponse {
         val user = userRepository.findById(userId)
             .orElseThrow { UserNotFoundException() }
 
@@ -65,21 +65,21 @@ class AttendanceService(
         }
 
         // DTO 변환 + 키워드 필터링
-        val storeInfos = teamMemberSchedules.mapNotNull { teamMemberSchedule ->
+        val accountInfos = teamMemberSchedules.mapNotNull { teamMemberSchedule ->
             val account = teamMemberSchedule.accountId?.let { accountMap[it] }
-            val storeName = account?.name ?: ""
+            val accountName = account?.name ?: ""
 
             // 키워드 필터링
             if (!keyword.isNullOrBlank()) {
                 val lowerKeyword = keyword.lowercase()
-                if (!storeName.lowercase().contains(lowerKeyword)) return@mapNotNull null
+                if (!accountName.lowercase().contains(lowerKeyword)) return@mapNotNull null
             }
 
-            StoreInfo(
+            AccountInfo(
                 scheduleId = teamMemberSchedule.id,
-                storeSfid = teamMemberSchedule.accountId?.toString(),
-                storeName = storeName,
-                storeTypeCode = account?.abcTypeCode,
+                accountSfid = teamMemberSchedule.accountId?.toString(),
+                accountName = accountName,
+                accountTypeCode = account?.abcTypeCode,
                 workCategory = teamMemberSchedule.workingCategory1 ?: "",
                 address = account?.address1,
                 latitude = account?.latitude?.toDoubleOrNull(),
@@ -88,11 +88,11 @@ class AttendanceService(
             )
         }
 
-        val registeredCount = storeInfos.count { it.isRegistered }
+        val registeredCount = accountInfos.count { it.isRegistered }
 
-        return StoreListResponse(
-            stores = storeInfos,
-            totalCount = storeInfos.size,
+        return AccountListResponse(
+            accounts = accountInfos,
+            totalCount = accountInfos.size,
             registeredCount = registeredCount,
             currentDate = today.format(DATE_FORMATTER)
         )
@@ -136,7 +136,7 @@ class AttendanceService(
 
         return CommuteResponse(
             scheduleId = scheduleId,
-            storeName = account?.name ?: "",
+            accountName = account?.name ?: "",
             workType = workType ?: teamMemberSchedule.workingType,
             distanceKm = distanceKm,
             totalCount = totalCount,
@@ -168,7 +168,7 @@ class AttendanceService(
             val account = teamMemberSchedule.accountId?.let { accountMap[it] }
             CommuteStatusItem(
                 scheduleId = teamMemberSchedule.id,
-                storeName = account?.name ?: "",
+                accountName = account?.name ?: "",
                 workCategory = teamMemberSchedule.workingCategory1 ?: "",
                 status = if (teamMemberSchedule.commuteLogId != null) "REGISTERED" else "PENDING"
             )
@@ -190,17 +190,17 @@ class AttendanceService(
      */
     private fun validateDistance(userLat: Double, userLon: Double, account: Account?): Double {
         // 면제 코드 확인
-        val storeTypeCode = account?.abcTypeCode
-        if (storeTypeCode != null && storeTypeCode in EXEMPT_STORE_TYPE_CODES) {
+        val accountTypeCode = account?.abcTypeCode
+        if (accountTypeCode != null && accountTypeCode in EXEMPT_ACCOUNT_TYPE_CODES) {
             return 0.0
         }
 
         // 거래처 위경도 확인
-        val storeLat = account?.latitude?.toDoubleOrNull() ?: return 0.0
-        val storeLon = account.longitude?.toDoubleOrNull() ?: return 0.0
+        val accountLat = account?.latitude?.toDoubleOrNull() ?: return 0.0
+        val accountLon = account.longitude?.toDoubleOrNull() ?: return 0.0
 
         // Haversine 거리 계산
-        val distance = GeoUtils.calculateDistance(userLat, userLon, storeLat, storeLon)
+        val distance = GeoUtils.calculateDistance(userLat, userLon, accountLat, accountLon)
 
         // 허용 거리 비교 (commute_distance 테이블 미구현 → 기본값 사용)
         val allowedDistance = DEFAULT_ALLOWED_DISTANCE_KM

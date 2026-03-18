@@ -36,7 +36,7 @@ class Inspection(
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "store_id", nullable = false)
-    val store: Store,
+    val account: Account,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "theme_id", nullable = false)
@@ -47,7 +47,7 @@ class Inspection(
     val category: InspectionCategory,
 
     @Column(name = "store_name", nullable = false, length = 200)
-    val storeName: String,
+    val accountName: String,
 
     @Column(name = "inspection_date", nullable = false)
     val inspectionDate: LocalDate,
