@@ -6,9 +6,9 @@ void main() {
     group('fromJson', () {
       test('모든 필드가 있는 JSON을 올바르게 파싱해야 한다', () {
         final json = {
-          'schedule_id': 'a0Xxxxxxxxxxx',
+          'schedule_id': 12345,
           'employee_name': '홍길동',
-          'employee_sfid': '005xxxxxxxxx',
+          'employee_id': '005xxxxxxxxx',
           'store_name': '이마트 부산점',
           'store_sfid': '001xxxxxxxxx',
           'work_category': '방판',
@@ -19,7 +19,7 @@ void main() {
 
         final model = ScheduleModel.fromJson(json);
 
-        expect(model.scheduleId, 'a0Xxxxxxxxxxx');
+        expect(model.scheduleId, 12345);
         expect(model.employeeName, '홍길동');
         expect(model.employeeSfid, '005xxxxxxxxx');
         expect(model.storeName, '이마트 부산점');
@@ -32,9 +32,9 @@ void main() {
 
       test('nullable 필드가 null인 JSON을 올바르게 파싱해야 한다', () {
         final json = {
-          'schedule_id': 'a0Xxxxxxxxxxx',
+          'schedule_id': 12345,
           'employee_name': '홍길동',
-          'employee_sfid': '005xxxxxxxxx',
+          'employee_id': '005xxxxxxxxx',
           'store_name': null,
           'store_sfid': null,
           'work_category': '방판',
@@ -56,7 +56,7 @@ void main() {
     group('toEntity', () {
       test('ScheduleModel을 Schedule 엔티티로 올바르게 변환해야 한다', () {
         const model = ScheduleModel(
-          scheduleId: 'a0X1',
+          scheduleId: 12345,
           employeeName: '홍길동',
           employeeSfid: '005x',
           storeName: '이마트 부산점',
@@ -69,7 +69,7 @@ void main() {
 
         final entity = model.toEntity();
 
-        expect(entity.scheduleId, 'a0X1');
+        expect(entity.scheduleId, 12345);
         expect(entity.employeeName, '홍길동');
         expect(entity.storeName, '이마트 부산점');
         expect(entity.workCategory, '방판');
@@ -81,7 +81,7 @@ void main() {
     group('toJson', () {
       test('snake_case 키로 변환해야 한다', () {
         const model = ScheduleModel(
-          scheduleId: 'a0X1',
+          scheduleId: 12345,
           employeeName: '홍길동',
           employeeSfid: '005x',
           workCategory: '방판',
@@ -90,7 +90,7 @@ void main() {
 
         final json = model.toJson();
 
-        expect(json['schedule_id'], 'a0X1');
+        expect(json['schedule_id'], 12345);
         expect(json['employee_name'], '홍길동');
         expect(json['work_category'], '방판');
         expect(json['is_commute_registered'], true);
@@ -100,14 +100,14 @@ void main() {
     group('equality', () {
       test('동일 필드의 두 모델은 같아야 한다', () {
         const model1 = ScheduleModel(
-          scheduleId: 'a0X1',
+          scheduleId: 12345,
           employeeName: '홍길동',
           employeeSfid: '005x',
           workCategory: '방판',
           isCommuteRegistered: false,
         );
         const model2 = ScheduleModel(
-          scheduleId: 'a0X1',
+          scheduleId: 12345,
           employeeName: '홍길동',
           employeeSfid: '005x',
           workCategory: '방판',

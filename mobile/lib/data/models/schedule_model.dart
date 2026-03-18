@@ -4,7 +4,7 @@ import '../../domain/entities/schedule.dart';
 ///
 /// API 응답의 snake_case JSON을 Domain Entity로 변환한다.
 class ScheduleModel {
-  final String scheduleId;
+  final int scheduleId;
   final String employeeName;
   final String employeeSfid;
   final String? storeName;
@@ -28,7 +28,7 @@ class ScheduleModel {
 
   factory ScheduleModel.fromJson(Map<String, dynamic> json) {
     return ScheduleModel(
-      scheduleId: json['schedule_id'] as String,
+      scheduleId: json['schedule_id'] as int,
       employeeName: json['employee_name'] as String,
       employeeSfid: json['employee_id'] as String,
       storeName: json['store_name'] as String?,
