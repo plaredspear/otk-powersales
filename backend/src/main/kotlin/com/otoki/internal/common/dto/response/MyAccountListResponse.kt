@@ -1,5 +1,7 @@
 package com.otoki.internal.common.dto.response
 
+import com.otoki.internal.sap.entity.Account
+
 /**
  * 내 거래처 목록 응답 DTO
  */
@@ -16,6 +18,19 @@ data class MyAccountInfo(
     val accountName: String,
     val accountCode: String,
     val address: String?,
+    val addressDetail: String?,
     val representativeName: String?,
     val phoneNumber: String?
-)
+) {
+    companion object {
+        fun from(account: Account): MyAccountInfo = MyAccountInfo(
+            accountId = account.id.toLong(),
+            accountName = account.name ?: "",
+            accountCode = account.externalKey ?: "",
+            address = account.address1,
+            addressDetail = account.address2,
+            representativeName = account.representative,
+            phoneNumber = account.phone
+        )
+    }
+}

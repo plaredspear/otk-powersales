@@ -1,11 +1,12 @@
 package com.otoki.internal.common.service
 
 import com.otoki.internal.sap.entity.Account
-import com.otoki.internal.schedule.entity.DisplayWorkSchedule
 import com.otoki.internal.sap.entity.User
 import com.otoki.internal.auth.exception.UserNotFoundException
+import com.otoki.internal.common.exception.AccountInvalidParameterException
 import com.otoki.internal.sap.repository.AccountRepository
-import com.otoki.internal.schedule.repository.DisplayWorkScheduleRepository
+import com.otoki.internal.schedule.repository.DisplayWorkScheduleRepositoryCustom
+import com.otoki.internal.schedule.repository.TeamMemberScheduleRepositoryCustom
 import com.otoki.internal.sap.repository.UserRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -17,9 +18,10 @@ import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
-import java.time.LocalDate
-import java.time.YearMonth
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.never
 import java.util.Optional
 
 @ExtendWith(MockitoExtension::class)
@@ -30,76 +32,112 @@ class MyAccountServiceTest {
     private lateinit var userRepository: UserRepository
 
     @Mock
-    private lateinit var displayWorkScheduleRepository: DisplayWorkScheduleRepository
+    private lateinit var accountRepository: AccountRepository
 
     @Mock
-    private lateinit var accountRepository: AccountRepository
+    private lateinit var teamMemberScheduleRepository: TeamMemberScheduleRepositoryCustom
+
+    @Mock
+    private lateinit var displayWorkScheduleRepository: DisplayWorkScheduleRepositoryCustom
 
     @InjectMocks
     private lateinit var myAccountService: MyAccountService
 
-    private val testEmployeeId = "20030117"
-
-    // ========== getMyAccounts Tests ==========
-
     @Nested
-    @DisplayName("getMyAccounts - 내 거래처 목록 조회")
-    inner class GetMyAccountsTests {
+    @DisplayName("getMyAccounts - 일반 사원 거래처 조회")
+    inner class EmployeeAccountsTests {
 
         @Test
-        @DisplayName("한 달 거래처 조회 - Account 마스터가 있으면 Account 정보 반환")
-        fun getMyAccounts_withAccountMaster() {
+        @DisplayName("일반 사원 - 팀멤버+진열스케줄 기반 거래처 조회, 중복 제거")
+        fun getMyAccounts_employee_mergedSchedules() {
             // Given
             val userId = 1L
-            val mockUser = createUser(id = userId, employeeId = testEmployeeId)
-            val now = LocalDate.now()
-            val yearMonth = YearMonth.from(now)
-            val startDate = yearMonth.atDay(1)
-            val endDate = yearMonth.atEndOfMonth()
-
-            val distinctAccountIds = listOf(1, 2)
+            val user = createUser(id = userId, employeeId = "20030117", sfid = "SF001")
             val accounts = listOf(
-                createAccount(id = 1, sfid = "SF_ACC001", name = "(유)경산식품", externalKey = "1025172",
-                    address1 = "전라남도 목포시", representative = "김정자", phone = "061-123-4567"),
-                createAccount(id = 2, sfid = "SF_ACC002", name = "(주)대한식품", externalKey = "1025173",
-                    address1 = "서울시 강남구", representative = "이영희", phone = "02-111-2222")
-            )
-            val schedules = listOf(
-                createDisplayWorkSchedule(accountId = 1, startDate = now),
-                createDisplayWorkSchedule(accountId = 2, startDate = now)
+                createAccount(id = 1, name = "(유)경산식품", externalKey = "1025172"),
+                createAccount(id = 2, name = "(주)대한식품", externalKey = "1025173"),
+                createAccount(id = 3, name = "나라마트", externalKey = "1025174")
             )
 
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(displayWorkScheduleRepository.findDistinctAccountIdsByEmployeeIdAndStartDateBetween(testEmployeeId, startDate, endDate))
-                .thenReturn(distinctAccountIds)
-            whenever(accountRepository.findByIdIn(distinctAccountIds)).thenReturn(accounts)
-            whenever(displayWorkScheduleRepository.findByEmployeeIdAndStartDateBetween(testEmployeeId, startDate, endDate))
-                .thenReturn(schedules)
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(eq("20030117"), any(), any()))
+                .thenReturn(listOf(1, 2))
+            whenever(displayWorkScheduleRepository.findDistinctAccountIdsBySfidAndDateRange(eq("SF001"), any(), any()))
+                .thenReturn(listOf(2, 3))
+            whenever(accountRepository.findByIdInAndIsDeletedNot(any(), eq(true)))
+                .thenReturn(accounts)
 
             // When
             val result = myAccountService.getMyAccounts(userId, null)
 
             // Then
-            assertThat(result.stores).hasSize(2)
-            assertThat(result.totalCount).isEqualTo(2)
+            assertThat(result.stores).hasSize(3)
+            assertThat(result.totalCount).isEqualTo(3)
+            // 거래처명 오름차순 정렬
             assertThat(result.stores[0].accountName).isEqualTo("(유)경산식품")
-            assertThat(result.stores[0].accountCode).isEqualTo("1025172")
-            assertThat(result.stores[0].representativeName).isEqualTo("김정자")
+            assertThat(result.stores[1].accountName).isEqualTo("(주)대한식품")
+            assertThat(result.stores[2].accountName).isEqualTo("나라마트")
         }
 
         @Test
-        @DisplayName("결과 없음 - 스케줄 데이터 없음 -> 빈 리스트 + totalCount=0")
-        fun getMyAccounts_noSchedules() {
+        @DisplayName("일반 사원 - 팀멤버스케줄만 있는 거래처 포함")
+        fun getMyAccounts_employee_teamScheduleOnly() {
             // Given
             val userId = 1L
-            val mockUser = createUser(id = userId, employeeId = testEmployeeId)
-            val now = LocalDate.now()
-            val yearMonth = YearMonth.from(now)
-            val startDate = yearMonth.atDay(1)
-            val endDate = yearMonth.atEndOfMonth()
+            val user = createUser(id = userId, employeeId = "20030117", sfid = "SF001")
+            val accounts = listOf(createAccount(id = 1, name = "경산농협", externalKey = "1025172"))
 
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(displayWorkScheduleRepository.findDistinctAccountIdsByEmployeeIdAndStartDateBetween(testEmployeeId, startDate, endDate))
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(eq("20030117"), any(), any()))
+                .thenReturn(listOf(1))
+            whenever(displayWorkScheduleRepository.findDistinctAccountIdsBySfidAndDateRange(eq("SF001"), any(), any()))
+                .thenReturn(emptyList())
+            whenever(accountRepository.findByIdInAndIsDeletedNot(any(), eq(true)))
+                .thenReturn(accounts)
+
+            // When
+            val result = myAccountService.getMyAccounts(userId, null)
+
+            // Then
+            assertThat(result.stores).hasSize(1)
+            assertThat(result.stores[0].accountName).isEqualTo("경산농협")
+        }
+
+        @Test
+        @DisplayName("일반 사원 - 진열스케줄만 있는 거래처 포함")
+        fun getMyAccounts_employee_displayScheduleOnly() {
+            // Given
+            val userId = 1L
+            val user = createUser(id = userId, employeeId = "20030117", sfid = "SF001")
+            val accounts = listOf(createAccount(id = 3, name = "나라마트", externalKey = "1025174"))
+
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(eq("20030117"), any(), any()))
+                .thenReturn(emptyList())
+            whenever(displayWorkScheduleRepository.findDistinctAccountIdsBySfidAndDateRange(eq("SF001"), any(), any()))
+                .thenReturn(listOf(3))
+            whenever(accountRepository.findByIdInAndIsDeletedNot(any(), eq(true)))
+                .thenReturn(accounts)
+
+            // When
+            val result = myAccountService.getMyAccounts(userId, null)
+
+            // Then
+            assertThat(result.stores).hasSize(1)
+            assertThat(result.stores[0].accountName).isEqualTo("나라마트")
+        }
+
+        @Test
+        @DisplayName("일반 사원 - 배정 거래처 없음 -> 빈 리스트")
+        fun getMyAccounts_employee_noSchedules() {
+            // Given
+            val userId = 1L
+            val user = createUser(id = userId, employeeId = "20030117", sfid = "SF001")
+
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(eq("20030117"), any(), any()))
+                .thenReturn(emptyList())
+            whenever(displayWorkScheduleRepository.findDistinctAccountIdsBySfidAndDateRange(eq("SF001"), any(), any()))
                 .thenReturn(emptyList())
 
             // When
@@ -111,48 +149,125 @@ class MyAccountServiceTest {
         }
 
         @Test
-        @DisplayName("사용자 미존재 - 잘못된 userId -> UserNotFoundException 예외")
-        fun getMyAccounts_userNotFound() {
+        @DisplayName("일반 사원 - sfid null이면 진열스케줄 조회 건너뜀")
+        fun getMyAccounts_employee_nullSfid() {
             // Given
-            val userId = 999L
-            whenever(userRepository.findById(userId)).thenReturn(Optional.empty())
+            val userId = 1L
+            val user = createUser(id = userId, employeeId = "20030117", sfid = null)
+            val accounts = listOf(createAccount(id = 1, name = "경산농협", externalKey = "1025172"))
 
-            // When & Then
-            assertThatThrownBy { myAccountService.getMyAccounts(userId, null) }
-                .isInstanceOf(UserNotFoundException::class.java)
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(eq("20030117"), any(), any()))
+                .thenReturn(listOf(1))
+            whenever(accountRepository.findByIdInAndIsDeletedNot(any(), eq(true)))
+                .thenReturn(accounts)
+
+            // When
+            val result = myAccountService.getMyAccounts(userId, null)
+
+            // Then
+            assertThat(result.stores).hasSize(1)
+            verify(displayWorkScheduleRepository, never()).findDistinctAccountIdsBySfidAndDateRange(any(), any(), any())
         }
 
         @Test
-        @DisplayName("검색 — 거래처명 - '경산' 검색 -> '(유)경산식품' 매칭")
-        fun getMyAccounts_searchByAccountName() {
+        @DisplayName("addressDetail 필드 포함 확인")
+        fun getMyAccounts_includesAddressDetail() {
             // Given
             val userId = 1L
-            val keyword = "경산"
-            val mockUser = createUser(id = userId, employeeId = testEmployeeId)
-            val now = LocalDate.now()
-            val yearMonth = YearMonth.from(now)
-            val startDate = yearMonth.atDay(1)
-            val endDate = yearMonth.atEndOfMonth()
-
-            val distinctAccountIds = listOf(1, 2)
+            val user = createUser(id = userId, employeeId = "20030117", sfid = "SF001")
             val accounts = listOf(
-                createAccount(id = 1, sfid = "SF_ACC001", name = "(유)경산식품", externalKey = "1025172"),
-                createAccount(id = 2, sfid = "SF_ACC002", name = "(주)대한식품", externalKey = "1025173")
-            )
-            val schedules = listOf(
-                createDisplayWorkSchedule(accountId = 1, startDate = now),
-                createDisplayWorkSchedule(accountId = 2, startDate = now)
+                createAccount(id = 1, name = "경산농협", externalKey = "1025172",
+                    address1 = "전라남도 목포시 용해동 123", address2 = "1층")
             )
 
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(displayWorkScheduleRepository.findDistinctAccountIdsByEmployeeIdAndStartDateBetween(testEmployeeId, startDate, endDate))
-                .thenReturn(distinctAccountIds)
-            whenever(accountRepository.findByIdIn(distinctAccountIds)).thenReturn(accounts)
-            whenever(displayWorkScheduleRepository.findByEmployeeIdAndStartDateBetween(testEmployeeId, startDate, endDate))
-                .thenReturn(schedules)
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(eq("20030117"), any(), any()))
+                .thenReturn(listOf(1))
+            whenever(displayWorkScheduleRepository.findDistinctAccountIdsBySfidAndDateRange(eq("SF001"), any(), any()))
+                .thenReturn(emptyList())
+            whenever(accountRepository.findByIdInAndIsDeletedNot(any(), eq(true)))
+                .thenReturn(accounts)
 
             // When
-            val result = myAccountService.getMyAccounts(userId, keyword)
+            val result = myAccountService.getMyAccounts(userId, null)
+
+            // Then
+            assertThat(result.stores[0].address).isEqualTo("전라남도 목포시 용해동 123")
+            assertThat(result.stores[0].addressDetail).isEqualTo("1층")
+        }
+    }
+
+    @Nested
+    @DisplayName("getMyAccounts - 조장 거래처 조회")
+    inner class LeaderAccountsTests {
+
+        @Test
+        @DisplayName("조장 - 지점코드 기반 거래처 조회")
+        fun getMyAccounts_leader_branchAccounts() {
+            // Given
+            val userId = 1L
+            val user = createUser(id = userId, employeeId = "20030117", appAuthority = "조장", costCenterCode = "1100")
+            val accounts = listOf(
+                createAccount(id = 10, name = "A마트", externalKey = "2001"),
+                createAccount(id = 11, name = "B식품", externalKey = "2002")
+            )
+
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(accountRepository.findByBranchCodeAndAccountGroupInAndIsDeletedNot(
+                eq("1100"), eq(listOf("1000", "1010")), eq(true)
+            )).thenReturn(accounts)
+
+            // When
+            val result = myAccountService.getMyAccounts(userId, null)
+
+            // Then
+            assertThat(result.stores).hasSize(2)
+            assertThat(result.totalCount).isEqualTo(2)
+            // 조장은 팀멤버/진열스케줄 조회하지 않음
+            verify(teamMemberScheduleRepository, never()).findDistinctAccountIdsByEmployeeIdAndDateRange(any(), any(), any())
+            verify(displayWorkScheduleRepository, never()).findDistinctAccountIdsBySfidAndDateRange(any(), any(), any())
+        }
+
+        @Test
+        @DisplayName("조장 - costCenterCode null -> 빈 리스트")
+        fun getMyAccounts_leader_noCostCenterCode() {
+            // Given
+            val userId = 1L
+            val user = createUser(id = userId, employeeId = "20030117", appAuthority = "조장", costCenterCode = null)
+
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+
+            // When
+            val result = myAccountService.getMyAccounts(userId, null)
+
+            // Then
+            assertThat(result.stores).isEmpty()
+            assertThat(result.totalCount).isEqualTo(0)
+        }
+    }
+
+    @Nested
+    @DisplayName("getMyAccounts - 키워드 검색")
+    inner class KeywordSearchTests {
+
+        @Test
+        @DisplayName("키워드 검색 (거래처명) - '경산' 검색 -> 매칭 결과만 반환")
+        fun getMyAccounts_searchByName() {
+            // Given
+            val userId = 1L
+            val user = createUser(id = userId, employeeId = "20030117", appAuthority = "조장", costCenterCode = "1100")
+            val accounts = listOf(
+                createAccount(id = 1, name = "(유)경산식품", externalKey = "1025172"),
+                createAccount(id = 2, name = "(주)대한식품", externalKey = "1025173")
+            )
+
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(accountRepository.findByBranchCodeAndAccountGroupInAndIsDeletedNot(any(), any(), eq(true)))
+                .thenReturn(accounts)
+
+            // When
+            val result = myAccountService.getMyAccounts(userId, "경산")
 
             // Then
             assertThat(result.stores).hasSize(1)
@@ -160,34 +275,72 @@ class MyAccountServiceTest {
         }
 
         @Test
-        @DisplayName("거래처명 기준 오름차순 정렬")
+        @DisplayName("키워드 검색 (SAP 코드) - '1025' 검색 -> 매칭 결과만 반환")
+        fun getMyAccounts_searchByCode() {
+            // Given
+            val userId = 1L
+            val user = createUser(id = userId, employeeId = "20030117", appAuthority = "조장", costCenterCode = "1100")
+            val accounts = listOf(
+                createAccount(id = 1, name = "A마트", externalKey = "1025172"),
+                createAccount(id = 2, name = "B식품", externalKey = "2001")
+            )
+
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(accountRepository.findByBranchCodeAndAccountGroupInAndIsDeletedNot(any(), any(), eq(true)))
+                .thenReturn(accounts)
+
+            // When
+            val result = myAccountService.getMyAccounts(userId, "1025")
+
+            // Then
+            assertThat(result.stores).hasSize(1)
+            assertThat(result.stores[0].accountCode).isEqualTo("1025172")
+        }
+
+        @Test
+        @DisplayName("키워드 1자 - AccountInvalidParameterException 예외")
+        fun getMyAccounts_keywordTooShort() {
+            // When & Then
+            assertThatThrownBy { myAccountService.getMyAccounts(1L, "가") }
+                .isInstanceOf(AccountInvalidParameterException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("getMyAccounts - 에러 처리")
+    inner class ErrorTests {
+
+        @Test
+        @DisplayName("사용자 미존재 - UserNotFoundException 예외")
+        fun getMyAccounts_userNotFound() {
+            // Given
+            whenever(userRepository.findById(999L)).thenReturn(Optional.empty())
+
+            // When & Then
+            assertThatThrownBy { myAccountService.getMyAccounts(999L, null) }
+                .isInstanceOf(UserNotFoundException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("getMyAccounts - 정렬")
+    inner class SortTests {
+
+        @Test
+        @DisplayName("거래처명 오름차순 정렬")
         fun getMyAccounts_sortedByAccountName() {
             // Given
             val userId = 1L
-            val mockUser = createUser(id = userId, employeeId = testEmployeeId)
-            val now = LocalDate.now()
-            val yearMonth = YearMonth.from(now)
-            val startDate = yearMonth.atDay(1)
-            val endDate = yearMonth.atEndOfMonth()
-
-            val distinctAccountIds = listOf(1, 2, 3)
+            val user = createUser(id = userId, employeeId = "20030117", appAuthority = "조장", costCenterCode = "1100")
             val accounts = listOf(
-                createAccount(id = 1, sfid = "SF_ACC001", name = "홈플러스 서면점", externalKey = "1025173"),
-                createAccount(id = 2, sfid = "SF_ACC002", name = "가나다식품", externalKey = "1025172"),
-                createAccount(id = 3, sfid = "SF_ACC003", name = "나라마트", externalKey = "1025174")
-            )
-            val schedules = listOf(
-                createDisplayWorkSchedule(accountId = 1, startDate = now),
-                createDisplayWorkSchedule(accountId = 2, startDate = now),
-                createDisplayWorkSchedule(accountId = 3, startDate = now)
+                createAccount(id = 1, name = "홈플러스 서면점", externalKey = "1025173"),
+                createAccount(id = 2, name = "가나다식품", externalKey = "1025172"),
+                createAccount(id = 3, name = "나라마트", externalKey = "1025174")
             )
 
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(displayWorkScheduleRepository.findDistinctAccountIdsByEmployeeIdAndStartDateBetween(testEmployeeId, startDate, endDate))
-                .thenReturn(distinctAccountIds)
-            whenever(accountRepository.findByIdIn(distinctAccountIds)).thenReturn(accounts)
-            whenever(displayWorkScheduleRepository.findByEmployeeIdAndStartDateBetween(testEmployeeId, startDate, endDate))
-                .thenReturn(schedules)
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(accountRepository.findByBranchCodeAndAccountGroupInAndIsDeletedNot(any(), any(), eq(true)))
+                .thenReturn(accounts)
 
             // When
             val result = myAccountService.getMyAccounts(userId, null)
@@ -205,7 +358,9 @@ class MyAccountServiceTest {
     private fun createUser(
         id: Long = 1L,
         employeeId: String = "12345678",
-        sfid: String? = null
+        sfid: String? = null,
+        appAuthority: String? = null,
+        costCenterCode: String? = null
     ): User {
         return User(
             id = id,
@@ -214,40 +369,29 @@ class MyAccountServiceTest {
             name = "테스트 사용자",
             orgName = "부산지점",
             passwordChangeRequired = false,
-            sfid = sfid
+            sfid = sfid,
+            appAuthority = appAuthority,
+            costCenterCode = costCenterCode
         )
     }
 
     private fun createAccount(
         id: Int = 1,
-        sfid: String? = null,
         externalKey: String = "1025172",
         name: String = "(유)경산식품",
         address1: String? = "전라남도 목포시",
+        address2: String? = null,
         representative: String? = "김정자",
         phone: String? = "061-123-4567"
     ): Account {
         return Account(
             id = id,
-            sfid = sfid,
             externalKey = externalKey,
             name = name,
             address1 = address1,
+            address2 = address2,
             representative = representative,
             phone = phone
-        )
-    }
-
-    private fun createDisplayWorkSchedule(
-        accountId: Int = 1,
-        typeOfWork1: String = "진열",
-        startDate: LocalDate = LocalDate.now()
-    ): DisplayWorkSchedule {
-        return DisplayWorkSchedule(
-            employeeId = testEmployeeId,
-            accountId = accountId,
-            typeOfWork1 = typeOfWork1,
-            startDate = startDate
         )
     }
 }

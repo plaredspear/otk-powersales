@@ -50,3 +50,9 @@ class InvalidFileException(detail: String) : BusinessException(
     message = detail,
     httpStatus = HttpStatus.BAD_REQUEST
 )
+
+class AccountInvalidParameterException(detail: String) : BusinessException(
+    errorCode = "INVALID_PARAMETER",
+    message = detail,
+    httpStatus = HttpStatus.BAD_REQUEST
+)
