@@ -60,22 +60,25 @@ class MyAccountCard extends StatelessWidget {
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     // 주소
-                    Text(
-                      account.address,
-                      style: AppTypography.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
+                    if (account.address != null)
+                      Text(
+                        account.address!,
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: AppSpacing.xxs),
-                    // 대표자
-                    Text(
-                      '대표자: ${account.representativeName}',
-                      style: AppTypography.bodySmall.copyWith(
-                        color: AppColors.textTertiary,
+                    if (account.representativeName != null) ...[
+                      const SizedBox(height: AppSpacing.xxs),
+                      // 대표자
+                      Text(
+                        '대표자: ${account.representativeName}',
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.textTertiary,
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),

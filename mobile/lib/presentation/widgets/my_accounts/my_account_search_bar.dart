@@ -15,6 +15,9 @@ class MyAccountSearchBar extends StatelessWidget {
   /// 검색 버튼 탭 콜백
   final VoidCallback onSearch;
 
+  /// 검색 초기화 콜백
+  final VoidCallback? onClear;
+
   /// 텍스트 변경 콜백
   final ValueChanged<String>? onChanged;
 
@@ -22,6 +25,7 @@ class MyAccountSearchBar extends StatelessWidget {
     super.key,
     required this.controller,
     required this.onSearch,
+    this.onClear,
     this.onChanged,
   });
 
@@ -36,37 +40,51 @@ class MyAccountSearchBar extends StatelessWidget {
         children: [
           // 검색 입력 필드
           Expanded(
-            child: TextField(
-              controller: controller,
-              onChanged: onChanged,
-              onSubmitted: (_) => onSearch(),
-              decoration: InputDecoration(
-                hintText: '거래처명, 거래처 코드 입력',
-                hintStyle: AppTypography.bodyMedium.copyWith(
-                  color: AppColors.textTertiary,
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.sm,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                  borderSide: const BorderSide(color: AppColors.border),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                  borderSide: const BorderSide(color: AppColors.border),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                  borderSide: const BorderSide(
-                    color: AppColors.otokiBlue,
-                    width: 1.5,
+            child: ValueListenableBuilder<TextEditingValue>(
+              valueListenable: controller,
+              builder: (context, value, _) {
+                return TextField(
+                  controller: controller,
+                  onChanged: onChanged,
+                  onSubmitted: (_) => onSearch(),
+                  decoration: InputDecoration(
+                    hintText: '거래처명, 거래처 코드 입력',
+                    hintStyle: AppTypography.bodyMedium.copyWith(
+                      color: AppColors.textTertiary,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.sm,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                      borderSide: const BorderSide(
+                        color: AppColors.otokiBlue,
+                        width: 1.5,
+                      ),
+                    ),
+                    isDense: true,
+                    suffixIcon: value.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 20),
+                            onPressed: () {
+                              controller.clear();
+                              onClear?.call();
+                            },
+                          )
+                        : null,
                   ),
-                ),
-                isDense: true,
-              ),
-              style: AppTypography.bodyMedium,
+                  style: AppTypography.bodyMedium,
+                );
+              },
             ),
           ),
           const SizedBox(width: AppSpacing.sm),

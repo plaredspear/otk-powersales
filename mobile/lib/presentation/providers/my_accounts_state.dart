@@ -8,23 +8,19 @@ class MyAccountsState {
   /// 에러 메시지
   final String? errorMessage;
 
-  /// 전체 거래처 목록 (필터 전)
-  final List<MyAccount> allAccounts;
-
-  /// 검색 결과 거래처 목록
-  final List<MyAccount> filteredAccounts;
+  /// 거래처 목록 (API 결과)
+  final List<MyAccount> accounts;
 
   /// 현재 검색어
   final String searchKeyword;
 
-  /// 총 거래처 수 (= allAccounts.length)
+  /// 총 거래처 수
   final int totalCount;
 
   const MyAccountsState({
     this.isLoading = false,
     this.errorMessage,
-    this.allAccounts = const [],
-    this.filteredAccounts = const [],
+    this.accounts = const [],
     this.searchKeyword = '',
     this.totalCount = 0,
   });
@@ -47,30 +43,28 @@ class MyAccountsState {
     );
   }
 
-  /// 표시할 거래처 수 (검색 전: 전체, 검색 후: 필터 결과)
-  int get displayCount => filteredAccounts.length;
+  /// 표시할 거래처 수
+  int get displayCount => accounts.length;
 
   /// 검색 결과가 없는지 (검색 후)
   bool get isSearchEmpty =>
-      searchKeyword.isNotEmpty && filteredAccounts.isEmpty;
+      searchKeyword.isNotEmpty && accounts.isEmpty && !isLoading;
 
   /// 거래처 목록이 비어있는지 (API 결과 자체가 빈 경우)
   bool get isAccountsEmpty =>
-      !isLoading && allAccounts.isEmpty && errorMessage == null;
+      !isLoading && accounts.isEmpty && errorMessage == null && searchKeyword.isEmpty;
 
   MyAccountsState copyWith({
     bool? isLoading,
     String? errorMessage,
-    List<MyAccount>? allAccounts,
-    List<MyAccount>? filteredAccounts,
+    List<MyAccount>? accounts,
     String? searchKeyword,
     int? totalCount,
   }) {
     return MyAccountsState(
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage,
-      allAccounts: allAccounts ?? this.allAccounts,
-      filteredAccounts: filteredAccounts ?? this.filteredAccounts,
+      accounts: accounts ?? this.accounts,
       searchKeyword: searchKeyword ?? this.searchKeyword,
       totalCount: totalCount ?? this.totalCount,
     );

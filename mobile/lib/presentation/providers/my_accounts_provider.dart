@@ -1,16 +1,28 @@
+import '../../core/network/dio_provider.dart';
 import '../../core/utils/error_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/repositories/mock/my_account_mock_repository.dart';
+import '../../data/datasources/my_account_api_datasource.dart';
+import '../../data/datasources/my_account_remote_datasource.dart';
+import '../../data/repositories/my_account_repository_impl.dart';
 import '../../domain/repositories/my_account_repository.dart';
 import '../../domain/usecases/get_my_accounts.dart';
 import 'my_accounts_state.dart';
 
 // --- Dependency Providers ---
 
+/// MyAccount Remote DataSource Provider
+final myAccountRemoteDataSourceProvider =
+    Provider<MyAccountRemoteDataSource>((ref) {
+  final dio = ref.watch(dioProvider);
+  return MyAccountApiDataSource(dio);
+});
+
 /// MyAccount Repository Provider
 final myAccountRepositoryProvider = Provider<MyAccountRepository>((ref) {
-  return MyAccountMockRepository();
+  return MyAccountRepositoryImpl(
+    remoteDataSource: ref.watch(myAccountRemoteDataSourceProvider),
+  );
 });
 
 /// GetMyAccounts UseCase Provider
@@ -23,7 +35,7 @@ final getMyAccountsUseCaseProvider = Provider<GetMyAccounts>((ref) {
 
 /// 내 거래처 상태 관리 Notifier
 ///
-/// 거래처 목록 로딩, 클라이언트 사이드 검색, 검색 초기화를 관리합니다.
+/// 거래처 목록 로딩, 서버 사이드 검색, 검색 초기화를 관리합니다.
 class MyAccountsNotifier extends StateNotifier<MyAccountsState> {
   final GetMyAccounts _getMyAccounts;
 
@@ -32,18 +44,18 @@ class MyAccountsNotifier extends StateNotifier<MyAccountsState> {
   })  : _getMyAccounts = getMyAccounts,
         super(MyAccountsState.initial());
 
-  /// 내 거래처 목록 로딩
-  Future<void> loadAccounts() async {
+  /// 내 거래처 목록 로딩 (서버 사이드 검색 지원)
+  Future<void> loadAccounts({String? keyword}) async {
     state = state.toLoading();
 
     try {
-      final result = await _getMyAccounts.call();
+      final result = await _getMyAccounts.call(keyword: keyword);
 
       state = state.copyWith(
         isLoading: false,
-        allAccounts: result.accounts,
-        filteredAccounts: result.accounts,
+        accounts: result.accounts,
         totalCount: result.totalCount,
+        searchKeyword: keyword ?? '',
         errorMessage: null,
       );
     } catch (e) {
@@ -53,36 +65,9 @@ class MyAccountsNotifier extends StateNotifier<MyAccountsState> {
     }
   }
 
-  /// 거래처 검색 (클라이언트 사이드)
-  ///
-  /// 거래처명 또는 거래처 코드로 필터링합니다.
-  void searchAccounts(String keyword) {
-    if (keyword.isEmpty) {
-      state = state.copyWith(
-        searchKeyword: '',
-        filteredAccounts: state.allAccounts,
-      );
-      return;
-    }
-
-    final lowerKeyword = keyword.toLowerCase();
-    final filtered = state.allAccounts.where((account) {
-      return account.accountName.toLowerCase().contains(lowerKeyword) ||
-          account.accountCode.toLowerCase().contains(lowerKeyword);
-    }).toList();
-
-    state = state.copyWith(
-      searchKeyword: keyword,
-      filteredAccounts: filtered,
-    );
-  }
-
-  /// 검색 초기화
-  void clearSearch() {
-    state = state.copyWith(
-      searchKeyword: '',
-      filteredAccounts: state.allAccounts,
-    );
+  /// 검색 초기화 (keyword 없이 API 재호출)
+  Future<void> clearSearch() async {
+    await loadAccounts();
   }
 
   /// 에러 초기화

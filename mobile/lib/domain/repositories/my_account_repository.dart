@@ -53,5 +53,5 @@ abstract class MyAccountRepository {
   /// 인증 토큰으로 사용자를 식별합니다.
   ///
   /// Returns: 거래처 목록과 총 건수
-  Future<MyAccountListResult> getMyAccounts();
+  Future<MyAccountListResult> getMyAccounts({String? keyword});
 }

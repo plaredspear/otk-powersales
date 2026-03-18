@@ -13,10 +13,13 @@ class MyAccount {
   final String accountCode;
 
   /// 주소
-  final String address;
+  final String? address;
+
+  /// 상세주소
+  final String? addressDetail;
 
   /// 대표자명
-  final String representativeName;
+  final String? representativeName;
 
   /// 대표자 전화번호 (없을 수 있음)
   final String? phoneNumber;
@@ -25,8 +28,9 @@ class MyAccount {
     required this.accountId,
     required this.accountName,
     required this.accountCode,
-    required this.address,
-    required this.representativeName,
+    this.address,
+    this.addressDetail,
+    this.representativeName,
     this.phoneNumber,
   });
 
@@ -35,6 +39,7 @@ class MyAccount {
     String? accountName,
     String? accountCode,
     String? address,
+    String? addressDetail,
     String? representativeName,
     String? phoneNumber,
   }) {
@@ -43,6 +48,7 @@ class MyAccount {
       accountName: accountName ?? this.accountName,
       accountCode: accountCode ?? this.accountCode,
       address: address ?? this.address,
+      addressDetail: addressDetail ?? this.addressDetail,
       representativeName: representativeName ?? this.representativeName,
       phoneNumber: phoneNumber ?? this.phoneNumber,
     );
@@ -54,6 +60,7 @@ class MyAccount {
       'accountName': accountName,
       'accountCode': accountCode,
       'address': address,
+      'addressDetail': addressDetail,
       'representativeName': representativeName,
       'phoneNumber': phoneNumber,
     };
@@ -64,8 +71,9 @@ class MyAccount {
       accountId: json['accountId'] as int,
       accountName: json['accountName'] as String,
       accountCode: json['accountCode'] as String,
-      address: json['address'] as String,
-      representativeName: json['representativeName'] as String,
+      address: json['address'] as String?,
+      addressDetail: json['addressDetail'] as String?,
+      representativeName: json['representativeName'] as String?,
       phoneNumber: json['phoneNumber'] as String?,
     );
   }
@@ -78,6 +86,7 @@ class MyAccount {
         other.accountName == accountName &&
         other.accountCode == accountCode &&
         other.address == address &&
+        other.addressDetail == addressDetail &&
         other.representativeName == representativeName &&
         other.phoneNumber == phoneNumber;
   }
@@ -89,6 +98,7 @@ class MyAccount {
       accountName,
       accountCode,
       address,
+      addressDetail,
       representativeName,
       phoneNumber,
     );
@@ -98,6 +108,7 @@ class MyAccount {
   String toString() {
     return 'MyAccount(accountId: $accountId, accountName: $accountName, '
         'accountCode: $accountCode, address: $address, '
+        'addressDetail: $addressDetail, '
         'representativeName: $representativeName, '
         'phoneNumber: $phoneNumber)';
   }

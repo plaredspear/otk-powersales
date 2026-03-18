@@ -111,7 +111,7 @@ class MyAccountMockRepository implements MyAccountRepository {
   ];
 
   @override
-  Future<MyAccountListResult> getMyAccounts() async {
+  Future<MyAccountListResult> getMyAccounts({String? keyword}) async {
     await _simulateDelay();
 
     return MyAccountListResult(
