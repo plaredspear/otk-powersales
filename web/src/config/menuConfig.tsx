@@ -12,7 +12,6 @@ import {
   SearchOutlined,
   FileTextOutlined,
   NotificationOutlined,
-  GiftOutlined,
   ReadOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
@@ -33,6 +32,25 @@ export const menuRoute: MenuRoute = {
   path: '/',
   children: [
     {
+      name: '여사원 배치',
+      icon: <TeamOutlined />,
+      children: [
+        { path: '/schedule', name: '일정관리' },
+        { path: '/deployment', name: '배치' },
+        { path: '/promotions', name: '행사마스터' },
+        { path: '/display-schedules', name: '진열스케줄마스터' },
+      ],
+    },
+    {
+      name: '근무',
+      icon: <ClockCircleOutlined />,
+      children: [{ path: '/attendance', name: '등록현황' }],
+    },
+    { path: '/event-team', name: '전문행사조', icon: <CalendarOutlined /> },
+    { path: '/claim', name: '클레임 현황', icon: <ExclamationCircleOutlined /> },
+    { path: '/suggestion', name: '제안사항', icon: <BulbOutlined /> },
+    { path: '/leave', name: '휴무관리', icon: <RestOutlined /> },
+    {
       name: '매출조회',
       icon: <BarChartOutlined />,
       children: [
@@ -41,25 +59,6 @@ export const menuRoute: MenuRoute = {
         { path: '/sales/pos', name: 'POS매출' },
       ],
     },
-    {
-      name: '여사원',
-      icon: <TeamOutlined />,
-      children: [
-        { path: '/schedule', name: '일정관리' },
-        { path: '/deployment', name: '배치' },
-      ],
-    },
-    {
-      name: '근무',
-      icon: <ClockCircleOutlined />,
-      children: [{ path: '/attendance', name: '등록현황' }],
-    },
-    { path: '/promotions', name: '행사마스터', icon: <GiftOutlined /> },
-    { path: '/display-schedules', name: '진열스케줄마스터', icon: <CalendarOutlined /> },
-    { path: '/event-team', name: '전문행사조', icon: <CalendarOutlined /> },
-    { path: '/claim', name: '클레임 현황', icon: <ExclamationCircleOutlined /> },
-    { path: '/suggestion', name: '제안사항', icon: <BulbOutlined /> },
-    { path: '/leave', name: '휴무관리', icon: <RestOutlined /> },
     { path: '/safety-check', name: '안전점검', icon: <SafetyCertificateOutlined /> },
     { path: '/field-inspection', name: '현장점검', icon: <SearchOutlined /> },
     { path: '/report', name: '보고서', icon: <FileTextOutlined /> },
