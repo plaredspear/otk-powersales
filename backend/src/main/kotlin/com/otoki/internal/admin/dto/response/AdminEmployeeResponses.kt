@@ -11,7 +11,6 @@ data class EmployeeListResponse(
 )
 
 data class EmployeeListItem(
-    val sfid: String?,
     val employeeId: String,
     val name: String,
     val status: String?,
@@ -24,7 +23,6 @@ data class EmployeeListItem(
 ) {
     companion object {
         fun from(user: User): EmployeeListItem = EmployeeListItem(
-            sfid = user.sfid,
             employeeId = user.employeeId,
             name = user.name,
             status = user.status,
