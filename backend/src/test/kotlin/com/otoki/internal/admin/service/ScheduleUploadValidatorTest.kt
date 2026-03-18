@@ -21,8 +21,8 @@ class ScheduleUploadValidatorTest {
     )
 
     private val accountMap = mapOf(
-        "ACC001" to createAccount("ACC001", "ACC_SFID_001", "이마트 강남점"),
-        "ACC002" to createAccount("ACC002", "ACC_SFID_002", "홈플러스 역삼점")
+        "ACC001" to createAccount("ACC001", "ACC_SFID_001", "이마트 강남점", id = 1),
+        "ACC002" to createAccount("ACC002", "ACC_SFID_002", "홈플러스 역삼점", id = 2)
     )
 
     @Nested
@@ -42,7 +42,7 @@ class ScheduleUploadValidatorTest {
             assertThat(result.validRows).hasSize(1)
             assertThat(result.previews).hasSize(1)
             assertThat(result.validRows[0].userEmployeeId).isEqualTo("20030001")
-            assertThat(result.validRows[0].accountSfid).isEqualTo("ACC_SFID_001")
+            assertThat(result.validRows[0].accountId).isEqualTo(1)
         }
 
         @Test
@@ -365,7 +365,7 @@ class ScheduleUploadValidatorTest {
             val existingSchedules = listOf(
                 DisplayWorkSchedule(
                     fullName = "20030001",
-                    account = "ACC_SFID_001",
+                    accountId = 1,
                     startDate = LocalDate.of(2026, 3, 1),
                     endDate = LocalDate.of(2026, 5, 1),
                     typeOfWork3 = "순회",
@@ -415,7 +415,7 @@ class ScheduleUploadValidatorTest {
             val existingSchedules = listOf(
                 DisplayWorkSchedule(
                     fullName = "20030001",
-                    account = "ACC_SFID_002",
+                    accountId = 2,
                     startDate = LocalDate.of(2026, 3, 1),
                     endDate = LocalDate.of(2026, 5, 1),
                     typeOfWork3 = "고정",
@@ -443,8 +443,8 @@ class ScheduleUploadValidatorTest {
             // 기존: USR001이 다른 거래처 2곳에 격고 배치
             // 신규: USR001이 ACC001에 격고 → C2 위반 (이미 2개)
             val existingSchedules = listOf(
-                DisplayWorkSchedule(fullName = "20030001", account = "ACC_SFID_X1", startDate = LocalDate.of(2026, 3, 1), endDate = LocalDate.of(2026, 5, 1), typeOfWork3 = "격고", typeOfWork5 = "상시"),
-                DisplayWorkSchedule(fullName = "20030001", account = "ACC_SFID_X2", startDate = LocalDate.of(2026, 3, 1), endDate = LocalDate.of(2026, 5, 1), typeOfWork3 = "격고", typeOfWork5 = "상시")
+                DisplayWorkSchedule(fullName = "20030001", accountId = 101, startDate = LocalDate.of(2026, 3, 1), endDate = LocalDate.of(2026, 5, 1), typeOfWork3 = "격고", typeOfWork5 = "상시"),
+                DisplayWorkSchedule(fullName = "20030001", accountId = 102, startDate = LocalDate.of(2026, 3, 1), endDate = LocalDate.of(2026, 5, 1), typeOfWork3 = "격고", typeOfWork5 = "상시")
             )
             val rows = listOf(
                 createParsedRow(4, "20030001", "홍길동", "ACC001", null, "격고", "상시", "2026-04-01", "2026-04-30")
@@ -467,7 +467,7 @@ class ScheduleUploadValidatorTest {
             // 기존: USR001이 다른 거래처에 임시 배치
             // 신규: USR001이 ACC001에 임시 → C3 위반
             val existingSchedules = listOf(
-                DisplayWorkSchedule(fullName = "20030001", account = "ACC_SFID_X1", startDate = LocalDate.of(2026, 3, 1), endDate = LocalDate.of(2026, 5, 1), typeOfWork3 = "순회", typeOfWork5 = "임시")
+                DisplayWorkSchedule(fullName = "20030001", accountId = 101, startDate = LocalDate.of(2026, 3, 1), endDate = LocalDate.of(2026, 5, 1), typeOfWork3 = "순회", typeOfWork5 = "임시")
             )
             val rows = listOf(
                 createParsedRow(4, "20030001", "홍길동", "ACC001", null, "순회", "임시", "2026-04-01", "2026-04-30")
@@ -528,12 +528,13 @@ class ScheduleUploadValidatorTest {
         externalKey: String,
         sfid: String,
         name: String,
+        id: Int = 1,
         accountStatusName: String? = null,
         accountGroup: String? = null,
         distribution: String? = null,
         abcTypeCode: String? = null
     ): Account = Account(
-        id = 1,
+        id = id,
         externalKey = externalKey,
         sfid = sfid,
         name = name,

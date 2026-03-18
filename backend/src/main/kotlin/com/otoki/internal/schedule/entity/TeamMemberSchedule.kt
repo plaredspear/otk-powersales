@@ -69,8 +69,8 @@ class TeamMemberSchedule(
 
     @SFField("AccountId__c")
     @HCColumn("accountid__c")
-    @Column(name = "account_id", length = 18)
-    var accountId: String? = null,
+    @Column(name = "account_id")
+    var accountId: Int? = null,
 
     @SFField("teamleadersfid__c")
     @HCColumn("teamleadersfid__c")
@@ -225,7 +225,7 @@ class TeamMemberSchedule(
 ) {
     fun updateForPromotion(
         employeeId: String,
-        accountId: String,
+        accountId: Int,
         workingDate: LocalDate,
         workingType: String,
         workingCategory1: String,

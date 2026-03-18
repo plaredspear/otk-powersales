@@ -98,8 +98,8 @@ class AdminTeamScheduleControllerTest {
         @DisplayName("성공 - 거래처 목록 반환")
         fun getAccounts_success() {
             val accounts = listOf(
-                TeamScheduleAccountDto(accountSfid = "ACC001", externalKey = "EXT001", name = "이마트 강남점"),
-                TeamScheduleAccountDto(accountSfid = "ACC002", externalKey = "EXT002", name = "홈플러스 잠실점")
+                TeamScheduleAccountDto(accountId = 1001, externalKey = "EXT001", name = "이마트 강남점"),
+                TeamScheduleAccountDto(accountId = 1002, externalKey = "EXT002", name = "홈플러스 잠실점")
             )
             whenever(adminTeamScheduleService.getAccounts(eq(1L), eq(null))).thenReturn(accounts)
 
@@ -108,7 +108,7 @@ class AdminTeamScheduleControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
                 .andExpect(jsonPath("$.data.length()").value(2))
-                .andExpect(jsonPath("$.data[0].account_sfid").value("ACC001"))
+                .andExpect(jsonPath("$.data[0].account_id").value(1001))
                 .andExpect(jsonPath("$.data[0].external_key").value("EXT001"))
                 .andExpect(jsonPath("$.data[0].name").value("이마트 강남점"))
         }
@@ -117,7 +117,7 @@ class AdminTeamScheduleControllerTest {
         @DisplayName("성공 - branch_code 파라미터 지정")
         fun getAccounts_withBranchCode() {
             val accounts = listOf(
-                TeamScheduleAccountDto(accountSfid = "ACC003", externalKey = "EXT003", name = "롯데마트 서울역점")
+                TeamScheduleAccountDto(accountId = 1003, externalKey = "EXT003", name = "롯데마트 서울역점")
             )
             whenever(adminTeamScheduleService.getAccounts(eq(1L), eq("BR001"))).thenReturn(accounts)
 
@@ -129,7 +129,7 @@ class AdminTeamScheduleControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
                 .andExpect(jsonPath("$.data.length()").value(1))
-                .andExpect(jsonPath("$.data[0].account_sfid").value("ACC003"))
+                .andExpect(jsonPath("$.data[0].account_id").value(1003))
                 .andExpect(jsonPath("$.data[0].name").value("롯데마트 서울역점"))
         }
     }
@@ -177,7 +177,7 @@ class AdminTeamScheduleControllerTest {
                     workingCategory1 = "고정",
                     workingCategory2 = "상시",
                     workingCategory3 = null,
-                    accountSfid = "ACC001",
+                    accountId = 1001,
                     accountName = "이마트 강남점",
                     accountExternalKey = "EXT001",
                     isClockIn = true
@@ -204,7 +204,7 @@ class AdminTeamScheduleControllerTest {
                 .andExpect(jsonPath("$.data[0].working_date").value("2026-03-15"))
                 .andExpect(jsonPath("$.data[0].working_type").value("진열"))
                 .andExpect(jsonPath("$.data[0].is_clock_in").value(true))
-                .andExpect(jsonPath("$.data[0].account_sfid").value("ACC001"))
+                .andExpect(jsonPath("$.data[0].account_id").value(1001))
                 .andExpect(jsonPath("$.data[0].account_name").value("이마트 강남점"))
         }
 
@@ -285,7 +285,7 @@ class AdminTeamScheduleControllerTest {
                 workingType = "진열",
                 workingCategory1 = "고정",
                 workingCategory2 = "상시",
-                accountSfid = "ACC001"
+                accountId = 1001
             )
             whenever(adminTeamScheduleService.createSchedule(eq(1L), any()))
                 .thenReturn(TeamScheduleCreateResultDto(id = 10L))
@@ -353,7 +353,7 @@ class AdminTeamScheduleControllerTest {
                 workingDate = "2026-03-21",
                 workingType = "판촉",
                 workingCategory1 = "행사",
-                accountSfid = "ACC002"
+                accountId = 1002
             )
 
             mockMvc.perform(

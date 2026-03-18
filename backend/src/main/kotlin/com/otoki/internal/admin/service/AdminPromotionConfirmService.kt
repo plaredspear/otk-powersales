@@ -71,7 +71,6 @@ class AdminPromotionConfirmService(
         validateEmployeeStatus(employees, userMap)
 
         // 6. Upsert 수행
-        val accountIdStr = promotion.accountId.toString()
         val teamMemberSchedulesToSave = mutableListOf<TeamMemberSchedule>()
 
         for (pe in employees) {
@@ -81,7 +80,7 @@ class AdminPromotionConfirmService(
             if (existing != null) {
                 existing.updateForPromotion(
                     employeeId = pe.employeeId!!,
-                    accountId = accountIdStr,
+                    accountId = promotion.accountId,
                     workingDate = pe.scheduleDate!!,
                     workingType = pe.workStatus!!,
                     workingCategory1 = pe.workType1!!,
@@ -93,7 +92,7 @@ class AdminPromotionConfirmService(
             } else {
                 val newTeamMemberSchedule = TeamMemberSchedule(
                     employeeId = pe.employeeId!!,
-                    accountId = accountIdStr,
+                    accountId = promotion.accountId,
                     workingDate = pe.scheduleDate!!,
                     workingType = pe.workStatus!!,
                     workingCategory1 = pe.workType1!!,
@@ -275,14 +274,13 @@ class AdminPromotionConfirmService(
         currentPeIds: List<String>,
         userMap: Map<String?, com.otoki.internal.sap.entity.User>
     ) {
-        val accountIdStr = promotion.accountId.toString()
         val externalTeamMemberSchedules = existingTeamMemberSchedules.filter { it.promotionEmpIdExt == null || it.promotionEmpIdExt !in currentPeIds }
 
         for (pe in employees) {
             val duplicate = externalTeamMemberSchedules.any {
                 it.employeeId == pe.employeeId!! &&
                     it.workingDate == pe.scheduleDate!! &&
-                    it.accountId == accountIdStr
+                    it.accountId == promotion.accountId
             }
             if (duplicate) {
                 val name = resolveEmployeeName(pe.employeeId!!, userMap)

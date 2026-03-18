@@ -20,13 +20,13 @@ data class TeamMemberDto(
 }
 
 data class TeamScheduleAccountDto(
-    val accountSfid: String,
+    val accountId: Int,
     val externalKey: String,
     val name: String
 ) {
     companion object {
         fun from(account: Account): TeamScheduleAccountDto = TeamScheduleAccountDto(
-            accountSfid = account.sfid ?: "",
+            accountId = account.id,
             externalKey = account.externalKey ?: "",
             name = account.name ?: ""
         )
@@ -43,7 +43,7 @@ data class TeamScheduleDto(
     val workingCategory1: String?,
     val workingCategory2: String?,
     val workingCategory3: String?,
-    val accountSfid: String?,
+    val accountId: Int?,
     val accountName: String?,
     val accountExternalKey: String?,
     val isClockIn: Boolean
@@ -52,7 +52,7 @@ data class TeamScheduleDto(
         fun from(
             schedule: TeamMemberSchedule,
             userMap: Map<String, User>,
-            accountMap: Map<String, Account>
+            accountMap: Map<Int, Account>
         ): TeamScheduleDto {
             val user = schedule.employeeId?.let { userMap[it] }
             val account = schedule.accountId?.let { accountMap[it] }
@@ -66,7 +66,7 @@ data class TeamScheduleDto(
                 workingCategory1 = schedule.workingCategory1,
                 workingCategory2 = schedule.workingCategory2,
                 workingCategory3 = schedule.workingCategory3,
-                accountSfid = schedule.accountId,
+                accountId = schedule.accountId,
                 accountName = account?.name,
                 accountExternalKey = account?.externalKey,
                 isClockIn = schedule.commuteLogId != null

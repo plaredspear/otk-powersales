@@ -69,8 +69,8 @@ class HomeServiceTest {
             val account = createAccount(id = 8938, name = "이마트 부산점")
 
             val teamMemberSchedules = listOf(
-                createTeamMemberSchedule(sfid = "SCH001", employeeId = employeeId, accountId = "8938", workingCategory1 = "진열"),
-                createTeamMemberSchedule(sfid = "SCH002", employeeId = employeeId, accountId = "8938", workingCategory1 = "행사")
+                createTeamMemberSchedule(sfid = "SCH001", employeeId = employeeId, accountId = 8938, workingCategory1 = "진열"),
+                createTeamMemberSchedule(sfid = "SCH002", employeeId = employeeId, accountId = 8938, workingCategory1 = "행사")
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
@@ -107,9 +107,9 @@ class HomeServiceTest {
             val teamUsers = listOf(leader, member1, member2)
 
             val teamMemberSchedules = listOf(
-                createTeamMemberSchedule(sfid = "SCH001", employeeId = member1EmpId, accountId = "8938", workingCategory1 = "진열"),
-                createTeamMemberSchedule(sfid = "SCH002", employeeId = member2EmpId, accountId = "8939", workingCategory1 = "행사"),
-                createTeamMemberSchedule(sfid = "SCH003", employeeId = leaderEmpId, accountId = "8938", workingCategory1 = "진열")
+                createTeamMemberSchedule(sfid = "SCH001", employeeId = member1EmpId, accountId = 8938, workingCategory1 = "진열"),
+                createTeamMemberSchedule(sfid = "SCH002", employeeId = member2EmpId, accountId = 8939, workingCategory1 = "행사"),
+                createTeamMemberSchedule(sfid = "SCH003", employeeId = leaderEmpId, accountId = 8938, workingCategory1 = "진열")
             )
 
             val accounts = listOf(
@@ -320,7 +320,7 @@ class HomeServiceTest {
             val displaySchedule = createTeamMemberSchedule(
                 sfid = "SCH_DISPLAY",
                 employeeId = employeeId,
-                accountId = "8938",
+                accountId = 8938,
                 workingCategory1 = "진열",
                 workingCategory2 = null,
                 commuteLogId = null
@@ -329,7 +329,7 @@ class HomeServiceTest {
             val eventSchedule = createTeamMemberSchedule(
                 sfid = "SCH_EVENT",
                 employeeId = employeeId,
-                accountId = "8939",
+                accountId = 8939,
                 workingCategory1 = "행사",
                 workingCategory2 = null,
                 commuteLogId = null
@@ -338,7 +338,7 @@ class HomeServiceTest {
             val tempSchedule = createTeamMemberSchedule(
                 sfid = "SCH_TEMP",
                 employeeId = employeeId,
-                accountId = "8940",
+                accountId = 8940,
                 workingCategory1 = "진열",
                 workingCategory2 = "임시배정",
                 commuteLogId = null
@@ -347,7 +347,7 @@ class HomeServiceTest {
             val commuteSchedule = createTeamMemberSchedule(
                 sfid = "SCH_COMMUTE",
                 employeeId = employeeId,
-                accountId = "8941",
+                accountId = 8941,
                 workingCategory1 = "진열",
                 workingCategory2 = null,
                 commuteLogId = "CLG001"
@@ -390,21 +390,21 @@ class HomeServiceTest {
             val displaySchedule = createTeamMemberSchedule(
                 sfid = "SCH_SAME",
                 employeeId = employeeId,
-                accountId = "8938",
+                accountId = 8938,
                 workingCategory1 = "진열",
                 commuteLogId = null
             )
             val eventSchedule = createTeamMemberSchedule(
                 sfid = "SCH_SAME",
                 employeeId = employeeId,
-                accountId = "8939",
+                accountId = 8939,
                 workingCategory1 = "행사",
                 commuteLogId = null
             )
             val otherSchedule = createTeamMemberSchedule(
                 sfid = "SCH_OTHER",
                 employeeId = employeeId,
-                accountId = "8940",
+                accountId = 8940,
                 workingCategory1 = "진열",
                 commuteLogId = null
             )
@@ -440,9 +440,9 @@ class HomeServiceTest {
             val user = createUser(id = userId, appAuthority = null)
 
             val teamMemberSchedules = listOf(
-                createTeamMemberSchedule(sfid = "SCH001", employeeId = employeeId, accountId = "8938", commuteLogId = "CLG001"),
-                createTeamMemberSchedule(sfid = "SCH002", employeeId = employeeId, accountId = "8939", commuteLogId = "CLG002"),
-                createTeamMemberSchedule(sfid = "SCH003", employeeId = employeeId, accountId = "8940", commuteLogId = null)
+                createTeamMemberSchedule(sfid = "SCH001", employeeId = employeeId, accountId = 8938, commuteLogId = "CLG001"),
+                createTeamMemberSchedule(sfid = "SCH002", employeeId = employeeId, accountId = 8939, commuteLogId = "CLG002"),
+                createTeamMemberSchedule(sfid = "SCH003", employeeId = employeeId, accountId = 8940, commuteLogId = null)
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
@@ -501,7 +501,7 @@ class HomeServiceTest {
         id: Long = 0L,
         sfid: String? = null,
         employeeId: String? = null,
-        accountId: String? = null,
+        accountId: Int? = null,
         workingDate: LocalDate = LocalDate.now(),
         workingType: String? = "순회",
         workingCategory1: String? = "진열",

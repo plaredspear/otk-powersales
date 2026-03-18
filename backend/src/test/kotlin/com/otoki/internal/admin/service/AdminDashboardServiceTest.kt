@@ -70,16 +70,16 @@ class AdminDashboardServiceTest {
             )
 
             val accounts = listOf(
-                createAccount(sfid = "ACC001", externalKey = "EK001", abcType = "대형마트"),
-                createAccount(sfid = "ACC002", externalKey = "EK002", abcType = "슈퍼")
+                createAccount(id = 1, sfid = "ACC001", externalKey = "EK001", abcType = "대형마트"),
+                createAccount(id = 2, sfid = "ACC002", externalKey = "EK002", abcType = "슈퍼")
             )
 
             val schedules = listOf(
-                createDisplayWorkSchedule(accountSfid = "ACC001", employeeSfid = "EMP001", typeOfWork1 = "고정"),
-                createDisplayWorkSchedule(accountSfid = "ACC002", employeeSfid = "EMP002", typeOfWork1 = "순회")
+                createDisplayWorkSchedule(accountId = 1, employeeSfid = "EMP001", typeOfWork1 = "고정"),
+                createDisplayWorkSchedule(accountId = 2, employeeSfid = "EMP002", typeOfWork1 = "순회")
             )
             val prevSchedules = listOf(
-                createDisplayWorkSchedule(accountSfid = "ACC001", employeeSfid = "EMP001", typeOfWork1 = "고정")
+                createDisplayWorkSchedule(accountId = 1, employeeSfid = "EMP001", typeOfWork1 = "고정")
             )
 
             val activeUsers = listOf(
@@ -113,8 +113,8 @@ class AdminDashboardServiceTest {
                 eq(LocalDate.of(2026, 2, 28)), eq(LocalDate.of(2026, 2, 1))
             )).thenReturn(prevSchedules)
 
-            // Account lookup for schedule accountSfids
-            whenever(accountRepository.findBySfidIn(any())).thenReturn(accounts)
+            // Account lookup for schedule accountIds
+            whenever(accountRepository.findByIdIn(any())).thenReturn(accounts)
 
             // Users
             whenever(userRepository.findByStatus("재직")).thenReturn(activeUsers)
@@ -156,7 +156,7 @@ class AdminDashboardServiceTest {
             val scope = DataScope(branchCodes = listOf("B001"), isAllBranches = false)
 
             val branchAccounts = listOf(
-                createAccount(sfid = "ACC001", externalKey = "EK001", branchCode = "B001",
+                createAccount(id = 1, sfid = "ACC001", externalKey = "EK001", branchCode = "B001",
                     branchName = "서울지점", abcType = "대형마트")
             )
 
@@ -169,7 +169,7 @@ class AdminDashboardServiceTest {
             )
 
             val schedules = listOf(
-                createDisplayWorkSchedule(accountSfid = "ACC001", employeeSfid = "EMP001", typeOfWork1 = "고정")
+                createDisplayWorkSchedule(accountId = 1, employeeSfid = "EMP001", typeOfWork1 = "고정")
             )
 
             val activeUsers = listOf(
@@ -193,16 +193,16 @@ class AdminDashboardServiceTest {
             // Accounts for channel classification
             whenever(accountRepository.findAll()).thenReturn(branchAccounts)
 
-            // Schedules (filtered by accountSfids)
-            whenever(displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndAccountIn(
-                eq(LocalDate.of(2026, 3, 31)), eq(LocalDate.of(2026, 3, 1)), eq(listOf("ACC001"))
+            // Schedules (filtered by accountIds)
+            whenever(displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndAccountIdIn(
+                eq(LocalDate.of(2026, 3, 31)), eq(LocalDate.of(2026, 3, 1)), eq(listOf(1))
             )).thenReturn(schedules)
-            whenever(displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndAccountIn(
-                eq(LocalDate.of(2026, 2, 28)), eq(LocalDate.of(2026, 2, 1)), eq(listOf("ACC001"))
+            whenever(displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndAccountIdIn(
+                eq(LocalDate.of(2026, 2, 28)), eq(LocalDate.of(2026, 2, 1)), eq(listOf(1))
             )).thenReturn(emptyList())
 
-            // Account lookup for schedule accountSfids
-            whenever(accountRepository.findBySfidIn(any())).thenReturn(branchAccounts)
+            // Account lookup for schedule accountIds
+            whenever(accountRepository.findByIdIn(any())).thenReturn(branchAccounts)
 
             // Users (filtered by costCenterCode)
             whenever(userRepository.findByCostCenterCodeInAndStatus(listOf("B001"), "재직"))
@@ -285,7 +285,7 @@ class AdminDashboardServiceTest {
             // branchCode 파라미터로 "B002" 지정 -> effectiveScope = DataScope(listOf("B002"), false)
 
             val filteredAccounts = listOf(
-                createAccount(sfid = "ACC002", externalKey = "EK002", branchCode = "B002",
+                createAccount(id = 2, sfid = "ACC002", externalKey = "EK002", branchCode = "B002",
                     branchName = "부산지점", abcType = "편의점")
             )
 
@@ -310,12 +310,12 @@ class AdminDashboardServiceTest {
             // Accounts for channel classification
             whenever(accountRepository.findAll()).thenReturn(filteredAccounts)
 
-            // Schedules filtered by accountSfids
-            whenever(displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndAccountIn(
-                eq(LocalDate.of(2026, 3, 31)), eq(LocalDate.of(2026, 3, 1)), eq(listOf("ACC002"))
+            // Schedules filtered by accountIds
+            whenever(displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndAccountIdIn(
+                eq(LocalDate.of(2026, 3, 31)), eq(LocalDate.of(2026, 3, 1)), eq(listOf(2))
             )).thenReturn(emptyList())
-            whenever(displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndAccountIn(
-                eq(LocalDate.of(2026, 2, 28)), eq(LocalDate.of(2026, 2, 1)), eq(listOf("ACC002"))
+            whenever(displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndAccountIdIn(
+                eq(LocalDate.of(2026, 2, 28)), eq(LocalDate.of(2026, 2, 1)), eq(listOf(2))
             )).thenReturn(emptyList())
 
             // Users filtered by costCenterCode
@@ -342,7 +342,7 @@ class AdminDashboardServiceTest {
             // branchCode="B999" 요청하지만 scope에 없으므로 원래 scope 유지
 
             val branchAccounts = listOf(
-                createAccount(sfid = "ACC001", externalKey = "EK001", branchCode = "B001",
+                createAccount(id = 1, sfid = "ACC001", externalKey = "EK001", branchCode = "B001",
                     branchName = "서울지점", abcType = "대형마트")
             )
 
@@ -360,11 +360,11 @@ class AdminDashboardServiceTest {
             )).thenReturn(emptyList())
 
             // Schedules
-            whenever(displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndAccountIn(
-                eq(LocalDate.of(2026, 3, 31)), eq(LocalDate.of(2026, 3, 1)), eq(listOf("ACC001"))
+            whenever(displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndAccountIdIn(
+                eq(LocalDate.of(2026, 3, 31)), eq(LocalDate.of(2026, 3, 1)), eq(listOf(1))
             )).thenReturn(emptyList())
-            whenever(displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndAccountIn(
-                eq(LocalDate.of(2026, 2, 28)), eq(LocalDate.of(2026, 2, 1)), eq(listOf("ACC001"))
+            whenever(displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndAccountIdIn(
+                eq(LocalDate.of(2026, 2, 28)), eq(LocalDate.of(2026, 2, 1)), eq(listOf(1))
             )).thenReturn(emptyList())
 
             // Users
@@ -398,7 +398,7 @@ class AdminDashboardServiceTest {
             )
 
             val accounts = listOf(
-                createAccount(sfid = "ACC001", externalKey = "EK001", abcType = "대형마트")
+                createAccount(id = 1, sfid = "ACC001", externalKey = "EK001", abcType = "대형마트")
             )
 
             whenever(dataScopeHolder.require()).thenReturn(scope)
@@ -510,9 +510,9 @@ class AdminDashboardServiceTest {
             )
 
             val accounts = listOf(
-                createAccount(sfid = "A1", externalKey = "EK001", abcType = "대형마트"),
-                createAccount(sfid = "A2", externalKey = "EK002", abcType = "슈퍼"),
-                createAccount(sfid = "A3", externalKey = "EK003", abcType = "편의점")
+                createAccount(id = 1, sfid = "A1", externalKey = "EK001", abcType = "대형마트"),
+                createAccount(id = 2, sfid = "A2", externalKey = "EK002", abcType = "슈퍼"),
+                createAccount(id = 3, sfid = "A3", externalKey = "EK003", abcType = "편의점")
             )
 
             whenever(dataScopeHolder.require()).thenReturn(scope)
@@ -637,7 +637,7 @@ class AdminDashboardServiceTest {
     private fun createDisplayWorkSchedule(
         id: Long = 0,
         sfid: String? = null,
-        accountSfid: String? = null,
+        accountId: Int? = null,
         confirmed: Boolean? = true,
         employeeSfid: String? = null,
         typeOfWork1: String? = null,
@@ -647,7 +647,7 @@ class AdminDashboardServiceTest {
         return DisplayWorkSchedule(
             id = id,
             sfid = sfid,
-            account = accountSfid,
+            accountId = accountId,
             confirmed = confirmed,
             fullName = employeeSfid,
             typeOfWork1 = typeOfWork1,

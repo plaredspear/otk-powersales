@@ -12,5 +12,5 @@ data class TeamScheduleUpdateRequest(
     val workingCategory1: String? = null,
     val workingCategory2: String? = null,
     val workingCategory3: String? = null,
-    val accountSfid: String? = null
+    val accountId: Int? = null
 )

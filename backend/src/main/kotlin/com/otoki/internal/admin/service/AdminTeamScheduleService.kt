@@ -54,10 +54,10 @@ class AdminTeamScheduleService(
         year: Int,
         month: Int,
         employeeIds: List<String>?,
-        accountSfids: List<String>?
+        accountIds: List<Int>?
     ): List<TeamScheduleDto> {
         val hasEmployeeFilter = !employeeIds.isNullOrEmpty()
-        val hasAccountFilter = !accountSfids.isNullOrEmpty()
+        val hasAccountFilter = !accountIds.isNullOrEmpty()
 
         if (!hasEmployeeFilter && !hasAccountFilter) {
             return emptyList()
@@ -76,7 +76,7 @@ class AdminTeamScheduleService(
         }
         if (hasAccountFilter) {
             schedules.addAll(
-                teamMemberScheduleRepository.findMonthlyByAccountIds(accountSfids!!, from, to)
+                teamMemberScheduleRepository.findMonthlyByAccountIds(accountIds!!, from, to)
             )
         }
 
@@ -92,10 +92,10 @@ class AdminTeamScheduleService(
         year: Int,
         month: Int,
         employeeIds: List<String>?,
-        accountSfids: List<String>?
+        accountIds: List<Int>?
     ): List<DailySummaryDto> {
         val hasEmployeeFilter = !employeeIds.isNullOrEmpty()
-        val hasAccountFilter = !accountSfids.isNullOrEmpty()
+        val hasAccountFilter = !accountIds.isNullOrEmpty()
 
         if (!hasEmployeeFilter && !hasAccountFilter) {
             return emptyList()
@@ -114,7 +114,7 @@ class AdminTeamScheduleService(
         }
         if (hasAccountFilter) {
             schedules.addAll(
-                teamMemberScheduleRepository.findMonthlyByAccountIds(accountSfids!!, from, to)
+                teamMemberScheduleRepository.findMonthlyByAccountIds(accountIds!!, from, to)
             )
         }
 
@@ -151,9 +151,9 @@ class AdminTeamScheduleService(
             validateScheduleConflict(employee.employeeId, workingDate, request.workingCategory3, null)
         }
 
-        if (request.accountSfid != null) {
-            accountRepository.findBySfid(request.accountSfid)
-                ?: throw TeamScheduleAccountNotFoundException()
+        if (request.accountId != null) {
+            accountRepository.findById(request.accountId)
+                .orElseThrow { TeamScheduleAccountNotFoundException() }
         }
 
         val currentUser = findUserById(userId)
@@ -164,7 +164,7 @@ class AdminTeamScheduleService(
             workingCategory1 = request.workingCategory1,
             workingCategory2 = request.workingCategory2,
             workingCategory3 = request.workingCategory3,
-            accountId = request.accountSfid,
+            accountId = request.accountId,
             teamLeaderSfid = currentUser.sfid
         )
         val saved = teamMemberScheduleRepository.save(schedule)
@@ -189,16 +189,16 @@ class AdminTeamScheduleService(
             validateScheduleConflict(schedule.employeeId!!, newWorkingDate, request.workingCategory3, scheduleId)
         }
 
-        if (request.accountSfid != null && request.accountSfid != schedule.accountId) {
-            accountRepository.findBySfid(request.accountSfid)
-                ?: throw TeamScheduleAccountNotFoundException()
+        if (request.accountId != null && request.accountId != schedule.accountId) {
+            accountRepository.findById(request.accountId)
+                .orElseThrow { TeamScheduleAccountNotFoundException() }
         }
 
         schedule.workingDate = newWorkingDate
         schedule.workingType = request.workingType
         schedule.workingCategory1 = request.workingCategory1
         schedule.workingCategory3 = request.workingCategory3
-        schedule.accountId = request.accountSfid
+        schedule.accountId = request.accountId
     }
 
     @Transactional
@@ -270,9 +270,9 @@ class AdminTeamScheduleService(
         return userRepository.findByEmployeeIdIn(employeeIds).associateBy { it.employeeId }
     }
 
-    private fun buildAccountMap(schedules: List<TeamMemberSchedule>): Map<String, Account> {
-        val accountSfids = schedules.mapNotNull { it.accountId }.distinct()
-        if (accountSfids.isEmpty()) return emptyMap()
-        return accountRepository.findBySfidIn(accountSfids).associateBy { it.sfid ?: "" }
+    private fun buildAccountMap(schedules: List<TeamMemberSchedule>): Map<Int, Account> {
+        val accountIds = schedules.mapNotNull { it.accountId }.distinct()
+        if (accountIds.isEmpty()) return emptyMap()
+        return accountRepository.findByIdIn(accountIds).associateBy { it.id }
     }
 }
