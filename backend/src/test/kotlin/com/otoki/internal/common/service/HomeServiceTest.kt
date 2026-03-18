@@ -69,8 +69,8 @@ class HomeServiceTest {
             val account = createAccount(id = 8938, name = "이마트 부산점")
 
             val teamMemberSchedules = listOf(
-                createTeamMemberSchedule(sfid = "SCH001", employeeId = employeeId, accountId = 8938, workingCategory1 = "진열"),
-                createTeamMemberSchedule(sfid = "SCH002", employeeId = employeeId, accountId = 8938, workingCategory1 = "행사")
+                createTeamMemberSchedule(id = 1L, employeeId = employeeId, accountId = 8938, workingCategory1 = "진열"),
+                createTeamMemberSchedule(id = 2L, employeeId = employeeId, accountId = 8938, workingCategory1 = "행사")
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
@@ -107,9 +107,9 @@ class HomeServiceTest {
             val teamUsers = listOf(leader, member1, member2)
 
             val teamMemberSchedules = listOf(
-                createTeamMemberSchedule(sfid = "SCH001", employeeId = member1EmpId, accountId = 8938, workingCategory1 = "진열"),
-                createTeamMemberSchedule(sfid = "SCH002", employeeId = member2EmpId, accountId = 8939, workingCategory1 = "행사"),
-                createTeamMemberSchedule(sfid = "SCH003", employeeId = leaderEmpId, accountId = 8938, workingCategory1 = "진열")
+                createTeamMemberSchedule(id = 1L, employeeId = member1EmpId, accountId = 8938, workingCategory1 = "진열"),
+                createTeamMemberSchedule(id = 2L, employeeId = member2EmpId, accountId = 8939, workingCategory1 = "행사"),
+                createTeamMemberSchedule(id = 3L, employeeId = leaderEmpId, accountId = 8938, workingCategory1 = "진열")
             )
 
             val accounts = listOf(
@@ -318,7 +318,7 @@ class HomeServiceTest {
 
             // 진열 (priority 3)
             val displaySchedule = createTeamMemberSchedule(
-                sfid = "SCH_DISPLAY",
+                id = 4L,
                 employeeId = employeeId,
                 accountId = 8938,
                 workingCategory1 = "진열",
@@ -327,7 +327,7 @@ class HomeServiceTest {
             )
             // 행사 (priority 2)
             val eventSchedule = createTeamMemberSchedule(
-                sfid = "SCH_EVENT",
+                id = 3L,
                 employeeId = employeeId,
                 accountId = 8939,
                 workingCategory1 = "행사",
@@ -336,7 +336,7 @@ class HomeServiceTest {
             )
             // 임시배정 (priority 1)
             val tempSchedule = createTeamMemberSchedule(
-                sfid = "SCH_TEMP",
+                id = 2L,
                 employeeId = employeeId,
                 accountId = 8940,
                 workingCategory1 = "진열",
@@ -345,7 +345,7 @@ class HomeServiceTest {
             )
             // 출근완료 (priority 0)
             val commuteSchedule = createTeamMemberSchedule(
-                sfid = "SCH_COMMUTE",
+                id = 1L,
                 employeeId = employeeId,
                 accountId = 8941,
                 workingCategory1 = "진열",
@@ -370,39 +370,39 @@ class HomeServiceTest {
 
             // Then
             assertThat(result.todaySchedules).hasSize(4)
-            assertThat(result.todaySchedules[0].scheduleId).isEqualTo("SCH_COMMUTE")
-            assertThat(result.todaySchedules[1].scheduleId).isEqualTo("SCH_TEMP")
-            assertThat(result.todaySchedules[2].scheduleId).isEqualTo("SCH_EVENT")
-            assertThat(result.todaySchedules[3].scheduleId).isEqualTo("SCH_DISPLAY")
+            assertThat(result.todaySchedules[0].scheduleId).isEqualTo(1L)
+            assertThat(result.todaySchedules[1].scheduleId).isEqualTo(2L)
+            assertThat(result.todaySchedules[2].scheduleId).isEqualTo(3L)
+            assertThat(result.todaySchedules[3].scheduleId).isEqualTo(4L)
         }
 
         // ========== 중복 제거 ==========
 
         @Test
-        @DisplayName("중복 사원 제거 - 동일 sfid 스케줄이 복수 존재 -> 정렬 후 첫 번째만 반환")
-        fun schedules_deduplicatedBySfid() {
+        @DisplayName("중복 제거 - 동일 id 스케줄이 복수 존재 -> 정렬 후 첫 번째만 반환")
+        fun schedules_deduplicatedById() {
             // Given
             val userId = 1L
             val employeeId = "20030117"
             val user = createUser(id = userId, appAuthority = null)
 
-            // 같은 sfid로 진열(priority 3)과 행사(priority 2) 스케줄 존재
+            // 같은 id로 진열(priority 3)과 행사(priority 2) 스케줄 존재
             val displaySchedule = createTeamMemberSchedule(
-                sfid = "SCH_SAME",
+                id = 1L,
                 employeeId = employeeId,
                 accountId = 8938,
                 workingCategory1 = "진열",
                 commuteLogId = null
             )
             val eventSchedule = createTeamMemberSchedule(
-                sfid = "SCH_SAME",
+                id = 1L,
                 employeeId = employeeId,
                 accountId = 8939,
                 workingCategory1 = "행사",
                 commuteLogId = null
             )
             val otherSchedule = createTeamMemberSchedule(
-                sfid = "SCH_OTHER",
+                id = 2L,
                 employeeId = employeeId,
                 accountId = 8940,
                 workingCategory1 = "진열",
@@ -426,7 +426,7 @@ class HomeServiceTest {
             // Then
             assertThat(result.todaySchedules).hasSize(2)
             val scheduleIds = result.todaySchedules.map { it.scheduleId }
-            assertThat(scheduleIds).containsExactlyInAnyOrder("SCH_SAME", "SCH_OTHER")
+            assertThat(scheduleIds).containsExactlyInAnyOrder(1L, 2L)
         }
 
         // ========== 출근현황 집계 ==========
@@ -440,9 +440,9 @@ class HomeServiceTest {
             val user = createUser(id = userId, appAuthority = null)
 
             val teamMemberSchedules = listOf(
-                createTeamMemberSchedule(sfid = "SCH001", employeeId = employeeId, accountId = 8938, commuteLogId = "CLG001"),
-                createTeamMemberSchedule(sfid = "SCH002", employeeId = employeeId, accountId = 8939, commuteLogId = "CLG002"),
-                createTeamMemberSchedule(sfid = "SCH003", employeeId = employeeId, accountId = 8940, commuteLogId = null)
+                createTeamMemberSchedule(id = 1L, employeeId = employeeId, accountId = 8938, commuteLogId = "CLG001"),
+                createTeamMemberSchedule(id = 2L, employeeId = employeeId, accountId = 8939, commuteLogId = "CLG002"),
+                createTeamMemberSchedule(id = 3L, employeeId = employeeId, accountId = 8940, commuteLogId = null)
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))

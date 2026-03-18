@@ -69,7 +69,7 @@ class HomeService(
         // 정렬 + 중복 제거 + DTO 변환
         val todaySchedules = teamMemberSchedules
             .sortedBy { sortPriority(it) }
-            .distinctBy { it.sfid }
+            .distinctBy { it.id }
             .map { teamMemberSchedule -> toTeamMemberScheduleInfo(teamMemberSchedule, userMap, accountMap) }
 
         // 출근 현황 집계
@@ -167,7 +167,7 @@ class HomeService(
         val employeeId = teamMemberSchedule.employeeId ?: ""
         val matchedUser = userMap[employeeId]
         return HomeResponse.TeamMemberScheduleInfo(
-            scheduleId = teamMemberSchedule.sfid ?: "",
+            scheduleId = teamMemberSchedule.id,
             employeeName = matchedUser?.name ?: "",
             employeeId = employeeId,
             storeName = teamMemberSchedule.accountId?.let { accountMap[it] },

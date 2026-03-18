@@ -18,7 +18,7 @@ data class HomeResponse(
      * 일정 정보 (역할별 스케줄 항목)
      */
     data class TeamMemberScheduleInfo(
-        val scheduleId: String,
+        val scheduleId: Long,
         val employeeName: String,
         val employeeId: String,
         val storeName: String?,

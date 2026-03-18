@@ -74,7 +74,7 @@ class HomeControllerTest {
             val mockResponse = HomeResponse(
                 todaySchedules = listOf(
                     HomeResponse.TeamMemberScheduleInfo(
-                        scheduleId = "SCH-20260225-001",
+                        scheduleId = 1L,
                         employeeName = "최금주",
                         employeeId = "20030117",
                         storeName = "이마트 부산점",
@@ -128,7 +128,7 @@ class HomeControllerTest {
                 // today_schedules
                 .andExpect(jsonPath("$.data.today_schedules").isArray)
                 .andExpect(jsonPath("$.data.today_schedules.length()").value(1))
-                .andExpect(jsonPath("$.data.today_schedules[0].schedule_id").value("SCH-20260225-001"))
+                .andExpect(jsonPath("$.data.today_schedules[0].schedule_id").value(1))
                 .andExpect(jsonPath("$.data.today_schedules[0].employee_name").value("최금주"))
                 .andExpect(jsonPath("$.data.today_schedules[0].employee_id").value("20030117"))
                 .andExpect(jsonPath("$.data.today_schedules[0].store_name").value("이마트 부산점"))
@@ -177,7 +177,7 @@ class HomeControllerTest {
             val mockResponse = HomeResponse(
                 todaySchedules = listOf(
                     HomeResponse.TeamMemberScheduleInfo(
-                        scheduleId = "SCH-20260225-010",
+                        scheduleId = 10L,
                         employeeName = "최금주",
                         employeeId = "20030117",
                         storeName = "이마트 부산점",
@@ -188,7 +188,7 @@ class HomeControllerTest {
                         commuteRegisteredAt = commuteTime1
                     ),
                     HomeResponse.TeamMemberScheduleInfo(
-                        scheduleId = "SCH-20260225-011",
+                        scheduleId = 11L,
                         employeeName = "김영희",
                         employeeId = "20190523",
                         storeName = "홈플러스 서면점",
@@ -199,7 +199,7 @@ class HomeControllerTest {
                         commuteRegisteredAt = null
                     ),
                     HomeResponse.TeamMemberScheduleInfo(
-                        scheduleId = "SCH-20260225-012",
+                        scheduleId = 12L,
                         employeeName = "박소현",
                         employeeId = "20210812",
                         storeName = null,
@@ -242,7 +242,7 @@ class HomeControllerTest {
                 .andExpect(jsonPath("$.data.today_schedules").isArray)
                 .andExpect(jsonPath("$.data.today_schedules.length()").value(3))
                 // 첫 번째 팀원 (출근 등록됨)
-                .andExpect(jsonPath("$.data.today_schedules[0].schedule_id").value("SCH-20260225-010"))
+                .andExpect(jsonPath("$.data.today_schedules[0].schedule_id").value(10))
                 .andExpect(jsonPath("$.data.today_schedules[0].employee_name").value("최금주"))
                 .andExpect(jsonPath("$.data.today_schedules[0].employee_id").value("20030117"))
                 .andExpect(jsonPath("$.data.today_schedules[0].store_name").value("이마트 부산점"))
@@ -252,7 +252,7 @@ class HomeControllerTest {
                 .andExpect(jsonPath("$.data.today_schedules[0].is_commute_registered").value(true))
                 .andExpect(jsonPath("$.data.today_schedules[0].commute_registered_at").exists())
                 // 두 번째 팀원 (출근 미등록, work_type null)
-                .andExpect(jsonPath("$.data.today_schedules[1].schedule_id").value("SCH-20260225-011"))
+                .andExpect(jsonPath("$.data.today_schedules[1].schedule_id").value(11))
                 .andExpect(jsonPath("$.data.today_schedules[1].employee_name").value("김영희"))
                 .andExpect(jsonPath("$.data.today_schedules[1].employee_id").value("20190523"))
                 .andExpect(jsonPath("$.data.today_schedules[1].store_name").value("홈플러스 서면점"))
@@ -261,7 +261,7 @@ class HomeControllerTest {
                 .andExpect(jsonPath("$.data.today_schedules[1].is_commute_registered").value(false))
                 .andExpect(jsonPath("$.data.today_schedules[1].commute_registered_at").doesNotExist())
                 // 세 번째 팀원 (내근, store null)
-                .andExpect(jsonPath("$.data.today_schedules[2].schedule_id").value("SCH-20260225-012"))
+                .andExpect(jsonPath("$.data.today_schedules[2].schedule_id").value(12))
                 .andExpect(jsonPath("$.data.today_schedules[2].employee_name").value("박소현"))
                 .andExpect(jsonPath("$.data.today_schedules[2].employee_id").value("20210812"))
                 .andExpect(jsonPath("$.data.today_schedules[2].store_name").doesNotExist())
