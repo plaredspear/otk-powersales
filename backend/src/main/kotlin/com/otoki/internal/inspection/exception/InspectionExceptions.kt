@@ -12,8 +12,8 @@ class InvalidDateRangeException : BusinessException(
     httpStatus = HttpStatus.BAD_REQUEST
 )
 
-class StoreNotFoundException : BusinessException(
-    errorCode = "STORE_NOT_FOUND",
+class AccountNotFoundException : BusinessException(
+    errorCode = "ACCOUNT_NOT_FOUND",
     message = "거래처를 찾을 수 없습니다",
     httpStatus = HttpStatus.NOT_FOUND
 )

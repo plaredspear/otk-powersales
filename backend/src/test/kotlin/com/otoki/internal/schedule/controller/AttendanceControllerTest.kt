@@ -1,8 +1,8 @@
 package com.otoki.internal.schedule.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.otoki.internal.common.dto.response.StoreInfo
-import com.otoki.internal.common.dto.response.StoreListResponse
+import com.otoki.internal.common.dto.response.AccountInfo
+import com.otoki.internal.common.dto.response.AccountListResponse
 import com.otoki.internal.sap.entity.UserRole
 import com.otoki.internal.common.security.GpsConsentFilter
 import com.otoki.internal.common.security.JwtAuthenticationFilter
@@ -83,7 +83,7 @@ class AttendanceControllerTest {
             // Given
             val mockResponse = CommuteResponse(
                 scheduleId = 10L,
-                storeName = "이마트 부산점",
+                accountName = "이마트 부산점",
                 workType = "ROOM_TEMP",
                 distanceKm = 0.12,
                 totalCount = 5,
@@ -115,7 +115,7 @@ class AttendanceControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("출근등록 완료"))
                 .andExpect(jsonPath("$.data.schedule_id").value(10))
-                .andExpect(jsonPath("$.data.store_name").value("이마트 부산점"))
+                .andExpect(jsonPath("$.data.account_name").value("이마트 부산점"))
                 .andExpect(jsonPath("$.data.work_type").value("ROOM_TEMP"))
                 .andExpect(jsonPath("$.data.distance_km").value(0.12))
                 .andExpect(jsonPath("$.data.total_count").value(5))
@@ -232,34 +232,34 @@ class AttendanceControllerTest {
         }
     }
 
-    // ========== GET /api/v1/attendance/stores ==========
+    // ========== GET /api/v1/attendance/accounts ==========
 
     @Nested
-    @DisplayName("GET /api/v1/attendance/stores - 거래처 목록 조회")
-    inner class GetStoreListTests {
+    @DisplayName("GET /api/v1/attendance/accounts - 거래처 목록 조회")
+    inner class GetAccountListTests {
 
         @Test
         @DisplayName("정상 조회 - 200 OK, latitude/longitude 포함")
-        fun getStoreList_success() {
+        fun getAccountList_success() {
             // Given
-            val mockResponse = StoreListResponse(
-                stores = listOf(
-                    StoreInfo(
+            val mockResponse = AccountListResponse(
+                accounts = listOf(
+                    AccountInfo(
                         scheduleId = 1L,
-                        storeSfid = "ACC-001",
-                        storeName = "이마트 부산점",
-                        storeTypeCode = "2110",
+                        accountSfid = "ACC-001",
+                        accountName = "이마트 부산점",
+                        accountTypeCode = "2110",
                         workCategory = "진열",
                         address = "부산시 해운대구 센텀2로 25",
                         latitude = 35.1696,
                         longitude = 129.1314,
                         isRegistered = false
                     ),
-                    StoreInfo(
+                    AccountInfo(
                         scheduleId = 2L,
-                        storeSfid = "ACC-002",
-                        storeName = "홈플러스 서면점",
-                        storeTypeCode = "2120",
+                        accountSfid = "ACC-002",
+                        accountName = "홈플러스 서면점",
+                        accountTypeCode = "2120",
                         workCategory = "상시",
                         address = "부산시 부산진구 부전동 168-7",
                         latitude = 35.1577,
@@ -272,26 +272,26 @@ class AttendanceControllerTest {
                 currentDate = "2026-02-25"
             )
 
-            whenever(attendanceService.getStoreList(eq(1L), eq(null))).thenReturn(mockResponse)
+            whenever(attendanceService.getAccountList(eq(1L), eq(null))).thenReturn(mockResponse)
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/attendance/stores")
+                get("/api/v1/attendance/accounts")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("조회 성공"))
-                .andExpect(jsonPath("$.data.stores").isArray)
-                .andExpect(jsonPath("$.data.stores[0].schedule_id").value(1))
-                .andExpect(jsonPath("$.data.stores[0].store_sfid").value("ACC-001"))
-                .andExpect(jsonPath("$.data.stores[0].store_name").value("이마트 부산점"))
-                .andExpect(jsonPath("$.data.stores[0].store_type_code").value("2110"))
-                .andExpect(jsonPath("$.data.stores[0].work_category").value("진열"))
-                .andExpect(jsonPath("$.data.stores[0].latitude").value(35.1696))
-                .andExpect(jsonPath("$.data.stores[0].longitude").value(129.1314))
-                .andExpect(jsonPath("$.data.stores[0].is_registered").value(false))
-                .andExpect(jsonPath("$.data.stores[1].is_registered").value(true))
+                .andExpect(jsonPath("$.data.accounts").isArray)
+                .andExpect(jsonPath("$.data.accounts[0].schedule_id").value(1))
+                .andExpect(jsonPath("$.data.accounts[0].account_sfid").value("ACC-001"))
+                .andExpect(jsonPath("$.data.accounts[0].account_name").value("이마트 부산점"))
+                .andExpect(jsonPath("$.data.accounts[0].account_type_code").value("2110"))
+                .andExpect(jsonPath("$.data.accounts[0].work_category").value("진열"))
+                .andExpect(jsonPath("$.data.accounts[0].latitude").value(35.1696))
+                .andExpect(jsonPath("$.data.accounts[0].longitude").value(129.1314))
+                .andExpect(jsonPath("$.data.accounts[0].is_registered").value(false))
+                .andExpect(jsonPath("$.data.accounts[1].is_registered").value(true))
                 .andExpect(jsonPath("$.data.total_count").value(2))
                 .andExpect(jsonPath("$.data.registered_count").value(1))
                 .andExpect(jsonPath("$.data.current_date").value("2026-02-25"))
@@ -299,15 +299,15 @@ class AttendanceControllerTest {
 
         @Test
         @DisplayName("키워드 검색 - 200 OK")
-        fun getStoreList_withKeyword() {
+        fun getAccountList_withKeyword() {
             // Given
-            val mockResponse = StoreListResponse(
-                stores = listOf(
-                    StoreInfo(
+            val mockResponse = AccountListResponse(
+                accounts = listOf(
+                    AccountInfo(
                         scheduleId = 1L,
-                        storeSfid = "ACC-001",
-                        storeName = "이마트 부산점",
-                        storeTypeCode = "2110",
+                        accountSfid = "ACC-001",
+                        accountName = "이마트 부산점",
+                        accountTypeCode = "2110",
                         workCategory = "진열",
                         address = "부산시 해운대구 센텀2로 25",
                         latitude = 35.1696,
@@ -320,18 +320,18 @@ class AttendanceControllerTest {
                 currentDate = "2026-02-25"
             )
 
-            whenever(attendanceService.getStoreList(eq(1L), eq("이마트"))).thenReturn(mockResponse)
+            whenever(attendanceService.getAccountList(eq(1L), eq("이마트"))).thenReturn(mockResponse)
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/attendance/stores")
+                get("/api/v1/attendance/accounts")
                     .param("keyword", "이마트")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.stores").isArray)
-                .andExpect(jsonPath("$.data.stores[0].store_name").value("이마트 부산점"))
+                .andExpect(jsonPath("$.data.accounts").isArray)
+                .andExpect(jsonPath("$.data.accounts[0].account_name").value("이마트 부산점"))
                 .andExpect(jsonPath("$.data.total_count").value(1))
                 .andExpect(jsonPath("$.data.registered_count").value(0))
         }
@@ -353,19 +353,19 @@ class AttendanceControllerTest {
                 statusList = listOf(
                     CommuteStatusItem(
                         scheduleId = 1L,
-                        storeName = "이마트 부산점",
+                        accountName = "이마트 부산점",
                         workCategory = "진열",
                         status = "REGISTERED"
                     ),
                     CommuteStatusItem(
                         scheduleId = 2L,
-                        storeName = "홈플러스 서면점",
+                        accountName = "홈플러스 서면점",
                         workCategory = "상시",
                         status = "PENDING"
                     ),
                     CommuteStatusItem(
                         scheduleId = 3L,
-                        storeName = "롯데마트 동래점",
+                        accountName = "롯데마트 동래점",
                         workCategory = "상시",
                         status = "PENDING"
                     )
@@ -387,11 +387,11 @@ class AttendanceControllerTest {
                 .andExpect(jsonPath("$.data.registered_count").value(1))
                 .andExpect(jsonPath("$.data.status_list").isArray)
                 .andExpect(jsonPath("$.data.status_list[0].schedule_id").value(1))
-                .andExpect(jsonPath("$.data.status_list[0].store_name").value("이마트 부산점"))
+                .andExpect(jsonPath("$.data.status_list[0].account_name").value("이마트 부산점"))
                 .andExpect(jsonPath("$.data.status_list[0].work_category").value("진열"))
                 .andExpect(jsonPath("$.data.status_list[0].status").value("REGISTERED"))
                 .andExpect(jsonPath("$.data.status_list[1].schedule_id").value(2))
-                .andExpect(jsonPath("$.data.status_list[1].store_name").value("홈플러스 서면점"))
+                .andExpect(jsonPath("$.data.status_list[1].account_name").value("홈플러스 서면점"))
                 .andExpect(jsonPath("$.data.status_list[1].status").value("PENDING"))
                 .andExpect(jsonPath("$.data.current_date").value("2026-02-25"))
         }

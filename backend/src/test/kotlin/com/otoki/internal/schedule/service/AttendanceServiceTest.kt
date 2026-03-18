@@ -47,15 +47,15 @@ class AttendanceServiceTest {
     @InjectMocks
     private lateinit var attendanceService: AttendanceService
 
-    // ========== getStoreList Tests ==========
+    // ========== getAccountList Tests ==========
 
     @Nested
-    @DisplayName("getStoreList - 오늘 출근 거래처 목록 조회")
-    inner class GetStoreListTests {
+    @DisplayName("getAccountList - 오늘 출근 거래처 목록 조회")
+    inner class GetAccountListTests {
 
         @Test
         @DisplayName("오늘 스케줄 3건 - 전체 조회 -> 3건 반환, GPS 좌표 포함")
-        fun getStoreList_threeSchedules_returnsThreeStoresWithGps() {
+        fun getAccountList_threeSchedules_returnsThreeAccountsWithGps() {
             // Given
             val userId = 1L
             val user = createUser(id = userId, sfid = "USR001")
@@ -78,27 +78,27 @@ class AttendanceServiceTest {
             whenever(accountRepository.findByIdIn(listOf(8938, 8939, 8940))).thenReturn(accounts)
 
             // When
-            val result = attendanceService.getStoreList(userId, null)
+            val result = attendanceService.getAccountList(userId, null)
 
             // Then
-            assertThat(result.stores).hasSize(3)
+            assertThat(result.accounts).hasSize(3)
             assertThat(result.totalCount).isEqualTo(3)
             assertThat(result.registeredCount).isEqualTo(0)
             assertThat(result.currentDate).isEqualTo(today.toString())
 
             // GPS 좌표 포함 확인
-            val store1 = result.stores[0]
-            assertThat(store1.scheduleId).isEqualTo(1L)
-            assertThat(store1.storeName).isEqualTo("이마트 강남점")
-            assertThat(store1.latitude).isEqualTo(37.4979)
-            assertThat(store1.longitude).isEqualTo(127.0276)
-            assertThat(store1.address).isEqualTo("서울시 강남구")
-            assertThat(store1.isRegistered).isFalse()
+            val account1 = result.accounts[0]
+            assertThat(account1.scheduleId).isEqualTo(1L)
+            assertThat(account1.accountName).isEqualTo("이마트 강남점")
+            assertThat(account1.latitude).isEqualTo(37.4979)
+            assertThat(account1.longitude).isEqualTo(127.0276)
+            assertThat(account1.address).isEqualTo("서울시 강남구")
+            assertThat(account1.isRegistered).isFalse()
         }
 
         @Test
         @DisplayName("키워드='이마트' - 3건 중 이마트 포함 결과만 -> 이마트 매장만 반환")
-        fun getStoreList_withKeyword_returnsFilteredResults() {
+        fun getAccountList_withKeyword_returnsFilteredResults() {
             // Given
             val userId = 1L
             val user = createUser(id = userId, sfid = "USR001")
@@ -121,29 +121,29 @@ class AttendanceServiceTest {
             whenever(accountRepository.findByIdIn(listOf(8938, 8939, 8940))).thenReturn(accounts)
 
             // When
-            val result = attendanceService.getStoreList(userId, "이마트")
+            val result = attendanceService.getAccountList(userId, "이마트")
 
             // Then
-            assertThat(result.stores).hasSize(2)
-            assertThat(result.stores.all { it.storeName.contains("이마트") }).isTrue()
+            assertThat(result.accounts).hasSize(2)
+            assertThat(result.accounts.all { it.accountName.contains("이마트") }).isTrue()
             assertThat(result.totalCount).isEqualTo(2)
         }
 
         @Test
         @DisplayName("존재하지 않는 사용자 -> UserNotFoundException 발생")
-        fun getStoreList_userNotFound_throwsException() {
+        fun getAccountList_userNotFound_throwsException() {
             // Given
             val userId = 999L
             whenever(userRepository.findById(userId)).thenReturn(Optional.empty())
 
             // When & Then
-            assertThatThrownBy { attendanceService.getStoreList(userId, null) }
+            assertThatThrownBy { attendanceService.getAccountList(userId, null) }
                 .isInstanceOf(UserNotFoundException::class.java)
         }
 
         @Test
         @DisplayName("오늘 스케줄 없음 -> 빈 목록 반환")
-        fun getStoreList_noSchedules_returnsEmptyList() {
+        fun getAccountList_noSchedules_returnsEmptyList() {
             // Given
             val userId = 1L
             val user = createUser(id = userId, sfid = "USR001")
@@ -153,17 +153,17 @@ class AttendanceServiceTest {
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate("USR001", today)).thenReturn(emptyList())
 
             // When
-            val result = attendanceService.getStoreList(userId, null)
+            val result = attendanceService.getAccountList(userId, null)
 
             // Then
-            assertThat(result.stores).isEmpty()
+            assertThat(result.accounts).isEmpty()
             assertThat(result.totalCount).isEqualTo(0)
             assertThat(result.registeredCount).isEqualTo(0)
         }
 
         @Test
         @DisplayName("일부 출근 등록 완료(commuteLogId 존재) -> registeredCount 반영")
-        fun getStoreList_withPartialRegistrations_returnsCorrectCount() {
+        fun getAccountList_withPartialRegistrations_returnsCorrectCount() {
             // Given
             val userId = 1L
             val user = createUser(id = userId, sfid = "USR001")
@@ -184,13 +184,13 @@ class AttendanceServiceTest {
             whenever(accountRepository.findByIdIn(listOf(8938, 8939))).thenReturn(accounts)
 
             // When
-            val result = attendanceService.getStoreList(userId, null)
+            val result = attendanceService.getAccountList(userId, null)
 
             // Then
             assertThat(result.totalCount).isEqualTo(2)
             assertThat(result.registeredCount).isEqualTo(1)
-            assertThat(result.stores[0].isRegistered).isTrue()
-            assertThat(result.stores[1].isRegistered).isFalse()
+            assertThat(result.accounts[0].isRegistered).isTrue()
+            assertThat(result.accounts[1].isRegistered).isFalse()
         }
     }
 
@@ -201,8 +201,8 @@ class AttendanceServiceTest {
     inner class RegisterCommuteTests {
 
         // 강남역 기준 좌표
-        private val storeLat = 37.4979
-        private val storeLon = 127.0276
+        private val accountLat = 37.4979
+        private val accountLon = 127.0276
 
         // 약 0.3km 거리 (0.277km)
         private val nearUserLat = 37.4995
@@ -228,7 +228,7 @@ class AttendanceServiceTest {
             val account = createAccount(
                 id = 8938, name = "이마트 강남점",
                 abcTypeCode = "2110",
-                latitude = storeLat.toString(), longitude = storeLon.toString()
+                latitude = accountLat.toString(), longitude = accountLon.toString()
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
@@ -244,7 +244,7 @@ class AttendanceServiceTest {
 
             // Then
             assertThat(result.scheduleId).isEqualTo(scheduleId)
-            assertThat(result.storeName).isEqualTo("이마트 강남점")
+            assertThat(result.accountName).isEqualTo("이마트 강남점")
             assertThat(result.distanceKm).isLessThan(0.5)
             assertThat(result.distanceKm).isEqualTo(0.277)
             assertThat(result.workType).isEqualTo("상온")
@@ -265,7 +265,7 @@ class AttendanceServiceTest {
             val account = createAccount(
                 id = 8938, name = "이마트 강남점",
                 abcTypeCode = "2110",
-                latitude = storeLat.toString(), longitude = storeLon.toString()
+                latitude = accountLat.toString(), longitude = accountLon.toString()
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
@@ -294,7 +294,7 @@ class AttendanceServiceTest {
             val account = createAccount(
                 id = 8938, name = "대리점A",
                 abcTypeCode = "1110",
-                latitude = storeLat.toString(), longitude = storeLon.toString()
+                latitude = accountLat.toString(), longitude = accountLon.toString()
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
@@ -315,7 +315,7 @@ class AttendanceServiceTest {
             // Then
             assertThat(result.scheduleId).isEqualTo(scheduleId)
             assertThat(result.distanceKm).isEqualTo(0.0)
-            assertThat(result.storeName).isEqualTo("대리점A")
+            assertThat(result.accountName).isEqualTo("대리점A")
         }
 
         @Test
@@ -334,7 +334,7 @@ class AttendanceServiceTest {
             val account = createAccount(
                 id = 8938, name = "특수거래처B",
                 abcTypeCode = "1900",
-                latitude = storeLat.toString(), longitude = storeLon.toString()
+                latitude = accountLat.toString(), longitude = accountLon.toString()
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
@@ -355,7 +355,7 @@ class AttendanceServiceTest {
             // Then
             assertThat(result.scheduleId).isEqualTo(scheduleId)
             assertThat(result.distanceKm).isEqualTo(0.0)
-            assertThat(result.storeName).isEqualTo("특수거래처B")
+            assertThat(result.accountName).isEqualTo("특수거래처B")
         }
 
         @Test
@@ -373,7 +373,7 @@ class AttendanceServiceTest {
             val account = createAccount(
                 id = 8938, name = "일반매장",
                 abcTypeCode = "2110",
-                latitude = storeLat.toString(), longitude = storeLon.toString()
+                latitude = accountLat.toString(), longitude = accountLon.toString()
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
@@ -454,7 +454,7 @@ class AttendanceServiceTest {
             val account = createAccount(
                 id = 8938, name = "이마트 강남점",
                 abcTypeCode = "2110",
-                latitude = storeLat.toString(), longitude = storeLon.toString()
+                latitude = accountLat.toString(), longitude = accountLon.toString()
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
@@ -488,7 +488,7 @@ class AttendanceServiceTest {
             val account = createAccount(
                 id = 8938, name = "이마트 강남점",
                 abcTypeCode = "2110",
-                latitude = storeLat.toString(), longitude = storeLon.toString()
+                latitude = accountLat.toString(), longitude = accountLon.toString()
             )
 
             // 오늘 전체 스케줄 3건 (1건 이미 등록, 1건 지금 등록, 1건 미등록)
@@ -557,7 +557,7 @@ class AttendanceServiceTest {
 
             // 등록 완료 항목
             assertThat(result.statusList[0].scheduleId).isEqualTo(1L)
-            assertThat(result.statusList[0].storeName).isEqualTo("이마트 강남점")
+            assertThat(result.statusList[0].accountName).isEqualTo("이마트 강남점")
             assertThat(result.statusList[0].workCategory).isEqualTo("진열")
             assertThat(result.statusList[0].status).isEqualTo("REGISTERED")
 
@@ -566,7 +566,7 @@ class AttendanceServiceTest {
 
             // 미등록 항목
             assertThat(result.statusList[2].scheduleId).isEqualTo(3L)
-            assertThat(result.statusList[2].storeName).isEqualTo("롯데마트 송파점")
+            assertThat(result.statusList[2].accountName).isEqualTo("롯데마트 송파점")
             assertThat(result.statusList[2].status).isEqualTo("PENDING")
         }
 

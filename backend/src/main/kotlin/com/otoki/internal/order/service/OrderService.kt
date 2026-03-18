@@ -50,7 +50,7 @@ class OrderService(
      */
     fun getMyOrders(
         userId: Long,
-        storeId: Long?,
+        accountId: Long?,
         status: String?,
         deliveryDateFrom: LocalDate?,
         deliveryDateTo: LocalDate?,
@@ -85,7 +85,7 @@ class OrderService(
         // 조회
         val orderPage = orderRepository.findByUserIdWithFilters(
             userId = userId,
-            storeId = storeId,
+            accountId = accountId,
             status = approvalStatus,
             deliveryDateFrom = deliveryDateFrom,
             deliveryDateTo = deliveryDateTo,

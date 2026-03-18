@@ -15,7 +15,7 @@ data class CommuteStatusResponse(
  */
 data class CommuteStatusItem(
     val scheduleId: Long,
-    val storeName: String,
+    val accountName: String,
     val workCategory: String,
     val status: String
 )

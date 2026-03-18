@@ -18,7 +18,7 @@ import com.otoki.internal.order.repository.OrderDraftRepository
 import com.otoki.internal.order.repository.OrderItemRepository
 import com.otoki.internal.order.repository.OrderRepository
 import com.otoki.internal.sap.repository.ProductRepository
-import com.otoki.internal.repository.StoreRepository
+import com.otoki.internal.repository.AccountRepository
 import com.otoki.internal.sap.repository.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -37,7 +37,7 @@ class OrderSubmitService(
     private val orderItemRepository: OrderItemRepository,
     private val orderDraftRepository: OrderDraftRepository,
     private val productRepository: ProductRepository,
-    private val storeRepository: StoreRepository,
+    private val accountRepository: AccountRepository,
     private val userRepository: UserRepository,
     private val sapOrderClient: SapOrderClient
 ) {
@@ -63,7 +63,7 @@ class OrderSubmitService(
         parseDeliveryDate(deliveryDateStr)
 
         // 2. 거래처 존재 확인
-        storeRepository.findById(clientId)
+        accountRepository.findById(clientId)
             .orElseThrow { ClientNotFoundException() }
 
         // 3. 제품 일괄 조회
@@ -138,7 +138,7 @@ class OrderSubmitService(
         }
 
         // 3. 거래처 조회
-        val store = storeRepository.findById(clientId)
+        val account = accountRepository.findById(clientId)
             .orElseThrow { ClientNotFoundException() }
 
         // 4. 사용자 조회
@@ -158,7 +158,7 @@ class OrderSubmitService(
         val order = Order(
             orderRequestNumber = orderRequestNumber,
             user = user,
-            store = store,
+            account = account,
             orderDate = LocalDate.now(),
             deliveryDate = deliveryDate,
             approvalStatus = ApprovalStatus.PENDING
@@ -193,7 +193,7 @@ class OrderSubmitService(
         val orderWithTotal = Order(
             orderRequestNumber = orderRequestNumber,
             user = user,
-            store = store,
+            account = account,
             orderDate = LocalDate.now(),
             deliveryDate = deliveryDate,
             totalAmount = totalAmount,

@@ -5,7 +5,7 @@ package com.otoki.internal.schedule.dto.response
  */
 data class CommuteResponse(
     val scheduleId: Long,
-    val storeName: String,
+    val accountName: String,
     val workType: String?,
     val distanceKm: Double,
     val totalCount: Int,

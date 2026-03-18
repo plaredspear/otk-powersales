@@ -23,8 +23,8 @@ import java.time.YearMonth
 import java.util.Optional
 
 @ExtendWith(MockitoExtension::class)
-@DisplayName("MyStoreService 테스트")
-class MyStoreServiceTest {
+@DisplayName("MyAccountService 테스트")
+class MyAccountServiceTest {
 
     @Mock
     private lateinit var userRepository: UserRepository
@@ -36,19 +36,19 @@ class MyStoreServiceTest {
     private lateinit var accountRepository: AccountRepository
 
     @InjectMocks
-    private lateinit var myStoreService: MyStoreService
+    private lateinit var myAccountService: MyAccountService
 
     private val testEmployeeId = "20030117"
 
-    // ========== getMyStores Tests ==========
+    // ========== getMyAccounts Tests ==========
 
     @Nested
-    @DisplayName("getMyStores - 내 거래처 목록 조회")
-    inner class GetMyStoresTests {
+    @DisplayName("getMyAccounts - 내 거래처 목록 조회")
+    inner class GetMyAccountsTests {
 
         @Test
         @DisplayName("한 달 거래처 조회 - Account 마스터가 있으면 Account 정보 반환")
-        fun getMyStores_withAccountMaster() {
+        fun getMyAccounts_withAccountMaster() {
             // Given
             val userId = 1L
             val mockUser = createUser(id = userId, employeeId = testEmployeeId)
@@ -77,19 +77,19 @@ class MyStoreServiceTest {
                 .thenReturn(schedules)
 
             // When
-            val result = myStoreService.getMyStores(userId, null)
+            val result = myAccountService.getMyAccounts(userId, null)
 
             // Then
             assertThat(result.stores).hasSize(2)
             assertThat(result.totalCount).isEqualTo(2)
-            assertThat(result.stores[0].storeName).isEqualTo("(유)경산식품")
-            assertThat(result.stores[0].storeCode).isEqualTo("1025172")
+            assertThat(result.stores[0].accountName).isEqualTo("(유)경산식품")
+            assertThat(result.stores[0].accountCode).isEqualTo("1025172")
             assertThat(result.stores[0].representativeName).isEqualTo("김정자")
         }
 
         @Test
         @DisplayName("결과 없음 - 스케줄 데이터 없음 -> 빈 리스트 + totalCount=0")
-        fun getMyStores_noSchedules() {
+        fun getMyAccounts_noSchedules() {
             // Given
             val userId = 1L
             val mockUser = createUser(id = userId, employeeId = testEmployeeId)
@@ -103,7 +103,7 @@ class MyStoreServiceTest {
                 .thenReturn(emptyList())
 
             // When
-            val result = myStoreService.getMyStores(userId, null)
+            val result = myAccountService.getMyAccounts(userId, null)
 
             // Then
             assertThat(result.stores).isEmpty()
@@ -112,19 +112,19 @@ class MyStoreServiceTest {
 
         @Test
         @DisplayName("사용자 미존재 - 잘못된 userId -> UserNotFoundException 예외")
-        fun getMyStores_userNotFound() {
+        fun getMyAccounts_userNotFound() {
             // Given
             val userId = 999L
             whenever(userRepository.findById(userId)).thenReturn(Optional.empty())
 
             // When & Then
-            assertThatThrownBy { myStoreService.getMyStores(userId, null) }
+            assertThatThrownBy { myAccountService.getMyAccounts(userId, null) }
                 .isInstanceOf(UserNotFoundException::class.java)
         }
 
         @Test
         @DisplayName("검색 — 거래처명 - '경산' 검색 -> '(유)경산식품' 매칭")
-        fun getMyStores_searchByStoreName() {
+        fun getMyAccounts_searchByAccountName() {
             // Given
             val userId = 1L
             val keyword = "경산"
@@ -152,16 +152,16 @@ class MyStoreServiceTest {
                 .thenReturn(schedules)
 
             // When
-            val result = myStoreService.getMyStores(userId, keyword)
+            val result = myAccountService.getMyAccounts(userId, keyword)
 
             // Then
             assertThat(result.stores).hasSize(1)
-            assertThat(result.stores[0].storeName).isEqualTo("(유)경산식품")
+            assertThat(result.stores[0].accountName).isEqualTo("(유)경산식품")
         }
 
         @Test
         @DisplayName("거래처명 기준 오름차순 정렬")
-        fun getMyStores_sortedByStoreName() {
+        fun getMyAccounts_sortedByAccountName() {
             // Given
             val userId = 1L
             val mockUser = createUser(id = userId, employeeId = testEmployeeId)
@@ -190,13 +190,13 @@ class MyStoreServiceTest {
                 .thenReturn(schedules)
 
             // When
-            val result = myStoreService.getMyStores(userId, null)
+            val result = myAccountService.getMyAccounts(userId, null)
 
             // Then
             assertThat(result.stores).hasSize(3)
-            assertThat(result.stores[0].storeName).isEqualTo("가나다식품")
-            assertThat(result.stores[1].storeName).isEqualTo("나라마트")
-            assertThat(result.stores[2].storeName).isEqualTo("홈플러스 서면점")
+            assertThat(result.stores[0].accountName).isEqualTo("가나다식품")
+            assertThat(result.stores[1].accountName).isEqualTo("나라마트")
+            assertThat(result.stores[2].accountName).isEqualTo("홈플러스 서면점")
         }
     }
 

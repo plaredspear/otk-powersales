@@ -1,7 +1,7 @@
 package com.otoki.internal.schedule.controller
 
 import com.otoki.internal.common.dto.ApiResponse
-import com.otoki.internal.common.dto.response.StoreListResponse
+import com.otoki.internal.common.dto.response.AccountListResponse
 import com.otoki.internal.common.security.UserPrincipal
 import com.otoki.internal.schedule.dto.request.CommuteRequest
 import com.otoki.internal.schedule.dto.response.CommuteResponse
@@ -23,14 +23,14 @@ class AttendanceController(
 
     /**
      * 출근 거래처 목록 조회
-     * GET /api/v1/attendance/stores
+     * GET /api/v1/attendance/accounts
      */
-    @GetMapping("/stores")
-    fun getStoreList(
+    @GetMapping("/accounts")
+    fun getAccountList(
         @AuthenticationPrincipal principal: UserPrincipal,
         @RequestParam(required = false) keyword: String?
-    ): ResponseEntity<ApiResponse<StoreListResponse>> {
-        val response = attendanceService.getStoreList(principal.userId, keyword)
+    ): ResponseEntity<ApiResponse<AccountListResponse>> {
+        val response = attendanceService.getAccountList(principal.userId, keyword)
         return ResponseEntity.ok(ApiResponse.success(response, "조회 성공"))
     }
 

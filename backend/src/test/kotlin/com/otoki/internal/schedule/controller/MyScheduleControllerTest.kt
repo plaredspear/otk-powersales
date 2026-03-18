@@ -139,10 +139,10 @@ class MyScheduleControllerTest {
                 total = 3,
                 workType = "진열"
             ),
-            stores = listOf(
+            accounts = listOf(
                 DisplayWorkScheduleItemDto(
-                    storeId = 1L,
-                    storeName = "(주)이마트트레이더스명지점",
+                    accountId = 1L,
+                    accountName = "(주)이마트트레이더스명지점",
                     workType1 = "진열",
                     workType2 = "전담",
                     workType3 = "순회",
@@ -168,7 +168,7 @@ class MyScheduleControllerTest {
             .andExpect(jsonPath("$.data.employee_number").value("20030117"))
             .andExpect(jsonPath("$.data.report_progress.completed").value(0))
             .andExpect(jsonPath("$.data.report_progress.total").value(3))
-            .andExpect(jsonPath("$.data.stores").isArray)
+            .andExpect(jsonPath("$.data.accounts").isArray)
     }
 
     @Test

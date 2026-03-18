@@ -10,7 +10,7 @@ import com.otoki.internal.order.exception.InvalidOrderParameterException
 import com.otoki.internal.exception.ProductNotFoundException
 import com.otoki.internal.order.repository.OrderItemRepository
 import com.otoki.internal.sap.repository.ProductRepository
-import com.otoki.internal.repository.StoreRepository
+import com.otoki.internal.repository.AccountRepository
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
@@ -30,7 +30,7 @@ import java.time.format.DateTimeFormatter
 class OrderQueryService(
     private val orderItemRepository: OrderItemRepository,
     private val productRepository: ProductRepository,
-    private val storeRepository: StoreRepository
+    private val accountRepository: AccountRepository
 ) {
 
     companion object {
@@ -100,16 +100,16 @@ class OrderQueryService(
      * @throws ClientNotFoundException 거래처를 찾을 수 없는 경우
      * /
     fun getClientCreditBalance(clientId: Long): CreditBalanceResponse {
-        val store = storeRepository.findById(clientId)
+        val account = accountRepository.findById(clientId)
             .orElseThrow { ClientNotFoundException() }
 
         return CreditBalanceResponse(
-            clientId = store.id,
-            clientName = store.storeName,
-            creditLimit = store.creditLimit,
-            usedCredit = store.usedCredit,
-            availableCredit = store.creditLimit - store.usedCredit,
-            lastUpdatedAt = store.creditUpdatedAt?.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+            clientId = account.id,
+            clientName = account.accountName,
+            creditLimit = account.creditLimit,
+            usedCredit = account.usedCredit,
+            availableCredit = account.creditLimit - account.usedCredit,
+            lastUpdatedAt = account.creditUpdatedAt?.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
         )
     }
 
