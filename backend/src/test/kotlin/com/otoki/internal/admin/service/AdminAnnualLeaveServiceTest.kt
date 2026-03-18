@@ -1,0 +1,152 @@
+package com.otoki.internal.admin.service
+
+import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.schedule.entity.TeamMemberSchedule
+import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.InjectMocks
+import org.mockito.Mock
+import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.whenever
+import java.time.LocalDate
+
+@ExtendWith(MockitoExtension::class)
+@DisplayName("AdminAnnualLeaveService 테스트")
+class AdminAnnualLeaveServiceTest {
+
+    @Mock
+    private lateinit var teamMemberScheduleRepository: TeamMemberScheduleRepository
+
+    @Mock
+    private lateinit var userRepository: UserRepository
+
+    @InjectMocks
+    private lateinit var adminAnnualLeaveService: AdminAnnualLeaveService
+
+    // --- Helper ---
+
+    private fun createUser(
+        id: Long = 1L,
+        employeeId: String = "12345678",
+        name: String = "홍길동",
+        orgName: String? = "서울1팀"
+    ) = User(id = id, employeeId = employeeId, name = name, orgName = orgName)
+
+    private fun createSchedule(
+        id: Long = 1L,
+        employeeId: String? = "12345678",
+        workingDate: LocalDate? = LocalDate.of(2026, 3, 5),
+        workingType: String? = "연차"
+    ) = TeamMemberSchedule(
+        id = id,
+        employeeId = employeeId,
+        workingDate = workingDate,
+        workingType = workingType
+    )
+
+    @Nested
+    @DisplayName("getSummary - 연차 현황 조회")
+    inner class GetSummaryTests {
+
+        @Test
+        @DisplayName("성공 - orgCode 없음 → 전체 사원 연차 반환")
+        fun noOrgCode_returnsAllEmployees() {
+            // Given
+            val schedule1 = createSchedule(id = 1L, employeeId = "EMP001", workingDate = LocalDate.of(2026, 3, 5))
+            val schedule2 = createSchedule(id = 2L, employeeId = "EMP001", workingDate = LocalDate.of(2026, 3, 10))
+            val schedule3 = createSchedule(id = 3L, employeeId = "EMP002", workingDate = LocalDate.of(2026, 3, 15))
+
+            whenever(teamMemberScheduleRepository.findAnnualLeaveByDateRange(
+                eq(LocalDate.of(2026, 3, 1)),
+                eq(LocalDate.of(2026, 3, 31))
+            )).thenReturn(listOf(schedule1, schedule2, schedule3))
+
+            val user1 = createUser(id = 1L, employeeId = "EMP001", name = "홍길동", orgName = "서울1팀")
+            val user2 = createUser(id = 2L, employeeId = "EMP002", name = "김철수", orgName = "부산1팀")
+            whenever(userRepository.findByEmployeeIdIn(listOf("EMP001", "EMP002")))
+                .thenReturn(listOf(user1, user2))
+
+            // When
+            val result = adminAnnualLeaveService.getSummary("2026-03", null)
+
+            // Then
+            assertThat(result).hasSize(2)
+
+            val emp1 = result.find { it.employeeId == "EMP001" }!!
+            assertThat(emp1.employeeName).isEqualTo("홍길동")
+            assertThat(emp1.orgName).isEqualTo("서울1팀")
+            assertThat(emp1.annualLeaveDays).hasSize(2)
+            assertThat(emp1.totalCount).isEqualTo(2)
+            assertThat(emp1.annualLeaveDays[0].date).isEqualTo("2026-03-05")
+            assertThat(emp1.annualLeaveDays[1].date).isEqualTo("2026-03-10")
+
+            val emp2 = result.find { it.employeeId == "EMP002" }!!
+            assertThat(emp2.employeeName).isEqualTo("김철수")
+            assertThat(emp2.totalCount).isEqualTo(1)
+        }
+
+        @Test
+        @DisplayName("성공 - orgCode 지정 → 해당 조직 사원만 반환")
+        fun withOrgCode_returnsFilteredEmployees() {
+            // Given
+            val user1 = createUser(id = 1L, employeeId = "EMP001", name = "홍길동", orgName = "서울1팀")
+            whenever(userRepository.findByOrgName("서울1팀")).thenReturn(listOf(user1))
+
+            val schedule1 = createSchedule(id = 1L, employeeId = "EMP001", workingDate = LocalDate.of(2026, 3, 5))
+            whenever(teamMemberScheduleRepository.findAnnualLeaveByDateRangeAndEmployeeIds(
+                eq(LocalDate.of(2026, 3, 1)),
+                eq(LocalDate.of(2026, 3, 31)),
+                eq(listOf("EMP001"))
+            )).thenReturn(listOf(schedule1))
+
+            whenever(userRepository.findByEmployeeIdIn(listOf("EMP001")))
+                .thenReturn(listOf(user1))
+
+            // When
+            val result = adminAnnualLeaveService.getSummary("2026-03", "서울1팀")
+
+            // Then
+            assertThat(result).hasSize(1)
+            assertThat(result[0].employeeId).isEqualTo("EMP001")
+            assertThat(result[0].employeeName).isEqualTo("홍길동")
+            assertThat(result[0].orgName).isEqualTo("서울1팀")
+            assertThat(result[0].totalCount).isEqualTo(1)
+        }
+
+        @Test
+        @DisplayName("빈 결과 - 스케줄 없음 → 빈 리스트 반환")
+        fun noSchedules_returnsEmptyList() {
+            // Given
+            whenever(teamMemberScheduleRepository.findAnnualLeaveByDateRange(
+                eq(LocalDate.of(2026, 3, 1)),
+                eq(LocalDate.of(2026, 3, 31))
+            )).thenReturn(emptyList())
+
+            // When
+            val result = adminAnnualLeaveService.getSummary("2026-03", null)
+
+            // Then
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        @DisplayName("빈 결과 - orgCode에 해당하는 사용자 없음 → 빈 리스트 반환")
+        fun orgCodeWithNoUsers_returnsEmptyList() {
+            // Given
+            whenever(userRepository.findByOrgName("존재하지않는팀")).thenReturn(emptyList())
+
+            // When
+            val result = adminAnnualLeaveService.getSummary("2026-03", "존재하지않는팀")
+
+            // Then
+            assertThat(result).isEmpty()
+        }
+    }
+}

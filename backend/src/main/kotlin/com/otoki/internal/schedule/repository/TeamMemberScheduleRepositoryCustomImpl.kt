@@ -64,7 +64,50 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             .fetch()
     }
 
+    @Transactional
+    override fun deleteAnnualLeaveByEmployeeIdAndDateRange(employeeId: String, from: LocalDate, to: LocalDate): Long {
+        return queryFactory
+            .delete(teamMemberSchedule)
+            .where(
+                teamMemberSchedule.employeeId.eq(employeeId),
+                teamMemberSchedule.workingDate.between(from, to),
+                teamMemberSchedule.workingType.eq(WORKING_TYPE_ANNUAL_LEAVE)
+            )
+            .execute()
+    }
+
+    override fun findAnnualLeaveByDateRange(from: LocalDate, to: LocalDate): List<TeamMemberSchedule> {
+        return queryFactory
+            .selectFrom(teamMemberSchedule)
+            .where(
+                teamMemberSchedule.workingDate.between(from, to),
+                teamMemberSchedule.workingType.eq(WORKING_TYPE_ANNUAL_LEAVE),
+                isNotDeleted()
+            )
+            .fetch()
+    }
+
+    override fun findAnnualLeaveByDateRangeAndEmployeeIds(
+        from: LocalDate,
+        to: LocalDate,
+        employeeIds: List<String>
+    ): List<TeamMemberSchedule> {
+        return queryFactory
+            .selectFrom(teamMemberSchedule)
+            .where(
+                teamMemberSchedule.workingDate.between(from, to),
+                teamMemberSchedule.workingType.eq(WORKING_TYPE_ANNUAL_LEAVE),
+                teamMemberSchedule.employeeId.`in`(employeeIds),
+                isNotDeleted()
+            )
+            .fetch()
+    }
+
     private fun isNotDeleted(): BooleanExpression {
         return teamMemberSchedule.isDeleted.isNull.or(teamMemberSchedule.isDeleted.eq(false))
+    }
+
+    companion object {
+        const val WORKING_TYPE_ANNUAL_LEAVE = "연차"
     }
 }
