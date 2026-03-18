@@ -53,7 +53,7 @@ class MyScheduleServiceTest {
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(displayWorkScheduleRepository.findDistinctStartDatesByFullNameAndDateBetween(
+            whenever(displayWorkScheduleRepository.findDistinctStartDatesByEmployeeIdAndDateBetween(
                 eq("20030117"),
                 eq(LocalDate.of(2020, 8, 1)),
                 eq(LocalDate.of(2020, 8, 31))
@@ -84,7 +84,7 @@ class MyScheduleServiceTest {
             val mockUser = createMockUser(userId, "최금주", "20030117", sfid = "a0B000000012345")
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(displayWorkScheduleRepository.findDistinctStartDatesByFullNameAndDateBetween(
+            whenever(displayWorkScheduleRepository.findDistinctStartDatesByEmployeeIdAndDateBetween(
                 eq("20030117"),
                 any(),
                 any()
@@ -110,7 +110,7 @@ class MyScheduleServiceTest {
             val mockUser = createMockUser(userId, "최금주", "20030117", sfid = "a0B000000012345")
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(displayWorkScheduleRepository.findDistinctStartDatesByFullNameAndDateBetween(
+            whenever(displayWorkScheduleRepository.findDistinctStartDatesByEmployeeIdAndDateBetween(
                 eq("20030117"),
                 any(),
                 any()
@@ -157,7 +157,7 @@ class MyScheduleServiceTest {
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(displayWorkScheduleRepository.findByFullNameAndStartDate("20030117", date))
+            whenever(displayWorkScheduleRepository.findByEmployeeIdAndStartDate("20030117", date))
                 .thenReturn(mockSchedules)
 
             // When
@@ -184,7 +184,7 @@ class MyScheduleServiceTest {
             val mockUser = createMockUser(userId, "최금주", "20030117", sfid = "a0B000000012345")
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(displayWorkScheduleRepository.findByFullNameAndStartDate("20030117", date))
+            whenever(displayWorkScheduleRepository.findByEmployeeIdAndStartDate("20030117", date))
                 .thenReturn(emptyList())
 
             // When
@@ -234,7 +234,7 @@ class MyScheduleServiceTest {
     ): DisplayWorkSchedule {
         return DisplayWorkSchedule(
             id = id,
-            fullName = "a0B000000012345",
+            employeeId = "a0B000000012345",
             account = account,
             typeOfWork1 = typeOfWork1,
             startDate = startDate

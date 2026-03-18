@@ -7,19 +7,19 @@ import java.time.LocalDate
 
 interface DisplayWorkScheduleRepositoryCustom {
 
-    fun findDistinctAccountIdsByFullNameAndStartDateBetween(
-        fullName: String,
+    fun findDistinctAccountIdsByEmployeeIdAndStartDateBetween(
+        employeeId: String,
         startDate: LocalDate,
         endDate: LocalDate
     ): List<Int>
 
-    fun findDistinctStartDatesByFullNameAndDateBetween(
-        fullName: String,
+    fun findDistinctStartDatesByEmployeeIdAndDateBetween(
+        employeeId: String,
         startDate: LocalDate,
         endDate: LocalDate
     ): List<LocalDate>
 
-    fun findByFullNameInAndNotDeleted(fullNames: List<String>): List<DisplayWorkSchedule>
+    fun findByEmployeeIdInAndNotDeleted(employeeIds: List<String>): List<DisplayWorkSchedule>
 
     fun findScheduleList(
         employeeCode: String?,

@@ -7,42 +7,25 @@ import java.time.LocalDate
 interface DisplayWorkScheduleRepository : JpaRepository<DisplayWorkSchedule, Long>, DisplayWorkScheduleRepositoryCustom {
 
     /**
-     * 사원(fullName sfid)의 특정 날짜 거래처 스케줄 조회
+     * 사원(employeeId)의 특정 날짜 거래처 스케줄 조회
      */
-    fun findByFullNameAndStartDate(fullName: String, startDate: LocalDate): List<DisplayWorkSchedule>
+    fun findByEmployeeIdAndStartDate(employeeId: String, startDate: LocalDate): List<DisplayWorkSchedule>
 
     /**
      * 사원의 특정 날짜, 특정 거래처 스케줄 존재 여부
      */
-    fun existsByFullNameAndAccountIdAndStartDate(fullName: String, accountId: Int, startDate: LocalDate): Boolean
+    fun existsByEmployeeIdAndAccountIdAndStartDate(employeeId: String, accountId: Int, startDate: LocalDate): Boolean
 
     /**
      * 사원의 특정 날짜, 특정 거래처 스케줄 조회
      */
-    fun findByFullNameAndAccountIdAndStartDate(fullName: String, accountId: Int, startDate: LocalDate): DisplayWorkSchedule?
-
-    // Phase2: 키워드 검색 — 삭제된 필드(storeName, storeCode, address) 참조로 비활성화
-    // @Query("""
-    //     SELECT s FROM DisplayWorkSchedule s
-    //     WHERE s.fullName = :fullName
-    //     AND s.startDate = :startDate
-    //     AND (
-    //         LOWER(s.storeName) LIKE LOWER(CONCAT('%', :keyword, '%'))
-    //         OR LOWER(COALESCE(s.address, '')) LIKE LOWER(CONCAT('%', :keyword, '%'))
-    //         OR LOWER(s.storeCode) LIKE LOWER(CONCAT('%', :keyword, '%'))
-    //     )
-    // """)
-    // fun findByFullNameAndStartDateAndKeyword(
-    //     @Param("fullName") fullName: String,
-    //     @Param("startDate") startDate: LocalDate,
-    //     @Param("keyword") keyword: String
-    // ): List<DisplayWorkSchedule>
+    fun findByEmployeeIdAndAccountIdAndStartDate(employeeId: String, accountId: Int, startDate: LocalDate): DisplayWorkSchedule?
 
     /**
      * 사원의 기간 내 스케줄 전체 조회
      */
-    fun findByFullNameAndStartDateBetween(
-        fullName: String,
+    fun findByEmployeeIdAndStartDateBetween(
+        employeeId: String,
         startDateStart: LocalDate,
         startDateEnd: LocalDate
     ): List<DisplayWorkSchedule>

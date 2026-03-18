@@ -205,7 +205,7 @@ class AdminDashboardService(
                 val account = schedule.accountId?.let { accountMap[it] }
                 classifyChannel(account?.abcType)
             }
-            .mapValues { (_, records) -> records.mapNotNull { it.fullName }.distinct().size }
+            .mapValues { (_, records) -> records.mapNotNull { it.employeeId }.distinct().size }
 
         return employeesByAccountType.map { (type, count) ->
             AccountTypeCount(accountType = type, count = count)
@@ -215,7 +215,7 @@ class AdminDashboardService(
     private fun buildByWorkType(schedules: List<DisplayWorkSchedule>): List<WorkTypeCount> {
         val employeesByWorkType = schedules
             .groupBy { normalizeWorkType(it.typeOfWork1) }
-            .mapValues { (_, records) -> records.mapNotNull { it.fullName }.distinct().size }
+            .mapValues { (_, records) -> records.mapNotNull { it.employeeId }.distinct().size }
 
         return employeesByWorkType.map { (type, count) ->
             WorkTypeCount(workType = type, count = count)
@@ -235,9 +235,9 @@ class AdminDashboardService(
             val byWork = records.groupBy { normalizeWorkType(it.typeOfWork1) }
             ChannelWorkTypeItem(
                 channelName = channelName,
-                fixed = byWork["고정"]?.mapNotNull { it.fullName }?.distinct()?.size ?: 0,
-                alternating = byWork["격고"]?.mapNotNull { it.fullName }?.distinct()?.size ?: 0,
-                visiting = byWork["순회"]?.mapNotNull { it.fullName }?.distinct()?.size ?: 0
+                fixed = byWork["고정"]?.mapNotNull { it.employeeId }?.distinct()?.size ?: 0,
+                alternating = byWork["격고"]?.mapNotNull { it.employeeId }?.distinct()?.size ?: 0,
+                visiting = byWork["순회"]?.mapNotNull { it.employeeId }?.distinct()?.size ?: 0
             )
         }.sortedBy { it.channelName }
     }
@@ -324,11 +324,11 @@ class AdminDashboardService(
         val monthEnd = ym.atEndOfMonth()
 
         val schedules = displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(monthEnd, monthStart)
-        val userSchedules = schedules.filter { it.fullName in employeeIds }
+        val userSchedules = schedules.filter { it.employeeId in employeeIds }
 
         val byWorkType = userSchedules
             .groupBy { normalizeWorkType(it.typeOfWork1) }
-            .mapValues { (_, records) -> records.mapNotNull { it.fullName }.distinct().size }
+            .mapValues { (_, records) -> records.mapNotNull { it.employeeId }.distinct().size }
 
         return WorkTypeStats(
             fixed = byWorkType["고정"] ?: 0,
