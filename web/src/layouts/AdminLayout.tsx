@@ -10,8 +10,6 @@ import AppBreadcrumb from '@/components/AppBreadcrumb';
 
 const { Text } = Typography;
 
-const HEADER_HEIGHT = 48;
-const BREADCRUMB_HEIGHT = 28;
 
 export default function AdminLayout() {
   const location = useLocation();
@@ -29,35 +27,33 @@ export default function AdminLayout() {
         title="판매여사원관리시스템"
         route={menuRoute}
         location={{ pathname: location.pathname }}
-        fixedHeader
         fixSiderbar
         layout="side"
         token={{
           header: {
-            heightLayoutHeader: HEADER_HEIGHT + BREADCRUMB_HEIGHT,
+            heightLayoutHeader: 0,
           },
         }}
         onMenuHeaderClick={() => navigate('/')}
         menuItemRender={(item, dom) => (
           <a onClick={() => item.path && navigate(item.path)}>{dom}</a>
         )}
-        headerRender={() => (
-          <>
-            <div className="admin-header">
-              <Space align="center">
-                <Text>{user?.name}</Text>
-                <Button type="text" size="small" onClick={handleLogout}>
-                  로그아웃
-                </Button>
-              </Space>
-            </div>
-            <AppBreadcrumb />
-          </>
-        )}
+        headerRender={false}
         style={{ minHeight: '100vh' }}
-        contentStyle={{ margin: 0 }}
+        contentStyle={{ margin: 0, padding: 0 }}
       >
-        <Outlet />
+        <div className="admin-header">
+          <Space align="center">
+            <Text>{user?.name}</Text>
+            <Button type="text" size="small" onClick={handleLogout}>
+              로그아웃
+            </Button>
+          </Space>
+        </div>
+        <AppBreadcrumb />
+        <div style={{ padding: 24 }}>
+          <Outlet />
+        </div>
       </ProLayout>
     </BreadcrumbProvider>
   );
