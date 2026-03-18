@@ -72,7 +72,6 @@ class AdminEmployeeControllerTest {
                 content = listOf(
                     EmployeeListItem(
                         employeeId = "10000001",
-                        sfid = "a0B5g00000ABCdef",
                         name = "홍길동",
                         status = "재직",
                         orgName = "서울1지점",
