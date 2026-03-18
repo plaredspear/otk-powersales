@@ -44,3 +44,9 @@ class ScheduleHasValidationErrorsException : BusinessException(
     message = "검증 에러가 있는 상태에서는 확정할 수 없습니다",
     httpStatus = HttpStatus.CONFLICT
 )
+
+class ScheduleNotFoundException : BusinessException(
+    errorCode = "SCHEDULE_NOT_FOUND",
+    message = "존재하지 않거나 삭제된 스케줄이 포함되어 있습니다",
+    httpStatus = HttpStatus.NOT_FOUND
+)

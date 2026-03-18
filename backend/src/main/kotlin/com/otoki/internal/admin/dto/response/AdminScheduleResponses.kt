@@ -32,3 +32,22 @@ data class RowPreview(
 data class ScheduleConfirmResultDto(
     val insertedCount: Int
 )
+
+data class ScheduleListItemDto(
+    val id: Long,
+    val employeeCode: String,
+    val employeeName: String,
+    val accountCode: String?,
+    val accountName: String?,
+    val typeOfWork3: String?,
+    val typeOfWork5: String?,
+    val startDate: java.time.LocalDate?,
+    val endDate: java.time.LocalDate?,
+    val confirmed: Boolean?,
+    val costCenterCode: String?,
+    val lastMonthRevenue: Long?
+)
+
+data class ScheduleBatchConfirmResultDto(
+    val updatedCount: Int
+)

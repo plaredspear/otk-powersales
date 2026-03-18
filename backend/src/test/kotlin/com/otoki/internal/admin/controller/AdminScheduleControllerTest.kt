@@ -1,6 +1,7 @@
 package com.otoki.internal.admin.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.otoki.internal.admin.dto.request.ScheduleBatchConfirmRequest
 import com.otoki.internal.admin.dto.request.ScheduleConfirmRequest
 import com.otoki.internal.admin.dto.response.*
 import com.otoki.internal.admin.exception.*
@@ -20,10 +21,13 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
+import org.springframework.data.domain.PageImpl
+import org.springframework.data.domain.PageRequest
 import org.springframework.http.MediaType
 import org.springframework.mock.web.MockMultipartFile
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -32,6 +36,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
+import java.time.LocalDate
 
 @WebMvcTest(AdminScheduleController::class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -64,6 +69,172 @@ class AdminScheduleControllerTest {
         val principal = UserPrincipal(userId = 1L, role = UserRole.ADMIN)
         SecurityContextHolder.getContext().authentication =
             UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/admin/schedule/list - 스케줄 목록 조회")
+    inner class ListSchedules {
+
+        @Test
+        @DisplayName("성공 - 스케줄 목록 반환")
+        fun list_success() {
+            val items = listOf(
+                ScheduleListItemDto(
+                    id = 1L,
+                    employeeCode = "20030001",
+                    employeeName = "홍길동",
+                    accountCode = "SAP001",
+                    accountName = "이마트 성수점",
+                    typeOfWork3 = "고정",
+                    typeOfWork5 = "상시",
+                    startDate = LocalDate.of(2026, 1, 1),
+                    endDate = LocalDate.of(2026, 12, 31),
+                    confirmed = false,
+                    costCenterCode = "A100",
+                    lastMonthRevenue = 15000000L
+                )
+            )
+            val page = PageImpl(items, PageRequest.of(0, 20), 1)
+            whenever(adminScheduleService.listSchedules(eq(0), eq(20), isNull(), isNull(), isNull(), isNull(), isNull(), isNull()))
+                .thenReturn(page)
+
+            mockMvc.perform(get("/api/v1/admin/schedule/list"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.content[0].id").value(1))
+                .andExpect(jsonPath("$.data.content[0].employee_code").value("20030001"))
+                .andExpect(jsonPath("$.data.content[0].employee_name").value("홍길동"))
+                .andExpect(jsonPath("$.data.content[0].account_code").value("SAP001"))
+                .andExpect(jsonPath("$.data.content[0].account_name").value("이마트 성수점"))
+                .andExpect(jsonPath("$.data.content[0].confirmed").value(false))
+                .andExpect(jsonPath("$.data.total_elements").value(1))
+        }
+
+        @Test
+        @DisplayName("성공 - 필터 파라미터 적용")
+        fun list_withFilters() {
+            val emptyPage = PageImpl<ScheduleListItemDto>(emptyList(), PageRequest.of(0, 20), 0)
+            whenever(adminScheduleService.listSchedules(
+                eq(0), eq(20), eq("123"), isNull(), eq(true), isNull(), isNull(), isNull()
+            )).thenReturn(emptyPage)
+
+            mockMvc.perform(
+                get("/api/v1/admin/schedule/list")
+                    .param("employeeCode", "123")
+                    .param("confirmed", "true")
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data.content").isEmpty())
+        }
+
+        @Test
+        @DisplayName("성공 - 빈 결과")
+        fun list_empty() {
+            val emptyPage = PageImpl<ScheduleListItemDto>(emptyList(), PageRequest.of(0, 20), 0)
+            whenever(adminScheduleService.listSchedules(eq(0), eq(20), isNull(), isNull(), isNull(), isNull(), isNull(), isNull()))
+                .thenReturn(emptyPage)
+
+            mockMvc.perform(get("/api/v1/admin/schedule/list"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data.content").isEmpty())
+                .andExpect(jsonPath("$.data.total_elements").value(0))
+        }
+    }
+
+    @Nested
+    @DisplayName("PATCH /api/v1/admin/schedule/confirm - 일괄 확정")
+    inner class BatchConfirm {
+
+        @Test
+        @DisplayName("성공 - 3건 확정")
+        fun confirm_success() {
+            val result = ScheduleBatchConfirmResultDto(updatedCount = 3)
+            whenever(adminScheduleService.batchConfirm(listOf(1L, 2L, 3L))).thenReturn(result)
+
+            mockMvc.perform(
+                patch("/api/v1/admin/schedule/confirm")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"ids": [1, 2, 3]}""")
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.updated_count").value(3))
+                .andExpect(jsonPath("$.message").value("3건이 확정되었습니다"))
+        }
+
+        @Test
+        @DisplayName("실패 - 빈 ids 목록")
+        fun confirm_emptyIds() {
+            mockMvc.perform(
+                patch("/api/v1/admin/schedule/confirm")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"ids": []}""")
+            )
+                .andExpect(status().isBadRequest)
+        }
+
+        @Test
+        @DisplayName("실패 - 미존재 ID 포함")
+        fun confirm_notFound() {
+            whenever(adminScheduleService.batchConfirm(listOf(1L, 999L)))
+                .thenThrow(ScheduleNotFoundException())
+
+            mockMvc.perform(
+                patch("/api/v1/admin/schedule/confirm")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"ids": [1, 999]}""")
+            )
+                .andExpect(status().isNotFound)
+                .andExpect(jsonPath("$.error.code").value("SCHEDULE_NOT_FOUND"))
+        }
+    }
+
+    @Nested
+    @DisplayName("PATCH /api/v1/admin/schedule/unconfirm - 확정 해제")
+    inner class BatchUnconfirm {
+
+        @Test
+        @DisplayName("성공 - 2건 확정 해제")
+        fun unconfirm_success() {
+            val result = ScheduleBatchConfirmResultDto(updatedCount = 2)
+            whenever(adminScheduleService.batchUnconfirm(listOf(1L, 2L))).thenReturn(result)
+
+            mockMvc.perform(
+                patch("/api/v1/admin/schedule/unconfirm")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"ids": [1, 2]}""")
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.updated_count").value(2))
+                .andExpect(jsonPath("$.message").value("2건이 확정 해제되었습니다"))
+        }
+
+        @Test
+        @DisplayName("실패 - 빈 ids 목록")
+        fun unconfirm_emptyIds() {
+            mockMvc.perform(
+                patch("/api/v1/admin/schedule/unconfirm")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"ids": []}""")
+            )
+                .andExpect(status().isBadRequest)
+        }
+
+        @Test
+        @DisplayName("실패 - 미존재 ID 포함")
+        fun unconfirm_notFound() {
+            whenever(adminScheduleService.batchUnconfirm(listOf(1L, 999L)))
+                .thenThrow(ScheduleNotFoundException())
+
+            mockMvc.perform(
+                patch("/api/v1/admin/schedule/unconfirm")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"ids": [1, 999]}""")
+            )
+                .andExpect(status().isNotFound)
+                .andExpect(jsonPath("$.error.code").value("SCHEDULE_NOT_FOUND"))
+        }
     }
 
     @Nested
