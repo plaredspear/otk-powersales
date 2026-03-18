@@ -6,7 +6,7 @@ import '../../core/utils/error_utils.dart';
 import '../../data/datasources/order_api_datasource.dart';
 import '../../data/datasources/order_local_datasource.dart';
 import '../../data/datasources/order_remote_datasource.dart';
-import '../../data/models/my_store_model.dart';
+import '../../data/models/my_account_model.dart';
 import '../../data/repositories/order_repository_impl.dart';
 import '../../domain/entities/order.dart';
 import '../../domain/repositories/order_repository.dart';

@@ -14,7 +14,7 @@ abstract final class MenuConstants {
       icon: Icons.store,
       label: '거래처',
       items: [
-        MenuItem(id: 'my-stores', label: '내 거래처', route: '/my-stores'),
+        MenuItem(id: 'my-accounts', label: '내 거래처', route: '/my-accounts'),
       ],
     ),
     // 2. 주문

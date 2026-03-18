@@ -8,7 +8,7 @@ import '../../../core/theme/app_typography.dart';
 ///
 /// 거래처명 또는 거래처 코드로 검색할 수 있는 입력 필드와 검색 버튼.
 /// 검색 버튼을 탭해야 검색이 실행됩니다 (실시간 검색 아님).
-class MyStoreSearchBar extends StatelessWidget {
+class MyAccountSearchBar extends StatelessWidget {
   /// 텍스트 컨트롤러
   final TextEditingController controller;
 
@@ -18,7 +18,7 @@ class MyStoreSearchBar extends StatelessWidget {
   /// 텍스트 변경 콜백
   final ValueChanged<String>? onChanged;
 
-  const MyStoreSearchBar({
+  const MyAccountSearchBar({
     super.key,
     required this.controller,
     required this.onSearch,

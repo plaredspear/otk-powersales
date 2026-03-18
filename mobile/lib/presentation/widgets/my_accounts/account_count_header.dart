@@ -7,11 +7,11 @@ import '../../../core/theme/app_typography.dart';
 /// 거래처 건수 헤더 위젯
 ///
 /// "거래처 (N)" 형식으로 현재 표시 중인 거래처 수를 보여줍니다.
-class StoreCountHeader extends StatelessWidget {
+class AccountCountHeader extends StatelessWidget {
   /// 표시할 거래처 수
   final int count;
 
-  const StoreCountHeader({
+  const AccountCountHeader({
     super.key,
     required this.count,
   });

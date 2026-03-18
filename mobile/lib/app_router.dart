@@ -17,7 +17,7 @@ import 'presentation/pages/order_detail_page.dart';
 import 'presentation/pages/order_list_page.dart';
 import 'presentation/pages/order_form_page.dart';
 import 'presentation/pages/product_search_page.dart';
-import 'presentation/pages/my_stores_page.dart';
+import 'presentation/pages/my_accounts_page.dart';
 import 'presentation/pages/product_search_result_page.dart';
 import 'presentation/pages/shelf_life_list_page.dart';
 import 'presentation/pages/suggestion_register_page.dart';
@@ -53,7 +53,7 @@ class AppRouter {
   static const String posSales = '/pos-sales';
   static const String attendance = '/attendance';
   static const String attendanceComplete = '/attendance/complete';
-  static const String myStores = '/my-stores';
+  static const String myAccounts = '/my-accounts';
   static const String productSearch = '/product-search';
   static const String productSearchResult = '/product-search/result';
   static const String orderList = '/order-list';
@@ -97,7 +97,7 @@ class AppRouter {
         posSales: (context) => const PosSalesScreen(),
         attendance: (context) => const AttendancePage(),
         attendanceComplete: (context) => const AttendanceCompletePage(),
-        myStores: (context) => const MyStoresPage(),
+        myAccounts: (context) => const MyAccountsPage(),
         productSearch: (context) => const ProductSearchPage(),
         productSearchResult: (context) => const ProductSearchResultPage(),
         orderList: (context) => const OrderListPage(),
