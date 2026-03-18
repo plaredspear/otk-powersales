@@ -1,7 +1,9 @@
 package com.otoki.internal.admin.service
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.otoki.internal.admin.dto.response.ScheduleBatchConfirmResultDto
 import com.otoki.internal.admin.dto.response.ScheduleConfirmResultDto
+import com.otoki.internal.admin.dto.response.ScheduleListItemDto
 import com.otoki.internal.admin.dto.response.ScheduleUploadResultDto
 import com.otoki.internal.admin.exception.*
 import com.otoki.internal.auth.exception.UserNotFoundException
@@ -11,6 +13,8 @@ import com.otoki.internal.sap.repository.OrganizationRepository
 import com.otoki.internal.sap.repository.UserRepository
 import com.otoki.internal.schedule.entity.DisplayWorkSchedule
 import com.otoki.internal.schedule.repository.DisplayWorkScheduleRepository
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageRequest
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.http.HttpStatus
 import com.otoki.internal.sap.repository.MonthlySalesHistoryRepository
@@ -200,6 +204,105 @@ class AdminScheduleService(
         redisTemplate.delete(redisKey)
 
         return ScheduleConfirmResultDto(insertedCount = entities.size)
+    }
+
+    fun listSchedules(
+        page: Int,
+        size: Int,
+        employeeCode: String?,
+        accountName: String?,
+        confirmed: Boolean?,
+        typeOfWork3: String?,
+        startDateFrom: LocalDate?,
+        startDateTo: LocalDate?
+    ): Page<ScheduleListItemDto> {
+        val pageSize = size.coerceIn(1, 100)
+        val pageable = PageRequest.of(page, pageSize)
+
+        val accountIds = if (!accountName.isNullOrBlank()) {
+            accountRepository.findByNameContainingIgnoreCase(accountName).map { it.id }
+        } else {
+            null
+        }
+
+        val schedulePage = scheduleRepository.findScheduleList(
+            employeeCode, accountIds, confirmed, typeOfWork3, startDateFrom, startDateTo, pageable
+        )
+
+        val fullNames = schedulePage.content.mapNotNull { it.fullName }.distinct()
+        val scheduleAccountIds = schedulePage.content.mapNotNull { it.accountId }.distinct()
+
+        val userMap = if (fullNames.isNotEmpty()) {
+            userRepository.findByEmployeeIdIn(fullNames).associateBy { it.employeeId }
+        } else {
+            emptyMap()
+        }
+
+        val accountMap = if (scheduleAccountIds.isNotEmpty()) {
+            accountRepository.findByIdIn(scheduleAccountIds).associateBy { it.id }
+        } else {
+            emptyMap()
+        }
+
+        return schedulePage.map { schedule ->
+            val user = schedule.fullName?.let { userMap[it] }
+            val account = schedule.accountId?.let { accountMap[it] }
+            ScheduleListItemDto(
+                id = schedule.id,
+                employeeCode = schedule.fullName ?: "",
+                employeeName = user?.name ?: "",
+                accountCode = account?.externalKey,
+                accountName = account?.name,
+                typeOfWork3 = schedule.typeOfWork3,
+                typeOfWork5 = schedule.typeOfWork5,
+                startDate = schedule.startDate,
+                endDate = schedule.endDate,
+                confirmed = schedule.confirmed,
+                costCenterCode = schedule.costCenterCode,
+                lastMonthRevenue = schedule.lastMonthRevenue
+            )
+        }
+    }
+
+    @Transactional
+    fun batchConfirm(ids: List<Long>): ScheduleBatchConfirmResultDto {
+        val schedules = scheduleRepository.findAllById(ids)
+        validateScheduleIds(ids, schedules)
+
+        var updatedCount = 0
+        for (schedule in schedules) {
+            if (schedule.confirmed != true) {
+                schedule.confirmed = true
+                updatedCount++
+            }
+        }
+
+        return ScheduleBatchConfirmResultDto(updatedCount = updatedCount)
+    }
+
+    @Transactional
+    fun batchUnconfirm(ids: List<Long>): ScheduleBatchConfirmResultDto {
+        val schedules = scheduleRepository.findAllById(ids)
+        validateScheduleIds(ids, schedules)
+
+        var updatedCount = 0
+        for (schedule in schedules) {
+            if (schedule.confirmed == true) {
+                schedule.confirmed = false
+                updatedCount++
+            }
+        }
+
+        return ScheduleBatchConfirmResultDto(updatedCount = updatedCount)
+    }
+
+    private fun validateScheduleIds(ids: List<Long>, schedules: List<DisplayWorkSchedule>) {
+        if (schedules.size != ids.size) {
+            throw ScheduleNotFoundException()
+        }
+        if (schedules.any { it.isDeleted == true }) {
+            throw ScheduleNotFoundException()
+        }
     }
 
     private fun validateFile(file: MultipartFile) {

@@ -55,7 +55,7 @@ class DisplayWorkSchedule(
     @SFField("Confirmed__c")
     @HCColumn("confirmed__c")
     @Column(name = "confirmed")
-    val confirmed: Boolean? = null,
+    var confirmed: Boolean? = null,
 
     @SFField("TypeOfWork1__c")
     @HCColumn("typeofwork1__c")
