@@ -12,4 +12,10 @@ interface TeamMemberScheduleRepositoryCustom {
     fun findMonthlyByAccountIds(accountIds: List<Int>, from: LocalDate, to: LocalDate): List<TeamMemberSchedule>
 
     fun findActiveByEmployeeIdAndDate(employeeId: String, workingDate: LocalDate): List<TeamMemberSchedule>
+
+    fun deleteAnnualLeaveByEmployeeIdAndDateRange(employeeId: String, from: LocalDate, to: LocalDate): Long
+
+    fun findAnnualLeaveByDateRange(from: LocalDate, to: LocalDate): List<TeamMemberSchedule>
+
+    fun findAnnualLeaveByDateRangeAndEmployeeIds(from: LocalDate, to: LocalDate, employeeIds: List<String>): List<TeamMemberSchedule>
 }

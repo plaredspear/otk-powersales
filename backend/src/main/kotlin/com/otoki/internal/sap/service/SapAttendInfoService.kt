@@ -4,21 +4,29 @@ import com.otoki.internal.sap.dto.SapAttendInfoRequest
 import com.otoki.internal.sap.dto.SapSyncError
 import com.otoki.internal.sap.dto.SapSyncResult
 import com.otoki.internal.sap.entity.AttendInfo
+import com.otoki.internal.sap.entity.AttendType
 import com.otoki.internal.sap.repository.AttendInfoRepository
+import com.otoki.internal.schedule.entity.TeamMemberSchedule
+import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 @Service
 class SapAttendInfoService(
-    private val attendInfoRepository: AttendInfoRepository
+    private val attendInfoRepository: AttendInfoRepository,
+    private val teamMemberScheduleRepository: TeamMemberScheduleRepository
 ) : SapSyncService<SapAttendInfoRequest.ReqItem> {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
     companion object {
         const val CHUNK_SIZE = 5_000
+        const val WORKING_TYPE_ANNUAL_LEAVE = "연차"
+        private val DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd")
     }
 
     override fun sync(items: List<SapAttendInfoRequest.ReqItem>): SapSyncResult {
@@ -97,5 +105,66 @@ class SapAttendInfoService(
         )
 
         attendInfoRepository.save(attendInfo)
+
+        processAnnualLeaveSchedule(attendInfo)
+    }
+
+    private fun processAnnualLeaveSchedule(attendInfo: AttendInfo) {
+        val attendType = attendInfo.attendType ?: return
+        val type = AttendType.fromCode(attendType) ?: return
+        if (!type.isAnnualLeave) return
+
+        val dates = parseDateRange(attendInfo.startDate, attendInfo.endDate)
+        if (dates.isEmpty()) return
+
+        val employeeCode = attendInfo.employeeCode
+
+        if (attendInfo.status == "Y") {
+            deleteAnnualLeaveSchedules(employeeCode, dates)
+        } else {
+            createAnnualLeaveSchedules(employeeCode, dates)
+        }
+    }
+
+    private fun createAnnualLeaveSchedules(employeeCode: String, dates: List<LocalDate>) {
+        for (date in dates) {
+            val exists = teamMemberScheduleRepository.existsByEmployeeIdAndWorkingDateAndWorkingType(
+                employeeCode, date, WORKING_TYPE_ANNUAL_LEAVE
+            )
+            if (exists) {
+                log.debug("연차 스케줄 이미 존재: employeeCode={}, date={}", employeeCode, date)
+                continue
+            }
+
+            val schedule = TeamMemberSchedule(
+                employeeId = employeeCode,
+                workingDate = date,
+                workingType = WORKING_TYPE_ANNUAL_LEAVE
+            )
+            teamMemberScheduleRepository.save(schedule)
+            log.debug("연차 스케줄 생성: employeeCode={}, date={}", employeeCode, date)
+        }
+    }
+
+    private fun deleteAnnualLeaveSchedules(employeeCode: String, dates: List<LocalDate>) {
+        val from = dates.min()
+        val to = dates.max()
+        val deletedCount = teamMemberScheduleRepository.deleteAnnualLeaveByEmployeeIdAndDateRange(
+            employeeCode, from, to
+        )
+        log.info("연차 스케줄 삭제: employeeCode={}, from={}, to={}, deletedCount={}", employeeCode, from, to, deletedCount)
+    }
+
+    private fun parseDateRange(startDateStr: String, endDateStr: String?): List<LocalDate> {
+        return try {
+            val startDate = LocalDate.parse(startDateStr, DATE_FORMAT)
+            val endDate = if (endDateStr.isNullOrBlank()) startDate else LocalDate.parse(endDateStr, DATE_FORMAT)
+            generateSequence(startDate) { it.plusDays(1) }
+                .takeWhile { !it.isAfter(endDate) }
+                .toList()
+        } catch (e: Exception) {
+            log.warn("날짜 파싱 실패: startDate={}, endDate={}, error={}", startDateStr, endDateStr, e.message)
+            emptyList()
+        }
     }
 }

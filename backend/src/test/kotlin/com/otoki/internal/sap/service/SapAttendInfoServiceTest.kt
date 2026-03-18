@@ -3,6 +3,8 @@ package com.otoki.internal.sap.service
 import com.otoki.internal.sap.dto.SapAttendInfoRequest.ReqItem
 import com.otoki.internal.sap.entity.AttendInfo
 import com.otoki.internal.sap.repository.AttendInfoRepository
+import com.otoki.internal.schedule.entity.TeamMemberSchedule
+import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -13,8 +15,12 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.time.LocalDate
 
 @ExtendWith(MockitoExtension::class)
 @DisplayName("SapAttendInfoService 테스트")
@@ -22,6 +28,9 @@ class SapAttendInfoServiceTest {
 
     @Mock
     private lateinit var attendInfoRepository: AttendInfoRepository
+
+    @Mock
+    private lateinit var teamMemberScheduleRepository: TeamMemberScheduleRepository
 
     @InjectMocks
     private lateinit var sapAttendInfoService: SapAttendInfoService
@@ -121,6 +130,258 @@ class SapAttendInfoServiceTest {
         @DisplayName("CHUNK_SIZE 확인 - 5000")
         fun chunkSize_is5000() {
             assertThat(SapAttendInfoService.CHUNK_SIZE).isEqualTo(5_000)
+        }
+    }
+
+    @Nested
+    @DisplayName("연차 스케줄 생성")
+    inner class AnnualLeaveScheduleCreationTests {
+
+        @Test
+        @DisplayName("연차(14) - startDate=20260305, endDate=20260307 -> 3건 TeamMemberSchedule 생성")
+        fun sync_annualLeave_createsSchedulesForDateRange() {
+            // Given
+            whenever(attendInfoRepository.save(any<AttendInfo>()))
+                .thenAnswer { it.getArgument<AttendInfo>(0) }
+            whenever(teamMemberScheduleRepository.existsByEmployeeIdAndWorkingDateAndWorkingType(
+                any(), any(), any()
+            )).thenReturn(false)
+            whenever(teamMemberScheduleRepository.save(any<TeamMemberSchedule>()))
+                .thenAnswer { it.getArgument<TeamMemberSchedule>(0) }
+
+            val item = createReqItem(
+                employeeCode = "100234",
+                startDate = "20260305",
+                endDate = "20260307",
+                attendType = "14"
+            )
+
+            // When
+            val result = sapAttendInfoService.sync(listOf(item))
+
+            // Then
+            assertThat(result.successCount).isEqualTo(1)
+            assertThat(result.failCount).isEqualTo(0)
+
+            val captor = argumentCaptor<TeamMemberSchedule>()
+            verify(teamMemberScheduleRepository, times(3)).save(captor.capture())
+
+            val savedSchedules = captor.allValues
+            assertThat(savedSchedules).hasSize(3)
+            assertThat(savedSchedules.map { it.workingDate }).containsExactly(
+                LocalDate.of(2026, 3, 5),
+                LocalDate.of(2026, 3, 6),
+                LocalDate.of(2026, 3, 7)
+            )
+            savedSchedules.forEach { schedule ->
+                assertThat(schedule.employeeId).isEqualTo("100234")
+                assertThat(schedule.workingType).isEqualTo("연차")
+            }
+        }
+
+        @Test
+        @DisplayName("경조(90) - startDate=20260310, endDate=20260310 -> 1건 스케줄 생성")
+        fun sync_familyEvent_createsOneSchedule() {
+            // Given
+            whenever(attendInfoRepository.save(any<AttendInfo>()))
+                .thenAnswer { it.getArgument<AttendInfo>(0) }
+            whenever(teamMemberScheduleRepository.existsByEmployeeIdAndWorkingDateAndWorkingType(
+                any(), any(), any()
+            )).thenReturn(false)
+            whenever(teamMemberScheduleRepository.save(any<TeamMemberSchedule>()))
+                .thenAnswer { it.getArgument<TeamMemberSchedule>(0) }
+
+            val item = createReqItem(
+                employeeCode = "100500",
+                startDate = "20260310",
+                endDate = "20260310",
+                attendType = "90"
+            )
+
+            // When
+            val result = sapAttendInfoService.sync(listOf(item))
+
+            // Then
+            assertThat(result.successCount).isEqualTo(1)
+
+            val captor = argumentCaptor<TeamMemberSchedule>()
+            verify(teamMemberScheduleRepository, times(1)).save(captor.capture())
+
+            val saved = captor.firstValue
+            assertThat(saved.employeeId).isEqualTo("100500")
+            assertThat(saved.workingDate).isEqualTo(LocalDate.of(2026, 3, 10))
+            assertThat(saved.workingType).isEqualTo("연차")
+        }
+
+        @Test
+        @DisplayName("endDate null - attendType=14, startDate=20260315 -> startDate 1건만 생성")
+        fun sync_endDateNull_createsOneScheduleForStartDate() {
+            // Given
+            whenever(attendInfoRepository.save(any<AttendInfo>()))
+                .thenAnswer { it.getArgument<AttendInfo>(0) }
+            whenever(teamMemberScheduleRepository.existsByEmployeeIdAndWorkingDateAndWorkingType(
+                any(), any(), any()
+            )).thenReturn(false)
+            whenever(teamMemberScheduleRepository.save(any<TeamMemberSchedule>()))
+                .thenAnswer { it.getArgument<TeamMemberSchedule>(0) }
+
+            val item = createReqItem(
+                employeeCode = "100234",
+                startDate = "20260315",
+                endDate = null,
+                attendType = "14"
+            )
+
+            // When
+            val result = sapAttendInfoService.sync(listOf(item))
+
+            // Then
+            assertThat(result.successCount).isEqualTo(1)
+
+            val captor = argumentCaptor<TeamMemberSchedule>()
+            verify(teamMemberScheduleRepository, times(1)).save(captor.capture())
+
+            val saved = captor.firstValue
+            assertThat(saved.employeeId).isEqualTo("100234")
+            assertThat(saved.workingDate).isEqualTo(LocalDate.of(2026, 3, 15))
+            assertThat(saved.workingType).isEqualTo("연차")
+        }
+    }
+
+    @Nested
+    @DisplayName("연차 스케줄 삭제 (취소)")
+    inner class AnnualLeaveScheduleCancellationTests {
+
+        @Test
+        @DisplayName("status=Y - 연차 취소 -> deleteAnnualLeaveByEmployeeIdAndDateRange 호출")
+        fun sync_statusY_deletesAnnualLeaveSchedules() {
+            // Given
+            whenever(attendInfoRepository.save(any<AttendInfo>()))
+                .thenAnswer { it.getArgument<AttendInfo>(0) }
+            whenever(teamMemberScheduleRepository.deleteAnnualLeaveByEmployeeIdAndDateRange(
+                any(), any(), any()
+            )).thenReturn(3L)
+
+            val item = createReqItem(
+                employeeCode = "100234",
+                startDate = "20260305",
+                endDate = "20260307",
+                attendType = "14",
+                status = "Y"
+            )
+
+            // When
+            val result = sapAttendInfoService.sync(listOf(item))
+
+            // Then
+            assertThat(result.successCount).isEqualTo(1)
+            assertThat(result.failCount).isEqualTo(0)
+
+            verify(teamMemberScheduleRepository).deleteAnnualLeaveByEmployeeIdAndDateRange(
+                eq("100234"),
+                eq(LocalDate.of(2026, 3, 5)),
+                eq(LocalDate.of(2026, 3, 7))
+            )
+            verify(teamMemberScheduleRepository, never()).save(any<TeamMemberSchedule>())
+        }
+    }
+
+    @Nested
+    @DisplayName("연차 스케줄 중복 방지")
+    inner class AnnualLeaveDuplicatePreventionTests {
+
+        @Test
+        @DisplayName("이미 존재하는 스케줄 - existsBy 반환 true -> save 미호출")
+        fun sync_duplicateScheduleExists_skipsSave() {
+            // Given
+            whenever(attendInfoRepository.save(any<AttendInfo>()))
+                .thenAnswer { it.getArgument<AttendInfo>(0) }
+            whenever(teamMemberScheduleRepository.existsByEmployeeIdAndWorkingDateAndWorkingType(
+                any(), any(), any()
+            )).thenReturn(true)
+
+            val item = createReqItem(
+                employeeCode = "100234",
+                startDate = "20260305",
+                endDate = "20260305",
+                attendType = "14"
+            )
+
+            // When
+            val result = sapAttendInfoService.sync(listOf(item))
+
+            // Then
+            assertThat(result.successCount).isEqualTo(1)
+
+            verify(teamMemberScheduleRepository).existsByEmployeeIdAndWorkingDateAndWorkingType(
+                eq("100234"),
+                eq(LocalDate.of(2026, 3, 5)),
+                eq("연차")
+            )
+            verify(teamMemberScheduleRepository, never()).save(any<TeamMemberSchedule>())
+        }
+    }
+
+    @Nested
+    @DisplayName("연차 스케줄 비대상")
+    inner class AnnualLeaveNonTargetTests {
+
+        @Test
+        @DisplayName("비대상 근태코드(30) - 스케줄 생성/삭제 미호출")
+        fun sync_nonTargetAttendType_noScheduleInteraction() {
+            // Given
+            whenever(attendInfoRepository.save(any<AttendInfo>()))
+                .thenAnswer { it.getArgument<AttendInfo>(0) }
+
+            val item = createReqItem(
+                employeeCode = "100234",
+                startDate = "20260305",
+                endDate = "20260305",
+                attendType = "30"
+            )
+
+            // When
+            val result = sapAttendInfoService.sync(listOf(item))
+
+            // Then
+            assertThat(result.successCount).isEqualTo(1)
+
+            verify(teamMemberScheduleRepository, never()).save(any<TeamMemberSchedule>())
+            verify(teamMemberScheduleRepository, never()).existsByEmployeeIdAndWorkingDateAndWorkingType(
+                any(), any(), any()
+            )
+            verify(teamMemberScheduleRepository, never()).deleteAnnualLeaveByEmployeeIdAndDateRange(
+                any(), any(), any()
+            )
+        }
+
+        @Test
+        @DisplayName("attendType null - 스케줄 생성/삭제 미호출")
+        fun sync_nullAttendType_noScheduleInteraction() {
+            // Given
+            whenever(attendInfoRepository.save(any<AttendInfo>()))
+                .thenAnswer { it.getArgument<AttendInfo>(0) }
+
+            val item = createReqItem(
+                employeeCode = "100234",
+                startDate = "20260305",
+                endDate = "20260305",
+                attendType = null
+            )
+
+            // When
+            val result = sapAttendInfoService.sync(listOf(item))
+
+            // Then
+            assertThat(result.successCount).isEqualTo(1)
+
+            verify(teamMemberScheduleRepository, never()).save(any<TeamMemberSchedule>())
+            verify(teamMemberScheduleRepository, never()).existsByEmployeeIdAndWorkingDateAndWorkingType(
+                any(), any(), any()
+            )
+            verify(teamMemberScheduleRepository, never()).deleteAnnualLeaveByEmployeeIdAndDateRange(
+                any(), any(), any()
+            )
         }
     }
 

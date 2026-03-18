@@ -18,4 +18,6 @@ interface TeamMemberScheduleRepository : JpaRepository<TeamMemberSchedule, Long>
     fun findByPromotionEmpIdExtIn(promotionEmpIdExts: List<String>): List<TeamMemberSchedule>
 
     fun findByEmployeeIdInAndWorkingDateIn(employeeIds: List<String>, workingDates: List<LocalDate>): List<TeamMemberSchedule>
+
+    fun existsByEmployeeIdAndWorkingDateAndWorkingType(employeeId: String, workingDate: LocalDate, workingType: String): Boolean
 }
