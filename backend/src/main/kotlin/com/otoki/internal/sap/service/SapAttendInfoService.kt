@@ -128,7 +128,7 @@ class SapAttendInfoService(
 
     private fun createAnnualLeaveSchedules(employeeCode: String, dates: List<LocalDate>) {
         for (date in dates) {
-            val exists = teamMemberScheduleRepository.existsByEmployeeIdAndWorkingDateAndWorkingType(
+            val exists = teamMemberScheduleRepository.existsByEmployeeNumberAndWorkingDateAndWorkingType(
                 employeeCode, date, WORKING_TYPE_ANNUAL_LEAVE
             )
             if (exists) {
@@ -137,7 +137,7 @@ class SapAttendInfoService(
             }
 
             val schedule = TeamMemberSchedule(
-                employeeId = employeeCode,
+                employeeNumber = employeeCode,
                 workingDate = date,
                 workingType = WORKING_TYPE_ANNUAL_LEAVE
             )
@@ -149,7 +149,7 @@ class SapAttendInfoService(
     private fun deleteAnnualLeaveSchedules(employeeCode: String, dates: List<LocalDate>) {
         val from = dates.min()
         val to = dates.max()
-        val deletedCount = teamMemberScheduleRepository.deleteAnnualLeaveByEmployeeIdAndDateRange(
+        val deletedCount = teamMemberScheduleRepository.deleteAnnualLeaveByEmployeeNumberAndDateRange(
             employeeCode, from, to
         )
         log.info("연차 스케줄 삭제: employeeCode={}, from={}, to={}, deletedCount={}", employeeCode, from, to, deletedCount)

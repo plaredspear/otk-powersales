@@ -46,14 +46,14 @@ class OrderRepositoryTest {
 
         // 테스트 사용자 생성
         testUser1 = testEntityManager.persistAndFlush(User(
-            employeeId = "10000001",
+            employeeNumber = "10000001",
             password = "encoded",
             name = "홍길동",
             orgName = "서울지점"
         ))
 
         testUser2 = testEntityManager.persistAndFlush(User(
-            employeeId = "10000002",
+            employeeNumber = "10000002",
             password = "encoded",
             name = "김영희",
             orgName = "부산지점"

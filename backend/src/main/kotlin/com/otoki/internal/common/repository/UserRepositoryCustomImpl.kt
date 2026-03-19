@@ -37,9 +37,9 @@ class UserRepositoryCustomImpl(
             .fetch()
     }
 
-    override fun findAllEmployeeIds(): List<String> {
+    override fun findAllEmployeeNumbers(): List<String> {
         return queryFactory
-            .select(user.employeeId)
+            .select(user.employeeNumber)
             .from(user)
             .fetch()
     }
@@ -62,7 +62,7 @@ class UserRepositoryCustomImpl(
         }
         if (!keyword.isNullOrBlank()) {
             where.and(
-                user.employeeId.containsIgnoreCase(keyword)
+                user.employeeNumber.containsIgnoreCase(keyword)
                     .or(user.name.containsIgnoreCase(keyword))
             )
         }

@@ -78,11 +78,11 @@ class AdminSafetyCheckServiceTest {
 
             val schedule1 = createSchedule(1L, "123456", today, "근무", accountId = 100)
             val schedule2 = createSchedule(2L, "654321", today, "근무", accountId = 200)
-            whenever(teamMemberScheduleRepository.findByWorkingDateAndEmployeeIdIn(eq(today), any()))
+            whenever(teamMemberScheduleRepository.findByWorkingDateAndEmployeeNumberIn(eq(today), any()))
                 .thenReturn(listOf(schedule1, schedule2))
 
             val submission = createSubmission("123456", today)
-            whenever(safetyCheckSubmissionRepository.findByEmployeeIdInAndWorkingDate(any(), eq(today)))
+            whenever(safetyCheckSubmissionRepository.findByEmployeeNumberInAndWorkingDate(any(), eq(today)))
                 .thenReturn(listOf(submission))
 
             val account1 = createAccount(100, "이마트 강남점")
@@ -100,7 +100,7 @@ class AdminSafetyCheckServiceTest {
             assertThat(result.members).hasSize(2)
 
             val submitted = result.members.first { it.submitted }
-            assertThat(submitted.employeeId).isEqualTo("123456")
+            assertThat(submitted.employeeNumber).isEqualTo("123456")
             assertThat(submitted.employeeName).isEqualTo("홍길동")
             assertThat(submitted.accountName).isEqualTo("이마트 강남점")
             assertThat(submitted.equipments).hasSize(9)
@@ -111,7 +111,7 @@ class AdminSafetyCheckServiceTest {
             assertThat(submitted.noCount).isEqualTo(2)
 
             val notSubmitted = result.members.first { !it.submitted }
-            assertThat(notSubmitted.employeeId).isEqualTo("654321")
+            assertThat(notSubmitted.employeeNumber).isEqualTo("654321")
             assertThat(notSubmitted.equipments).isEmpty()
             assertThat(notSubmitted.yesCount).isEqualTo(0)
         }
@@ -143,10 +143,10 @@ class AdminSafetyCheckServiceTest {
 
             val schedule1 = createSchedule(1L, "123456", today, "근무")
             val schedule2 = createSchedule(2L, "654321", today, "근무")
-            whenever(teamMemberScheduleRepository.findByWorkingDateAndEmployeeIdIn(eq(today), any()))
+            whenever(teamMemberScheduleRepository.findByWorkingDateAndEmployeeNumberIn(eq(today), any()))
                 .thenReturn(listOf(schedule1, schedule2))
 
-            whenever(safetyCheckSubmissionRepository.findByEmployeeIdInAndWorkingDate(any(), eq(today)))
+            whenever(safetyCheckSubmissionRepository.findByEmployeeNumberInAndWorkingDate(any(), eq(today)))
                 .thenReturn(listOf(
                     createSubmission("123456", today),
                     createSubmission("654321", today)
@@ -168,7 +168,7 @@ class AdminSafetyCheckServiceTest {
             whenever(userRepository.findById(adminUserId)).thenReturn(Optional.of(admin))
             whenever(userRepository.findByCostCenterCodeAndAppAuthority("CC001", "여사원"))
                 .thenReturn(listOf(member))
-            whenever(teamMemberScheduleRepository.findByWorkingDateAndEmployeeIdIn(eq(today), any()))
+            whenever(teamMemberScheduleRepository.findByWorkingDateAndEmployeeNumberIn(eq(today), any()))
                 .thenReturn(emptyList())
 
             val result = service.getStatus(adminUserId, today)
@@ -190,17 +190,17 @@ class AdminSafetyCheckServiceTest {
 
             val workSchedule = createSchedule(1L, "123456", today, "근무")
             val leaveSchedule = createSchedule(2L, "654321", today, "연차")
-            whenever(teamMemberScheduleRepository.findByWorkingDateAndEmployeeIdIn(eq(today), any()))
+            whenever(teamMemberScheduleRepository.findByWorkingDateAndEmployeeNumberIn(eq(today), any()))
                 .thenReturn(listOf(workSchedule, leaveSchedule))
 
-            whenever(safetyCheckSubmissionRepository.findByEmployeeIdInAndWorkingDate(any(), eq(today)))
+            whenever(safetyCheckSubmissionRepository.findByEmployeeNumberInAndWorkingDate(any(), eq(today)))
                 .thenReturn(emptyList())
 
             val result = service.getStatus(adminUserId, today)
 
             assertThat(result.totalCount).isEqualTo(1)
             assertThat(result.members).hasSize(1)
-            assertThat(result.members[0].employeeId).isEqualTo("123456")
+            assertThat(result.members[0].employeeNumber).isEqualTo("123456")
         }
 
         @Test
@@ -215,10 +215,10 @@ class AdminSafetyCheckServiceTest {
 
             val schedule1 = createSchedule(1L, "123456", today, "근무", accountId = 100, traversalFlag = null)
             val schedule2 = createSchedule(2L, "123456", today, "근무", accountId = 200, traversalFlag = "O")
-            whenever(teamMemberScheduleRepository.findByWorkingDateAndEmployeeIdIn(eq(today), any()))
+            whenever(teamMemberScheduleRepository.findByWorkingDateAndEmployeeNumberIn(eq(today), any()))
                 .thenReturn(listOf(schedule1, schedule2))
 
-            whenever(safetyCheckSubmissionRepository.findByEmployeeIdInAndWorkingDate(any(), eq(today)))
+            whenever(safetyCheckSubmissionRepository.findByEmployeeNumberInAndWorkingDate(any(), eq(today)))
                 .thenReturn(emptyList())
 
             val account = createAccount(200, "홈플러스 역삼점")
@@ -263,9 +263,9 @@ class AdminSafetyCheckServiceTest {
                 .thenReturn(listOf(activeMember, deletedMember))
 
             val schedule = createSchedule(1L, "123456", today, "근무")
-            whenever(teamMemberScheduleRepository.findByWorkingDateAndEmployeeIdIn(eq(today), any()))
+            whenever(teamMemberScheduleRepository.findByWorkingDateAndEmployeeNumberIn(eq(today), any()))
                 .thenReturn(listOf(schedule))
-            whenever(safetyCheckSubmissionRepository.findByEmployeeIdInAndWorkingDate(any(), eq(today)))
+            whenever(safetyCheckSubmissionRepository.findByEmployeeNumberInAndWorkingDate(any(), eq(today)))
                 .thenReturn(emptyList())
 
             val result = service.getStatus(adminUserId, today)
@@ -285,13 +285,13 @@ class AdminSafetyCheckServiceTest {
             whenever(userRepository.findByCostCenterCodeAndAppAuthority("CC001", "여사원"))
                 .thenReturn(listOf(member1, member2, member3))
 
-            whenever(teamMemberScheduleRepository.findByWorkingDateAndEmployeeIdIn(eq(today), any()))
+            whenever(teamMemberScheduleRepository.findByWorkingDateAndEmployeeNumberIn(eq(today), any()))
                 .thenReturn(listOf(
                     createSchedule(1L, "111111", today, "근무"),
                     createSchedule(2L, "222222", today, "근무"),
                     createSchedule(3L, "333333", today, "근무")
                 ))
-            whenever(safetyCheckSubmissionRepository.findByEmployeeIdInAndWorkingDate(any(), eq(today)))
+            whenever(safetyCheckSubmissionRepository.findByEmployeeNumberInAndWorkingDate(any(), eq(today)))
                 .thenReturn(emptyList())
 
             val result = service.getStatus(adminUserId, today)
@@ -305,13 +305,13 @@ class AdminSafetyCheckServiceTest {
 
     private fun createUser(
         id: Long,
-        employeeId: String,
+        employeeNumber: String,
         name: String,
         appAuthority: String?,
         costCenterCode: String?,
         isDeleted: Boolean? = null
     ): User {
-        val user = User(id = id, employeeId = employeeId, name = name)
+        val user = User(id = id, employeeNumber = employeeNumber, name = name)
         user.appAuthority = appAuthority
         user.costCenterCode = costCenterCode
         val isDeletedField = User::class.java.getDeclaredField("isDeleted")
@@ -322,7 +322,7 @@ class AdminSafetyCheckServiceTest {
 
     private fun createSchedule(
         id: Long,
-        employeeId: String,
+        employeeNumber: String,
         workingDate: LocalDate,
         workingType: String,
         accountId: Int? = null,
@@ -330,7 +330,7 @@ class AdminSafetyCheckServiceTest {
     ): TeamMemberSchedule {
         return TeamMemberSchedule(
             id = id,
-            employeeId = employeeId,
+            employeeNumber = employeeNumber,
             workingDate = workingDate,
             workingType = workingType,
             accountId = accountId,
@@ -339,12 +339,12 @@ class AdminSafetyCheckServiceTest {
     }
 
     private fun createSubmission(
-        employeeId: String,
+        employeeNumber: String,
         workingDate: LocalDate
     ): SafetyCheckSubmission {
         return SafetyCheckSubmission(
             masterId = "MASTER001",
-            employeeId = employeeId,
+            employeeNumber = employeeNumber,
             workingDate = workingDate,
             completeTime = LocalDateTime.of(2026, 3, 17, 9, 15, 30),
             yesCheckCount = 7,

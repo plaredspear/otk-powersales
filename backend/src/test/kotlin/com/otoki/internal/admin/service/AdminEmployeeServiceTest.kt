@@ -43,7 +43,7 @@ class AdminEmployeeServiceTest {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
-            val users = listOf(createUser(employeeId = "10000001", name = "홍길동"))
+            val users = listOf(createUser(employeeNumber = "10000001", name = "홍길동"))
             val page = PageImpl(users, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
             whenever(userRepository.findEmployees(eq(null), eq(null), eq(null), eq(null), any())).thenReturn(page)
 
@@ -52,7 +52,7 @@ class AdminEmployeeServiceTest {
 
             // Then
             assertThat(result.content).hasSize(1)
-            assertThat(result.content[0].employeeId).isEqualTo("10000001")
+            assertThat(result.content[0].employeeNumber).isEqualTo("10000001")
             assertThat(result.totalElements).isEqualTo(1)
             assertThat(result.totalPages).isEqualTo(1)
         }
@@ -63,7 +63,7 @@ class AdminEmployeeServiceTest {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
-            val users = listOf(createUser(employeeId = "10000001", costCenterCode = "A001"))
+            val users = listOf(createUser(employeeNumber = "10000001", costCenterCode = "A001"))
             val page = PageImpl(users, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
             whenever(userRepository.findEmployees(eq(null), eq(listOf("A001")), eq(null), eq(null), any())).thenReturn(page)
 
@@ -79,7 +79,7 @@ class AdminEmployeeServiceTest {
             val scope = DataScope(branchCodes = listOf("A001"), isAllBranches = false)
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
-            val users = listOf(createUser(employeeId = "10000001", costCenterCode = "A001"))
+            val users = listOf(createUser(employeeNumber = "10000001", costCenterCode = "A001"))
             val page = PageImpl(users, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
             whenever(userRepository.findEmployees(eq(null), eq(listOf("A001")), eq(null), eq(null), any())).thenReturn(page)
 
@@ -118,7 +118,7 @@ class AdminEmployeeServiceTest {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
-            val users = listOf(createUser(employeeId = "10000001", status = "재직"))
+            val users = listOf(createUser(employeeNumber = "10000001", status = "재직"))
             val page = PageImpl(users, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
             whenever(userRepository.findEmployees(eq("재직"), eq(null), eq(null), eq(null), any())).thenReturn(page)
 
@@ -133,7 +133,7 @@ class AdminEmployeeServiceTest {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
-            val users = listOf(createUser(employeeId = "10000001", name = "홍길동"))
+            val users = listOf(createUser(employeeNumber = "10000001", name = "홍길동"))
             val page = PageImpl(users, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
             whenever(userRepository.findEmployees(eq(null), eq(null), eq("홍"), eq(null), any())).thenReturn(page)
 
@@ -148,7 +148,7 @@ class AdminEmployeeServiceTest {
             val scope = DataScope(branchCodes = listOf("A001", "A002"), isAllBranches = false)
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
-            val users = listOf(createUser(employeeId = "10000001", costCenterCode = "A001"))
+            val users = listOf(createUser(employeeNumber = "10000001", costCenterCode = "A001"))
             val page = PageImpl(users, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
             whenever(userRepository.findEmployees(eq(null), eq(listOf("A001")), eq(null), eq(null), any())).thenReturn(page)
 
@@ -160,14 +160,14 @@ class AdminEmployeeServiceTest {
 
     private fun createUser(
         id: Long = 1L,
-        employeeId: String = "10000001",
+        employeeNumber: String = "10000001",
         name: String = "테스트",
         status: String? = "재직",
         costCenterCode: String? = "A001",
         appAuthority: String? = null
     ): User = User(
         id = id,
-        employeeId = employeeId,
+        employeeNumber = employeeNumber,
         name = name,
         status = status,
         costCenterCode = costCenterCode,

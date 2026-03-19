@@ -8,7 +8,7 @@ import java.time.LocalDate
 data class AlternativeHolidayCreateRequest(
     @field:NotBlank(message = "사번은 필수입니다")
     @field:Size(max = 20, message = "사번은 20자 이하여야 합니다")
-    val employeeId: String,
+    val employeeNumber: String,
 
     @field:NotNull(message = "대상일은 필수입니다")
     val actualWorkDate: LocalDate,

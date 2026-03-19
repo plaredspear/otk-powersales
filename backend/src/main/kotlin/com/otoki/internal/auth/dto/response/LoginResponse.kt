@@ -17,7 +17,7 @@ data class LoginResponse(
  */
 data class UserInfo(
     val id: Long,
-    val employeeId: String,
+    val employeeNumber: String,
     val name: String,
     val orgName: String?,
     val role: String
@@ -26,7 +26,7 @@ data class UserInfo(
         fun from(user: User): UserInfo {
             return UserInfo(
                 id = user.id,
-                employeeId = user.employeeId,
+                employeeNumber = user.employeeNumber,
                 name = user.name,
                 orgName = user.orgName,
                 role = user.role.name

@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:60832",
+    "url" : "http://localhost:61600",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -1400,12 +1400,12 @@
         }
       }
     },
-    "/api/v1/admin/users/{employeeId}/reset-device" : {
+    "/api/v1/admin/users/{employeeNumber}/reset-device" : {
       "post" : {
         "tags" : [ "admin-controller" ],
         "operationId" : "resetDevice",
         "parameters" : [ {
-          "name" : "employeeId",
+          "name" : "employeeNumber",
           "in" : "path",
           "required" : true,
           "schema" : {
@@ -1447,7 +1447,7 @@
             "format" : "int32"
           }
         }, {
-          "name" : "employeeIds",
+          "name" : "employeeNumbers",
           "in" : "query",
           "required" : false,
           "schema" : {
@@ -2113,7 +2113,7 @@
             "type" : "string"
           }
         }, {
-          "name" : "employeeId",
+          "name" : "employeeNumber",
           "in" : "query",
           "required" : false,
           "schema" : {
@@ -2876,7 +2876,7 @@
             "format" : "int32"
           }
         }, {
-          "name" : "employeeIds",
+          "name" : "employeeNumbers",
           "in" : "query",
           "required" : false,
           "schema" : {
@@ -3656,7 +3656,7 @@
             "type" : "integer",
             "format" : "int64"
           },
-          "employeeId" : {
+          "employeeNumber" : {
             "type" : "string",
             "maxLength" : 8,
             "minLength" : 0
@@ -3800,7 +3800,7 @@
             "type" : "integer",
             "format" : "int64"
           },
-          "employeeId" : {
+          "employeeNumber" : {
             "type" : "string"
           },
           "employeeName" : {
@@ -4104,7 +4104,7 @@
       "PromotionEmployeeRequest" : {
         "type" : "object",
         "properties" : {
-          "employeeId" : {
+          "employeeNumber" : {
             "type" : "string",
             "maxLength" : 8,
             "minLength" : 0
@@ -4219,7 +4219,7 @@
             "type" : "integer",
             "format" : "int64"
           },
-          "employeeId" : {
+          "employeeNumber" : {
             "type" : "string"
           },
           "employeeName" : {
@@ -4944,7 +4944,7 @@
       "LoginRequest" : {
         "type" : "object",
         "properties" : {
-          "employeeId" : {
+          "employeeNumber" : {
             "type" : "string",
             "pattern" : "^\\d{8}$"
           },
@@ -4957,7 +4957,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "employeeId", "password" ]
+        "required" : [ "employeeNumber", "password" ]
       },
       "ApiResponseLoginResponse" : {
         "type" : "object",
@@ -5022,7 +5022,7 @@
             "type" : "integer",
             "format" : "int64"
           },
-          "employeeId" : {
+          "employeeNumber" : {
             "type" : "string"
           },
           "name" : {
@@ -5035,7 +5035,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "employeeId", "id", "name", "role" ]
+        "required" : [ "employeeNumber", "id", "name", "role" ]
       },
       "GpsConsentRequest" : {
         "type" : "object",
@@ -5233,7 +5233,7 @@
       "TeamScheduleCreateRequest" : {
         "type" : "object",
         "properties" : {
-          "employeeId" : {
+          "employeeNumber" : {
             "type" : "string"
           },
           "workingDate" : {
@@ -5256,7 +5256,7 @@
             "format" : "int32"
           }
         },
-        "required" : [ "employeeId", "workingDate", "workingType" ]
+        "required" : [ "employeeNumber", "workingDate", "workingType" ]
       },
       "ApiResponseTeamScheduleCreateResultDto" : {
         "type" : "object",
@@ -5558,7 +5558,7 @@
             "type" : "integer",
             "format" : "int64"
           },
-          "employeeId" : {
+          "employeeNumber" : {
             "type" : "string"
           },
           "name" : {
@@ -5577,7 +5577,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "employeeId", "id", "name", "role" ]
+        "required" : [ "employeeNumber", "id", "name", "role" ]
       },
       "ApiResponseAdminLoginResponse" : {
         "type" : "object",
@@ -5604,7 +5604,7 @@
       "AlternativeHolidayCreateRequest" : {
         "type" : "object",
         "properties" : {
-          "employeeId" : {
+          "employeeNumber" : {
             "type" : "string",
             "maxLength" : 20,
             "minLength" : 0
@@ -5618,7 +5618,7 @@
             "format" : "date"
           }
         },
-        "required" : [ "actualWorkDate", "employeeId", "targetAltHolidayDate" ]
+        "required" : [ "actualWorkDate", "employeeNumber", "targetAltHolidayDate" ]
       },
       "AlternativeHolidayRejectRequest" : {
         "type" : "object",
@@ -5796,9 +5796,6 @@
             "type" : "string",
             "pattern" : "^\\d{6}$"
           },
-          "previousYearMonth" : {
-            "type" : "string"
-          },
           "year" : {
             "type" : "integer",
             "format" : "int32"
@@ -5806,6 +5803,9 @@
           "month" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "previousYearMonth" : {
+            "type" : "string"
           }
         },
         "required" : [ "month", "previousYearMonth", "year", "yearMonth" ]
@@ -6303,19 +6303,6 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "size" : {
             "type" : "integer",
             "format" : "int32"
@@ -6333,6 +6320,19 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
+          },
           "empty" : {
             "type" : "boolean"
           }
@@ -6341,11 +6341,18 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
-          "pageNumber" : {
+          "offset" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
+          },
+          "pageSize" : {
             "type" : "integer",
             "format" : "int32"
           },
-          "pageSize" : {
+          "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
           },
@@ -6354,13 +6361,6 @@
           },
           "unpaged" : {
             "type" : "boolean"
-          },
-          "offset" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
           }
         }
       },
@@ -6393,13 +6393,13 @@
       "SortObject" : {
         "type" : "object",
         "properties" : {
+          "empty" : {
+            "type" : "boolean"
+          },
           "unsorted" : {
             "type" : "boolean"
           },
           "sorted" : {
-            "type" : "boolean"
-          },
-          "empty" : {
             "type" : "boolean"
           }
         }
@@ -6749,7 +6749,7 @@
           "employeeName" : {
             "type" : "string"
           },
-          "employeeId" : {
+          "employeeNumber" : {
             "type" : "string"
           },
           "expiryCount" : {
@@ -6757,7 +6757,7 @@
             "format" : "int32"
           }
         },
-        "required" : [ "branchName", "employeeId", "employeeName", "expiryCount" ]
+        "required" : [ "branchName", "employeeName", "employeeNumber", "expiryCount" ]
       },
       "HomeResponse" : {
         "type" : "object",
@@ -6822,7 +6822,7 @@
           "employeeName" : {
             "type" : "string"
           },
-          "employeeId" : {
+          "employeeNumber" : {
             "type" : "string"
           },
           "accountName" : {
@@ -6845,7 +6845,7 @@
             "format" : "date-time"
           }
         },
-        "required" : [ "employeeId", "employeeName", "isCommuteRegistered", "scheduleId", "workCategory" ]
+        "required" : [ "employeeName", "employeeNumber", "isCommuteRegistered", "scheduleId", "workCategory" ]
       },
       "ApiResponseListHolidayDateResponse" : {
         "type" : "object",
@@ -7362,13 +7362,10 @@
             "type" : "integer",
             "format" : "int64"
           },
-          "employeeId" : {
+          "employeeNumber" : {
             "type" : "string"
           },
           "employeeName" : {
-            "type" : "string"
-          },
-          "empCode" : {
             "type" : "string"
           },
           "workingDate" : {
@@ -7400,7 +7397,7 @@
             "type" : "boolean"
           }
         },
-        "required" : [ "empCode", "employeeId", "employeeName", "id", "isClockIn", "workingDate", "workingType" ]
+        "required" : [ "employeeName", "employeeNumber", "id", "isClockIn", "workingDate", "workingType" ]
       },
       "ApiResponseListDailySummaryDto" : {
         "type" : "object",
@@ -7488,17 +7485,14 @@
       "TeamMemberDto" : {
         "type" : "object",
         "properties" : {
-          "employeeId" : {
-            "type" : "string"
-          },
-          "empCode" : {
+          "employeeNumber" : {
             "type" : "string"
           },
           "name" : {
             "type" : "string"
           }
         },
-        "required" : [ "empCode", "employeeId", "name" ]
+        "required" : [ "employeeNumber", "name" ]
       },
       "ApiResponseListBranchResponse" : {
         "type" : "object",
@@ -7611,19 +7605,6 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "size" : {
             "type" : "integer",
             "format" : "int32"
@@ -7640,6 +7621,19 @@
           },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
+          },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "empty" : {
             "type" : "boolean"
@@ -7737,7 +7731,7 @@
             "type" : "integer",
             "format" : "int64"
           },
-          "employeeId" : {
+          "employeeNumber" : {
             "type" : "string"
           },
           "employeeName" : {
@@ -7778,7 +7772,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "employeeId", "employeeName", "equipments", "id", "noCount", "precautionCount", "submitted", "yesCount" ]
+        "required" : [ "employeeName", "employeeNumber", "equipments", "id", "noCount", "precautionCount", "submitted", "yesCount" ]
       },
       "SafetyCheckStatusResponse" : {
         "type" : "object",
@@ -8374,7 +8368,7 @@
       "EmployeeListItem" : {
         "type" : "object",
         "properties" : {
-          "employeeId" : {
+          "employeeNumber" : {
             "type" : "string"
           },
           "name" : {
@@ -8402,7 +8396,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "employeeId", "name" ]
+        "required" : [ "employeeNumber", "name" ]
       },
       "EmployeeListResponse" : {
         "type" : "object",
@@ -8859,7 +8853,7 @@
       "EmployeeAnnualLeaveDto" : {
         "type" : "object",
         "properties" : {
-          "employeeId" : {
+          "employeeNumber" : {
             "type" : "string"
           },
           "employeeName" : {
@@ -8879,7 +8873,7 @@
             "format" : "int32"
           }
         },
-        "required" : [ "annualLeaveDays", "employeeId", "employeeName", "orgName", "totalCount" ]
+        "required" : [ "annualLeaveDays", "employeeName", "employeeNumber", "orgName", "totalCount" ]
       },
       "AlternativeHolidayListItem" : {
         "type" : "object",
@@ -8888,7 +8882,7 @@
             "type" : "integer",
             "format" : "int64"
           },
-          "employeeId" : {
+          "employeeNumber" : {
             "type" : "string"
           },
           "employeeName" : {
@@ -8923,7 +8917,7 @@
             "format" : "date-time"
           }
         },
-        "required" : [ "actualWorkDate", "createdAt", "createdBy", "employeeId", "employeeName", "id", "status", "targetAltHolidayDate" ]
+        "required" : [ "actualWorkDate", "createdAt", "createdBy", "employeeName", "employeeNumber", "id", "status", "targetAltHolidayDate" ]
       },
       "ApiResponseListAlternativeHolidayListItem" : {
         "type" : "object",

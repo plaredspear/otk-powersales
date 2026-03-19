@@ -66,7 +66,7 @@ class AdminAnnualLeaveControllerTest {
         fun validYearMonth_returns200() {
             val data = listOf(
                 EmployeeAnnualLeaveDto(
-                    employeeId = "EMP001",
+                    employeeNumber = "EMP001",
                     employeeName = "홍길동",
                     orgName = "서울1팀",
                     annualLeaveDays = listOf(
@@ -85,7 +85,7 @@ class AdminAnnualLeaveControllerTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data[0].employee_id").value("EMP001"))
+                .andExpect(jsonPath("$.data[0].employee_number").value("EMP001"))
                 .andExpect(jsonPath("$.data[0].employee_name").value("홍길동"))
                 .andExpect(jsonPath("$.data[0].org_name").value("서울1팀"))
                 .andExpect(jsonPath("$.data[0].annual_leave_days[0].date").value("2026-03-05"))
@@ -109,7 +109,7 @@ class AdminAnnualLeaveControllerTest {
         fun withOrgCode_returns200() {
             val data = listOf(
                 EmployeeAnnualLeaveDto(
-                    employeeId = "EMP001",
+                    employeeNumber = "EMP001",
                     employeeName = "홍길동",
                     orgName = "서울1팀",
                     annualLeaveDays = listOf(
@@ -128,7 +128,7 @@ class AdminAnnualLeaveControllerTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data[0].employee_id").value("EMP001"))
+                .andExpect(jsonPath("$.data[0].employee_number").value("EMP001"))
                 .andExpect(jsonPath("$.data[0].org_name").value("서울1팀"))
                 .andExpect(jsonPath("$.data[0].total_count").value(1))
         }

@@ -12,10 +12,10 @@ class AdminController(
     private val authService: AuthService
 ) {
 
-    @PostMapping("/users/{employeeId}/reset-device")
+    @PostMapping("/users/{employeeNumber}/reset-device")
     @PreAuthorize("hasRole('ADMIN')")
-    fun resetDevice(@PathVariable employeeId: String): ResponseEntity<ApiResponse<Any?>> {
-        authService.resetDevice(employeeId)
+    fun resetDevice(@PathVariable employeeNumber: String): ResponseEntity<ApiResponse<Any?>> {
+        authService.resetDevice(employeeNumber)
         return ResponseEntity.ok(ApiResponse.success(null, "단말기 등록이 초기화되었습니다"))
     }
 }

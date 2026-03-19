@@ -54,7 +54,7 @@ class OrderDraftServiceTest {
     private fun createTestUser(id: Long = 1L): User {
         return User(
             id = id,
-            employeeId = "20010585",
+            employeeNumber = "20010585",
             password = "encodedPassword",
             name = "홍길동",
             orgName = "서울지점"

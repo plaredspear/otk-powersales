@@ -53,10 +53,10 @@ class AdminTeamScheduleService(
         userId: Long,
         year: Int,
         month: Int,
-        employeeIds: List<String>?,
+        employeeNumbers: List<String>?,
         accountIds: List<Int>?
     ): List<TeamScheduleDto> {
-        val hasEmployeeFilter = !employeeIds.isNullOrEmpty()
+        val hasEmployeeFilter = !employeeNumbers.isNullOrEmpty()
         val hasAccountFilter = !accountIds.isNullOrEmpty()
 
         if (!hasEmployeeFilter && !hasAccountFilter) {
@@ -71,7 +71,7 @@ class AdminTeamScheduleService(
 
         if (hasEmployeeFilter) {
             schedules.addAll(
-                teamMemberScheduleRepository.findMonthlyByEmployeeIds(employeeIds!!, from, to)
+                teamMemberScheduleRepository.findMonthlyByEmployeeNumbers(employeeNumbers!!, from, to)
             )
         }
         if (hasAccountFilter) {
@@ -91,10 +91,10 @@ class AdminTeamScheduleService(
         userId: Long,
         year: Int,
         month: Int,
-        employeeIds: List<String>?,
+        employeeNumbers: List<String>?,
         accountIds: List<Int>?
     ): List<DailySummaryDto> {
-        val hasEmployeeFilter = !employeeIds.isNullOrEmpty()
+        val hasEmployeeFilter = !employeeNumbers.isNullOrEmpty()
         val hasAccountFilter = !accountIds.isNullOrEmpty()
 
         if (!hasEmployeeFilter && !hasAccountFilter) {
@@ -109,7 +109,7 @@ class AdminTeamScheduleService(
 
         if (hasEmployeeFilter) {
             schedules.addAll(
-                teamMemberScheduleRepository.findMonthlyByEmployeeIds(employeeIds!!, from, to)
+                teamMemberScheduleRepository.findMonthlyByEmployeeNumbers(employeeNumbers!!, from, to)
             )
         }
         if (hasAccountFilter) {
@@ -141,14 +141,14 @@ class AdminTeamScheduleService(
 
     @Transactional
     fun createSchedule(userId: Long, request: TeamScheduleCreateRequest): TeamScheduleCreateResultDto {
-        val employee = userRepository.findByEmployeeId(request.employeeId)
+        val employee = userRepository.findByEmployeeNumber(request.employeeNumber)
             .orElseThrow { TeamScheduleEmployeeNotFoundException() }
 
         validateEmployeeStatus(employee)
         val workingDate = LocalDate.parse(request.workingDate, DateTimeFormatter.ISO_LOCAL_DATE)
 
         if (request.workingType == "근무" && request.workingCategory1 == "진열") {
-            validateScheduleConflict(employee.employeeId, workingDate, request.workingCategory3, null)
+            validateScheduleConflict(employee.employeeNumber, workingDate, request.workingCategory3, null)
         }
 
         if (request.accountId != null) {
@@ -158,7 +158,7 @@ class AdminTeamScheduleService(
 
         val currentUser = findUserById(userId)
         val schedule = TeamMemberSchedule(
-            employeeId = employee.employeeId,
+            employeeNumber = employee.employeeNumber,
             workingDate = workingDate,
             workingType = request.workingType,
             workingCategory1 = request.workingCategory1,
@@ -176,7 +176,7 @@ class AdminTeamScheduleService(
         val schedule = teamMemberScheduleRepository.findById(scheduleId)
             .orElseThrow { TeamScheduleNotFoundException() }
 
-        val employee = schedule.employeeId?.let { userRepository.findByEmployeeId(it).orElse(null) }
+        val employee = schedule.employeeNumber?.let { userRepository.findByEmployeeNumber(it).orElse(null) }
         if (employee != null) {
             validateEmployeeStatus(employee)
         }
@@ -186,7 +186,7 @@ class AdminTeamScheduleService(
         val category3Changed = schedule.workingCategory3 != request.workingCategory3
 
         if (request.workingType == "근무" && request.workingCategory1 == "진열" && (dateChanged || category3Changed)) {
-            validateScheduleConflict(schedule.employeeId!!, newWorkingDate, request.workingCategory3, scheduleId)
+            validateScheduleConflict(schedule.employeeNumber!!, newWorkingDate, request.workingCategory3, scheduleId)
         }
 
         if (request.accountId != null && request.accountId != schedule.accountId) {
@@ -229,12 +229,12 @@ class AdminTeamScheduleService(
     }
 
     private fun validateScheduleConflict(
-        employeeId: String,
+        employeeNumber: String,
         workingDate: LocalDate,
         workingCategory3: String?,
         excludeId: Long?
     ) {
-        val existing = teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(employeeId, workingDate)
+        val existing = teamMemberScheduleRepository.findActiveByEmployeeNumberAndDate(employeeNumber, workingDate)
             .filter { it.id != excludeId }
 
         if (existing.isEmpty()) return
@@ -265,9 +265,9 @@ class AdminTeamScheduleService(
     }
 
     private fun buildUserMap(schedules: List<TeamMemberSchedule>): Map<String, User> {
-        val employeeIds = schedules.mapNotNull { it.employeeId }.distinct()
-        if (employeeIds.isEmpty()) return emptyMap()
-        return userRepository.findByEmployeeIdIn(employeeIds).associateBy { it.employeeId }
+        val employeeNumbers = schedules.mapNotNull { it.employeeNumber }.distinct()
+        if (employeeNumbers.isEmpty()) return emptyMap()
+        return userRepository.findByEmployeeNumberIn(employeeNumbers).associateBy { it.employeeNumber }
     }
 
     private fun buildAccountMap(schedules: List<TeamMemberSchedule>): Map<Int, Account> {

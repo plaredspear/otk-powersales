@@ -94,7 +94,7 @@ class AlternativeHolidayServiceTest {
             val user = createUser()
             whenever(userRepository.findById(1L)).thenReturn(Optional.of(user))
             val altHoliday = createAltHoliday()
-            whenever(alternativeHolidayRepository.findByEmployeeIdAndActualWorkDateBetweenOrderByCreatedAtDesc(
+            whenever(alternativeHolidayRepository.findByEmployeeNumberAndActualWorkDateBetweenOrderByCreatedAtDesc(
                 "12345678", LocalDate.of(2026, 1, 1), LocalDate.of(2026, 3, 31)
             )).thenReturn(listOf(altHoliday))
 
@@ -109,7 +109,7 @@ class AlternativeHolidayServiceTest {
         fun get_defaultDateRange() {
             val user = createUser()
             whenever(userRepository.findById(1L)).thenReturn(Optional.of(user))
-            whenever(alternativeHolidayRepository.findByEmployeeIdAndActualWorkDateBetweenOrderByCreatedAtDesc(
+            whenever(alternativeHolidayRepository.findByEmployeeNumberAndActualWorkDateBetweenOrderByCreatedAtDesc(
                 org.mockito.kotlin.eq("12345678"), any(), any()
             )).thenReturn(emptyList())
 
@@ -130,12 +130,12 @@ class AlternativeHolidayServiceTest {
 
     private fun createUser(
         id: Long = 1L,
-        employeeId: String = "12345678",
+        employeeNumber: String = "12345678",
         name: String = "홍길동"
     ): User = User(
         id = id,
         sfid = "SF001",
-        employeeId = employeeId,
+        employeeNumber = employeeNumber,
         name = name,
         status = "재직"
     )
@@ -145,7 +145,7 @@ class AlternativeHolidayServiceTest {
         status: String = "신규"
     ): AlternativeHoliday = AlternativeHoliday(
         id = id,
-        employeeId = "12345678",
+        employeeNumber = "12345678",
         employeeName = "홍길동",
         actualWorkDate = saturday,
         targetAltHolidayDate = monday,

@@ -6,14 +6,12 @@ import com.otoki.internal.schedule.entity.TeamMemberSchedule
 import java.time.LocalDate
 
 data class TeamMemberDto(
-    val employeeId: String,
-    val empCode: String,
+    val employeeNumber: String,
     val name: String
 ) {
     companion object {
         fun from(user: User): TeamMemberDto = TeamMemberDto(
-            employeeId = user.employeeId,
-            empCode = user.employeeId,
+            employeeNumber = user.employeeNumber,
             name = user.name
         )
     }
@@ -35,9 +33,8 @@ data class TeamScheduleAccountDto(
 
 data class TeamScheduleDto(
     val id: Long,
-    val employeeId: String,
+    val employeeNumber: String,
     val employeeName: String,
-    val empCode: String,
     val workingDate: String,
     val workingType: String,
     val workingCategory1: String?,
@@ -54,13 +51,12 @@ data class TeamScheduleDto(
             userMap: Map<String, User>,
             accountMap: Map<Int, Account>
         ): TeamScheduleDto {
-            val user = schedule.employeeId?.let { userMap[it] }
+            val user = schedule.employeeNumber?.let { userMap[it] }
             val account = schedule.accountId?.let { accountMap[it] }
             return TeamScheduleDto(
                 id = schedule.id,
-                employeeId = schedule.employeeId ?: "",
+                employeeNumber = schedule.employeeNumber ?: "",
                 employeeName = user?.name ?: "",
-                empCode = user?.employeeId ?: "",
                 workingDate = schedule.workingDate?.toString() ?: "",
                 workingType = schedule.workingType ?: "",
                 workingCategory1 = schedule.workingCategory1,

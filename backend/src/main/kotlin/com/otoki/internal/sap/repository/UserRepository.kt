@@ -13,12 +13,12 @@ interface UserRepository : JpaRepository<User, Long>, UserRepositoryCustom {
     /**
      * 사번으로 사용자 조회
      */
-    fun findByEmployeeId(employeeId: String): Optional<User>
+    fun findByEmployeeNumber(employeeNumber: String): Optional<User>
 
     /**
      * 사번 존재 여부 확인
      */
-    fun existsByEmployeeId(employeeId: String): Boolean
+    fun existsByEmployeeNumber(employeeNumber: String): Boolean
 
     /**
      * 조직별 사용자 목록 조회
@@ -52,7 +52,7 @@ interface UserRepository : JpaRepository<User, Long>, UserRepositoryCustom {
     /**
      * 사원번호 목록으로 일괄 조회 (Excel 업로드 검증용)
      */
-    fun findByEmployeeIdIn(employeeIds: List<String>): List<User>
+    fun findByEmployeeNumberIn(employeeNumbers: List<String>): List<User>
 
     /**
      * 조직(costCenterCode) + 권한(appAuthority)으로 사용자 조회 (여사원 일정관리)

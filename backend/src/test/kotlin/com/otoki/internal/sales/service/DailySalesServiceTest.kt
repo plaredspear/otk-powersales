@@ -54,7 +54,7 @@ class DailySalesServiceTest {
     private fun createTestUser(): com.otoki.internal.common.entity.User {
         return com.otoki.internal.common.entity.User(
             id = testUserId,
-            employeeId = testEmployeeId,
+            employeeNumber = testEmployeeId,
             password = "encoded",
             name = "테스트",
             orgName = "서울"
@@ -217,7 +217,7 @@ class DailySalesServiceTest {
         val otherUser = createTestUser().apply {
             val userWithDifferentId = com.otoki.internal.common.entity.User(
                 id = testUserId,
-                employeeId = "99999",
+                employeeNumber = "99999",
                 password = "encoded",
                 name = "다른사람",
                 orgName = "서울"
@@ -233,7 +233,7 @@ class DailySalesServiceTest {
         whenever(userRepository.findById(testUserId)).thenReturn(Optional.of(
             com.otoki.internal.common.entity.User(
                 id = testUserId,
-                employeeId = "99999",
+                employeeNumber = "99999",
                 password = "encoded",
                 name = "다른사람",
                 orgName = "서울"

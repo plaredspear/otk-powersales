@@ -31,10 +31,10 @@ class AdminAlternativeHolidayService(
         startDate: LocalDate,
         endDate: LocalDate,
         status: String?,
-        employeeId: String?,
+        employeeNumber: String?,
         orgCode: String?
     ): List<AlternativeHolidayListItem> {
-        return alternativeHolidayRepository.findByFilters(startDate, endDate, status, employeeId, orgCode)
+        return alternativeHolidayRepository.findByFilters(startDate, endDate, status, employeeNumber, orgCode)
     }
 
     @Transactional
@@ -42,7 +42,7 @@ class AdminAlternativeHolidayService(
         request: AlternativeHolidayCreateRequest,
         adminUserId: Long
     ): AlternativeHolidayCreateResponse {
-        val employee = userRepository.findByEmployeeId(request.employeeId)
+        val employee = userRepository.findByEmployeeNumber(request.employeeNumber)
             .orElseThrow { com.otoki.internal.leave.exception.EmployeeNotFoundException() }
 
         val admin = userRepository.findById(adminUserId)
@@ -50,17 +50,17 @@ class AdminAlternativeHolidayService(
 
         validator.validateConfirmDate(request.targetAltHolidayDate)
         validator.validateActualWorkDate(request.actualWorkDate)
-        validator.validateWorkScheduleExists(request.employeeId, request.actualWorkDate)
-        validator.validateNoDuplicate(request.employeeId, request.actualWorkDate)
+        validator.validateWorkScheduleExists(request.employeeNumber, request.actualWorkDate)
+        validator.validateNoDuplicate(request.employeeNumber, request.actualWorkDate)
 
         val altHoliday = alternativeHolidayRepository.save(
             AlternativeHoliday(
-                employeeId = request.employeeId,
+                employeeNumber = request.employeeNumber,
                 employeeName = employee.name,
                 actualWorkDate = request.actualWorkDate,
                 targetAltHolidayDate = request.targetAltHolidayDate,
                 status = "신규",
-                createdBy = admin.employeeId
+                createdBy = admin.employeeNumber
             )
         )
 
@@ -89,7 +89,7 @@ class AdminAlternativeHolidayService(
 
         teamMemberScheduleRepository.save(
             TeamMemberSchedule(
-                employeeId = altHoliday.employeeId,
+                employeeNumber = altHoliday.employeeNumber,
                 workingDate = confirmDate,
                 workingType = "대휴",
                 altHolidayId = altHoliday.id.toString()

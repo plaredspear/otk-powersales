@@ -9,7 +9,7 @@ data class AdminLoginResponse(
 
 data class AdminUserInfo(
     val id: Long,
-    val employeeId: String,
+    val employeeNumber: String,
     val name: String,
     val orgName: String?,
     val role: String,
@@ -20,7 +20,7 @@ data class AdminUserInfo(
         fun from(user: User): AdminUserInfo {
             return AdminUserInfo(
                 id = user.id,
-                employeeId = user.employeeId,
+                employeeNumber = user.employeeNumber,
                 name = user.name,
                 orgName = user.orgName,
                 role = user.role.name,

@@ -9,7 +9,7 @@ interface UserRepositoryCustom {
 
     fun findDistinctBranches(): List<BranchResponse>
 
-    fun findAllEmployeeIds(): List<String>
+    fun findAllEmployeeNumbers(): List<String>
 
     fun findEmployees(
         status: String?,

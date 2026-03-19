@@ -234,14 +234,14 @@ class AdminDataScopeServiceTest {
 
     private fun createTestUser(
         id: Long = 1L,
-        employeeId: String = "12345678",
+        employeeNumber: String = "12345678",
         name: String = "홍길동",
         appAuthority: String? = null,
         costCenterCode: String? = null
     ): User {
         return User(
             id = id,
-            employeeId = employeeId,
+            employeeNumber = employeeNumber,
             name = name,
             appAuthority = appAuthority,
             costCenterCode = costCenterCode

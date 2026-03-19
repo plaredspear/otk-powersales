@@ -18,7 +18,7 @@ data class BatchUpdatePromotionEmployeeItem(
     val id: Long,
 
     @field:Size(max = 8, message = "여사원 사번은 최대 8자입니다")
-    val employeeId: String? = null,
+    val employeeNumber: String? = null,
 
     @field:NotNull(message = "투입일은 필수입니다")
     val scheduleDate: LocalDate,

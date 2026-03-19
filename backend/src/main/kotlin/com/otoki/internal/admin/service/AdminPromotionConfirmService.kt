@@ -50,17 +50,17 @@ class AdminPromotionConfirmService(
         }
 
         // 4. 검증에 필요한 데이터 사전 조회
-        val employeeIds = employees.mapNotNull { it.employeeId }.distinct()
+        val employeeNumbers = employees.mapNotNull { it.employeeNumber }.distinct()
         val scheduleDates = employees.mapNotNull { it.scheduleDate }.distinct()
         val peIdStrings = employees.map { it.id.toString() }
 
         // 기존 스케줄 조회 (검증 + Upsert용)
         val existingTeamMemberSchedulesByExt = teamMemberScheduleRepository.findByPromotionEmpIdExtIn(peIdStrings)
             .associateBy { it.promotionEmpIdExt }
-        val existingTeamMemberSchedules = teamMemberScheduleRepository.findByEmployeeIdInAndWorkingDateIn(employeeIds, scheduleDates)
+        val existingTeamMemberSchedules = teamMemberScheduleRepository.findByEmployeeNumberInAndWorkingDateIn(employeeNumbers, scheduleDates)
 
         // 사원 정보 조회 (이름 + 상태 검증용)
-        val userMap: Map<String?, com.otoki.internal.sap.entity.User> = userRepository.findByEmployeeIdIn(employeeIds).associateBy { it.employeeId }
+        val userMap: Map<String?, com.otoki.internal.sap.entity.User> = userRepository.findByEmployeeNumberIn(employeeNumbers).associateBy { it.employeeNumber }
 
         // 5. 검증 단계 (순서대로)
         validateRequiredValues(employees, userMap)
@@ -79,7 +79,7 @@ class AdminPromotionConfirmService(
 
             if (existing != null) {
                 existing.updateForPromotion(
-                    employeeId = pe.employeeId!!,
+                    employeeNumber = pe.employeeNumber!!,
                     accountId = promotion.accountId,
                     workingDate = pe.scheduleDate!!,
                     workingType = pe.workStatus!!,
@@ -91,7 +91,7 @@ class AdminPromotionConfirmService(
                 teamMemberSchedulesToSave.add(existing)
             } else {
                 val newTeamMemberSchedule = TeamMemberSchedule(
-                    employeeId = pe.employeeId!!,
+                    employeeNumber = pe.employeeNumber!!,
                     accountId = promotion.accountId,
                     workingDate = pe.scheduleDate!!,
                     workingType = pe.workStatus!!,
@@ -124,8 +124,8 @@ class AdminPromotionConfirmService(
         )
     }
 
-    private fun resolveEmployeeName(employeeId: String, userMap: Map<String?, com.otoki.internal.sap.entity.User>): String {
-        return userMap[employeeId]?.name ?: employeeId
+    private fun resolveEmployeeName(employeeNumber: String, userMap: Map<String?, com.otoki.internal.sap.entity.User>): String {
+        return userMap[employeeNumber]?.name ?: employeeNumber
     }
 
     // 검증 1: 필수값
@@ -135,14 +135,14 @@ class AdminPromotionConfirmService(
     ) {
         for (pe in employees) {
             val missingFields = mutableListOf<String>()
-            if (pe.employeeId.isNullOrBlank()) missingFields.add("행사사원")
+            if (pe.employeeNumber.isNullOrBlank()) missingFields.add("행사사원")
             if (pe.scheduleDate == null) missingFields.add("투입일")
             if (pe.workStatus.isNullOrBlank()) missingFields.add("근무상태")
             if (pe.workType1.isNullOrBlank()) missingFields.add("근무유형1")
             if (pe.workType3.isNullOrBlank()) missingFields.add("근무유형3")
 
             if (missingFields.isNotEmpty()) {
-                val name = resolveEmployeeName(pe.employeeId ?: pe.id.toString(), userMap)
+                val name = resolveEmployeeName(pe.employeeNumber ?: pe.id.toString(), userMap)
                 throw ValuesRequiredException(
                     "${name}의 필수 항목을 입력하세요 (${missingFields.joinToString(", ")})"
                 )
@@ -159,7 +159,7 @@ class AdminPromotionConfirmService(
         for (pe in employees) {
             val scheduleDate = pe.scheduleDate!!
             if (scheduleDate < promotion.startDate || scheduleDate > promotion.endDate) {
-                val name = resolveEmployeeName(pe.employeeId!!, userMap)
+                val name = resolveEmployeeName(pe.employeeNumber!!, userMap)
                 throw DateOutOfRangeException(
                     "${name}의 투입일이 행사 기간(${promotion.startDate} ~ ${promotion.endDate})을 벗어납니다"
                 )
@@ -178,11 +178,11 @@ class AdminPromotionConfirmService(
         val externalTeamMemberSchedules = existingTeamMemberSchedules.filter { it.promotionEmpIdExt == null || it.promotionEmpIdExt !in currentPeIds }
 
         // 기존 스케줄: 사원+날짜별 근무유형3 카운트
-        data class EmpDateKey(val employeeId: String, val date: LocalDate)
+        data class EmpDateKey(val employeeNumber: String, val date: LocalDate)
 
         val existingCounts = mutableMapOf<EmpDateKey, MutableMap<String, Int>>()
         for (teamMemberSchedule in externalTeamMemberSchedules) {
-            val key = EmpDateKey(teamMemberSchedule.employeeId ?: continue, teamMemberSchedule.workingDate ?: continue)
+            val key = EmpDateKey(teamMemberSchedule.employeeNumber ?: continue, teamMemberSchedule.workingDate ?: continue)
             val type3 = teamMemberSchedule.workingCategory3 ?: continue
             existingCounts.getOrPut(key) { mutableMapOf() }
                 .merge(type3, 1) { a, b -> a + b }
@@ -191,7 +191,7 @@ class AdminPromotionConfirmService(
         // 신규 PE: 사원+날짜별 근무유형3 카운트
         val newCounts = mutableMapOf<EmpDateKey, MutableMap<String, Int>>()
         for (pe in employees) {
-            val key = EmpDateKey(pe.employeeId!!, pe.scheduleDate!!)
+            val key = EmpDateKey(pe.employeeNumber!!, pe.scheduleDate!!)
             newCounts.getOrPut(key) { mutableMapOf() }
                 .merge(pe.workType3!!, 1) { a, b -> a + b }
         }
@@ -206,7 +206,7 @@ class AdminPromotionConfirmService(
             val totalAlternate = (existing["격고"] ?: 0) + (incoming["격고"] ?: 0)
             val totalTraversal = (existing["순회"] ?: 0) + (incoming["순회"] ?: 0)
 
-            val name = resolveEmployeeName(key.employeeId, userMap)
+            val name = resolveEmployeeName(key.employeeNumber, userMap)
 
             // 고정 검증
             if (totalFixed > 0) {
@@ -239,16 +239,16 @@ class AdminPromotionConfirmService(
     ) {
         val externalTeamMemberSchedules = existingTeamMemberSchedules.filter { it.promotionEmpIdExt == null || it.promotionEmpIdExt !in currentPeIds }
 
-        data class EmpDateKey(val employeeId: String, val date: LocalDate)
+        data class EmpDateKey(val employeeNumber: String, val date: LocalDate)
 
         val existingByKey = externalTeamMemberSchedules.groupBy {
-            EmpDateKey(it.employeeId ?: "", it.workingDate ?: LocalDate.MIN)
+            EmpDateKey(it.employeeNumber ?: "", it.workingDate ?: LocalDate.MIN)
         }
 
         for (pe in employees) {
-            val key = EmpDateKey(pe.employeeId!!, pe.scheduleDate!!)
+            val key = EmpDateKey(pe.employeeNumber!!, pe.scheduleDate!!)
             val existing = existingByKey[key] ?: continue
-            val name = resolveEmployeeName(pe.employeeId!!, userMap)
+            val name = resolveEmployeeName(pe.employeeNumber!!, userMap)
 
             // 기존에 연차/대휴가 있으면 충돌
             val hasLeave = existing.any { it.workingType == "연차" || it.workingType == "대휴" }
@@ -278,12 +278,12 @@ class AdminPromotionConfirmService(
 
         for (pe in employees) {
             val duplicate = externalTeamMemberSchedules.any {
-                it.employeeId == pe.employeeId!! &&
+                it.employeeNumber == pe.employeeNumber!! &&
                     it.workingDate == pe.scheduleDate!! &&
                     it.accountId == promotion.accountId
             }
             if (duplicate) {
-                val name = resolveEmployeeName(pe.employeeId!!, userMap)
+                val name = resolveEmployeeName(pe.employeeNumber!!, userMap)
                 throw DuplicateScheduleException("${name}의 ${pe.scheduleDate}에 동일 거래처 근무 일정이 존재합니다")
             }
         }
@@ -295,7 +295,7 @@ class AdminPromotionConfirmService(
         userMap: Map<String?, com.otoki.internal.sap.entity.User>
     ) {
         for (pe in employees) {
-            val user = userMap[pe.employeeId] ?: continue
+            val user = userMap[pe.employeeNumber] ?: continue
             val name = user.name
 
             when (user.status) {

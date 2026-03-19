@@ -56,7 +56,7 @@ class AuthService(
      */
     @Transactional
     fun login(request: LoginRequest): LoginResponse {
-        val user = userRepository.findByEmployeeId(request.employeeId)
+        val user = userRepository.findByEmployeeNumber(request.employeeNumber)
             .orElseThrow { InvalidCredentialsException() }
 
         if (!passwordEncoder.matches(request.password, user.password)) {
@@ -71,9 +71,9 @@ class AuthService(
 
         // 로그인 이력 기록 (실패해도 로그인에 영향 없음)
         try {
-            loginHistoryRepository.save(LoginHistory(employeeId = user.employeeId))
+            loginHistoryRepository.save(LoginHistory(employeeId = user.employeeNumber))
         } catch (e: Exception) {
-            log.warn("로그인 이력 기록 실패: employeeId={}", user.employeeId, e)
+            log.warn("로그인 이력 기록 실패: employeeNumber={}", user.employeeNumber, e)
         }
 
         val accessToken = jwtTokenProvider.createAccessToken(user.id, user.role, user.agreementFlag == true)
@@ -109,7 +109,7 @@ class AuthService(
      */
     @Transactional
     fun adminLogin(request: LoginRequest): AdminLoginResponse {
-        val user = userRepository.findByEmployeeId(request.employeeId)
+        val user = userRepository.findByEmployeeNumber(request.employeeNumber)
             .orElseThrow { InvalidCredentialsException() }
 
         if (!passwordEncoder.matches(request.password, user.password)) {
@@ -121,9 +121,9 @@ class AuthService(
         }
 
         try {
-            loginHistoryRepository.save(LoginHistory(employeeId = user.employeeId))
+            loginHistoryRepository.save(LoginHistory(employeeId = user.employeeNumber))
         } catch (e: Exception) {
-            log.warn("로그인 이력 기록 실패: employeeId={}", user.employeeId, e)
+            log.warn("로그인 이력 기록 실패: employeeNumber={}", user.employeeNumber, e)
         }
 
         val accessToken = jwtTokenProvider.createAccessToken(user.id, user.role, user.agreementFlag == true)
@@ -156,7 +156,7 @@ class AuthService(
     private fun validateDeviceBinding(user: User, deviceId: String?) {
         if (deviceId.isNullOrBlank()) return
         if (!deviceBindingProperties.enabled) return
-        if (deviceBindingProperties.isExcluded(user.employeeId)) return
+        if (deviceBindingProperties.isExcluded(user.employeeNumber)) return
 
         if (user.deviceUuid == null) {
             user.bindDevice(deviceId)
@@ -379,8 +379,8 @@ class AuthService(
      * 단말기 초기화 (관리자 전용)
      */
     @Transactional
-    fun resetDevice(employeeId: String) {
-        val user = userRepository.findByEmployeeId(employeeId)
+    fun resetDevice(employeeNumber: String) {
+        val user = userRepository.findByEmployeeNumber(employeeNumber)
             .orElseThrow { UserNotFoundException() }
 
         user.resetDevice()

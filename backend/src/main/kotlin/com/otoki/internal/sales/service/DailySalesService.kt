@@ -48,13 +48,13 @@ class DailySalesService(
         // 1. 사용자 조회
         val user = userRepository.findById(userId)
             .orElseThrow { RuntimeException("사용자를 찾을 수 없습니다") }
-        val employeeId = user.employeeId
+        val employeeNumber = user.employeeNumber
         // 1. 행사 존재 여부 확인
         val event = eventRepository.findByEventId(eventId)
             .orElseThrow { EventNotFoundException() }
 
         // 2. 현재 사용자가 행사 담당자인지 확인
-        if (event.assigneeId != employeeId) {
+        if (event.assigneeId != employeeNumber) {
             throw DailySalesForbiddenException("행사 담당자만 매출을 등록할 수 있습니다")
         }
 
@@ -67,7 +67,7 @@ class DailySalesService(
         // 4. 오늘 이미 REGISTERED 상태의 일매출이 있는지 확인 (중복 방지)
         val alreadyRegistered = dailySalesRepository.existsByEventIdAndEmployeeIdAndSalesDateAndStatus(
             eventId = eventId,
-            employeeId = employeeId,
+            employeeId = employeeNumber,
             salesDate = today,
             status = DailySales.STATUS_REGISTERED
         )
@@ -115,7 +115,7 @@ class DailySalesService(
         // 11. DailySales Entity 생성 및 저장
         val dailySales = DailySales(
             eventId = eventId,
-            employeeId = employeeId,
+            employeeId = employeeNumber,
             salesDate = today,
             mainProductPrice = request.mainProductPrice,
             mainProductQuantity = request.mainProductQuantity,
@@ -149,14 +149,14 @@ class DailySalesService(
         // 1. 사용자 조회
         val user = userRepository.findById(userId)
             .orElseThrow { RuntimeException("사용자를 찾을 수 없습니다") }
-        val employeeId = user.employeeId
+        val employeeNumber = user.employeeNumber
 
         // 2. 행사 존재 여부 확인
         val event = eventRepository.findByEventId(eventId)
             .orElseThrow { EventNotFoundException() }
 
         // 3. 현재 사용자가 행사 담당자인지 확인
-        if (event.assigneeId != employeeId) {
+        if (event.assigneeId != employeeNumber) {
             throw DailySalesForbiddenException("행사 담당자만 매출을 저장할 수 있습니다")
         }
 
@@ -165,7 +165,7 @@ class DailySalesService(
         // 4. 기존 DRAFT 상태 데이터가 있으면 업데이트 (upsert)
         val existingDraft = dailySalesRepository.findByEventIdAndEmployeeIdAndSalesDateAndStatus(
             eventId = eventId,
-            employeeId = employeeId,
+            employeeId = employeeNumber,
             salesDate = today,
             status = DailySales.STATUS_DRAFT
         )
@@ -199,7 +199,7 @@ class DailySalesService(
         } else {
             DailySales(
                 eventId = eventId,
-                employeeId = employeeId,
+                employeeId = employeeNumber,
                 salesDate = today,
                 mainProductPrice = request.mainProductPrice,
                 mainProductQuantity = request.mainProductQuantity,

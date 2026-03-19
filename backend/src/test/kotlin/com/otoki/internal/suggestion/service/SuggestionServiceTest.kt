@@ -325,7 +325,7 @@ class SuggestionServiceTest {
     private fun createMockUser(id: Long): User {
         return User(
             id = id,
-            employeeId = "10000001",
+            employeeNumber = "10000001",
             password = "encoded",
             name = "홍길동",
             orgName = "서울지점"

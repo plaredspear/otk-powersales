@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test
 class UserTest {
 
     private fun createTestUser(
-        employeeId: String = "12345678",
+        employeeNumber: String = "12345678",
         password: String = "encodedPassword",
         name: String = "홍길동",
         orgName: String = "서울지점",
@@ -22,7 +22,7 @@ class UserTest {
         agreementFlag: Boolean? = null
     ): User {
         return User(
-            employeeId = employeeId,
+            employeeNumber = employeeNumber,
             password = password,
             name = name,
             orgName = orgName,

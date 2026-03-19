@@ -36,7 +36,7 @@ class SapEmployeeMasterServiceTest {
         @DisplayName("정상 등록 - DB에 없는 사원코드 -> User + EmployeeMng 생성")
         fun sync_newEmployee_createsUser() {
             val items = listOf(createReqItem(employeeCode = "100234", employeeName = "홍길동", status = "1"))
-            whenever(userRepository.findByEmployeeId("100234")).thenReturn(Optional.empty())
+            whenever(userRepository.findByEmployeeNumber("100234")).thenReturn(Optional.empty())
             whenever(userRepository.save(any<User>())).thenAnswer { it.getArgument<User>(0) }
 
             val result = sapEmployeeMasterService.sync(items)
@@ -46,7 +46,7 @@ class SapEmployeeMasterServiceTest {
             val captor = argumentCaptor<User>()
             verify(userRepository).save(captor.capture())
             val saved = captor.firstValue
-            assertThat(saved.employeeId).isEqualTo("100234")
+            assertThat(saved.employeeNumber).isEqualTo("100234")
             assertThat(saved.name).isEqualTo("홍길동")
             assertThat(saved.status).isEqualTo("재직")
             assertThat(saved.appLoginActive).isTrue()
@@ -66,7 +66,7 @@ class SapEmployeeMasterServiceTest {
                 orgCode = "1111",
                 startDate = "20150301"
             ))
-            whenever(userRepository.findByEmployeeId("100234")).thenReturn(Optional.empty())
+            whenever(userRepository.findByEmployeeNumber("100234")).thenReturn(Optional.empty())
             whenever(userRepository.save(any<User>())).thenAnswer { it.getArgument<User>(0) }
 
             sapEmployeeMasterService.sync(items)
@@ -89,7 +89,7 @@ class SapEmployeeMasterServiceTest {
         @Test
         @DisplayName("기존 사원 업데이트 - 필드 변경, EmployeeMng 미변경")
         fun sync_existingEmployee_updates() {
-            val existingUser = createUser(employeeId = "100234", name = "홍길동")
+            val existingUser = createUser(employeeNumber = "100234", name = "홍길동")
             val items = listOf(createReqItem(
                 employeeCode = "100234",
                 employeeName = "홍길동수정",
@@ -97,7 +97,7 @@ class SapEmployeeMasterServiceTest {
                 homePhone = "02-1111-2222",
                 orgCode = "2222"
             ))
-            whenever(userRepository.findByEmployeeId("100234")).thenReturn(Optional.of(existingUser))
+            whenever(userRepository.findByEmployeeNumber("100234")).thenReturn(Optional.of(existingUser))
             whenever(userRepository.save(any<User>())).thenAnswer { it.getArgument<User>(0) }
 
             val result = sapEmployeeMasterService.sync(items)
@@ -117,7 +117,7 @@ class SapEmployeeMasterServiceTest {
         @DisplayName("재직 - status=1 -> 재직, appLoginActive=true")
         fun sync_status1_active() {
             val items = listOf(createReqItem(employeeCode = "100001", employeeName = "테스트", status = "1"))
-            whenever(userRepository.findByEmployeeId("100001")).thenReturn(Optional.empty())
+            whenever(userRepository.findByEmployeeNumber("100001")).thenReturn(Optional.empty())
             whenever(userRepository.save(any<User>())).thenAnswer { it.getArgument<User>(0) }
 
             sapEmployeeMasterService.sync(items)
@@ -132,7 +132,7 @@ class SapEmployeeMasterServiceTest {
         @DisplayName("휴직 - status=2 -> 휴직, appLoginActive=false")
         fun sync_status2_inactive() {
             val items = listOf(createReqItem(employeeCode = "100001", employeeName = "테스트", status = "2"))
-            whenever(userRepository.findByEmployeeId("100001")).thenReturn(Optional.empty())
+            whenever(userRepository.findByEmployeeNumber("100001")).thenReturn(Optional.empty())
             whenever(userRepository.save(any<User>())).thenAnswer { it.getArgument<User>(0) }
 
             sapEmployeeMasterService.sync(items)
@@ -147,7 +147,7 @@ class SapEmployeeMasterServiceTest {
         @DisplayName("퇴직 - status=3 -> 퇴직, appLoginActive=false")
         fun sync_status3_inactive() {
             val items = listOf(createReqItem(employeeCode = "100001", employeeName = "테스트", status = "3"))
-            whenever(userRepository.findByEmployeeId("100001")).thenReturn(Optional.empty())
+            whenever(userRepository.findByEmployeeNumber("100001")).thenReturn(Optional.empty())
             whenever(userRepository.save(any<User>())).thenAnswer { it.getArgument<User>(0) }
 
             sapEmployeeMasterService.sync(items)
@@ -165,7 +165,7 @@ class SapEmployeeMasterServiceTest {
                 employeeCode = "100001", employeeName = "테스트",
                 status = "1", lockingFlag = "Y"
             ))
-            whenever(userRepository.findByEmployeeId("100001")).thenReturn(Optional.empty())
+            whenever(userRepository.findByEmployeeNumber("100001")).thenReturn(Optional.empty())
             whenever(userRepository.save(any<User>())).thenAnswer { it.getArgument<User>(0) }
 
             sapEmployeeMasterService.sync(items)
@@ -182,7 +182,7 @@ class SapEmployeeMasterServiceTest {
                 employeeCode = "100001", employeeName = "테스트",
                 status = "1", lockingFlag = "N"
             ))
-            whenever(userRepository.findByEmployeeId("100001")).thenReturn(Optional.empty())
+            whenever(userRepository.findByEmployeeNumber("100001")).thenReturn(Optional.empty())
             whenever(userRepository.save(any<User>())).thenAnswer { it.getArgument<User>(0) }
 
             sapEmployeeMasterService.sync(items)
@@ -217,8 +217,8 @@ class SapEmployeeMasterServiceTest {
                 createReqItem(employeeCode = null, employeeName = "실패", status = "1"),
                 createReqItem(employeeCode = "100003", employeeName = "성공2", status = "1")
             )
-            whenever(userRepository.findByEmployeeId("100001")).thenReturn(Optional.empty())
-            whenever(userRepository.findByEmployeeId("100003")).thenReturn(Optional.empty())
+            whenever(userRepository.findByEmployeeNumber("100001")).thenReturn(Optional.empty())
+            whenever(userRepository.findByEmployeeNumber("100003")).thenReturn(Optional.empty())
             whenever(userRepository.save(any<User>())).thenAnswer { it.getArgument<User>(0) }
 
             val result = sapEmployeeMasterService.sync(items)
@@ -271,11 +271,11 @@ class SapEmployeeMasterServiceTest {
             val items = newItems + existingItems
 
             (1..5).forEach {
-                whenever(userRepository.findByEmployeeId("NEW00$it")).thenReturn(Optional.empty())
+                whenever(userRepository.findByEmployeeNumber("NEW00$it")).thenReturn(Optional.empty())
             }
             (1..5).forEach {
-                val user = createUser(employeeId = "EXT00$it", name = "기존$it")
-                whenever(userRepository.findByEmployeeId("EXT00$it")).thenReturn(Optional.of(user))
+                val user = createUser(employeeNumber = "EXT00$it", name = "기존$it")
+                whenever(userRepository.findByEmployeeNumber("EXT00$it")).thenReturn(Optional.of(user))
             }
             whenever(userRepository.save(any<User>())).thenAnswer { it.getArgument<User>(0) }
 
@@ -312,11 +312,11 @@ class SapEmployeeMasterServiceTest {
 
     private fun createUser(
         id: Long = 1L,
-        employeeId: String = "100234",
+        employeeNumber: String = "100234",
         name: String = "테스트"
     ) = User(
         id = id,
-        employeeId = employeeId,
+        employeeNumber = employeeNumber,
         name = name,
         status = "재직",
         appLoginActive = true

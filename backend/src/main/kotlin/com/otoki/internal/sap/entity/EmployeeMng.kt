@@ -6,15 +6,15 @@ import java.time.LocalDateTime
 /**
  * 사원 인증/기기 정보 Entity (employee_mng 테이블)
  *
- * User와 1:1 관계. employee_id = employee_id 로 조인.
+ * User와 1:1 관계. employee_number = employee_number 로 조인.
  */
 @Entity
 @Table(name = "employee_mng")
 class EmployeeMng(
 
     @Id
-    @Column(name = "employee_id", length = 40)
-    val empcode: String,
+    @Column(name = "employee_number", length = 40)
+    val employeeNumber: String,
 
     @Column(name = "emp_pwd", length = 200)
     var password: String? = null,

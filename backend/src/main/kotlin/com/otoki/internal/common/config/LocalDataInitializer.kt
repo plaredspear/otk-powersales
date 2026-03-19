@@ -43,10 +43,10 @@ class LocalDataInitializer(
         val encodedPassword = passwordEncoder.encode("1234")
 
         // 영업지원실 (ADMIN - 웹 관리자 전체 조회용)
-        if (!userRepository.existsByEmployeeId("00000001")) {
+        if (!userRepository.existsByEmployeeNumber("00000001")) {
             userRepository.save(
                 User(
-                    employeeId = "00000001",
+                    employeeNumber = "00000001",
                     name = "개발테스트",
                     status = "재직",
                     appLoginActive = true,
@@ -61,14 +61,14 @@ class LocalDataInitializer(
                     passwordChangeRequired = false
                 )
             )
-            log.info("시드 계정 생성 완료: employeeId=00000001, name=개발테스트, role=LEADER")
+            log.info("시드 계정 생성 완료: employeeNumber=00000001, name=개발테스트, role=LEADER")
         }
 
         // 여사원 (USER)
-        if (!userRepository.existsByEmployeeId("00000002")) {
+        if (!userRepository.existsByEmployeeNumber("00000002")) {
             userRepository.save(
                 User(
-                    employeeId = "00000002",
+                    employeeNumber = "00000002",
                     name = "여사원테스트",
                     status = "재직",
                     appLoginActive = true,
@@ -83,14 +83,14 @@ class LocalDataInitializer(
                     passwordChangeRequired = false
                 )
             )
-            log.info("시드 계정 생성 완료: employeeId=00000002, name=여사원테스트, role=USER")
+            log.info("시드 계정 생성 완료: employeeNumber=00000002, name=여사원테스트, role=USER")
         }
 
         // 지점장 (ADMIN)
-        if (!userRepository.existsByEmployeeId("00000003")) {
+        if (!userRepository.existsByEmployeeNumber("00000003")) {
             userRepository.save(
                 User(
-                    employeeId = "00000003",
+                    employeeNumber = "00000003",
                     name = "지점장테스트",
                     status = "재직",
                     appLoginActive = true,
@@ -105,14 +105,14 @@ class LocalDataInitializer(
                     passwordChangeRequired = false
                 )
             )
-            log.info("시드 계정 생성 완료: employeeId=00000003, name=지점장테스트, role=ADMIN")
+            log.info("시드 계정 생성 완료: employeeNumber=00000003, name=지점장테스트, role=ADMIN")
         }
 
         // 강남지점 조장
-        if (!userRepository.existsByEmployeeId("00000004")) {
+        if (!userRepository.existsByEmployeeNumber("00000004")) {
             userRepository.save(
                 User(
-                    employeeId = "00000004",
+                    employeeNumber = "00000004",
                     name = "강남조장",
                     status = "재직",
                     appLoginActive = true,
@@ -127,14 +127,14 @@ class LocalDataInitializer(
                     passwordChangeRequired = false
                 )
             )
-            log.info("시드 계정 생성 완료: employeeId=00000004, name=강남조장, role=LEADER")
+            log.info("시드 계정 생성 완료: employeeNumber=00000004, name=강남조장, role=LEADER")
         }
 
         // 강남지점 여사원
-        if (!userRepository.existsByEmployeeId("00000005")) {
+        if (!userRepository.existsByEmployeeNumber("00000005")) {
             userRepository.save(
                 User(
-                    employeeId = "00000005",
+                    employeeNumber = "00000005",
                     name = "강남여사원",
                     status = "재직",
                     appLoginActive = true,
@@ -149,7 +149,7 @@ class LocalDataInitializer(
                     passwordChangeRequired = false
                 )
             )
-            log.info("시드 계정 생성 완료: employeeId=00000005, name=강남여사원, role=USER")
+            log.info("시드 계정 생성 완료: employeeNumber=00000005, name=강남여사원, role=USER")
         }
     }
 

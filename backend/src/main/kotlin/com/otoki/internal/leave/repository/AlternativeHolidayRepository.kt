@@ -6,14 +6,14 @@ import java.time.LocalDate
 
 interface AlternativeHolidayRepository : JpaRepository<AlternativeHoliday, Long>, AlternativeHolidayRepositoryCustom {
 
-    fun existsByEmployeeIdAndActualWorkDateAndStatusNot(
-        employeeId: String,
+    fun existsByEmployeeNumberAndActualWorkDateAndStatusNot(
+        employeeNumber: String,
         actualWorkDate: LocalDate,
         status: String
     ): Boolean
 
-    fun findByEmployeeIdAndActualWorkDateBetweenOrderByCreatedAtDesc(
-        employeeId: String,
+    fun findByEmployeeNumberAndActualWorkDateBetweenOrderByCreatedAtDesc(
+        employeeNumber: String,
         startDate: LocalDate,
         endDate: LocalDate
     ): List<AlternativeHoliday>

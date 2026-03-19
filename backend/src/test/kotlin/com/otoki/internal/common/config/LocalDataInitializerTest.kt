@@ -51,21 +51,21 @@ class LocalDataInitializerTest {
     private lateinit var localDataInitializer: LocalDataInitializer
 
     private fun stubAllUsersNotExist() {
-        whenever(userRepository.existsByEmployeeId("00000001")).thenReturn(false)
-        whenever(userRepository.existsByEmployeeId("00000002")).thenReturn(false)
-        whenever(userRepository.existsByEmployeeId("00000003")).thenReturn(false)
-        whenever(userRepository.existsByEmployeeId("00000004")).thenReturn(false)
-        whenever(userRepository.existsByEmployeeId("00000005")).thenReturn(false)
+        whenever(userRepository.existsByEmployeeNumber("00000001")).thenReturn(false)
+        whenever(userRepository.existsByEmployeeNumber("00000002")).thenReturn(false)
+        whenever(userRepository.existsByEmployeeNumber("00000003")).thenReturn(false)
+        whenever(userRepository.existsByEmployeeNumber("00000004")).thenReturn(false)
+        whenever(userRepository.existsByEmployeeNumber("00000005")).thenReturn(false)
         whenever(passwordEncoder.encode("1234")).thenReturn("encoded_password")
         whenever(userRepository.save(any<User>())).thenAnswer { it.getArgument<User>(0) }
     }
 
     private fun stubAllUsersExist() {
-        whenever(userRepository.existsByEmployeeId("00000001")).thenReturn(true)
-        whenever(userRepository.existsByEmployeeId("00000002")).thenReturn(true)
-        whenever(userRepository.existsByEmployeeId("00000003")).thenReturn(true)
-        whenever(userRepository.existsByEmployeeId("00000004")).thenReturn(true)
-        whenever(userRepository.existsByEmployeeId("00000005")).thenReturn(true)
+        whenever(userRepository.existsByEmployeeNumber("00000001")).thenReturn(true)
+        whenever(userRepository.existsByEmployeeNumber("00000002")).thenReturn(true)
+        whenever(userRepository.existsByEmployeeNumber("00000003")).thenReturn(true)
+        whenever(userRepository.existsByEmployeeNumber("00000004")).thenReturn(true)
+        whenever(userRepository.existsByEmployeeNumber("00000005")).thenReturn(true)
     }
 
     private fun stubOtherSeedsExist() {
@@ -96,7 +96,7 @@ class LocalDataInitializerTest {
 
             // Then
             val users = captureAllSavedUsers()
-            val leader = users.find { it.employeeId == "00000001" }!!
+            val leader = users.find { it.employeeNumber == "00000001" }!!
             assertThat(leader.name).isEqualTo("개발테스트")
             assertThat(leader.status).isEqualTo("재직")
             assertThat(leader.appLoginActive).isTrue()
@@ -118,7 +118,7 @@ class LocalDataInitializerTest {
 
             // Then
             val users = captureAllSavedUsers()
-            val leader = users.find { it.employeeId == "00000001" }!!
+            val leader = users.find { it.employeeNumber == "00000001" }!!
             assertThat(leader.role).isEqualTo(UserRole.USER)
         }
 
@@ -153,7 +153,7 @@ class LocalDataInitializerTest {
 
             // Then
             val users = captureAllSavedUsers()
-            val salesUser = users.find { it.employeeId == "00000002" }!!
+            val salesUser = users.find { it.employeeNumber == "00000002" }!!
             assertThat(salesUser.name).isEqualTo("여사원테스트")
             assertThat(salesUser.status).isEqualTo("재직")
             assertThat(salesUser.appLoginActive).isTrue()
@@ -175,7 +175,7 @@ class LocalDataInitializerTest {
 
             // Then
             val users = captureAllSavedUsers()
-            val salesUser = users.find { it.employeeId == "00000002" }!!
+            val salesUser = users.find { it.employeeNumber == "00000002" }!!
             assertThat(salesUser.role).isEqualTo(UserRole.USER)
         }
 
@@ -183,11 +183,11 @@ class LocalDataInitializerTest {
         @DisplayName("멱등성 - DB에 00000002 존재 -> 해당 사용자 save 미호출")
         fun skipsSalesUser_whenAlreadyExists() {
             // Given
-            whenever(userRepository.existsByEmployeeId("00000001")).thenReturn(false)
-            whenever(userRepository.existsByEmployeeId("00000002")).thenReturn(true)
-            whenever(userRepository.existsByEmployeeId("00000003")).thenReturn(false)
-            whenever(userRepository.existsByEmployeeId("00000004")).thenReturn(false)
-            whenever(userRepository.existsByEmployeeId("00000005")).thenReturn(false)
+            whenever(userRepository.existsByEmployeeNumber("00000001")).thenReturn(false)
+            whenever(userRepository.existsByEmployeeNumber("00000002")).thenReturn(true)
+            whenever(userRepository.existsByEmployeeNumber("00000003")).thenReturn(false)
+            whenever(userRepository.existsByEmployeeNumber("00000004")).thenReturn(false)
+            whenever(userRepository.existsByEmployeeNumber("00000005")).thenReturn(false)
             whenever(passwordEncoder.encode("1234")).thenReturn("encoded_password")
             whenever(userRepository.save(any<User>())).thenAnswer { it.getArgument<User>(0) }
             stubOtherSeedsExist()
@@ -198,7 +198,7 @@ class LocalDataInitializerTest {
             // Then
             val captor = argumentCaptor<User>()
             verify(userRepository, times(4)).save(captor.capture())
-            val savedIds = captor.allValues.map { it.employeeId }
+            val savedIds = captor.allValues.map { it.employeeNumber }
             assertThat(savedIds).doesNotContain("00000002")
         }
     }
@@ -219,7 +219,7 @@ class LocalDataInitializerTest {
 
             // Then
             val users = captureAllSavedUsers()
-            val admin = users.find { it.employeeId == "00000003" }!!
+            val admin = users.find { it.employeeNumber == "00000003" }!!
             assertThat(admin.name).isEqualTo("지점장테스트")
             assertThat(admin.status).isEqualTo("재직")
             assertThat(admin.appLoginActive).isTrue()
@@ -241,7 +241,7 @@ class LocalDataInitializerTest {
 
             // Then
             val users = captureAllSavedUsers()
-            val admin = users.find { it.employeeId == "00000003" }!!
+            val admin = users.find { it.employeeNumber == "00000003" }!!
             assertThat(admin.role).isEqualTo(UserRole.ADMIN)
         }
 
@@ -249,11 +249,11 @@ class LocalDataInitializerTest {
         @DisplayName("멱등성 - DB에 00000003 존재 -> 해당 사용자 save 미호출")
         fun skipsAdminUser_whenAlreadyExists() {
             // Given
-            whenever(userRepository.existsByEmployeeId("00000001")).thenReturn(false)
-            whenever(userRepository.existsByEmployeeId("00000002")).thenReturn(false)
-            whenever(userRepository.existsByEmployeeId("00000003")).thenReturn(true)
-            whenever(userRepository.existsByEmployeeId("00000004")).thenReturn(false)
-            whenever(userRepository.existsByEmployeeId("00000005")).thenReturn(false)
+            whenever(userRepository.existsByEmployeeNumber("00000001")).thenReturn(false)
+            whenever(userRepository.existsByEmployeeNumber("00000002")).thenReturn(false)
+            whenever(userRepository.existsByEmployeeNumber("00000003")).thenReturn(true)
+            whenever(userRepository.existsByEmployeeNumber("00000004")).thenReturn(false)
+            whenever(userRepository.existsByEmployeeNumber("00000005")).thenReturn(false)
             whenever(passwordEncoder.encode("1234")).thenReturn("encoded_password")
             whenever(userRepository.save(any<User>())).thenAnswer { it.getArgument<User>(0) }
             stubOtherSeedsExist()
@@ -264,7 +264,7 @@ class LocalDataInitializerTest {
             // Then
             val captor = argumentCaptor<User>()
             verify(userRepository, times(4)).save(captor.capture())
-            val savedIds = captor.allValues.map { it.employeeId }
+            val savedIds = captor.allValues.map { it.employeeNumber }
             assertThat(savedIds).doesNotContain("00000003")
         }
     }
@@ -277,11 +277,11 @@ class LocalDataInitializerTest {
         @DisplayName("부분 존재 - 00000001만 존재 -> 나머지 4명만 생성")
         fun createsOnlyMissing_whenPartiallyExists() {
             // Given
-            whenever(userRepository.existsByEmployeeId("00000001")).thenReturn(true)
-            whenever(userRepository.existsByEmployeeId("00000002")).thenReturn(false)
-            whenever(userRepository.existsByEmployeeId("00000003")).thenReturn(false)
-            whenever(userRepository.existsByEmployeeId("00000004")).thenReturn(false)
-            whenever(userRepository.existsByEmployeeId("00000005")).thenReturn(false)
+            whenever(userRepository.existsByEmployeeNumber("00000001")).thenReturn(true)
+            whenever(userRepository.existsByEmployeeNumber("00000002")).thenReturn(false)
+            whenever(userRepository.existsByEmployeeNumber("00000003")).thenReturn(false)
+            whenever(userRepository.existsByEmployeeNumber("00000004")).thenReturn(false)
+            whenever(userRepository.existsByEmployeeNumber("00000005")).thenReturn(false)
             whenever(passwordEncoder.encode("1234")).thenReturn("encoded_password")
             whenever(userRepository.save(any<User>())).thenAnswer { it.getArgument<User>(0) }
             stubOtherSeedsExist()
@@ -292,7 +292,7 @@ class LocalDataInitializerTest {
             // Then
             val captor = argumentCaptor<User>()
             verify(userRepository, times(4)).save(captor.capture())
-            val savedIds = captor.allValues.map { it.employeeId }
+            val savedIds = captor.allValues.map { it.employeeNumber }
             assertThat(savedIds).containsExactly("00000002", "00000003", "00000004", "00000005")
         }
 
@@ -310,7 +310,7 @@ class LocalDataInitializerTest {
             val users = captureAllSavedUsers()
             val testBranchUsers = users.filter { it.orgName == "테스트지점" }
             assertThat(testBranchUsers).hasSize(3)
-            assertThat(testBranchUsers.map { it.employeeId })
+            assertThat(testBranchUsers.map { it.employeeNumber })
                 .containsExactlyInAnyOrder("00000001", "00000002", "00000003")
         }
 

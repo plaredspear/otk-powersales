@@ -16,13 +16,13 @@ class AlternativeHolidayRepositoryCustomImpl(
         startDate: LocalDate,
         endDate: LocalDate,
         status: String?,
-        employeeId: String?,
+        employeeNumber: String?,
         orgCode: String?
     ): List<AlternativeHolidayListItem> {
         val condition = BooleanBuilder()
             .and(alternativeHoliday.actualWorkDate.between(startDate, endDate))
             .and(buildStatusCondition(status))
-            .and(buildEmployeeIdCondition(employeeId))
+            .and(buildEmployeeNumberCondition(employeeNumber))
             .and(buildOrgCodeCondition(orgCode))
 
         return queryFactory
@@ -30,7 +30,7 @@ class AlternativeHolidayRepositoryCustomImpl(
                 Projections.constructor(
                     AlternativeHolidayListItem::class.java,
                     alternativeHoliday.id,
-                    alternativeHoliday.employeeId,
+                    alternativeHoliday.employeeNumber,
                     alternativeHoliday.employeeName,
                     user.orgName,
                     alternativeHoliday.actualWorkDate,
@@ -43,7 +43,7 @@ class AlternativeHolidayRepositoryCustomImpl(
                 )
             )
             .from(alternativeHoliday)
-            .leftJoin(user).on(user.employeeId.eq(alternativeHoliday.employeeId))
+            .leftJoin(user).on(user.employeeNumber.eq(alternativeHoliday.employeeNumber))
             .where(condition)
             .orderBy(alternativeHoliday.actualWorkDate.desc(), alternativeHoliday.id.desc())
             .fetch()
@@ -52,8 +52,8 @@ class AlternativeHolidayRepositoryCustomImpl(
     private fun buildStatusCondition(status: String?) =
         status?.let { alternativeHoliday.status.eq(it) }
 
-    private fun buildEmployeeIdCondition(employeeId: String?) =
-        employeeId?.let { alternativeHoliday.employeeId.eq(it) }
+    private fun buildEmployeeNumberCondition(employeeNumber: String?) =
+        employeeNumber?.let { alternativeHoliday.employeeNumber.eq(it) }
 
     private fun buildOrgCodeCondition(orgCode: String?) =
         orgCode?.let { user.costCenterCode.eq(it) }

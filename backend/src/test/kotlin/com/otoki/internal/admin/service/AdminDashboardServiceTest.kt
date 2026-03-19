@@ -649,7 +649,7 @@ class AdminDashboardServiceTest {
             sfid = sfid,
             accountId = accountId,
             confirmed = confirmed,
-            employeeId = employeeSfid,
+            employeeNumber = employeeSfid,
             typeOfWork1 = typeOfWork1,
             startDate = startDate,
             endDate = endDate
@@ -678,7 +678,7 @@ class AdminDashboardServiceTest {
 
     private fun createUser(
         id: Long = 0,
-        employeeId: String = "EMP001",
+        employeeNumber: String = "EMP001",
         name: String = "테스트사원",
         appAuthority: String? = null,
         costCenterCode: String? = null,
@@ -688,7 +688,7 @@ class AdminDashboardServiceTest {
     ): User {
         return User(
             id = id,
-            employeeId = employeeId,
+            employeeNumber = employeeNumber,
             name = name,
             appAuthority = appAuthority,
             costCenterCode = costCenterCode,

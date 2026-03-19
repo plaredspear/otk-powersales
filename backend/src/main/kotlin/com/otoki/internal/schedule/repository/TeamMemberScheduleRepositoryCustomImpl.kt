@@ -20,15 +20,15 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             .execute()
     }
 
-    override fun findMonthlyByEmployeeIds(
-        employeeIds: List<String>,
+    override fun findMonthlyByEmployeeNumbers(
+        employeeNumbers: List<String>,
         from: LocalDate,
         to: LocalDate
     ): List<TeamMemberSchedule> {
         return queryFactory
             .selectFrom(teamMemberSchedule)
             .where(
-                teamMemberSchedule.employeeId.`in`(employeeIds),
+                teamMemberSchedule.employeeNumber.`in`(employeeNumbers),
                 teamMemberSchedule.workingDate.between(from, to),
                 isNotDeleted()
             )
@@ -50,14 +50,14 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             .fetch()
     }
 
-    override fun findActiveByEmployeeIdAndDate(
-        employeeId: String,
+    override fun findActiveByEmployeeNumberAndDate(
+        employeeNumber: String,
         workingDate: LocalDate
     ): List<TeamMemberSchedule> {
         return queryFactory
             .selectFrom(teamMemberSchedule)
             .where(
-                teamMemberSchedule.employeeId.eq(employeeId),
+                teamMemberSchedule.employeeNumber.eq(employeeNumber),
                 teamMemberSchedule.workingDate.eq(workingDate),
                 isNotDeleted()
             )
@@ -65,11 +65,11 @@ open class TeamMemberScheduleRepositoryCustomImpl(
     }
 
     @Transactional
-    override fun deleteAnnualLeaveByEmployeeIdAndDateRange(employeeId: String, from: LocalDate, to: LocalDate): Long {
+    override fun deleteAnnualLeaveByEmployeeNumberAndDateRange(employeeNumber: String, from: LocalDate, to: LocalDate): Long {
         return queryFactory
             .delete(teamMemberSchedule)
             .where(
-                teamMemberSchedule.employeeId.eq(employeeId),
+                teamMemberSchedule.employeeNumber.eq(employeeNumber),
                 teamMemberSchedule.workingDate.between(from, to),
                 teamMemberSchedule.workingType.eq(WORKING_TYPE_ANNUAL_LEAVE)
             )
@@ -87,24 +87,24 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             .fetch()
     }
 
-    override fun findAnnualLeaveByDateRangeAndEmployeeIds(
+    override fun findAnnualLeaveByDateRangeAndEmployeeNumbers(
         from: LocalDate,
         to: LocalDate,
-        employeeIds: List<String>
+        employeeNumbers: List<String>
     ): List<TeamMemberSchedule> {
         return queryFactory
             .selectFrom(teamMemberSchedule)
             .where(
                 teamMemberSchedule.workingDate.between(from, to),
                 teamMemberSchedule.workingType.eq(WORKING_TYPE_ANNUAL_LEAVE),
-                teamMemberSchedule.employeeId.`in`(employeeIds),
+                teamMemberSchedule.employeeNumber.`in`(employeeNumbers),
                 isNotDeleted()
             )
             .fetch()
     }
 
-    override fun findDistinctAccountIdsByEmployeeIdAndDateRange(
-        employeeId: String,
+    override fun findDistinctAccountIdsByEmployeeNumberAndDateRange(
+        employeeNumber: String,
         fromDate: LocalDate,
         toDate: LocalDate
     ): List<Int> {
@@ -112,7 +112,7 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             .select(teamMemberSchedule.accountId).distinct()
             .from(teamMemberSchedule)
             .where(
-                teamMemberSchedule.employeeId.eq(employeeId),
+                teamMemberSchedule.employeeNumber.eq(employeeNumber),
                 teamMemberSchedule.workingDate.goe(fromDate),
                 teamMemberSchedule.workingDate.lt(toDate),
                 teamMemberSchedule.accountId.isNotNull,

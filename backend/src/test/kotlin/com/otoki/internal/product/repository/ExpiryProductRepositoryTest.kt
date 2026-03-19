@@ -38,7 +38,7 @@ class ExpiryProductRepositoryTest {
         testEntityManager.clear()
 
         val user = User(
-            employeeId = "20030117",
+            employeeNumber = "20030117",
             password = "encodedPassword",
             name = "최금주",
             orgName = "부산1지점"
@@ -113,7 +113,7 @@ class ExpiryProductRepositoryTest {
         // Given
         val today = LocalDate.now()
         val otherUser = User(
-            employeeId = "20030118",
+            employeeNumber = "20030118",
             password = "encodedPassword",
             name = "김영희",
             orgName = "서울1지점"
