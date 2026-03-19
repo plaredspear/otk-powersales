@@ -11,4 +11,10 @@ interface AlternativeHolidayRepository : JpaRepository<AlternativeHoliday, Long>
         actualWorkDate: LocalDate,
         status: String
     ): Boolean
+
+    fun findByEmployeeIdAndActualWorkDateBetweenOrderByCreatedAtDesc(
+        employeeId: String,
+        startDate: LocalDate,
+        endDate: LocalDate
+    ): List<AlternativeHoliday>
 }
