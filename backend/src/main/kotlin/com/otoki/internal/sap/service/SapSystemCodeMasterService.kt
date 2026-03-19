@@ -8,7 +8,6 @@ import com.otoki.internal.sap.repository.SystemCodeMasterRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDateTime
 
 @Service
 class SapSystemCodeMasterService(
@@ -56,7 +55,6 @@ class SapSystemCodeMasterService(
             ?: throw IllegalArgumentException("detail_code is required")
 
         val externalKey = "$companyCode;$groupCode;$detailCode"
-        val now = LocalDateTime.now()
 
         val existing = systemCodeMasterRepository.findByExternalKey(externalKey)
 
@@ -64,7 +62,6 @@ class SapSystemCodeMasterService(
             existing.groupCodeName = item.groupCodeName
             existing.detailCodeName = item.detailCodeName
             existing.seq = item.seq
-            existing.updatedAt = now
             systemCodeMasterRepository.save(existing)
         } else {
             val entity = SystemCodeMaster(
@@ -74,8 +71,7 @@ class SapSystemCodeMasterService(
                 groupCodeName = item.groupCodeName,
                 detailCodeName = item.detailCodeName,
                 seq = item.seq,
-                externalKey = externalKey,
-                createdAt = now
+                externalKey = externalKey
             )
             systemCodeMasterRepository.save(entity)
         }

@@ -1,10 +1,10 @@
 package com.otoki.internal.sap.entity
 
+import com.otoki.internal.common.entity.BaseEntity
 import com.otoki.internal.common.sap.SAPSource
 import com.otoki.internal.common.sap.SAPUpsertKey
 import com.otoki.internal.common.sap.SyncMode
 import jakarta.persistence.*
-import java.time.LocalDateTime
 
 @Entity
 @Table(name = "daily_sales_history")
@@ -44,11 +44,5 @@ class DailySalesHistory(
     var erpDistributionAmount3: Double? = null,
 
     @Column(name = "ledger_amount")
-    var ledgerAmount: Double? = null,
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    val createdAt: LocalDateTime = LocalDateTime.now(),
-
-    @Column(name = "updated_at")
-    var updatedAt: LocalDateTime? = null
-)
+    var ledgerAmount: Double? = null
+) : BaseEntity()

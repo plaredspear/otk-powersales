@@ -1,10 +1,10 @@
 package com.otoki.internal.sap.entity
 
+import com.otoki.internal.common.entity.BaseEntity
 import com.otoki.internal.common.sap.SAPSource
 import com.otoki.internal.common.sap.SAPUpsertKey
 import com.otoki.internal.common.sap.SyncMode
 import jakarta.persistence.*
-import java.time.LocalDateTime
 
 @Entity
 @Table(name = "system_code_master")
@@ -35,11 +35,5 @@ class SystemCodeMaster(
 
     @SAPUpsertKey(composite = true, components = ["companyCode", "groupCode", "detailCode"])
     @Column(name = "external_key", nullable = false, length = 60, unique = true)
-    var externalKey: String,
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    val createdAt: LocalDateTime = LocalDateTime.now(),
-
-    @Column(name = "updated_at")
-    var updatedAt: LocalDateTime? = null
-)
+    var externalKey: String
+) : BaseEntity()

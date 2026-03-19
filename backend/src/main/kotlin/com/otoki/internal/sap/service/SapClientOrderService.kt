@@ -10,7 +10,6 @@ import com.otoki.internal.sap.repository.ErpOrderRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDateTime
 
 @Service
 class SapClientOrderService(
@@ -64,11 +63,9 @@ class SapClientOrderService(
             ?: throw IllegalArgumentException("sap_order_number is required")
 
         val existing = erpOrderRepository.findBySapOrderNumber(sapOrderNumber)
-        val now = LocalDateTime.now()
 
         return if (existing != null) {
             mapHeaderFields(existing, item)
-            existing.updatedAt = now
             erpOrderRepository.save(existing)
         } else {
             val order = ErpOrder(sapOrderNumber = sapOrderNumber)
@@ -104,13 +101,11 @@ class SapClientOrderService(
         }
 
         val existing = erpOrderProductRepository.findByExternalKey(externalKey)
-        val now = LocalDateTime.now()
 
         return if (existing != null) {
             existing.erpOrder = order
             mapDetailFields(existing, detail)
             existing.deliveryStatus = determineDeliveryStatus(detail)
-            existing.updatedAt = now
             erpOrderProductRepository.save(existing)
         } else {
             val product = ErpOrderProduct(

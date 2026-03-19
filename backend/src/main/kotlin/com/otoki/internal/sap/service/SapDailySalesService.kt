@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDateTime
 
 @Service
 class SapDailySalesService(
@@ -94,7 +93,6 @@ class SapDailySalesService(
 
         if (existing != null) {
             mapFields(existing, item)
-            existing.updatedAt = LocalDateTime.now()
             dailySalesHistoryRepository.save(existing)
         } else {
             val entity = DailySalesHistory(
