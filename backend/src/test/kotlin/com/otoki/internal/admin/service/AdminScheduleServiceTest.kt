@@ -194,7 +194,7 @@ class AdminScheduleServiceTest {
             whenever(excelParser.parse(any())).thenReturn(parseResult)
             whenever(userRepository.findByEmployeeNumberIn(listOf("20030001"))).thenReturn(listOf(user))
             whenever(accountRepository.findByExternalKeyIn(listOf("ACC001"))).thenReturn(listOf(account))
-            whenever(scheduleRepository.findByEmployeeNumberInAndNotDeleted(listOf("20030001"))).thenReturn(emptyList())
+            whenever(scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L))).thenReturn(emptyList())
             whenever(uploadValidator.validate(eq(parsedRows), any(), any(), any())).thenReturn(
                 ScheduleUploadValidator.ValidationResult(
                     errors = emptyList(),
@@ -202,7 +202,7 @@ class AdminScheduleServiceTest {
                         RowPreview(4, "20030001", "홍길동", "ACC001", "이마트 강남점", "고정", "상시", "2026-04-01", null)
                     ),
                     validRows = listOf(
-                        ScheduleUploadValidator.ValidatedRow("20030001", 1, "고정", "상시", LocalDate.of(2026, 4, 1), null)
+                        ScheduleUploadValidator.ValidatedRow(1L, "20030001", 1, "고정", "상시", LocalDate.of(2026, 4, 1), null)
                     )
                 )
             )
@@ -280,7 +280,7 @@ class AdminScheduleServiceTest {
             val uploadId = "test-upload-id"
             val cacheData = AdminScheduleService.UploadCacheData(
                 validRows = listOf(
-                    ScheduleUploadValidator.ValidatedRow("20030001", 1, "고정", "상시", LocalDate.of(2026, 4, 1), null)
+                    ScheduleUploadValidator.ValidatedRow(1L, "20030001", 1, "고정", "상시", LocalDate.of(2026, 4, 1), null)
                 ),
                 errorCount = 0
             )
@@ -298,7 +298,7 @@ class AdminScheduleServiceTest {
             assertThat(result.insertedCount).isEqualTo(1)
             verify(scheduleRepository).saveAll(argThat<List<DisplayWorkSchedule>> { list ->
                 list.size == 1 &&
-                    list[0].employeeNumber == "20030001" &&
+                    list[0].employeeId == 1L &&
                     list[0].accountId == 1 &&
                     list[0].typeOfWork1 == "진열" &&
                     list[0].confirmed == false
@@ -339,7 +339,7 @@ class AdminScheduleServiceTest {
             val cacheData = AdminScheduleService.UploadCacheData(
                 validRows = listOf(
                     ScheduleUploadValidator.ValidatedRow(
-                        "20030001", 1, "고정", "상시",
+                        1L, "20030001", 1, "고정", "상시",
                         LocalDate.of(2026, 4, 1), null,
                         costCenterCode = "A10010", accountExternalKey = "EXT001"
                     )
@@ -365,13 +365,13 @@ class AdminScheduleServiceTest {
         }
 
         @Test
-        @DisplayName("ownerId 자동 설정 - 조장이 존재하면 조장의 employeeNumber 저장")
+        @DisplayName("ownerId 자동 설정 - 조장이 존재하면 조장의 User PK 저장")
         fun confirmUpload_ownerIdWithManager() {
             val uploadId = "test-owner"
             val cacheData = AdminScheduleService.UploadCacheData(
                 validRows = listOf(
                     ScheduleUploadValidator.ValidatedRow(
-                        "20030001", 1, "고정", "상시",
+                        1L, "20030001", 1, "고정", "상시",
                         LocalDate.of(2026, 4, 1), null,
                         costCenterCode = "A10010", accountExternalKey = "EXT001"
                     )
@@ -393,7 +393,7 @@ class AdminScheduleServiceTest {
             adminScheduleService.confirmUpload(uploadId)
 
             verify(scheduleRepository).saveAll(argThat<List<DisplayWorkSchedule>> { list ->
-                list.size == 1 && list[0].ownerId == "20030099"
+                list.size == 1 && list[0].ownerId == manager.id
             })
         }
 
@@ -404,7 +404,7 @@ class AdminScheduleServiceTest {
             val cacheData = AdminScheduleService.UploadCacheData(
                 validRows = listOf(
                     ScheduleUploadValidator.ValidatedRow(
-                        "20030001", 1, "고정", "상시",
+                        1L, "20030001", 1, "고정", "상시",
                         LocalDate.of(2026, 4, 1), null,
                         costCenterCode = "A10010", accountExternalKey = "EXT001"
                     )
@@ -436,7 +436,7 @@ class AdminScheduleServiceTest {
             val cacheData = AdminScheduleService.UploadCacheData(
                 validRows = listOf(
                     ScheduleUploadValidator.ValidatedRow(
-                        "20030001", 1, "고정", "상시",
+                        1L, "20030001", 1, "고정", "상시",
                         LocalDate.of(2026, 4, 1), null,
                         costCenterCode = "A10010", accountExternalKey = "EXT001"
                     )
@@ -473,7 +473,7 @@ class AdminScheduleServiceTest {
             val cacheData = AdminScheduleService.UploadCacheData(
                 validRows = listOf(
                     ScheduleUploadValidator.ValidatedRow(
-                        "20030001", 1, "고정", "상시",
+                        1L, "20030001", 1, "고정", "상시",
                         LocalDate.of(2026, 4, 1), null,
                         costCenterCode = "A10010", accountExternalKey = "EXT001"
                     )
@@ -505,7 +505,7 @@ class AdminScheduleServiceTest {
             val cacheData = AdminScheduleService.UploadCacheData(
                 validRows = listOf(
                     ScheduleUploadValidator.ValidatedRow(
-                        "20030001", 1, "고정", "상시",
+                        1L, "20030001", 1, "고정", "상시",
                         LocalDate.of(2026, 4, 1), null,
                         costCenterCode = null, accountExternalKey = "EXT001"
                     )
@@ -536,14 +536,14 @@ class AdminScheduleServiceTest {
         @Test
         @DisplayName("정상 조회 - 필터 없이 전체 목록 반환")
         fun listSchedules_success() {
-            val schedule = createSchedule(id = 1L, employeeNumber = "20030001", accountId = 100, confirmed = false)
+            val schedule = createSchedule(id = 1L, employeeId = 1L, accountId = 100, confirmed = false)
             val page = PageImpl(listOf(schedule), PageRequest.of(0, 20), 1)
-            val user = createUser(employeeNumber = "20030001", name = "홍길동")
+            val user = createUser(id = 1L, employeeNumber = "20030001", name = "홍길동")
             val account = createAccount(id = 100, externalKey = "SAP001", name = "이마트 성수점")
 
             whenever(scheduleRepository.findScheduleList(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any()))
                 .thenReturn(page)
-            whenever(userRepository.findByEmployeeNumberIn(listOf("20030001"))).thenReturn(listOf(user))
+            whenever(userRepository.findAllById(listOf(1L))).thenReturn(listOf(user))
             whenever(accountRepository.findByIdIn(listOf(100))).thenReturn(listOf(account))
 
             val result = adminScheduleService.listSchedules(0, 20, null, null, null, null, null, null)
@@ -716,13 +716,13 @@ class AdminScheduleServiceTest {
 
     private fun createSchedule(
         id: Long = 1L,
-        employeeNumber: String = "20030001",
+        employeeId: Long = 1L,
         accountId: Int = 1,
         confirmed: Boolean? = false,
         isDeleted: Boolean? = null
     ): DisplayWorkSchedule = DisplayWorkSchedule(
         id = id,
-        employeeNumber = employeeNumber,
+        employeeId = employeeId,
         accountId = accountId,
         typeOfWork1 = "진열",
         typeOfWork3 = "고정",

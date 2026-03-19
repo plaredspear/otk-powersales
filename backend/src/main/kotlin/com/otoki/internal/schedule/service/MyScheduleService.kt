@@ -41,7 +41,6 @@ class MyScheduleService(
     fun getMonthlySchedule(userId: Long, year: Int, month: Int): MonthlyScheduleResponse {
         val user = userRepository.findById(userId)
             .orElseThrow { UserNotFoundException() }
-        val employeeNumber = user.employeeNumber
 
         // YearMonth로 해당 월의 시작일/종료일 계산
         val yearMonth = YearMonth.of(year, month)
@@ -50,12 +49,12 @@ class MyScheduleService(
 
         // 해당 기간 내 일정이 있는 날짜 목록 조회
         val workDates = displayWorkScheduleRepository
-            .findDistinctStartDatesByEmployeeNumberAndDateBetween(employeeNumber, startDate, endDate)
+            .findDistinctStartDatesByEmployeeIdAndDateBetween(user.id, startDate, endDate)
             .toSet()
 
         // TeamMemberSchedule에서 날짜별 workingType 조회
         val memberSchedules = teamMemberScheduleRepository
-            .findMonthlyByEmployeeNumbers(listOf(employeeNumber), startDate, endDate)
+            .findMonthlyByEmployeeNumbers(listOf(user.employeeNumber), startDate, endDate)
         val workingTypeByDate = memberSchedules
             .groupBy { it.workingDate }
             .mapValues { (_, schedules) -> schedules.firstOrNull()?.workingType }
@@ -93,10 +92,9 @@ class MyScheduleService(
     fun getDailySchedule(userId: Long, date: LocalDate): DailyScheduleResponse {
         val user = userRepository.findById(userId)
             .orElseThrow { UserNotFoundException() }
-        val employeeNumber = user.employeeNumber
 
         // 해당 날짜의 거래처 일정 목록 조회
-        val schedules = displayWorkScheduleRepository.findByEmployeeNumberAndStartDate(employeeNumber, date)
+        val schedules = displayWorkScheduleRepository.findByEmployeeIdAndStartDate(user.id, date)
 
         // Phase2: Attendance PG 대응 테이블 없음 - 주석 처리
         // val attendances = attendanceRepository.findByUserIdAndAttendanceDate(userId, date)

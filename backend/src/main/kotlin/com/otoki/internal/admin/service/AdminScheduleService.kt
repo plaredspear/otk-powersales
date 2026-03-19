@@ -106,9 +106,9 @@ class AdminScheduleService(
         }
 
         // 기존 스케줄 조회 (중복 검증용)
-        val userEmployeeNumbers = usersByEmployeeNumber.values.map { it.employeeNumber }
-        val existingSchedules = if (userEmployeeNumbers.isNotEmpty()) {
-            scheduleRepository.findByEmployeeNumberInAndNotDeleted(userEmployeeNumbers)
+        val userIds = usersByEmployeeNumber.values.map { it.id }
+        val existingSchedules = if (userIds.isNotEmpty()) {
+            scheduleRepository.findByEmployeeIdInAndNotDeleted(userIds)
         } else {
             emptyList()
         }
@@ -177,7 +177,7 @@ class AdminScheduleService(
         val entities = cacheData.validRows.map { row ->
             val costCenterCode = row.costCenterCode
             val ownerId = if (!costCenterCode.isNullOrBlank()) {
-                managersByCostCenter[costCenterCode]?.firstOrNull()?.employeeNumber
+                managersByCostCenter[costCenterCode]?.firstOrNull()?.id
             } else {
                 null
             }
@@ -186,7 +186,7 @@ class AdminScheduleService(
             }
 
             DisplayWorkSchedule(
-                employeeNumber = row.userEmployeeNumber,
+                employeeId = row.userId,
                 accountId = row.accountId,
                 typeOfWork1 = "진열",
                 typeOfWork3 = row.typeOfWork3,
@@ -229,11 +229,11 @@ class AdminScheduleService(
             employeeCode, accountIds, confirmed, typeOfWork3, startDateFrom, startDateTo, pageable
         )
 
-        val employeeNumbers = schedulePage.content.mapNotNull { it.employeeNumber }.distinct()
+        val employeeIds = schedulePage.content.mapNotNull { it.employeeId }.distinct()
         val scheduleAccountIds = schedulePage.content.mapNotNull { it.accountId }.distinct()
 
-        val userMap = if (employeeNumbers.isNotEmpty()) {
-            userRepository.findByEmployeeNumberIn(employeeNumbers).associateBy { it.employeeNumber }
+        val userMap = if (employeeIds.isNotEmpty()) {
+            userRepository.findAllById(employeeIds).associateBy { it.id }
         } else {
             emptyMap()
         }
@@ -245,11 +245,11 @@ class AdminScheduleService(
         }
 
         return schedulePage.map { schedule ->
-            val user = schedule.employeeNumber?.let { userMap[it] }
+            val user = schedule.employeeId?.let { userMap[it] }
             val account = schedule.accountId?.let { accountMap[it] }
             ScheduleListItemDto(
                 id = schedule.id,
-                employeeCode = schedule.employeeNumber ?: "",
+                employeeCode = user?.employeeNumber ?: "",
                 employeeName = user?.name ?: "",
                 accountCode = account?.externalKey,
                 accountName = account?.name,

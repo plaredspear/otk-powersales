@@ -75,11 +75,11 @@ class AdminDashboardServiceTest {
             )
 
             val schedules = listOf(
-                createDisplayWorkSchedule(accountId = 1, employeeSfid = "EMP001", typeOfWork1 = "고정"),
-                createDisplayWorkSchedule(accountId = 2, employeeSfid = "EMP002", typeOfWork1 = "순회")
+                createDisplayWorkSchedule(accountId = 1, employeeId = 1L, typeOfWork1 = "고정"),
+                createDisplayWorkSchedule(accountId = 2, employeeId = 2L, typeOfWork1 = "순회")
             )
             val prevSchedules = listOf(
-                createDisplayWorkSchedule(accountId = 1, employeeSfid = "EMP001", typeOfWork1 = "고정")
+                createDisplayWorkSchedule(accountId = 1, employeeId = 1L, typeOfWork1 = "고정")
             )
 
             val activeUsers = listOf(
@@ -169,7 +169,7 @@ class AdminDashboardServiceTest {
             )
 
             val schedules = listOf(
-                createDisplayWorkSchedule(accountId = 1, employeeSfid = "EMP001", typeOfWork1 = "고정")
+                createDisplayWorkSchedule(accountId = 1, employeeId = 1L, typeOfWork1 = "고정")
             )
 
             val activeUsers = listOf(
@@ -639,7 +639,7 @@ class AdminDashboardServiceTest {
         sfid: String? = null,
         accountId: Int? = null,
         confirmed: Boolean? = true,
-        employeeSfid: String? = null,
+        employeeId: Long? = null,
         typeOfWork1: String? = null,
         startDate: LocalDate? = null,
         endDate: LocalDate? = null
@@ -649,7 +649,7 @@ class AdminDashboardServiceTest {
             sfid = sfid,
             accountId = accountId,
             confirmed = confirmed,
-            employeeNumber = employeeSfid,
+            employeeId = employeeId,
             typeOfWork1 = typeOfWork1,
             startDate = startDate,
             endDate = endDate
