@@ -82,10 +82,9 @@ class AdminTeamScheduleControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
                 .andExpect(jsonPath("$.data.length()").value(2))
-                .andExpect(jsonPath("$.data[0].employee_number").value("SF001"))
-                .andExpect(jsonPath("$.data[0].emp_code").value("20030001"))
+                .andExpect(jsonPath("$.data[0].employee_number").value("20030001"))
                 .andExpect(jsonPath("$.data[0].name").value("홍길동"))
-                .andExpect(jsonPath("$.data[1].employee_number").value("SF002"))
+                .andExpect(jsonPath("$.data[1].employee_number").value("20030002"))
                 .andExpect(jsonPath("$.data[1].name").value("김영희"))
         }
     }
@@ -198,7 +197,7 @@ class AdminTeamScheduleControllerTest {
                 .andExpect(jsonPath("$.data").isArray)
                 .andExpect(jsonPath("$.data.length()").value(1))
                 .andExpect(jsonPath("$.data[0].id").value(1))
-                .andExpect(jsonPath("$.data[0].employee_number").value("SF001"))
+                .andExpect(jsonPath("$.data[0].employee_number").value("20030001"))
                 .andExpect(jsonPath("$.data[0].employee_name").value("홍길동"))
                 .andExpect(jsonPath("$.data[0].working_date").value("2026-03-15"))
                 .andExpect(jsonPath("$.data[0].working_type").value("진열"))
