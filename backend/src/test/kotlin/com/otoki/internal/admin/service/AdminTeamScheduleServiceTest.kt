@@ -88,7 +88,7 @@ class AdminTeamScheduleServiceTest {
         workingCategory2: String? = null,
         workingCategory3: String? = "고정",
         accountId: Int? = 1,
-        teamLeaderSfid: String? = "LEADER_SFID",
+        teamLeaderId: Long? = 99L,
         commuteLogId: String? = null
     ): TeamMemberSchedule = TeamMemberSchedule(
         id = id,
@@ -99,7 +99,7 @@ class AdminTeamScheduleServiceTest {
         workingCategory2 = workingCategory2,
         workingCategory3 = workingCategory3,
         accountId = accountId,
-        teamLeaderSfid = teamLeaderSfid,
+        teamLeaderId = teamLeaderId,
         commuteLogId = commuteLogId
     )
 

@@ -15,7 +15,7 @@ interface TeamMemberScheduleRepository : JpaRepository<TeamMemberSchedule, Long>
 
     fun deleteAllByIdIn(ids: List<Long>)
 
-    fun findByPromotionEmpIdExtIn(promotionEmpIdExts: List<String>): List<TeamMemberSchedule>
+    fun findByPromotionEmployeeIdIn(promotionEmployeeIds: List<Long>): List<TeamMemberSchedule>
 
     fun findByEmployeeNumberInAndWorkingDateIn(employeeNumbers: List<String>, workingDates: List<LocalDate>): List<TeamMemberSchedule>
 
