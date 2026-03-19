@@ -25,22 +25,22 @@ class AdminAnnualLeaveService(
         val schedules = if (orgCode != null) {
             val users = userRepository.findByOrgName(orgCode)
             if (users.isEmpty()) return emptyList()
-            val employeeIds = users.map { it.employeeId }
-            teamMemberScheduleRepository.findAnnualLeaveByDateRangeAndEmployeeIds(from, to, employeeIds)
+            val employeeNumbers = users.map { it.employeeNumber }
+            teamMemberScheduleRepository.findAnnualLeaveByDateRangeAndEmployeeNumbers(from, to, employeeNumbers)
         } else {
             teamMemberScheduleRepository.findAnnualLeaveByDateRange(from, to)
         }
 
         if (schedules.isEmpty()) return emptyList()
 
-        val employeeIds = schedules.mapNotNull { it.employeeId }.distinct()
-        val userMap = userRepository.findByEmployeeIdIn(employeeIds).associateBy { it.employeeId }
+        val employeeNumbers = schedules.mapNotNull { it.employeeNumber }.distinct()
+        val userMap = userRepository.findByEmployeeNumberIn(employeeNumbers).associateBy { it.employeeNumber }
 
         return schedules
-            .groupBy { it.employeeId ?: "" }
+            .groupBy { it.employeeNumber ?: "" }
             .filter { it.key.isNotBlank() }
-            .map { (employeeId, employeeSchedules) ->
-                val user = userMap[employeeId]
+            .map { (employeeNumber, employeeSchedules) ->
+                val user = userMap[employeeNumber]
                 val days = employeeSchedules
                     .sortedBy { it.workingDate }
                     .map { schedule ->
@@ -50,13 +50,13 @@ class AdminAnnualLeaveService(
                         )
                     }
                 EmployeeAnnualLeaveDto(
-                    employeeId = employeeId,
+                    employeeNumber = employeeNumber,
                     employeeName = user?.name ?: "",
                     orgName = user?.orgName ?: "",
                     annualLeaveDays = days,
                     totalCount = days.size
                 )
             }
-            .sortedBy { it.employeeId }
+            .sortedBy { it.employeeNumber }
     }
 }

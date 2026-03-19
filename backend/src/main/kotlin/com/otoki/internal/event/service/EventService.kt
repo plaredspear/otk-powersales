@@ -47,7 +47,7 @@ class EventService(
 
         val date = request.getDateOrToday()
         val eventPage = eventRepository.findEventsByAssignee(
-            assigneeId = user.employeeId,
+            assigneeId = user.employeeNumber,
             customerId = request.customerId,
             date = date,
             pageable = pageable
@@ -99,7 +99,7 @@ class EventService(
 
         // 오늘 등록 가능 여부
         val canRegisterToday = today in event.startDate..event.endDate &&
-            event.assigneeId == user.employeeId
+            event.assigneeId == user.employeeNumber
 
         // TODO: DailySales 구현 후 실제 등록 여부 확인 (F51)
         val isTodayRegistered = false

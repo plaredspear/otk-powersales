@@ -20,7 +20,7 @@ data class HomeResponse(
     data class TeamMemberScheduleInfo(
         val scheduleId: Long,
         val employeeName: String,
-        val employeeId: String,
+        val employeeNumber: String,
         val accountName: String?,
         val accountSfid: String?,
         val workCategory: String,
@@ -43,7 +43,7 @@ data class HomeResponse(
     data class ExpiryAlertInfo(
         val branchName: String,
         val employeeName: String,
-        val employeeId: String,
+        val employeeNumber: String,
         val expiryCount: Int
     )
 

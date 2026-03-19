@@ -71,7 +71,7 @@ class AdminEmployeeControllerTest {
             val response = EmployeeListResponse(
                 content = listOf(
                     EmployeeListItem(
-                        employeeId = "10000001",
+                        employeeNumber = "10000001",
                         name = "홍길동",
                         status = "재직",
                         orgName = "서울1지점",
@@ -93,7 +93,7 @@ class AdminEmployeeControllerTest {
             mockMvc.perform(get("/api/v1/admin/employees"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.content[0].employee_id").value("10000001"))
+                .andExpect(jsonPath("$.data.content[0].employee_number").value("10000001"))
                 .andExpect(jsonPath("$.data.content[0].name").value("홍길동"))
                 .andExpect(jsonPath("$.data.content[0].status").value("재직"))
                 .andExpect(jsonPath("$.data.content[0].org_name").value("서울1지점"))

@@ -31,18 +31,18 @@ class AlternativeHolidayValidator(
         }
     }
 
-    fun validateWorkScheduleExists(employeeId: String, actualWorkDate: LocalDate) {
-        if (!teamMemberScheduleRepository.existsByEmployeeIdAndWorkingDateAndWorkingType(
-                employeeId, actualWorkDate, "근무"
+    fun validateWorkScheduleExists(employeeNumber: String, actualWorkDate: LocalDate) {
+        if (!teamMemberScheduleRepository.existsByEmployeeNumberAndWorkingDateAndWorkingType(
+                employeeNumber, actualWorkDate, "근무"
             )
         ) {
             throw AltHolidayNoWorkScheduleException()
         }
     }
 
-    fun validateNoDuplicate(employeeId: String, actualWorkDate: LocalDate) {
-        if (alternativeHolidayRepository.existsByEmployeeIdAndActualWorkDateAndStatusNot(
-                employeeId, actualWorkDate, "반려"
+    fun validateNoDuplicate(employeeNumber: String, actualWorkDate: LocalDate) {
+        if (alternativeHolidayRepository.existsByEmployeeNumberAndActualWorkDateAndStatusNot(
+                employeeNumber, actualWorkDate, "반려"
             )
         ) {
             throw AltHolidayDuplicateException()

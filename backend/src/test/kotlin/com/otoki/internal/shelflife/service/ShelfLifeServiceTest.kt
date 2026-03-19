@@ -41,15 +41,15 @@ class ShelfLifeServiceTest {
     private lateinit var shelfLifeService: ShelfLifeService
 
     private val userId = 1L
-    private val employeeIdVal = "20030117"
+    private val employeeNumberVal = "20030117"
 
     private fun createUser(id: Long = userId, sfid: String? = "EMP_SFID_001"): User {
-        return User(id = id, sfid = sfid, employeeId = employeeIdVal, name = "테스트사원")
+        return User(id = id, sfid = sfid, employeeNumber = employeeNumberVal, name = "테스트사원")
     }
 
     private fun createShelfLife(
         seq: Int = 1,
-        employeeId: String = employeeIdVal,
+        employeeNumber: String = employeeNumberVal,
         accountCode: String = "1025172",
         accountId: String = "(유)경산식품",
         productCode: String = "30310009",
@@ -60,7 +60,7 @@ class ShelfLifeServiceTest {
     ): ShelfLife {
         return ShelfLife(
             seq = seq,
-            employeeId = employeeId,
+            employeeNumber = employeeNumber,
             accountCode = accountCode,
             accountId = accountId,
             productCode = productCode,
@@ -85,8 +85,8 @@ class ShelfLifeServiceTest {
             stubUser()
             val items = listOf(createShelfLife(seq = 1), createShelfLife(seq = 2))
             whenever(
-                shelfLifeRepository.findByEmployeeIdAndExpirationDateBetweenOrderByExpirationDateAsc(
-                    eq(employeeIdVal), any(), any()
+                shelfLifeRepository.findByEmployeeNumberAndExpirationDateBetweenOrderByExpirationDateAsc(
+                    eq(employeeNumberVal), any(), any()
                 )
             ).thenReturn(items)
 
@@ -101,8 +101,8 @@ class ShelfLifeServiceTest {
             stubUser()
             val items = listOf(createShelfLife(seq = 1))
             whenever(
-                shelfLifeRepository.findByEmployeeIdAndAccountCodeAndExpirationDateBetweenOrderByExpirationDateAsc(
-                    eq(employeeIdVal), eq("1025172"), any(), any()
+                shelfLifeRepository.findByEmployeeNumberAndAccountCodeAndExpirationDateBetweenOrderByExpirationDateAsc(
+                    eq(employeeNumberVal), eq("1025172"), any(), any()
                 )
             ).thenReturn(items)
 
@@ -117,8 +117,8 @@ class ShelfLifeServiceTest {
         fun getList_empty() {
             stubUser()
             whenever(
-                shelfLifeRepository.findByEmployeeIdAndExpirationDateBetweenOrderByExpirationDateAsc(
-                    eq(employeeIdVal), any(), any()
+                shelfLifeRepository.findByEmployeeNumberAndExpirationDateBetweenOrderByExpirationDateAsc(
+                    eq(employeeNumberVal), any(), any()
                 )
             ).thenReturn(emptyList())
 
@@ -128,12 +128,12 @@ class ShelfLifeServiceTest {
         }
 
         @Test
-        @DisplayName("데이터 없음 - employeeId로 조회 결과 없음 -> 빈 리스트 반환")
+        @DisplayName("데이터 없음 - employeeNumber로 조회 결과 없음 -> 빈 리스트 반환")
         fun getList_noData_returnsEmpty() {
             stubUser()
             whenever(
-                shelfLifeRepository.findByEmployeeIdAndExpirationDateBetweenOrderByExpirationDateAsc(
-                    eq(employeeIdVal), any(), any()
+                shelfLifeRepository.findByEmployeeNumberAndExpirationDateBetweenOrderByExpirationDateAsc(
+                    eq(employeeNumberVal), any(), any()
                 )
             ).thenReturn(emptyList())
 
@@ -254,10 +254,10 @@ class ShelfLifeServiceTest {
         }
 
         @Test
-        @DisplayName("타인 데이터 수정 - employeeId 불일치 -> ShelfLifeForbiddenException")
+        @DisplayName("타인 데이터 수정 - employeeNumber 불일치 -> ShelfLifeForbiddenException")
         fun update_forbidden() {
             stubUser()
-            val entity = createShelfLife(seq = 1, employeeId = "OTHER_EMP")
+            val entity = createShelfLife(seq = 1, employeeNumber = "OTHER_EMP")
             whenever(shelfLifeRepository.findById(1)).thenReturn(Optional.of(entity))
 
             val request = ShelfLifeUpdateRequest(
@@ -313,10 +313,10 @@ class ShelfLifeServiceTest {
         }
 
         @Test
-        @DisplayName("타인 데이터 삭제 - employeeId 불일치 -> ShelfLifeForbiddenException")
+        @DisplayName("타인 데이터 삭제 - employeeNumber 불일치 -> ShelfLifeForbiddenException")
         fun delete_forbidden() {
             stubUser()
-            val entity = createShelfLife(seq = 1, employeeId = "OTHER_EMP")
+            val entity = createShelfLife(seq = 1, employeeNumber = "OTHER_EMP")
             whenever(shelfLifeRepository.findById(1)).thenReturn(Optional.of(entity))
 
             assertThatThrownBy {
@@ -338,7 +338,7 @@ class ShelfLifeServiceTest {
                 createShelfLife(seq = 2),
                 createShelfLife(seq = 3)
             )
-            whenever(shelfLifeRepository.findBySeqInAndEmployeeId(eq(listOf(1, 2, 3)), eq(employeeIdVal)))
+            whenever(shelfLifeRepository.findBySeqInAndEmployeeNumber(eq(listOf(1, 2, 3)), eq(employeeNumberVal)))
                 .thenReturn(items)
 
             val request = ShelfLifeBatchDeleteRequest(ids = listOf(1, 2, 3))
@@ -352,10 +352,10 @@ class ShelfLifeServiceTest {
         fun batchDelete_forbidden() {
             stubUser()
             val myItem = createShelfLife(seq = 1)
-            whenever(shelfLifeRepository.findBySeqInAndEmployeeId(eq(listOf(1, 2)), eq(employeeIdVal)))
+            whenever(shelfLifeRepository.findBySeqInAndEmployeeNumber(eq(listOf(1, 2)), eq(employeeNumberVal)))
                 .thenReturn(listOf(myItem))
             whenever(shelfLifeRepository.findAllById(listOf(2)))
-                .thenReturn(listOf(createShelfLife(seq = 2, employeeId = "OTHER_EMP")))
+                .thenReturn(listOf(createShelfLife(seq = 2, employeeNumber = "OTHER_EMP")))
 
             val request = ShelfLifeBatchDeleteRequest(ids = listOf(1, 2))
 

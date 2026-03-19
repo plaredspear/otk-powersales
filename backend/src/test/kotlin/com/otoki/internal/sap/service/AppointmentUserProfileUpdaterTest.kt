@@ -170,8 +170,8 @@ class AppointmentUserProfileUpdaterTest {
             val org = createOrg(costCenterLevel5 = "1111", orgCodeLevel3 = "5066")
             whenever(organizationRepository.findAll()).thenReturn(listOf(org))
 
-            val user = createUser(employeeId = "100234")
-            whenever(userRepository.findByEmployeeId("100234")).thenReturn(Optional.of(user))
+            val user = createUser(employeeNumber = "100234")
+            whenever(userRepository.findByEmployeeNumber("100234")).thenReturn(Optional.of(user))
 
             val appointment = createAppointment(
                 employeeCode = "100234",
@@ -222,8 +222,8 @@ class AppointmentUserProfileUpdaterTest {
         fun orgNotFound() {
             whenever(organizationRepository.findAll()).thenReturn(emptyList())
 
-            val user = createUser(employeeId = "100234", appAuthority = "영업사원")
-            whenever(userRepository.findByEmployeeId("100234")).thenReturn(Optional.of(user))
+            val user = createUser(employeeNumber = "100234", appAuthority = "영업사원")
+            whenever(userRepository.findByEmployeeNumber("100234")).thenReturn(Optional.of(user))
 
             val appointment = createAppointment(
                 employeeCode = "100234",
@@ -245,8 +245,8 @@ class AppointmentUserProfileUpdaterTest {
             val org = createOrg(costCenterLevel4 = "2222", orgCodeLevel3 = "3472")
             whenever(organizationRepository.findAll()).thenReturn(listOf(org))
 
-            val user = createUser(employeeId = "100234")
-            whenever(userRepository.findByEmployeeId("100234")).thenReturn(Optional.of(user))
+            val user = createUser(employeeNumber = "100234")
+            whenever(userRepository.findByEmployeeNumber("100234")).thenReturn(Optional.of(user))
 
             val appointment = createAppointment(
                 employeeCode = "100234",
@@ -267,8 +267,8 @@ class AppointmentUserProfileUpdaterTest {
             val org2 = createOrg(costCenterLevel5 = "2222", orgCodeLevel3 = "9999")
             whenever(organizationRepository.findAll()).thenReturn(listOf(org1, org2))
 
-            val user = createUser(employeeId = "100234")
-            whenever(userRepository.findByEmployeeId("100234")).thenReturn(Optional.of(user))
+            val user = createUser(employeeNumber = "100234")
+            whenever(userRepository.findByEmployeeNumber("100234")).thenReturn(Optional.of(user))
 
             val appointments = listOf(
                 createAppointment(
@@ -290,11 +290,11 @@ class AppointmentUserProfileUpdaterTest {
 
     private fun createUser(
         id: Long = 1L,
-        employeeId: String = "100234",
+        employeeNumber: String = "100234",
         appAuthority: String? = null
     ): User = User(
         id = id,
-        employeeId = employeeId,
+        employeeNumber = employeeNumber,
         name = "테스트사원",
         appAuthority = appAuthority
     )

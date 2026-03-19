@@ -38,11 +38,11 @@ class UserRepositoryTest {
     }
 
     @Test
-    @DisplayName("findByEmployeeId - 존재하는 사번으로 사용자를 조회하면 User를 반환한다")
-    fun findByEmployeeId_WithExistingEmployeeId_ReturnsUser() {
+    @DisplayName("findByEmployeeNumber - 존재하는 사번으로 사용자를 조회하면 User를 반환한다")
+    fun findByEmployeeNumber_WithExistingEmployeeNumber_ReturnsUser() {
         // Given
         val testUser = createTestUser(
-            employeeId = "20010585",
+            employeeNumber = "20010585",
             name = "홍길동",
             orgName = "부산1지점"
         )
@@ -50,55 +50,55 @@ class UserRepositoryTest {
         testEntityManager.clear()
 
         // When
-        val result = userRepository.findByEmployeeId("20010585")
+        val result = userRepository.findByEmployeeNumber("20010585")
 
         // Then
         assertThat(result).isPresent
-        assertThat(result.get().employeeId).isEqualTo("20010585")
+        assertThat(result.get().employeeNumber).isEqualTo("20010585")
         assertThat(result.get().name).isEqualTo("홍길동")
         assertThat(result.get().orgName).isEqualTo("부산1지점")
     }
 
     @Test
-    @DisplayName("findByEmployeeId - 존재하지 않는 사번으로 조회하면 Optional.empty()를 반환한다")
-    fun findByEmployeeId_WithNonExistingEmployeeId_ReturnsEmpty() {
+    @DisplayName("findByEmployeeNumber - 존재하지 않는 사번으로 조회하면 Optional.empty()를 반환한다")
+    fun findByEmployeeNumber_WithNonExistingEmployeeNumber_ReturnsEmpty() {
         // Given
-        val testUser = createTestUser(employeeId = "20010585")
+        val testUser = createTestUser(employeeNumber = "20010585")
         testEntityManager.persistAndFlush(testUser)
         testEntityManager.clear()
 
         // When
-        val result = userRepository.findByEmployeeId("99999999")
+        val result = userRepository.findByEmployeeNumber("99999999")
 
         // Then
         assertThat(result).isEmpty
     }
 
     @Test
-    @DisplayName("existsByEmployeeId - 존재하는 사번으로 확인하면 true를 반환한다")
-    fun existsByEmployeeId_WithExistingEmployeeId_ReturnsTrue() {
+    @DisplayName("existsByEmployeeNumber - 존재하는 사번으로 확인하면 true를 반환한다")
+    fun existsByEmployeeNumber_WithExistingEmployeeNumber_ReturnsTrue() {
         // Given
-        val testUser = createTestUser(employeeId = "20010585")
+        val testUser = createTestUser(employeeNumber = "20010585")
         testEntityManager.persistAndFlush(testUser)
         testEntityManager.clear()
 
         // When
-        val result = userRepository.existsByEmployeeId("20010585")
+        val result = userRepository.existsByEmployeeNumber("20010585")
 
         // Then
         assertThat(result).isTrue()
     }
 
     @Test
-    @DisplayName("existsByEmployeeId - 존재하지 않는 사번으로 확인하면 false를 반환한다")
-    fun existsByEmployeeId_WithNonExistingEmployeeId_ReturnsFalse() {
+    @DisplayName("existsByEmployeeNumber - 존재하지 않는 사번으로 확인하면 false를 반환한다")
+    fun existsByEmployeeNumber_WithNonExistingEmployeeNumber_ReturnsFalse() {
         // Given
-        val testUser = createTestUser(employeeId = "20010585")
+        val testUser = createTestUser(employeeNumber = "20010585")
         testEntityManager.persistAndFlush(testUser)
         testEntityManager.clear()
 
         // When
-        val result = userRepository.existsByEmployeeId("99999999")
+        val result = userRepository.existsByEmployeeNumber("99999999")
 
         // Then
         assertThat(result).isFalse()
@@ -109,17 +109,17 @@ class UserRepositoryTest {
     fun findByOrgName_WithExistingOrg_ReturnsUserList() {
         // Given
         val user1 = createTestUser(
-            employeeId = "20010585",
+            employeeNumber = "20010585",
             name = "홍길동",
             orgName = "부산1지점"
         )
         val user2 = createTestUser(
-            employeeId = "20010586",
+            employeeNumber = "20010586",
             name = "김영희",
             orgName = "부산1지점"
         )
         val user3 = createTestUser(
-            employeeId = "20010587",
+            employeeNumber = "20010587",
             name = "이철수",
             orgName = "서울1지점"
         )
@@ -133,7 +133,7 @@ class UserRepositoryTest {
 
         // Then
         assertThat(result).hasSize(2)
-        assertThat(result.map { it.employeeId }).containsExactlyInAnyOrder("20010585", "20010586")
+        assertThat(result.map { it.employeeNumber }).containsExactlyInAnyOrder("20010585", "20010586")
         assertThat(result.map { it.name }).containsExactlyInAnyOrder("홍길동", "김영희")
         assertThat(result.all { it.orgName == "부산1지점" }).isTrue()
     }
@@ -143,7 +143,7 @@ class UserRepositoryTest {
     fun findByOrgName_WithNonExistingOrg_ReturnsEmptyList() {
         // Given
         val user1 = createTestUser(
-            employeeId = "20010585",
+            employeeNumber = "20010585",
             orgName = "부산1지점"
         )
         testEntityManager.persistAndFlush(user1)
@@ -161,19 +161,19 @@ class UserRepositoryTest {
     fun findByOrgName_WithVariousRoles_ReturnsAllUsers() {
         // Given
         val user = createTestUser(
-            employeeId = "20010585",
+            employeeNumber = "20010585",
             name = "일반사원",
             orgName = "서울1지점",
             appAuthority = null
         )
         val leader = createTestUser(
-            employeeId = "20010586",
+            employeeNumber = "20010586",
             name = "팀장",
             orgName = "서울1지점",
             appAuthority = "조장"
         )
         val admin = createTestUser(
-            employeeId = "20010587",
+            employeeNumber = "20010587",
             name = "관리자",
             orgName = "서울1지점",
             appAuthority = "지점장"
@@ -199,13 +199,13 @@ class UserRepositoryTest {
      * 테스트용 User 생성 헬퍼 함수
      */
     private fun createTestUser(
-        employeeId: String = "20010585",
+        employeeNumber: String = "20010585",
         name: String = "홍길동",
         orgName: String = "부산1지점",
         appAuthority: String? = null
     ): User {
         return User(
-            employeeId = employeeId,
+            employeeNumber = employeeNumber,
             password = "encodedPassword",
             name = name,
             orgName = orgName,

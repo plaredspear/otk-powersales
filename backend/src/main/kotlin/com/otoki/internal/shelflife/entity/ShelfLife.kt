@@ -24,8 +24,8 @@ class ShelfLife(
     @Column(name = "account_code", length = 100)
     val accountCode: String? = null,
 
-    @Column(name = "employee_id", length = 100)
-    val employeeId: String? = null,
+    @Column(name = "employee_number", length = 100)
+    val employeeNumber: String? = null,
 
     @Column(name = "product_id", length = 100)
     val productId: String? = null,

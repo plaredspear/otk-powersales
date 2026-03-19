@@ -63,7 +63,7 @@ class AdminSafetyCheckControllerTest {
                 members = listOf(
                     MemberStatus(
                         id = 42L,
-                        employeeId = "123456",
+                        employeeNumber = "123456",
                         employeeName = "홍길동",
                         accountName = "이마트 강남점",
                         submitted = true,
@@ -80,7 +80,7 @@ class AdminSafetyCheckControllerTest {
                     ),
                     MemberStatus(
                         id = 55L,
-                        employeeId = "654321",
+                        employeeNumber = "654321",
                         employeeName = "김영희",
                         accountName = "홈플러스 역삼점",
                         submitted = false,
@@ -103,7 +103,7 @@ class AdminSafetyCheckControllerTest {
                 .andExpect(jsonPath("$.data.total_count").value(2))
                 .andExpect(jsonPath("$.data.submitted_count").value(1))
                 .andExpect(jsonPath("$.data.not_submitted_count").value(1))
-                .andExpect(jsonPath("$.data.members[0].employee_id").value("123456"))
+                .andExpect(jsonPath("$.data.members[0].employee_number").value("123456"))
                 .andExpect(jsonPath("$.data.members[0].submitted").value(true))
                 .andExpect(jsonPath("$.data.members[0].equipments[0].seq_num").value(1))
                 .andExpect(jsonPath("$.data.members[0].equipments[0].label").value("손목보호대 착용"))

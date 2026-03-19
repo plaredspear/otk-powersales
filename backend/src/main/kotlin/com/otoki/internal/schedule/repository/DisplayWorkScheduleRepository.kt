@@ -7,25 +7,25 @@ import java.time.LocalDate
 interface DisplayWorkScheduleRepository : JpaRepository<DisplayWorkSchedule, Long>, DisplayWorkScheduleRepositoryCustom {
 
     /**
-     * 사원(employeeId)의 특정 날짜 거래처 스케줄 조회
+     * 사원(employeeNumber)의 특정 날짜 거래처 스케줄 조회
      */
-    fun findByEmployeeIdAndStartDate(employeeId: String, startDate: LocalDate): List<DisplayWorkSchedule>
+    fun findByEmployeeNumberAndStartDate(employeeNumber: String, startDate: LocalDate): List<DisplayWorkSchedule>
 
     /**
      * 사원의 특정 날짜, 특정 거래처 스케줄 존재 여부
      */
-    fun existsByEmployeeIdAndAccountIdAndStartDate(employeeId: String, accountId: Int, startDate: LocalDate): Boolean
+    fun existsByEmployeeNumberAndAccountIdAndStartDate(employeeNumber: String, accountId: Int, startDate: LocalDate): Boolean
 
     /**
      * 사원의 특정 날짜, 특정 거래처 스케줄 조회
      */
-    fun findByEmployeeIdAndAccountIdAndStartDate(employeeId: String, accountId: Int, startDate: LocalDate): DisplayWorkSchedule?
+    fun findByEmployeeNumberAndAccountIdAndStartDate(employeeNumber: String, accountId: Int, startDate: LocalDate): DisplayWorkSchedule?
 
     /**
      * 사원의 기간 내 스케줄 전체 조회
      */
-    fun findByEmployeeIdAndStartDateBetween(
-        employeeId: String,
+    fun findByEmployeeNumberAndStartDateBetween(
+        employeeNumber: String,
         startDateStart: LocalDate,
         startDateEnd: LocalDate
     ): List<DisplayWorkSchedule>

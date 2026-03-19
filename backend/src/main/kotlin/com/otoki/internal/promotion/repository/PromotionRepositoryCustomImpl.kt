@@ -78,7 +78,7 @@ class PromotionRepositoryCustomImpl(
     }
 
     override fun searchForMobile(
-        employeeId: String?,
+        employeeNumber: String?,
         costCenterCode: String?,
         isWoman: Boolean,
         keyword: String?,
@@ -92,13 +92,13 @@ class PromotionRepositoryCustomImpl(
 
         // 권한 기반 필터
         if (isWoman) {
-            // 여사원: 본인이 배정된 행사만 (PromotionEmployee.employeeId = 사번)
+            // 여사원: 본인이 배정된 행사만 (PromotionEmployee.employeeNumber = 사번)
             builder.and(
                 promotion.id.`in`(
                     JPAExpressions
                         .select(promotionEmployee.promotionId)
                         .from(promotionEmployee)
-                        .where(promotionEmployee.employeeId.eq(employeeId))
+                        .where(promotionEmployee.employeeNumber.eq(employeeNumber))
                 )
             )
         } else {

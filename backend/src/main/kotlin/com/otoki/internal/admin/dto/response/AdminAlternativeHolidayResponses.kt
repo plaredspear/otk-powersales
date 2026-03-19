@@ -6,7 +6,7 @@ import java.time.LocalDateTime
 
 data class AlternativeHolidayListItem(
     val id: Long,
-    val employeeId: String,
+    val employeeNumber: String,
     val employeeName: String,
     val orgName: String?,
     val actualWorkDate: LocalDate,

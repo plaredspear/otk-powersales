@@ -42,7 +42,7 @@ class SafetyCheckServiceTest {
     private lateinit var safetyCheckService: SafetyCheckService
 
     private val userId = 1L
-    private val employeeId = "20030117"
+    private val employeeNumber = "20030117"
 
     @Nested
     @DisplayName("getChecklistItems - 점검 항목 목록 조회")
@@ -96,7 +96,7 @@ class SafetyCheckServiceTest {
             val completeTime = LocalDateTime.now().minusHours(2)
             val submission = createSubmission(completeTime = completeTime)
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(createUser()))
-            whenever(submissionRepository.findByEmployeeIdAndWorkingDate(employeeId, LocalDate.now()))
+            whenever(submissionRepository.findByEmployeeNumberAndWorkingDate(employeeNumber, LocalDate.now()))
                 .thenReturn(Optional.of(submission))
 
             // When
@@ -112,7 +112,7 @@ class SafetyCheckServiceTest {
         fun getTodayStatus_notCompleted() {
             // Given
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(createUser()))
-            whenever(submissionRepository.findByEmployeeIdAndWorkingDate(employeeId, LocalDate.now()))
+            whenever(submissionRepository.findByEmployeeNumberAndWorkingDate(employeeNumber, LocalDate.now()))
                 .thenReturn(Optional.empty())
 
             // When
@@ -144,7 +144,7 @@ class SafetyCheckServiceTest {
         fun submitSafetyCheck_success() {
             // Given
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(createUser()))
-            whenever(submissionRepository.existsByEmployeeIdAndWorkingDate(employeeId, LocalDate.now()))
+            whenever(submissionRepository.existsByEmployeeNumberAndWorkingDate(employeeNumber, LocalDate.now()))
                 .thenReturn(false)
             whenever(itemRepository.countByQuestionNumAndUseYn(1, "Y")).thenReturn(9L)
             whenever(submissionRepository.save(any<SafetyCheckSubmission>()))
@@ -165,7 +165,7 @@ class SafetyCheckServiceTest {
         fun submitSafetyCheck_noPrecautions() {
             // Given
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(createUser()))
-            whenever(submissionRepository.existsByEmployeeIdAndWorkingDate(employeeId, LocalDate.now()))
+            whenever(submissionRepository.existsByEmployeeNumberAndWorkingDate(employeeNumber, LocalDate.now()))
                 .thenReturn(false)
             whenever(itemRepository.countByQuestionNumAndUseYn(1, "Y")).thenReturn(9L)
             whenever(submissionRepository.save(any<SafetyCheckSubmission>()))
@@ -185,7 +185,7 @@ class SafetyCheckServiceTest {
         fun submitSafetyCheck_alreadySubmitted() {
             // Given
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(createUser()))
-            whenever(submissionRepository.existsByEmployeeIdAndWorkingDate(employeeId, LocalDate.now()))
+            whenever(submissionRepository.existsByEmployeeNumberAndWorkingDate(employeeNumber, LocalDate.now()))
                 .thenReturn(true)
 
             // When & Then
@@ -198,7 +198,7 @@ class SafetyCheckServiceTest {
         fun submitSafetyCheck_equipmentCountMismatch() {
             // Given
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(createUser()))
-            whenever(submissionRepository.existsByEmployeeIdAndWorkingDate(employeeId, LocalDate.now()))
+            whenever(submissionRepository.existsByEmployeeNumberAndWorkingDate(employeeNumber, LocalDate.now()))
                 .thenReturn(false)
             whenever(itemRepository.countByQuestionNumAndUseYn(1, "Y")).thenReturn(9L)
 
@@ -214,7 +214,7 @@ class SafetyCheckServiceTest {
         fun submitSafetyCheck_invalidAnswer() {
             // Given
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(createUser()))
-            whenever(submissionRepository.existsByEmployeeIdAndWorkingDate(employeeId, LocalDate.now()))
+            whenever(submissionRepository.existsByEmployeeNumberAndWorkingDate(employeeNumber, LocalDate.now()))
                 .thenReturn(false)
             whenever(itemRepository.countByQuestionNumAndUseYn(1, "Y")).thenReturn(9L)
 
@@ -250,10 +250,10 @@ class SafetyCheckServiceTest {
 
     private fun createUser(
         id: Long = userId,
-        employeeId: String = this.employeeId,
+        employeeNumber: String = this.employeeNumber,
         name: String = "테스트 사용자"
     ): User {
-        return User(id = id, employeeId = employeeId, name = name)
+        return User(id = id, employeeNumber = employeeNumber, name = name)
     }
 
     private fun createItem(
@@ -272,13 +272,13 @@ class SafetyCheckServiceTest {
 
     private fun createSubmission(
         masterId: String = "",
-        employeeId: String = this.employeeId,
+        employeeNumber: String = this.employeeNumber,
         workingDate: LocalDate = LocalDate.now(),
         completeTime: LocalDateTime? = LocalDateTime.now()
     ): SafetyCheckSubmission {
         return SafetyCheckSubmission(
             masterId = masterId,
-            employeeId = employeeId,
+            employeeNumber = employeeNumber,
             workingDate = workingDate,
             completeTime = completeTime
         )

@@ -244,7 +244,7 @@ class NoticeServiceTest {
     inner class GetPostsTests {
 
         private val userId = 1L
-        private val testUser = User(id = userId, employeeId = "20030117", name = "테스트사원", orgName = "테스트지점")
+        private val testUser = User(id = userId, employeeNumber = "20030117", name = "테스트사원", orgName = "테스트지점")
 
         @BeforeEach
         fun setUpUser() {

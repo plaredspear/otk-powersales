@@ -34,19 +34,19 @@ class AdminAnnualLeaveServiceTest {
 
     private fun createUser(
         id: Long = 1L,
-        employeeId: String = "12345678",
+        employeeNumber: String = "12345678",
         name: String = "홍길동",
         orgName: String? = "서울1팀"
-    ) = User(id = id, employeeId = employeeId, name = name, orgName = orgName)
+    ) = User(id = id, employeeNumber = employeeNumber, name = name, orgName = orgName)
 
     private fun createSchedule(
         id: Long = 1L,
-        employeeId: String? = "12345678",
+        employeeNumber: String? = "12345678",
         workingDate: LocalDate? = LocalDate.of(2026, 3, 5),
         workingType: String? = "연차"
     ) = TeamMemberSchedule(
         id = id,
-        employeeId = employeeId,
+        employeeNumber = employeeNumber,
         workingDate = workingDate,
         workingType = workingType
     )
@@ -59,18 +59,18 @@ class AdminAnnualLeaveServiceTest {
         @DisplayName("성공 - orgCode 없음 → 전체 사원 연차 반환")
         fun noOrgCode_returnsAllEmployees() {
             // Given
-            val schedule1 = createSchedule(id = 1L, employeeId = "EMP001", workingDate = LocalDate.of(2026, 3, 5))
-            val schedule2 = createSchedule(id = 2L, employeeId = "EMP001", workingDate = LocalDate.of(2026, 3, 10))
-            val schedule3 = createSchedule(id = 3L, employeeId = "EMP002", workingDate = LocalDate.of(2026, 3, 15))
+            val schedule1 = createSchedule(id = 1L, employeeNumber = "EMP001", workingDate = LocalDate.of(2026, 3, 5))
+            val schedule2 = createSchedule(id = 2L, employeeNumber = "EMP001", workingDate = LocalDate.of(2026, 3, 10))
+            val schedule3 = createSchedule(id = 3L, employeeNumber = "EMP002", workingDate = LocalDate.of(2026, 3, 15))
 
             whenever(teamMemberScheduleRepository.findAnnualLeaveByDateRange(
                 eq(LocalDate.of(2026, 3, 1)),
                 eq(LocalDate.of(2026, 3, 31))
             )).thenReturn(listOf(schedule1, schedule2, schedule3))
 
-            val user1 = createUser(id = 1L, employeeId = "EMP001", name = "홍길동", orgName = "서울1팀")
-            val user2 = createUser(id = 2L, employeeId = "EMP002", name = "김철수", orgName = "부산1팀")
-            whenever(userRepository.findByEmployeeIdIn(listOf("EMP001", "EMP002")))
+            val user1 = createUser(id = 1L, employeeNumber = "EMP001", name = "홍길동", orgName = "서울1팀")
+            val user2 = createUser(id = 2L, employeeNumber = "EMP002", name = "김철수", orgName = "부산1팀")
+            whenever(userRepository.findByEmployeeNumberIn(listOf("EMP001", "EMP002")))
                 .thenReturn(listOf(user1, user2))
 
             // When
@@ -79,7 +79,7 @@ class AdminAnnualLeaveServiceTest {
             // Then
             assertThat(result).hasSize(2)
 
-            val emp1 = result.find { it.employeeId == "EMP001" }!!
+            val emp1 = result.find { it.employeeNumber == "EMP001" }!!
             assertThat(emp1.employeeName).isEqualTo("홍길동")
             assertThat(emp1.orgName).isEqualTo("서울1팀")
             assertThat(emp1.annualLeaveDays).hasSize(2)
@@ -87,7 +87,7 @@ class AdminAnnualLeaveServiceTest {
             assertThat(emp1.annualLeaveDays[0].date).isEqualTo("2026-03-05")
             assertThat(emp1.annualLeaveDays[1].date).isEqualTo("2026-03-10")
 
-            val emp2 = result.find { it.employeeId == "EMP002" }!!
+            val emp2 = result.find { it.employeeNumber == "EMP002" }!!
             assertThat(emp2.employeeName).isEqualTo("김철수")
             assertThat(emp2.totalCount).isEqualTo(1)
         }
@@ -96,17 +96,17 @@ class AdminAnnualLeaveServiceTest {
         @DisplayName("성공 - orgCode 지정 → 해당 조직 사원만 반환")
         fun withOrgCode_returnsFilteredEmployees() {
             // Given
-            val user1 = createUser(id = 1L, employeeId = "EMP001", name = "홍길동", orgName = "서울1팀")
+            val user1 = createUser(id = 1L, employeeNumber = "EMP001", name = "홍길동", orgName = "서울1팀")
             whenever(userRepository.findByOrgName("서울1팀")).thenReturn(listOf(user1))
 
-            val schedule1 = createSchedule(id = 1L, employeeId = "EMP001", workingDate = LocalDate.of(2026, 3, 5))
-            whenever(teamMemberScheduleRepository.findAnnualLeaveByDateRangeAndEmployeeIds(
+            val schedule1 = createSchedule(id = 1L, employeeNumber = "EMP001", workingDate = LocalDate.of(2026, 3, 5))
+            whenever(teamMemberScheduleRepository.findAnnualLeaveByDateRangeAndEmployeeNumbers(
                 eq(LocalDate.of(2026, 3, 1)),
                 eq(LocalDate.of(2026, 3, 31)),
                 eq(listOf("EMP001"))
             )).thenReturn(listOf(schedule1))
 
-            whenever(userRepository.findByEmployeeIdIn(listOf("EMP001")))
+            whenever(userRepository.findByEmployeeNumberIn(listOf("EMP001")))
                 .thenReturn(listOf(user1))
 
             // When
@@ -114,7 +114,7 @@ class AdminAnnualLeaveServiceTest {
 
             // Then
             assertThat(result).hasSize(1)
-            assertThat(result[0].employeeId).isEqualTo("EMP001")
+            assertThat(result[0].employeeNumber).isEqualTo("EMP001")
             assertThat(result[0].employeeName).isEqualTo("홍길동")
             assertThat(result[0].orgName).isEqualTo("서울1팀")
             assertThat(result[0].totalCount).isEqualTo(1)

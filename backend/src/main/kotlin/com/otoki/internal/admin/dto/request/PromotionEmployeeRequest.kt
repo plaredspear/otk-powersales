@@ -6,7 +6,7 @@ import java.time.LocalDate
 
 data class PromotionEmployeeRequest(
     @field:Size(max = 8, message = "여사원 사번은 최대 8자입니다")
-    val employeeId: String? = null,
+    val employeeNumber: String? = null,
 
     val scheduleDate: LocalDate? = null,
 

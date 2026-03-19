@@ -21,14 +21,14 @@ class SapAppointmentService(
 
     @Transactional
     override fun sync(items: List<SapAppointmentRequest.ReqItem>): SapSyncResult {
-        val employeeIds = userRepository.findAllEmployeeIds().toSet()
+        val employeeNumbers = userRepository.findAllEmployeeNumbers().toSet()
         var successCount = 0
         val errors = mutableListOf<SapSyncError>()
         val savedAppointments = mutableListOf<Appointment>()
 
         items.forEachIndexed { index, item ->
             try {
-                val appointment = syncItem(item, employeeIds)
+                val appointment = syncItem(item, employeeNumbers)
                 savedAppointments.add(appointment)
                 successCount++
             } catch (e: Exception) {
@@ -56,7 +56,7 @@ class SapAppointmentService(
         )
     }
 
-    private fun syncItem(item: SapAppointmentRequest.ReqItem, employeeIds: Set<String>): Appointment {
+    private fun syncItem(item: SapAppointmentRequest.ReqItem, employeeNumbers: Set<String>): Appointment {
         val employeeCode = item.employeeCode
             ?: throw IllegalArgumentException("employee_code is required")
         val appointDate = item.appointDate
@@ -64,7 +64,7 @@ class SapAppointmentService(
 
         val appointment = Appointment(
             employeeCode = employeeCode,
-            empCodeExist = employeeIds.contains(employeeCode),
+            empCodeExist = employeeNumbers.contains(employeeCode),
             afterOrgCode = item.afterOrgCode,
             afterOrgName = item.afterOrgName,
             jikchak = item.jikchak,

@@ -52,7 +52,7 @@ class MyAccountServiceTest {
         fun getMyAccounts_employee_mergedSchedules() {
             // Given
             val userId = 1L
-            val user = createUser(id = userId, employeeId = "20030117", sfid = "SF001")
+            val user = createUser(id = userId, employeeNumber = "20030117", sfid = "SF001")
             val accounts = listOf(
                 createAccount(id = 1, name = "(유)경산식품", externalKey = "1025172"),
                 createAccount(id = 2, name = "(주)대한식품", externalKey = "1025173"),
@@ -60,7 +60,7 @@ class MyAccountServiceTest {
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(eq("20030117"), any(), any()))
+            whenever(teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeNumberAndDateRange(eq("20030117"), any(), any()))
                 .thenReturn(listOf(1, 2))
             whenever(displayWorkScheduleRepository.findDistinctAccountIdsBySfidAndDateRange(eq("SF001"), any(), any()))
                 .thenReturn(listOf(2, 3))
@@ -84,11 +84,11 @@ class MyAccountServiceTest {
         fun getMyAccounts_employee_teamScheduleOnly() {
             // Given
             val userId = 1L
-            val user = createUser(id = userId, employeeId = "20030117", sfid = "SF001")
+            val user = createUser(id = userId, employeeNumber = "20030117", sfid = "SF001")
             val accounts = listOf(createAccount(id = 1, name = "경산농협", externalKey = "1025172"))
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(eq("20030117"), any(), any()))
+            whenever(teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeNumberAndDateRange(eq("20030117"), any(), any()))
                 .thenReturn(listOf(1))
             whenever(displayWorkScheduleRepository.findDistinctAccountIdsBySfidAndDateRange(eq("SF001"), any(), any()))
                 .thenReturn(emptyList())
@@ -108,11 +108,11 @@ class MyAccountServiceTest {
         fun getMyAccounts_employee_displayScheduleOnly() {
             // Given
             val userId = 1L
-            val user = createUser(id = userId, employeeId = "20030117", sfid = "SF001")
+            val user = createUser(id = userId, employeeNumber = "20030117", sfid = "SF001")
             val accounts = listOf(createAccount(id = 3, name = "나라마트", externalKey = "1025174"))
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(eq("20030117"), any(), any()))
+            whenever(teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeNumberAndDateRange(eq("20030117"), any(), any()))
                 .thenReturn(emptyList())
             whenever(displayWorkScheduleRepository.findDistinctAccountIdsBySfidAndDateRange(eq("SF001"), any(), any()))
                 .thenReturn(listOf(3))
@@ -132,10 +132,10 @@ class MyAccountServiceTest {
         fun getMyAccounts_employee_noSchedules() {
             // Given
             val userId = 1L
-            val user = createUser(id = userId, employeeId = "20030117", sfid = "SF001")
+            val user = createUser(id = userId, employeeNumber = "20030117", sfid = "SF001")
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(eq("20030117"), any(), any()))
+            whenever(teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeNumberAndDateRange(eq("20030117"), any(), any()))
                 .thenReturn(emptyList())
             whenever(displayWorkScheduleRepository.findDistinctAccountIdsBySfidAndDateRange(eq("SF001"), any(), any()))
                 .thenReturn(emptyList())
@@ -153,11 +153,11 @@ class MyAccountServiceTest {
         fun getMyAccounts_employee_nullSfid() {
             // Given
             val userId = 1L
-            val user = createUser(id = userId, employeeId = "20030117", sfid = null)
+            val user = createUser(id = userId, employeeNumber = "20030117", sfid = null)
             val accounts = listOf(createAccount(id = 1, name = "경산농협", externalKey = "1025172"))
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(eq("20030117"), any(), any()))
+            whenever(teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeNumberAndDateRange(eq("20030117"), any(), any()))
                 .thenReturn(listOf(1))
             whenever(accountRepository.findByIdInAndIsDeletedNot(any(), eq(true)))
                 .thenReturn(accounts)
@@ -175,14 +175,14 @@ class MyAccountServiceTest {
         fun getMyAccounts_includesAddressDetail() {
             // Given
             val userId = 1L
-            val user = createUser(id = userId, employeeId = "20030117", sfid = "SF001")
+            val user = createUser(id = userId, employeeNumber = "20030117", sfid = "SF001")
             val accounts = listOf(
                 createAccount(id = 1, name = "경산농협", externalKey = "1025172",
                     address1 = "전라남도 목포시 용해동 123", address2 = "1층")
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(eq("20030117"), any(), any()))
+            whenever(teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeNumberAndDateRange(eq("20030117"), any(), any()))
                 .thenReturn(listOf(1))
             whenever(displayWorkScheduleRepository.findDistinctAccountIdsBySfidAndDateRange(eq("SF001"), any(), any()))
                 .thenReturn(emptyList())
@@ -207,7 +207,7 @@ class MyAccountServiceTest {
         fun getMyAccounts_leader_branchAccounts() {
             // Given
             val userId = 1L
-            val user = createUser(id = userId, employeeId = "20030117", appAuthority = "조장", costCenterCode = "1100")
+            val user = createUser(id = userId, employeeNumber = "20030117", appAuthority = "조장", costCenterCode = "1100")
             val accounts = listOf(
                 createAccount(id = 10, name = "A마트", externalKey = "2001"),
                 createAccount(id = 11, name = "B식품", externalKey = "2002")
@@ -225,7 +225,7 @@ class MyAccountServiceTest {
             assertThat(result.stores).hasSize(2)
             assertThat(result.totalCount).isEqualTo(2)
             // 조장은 팀멤버/진열스케줄 조회하지 않음
-            verify(teamMemberScheduleRepository, never()).findDistinctAccountIdsByEmployeeIdAndDateRange(any(), any(), any())
+            verify(teamMemberScheduleRepository, never()).findDistinctAccountIdsByEmployeeNumberAndDateRange(any(), any(), any())
             verify(displayWorkScheduleRepository, never()).findDistinctAccountIdsBySfidAndDateRange(any(), any(), any())
         }
 
@@ -234,7 +234,7 @@ class MyAccountServiceTest {
         fun getMyAccounts_leader_noCostCenterCode() {
             // Given
             val userId = 1L
-            val user = createUser(id = userId, employeeId = "20030117", appAuthority = "조장", costCenterCode = null)
+            val user = createUser(id = userId, employeeNumber = "20030117", appAuthority = "조장", costCenterCode = null)
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
 
@@ -256,7 +256,7 @@ class MyAccountServiceTest {
         fun getMyAccounts_searchByName() {
             // Given
             val userId = 1L
-            val user = createUser(id = userId, employeeId = "20030117", appAuthority = "조장", costCenterCode = "1100")
+            val user = createUser(id = userId, employeeNumber = "20030117", appAuthority = "조장", costCenterCode = "1100")
             val accounts = listOf(
                 createAccount(id = 1, name = "(유)경산식품", externalKey = "1025172"),
                 createAccount(id = 2, name = "(주)대한식품", externalKey = "1025173")
@@ -279,7 +279,7 @@ class MyAccountServiceTest {
         fun getMyAccounts_searchByCode() {
             // Given
             val userId = 1L
-            val user = createUser(id = userId, employeeId = "20030117", appAuthority = "조장", costCenterCode = "1100")
+            val user = createUser(id = userId, employeeNumber = "20030117", appAuthority = "조장", costCenterCode = "1100")
             val accounts = listOf(
                 createAccount(id = 1, name = "A마트", externalKey = "1025172"),
                 createAccount(id = 2, name = "B식품", externalKey = "2001")
@@ -331,7 +331,7 @@ class MyAccountServiceTest {
         fun getMyAccounts_sortedByAccountName() {
             // Given
             val userId = 1L
-            val user = createUser(id = userId, employeeId = "20030117", appAuthority = "조장", costCenterCode = "1100")
+            val user = createUser(id = userId, employeeNumber = "20030117", appAuthority = "조장", costCenterCode = "1100")
             val accounts = listOf(
                 createAccount(id = 1, name = "홈플러스 서면점", externalKey = "1025173"),
                 createAccount(id = 2, name = "가나다식품", externalKey = "1025172"),
@@ -357,14 +357,14 @@ class MyAccountServiceTest {
 
     private fun createUser(
         id: Long = 1L,
-        employeeId: String = "12345678",
+        employeeNumber: String = "12345678",
         sfid: String? = null,
         appAuthority: String? = null,
         costCenterCode: String? = null
     ): User {
         return User(
             id = id,
-            employeeId = employeeId,
+            employeeNumber = employeeNumber,
             password = "encodedPassword",
             name = "테스트 사용자",
             orgName = "부산지점",

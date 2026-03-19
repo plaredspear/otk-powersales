@@ -88,8 +88,8 @@ class AdminScheduleServiceTest {
             val user = createUser(id = userId, costCenterCode = costCenterCode)
             val org = Organization(id = 1, costCenterLevel5 = costCenterCode)
             val employees = listOf(
-                createUser(employeeId = "20030001", name = "홍길동", orgName = "A팀"),
-                createUser(employeeId = "20030002", name = "김철수", orgName = "B팀")
+                createUser(employeeNumber = "20030001", name = "홍길동", orgName = "A팀"),
+                createUser(employeeNumber = "20030002", name = "김철수", orgName = "B팀")
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
@@ -188,13 +188,13 @@ class AdminScheduleServiceTest {
                 ScheduleExcelParser.ParsedRow(4, "20030001", "홍길동", "ACC001", "이마트 강남점", "고정", "상시", "2026-04-01", null, LocalDate.of(2026, 4, 1), null)
             )
             val parseResult = ScheduleExcelParser.ParseResult(parsedRows, 1)
-            val user = createUser(employeeId = "20030001", name = "홍길동", sfid = "USR001")
+            val user = createUser(employeeNumber = "20030001", name = "홍길동", sfid = "USR001")
             val account = createAccount(externalKey = "ACC001", sfid = "ACC_SFID_001", name = "이마트 강남점")
 
             whenever(excelParser.parse(any())).thenReturn(parseResult)
-            whenever(userRepository.findByEmployeeIdIn(listOf("20030001"))).thenReturn(listOf(user))
+            whenever(userRepository.findByEmployeeNumberIn(listOf("20030001"))).thenReturn(listOf(user))
             whenever(accountRepository.findByExternalKeyIn(listOf("ACC001"))).thenReturn(listOf(account))
-            whenever(scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf("20030001"))).thenReturn(emptyList())
+            whenever(scheduleRepository.findByEmployeeNumberInAndNotDeleted(listOf("20030001"))).thenReturn(emptyList())
             whenever(uploadValidator.validate(eq(parsedRows), any(), any(), any())).thenReturn(
                 ScheduleUploadValidator.ValidationResult(
                     errors = emptyList(),
@@ -298,7 +298,7 @@ class AdminScheduleServiceTest {
             assertThat(result.insertedCount).isEqualTo(1)
             verify(scheduleRepository).saveAll(argThat<List<DisplayWorkSchedule>> { list ->
                 list.size == 1 &&
-                    list[0].employeeId == "20030001" &&
+                    list[0].employeeNumber == "20030001" &&
                     list[0].accountId == 1 &&
                     list[0].typeOfWork1 == "진열" &&
                     list[0].confirmed == false
@@ -365,7 +365,7 @@ class AdminScheduleServiceTest {
         }
 
         @Test
-        @DisplayName("ownerId 자동 설정 - 조장이 존재하면 조장의 employeeId 저장")
+        @DisplayName("ownerId 자동 설정 - 조장이 존재하면 조장의 employeeNumber 저장")
         fun confirmUpload_ownerIdWithManager() {
             val uploadId = "test-owner"
             val cacheData = AdminScheduleService.UploadCacheData(
@@ -379,7 +379,7 @@ class AdminScheduleServiceTest {
                 errorCount = 0
             )
             val json = objectMapper.writeValueAsString(cacheData)
-            val manager = createUser(employeeId = "20030099", name = "조장사원", costCenterCode = "A10010", appAuthority = "조장")
+            val manager = createUser(employeeNumber = "20030099", name = "조장사원", costCenterCode = "A10010", appAuthority = "조장")
 
             whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
             whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
@@ -536,14 +536,14 @@ class AdminScheduleServiceTest {
         @Test
         @DisplayName("정상 조회 - 필터 없이 전체 목록 반환")
         fun listSchedules_success() {
-            val schedule = createSchedule(id = 1L, employeeId = "20030001", accountId = 100, confirmed = false)
+            val schedule = createSchedule(id = 1L, employeeNumber = "20030001", accountId = 100, confirmed = false)
             val page = PageImpl(listOf(schedule), PageRequest.of(0, 20), 1)
-            val user = createUser(employeeId = "20030001", name = "홍길동")
+            val user = createUser(employeeNumber = "20030001", name = "홍길동")
             val account = createAccount(id = 100, externalKey = "SAP001", name = "이마트 성수점")
 
             whenever(scheduleRepository.findScheduleList(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any()))
                 .thenReturn(page)
-            whenever(userRepository.findByEmployeeIdIn(listOf("20030001"))).thenReturn(listOf(user))
+            whenever(userRepository.findByEmployeeNumberIn(listOf("20030001"))).thenReturn(listOf(user))
             whenever(accountRepository.findByIdIn(listOf(100))).thenReturn(listOf(account))
 
             val result = adminScheduleService.listSchedules(0, 20, null, null, null, null, null, null)
@@ -716,13 +716,13 @@ class AdminScheduleServiceTest {
 
     private fun createSchedule(
         id: Long = 1L,
-        employeeId: String = "20030001",
+        employeeNumber: String = "20030001",
         accountId: Int = 1,
         confirmed: Boolean? = false,
         isDeleted: Boolean? = null
     ): DisplayWorkSchedule = DisplayWorkSchedule(
         id = id,
-        employeeId = employeeId,
+        employeeNumber = employeeNumber,
         accountId = accountId,
         typeOfWork1 = "진열",
         typeOfWork3 = "고정",
@@ -735,7 +735,7 @@ class AdminScheduleServiceTest {
 
     private fun createUser(
         id: Long = 1L,
-        employeeId: String = "20030001",
+        employeeNumber: String = "20030001",
         name: String = "테스트사원",
         costCenterCode: String? = "1234",
         orgName: String = "테스트팀",
@@ -744,7 +744,7 @@ class AdminScheduleServiceTest {
         appAuthority: String? = null
     ): User = User(
         id = id,
-        employeeId = employeeId,
+        employeeNumber = employeeNumber,
         name = name,
         costCenterCode = costCenterCode,
         orgName = orgName,

@@ -52,8 +52,8 @@ class AdminPromotionConfirmServiceTest {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
             whenever(promotionEmployeeRepository.findByPromotionId(10L)).thenReturn(employees)
             whenever(teamMemberScheduleRepository.findByPromotionEmpIdExtIn(any())).thenReturn(emptyList())
-            whenever(teamMemberScheduleRepository.findByEmployeeIdInAndWorkingDateIn(any(), any())).thenReturn(emptyList())
-            whenever(userRepository.findByEmployeeIdIn(any())).thenReturn(listOf(
+            whenever(teamMemberScheduleRepository.findByEmployeeNumberInAndWorkingDateIn(any(), any())).thenReturn(emptyList())
+            whenever(userRepository.findByEmployeeNumberIn(any())).thenReturn(listOf(
                 createUser("EMP001", "김철수"),
                 createUser("EMP002", "이영희"),
                 createUser("EMP003", "박민수")
@@ -63,7 +63,7 @@ class AdminPromotionConfirmServiceTest {
                 teamMemberSchedules.mapIndexed { index, s ->
                     TeamMemberSchedule(
                         id = (100L + index),
-                        employeeId = s.employeeId,
+                        employeeNumber = s.employeeNumber,
                         accountId = s.accountId,
                         workingDate = s.workingDate,
                         workingType = s.workingType,
@@ -96,7 +96,7 @@ class AdminPromotionConfirmServiceTest {
             )
             val existingTeamMemberSchedule = TeamMemberSchedule(
                 id = 50L,
-                employeeId = "EMP001",
+                employeeNumber = "EMP001",
                 accountId = 100,
                 workingDate = startDate,
                 workingType = "근무",
@@ -109,8 +109,8 @@ class AdminPromotionConfirmServiceTest {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
             whenever(promotionEmployeeRepository.findByPromotionId(10L)).thenReturn(employees)
             whenever(teamMemberScheduleRepository.findByPromotionEmpIdExtIn(listOf("1"))).thenReturn(listOf(existingTeamMemberSchedule))
-            whenever(teamMemberScheduleRepository.findByEmployeeIdInAndWorkingDateIn(any(), any())).thenReturn(listOf(existingTeamMemberSchedule))
-            whenever(userRepository.findByEmployeeIdIn(any())).thenReturn(listOf(createUser("EMP001", "김철수")))
+            whenever(teamMemberScheduleRepository.findByEmployeeNumberInAndWorkingDateIn(any(), any())).thenReturn(listOf(existingTeamMemberSchedule))
+            whenever(userRepository.findByEmployeeNumberIn(any())).thenReturn(listOf(createUser("EMP001", "김철수")))
             whenever(teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>())).thenAnswer { it.getArgument<List<TeamMemberSchedule>>(0) }
             whenever(promotionEmployeeRepository.saveAll(any<List<PromotionEmployee>>())).thenAnswer { it.getArgument<List<PromotionEmployee>>(0) }
 
@@ -215,15 +215,15 @@ class AdminPromotionConfirmServiceTest {
     }
 
     @Nested
-    @DisplayName("employeeId 기반 확정")
-    inner class EmployeeIdConfirmTests {
+    @DisplayName("employeeNumber 기반 확정")
+    inner class EmployeeNumberConfirmTests {
 
         @Test
-        @DisplayName("employeeId 기반 사원 확정 -> employeeSfid null이어도 성공")
-        fun confirm_employeeIdOnly_success() {
+        @DisplayName("employeeNumber 기반 사원 확정 -> employeeSfid null이어도 성공")
+        fun confirm_employeeNumberOnly_success() {
             val promotion = createPromotion()
             val employees = listOf(
-                createPE(id = 1L, employeeSfid = null, employeeId = "123456", scheduleDate = startDate)
+                createPE(id = 1L, employeeSfid = null, employeeNumber = "123456", scheduleDate = startDate)
             )
             setupMocksForSuccess(promotion, employees)
 
@@ -232,11 +232,11 @@ class AdminPromotionConfirmServiceTest {
         }
 
         @Test
-        @DisplayName("employeeId null + employeeSfid null -> 행사사원 누락 에러")
+        @DisplayName("employeeNumber null + employeeSfid null -> 행사사원 누락 에러")
         fun confirm_noIdentifier_missingEmployee() {
             val promotion = createPromotion()
             val employees = listOf(
-                createPE(id = 1L, employeeSfid = null, employeeId = null)
+                createPE(id = 1L, employeeSfid = null, employeeNumber = null)
             )
             setupMocks(promotion, employees)
 
@@ -351,8 +351,8 @@ class AdminPromotionConfirmServiceTest {
                 createPE(id = 1L, employeeSfid = "EMP001", scheduleDate = startDate, workType3 = "순회")
             )
             val existingTeamMemberSchedules = listOf(
-                createTeamMemberSchedule(employeeId = "EMP001", workingDate = startDate, workingCategory3 = "격고"),
-                createTeamMemberSchedule(employeeId = "EMP001", workingDate = startDate, workingCategory3 = "격고")
+                createTeamMemberSchedule(employeeNumber = "EMP001", workingDate = startDate, workingCategory3 = "격고"),
+                createTeamMemberSchedule(employeeNumber = "EMP001", workingDate = startDate, workingCategory3 = "격고")
             )
             setupMocks(promotion, employees, existingTeamMemberSchedules = existingTeamMemberSchedules)
 
@@ -387,7 +387,7 @@ class AdminPromotionConfirmServiceTest {
                 createPE(id = 1L, employeeSfid = "EMP001", scheduleDate = startDate, workStatus = "근무", workType3 = "순회")
             )
             val existingTeamMemberSchedules = listOf(
-                createTeamMemberSchedule(employeeId = "EMP001", workingDate = startDate, workingType = "연차", workingCategory3 = "순회")
+                createTeamMemberSchedule(employeeNumber = "EMP001", workingDate = startDate, workingType = "연차", workingCategory3 = "순회")
             )
             setupMocks(promotion, employees, existingTeamMemberSchedules = existingTeamMemberSchedules)
 
@@ -403,7 +403,7 @@ class AdminPromotionConfirmServiceTest {
                 createPE(id = 1L, employeeSfid = "EMP001", scheduleDate = startDate, workStatus = "연차", workType3 = "순회")
             )
             val existingTeamMemberSchedules = listOf(
-                createTeamMemberSchedule(employeeId = "EMP001", workingDate = startDate, workingType = "근무", workingCategory3 = "순회")
+                createTeamMemberSchedule(employeeNumber = "EMP001", workingDate = startDate, workingType = "근무", workingCategory3 = "순회")
             )
             setupMocks(promotion, employees, existingTeamMemberSchedules = existingTeamMemberSchedules)
 
@@ -424,7 +424,7 @@ class AdminPromotionConfirmServiceTest {
                 createPE(id = 1L, employeeSfid = "EMP001", scheduleDate = startDate, workType3 = "순회")
             )
             val existingTeamMemberSchedules = listOf(
-                createTeamMemberSchedule(employeeId = "EMP001", workingDate = startDate, accountId = 100, workingCategory3 = "순회")
+                createTeamMemberSchedule(employeeNumber = "EMP001", workingDate = startDate, accountId = 100, workingCategory3 = "순회")
             )
             setupMocks(promotion, employees, existingTeamMemberSchedules = existingTeamMemberSchedules)
 
@@ -476,11 +476,11 @@ class AdminPromotionConfirmServiceTest {
         whenever(promotionEmployeeRepository.findByPromotionId(10L)).thenReturn(employees)
         org.mockito.Mockito.lenient().`when`(promotionEmployeeRepository.saveAll(any<List<PromotionEmployee>>())).thenAnswer { it.getArgument<List<PromotionEmployee>>(0) }
         whenever(teamMemberScheduleRepository.findByPromotionEmpIdExtIn(any())).thenReturn(emptyList())
-        whenever(teamMemberScheduleRepository.findByEmployeeIdInAndWorkingDateIn(any(), any())).thenReturn(existingTeamMemberSchedules)
+        whenever(teamMemberScheduleRepository.findByEmployeeNumberInAndWorkingDateIn(any(), any())).thenReturn(existingTeamMemberSchedules)
 
-        val employeeIds = employees.mapNotNull { it.employeeId }.distinct()
-        val users = employeeIds.map { createUser(it, "${it}이름", userStatus) }
-        whenever(userRepository.findByEmployeeIdIn(any())).thenReturn(users)
+        val employeeNumbers = employees.mapNotNull { it.employeeNumber }.distinct()
+        val users = employeeNumbers.map { createUser(it, "${it}이름", userStatus) }
+        whenever(userRepository.findByEmployeeNumberIn(any())).thenReturn(users)
     }
 
     private fun setupMocksForSuccess(
@@ -493,7 +493,7 @@ class AdminPromotionConfirmServiceTest {
             schedules.mapIndexed { index, s ->
                 TeamMemberSchedule(
                     id = (100L + index),
-                    employeeId = s.employeeId,
+                    employeeNumber = s.employeeNumber,
                     accountId = s.accountId,
                     workingDate = s.workingDate,
                     workingType = s.workingType,
@@ -526,7 +526,7 @@ class AdminPromotionConfirmServiceTest {
         id: Long = 1L,
         promotionId: Long = 10L,
         employeeSfid: String? = "EMP001",
-        employeeId: String? = employeeSfid,
+        employeeNumber: String? = employeeSfid,
         scheduleDate: LocalDate = startDate,
         workStatus: String? = "근무",
         workType1: String? = "행사",
@@ -536,7 +536,7 @@ class AdminPromotionConfirmServiceTest {
         id = id,
         promotionId = promotionId,
         employeeSfid = employeeSfid,
-        employeeId = employeeId,
+        employeeNumber = employeeNumber,
         scheduleDate = scheduleDate,
         workStatus = workStatus,
         workType1 = workType1,
@@ -550,14 +550,14 @@ class AdminPromotionConfirmServiceTest {
         status: String? = null
     ): User = User(
         sfid = sfid,
-        employeeId = sfid,
+        employeeNumber = sfid,
         name = name,
         status = status
     )
 
     private fun createTeamMemberSchedule(
         id: Long = 0L,
-        employeeId: String = "EMP001",
+        employeeNumber: String = "EMP001",
         workingDate: LocalDate = startDate,
         workingType: String = "근무",
         workingCategory3: String = "고정",
@@ -565,7 +565,7 @@ class AdminPromotionConfirmServiceTest {
         promotionEmpIdExt: String? = null
     ): TeamMemberSchedule = TeamMemberSchedule(
         id = id,
-        employeeId = employeeId,
+        employeeNumber = employeeNumber,
         workingDate = workingDate,
         workingType = workingType,
         workingCategory3 = workingCategory3,

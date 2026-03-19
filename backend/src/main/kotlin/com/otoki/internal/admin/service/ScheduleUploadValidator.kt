@@ -23,7 +23,7 @@ class ScheduleUploadValidator {
     )
 
     data class ValidatedRow(
-        val userEmployeeId: String,
+        val userEmployeeNumber: String,
         val accountId: Int,
         val typeOfWork3: String,
         val typeOfWork5: String,
@@ -35,7 +35,7 @@ class ScheduleUploadValidator {
 
     fun validate(
         parsedRows: List<ScheduleExcelParser.ParsedRow>,
-        usersByEmployeeId: Map<String, User>,
+        usersByEmployeeNumber: Map<String, User>,
         accountsByExternalKey: Map<String, Account>,
         existingSchedules: List<DisplayWorkSchedule>
     ): ValidationResult {
@@ -84,7 +84,7 @@ class ScheduleUploadValidator {
             val endDate = row.endDate
 
             // V1: 사원번호 존재
-            val user = usersByEmployeeId[employeeCode]
+            val user = usersByEmployeeNumber[employeeCode]
             if (user == null) {
                 rowErrors.add(RowError(row.rowNumber, "A", "사원번호", employeeCode, "사원번호 $employeeCode: 존재하지 않는 사원"))
             }
@@ -140,12 +140,12 @@ class ScheduleUploadValidator {
                 continue
             }
 
-            val userEmployeeId = user!!.employeeId
+            val userEmployeeNumber = user!!.employeeNumber
             val accountIdVal = account!!.id
 
             // V8: DB 기존 레코드와 기간 중복 검사
             val overlappingDb = existingSchedules.filter { schedule ->
-                schedule.employeeId == userEmployeeId &&
+                schedule.employeeNumber == userEmployeeNumber &&
                     schedule.accountId == accountIdVal &&
                     periodsOverlap(schedule.startDate, schedule.endDate, startDate, endDate)
             }
@@ -160,7 +160,7 @@ class ScheduleUploadValidator {
 
             // V9: 파일 내 행 간 중복 검사
             val overlappingFile = validatedInFile.filter { prev ->
-                prev.userEmployeeId == userEmployeeId &&
+                prev.userEmployeeNumber == userEmployeeNumber &&
                     prev.accountId == accountIdVal &&
                     periodsOverlap(prev.startDate, prev.endDate, startDate, endDate)
             }
@@ -176,10 +176,10 @@ class ScheduleUploadValidator {
             // C1~C3: 근무유형 조합 규칙 (DB + 파일 내 선행 행)
             if (rowErrors.isEmpty()) {
                 val sameEmployeeSamePeriod = existingSchedules.filter { schedule ->
-                    schedule.employeeId == userEmployeeId &&
+                    schedule.employeeNumber == userEmployeeNumber &&
                         periodsOverlap(schedule.startDate, schedule.endDate, startDate, endDate)
                 } + validatedInFile.filter { prev ->
-                    prev.userEmployeeId == userEmployeeId &&
+                    prev.userEmployeeNumber == userEmployeeNumber &&
                         periodsOverlap(prev.startDate, prev.endDate, startDate, endDate)
                 }.map { toScheduleLike(it) }
 
@@ -193,7 +193,7 @@ class ScheduleUploadValidator {
                 errors.addAll(rowErrors)
             } else {
                 val validatedRow = ValidatedRow(
-                    userEmployeeId = userEmployeeId,
+                    userEmployeeNumber = userEmployeeNumber,
                     accountId = accountIdVal,
                     typeOfWork3 = typeOfWork3,
                     typeOfWork5 = typeOfWork5,
@@ -206,7 +206,7 @@ class ScheduleUploadValidator {
                 validatedInFile.add(
                     FileRowData(
                         rowNumber = row.rowNumber,
-                        userEmployeeId = userEmployeeId,
+                        userEmployeeNumber = userEmployeeNumber,
                         accountId = accountIdVal,
                         typeOfWork3 = typeOfWork3,
                         typeOfWork5 = typeOfWork5,
@@ -249,7 +249,7 @@ class ScheduleUploadValidator {
 
     private data class FileRowData(
         val rowNumber: Int,
-        val userEmployeeId: String,
+        val userEmployeeNumber: String,
         val accountId: Int,
         val typeOfWork3: String,
         val typeOfWork5: String,

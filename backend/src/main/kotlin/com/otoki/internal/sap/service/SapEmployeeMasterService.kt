@@ -69,14 +69,14 @@ class SapEmployeeMasterService(
         val isActive = resolveAppLoginActive(statusCode, item.lockingFlag)
         val startDate = parseDate(item.startDate)
 
-        val existingUser = userRepository.findByEmployeeId(employeeCode).orElse(null)
+        val existingUser = userRepository.findByEmployeeNumber(employeeCode).orElse(null)
 
         if (existingUser != null) {
             updateUser(existingUser, employeeName, statusName, isActive, item, startDate)
             userRepository.save(existingUser)
         } else {
             val newUser = User(
-                employeeId = employeeCode,
+                employeeNumber = employeeCode,
                 name = employeeName,
                 status = statusName,
                 appLoginActive = isActive,

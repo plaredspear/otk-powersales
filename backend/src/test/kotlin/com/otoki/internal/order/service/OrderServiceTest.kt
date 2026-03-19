@@ -71,7 +71,7 @@ class OrderServiceTest {
 
     private val testUser = User(
         id = 1L,
-        employeeId = "12345678",
+        employeeNumber = "12345678",
         password = "encoded",
         name = "홍길동",
         orgName = "서울지점"
@@ -707,7 +707,7 @@ class OrderServiceTest {
             val orderService = createOrderService()
             val otherUser = User(
                 id = 2L,
-                employeeId = "87654321",
+                employeeNumber = "87654321",
                 password = "encoded",
                 name = "김철수",
                 orgName = "서울지점"
@@ -829,7 +829,7 @@ class OrderServiceTest {
             val orderService = createOrderService()
             val otherUser = User(
                 id = 2L,
-                employeeId = "87654321",
+                employeeNumber = "87654321",
                 password = "encoded",
                 name = "김철수",
                 orgName = "서울지점"
@@ -1033,7 +1033,7 @@ class OrderServiceTest {
             val orderService = createOrderService()
             val otherUser = User(
                 id = 2L,
-                employeeId = "87654321",
+                employeeNumber = "87654321",
                 password = "encoded",
                 name = "김철수",
                 orgName = "서울지점"

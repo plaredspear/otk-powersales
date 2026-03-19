@@ -856,10 +856,10 @@ class AdminPromotionServiceTest {
 
     private fun createUser(
         id: Long = 1L,
-        employeeId: String = "20030117",
+        employeeNumber: String = "20030117",
         costCenterCode: String? = "1101",
         appAuthority: String? = null
-    ) = User(id = id, employeeId = employeeId, name = "테스트 사용자").also {
+    ) = User(id = id, employeeNumber = employeeNumber, name = "테스트 사용자").also {
         it.costCenterCode = costCenterCode
         it.appAuthority = appAuthority
     }

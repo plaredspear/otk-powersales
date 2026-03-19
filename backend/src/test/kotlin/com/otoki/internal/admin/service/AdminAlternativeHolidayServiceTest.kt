@@ -52,11 +52,11 @@ class AdminAlternativeHolidayServiceTest {
         @DisplayName("정상 신청 - 토요일 근무 대휴 -> 신규 생성")
         fun create_success() {
             val request = AlternativeHolidayCreateRequest(
-                employeeId = "12345678",
+                employeeNumber = "12345678",
                 actualWorkDate = saturday,
                 targetAltHolidayDate = monday
             )
-            whenever(userRepository.findByEmployeeId(request.employeeId)).thenReturn(Optional.of(createUser()))
+            whenever(userRepository.findByEmployeeNumber(request.employeeNumber)).thenReturn(Optional.of(createUser()))
             whenever(userRepository.findById(1L)).thenReturn(Optional.of(createAdmin()))
             whenever(alternativeHolidayRepository.save(any<AlternativeHoliday>()))
                 .thenAnswer { it.getArgument<AlternativeHoliday>(0) }
@@ -70,11 +70,11 @@ class AdminAlternativeHolidayServiceTest {
         @DisplayName("사원 없음 - 존재하지 않는 사번 -> EmployeeNotFoundException")
         fun create_employeeNotFound() {
             val request = AlternativeHolidayCreateRequest(
-                employeeId = "99999999",
+                employeeNumber = "99999999",
                 actualWorkDate = saturday,
                 targetAltHolidayDate = monday
             )
-            whenever(userRepository.findByEmployeeId("99999999")).thenReturn(Optional.empty())
+            whenever(userRepository.findByEmployeeNumber("99999999")).thenReturn(Optional.empty())
 
             assertThatThrownBy { service.createAlternativeHoliday(request, 1L) }
                 .isInstanceOf(EmployeeNotFoundException::class.java)
@@ -84,11 +84,11 @@ class AdminAlternativeHolidayServiceTest {
         @DisplayName("신청일이 공휴일 -> AltHolidayConfirmDateIsHolidayException")
         fun create_targetDateIsHoliday() {
             val request = AlternativeHolidayCreateRequest(
-                employeeId = "12345678",
+                employeeNumber = "12345678",
                 actualWorkDate = saturday,
                 targetAltHolidayDate = monday
             )
-            whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(createUser()))
+            whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(createUser()))
             whenever(userRepository.findById(1L)).thenReturn(Optional.of(createAdmin()))
             doThrow(AltHolidayConfirmDateIsHolidayException()).whenever(validator).validateConfirmDate(monday)
 
@@ -100,11 +100,11 @@ class AdminAlternativeHolidayServiceTest {
         @DisplayName("신청일이 주말 -> AltHolidayConfirmDateIsWeekendException")
         fun create_targetDateIsWeekend() {
             val request = AlternativeHolidayCreateRequest(
-                employeeId = "12345678",
+                employeeNumber = "12345678",
                 actualWorkDate = saturday,
                 targetAltHolidayDate = saturday
             )
-            whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(createUser()))
+            whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(createUser()))
             whenever(userRepository.findById(1L)).thenReturn(Optional.of(createAdmin()))
             doThrow(AltHolidayConfirmDateIsWeekendException()).whenever(validator).validateConfirmDate(saturday)
 
@@ -116,11 +116,11 @@ class AdminAlternativeHolidayServiceTest {
         @DisplayName("대상일이 평일(공휴일 아님) -> AltHolidayActualDateIsWeekdayException")
         fun create_actualDateIsWeekday() {
             val request = AlternativeHolidayCreateRequest(
-                employeeId = "12345678",
+                employeeNumber = "12345678",
                 actualWorkDate = wednesday,
                 targetAltHolidayDate = monday
             )
-            whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(createUser()))
+            whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(createUser()))
             whenever(userRepository.findById(1L)).thenReturn(Optional.of(createAdmin()))
             doThrow(AltHolidayActualDateIsWeekdayException()).whenever(validator).validateActualWorkDate(wednesday)
 
@@ -132,11 +132,11 @@ class AdminAlternativeHolidayServiceTest {
         @DisplayName("근무 스케줄 없음 -> AltHolidayNoWorkScheduleException")
         fun create_noWorkSchedule() {
             val request = AlternativeHolidayCreateRequest(
-                employeeId = "12345678",
+                employeeNumber = "12345678",
                 actualWorkDate = saturday,
                 targetAltHolidayDate = monday
             )
-            whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(createUser()))
+            whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(createUser()))
             whenever(userRepository.findById(1L)).thenReturn(Optional.of(createAdmin()))
             doThrow(AltHolidayNoWorkScheduleException()).whenever(validator).validateWorkScheduleExists("12345678", saturday)
 
@@ -148,11 +148,11 @@ class AdminAlternativeHolidayServiceTest {
         @DisplayName("중복 신청 -> AltHolidayDuplicateException")
         fun create_duplicate() {
             val request = AlternativeHolidayCreateRequest(
-                employeeId = "12345678",
+                employeeNumber = "12345678",
                 actualWorkDate = saturday,
                 targetAltHolidayDate = monday
             )
-            whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(createUser()))
+            whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(createUser()))
             whenever(userRepository.findById(1L)).thenReturn(Optional.of(createAdmin()))
             doThrow(AltHolidayDuplicateException()).whenever(validator).validateNoDuplicate("12345678", saturday)
 
@@ -278,24 +278,24 @@ class AdminAlternativeHolidayServiceTest {
 
     private fun createUser(
         id: Long = 10L,
-        employeeId: String = "12345678",
+        employeeNumber: String = "12345678",
         name: String = "홍길동"
     ): User = User(
         id = id,
         sfid = "SF001",
-        employeeId = employeeId,
+        employeeNumber = employeeNumber,
         name = name,
         status = "재직"
     )
 
     private fun createAdmin(
         id: Long = 1L,
-        employeeId: String = "admin001",
+        employeeNumber: String = "admin001",
         name: String = "관리자"
     ): User = User(
         id = id,
         sfid = "SF_ADMIN",
-        employeeId = employeeId,
+        employeeNumber = employeeNumber,
         name = name,
         status = "재직"
     )
@@ -305,7 +305,7 @@ class AdminAlternativeHolidayServiceTest {
         status: String = "신규"
     ): AlternativeHoliday = AlternativeHoliday(
         id = id,
-        employeeId = "12345678",
+        employeeNumber = "12345678",
         employeeName = "홍길동",
         actualWorkDate = saturday,
         targetAltHolidayDate = monday,

@@ -63,7 +63,7 @@ class AdminAlternativeHolidayControllerTest {
         fun getList_success() {
             val items = listOf(
                 AlternativeHolidayListItem(
-                    id = 1, employeeId = "12345678", employeeName = "홍길동", orgName = "서울1팀",
+                    id = 1, employeeNumber = "12345678", employeeName = "홍길동", orgName = "서울1팀",
                     actualWorkDate = LocalDate.of(2026, 3, 7),
                     targetAltHolidayDate = LocalDate.of(2026, 3, 9),
                     confirmAltHolidayDate = null, status = "신규", changeReason = null,
@@ -82,7 +82,7 @@ class AdminAlternativeHolidayControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
-                .andExpect(jsonPath("$.data[0].employee_id").value("12345678"))
+                .andExpect(jsonPath("$.data[0].employee_number").value("12345678"))
                 .andExpect(jsonPath("$.data[0].org_name").value("서울1팀"))
                 .andExpect(jsonPath("$.data[0].status").value("신규"))
         }
@@ -99,7 +99,7 @@ class AdminAlternativeHolidayControllerTest {
             whenever(adminAlternativeHolidayService.createAlternativeHoliday(any(), eq(1L))).thenReturn(response)
 
             val request = AlternativeHolidayCreateRequest(
-                employeeId = "12345678",
+                employeeNumber = "12345678",
                 actualWorkDate = LocalDate.of(2026, 3, 7),
                 targetAltHolidayDate = LocalDate.of(2026, 3, 9)
             )
@@ -120,7 +120,7 @@ class AdminAlternativeHolidayControllerTest {
             whenever(adminAlternativeHolidayService.createAlternativeHoliday(any(), eq(1L)))
                 .thenThrow(AltHolidayConfirmDateIsHolidayException())
 
-            val json = """{"employee_id": "12345678", "actual_work_date": "2026-03-07", "target_alt_holiday_date": "2026-01-01"}"""
+            val json = """{"employee_number": "12345678", "actual_work_date": "2026-03-07", "target_alt_holiday_date": "2026-01-01"}"""
             mockMvc.perform(
                 post("/api/v1/admin/alternative-holidays")
                     .contentType(MediaType.APPLICATION_JSON).content(json)
@@ -131,8 +131,8 @@ class AdminAlternativeHolidayControllerTest {
 
         @Test
         @DisplayName("실패 - 사번 누락")
-        fun create_missingEmployeeId() {
-            val json = """{"employee_id": "", "actual_work_date": "2026-03-07", "target_alt_holiday_date": "2026-03-09"}"""
+        fun create_missingEmployeeNumber() {
+            val json = """{"employee_number": "", "actual_work_date": "2026-03-07", "target_alt_holiday_date": "2026-03-09"}"""
             mockMvc.perform(
                 post("/api/v1/admin/alternative-holidays")
                     .contentType(MediaType.APPLICATION_JSON).content(json)

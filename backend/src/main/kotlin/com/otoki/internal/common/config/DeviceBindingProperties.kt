@@ -7,8 +7,8 @@ data class DeviceBindingProperties(
     val enabled: Boolean = true,
     val excludedIds: String = ""
 ) {
-    fun isExcluded(employeeId: String): Boolean {
+    fun isExcluded(employeeNumber: String): Boolean {
         if (excludedIds.isBlank()) return false
-        return excludedIds.split(",").map { it.trim() }.contains(employeeId)
+        return excludedIds.split(",").map { it.trim() }.contains(employeeNumber)
     }
 }

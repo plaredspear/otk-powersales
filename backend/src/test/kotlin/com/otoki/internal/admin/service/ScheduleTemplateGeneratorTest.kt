@@ -24,8 +24,8 @@ class ScheduleTemplateGeneratorTest {
         fun generate_withEmployees() {
             // Given
             val employees = listOf(
-                createUser(employeeId = "20030001", name = "홍길동"),
-                createUser(employeeId = "20030002", name = "김철수")
+                createUser(employeeNumber = "20030001", name = "홍길동"),
+                createUser(employeeNumber = "20030002", name = "김철수")
             )
 
             // When
@@ -138,13 +138,13 @@ class ScheduleTemplateGeneratorTest {
 
     private fun createUser(
         id: Long = 1L,
-        employeeId: String = "20030001",
+        employeeNumber: String = "20030001",
         name: String = "테스트사원",
         costCenterCode: String = "1234",
         orgName: String = "테스트팀"
     ): User = User(
         id = id,
-        employeeId = employeeId,
+        employeeNumber = employeeNumber,
         name = name,
         costCenterCode = costCenterCode,
         orgName = orgName,

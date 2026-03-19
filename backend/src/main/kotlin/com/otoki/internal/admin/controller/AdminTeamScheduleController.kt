@@ -49,13 +49,13 @@ class AdminTeamScheduleController(
         @AuthenticationPrincipal principal: UserPrincipal,
         @RequestParam year: Int,
         @RequestParam month: Int,
-        @RequestParam(required = false) employeeIds: String?,
+        @RequestParam(required = false) employeeNumbers: String?,
         @RequestParam(required = false) accountIds: String?
     ): ResponseEntity<ApiResponse<List<TeamScheduleDto>>> {
-        val employeeIdList = employeeIds?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }
+        val employeeNumberList = employeeNumbers?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }
         val accountIdList = accountIds?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }?.map { it.toInt() }
         val result = adminTeamScheduleService.getMonthlySchedules(
-            principal.userId, year, month, employeeIdList, accountIdList
+            principal.userId, year, month, employeeNumberList, accountIdList
         )
         return ResponseEntity.ok(ApiResponse.success(result))
     }
@@ -65,13 +65,13 @@ class AdminTeamScheduleController(
         @AuthenticationPrincipal principal: UserPrincipal,
         @RequestParam year: Int,
         @RequestParam month: Int,
-        @RequestParam(required = false) employeeIds: String?,
+        @RequestParam(required = false) employeeNumbers: String?,
         @RequestParam(required = false) accountIds: String?
     ): ResponseEntity<ApiResponse<List<DailySummaryDto>>> {
-        val employeeIdList = employeeIds?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }
+        val employeeNumberList = employeeNumbers?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }
         val accountIdList = accountIds?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }?.map { it.toInt() }
         val result = adminTeamScheduleService.getDailySummary(
-            principal.userId, year, month, employeeIdList, accountIdList
+            principal.userId, year, month, employeeNumberList, accountIdList
         )
         return ResponseEntity.ok(ApiResponse.success(result))
     }

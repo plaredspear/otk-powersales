@@ -42,7 +42,7 @@ class NoticePostRepositoryTest {
         // 테스트 사용자 생성
         testUser = testEntityManager.persistAndFlush(
             User(
-                employeeId = "10000001",
+                employeeNumber = "10000001",
                 password = "encoded",
                 name = "관리자",
                 orgName = "본사",

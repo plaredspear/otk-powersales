@@ -74,23 +74,23 @@ class AuthServiceTest {
     @DisplayName("로그인 성공 - 유효한 사번과 비밀번호로 로그인 시 LoginResponse 반환")
     fun login_success() {
         // Given
-        val employeeId = "12345678"
+        val employeeNumber = "12345678"
         val rawPassword = "password123"
         val encodedPassword = "encoded_password"
         val user = createTestUser(
             id = 1L,
-            employeeId = employeeId,
+            employeeNumber = employeeNumber,
             password = encodedPassword,
             passwordChangeRequired = true,
             agreementFlag = null
         )
 
-        val loginRequest = LoginRequest(employeeId, rawPassword)
+        val loginRequest = LoginRequest(employeeNumber, rawPassword)
         val accessToken = "access_token_123"
         val refreshToken = "refresh_token_123"
         val expiresIn = 3600
 
-        whenever(userRepository.findByEmployeeId(employeeId)).thenReturn(Optional.of(user))
+        whenever(userRepository.findByEmployeeNumber(employeeNumber)).thenReturn(Optional.of(user))
         whenever(passwordEncoder.matches(rawPassword, encodedPassword)).thenReturn(true)
         whenever(jwtTokenProvider.createAccessToken(user.id, user.role, false)).thenReturn(accessToken)
         whenever(jwtTokenProvider.createRefreshToken(eq(user.id), any(), any())).thenReturn(refreshToken)
@@ -101,7 +101,7 @@ class AuthServiceTest {
 
         // Then
         assertThat(response.user.id).isEqualTo(1L)
-        assertThat(response.user.employeeId).isEqualTo(employeeId)
+        assertThat(response.user.employeeNumber).isEqualTo(employeeNumber)
         assertThat(response.user.name).isEqualTo("홍길동")
         assertThat(response.user.orgName).isEqualTo("서울지점")
         assertThat(response.user.role).isEqualTo("USER")
@@ -118,12 +118,12 @@ class AuthServiceTest {
     @DisplayName("로그인 성공 시 이력 기록 - employeeId가 설정된 LoginHistory가 저장된다")
     fun login_success_savesLoginHistory() {
         // Given
-        val employeeId = "12345678"
-        val user = createTestUser(id = 1L, employeeId = employeeId)
-        val loginRequest = LoginRequest(employeeId, "password123")
+        val employeeNumber = "12345678"
+        val user = createTestUser(id = 1L, employeeNumber = employeeNumber)
+        val loginRequest = LoginRequest(employeeNumber, "password123")
         val historyCaptor = ArgumentCaptor.forClass(LoginHistory::class.java)
 
-        whenever(userRepository.findByEmployeeId(employeeId)).thenReturn(Optional.of(user))
+        whenever(userRepository.findByEmployeeNumber(employeeNumber)).thenReturn(Optional.of(user))
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
         whenever(jwtTokenProvider.createAccessToken(user.id, user.role)).thenReturn("token")
         whenever(jwtTokenProvider.createRefreshToken(eq(user.id), any(), any())).thenReturn("refresh")
@@ -135,7 +135,7 @@ class AuthServiceTest {
         // Then
         verify(loginHistoryRepository).save(historyCaptor.capture())
         val savedHistory = historyCaptor.value
-        assertThat(savedHistory.employeeId).isEqualTo(employeeId)
+        assertThat(savedHistory.employeeId).isEqualTo(employeeNumber)
         assertThat(savedHistory.loginAt).isNotNull()
     }
 
@@ -143,11 +143,11 @@ class AuthServiceTest {
     @DisplayName("이력 기록 실패 시 로그인 정상 - DB 오류가 발생해도 LoginResponse를 정상 반환한다")
     fun login_historyFailure_stillReturnsResponse() {
         // Given
-        val employeeId = "12345678"
-        val user = createTestUser(id = 1L, employeeId = employeeId)
-        val loginRequest = LoginRequest(employeeId, "password123")
+        val employeeNumber = "12345678"
+        val user = createTestUser(id = 1L, employeeNumber = employeeNumber)
+        val loginRequest = LoginRequest(employeeNumber, "password123")
 
-        whenever(userRepository.findByEmployeeId(employeeId)).thenReturn(Optional.of(user))
+        whenever(userRepository.findByEmployeeNumber(employeeNumber)).thenReturn(Optional.of(user))
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
         whenever(loginHistoryRepository.save(any<LoginHistory>())).thenThrow(RuntimeException("DB error"))
         whenever(jwtTokenProvider.createAccessToken(user.id, user.role)).thenReturn("token")
@@ -159,7 +159,7 @@ class AuthServiceTest {
 
         // Then
         assertThat(response.token.accessToken).isEqualTo("token")
-        assertThat(response.user.employeeId).isEqualTo(employeeId)
+        assertThat(response.user.employeeNumber).isEqualTo(employeeNumber)
     }
 
     @Test
@@ -168,7 +168,7 @@ class AuthServiceTest {
         // Given
         val loginRequest = LoginRequest("99999999", "password123")
 
-        whenever(userRepository.findByEmployeeId("99999999")).thenReturn(Optional.empty())
+        whenever(userRepository.findByEmployeeNumber("99999999")).thenReturn(Optional.empty())
 
         // When & Then
         assertThatThrownBy { authService.login(loginRequest) }
@@ -183,7 +183,7 @@ class AuthServiceTest {
         val user = createTestUser(password = "encoded_password")
         val loginRequest = LoginRequest("12345678", "wrong_password")
 
-        whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(user))
+        whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(user))
         whenever(passwordEncoder.matches("wrong_password", "encoded_password")).thenReturn(false)
 
         // When & Then
@@ -651,7 +651,7 @@ class AuthServiceTest {
         val user = createTestUser(id = 1L, deviceUuid = null)
         val request = LoginRequest("12345678", "password123", deviceId = "device-abc-123")
 
-        whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(user))
+        whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(user))
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
         whenever(deviceBindingProperties.enabled).thenReturn(true)
         whenever(deviceBindingProperties.isExcluded("12345678")).thenReturn(false)
@@ -676,7 +676,7 @@ class AuthServiceTest {
         val user = createTestUser(id = 1L, deviceUuid = "device-abc-123")
         val request = LoginRequest("12345678", "password123", deviceId = "device-abc-123")
 
-        whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(user))
+        whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(user))
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
         whenever(deviceBindingProperties.enabled).thenReturn(true)
         whenever(deviceBindingProperties.isExcluded("12345678")).thenReturn(false)
@@ -698,7 +698,7 @@ class AuthServiceTest {
         val user = createTestUser(id = 1L, deviceUuid = "device-abc-123")
         val request = LoginRequest("12345678", "password123", deviceId = "device-xyz-789")
 
-        whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(user))
+        whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(user))
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
         whenever(deviceBindingProperties.enabled).thenReturn(true)
         whenever(deviceBindingProperties.isExcluded("12345678")).thenReturn(false)
@@ -715,7 +715,7 @@ class AuthServiceTest {
         val user = createTestUser(id = 1L, deviceUuid = "device-abc-123")
         val request = LoginRequest("12345678", "password123")
 
-        whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(user))
+        whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(user))
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
         whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER, false)).thenReturn("token")
         whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
@@ -735,7 +735,7 @@ class AuthServiceTest {
         val user = createTestUser(id = 1L, deviceUuid = "device-abc-123")
         val request = LoginRequest("12345678", "password123", deviceId = "device-xyz-789")
 
-        whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(user))
+        whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(user))
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
         whenever(deviceBindingProperties.enabled).thenReturn(false)
         whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER, false)).thenReturn("token")
@@ -753,10 +753,10 @@ class AuthServiceTest {
     @DisplayName("예외 사번 로그인 - excluded-ids에 포함된 사번은 device_id 불일치여도 로그인 성공")
     fun login_excludedEmployee_skipsValidation() {
         // Given
-        val user = createTestUser(id = 1L, employeeId = "20010585", deviceUuid = "device-abc-123")
+        val user = createTestUser(id = 1L, employeeNumber = "20010585", deviceUuid = "device-abc-123")
         val request = LoginRequest("20010585", "password123", deviceId = "device-xyz-789")
 
-        whenever(userRepository.findByEmployeeId("20010585")).thenReturn(Optional.of(user))
+        whenever(userRepository.findByEmployeeNumber("20010585")).thenReturn(Optional.of(user))
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
         whenever(deviceBindingProperties.enabled).thenReturn(true)
         whenever(deviceBindingProperties.isExcluded("20010585")).thenReturn(true)
@@ -784,7 +784,7 @@ class AuthServiceTest {
             val user = createTestUser(id = 1L, appAuthority = "영업부장")
             val request = LoginRequest("12345678", "password123")
 
-            whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(user))
+            whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(user))
             whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
             whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER, false)).thenReturn("token")
             whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
@@ -804,7 +804,7 @@ class AuthServiceTest {
             val user = createTestUser(id = 1L, appLoginActive = true, deviceUuid = null)
             val request = LoginRequest("12345678", "password123", deviceId = "device-123")
 
-            whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(user))
+            whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(user))
             whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
             whenever(deviceBindingProperties.enabled).thenReturn(true)
             whenever(deviceBindingProperties.isExcluded("12345678")).thenReturn(false)
@@ -827,7 +827,7 @@ class AuthServiceTest {
             val user = createTestUser(id = 1L, appAuthority = "여사원")
             val request = LoginRequest("12345678", "password123")
 
-            whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(user))
+            whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(user))
             whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
 
             // When & Then
@@ -842,7 +842,7 @@ class AuthServiceTest {
             val user = createTestUser(id = 1L, appAuthority = null)
             val request = LoginRequest("12345678", "password123")
 
-            whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(user))
+            whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(user))
             whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
 
             // When & Then
@@ -857,7 +857,7 @@ class AuthServiceTest {
             val user = createTestUser(id = 1L, appLoginActive = false)
             val request = LoginRequest("12345678", "password123", deviceId = "device-123")
 
-            whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(user))
+            whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(user))
             whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
 
             // When & Then
@@ -872,7 +872,7 @@ class AuthServiceTest {
             val user = createTestUser(id = 1L, appLoginActive = null)
             val request = LoginRequest("12345678", "password123", deviceId = "device-123")
 
-            whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(user))
+            whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(user))
             whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
 
             // When & Then
@@ -894,7 +894,7 @@ class AuthServiceTest {
             val user = createTestUser(id = 1L, appAuthority = "조장", costCenterCode = "CC001")
             val request = LoginRequest("12345678", "password123")
 
-            whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(user))
+            whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(user))
             whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
             whenever(jwtTokenProvider.createAccessToken(1L, UserRole.LEADER, false)).thenReturn("admin-token")
             whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("admin-refresh")
@@ -905,7 +905,7 @@ class AuthServiceTest {
 
             // Then
             assertThat(response.user.id).isEqualTo(1L)
-            assertThat(response.user.employeeId).isEqualTo("12345678")
+            assertThat(response.user.employeeNumber).isEqualTo("12345678")
             assertThat(response.user.appAuthority).isEqualTo("조장")
             assertThat(response.user.costCenterCode).isEqualTo("CC001")
             assertThat(response.user.role).isEqualTo("LEADER")
@@ -921,7 +921,7 @@ class AuthServiceTest {
         fun adminLogin_userNotFound() {
             // Given
             val request = LoginRequest("99999999", "password123")
-            whenever(userRepository.findByEmployeeId("99999999")).thenReturn(Optional.empty())
+            whenever(userRepository.findByEmployeeNumber("99999999")).thenReturn(Optional.empty())
 
             // When & Then
             assertThatThrownBy { authService.adminLogin(request) }
@@ -935,7 +935,7 @@ class AuthServiceTest {
             val user = createTestUser(id = 1L, appAuthority = "조장")
             val request = LoginRequest("12345678", "wrong")
 
-            whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(user))
+            whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(user))
             whenever(passwordEncoder.matches("wrong", "encoded_password")).thenReturn(false)
 
             // When & Then
@@ -950,7 +950,7 @@ class AuthServiceTest {
             val user = createTestUser(id = 1L, appAuthority = "여사원")
             val request = LoginRequest("12345678", "password123")
 
-            whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(user))
+            whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(user))
             whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
 
             // When & Then
@@ -965,7 +965,7 @@ class AuthServiceTest {
             val user = createTestUser(id = 1L, appAuthority = null)
             val request = LoginRequest("12345678", "password123")
 
-            whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(user))
+            whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(user))
             whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
 
             // When & Then
@@ -980,9 +980,9 @@ class AuthServiceTest {
     @DisplayName("단말기 초기화 성공 - 유효한 사번의 deviceUuid를 NULL로 초기화")
     fun resetDevice_success() {
         // Given
-        val user = createTestUser(id = 1L, employeeId = "20010585", deviceUuid = "device-abc-123")
+        val user = createTestUser(id = 1L, employeeNumber = "20010585", deviceUuid = "device-abc-123")
 
-        whenever(userRepository.findByEmployeeId("20010585")).thenReturn(Optional.of(user))
+        whenever(userRepository.findByEmployeeNumber("20010585")).thenReturn(Optional.of(user))
         whenever(userRepository.save(any<User>())).thenAnswer { it.arguments[0] }
 
         // When
@@ -997,7 +997,7 @@ class AuthServiceTest {
     @DisplayName("단말기 초기화 실패 - 존재하지 않는 사번 시 UserNotFoundException 발생")
     fun resetDevice_userNotFound() {
         // Given
-        whenever(userRepository.findByEmployeeId("99999999")).thenReturn(Optional.empty())
+        whenever(userRepository.findByEmployeeNumber("99999999")).thenReturn(Optional.empty())
 
         // When & Then
         assertThatThrownBy { authService.resetDevice("99999999") }
@@ -1008,7 +1008,7 @@ class AuthServiceTest {
 
     private fun createTestUser(
         id: Long = 1L,
-        employeeId: String = "12345678",
+        employeeNumber: String = "12345678",
         password: String = "encoded_password",
         name: String = "홍길동",
         orgName: String = "서울지점",
@@ -1021,7 +1021,7 @@ class AuthServiceTest {
     ): User {
         return User(
             id = id,
-            employeeId = employeeId,
+            employeeNumber = employeeNumber,
             password = password,
             name = name,
             orgName = orgName,

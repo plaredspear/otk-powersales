@@ -64,7 +64,7 @@ class AdminScheduleService(
 
         val employees = userRepository.findByCostCenterCodeAndAppAuthorityIsNullAndAppLoginActiveTrueAndStatus(
             costCenterCode, "재직"
-        ).sortedWith(compareBy({ it.orgName }, { it.employeeId }))
+        ).sortedWith(compareBy({ it.orgName }, { it.employeeNumber }))
 
         val excelBytes = templateGenerator.generate(employees)
         val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
@@ -91,8 +91,8 @@ class AdminScheduleService(
         val employeeCodes = parseResult.rows.mapNotNull { it.employeeCode }.distinct()
         val accountCodes = parseResult.rows.mapNotNull { it.accountCode }.distinct()
 
-        val usersByEmployeeId = if (employeeCodes.isNotEmpty()) {
-            userRepository.findByEmployeeIdIn(employeeCodes).associateBy { it.employeeId }
+        val usersByEmployeeNumber = if (employeeCodes.isNotEmpty()) {
+            userRepository.findByEmployeeNumberIn(employeeCodes).associateBy { it.employeeNumber }
         } else {
             emptyMap()
         }
@@ -106,16 +106,16 @@ class AdminScheduleService(
         }
 
         // 기존 스케줄 조회 (중복 검증용)
-        val userEmployeeIds = usersByEmployeeId.values.map { it.employeeId }
-        val existingSchedules = if (userEmployeeIds.isNotEmpty()) {
-            scheduleRepository.findByEmployeeIdInAndNotDeleted(userEmployeeIds)
+        val userEmployeeNumbers = usersByEmployeeNumber.values.map { it.employeeNumber }
+        val existingSchedules = if (userEmployeeNumbers.isNotEmpty()) {
+            scheduleRepository.findByEmployeeNumberInAndNotDeleted(userEmployeeNumbers)
         } else {
             emptyList()
         }
 
         // 검증
         val validationResult = uploadValidator.validate(
-            parseResult.rows, usersByEmployeeId, accountsByExternalKey, existingSchedules
+            parseResult.rows, usersByEmployeeNumber, accountsByExternalKey, existingSchedules
         )
 
         // UUID 생성 + Redis 저장
@@ -177,7 +177,7 @@ class AdminScheduleService(
         val entities = cacheData.validRows.map { row ->
             val costCenterCode = row.costCenterCode
             val ownerId = if (!costCenterCode.isNullOrBlank()) {
-                managersByCostCenter[costCenterCode]?.firstOrNull()?.employeeId
+                managersByCostCenter[costCenterCode]?.firstOrNull()?.employeeNumber
             } else {
                 null
             }
@@ -186,7 +186,7 @@ class AdminScheduleService(
             }
 
             DisplayWorkSchedule(
-                employeeId = row.userEmployeeId,
+                employeeNumber = row.userEmployeeNumber,
                 accountId = row.accountId,
                 typeOfWork1 = "진열",
                 typeOfWork3 = row.typeOfWork3,
@@ -229,11 +229,11 @@ class AdminScheduleService(
             employeeCode, accountIds, confirmed, typeOfWork3, startDateFrom, startDateTo, pageable
         )
 
-        val employeeIds = schedulePage.content.mapNotNull { it.employeeId }.distinct()
+        val employeeNumbers = schedulePage.content.mapNotNull { it.employeeNumber }.distinct()
         val scheduleAccountIds = schedulePage.content.mapNotNull { it.accountId }.distinct()
 
-        val userMap = if (employeeIds.isNotEmpty()) {
-            userRepository.findByEmployeeIdIn(employeeIds).associateBy { it.employeeId }
+        val userMap = if (employeeNumbers.isNotEmpty()) {
+            userRepository.findByEmployeeNumberIn(employeeNumbers).associateBy { it.employeeNumber }
         } else {
             emptyMap()
         }
@@ -245,11 +245,11 @@ class AdminScheduleService(
         }
 
         return schedulePage.map { schedule ->
-            val user = schedule.employeeId?.let { userMap[it] }
+            val user = schedule.employeeNumber?.let { userMap[it] }
             val account = schedule.accountId?.let { accountMap[it] }
             ScheduleListItemDto(
                 id = schedule.id,
-                employeeCode = schedule.employeeId ?: "",
+                employeeCode = schedule.employeeNumber ?: "",
                 employeeName = user?.name ?: "",
                 accountCode = account?.externalKey,
                 accountName = account?.name,

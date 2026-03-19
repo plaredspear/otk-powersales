@@ -402,7 +402,7 @@ class InspectionServiceTest {
     private fun createMockUser(id: Long): User {
         return User(
             id = id,
-            employeeId = "10000001",
+            employeeNumber = "10000001",
             password = "encoded",
             name = "테스트 사용자",
             orgName = "서울지점"

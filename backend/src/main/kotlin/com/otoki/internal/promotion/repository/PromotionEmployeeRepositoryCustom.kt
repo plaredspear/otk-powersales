@@ -12,5 +12,5 @@ interface PromotionEmployeeRepositoryCustom {
 
     fun sumActualAmountByPromotionId(promotionId: Long): Long
 
-    fun findMinScheduleDateByPromotionIdAndEmployeeId(promotionId: Long, employeeId: String): LocalDate?
+    fun findMinScheduleDateByPromotionIdAndEmployeeNumber(promotionId: Long, employeeNumber: String): LocalDate?
 }

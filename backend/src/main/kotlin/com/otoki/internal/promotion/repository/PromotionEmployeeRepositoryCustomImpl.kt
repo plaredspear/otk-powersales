@@ -40,13 +40,13 @@ class PromotionEmployeeRepositoryCustomImpl(
             .fetchOne() ?: 0L
     }
 
-    override fun findMinScheduleDateByPromotionIdAndEmployeeId(promotionId: Long, employeeId: String): LocalDate? {
+    override fun findMinScheduleDateByPromotionIdAndEmployeeNumber(promotionId: Long, employeeNumber: String): LocalDate? {
         return queryFactory
             .select(promotionEmployee.scheduleDate.min())
             .from(promotionEmployee)
             .where(
                 promotionEmployee.promotionId.eq(promotionId),
-                promotionEmployee.employeeId.eq(employeeId)
+                promotionEmployee.employeeNumber.eq(employeeNumber)
             )
             .fetchOne()
     }
