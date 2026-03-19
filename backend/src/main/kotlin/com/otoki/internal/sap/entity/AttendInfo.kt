@@ -4,8 +4,8 @@ import com.otoki.internal.common.salesforce.SFField
 import com.otoki.internal.common.salesforce.SFObject
 import com.otoki.internal.common.sap.SAPSource
 import com.otoki.internal.common.sap.SyncMode
+import com.otoki.internal.common.entity.BaseEntity
 import jakarta.persistence.*
-import java.time.LocalDateTime
 
 @Entity
 @SFObject("AttendInfo__c")
@@ -41,8 +41,5 @@ class AttendInfo(
 
     @SFField("Status__c")
     @Column(name = "status", length = 20)
-    val status: String? = null,
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    val createdAt: LocalDateTime = LocalDateTime.now()
-)
+    val status: String? = null
+) : BaseEntity()

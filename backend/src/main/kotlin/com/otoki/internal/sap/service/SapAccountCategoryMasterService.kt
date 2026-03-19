@@ -8,7 +8,7 @@ import com.otoki.internal.sap.repository.AccountCategoryMasterRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDateTime
+
 
 @Service
 class SapAccountCategoryMasterService(
@@ -57,7 +57,6 @@ class SapAccountCategoryMasterService(
 
         if (existing != null) {
             existing.name = accountName
-            existing.updatedAt = LocalDateTime.now()
             accountCategoryMasterRepository.save(existing)
         } else {
             val entity = AccountCategoryMaster(
