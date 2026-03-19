@@ -15,19 +15,19 @@ type FilterTab = 'member' | 'account';
 export default function SchedulePage() {
   const [currentDate, setCurrentDate] = useState<Dayjs>(dayjs());
   const [filterTab, setFilterTab] = useState<FilterTab>('member');
-  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
+  const [selectedEmployeeNumbers, setSelectedEmployeeNumbers] = useState<string[]>([]);
   const [selectedAccountSfids, setSelectedAccountSfids] = useState<string[]>([]);
   const [selectedBranchCode, setSelectedBranchCode] = useState<string>('');
 
   // Debounce filter values
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const [debouncedEmployeeIds, setDebouncedEmployeeIds] = useState<string[]>([]);
+  const [debouncedEmployeeNumbers, setDebouncedEmployeeNumbers] = useState<string[]>([]);
   const [debouncedAccountSfids, setDebouncedAccountSfids] = useState<string[]>([]);
 
-  const handleEmployeeIdsChange = useCallback((ids: string[]) => {
-    setSelectedEmployeeIds(ids);
+  const handleEmployeeNumbersChange = useCallback((ids: string[]) => {
+    setSelectedEmployeeNumbers(ids);
     clearTimeout(debounceTimer.current);
-    debounceTimer.current = setTimeout(() => setDebouncedEmployeeIds(ids), 300);
+    debounceTimer.current = setTimeout(() => setDebouncedEmployeeNumbers(ids), 300);
   }, []);
 
   const handleAccountSfidsChange = useCallback((ids: string[]) => {
@@ -49,10 +49,10 @@ export default function SchedulePage() {
     () => ({
       year,
       month,
-      employeeIds: filterTab === 'member' ? debouncedEmployeeIds : [],
+      employeeNumbers: filterTab === 'member' ? debouncedEmployeeNumbers : [],
       accountSfids: filterTab === 'account' ? debouncedAccountSfids : [],
     }),
-    [year, month, filterTab, debouncedEmployeeIds, debouncedAccountSfids],
+    [year, month, filterTab, debouncedEmployeeNumbers, debouncedAccountSfids],
   );
 
   const { data: schedules = [], isLoading: schedulesLoading } = useTeamSchedules(queryParams);
@@ -80,8 +80,8 @@ export default function SchedulePage() {
         <ScheduleFilterPanel
           filterTab={filterTab}
           onFilterTabChange={setFilterTab}
-          selectedEmployeeIds={selectedEmployeeIds}
-          onSelectedEmployeeIdsChange={handleEmployeeIdsChange}
+          selectedEmployeeNumbers={selectedEmployeeNumbers}
+          onSelectedEmployeeNumbersChange={handleEmployeeNumbersChange}
           selectedAccountSfids={selectedAccountSfids}
           onSelectedAccountSfidsChange={handleAccountSfidsChange}
           selectedBranchCode={selectedBranchCode}

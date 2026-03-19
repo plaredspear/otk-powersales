@@ -10,7 +10,7 @@ interface ApiResponse<T> {
 }
 
 interface TeamMemberRaw {
-  employee_id: string;
+  employee_number: string;
   emp_code: string;
   name: string;
 }
@@ -28,7 +28,7 @@ interface BranchRaw {
 
 interface TeamScheduleRaw {
   id: number;
-  employee_id: string;
+  employee_number: string;
   employee_name: string;
   emp_code: string;
   working_date: string;
@@ -55,7 +55,7 @@ interface DailySummaryRaw {
 // --- Frontend interfaces (camelCase) ---
 
 export interface TeamMember {
-  employeeId: string;
+  employeeNumber: string;
   empCode: string;
   name: string;
 }
@@ -73,7 +73,7 @@ export interface Branch {
 
 export interface TeamSchedule {
   id: number;
-  employeeId: string;
+  employeeNumber: string;
   employeeName: string;
   empCode: string;
   workingDate: string;
@@ -110,7 +110,7 @@ export interface TeamScheduleUpdateRequest {
 
 function mapMembers(raw: TeamMemberRaw[]): TeamMember[] {
   return raw.map((m) => ({
-    employeeId: m.employee_id,
+    employeeNumber: m.employee_number,
     empCode: m.emp_code,
     name: m.name,
   }));
@@ -134,7 +134,7 @@ function mapBranches(raw: BranchRaw[]): Branch[] {
 function mapSchedules(raw: TeamScheduleRaw[]): TeamSchedule[] {
   return raw.map((s) => ({
     id: s.id,
-    employeeId: s.employee_id,
+    employeeNumber: s.employee_number,
     employeeName: s.employee_name,
     empCode: s.emp_code,
     workingDate: s.working_date,
@@ -197,7 +197,7 @@ export async function fetchTeamScheduleBranches(): Promise<Branch[]> {
 export async function fetchTeamSchedules(params: {
   year: number;
   month: number;
-  employeeIds: string[];
+  employeeNumbers: string[];
   accountSfids: string[];
 }): Promise<TeamSchedule[]> {
   const res = await client.get<ApiResponse<TeamScheduleRaw[]>>(
@@ -206,7 +206,7 @@ export async function fetchTeamSchedules(params: {
       params: {
         year: params.year,
         month: params.month,
-        employeeIds: params.employeeIds.join(','),
+        employeeNumbers: params.employeeNumbers.join(','),
         accountSfids: params.accountSfids.join(','),
       },
     },
@@ -220,7 +220,7 @@ export async function fetchTeamSchedules(params: {
 export async function fetchTeamScheduleSummary(params: {
   year: number;
   month: number;
-  employeeIds: string[];
+  employeeNumbers: string[];
   accountSfids: string[];
 }): Promise<DailySummary[]> {
   const res = await client.get<ApiResponse<DailySummaryRaw[]>>(
@@ -229,7 +229,7 @@ export async function fetchTeamScheduleSummary(params: {
       params: {
         year: params.year,
         month: params.month,
-        employeeIds: params.employeeIds.join(','),
+        employeeNumbers: params.employeeNumbers.join(','),
         accountSfids: params.accountSfids.join(','),
       },
     },
