@@ -4,7 +4,7 @@ import jakarta.persistence.*
 import java.time.LocalDate
 
 @Entity
-@Table(name = "agreementword__c")
+@Table(name = "agreement_word")
 class AgreementWord(
 
     @Id

@@ -8,7 +8,7 @@ import jakarta.persistence.*
  * V1 스키마: staffreview__c (Heroku Connect 동기화)
  */
 @Entity
-@Table(name = "staffreview__c")
+@Table(name = "staff_review")
 class StaffReview(
 
     @Id

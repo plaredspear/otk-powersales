@@ -11,7 +11,7 @@ import jakarta.persistence.*
  * V1 스키마: monthlysaleshistory__c (Heroku Connect 동기화)
  */
 @Entity
-@Table(name = "monthlysaleshistory__c")
+@Table(name = "monthly_sales_history")
 @SAPSource(api = "/sap/MonthlySalesHistory", syncMode = SyncMode.UPSERT)
 class MonthlySalesHistory(
 
