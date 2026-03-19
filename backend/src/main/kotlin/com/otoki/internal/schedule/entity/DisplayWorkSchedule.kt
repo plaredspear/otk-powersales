@@ -39,8 +39,8 @@ class DisplayWorkSchedule(
 
     @SFField("FullName__c")
     @HCColumn("fullname__c")
-    @Column(name = "employee_number", length = 100)
-    val employeeNumber: String? = null,
+    @Column(name = "employee_id")
+    val employeeId: Long? = null,
 
     @SFField("StartDate__c")
     @HCColumn("startdate__c")
@@ -72,14 +72,10 @@ class DisplayWorkSchedule(
     @Column(name = "type_of_work5", length = 255)
     val typeOfWork5: String? = null,
 
-    @HCColumn("createdbyid")
-    @Column(name = "created_by_id", length = 18)
-    val createdById: String? = null,
-
     @SFField("OwnerId")
     @HCColumn("ownerid")
-    @Column(name = "owner_id", length = 18)
-    val ownerId: String? = null,
+    @Column(name = "owner_id")
+    val ownerId: Long? = null,
 
     @SFField("CostCenterCode__c")
     @HCColumn("costcentercode__c")

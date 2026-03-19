@@ -2,8 +2,10 @@ package com.otoki.internal.schedule.repository
 
 import com.otoki.internal.schedule.entity.DisplayWorkSchedule
 import com.otoki.internal.schedule.entity.QDisplayWorkSchedule.displayWorkSchedule
+import com.otoki.internal.sap.entity.QUser.user
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.dsl.BooleanExpression
+import com.querydsl.jpa.JPAExpressions
 import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -14,8 +16,8 @@ class DisplayWorkScheduleRepositoryCustomImpl(
     private val queryFactory: JPAQueryFactory
 ) : DisplayWorkScheduleRepositoryCustom {
 
-    override fun findDistinctAccountIdsByEmployeeNumberAndStartDateBetween(
-        employeeNumber: String,
+    override fun findDistinctAccountIdsByEmployeeIdAndStartDateBetween(
+        employeeId: Long,
         startDate: LocalDate,
         endDate: LocalDate
     ): List<Int> {
@@ -23,15 +25,15 @@ class DisplayWorkScheduleRepositoryCustomImpl(
             .select(displayWorkSchedule.accountId).distinct()
             .from(displayWorkSchedule)
             .where(
-                displayWorkSchedule.employeeNumber.eq(employeeNumber),
+                displayWorkSchedule.employeeId.eq(employeeId),
                 displayWorkSchedule.startDate.between(startDate, endDate)
             )
             .fetch()
             .filterNotNull()
     }
 
-    override fun findDistinctStartDatesByEmployeeNumberAndDateBetween(
-        employeeNumber: String,
+    override fun findDistinctStartDatesByEmployeeIdAndDateBetween(
+        employeeId: Long,
         startDate: LocalDate,
         endDate: LocalDate
     ): List<LocalDate> {
@@ -39,7 +41,7 @@ class DisplayWorkScheduleRepositoryCustomImpl(
             .select(displayWorkSchedule.startDate).distinct()
             .from(displayWorkSchedule)
             .where(
-                displayWorkSchedule.employeeNumber.eq(employeeNumber),
+                displayWorkSchedule.employeeId.eq(employeeId),
                 displayWorkSchedule.startDate.between(startDate, endDate)
             )
             .orderBy(displayWorkSchedule.startDate.asc())
@@ -47,8 +49,8 @@ class DisplayWorkScheduleRepositoryCustomImpl(
             .filterNotNull()
     }
 
-    override fun findDistinctAccountIdsBySfidAndDateRange(
-        sfid: String,
+    override fun findDistinctAccountIdsByEmployeeIdAndDateRange(
+        employeeId: Long,
         fromDate: LocalDate,
         toDate: LocalDate
     ): List<Int> {
@@ -64,7 +66,7 @@ class DisplayWorkScheduleRepositoryCustomImpl(
             .select(displayWorkSchedule.accountId).distinct()
             .from(displayWorkSchedule)
             .where(
-                displayWorkSchedule.employeeNumber.eq(sfid),
+                displayWorkSchedule.employeeId.eq(employeeId),
                 dateCondition,
                 displayWorkSchedule.accountId.isNotNull,
                 isNotDeleted()
@@ -73,11 +75,11 @@ class DisplayWorkScheduleRepositoryCustomImpl(
             .filterNotNull()
     }
 
-    override fun findByEmployeeNumberInAndNotDeleted(employeeNumbers: List<String>): List<DisplayWorkSchedule> {
+    override fun findByEmployeeIdInAndNotDeleted(employeeIds: List<Long>): List<DisplayWorkSchedule> {
         return queryFactory
             .selectFrom(displayWorkSchedule)
             .where(
-                displayWorkSchedule.employeeNumber.`in`(employeeNumbers),
+                displayWorkSchedule.employeeId.`in`(employeeIds),
                 isNotDeleted()
             )
             .fetch()
@@ -121,7 +123,12 @@ class DisplayWorkScheduleRepositoryCustomImpl(
 
     private fun buildEmployeeCodeCondition(employeeCode: String?): BooleanExpression? {
         if (employeeCode.isNullOrBlank()) return null
-        return displayWorkSchedule.employeeNumber.containsIgnoreCase(employeeCode)
+        // employee 테이블 서브쿼리로 사번 부분 매칭 → employeeId in (...)
+        val matchingIds = JPAExpressions
+            .select(user.id)
+            .from(user)
+            .where(user.employeeNumber.containsIgnoreCase(employeeCode))
+        return displayWorkSchedule.employeeId.`in`(matchingIds)
     }
 
     private fun buildAccountIdsCondition(accountIds: List<Int>?): BooleanExpression? {

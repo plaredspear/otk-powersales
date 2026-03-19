@@ -62,7 +62,7 @@ class MyAccountServiceTest {
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
             whenever(teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeNumberAndDateRange(eq("20030117"), any(), any()))
                 .thenReturn(listOf(1, 2))
-            whenever(displayWorkScheduleRepository.findDistinctAccountIdsBySfidAndDateRange(eq("SF001"), any(), any()))
+            whenever(displayWorkScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(eq(userId), any(), any()))
                 .thenReturn(listOf(2, 3))
             whenever(accountRepository.findByIdInAndIsDeletedNot(any(), eq(true)))
                 .thenReturn(accounts)
@@ -90,7 +90,7 @@ class MyAccountServiceTest {
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
             whenever(teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeNumberAndDateRange(eq("20030117"), any(), any()))
                 .thenReturn(listOf(1))
-            whenever(displayWorkScheduleRepository.findDistinctAccountIdsBySfidAndDateRange(eq("SF001"), any(), any()))
+            whenever(displayWorkScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(eq(userId), any(), any()))
                 .thenReturn(emptyList())
             whenever(accountRepository.findByIdInAndIsDeletedNot(any(), eq(true)))
                 .thenReturn(accounts)
@@ -114,7 +114,7 @@ class MyAccountServiceTest {
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
             whenever(teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeNumberAndDateRange(eq("20030117"), any(), any()))
                 .thenReturn(emptyList())
-            whenever(displayWorkScheduleRepository.findDistinctAccountIdsBySfidAndDateRange(eq("SF001"), any(), any()))
+            whenever(displayWorkScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(eq(userId), any(), any()))
                 .thenReturn(listOf(3))
             whenever(accountRepository.findByIdInAndIsDeletedNot(any(), eq(true)))
                 .thenReturn(accounts)
@@ -137,7 +137,7 @@ class MyAccountServiceTest {
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
             whenever(teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeNumberAndDateRange(eq("20030117"), any(), any()))
                 .thenReturn(emptyList())
-            whenever(displayWorkScheduleRepository.findDistinctAccountIdsBySfidAndDateRange(eq("SF001"), any(), any()))
+            whenever(displayWorkScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(eq(userId), any(), any()))
                 .thenReturn(emptyList())
 
             // When
@@ -149,8 +149,8 @@ class MyAccountServiceTest {
         }
 
         @Test
-        @DisplayName("일반 사원 - sfid null이면 진열스케줄 조회 건너뜀")
-        fun getMyAccounts_employee_nullSfid() {
+        @DisplayName("일반 사원 - 진열스케줄도 userId 기반으로 조회")
+        fun getMyAccounts_employee_displayScheduleByUserId() {
             // Given
             val userId = 1L
             val user = createUser(id = userId, employeeNumber = "20030117", sfid = null)
@@ -159,6 +159,8 @@ class MyAccountServiceTest {
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
             whenever(teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeNumberAndDateRange(eq("20030117"), any(), any()))
                 .thenReturn(listOf(1))
+            whenever(displayWorkScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(eq(userId), any(), any()))
+                .thenReturn(emptyList())
             whenever(accountRepository.findByIdInAndIsDeletedNot(any(), eq(true)))
                 .thenReturn(accounts)
 
@@ -167,7 +169,7 @@ class MyAccountServiceTest {
 
             // Then
             assertThat(result.stores).hasSize(1)
-            verify(displayWorkScheduleRepository, never()).findDistinctAccountIdsBySfidAndDateRange(any(), any(), any())
+            verify(displayWorkScheduleRepository).findDistinctAccountIdsByEmployeeIdAndDateRange(eq(userId), any(), any())
         }
 
         @Test
@@ -184,7 +186,7 @@ class MyAccountServiceTest {
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
             whenever(teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeNumberAndDateRange(eq("20030117"), any(), any()))
                 .thenReturn(listOf(1))
-            whenever(displayWorkScheduleRepository.findDistinctAccountIdsBySfidAndDateRange(eq("SF001"), any(), any()))
+            whenever(displayWorkScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(eq(userId), any(), any()))
                 .thenReturn(emptyList())
             whenever(accountRepository.findByIdInAndIsDeletedNot(any(), eq(true)))
                 .thenReturn(accounts)
@@ -226,7 +228,7 @@ class MyAccountServiceTest {
             assertThat(result.totalCount).isEqualTo(2)
             // 조장은 팀멤버/진열스케줄 조회하지 않음
             verify(teamMemberScheduleRepository, never()).findDistinctAccountIdsByEmployeeNumberAndDateRange(any(), any(), any())
-            verify(displayWorkScheduleRepository, never()).findDistinctAccountIdsBySfidAndDateRange(any(), any(), any())
+            verify(displayWorkScheduleRepository, never()).findDistinctAccountIdsByEmployeeIdAndDateRange(any(), any(), any())
         }
 
         @Test
