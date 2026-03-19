@@ -15,7 +15,7 @@ export function MemberFilterTab({ selectedIds, onChange }: MemberFilterTabProps)
   useEffect(() => {
     if (members.length > 0 && !initializedRef.current) {
       initializedRef.current = true;
-      onChange(members.map((m) => m.employeeId));
+      onChange(members.map((m) => m.employeeNumber));
     }
   }, [members, onChange]);
 
@@ -31,14 +31,14 @@ export function MemberFilterTab({ selectedIds, onChange }: MemberFilterTabProps)
   const indeterminate = selectedIds.length > 0 && selectedIds.length < members.length;
 
   const handleSelectAll = (checked: boolean) => {
-    onChange(checked ? members.map((m) => m.employeeId) : []);
+    onChange(checked ? members.map((m) => m.employeeNumber) : []);
   };
 
-  const handleToggle = (employeeId: string, checked: boolean) => {
+  const handleToggle = (employeeNumber: string, checked: boolean) => {
     if (checked) {
-      onChange([...selectedIds, employeeId]);
+      onChange([...selectedIds, employeeNumber]);
     } else {
-      onChange(selectedIds.filter((id) => id !== employeeId));
+      onChange(selectedIds.filter((id) => id !== employeeNumber));
     }
   };
 
@@ -60,10 +60,10 @@ export function MemberFilterTab({ selectedIds, onChange }: MemberFilterTabProps)
         </Checkbox>
       </div>
       {members.map((member) => (
-        <div key={member.employeeId} style={{ padding: '3px 0' }}>
+        <div key={member.employeeNumber} style={{ padding: '3px 0' }}>
           <Checkbox
-            checked={selectedIds.includes(member.employeeId)}
-            onChange={(e) => handleToggle(member.employeeId, e.target.checked)}
+            checked={selectedIds.includes(member.employeeNumber)}
+            onChange={(e) => handleToggle(member.employeeNumber, e.target.checked)}
           >
             {member.name}({member.empCode})
           </Checkbox>
