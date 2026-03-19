@@ -1,8 +1,8 @@
 package com.otoki.internal.promotion.entity
 
+import com.otoki.internal.common.entity.BaseEntity
 import jakarta.persistence.*
 import java.time.LocalDate
-import java.time.LocalDateTime
 
 @Entity
 @Table(name = "dkretail__promotion__c")
@@ -67,14 +67,8 @@ class Promotion(
     var isClosed: Boolean = false,
 
     @Column(name = "is_deleted", nullable = false)
-    var isDeleted: Boolean = false,
-
-    @Column(name = "created_at", nullable = false)
-    val createdAt: LocalDateTime = LocalDateTime.now(),
-
-    @Column(name = "updated_at", nullable = false)
-    var updatedAt: LocalDateTime = LocalDateTime.now()
-) {
+    var isDeleted: Boolean = false
+) : BaseEntity() {
     fun update(
         promotionName: String?,
         promotionTypeId: Long?,
@@ -103,17 +97,17 @@ class Promotion(
         this.productType = productType
         this.branchName = branchName
         this.remark = remark
-        this.updatedAt = LocalDateTime.now()
+
     }
 
     fun updateAmounts(targetAmount: Long, actualAmount: Long) {
         this.targetAmount = targetAmount
         this.actualAmount = actualAmount
-        this.updatedAt = LocalDateTime.now()
+
     }
 
     fun softDelete() {
         this.isDeleted = true
-        this.updatedAt = LocalDateTime.now()
+
     }
 }

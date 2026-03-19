@@ -2,9 +2,9 @@ package com.otoki.internal.leave.entity
 
 import com.otoki.internal.common.salesforce.SFField
 import com.otoki.internal.common.salesforce.SFObject
+import com.otoki.internal.common.entity.BaseEntity
 import jakarta.persistence.*
 import java.time.LocalDate
-import java.time.LocalDateTime
 
 @Entity
 @Table(name = "alternative_holiday")
@@ -44,27 +44,21 @@ class AlternativeHoliday(
     var changeReason: String? = null,
 
     @Column(name = "created_by", nullable = false, length = 20)
-    val createdBy: String,
-
-    @Column(name = "created_at", nullable = false)
-    val createdAt: LocalDateTime = LocalDateTime.now(),
-
-    @Column(name = "updated_at", nullable = false)
-    var updatedAt: LocalDateTime = LocalDateTime.now()
-) {
+    val createdBy: String
+) : BaseEntity() {
     fun approve(confirmDate: LocalDate, changeReason: String?) {
         this.confirmAltHolidayDate = confirmDate
         this.status = "승인"
         if (changeReason != null) {
             this.changeReason = changeReason
         }
-        this.updatedAt = LocalDateTime.now()
+
     }
 
     fun reject(reason: String) {
         this.status = "반려"
         this.changeReason = reason
-        this.updatedAt = LocalDateTime.now()
+
     }
 
     fun canTransition(): Boolean {

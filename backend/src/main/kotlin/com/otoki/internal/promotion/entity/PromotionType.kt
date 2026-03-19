@@ -1,7 +1,7 @@
 package com.otoki.internal.promotion.entity
 
+import com.otoki.internal.common.entity.BaseEntity
 import jakarta.persistence.*
-import java.time.LocalDateTime
 
 @Entity
 @Table(name = "dkretail__promotion_type")
@@ -18,22 +18,16 @@ class PromotionType(
     var displayOrder: Int,
 
     @Column(name = "is_active", nullable = false)
-    var isActive: Boolean = true,
-
-    @Column(name = "created_at", nullable = false)
-    val createdAt: LocalDateTime = LocalDateTime.now(),
-
-    @Column(name = "updated_at", nullable = false)
-    var updatedAt: LocalDateTime = LocalDateTime.now()
-) {
+    var isActive: Boolean = true
+) : BaseEntity() {
     fun update(name: String, displayOrder: Int) {
         this.name = name
         this.displayOrder = displayOrder
-        this.updatedAt = LocalDateTime.now()
+
     }
 
     fun deactivate() {
         this.isActive = false
-        this.updatedAt = LocalDateTime.now()
+
     }
 }
