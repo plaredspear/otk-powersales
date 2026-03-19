@@ -6,7 +6,7 @@ import com.otoki.internal.admin.dto.request.AlternativeHolidayRejectRequest
 import com.otoki.internal.leave.entity.AlternativeHoliday
 import com.otoki.internal.leave.exception.*
 import com.otoki.internal.leave.repository.AlternativeHolidayRepository
-import com.otoki.internal.leave.service.HolidayMasterService
+import com.otoki.internal.leave.service.AlternativeHolidayValidator
 import com.otoki.internal.sap.entity.User
 import com.otoki.internal.sap.repository.UserRepository
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
@@ -21,6 +21,8 @@ import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doNothing
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.LocalDate
@@ -32,7 +34,7 @@ class AdminAlternativeHolidayServiceTest {
 
     @Mock private lateinit var alternativeHolidayRepository: AlternativeHolidayRepository
     @Mock private lateinit var userRepository: UserRepository
-    @Mock private lateinit var holidayMasterService: HolidayMasterService
+    @Mock private lateinit var validator: AlternativeHolidayValidator
     @Mock private lateinit var teamMemberScheduleRepository: TeamMemberScheduleRepository
     @InjectMocks private lateinit var service: AdminAlternativeHolidayService
 
@@ -54,7 +56,8 @@ class AdminAlternativeHolidayServiceTest {
                 actualWorkDate = saturday,
                 targetAltHolidayDate = monday
             )
-            setupValidCreateMocks(request)
+            whenever(userRepository.findByEmployeeId(request.employeeId)).thenReturn(Optional.of(createUser()))
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createAdmin()))
             whenever(alternativeHolidayRepository.save(any<AlternativeHoliday>()))
                 .thenAnswer { it.getArgument<AlternativeHoliday>(0) }
 
@@ -87,7 +90,7 @@ class AdminAlternativeHolidayServiceTest {
             )
             whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(createUser()))
             whenever(userRepository.findById(1L)).thenReturn(Optional.of(createAdmin()))
-            whenever(holidayMasterService.isHoliday(monday)).thenReturn(true)
+            doThrow(AltHolidayConfirmDateIsHolidayException()).whenever(validator).validateConfirmDate(monday)
 
             assertThatThrownBy { service.createAlternativeHoliday(request, 1L) }
                 .isInstanceOf(AltHolidayConfirmDateIsHolidayException::class.java)
@@ -103,7 +106,7 @@ class AdminAlternativeHolidayServiceTest {
             )
             whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(createUser()))
             whenever(userRepository.findById(1L)).thenReturn(Optional.of(createAdmin()))
-            whenever(holidayMasterService.isHoliday(saturday)).thenReturn(false)
+            doThrow(AltHolidayConfirmDateIsWeekendException()).whenever(validator).validateConfirmDate(saturday)
 
             assertThatThrownBy { service.createAlternativeHoliday(request, 1L) }
                 .isInstanceOf(AltHolidayConfirmDateIsWeekendException::class.java)
@@ -119,8 +122,7 @@ class AdminAlternativeHolidayServiceTest {
             )
             whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(createUser()))
             whenever(userRepository.findById(1L)).thenReturn(Optional.of(createAdmin()))
-            whenever(holidayMasterService.isHoliday(monday)).thenReturn(false)
-            whenever(holidayMasterService.isHoliday(wednesday)).thenReturn(false)
+            doThrow(AltHolidayActualDateIsWeekdayException()).whenever(validator).validateActualWorkDate(wednesday)
 
             assertThatThrownBy { service.createAlternativeHoliday(request, 1L) }
                 .isInstanceOf(AltHolidayActualDateIsWeekdayException::class.java)
@@ -136,11 +138,7 @@ class AdminAlternativeHolidayServiceTest {
             )
             whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(createUser()))
             whenever(userRepository.findById(1L)).thenReturn(Optional.of(createAdmin()))
-            whenever(holidayMasterService.isHoliday(monday)).thenReturn(false)
-            whenever(holidayMasterService.isHoliday(saturday)).thenReturn(false)
-            whenever(teamMemberScheduleRepository.existsByEmployeeIdAndWorkingDateAndWorkingType(
-                "12345678", saturday, "근무"
-            )).thenReturn(false)
+            doThrow(AltHolidayNoWorkScheduleException()).whenever(validator).validateWorkScheduleExists("12345678", saturday)
 
             assertThatThrownBy { service.createAlternativeHoliday(request, 1L) }
                 .isInstanceOf(AltHolidayNoWorkScheduleException::class.java)
@@ -154,26 +152,12 @@ class AdminAlternativeHolidayServiceTest {
                 actualWorkDate = saturday,
                 targetAltHolidayDate = monday
             )
-            setupValidCreateMocks(request)
-            whenever(alternativeHolidayRepository.existsByEmployeeIdAndActualWorkDateAndStatusNot(
-                "12345678", saturday, "반려"
-            )).thenReturn(true)
+            whenever(userRepository.findByEmployeeId("12345678")).thenReturn(Optional.of(createUser()))
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createAdmin()))
+            doThrow(AltHolidayDuplicateException()).whenever(validator).validateNoDuplicate("12345678", saturday)
 
             assertThatThrownBy { service.createAlternativeHoliday(request, 1L) }
                 .isInstanceOf(AltHolidayDuplicateException::class.java)
-        }
-
-        private fun setupValidCreateMocks(request: AlternativeHolidayCreateRequest) {
-            whenever(userRepository.findByEmployeeId(request.employeeId)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createAdmin()))
-            whenever(holidayMasterService.isHoliday(request.targetAltHolidayDate)).thenReturn(false)
-            whenever(holidayMasterService.isHoliday(request.actualWorkDate)).thenReturn(false)
-            whenever(teamMemberScheduleRepository.existsByEmployeeIdAndWorkingDateAndWorkingType(
-                request.employeeId, request.actualWorkDate, "근무"
-            )).thenReturn(true)
-            whenever(alternativeHolidayRepository.existsByEmployeeIdAndActualWorkDateAndStatusNot(
-                request.employeeId, request.actualWorkDate, "반려"
-            )).thenReturn(false)
         }
     }
 
@@ -186,7 +170,6 @@ class AdminAlternativeHolidayServiceTest {
         fun approve_success_noConfirmDate() {
             val altHoliday = createAltHoliday(status = "신규")
             whenever(alternativeHolidayRepository.findById(1L)).thenReturn(Optional.of(altHoliday))
-            whenever(holidayMasterService.isHoliday(monday)).thenReturn(false)
             whenever(teamMemberScheduleRepository.save(any<TeamMemberSchedule>()))
                 .thenAnswer { it.getArgument<TeamMemberSchedule>(0) }
 
@@ -202,7 +185,6 @@ class AdminAlternativeHolidayServiceTest {
         fun approve_success_withAdjustedDate() {
             val altHoliday = createAltHoliday(status = "신규")
             whenever(alternativeHolidayRepository.findById(1L)).thenReturn(Optional.of(altHoliday))
-            whenever(holidayMasterService.isHoliday(tuesday)).thenReturn(false)
             whenever(teamMemberScheduleRepository.save(any<TeamMemberSchedule>()))
                 .thenAnswer { it.getArgument<TeamMemberSchedule>(0) }
 
@@ -237,7 +219,7 @@ class AdminAlternativeHolidayServiceTest {
         fun approve_confirmDateIsHoliday() {
             val altHoliday = createAltHoliday(status = "신규")
             whenever(alternativeHolidayRepository.findById(1L)).thenReturn(Optional.of(altHoliday))
-            whenever(holidayMasterService.isHoliday(tuesday)).thenReturn(true)
+            doThrow(AltHolidayConfirmDateIsHolidayException()).whenever(validator).validateConfirmDate(tuesday)
 
             assertThatThrownBy {
                 service.approveAlternativeHoliday(1L, AlternativeHolidayApproveRequest(confirmAltHolidayDate = tuesday))
