@@ -1,17 +1,22 @@
 package com.otoki.internal.sap.entity
 
+import com.otoki.internal.common.sap.SAPSource
+import com.otoki.internal.common.sap.SAPUpsertKey
+import com.otoki.internal.common.sap.SyncMode
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
 @Entity
 @Table(name = "erp_order")
+@SAPSource(api = "/sap/ClientOrderSearch", syncMode = SyncMode.UPSERT)
 class ErpOrder(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,
 
-    @Column(name = "sap_order_number", nullable = false, length = 20)
+    @SAPUpsertKey
+    @Column(name = "sap_order_number", nullable = false, unique = true, length = 20)
     val sapOrderNumber: String,
 
     @Column(name = "sap_account_code", length = 20)

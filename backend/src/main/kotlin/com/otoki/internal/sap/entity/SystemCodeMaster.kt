@@ -1,10 +1,14 @@
 package com.otoki.internal.sap.entity
 
+import com.otoki.internal.common.sap.SAPSource
+import com.otoki.internal.common.sap.SAPUpsertKey
+import com.otoki.internal.common.sap.SyncMode
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
 @Entity
 @Table(name = "system_code_master")
+@SAPSource(api = "/sap/SystemCodeMaster", syncMode = SyncMode.UPSERT)
 class SystemCodeMaster(
 
     @Id
@@ -29,6 +33,7 @@ class SystemCodeMaster(
     @Column(name = "seq", length = 10)
     var seq: String? = null,
 
+    @SAPUpsertKey(composite = true, components = ["companyCode", "groupCode", "detailCode"])
     @Column(name = "external_key", nullable = false, length = 60, unique = true)
     var externalKey: String,
 

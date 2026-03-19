@@ -4,6 +4,9 @@ import com.otoki.internal.common.salesforce.HCColumn
 import com.otoki.internal.common.salesforce.HCTable
 import com.otoki.internal.common.salesforce.SFField
 import com.otoki.internal.common.salesforce.SFObject
+import com.otoki.internal.common.sap.SAPSource
+import com.otoki.internal.common.sap.SAPUpsertKey
+import com.otoki.internal.common.sap.SyncMode
 import jakarta.persistence.*
 
 /**
@@ -15,6 +18,7 @@ import jakarta.persistence.*
 @Table(name = "product_barcode")
 @SFObject("ProductBarcode__c")
 @HCTable("productbarcode__c")
+@SAPSource(api = "/sap/BarcodeMaster", syncMode = SyncMode.UPSERT)
 class ProductBarcode(
 
     @Id
@@ -56,8 +60,9 @@ class ProductBarcode(
     @Column(name = "product_sfid", length = 18)
     var productSfid: String? = null,
 
+    @SAPUpsertKey(composite = true, components = ["productCode", "unit", "sortOrder"])
     @SFField("CustomKey__c")
-    @Column(name = "custom_key", length = 255)
+    @Column(name = "custom_key", unique = true, length = 255)
     var customKey: String? = null,
 
     @HCColumn("isdeleted")

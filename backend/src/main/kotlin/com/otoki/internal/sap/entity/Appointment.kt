@@ -1,9 +1,12 @@
 package com.otoki.internal.sap.entity
 
+import com.otoki.internal.common.sap.SAPSource
+import com.otoki.internal.common.sap.SyncMode
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
 @Entity
+@SAPSource(api = "/sap/Appointment", syncMode = SyncMode.INSERT_ONLY)
 @Table(
     name = "appointment",
     indexes = [

@@ -4,6 +4,9 @@ import com.otoki.internal.common.salesforce.HCColumn
 import com.otoki.internal.common.salesforce.HCTable
 import com.otoki.internal.common.salesforce.SFField
 import com.otoki.internal.common.salesforce.SFObject
+import com.otoki.internal.common.sap.SAPSource
+import com.otoki.internal.common.sap.SAPUpsertKey
+import com.otoki.internal.common.sap.SyncMode
 import jakarta.persistence.*
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -17,6 +20,7 @@ import java.time.LocalDateTime
 @Table(name = "product")
 @SFObject("DKRetail__Product__c")
 @HCTable("dkretail__product__c")
+@SAPSource(api = "/sap/ProductMasterSend", syncMode = SyncMode.UPSERT)
 class Product(
 
     @Id
@@ -33,9 +37,10 @@ class Product(
     @Column(name = "name", length = 80)
     var name: String? = null,
 
+    @SAPUpsertKey
     @SFField("DKRetail__ProductCode__c")
     @HCColumn("dkretail__productcode__c")
-    @Column(name = "product_code", length = 100)
+    @Column(name = "product_code", unique = true, length = 100)
     val productCode: String? = null,
 
     @SFField("DKRetail__ProductType__c")

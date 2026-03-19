@@ -4,6 +4,9 @@ import com.otoki.internal.common.salesforce.HCColumn
 import com.otoki.internal.common.salesforce.HCTable
 import com.otoki.internal.common.salesforce.SFField
 import com.otoki.internal.common.salesforce.SFObject
+import com.otoki.internal.common.sap.SAPSource
+import com.otoki.internal.common.sap.SAPUpsertKey
+import com.otoki.internal.common.sap.SyncMode
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
@@ -15,6 +18,7 @@ import java.time.LocalDateTime
 @Table(name = "account")
 @SFObject("Account")
 @HCTable("account")
+@SAPSource(api = "/sap/ClientMasterReceive", syncMode = SyncMode.UPSERT)
 class Account(
 
     @Id
@@ -66,9 +70,10 @@ class Account(
     @Column(name = "abc_type_code", length = 40)
     var abcTypeCode: String? = null,
 
+    @SAPUpsertKey
     @SFField("ExternalKey__c")
     @HCColumn("externalkey__c")
-    @Column(name = "external_key", length = 100)
+    @Column(name = "external_key", unique = true, length = 100)
     var externalKey: String? = null,
 
     @SFField("AccountGroup__c")

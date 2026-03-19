@@ -2,11 +2,14 @@ package com.otoki.internal.sap.entity
 
 import com.otoki.internal.common.salesforce.SFField
 import com.otoki.internal.common.salesforce.SFObject
+import com.otoki.internal.common.sap.SAPSource
+import com.otoki.internal.common.sap.SyncMode
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
 @Entity
 @SFObject("AttendInfo__c")
+@SAPSource(api = "/sap/AttendInfo", syncMode = SyncMode.INSERT_ONLY)
 @Table(
     name = "attend_info",
     indexes = [

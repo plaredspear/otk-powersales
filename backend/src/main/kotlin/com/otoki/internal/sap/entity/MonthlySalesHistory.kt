@@ -1,5 +1,8 @@
 package com.otoki.internal.sap.entity
 
+import com.otoki.internal.common.sap.SAPSource
+import com.otoki.internal.common.sap.SAPUpsertKey
+import com.otoki.internal.common.sap.SyncMode
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
@@ -9,6 +12,7 @@ import java.time.LocalDateTime
  */
 @Entity
 @Table(name = "monthlysaleshistory__c")
+@SAPSource(api = "/sap/MonthlySalesHistory", syncMode = SyncMode.UPSERT)
 class MonthlySalesHistory(
 
     @Id
@@ -87,7 +91,8 @@ class MonthlySalesHistory(
     @Column(name = "_hc_err", columnDefinition = "TEXT")
     val hcErr: String? = null,
 
-    @Column(name = "externalkey__c", length = 30)
+    @SAPUpsertKey(composite = true, components = ["sapAccountCode", "salesYearMonth"])
+    @Column(name = "externalkey__c", unique = true, length = 30)
     var externalkeyC: String? = null,
 
     @Column(name = "rlsales__c")

@@ -1,10 +1,13 @@
 package com.otoki.internal.sap.entity
 
+import com.otoki.internal.common.sap.SAPSource
+import com.otoki.internal.common.sap.SyncMode
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
 @Entity
 @Table(name = "tmp_claim")
+@SAPSource(api = "/sap/ClaimReceive", syncMode = SyncMode.UPDATE_ONLY)
 class TmpClaim(
 
     @Id
