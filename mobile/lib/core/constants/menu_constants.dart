@@ -75,6 +75,16 @@ abstract final class MenuConstants {
       items: [
         MenuItem(id: 'my-schedule', label: '내 일정/등록', route: '/my-schedule'),
         MenuItem(
+          id: 'alt-holiday-request',
+          label: '대체휴무 신청',
+          route: '/alt-holiday/request',
+        ),
+        MenuItem(
+          id: 'alt-holiday-history',
+          label: '대체휴무 이력',
+          route: '/alt-holiday/history',
+        ),
+        MenuItem(
           id: 'change-password',
           label: '비밀번호 변경',
           route: '/verify-password',
