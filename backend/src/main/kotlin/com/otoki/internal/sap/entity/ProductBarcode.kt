@@ -56,10 +56,9 @@ class ProductBarcode(
     @Column(name = "sort_order", length = 255)
     var sortOrder: String? = null,
 
-    @SFField("Product__c")
     @HCColumn("product__c")
-    @Column(name = "product_sfid", length = 18)
-    var productSfid: String? = null,
+    @Column(name = "product_id")
+    var productId: Long? = null,
 
     @SAPUpsertKey(composite = true, components = ["productCode", "unit", "sortOrder"])
     @SFField("CustomKey__c")

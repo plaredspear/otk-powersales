@@ -58,7 +58,7 @@ class SapBarcodeMasterService(
 
         val customKey = "$productCode$productUnit$productSequence"
 
-        val productSfid = productRepository.findByProductCode(productCode)?.sfid
+        val productId = productRepository.findByProductCode(productCode)?.id
 
         val existing = productBarcodeRepository.findByCustomKey(customKey)
 
@@ -67,7 +67,7 @@ class SapBarcodeMasterService(
             existing.barcode = item.productBarcode
             existing.unit = productUnit
             existing.sortOrder = productSequence
-            existing.productSfid = productSfid
+            existing.productId = productId
             productBarcodeRepository.save(existing)
         } else {
             val barcode = ProductBarcode(
@@ -76,7 +76,7 @@ class SapBarcodeMasterService(
                 sortOrder = productSequence,
                 productName = item.productName,
                 barcode = item.productBarcode,
-                productSfid = productSfid
+                productId = productId
             )
             productBarcodeRepository.save(barcode)
         }

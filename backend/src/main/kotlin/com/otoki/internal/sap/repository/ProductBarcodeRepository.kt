@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository
 @Repository
 interface ProductBarcodeRepository : JpaRepository<ProductBarcode, Int> {
 
-    fun findByProductSfid(productSfid: String): List<ProductBarcode>
+    fun findByProductId(productId: Long): List<ProductBarcode>
 
     fun findByBarcode(barcode: String): List<ProductBarcode>
 
