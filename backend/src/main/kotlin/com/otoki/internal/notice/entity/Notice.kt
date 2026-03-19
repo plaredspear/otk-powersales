@@ -29,8 +29,8 @@ class Notice(
 
     @SFField("EmployeeId__c")
     @HCColumn("employeeid__c")
-    @Column(name = "employeeid__c", length = 18)
-    val employeeId: String? = null,
+    @Column(name = "employee_id")
+    val employeeId: Long? = null,
 
     @SFField("DKRetail__Scope__c")
     @HCColumn("dkretail__scope__c")
