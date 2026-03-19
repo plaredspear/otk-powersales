@@ -1,5 +1,6 @@
 package com.otoki.internal.schedule.entity
 
+import com.otoki.internal.common.entity.BaseEntity
 import com.otoki.internal.common.salesforce.HCColumn
 import com.otoki.internal.common.salesforce.HCTable
 import com.otoki.internal.common.salesforce.SFField
@@ -199,14 +200,6 @@ class TeamMemberSchedule(
     @Column(name = "isdeleted")
     val isDeleted: Boolean? = null,
 
-    @HCColumn("createddate")
-    @Column(name = "created_date")
-    val createdDate: LocalDateTime? = null,
-
-    @HCColumn("systemmodstamp")
-    @Column(name = "systemmodstamp")
-    var systemModStamp: LocalDateTime? = null,
-
     @HCColumn("_hc_lastop")
     @Column(name = "_hc_lastop", length = 32)
     val hcLastOp: String? = null,
@@ -214,15 +207,7 @@ class TeamMemberSchedule(
     @HCColumn("_hc_err")
     @Column(name = "_hc_err", columnDefinition = "TEXT")
     val hcErr: String? = null
-
-    // --- 주석 처리: V2 기존 필드 ---
-    // userId: Long — V1에서 employeeId(String sfid)로 대체
-    // storeName: String — V1에 없음
-    // scheduleDate: LocalDate — V1에서 workingDate로 대체
-    // startTime: LocalTime — V1에서 startTime(LocalDateTime)으로 대체
-    // endTime: LocalTime — V1에서 completeTime(LocalDateTime)으로 대체
-    // type: String — V1에서 workingType으로 대체
-) {
+) : BaseEntity() {
     fun updateForPromotion(
         employeeNumber: String,
         accountId: Int,
@@ -242,6 +227,6 @@ class TeamMemberSchedule(
         this.workingCategory4 = workingCategory4
         this.promotionEmpId = promotionEmpId
         this.promotionEmpIdExt = promotionEmpId
-        this.systemModStamp = LocalDateTime.now()
+        this.updatedAt = LocalDateTime.now()
     }
 }

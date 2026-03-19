@@ -29,7 +29,7 @@ class NoticeRepositoryCustomImpl(
         val content = queryFactory
             .selectFrom(notice)
             .where(where)
-            .orderBy(notice.createdDate.desc())
+            .orderBy(notice.createdAt.desc())
             .offset(pageable.offset)
             .limit(pageable.pageSize.toLong())
             .fetch()
@@ -57,7 +57,7 @@ class NoticeRepositoryCustomImpl(
         val content = queryFactory
             .selectFrom(notice)
             .where(where)
-            .orderBy(notice.createdDate.desc())
+            .orderBy(notice.createdAt.desc())
             .offset(pageable.offset)
             .limit(pageable.pageSize.toLong())
             .fetch()
@@ -79,12 +79,12 @@ class NoticeRepositoryCustomImpl(
         return queryFactory
             .selectFrom(notice)
             .where(
-                notice.createdDate.goe(since),
+                notice.createdAt.goe(since),
                 notice.category.eq(NoticeCategory.COMPANY)
                     .or(notice.category.eq(NoticeCategory.BRANCH).and(notice.branch.eq(branch)))
                     .or(notice.category.eq(NoticeCategory.EDUCATION))
             )
-            .orderBy(notice.createdDate.desc())
+            .orderBy(notice.createdAt.desc())
             .limit(5)
             .fetch()
     }

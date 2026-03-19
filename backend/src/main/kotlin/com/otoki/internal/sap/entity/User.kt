@@ -1,5 +1,6 @@
 package com.otoki.internal.sap.entity
 
+import com.otoki.internal.common.entity.BaseEntity
 import com.otoki.internal.common.salesforce.HCColumn
 import com.otoki.internal.common.salesforce.HCTable
 import com.otoki.internal.common.salesforce.SFField
@@ -102,14 +103,6 @@ class User(
     @Column(name = "isdeleted")
     val isDeleted: Boolean? = null,
 
-    @HCColumn("systemmodstamp")
-    @Column(name = "systemmodstamp")
-    val systemModStamp: LocalDateTime? = null,
-
-    @HCColumn("createddate")
-    @Column(name = "created_date")
-    val createdDate: LocalDateTime? = null,
-
     @HCColumn("_hc_lastop")
     @Column(name = "_hc_lastop", length = 32)
     val hcLastOp: String? = null,
@@ -125,7 +118,7 @@ class User(
     deviceUuid: String? = null,
     fcmToken: String? = null,
     lastAgreementNumber: String? = null
-) {
+) : BaseEntity() {
 
     // --- employee_mng @OneToOne 관계 ---
 
@@ -174,13 +167,6 @@ class User(
     val gpsYnDate: LocalDateTime?
         get() = employeeMng?.gpsYnDate
 
-    val instDate: LocalDateTime?
-        get() = employeeMng?.instDate
-
-    var updDate: LocalDateTime?
-        get() = employeeMng?.updDate
-        set(value) { ensureEmployeeMng().updDate = value }
-
     private fun ensureEmployeeMng(): EmployeeMng {
         if (employeeMng == null) {
             employeeMng = EmployeeMng(employeeNumber = employeeNumber)
@@ -205,7 +191,7 @@ class User(
     fun changePassword(newEncodedPassword: String) {
         this.password = newEncodedPassword
         this.passwordChangeRequired = false
-        this.updDate = LocalDateTime.now()
+        this.updatedAt = LocalDateTime.now()
     }
 
     fun requiresGpsConsent(): Boolean {
@@ -217,21 +203,21 @@ class User(
         if (agreementNumber != null) {
             this.lastAgreementNumber = agreementNumber
         }
-        this.updDate = LocalDateTime.now()
+        this.updatedAt = LocalDateTime.now()
     }
 
     fun bindDevice(deviceId: String) {
         this.deviceUuid = deviceId
-        this.updDate = LocalDateTime.now()
+        this.updatedAt = LocalDateTime.now()
     }
 
     fun resetDevice() {
         this.deviceUuid = null
-        this.updDate = LocalDateTime.now()
+        this.updatedAt = LocalDateTime.now()
     }
 
     @PreUpdate
     fun onPreUpdate() {
-        this.updDate = LocalDateTime.now()
+        this.updatedAt = LocalDateTime.now()
     }
 }

@@ -1,5 +1,6 @@
 package com.otoki.internal.sap.entity
 
+import com.otoki.internal.common.entity.BaseEntity
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
@@ -34,12 +35,6 @@ class EmployeeMng(
     @Column(name = "gps_yn_date")
     val gpsYnDate: LocalDateTime? = null,
 
-    @Column(name = "inst_date")
-    val instDate: LocalDateTime? = null,
-
-    @Column(name = "upd_date")
-    var updDate: LocalDateTime? = null,
-
     @Column(name = "last_agreement_number", length = 80)
     var lastAgreementNumber: String? = null
-)
+) : BaseEntity()

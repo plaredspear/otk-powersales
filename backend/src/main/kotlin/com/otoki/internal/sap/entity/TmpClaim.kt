@@ -1,9 +1,9 @@
 package com.otoki.internal.sap.entity
 
+import com.otoki.internal.common.entity.BaseEntity
 import com.otoki.internal.common.sap.SAPSource
 import com.otoki.internal.common.sap.SyncMode
 import jakarta.persistence.*
-import java.time.LocalDateTime
 
 @Entity
 @Table(name = "tmp_claim")
@@ -59,12 +59,6 @@ class TmpClaim(
     @Column(name = "tmp_requesttype", columnDefinition = "TEXT")
     var tmpRequestType: String? = null,
 
-    @Column(name = "inst_date")
-    var instDate: LocalDateTime? = null,
-
-    @Column(name = "upd_date")
-    var updDate: LocalDateTime? = null,
-
     @Column(name = "tmp_employeecode", length = 80)
     var tmpEmployeeCode: String? = null,
 
@@ -119,4 +113,4 @@ class TmpClaim(
 
     @Column(name = "cosmos_key", length = 80)
     var cosmosKey: String? = null
-)
+) : BaseEntity()

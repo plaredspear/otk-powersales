@@ -1,5 +1,6 @@
 package com.otoki.internal.shelflife.entity
 
+import com.otoki.internal.common.entity.BaseEntity
 import jakarta.persistence.*
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -40,18 +41,12 @@ class ShelfLife(
     var alarmDate: LocalDate? = null,
 
     @Column(name = "description", columnDefinition = "TEXT")
-    var description: String? = null,
-
-    @Column(name = "inst_dt")
-    val instDt: LocalDateTime? = null,
-
-    @Column(name = "updt_dt")
-    var updtDt: LocalDateTime? = null
-) {
+    var description: String? = null
+) : BaseEntity() {
     fun update(expirationDate: LocalDate, alarmDate: LocalDate, description: String?) {
         this.expirationDate = expirationDate
         this.alarmDate = alarmDate
         this.description = description
-        this.updtDt = LocalDateTime.now()
+        this.updatedAt = LocalDateTime.now()
     }
 }

@@ -27,7 +27,7 @@ class EducationPostRepositoryCustomImpl(
         val content = queryFactory
             .selectFrom(educationPost)
             .where(where)
-            .orderBy(educationPost.instDate.desc())
+            .orderBy(educationPost.createdAt.desc())
             .offset(pageable.offset)
             .limit(pageable.pageSize.toLong())
             .fetch()
@@ -64,7 +64,7 @@ class EducationPostRepositoryCustomImpl(
         val content = queryFactory
             .selectFrom(educationPost)
             .where(where)
-            .orderBy(educationPost.instDate.desc())
+            .orderBy(educationPost.createdAt.desc())
             .offset(pageable.offset)
             .limit(pageable.pageSize.toLong())
             .fetch()

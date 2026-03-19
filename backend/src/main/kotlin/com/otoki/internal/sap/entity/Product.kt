@@ -1,5 +1,6 @@
 package com.otoki.internal.sap.entity
 
+import com.otoki.internal.common.entity.BaseEntity
 import com.otoki.internal.common.salesforce.HCColumn
 import com.otoki.internal.common.salesforce.HCTable
 import com.otoki.internal.common.salesforce.SFField
@@ -9,7 +10,6 @@ import com.otoki.internal.common.sap.SAPUpsertKey
 import com.otoki.internal.common.sap.SyncMode
 import jakarta.persistence.*
 import java.time.LocalDate
-import java.time.LocalDateTime
 
 /**
  * 제품 Entity
@@ -207,14 +207,6 @@ class Product(
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 
-    @HCColumn("createddate")
-    @Column(name = "created_date")
-    val createdDate: LocalDateTime? = null,
-
-    @HCColumn("systemmodstamp")
-    @Column(name = "system_mod_stamp")
-    val systemModStamp: LocalDateTime? = null,
-
     @HCColumn("_hc_lastop")
     @Column(name = "_hc_lastop", length = 32)
     val hcLastOp: String? = null,
@@ -231,4 +223,4 @@ class Product(
     dcQuantity: V1에 없음
     unitPrice: V1에 없음 (standardUnitPrice로 대체)
     */
-)
+) : BaseEntity()

@@ -1,7 +1,7 @@
 package com.otoki.internal.education.entity
 
+import com.otoki.internal.common.entity.BaseEntity
 import jakarta.persistence.*
-import java.time.LocalDateTime
 
 /**
  * 교육 게시물 Entity
@@ -27,21 +27,5 @@ class EducationPost(
     val eduCode: String? = null,
 
     @Column(name = "empcode__c", length = 40)
-    val empCode: String? = null,
-
-    @Column(name = "inst_date")
-    val instDate: LocalDateTime? = null,
-
-    @Column(name = "upd_date")
-    var updDate: LocalDateTime? = null
-
-    // --- 주석 처리: V1 스키마에 없는 필드 ---
-    // val id: Long = 0,                          // PK 변경: Long → String (eduId)
-    // val category: EducationCategory,            // Enum → String (eduCode)
-    // val title: String,                          // → eduTitle
-    // val content: String,                        // → eduContent
-    // @ManyToOne val createdBy: User,             // @ManyToOne → raw String (empCode)
-    // val isActive: Boolean = true,               // V1에 없음
-    // val createdAt: LocalDateTime,               // → instDate
-    // var updatedAt: LocalDateTime                // → updDate
-)
+    val empCode: String? = null
+) : BaseEntity()

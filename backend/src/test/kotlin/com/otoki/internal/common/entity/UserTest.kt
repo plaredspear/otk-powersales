@@ -61,20 +61,17 @@ class UserTest {
     }
 
     @Test
-    @DisplayName("비밀번호 변경 시 updDate가 갱신된다")
+    @DisplayName("비밀번호 변경 시 updatedAt가 갱신된다")
     fun changePassword_UpdatesUpdDate() {
         // given
         val user = createTestUser()
-        val originalUpdDate = user.updDate
+        val originalUpdatedAt = user.updatedAt
 
         // when
         user.changePassword("newEncodedPassword")
 
         // then
-        assertThat(user.updDate).isNotNull()
-        if (originalUpdDate != null) {
-            assertThat(user.updDate).isAfterOrEqualTo(originalUpdDate)
-        }
+        assertThat(user.updatedAt).isAfterOrEqualTo(originalUpdatedAt)
     }
 
     @Test
@@ -130,7 +127,7 @@ class UserTest {
     }
 
     @Test
-    @DisplayName("GPS 동의 기록 시 updDate가 갱신된다")
+    @DisplayName("GPS 동의 기록 시 updatedAt가 갱신된다")
     fun recordGpsConsent_UpdatesUpdDate() {
         // given
         val user = createTestUser()
@@ -139,7 +136,7 @@ class UserTest {
         user.recordGpsConsent()
 
         // then
-        assertThat(user.updDate).isNotNull()
+        assertThat(user.updatedAt).isNotNull()
     }
 
     @Test

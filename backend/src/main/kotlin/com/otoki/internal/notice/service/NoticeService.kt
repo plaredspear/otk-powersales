@@ -52,7 +52,7 @@ class NoticeService(
         val images = if (!notice.sfid.isNullOrBlank()) {
             uploadFileRepository.findByRecordIdAndIsDeletedFalse(notice.sfid!!)
                 .filter { !it.uniqueKey.isNullOrBlank() }
-                .sortedBy { it.createdDate }
+                .sortedBy { it.createdAt }
                 .mapIndexed { index, file ->
                     NoticeImageResponse(
                         id = file.id,
@@ -72,7 +72,7 @@ class NoticeService(
             content = notice.contents ?: "",
             branch = notice.branch,
             branchCode = notice.branchCode,
-            createdAt = notice.createdDate?.format(DATE_TIME_FORMATTER) ?: "",
+            createdAt = notice.createdAt?.format(DATE_TIME_FORMATTER) ?: "",
             images = images
         )
     }
@@ -94,7 +94,7 @@ class NoticeService(
                 category = notice.category?.apiCode ?: "",
                 categoryName = notice.category?.displayName ?: "",
                 title = notice.name ?: "",
-                createdAt = notice.createdDate?.format(DATE_TIME_FORMATTER) ?: ""
+                createdAt = notice.createdAt?.format(DATE_TIME_FORMATTER) ?: ""
             )
         }
 
@@ -120,7 +120,7 @@ class NoticeService(
                 category = notice.category?.apiCode ?: "",
                 categoryName = notice.category?.displayName ?: "",
                 title = notice.name ?: "",
-                createdAt = notice.createdDate?.format(DATE_TIME_FORMATTER) ?: ""
+                createdAt = notice.createdAt?.format(DATE_TIME_FORMATTER) ?: ""
             )
         }
 
@@ -143,8 +143,7 @@ class NoticeService(
             category = cat,
             contents = request.content,
             branch = if (cat == NoticeCategory.BRANCH) request.branch else null,
-            branchCode = if (cat == NoticeCategory.BRANCH) request.branchCode else null,
-            createdDate = LocalDateTime.now()
+            branchCode = if (cat == NoticeCategory.BRANCH) request.branchCode else null
         )
         val saved = noticeRepository.save(notice)
         return NoticeMutationResponse.from(saved)

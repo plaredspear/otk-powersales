@@ -50,9 +50,10 @@ class NoticeRepositoryTest {
             category = category,
             branch = branch,
             contents = contents,
-            isDeleted = isDeleted,
-            createdDate = createdDate
-        )
+            isDeleted = isDeleted
+        ).apply {
+            if (createdDate != null) createdAt = createdDate
+        }
         val persisted = testEntityManager.persistAndFlush(notice)
         testEntityManager.clear()
         return persisted

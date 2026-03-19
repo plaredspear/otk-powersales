@@ -1,8 +1,8 @@
 package com.otoki.internal.entity
 
+import com.otoki.internal.common.entity.BaseEntity
 import jakarta.persistence.*
 import java.time.LocalDate
-import java.time.LocalDateTime
 
 /**
  * 인터페이스 제품 Entity
@@ -122,10 +122,4 @@ class InterfaceProduct(
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 
-    @Column(name = "created_date")
-    val createdDate: LocalDateTime? = null,
-
-    @Column(name = "system_mod_stamp")
-    val systemModStamp: LocalDateTime? = null,
-
-)
+) : BaseEntity()

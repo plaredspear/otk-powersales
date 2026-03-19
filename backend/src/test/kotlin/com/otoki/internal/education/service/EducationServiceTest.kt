@@ -57,9 +57,10 @@ class EducationServiceTest {
             eduTitle = "진짬뽕 시식 매뉴얼",
             eduContent = "진짬뽕 시식 방법을 안내합니다.",
             eduCode = "TASTING_MANUAL",
-            empCode = "10000001",
-            instDate = LocalDateTime.of(2020, 8, 10, 0, 0, 0)
-        )
+            empCode = "10000001"
+        ).apply {
+            createdAt = LocalDateTime.of(2020, 8, 10, 0, 0, 0)
+        }
     }
 
     @Nested
@@ -74,7 +75,7 @@ class EducationServiceTest {
             val page = PageImpl(posts, PageRequest.of(0, 10), 1)
 
             whenever(educationCodeRepository.existsById("TASTING_MANUAL")).thenReturn(true)
-            whenever(educationPostRepository.findByEduCodeOrderByInstDateDesc(any(), any()))
+            whenever(educationPostRepository.findByEduCodeOrderByCreatedAtDesc(any(), any()))
                 .thenReturn(page)
 
             // When
@@ -144,7 +145,7 @@ class EducationServiceTest {
             val emptyPage = PageImpl<EducationPost>(emptyList(), PageRequest.of(0, 10), 0)
 
             whenever(educationCodeRepository.existsById("TASTING_MANUAL")).thenReturn(true)
-            whenever(educationPostRepository.findByEduCodeOrderByInstDateDesc(any(), any()))
+            whenever(educationPostRepository.findByEduCodeOrderByCreatedAtDesc(any(), any()))
                 .thenReturn(emptyPage)
 
             // When

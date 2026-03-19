@@ -1,7 +1,7 @@
 package com.otoki.internal.notice.entity
 
+import com.otoki.internal.common.entity.BaseEntity
 import jakarta.persistence.*
-import java.time.LocalDateTime
 
 @Entity
 @Table(name = "uploadfile__c")
@@ -27,8 +27,5 @@ class UploadFile(
     val fileSize: String? = null,
 
     @Column(name = "isdeleted")
-    val isDeleted: Boolean? = null,
-
-    @Column(name = "createddate")
-    val createdDate: LocalDateTime? = null
-)
+    val isDeleted: Boolean? = null
+) : BaseEntity()

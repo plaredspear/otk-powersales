@@ -64,8 +64,8 @@ class PushMessageReceiverTest {
         assertThat(found.employeeId).isNull()
         assertThat(found.messageId).isNull()
         assertThat(found.isDeleted).isNull()
-        assertThat(found.createdDate).isNull()
-        assertThat(found.systemModStamp).isNull()
+        assertThat(found.createdAt).isNotNull()
+        assertThat(found.updatedAt).isNotNull()
         assertThat(found.hcLastOp).isNull()
         assertThat(found.hcErr).isNull()
     }
@@ -78,11 +78,12 @@ class PushMessageReceiverTest {
         val receiver = PushMessageReceiver(
             sfid = "a0D5g000003GHI",
             isDeleted = false,
-            createdDate = now,
-            systemModStamp = now,
             hcLastOp = "SYNCED",
             hcErr = null
-        )
+        ).apply {
+            createdAt = now
+            updatedAt = now
+        }
 
         // When
         val persisted = testEntityManager.persistAndFlush(receiver)
@@ -92,8 +93,8 @@ class PushMessageReceiverTest {
         // Then
         assertThat(found.sfid).isEqualTo("a0D5g000003GHI")
         assertThat(found.isDeleted).isFalse()
-        assertThat(found.createdDate).isEqualTo(now)
-        assertThat(found.systemModStamp).isEqualTo(now)
+        assertThat(found.createdAt).isEqualTo(now)
+        assertThat(found.updatedAt).isEqualTo(now)
         assertThat(found.hcLastOp).isEqualTo("SYNCED")
         assertThat(found.hcErr).isNull()
     }

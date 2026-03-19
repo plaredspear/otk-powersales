@@ -1,7 +1,7 @@
 package com.otoki.internal.notice.entity
 
+import com.otoki.internal.common.entity.BaseEntity
 import jakarta.persistence.*
-import java.time.LocalDateTime
 
 @Entity
 @Table(name = "dkretail__notice__c")
@@ -42,15 +42,9 @@ class Notice(
     @Column(name = "isdeleted")
     var isDeleted: Boolean? = null,
 
-    @Column(name = "createddate")
-    var createdDate: LocalDateTime? = null,
-
-    @Column(name = "systemmodstamp")
-    val systemModStamp: LocalDateTime? = null,
-
     @Column(name = "_hc_lastop", length = 32)
     val hcLastOp: String? = null,
 
     @Column(name = "_hc_err", columnDefinition = "TEXT")
     val hcErr: String? = null
-)
+) : BaseEntity()
