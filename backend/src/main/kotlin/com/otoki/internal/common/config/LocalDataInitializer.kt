@@ -175,9 +175,8 @@ class LocalDataInitializer(
                     |2. 적용 기간: 2026.01.01 ~ 2026.06.30
                     |3. 문의: 영업기획팀 (내선 1234)
                 """.trimMargin(),
-                isDeleted = false,
-                createdDate = now.minusDays(5)
-            ),
+                isDeleted = false
+            ).apply { createdAt = now.minusDays(5) },
             Notice(
                 name = "NTC-LOCAL-002",
                 category = NoticeCategory.COMPANY,
@@ -194,9 +193,8 @@ class LocalDataInitializer(
                     |
                     |앱스토어에서 업데이트해주세요.
                 """.trimMargin(),
-                isDeleted = false,
-                createdDate = now.minusDays(4)
-            ),
+                isDeleted = false
+            ).apply { createdAt = now.minusDays(4) },
             Notice(
                 name = "NTC-LOCAL-003",
                 category = NoticeCategory.EDUCATION,
@@ -212,9 +210,8 @@ class LocalDataInitializer(
                     |- 내용: 폭염 대비 안전 수칙, 차량 관리
                 """.trimMargin(),
                 eduCategory = "교육",
-                isDeleted = false,
-                createdDate = now.minusDays(3)
-            ),
+                isDeleted = false
+            ).apply { createdAt = now.minusDays(3) },
             Notice(
                 name = "NTC-LOCAL-004",
                 category = NoticeCategory.BRANCH,
@@ -230,9 +227,8 @@ class LocalDataInitializer(
                 """.trimMargin(),
                 branch = "테스트지점",
                 branchCode = "BR-TEST-001",
-                isDeleted = false,
-                createdDate = now.minusDays(2)
-            ),
+                isDeleted = false
+            ).apply { createdAt = now.minusDays(2) },
             Notice(
                 name = "NTC-LOCAL-005",
                 category = NoticeCategory.BRANCH,
@@ -248,9 +244,8 @@ class LocalDataInitializer(
                 """.trimMargin(),
                 branch = "테스트지점",
                 branchCode = "BR-TEST-001",
-                isDeleted = false,
-                createdDate = now.minusDays(1)
-            )
+                isDeleted = false
+            ).apply { createdAt = now.minusDays(1) }
         )
 
         noticeRepository.saveAll(notices)
@@ -278,8 +273,7 @@ class LocalDataInitializer(
             """.trimMargin(),
             active = true,
             isDeleted = false,
-            activeDate = LocalDate.now(),
-            createdDate = LocalDateTime.now()
+            activeDate = LocalDate.now()
         )
 
         agreementWordRepository.save(agreementWord)

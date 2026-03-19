@@ -1,7 +1,7 @@
 package com.otoki.internal.entity
 
+import com.otoki.internal.common.entity.BaseEntity
 import jakarta.persistence.*
-import java.time.LocalDateTime
 
 /**
  * 푸시 메시지 수신자 Entity
@@ -32,15 +32,9 @@ class PushMessageReceiver(
     @Column(name = "isdeleted")
     val isDeleted: Boolean? = null,
 
-    @Column(name = "createddate")
-    val createdDate: LocalDateTime? = null,
-
-    @Column(name = "systemmodstamp")
-    val systemModStamp: LocalDateTime? = null,
-
     @Column(name = "_hc_lastop", length = 32)
     val hcLastOp: String? = null,
 
     @Column(name = "_hc_err", columnDefinition = "TEXT")
     val hcErr: String? = null
-)
+) : BaseEntity()

@@ -749,9 +749,10 @@ class NoticeServiceTest {
         category = category,
         contents = contents,
         branch = branch,
-        isDeleted = isDeleted,
-        createdDate = createdDate
-    )
+        isDeleted = isDeleted
+    ).apply {
+        if (createdDate != null) createdAt = createdDate
+    }
 
     private fun createUploadFile(
         id: Long = 1L,
@@ -759,7 +760,8 @@ class NoticeServiceTest {
         createdDate: LocalDateTime? = LocalDateTime.of(2026, 1, 1, 0, 0, 0)
     ): UploadFile = UploadFile(
         id = id,
-        uniqueKey = uniqueKey,
-        createdDate = createdDate
-    )
+        uniqueKey = uniqueKey
+    ).apply {
+        if (createdDate != null) createdAt = createdDate
+    }
 }

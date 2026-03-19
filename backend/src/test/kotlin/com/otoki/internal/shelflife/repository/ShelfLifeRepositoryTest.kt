@@ -56,10 +56,11 @@ class ShelfLifeRepositoryTest {
                 productCode = "30310009",
                 expirationDate = LocalDate.of(2026, 6, 1),
                 alarmDate = LocalDate.of(2026, 5, 25),
-                description = "테스트 설명",
-                instDt = LocalDateTime.of(2026, 2, 23, 10, 0),
-                updtDt = LocalDateTime.of(2026, 2, 23, 10, 0)
-            )
+                description = "테스트 설명"
+            ).apply {
+                createdAt = LocalDateTime.of(2026, 2, 23, 10, 0)
+                updatedAt = LocalDateTime.of(2026, 2, 23, 10, 0)
+            }
 
             // When
             val saved = shelfLifeRepository.save(shelfLife)
@@ -101,8 +102,8 @@ class ShelfLifeRepositoryTest {
             assertThat(found.get().expirationDate).isNull()
             assertThat(found.get().alarmDate).isNull()
             assertThat(found.get().description).isNull()
-            assertThat(found.get().instDt).isNull()
-            assertThat(found.get().updtDt).isNull()
+            assertThat(found.get().createdAt).isNotNull()
+            assertThat(found.get().updatedAt).isNotNull()
         }
     }
 

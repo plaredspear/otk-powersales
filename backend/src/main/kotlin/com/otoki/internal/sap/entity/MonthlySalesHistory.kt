@@ -1,10 +1,10 @@
 package com.otoki.internal.sap.entity
 
+import com.otoki.internal.common.entity.BaseEntity
 import com.otoki.internal.common.sap.SAPSource
 import com.otoki.internal.common.sap.SAPUpsertKey
 import com.otoki.internal.common.sap.SyncMode
 import jakarta.persistence.*
-import java.time.LocalDateTime
 
 /**
  * 월매출 이력 Entity
@@ -79,12 +79,6 @@ class MonthlySalesHistory(
     @Column(name = "isdeleted")
     val isDeleted: Boolean? = null,
 
-    @Column(name = "createddate")
-    val createdDate: LocalDateTime? = null,
-
-    @Column(name = "systemmodstamp")
-    val systemModStamp: LocalDateTime? = null,
-
     @Column(name = "_hc_lastop", length = 32)
     val hcLastOp: String? = null,
 
@@ -97,4 +91,4 @@ class MonthlySalesHistory(
 
     @Column(name = "rlsales__c")
     var rlsalesC: Double? = null
-)
+) : BaseEntity()

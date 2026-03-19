@@ -387,7 +387,7 @@ class LocalDataInitializerTest {
                 assertThat(aw.active).isTrue()
                 assertThat(aw.isDeleted).isFalse()
                 assertThat(aw.activeDate).isNotNull()
-                assertThat(aw.createdDate).isNotNull()
+                assertThat(aw.createdAt).isNotNull()
             })
         }
     }
@@ -465,7 +465,7 @@ class LocalDataInitializerTest {
                 val eduNotice = notices.find { it.name == "NTC-LOCAL-003" }
                 assertThat(eduNotice?.eduCategory).isEqualTo("교육")
 
-                val dates = notices.mapNotNull { it.createdDate }
+                val dates = notices.mapNotNull { it.createdAt }
                 assertThat(dates).hasSize(5)
                 assertThat(dates).isSorted()
             })

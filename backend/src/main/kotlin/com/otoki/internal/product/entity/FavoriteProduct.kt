@@ -1,7 +1,7 @@
 package com.otoki.internal.product.entity
 
+import com.otoki.internal.common.entity.BaseEntity
 import jakarta.persistence.*
-import java.time.LocalDateTime
 
 /**
  * 즐겨찾기 제품 Entity
@@ -20,20 +20,5 @@ class FavoriteProduct(
 
     @Id
     @Column(name = "productcode", length = 80)
-    val productCode: String = "",
-
-    @Column(name = "inst_date")
-    val instDate: LocalDateTime? = null,
-
-    @Column(name = "upd_date")
-    val updDate: LocalDateTime? = null
-)
-
-/* --- 주석 처리: V1에 없는 기존 필드 ---
-id: Long — V2 IDENTITY PK → @IdClass(employeeCode, productCode) 로 대체
-user: User (@ManyToOne) → employeeCode: String
-product: Product (@ManyToOne) → productCode: String (컬럼 재정의)
-productCode: String (기존 @Column 정의) → @Id 컬럼으로 승격
-createdAt → instDate
-@UniqueConstraint, @Table(indexes): V1 매핑 시 제거
---- */
+    val productCode: String = ""
+) : BaseEntity()

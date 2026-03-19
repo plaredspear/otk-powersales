@@ -1,12 +1,12 @@
 package com.otoki.internal.schedule.entity
 
+import com.otoki.internal.common.entity.BaseEntity
 import com.otoki.internal.common.salesforce.HCColumn
 import com.otoki.internal.common.salesforce.HCTable
 import com.otoki.internal.common.salesforce.SFField
 import com.otoki.internal.common.salesforce.SFObject
 import jakarta.persistence.*
 import java.time.LocalDate
-import java.time.LocalDateTime
 
 /**
  * 거래처 일정 Entity (진열마스터 확정 스케줄)
@@ -95,14 +95,6 @@ class DisplayWorkSchedule(
     @Column(name = "isdeleted")
     val isDeleted: Boolean? = null,
 
-    @HCColumn("createddate")
-    @Column(name = "created_date")
-    val createdDate: LocalDateTime? = null,
-
-    @HCColumn("systemmodstamp")
-    @Column(name = "systemmodstamp")
-    val systemModStamp: LocalDateTime? = null,
-
     @HCColumn("_hc_lastop")
     @Column(name = "_hc_lastop", length = 32)
     val hcLastOp: String? = null,
@@ -110,13 +102,4 @@ class DisplayWorkSchedule(
     @HCColumn("_hc_err")
     @Column(name = "_hc_err", columnDefinition = "TEXT")
     val hcErr: String? = null
-
-    // --- 주석 처리: V2 기존 필드 ---
-    // userId: Long — V1에서 employeeId(String)로 대체
-    // storeId: Long — V1에서 account(String sfid)로 대체
-    // storeName: String — V1에 없음
-    // storeCode: String — V1에 없음
-    // address: String? — V1에 없음
-    // workCategory: String — V1에서 typeOfWork1로 대체
-    // scheduleDate: LocalDate — V1에서 startDate로 대체
-)
+) : BaseEntity()

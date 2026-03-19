@@ -58,7 +58,7 @@ class EducationService(
 
         // 3. 검색 키워드에 따라 다른 메서드 호출
         val postsPage = if (search.isNullOrBlank()) {
-            educationPostRepository.findByEduCodeOrderByInstDateDesc(
+            educationPostRepository.findByEduCodeOrderByCreatedAtDesc(
                 category,
                 pageable
             )
@@ -75,7 +75,7 @@ class EducationService(
             EducationPostSummaryResponse(
                 id = post.eduId,
                 title = post.eduTitle ?: "",
-                createdAt = post.instDate?.format(DATE_TIME_FORMATTER) ?: ""
+                createdAt = post.createdAt?.format(DATE_TIME_FORMATTER) ?: ""
             )
         }
 
@@ -134,7 +134,7 @@ class EducationService(
             categoryName = categoryName,
             title = post.eduTitle ?: "",
             content = post.eduContent ?: "",
-            createdAt = post.instDate?.format(DATE_TIME_FORMATTER) ?: "",
+            createdAt = post.createdAt?.format(DATE_TIME_FORMATTER) ?: "",
             images = images,
             attachments = attachments
         )
@@ -172,7 +172,7 @@ class EducationService(
                 eduTitle = post.eduTitle ?: "",
                 eduCode = post.eduCode ?: "",
                 eduCodeNm = categoryName,
-                instDate = post.instDate?.format(DATE_TIME_FORMATTER) ?: "",
+                instDate = post.createdAt?.format(DATE_TIME_FORMATTER) ?: "",
                 attachmentCount = attachmentCounts[post.eduId] ?: 0
             )
         }
@@ -211,8 +211,7 @@ class EducationService(
             eduTitle = title,
             eduContent = content,
             eduCode = category,
-            empCode = user.employeeNumber,
-            instDate = now
+            empCode = user.employeeNumber
         )
         educationPostRepository.save(post)
 
@@ -273,10 +272,11 @@ class EducationService(
             eduTitle = title,
             eduContent = content,
             eduCode = category,
-            empCode = post.empCode,
-            instDate = post.instDate,
-            updDate = LocalDateTime.now()
-        )
+            empCode = post.empCode
+        ).apply {
+            createdAt = post.createdAt
+            updatedAt = LocalDateTime.now()
+        }
         educationPostRepository.save(updated)
 
         val allAttachments = educationPostAttachmentRepository.findByEduId(postId)
@@ -383,8 +383,8 @@ class EducationService(
             eduCode = post.eduCode ?: "",
             eduCodeNm = categoryName,
             empCode = post.empCode ?: "",
-            instDate = post.instDate?.format(DATE_TIME_FORMATTER) ?: "",
-            updDate = post.updDate?.format(DATE_TIME_FORMATTER),
+            instDate = post.createdAt?.format(DATE_TIME_FORMATTER) ?: "",
+            updDate = post.updatedAt?.format(DATE_TIME_FORMATTER),
             attachments = attachments.map {
                 AttachmentInfo(
                     eduFileKey = it.eduFileKey,

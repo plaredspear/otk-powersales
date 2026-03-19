@@ -26,7 +26,7 @@ data class NoticeMutationResponse(
                 content = entity.contents ?: "",
                 branch = entity.branch,
                 branchCode = entity.branchCode,
-                createdAt = entity.createdDate?.format(DATE_TIME_FORMATTER) ?: ""
+                createdAt = entity.createdAt?.format(DATE_TIME_FORMATTER) ?: ""
             )
         }
     }

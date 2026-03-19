@@ -14,7 +14,7 @@ interface EducationPostRepository : JpaRepository<EducationPost, String>, Educat
      * 카테고리별 게시물 조회 (페이지네이션)
      * eduCode 기준, instDate 내림차순 정렬
      */
-    fun findByEduCodeOrderByInstDateDesc(
+    fun findByEduCodeOrderByCreatedAtDesc(
         eduCode: String,
         pageable: Pageable
     ): Page<EducationPost>

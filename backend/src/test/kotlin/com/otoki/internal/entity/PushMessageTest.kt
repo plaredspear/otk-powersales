@@ -65,8 +65,8 @@ class PushMessageTest {
         assertThat(found.message).isNull()
         assertThat(found.scheduleDate).isNull()
         assertThat(found.isDeleted).isNull()
-        assertThat(found.createdDate).isNull()
-        assertThat(found.systemModStamp).isNull()
+        assertThat(found.createdAt).isNotNull()
+        assertThat(found.updatedAt).isNotNull()
         assertThat(found.hcLastOp).isNull()
         assertThat(found.hcErr).isNull()
     }
@@ -79,11 +79,12 @@ class PushMessageTest {
         val pushMessage = PushMessage(
             sfid = "a0B5g000001ABC",
             isDeleted = false,
-            createdDate = now,
-            systemModStamp = now,
             hcLastOp = "SYNCED",
             hcErr = null
-        )
+        ).apply {
+            createdAt = now
+            updatedAt = now
+        }
 
         // When
         val persisted = testEntityManager.persistAndFlush(pushMessage)
@@ -93,8 +94,8 @@ class PushMessageTest {
         // Then
         assertThat(found.sfid).isEqualTo("a0B5g000001ABC")
         assertThat(found.isDeleted).isFalse()
-        assertThat(found.createdDate).isEqualTo(now)
-        assertThat(found.systemModStamp).isEqualTo(now)
+        assertThat(found.createdAt).isEqualTo(now)
+        assertThat(found.updatedAt).isEqualTo(now)
         assertThat(found.hcLastOp).isEqualTo("SYNCED")
         assertThat(found.hcErr).isNull()
     }

@@ -154,8 +154,8 @@ class MonthlySalesHistoryTest {
         assertThat(found.fridgePurpose).isNull()
         assertThat(found.sfid).isNull()
         assertThat(found.isDeleted).isNull()
-        assertThat(found.createdDate).isNull()
-        assertThat(found.systemModStamp).isNull()
+        assertThat(found.createdAt).isNotNull()
+        assertThat(found.updatedAt).isNotNull()
         assertThat(found.hcLastOp).isNull()
         assertThat(found.hcErr).isNull()
     }
@@ -169,11 +169,12 @@ class MonthlySalesHistoryTest {
             name = "MSH-SF",
             sfid = "a0B5g000001XYZ",
             isDeleted = false,
-            createdDate = now,
-            systemModStamp = now,
             hcLastOp = "SYNCED",
             hcErr = null
-        )
+        ).apply {
+            createdAt = now
+            updatedAt = now
+        }
 
         // When
         val persisted = testEntityManager.persistAndFlush(history)
@@ -183,8 +184,8 @@ class MonthlySalesHistoryTest {
         // Then
         assertThat(found.sfid).isEqualTo("a0B5g000001XYZ")
         assertThat(found.isDeleted).isFalse()
-        assertThat(found.createdDate).isEqualTo(now)
-        assertThat(found.systemModStamp).isEqualTo(now)
+        assertThat(found.createdAt).isEqualTo(now)
+        assertThat(found.updatedAt).isEqualTo(now)
         assertThat(found.hcLastOp).isEqualTo("SYNCED")
     }
 }

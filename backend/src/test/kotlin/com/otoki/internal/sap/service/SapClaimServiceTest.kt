@@ -62,7 +62,7 @@ class SapClaimServiceTest {
             assertThat(existing.claimContent).isEqualTo("불량 신고")
             assertThat(existing.reasonType).isEqualTo("DEFECT")
             assertThat(existing.cosmosKey).isEqualTo("COS-001")
-            assertThat(existing.updDate).isNotNull()
+            assertThat(existing.updatedAt).isNotNull()
         }
 
         @Test

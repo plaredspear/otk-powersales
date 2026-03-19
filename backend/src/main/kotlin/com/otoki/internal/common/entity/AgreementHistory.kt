@@ -2,7 +2,6 @@ package com.otoki.internal.common.entity
 
 import jakarta.persistence.*
 import java.time.LocalDate
-import java.time.LocalDateTime
 
 @Entity
 @Table(name = "agreementhistory__c")
@@ -24,9 +23,6 @@ class AgreementHistory(
     @Column(name = "agreementwordid__c", nullable = false)
     val agreementWordId: Long,
 
-    @Column(name = "createddate", nullable = false)
-    val createdDate: LocalDateTime = LocalDateTime.now(),
-
     @Column(name = "isdeleted", nullable = false)
     val isDeleted: Boolean = false
-)
+) : BaseEntity()

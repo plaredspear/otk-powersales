@@ -1,8 +1,8 @@
 package com.otoki.internal.entity
 
+import com.otoki.internal.common.entity.BaseEntity
 import jakarta.persistence.*
 import java.time.LocalDate
-import java.time.LocalDateTime
 
 /**
  * 본사 평가 Entity
@@ -43,15 +43,9 @@ class HqReview(
     @Column(name = "isdeleted")
     val isDeleted: Boolean? = null,
 
-    @Column(name = "createddate")
-    val createdDate: LocalDateTime? = null,
-
-    @Column(name = "systemmodstamp")
-    val systemModStamp: LocalDateTime? = null,
-
     @Column(name = "_hc_lastop", length = 32)
     val hcLastOp: String? = null,
 
     @Column(name = "_hc_err", columnDefinition = "TEXT")
     val hcErr: String? = null
-)
+) : BaseEntity()

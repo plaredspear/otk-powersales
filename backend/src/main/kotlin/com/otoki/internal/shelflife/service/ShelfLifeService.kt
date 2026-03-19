@@ -70,8 +70,7 @@ class ShelfLifeService(
             productId = request.productName,
             expirationDate = expirationDate,
             alarmDate = alarmDate,
-            description = request.description,
-            instDt = LocalDateTime.now()
+            description = request.description
         )
 
         val saved = shelfLifeRepository.save(shelfLife)

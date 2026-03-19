@@ -41,7 +41,7 @@ class EducationPostRepositoryTest {
     }
 
     @Nested
-    @DisplayName("findByEduCodeOrderByInstDateDesc - 카테고리별 게시물 조회")
+    @DisplayName("findByEduCodeOrderByCreatedAtDesc - 카테고리별 게시물 조회")
     inner class FindByEduCodeTests {
 
         @Test
@@ -52,13 +52,13 @@ class EducationPostRepositoryTest {
                 eduId = "EDU001",
                 eduCode = "TASTING_MANUAL",
                 eduTitle = "진짬뽕 시식 매뉴얼",
-                instDate = LocalDateTime.of(2020, 8, 10, 0, 0)
+                createdAt = LocalDateTime.of(2020, 8, 10, 0, 0)
             )
             val post2 = persistPost(
                 eduId = "EDU002",
                 eduCode = "TASTING_MANUAL",
                 eduTitle = "미숫가루 시식 매뉴얼",
-                instDate = LocalDateTime.of(2020, 8, 11, 0, 0)
+                createdAt = LocalDateTime.of(2020, 8, 11, 0, 0)
             )
             // 다른 카테고리 (조회 대상 아님)
             persistPost(
@@ -69,7 +69,7 @@ class EducationPostRepositoryTest {
 
             // When
             val pageable = PageRequest.of(0, 10)
-            val result = educationPostRepository.findByEduCodeOrderByInstDateDesc(
+            val result = educationPostRepository.findByEduCodeOrderByCreatedAtDesc(
                 "TASTING_MANUAL", pageable
             )
 
@@ -162,15 +162,16 @@ class EducationPostRepositoryTest {
         eduCode: String,
         eduTitle: String,
         eduContent: String = "내용",
-        instDate: LocalDateTime = LocalDateTime.now()
+        createdAt: LocalDateTime = LocalDateTime.now()
     ): EducationPost {
         val post = EducationPost(
             eduId = eduId,
             eduTitle = eduTitle,
             eduContent = eduContent,
-            eduCode = eduCode,
-            instDate = instDate
-        )
+            eduCode = eduCode
+        ).apply {
+            this.createdAt = createdAt
+        }
         val persisted = testEntityManager.persistAndFlush(post)
         testEntityManager.clear()
         return persisted

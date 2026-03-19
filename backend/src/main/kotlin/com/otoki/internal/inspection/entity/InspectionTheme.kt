@@ -1,8 +1,8 @@
 package com.otoki.internal.inspection.entity
 
+import com.otoki.internal.common.entity.BaseEntity
 import jakarta.persistence.*
 import java.time.LocalDate
-import java.time.LocalDateTime
 
 /**
  * 현장 점검 테마 Entity
@@ -43,19 +43,9 @@ class InspectionTheme(
     @Column(name = "isdeleted")
     val isDeleted: Boolean? = null,
 
-    @Column(name = "createddate")
-    val createdDate: LocalDateTime? = null,
-
-    @Column(name = "systemmodstamp")
-    val systemModStamp: LocalDateTime? = null,
-
     @Column(name = "_hc_lastop", length = 32)
     val hcLastOp: String? = null,
 
     @Column(name = "_hc_err", columnDefinition = "TEXT")
     val hcErr: String? = null
-
-    // --- 주석 처리: V2 기존 필드 ---
-    // isActive: Boolean — V1에서 publicFlag로 대체
-    // createdAt: LocalDateTime — V1에서 createdDate로 대체
-)
+) : BaseEntity()

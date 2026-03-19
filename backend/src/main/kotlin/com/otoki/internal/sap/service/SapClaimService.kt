@@ -29,7 +29,7 @@ class SapClaimService(
         existing.claimContent = item.content
         existing.reasonType = item.reasonType
         existing.cosmosKey = item.cosmosKey
-        existing.updDate = LocalDateTime.now()
+        existing.updatedAt = LocalDateTime.now()
 
         tmpClaimRepository.save(existing)
         log.info("클레임 동기화 성공: claimName={}", name)
