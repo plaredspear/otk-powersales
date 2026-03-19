@@ -29,8 +29,8 @@ class PushMessageReceiverTest {
         // Given
         val receiver = PushMessageReceiver(
             name = "RCV-001",
-            employeeId = "a0C5g000002DEF",
-            messageId = "a0B5g000001ABC"
+            employeeId = 100L,
+            messageId = 200
         )
 
         // When
@@ -42,8 +42,8 @@ class PushMessageReceiverTest {
         assertThat(found).isNotNull
         assertThat(found.id).isGreaterThan(0)
         assertThat(found.name).isEqualTo("RCV-001")
-        assertThat(found.employeeId).isEqualTo("a0C5g000002DEF")
-        assertThat(found.messageId).isEqualTo("a0B5g000001ABC")
+        assertThat(found.employeeId).isEqualTo(100L)
+        assertThat(found.messageId).isEqualTo(200)
     }
 
     @Test
@@ -100,12 +100,12 @@ class PushMessageReceiverTest {
     }
 
     @Test
-    @DisplayName("PushMessageReceiver - messageId FK 없이 임의 sfid 저장 가능")
+    @DisplayName("PushMessageReceiver - PK 참조 FK 없이 임의 ID 저장 가능")
     fun createPushMessageReceiver_noFkConstraint() {
         // Given
         val receiver = PushMessageReceiver(
-            employeeId = "NON_EXISTENT_EMP",
-            messageId = "NON_EXISTENT_MSG"
+            employeeId = 99999L,
+            messageId = 88888
         )
 
         // When
@@ -115,7 +115,7 @@ class PushMessageReceiverTest {
 
         // Then
         assertThat(found).isNotNull
-        assertThat(found.employeeId).isEqualTo("NON_EXISTENT_EMP")
-        assertThat(found.messageId).isEqualTo("NON_EXISTENT_MSG")
+        assertThat(found.employeeId).isEqualTo(99999L)
+        assertThat(found.messageId).isEqualTo(88888)
     }
 }

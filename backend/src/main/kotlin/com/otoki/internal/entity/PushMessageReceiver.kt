@@ -5,12 +5,12 @@ import jakarta.persistence.*
 
 /**
  * 푸시 메시지 수신자 Entity
- * V1 스키마: pushmessagereceiver__c (Heroku Connect 동기화)
+ * V1 스키마: push_message_receiver (V42 리네이밍)
  *
- * PushMessage N:1 관계 (sfid 참조, DB FK 없음) → messageId는 raw String 컬럼
+ * PushMessage N:1 관계 (PK 참조, DB FK 없음)
  */
 @Entity
-@Table(name = "pushmessagereceiver__c")
+@Table(name = "push_message_receiver")
 class PushMessageReceiver(
 
     @Id
@@ -23,11 +23,11 @@ class PushMessageReceiver(
     @Column(name = "name", length = 80)
     val name: String? = null,
 
-    @Column(name = "employeeid__c", length = 18)
-    val employeeId: String? = null,
+    @Column(name = "employee_id")
+    val employeeId: Long? = null,
 
-    @Column(name = "messageid__c", length = 18)
-    val messageId: String? = null,
+    @Column(name = "message_id")
+    val messageId: Int? = null,
 
     @Column(name = "isdeleted")
     val isDeleted: Boolean? = null,
