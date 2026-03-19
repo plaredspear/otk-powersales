@@ -142,3 +142,10 @@ tasks.register<Test>("generateOpenApiDocs") {
 		includeTestsMatching("com.otoki.internal.OpenApiSpecGeneratorTest")
 	}
 }
+
+tasks.register<JavaExec>("migrateHeroku") {
+	group = "migration"
+	description = "Heroku DB → Dev DB 데이터 마이그레이션 (예: ./gradlew migrateHeroku --args='account')"
+	mainClass.set("com.otoki.internal.migration.HerokuMigrationTool")
+	classpath = sourceSets.main.get().runtimeClasspath
+}
