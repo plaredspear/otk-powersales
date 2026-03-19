@@ -104,9 +104,10 @@ object HerokuMigrationTool {
             return
         }
 
-        // 2. 대상 테이블 초기화
+        // 2. 대상 테이블 초기화 + 시퀀스 리셋
         targetConn.createStatement().use { stmt ->
             stmt.execute("TRUNCATE TABLE $TARGET_SCHEMA.$tableName CASCADE")
+            stmt.execute("ALTER SEQUENCE $TARGET_SCHEMA.${tableName}_id_seq RESTART WITH 1")
         }
 
         // 3. 배치 INSERT (ID 포함, 원본 그대로 보존)
@@ -135,15 +136,6 @@ object HerokuMigrationTool {
 
         targetConn.autoCommit = true
         println("[$name] $inserted / ${rows.size}")
-
-        // 4. 시퀀스 리셋 (IDENTITY 전략 대비)
-        targetConn.createStatement().use { stmt ->
-            stmt.execute(
-                "SELECT setval('$TARGET_SCHEMA.${tableName}_id_seq', " +
-                    "(SELECT COALESCE(MAX(id), 0) FROM $TARGET_SCHEMA.$tableName))"
-            )
-        }
-
         println("[$name] 완료: ${rows.size}건")
     }
 
