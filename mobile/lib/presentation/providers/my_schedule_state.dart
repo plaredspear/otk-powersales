@@ -81,6 +81,9 @@ class MyScheduleCalendarState {
     );
   }
 
+  /// 해당 월의 연차 건수
+  int get annualLeaveCount => workDays.where((d) => d.isAnnualLeave).length;
+
   /// 데이터 로딩 완료 여부
   bool get isLoaded => workDays.isNotEmpty && !isLoading && errorMessage == null;
 
