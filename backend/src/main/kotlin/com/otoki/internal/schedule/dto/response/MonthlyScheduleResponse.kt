@@ -9,7 +9,8 @@ data class MonthlyScheduleResponse(
     val year: Int,
     val month: Int,
     @JsonProperty("work_days")
-    val workDays: List<WorkDayDto>
+    val workDays: List<WorkDayDto>,
+    val annualLeaveCount: Int
 )
 
 /**
@@ -18,5 +19,6 @@ data class MonthlyScheduleResponse(
 data class WorkDayDto(
     val date: String, // YYYY-MM-DD 형식
     @JsonProperty("has_work")
-    val hasWork: Boolean
+    val hasWork: Boolean,
+    val workingType: String? = null
 )

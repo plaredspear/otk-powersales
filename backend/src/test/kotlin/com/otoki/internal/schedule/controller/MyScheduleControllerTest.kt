@@ -76,7 +76,8 @@ class MyScheduleControllerTest {
                 WorkDayDto(date = "2020-08-01", hasWork = true),
                 WorkDayDto(date = "2020-08-04", hasWork = true),
                 WorkDayDto(date = "2020-08-05", hasWork = false)
-            )
+            ),
+            annualLeaveCount = 0
         )
         whenever(myScheduleService.getMonthlySchedule(eq(1L), eq(2020), eq(8)))
             .thenReturn(mockResponse)
