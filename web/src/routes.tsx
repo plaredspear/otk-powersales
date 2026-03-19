@@ -33,6 +33,7 @@ const EducationFormPage = lazy(() => import('@/pages/education/EducationFormPage
 const DisplaySchedulePage = lazy(() => import('@/pages/DisplaySchedulePage'));
 const OrganizationPage = lazy(() => import('@/pages/settings/OrganizationPage'));
 const AlternativeHolidayPage = lazy(() => import('@/pages/alternative-holidays/AlternativeHolidayPage'));
+const HolidayMasterListPage = lazy(() => import('@/pages/holiday-masters/HolidayMasterListPage'));
 
 // eslint-disable-next-line react-refresh/only-export-components
 function LazyWrapper({ children }: { children: React.ReactNode }) {
@@ -98,6 +99,7 @@ export const router = createBrowserRouter(
             { path: '/settings/promotion-types', element: <LazyWrapper><PromotionTypesPage /></LazyWrapper> },
             { path: '/alternative-holidays', element: <LazyWrapper><AlternativeHolidayPage /></LazyWrapper> },
             { path: '/settings/organizations', element: <LazyWrapper><OrganizationPage /></LazyWrapper> },
+            { path: '/settings/holiday-masters', element: <LazyWrapper><HolidayMasterListPage /></LazyWrapper> },
             { path: '*', element: <Navigate to="/" replace /> },
           ],
         },

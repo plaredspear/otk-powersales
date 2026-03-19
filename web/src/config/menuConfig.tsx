@@ -86,6 +86,7 @@ export const menuRoute: MenuRoute = {
       icon: <SettingOutlined />,
       children: [
         { path: '/settings/promotion-types', name: '행사유형 관리' },
+        { path: '/settings/holiday-masters', name: '공휴일 관리' },
       ],
     },
   ],
