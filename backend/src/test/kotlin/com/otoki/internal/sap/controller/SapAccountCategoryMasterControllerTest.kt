@@ -2,13 +2,13 @@ package com.otoki.internal.sap.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.otoki.internal.sap.config.SapAuthProperties
-import com.otoki.internal.sap.dto.SapClientMasterRequest
+import com.otoki.internal.sap.dto.SapAccountCategoryMasterRequest
 import com.otoki.internal.sap.dto.SapSyncResult
 import com.otoki.internal.admin.security.AdminAuthorityFilter
 import com.otoki.internal.common.security.JwtAuthenticationFilter
 import com.otoki.internal.common.security.JwtTokenProvider
 import com.otoki.internal.sap.filter.SapApiKeyFilter
-import com.otoki.internal.sap.service.SapClientMasterService
+import com.otoki.internal.sap.service.SapAccountCategoryMasterService
 import com.otoki.internal.sap.service.SapSyncLogService
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -25,10 +25,10 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
-@WebMvcTest(SapClientMasterController::class)
+@WebMvcTest(SapAccountCategoryMasterController::class)
 @AutoConfigureMockMvc(addFilters = false)
-@DisplayName("SapClientMasterController 테스트")
-class SapClientMasterControllerTest {
+@DisplayName("SapAccountCategoryMasterController 테스트")
+class SapAccountCategoryMasterControllerTest {
 
     @Autowired
     private lateinit var mockMvc: MockMvc
@@ -37,7 +37,7 @@ class SapClientMasterControllerTest {
     private lateinit var objectMapper: ObjectMapper
 
     @MockitoBean
-    private lateinit var sapClientMasterService: SapClientMasterService
+    private lateinit var sapAccountCategoryMasterService: SapAccountCategoryMasterService
 
     @MockitoBean
     private lateinit var sapSyncLogService: SapSyncLogService
@@ -58,27 +58,27 @@ class SapClientMasterControllerTest {
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
     @Nested
-    @DisplayName("POST /api/v1/sap/client-master")
-    inner class SyncClientMaster {
+    @DisplayName("POST /api/v1/sap/account-master")
+    inner class SyncAccountCategoryMaster {
 
         @Test
         @DisplayName("성공 - 정상 동기화 요청")
         fun sync_success() {
-            whenever(sapClientMasterService.sync(any())).thenReturn(
+            whenever(sapAccountCategoryMasterService.sync(any())).thenReturn(
                 SapSyncResult(successCount = 1, failCount = 0)
             )
 
-            val request = SapClientMasterRequest(
+            val request = SapAccountCategoryMasterRequest(
                 reqItemList = listOf(
-                    SapClientMasterRequest.ReqItem(
-                        sapAccountCode = "0001234567",
-                        name = "홍길동 슈퍼"
+                    SapAccountCategoryMasterRequest.ReqItem(
+                        accountCode = "610000",
+                        name = "매출"
                     )
                 )
             )
 
             mockMvc.perform(
-                post("/api/v1/sap/client-master")
+                post("/api/v1/sap/account-category-master")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -90,10 +90,10 @@ class SapClientMasterControllerTest {
         @Test
         @DisplayName("빈 요청 - EMPTY_REQUEST 반환")
         fun sync_emptyRequest() {
-            val request = SapClientMasterRequest(reqItemList = emptyList())
+            val request = SapAccountCategoryMasterRequest(reqItemList = emptyList())
 
             mockMvc.perform(
-                post("/api/v1/sap/client-master")
+                post("/api/v1/sap/account-category-master")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -105,21 +105,21 @@ class SapClientMasterControllerTest {
         @Test
         @DisplayName("트랜잭션 실패 - result_code=0 반환")
         fun sync_transactionFailure() {
-            whenever(sapClientMasterService.sync(any())).thenThrow(
+            whenever(sapAccountCategoryMasterService.sync(any())).thenThrow(
                 RuntimeException("DB connection lost")
             )
 
-            val request = SapClientMasterRequest(
+            val request = SapAccountCategoryMasterRequest(
                 reqItemList = listOf(
-                    SapClientMasterRequest.ReqItem(
-                        sapAccountCode = "0001234567",
-                        name = "홍길동 슈퍼"
+                    SapAccountCategoryMasterRequest.ReqItem(
+                        accountCode = "610000",
+                        name = "매출"
                     )
                 )
             )
 
             mockMvc.perform(
-                post("/api/v1/sap/client-master")
+                post("/api/v1/sap/account-category-master")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )

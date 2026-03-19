@@ -58,7 +58,7 @@ class SapAccountMasterControllerTest {
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
     @Nested
-    @DisplayName("POST /api/v1/sap/account-master")
+    @DisplayName("POST /api/v1/sap/client-master")
     inner class SyncAccountMaster {
 
         @Test
@@ -71,8 +71,8 @@ class SapAccountMasterControllerTest {
             val request = SapAccountMasterRequest(
                 reqItemList = listOf(
                     SapAccountMasterRequest.ReqItem(
-                        accountCode = "610000",
-                        name = "매출"
+                        sapAccountCode = "0001234567",
+                        name = "홍길동 슈퍼"
                     )
                 )
             )
@@ -112,8 +112,8 @@ class SapAccountMasterControllerTest {
             val request = SapAccountMasterRequest(
                 reqItemList = listOf(
                     SapAccountMasterRequest.ReqItem(
-                        accountCode = "610000",
-                        name = "매출"
+                        sapAccountCode = "0001234567",
+                        name = "홍길동 슈퍼"
                     )
                 )
             )
