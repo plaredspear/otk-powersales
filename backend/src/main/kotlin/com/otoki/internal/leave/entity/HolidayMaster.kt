@@ -1,8 +1,8 @@
 package com.otoki.internal.leave.entity
 
+import com.otoki.internal.common.entity.BaseEntity
 import jakarta.persistence.*
 import java.time.LocalDate
-import java.time.LocalDateTime
 
 @Entity
 @Table(name = "holiday_master")
@@ -22,20 +22,14 @@ class HolidayMaster(
     var type: String,
 
     @Column(name = "year", nullable = false)
-    var year: Int,
-
-    @Column(name = "created_at", nullable = false)
-    val createdAt: LocalDateTime = LocalDateTime.now(),
-
-    @Column(name = "updated_at", nullable = false)
-    var updatedAt: LocalDateTime = LocalDateTime.now()
-) {
+    var year: Int
+) : BaseEntity() {
     fun update(holidayDate: LocalDate, name: String, type: String) {
         this.holidayDate = holidayDate
         this.name = name
         this.type = type
         this.year = holidayDate.year
-        this.updatedAt = LocalDateTime.now()
+
     }
 
     companion object {

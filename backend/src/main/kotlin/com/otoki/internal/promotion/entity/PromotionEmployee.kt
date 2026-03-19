@@ -4,9 +4,9 @@ import com.otoki.internal.common.salesforce.HCColumn
 import com.otoki.internal.common.salesforce.HCTable
 import com.otoki.internal.common.salesforce.SFField
 import com.otoki.internal.common.salesforce.SFObject
+import com.otoki.internal.common.entity.BaseEntity
 import jakarta.persistence.*
 import java.time.LocalDate
-import java.time.LocalDateTime
 
 @Entity
 @Table(name = "promotion_employee")
@@ -118,12 +118,7 @@ class PromotionEmployee(
     @Column(name = "s3_image_unique_key", length = 255)
     var s3ImageUniqueKey: String? = null,
 
-    @Column(name = "created_at", nullable = false)
-    val createdAt: LocalDateTime = LocalDateTime.now(),
-
-    @Column(name = "updated_at", nullable = false)
-    var updatedAt: LocalDateTime = LocalDateTime.now()
-) {
+) : BaseEntity() {
     fun update(
         employeeNumber: String?,
         scheduleDate: LocalDate?,
@@ -160,6 +155,6 @@ class PromotionEmployee(
         this.otherSalesAmount = otherSalesAmount
         this.otherSalesQuantity = otherSalesQuantity
         this.s3ImageUniqueKey = s3ImageUniqueKey
-        this.updatedAt = LocalDateTime.now()
+
     }
 }
