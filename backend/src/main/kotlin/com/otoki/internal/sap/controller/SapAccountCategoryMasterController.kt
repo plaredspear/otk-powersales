@@ -1,9 +1,9 @@
 package com.otoki.internal.sap.controller
 
-import com.otoki.internal.sap.dto.SapClientMasterRequest
+import com.otoki.internal.sap.dto.SapAccountCategoryMasterRequest
 import com.otoki.internal.sap.dto.SapSyncResponse
 import com.otoki.internal.sap.dto.SapSyncResult
-import com.otoki.internal.sap.service.SapClientMasterService
+import com.otoki.internal.sap.service.SapAccountCategoryMasterService
 import com.otoki.internal.sap.service.SapSyncLogService
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.http.ResponseEntity
@@ -14,15 +14,15 @@ import org.springframework.web.bind.annotation.RestController
 import java.time.LocalDateTime
 
 @RestController
-@RequestMapping("/api/v1/sap/client-master")
-class SapClientMasterController(
-    private val sapClientMasterService: SapClientMasterService,
+@RequestMapping("/api/v1/sap/account-category-master")
+class SapAccountCategoryMasterController(
+    private val sapAccountCategoryMasterService: SapAccountCategoryMasterService,
     private val sapSyncLogService: SapSyncLogService
 ) {
 
     @PostMapping
-    fun syncClientMaster(
-        @RequestBody request: SapClientMasterRequest,
+    fun syncAccountCategoryMaster(
+        @RequestBody request: SapAccountCategoryMasterRequest,
         httpRequest: HttpServletRequest
     ): ResponseEntity<SapSyncResponse> {
         val requestedAt = LocalDateTime.now()
@@ -33,11 +33,11 @@ class SapClientMasterController(
         }
 
         return try {
-            val result = sapClientMasterService.sync(request.reqItemList)
+            val result = sapAccountCategoryMasterService.sync(request.reqItemList)
             val durationMs = System.currentTimeMillis() - startTime
 
             sapSyncLogService.log(
-                apiName = "client-master",
+                apiName = "account-category-master",
                 requestCount = request.reqItemList.size,
                 result = result,
                 durationMs = durationMs,
@@ -50,7 +50,7 @@ class SapClientMasterController(
             val durationMs = System.currentTimeMillis() - startTime
 
             sapSyncLogService.log(
-                apiName = "client-master",
+                apiName = "account-category-master",
                 requestCount = request.reqItemList.size,
                 result = SapSyncResult(successCount = 0, failCount = request.reqItemList.size),
                 durationMs = durationMs,

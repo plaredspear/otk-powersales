@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:49922",
+    "url" : "http://localhost:60832",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -497,6 +497,68 @@
         }
       }
     },
+    "/api/v1/admin/holiday-masters/{id}" : {
+      "put" : {
+        "tags" : [ "admin-holiday-master-controller" ],
+        "operationId" : "updateHolidayMaster",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/HolidayMasterUpdateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseHolidayMasterResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "admin-holiday-master-controller" ],
+        "operationId" : "deleteHolidayMaster",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseObject"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/education/posts/{postId}" : {
       "get" : {
         "tags" : [ "admin-education-controller" ],
@@ -903,34 +965,6 @@
         }
       }
     },
-    "/api/v1/sap/client-master" : {
-      "post" : {
-        "tags" : [ "sap-client-master-controller" ],
-        "operationId" : "syncClientMaster",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/SapClientMasterRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SapSyncResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/sap/claim" : {
       "post" : {
         "tags" : [ "sap-claim-controller" ],
@@ -1052,6 +1086,34 @@
             "application/json" : {
               "schema" : {
                 "$ref" : "#/components/schemas/SapAccountMasterRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SapSyncResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sap/account-category-master" : {
+      "post" : {
+        "tags" : [ "sap-account-category-master-controller" ],
+        "operationId" : "syncAccountCategoryMaster",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SapAccountCategoryMasterRequest"
               }
             }
           },
@@ -1270,6 +1332,67 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseCommuteResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/alternative-holidays" : {
+      "get" : {
+        "tags" : [ "alternative-holiday-controller" ],
+        "operationId" : "getAlternativeHolidays",
+        "parameters" : [ {
+          "name" : "startDate",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "endDate",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListAlternativeHolidayListItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "alternative-holiday-controller" ],
+        "operationId" : "createAlternativeHoliday",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AlternativeHolidayRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAlternativeHolidayCreateResponse"
                 }
               }
             }
@@ -1753,6 +1876,59 @@
         }
       }
     },
+    "/api/v1/admin/holiday-masters" : {
+      "get" : {
+        "tags" : [ "admin-holiday-master-controller" ],
+        "operationId" : "getHolidayMasters",
+        "parameters" : [ {
+          "name" : "year",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListHolidayMasterResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "admin-holiday-master-controller" ],
+        "operationId" : "createHolidayMaster",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/HolidayMasterCreateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseHolidayMasterResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/education/posts" : {
       "get" : {
         "tags" : [ "admin-education-controller" ],
@@ -1902,6 +2078,162 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseAdminLoginResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/alternative-holidays" : {
+      "get" : {
+        "tags" : [ "admin-alternative-holiday-controller" ],
+        "operationId" : "getAlternativeHolidays_1",
+        "parameters" : [ {
+          "name" : "startDate",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "endDate",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "status",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "employeeId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "orgCode",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListAlternativeHolidayListItem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "admin-alternative-holiday-controller" ],
+        "operationId" : "createAlternativeHoliday_1",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AlternativeHolidayCreateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAlternativeHolidayCreateResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/alternative-holidays/{id}/reject" : {
+      "post" : {
+        "tags" : [ "admin-alternative-holiday-controller" ],
+        "operationId" : "rejectAlternativeHoliday",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AlternativeHolidayRejectRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAlternativeHolidayRejectResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/alternative-holidays/{id}/approve" : {
+      "post" : {
+        "tags" : [ "admin-alternative-holiday-controller" ],
+        "operationId" : "approveAlternativeHoliday",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AlternativeHolidayApproveRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAlternativeHolidayApproveResponse"
                 }
               }
             }
@@ -2314,6 +2646,33 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseHomeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/holidays" : {
+      "get" : {
+        "tags" : [ "holiday-controller" ],
+        "operationId" : "getHolidays",
+        "parameters" : [ {
+          "name" : "year",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListHolidayDateResponse"
                 }
               }
             }
@@ -4018,6 +4377,66 @@
         },
         "required" : [ "category", "categoryName", "content", "createdAt", "id", "title" ]
       },
+      "HolidayMasterUpdateRequest" : {
+        "type" : "object",
+        "properties" : {
+          "holidayDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "name" : {
+            "type" : "string",
+            "maxLength" : 50,
+            "minLength" : 0
+          },
+          "type" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "holidayDate", "name", "type" ]
+      },
+      "ApiResponseHolidayMasterResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "$ref" : "#/components/schemas/HolidayMasterResponse"
+          },
+          "error" : {
+            "$ref" : "#/components/schemas/ErrorDetail"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "success", "timestamp" ]
+      },
+      "HolidayMasterResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "holidayDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "holidayDate", "id", "name", "type" ]
+      },
       "ApiResponseEducationMutationResponse" : {
         "type" : "object",
         "properties" : {
@@ -4286,18 +4705,6 @@
         },
         "required" : [ "reqItemList" ]
       },
-      "SapClientMasterRequest" : {
-        "type" : "object",
-        "properties" : {
-          "reqItemList" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/ReqItem"
-            }
-          }
-        },
-        "required" : [ "reqItemList" ]
-      },
       "ClaimItem" : {
         "type" : "object",
         "properties" : {
@@ -4381,6 +4788,18 @@
         "required" : [ "reqItemList" ]
       },
       "SapAccountMasterRequest" : {
+        "type" : "object",
+        "properties" : {
+          "reqItemList" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ReqItem"
+            }
+          }
+        },
+        "required" : [ "reqItemList" ]
+      },
+      "SapAccountCategoryMasterRequest" : {
         "type" : "object",
         "properties" : {
           "reqItemList" : {
@@ -4750,6 +5169,67 @@
         },
         "required" : [ "accountName", "distanceKm", "registeredCount", "scheduleId", "totalCount" ]
       },
+      "AlternativeHolidayRequest" : {
+        "type" : "object",
+        "properties" : {
+          "actualWorkDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "targetAltHolidayDate" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        },
+        "required" : [ "actualWorkDate", "targetAltHolidayDate" ]
+      },
+      "AlternativeHolidayCreateResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "actualWorkDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "targetAltHolidayDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "actualWorkDate", "createdAt", "id", "status", "targetAltHolidayDate" ]
+      },
+      "ApiResponseAlternativeHolidayCreateResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "$ref" : "#/components/schemas/AlternativeHolidayCreateResponse"
+          },
+          "error" : {
+            "$ref" : "#/components/schemas/ErrorDetail"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "success", "timestamp" ]
+      },
       "TeamScheduleCreateRequest" : {
         "type" : "object",
         "properties" : {
@@ -5025,6 +5505,24 @@
         },
         "required" : [ "category", "content", "title" ]
       },
+      "HolidayMasterCreateRequest" : {
+        "type" : "object",
+        "properties" : {
+          "holidayDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "name" : {
+            "type" : "string",
+            "maxLength" : 50,
+            "minLength" : 0
+          },
+          "type" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "holidayDate", "name", "type" ]
+      },
       "AdminLoginResponse" : {
         "type" : "object",
         "properties" : {
@@ -5089,6 +5587,119 @@
           },
           "data" : {
             "$ref" : "#/components/schemas/AdminLoginResponse"
+          },
+          "error" : {
+            "$ref" : "#/components/schemas/ErrorDetail"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "success", "timestamp" ]
+      },
+      "AlternativeHolidayCreateRequest" : {
+        "type" : "object",
+        "properties" : {
+          "employeeId" : {
+            "type" : "string",
+            "maxLength" : 20,
+            "minLength" : 0
+          },
+          "actualWorkDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "targetAltHolidayDate" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        },
+        "required" : [ "actualWorkDate", "employeeId", "targetAltHolidayDate" ]
+      },
+      "AlternativeHolidayRejectRequest" : {
+        "type" : "object",
+        "properties" : {
+          "changeReason" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "changeReason" ]
+      },
+      "AlternativeHolidayRejectResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "status" ]
+      },
+      "ApiResponseAlternativeHolidayRejectResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "$ref" : "#/components/schemas/AlternativeHolidayRejectResponse"
+          },
+          "error" : {
+            "$ref" : "#/components/schemas/ErrorDetail"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "success", "timestamp" ]
+      },
+      "AlternativeHolidayApproveRequest" : {
+        "type" : "object",
+        "properties" : {
+          "confirmAltHolidayDate" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }
+      },
+      "AlternativeHolidayApproveResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "confirmAltHolidayDate" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        },
+        "required" : [ "id", "status" ]
+      },
+      "ApiResponseAlternativeHolidayApproveResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "$ref" : "#/components/schemas/AlternativeHolidayApproveResponse"
           },
           "error" : {
             "$ref" : "#/components/schemas/ErrorDetail"
@@ -5185,6 +5796,9 @@
             "type" : "string",
             "pattern" : "^\\d{6}$"
           },
+          "previousYearMonth" : {
+            "type" : "string"
+          },
           "year" : {
             "type" : "integer",
             "format" : "int32"
@@ -5192,9 +5806,6 @@
           "month" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "previousYearMonth" : {
-            "type" : "string"
           }
         },
         "required" : [ "month", "previousYearMonth", "year", "yearMonth" ]
@@ -5692,6 +6303,19 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
+          },
           "size" : {
             "type" : "integer",
             "format" : "int32"
@@ -5709,19 +6333,6 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "empty" : {
             "type" : "boolean"
           }
@@ -5730,18 +6341,11 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
-          "offset" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
-          "pageSize" : {
+          "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
           },
-          "pageNumber" : {
+          "pageSize" : {
             "type" : "integer",
             "format" : "int32"
           },
@@ -5750,6 +6354,13 @@
           },
           "unpaged" : {
             "type" : "boolean"
+          },
+          "offset" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           }
         }
       },
@@ -5782,13 +6393,13 @@
       "SortObject" : {
         "type" : "object",
         "properties" : {
-          "empty" : {
-            "type" : "boolean"
-          },
           "unsorted" : {
             "type" : "boolean"
           },
           "sorted" : {
+            "type" : "boolean"
+          },
+          "empty" : {
             "type" : "boolean"
           }
         }
@@ -5979,9 +6590,13 @@
             "items" : {
               "$ref" : "#/components/schemas/WorkDayDto"
             }
+          },
+          "annualLeaveCount" : {
+            "type" : "integer",
+            "format" : "int32"
           }
         },
-        "required" : [ "month", "work_days", "year" ]
+        "required" : [ "annualLeaveCount", "month", "work_days", "year" ]
       },
       "WorkDayDto" : {
         "type" : "object",
@@ -5991,6 +6606,9 @@
           },
           "has_work" : {
             "type" : "boolean"
+          },
+          "workingType" : {
+            "type" : "string"
           }
         },
         "required" : [ "date", "has_work" ]
@@ -6228,6 +6846,43 @@
           }
         },
         "required" : [ "employeeId", "employeeName", "isCommuteRegistered", "scheduleId", "workCategory" ]
+      },
+      "ApiResponseListHolidayDateResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/HolidayDateResponse"
+            }
+          },
+          "error" : {
+            "$ref" : "#/components/schemas/ErrorDetail"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "success", "timestamp" ]
+      },
+      "HolidayDateResponse" : {
+        "type" : "object",
+        "properties" : {
+          "date" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "date", "name" ]
       },
       "ApiResponseHealthStatus" : {
         "type" : "object",
@@ -6618,6 +7273,63 @@
         },
         "required" : [ "success", "timestamp" ]
       },
+      "AlternativeHolidayListItemResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "actualWorkDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "targetAltHolidayDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "confirmAltHolidayDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "changeReason" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "actualWorkDate", "createdAt", "id", "status", "targetAltHolidayDate" ]
+      },
+      "ApiResponseListAlternativeHolidayListItemResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AlternativeHolidayListItemResponse"
+            }
+          },
+          "error" : {
+            "$ref" : "#/components/schemas/ErrorDetail"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "success", "timestamp" ]
+      },
       "ApiResponseListTeamScheduleDto" : {
         "type" : "object",
         "properties" : {
@@ -6899,6 +7611,19 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
+          },
           "size" : {
             "type" : "integer",
             "format" : "int32"
@@ -6915,19 +7640,6 @@
           },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
-          },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
           },
           "empty" : {
             "type" : "boolean"
@@ -7612,6 +8324,31 @@
         },
         "required" : [ "branches", "categories" ]
       },
+      "ApiResponseListHolidayMasterResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/HolidayMasterResponse"
+            }
+          },
+          "error" : {
+            "$ref" : "#/components/schemas/ErrorDetail"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "success", "timestamp" ]
+      },
       "ApiResponseEmployeeListResponse" : {
         "type" : "object",
         "properties" : {
@@ -8144,6 +8881,75 @@
         },
         "required" : [ "annualLeaveDays", "employeeId", "employeeName", "orgName", "totalCount" ]
       },
+      "AlternativeHolidayListItem" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "employeeId" : {
+            "type" : "string"
+          },
+          "employeeName" : {
+            "type" : "string"
+          },
+          "orgName" : {
+            "type" : "string"
+          },
+          "actualWorkDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "targetAltHolidayDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "confirmAltHolidayDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "changeReason" : {
+            "type" : "string"
+          },
+          "createdBy" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "actualWorkDate", "createdAt", "createdBy", "employeeId", "employeeName", "id", "status", "targetAltHolidayDate" ]
+      },
+      "ApiResponseListAlternativeHolidayListItem" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AlternativeHolidayListItem"
+            }
+          },
+          "error" : {
+            "$ref" : "#/components/schemas/ErrorDetail"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "success", "timestamp" ]
+      },
       "ApiResponseMyAccountListResponse" : {
         "type" : "object",
         "properties" : {
@@ -8180,6 +8986,9 @@
             "type" : "string"
           },
           "address" : {
+            "type" : "string"
+          },
+          "addressDetail" : {
             "type" : "string"
           },
           "representativeName" : {

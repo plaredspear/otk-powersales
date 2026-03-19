@@ -1,10 +1,12 @@
 package com.otoki.internal.sap.service
 
+import com.otoki.internal.sap.entity.Account
+import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.sap.dto.SapAccountMasterRequest
 import com.otoki.internal.sap.dto.SapSyncError
 import com.otoki.internal.sap.dto.SapSyncResult
-import com.otoki.internal.sap.entity.AccountCategoryMaster
-import com.otoki.internal.sap.repository.AccountCategoryMasterRepository
+import com.otoki.internal.sap.entity.Organization
+import com.otoki.internal.sap.repository.OrganizationRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -12,7 +14,8 @@ import java.time.LocalDateTime
 
 @Service
 class SapAccountMasterService(
-    private val accountCategoryMasterRepository: AccountCategoryMasterRepository
+    private val accountRepository: AccountRepository,
+    private val organizationRepository: OrganizationRepository
 ) : SapSyncService<SapAccountMasterRequest.ReqItem> {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -27,13 +30,13 @@ class SapAccountMasterService(
                 syncItem(item)
                 successCount++
             } catch (e: Exception) {
-                log.warn("거래처분류 동기화 실패: index={}, accountCode={}, error={}",
-                    index, item.accountCode, e.message)
+                log.warn("거래처 동기화 실패: index={}, sapAccountCode={}, error={}",
+                    index, item.sapAccountCode, e.message)
                 errors.add(
                     SapSyncError(
                         index = index,
-                        field = "account_code",
-                        value = item.accountCode,
+                        field = "sap_account_code",
+                        value = item.sapAccountCode,
                         error = e.message ?: "Unknown error"
                     )
                 )
@@ -48,23 +51,88 @@ class SapAccountMasterService(
     }
 
     private fun syncItem(item: SapAccountMasterRequest.ReqItem) {
-        val accountCode = item.accountCode
-            ?: throw IllegalArgumentException("account_code is required")
+        val sapAccountCode = item.sapAccountCode
+            ?: throw IllegalArgumentException("sap_account_code is required")
         val accountName = item.name
             ?: throw IllegalArgumentException("name is required")
 
-        val existing = accountCategoryMasterRepository.findByAccountCode(accountCode)
+        val existing = accountRepository.findByExternalKey(sapAccountCode)
+        val now = LocalDateTime.now()
+
+        val org = resolveOrg(item.branchCode, item.salesDeptCode)
 
         if (existing != null) {
-            existing.name = accountName
-            existing.updatedAt = LocalDateTime.now()
-            accountCategoryMasterRepository.save(existing)
+            mapFields(existing, item, accountName, org)
+            existing.updatedAt = now
+            accountRepository.save(existing)
         } else {
-            val entity = AccountCategoryMaster(
-                accountCode = accountCode,
-                name = accountName
+            val account = Account(
+                externalKey = sapAccountCode,
+                createdAt = now,
+                updatedAt = now
             )
-            accountCategoryMasterRepository.save(entity)
+            mapFields(account, item, accountName, org)
+            accountRepository.save(account)
         }
+    }
+
+    private fun mapFields(
+        account: Account,
+        item: SapAccountMasterRequest.ReqItem,
+        name: String,
+        org: Organization?
+    ) {
+        account.name = name
+        account.accountType = item.accountType
+        account.accountStatusCode = item.accountStatusCode
+        account.accountStatusName = item.accountStatusName
+        account.accountGroup = item.accountGroup
+        account.phone = item.phone
+        account.mobilePhone = item.mobilePhone
+        account.email = item.email
+        account.businessType = item.businessType
+        account.businessCategory = item.businessCategory
+        account.employeeCode = item.employeeCode
+        account.businessLicenseNumber = item.businessLicenseNumber
+        account.representative = item.representative
+        account.zipCode = item.zipcode
+        account.address1 = item.address1
+        account.address2 = item.address2
+        account.divisionCode = item.divisionCode
+        account.divisionName = item.divisionName
+        account.salesDeptCode = item.salesDeptCode
+        account.salesDeptName = item.salesDeptName
+        account.branchCode = item.branchCode
+        account.branchName = item.branchName
+        account.closingTime1 = item.closingTime1
+        account.closingTime2 = item.closingTime2
+        account.closingTime3 = item.closingTime3
+        account.abcType = item.abcType
+        account.abcTypeCode = item.abcTypeCode
+        account.distribution = item.distribution
+        account.consignmentAcc = item.consignmentAcc
+        account.werk1 = item.werk1
+        account.werk2 = item.werk2
+        account.werk3 = item.werk3
+        account.werk1Tx = item.werk1Tx
+        account.werk2Tx = item.werk2Tx
+        account.werk3Tx = item.werk3Tx
+
+        account.orgCd3 = org?.orgCodeLevel3
+        account.orgCd4 = org?.orgCodeLevel4
+        account.orgCd5 = org?.orgCodeLevel5
+    }
+
+    internal fun resolveOrg(branchCode: String?, salesDeptCode: String?): Organization? {
+        if (branchCode.isNullOrBlank()) return null
+
+        organizationRepository.findFirstByCostCenterLevel5(branchCode)?.let { return it }
+        organizationRepository.findFirstByCostCenterLevel4(branchCode)?.let { return it }
+
+        if (!salesDeptCode.isNullOrBlank()) {
+            organizationRepository.findFirstByCostCenterLevel4(salesDeptCode)?.let { return it }
+        }
+
+        return null
     }
 }
