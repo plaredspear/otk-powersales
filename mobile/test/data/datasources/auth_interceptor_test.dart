@@ -61,7 +61,7 @@ void main() {
       fakeLocalDataSource.accessToken = _mockAccessToken;
 
       await dio.post('/api/v1/auth/login', data: {
-        'employee_id': '20010585',
+        'employee_number': '20010585',
         'password': 'test1234',
       });
 
@@ -200,8 +200,8 @@ class FakeAuthLocalDataSource implements AuthLocalDataSource {
   String? accessToken;
   String? refreshToken;
   bool autoLogin = false;
-  String? savedEmployeeId;
-  bool rememberEmployeeId = false;
+  String? savedEmployeeNumber;
+  bool rememberEmployeeNumber = false;
 
   @override
   Future<void> saveAccessToken(String token) async {
@@ -245,26 +245,26 @@ class FakeAuthLocalDataSource implements AuthLocalDataSource {
   }
 
   @override
-  Future<void> saveEmployeeId(String employeeId) async {
-    savedEmployeeId = employeeId;
-    rememberEmployeeId = true;
+  Future<void> saveEmployeeNumber(String employeeNumber) async {
+    savedEmployeeNumber = employeeNumber;
+    rememberEmployeeNumber = true;
   }
 
   @override
-  Future<String?> getSavedEmployeeId() async {
-    if (!rememberEmployeeId) return null;
-    return savedEmployeeId;
+  Future<String?> getSavedEmployeeNumber() async {
+    if (!rememberEmployeeNumber) return null;
+    return savedEmployeeNumber;
   }
 
   @override
-  Future<void> clearSavedEmployeeId() async {
-    savedEmployeeId = null;
-    rememberEmployeeId = false;
+  Future<void> clearSavedEmployeeNumber() async {
+    savedEmployeeNumber = null;
+    rememberEmployeeNumber = false;
   }
 
   @override
-  Future<bool> isRememberEmployeeIdEnabled() async {
-    return rememberEmployeeId;
+  Future<bool> isRememberEmployeeNumberEnabled() async {
+    return rememberEmployeeNumber;
   }
 
   // AuthLocalDataSource는 class이므로 noSuchMethod로 미구현 메서드 처리 불필요

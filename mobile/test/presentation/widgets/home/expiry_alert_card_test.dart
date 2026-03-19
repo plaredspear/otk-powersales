@@ -25,7 +25,7 @@ void main() {
         expiryAlert: const ExpiryAlert(
           branchName: '강남53지점',
           employeeName: '홍길동',
-          employeeId: '00000009',
+          employeeNumber: '00000009',
           expiryCount: 0,
         ),
       ));
@@ -40,7 +40,7 @@ void main() {
         expiryAlert: const ExpiryAlert(
           branchName: '강남53지점',
           employeeName: '홍길동',
-          employeeId: '00000009',
+          employeeNumber: '00000009',
           expiryCount: 0,
         ),
       ));
@@ -56,7 +56,7 @@ void main() {
         expiryAlert: const ExpiryAlert(
           branchName: '강남53지점',
           employeeName: '홍길동',
-          employeeId: '00000009',
+          employeeNumber: '00000009',
           expiryCount: 5,
         ),
       ));
@@ -79,7 +79,7 @@ void main() {
         expiryAlert: const ExpiryAlert(
           branchName: '강남53지점',
           employeeName: '홍길동',
-          employeeId: '00000009',
+          employeeNumber: '00000009',
           expiryCount: 3,
         ),
       ));
@@ -93,7 +93,7 @@ void main() {
         expiryAlert: const ExpiryAlert(
           branchName: '강남53지점',
           employeeName: '홍길동',
-          employeeId: '00000009',
+          employeeNumber: '00000009',
           expiryCount: 3,
         ),
         onTap: () => tapped = true,

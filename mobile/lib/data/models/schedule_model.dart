@@ -6,7 +6,7 @@ import '../../domain/entities/schedule.dart';
 class ScheduleModel {
   final int scheduleId;
   final String employeeName;
-  final String employeeSfid;
+  final String employeeNumber;
   final String? accountName;
   final String? accountSfid;
   final String workCategory;
@@ -17,7 +17,7 @@ class ScheduleModel {
   const ScheduleModel({
     required this.scheduleId,
     required this.employeeName,
-    required this.employeeSfid,
+    required this.employeeNumber,
     this.accountName,
     this.accountSfid,
     required this.workCategory,
@@ -30,7 +30,7 @@ class ScheduleModel {
     return ScheduleModel(
       scheduleId: json['schedule_id'] as int,
       employeeName: json['employee_name'] as String,
-      employeeSfid: json['employee_id'] as String,
+      employeeNumber: json['employee_number'] as String,
       accountName: json['account_name'] as String?,
       accountSfid: json['account_sfid'] as String?,
       workCategory: json['work_category'] as String,
@@ -46,7 +46,7 @@ class ScheduleModel {
     return {
       'schedule_id': scheduleId,
       'employee_name': employeeName,
-      'employee_id': employeeSfid,
+      'employee_number': employeeNumber,
       'account_name': accountName,
       'account_sfid': accountSfid,
       'work_category': workCategory,
@@ -60,7 +60,7 @@ class ScheduleModel {
     return Schedule(
       scheduleId: scheduleId,
       employeeName: employeeName,
-      employeeSfid: employeeSfid,
+      employeeNumber: employeeNumber,
       accountName: accountName,
       accountSfid: accountSfid,
       workCategory: workCategory,
@@ -74,7 +74,7 @@ class ScheduleModel {
     return ScheduleModel(
       scheduleId: entity.scheduleId,
       employeeName: entity.employeeName,
-      employeeSfid: entity.employeeSfid,
+      employeeNumber: entity.employeeNumber,
       accountName: entity.accountName,
       accountSfid: entity.accountSfid,
       workCategory: entity.workCategory,
@@ -90,7 +90,7 @@ class ScheduleModel {
     return other is ScheduleModel &&
         other.scheduleId == scheduleId &&
         other.employeeName == employeeName &&
-        other.employeeSfid == employeeSfid &&
+        other.employeeNumber == employeeNumber &&
         other.accountName == accountName &&
         other.accountSfid == accountSfid &&
         other.workCategory == workCategory &&
@@ -104,7 +104,7 @@ class ScheduleModel {
     return Object.hash(
       scheduleId,
       employeeName,
-      employeeSfid,
+      employeeNumber,
       accountName,
       accountSfid,
       workCategory,

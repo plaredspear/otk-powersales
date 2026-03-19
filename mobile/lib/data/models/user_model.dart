@@ -5,14 +5,14 @@ import '../../domain/entities/user.dart';
 /// Backend API의 snake_case JSON을 파싱하여 User 엔티티로 변환합니다.
 class UserModel {
   final int id;
-  final String employeeId;
+  final String employeeNumber;
   final String name;
   final String? orgName;
   final String role;
 
   const UserModel({
     required this.id,
-    required this.employeeId,
+    required this.employeeNumber,
     required this.name,
     this.orgName,
     required this.role,
@@ -22,7 +22,7 @@ class UserModel {
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
       id: json['id'] as int,
-      employeeId: json['employee_id'] as String,
+      employeeNumber: json['employee_number'] as String,
       name: json['name'] as String,
       orgName: json['org_name'] as String?,
       role: json['role'] as String,
@@ -33,7 +33,7 @@ class UserModel {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'employee_id': employeeId,
+      'employee_number': employeeNumber,
       'name': name,
       'org_name': orgName,
       'role': role,
@@ -44,7 +44,7 @@ class UserModel {
   User toEntity() {
     return User(
       id: id,
-      employeeId: employeeId,
+      employeeNumber: employeeNumber,
       name: name,
       orgName: orgName,
       role: role,
@@ -55,7 +55,7 @@ class UserModel {
   factory UserModel.fromEntity(User entity) {
     return UserModel(
       id: entity.id,
-      employeeId: entity.employeeId,
+      employeeNumber: entity.employeeNumber,
       name: entity.name,
       orgName: entity.orgName,
       role: entity.role,
@@ -67,7 +67,7 @@ class UserModel {
     if (identical(this, other)) return true;
     return other is UserModel &&
         other.id == id &&
-        other.employeeId == employeeId &&
+        other.employeeNumber == employeeNumber &&
         other.name == name &&
         other.orgName == orgName &&
         other.role == role;
@@ -77,7 +77,7 @@ class UserModel {
   int get hashCode {
     return Object.hash(
       id,
-      employeeId,
+      employeeNumber,
       name,
       orgName,
       role,
@@ -86,6 +86,6 @@ class UserModel {
 
   @override
   String toString() {
-    return 'UserModel(id: $id, employeeId: $employeeId, name: $name, orgName: $orgName, role: $role)';
+    return 'UserModel(id: $id, employeeNumber: $employeeNumber, name: $name, orgName: $orgName, role: $role)';
   }
 }

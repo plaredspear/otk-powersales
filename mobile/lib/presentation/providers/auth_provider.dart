@@ -101,21 +101,21 @@ class AuthNotifier extends StateNotifier<AuthState> {
   /// 저장된 사번을 로드하고, 자동 로그인을 시도합니다.
   Future<void> initialize() async {
     // 저장된 사번 로드
-    await loadSavedEmployeeId();
+    await loadSavedEmployeeNumber();
 
     // 자동 로그인 시도
     await tryAutoLogin();
   }
 
   /// 저장된 사번 로드 (Hive)
-  Future<void> loadSavedEmployeeId() async {
+  Future<void> loadSavedEmployeeNumber() async {
     try {
-      final savedId = await _localDataSource.getSavedEmployeeId();
+      final savedId = await _localDataSource.getSavedEmployeeNumber();
       final rememberEnabled =
-          await _localDataSource.isRememberEmployeeIdEnabled();
+          await _localDataSource.isRememberEmployeeNumberEnabled();
       state = state.copyWith(
-        savedEmployeeId: savedId,
-        rememberEmployeeId: rememberEnabled,
+        savedEmployeeNumber: savedId,
+        rememberEmployeeNumber: rememberEnabled,
       );
     } catch (_) {
       // Hive 로드 실패 시 무시
@@ -167,23 +167,23 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   /// 로그인 수행
   ///
-  /// [employeeId]: 사번
+  /// [employeeNumber]: 사번
   /// [password]: 비밀번호
-  /// [rememberEmployeeId]: 아이디 기억하기
+  /// [rememberEmployeeNumber]: 아이디 기억하기
   /// [autoLogin]: 자동 로그인
   Future<void> login({
-    required String employeeId,
+    required String employeeNumber,
     required String password,
-    required bool rememberEmployeeId,
+    required bool rememberEmployeeNumber,
     required bool autoLogin,
   }) async {
     state = state.toLoading();
 
     try {
       final result = await _loginUseCase(
-        employeeId: employeeId,
+        employeeNumber: employeeNumber,
         password: password,
-        rememberEmployeeId: rememberEmployeeId,
+        rememberEmployeeNumber: rememberEmployeeNumber,
         autoLogin: autoLogin,
       );
 
@@ -192,10 +192,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await _localDataSource.saveRefreshToken(result.token.refreshToken);
 
       // 아이디 기억하기 처리
-      if (rememberEmployeeId) {
-        await _localDataSource.saveEmployeeId(employeeId);
+      if (rememberEmployeeNumber) {
+        await _localDataSource.saveEmployeeNumber(employeeNumber);
       } else {
-        await _localDataSource.clearSavedEmployeeId();
+        await _localDataSource.clearSavedEmployeeNumber();
       }
 
       // 자동 로그인 설정
@@ -209,7 +209,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
           errorMessage: null,
           requiresPasswordChange: true,
           requiresGpsConsent: result.requiresGpsConsent,
-          rememberEmployeeId: rememberEmployeeId,
+          rememberEmployeeNumber: rememberEmployeeNumber,
           autoLogin: autoLogin,
           isInitialized: true,
         );
@@ -220,7 +220,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
           errorMessage: null,
           requiresPasswordChange: false,
           requiresGpsConsent: true,
-          rememberEmployeeId: rememberEmployeeId,
+          rememberEmployeeNumber: rememberEmployeeNumber,
           autoLogin: autoLogin,
           isInitialized: true,
         );

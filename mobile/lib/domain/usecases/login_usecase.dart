@@ -3,7 +3,7 @@ import '../repositories/auth_repository.dart';
 /// 로그인 UseCase
 ///
 /// 사번과 비밀번호로 로그인을 수행합니다.
-/// rememberEmployeeId와 autoLogin 옵션은 Presentation 레이어에서 처리됩니다.
+/// rememberEmployeeNumber와 autoLogin 옵션은 Presentation 레이어에서 처리됩니다.
 class LoginUseCase {
   final AuthRepository _repository;
 
@@ -11,9 +11,9 @@ class LoginUseCase {
 
   /// 로그인 실행
   ///
-  /// [employeeId]: 사번 (8자리 숫자, 필수)
+  /// [employeeNumber]: 사번 (8자리 숫자, 필수)
   /// [password]: 비밀번호 (필수)
-  /// [rememberEmployeeId]: 사번 저장 여부 (Presentation 레이어에서 처리)
+  /// [rememberEmployeeNumber]: 사번 저장 여부 (Presentation 레이어에서 처리)
   /// [autoLogin]: 자동 로그인 여부 (Presentation 레이어에서 처리)
   ///
   /// Returns: 로그인 결과
@@ -21,13 +21,13 @@ class LoginUseCase {
   /// Throws:
   /// - [ArgumentError] 사번 또는 비밀번호가 비어있는 경우
   Future<LoginResult> call({
-    required String employeeId,
+    required String employeeNumber,
     required String password,
-    required bool rememberEmployeeId,
+    required bool rememberEmployeeNumber,
     required bool autoLogin,
   }) async {
     // 입력값 검증
-    if (employeeId.isEmpty) {
+    if (employeeNumber.isEmpty) {
       throw ArgumentError('사번을 입력해주세요');
     }
 
@@ -36,6 +36,6 @@ class LoginUseCase {
     }
 
     // Repository에서 로그인 수행
-    return await _repository.login(employeeId, password);
+    return await _repository.login(employeeNumber, password);
   }
 }

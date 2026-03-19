@@ -10,7 +10,7 @@ class MockAuthRepository implements AuthRepository {
   AuthToken? refreshResult;
   Exception? exceptionToThrow;
 
-  String? lastLoginEmployeeId;
+  String? lastLoginEmployeeNumber;
   String? lastLoginPassword;
   String? lastRefreshToken;
   String? lastCurrentPassword;
@@ -19,8 +19,8 @@ class MockAuthRepository implements AuthRepository {
   bool recordGpsConsentCalled = false;
 
   @override
-  Future<LoginResult> login(String employeeId, String password) async {
-    lastLoginEmployeeId = employeeId;
+  Future<LoginResult> login(String employeeNumber, String password) async {
+    lastLoginEmployeeNumber = employeeNumber;
     lastLoginPassword = password;
     if (exceptionToThrow != null) throw exceptionToThrow!;
     return loginResult!;
@@ -78,7 +78,7 @@ void main() {
       // Arrange
       const expectedUser = User(
         id: 1,
-        employeeId: '20010585',
+        employeeNumber: '20010585',
         name: '홍길동',
         orgName: '부산1지점',
         role: 'USER',
@@ -98,9 +98,9 @@ void main() {
 
       // Act
       final result = await loginUseCase.call(
-        employeeId: '20010585',
+        employeeNumber: '20010585',
         password: 'test1234',
-        rememberEmployeeId: false,
+        rememberEmployeeNumber: false,
         autoLogin: false,
       );
 
@@ -114,9 +114,9 @@ void main() {
       // Act & Assert
       expect(
         () => loginUseCase.call(
-          employeeId: '',
+          employeeNumber: '',
           password: 'test1234',
-          rememberEmployeeId: false,
+          rememberEmployeeNumber: false,
           autoLogin: false,
         ),
         throwsA(
@@ -133,9 +133,9 @@ void main() {
       // Act & Assert
       expect(
         () => loginUseCase.call(
-          employeeId: '20010585',
+          employeeNumber: '20010585',
           password: '',
-          rememberEmployeeId: false,
+          rememberEmployeeNumber: false,
           autoLogin: false,
         ),
         throwsA(
@@ -150,12 +150,12 @@ void main() {
 
     test('Repository에 올바른 파라미터가 전달되는지 확인', () async {
       // Arrange
-      const testEmployeeId = '20010585';
+      const testEmployeeNumber = '20010585';
       const testPassword = 'test1234';
       const mockLoginResult = LoginResult(
         user: User(
           id: 1,
-          employeeId: testEmployeeId,
+          employeeNumber: testEmployeeNumber,
           name: '홍길동',
           orgName: '부산1지점',
           role: 'USER',
@@ -172,14 +172,14 @@ void main() {
 
       // Act
       await loginUseCase.call(
-        employeeId: testEmployeeId,
+        employeeNumber: testEmployeeNumber,
         password: testPassword,
-        rememberEmployeeId: true,
+        rememberEmployeeNumber: true,
         autoLogin: true,
       );
 
       // Assert
-      expect(mockRepository.lastLoginEmployeeId, equals(testEmployeeId));
+      expect(mockRepository.lastLoginEmployeeNumber, equals(testEmployeeNumber));
       expect(mockRepository.lastLoginPassword, equals(testPassword));
     });
 
@@ -190,9 +190,9 @@ void main() {
       // Act & Assert
       expect(
         () => loginUseCase.call(
-          employeeId: '20010585',
+          employeeNumber: '20010585',
           password: 'test1234',
-          rememberEmployeeId: false,
+          rememberEmployeeNumber: false,
           autoLogin: false,
         ),
         throwsA(

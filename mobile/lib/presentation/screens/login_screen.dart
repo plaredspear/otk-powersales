@@ -21,17 +21,17 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _employeeIdController = TextEditingController();
+  final _employeeNumberController = TextEditingController();
   final _passwordController = TextEditingController();
   final _passwordFocusNode = FocusNode();
 
-  bool _rememberEmployeeId = false;
+  bool _rememberEmployeeNumber = false;
   bool _autoLogin = false;
   bool _isInitialized = false;
 
   @override
   void dispose() {
-    _employeeIdController.dispose();
+    _employeeNumberController.dispose();
     _passwordController.dispose();
     _passwordFocusNode.dispose();
     super.dispose();
@@ -43,13 +43,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     _isInitialized = true;
 
     final authState = ref.read(authProvider);
-    if (authState.savedEmployeeId != null &&
-        authState.savedEmployeeId!.isNotEmpty) {
-      _employeeIdController.text = authState.savedEmployeeId!;
-      _rememberEmployeeId = true;
+    if (authState.savedEmployeeNumber != null &&
+        authState.savedEmployeeNumber!.isNotEmpty) {
+      _employeeNumberController.text = authState.savedEmployeeNumber!;
+      _rememberEmployeeNumber = true;
     }
-    if (authState.rememberEmployeeId) {
-      _rememberEmployeeId = true;
+    if (authState.rememberEmployeeNumber) {
+      _rememberEmployeeNumber = true;
     }
   }
 
@@ -59,9 +59,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     ref.read(authProvider.notifier).login(
-          employeeId: _employeeIdController.text.trim(),
+          employeeNumber: _employeeNumberController.text.trim(),
           password: _passwordController.text,
-          rememberEmployeeId: _rememberEmployeeId,
+          rememberEmployeeNumber: _rememberEmployeeNumber,
           autoLogin: _autoLogin,
         );
   }
@@ -116,7 +116,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         const SizedBox(height: 32),
 
                         // 아이디(사번) 입력
-                        _buildEmployeeIdField(),
+                        _buildEmployeeNumberField(),
                         const SizedBox(height: 12),
 
                         // 비밀번호 입력
@@ -179,9 +179,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   /// 아이디(사번) 입력 필드
-  Widget _buildEmployeeIdField() {
+  Widget _buildEmployeeNumberField() {
     return TextFormField(
-      controller: _employeeIdController,
+      controller: _employeeNumberController,
       keyboardType: TextInputType.number,
       inputFormatters: [
         FilteringTextInputFormatter.digitsOnly,
@@ -288,10 +288,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           height: 20,
           width: 20,
           child: Checkbox(
-            value: _rememberEmployeeId,
+            value: _rememberEmployeeNumber,
             onChanged: (value) {
               setState(() {
-                _rememberEmployeeId = value ?? false;
+                _rememberEmployeeNumber = value ?? false;
               });
             },
             activeColor: AppColors.secondary,
@@ -304,7 +304,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         GestureDetector(
           onTap: () {
             setState(() {
-              _rememberEmployeeId = !_rememberEmployeeId;
+              _rememberEmployeeNumber = !_rememberEmployeeNumber;
             });
           },
           child: Text(

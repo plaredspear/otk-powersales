@@ -56,7 +56,7 @@ class ExpiryAlertCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${alert.branchName}, ${alert.employeeName}(${alert.employeeId})',
+                    '${alert.branchName}, ${alert.employeeName}(${alert.employeeNumber})',
                     style: AppTypography.bodyMedium.copyWith(
                       fontWeight: FontWeight.w600,
                     ),

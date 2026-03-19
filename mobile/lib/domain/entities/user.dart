@@ -5,7 +5,7 @@ class User {
   final int id;
 
   /// 사번 (8자리 숫자)
-  final String employeeId;
+  final String employeeNumber;
 
   /// 이름
   final String name;
@@ -18,7 +18,7 @@ class User {
 
   const User({
     required this.id,
-    required this.employeeId,
+    required this.employeeNumber,
     required this.name,
     this.orgName,
     required this.role,
@@ -26,7 +26,7 @@ class User {
 
   User copyWith({
     int? id,
-    String? employeeId,
+    String? employeeNumber,
     String? name,
     String? orgName,
     bool clearOrgName = false,
@@ -34,7 +34,7 @@ class User {
   }) {
     return User(
       id: id ?? this.id,
-      employeeId: employeeId ?? this.employeeId,
+      employeeNumber: employeeNumber ?? this.employeeNumber,
       name: name ?? this.name,
       orgName: clearOrgName ? null : (orgName ?? this.orgName),
       role: role ?? this.role,
@@ -44,7 +44,7 @@ class User {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'employeeId': employeeId,
+      'employeeNumber': employeeNumber,
       'name': name,
       'orgName': orgName,
       'role': role,
@@ -54,7 +54,7 @@ class User {
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: json['id'] as int,
-      employeeId: json['employeeId'] as String,
+      employeeNumber: json['employeeNumber'] as String,
       name: json['name'] as String,
       orgName: json['orgName'] as String?,
       role: json['role'] as String,
@@ -66,7 +66,7 @@ class User {
     if (identical(this, other)) return true;
     return other is User &&
         other.id == id &&
-        other.employeeId == employeeId &&
+        other.employeeNumber == employeeNumber &&
         other.name == name &&
         other.orgName == orgName &&
         other.role == role;
@@ -76,7 +76,7 @@ class User {
   int get hashCode {
     return Object.hash(
       id,
-      employeeId,
+      employeeNumber,
       name,
       orgName,
       role,
@@ -85,6 +85,6 @@ class User {
 
   @override
   String toString() {
-    return 'User(id: $id, employeeId: $employeeId, name: $name, orgName: $orgName, role: $role)';
+    return 'User(id: $id, employeeNumber: $employeeNumber, name: $name, orgName: $orgName, role: $role)';
   }
 }

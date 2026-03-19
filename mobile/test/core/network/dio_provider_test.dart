@@ -24,10 +24,10 @@ class FakeAuthLocalDataSource implements AuthLocalDataSource {
   Future<void> clearTokens() async {}
 
   @override
-  Future<void> saveEmployeeId(String employeeId) async {}
+  Future<void> saveEmployeeNumber(String employeeNumber) async {}
 
   @override
-  Future<String?> getSavedEmployeeId() async => null;
+  Future<String?> getSavedEmployeeNumber() async => null;
 
   @override
   Future<void> setAutoLogin(bool enabled) async {}
@@ -39,10 +39,10 @@ class FakeAuthLocalDataSource implements AuthLocalDataSource {
   Future<String> getDeviceId() async => 'fake-device-id';
 
   @override
-  Future<void> clearSavedEmployeeId() async {}
+  Future<void> clearSavedEmployeeNumber() async {}
 
   @override
-  Future<bool> isRememberEmployeeIdEnabled() async => false;
+  Future<bool> isRememberEmployeeNumberEnabled() async => false;
 }
 
 void main() {

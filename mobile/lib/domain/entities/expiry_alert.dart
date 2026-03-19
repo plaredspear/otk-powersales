@@ -4,26 +4,26 @@
 class ExpiryAlert {
   final String branchName;
   final String employeeName;
-  final String employeeId;
+  final String employeeNumber;
   final int expiryCount;
 
   const ExpiryAlert({
     required this.branchName,
     required this.employeeName,
-    required this.employeeId,
+    required this.employeeNumber,
     required this.expiryCount,
   });
 
   ExpiryAlert copyWith({
     String? branchName,
     String? employeeName,
-    String? employeeId,
+    String? employeeNumber,
     int? expiryCount,
   }) {
     return ExpiryAlert(
       branchName: branchName ?? this.branchName,
       employeeName: employeeName ?? this.employeeName,
-      employeeId: employeeId ?? this.employeeId,
+      employeeNumber: employeeNumber ?? this.employeeNumber,
       expiryCount: expiryCount ?? this.expiryCount,
     );
   }
@@ -32,7 +32,7 @@ class ExpiryAlert {
     return {
       'branchName': branchName,
       'employeeName': employeeName,
-      'employeeId': employeeId,
+      'employeeNumber': employeeNumber,
       'expiryCount': expiryCount,
     };
   }
@@ -41,7 +41,7 @@ class ExpiryAlert {
     return ExpiryAlert(
       branchName: json['branchName'] as String,
       employeeName: json['employeeName'] as String,
-      employeeId: json['employeeId'] as String,
+      employeeNumber: json['employeeNumber'] as String,
       expiryCount: json['expiryCount'] as int,
     );
   }
@@ -52,7 +52,7 @@ class ExpiryAlert {
     return other is ExpiryAlert &&
         other.branchName == branchName &&
         other.employeeName == employeeName &&
-        other.employeeId == employeeId &&
+        other.employeeNumber == employeeNumber &&
         other.expiryCount == expiryCount;
   }
 
@@ -61,13 +61,13 @@ class ExpiryAlert {
     return Object.hash(
       branchName,
       employeeName,
-      employeeId,
+      employeeNumber,
       expiryCount,
     );
   }
 
   @override
   String toString() {
-    return 'ExpiryAlert(branchName: $branchName, employeeName: $employeeName, employeeId: $employeeId, expiryCount: $expiryCount)';
+    return 'ExpiryAlert(branchName: $branchName, employeeName: $employeeName, employeeNumber: $employeeNumber, expiryCount: $expiryCount)';
   }
 }
