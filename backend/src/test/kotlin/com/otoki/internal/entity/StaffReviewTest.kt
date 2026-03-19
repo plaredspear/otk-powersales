@@ -29,7 +29,7 @@ class StaffReviewTest {
         // Given
         val staffReview = StaffReview(
             name = "2026-01 영업사원 평가",
-            employeeId = "a0B5g000001XYZ",
+            employeeId = 100L,
             employeeName = "홍길동",
             employeeNumber = "EMP001",
             branch = "서울지점",
@@ -46,7 +46,7 @@ class StaffReviewTest {
         assertThat(found).isNotNull
         assertThat(found.employeeTotalScore).isEqualTo(85.5)
         assertThat(found.name).isEqualTo("2026-01 영업사원 평가")
-        assertThat(found.employeeId).isEqualTo("a0B5g000001XYZ")
+        assertThat(found.employeeId).isEqualTo(100L)
         assertThat(found.employeeName).isEqualTo("홍길동")
         assertThat(found.employeeNumber).isEqualTo("EMP001")
         assertThat(found.branch).isEqualTo("서울지점")

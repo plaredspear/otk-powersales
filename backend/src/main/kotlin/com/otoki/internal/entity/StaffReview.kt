@@ -21,8 +21,8 @@ class StaffReview(
     @Column(name = "name", length = 80)
     val name: String? = null,
 
-    @Column(name = "dkretail_employeeid__c", length = 18)
-    val employeeId: String? = null,
+    @Column(name = "employee_id")
+    val employeeId: Long? = null,
 
     @Column(name = "employeename__c", length = 1300)
     val employeeName: String? = null,
