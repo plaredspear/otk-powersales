@@ -4,7 +4,7 @@ import com.otoki.internal.common.entity.BaseEntity
 import jakarta.persistence.*
 
 @Entity
-@Table(name = "uploadfile__c")
+@Table(name = "upload_file")
 class UploadFile(
 
     @Id

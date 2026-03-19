@@ -4,7 +4,7 @@ import com.otoki.internal.common.entity.BaseEntity
 import jakarta.persistence.*
 
 @Entity
-@Table(name = "dkretail__promotion_type")
+@Table(name = "promotion_type")
 class PromotionType(
 
     @Id

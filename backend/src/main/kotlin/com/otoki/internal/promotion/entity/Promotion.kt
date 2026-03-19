@@ -5,7 +5,7 @@ import jakarta.persistence.*
 import java.time.LocalDate
 
 @Entity
-@Table(name = "dkretail__promotion__c")
+@Table(name = "promotion")
 class Promotion(
 
     @Id

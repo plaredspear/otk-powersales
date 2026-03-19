@@ -9,7 +9,7 @@ import java.time.LocalDate
  * V1 스키마: theme__c
  */
 @Entity
-@Table(name = "theme__c")
+@Table(name = "inspection_theme")
 class InspectionTheme(
 
     @Id

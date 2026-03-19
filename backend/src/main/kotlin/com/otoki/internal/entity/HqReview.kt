@@ -9,7 +9,7 @@ import java.time.LocalDate
  * V1 스키마: hqreview__c (Heroku Connect 동기화)
  */
 @Entity
-@Table(name = "hqreview__c")
+@Table(name = "hq_review")
 class HqReview(
 
     @Id

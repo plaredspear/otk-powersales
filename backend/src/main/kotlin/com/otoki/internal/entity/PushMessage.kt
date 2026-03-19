@@ -9,7 +9,7 @@ import java.time.LocalDateTime
  * V1 스키마: pushmessage__c (Heroku Connect 동기화)
  */
 @Entity
-@Table(name = "pushmessage__c")
+@Table(name = "push_message")
 class PushMessage(
 
     @Id
