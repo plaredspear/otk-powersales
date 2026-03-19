@@ -44,19 +44,19 @@ class AdminPromotionConfirmServiceTest {
         fun confirm_success_newInsert() {
             val promotion = createPromotion()
             val employees = listOf(
-                createPE(id = 1L, employeeSfid = "EMP001", scheduleDate = startDate),
-                createPE(id = 2L, employeeSfid = "EMP002", scheduleDate = startDate.plusDays(1)),
-                createPE(id = 3L, employeeSfid = "EMP003", scheduleDate = startDate.plusDays(2))
+                createPE(id = 1L, employeeId = 1L, scheduleDate = startDate),
+                createPE(id = 2L, employeeId = 2L, scheduleDate = startDate.plusDays(1)),
+                createPE(id = 3L, employeeId = 3L, scheduleDate = startDate.plusDays(2))
             )
 
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
             whenever(promotionEmployeeRepository.findByPromotionId(10L)).thenReturn(employees)
             whenever(teamMemberScheduleRepository.findByPromotionEmployeeIdIn(any())).thenReturn(emptyList())
             whenever(teamMemberScheduleRepository.findByEmployeeNumberInAndWorkingDateIn(any(), any())).thenReturn(emptyList())
-            whenever(userRepository.findByEmployeeNumberIn(any())).thenReturn(listOf(
-                createUser("EMP001", "김철수"),
-                createUser("EMP002", "이영희"),
-                createUser("EMP003", "박민수")
+            whenever(userRepository.findAllById(any())).thenReturn(listOf(
+                createUser(id = 1L, employeeNumber = "EMP001", name = "김철수"),
+                createUser(id = 2L, employeeNumber = "EMP002", name = "이영희"),
+                createUser(id = 3L, employeeNumber = "EMP003", name = "박민수")
             ))
             whenever(teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>())).thenAnswer { invocation ->
                 val teamMemberSchedules = invocation.getArgument<List<TeamMemberSchedule>>(0)
@@ -91,7 +91,7 @@ class AdminPromotionConfirmServiceTest {
         fun confirm_success_upsertUpdate() {
             val promotion = createPromotion()
             val employees = listOf(
-                createPE(id = 1L, employeeSfid = "EMP001", scheduleDate = startDate)
+                createPE(id = 1L, employeeId = 1L, scheduleDate = startDate)
             )
             val existingTeamMemberSchedule = TeamMemberSchedule(
                 id = 50L,
@@ -108,7 +108,7 @@ class AdminPromotionConfirmServiceTest {
             whenever(promotionEmployeeRepository.findByPromotionId(10L)).thenReturn(employees)
             whenever(teamMemberScheduleRepository.findByPromotionEmployeeIdIn(listOf(1L))).thenReturn(listOf(existingTeamMemberSchedule))
             whenever(teamMemberScheduleRepository.findByEmployeeNumberInAndWorkingDateIn(any(), any())).thenReturn(listOf(existingTeamMemberSchedule))
-            whenever(userRepository.findByEmployeeNumberIn(any())).thenReturn(listOf(createUser("EMP001", "김철수")))
+            whenever(userRepository.findAllById(any())).thenReturn(listOf(createUser(id = 1L, employeeNumber = "EMP001", name = "김철수")))
             whenever(teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>())).thenAnswer { it.getArgument<List<TeamMemberSchedule>>(0) }
             whenever(promotionEmployeeRepository.saveAll(any<List<PromotionEmployee>>())).thenAnswer { it.getArgument<List<PromotionEmployee>>(0) }
 
@@ -158,7 +158,7 @@ class AdminPromotionConfirmServiceTest {
         fun confirm_workType1Null_correctedToDefault() {
             val promotion = createPromotion()
             val employees = listOf(
-                createPE(id = 1L, employeeSfid = "EMP001", workType1 = null)
+                createPE(id = 1L, employeeId = 1L, workType1 = null)
             )
             setupMocksForSuccess(promotion, employees)
 
@@ -172,7 +172,7 @@ class AdminPromotionConfirmServiceTest {
         fun confirm_workStatusNull_correctedToDefault() {
             val promotion = createPromotion()
             val employees = listOf(
-                createPE(id = 1L, employeeSfid = "EMP001", workStatus = null)
+                createPE(id = 1L, employeeId = 1L, workStatus = null)
             )
             setupMocksForSuccess(promotion, employees)
 
@@ -186,7 +186,7 @@ class AdminPromotionConfirmServiceTest {
         fun confirm_bothNull_correctedToDefaults() {
             val promotion = createPromotion()
             val employees = listOf(
-                createPE(id = 1L, employeeSfid = "EMP001", workType1 = null, workStatus = null)
+                createPE(id = 1L, employeeId = 1L, workType1 = null, workStatus = null)
             )
             setupMocksForSuccess(promotion, employees)
 
@@ -201,7 +201,7 @@ class AdminPromotionConfirmServiceTest {
         fun confirm_existingValues_notOverridden() {
             val promotion = createPromotion()
             val employees = listOf(
-                createPE(id = 1L, employeeSfid = "EMP001", workType1 = "진열", workStatus = "연차")
+                createPE(id = 1L, employeeId = 1L, workType1 = "진열", workStatus = "연차")
             )
             setupMocksForSuccess(promotion, employees)
 
@@ -213,15 +213,15 @@ class AdminPromotionConfirmServiceTest {
     }
 
     @Nested
-    @DisplayName("employeeNumber 기반 확정")
-    inner class EmployeeNumberConfirmTests {
+    @DisplayName("employeeId 기반 확정")
+    inner class EmployeeIdConfirmTests {
 
         @Test
-        @DisplayName("employeeNumber 기반 사원 확정 -> employeeSfid null이어도 성공")
-        fun confirm_employeeNumberOnly_success() {
+        @DisplayName("employeeId 기반 사원 확정 -> 성공")
+        fun confirm_employeeIdOnly_success() {
             val promotion = createPromotion()
             val employees = listOf(
-                createPE(id = 1L, employeeSfid = null, employeeNumber = "123456", scheduleDate = startDate)
+                createPE(id = 1L, employeeId = 1L, scheduleDate = startDate)
             )
             setupMocksForSuccess(promotion, employees)
 
@@ -230,11 +230,11 @@ class AdminPromotionConfirmServiceTest {
         }
 
         @Test
-        @DisplayName("employeeNumber null + employeeSfid null -> 행사사원 누락 에러")
+        @DisplayName("employeeId null -> 행사사원 누락 에러")
         fun confirm_noIdentifier_missingEmployee() {
             val promotion = createPromotion()
             val employees = listOf(
-                createPE(id = 1L, employeeSfid = null, employeeNumber = null)
+                createPE(id = 1L, employeeId = null)
             )
             setupMocks(promotion, employees)
 
@@ -253,7 +253,7 @@ class AdminPromotionConfirmServiceTest {
         fun confirm_missingWorkType3() {
             val promotion = createPromotion()
             val employees = listOf(
-                createPE(id = 1L, employeeSfid = "EMP001", workType1 = "", workType3 = "")
+                createPE(id = 1L, employeeId = 1L, workType1 = "", workType3 = "")
             )
             setupMocks(promotion, employees)
 
@@ -272,7 +272,7 @@ class AdminPromotionConfirmServiceTest {
         fun confirm_dateAfterEnd() {
             val promotion = createPromotion()
             val employees = listOf(
-                createPE(id = 1L, employeeSfid = "EMP001", scheduleDate = endDate.plusDays(1))
+                createPE(id = 1L, employeeId = 1L, scheduleDate = endDate.plusDays(1))
             )
             setupMocks(promotion, employees)
 
@@ -285,7 +285,7 @@ class AdminPromotionConfirmServiceTest {
         fun confirm_dateBeforeStart() {
             val promotion = createPromotion()
             val employees = listOf(
-                createPE(id = 1L, employeeSfid = "EMP001", scheduleDate = startDate.minusDays(1))
+                createPE(id = 1L, employeeId = 1L, scheduleDate = startDate.minusDays(1))
             )
             setupMocks(promotion, employees)
 
@@ -303,8 +303,8 @@ class AdminPromotionConfirmServiceTest {
         fun confirm_fixed2() {
             val promotion = createPromotion()
             val employees = listOf(
-                createPE(id = 1L, employeeSfid = "EMP001", scheduleDate = startDate, workType3 = "고정"),
-                createPE(id = 2L, employeeSfid = "EMP001", scheduleDate = startDate, workType3 = "고정")
+                createPE(id = 1L, employeeId = 1L, scheduleDate = startDate, workType3 = "고정"),
+                createPE(id = 2L, employeeId = 1L, scheduleDate = startDate, workType3 = "고정")
             )
             setupMocks(promotion, employees)
 
@@ -317,8 +317,8 @@ class AdminPromotionConfirmServiceTest {
         fun confirm_fixedPlusAlternate() {
             val promotion = createPromotion()
             val employees = listOf(
-                createPE(id = 1L, employeeSfid = "EMP001", scheduleDate = startDate, workType3 = "고정"),
-                createPE(id = 2L, employeeSfid = "EMP001", scheduleDate = startDate, workType3 = "격고")
+                createPE(id = 1L, employeeId = 1L, scheduleDate = startDate, workType3 = "고정"),
+                createPE(id = 2L, employeeId = 1L, scheduleDate = startDate, workType3 = "격고")
             )
             setupMocks(promotion, employees)
 
@@ -331,9 +331,9 @@ class AdminPromotionConfirmServiceTest {
         fun confirm_alternate3() {
             val promotion = createPromotion()
             val employees = listOf(
-                createPE(id = 1L, employeeSfid = "EMP001", scheduleDate = startDate, workType3 = "격고"),
-                createPE(id = 2L, employeeSfid = "EMP001", scheduleDate = startDate, workType3 = "격고"),
-                createPE(id = 3L, employeeSfid = "EMP001", scheduleDate = startDate, workType3 = "격고")
+                createPE(id = 1L, employeeId = 1L, scheduleDate = startDate, workType3 = "격고"),
+                createPE(id = 2L, employeeId = 1L, scheduleDate = startDate, workType3 = "격고"),
+                createPE(id = 3L, employeeId = 1L, scheduleDate = startDate, workType3 = "격고")
             )
             setupMocks(promotion, employees)
 
@@ -346,7 +346,7 @@ class AdminPromotionConfirmServiceTest {
         fun confirm_alternate2PlusTraversal() {
             val promotion = createPromotion()
             val employees = listOf(
-                createPE(id = 1L, employeeSfid = "EMP001", scheduleDate = startDate, workType3 = "순회")
+                createPE(id = 1L, employeeId = 1L, scheduleDate = startDate, workType3 = "순회")
             )
             val existingTeamMemberSchedules = listOf(
                 createTeamMemberSchedule(employeeNumber = "EMP001", workingDate = startDate, workingCategory3 = "격고"),
@@ -363,8 +363,8 @@ class AdminPromotionConfirmServiceTest {
         fun confirm_alternate1PlusTraversal1_success() {
             val promotion = createPromotion()
             val employees = listOf(
-                createPE(id = 1L, employeeSfid = "EMP001", scheduleDate = startDate, workType3 = "격고"),
-                createPE(id = 2L, employeeSfid = "EMP001", scheduleDate = startDate, workType3 = "순회")
+                createPE(id = 1L, employeeId = 1L, scheduleDate = startDate, workType3 = "격고"),
+                createPE(id = 2L, employeeId = 1L, scheduleDate = startDate, workType3 = "순회")
             )
             setupMocksForSuccess(promotion, employees)
 
@@ -382,7 +382,7 @@ class AdminPromotionConfirmServiceTest {
         fun confirm_existingLeave() {
             val promotion = createPromotion()
             val employees = listOf(
-                createPE(id = 1L, employeeSfid = "EMP001", scheduleDate = startDate, workStatus = "근무", workType3 = "순회")
+                createPE(id = 1L, employeeId = 1L, scheduleDate = startDate, workStatus = "근무", workType3 = "순회")
             )
             val existingTeamMemberSchedules = listOf(
                 createTeamMemberSchedule(employeeNumber = "EMP001", workingDate = startDate, workingType = "연차", workingCategory3 = "순회")
@@ -398,7 +398,7 @@ class AdminPromotionConfirmServiceTest {
         fun confirm_peLeaveExistingWork() {
             val promotion = createPromotion()
             val employees = listOf(
-                createPE(id = 1L, employeeSfid = "EMP001", scheduleDate = startDate, workStatus = "연차", workType3 = "순회")
+                createPE(id = 1L, employeeId = 1L, scheduleDate = startDate, workStatus = "연차", workType3 = "순회")
             )
             val existingTeamMemberSchedules = listOf(
                 createTeamMemberSchedule(employeeNumber = "EMP001", workingDate = startDate, workingType = "근무", workingCategory3 = "순회")
@@ -419,7 +419,7 @@ class AdminPromotionConfirmServiceTest {
         fun confirm_duplicateTeamMemberSchedule() {
             val promotion = createPromotion(accountId = 100)
             val employees = listOf(
-                createPE(id = 1L, employeeSfid = "EMP001", scheduleDate = startDate, workType3 = "순회")
+                createPE(id = 1L, employeeId = 1L, scheduleDate = startDate, workType3 = "순회")
             )
             val existingTeamMemberSchedules = listOf(
                 createTeamMemberSchedule(employeeNumber = "EMP001", workingDate = startDate, accountId = 100, workingCategory3 = "순회")
@@ -440,7 +440,7 @@ class AdminPromotionConfirmServiceTest {
         fun confirm_employeeOnLeave() {
             val promotion = createPromotion()
             val employees = listOf(
-                createPE(id = 1L, employeeSfid = "EMP001", scheduleDate = startDate)
+                createPE(id = 1L, employeeId = 1L, scheduleDate = startDate)
             )
             setupMocks(promotion, employees, userStatus = "휴직")
 
@@ -453,7 +453,7 @@ class AdminPromotionConfirmServiceTest {
         fun confirm_employeeResigned() {
             val promotion = createPromotion()
             val employees = listOf(
-                createPE(id = 1L, employeeSfid = "EMP001", scheduleDate = startDate)
+                createPE(id = 1L, employeeId = 1L, scheduleDate = startDate)
             )
             setupMocks(promotion, employees, userStatus = "퇴직")
 
@@ -473,12 +473,14 @@ class AdminPromotionConfirmServiceTest {
         whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
         whenever(promotionEmployeeRepository.findByPromotionId(10L)).thenReturn(employees)
         org.mockito.Mockito.lenient().`when`(promotionEmployeeRepository.saveAll(any<List<PromotionEmployee>>())).thenAnswer { it.getArgument<List<PromotionEmployee>>(0) }
-        whenever(teamMemberScheduleRepository.findByPromotionEmployeeIdIn(any())).thenReturn(emptyList())
-        whenever(teamMemberScheduleRepository.findByEmployeeNumberInAndWorkingDateIn(any(), any())).thenReturn(existingTeamMemberSchedules)
+        org.mockito.Mockito.lenient().`when`(teamMemberScheduleRepository.findByPromotionEmployeeIdIn(any())).thenReturn(emptyList())
+        org.mockito.Mockito.lenient().`when`(teamMemberScheduleRepository.findByEmployeeNumberInAndWorkingDateIn(any(), any())).thenReturn(existingTeamMemberSchedules)
 
-        val employeeNumbers = employees.mapNotNull { it.employeeNumber }.distinct()
-        val users = employeeNumbers.map { createUser(it, "${it}이름", userStatus) }
-        whenever(userRepository.findByEmployeeNumberIn(any())).thenReturn(users)
+        val employeeIds = employees.mapNotNull { it.employeeId }.distinct()
+        val users = employeeIds.mapIndexed { _, id ->
+            createUser(id = id, employeeNumber = "EMP${String.format("%03d", id)}", name = "EMP${String.format("%03d", id)}이름", status = userStatus)
+        }
+        org.mockito.Mockito.lenient().`when`(userRepository.findAllById(any())).thenReturn(users)
     }
 
     private fun setupMocksForSuccess(
@@ -522,8 +524,7 @@ class AdminPromotionConfirmServiceTest {
     private fun createPE(
         id: Long = 1L,
         promotionId: Long = 10L,
-        employeeSfid: String? = "EMP001",
-        employeeNumber: String? = employeeSfid,
+        employeeId: Long? = 1L,
         scheduleDate: LocalDate = startDate,
         workStatus: String? = "근무",
         workType1: String? = "행사",
@@ -532,8 +533,7 @@ class AdminPromotionConfirmServiceTest {
     ): PromotionEmployee = PromotionEmployee(
         id = id,
         promotionId = promotionId,
-        employeeSfid = employeeSfid,
-        employeeNumber = employeeNumber,
+        employeeId = employeeId,
         scheduleDate = scheduleDate,
         workStatus = workStatus,
         workType1 = workType1,
@@ -542,12 +542,13 @@ class AdminPromotionConfirmServiceTest {
     )
 
     private fun createUser(
-        sfid: String = "EMP001",
+        id: Long = 1L,
+        employeeNumber: String = "EMP001",
         name: String = "테스트사원",
         status: String? = null
     ): User = User(
-        sfid = sfid,
-        employeeNumber = sfid,
+        id = id,
+        employeeNumber = employeeNumber,
         name = name,
         status = status
     )

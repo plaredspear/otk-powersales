@@ -24,13 +24,8 @@ class PromotionEmployee(
     @Column(name = "promotion_id", nullable = false)
     val promotionId: Long,
 
-    @SFField("DKRetail__EmployeeId__c")
-    @HCColumn("dkretail__employeeid__c")
-    @Column(name = "employee_sfid", length = 18)
-    var employeeSfid: String? = null,
-
-    @Column(name = "employee_number", length = 8)
-    var employeeNumber: String? = null,
+    @Column(name = "employee_id")
+    var employeeId: Long? = null,
 
     @SFField("DKRetail__ScheduleDate__c")
     @HCColumn("dkretail__scheduledate__c")
@@ -120,7 +115,7 @@ class PromotionEmployee(
 
 ) : BaseEntity() {
     fun update(
-        employeeNumber: String?,
+        employeeId: Long?,
         scheduleDate: LocalDate?,
         workStatus: String?,
         workType1: String?,
@@ -138,7 +133,7 @@ class PromotionEmployee(
         otherSalesQuantity: Int? = null,
         s3ImageUniqueKey: String? = null
     ) {
-        this.employeeNumber = employeeNumber
+        this.employeeId = employeeId
         this.scheduleDate = scheduleDate
         this.workStatus = workStatus
         this.workType1 = workType1

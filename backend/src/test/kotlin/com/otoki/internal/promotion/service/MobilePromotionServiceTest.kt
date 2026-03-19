@@ -118,8 +118,7 @@ class MobilePromotionServiceTest {
     private fun createPromotionEmployee(
         id: Long = 1L,
         promotionId: Long = 1L,
-        employeeSfid: String? = null,
-        employeeNumber: String? = "20030117",
+        employeeId: Long? = 1L,
         scheduleDate: LocalDate? = LocalDate.of(2026, 3, 5),
         workStatus: String? = null,
         workType3: String? = null,
@@ -129,8 +128,7 @@ class MobilePromotionServiceTest {
     ): PromotionEmployee = PromotionEmployee(
         id = id,
         promotionId = promotionId,
-        employeeSfid = employeeSfid,
-        employeeNumber = employeeNumber,
+        employeeId = employeeId,
         scheduleDate = scheduleDate,
         workStatus = workStatus,
         workType3 = workType3,
@@ -188,7 +186,7 @@ class MobilePromotionServiceTest {
 
             whenever(userRepository.findById(10L)).thenReturn(Optional.of(leader))
             whenever(promotionRepository.searchForMobile(
-                employeeNumber = eq("20030001"),
+                employeeId = eq(10L),
                 costCenterCode = eq("1234"),
                 isWoman = eq(false),
                 keyword = isNull(),
@@ -211,7 +209,7 @@ class MobilePromotionServiceTest {
             assertThat(result.totalElements).isEqualTo(1)
             assertThat(result.totalPages).isEqualTo(1)
 
-            verify(promotionEmployeeRepository, never()).findMinScheduleDateByPromotionIdAndEmployeeNumber(any(), any())
+            verify(promotionEmployeeRepository, never()).findMinScheduleDateByPromotionIdAndEmployeeId(any(), any())
         }
 
         @Test
@@ -228,7 +226,7 @@ class MobilePromotionServiceTest {
 
             whenever(userRepository.findById(20L)).thenReturn(Optional.of(woman))
             whenever(promotionRepository.searchForMobile(
-                employeeNumber = eq("20030002"),
+                employeeId = eq(20L),
                 costCenterCode = eq("1234"),
                 isWoman = eq(true),
                 keyword = isNull(),
@@ -238,7 +236,7 @@ class MobilePromotionServiceTest {
             )).thenReturn(page)
             whenever(accountRepository.findByIdIn(listOf(100))).thenReturn(listOf(account))
             whenever(promotionTypeRepository.findAllById(listOf(1L))).thenReturn(listOf(promotionType))
-            whenever(promotionEmployeeRepository.findMinScheduleDateByPromotionIdAndEmployeeNumber(1L, "20030002"))
+            whenever(promotionEmployeeRepository.findMinScheduleDateByPromotionIdAndEmployeeId(1L, 20L))
                 .thenReturn(myScheduleDate)
 
             // When
@@ -248,7 +246,7 @@ class MobilePromotionServiceTest {
             assertThat(result.content).hasSize(1)
             assertThat(result.content[0].myScheduleDate).isEqualTo(myScheduleDate)
 
-            verify(promotionEmployeeRepository).findMinScheduleDateByPromotionIdAndEmployeeNumber(1L, "20030002")
+            verify(promotionEmployeeRepository).findMinScheduleDateByPromotionIdAndEmployeeId(1L, 20L)
         }
 
         @Test
@@ -261,7 +259,7 @@ class MobilePromotionServiceTest {
 
             whenever(userRepository.findById(10L)).thenReturn(Optional.of(leader))
             whenever(promotionRepository.searchForMobile(
-                employeeNumber = eq("20030001"),
+                employeeId = eq(10L),
                 costCenterCode = eq("1234"),
                 isWoman = eq(false),
                 keyword = isNull(),
@@ -283,7 +281,7 @@ class MobilePromotionServiceTest {
             // Then
             assertThat(result.content).isEmpty()
             verify(promotionRepository).searchForMobile(
-                employeeNumber = eq("20030001"),
+                employeeId = eq(10L),
                 costCenterCode = eq("1234"),
                 isWoman = eq(false),
                 keyword = isNull(),
@@ -303,7 +301,7 @@ class MobilePromotionServiceTest {
 
             whenever(userRepository.findById(10L)).thenReturn(Optional.of(leader))
             whenever(promotionRepository.searchForMobile(
-                employeeNumber = eq("20030001"),
+                employeeId = eq(10L),
                 costCenterCode = eq("1234"),
                 isWoman = eq(false),
                 keyword = eq("이마트"),
@@ -325,7 +323,7 @@ class MobilePromotionServiceTest {
             // Then
             assertThat(result.content).isEmpty()
             verify(promotionRepository).searchForMobile(
-                employeeNumber = eq("20030001"),
+                employeeId = eq(10L),
                 costCenterCode = eq("1234"),
                 isWoman = eq(false),
                 keyword = eq("이마트"),
@@ -399,13 +397,13 @@ class MobilePromotionServiceTest {
             val employee1 = createPromotionEmployee(
                 id = 10L,
                 promotionId = 1L,
-                employeeNumber = "20030002",
+                employeeId = 20L,
                 scheduleDate = LocalDate.of(2026, 3, 5)
             )
             val employee2 = createPromotionEmployee(
                 id = 11L,
                 promotionId = 1L,
-                employeeNumber = "20030003",
+                employeeId = 21L,
                 scheduleDate = LocalDate.of(2026, 3, 6)
             )
             val empUser1 = createUser(id = 20L, employeeNumber = "20030002", name = "김영희")
@@ -418,7 +416,7 @@ class MobilePromotionServiceTest {
             whenever(promotionTypeRepository.findById(1L)).thenReturn(Optional.of(promotionType))
             whenever(promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(1L))
                 .thenReturn(listOf(employee1, employee2))
-            whenever(userRepository.findByEmployeeNumberIn(listOf("20030002", "20030003")))
+            whenever(userRepository.findAllById(listOf(20L, 21L)))
                 .thenReturn(listOf(empUser1, empUser2))
 
             // When
@@ -433,7 +431,7 @@ class MobilePromotionServiceTest {
             assertThat(result.employees[0].employeeName).isEqualTo("김영희")
             assertThat(result.employees[1].employeeName).isEqualTo("이수진")
 
-            verify(promotionEmployeeRepository, never()).existsByPromotionIdAndEmployeeNumber(any(), any())
+            verify(promotionEmployeeRepository, never()).existsByPromotionIdAndEmployeeId(any(), any())
         }
 
         @Test
@@ -443,15 +441,15 @@ class MobilePromotionServiceTest {
             val woman = createUser(id = 20L, employeeNumber = "20030002", appAuthority = "여사원", costCenterCode = "1234")
             val promotion = createPromotion(id = 1L, costCenterCode = "1234", accountId = 100)
             val account = createAccount(id = 100)
-            val employee = createPromotionEmployee(id = 10L, promotionId = 1L, employeeNumber = "20030002")
+            val employee = createPromotionEmployee(id = 10L, promotionId = 1L, employeeId = 20L)
 
             whenever(userRepository.findById(20L)).thenReturn(Optional.of(woman))
             whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
-            whenever(promotionEmployeeRepository.existsByPromotionIdAndEmployeeNumber(1L, "20030002")).thenReturn(true)
+            whenever(promotionEmployeeRepository.existsByPromotionIdAndEmployeeId(1L, 20L)).thenReturn(true)
             whenever(accountRepository.findById(100)).thenReturn(Optional.of(account))
             whenever(promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(1L))
                 .thenReturn(listOf(employee))
-            whenever(userRepository.findByEmployeeNumberIn(listOf("20030002")))
+            whenever(userRepository.findAllById(listOf(20L)))
                 .thenReturn(listOf(woman))
 
             // When
@@ -461,7 +459,7 @@ class MobilePromotionServiceTest {
             assertThat(result.id).isEqualTo(1L)
             assertThat(result.employees).hasSize(1)
 
-            verify(promotionEmployeeRepository).existsByPromotionIdAndEmployeeNumber(1L, "20030002")
+            verify(promotionEmployeeRepository).existsByPromotionIdAndEmployeeId(1L, 20L)
         }
 
         @Test
@@ -503,7 +501,7 @@ class MobilePromotionServiceTest {
 
             whenever(userRepository.findById(20L)).thenReturn(Optional.of(woman))
             whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
-            whenever(promotionEmployeeRepository.existsByPromotionIdAndEmployeeNumber(1L, "20030002")).thenReturn(false)
+            whenever(promotionEmployeeRepository.existsByPromotionIdAndEmployeeId(1L, 20L)).thenReturn(false)
 
             // When & Then
             assertThatThrownBy { service.getPromotion(userId = 20L, promotionId = 1L) }

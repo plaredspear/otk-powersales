@@ -13,5 +13,5 @@ interface PromotionEmployeeRepository : JpaRepository<PromotionEmployee, Long>, 
 
     fun deleteByPromotionId(promotionId: Long)
 
-    fun existsByPromotionIdAndEmployeeNumber(promotionId: Long, employeeNumber: String): Boolean
+    fun existsByPromotionIdAndEmployeeId(promotionId: Long, employeeId: Long): Boolean
 }
