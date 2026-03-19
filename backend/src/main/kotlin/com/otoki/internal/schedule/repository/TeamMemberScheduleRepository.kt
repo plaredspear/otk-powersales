@@ -9,15 +9,15 @@ import java.time.LocalDate
  */
 interface TeamMemberScheduleRepository : JpaRepository<TeamMemberSchedule, Long>, TeamMemberScheduleRepositoryCustom {
 
-    fun findByEmployeeNumberAndWorkingDate(employeeNumber: String, workingDate: LocalDate): List<TeamMemberSchedule>
+    fun findByEmployeeIdAndWorkingDate(employeeId: Long, workingDate: LocalDate): List<TeamMemberSchedule>
 
-    fun findByWorkingDateAndEmployeeNumberIn(workingDate: LocalDate, employeeNumbers: List<String>): List<TeamMemberSchedule>
+    fun findByWorkingDateAndEmployeeIdIn(workingDate: LocalDate, employeeIds: List<Long>): List<TeamMemberSchedule>
 
     fun deleteAllByIdIn(ids: List<Long>)
 
     fun findByPromotionEmployeeIdIn(promotionEmployeeIds: List<Long>): List<TeamMemberSchedule>
 
-    fun findByEmployeeNumberInAndWorkingDateIn(employeeNumbers: List<String>, workingDates: List<LocalDate>): List<TeamMemberSchedule>
+    fun findByEmployeeIdInAndWorkingDateIn(employeeIds: List<Long>, workingDates: List<LocalDate>): List<TeamMemberSchedule>
 
-    fun existsByEmployeeNumberAndWorkingDateAndWorkingType(employeeNumber: String, workingDate: LocalDate, workingType: String): Boolean
+    fun existsByEmployeeIdAndWorkingDateAndWorkingType(employeeId: Long, workingDate: LocalDate, workingType: String): Boolean
 }

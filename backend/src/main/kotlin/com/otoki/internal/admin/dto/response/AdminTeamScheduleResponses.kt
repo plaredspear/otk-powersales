@@ -48,14 +48,14 @@ data class TeamScheduleDto(
     companion object {
         fun from(
             schedule: TeamMemberSchedule,
-            userMap: Map<String, User>,
+            userMap: Map<Long, User>,
             accountMap: Map<Int, Account>
         ): TeamScheduleDto {
-            val user = schedule.employeeNumber?.let { userMap[it] }
+            val user = schedule.employeeId?.let { userMap[it] }
             val account = schedule.accountId?.let { accountMap[it] }
             return TeamScheduleDto(
                 id = schedule.id,
-                employeeNumber = schedule.employeeNumber ?: "",
+                employeeNumber = user?.employeeNumber ?: "",
                 employeeName = user?.name ?: "",
                 workingDate = schedule.workingDate?.toString() ?: "",
                 workingType = schedule.workingType ?: "",

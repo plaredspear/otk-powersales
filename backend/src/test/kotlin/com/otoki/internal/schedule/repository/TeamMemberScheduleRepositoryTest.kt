@@ -31,7 +31,7 @@ class TeamMemberScheduleRepositoryTest {
     @Autowired
     private lateinit var testEntityManager: TestEntityManager
 
-    private val testEmployeeNumber = "00000001"
+    private val testEmployeeId = 1L
 
     @BeforeEach
     fun setUp() {
@@ -40,17 +40,17 @@ class TeamMemberScheduleRepositoryTest {
     }
 
     @Test
-    @DisplayName("findByEmployeeNumberAndWorkingDate - 해당 날짜 일정이 있으면 일정 목록을 반환한다")
-    fun findByEmployeeNumberAndWorkingDate_withSchedules() {
+    @DisplayName("findByEmployeeIdAndWorkingDate - 해당 날짜 일정이 있으면 일정 목록을 반환한다")
+    fun findByEmployeeIdAndWorkingDate_withSchedules() {
         // Given
         val today = LocalDate.now()
         val teamMemberSchedule1 = TeamMemberSchedule(
-            employeeNumber = testEmployeeNumber,
+            employeeId = testEmployeeId,
             workingDate = today,
             workingType = "순회"
         )
         val teamMemberSchedule2 = TeamMemberSchedule(
-            employeeNumber = testEmployeeNumber,
+            employeeId = testEmployeeId,
             workingDate = today,
             workingType = "격고"
         )
@@ -59,7 +59,7 @@ class TeamMemberScheduleRepositoryTest {
         testEntityManager.clear()
 
         // When
-        val result = teamMemberScheduleRepository.findByEmployeeNumberAndWorkingDate(testEmployeeNumber, today)
+        val result = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(testEmployeeId, today)
 
         // Then
         assertThat(result).hasSize(2)
@@ -67,13 +67,13 @@ class TeamMemberScheduleRepositoryTest {
     }
 
     @Test
-    @DisplayName("findByEmployeeNumberAndWorkingDate - 다른 날짜 일정만 있으면 빈 목록을 반환한다")
-    fun findByEmployeeNumberAndWorkingDate_differentDate() {
+    @DisplayName("findByEmployeeIdAndWorkingDate - 다른 날짜 일정만 있으면 빈 목록을 반환한다")
+    fun findByEmployeeIdAndWorkingDate_differentDate() {
         // Given
         val today = LocalDate.now()
         val tomorrow = today.plusDays(1)
         val teamMemberSchedule = TeamMemberSchedule(
-            employeeNumber = testEmployeeNumber,
+            employeeId = testEmployeeId,
             workingDate = tomorrow,
             workingType = "순회"
         )
@@ -81,20 +81,20 @@ class TeamMemberScheduleRepositoryTest {
         testEntityManager.clear()
 
         // When
-        val result = teamMemberScheduleRepository.findByEmployeeNumberAndWorkingDate(testEmployeeNumber, today)
+        val result = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(testEmployeeId, today)
 
         // Then
         assertThat(result).isEmpty()
     }
 
     @Test
-    @DisplayName("findByEmployeeNumberAndWorkingDate - 다른 사원의 일정은 조회되지 않는다")
-    fun findByEmployeeNumberAndWorkingDate_differentEmployee() {
+    @DisplayName("findByEmployeeIdAndWorkingDate - 다른 사원의 일정은 조회되지 않는다")
+    fun findByEmployeeIdAndWorkingDate_differentEmployee() {
         // Given
         val today = LocalDate.now()
-        val otherEmployeeNumber = "00000099"
+        val otherEmployeeId = 99L
         val teamMemberSchedule = TeamMemberSchedule(
-            employeeNumber = otherEmployeeNumber,
+            employeeId = otherEmployeeId,
             workingDate = today,
             workingType = "순회"
         )
@@ -102,47 +102,47 @@ class TeamMemberScheduleRepositoryTest {
         testEntityManager.clear()
 
         // When
-        val result = teamMemberScheduleRepository.findByEmployeeNumberAndWorkingDate(testEmployeeNumber, today)
+        val result = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(testEmployeeId, today)
 
         // Then
         assertThat(result).isEmpty()
     }
 
     @Test
-    @DisplayName("findByEmployeeNumberAndWorkingDate - 일정이 전혀 없으면 빈 목록을 반환한다")
-    fun findByEmployeeNumberAndWorkingDate_noSchedules() {
+    @DisplayName("findByEmployeeIdAndWorkingDate - 일정이 전혀 없으면 빈 목록을 반환한다")
+    fun findByEmployeeIdAndWorkingDate_noSchedules() {
         // When
-        val result = teamMemberScheduleRepository.findByEmployeeNumberAndWorkingDate(testEmployeeNumber, LocalDate.now())
+        val result = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(testEmployeeId, LocalDate.now())
 
         // Then
         assertThat(result).isEmpty()
     }
 
     @Nested
-    @DisplayName("findByWorkingDateAndEmployeeNumberIn")
-    inner class FindByWorkingDateAndEmployeeNumberIn {
+    @DisplayName("findByWorkingDateAndEmployeeIdIn")
+    inner class FindByWorkingDateAndEmployeeIdIn {
 
         @Test
         @DisplayName("팀 스케줄 조회 - 3명의 사원 스케줄 반환")
-        fun findByWorkingDateAndEmployeeNumberIn_threeEmployees() {
+        fun findByWorkingDateAndEmployeeIdIn_threeEmployees() {
             // Given
             val today = LocalDate.now()
-            val employeeNumber1 = "00000011"
-            val employeeNumber2 = "00000022"
-            val employeeNumber3 = "00000033"
+            val employeeId1 = 11L
+            val employeeId2 = 22L
+            val employeeId3 = 33L
 
             val teamMemberSchedule1 = TeamMemberSchedule(
-                employeeNumber = employeeNumber1,
+                employeeId = employeeId1,
                 workingDate = today,
                 workingType = "순회"
             )
             val teamMemberSchedule2 = TeamMemberSchedule(
-                employeeNumber = employeeNumber2,
+                employeeId = employeeId2,
                 workingDate = today,
                 workingType = "격고"
             )
             val teamMemberSchedule3 = TeamMemberSchedule(
-                employeeNumber = employeeNumber3,
+                employeeId = employeeId3,
                 workingDate = today,
                 workingType = "휴가"
             )
@@ -152,24 +152,24 @@ class TeamMemberScheduleRepositoryTest {
             testEntityManager.clear()
 
             // When
-            val result = teamMemberScheduleRepository.findByWorkingDateAndEmployeeNumberIn(
+            val result = teamMemberScheduleRepository.findByWorkingDateAndEmployeeIdIn(
                 today,
-                listOf(employeeNumber1, employeeNumber2, employeeNumber3)
+                listOf(employeeId1, employeeId2, employeeId3)
             )
 
             // Then
             assertThat(result).hasSize(3)
-            assertThat(result.map { it.employeeNumber })
-                .containsExactlyInAnyOrder(employeeNumber1, employeeNumber2, employeeNumber3)
+            assertThat(result.map { it.employeeId })
+                .containsExactlyInAnyOrder(employeeId1, employeeId2, employeeId3)
         }
 
         @Test
         @DisplayName("빈 결과 - 일치하는 사원 없음")
-        fun findByWorkingDateAndEmployeeNumberIn_noMatchingEmployees() {
+        fun findByWorkingDateAndEmployeeIdIn_noMatchingEmployees() {
             // Given
             val today = LocalDate.now()
             val teamMemberSchedule = TeamMemberSchedule(
-                employeeNumber = "00000099",
+                employeeId = 99L,
                 workingDate = today,
                 workingType = "순회"
             )
@@ -177,9 +177,9 @@ class TeamMemberScheduleRepositoryTest {
             testEntityManager.clear()
 
             // When
-            val result = teamMemberScheduleRepository.findByWorkingDateAndEmployeeNumberIn(
+            val result = teamMemberScheduleRepository.findByWorkingDateAndEmployeeIdIn(
                 today,
-                listOf("00000011", "00000022")
+                listOf(11L, 22L)
             )
 
             // Then
@@ -197,7 +197,7 @@ class TeamMemberScheduleRepositoryTest {
             // Given
             val teamMemberSchedule = TeamMemberSchedule(
                 sfid = "SF001",
-                employeeNumber = testEmployeeNumber,
+                employeeId = testEmployeeId,
                 workingDate = LocalDate.now(),
                 workingType = "순회"
             )

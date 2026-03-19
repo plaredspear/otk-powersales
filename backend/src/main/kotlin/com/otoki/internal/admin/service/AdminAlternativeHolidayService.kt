@@ -50,12 +50,12 @@ class AdminAlternativeHolidayService(
 
         validator.validateConfirmDate(request.targetAltHolidayDate)
         validator.validateActualWorkDate(request.actualWorkDate)
-        validator.validateWorkScheduleExists(request.employeeNumber, request.actualWorkDate)
-        validator.validateNoDuplicate(request.employeeNumber, request.actualWorkDate)
+        validator.validateWorkScheduleExists(employee.id, request.actualWorkDate)
+        validator.validateNoDuplicate(employee.id, request.actualWorkDate)
 
         val altHoliday = alternativeHolidayRepository.save(
             AlternativeHoliday(
-                employeeNumber = request.employeeNumber,
+                employeeId = employee.id,
                 employeeName = employee.name,
                 actualWorkDate = request.actualWorkDate,
                 targetAltHolidayDate = request.targetAltHolidayDate,
@@ -89,7 +89,7 @@ class AdminAlternativeHolidayService(
 
         teamMemberScheduleRepository.save(
             TeamMemberSchedule(
-                employeeNumber = altHoliday.employeeNumber,
+                employeeId = altHoliday.employeeId,
                 workingDate = confirmDate,
                 workingType = "대휴",
                 altHolidayId = altHoliday.id

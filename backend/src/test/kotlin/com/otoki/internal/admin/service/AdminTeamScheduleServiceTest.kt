@@ -81,7 +81,7 @@ class AdminTeamScheduleServiceTest {
 
     private fun createSchedule(
         id: Long = 1L,
-        employeeNumber: String? = "20030001",
+        employeeId: Long? = 1L,
         workingDate: LocalDate? = LocalDate.of(2026, 4, 1),
         workingType: String? = "근무",
         workingCategory1: String? = "진열",
@@ -92,7 +92,7 @@ class AdminTeamScheduleServiceTest {
         commuteLogId: String? = null
     ): TeamMemberSchedule = TeamMemberSchedule(
         id = id,
-        employeeNumber = employeeNumber,
+        employeeId = employeeId,
         workingDate = workingDate,
         workingType = workingType,
         workingCategory1 = workingCategory1,
@@ -201,24 +201,24 @@ class AdminTeamScheduleServiceTest {
     inner class GetMonthlySchedulesTests {
 
         @Test
-        @DisplayName("정상 조회 - employee_numbers 지정 시 해당 사원의 일정 반환")
-        fun getMonthlySchedules_byEmployeeNumbers() {
+        @DisplayName("정상 조회 - employeeIds 지정 시 해당 사원의 일정 반환")
+        fun getMonthlySchedules_byEmployeeIds() {
             // Given
-            val schedule = createSchedule(id = 1L, employeeNumber = "20030001")
+            val schedule = createSchedule(id = 1L, employeeId = 1L)
             val user = createUser(sfid = "USR_001", employeeNumber = "20030001", name = "홍길동")
 
-            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeNumbers(
-                eq(listOf("20030001")),
+            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(
+                eq(listOf(1L)),
                 eq(LocalDate.of(2026, 4, 1)),
                 eq(LocalDate.of(2026, 4, 30))
             )).thenReturn(listOf(schedule))
-            whenever(userRepository.findByEmployeeNumberIn(listOf("20030001"))).thenReturn(listOf(user))
+            whenever(userRepository.findAllById(listOf(1L))).thenReturn(listOf(user))
             whenever(accountRepository.findByIdIn(listOf(1))).thenReturn(
                 listOf(createAccount(id = 1))
             )
 
             // When
-            val result = service.getMonthlySchedules(1L, 2026, 4, listOf("20030001"), null)
+            val result = service.getMonthlySchedules(1L, 2026, 4, listOf(1L), null)
 
             // Then
             assertThat(result).hasSize(1)
@@ -238,7 +238,7 @@ class AdminTeamScheduleServiceTest {
                 eq(LocalDate.of(2026, 4, 1)),
                 eq(LocalDate.of(2026, 4, 30))
             )).thenReturn(listOf(schedule))
-            whenever(userRepository.findByEmployeeNumberIn(listOf("20030001"))).thenReturn(listOf(user))
+            whenever(userRepository.findAllById(listOf(1L))).thenReturn(listOf(user))
             whenever(accountRepository.findByIdIn(listOf(10))).thenReturn(
                 listOf(createAccount(id = 10))
             )
@@ -283,14 +283,14 @@ class AdminTeamScheduleServiceTest {
 
             val allSchedules = listOf(displaySchedule, displayWithCommute, promotionSchedule, promotionWithCommute, annualLeave, compensatoryLeave)
 
-            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeNumbers(
-                eq(listOf("EMP1")),
+            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(
+                eq(listOf(1L)),
                 eq(LocalDate.of(2026, 4, 1)),
                 eq(LocalDate.of(2026, 4, 30))
             )).thenReturn(allSchedules)
 
             // When
-            val result = service.getDailySummary(1L, 2026, 4, listOf("EMP1"), null)
+            val result = service.getDailySummary(1L, 2026, 4, listOf(1L), null)
 
             // Then
             assertThat(result).hasSize(1)
@@ -330,7 +330,7 @@ class AdminTeamScheduleServiceTest {
             )
 
             whenever(userRepository.findByEmployeeNumber("20030001")).thenReturn(Optional.of(employee))
-            whenever(teamMemberScheduleRepository.findActiveByEmployeeNumberAndDate("20030001", LocalDate.of(2026, 4, 1)))
+            whenever(teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(1L, LocalDate.of(2026, 4, 1)))
                 .thenReturn(emptyList())
             whenever(accountRepository.findById(1)).thenReturn(Optional.of(account))
             whenever(userRepository.findById(10L)).thenReturn(Optional.of(leader))
@@ -396,7 +396,7 @@ class AdminTeamScheduleServiceTest {
             )
 
             whenever(userRepository.findByEmployeeNumber("20030001")).thenReturn(Optional.of(employee))
-            whenever(teamMemberScheduleRepository.findActiveByEmployeeNumberAndDate("20030001", LocalDate.of(2026, 4, 1)))
+            whenever(teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(1L, LocalDate.of(2026, 4, 1)))
                 .thenReturn(listOf(existingSchedule))
 
             // When & Then
@@ -420,7 +420,7 @@ class AdminTeamScheduleServiceTest {
             )
 
             whenever(userRepository.findByEmployeeNumber("20030001")).thenReturn(Optional.of(employee))
-            whenever(teamMemberScheduleRepository.findActiveByEmployeeNumberAndDate("20030001", LocalDate.of(2026, 4, 1)))
+            whenever(teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(1L, LocalDate.of(2026, 4, 1)))
                 .thenReturn(listOf(existingSchedule))
 
             // When & Then
@@ -445,7 +445,7 @@ class AdminTeamScheduleServiceTest {
             )
 
             whenever(userRepository.findByEmployeeNumber("20030001")).thenReturn(Optional.of(employee))
-            whenever(teamMemberScheduleRepository.findActiveByEmployeeNumberAndDate("20030001", LocalDate.of(2026, 4, 1)))
+            whenever(teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(1L, LocalDate.of(2026, 4, 1)))
                 .thenReturn(listOf(existing1, existing2))
 
             // When & Then
@@ -483,7 +483,7 @@ class AdminTeamScheduleServiceTest {
             // Given
             val schedule = createSchedule(
                 id = 100L,
-                employeeNumber = "20030001",
+                employeeId = 1L,
                 workingDate = LocalDate.of(2026, 4, 1),
                 workingType = "근무",
                 workingCategory1 = "진열",
@@ -502,7 +502,7 @@ class AdminTeamScheduleServiceTest {
             )
 
             whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
-            whenever(userRepository.findByEmployeeNumber("20030001")).thenReturn(Optional.of(employee))
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(employee))
             whenever(accountRepository.findById(2)).thenReturn(Optional.of(newAccount))
 
             // When

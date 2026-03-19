@@ -49,21 +49,21 @@ class AdminSafetyCheckService(
             .filter { it.isDeleted != true }
         if (members.isEmpty()) return emptyResponse(date)
 
-        val employeeNumbers = members.map { it.employeeNumber }
+        val employeeIds = members.map { it.id }
 
         // 2. 스케줄 벌크 조회 + 근무 필터 + 사원당 1건 선택
         val schedules = teamMemberScheduleRepository
-            .findByWorkingDateAndEmployeeNumberIn(date, employeeNumbers)
+            .findByWorkingDateAndEmployeeIdIn(date, employeeIds)
             .filter { it.workingType == "근무" && it.isDeleted != true }
         val scheduleByEmployee = selectOneSchedulePerEmployee(schedules)
 
         if (scheduleByEmployee.isEmpty()) return emptyResponse(date)
 
         // 3. 안전점검 제출 벌크 조회
-        val scheduledEmployeeNumbers = scheduleByEmployee.keys.toList()
+        val scheduledEmployeeIds = scheduleByEmployee.keys.toList()
         val submissions = safetyCheckSubmissionRepository
-            .findByEmployeeNumberInAndWorkingDate(scheduledEmployeeNumbers, date)
-        val submissionByEmployee = submissions.associateBy { it.employeeNumber }
+            .findByEmployeeIdInAndWorkingDate(scheduledEmployeeIds, date)
+        val submissionByEmployee = submissions.associateBy { it.employeeId }
 
         // 4. 거래처 벌크 조회
         val accountIds = scheduleByEmployee.values.mapNotNull { it.accountId }.distinct()
@@ -72,10 +72,10 @@ class AdminSafetyCheckService(
         } else emptyMap()
 
         // 5. 사원 Map
-        val userMap = members.associateBy { it.employeeNumber }
+        val userMap = members.associateBy { it.id }
 
         // 6. 응답 생성
-        val memberStatuses = scheduledEmployeeNumbers.mapNotNull { empId ->
+        val memberStatuses = scheduledEmployeeIds.mapNotNull { empId ->
             val user = userMap[empId] ?: return@mapNotNull null
             val schedule = scheduleByEmployee[empId] ?: return@mapNotNull null
             val submission = submissionByEmployee[empId]
@@ -94,10 +94,10 @@ class AdminSafetyCheckService(
         )
     }
 
-    private fun selectOneSchedulePerEmployee(schedules: List<TeamMemberSchedule>): Map<String, TeamMemberSchedule> {
+    private fun selectOneSchedulePerEmployee(schedules: List<TeamMemberSchedule>): Map<Long, TeamMemberSchedule> {
         return schedules
-            .groupBy { it.employeeNumber ?: "" }
-            .filterKeys { it.isNotEmpty() }
+            .groupBy { it.employeeId ?: 0L }
+            .filterKeys { it != 0L }
             .mapValues { (_, list) ->
                 list.firstOrNull { it.traversalFlag == "O" }
                     ?: list.firstOrNull { it.traversalFlag == null }

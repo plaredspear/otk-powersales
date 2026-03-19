@@ -77,7 +77,7 @@ class AlternativeHolidayServiceTest {
         @DisplayName("중복 신청 -> AltHolidayDuplicateException")
         fun create_duplicate() {
             whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            doThrow(AltHolidayDuplicateException()).whenever(validator).validateNoDuplicate("12345678", saturday)
+            doThrow(AltHolidayDuplicateException()).whenever(validator).validateNoDuplicate(1L, saturday)
 
             assertThatThrownBy { service.createAlternativeHoliday(1L, saturday, monday) }
                 .isInstanceOf(AltHolidayDuplicateException::class.java)
@@ -94,8 +94,8 @@ class AlternativeHolidayServiceTest {
             val user = createUser()
             whenever(userRepository.findById(1L)).thenReturn(Optional.of(user))
             val altHoliday = createAltHoliday()
-            whenever(alternativeHolidayRepository.findByEmployeeNumberAndActualWorkDateBetweenOrderByCreatedAtDesc(
-                "12345678", LocalDate.of(2026, 1, 1), LocalDate.of(2026, 3, 31)
+            whenever(alternativeHolidayRepository.findByEmployeeIdAndActualWorkDateBetweenOrderByCreatedAtDesc(
+                1L, LocalDate.of(2026, 1, 1), LocalDate.of(2026, 3, 31)
             )).thenReturn(listOf(altHoliday))
 
             val result = service.getAlternativeHolidays(1L, LocalDate.of(2026, 1, 1), LocalDate.of(2026, 3, 31))
@@ -109,8 +109,8 @@ class AlternativeHolidayServiceTest {
         fun get_defaultDateRange() {
             val user = createUser()
             whenever(userRepository.findById(1L)).thenReturn(Optional.of(user))
-            whenever(alternativeHolidayRepository.findByEmployeeNumberAndActualWorkDateBetweenOrderByCreatedAtDesc(
-                org.mockito.kotlin.eq("12345678"), any(), any()
+            whenever(alternativeHolidayRepository.findByEmployeeIdAndActualWorkDateBetweenOrderByCreatedAtDesc(
+                org.mockito.kotlin.eq(1L), any(), any()
             )).thenReturn(emptyList())
 
             val result = service.getAlternativeHolidays(1L, null, null)
@@ -145,7 +145,7 @@ class AlternativeHolidayServiceTest {
         status: String = "신규"
     ): AlternativeHoliday = AlternativeHoliday(
         id = id,
-        employeeNumber = "12345678",
+        employeeId = 1L,
         employeeName = "홍길동",
         actualWorkDate = saturday,
         targetAltHolidayDate = monday,

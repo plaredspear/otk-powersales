@@ -99,20 +99,20 @@ class AlternativeHolidayValidatorTest {
         @Test
         @DisplayName("근무 스케줄 존재 -> 통과")
         fun scheduleExists() {
-            whenever(teamMemberScheduleRepository.existsByEmployeeNumberAndWorkingDateAndWorkingType(
-                "12345678", saturday, "근무"
+            whenever(teamMemberScheduleRepository.existsByEmployeeIdAndWorkingDateAndWorkingType(
+                1L, saturday, "근무"
             )).thenReturn(true)
-            assertThatCode { validator.validateWorkScheduleExists("12345678", saturday) }
+            assertThatCode { validator.validateWorkScheduleExists(1L, saturday) }
                 .doesNotThrowAnyException()
         }
 
         @Test
         @DisplayName("근무 스케줄 없음 -> AltHolidayNoWorkScheduleException")
         fun noSchedule() {
-            whenever(teamMemberScheduleRepository.existsByEmployeeNumberAndWorkingDateAndWorkingType(
-                "12345678", saturday, "근무"
+            whenever(teamMemberScheduleRepository.existsByEmployeeIdAndWorkingDateAndWorkingType(
+                1L, saturday, "근무"
             )).thenReturn(false)
-            assertThatThrownBy { validator.validateWorkScheduleExists("12345678", saturday) }
+            assertThatThrownBy { validator.validateWorkScheduleExists(1L, saturday) }
                 .isInstanceOf(AltHolidayNoWorkScheduleException::class.java)
         }
     }
@@ -124,20 +124,20 @@ class AlternativeHolidayValidatorTest {
         @Test
         @DisplayName("중복 없음 -> 통과")
         fun noDuplicate() {
-            whenever(alternativeHolidayRepository.existsByEmployeeNumberAndActualWorkDateAndStatusNot(
-                "12345678", saturday, "반려"
+            whenever(alternativeHolidayRepository.existsByEmployeeIdAndActualWorkDateAndStatusNot(
+                1L, saturday, "반려"
             )).thenReturn(false)
-            assertThatCode { validator.validateNoDuplicate("12345678", saturday) }
+            assertThatCode { validator.validateNoDuplicate(1L, saturday) }
                 .doesNotThrowAnyException()
         }
 
         @Test
         @DisplayName("중복 존재 -> AltHolidayDuplicateException")
         fun duplicate() {
-            whenever(alternativeHolidayRepository.existsByEmployeeNumberAndActualWorkDateAndStatusNot(
-                "12345678", saturday, "반려"
+            whenever(alternativeHolidayRepository.existsByEmployeeIdAndActualWorkDateAndStatusNot(
+                1L, saturday, "반려"
             )).thenReturn(true)
-            assertThatThrownBy { validator.validateNoDuplicate("12345678", saturday) }
+            assertThatThrownBy { validator.validateNoDuplicate(1L, saturday) }
                 .isInstanceOf(AltHolidayDuplicateException::class.java)
         }
     }

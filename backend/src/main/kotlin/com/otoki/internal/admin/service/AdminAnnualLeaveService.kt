@@ -25,22 +25,22 @@ class AdminAnnualLeaveService(
         val schedules = if (orgCode != null) {
             val users = userRepository.findByOrgName(orgCode)
             if (users.isEmpty()) return emptyList()
-            val employeeNumbers = users.map { it.employeeNumber }
-            teamMemberScheduleRepository.findAnnualLeaveByDateRangeAndEmployeeNumbers(from, to, employeeNumbers)
+            val employeeIds = users.map { it.id }
+            teamMemberScheduleRepository.findAnnualLeaveByDateRangeAndEmployeeIds(from, to, employeeIds)
         } else {
             teamMemberScheduleRepository.findAnnualLeaveByDateRange(from, to)
         }
 
         if (schedules.isEmpty()) return emptyList()
 
-        val employeeNumbers = schedules.mapNotNull { it.employeeNumber }.distinct()
-        val userMap = userRepository.findByEmployeeNumberIn(employeeNumbers).associateBy { it.employeeNumber }
+        val employeeIds = schedules.mapNotNull { it.employeeId }.distinct()
+        val userMap = userRepository.findAllById(employeeIds).associateBy { it.id }
 
         return schedules
-            .groupBy { it.employeeNumber ?: "" }
-            .filter { it.key.isNotBlank() }
-            .map { (employeeNumber, employeeSchedules) ->
-                val user = userMap[employeeNumber]
+            .groupBy { it.employeeId ?: 0L }
+            .filter { it.key != 0L }
+            .map { (employeeId, employeeSchedules) ->
+                val user = userMap[employeeId]
                 val days = employeeSchedules
                     .sortedBy { it.workingDate }
                     .map { schedule ->
@@ -50,7 +50,7 @@ class AdminAnnualLeaveService(
                         )
                     }
                 EmployeeAnnualLeaveDto(
-                    employeeNumber = employeeNumber,
+                    employeeNumber = user?.employeeNumber ?: "",
                     employeeName = user?.name ?: "",
                     orgName = user?.orgName ?: "",
                     annualLeaveDays = days,

@@ -62,9 +62,9 @@ class AttendanceServiceTest {
             val today = LocalDate.now()
 
             val teamMemberSchedules = listOf(
-                createTeamMemberSchedule(id = 1L, sfid = "SCH001", employeeNumber = "USR001", accountId = 8938, workingCategory1 = "진열"),
-                createTeamMemberSchedule(id = 2L, sfid = "SCH002", employeeNumber = "USR001", accountId = 8939, workingCategory1 = "납품"),
-                createTeamMemberSchedule(id = 3L, sfid = "SCH003", employeeNumber = "USR001", accountId = 8940, workingCategory1 = "진열")
+                createTeamMemberSchedule(id = 1L, sfid = "SCH001", employeeId = userId, accountId = 8938, workingCategory1 = "진열"),
+                createTeamMemberSchedule(id = 2L, sfid = "SCH002", employeeId = userId, accountId = 8939, workingCategory1 = "납품"),
+                createTeamMemberSchedule(id = 3L, sfid = "SCH003", employeeId = userId, accountId = 8940, workingCategory1 = "진열")
             )
 
             val accounts = listOf(
@@ -74,7 +74,7 @@ class AttendanceServiceTest {
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(teamMemberScheduleRepository.findByEmployeeNumberAndWorkingDate("USR001", today)).thenReturn(teamMemberSchedules)
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
             whenever(accountRepository.findByIdIn(listOf(8938, 8939, 8940))).thenReturn(accounts)
 
             // When
@@ -105,9 +105,9 @@ class AttendanceServiceTest {
             val today = LocalDate.now()
 
             val teamMemberSchedules = listOf(
-                createTeamMemberSchedule(sfid = "SCH001", employeeNumber = "USR001", accountId = 8938),
-                createTeamMemberSchedule(sfid = "SCH002", employeeNumber = "USR001", accountId = 8939),
-                createTeamMemberSchedule(sfid = "SCH003", employeeNumber = "USR001", accountId = 8940)
+                createTeamMemberSchedule(sfid = "SCH001", employeeId = userId, accountId = 8938),
+                createTeamMemberSchedule(sfid = "SCH002", employeeId = userId, accountId = 8939),
+                createTeamMemberSchedule(sfid = "SCH003", employeeId = userId, accountId = 8940)
             )
 
             val accounts = listOf(
@@ -117,7 +117,7 @@ class AttendanceServiceTest {
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(teamMemberScheduleRepository.findByEmployeeNumberAndWorkingDate("USR001", today)).thenReturn(teamMemberSchedules)
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
             whenever(accountRepository.findByIdIn(listOf(8938, 8939, 8940))).thenReturn(accounts)
 
             // When
@@ -150,7 +150,7 @@ class AttendanceServiceTest {
             val today = LocalDate.now()
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(teamMemberScheduleRepository.findByEmployeeNumberAndWorkingDate("USR001", today)).thenReturn(emptyList())
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(emptyList())
 
             // When
             val result = attendanceService.getAccountList(userId, null)
@@ -170,8 +170,8 @@ class AttendanceServiceTest {
             val today = LocalDate.now()
 
             val teamMemberSchedules = listOf(
-                createTeamMemberSchedule(sfid = "SCH001", employeeNumber = "USR001", accountId = 8938, commuteLogId = "OK"),
-                createTeamMemberSchedule(sfid = "SCH002", employeeNumber = "USR001", accountId = 8939, commuteLogId = null)
+                createTeamMemberSchedule(sfid = "SCH001", employeeId = userId, accountId = 8938, commuteLogId = "OK"),
+                createTeamMemberSchedule(sfid = "SCH002", employeeId = userId, accountId = 8939, commuteLogId = null)
             )
 
             val accounts = listOf(
@@ -180,7 +180,7 @@ class AttendanceServiceTest {
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(teamMemberScheduleRepository.findByEmployeeNumberAndWorkingDate("USR001", today)).thenReturn(teamMemberSchedules)
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
             whenever(accountRepository.findByIdIn(listOf(8938, 8939))).thenReturn(accounts)
 
             // When
@@ -222,7 +222,7 @@ class AttendanceServiceTest {
             val today = LocalDate.now()
 
             val teamMemberSchedule = createTeamMemberSchedule(
-                id = scheduleId, sfid = "SCH001", employeeNumber = "USR001", accountId = 8938,
+                id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
                 workingType = "상온", commuteLogId = null
             )
             val account = createAccount(
@@ -236,7 +236,7 @@ class AttendanceServiceTest {
             whenever(accountRepository.findById(8938)).thenReturn(Optional.of(account))
             doReturn(OroraWorkReportResult("200", "SUCCESS"))
                 .whenever(ororaApiService).sendWorkReport(any(), anyOrNull())
-            whenever(teamMemberScheduleRepository.findByEmployeeNumberAndWorkingDate("USR001", today))
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
                 .thenReturn(listOf(teamMemberSchedule))
 
             // When
@@ -259,7 +259,7 @@ class AttendanceServiceTest {
             val user = createUser(id = userId, sfid = "USR001")
 
             val teamMemberSchedule = createTeamMemberSchedule(
-                id = scheduleId, sfid = "SCH001", employeeNumber = "USR001", accountId = 8938,
+                id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
                 commuteLogId = null
             )
             val account = createAccount(
@@ -288,7 +288,7 @@ class AttendanceServiceTest {
             val today = LocalDate.now()
 
             val teamMemberSchedule = createTeamMemberSchedule(
-                id = scheduleId, sfid = "SCH001", employeeNumber = "USR001", accountId = 8938,
+                id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
                 workingType = "상온", commuteLogId = null
             )
             val account = createAccount(
@@ -302,7 +302,7 @@ class AttendanceServiceTest {
             whenever(accountRepository.findById(8938)).thenReturn(Optional.of(account))
             doReturn(OroraWorkReportResult("200", "SUCCESS"))
                 .whenever(ororaApiService).sendWorkReport(any(), anyOrNull())
-            whenever(teamMemberScheduleRepository.findByEmployeeNumberAndWorkingDate("USR001", today))
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
                 .thenReturn(listOf(teamMemberSchedule))
 
             // 5km 떨어진 좌표 사용 (면제이므로 성공해야 함)
@@ -328,7 +328,7 @@ class AttendanceServiceTest {
             val today = LocalDate.now()
 
             val teamMemberSchedule = createTeamMemberSchedule(
-                id = scheduleId, sfid = "SCH001", employeeNumber = "USR001", accountId = 8938,
+                id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
                 workingType = "냉장", commuteLogId = null
             )
             val account = createAccount(
@@ -342,7 +342,7 @@ class AttendanceServiceTest {
             whenever(accountRepository.findById(8938)).thenReturn(Optional.of(account))
             doReturn(OroraWorkReportResult("200", "SUCCESS"))
                 .whenever(ororaApiService).sendWorkReport(any(), anyOrNull())
-            whenever(teamMemberScheduleRepository.findByEmployeeNumberAndWorkingDate("USR001", today))
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
                 .thenReturn(listOf(teamMemberSchedule))
 
             // 10km 떨어진 좌표 사용 (면제이므로 성공해야 함)
@@ -367,7 +367,7 @@ class AttendanceServiceTest {
             val user = createUser(id = userId, sfid = "USR001")
 
             val teamMemberSchedule = createTeamMemberSchedule(
-                id = scheduleId, sfid = "SCH001", employeeNumber = "USR001", accountId = 8938,
+                id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
                 commuteLogId = null
             )
             val account = createAccount(
@@ -395,7 +395,7 @@ class AttendanceServiceTest {
             val user = createUser(id = userId, sfid = "USR001")
 
             val teamMemberSchedule = createTeamMemberSchedule(
-                id = scheduleId, sfid = "SCH001", employeeNumber = "USR001", accountId = 8938,
+                id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
                 commuteLogId = "OK"
             )
 
@@ -448,7 +448,7 @@ class AttendanceServiceTest {
             val today = LocalDate.now()
 
             val teamMemberSchedule = createTeamMemberSchedule(
-                id = scheduleId, sfid = "SCH001", employeeNumber = "USR001", accountId = 8938,
+                id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
                 workingType = "상온", commuteLogId = null
             )
             val account = createAccount(
@@ -462,7 +462,7 @@ class AttendanceServiceTest {
             whenever(accountRepository.findById(8938)).thenReturn(Optional.of(account))
             doReturn(OroraWorkReportResult("200", "SUCCESS"))
                 .whenever(ororaApiService).sendWorkReport(any(), anyOrNull())
-            whenever(teamMemberScheduleRepository.findByEmployeeNumberAndWorkingDate("USR001", today))
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
                 .thenReturn(listOf(teamMemberSchedule))
 
             // When
@@ -482,7 +482,7 @@ class AttendanceServiceTest {
             val today = LocalDate.now()
 
             val targetTeamMemberSchedule = createTeamMemberSchedule(
-                id = scheduleId, sfid = "SCH001", employeeNumber = "USR001", accountId = 8938,
+                id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
                 workingType = "상온", commuteLogId = null
             )
             val account = createAccount(
@@ -494,8 +494,8 @@ class AttendanceServiceTest {
             // 오늘 전체 스케줄 3건 (1건 이미 등록, 1건 지금 등록, 1건 미등록)
             val allTeamMemberSchedules = listOf(
                 targetTeamMemberSchedule,
-                createTeamMemberSchedule(id = 20L, sfid = "SCH002", employeeNumber = "USR001", accountId = 8939, commuteLogId = "OK"),
-                createTeamMemberSchedule(id = 30L, sfid = "SCH003", employeeNumber = "USR001", accountId = 8940, commuteLogId = null)
+                createTeamMemberSchedule(id = 20L, sfid = "SCH002", employeeId = userId, accountId = 8939, commuteLogId = "OK"),
+                createTeamMemberSchedule(id = 30L, sfid = "SCH003", employeeId = userId, accountId = 8940, commuteLogId = null)
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
@@ -503,7 +503,7 @@ class AttendanceServiceTest {
             whenever(accountRepository.findById(8938)).thenReturn(Optional.of(account))
             doReturn(OroraWorkReportResult("200", "SUCCESS"))
                 .whenever(ororaApiService).sendWorkReport(any(), anyOrNull())
-            whenever(teamMemberScheduleRepository.findByEmployeeNumberAndWorkingDate("USR001", today))
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
                 .thenReturn(allTeamMemberSchedules)
 
             // When
@@ -531,9 +531,9 @@ class AttendanceServiceTest {
             val today = LocalDate.now()
 
             val teamMemberSchedules = listOf(
-                createTeamMemberSchedule(id = 1L, sfid = "SCH001", employeeNumber = "USR001", accountId = 8938, commuteLogId = "OK", workingCategory1 = "진열"),
-                createTeamMemberSchedule(id = 2L, sfid = "SCH002", employeeNumber = "USR001", accountId = 8939, commuteLogId = "OK", workingCategory1 = "납품"),
-                createTeamMemberSchedule(id = 3L, sfid = "SCH003", employeeNumber = "USR001", accountId = 8940, commuteLogId = null, workingCategory1 = "진열")
+                createTeamMemberSchedule(id = 1L, sfid = "SCH001", employeeId = userId, accountId = 8938, commuteLogId = "OK", workingCategory1 = "진열"),
+                createTeamMemberSchedule(id = 2L, sfid = "SCH002", employeeId = userId, accountId = 8939, commuteLogId = "OK", workingCategory1 = "납품"),
+                createTeamMemberSchedule(id = 3L, sfid = "SCH003", employeeId = userId, accountId = 8940, commuteLogId = null, workingCategory1 = "진열")
             )
 
             val accounts = listOf(
@@ -543,7 +543,7 @@ class AttendanceServiceTest {
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(teamMemberScheduleRepository.findByEmployeeNumberAndWorkingDate("USR001", today)).thenReturn(teamMemberSchedules)
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
             whenever(accountRepository.findByIdIn(listOf(8938, 8939, 8940))).thenReturn(accounts)
 
             // When
@@ -579,8 +579,8 @@ class AttendanceServiceTest {
             val today = LocalDate.now()
 
             val teamMemberSchedules = listOf(
-                createTeamMemberSchedule(sfid = "SCH001", employeeNumber = "USR001", accountId = 8938, commuteLogId = "OK"),
-                createTeamMemberSchedule(sfid = "SCH002", employeeNumber = "USR001", accountId = 8939, commuteLogId = "OK")
+                createTeamMemberSchedule(sfid = "SCH001", employeeId = userId, accountId = 8938, commuteLogId = "OK"),
+                createTeamMemberSchedule(sfid = "SCH002", employeeId = userId, accountId = 8939, commuteLogId = "OK")
             )
 
             val accounts = listOf(
@@ -589,7 +589,7 @@ class AttendanceServiceTest {
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(teamMemberScheduleRepository.findByEmployeeNumberAndWorkingDate("USR001", today)).thenReturn(teamMemberSchedules)
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
             whenever(accountRepository.findByIdIn(listOf(8938, 8939))).thenReturn(accounts)
 
             // When
@@ -610,8 +610,8 @@ class AttendanceServiceTest {
             val today = LocalDate.now()
 
             val teamMemberSchedules = listOf(
-                createTeamMemberSchedule(sfid = "SCH001", employeeNumber = "USR001", accountId = 8938, commuteLogId = null),
-                createTeamMemberSchedule(sfid = "SCH002", employeeNumber = "USR001", accountId = 8939, commuteLogId = null)
+                createTeamMemberSchedule(sfid = "SCH001", employeeId = userId, accountId = 8938, commuteLogId = null),
+                createTeamMemberSchedule(sfid = "SCH002", employeeId = userId, accountId = 8939, commuteLogId = null)
             )
 
             val accounts = listOf(
@@ -620,7 +620,7 @@ class AttendanceServiceTest {
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(teamMemberScheduleRepository.findByEmployeeNumberAndWorkingDate("USR001", today)).thenReturn(teamMemberSchedules)
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
             whenever(accountRepository.findByIdIn(listOf(8938, 8939))).thenReturn(accounts)
 
             // When
@@ -653,7 +653,7 @@ class AttendanceServiceTest {
             val today = LocalDate.now()
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(teamMemberScheduleRepository.findByEmployeeNumberAndWorkingDate("USR001", today)).thenReturn(emptyList())
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(emptyList())
 
             // When
             val result = attendanceService.getCommuteStatus(userId)
@@ -690,7 +690,7 @@ class AttendanceServiceTest {
     private fun createTeamMemberSchedule(
         id: Long = 0L,
         sfid: String? = "SCH001",
-        employeeNumber: String? = "USR001",
+        employeeId: Long? = 1L,
         workingDate: LocalDate = LocalDate.now(),
         workingType: String? = "상온",
         workingCategory1: String? = "진열",
@@ -700,7 +700,7 @@ class AttendanceServiceTest {
         return TeamMemberSchedule(
             id = id,
             sfid = sfid,
-            employeeNumber = employeeNumber,
+            employeeId = employeeId,
             workingDate = workingDate,
             workingType = workingType,
             workingCategory1 = workingCategory1,

@@ -8,9 +8,9 @@ import java.util.Optional
 
 interface SafetyCheckSubmissionRepository : JpaRepository<SafetyCheckSubmission, SafetyCheckMemberId> {
 
-    fun existsByEmployeeNumberAndWorkingDate(employeeNumber: String, workingDate: LocalDate): Boolean
+    fun existsByEmployeeIdAndWorkingDate(employeeId: Long, workingDate: LocalDate): Boolean
 
-    fun findByEmployeeNumberAndWorkingDate(employeeNumber: String, workingDate: LocalDate): Optional<SafetyCheckSubmission>
+    fun findByEmployeeIdAndWorkingDate(employeeId: Long, workingDate: LocalDate): Optional<SafetyCheckSubmission>
 
-    fun findByEmployeeNumberInAndWorkingDate(employeeNumbers: List<String>, workingDate: LocalDate): List<SafetyCheckSubmission>
+    fun findByEmployeeIdInAndWorkingDate(employeeIds: List<Long>, workingDate: LocalDate): List<SafetyCheckSubmission>
 }

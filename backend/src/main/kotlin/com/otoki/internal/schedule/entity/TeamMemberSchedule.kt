@@ -35,8 +35,8 @@ class TeamMemberSchedule(
 
     @SFField("DKRetail__EmployeeId__c")
     @HCColumn("dkretail__employeeid__c")
-    @Column(name = "employee_number", length = 100)
-    var employeeNumber: String? = null,
+    @Column(name = "employee_id")
+    var employeeId: Long? = null,
 
     @SFField("DKRetail__WorkingDate__c")
     @HCColumn("dkretail__workingdate__c")
@@ -205,7 +205,7 @@ class TeamMemberSchedule(
     val hcErr: String? = null
 ) : BaseEntity() {
     fun updateForPromotion(
-        employeeNumber: String,
+        employeeId: Long,
         accountId: Int,
         workingDate: LocalDate,
         workingType: String,
@@ -214,7 +214,7 @@ class TeamMemberSchedule(
         workingCategory4: String?,
         promotionEmployeeId: Long
     ) {
-        this.employeeNumber = employeeNumber
+        this.employeeId = employeeId
         this.accountId = accountId
         this.workingDate = workingDate
         this.workingType = workingType

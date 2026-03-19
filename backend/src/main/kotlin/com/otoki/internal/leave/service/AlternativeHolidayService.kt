@@ -29,12 +29,12 @@ class AlternativeHolidayService(
 
         validator.validateConfirmDate(targetAltHolidayDate)
         validator.validateActualWorkDate(actualWorkDate)
-        validator.validateWorkScheduleExists(user.employeeNumber, actualWorkDate)
-        validator.validateNoDuplicate(user.employeeNumber, actualWorkDate)
+        validator.validateWorkScheduleExists(user.id, actualWorkDate)
+        validator.validateNoDuplicate(user.id, actualWorkDate)
 
         val altHoliday = alternativeHolidayRepository.save(
             AlternativeHoliday(
-                employeeNumber = user.employeeNumber,
+                employeeId = user.id,
                 employeeName = user.name,
                 actualWorkDate = actualWorkDate,
                 targetAltHolidayDate = targetAltHolidayDate,
@@ -58,8 +58,8 @@ class AlternativeHolidayService(
         val effectiveStartDate = startDate ?: effectiveEndDate.minusMonths(3)
 
         return alternativeHolidayRepository
-            .findByEmployeeNumberAndActualWorkDateBetweenOrderByCreatedAtDesc(
-                user.employeeNumber, effectiveStartDate, effectiveEndDate
+            .findByEmployeeIdAndActualWorkDateBetweenOrderByCreatedAtDesc(
+                user.id, effectiveStartDate, effectiveEndDate
             )
             .map { AlternativeHolidayListItemResponse.from(it) }
     }

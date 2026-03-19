@@ -36,7 +36,7 @@ class MyAccountService(
         val accounts = if (user.appAuthority == "조장") {
             getLeaderAccounts(user.costCenterCode)
         } else {
-            getEmployeeAccounts(user.id, user.employeeNumber)
+            getEmployeeAccounts(user.id)
         }
 
         val filteredList = if (!keyword.isNullOrBlank()) {
@@ -73,14 +73,14 @@ class MyAccountService(
     /**
      * 일반 사원 거래처 조회: 팀멤버스케줄 + 진열스케줄 기반 중복 제거
      */
-    private fun getEmployeeAccounts(userId: Long, employeeNumber: String): List<MyAccountInfo> {
+    private fun getEmployeeAccounts(userId: Long): List<MyAccountInfo> {
         val now = LocalDate.now()
         val fromDate = now.minusMonths(1).withDayOfMonth(25)
         val toDate = now.plusMonths(1).withDayOfMonth(now.plusMonths(1).lengthOfMonth())
 
-        // 팀멤버스케줄 기반 거래처 ID (사번으로 조회)
+        // 팀멤버스케줄 기반 거래처 ID (userId PK로 조회)
         val teamAccountIds = teamMemberScheduleRepository
-            .findDistinctAccountIdsByEmployeeNumberAndDateRange(employeeNumber, fromDate, toDate)
+            .findDistinctAccountIdsByEmployeeIdAndDateRange(userId, fromDate, toDate)
 
         // 진열스케줄 기반 거래처 ID (userId PK로 조회)
         val displayAccountIds = displayWorkScheduleRepository

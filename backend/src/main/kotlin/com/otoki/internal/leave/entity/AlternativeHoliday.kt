@@ -16,8 +16,8 @@ class AlternativeHoliday(
     val id: Long = 0,
 
     @SFField("DKRetail__EmployeeId__c")
-    @Column(name = "employee_number", nullable = false, length = 20)
-    val employeeNumber: String,
+    @Column(name = "employee_id", nullable = false)
+    val employeeId: Long,
 
     @SFField("DKRetail__EmpName__c")
     @Column(name = "employee_name", nullable = false, length = 50)

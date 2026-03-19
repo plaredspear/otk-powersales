@@ -87,7 +87,7 @@ class HomeService(
             else -> false
         }
 
-        val expiryCount = shelfLifeRepository.countByEmployeeNumberAndAlarmDate(user.employeeNumber, today)
+        val expiryCount = shelfLifeRepository.countByEmployeeIdAndAlarmDate(user.id, today)
 
         val expiryAlert = HomeResponse.ExpiryAlertInfo(
             branchName = user.orgName ?: "",
@@ -122,25 +122,24 @@ class HomeService(
 
     /**
      * 역할별 스케줄 조회
-     * @return Pair(스케줄 목록, employeeNumber→User 매핑)
+     * @return Pair(스케줄 목록, employeeId→User 매핑)
      */
-    private fun fetchSchedulesByRole(user: User, today: LocalDate): Pair<List<TeamMemberSchedule>, Map<String, User>> {
+    private fun fetchSchedulesByRole(user: User, today: LocalDate): Pair<List<TeamMemberSchedule>, Map<Long, User>> {
         return when (user.role) {
             UserRole.LEADER -> {
                 val teamUsers = userRepository.findByOrgName(user.orgName ?: "")
-                val employeeNumbers = teamUsers.map { it.employeeNumber }
-                val teamMemberSchedules = if (employeeNumbers.isNotEmpty()) {
-                    teamMemberScheduleRepository.findByWorkingDateAndEmployeeNumberIn(today, employeeNumbers)
+                val employeeIds = teamUsers.map { it.id }
+                val teamMemberSchedules = if (employeeIds.isNotEmpty()) {
+                    teamMemberScheduleRepository.findByWorkingDateAndEmployeeIdIn(today, employeeIds)
                 } else {
                     emptyList()
                 }
-                val userMap = teamUsers.associateBy { it.employeeNumber }
+                val userMap = teamUsers.associateBy { it.id }
                 Pair(teamMemberSchedules, userMap)
             }
             else -> {
-                val employeeNumber = user.employeeNumber
-                val teamMemberSchedules = teamMemberScheduleRepository.findByEmployeeNumberAndWorkingDate(employeeNumber, today)
-                val userMap = mapOf(employeeNumber to user)
+                val teamMemberSchedules = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(user.id, today)
+                val userMap = mapOf(user.id to user)
                 Pair(teamMemberSchedules, userMap)
             }
         }
@@ -161,15 +160,14 @@ class HomeService(
      */
     private fun toTeamMemberScheduleInfo(
         teamMemberSchedule: TeamMemberSchedule,
-        userMap: Map<String, User>,
+        userMap: Map<Long, User>,
         accountMap: Map<Int, String>
     ): HomeResponse.TeamMemberScheduleInfo {
-        val employeeNumber = teamMemberSchedule.employeeNumber ?: ""
-        val matchedUser = userMap[employeeNumber]
+        val matchedUser = teamMemberSchedule.employeeId?.let { userMap[it] }
         return HomeResponse.TeamMemberScheduleInfo(
             scheduleId = teamMemberSchedule.id,
             employeeName = matchedUser?.name ?: "",
-            employeeNumber = employeeNumber,
+            employeeNumber = matchedUser?.employeeNumber ?: "",
             accountName = teamMemberSchedule.accountId?.let { accountMap[it] },
             accountSfid = teamMemberSchedule.accountId?.toString(),
             workCategory = teamMemberSchedule.workingCategory1 ?: "",

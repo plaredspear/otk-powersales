@@ -8,15 +8,15 @@ import java.time.LocalDate
 @Repository
 interface ShelfLifeRepository : JpaRepository<ShelfLife, Int> {
 
-    fun countByEmployeeNumberAndAlarmDate(employeeNumber: String, alarmDate: LocalDate): Long
+    fun countByEmployeeIdAndAlarmDate(employeeId: Long, alarmDate: LocalDate): Long
 
-    fun findByEmployeeNumberAndExpirationDateBetweenOrderByExpirationDateAsc(
-        employeeNumber: String, fromDate: LocalDate, toDate: LocalDate
+    fun findByEmployeeIdAndExpirationDateBetweenOrderByExpirationDateAsc(
+        employeeId: Long, fromDate: LocalDate, toDate: LocalDate
     ): List<ShelfLife>
 
-    fun findByEmployeeNumberAndAccountCodeAndExpirationDateBetweenOrderByExpirationDateAsc(
-        employeeNumber: String, accountCode: String, fromDate: LocalDate, toDate: LocalDate
+    fun findByEmployeeIdAndAccountCodeAndExpirationDateBetweenOrderByExpirationDateAsc(
+        employeeId: Long, accountCode: String, fromDate: LocalDate, toDate: LocalDate
     ): List<ShelfLife>
 
-    fun findBySeqInAndEmployeeNumber(seqs: List<Int>, employeeNumber: String): List<ShelfLife>
+    fun findBySeqInAndEmployeeId(seqs: List<Int>, employeeId: Long): List<ShelfLife>
 }

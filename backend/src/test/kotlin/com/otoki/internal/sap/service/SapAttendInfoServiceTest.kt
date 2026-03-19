@@ -2,7 +2,9 @@ package com.otoki.internal.sap.service
 
 import com.otoki.internal.sap.dto.SapAttendInfoRequest.ReqItem
 import com.otoki.internal.sap.entity.AttendInfo
+import com.otoki.internal.sap.entity.User
 import com.otoki.internal.sap.repository.AttendInfoRepository
+import com.otoki.internal.sap.repository.UserRepository
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
 import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
@@ -21,6 +23,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.LocalDate
+import java.util.*
 
 @ExtendWith(MockitoExtension::class)
 @DisplayName("SapAttendInfoService 테스트")
@@ -31,6 +34,9 @@ class SapAttendInfoServiceTest {
 
     @Mock
     private lateinit var teamMemberScheduleRepository: TeamMemberScheduleRepository
+
+    @Mock
+    private lateinit var userRepository: UserRepository
 
     @InjectMocks
     private lateinit var sapAttendInfoService: SapAttendInfoService
@@ -143,7 +149,9 @@ class SapAttendInfoServiceTest {
             // Given
             whenever(attendInfoRepository.save(any<AttendInfo>()))
                 .thenAnswer { it.getArgument<AttendInfo>(0) }
-            whenever(teamMemberScheduleRepository.existsByEmployeeNumberAndWorkingDateAndWorkingType(
+            whenever(userRepository.findByEmployeeNumber("100234"))
+                .thenReturn(Optional.of(createUser(id = 100L, employeeNumber = "100234")))
+            whenever(teamMemberScheduleRepository.existsByEmployeeIdAndWorkingDateAndWorkingType(
                 any(), any(), any()
             )).thenReturn(false)
             whenever(teamMemberScheduleRepository.save(any<TeamMemberSchedule>()))
@@ -174,7 +182,7 @@ class SapAttendInfoServiceTest {
                 LocalDate.of(2026, 3, 7)
             )
             savedSchedules.forEach { schedule ->
-                assertThat(schedule.employeeNumber).isEqualTo("100234")
+                assertThat(schedule.employeeId).isEqualTo(100L)
                 assertThat(schedule.workingType).isEqualTo("연차")
             }
         }
@@ -185,7 +193,9 @@ class SapAttendInfoServiceTest {
             // Given
             whenever(attendInfoRepository.save(any<AttendInfo>()))
                 .thenAnswer { it.getArgument<AttendInfo>(0) }
-            whenever(teamMemberScheduleRepository.existsByEmployeeNumberAndWorkingDateAndWorkingType(
+            whenever(userRepository.findByEmployeeNumber("100500"))
+                .thenReturn(Optional.of(createUser(id = 200L, employeeNumber = "100500")))
+            whenever(teamMemberScheduleRepository.existsByEmployeeIdAndWorkingDateAndWorkingType(
                 any(), any(), any()
             )).thenReturn(false)
             whenever(teamMemberScheduleRepository.save(any<TeamMemberSchedule>()))
@@ -208,7 +218,7 @@ class SapAttendInfoServiceTest {
             verify(teamMemberScheduleRepository, times(1)).save(captor.capture())
 
             val saved = captor.firstValue
-            assertThat(saved.employeeNumber).isEqualTo("100500")
+            assertThat(saved.employeeId).isEqualTo(200L)
             assertThat(saved.workingDate).isEqualTo(LocalDate.of(2026, 3, 10))
             assertThat(saved.workingType).isEqualTo("연차")
         }
@@ -219,7 +229,9 @@ class SapAttendInfoServiceTest {
             // Given
             whenever(attendInfoRepository.save(any<AttendInfo>()))
                 .thenAnswer { it.getArgument<AttendInfo>(0) }
-            whenever(teamMemberScheduleRepository.existsByEmployeeNumberAndWorkingDateAndWorkingType(
+            whenever(userRepository.findByEmployeeNumber("100234"))
+                .thenReturn(Optional.of(createUser(id = 100L, employeeNumber = "100234")))
+            whenever(teamMemberScheduleRepository.existsByEmployeeIdAndWorkingDateAndWorkingType(
                 any(), any(), any()
             )).thenReturn(false)
             whenever(teamMemberScheduleRepository.save(any<TeamMemberSchedule>()))
@@ -242,7 +254,7 @@ class SapAttendInfoServiceTest {
             verify(teamMemberScheduleRepository, times(1)).save(captor.capture())
 
             val saved = captor.firstValue
-            assertThat(saved.employeeNumber).isEqualTo("100234")
+            assertThat(saved.employeeId).isEqualTo(100L)
             assertThat(saved.workingDate).isEqualTo(LocalDate.of(2026, 3, 15))
             assertThat(saved.workingType).isEqualTo("연차")
         }
@@ -253,12 +265,14 @@ class SapAttendInfoServiceTest {
     inner class AnnualLeaveScheduleCancellationTests {
 
         @Test
-        @DisplayName("status=Y - 연차 취소 -> deleteAnnualLeaveByEmployeeNumberAndDateRange 호출")
+        @DisplayName("status=Y - 연차 취소 -> deleteAnnualLeaveByEmployeeIdAndDateRange 호출")
         fun sync_statusY_deletesAnnualLeaveSchedules() {
             // Given
             whenever(attendInfoRepository.save(any<AttendInfo>()))
                 .thenAnswer { it.getArgument<AttendInfo>(0) }
-            whenever(teamMemberScheduleRepository.deleteAnnualLeaveByEmployeeNumberAndDateRange(
+            whenever(userRepository.findByEmployeeNumber("100234"))
+                .thenReturn(Optional.of(createUser(id = 100L, employeeNumber = "100234")))
+            whenever(teamMemberScheduleRepository.deleteAnnualLeaveByEmployeeIdAndDateRange(
                 any(), any(), any()
             )).thenReturn(3L)
 
@@ -277,8 +291,8 @@ class SapAttendInfoServiceTest {
             assertThat(result.successCount).isEqualTo(1)
             assertThat(result.failCount).isEqualTo(0)
 
-            verify(teamMemberScheduleRepository).deleteAnnualLeaveByEmployeeNumberAndDateRange(
-                eq("100234"),
+            verify(teamMemberScheduleRepository).deleteAnnualLeaveByEmployeeIdAndDateRange(
+                eq(100L),
                 eq(LocalDate.of(2026, 3, 5)),
                 eq(LocalDate.of(2026, 3, 7))
             )
@@ -296,7 +310,9 @@ class SapAttendInfoServiceTest {
             // Given
             whenever(attendInfoRepository.save(any<AttendInfo>()))
                 .thenAnswer { it.getArgument<AttendInfo>(0) }
-            whenever(teamMemberScheduleRepository.existsByEmployeeNumberAndWorkingDateAndWorkingType(
+            whenever(userRepository.findByEmployeeNumber("100234"))
+                .thenReturn(Optional.of(createUser(id = 100L, employeeNumber = "100234")))
+            whenever(teamMemberScheduleRepository.existsByEmployeeIdAndWorkingDateAndWorkingType(
                 any(), any(), any()
             )).thenReturn(true)
 
@@ -313,8 +329,8 @@ class SapAttendInfoServiceTest {
             // Then
             assertThat(result.successCount).isEqualTo(1)
 
-            verify(teamMemberScheduleRepository).existsByEmployeeNumberAndWorkingDateAndWorkingType(
-                eq("100234"),
+            verify(teamMemberScheduleRepository).existsByEmployeeIdAndWorkingDateAndWorkingType(
+                eq(100L),
                 eq(LocalDate.of(2026, 3, 5)),
                 eq("연차")
             )
@@ -347,10 +363,10 @@ class SapAttendInfoServiceTest {
             assertThat(result.successCount).isEqualTo(1)
 
             verify(teamMemberScheduleRepository, never()).save(any<TeamMemberSchedule>())
-            verify(teamMemberScheduleRepository, never()).existsByEmployeeNumberAndWorkingDateAndWorkingType(
+            verify(teamMemberScheduleRepository, never()).existsByEmployeeIdAndWorkingDateAndWorkingType(
                 any(), any(), any()
             )
-            verify(teamMemberScheduleRepository, never()).deleteAnnualLeaveByEmployeeNumberAndDateRange(
+            verify(teamMemberScheduleRepository, never()).deleteAnnualLeaveByEmployeeIdAndDateRange(
                 any(), any(), any()
             )
         }
@@ -376,14 +392,23 @@ class SapAttendInfoServiceTest {
             assertThat(result.successCount).isEqualTo(1)
 
             verify(teamMemberScheduleRepository, never()).save(any<TeamMemberSchedule>())
-            verify(teamMemberScheduleRepository, never()).existsByEmployeeNumberAndWorkingDateAndWorkingType(
+            verify(teamMemberScheduleRepository, never()).existsByEmployeeIdAndWorkingDateAndWorkingType(
                 any(), any(), any()
             )
-            verify(teamMemberScheduleRepository, never()).deleteAnnualLeaveByEmployeeNumberAndDateRange(
+            verify(teamMemberScheduleRepository, never()).deleteAnnualLeaveByEmployeeIdAndDateRange(
                 any(), any(), any()
             )
         }
     }
+
+    private fun createUser(
+        id: Long = 100L,
+        employeeNumber: String = "100234"
+    ): User = User(
+        id = id,
+        employeeNumber = employeeNumber,
+        name = "테스트사원"
+    )
 
     private fun createReqItem(
         employeeCode: String? = null,

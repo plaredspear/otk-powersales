@@ -30,7 +30,7 @@ class AlternativeHolidayRepositoryCustomImpl(
                 Projections.constructor(
                     AlternativeHolidayListItem::class.java,
                     alternativeHoliday.id,
-                    alternativeHoliday.employeeNumber,
+                    user.employeeNumber,
                     alternativeHoliday.employeeName,
                     user.orgName,
                     alternativeHoliday.actualWorkDate,
@@ -43,7 +43,7 @@ class AlternativeHolidayRepositoryCustomImpl(
                 )
             )
             .from(alternativeHoliday)
-            .leftJoin(user).on(user.employeeNumber.eq(alternativeHoliday.employeeNumber))
+            .leftJoin(user).on(user.id.eq(alternativeHoliday.employeeId))
             .where(condition)
             .orderBy(alternativeHoliday.actualWorkDate.desc(), alternativeHoliday.id.desc())
             .fetch()
@@ -53,7 +53,7 @@ class AlternativeHolidayRepositoryCustomImpl(
         status?.let { alternativeHoliday.status.eq(it) }
 
     private fun buildEmployeeNumberCondition(employeeNumber: String?) =
-        employeeNumber?.let { alternativeHoliday.employeeNumber.eq(it) }
+        employeeNumber?.let { user.employeeNumber.eq(it) }
 
     private fun buildOrgCodeCondition(orgCode: String?) =
         orgCode?.let { user.costCenterCode.eq(it) }

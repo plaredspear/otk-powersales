@@ -54,7 +54,7 @@ class MyScheduleService(
 
         // TeamMemberSchedule에서 날짜별 workingType 조회
         val memberSchedules = teamMemberScheduleRepository
-            .findMonthlyByEmployeeNumbers(listOf(user.employeeNumber), startDate, endDate)
+            .findMonthlyByEmployeeIds(listOf(user.id), startDate, endDate)
         val workingTypeByDate = memberSchedules
             .groupBy { it.workingDate }
             .mapValues { (_, schedules) -> schedules.firstOrNull()?.workingType }

@@ -138,7 +138,7 @@ class AdminAlternativeHolidayServiceTest {
             )
             whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(createUser()))
             whenever(userRepository.findById(1L)).thenReturn(Optional.of(createAdmin()))
-            doThrow(AltHolidayNoWorkScheduleException()).whenever(validator).validateWorkScheduleExists("12345678", saturday)
+            doThrow(AltHolidayNoWorkScheduleException()).whenever(validator).validateWorkScheduleExists(10L, saturday)
 
             assertThatThrownBy { service.createAlternativeHoliday(request, 1L) }
                 .isInstanceOf(AltHolidayNoWorkScheduleException::class.java)
@@ -154,7 +154,7 @@ class AdminAlternativeHolidayServiceTest {
             )
             whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(createUser()))
             whenever(userRepository.findById(1L)).thenReturn(Optional.of(createAdmin()))
-            doThrow(AltHolidayDuplicateException()).whenever(validator).validateNoDuplicate("12345678", saturday)
+            doThrow(AltHolidayDuplicateException()).whenever(validator).validateNoDuplicate(10L, saturday)
 
             assertThatThrownBy { service.createAlternativeHoliday(request, 1L) }
                 .isInstanceOf(AltHolidayDuplicateException::class.java)
@@ -305,7 +305,7 @@ class AdminAlternativeHolidayServiceTest {
         status: String = "신규"
     ): AlternativeHoliday = AlternativeHoliday(
         id = id,
-        employeeNumber = "12345678",
+        employeeId = 10L,
         employeeName = "홍길동",
         actualWorkDate = saturday,
         targetAltHolidayDate = monday,
