@@ -2,8 +2,8 @@ package com.otoki.internal.sap.entity
 
 import com.otoki.internal.common.sap.SAPSource
 import com.otoki.internal.common.sap.SyncMode
+import com.otoki.internal.common.entity.BaseEntity
 import jakarta.persistence.*
-import java.time.LocalDateTime
 
 @Entity
 @SAPSource(api = "/sap/Appointment", syncMode = SyncMode.INSERT_ONLY)
@@ -66,8 +66,5 @@ class Appointment(
     val ordDetailCode: String? = null,
 
     @Column(name = "ord_detail_node", length = 100)
-    val ordDetailNode: String? = null,
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    val createdAt: LocalDateTime = LocalDateTime.now()
-)
+    val ordDetailNode: String? = null
+) : BaseEntity()

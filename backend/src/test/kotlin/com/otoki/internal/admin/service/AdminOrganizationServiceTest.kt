@@ -147,7 +147,6 @@ class AdminOrganizationServiceTest {
         orgNameLevel4 = orgNameLevel4,
         costCenterLevel5 = costCenterLevel5,
         orgCodeLevel5 = orgCodeLevel5,
-        orgNameLevel5 = orgNameLevel5,
-        createdAt = createdAt
-    )
+        orgNameLevel5 = orgNameLevel5
+    ).apply { this.createdAt = createdAt }
 }

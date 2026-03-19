@@ -4,9 +4,9 @@ import com.otoki.internal.common.salesforce.SFField
 import com.otoki.internal.common.salesforce.SFObject
 import com.otoki.internal.common.sap.SAPSource
 import com.otoki.internal.common.sap.SyncMode
+import com.otoki.internal.common.entity.BaseEntity
 import jakarta.persistence.*
 import org.hibernate.annotations.Comment
-import java.time.LocalDateTime
 
 /**
  * 조직 마스터 Entity
@@ -79,8 +79,5 @@ class Organization(
     @SFField("OrgNameLevel5__c")
     @Comment("HR 조직명(5레벨)")
     @Column(name = "org_nm5", length = 100)
-    val orgNameLevel5: String? = null,
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    val createdAt: LocalDateTime = LocalDateTime.now()
-)
+    val orgNameLevel5: String? = null
+) : BaseEntity()

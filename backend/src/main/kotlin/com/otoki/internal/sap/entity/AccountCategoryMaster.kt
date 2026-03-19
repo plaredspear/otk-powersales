@@ -1,7 +1,7 @@
 package com.otoki.internal.sap.entity
 
+import com.otoki.internal.common.entity.BaseEntity
 import jakarta.persistence.*
-import java.time.LocalDateTime
 
 @Entity
 @Table(name = "account_category_master")
@@ -14,11 +14,5 @@ class AccountCategoryMaster(
     val accountCode: String,
 
     @Column(name = "name", nullable = false, length = 100)
-    var name: String,
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    val createdAt: LocalDateTime = LocalDateTime.now(),
-
-    @Column(name = "updated_at")
-    var updatedAt: LocalDateTime? = null
-)
+    var name: String
+) : BaseEntity()
