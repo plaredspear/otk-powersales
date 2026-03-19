@@ -26,6 +26,8 @@ import 'presentation/pages/shelf_life_register_page.dart';
 import 'presentation/pages/shelf_life_edit_page.dart';
 import 'presentation/pages/change_password_page.dart';
 import 'presentation/pages/verify_password_page.dart';
+import 'presentation/pages/alt_holiday_history_page.dart';
+import 'presentation/pages/alt_holiday_request_page.dart';
 import 'presentation/pages/my_schedule_calendar_page.dart';
 import 'presentation/pages/my_schedule_detail_page.dart';
 import 'presentation/pages/promotion_list_page.dart';
@@ -81,6 +83,8 @@ class AppRouter {
   static const String safetyCheckStatus = '/safety-check-status'; // #278: 안전점검 현황
   static const String myScheduleCalendar = '/my-schedule'; // F56: 마이페이지 일정 캘린더
   static const String myScheduleDetail = '/my-schedule/detail'; // F56: 일정 상세
+  static const String altHolidayRequest = '/alt-holiday/request'; // #285: 대체휴무 신청
+  static const String altHolidayHistory = '/alt-holiday/history'; // #285: 대체휴무 이력
 
   /// 라우트 맵
   static Map<String, WidgetBuilder> get routes => {
@@ -165,6 +169,8 @@ class AppRouter {
               ModalRoute.of(context)!.settings.arguments as int;
           return PromotionDetailPage(promotionId: promotionId);
         },
+        altHolidayRequest: (context) => const AltHolidayRequestPage(), // #285: 대체휴무 신청
+        altHolidayHistory: (context) => const AltHolidayHistoryPage(), // #285: 대체휴무 이력
         myScheduleCalendar: (context) => const MyScheduleCalendarPage(), // F56: 일정 캘린더
         myScheduleDetail: (context) {
           // F56: 일정 상세
