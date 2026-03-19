@@ -1,5 +1,6 @@
 package com.otoki.internal.education.entity
 
+import com.otoki.internal.common.entity.BaseEntity
 import jakarta.persistence.*
 
 /**
@@ -21,4 +22,4 @@ class EducationCode(
 
     @Column(name = "edu_type", length = 10)
     val eduType: String? = null
-)
+) : BaseEntity()

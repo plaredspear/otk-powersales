@@ -1,5 +1,6 @@
 package com.otoki.internal.entity
 
+import com.otoki.internal.common.entity.BaseEntity
 import jakarta.persistence.*
 
 /**
@@ -14,4 +15,4 @@ class EmployeeAdmin(
     @Id
     @Column(name = "empcode__c", length = 40)
     val empCode: String
-)
+) : BaseEntity()

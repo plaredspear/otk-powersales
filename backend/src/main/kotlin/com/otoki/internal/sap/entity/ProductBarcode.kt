@@ -7,6 +7,7 @@ import com.otoki.internal.common.salesforce.SFObject
 import com.otoki.internal.common.sap.SAPSource
 import com.otoki.internal.common.sap.SAPUpsertKey
 import com.otoki.internal.common.sap.SyncMode
+import com.otoki.internal.common.entity.BaseEntity
 import jakarta.persistence.*
 
 /**
@@ -68,4 +69,4 @@ class ProductBarcode(
     @HCColumn("isdeleted")
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null
-)
+) : BaseEntity()

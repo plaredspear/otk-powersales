@@ -1,5 +1,6 @@
 package com.otoki.internal.safetycheck.entity
 
+import com.otoki.internal.common.entity.BaseEntity
 import com.otoki.internal.common.salesforce.HCColumn
 import com.otoki.internal.common.salesforce.HCTable
 import jakarta.persistence.*
@@ -98,4 +99,4 @@ class SafetyCheckSubmission(
     @Column(name = "complete_work_yn", length = 18)
     @HCColumn("completeworkyn")
     val completeWorkYn: String? = null
-)
+) : BaseEntity()

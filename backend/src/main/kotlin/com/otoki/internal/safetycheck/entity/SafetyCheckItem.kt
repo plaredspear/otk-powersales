@@ -1,5 +1,6 @@
 package com.otoki.internal.safetycheck.entity
 
+import com.otoki.internal.common.entity.BaseEntity
 import com.otoki.internal.common.salesforce.HCColumn
 import com.otoki.internal.common.salesforce.HCTable
 import jakarta.persistence.*
@@ -35,4 +36,4 @@ class SafetyCheckItem(
     // val sortOrder: Int,                  // V1에 없음
     // val required: Boolean = true,        // V1에 없음
     // val active: Boolean = true           // → useYn (String 'Y'/'N')으로 대체
-)
+) : BaseEntity()
