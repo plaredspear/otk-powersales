@@ -19,9 +19,9 @@ class SafetyCheckSubmission(
     val masterId: String = "",
 
     @Id
-    @Column(name = "employee_number", length = 18)
+    @Column(name = "employee_id")
     @HCColumn("employeeid__c")
-    val employeeNumber: String = "",
+    val employeeId: Long = 0,
 
     @Id
     @Column(name = "working_date")

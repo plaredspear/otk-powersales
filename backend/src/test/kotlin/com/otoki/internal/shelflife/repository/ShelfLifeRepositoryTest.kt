@@ -51,7 +51,7 @@ class ShelfLifeRepositoryTest {
             val shelfLife = ShelfLife(
                 accountId = "ACC001",
                 accountCode = "1025",
-                employeeNumber = "20030117",
+                employeeId = 1L,
                 productId = "PROD001",
                 productCode = "30310009",
                 expirationDate = LocalDate.of(2026, 6, 1),
@@ -73,7 +73,7 @@ class ShelfLifeRepositoryTest {
             assertThat(found.get().seq).isEqualTo(saved.seq)
             assertThat(found.get().accountId).isEqualTo("ACC001")
             assertThat(found.get().accountCode).isEqualTo("1025")
-            assertThat(found.get().employeeNumber).isEqualTo("20030117")
+            assertThat(found.get().employeeId).isEqualTo(1L)
             assertThat(found.get().productId).isEqualTo("PROD001")
             assertThat(found.get().productCode).isEqualTo("30310009")
             assertThat(found.get().expirationDate).isEqualTo(LocalDate.of(2026, 6, 1))
@@ -86,7 +86,7 @@ class ShelfLifeRepositoryTest {
         fun save_withNullableFields_success() {
             // Given
             val shelfLife = ShelfLife(
-                employeeNumber = "20030117",
+                employeeId = 1L,
                 productCode = "30310009"
             )
 
@@ -108,25 +108,25 @@ class ShelfLifeRepositoryTest {
     }
 
     @Nested
-    @DisplayName("countByEmployeeNumberAndAlarmDate - 사원별 알람일 기준 건수 조회")
-    inner class CountByEmployeeNumberAndAlarmDateTests {
+    @DisplayName("countByEmployeeIdAndAlarmDate - 사원별 알람일 기준 건수 조회")
+    inner class CountByEmployeeIdAndAlarmDateTests {
 
         @Test
         @DisplayName("알람 대상 건수 조회 - 해당 사원/오늘 3건 -> 3 반환")
         fun count_matchingRecords() {
             // Given
             val today = LocalDate.now()
-            val employeeNumber = "EMP_SFID_001"
+            val employeeId = 100L
 
             repeat(3) {
                 testEntityManager.persistAndFlush(
-                    ShelfLife(employeeNumber = employeeNumber, alarmDate = today, productCode = "P00$it")
+                    ShelfLife(employeeId = employeeId, alarmDate = today, productCode = "P00$it")
                 )
             }
             testEntityManager.clear()
 
             // When
-            val count = shelfLifeRepository.countByEmployeeNumberAndAlarmDate(employeeNumber, today)
+            val count = shelfLifeRepository.countByEmployeeIdAndAlarmDate(employeeId, today)
 
             // Then
             assertThat(count).isEqualTo(3L)
@@ -139,7 +139,7 @@ class ShelfLifeRepositoryTest {
             val today = LocalDate.now()
 
             // When
-            val count = shelfLifeRepository.countByEmployeeNumberAndAlarmDate("EMP_SFID_001", today)
+            val count = shelfLifeRepository.countByEmployeeIdAndAlarmDate(100L, today)
 
             // Then
             assertThat(count).isEqualTo(0L)
@@ -151,36 +151,36 @@ class ShelfLifeRepositoryTest {
             // Given
             val today = LocalDate.now()
             val yesterday = today.minusDays(1)
-            val employeeNumber = "EMP_SFID_001"
+            val employeeId = 100L
 
             testEntityManager.persistAndFlush(
-                ShelfLife(employeeNumber = employeeNumber, alarmDate = yesterday, productCode = "P001")
+                ShelfLife(employeeId = employeeId, alarmDate = yesterday, productCode = "P001")
             )
             testEntityManager.clear()
 
             // When
-            val count = shelfLifeRepository.countByEmployeeNumberAndAlarmDate(employeeNumber, today)
+            val count = shelfLifeRepository.countByEmployeeIdAndAlarmDate(employeeId, today)
 
             // Then
             assertThat(count).isEqualTo(0L)
         }
 
         @Test
-        @DisplayName("다른 사원 건 제외 - 다른 employeeNumber의 건 -> 본인만 카운트")
+        @DisplayName("다른 사원 건 제외 - 다른 employeeId의 건 -> 본인만 카운트")
         fun count_excludesDifferentEmployee() {
             // Given
             val today = LocalDate.now()
 
             testEntityManager.persistAndFlush(
-                ShelfLife(employeeNumber = "EMP_SFID_001", alarmDate = today, productCode = "P001")
+                ShelfLife(employeeId = 100L, alarmDate = today, productCode = "P001")
             )
             testEntityManager.persistAndFlush(
-                ShelfLife(employeeNumber = "EMP_SFID_002", alarmDate = today, productCode = "P002")
+                ShelfLife(employeeId = 200L, alarmDate = today, productCode = "P002")
             )
             testEntityManager.clear()
 
             // When
-            val count = shelfLifeRepository.countByEmployeeNumberAndAlarmDate("EMP_SFID_001", today)
+            val count = shelfLifeRepository.countByEmployeeIdAndAlarmDate(100L, today)
 
             // Then
             assertThat(count).isEqualTo(1L)
@@ -197,7 +197,7 @@ class ShelfLifeRepositoryTest {
             // Given - FK 제약 없이 임의의 문자열 저장 가능
             val shelfLife = ShelfLife(
                 accountId = "NON_EXISTENT_ACCOUNT",
-                employeeNumber = "NON_EXISTENT_EMP",
+                employeeId = 99999L,
                 productId = "NON_EXISTENT_PRODUCT",
                 productCode = "ARBITRARY_CODE"
             )
@@ -211,7 +211,7 @@ class ShelfLifeRepositoryTest {
             val found = shelfLifeRepository.findById(saved.seq)
             assertThat(found).isPresent
             assertThat(found.get().accountId).isEqualTo("NON_EXISTENT_ACCOUNT")
-            assertThat(found.get().employeeNumber).isEqualTo("NON_EXISTENT_EMP")
+            assertThat(found.get().employeeId).isEqualTo(99999L)
             assertThat(found.get().productId).isEqualTo("NON_EXISTENT_PRODUCT")
         }
     }

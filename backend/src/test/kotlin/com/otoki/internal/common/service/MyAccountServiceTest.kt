@@ -60,7 +60,7 @@ class MyAccountServiceTest {
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeNumberAndDateRange(eq("20030117"), any(), any()))
+            whenever(teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(eq(userId), any(), any()))
                 .thenReturn(listOf(1, 2))
             whenever(displayWorkScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(eq(userId), any(), any()))
                 .thenReturn(listOf(2, 3))
@@ -88,7 +88,7 @@ class MyAccountServiceTest {
             val accounts = listOf(createAccount(id = 1, name = "경산농협", externalKey = "1025172"))
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeNumberAndDateRange(eq("20030117"), any(), any()))
+            whenever(teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(eq(userId), any(), any()))
                 .thenReturn(listOf(1))
             whenever(displayWorkScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(eq(userId), any(), any()))
                 .thenReturn(emptyList())
@@ -112,7 +112,7 @@ class MyAccountServiceTest {
             val accounts = listOf(createAccount(id = 3, name = "나라마트", externalKey = "1025174"))
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeNumberAndDateRange(eq("20030117"), any(), any()))
+            whenever(teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(eq(userId), any(), any()))
                 .thenReturn(emptyList())
             whenever(displayWorkScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(eq(userId), any(), any()))
                 .thenReturn(listOf(3))
@@ -135,7 +135,7 @@ class MyAccountServiceTest {
             val user = createUser(id = userId, employeeNumber = "20030117", sfid = "SF001")
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeNumberAndDateRange(eq("20030117"), any(), any()))
+            whenever(teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(eq(userId), any(), any()))
                 .thenReturn(emptyList())
             whenever(displayWorkScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(eq(userId), any(), any()))
                 .thenReturn(emptyList())
@@ -157,7 +157,7 @@ class MyAccountServiceTest {
             val accounts = listOf(createAccount(id = 1, name = "경산농협", externalKey = "1025172"))
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeNumberAndDateRange(eq("20030117"), any(), any()))
+            whenever(teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(eq(userId), any(), any()))
                 .thenReturn(listOf(1))
             whenever(displayWorkScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(eq(userId), any(), any()))
                 .thenReturn(emptyList())
@@ -184,7 +184,7 @@ class MyAccountServiceTest {
             )
 
             whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeNumberAndDateRange(eq("20030117"), any(), any()))
+            whenever(teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(eq(userId), any(), any()))
                 .thenReturn(listOf(1))
             whenever(displayWorkScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(eq(userId), any(), any()))
                 .thenReturn(emptyList())
@@ -227,7 +227,7 @@ class MyAccountServiceTest {
             assertThat(result.stores).hasSize(2)
             assertThat(result.totalCount).isEqualTo(2)
             // 조장은 팀멤버/진열스케줄 조회하지 않음
-            verify(teamMemberScheduleRepository, never()).findDistinctAccountIdsByEmployeeNumberAndDateRange(any(), any(), any())
+            verify(teamMemberScheduleRepository, never()).findDistinctAccountIdsByEmployeeIdAndDateRange(any(), any(), any())
             verify(displayWorkScheduleRepository, never()).findDistinctAccountIdsByEmployeeIdAndDateRange(any(), any(), any())
         }
 

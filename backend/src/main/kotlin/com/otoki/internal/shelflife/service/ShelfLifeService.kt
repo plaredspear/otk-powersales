@@ -34,15 +34,15 @@ class ShelfLifeService(
         val parsedToDate = parseDate(toDate)
         validateDateRange(parsedFromDate, parsedToDate)
 
-        val employeeNumber = getEmployeeNumber(userId) ?: return emptyList()
+        val employeeId = getUserId(userId) ?: return emptyList()
 
         val items = if (accountCode != null) {
-            shelfLifeRepository.findByEmployeeNumberAndAccountCodeAndExpirationDateBetweenOrderByExpirationDateAsc(
-                employeeNumber, accountCode, parsedFromDate, parsedToDate
+            shelfLifeRepository.findByEmployeeIdAndAccountCodeAndExpirationDateBetweenOrderByExpirationDateAsc(
+                employeeId, accountCode, parsedFromDate, parsedToDate
             )
         } else {
-            shelfLifeRepository.findByEmployeeNumberAndExpirationDateBetweenOrderByExpirationDateAsc(
-                employeeNumber, parsedFromDate, parsedToDate
+            shelfLifeRepository.findByEmployeeIdAndExpirationDateBetweenOrderByExpirationDateAsc(
+                employeeId, parsedFromDate, parsedToDate
             )
         }
 
@@ -52,7 +52,7 @@ class ShelfLifeService(
 
     @Transactional
     fun createShelfLife(userId: Long, request: ShelfLifeCreateRequest): ShelfLifeItemResponse {
-        val employeeNumber = getEmployeeNumber(userId)
+        val employeeId = getUserId(userId)
             ?: throw UserNotFoundException()
 
         val expirationDate = parseDate(request.expirationDate)
@@ -63,7 +63,7 @@ class ShelfLifeService(
         }
 
         val shelfLife = ShelfLife(
-            employeeNumber = employeeNumber,
+            employeeId = employeeId,
             accountCode = request.accountCode,
             accountId = request.accountName,
             productCode = request.productCode,
@@ -79,10 +79,10 @@ class ShelfLifeService(
 
     @Transactional
     fun updateShelfLife(userId: Long, seq: Int, request: ShelfLifeUpdateRequest): ShelfLifeItemResponse {
-        val employeeNumber = getEmployeeNumber(userId)
+        val employeeId = getUserId(userId)
             ?: throw UserNotFoundException()
         val shelfLife = findBySeq(seq)
-        validateOwnership(shelfLife, employeeNumber)
+        validateOwnership(shelfLife, employeeId)
 
         val expirationDate = parseDate(request.expirationDate)
         val alarmDate = parseDate(request.alarmDate)
@@ -97,19 +97,19 @@ class ShelfLifeService(
 
     @Transactional
     fun deleteShelfLife(userId: Long, seq: Int) {
-        val employeeNumber = getEmployeeNumber(userId)
+        val employeeId = getUserId(userId)
             ?: throw UserNotFoundException()
         val shelfLife = findBySeq(seq)
-        validateOwnership(shelfLife, employeeNumber)
+        validateOwnership(shelfLife, employeeId)
         shelfLifeRepository.delete(shelfLife)
     }
 
     @Transactional
     fun deleteShelfLifeBatch(userId: Long, request: ShelfLifeBatchDeleteRequest): ShelfLifeBatchDeleteResponse {
-        val employeeNumber = getEmployeeNumber(userId)
+        val employeeId = getUserId(userId)
             ?: throw UserNotFoundException()
 
-        val items = shelfLifeRepository.findBySeqInAndEmployeeNumber(request.ids, employeeNumber)
+        val items = shelfLifeRepository.findBySeqInAndEmployeeId(request.ids, employeeId)
 
         if (items.size != request.ids.size) {
             val foundSeqs = items.map { it.seq }.toSet()
@@ -125,10 +125,10 @@ class ShelfLifeService(
         return ShelfLifeBatchDeleteResponse(deletedCount = items.size)
     }
 
-    private fun getEmployeeNumber(userId: Long): String? {
+    private fun getUserId(userId: Long): Long? {
         val user = userRepository.findById(userId)
             .orElseThrow { UserNotFoundException() }
-        return user.employeeNumber
+        return user.id
     }
 
     private fun findBySeq(seq: Int): ShelfLife {
@@ -136,8 +136,8 @@ class ShelfLifeService(
             .orElseThrow { ShelfLifeNotFoundException() }
     }
 
-    private fun validateOwnership(shelfLife: ShelfLife, employeeNumber: String) {
-        if (shelfLife.employeeNumber != employeeNumber) {
+    private fun validateOwnership(shelfLife: ShelfLife, employeeId: Long) {
+        if (shelfLife.employeeId != employeeId) {
             throw ShelfLifeForbiddenException()
         }
     }

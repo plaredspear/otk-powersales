@@ -7,17 +7,17 @@ interface TeamMemberScheduleRepositoryCustom {
 
     fun updateCommuteLogId(sfid: String, commuteLogId: String)
 
-    fun findMonthlyByEmployeeNumbers(employeeNumbers: List<String>, from: LocalDate, to: LocalDate): List<TeamMemberSchedule>
+    fun findMonthlyByEmployeeIds(employeeIds: List<Long>, from: LocalDate, to: LocalDate): List<TeamMemberSchedule>
 
     fun findMonthlyByAccountIds(accountIds: List<Int>, from: LocalDate, to: LocalDate): List<TeamMemberSchedule>
 
-    fun findActiveByEmployeeNumberAndDate(employeeNumber: String, workingDate: LocalDate): List<TeamMemberSchedule>
+    fun findActiveByEmployeeIdAndDate(employeeId: Long, workingDate: LocalDate): List<TeamMemberSchedule>
 
-    fun deleteAnnualLeaveByEmployeeNumberAndDateRange(employeeNumber: String, from: LocalDate, to: LocalDate): Long
+    fun deleteAnnualLeaveByEmployeeIdAndDateRange(employeeId: Long, from: LocalDate, to: LocalDate): Long
 
     fun findAnnualLeaveByDateRange(from: LocalDate, to: LocalDate): List<TeamMemberSchedule>
 
-    fun findAnnualLeaveByDateRangeAndEmployeeNumbers(from: LocalDate, to: LocalDate, employeeNumbers: List<String>): List<TeamMemberSchedule>
+    fun findAnnualLeaveByDateRangeAndEmployeeIds(from: LocalDate, to: LocalDate, employeeIds: List<Long>): List<TeamMemberSchedule>
 
-    fun findDistinctAccountIdsByEmployeeNumberAndDateRange(employeeNumber: String, fromDate: LocalDate, toDate: LocalDate): List<Int>
+    fun findDistinctAccountIdsByEmployeeIdAndDateRange(employeeId: Long, fromDate: LocalDate, toDate: LocalDate): List<Int>
 }

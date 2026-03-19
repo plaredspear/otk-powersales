@@ -8,6 +8,7 @@ import com.otoki.internal.sap.entity.AttendType
 import com.otoki.internal.sap.repository.AttendInfoRepository
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
 import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
+import com.otoki.internal.sap.repository.UserRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation
@@ -18,7 +19,8 @@ import java.time.format.DateTimeFormatter
 @Service
 class SapAttendInfoService(
     private val attendInfoRepository: AttendInfoRepository,
-    private val teamMemberScheduleRepository: TeamMemberScheduleRepository
+    private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
+    private val userRepository: UserRepository
 ) : SapSyncService<SapAttendInfoRequest.ReqItem> {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -118,18 +120,23 @@ class SapAttendInfoService(
         if (dates.isEmpty()) return
 
         val employeeCode = attendInfo.employeeCode
+        val user = userRepository.findByEmployeeNumber(employeeCode).orElse(null)
+        if (user == null) {
+            log.warn("연차 스케줄 처리 실패 - 사원 조회 불가: employeeCode={}", employeeCode)
+            return
+        }
 
         if (attendInfo.status == "Y") {
-            deleteAnnualLeaveSchedules(employeeCode, dates)
+            deleteAnnualLeaveSchedules(user.id, employeeCode, dates)
         } else {
-            createAnnualLeaveSchedules(employeeCode, dates)
+            createAnnualLeaveSchedules(user.id, employeeCode, dates)
         }
     }
 
-    private fun createAnnualLeaveSchedules(employeeCode: String, dates: List<LocalDate>) {
+    private fun createAnnualLeaveSchedules(employeeId: Long, employeeCode: String, dates: List<LocalDate>) {
         for (date in dates) {
-            val exists = teamMemberScheduleRepository.existsByEmployeeNumberAndWorkingDateAndWorkingType(
-                employeeCode, date, WORKING_TYPE_ANNUAL_LEAVE
+            val exists = teamMemberScheduleRepository.existsByEmployeeIdAndWorkingDateAndWorkingType(
+                employeeId, date, WORKING_TYPE_ANNUAL_LEAVE
             )
             if (exists) {
                 log.debug("연차 스케줄 이미 존재: employeeCode={}, date={}", employeeCode, date)
@@ -137,7 +144,7 @@ class SapAttendInfoService(
             }
 
             val schedule = TeamMemberSchedule(
-                employeeNumber = employeeCode,
+                employeeId = employeeId,
                 workingDate = date,
                 workingType = WORKING_TYPE_ANNUAL_LEAVE
             )
@@ -146,11 +153,11 @@ class SapAttendInfoService(
         }
     }
 
-    private fun deleteAnnualLeaveSchedules(employeeCode: String, dates: List<LocalDate>) {
+    private fun deleteAnnualLeaveSchedules(employeeId: Long, employeeCode: String, dates: List<LocalDate>) {
         val from = dates.min()
         val to = dates.max()
-        val deletedCount = teamMemberScheduleRepository.deleteAnnualLeaveByEmployeeNumberAndDateRange(
-            employeeCode, from, to
+        val deletedCount = teamMemberScheduleRepository.deleteAnnualLeaveByEmployeeIdAndDateRange(
+            employeeId, from, to
         )
         log.info("연차 스케줄 삭제: employeeCode={}, from={}, to={}, deletedCount={}", employeeCode, from, to, deletedCount)
     }

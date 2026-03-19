@@ -50,7 +50,7 @@ class SafetyCheckService(
         val user = userRepository.findById(userId)
             .orElseThrow { UserNotFoundException() }
         val today = LocalDate.now()
-        val submission = submissionRepository.findByEmployeeNumberAndWorkingDate(user.employeeNumber, today)
+        val submission = submissionRepository.findByEmployeeIdAndWorkingDate(user.id, today)
 
         return if (submission.isPresent) {
             SafetyCheckTodayResponse(
@@ -71,7 +71,7 @@ class SafetyCheckService(
             .orElseThrow { UserNotFoundException() }
         val today = LocalDate.now()
 
-        if (submissionRepository.existsByEmployeeNumberAndWorkingDate(user.employeeNumber, today)) {
+        if (submissionRepository.existsByEmployeeIdAndWorkingDate(user.id, today)) {
             throw AlreadySubmittedException()
         }
 
@@ -96,7 +96,7 @@ class SafetyCheckService(
 
         val submission = SafetyCheckSubmission(
             masterId = "",
-            employeeNumber = user.employeeNumber,
+            employeeId = user.id,
             workingDate = today,
             startTime = request.startTime,
             completeTime = request.completeTime,
