@@ -5,7 +5,7 @@ ALTER TABLE team_member_schedule ADD COLUMN team_leader_id BIGINT;
 
 UPDATE team_member_schedule tms
 SET team_leader_id = u.id
-FROM users u
+FROM employee u
 WHERE tms.team_leader_sfid = u.sfid
   AND tms.team_leader_sfid IS NOT NULL;
 
