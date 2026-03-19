@@ -165,7 +165,7 @@ class AdminTeamScheduleService(
             workingCategory2 = request.workingCategory2,
             workingCategory3 = request.workingCategory3,
             accountId = request.accountId,
-            teamLeaderSfid = currentUser.sfid
+            teamLeaderId = currentUser.id
         )
         val saved = teamMemberScheduleRepository.save(schedule)
         return TeamScheduleCreateResultDto(id = saved.id)

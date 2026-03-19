@@ -75,13 +75,13 @@ class TeamMemberSchedule(
 
     @SFField("teamleadersfid__c")
     @HCColumn("teamleadersfid__c")
-    @Column(name = "team_leader_sfid", length = 100)
-    val teamLeaderSfid: String? = null,
+    @Column(name = "team_leader_id")
+    val teamLeaderId: Long? = null,
 
     @SFField("DKRetail__AltHolidayId__c")
     @HCColumn("dkretail__altholidayid__c")
-    @Column(name = "alt_holiday_id", length = 18)
-    val altHolidayId: String? = null,
+    @Column(name = "alt_holiday_id")
+    val altHolidayId: Long? = null,
 
     @SFField("DKRetail__CommuteLogId__c")
     @HCColumn("dkretail__commutelogid__c")
@@ -90,12 +90,8 @@ class TeamMemberSchedule(
 
     @SFField("DKRetail__PromotionEmpId__c")
     @HCColumn("dkretail__promotionempid__c")
-    @Column(name = "promotion_emp_id", length = 18)
-    var promotionEmpId: String? = null,
-
-    @SFField("DKRetail__PromotionEmpIdExt__c")
-    @Column(name = "promotion_emp_id_ext", length = 50)
-    var promotionEmpIdExt: String? = null,
+    @Column(name = "promotion_employee_id")
+    var promotionEmployeeId: Long? = null,
 
     @SFField("CommuteReportDateTime__c")
     @HCColumn("commutereportdatetime__c")
@@ -216,7 +212,7 @@ class TeamMemberSchedule(
         workingCategory1: String,
         workingCategory3: String,
         workingCategory4: String?,
-        promotionEmpId: String
+        promotionEmployeeId: Long
     ) {
         this.employeeNumber = employeeNumber
         this.accountId = accountId
@@ -225,8 +221,7 @@ class TeamMemberSchedule(
         this.workingCategory1 = workingCategory1
         this.workingCategory3 = workingCategory3
         this.workingCategory4 = workingCategory4
-        this.promotionEmpId = promotionEmpId
-        this.promotionEmpIdExt = promotionEmpId
+        this.promotionEmployeeId = promotionEmployeeId
         this.updatedAt = LocalDateTime.now()
     }
 }

@@ -51,7 +51,7 @@ class AdminPromotionConfirmServiceTest {
 
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
             whenever(promotionEmployeeRepository.findByPromotionId(10L)).thenReturn(employees)
-            whenever(teamMemberScheduleRepository.findByPromotionEmpIdExtIn(any())).thenReturn(emptyList())
+            whenever(teamMemberScheduleRepository.findByPromotionEmployeeIdIn(any())).thenReturn(emptyList())
             whenever(teamMemberScheduleRepository.findByEmployeeNumberInAndWorkingDateIn(any(), any())).thenReturn(emptyList())
             whenever(userRepository.findByEmployeeNumberIn(any())).thenReturn(listOf(
                 createUser("EMP001", "김철수"),
@@ -70,8 +70,7 @@ class AdminPromotionConfirmServiceTest {
                         workingCategory1 = s.workingCategory1,
                         workingCategory3 = s.workingCategory3,
                         workingCategory4 = s.workingCategory4,
-                        promotionEmpId = s.promotionEmpId,
-                        promotionEmpIdExt = s.promotionEmpIdExt
+                        promotionEmployeeId = s.promotionEmployeeId
                     )
                 }
             }
@@ -102,13 +101,12 @@ class AdminPromotionConfirmServiceTest {
                 workingType = "근무",
                 workingCategory1 = "행사",
                 workingCategory3 = "고정",
-                promotionEmpId = "1",
-                promotionEmpIdExt = "1"
+                promotionEmployeeId = 1L
             )
 
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
             whenever(promotionEmployeeRepository.findByPromotionId(10L)).thenReturn(employees)
-            whenever(teamMemberScheduleRepository.findByPromotionEmpIdExtIn(listOf("1"))).thenReturn(listOf(existingTeamMemberSchedule))
+            whenever(teamMemberScheduleRepository.findByPromotionEmployeeIdIn(listOf(1L))).thenReturn(listOf(existingTeamMemberSchedule))
             whenever(teamMemberScheduleRepository.findByEmployeeNumberInAndWorkingDateIn(any(), any())).thenReturn(listOf(existingTeamMemberSchedule))
             whenever(userRepository.findByEmployeeNumberIn(any())).thenReturn(listOf(createUser("EMP001", "김철수")))
             whenever(teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>())).thenAnswer { it.getArgument<List<TeamMemberSchedule>>(0) }
@@ -475,7 +473,7 @@ class AdminPromotionConfirmServiceTest {
         whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
         whenever(promotionEmployeeRepository.findByPromotionId(10L)).thenReturn(employees)
         org.mockito.Mockito.lenient().`when`(promotionEmployeeRepository.saveAll(any<List<PromotionEmployee>>())).thenAnswer { it.getArgument<List<PromotionEmployee>>(0) }
-        whenever(teamMemberScheduleRepository.findByPromotionEmpIdExtIn(any())).thenReturn(emptyList())
+        whenever(teamMemberScheduleRepository.findByPromotionEmployeeIdIn(any())).thenReturn(emptyList())
         whenever(teamMemberScheduleRepository.findByEmployeeNumberInAndWorkingDateIn(any(), any())).thenReturn(existingTeamMemberSchedules)
 
         val employeeNumbers = employees.mapNotNull { it.employeeNumber }.distinct()
@@ -500,8 +498,7 @@ class AdminPromotionConfirmServiceTest {
                     workingCategory1 = s.workingCategory1,
                     workingCategory3 = s.workingCategory3,
                     workingCategory4 = s.workingCategory4,
-                    promotionEmpId = s.promotionEmpId,
-                    promotionEmpIdExt = s.promotionEmpIdExt
+                    promotionEmployeeId = s.promotionEmployeeId
                 )
             }
         }
@@ -562,7 +559,7 @@ class AdminPromotionConfirmServiceTest {
         workingType: String = "근무",
         workingCategory3: String = "고정",
         accountId: Int? = 999,
-        promotionEmpIdExt: String? = null
+        promotionEmployeeId: Long? = null
     ): TeamMemberSchedule = TeamMemberSchedule(
         id = id,
         employeeNumber = employeeNumber,
@@ -570,6 +567,6 @@ class AdminPromotionConfirmServiceTest {
         workingType = workingType,
         workingCategory3 = workingCategory3,
         accountId = accountId,
-        promotionEmpIdExt = promotionEmpIdExt
+        promotionEmployeeId = promotionEmployeeId
     )
 }

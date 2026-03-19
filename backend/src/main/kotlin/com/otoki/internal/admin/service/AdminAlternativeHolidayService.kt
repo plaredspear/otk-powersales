@@ -92,7 +92,7 @@ class AdminAlternativeHolidayService(
                 employeeNumber = altHoliday.employeeNumber,
                 workingDate = confirmDate,
                 workingType = "대휴",
-                altHolidayId = altHoliday.id.toString()
+                altHolidayId = altHoliday.id
             )
         )
 
