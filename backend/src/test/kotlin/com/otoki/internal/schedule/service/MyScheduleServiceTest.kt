@@ -5,6 +5,7 @@ import com.otoki.internal.common.entity.*
 import com.otoki.internal.sap.entity.*
 import com.otoki.internal.auth.exception.UserNotFoundException
 import com.otoki.internal.schedule.repository.DisplayWorkScheduleRepository
+import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.internal.sap.repository.UserRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
@@ -28,6 +29,9 @@ class MyScheduleServiceTest {
 
     @Mock
     private lateinit var displayWorkScheduleRepository: DisplayWorkScheduleRepository
+
+    @Mock
+    private lateinit var teamMemberScheduleRepository: TeamMemberScheduleRepository
 
     @InjectMocks
     private lateinit var myScheduleService: MyScheduleService
@@ -58,6 +62,9 @@ class MyScheduleServiceTest {
                 eq(LocalDate.of(2020, 8, 1)),
                 eq(LocalDate.of(2020, 8, 31))
             )).thenReturn(workDates)
+            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(
+                eq(listOf("20030117")), any(), any()
+            )).thenReturn(emptyList())
 
             // When
             val result = myScheduleService.getMonthlySchedule(userId, year, month)
@@ -72,6 +79,7 @@ class MyScheduleServiceTest {
             assertThat(result.workDays[3].date).isEqualTo("2020-08-04")
             assertThat(result.workDays[3].hasWork).isTrue()
             assertThat(result.workDays[1].hasWork).isFalse()
+            assertThat(result.annualLeaveCount).isEqualTo(0)
         }
 
         @Test
@@ -89,6 +97,9 @@ class MyScheduleServiceTest {
                 any(),
                 any()
             )).thenReturn(emptyList())
+            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(
+                eq(listOf("20030117")), any(), any()
+            )).thenReturn(emptyList())
 
             // When
             val result = myScheduleService.getMonthlySchedule(userId, year, month)
@@ -98,6 +109,7 @@ class MyScheduleServiceTest {
             assertThat(result.month).isEqualTo(8)
             assertThat(result.workDays).hasSize(31)
             assertThat(result.workDays.all { !it.hasWork }).isTrue()
+            assertThat(result.annualLeaveCount).isEqualTo(0)
         }
 
         @Test
@@ -115,12 +127,55 @@ class MyScheduleServiceTest {
                 any(),
                 any()
             )).thenReturn(emptyList())
+            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(
+                eq(listOf("20030117")), any(), any()
+            )).thenReturn(emptyList())
 
             // When
             val result = myScheduleService.getMonthlySchedule(userId, year, month)
 
             // Then
             assertThat(result.workDays).hasSize(28)
+        }
+
+        @Test
+        @DisplayName("성공 - 연차 2건 있는 월 → annualLeaveCount=2, workingType 매핑")
+        fun getMonthlySchedule_withAnnualLeave() {
+            // Given
+            val userId = 1L
+            val year = 2026
+            val month = 3
+            val mockUser = createMockUser(userId, "최금주", "20030117", sfid = "a0B000000012345")
+
+            whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
+            whenever(displayWorkScheduleRepository.findDistinctStartDatesByEmployeeIdAndDateBetween(
+                eq("20030117"), any(), any()
+            )).thenReturn(listOf(LocalDate.of(2026, 3, 5), LocalDate.of(2026, 3, 10)))
+            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(
+                eq(listOf("20030117")),
+                eq(LocalDate.of(2026, 3, 1)),
+                eq(LocalDate.of(2026, 3, 31))
+            )).thenReturn(listOf(
+                createMockMemberSchedule("20030117", LocalDate.of(2026, 3, 5), "연차"),
+                createMockMemberSchedule("20030117", LocalDate.of(2026, 3, 10), "근무"),
+                createMockMemberSchedule("20030117", LocalDate.of(2026, 3, 20), "연차")
+            ))
+
+            // When
+            val result = myScheduleService.getMonthlySchedule(userId, year, month)
+
+            // Then
+            assertThat(result.annualLeaveCount).isEqualTo(2)
+            // 3/5 → workingType="연차"
+            val day5 = result.workDays.first { it.date == "2026-03-05" }
+            assertThat(day5.workingType).isEqualTo("연차")
+            assertThat(day5.hasWork).isTrue()
+            // 3/10 → workingType="근무"
+            val day10 = result.workDays.first { it.date == "2026-03-10" }
+            assertThat(day10.workingType).isEqualTo("근무")
+            // 스케줄 없는 날 → workingType=null
+            val day1 = result.workDays.first { it.date == "2026-03-01" }
+            assertThat(day1.workingType).isNull()
         }
 
         @Test
@@ -223,6 +278,18 @@ class MyScheduleServiceTest {
             name = name,
             orgName = "서울지점",
             sfid = sfid
+        )
+    }
+
+    private fun createMockMemberSchedule(
+        employeeId: String = "20030117",
+        workingDate: LocalDate = LocalDate.now(),
+        workingType: String = "근무"
+    ): TeamMemberSchedule {
+        return TeamMemberSchedule(
+            employeeId = employeeId,
+            workingDate = workingDate,
+            workingType = workingType
         )
     }
 

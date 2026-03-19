@@ -5,6 +5,7 @@ import com.otoki.internal.common.dto.response.*
 import com.otoki.internal.auth.exception.UserNotFoundException
 // import com.otoki.internal.schedule.repository.AttendanceRepository  // Phase2: PG 대응 테이블 없음
 import com.otoki.internal.schedule.repository.DisplayWorkScheduleRepository
+import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.internal.sap.repository.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -15,7 +16,8 @@ import java.time.YearMonth
 @Service
 class MyScheduleService(
     private val userRepository: UserRepository,
-    private val displayWorkScheduleRepository: DisplayWorkScheduleRepository
+    private val displayWorkScheduleRepository: DisplayWorkScheduleRepository,
+    private val teamMemberScheduleRepository: TeamMemberScheduleRepository
     // private val attendanceRepository: AttendanceRepository  // Phase2: PG 대응 테이블 없음
 ) {
 
@@ -51,6 +53,16 @@ class MyScheduleService(
             .findDistinctStartDatesByEmployeeIdAndDateBetween(employeeId, startDate, endDate)
             .toSet()
 
+        // TeamMemberSchedule에서 날짜별 workingType 조회
+        val memberSchedules = teamMemberScheduleRepository
+            .findMonthlyByEmployeeIds(listOf(employeeId), startDate, endDate)
+        val workingTypeByDate = memberSchedules
+            .groupBy { it.workingDate }
+            .mapValues { (_, schedules) -> schedules.firstOrNull()?.workingType }
+
+        // 연차 건수 카운트
+        val annualLeaveCount = memberSchedules.count { it.workingType == "연차" }
+
         // 해당 월의 모든 날짜에 대해 근무 여부 판정
         val workDays = mutableListOf<WorkDayDto>()
         var currentDate = startDate
@@ -58,7 +70,8 @@ class MyScheduleService(
             workDays.add(
                 WorkDayDto(
                     date = currentDate.toString(),
-                    hasWork = workDates.contains(currentDate)
+                    hasWork = workDates.contains(currentDate),
+                    workingType = workingTypeByDate[currentDate]
                 )
             )
             currentDate = currentDate.plusDays(1)
@@ -67,7 +80,8 @@ class MyScheduleService(
         return MonthlyScheduleResponse(
             year = year,
             month = month,
-            workDays = workDays
+            workDays = workDays,
+            annualLeaveCount = annualLeaveCount
         )
     }
 
