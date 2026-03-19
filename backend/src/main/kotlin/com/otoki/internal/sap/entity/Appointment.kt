@@ -18,6 +18,7 @@ class Appointment(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "appointment_id")
     val id: Long = 0,
 
     @Column(name = "employee_code", nullable = false, length = 20)

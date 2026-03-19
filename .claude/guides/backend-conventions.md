@@ -316,6 +316,7 @@ class User(
 **규칙**:
 - 변경 가능 필드만 `var`, 나머지 `val`. 도메인 행위는 Entity 메서드로.
 - `@Column` 어노테이션이 있는 프로퍼티는 반드시 프로퍼티 바로 윗줄에 `@Column`을 선언해야 한다. 다른 어노테이션이나 빈 줄이 사이에 끼지 않도록 한다.
+- **PK 컬럼명**: `{table_name}_id` 형식을 사용한다 (예: `account` 테이블 → `account_id`, `users` 테이블 → `users_id`). `@Id` 필드에 `@Column(name = "{table_name}_id")` 어노테이션을 명시하고, Kotlin 필드명은 `id`를 유지한다.
 
 ---
 

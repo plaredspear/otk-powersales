@@ -23,7 +23,7 @@ class Account(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @HCColumn("id")
+    @Column(name = "account_id")
     val id: Int = 0,
 
     @HCColumn("sfid")

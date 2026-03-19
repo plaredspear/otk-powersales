@@ -25,7 +25,7 @@ class Product(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @HCColumn("id")
+    @Column(name = "product_id")
     val id: Long = 0,
 
     @HCColumn("sfid")
