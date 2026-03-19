@@ -7,7 +7,7 @@ import '../models/auth_token_model.dart';
 abstract class AuthRemoteDataSource {
   /// 로그인 API 호출
   Future<LoginResponseModel> login(
-      String employeeId, String password, String deviceId);
+      String employeeNumber, String password, String deviceId);
 
   /// 토큰 갱신 API 호출
   Future<AuthTokenModel> refreshToken(String refreshToken);

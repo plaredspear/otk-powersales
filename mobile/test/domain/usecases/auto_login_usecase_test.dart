@@ -9,7 +9,7 @@ class MockAuthRepository implements AuthRepository {
   AuthToken? refreshResult;
   Exception? exceptionToThrow;
 
-  String? lastLoginEmployeeId;
+  String? lastLoginEmployeeNumber;
   String? lastLoginPassword;
   String? lastRefreshToken;
   String? lastCurrentPassword;
@@ -18,8 +18,8 @@ class MockAuthRepository implements AuthRepository {
   bool recordGpsConsentCalled = false;
 
   @override
-  Future<LoginResult> login(String employeeId, String password) async {
-    lastLoginEmployeeId = employeeId;
+  Future<LoginResult> login(String employeeNumber, String password) async {
+    lastLoginEmployeeNumber = employeeNumber;
     lastLoginPassword = password;
     if (exceptionToThrow != null) throw exceptionToThrow!;
     return loginResult!;

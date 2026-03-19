@@ -20,8 +20,8 @@ class AuthLocalDataSource {
 
   // Hive box and keys
   static const String _authBoxName = 'auth_box';
-  static const String _savedEmployeeIdKey = 'saved_employee_id';
-  static const String _rememberEmployeeIdKey = 'remember_employee_id';
+  static const String _savedEmployeeNumberKey = 'saved_employee_number';
+  static const String _rememberEmployeeNumberKey = 'remember_employee_number';
 
   AuthLocalDataSource({
     FlutterSecureStorage? secureStorage,
@@ -122,30 +122,30 @@ class AuthLocalDataSource {
   }
 
   /// 사번 저장 (아이디 기억하기)
-  Future<void> saveEmployeeId(String employeeId) async {
+  Future<void> saveEmployeeNumber(String employeeNumber) async {
     final box = await _openBox();
-    await box.put(_savedEmployeeIdKey, employeeId);
-    await box.put(_rememberEmployeeIdKey, true);
+    await box.put(_savedEmployeeNumberKey, employeeNumber);
+    await box.put(_rememberEmployeeNumberKey, true);
   }
 
   /// 저장된 사번 조회
-  Future<String?> getSavedEmployeeId() async {
+  Future<String?> getSavedEmployeeNumber() async {
     final box = await _openBox();
-    final remember = box.get(_rememberEmployeeIdKey, defaultValue: false) as bool;
+    final remember = box.get(_rememberEmployeeNumberKey, defaultValue: false) as bool;
     if (!remember) return null;
-    return box.get(_savedEmployeeIdKey) as String?;
+    return box.get(_savedEmployeeNumberKey) as String?;
   }
 
   /// 저장된 사번 삭제 (아이디 기억하기 해제)
-  Future<void> clearSavedEmployeeId() async {
+  Future<void> clearSavedEmployeeNumber() async {
     final box = await _openBox();
-    await box.delete(_savedEmployeeIdKey);
-    await box.put(_rememberEmployeeIdKey, false);
+    await box.delete(_savedEmployeeNumberKey);
+    await box.put(_rememberEmployeeNumberKey, false);
   }
 
   /// 아이디 기억하기 여부 조회
-  Future<bool> isRememberEmployeeIdEnabled() async {
+  Future<bool> isRememberEmployeeNumberEnabled() async {
     final box = await _openBox();
-    return box.get(_rememberEmployeeIdKey, defaultValue: false) as bool;
+    return box.get(_rememberEmployeeNumberKey, defaultValue: false) as bool;
   }
 }

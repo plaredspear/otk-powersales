@@ -118,7 +118,7 @@ class FakeAuthRepository implements AuthRepository {
   // --- 미사용 메서드 (stub) ---
 
   @override
-  Future<LoginResult> login(String employeeId, String password) async {
+  Future<LoginResult> login(String employeeNumber, String password) async {
     throw UnimplementedError();
   }
 

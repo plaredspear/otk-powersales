@@ -15,11 +15,11 @@ class AuthApiDataSource implements AuthRemoteDataSource {
 
   @override
   Future<LoginResponseModel> login(
-      String employeeId, String password, String deviceId) async {
+      String employeeNumber, String password, String deviceId) async {
     final response = await _dio.post(
       '/api/v1/auth/login',
       data: {
-        'employee_id': employeeId,
+        'employee_number': employeeNumber,
         'password': password,
         'device_id': deviceId,
       },

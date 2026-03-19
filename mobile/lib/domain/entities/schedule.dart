@@ -5,7 +5,7 @@
 class Schedule {
   final int scheduleId;
   final String employeeName;
-  final String employeeSfid;
+  final String employeeNumber;
   final String? accountName;
   final String? accountSfid;
   final String workCategory;
@@ -16,7 +16,7 @@ class Schedule {
   const Schedule({
     required this.scheduleId,
     required this.employeeName,
-    required this.employeeSfid,
+    required this.employeeNumber,
     this.accountName,
     this.accountSfid,
     required this.workCategory,
@@ -28,7 +28,7 @@ class Schedule {
   Schedule copyWith({
     int? scheduleId,
     String? employeeName,
-    String? employeeSfid,
+    String? employeeNumber,
     String? accountName,
     String? accountSfid,
     String? workCategory,
@@ -43,7 +43,7 @@ class Schedule {
     return Schedule(
       scheduleId: scheduleId ?? this.scheduleId,
       employeeName: employeeName ?? this.employeeName,
-      employeeSfid: employeeSfid ?? this.employeeSfid,
+      employeeNumber: employeeNumber ?? this.employeeNumber,
       accountName: clearAccountName ? null : (accountName ?? this.accountName),
       accountSfid: clearAccountSfid ? null : (accountSfid ?? this.accountSfid),
       workCategory: workCategory ?? this.workCategory,
@@ -61,7 +61,7 @@ class Schedule {
     return other is Schedule &&
         other.scheduleId == scheduleId &&
         other.employeeName == employeeName &&
-        other.employeeSfid == employeeSfid &&
+        other.employeeNumber == employeeNumber &&
         other.accountName == accountName &&
         other.accountSfid == accountSfid &&
         other.workCategory == workCategory &&
@@ -75,7 +75,7 @@ class Schedule {
     return Object.hash(
       scheduleId,
       employeeName,
-      employeeSfid,
+      employeeNumber,
       accountName,
       accountSfid,
       workCategory,

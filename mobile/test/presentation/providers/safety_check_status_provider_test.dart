@@ -157,7 +157,7 @@ final _sampleStatus = SafetyCheckStatusModel(
   members: [
     MemberStatusModel(
       id: 42,
-      employeeId: '123456',
+      employeeNumber: '123456',
       employeeName: '홍길동',
       accountName: '이마트 강남점',
       submitted: true,
@@ -173,7 +173,7 @@ final _sampleStatus = SafetyCheckStatusModel(
     ),
     MemberStatusModel(
       id: 55,
-      employeeId: '654321',
+      employeeNumber: '654321',
       employeeName: '김영희',
       accountName: '홈플러스 역삼점',
       submitted: false,

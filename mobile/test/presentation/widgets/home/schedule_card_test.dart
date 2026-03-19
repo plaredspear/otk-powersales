@@ -260,7 +260,7 @@ void main() {
             Schedule(
               scheduleId: 1,
               employeeName: '김영미',
-              employeeSfid: 'EMP-001',
+              employeeNumber: 'EMP-001',
               accountName: '이마트 강남점',
               workCategory: '행사',
               isCommuteRegistered: true,
@@ -282,7 +282,7 @@ void main() {
             const Schedule(
               scheduleId: 1,
               employeeName: '박수진',
-              employeeSfid: 'EMP-002',
+              employeeNumber: 'EMP-002',
               accountName: '홈플러스 잠실점',
               workCategory: '진열',
               isCommuteRegistered: false,
@@ -315,7 +315,7 @@ void main() {
             Schedule(
               scheduleId: 1,
               employeeName: '김영미',
-              employeeSfid: 'EMP-001',
+              employeeNumber: 'EMP-001',
               accountName: '이마트 강남점',
               workCategory: '행사',
               isCommuteRegistered: true,
@@ -324,7 +324,7 @@ void main() {
             Schedule(
               scheduleId: 2,
               employeeName: '김영미',
-              employeeSfid: 'EMP-001',
+              employeeNumber: 'EMP-001',
               accountName: '롯데마트 서초점',
               workCategory: '진열',
               isCommuteRegistered: false,
@@ -430,7 +430,7 @@ List<Schedule> _makeSchedules(int count, {required int registered}) {
     return Schedule(
       scheduleId: i + 1,
       employeeName: '테스트',
-      employeeSfid: 'EMP-001',
+      employeeNumber: 'EMP-001',
       accountName: '매장 $i',
       workCategory: '행사',
       isCommuteRegistered: i < registered,
@@ -444,7 +444,7 @@ List<Schedule> _makeLeaderSchedules() {
     Schedule(
       scheduleId: 1,
       employeeName: '김영미',
-      employeeSfid: 'EMP-001',
+      employeeNumber: 'EMP-001',
       accountName: '이마트 강남점',
       workCategory: '행사',
       isCommuteRegistered: true,
@@ -453,7 +453,7 @@ List<Schedule> _makeLeaderSchedules() {
     const Schedule(
       scheduleId: 2,
       employeeName: '박수진',
-      employeeSfid: 'EMP-002',
+      employeeNumber: 'EMP-002',
       accountName: '홈플러스 잠실점',
       workCategory: '진열',
       isCommuteRegistered: false,
@@ -461,7 +461,7 @@ List<Schedule> _makeLeaderSchedules() {
     Schedule(
       scheduleId: 3,
       employeeName: '이지현',
-      employeeSfid: 'EMP-003',
+      employeeNumber: 'EMP-003',
       accountName: '롯데마트 서초점',
       workCategory: '행사',
       isCommuteRegistered: false,

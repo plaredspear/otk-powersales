@@ -27,10 +27,10 @@ class AuthState {
   final bool requiresGpsConsent;
 
   /// 기억된 사번 (아이디 기억하기)
-  final String? savedEmployeeId;
+  final String? savedEmployeeNumber;
 
   /// 아이디 기억하기 활성화 여부
-  final bool rememberEmployeeId;
+  final bool rememberEmployeeNumber;
 
   /// 자동 로그인 활성화 여부
   final bool autoLogin;
@@ -44,8 +44,8 @@ class AuthState {
     this.errorMessage,
     this.requiresPasswordChange = false,
     this.requiresGpsConsent = false,
-    this.savedEmployeeId,
-    this.rememberEmployeeId = false,
+    this.savedEmployeeNumber,
+    this.rememberEmployeeNumber = false,
     this.autoLogin = false,
     this.isInitialized = false,
   });
@@ -83,8 +83,8 @@ class AuthState {
       errorMessage: null,
       requiresPasswordChange: false,
       requiresGpsConsent: false,
-      savedEmployeeId: savedEmployeeId,
-      rememberEmployeeId: rememberEmployeeId,
+      savedEmployeeNumber: savedEmployeeNumber,
+      rememberEmployeeNumber: rememberEmployeeNumber,
       autoLogin: false,
       isInitialized: true,
     );
@@ -112,8 +112,8 @@ class AuthState {
     String? errorMessage,
     bool? requiresPasswordChange,
     bool? requiresGpsConsent,
-    String? savedEmployeeId,
-    bool? rememberEmployeeId,
+    String? savedEmployeeNumber,
+    bool? rememberEmployeeNumber,
     bool? autoLogin,
     bool? isInitialized,
   }) {
@@ -124,8 +124,8 @@ class AuthState {
       requiresPasswordChange:
           requiresPasswordChange ?? this.requiresPasswordChange,
       requiresGpsConsent: requiresGpsConsent ?? this.requiresGpsConsent,
-      savedEmployeeId: savedEmployeeId ?? this.savedEmployeeId,
-      rememberEmployeeId: rememberEmployeeId ?? this.rememberEmployeeId,
+      savedEmployeeNumber: savedEmployeeNumber ?? this.savedEmployeeNumber,
+      rememberEmployeeNumber: rememberEmployeeNumber ?? this.rememberEmployeeNumber,
       autoLogin: autoLogin ?? this.autoLogin,
       isInitialized: isInitialized ?? this.isInitialized,
     );

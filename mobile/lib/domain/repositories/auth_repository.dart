@@ -57,11 +57,11 @@ class LoginResult {
 abstract class AuthRepository {
   /// 로그인
   ///
-  /// [employeeId]: 사번 (8자리 숫자)
+  /// [employeeNumber]: 사번 (8자리 숫자)
   /// [password]: 비밀번호
   ///
   /// Returns: 로그인 결과 (사용자 정보, 토큰, 비밀번호 변경 필요 여부, GPS 동의 필요 여부)
-  Future<LoginResult> login(String employeeId, String password);
+  Future<LoginResult> login(String employeeNumber, String password);
 
   /// 토큰 갱신
   ///
