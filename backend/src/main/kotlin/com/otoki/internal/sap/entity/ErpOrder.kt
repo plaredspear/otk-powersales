@@ -1,10 +1,10 @@
 package com.otoki.internal.sap.entity
 
+import com.otoki.internal.common.entity.BaseEntity
 import com.otoki.internal.common.sap.SAPSource
 import com.otoki.internal.common.sap.SAPUpsertKey
 import com.otoki.internal.common.sap.SyncMode
 import jakarta.persistence.*
-import java.time.LocalDateTime
 
 @Entity
 @Table(name = "erp_order")
@@ -50,11 +50,5 @@ class ErpOrder(
     var orderType: String? = null,
 
     @Column(name = "order_type_nm", length = 50)
-    var orderTypeNm: String? = null,
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    val createdAt: LocalDateTime = LocalDateTime.now(),
-
-    @Column(name = "updated_at")
-    var updatedAt: LocalDateTime? = null
-)
+    var orderTypeNm: String? = null
+) : BaseEntity()

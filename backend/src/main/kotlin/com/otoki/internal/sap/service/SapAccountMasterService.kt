@@ -10,7 +10,6 @@ import com.otoki.internal.sap.repository.OrganizationRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDateTime
 
 @Service
 class SapAccountMasterService(
@@ -57,19 +56,15 @@ class SapAccountMasterService(
             ?: throw IllegalArgumentException("name is required")
 
         val existing = accountRepository.findByExternalKey(sapAccountCode)
-        val now = LocalDateTime.now()
 
         val org = resolveOrg(item.branchCode, item.salesDeptCode)
 
         if (existing != null) {
             mapFields(existing, item, accountName, org)
-            existing.updatedAt = now
             accountRepository.save(existing)
         } else {
             val account = Account(
-                externalKey = sapAccountCode,
-                createdAt = now,
-                updatedAt = now
+                externalKey = sapAccountCode
             )
             mapFields(account, item, accountName, org)
             accountRepository.save(account)

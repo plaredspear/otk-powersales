@@ -7,8 +7,8 @@ import com.otoki.internal.common.salesforce.SFObject
 import com.otoki.internal.common.sap.SAPSource
 import com.otoki.internal.common.sap.SAPUpsertKey
 import com.otoki.internal.common.sap.SyncMode
+import com.otoki.internal.common.entity.BaseEntity
 import jakarta.persistence.*
-import java.time.LocalDateTime
 
 /**
  * 거래처 마스터 Entity
@@ -205,11 +205,5 @@ class Account(
     var orgCd4: String? = null,
 
     @Column(name = "org_cd5", length = 20)
-    var orgCd5: String? = null,
-
-    @Column(name = "created_at")
-    var createdAt: LocalDateTime? = null,
-
-    @Column(name = "updated_at")
-    var updatedAt: LocalDateTime? = null
-)
+    var orgCd5: String? = null
+) : BaseEntity()

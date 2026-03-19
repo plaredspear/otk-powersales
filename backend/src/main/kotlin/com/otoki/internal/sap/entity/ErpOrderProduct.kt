@@ -1,7 +1,7 @@
 package com.otoki.internal.sap.entity
 
+import com.otoki.internal.common.entity.BaseEntity
 import jakarta.persistence.*
-import java.time.LocalDateTime
 
 @Entity
 @Table(name = "erp_order_product")
@@ -91,11 +91,5 @@ class ErpOrderProduct(
     var releaseQuantity: Double? = null,
 
     @Column(name = "release_amount")
-    var releaseAmount: Double? = null,
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    val createdAt: LocalDateTime = LocalDateTime.now(),
-
-    @Column(name = "updated_at")
-    var updatedAt: LocalDateTime? = null
-)
+    var releaseAmount: Double? = null
+) : BaseEntity()
