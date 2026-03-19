@@ -19,6 +19,7 @@ import org.hibernate.annotations.Comment
 class Organization(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "organization_id")
     val id: Long = 0,
 
     @SFField("CostCenterLevel2__c")

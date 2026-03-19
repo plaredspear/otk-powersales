@@ -131,11 +131,11 @@ class SFSchemaUtilsTest {
     inner class GetHCMappingTests {
 
         @Test
-        @DisplayName("Account 엔티티 - 25개 HC Column 매핑 반환")
+        @DisplayName("Account 엔티티 - 24개 HC Column 매핑 반환")
         fun getHCMapping_account() {
             val mapping = SFSchemaUtils.getHCMapping(Account::class.java)
 
-            assertThat(mapping).hasSize(25)
+            assertThat(mapping).hasSize(24)
             assertThat(mapping["sfid"]).isEqualTo("sfid")
             assertThat(mapping["isdeleted"]).isEqualTo("is_deleted")
             assertThat(mapping["name"]).isEqualTo("name")
@@ -231,11 +231,11 @@ class SFSchemaUtilsTest {
         }
 
         @Test
-        @DisplayName("Product 엔티티 - 39개 HC Column 매핑 반환")
+        @DisplayName("Product 엔티티 - 38개 HC Column 매핑 반환")
         fun getHCMapping_product() {
             val mapping = SFSchemaUtils.getHCMapping(Product::class.java)
 
-            assertThat(mapping).hasSize(39)
+            assertThat(mapping).hasSize(38)
             assertThat(mapping["name"]).isEqualTo("name")
             assertThat(mapping["sfid"]).isEqualTo("sfid")
             assertThat(mapping["dkretail__productcode__c"]).isEqualTo("product_code")
