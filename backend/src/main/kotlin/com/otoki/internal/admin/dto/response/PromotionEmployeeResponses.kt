@@ -29,11 +29,11 @@ data class PromotionEmployeeListResponse(
     val s3ImageUniqueKey: String?
 ) {
     companion object {
-        fun from(entity: PromotionEmployee, employeeName: String?): PromotionEmployeeListResponse =
+        fun from(entity: PromotionEmployee, employeeName: String?, employeeNumber: String? = null): PromotionEmployeeListResponse =
             PromotionEmployeeListResponse(
                 id = entity.id,
                 promotionId = entity.promotionId,
-                employeeNumber = entity.employeeNumber,
+                employeeNumber = employeeNumber,
                 employeeName = employeeName,
                 scheduleDate = entity.scheduleDate,
                 workStatus = entity.workStatus,
@@ -84,11 +84,11 @@ data class PromotionEmployeeDetailResponse(
     val updatedAt: LocalDateTime
 ) {
     companion object {
-        fun from(entity: PromotionEmployee, employeeName: String?): PromotionEmployeeDetailResponse =
+        fun from(entity: PromotionEmployee, employeeName: String?, employeeNumber: String? = null): PromotionEmployeeDetailResponse =
             PromotionEmployeeDetailResponse(
                 id = entity.id,
                 promotionId = entity.promotionId,
-                employeeNumber = entity.employeeNumber,
+                employeeNumber = employeeNumber,
                 employeeName = employeeName,
                 scheduleDate = entity.scheduleDate,
                 workStatus = entity.workStatus,

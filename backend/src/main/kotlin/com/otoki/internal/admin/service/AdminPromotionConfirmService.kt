@@ -50,25 +50,39 @@ class AdminPromotionConfirmService(
         }
 
         // 4. 검증에 필요한 데이터 사전 조회
-        val employeeNumbers = employees.mapNotNull { it.employeeNumber }.distinct()
+        val employeeIds = employees.mapNotNull { it.employeeId }.distinct()
         val scheduleDates = employees.mapNotNull { it.scheduleDate }.distinct()
         val peIds = employees.map { it.id }
+
+        // 사원 정보 조회 (이름 + 상태 검증 + employeeNumber 역참조용)
+        val userByIdMap: Map<Long, com.otoki.internal.sap.entity.User> = if (employeeIds.isNotEmpty()) {
+            userRepository.findAllById(employeeIds).associateBy { it.id }
+        } else emptyMap()
+
+        // PE → employeeNumber 매핑 (TeamMemberSchedule 연동용)
+        val peEmployeeNumberMap: Map<Long, String> = employees.mapNotNull { pe ->
+            pe.employeeId?.let { userByIdMap[it] }?.let { pe.id to it.employeeNumber }
+        }.toMap()
+
+        val employeeNumbers = peEmployeeNumberMap.values.distinct()
 
         // 기존 스케줄 조회 (검증 + Upsert용)
         val existingTeamMemberSchedulesByPeId = teamMemberScheduleRepository.findByPromotionEmployeeIdIn(peIds)
             .associateBy { it.promotionEmployeeId }
-        val existingTeamMemberSchedules = teamMemberScheduleRepository.findByEmployeeNumberInAndWorkingDateIn(employeeNumbers, scheduleDates)
+        val existingTeamMemberSchedules = if (employeeNumbers.isNotEmpty()) {
+            teamMemberScheduleRepository.findByEmployeeNumberInAndWorkingDateIn(employeeNumbers, scheduleDates)
+        } else emptyList()
 
-        // 사원 정보 조회 (이름 + 상태 검증용)
-        val userMap: Map<String?, com.otoki.internal.sap.entity.User> = userRepository.findByEmployeeNumberIn(employeeNumbers).associateBy { it.employeeNumber }
+        // userMap keyed by employeeNumber (검증 메서드 호환용)
+        val userMap: Map<String?, com.otoki.internal.sap.entity.User> = userByIdMap.values.associateBy { it.employeeNumber }
 
         // 5. 검증 단계 (순서대로)
-        validateRequiredValues(employees, userMap)
-        validateDateRange(employees, promotion, userMap)
-        validateWorkType3Limit(employees, existingTeamMemberSchedules, peIds, userMap)
-        validateLeaveConflict(employees, existingTeamMemberSchedules, peIds, userMap)
-        validateDuplicateSchedule(employees, existingTeamMemberSchedules, promotion, peIds, userMap)
-        validateEmployeeStatus(employees, userMap)
+        validateRequiredValues(employees, peEmployeeNumberMap, userMap)
+        validateDateRange(employees, promotion, peEmployeeNumberMap, userMap)
+        validateWorkType3Limit(employees, existingTeamMemberSchedules, peIds, peEmployeeNumberMap, userMap)
+        validateLeaveConflict(employees, existingTeamMemberSchedules, peIds, peEmployeeNumberMap, userMap)
+        validateDuplicateSchedule(employees, existingTeamMemberSchedules, promotion, peIds, peEmployeeNumberMap, userMap)
+        validateEmployeeStatus(employees, userByIdMap)
 
         // 6. Upsert 수행
         val teamMemberSchedulesToSave = mutableListOf<TeamMemberSchedule>()
@@ -76,9 +90,11 @@ class AdminPromotionConfirmService(
         for (pe in employees) {
             val existing = existingTeamMemberSchedulesByPeId[pe.id]
 
+            val empNumber = peEmployeeNumberMap[pe.id]!!
+
             if (existing != null) {
                 existing.updateForPromotion(
-                    employeeNumber = pe.employeeNumber!!,
+                    employeeNumber = empNumber,
                     accountId = promotion.accountId,
                     workingDate = pe.scheduleDate!!,
                     workingType = pe.workStatus!!,
@@ -90,7 +106,7 @@ class AdminPromotionConfirmService(
                 teamMemberSchedulesToSave.add(existing)
             } else {
                 val newTeamMemberSchedule = TeamMemberSchedule(
-                    employeeNumber = pe.employeeNumber!!,
+                    employeeNumber = empNumber,
                     accountId = promotion.accountId,
                     workingDate = pe.scheduleDate!!,
                     workingType = pe.workStatus!!,
@@ -129,18 +145,20 @@ class AdminPromotionConfirmService(
     // 검증 1: 필수값
     private fun validateRequiredValues(
         employees: List<PromotionEmployee>,
+        peEmployeeNumberMap: Map<Long, String>,
         userMap: Map<String?, com.otoki.internal.sap.entity.User>
     ) {
         for (pe in employees) {
             val missingFields = mutableListOf<String>()
-            if (pe.employeeNumber.isNullOrBlank()) missingFields.add("행사사원")
+            if (pe.employeeId == null) missingFields.add("행사사원")
             if (pe.scheduleDate == null) missingFields.add("투입일")
             if (pe.workStatus.isNullOrBlank()) missingFields.add("근무상태")
             if (pe.workType1.isNullOrBlank()) missingFields.add("근무유형1")
             if (pe.workType3.isNullOrBlank()) missingFields.add("근무유형3")
 
             if (missingFields.isNotEmpty()) {
-                val name = resolveEmployeeName(pe.employeeNumber ?: pe.id.toString(), userMap)
+                val empNumber = peEmployeeNumberMap[pe.id] ?: pe.id.toString()
+                val name = resolveEmployeeName(empNumber, userMap)
                 throw ValuesRequiredException(
                     "${name}의 필수 항목을 입력하세요 (${missingFields.joinToString(", ")})"
                 )
@@ -152,12 +170,13 @@ class AdminPromotionConfirmService(
     private fun validateDateRange(
         employees: List<PromotionEmployee>,
         promotion: Promotion,
+        peEmployeeNumberMap: Map<Long, String>,
         userMap: Map<String?, com.otoki.internal.sap.entity.User>
     ) {
         for (pe in employees) {
             val scheduleDate = pe.scheduleDate!!
             if (scheduleDate < promotion.startDate || scheduleDate > promotion.endDate) {
-                val name = resolveEmployeeName(pe.employeeNumber!!, userMap)
+                val name = resolveEmployeeName(peEmployeeNumberMap[pe.id]!!, userMap)
                 throw DateOutOfRangeException(
                     "${name}의 투입일이 행사 기간(${promotion.startDate} ~ ${promotion.endDate})을 벗어납니다"
                 )
@@ -170,6 +189,7 @@ class AdminPromotionConfirmService(
         employees: List<PromotionEmployee>,
         existingTeamMemberSchedules: List<TeamMemberSchedule>,
         currentPeIds: List<Long>,
+        peEmployeeNumberMap: Map<Long, String>,
         userMap: Map<String?, com.otoki.internal.sap.entity.User>
     ) {
         // 기존 스케줄에서 현재 PE에 의해 생성된 스케줄 제외
@@ -189,7 +209,8 @@ class AdminPromotionConfirmService(
         // 신규 PE: 사원+날짜별 근무유형3 카운트
         val newCounts = mutableMapOf<EmpDateKey, MutableMap<String, Int>>()
         for (pe in employees) {
-            val key = EmpDateKey(pe.employeeNumber!!, pe.scheduleDate!!)
+            val empNumber = peEmployeeNumberMap[pe.id]!!
+            val key = EmpDateKey(empNumber, pe.scheduleDate!!)
             newCounts.getOrPut(key) { mutableMapOf() }
                 .merge(pe.workType3!!, 1) { a, b -> a + b }
         }
@@ -233,6 +254,7 @@ class AdminPromotionConfirmService(
         employees: List<PromotionEmployee>,
         existingTeamMemberSchedules: List<TeamMemberSchedule>,
         currentPeIds: List<Long>,
+        peEmployeeNumberMap: Map<Long, String>,
         userMap: Map<String?, com.otoki.internal.sap.entity.User>
     ) {
         val externalTeamMemberSchedules = existingTeamMemberSchedules.filter { it.promotionEmployeeId == null || it.promotionEmployeeId !in currentPeIds }
@@ -244,9 +266,10 @@ class AdminPromotionConfirmService(
         }
 
         for (pe in employees) {
-            val key = EmpDateKey(pe.employeeNumber!!, pe.scheduleDate!!)
+            val empNumber = peEmployeeNumberMap[pe.id]!!
+            val key = EmpDateKey(empNumber, pe.scheduleDate!!)
             val existing = existingByKey[key] ?: continue
-            val name = resolveEmployeeName(pe.employeeNumber!!, userMap)
+            val name = resolveEmployeeName(empNumber, userMap)
 
             // 기존에 연차/대휴가 있으면 충돌
             val hasLeave = existing.any { it.workingType == "연차" || it.workingType == "대휴" }
@@ -270,18 +293,20 @@ class AdminPromotionConfirmService(
         existingTeamMemberSchedules: List<TeamMemberSchedule>,
         promotion: Promotion,
         currentPeIds: List<Long>,
+        peEmployeeNumberMap: Map<Long, String>,
         userMap: Map<String?, com.otoki.internal.sap.entity.User>
     ) {
         val externalTeamMemberSchedules = existingTeamMemberSchedules.filter { it.promotionEmployeeId == null || it.promotionEmployeeId !in currentPeIds }
 
         for (pe in employees) {
+            val empNumber = peEmployeeNumberMap[pe.id]!!
             val duplicate = externalTeamMemberSchedules.any {
-                it.employeeNumber == pe.employeeNumber!! &&
+                it.employeeNumber == empNumber &&
                     it.workingDate == pe.scheduleDate!! &&
                     it.accountId == promotion.accountId
             }
             if (duplicate) {
-                val name = resolveEmployeeName(pe.employeeNumber!!, userMap)
+                val name = resolveEmployeeName(empNumber, userMap)
                 throw DuplicateScheduleException("${name}의 ${pe.scheduleDate}에 동일 거래처 근무 일정이 존재합니다")
             }
         }
@@ -290,10 +315,10 @@ class AdminPromotionConfirmService(
     // 검증 6: 여사원 상태
     private fun validateEmployeeStatus(
         employees: List<PromotionEmployee>,
-        userMap: Map<String?, com.otoki.internal.sap.entity.User>
+        userByIdMap: Map<Long, com.otoki.internal.sap.entity.User>
     ) {
         for (pe in employees) {
-            val user = userMap[pe.employeeNumber] ?: continue
+            val user = pe.employeeId?.let { userByIdMap[it] } ?: continue
             val name = user.name
 
             when (user.status) {

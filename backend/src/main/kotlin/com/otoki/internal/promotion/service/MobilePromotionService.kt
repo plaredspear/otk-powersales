@@ -48,7 +48,7 @@ class MobilePromotionService(
 
         val pageable = PageRequest.of(page, size)
         val promotionPage = promotionRepository.searchForMobile(
-            employeeNumber = user.employeeNumber,
+            employeeId = user.id,
             costCenterCode = user.costCenterCode,
             isWoman = isWoman,
             keyword = keyword,
@@ -72,8 +72,8 @@ class MobilePromotionService(
                 val accountName = accountMap[promotion.accountId]?.name
                 val typeName = promotion.promotionTypeId?.let { typeMap[it]?.name }
                 val myScheduleDate = if (isWoman) {
-                    promotionEmployeeRepository.findMinScheduleDateByPromotionIdAndEmployeeNumber(
-                        promotion.id, user.employeeNumber
+                    promotionEmployeeRepository.findMinScheduleDateByPromotionIdAndEmployeeId(
+                        promotion.id, user.id
                     )
                 } else null
 
@@ -103,7 +103,7 @@ class MobilePromotionService(
 
         // 권한 검증
         if (isWoman) {
-            if (!promotionEmployeeRepository.existsByPromotionIdAndEmployeeNumber(promotionId, user.employeeNumber)) {
+            if (!promotionEmployeeRepository.existsByPromotionIdAndEmployeeId(promotionId, user.id)) {
                 throw PromotionForbiddenException()
             }
         } else {
@@ -120,13 +120,13 @@ class MobilePromotionService(
 
         // 조원 목록 + 사원명 매핑
         val employees = promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(promotionId)
-        val empIds = employees.mapNotNull { it.employeeNumber }.distinct()
+        val empIds = employees.mapNotNull { it.employeeId }.distinct()
         val userMap = if (empIds.isNotEmpty()) {
-            userRepository.findByEmployeeNumberIn(empIds).associateBy { it.employeeNumber }
+            userRepository.findAllById(empIds).associateBy { it.id }
         } else emptyMap()
 
         val employeeItems = employees.map { emp ->
-            val empName = emp.employeeNumber?.let { userMap[it]?.name }
+            val empName = emp.employeeId?.let { userMap[it]?.name }
             MobilePromotionEmployeeItem.from(emp, empName)
         }
 

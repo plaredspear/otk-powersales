@@ -626,7 +626,7 @@ class AdminPromotionServiceTest {
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
 
             val pe = PromotionEmployee(
-                id = 5L, promotionId = 1L, employeeSfid = "sfid1",
+                id = 5L, promotionId = 1L, employeeId = 1L,
                 scheduleDate = LocalDate.of(2026, 3, 15), workStatus = "근무",
                 workType1 = "시식", workType3 = "고정", scheduleId = 100L
             )
@@ -708,7 +708,7 @@ class AdminPromotionServiceTest {
             whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(false)
 
             val pe = PromotionEmployee(
-                id = 5L, promotionId = 1L, employeeSfid = "sfid1",
+                id = 5L, promotionId = 1L, employeeId = 1L,
                 scheduleDate = LocalDate.of(2026, 3, 15), workStatus = "근무",
                 workType1 = "시식", workType3 = "고정", scheduleId = 100L
             )
@@ -742,7 +742,7 @@ class AdminPromotionServiceTest {
             whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(false)
 
             val pe = PromotionEmployee(
-                id = 5L, promotionId = 1L, employeeSfid = "sfid1",
+                id = 5L, promotionId = 1L, employeeId = 1L,
                 scheduleDate = LocalDate.of(2026, 3, 15), workStatus = "근무",
                 workType1 = "시식", workType3 = "고정", scheduleId = 100L
             )
