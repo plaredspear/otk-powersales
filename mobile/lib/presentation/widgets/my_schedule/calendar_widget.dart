@@ -20,12 +20,16 @@ class CalendarWidget extends StatelessWidget {
   /// 날짜 선택 시 콜백
   final Function(DateTime) onDateTap;
 
+  /// 해당 월의 연차 건수
+  final int annualLeaveCount;
+
   const CalendarWidget({
     super.key,
     required this.year,
     required this.month,
     required this.workDays,
     required this.onDateTap,
+    this.annualLeaveCount = 0,
   });
 
   /// 해당 날짜가 근무일인지 확인
@@ -35,6 +39,18 @@ class CalendarWidget extends StatelessWidget {
         workDay.date.year == date.year &&
         workDay.date.month == date.month &&
         workDay.date.day == date.day);
+  }
+
+  /// 해당 날짜의 근무유형 조회
+  String? _getWorkingType(DateTime date) {
+    final day = workDays.cast<MonthlyScheduleDay?>().firstWhere(
+          (workDay) =>
+              workDay!.date.year == date.year &&
+              workDay.date.month == date.month &&
+              workDay.date.day == date.day,
+          orElse: () => null,
+        );
+    return day?.workingType;
   }
 
   /// 해당 날짜가 오늘인지 확인
@@ -124,6 +140,8 @@ class CalendarWidget extends StatelessWidget {
 
                 final isWorkDay = _isWorkDay(date);
                 final isToday = _isToday(date);
+                final workingType = _getWorkingType(date);
+                final isAnnualLeave = workingType == '연차';
                 final weekday = index % 7;
                 final isSunday = weekday == 0;
                 final isSaturday = weekday == 6;
@@ -155,8 +173,21 @@ class CalendarWidget extends StatelessWidget {
                           ),
                         ),
 
+                        // 연차 표시
+                        if (isAnnualLeave)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2.0),
+                            child: Text(
+                              '연차',
+                              style: AppTypography.labelSmall.copyWith(
+                                color: AppColors.secondary,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          )
                         // 근무 표시
-                        if (isWorkDay)
+                        else if (isWorkDay)
                           Padding(
                             padding: const EdgeInsets.only(top: 2.0),
                             child: Text(
@@ -174,6 +205,30 @@ class CalendarWidget extends StatelessWidget {
                 );
               },
             ),
+          ),
+        ),
+
+        // 연차 건수 요약
+        Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.sm,
+          ),
+          decoration: BoxDecoration(
+            border: Border(
+              top: BorderSide(color: AppColors.divider, width: 1),
+            ),
+          ),
+          child: Row(
+            children: [
+              Text(
+                '연차: ${annualLeaveCount}일',
+                style: AppTypography.bodyMedium.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
           ),
         ),
       ],

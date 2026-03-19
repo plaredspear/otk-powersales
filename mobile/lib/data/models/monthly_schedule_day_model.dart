@@ -6,10 +6,12 @@ import '../../domain/entities/monthly_schedule_day.dart';
 class MonthlyScheduleDayModel {
   final DateTime date;
   final bool hasWork;
+  final String? workingType;
 
   const MonthlyScheduleDayModel({
     required this.date,
     required this.hasWork,
+    this.workingType,
   });
 
   /// snake_case JSON에서 파싱
@@ -17,6 +19,7 @@ class MonthlyScheduleDayModel {
     return MonthlyScheduleDayModel(
       date: DateTime.parse(json['date'] as String),
       hasWork: json['has_work'] as bool,
+      workingType: json['working_type'] as String?,
     );
   }
 
@@ -25,6 +28,7 @@ class MonthlyScheduleDayModel {
     return {
       'date': date.toIso8601String().split('T')[0], // YYYY-MM-DD 형식
       'has_work': hasWork,
+      'working_type': workingType,
     };
   }
 
@@ -33,6 +37,7 @@ class MonthlyScheduleDayModel {
     return MonthlyScheduleDay(
       date: date,
       hasWork: hasWork,
+      workingType: workingType,
     );
   }
 
@@ -41,6 +46,7 @@ class MonthlyScheduleDayModel {
     return MonthlyScheduleDayModel(
       date: entity.date,
       hasWork: entity.hasWork,
+      workingType: entity.workingType,
     );
   }
 
@@ -49,14 +55,15 @@ class MonthlyScheduleDayModel {
     if (identical(this, other)) return true;
     return other is MonthlyScheduleDayModel &&
         other.date == date &&
-        other.hasWork == hasWork;
+        other.hasWork == hasWork &&
+        other.workingType == workingType;
   }
 
   @override
-  int get hashCode => Object.hash(date, hasWork);
+  int get hashCode => Object.hash(date, hasWork, workingType);
 
   @override
   String toString() {
-    return 'MonthlyScheduleDayModel(date: $date, hasWork: $hasWork)';
+    return 'MonthlyScheduleDayModel(date: $date, hasWork: $hasWork, workingType: $workingType)';
   }
 }
