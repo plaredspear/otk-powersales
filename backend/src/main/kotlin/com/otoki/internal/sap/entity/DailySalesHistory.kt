@@ -1,10 +1,14 @@
 package com.otoki.internal.sap.entity
 
+import com.otoki.internal.common.sap.SAPSource
+import com.otoki.internal.common.sap.SAPUpsertKey
+import com.otoki.internal.common.sap.SyncMode
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
 @Entity
 @Table(name = "daily_sales_history")
+@SAPSource(api = "/sap/DailyErpSalesInfoReceive", syncMode = SyncMode.UPSERT)
 class DailySalesHistory(
 
     @Id
@@ -17,6 +21,7 @@ class DailySalesHistory(
     @Column(name = "sales_date", nullable = false, length = 8)
     val salesDate: String,
 
+    @SAPUpsertKey(composite = true, components = ["sapAccountCode", "salesDate"])
     @Column(name = "external_key", nullable = false, unique = true, length = 30)
     val externalKey: String,
 

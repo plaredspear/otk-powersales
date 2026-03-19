@@ -2,6 +2,8 @@ package com.otoki.internal.sap.entity
 
 import com.otoki.internal.common.salesforce.SFField
 import com.otoki.internal.common.salesforce.SFObject
+import com.otoki.internal.common.sap.SAPSource
+import com.otoki.internal.common.sap.SyncMode
 import jakarta.persistence.*
 import org.hibernate.annotations.Comment
 import java.time.LocalDateTime
@@ -13,6 +15,7 @@ import java.time.LocalDateTime
 @Entity
 @Table(name = "organization")
 @SFObject("Organization__c")
+@SAPSource(api = "/sap/OrganizeMasterReceive", syncMode = SyncMode.DELETE_INSERT)
 class Organization(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
