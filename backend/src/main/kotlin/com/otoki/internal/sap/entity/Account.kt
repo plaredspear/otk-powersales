@@ -150,60 +150,12 @@ class Account(
     @Column(name = "account_type", length = 20)
     var accountType: String? = null,
 
-    @Column(name = "account_status_code", length = 20)
-    var accountStatusCode: String? = null,
-
     @Column(name = "account_status_name", length = 40)
     var accountStatusName: String? = null,
-
-    @Column(name = "email", length = 255)
-    var email: String? = null,
-
-    @Column(name = "business_type", length = 100)
-    var businessType: String? = null,
-
-    @Column(name = "business_category", length = 100)
-    var businessCategory: String? = null,
 
     @Column(name = "employee_code", length = 20)
     var employeeCode: String? = null,
 
-    @Column(name = "business_license_number", length = 20)
-    var businessLicenseNumber: String? = null,
-
-    @Column(name = "division_code", length = 20)
-    var divisionCode: String? = null,
-
-    @Column(name = "division_name", length = 100)
-    var divisionName: String? = null,
-
-    @Column(name = "sales_dept_code", length = 20)
-    var salesDeptCode: String? = null,
-
-    @Column(name = "sales_dept_name", length = 100)
-    var salesDeptName: String? = null,
-
     @Column(name = "distribution", length = 1)
-    var distribution: String? = null,
-
-    @Column(name = "consignment_acc", length = 1)
-    var consignmentAcc: String? = null,
-
-    @Column(name = "werk1", length = 10)
-    var werk1: String? = null,
-
-    @Column(name = "werk2", length = 10)
-    var werk2: String? = null,
-
-    @Column(name = "werk3", length = 10)
-    var werk3: String? = null,
-
-    @Column(name = "org_cd3", length = 20)
-    var orgCd3: String? = null,
-
-    @Column(name = "org_cd4", length = 20)
-    var orgCd4: String? = null,
-
-    @Column(name = "org_cd5", length = 20)
-    var orgCd5: String? = null
+    var distribution: String? = null
 ) : BaseEntity()
