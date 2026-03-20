@@ -5,6 +5,7 @@ import com.otoki.internal.common.salesforce.SFSchemaUtils
 import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.sap.entity.Product
 import jakarta.persistence.Id
+import jakarta.persistence.Table
 import java.io.File
 import java.sql.Connection
 import java.sql.DriverManager
@@ -80,8 +81,10 @@ object HerokuMigrationTool {
         herokuConn: Connection,
         targetConn: Connection
     ) {
-        val tableName = entityClass.getAnnotation(HCTable::class.java)?.value
+        val hcTableName = entityClass.getAnnotation(HCTable::class.java)?.value
             ?: throw IllegalArgumentException("$name: @HCTable 어노테이션 없음")
+        val targetTableName = entityClass.getAnnotation(Table::class.java)?.name
+            ?: hcTableName
 
         // @Id 필드의 JPA 컬럼명 수집 (PK 제외용)
         val idColumnNames = entityClass.declaredFields
@@ -101,7 +104,7 @@ object HerokuMigrationTool {
         } + listOf("createddate AS created_at", "systemmodstamp AS updated_at")
 
         val allJpaColumns = mappings.map { it.jpaColumnName } + listOf("created_at", "updated_at")
-        val selectSql = "SELECT ${selectColumns.joinToString(", ")} FROM $HEROKU_SCHEMA.$tableName"
+        val selectSql = "SELECT ${selectColumns.joinToString(", ")} FROM $HEROKU_SCHEMA.$hcTableName"
 
         println("[$name] Heroku DB 조회 중...")
 
@@ -122,11 +125,11 @@ object HerokuMigrationTool {
 
         // 2. 대상 테이블 초기화 (PK는 IDENTITY 자동 채번이므로 시퀀스 리셋 불필요)
         targetConn.createStatement().use { stmt ->
-            stmt.execute("TRUNCATE TABLE $TARGET_SCHEMA.$tableName CASCADE")
+            stmt.execute("TRUNCATE TABLE $TARGET_SCHEMA.$targetTableName CASCADE")
         }
 
         // 3. 배치 INSERT (PK 제외 — IDENTITY 자동 채번)
-        val insertSql = "INSERT INTO $TARGET_SCHEMA.$tableName " +
+        val insertSql = "INSERT INTO $TARGET_SCHEMA.$targetTableName " +
             "(${allJpaColumns.joinToString(", ")}) VALUES " +
             "(${allJpaColumns.indices.joinToString(", ") { "?" }})"
 
