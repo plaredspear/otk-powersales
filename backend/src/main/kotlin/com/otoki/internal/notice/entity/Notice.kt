@@ -64,11 +64,4 @@ class Notice(
     @Column(name = "isdeleted")
     var isDeleted: Boolean? = null,
 
-    @HCColumn("_hc_lastop")
-    @Column(name = "_hc_lastop", length = 32)
-    val hcLastOp: String? = null,
-
-    @HCColumn("_hc_err")
-    @Column(name = "_hc_err", columnDefinition = "TEXT")
-    val hcErr: String? = null
 ) : BaseEntity()

@@ -146,7 +146,7 @@ class SFSchemaUtilsTest {
         fun getHCMapping_user() {
             val mapping = SFSchemaUtils.getHCMapping(Employee::class.java)
 
-            assertThat(mapping).hasSize(18)
+            assertThat(mapping).hasSize(16)
             assertThat(mapping["id"]).isEqualTo("id")
             assertThat(mapping["sfid"]).isEqualTo("sfid")
             assertThat(mapping["dkretail__empcode__c"]).isEqualTo("employee_number")
@@ -163,8 +163,6 @@ class SFSchemaUtilsTest {
             assertThat(mapping["dkretail__startdate__c"]).isEqualTo("start_date")
             assertThat(mapping["agreementflag__c"]).isEqualTo("agreement_flag")
             assertThat(mapping["isdeleted"]).isEqualTo("isdeleted")
-            assertThat(mapping["_hc_lastop"]).isEqualTo("_hc_lastop")
-            assertThat(mapping["_hc_err"]).isEqualTo("_hc_err")
         }
 
         @Test
@@ -172,7 +170,7 @@ class SFSchemaUtilsTest {
         fun getHCMapping_teamMemberSchedule() {
             val mapping = SFSchemaUtils.getHCMapping(TeamMemberSchedule::class.java)
 
-            assertThat(mapping).hasSize(38)
+            assertThat(mapping).hasSize(36)
             assertThat(mapping["id"]).isEqualTo("id")
             assertThat(mapping["sfid"]).isEqualTo("sfid")
             assertThat(mapping["name"]).isEqualTo("name")
@@ -201,16 +199,14 @@ class SFSchemaUtilsTest {
             assertThat(mapping["starttime__c"]).isEqualTo("start_time")
             assertThat(mapping["completetime__c"]).isEqualTo("complete_time")
             assertThat(mapping["isdeleted"]).isEqualTo("isdeleted")
-            assertThat(mapping["_hc_lastop"]).isEqualTo("_hc_lastop")
-            assertThat(mapping["_hc_err"]).isEqualTo("_hc_err")
         }
 
         @Test
-        @DisplayName("DisplayWorkSchedule 엔티티 - 18개 HC Column 매핑 반환")
+        @DisplayName("DisplayWorkSchedule 엔티티 - 15개 HC Column 매핑 반환")
         fun getHCMapping_displayWorkSchedule() {
             val mapping = SFSchemaUtils.getHCMapping(DisplayWorkSchedule::class.java)
 
-            assertThat(mapping).hasSize(17)
+            assertThat(mapping).hasSize(15)
             assertThat(mapping["id"]).isEqualTo("id")
             assertThat(mapping["sfid"]).isEqualTo("sfid")
             assertThat(mapping["name"]).isEqualTo("name")
@@ -224,8 +220,6 @@ class SFSchemaUtilsTest {
             assertThat(mapping["typeofwork5__c"]).isEqualTo("type_of_work5")
             assertThat(mapping["ownerid"]).isEqualTo("owner_id")
             assertThat(mapping["isdeleted"]).isEqualTo("isdeleted")
-            assertThat(mapping["_hc_lastop"]).isEqualTo("_hc_lastop")
-            assertThat(mapping["_hc_err"]).isEqualTo("_hc_err")
             assertThat(mapping["costcentercode__c"]).isEqualTo("cost_center_code")
             assertThat(mapping["lastmonthrevenue__c"]).isEqualTo("last_month_revenue")
         }

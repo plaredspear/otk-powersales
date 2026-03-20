@@ -32,9 +32,4 @@ class PushMessageReceiver(
     @Column(name = "isdeleted")
     val isDeleted: Boolean? = null,
 
-    @Column(name = "_hc_lastop", length = 32)
-    val hcLastOp: String? = null,
-
-    @Column(name = "_hc_err", columnDefinition = "TEXT")
-    val hcErr: String? = null
 ) : BaseEntity()
