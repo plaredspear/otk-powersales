@@ -202,11 +202,11 @@ class SFSchemaUtilsTest {
         }
 
         @Test
-        @DisplayName("DisplayWorkSchedule 엔티티 - 13개 HC Column 매핑 반환")
+        @DisplayName("DisplayWorkSchedule 엔티티 - 11개 HC Column 매핑 반환")
         fun getHCMapping_displayWorkSchedule() {
             val mapping = SFSchemaUtils.getHCMapping(DisplayWorkSchedule::class.java)
 
-            assertThat(mapping).hasSize(13)
+            assertThat(mapping).hasSize(11)
             assertThat(mapping["sfid"]).isEqualTo("sfid")
             assertThat(mapping["name"]).isEqualTo("name")
             assertThat(mapping["account__c"]).isEqualTo("account_id")
@@ -217,9 +217,7 @@ class SFSchemaUtilsTest {
             assertThat(mapping["typeofwork1__c"]).isEqualTo("type_of_work1")
             assertThat(mapping["typeofwork3__c"]).isEqualTo("type_of_work3")
             assertThat(mapping["typeofwork5__c"]).isEqualTo("type_of_work5")
-            assertThat(mapping["ownerid"]).isEqualTo("owner_id")
-            assertThat(mapping["costcentercode__c"]).isEqualTo("cost_center_code")
-            assertThat(mapping["lastmonthrevenue__c"]).isEqualTo("last_month_revenue")
+            assertThat(mapping["isdeleted"]).isEqualTo("is_deleted")
         }
 
         @Test

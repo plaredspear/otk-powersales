@@ -73,20 +73,18 @@ class DisplayWorkSchedule(
     val typeOfWork5: String? = null,
 
     @SFField("OwnerId")
-    @HCColumn("ownerid")
     @Column(name = "owner_id")
     val ownerId: Long? = null,
 
     @SFField("CostCenterCode__c")
-    @HCColumn("costcentercode__c")
     @Column(name = "cost_center_code", length = 20)
     val costCenterCode: String? = null,
 
     @SFField("LastMonthRevenue__c")
-    @HCColumn("lastmonthrevenue__c")
     @Column(name = "last_month_revenue")
     val lastMonthRevenue: Long? = null,
 
+    @HCColumn("isdeleted")
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 
