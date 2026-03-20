@@ -7,6 +7,7 @@ import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.sap.entity.Product
 import com.otoki.internal.notice.entity.Notice
+import com.otoki.internal.schedule.entity.DisplayWorkSchedule
 import com.otoki.internal.sap.entity.ProductBarcode
 import jakarta.persistence.Id
 import jakarta.persistence.Table
@@ -66,6 +67,25 @@ object HerokuMigrationTool {
                 }
             }
             mapOf("employee_id" to sfidToPk)
+        },
+        EntityRegistration("displayWorkSchedule", DisplayWorkSchedule::class.java) { targetConn ->
+            val accountSfidToPk = mutableMapOf<String, Any?>()
+            val employeeSfidToPk = mutableMapOf<String, Any?>()
+            targetConn.createStatement().use { stmt ->
+                stmt.executeQuery("SELECT sfid, account_id FROM $TARGET_SCHEMA.account WHERE sfid IS NOT NULL").use { rs ->
+                    while (rs.next()) {
+                        accountSfidToPk[rs.getString("sfid")] = rs.getInt("account_id")
+                    }
+                }
+            }
+            targetConn.createStatement().use { stmt ->
+                stmt.executeQuery("SELECT sfid, id FROM $TARGET_SCHEMA.employee WHERE sfid IS NOT NULL").use { rs ->
+                    while (rs.next()) {
+                        employeeSfidToPk[rs.getString("sfid")] = rs.getLong("id")
+                    }
+                }
+            }
+            mapOf("account_id" to accountSfidToPk, "employee_id" to employeeSfidToPk)
         },
     )
 
