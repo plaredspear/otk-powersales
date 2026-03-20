@@ -6,6 +6,7 @@ import com.otoki.internal.safetycheck.entity.SafetyCheckItem
 import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.sap.entity.Product
+import com.otoki.internal.notice.entity.Notice
 import com.otoki.internal.sap.entity.ProductBarcode
 import jakarta.persistence.Id
 import jakarta.persistence.Table
@@ -54,6 +55,17 @@ object HerokuMigrationTool {
                 }
             }
             mapOf("product_id" to sfidToPk)
+        },
+        EntityRegistration("notice", Notice::class.java) { targetConn ->
+            val sfidToPk = mutableMapOf<String, Any?>()
+            targetConn.createStatement().use { stmt ->
+                stmt.executeQuery("SELECT sfid, id FROM $TARGET_SCHEMA.employee WHERE sfid IS NOT NULL").use { rs ->
+                    while (rs.next()) {
+                        sfidToPk[rs.getString("sfid")] = rs.getLong("id")
+                    }
+                }
+            }
+            mapOf("employee_id" to sfidToPk)
         },
     )
 
