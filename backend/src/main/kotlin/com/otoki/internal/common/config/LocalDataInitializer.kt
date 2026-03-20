@@ -16,6 +16,7 @@ import org.springframework.context.annotation.Profile
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.support.TransactionTemplate
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -26,17 +27,25 @@ class LocalDataInitializer(
     private val passwordEncoder: PasswordEncoder,
     private val agreementWordRepository: AgreementWordRepository,
     private val noticeRepository: NoticeRepository,
-    private val organizationRepository: OrganizationRepository
+    private val organizationRepository: OrganizationRepository,
+    private val transactionTemplate: TransactionTemplate
 ) : ApplicationRunner {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
-    @Transactional
     override fun run(args: ApplicationArguments?) {
-        seedUser()
-        seedAgreementWord()
-        seedNotices()
-        seedOrg()
+        runSafely("seedUser") { seedUser() }
+        runSafely("seedAgreementWord") { seedAgreementWord() }
+        runSafely("seedNotices") { seedNotices() }
+        runSafely("seedOrg") { seedOrg() }
+    }
+
+    private fun runSafely(name: String, block: () -> Unit) {
+        try {
+            transactionTemplate.executeWithoutResult { block() }
+        } catch (e: Exception) {
+            log.warn("시드 데이터 '{}' 실행 실패 (기존 데이터 충돌 가능): {}", name, e.message)
+        }
     }
 
     private fun seedUser() {
