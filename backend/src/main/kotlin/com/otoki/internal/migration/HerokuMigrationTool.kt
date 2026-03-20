@@ -5,6 +5,7 @@ import com.otoki.internal.common.salesforce.SFSchemaUtils
 import com.otoki.internal.safetycheck.entity.SafetyCheckItem
 import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.sap.entity.Product
+import com.otoki.internal.sap.entity.ProductBarcode
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import java.io.File
@@ -21,11 +22,35 @@ import java.util.Properties
  */
 object HerokuMigrationTool {
 
-    /** @HCTable 엔티티 등록. 추가 엔티티는 여기에 추가 */
+    /**
+     * 엔티티 등록 정보.
+     * @param name 로그 식별명
+     * @param entityClass JPA 엔티티 클래스 (@HCTable/@HCColumn 필수)
+     * @param columnTransformProvider 마이그레이션 시점에 컬럼 변환 맵을 동적 생성하는 함수.
+     *   반환: Map<JPA컬럼명, Map<Heroku원본값, DevDB변환값>>. null이면 변환 없음.
+     */
+    private data class EntityRegistration(
+        val name: String,
+        val entityClass: Class<*>,
+        val columnTransformProvider: ((Connection) -> Map<String, Map<String, Any?>>)? = null,
+    )
+
+    /** @HCTable 엔티티 등록. 추가 엔티티는 여기에 추가. 순서가 마이그레이션 순서를 결정 */
     private val entities = listOf(
-        "account" to Account::class.java,
-        "product" to Product::class.java,
-        "safetyCheckItem" to SafetyCheckItem::class.java,
+        EntityRegistration("account", Account::class.java),
+        EntityRegistration("product", Product::class.java),
+        EntityRegistration("safetyCheckItem", SafetyCheckItem::class.java),
+        EntityRegistration("productBarcode", ProductBarcode::class.java) { targetConn ->
+            val sfidToPk = mutableMapOf<String, Any?>()
+            targetConn.createStatement().use { stmt ->
+                stmt.executeQuery("SELECT sfid, product_id FROM $TARGET_SCHEMA.product WHERE sfid IS NOT NULL").use { rs ->
+                    while (rs.next()) {
+                        sfidToPk[rs.getString("sfid")] = rs.getLong("product_id")
+                    }
+                }
+            }
+            mapOf("product_id" to sfidToPk)
+        },
     )
 
     /** 마이그레이션에서 제외할 HC 전용 컬럼 (JPA @Column name 기준) */
@@ -68,8 +93,9 @@ object HerokuMigrationTool {
 
         createConnection(HEROKU_URL, HEROKU_USER, herokuPassword).use { herokuConn ->
             createConnection(TARGET_URL, TARGET_USER, TARGET_PASSWORD).use { targetConn ->
-                entities.forEach { (name, entityClass) ->
-                    migrateEntity(name, entityClass, herokuConn, targetConn)
+                entities.forEach { reg ->
+                    val columnTransforms = reg.columnTransformProvider?.invoke(targetConn) ?: emptyMap()
+                    migrateEntity(reg.name, reg.entityClass, herokuConn, targetConn, columnTransforms)
                 }
             }
         }
@@ -81,7 +107,8 @@ object HerokuMigrationTool {
         name: String,
         entityClass: Class<*>,
         herokuConn: Connection,
-        targetConn: Connection
+        targetConn: Connection,
+        columnTransforms: Map<String, Map<String, Any?>> = emptyMap(),
     ) {
         val hcTableName = entityClass.getAnnotation(HCTable::class.java)?.value
             ?: throw IllegalArgumentException("$name: @HCTable 어노테이션 없음")
@@ -134,15 +161,40 @@ object HerokuMigrationTool {
         }
 
         // 3. 배치 INSERT (PK 제외 — IDENTITY 자동 채번)
+        // 변환 대상 컬럼의 인덱스 매핑 (성능: 행마다 맵 조회 대신 인덱스로 접근)
+        val transformIndices = columnTransforms.mapNotNull { (colName, transformMap) ->
+            val idx = allJpaColumns.indexOf(colName)
+            if (idx >= 0) idx to transformMap else null
+        }.toMap()
+
         val insertSql = "INSERT INTO $TARGET_SCHEMA.$targetTableName " +
             "(${allJpaColumns.joinToString(", ")}) VALUES " +
             "(${allJpaColumns.indices.joinToString(", ") { "?" }})"
 
         targetConn.autoCommit = false
         var inserted = 0
+        var skipped = 0
 
         targetConn.prepareStatement(insertSql).use { ps ->
             rows.forEach { row ->
+                // 컬럼 값 변환 적용
+                var skip = false
+                for ((idx, transformMap) in transformIndices) {
+                    val originalValue = row[idx]
+                    if (originalValue == null) continue // NULL은 그대로
+                    val key = originalValue.toString()
+                    if (key !in transformMap) {
+                        println("[$name] WARN: 변환 실패 — ${allJpaColumns[idx]}='$key' (참조 대상 없음), 행 스킵")
+                        skip = true
+                        break
+                    }
+                    row[idx] = transformMap[key]
+                }
+                if (skip) {
+                    skipped++
+                    return@forEach
+                }
+
                 row.forEachIndexed { i, value -> ps.setObject(i + 1, value) }
                 ps.addBatch()
                 inserted++
@@ -159,7 +211,8 @@ object HerokuMigrationTool {
 
         targetConn.autoCommit = true
         println("[$name] $inserted / ${rows.size}")
-        println("[$name] 완료: ${rows.size}건")
+        if (skipped > 0) println("[$name] 스킵: ${skipped}건 (참조 변환 실패)")
+        println("[$name] 완료: ${inserted}건 이관, ${skipped}건 스킵 (총 ${rows.size}건)")
     }
 
     private fun hasColumn(conn: Connection, schema: String, table: String, column: String): Boolean {
