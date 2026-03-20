@@ -8,25 +8,34 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 @Entity
-@Table(name = "safety_check_submission")
+@Table(
+    name = "safety_check_submission",
+    uniqueConstraints = [
+        UniqueConstraint(
+            name = "uq_safety_check_employee_date",
+            columnNames = ["employee_id", "working_date"]
+        )
+    ]
+)
 @HCTable("safetycheck__workschedule__member")
-@IdClass(SafetyCheckMemberId::class)
 class SafetyCheckSubmission(
 
     @Id
-    @Column(name = "master_id", length = 18)
-    @HCColumn("masterId")
-    val masterId: String = "",
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "safety_check_submission_id")
+    val id: Long = 0,
 
-    @Id
-    @Column(name = "employee_id")
+    @Column(name = "employee_id", nullable = false)
     @HCColumn("employeeid__c")
     val employeeId: Long = 0,
 
-    @Id
-    @Column(name = "working_date")
+    @Column(name = "working_date", nullable = false)
     @HCColumn("working__date")
     val workingDate: LocalDate? = null,
+
+    @Column(name = "master_id", length = 18)
+    @HCColumn("masterId")
+    val masterId: String? = null,
 
     @Column(name = "start_time")
     @HCColumn("starttime")

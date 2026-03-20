@@ -95,7 +95,6 @@ class SafetyCheckService(
         val precautionCount = request.precautions?.size ?: 0
 
         val submission = SafetyCheckSubmission(
-            masterId = "",
             employeeId = employee.id,
             workingDate = today,
             startTime = request.startTime,
