@@ -205,15 +205,7 @@ class Product(
 
     @HCColumn("isdeleted")
     @Column(name = "is_deleted")
-    val isDeleted: Boolean? = null,
-
-    @HCColumn("_hc_lastop")
-    @Column(name = "_hc_lastop", length = 32)
-    val hcLastOp: String? = null,
-
-    @HCColumn("_hc_err")
-    @Column(name = "_hc_err", columnDefinition = "TEXT")
-    val hcErr: String? = null
+    val isDeleted: Boolean? = null
 
     /* --- 주석 처리: V1에 없는 기존 필드 ---
     productId: V1에 없음 (sfid로 대체)
