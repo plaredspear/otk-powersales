@@ -1,6 +1,6 @@
 package com.otoki.internal.safetycheck.service
 
-import com.otoki.internal.auth.exception.UserNotFoundException
+import com.otoki.internal.auth.exception.EmployeeNotFoundException
 import com.otoki.internal.safetycheck.dto.request.SafetyCheckSubmitRequest
 import com.otoki.internal.safetycheck.entity.SafetyCheckItem
 import com.otoki.internal.safetycheck.entity.SafetyCheckSubmission
@@ -8,8 +8,8 @@ import com.otoki.internal.safetycheck.exception.AlreadySubmittedException
 import com.otoki.internal.safetycheck.exception.RequiredItemsMissingException
 import com.otoki.internal.safetycheck.repository.SafetyCheckItemRepository
 import com.otoki.internal.safetycheck.repository.SafetyCheckSubmissionRepository
-import com.otoki.internal.sap.entity.User
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.entity.Employee
+import com.otoki.internal.sap.repository.EmployeeRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
@@ -36,7 +36,7 @@ class SafetyCheckServiceTest {
     private lateinit var submissionRepository: SafetyCheckSubmissionRepository
 
     @Mock
-    private lateinit var userRepository: UserRepository
+    private lateinit var employeeRepository: EmployeeRepository
 
     @InjectMocks
     private lateinit var safetyCheckService: SafetyCheckService
@@ -95,7 +95,7 @@ class SafetyCheckServiceTest {
             // Given
             val completeTime = LocalDateTime.now().minusHours(2)
             val submission = createSubmission(completeTime = completeTime)
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee()))
             whenever(submissionRepository.findByEmployeeIdAndWorkingDate(userId, LocalDate.now()))
                 .thenReturn(Optional.of(submission))
 
@@ -111,7 +111,7 @@ class SafetyCheckServiceTest {
         @DisplayName("오늘 제출 없음 - completed=false, submittedAt=null")
         fun getTodayStatus_notCompleted() {
             // Given
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee()))
             whenever(submissionRepository.findByEmployeeIdAndWorkingDate(userId, LocalDate.now()))
                 .thenReturn(Optional.empty())
 
@@ -124,14 +124,14 @@ class SafetyCheckServiceTest {
         }
 
         @Test
-        @DisplayName("사용자 없음 - UserNotFoundException")
+        @DisplayName("사용자 없음 - EmployeeNotFoundException")
         fun getTodayStatus_userNotFound() {
             // Given
-            whenever(userRepository.findById(userId)).thenReturn(Optional.empty())
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.empty())
 
             // When & Then
             assertThatThrownBy { safetyCheckService.getTodayStatus(userId) }
-                .isInstanceOf(UserNotFoundException::class.java)
+                .isInstanceOf(EmployeeNotFoundException::class.java)
         }
     }
 
@@ -143,7 +143,7 @@ class SafetyCheckServiceTest {
         @DisplayName("정상 제출 - 9개 장비 응답 + 예방사항 2건")
         fun submitSafetyCheck_success() {
             // Given
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee()))
             whenever(submissionRepository.existsByEmployeeIdAndWorkingDate(userId, LocalDate.now()))
                 .thenReturn(false)
             whenever(itemRepository.countByQuestionNumAndUseYn(1, "Y")).thenReturn(9L)
@@ -164,7 +164,7 @@ class SafetyCheckServiceTest {
         @DisplayName("예방사항 없이 제출 - precautions 빈 배열")
         fun submitSafetyCheck_noPrecautions() {
             // Given
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee()))
             whenever(submissionRepository.existsByEmployeeIdAndWorkingDate(userId, LocalDate.now()))
                 .thenReturn(false)
             whenever(itemRepository.countByQuestionNumAndUseYn(1, "Y")).thenReturn(9L)
@@ -184,7 +184,7 @@ class SafetyCheckServiceTest {
         @DisplayName("중복 제출 - AlreadySubmittedException")
         fun submitSafetyCheck_alreadySubmitted() {
             // Given
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee()))
             whenever(submissionRepository.existsByEmployeeIdAndWorkingDate(userId, LocalDate.now()))
                 .thenReturn(true)
 
@@ -197,7 +197,7 @@ class SafetyCheckServiceTest {
         @DisplayName("장비 응답 수 불일치 - 8개 제출 시 RequiredItemsMissingException")
         fun submitSafetyCheck_equipmentCountMismatch() {
             // Given
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee()))
             whenever(submissionRepository.existsByEmployeeIdAndWorkingDate(userId, LocalDate.now()))
                 .thenReturn(false)
             whenever(itemRepository.countByQuestionNumAndUseYn(1, "Y")).thenReturn(9L)
@@ -213,7 +213,7 @@ class SafetyCheckServiceTest {
         @DisplayName("잘못된 응답값 - answer가 '아니오'인 경우 RequiredItemsMissingException")
         fun submitSafetyCheck_invalidAnswer() {
             // Given
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee()))
             whenever(submissionRepository.existsByEmployeeIdAndWorkingDate(userId, LocalDate.now()))
                 .thenReturn(false)
             whenever(itemRepository.countByQuestionNumAndUseYn(1, "Y")).thenReturn(9L)
@@ -237,23 +237,23 @@ class SafetyCheckServiceTest {
         }
 
         @Test
-        @DisplayName("사용자 없음 - UserNotFoundException")
+        @DisplayName("사용자 없음 - EmployeeNotFoundException")
         fun submitSafetyCheck_userNotFound() {
             // Given
-            whenever(userRepository.findById(userId)).thenReturn(Optional.empty())
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.empty())
 
             // When & Then
             assertThatThrownBy { safetyCheckService.submitSafetyCheck(userId, createSubmitRequest()) }
-                .isInstanceOf(UserNotFoundException::class.java)
+                .isInstanceOf(EmployeeNotFoundException::class.java)
         }
     }
 
-    private fun createUser(
+    private fun createEmployee(
         id: Long = userId,
         employeeNumber: String = this.employeeNumber,
         name: String = "테스트 사용자"
-    ): User {
-        return User(id = id, employeeNumber = employeeNumber, name = name)
+    ): Employee {
+        return Employee(id = id, employeeNumber = employeeNumber, name = name)
     }
 
     private fun createItem(

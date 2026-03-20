@@ -1,7 +1,7 @@
 package com.otoki.internal.sap.service
 
-import com.otoki.internal.sap.entity.User
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.entity.Employee
+import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.sap.entity.Appointment
 import com.otoki.internal.sap.entity.Organization
 import com.otoki.internal.sap.repository.OrganizationRepository
@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service
 
 @Service
 class AppointmentUserProfileUpdater(
-    private val userRepository: UserRepository,
+    private val employeeRepository: EmployeeRepository,
     private val organizationRepository: OrganizationRepository
 ) {
 
@@ -41,8 +41,8 @@ class AppointmentUserProfileUpdater(
                     continue
                 }
 
-                val user = userRepository.findByEmployeeNumber(appointment.employeeCode).orElse(null)
-                if (user == null) {
+                val employee = employeeRepository.findByEmployeeNumber(appointment.employeeCode).orElse(null)
+                if (employee == null) {
                     skippedCount++
                     continue
                 }
@@ -59,10 +59,10 @@ class AppointmentUserProfileUpdater(
                 }
 
                 if (newAuthority != null) {
-                    user.appAuthority = newAuthority
+                    employee.appAuthority = newAuthority
                 }
-                user.costCenterCode = afterOrgCode
-                user.orgName = appointment.afterOrgName
+                employee.costCenterCode = afterOrgCode
+                employee.orgName = appointment.afterOrgName
 
                 updatedCount++
             } catch (e: Exception) {

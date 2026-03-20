@@ -1,11 +1,11 @@
 package com.otoki.internal.common.repository
 
 import com.otoki.internal.branch.dto.response.BranchResponse
-import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.entity.Employee
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 
-interface UserRepositoryCustom {
+interface EmployeeRepositoryCustom {
 
     fun findDistinctBranches(): List<BranchResponse>
 
@@ -17,5 +17,5 @@ interface UserRepositoryCustom {
         keyword: String?,
         appAuthority: String?,
         pageable: Pageable
-    ): Page<User>
+    ): Page<Employee>
 }

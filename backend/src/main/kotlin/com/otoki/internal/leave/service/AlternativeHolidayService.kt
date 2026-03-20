@@ -5,7 +5,7 @@ import com.otoki.internal.leave.dto.AlternativeHolidayListItemResponse
 import com.otoki.internal.leave.entity.AlternativeHoliday
 import com.otoki.internal.leave.exception.EmployeeNotFoundException
 import com.otoki.internal.leave.repository.AlternativeHolidayRepository
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.repository.EmployeeRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -14,7 +14,7 @@ import java.time.LocalDate
 @Transactional(readOnly = true)
 class AlternativeHolidayService(
     private val alternativeHolidayRepository: AlternativeHolidayRepository,
-    private val userRepository: UserRepository,
+    private val employeeRepository: EmployeeRepository,
     private val validator: AlternativeHolidayValidator
 ) {
 
@@ -24,22 +24,22 @@ class AlternativeHolidayService(
         actualWorkDate: LocalDate,
         targetAltHolidayDate: LocalDate
     ): AlternativeHolidayCreateResponse {
-        val user = userRepository.findById(userId)
+        val employee = employeeRepository.findById(userId)
             .orElseThrow { EmployeeNotFoundException() }
 
         validator.validateConfirmDate(targetAltHolidayDate)
         validator.validateActualWorkDate(actualWorkDate)
-        validator.validateWorkScheduleExists(user.id, actualWorkDate)
-        validator.validateNoDuplicate(user.id, actualWorkDate)
+        validator.validateWorkScheduleExists(employee.id, actualWorkDate)
+        validator.validateNoDuplicate(employee.id, actualWorkDate)
 
         val altHoliday = alternativeHolidayRepository.save(
             AlternativeHoliday(
-                employeeId = user.id,
-                employeeName = user.name,
+                employeeId = employee.id,
+                employeeName = employee.name,
                 actualWorkDate = actualWorkDate,
                 targetAltHolidayDate = targetAltHolidayDate,
                 status = "신규",
-                createdBy = user.employeeNumber
+                createdBy = employee.employeeNumber
             )
         )
 
@@ -51,7 +51,7 @@ class AlternativeHolidayService(
         startDate: LocalDate?,
         endDate: LocalDate?
     ): List<AlternativeHolidayListItemResponse> {
-        val user = userRepository.findById(userId)
+        val employee = employeeRepository.findById(userId)
             .orElseThrow { EmployeeNotFoundException() }
 
         val effectiveEndDate = endDate ?: LocalDate.now()
@@ -59,7 +59,7 @@ class AlternativeHolidayService(
 
         return alternativeHolidayRepository
             .findByEmployeeIdAndActualWorkDateBetweenOrderByCreatedAtDesc(
-                user.id, effectiveStartDate, effectiveEndDate
+                employee.id, effectiveStartDate, effectiveEndDate
             )
             .map { AlternativeHolidayListItemResponse.from(it) }
     }

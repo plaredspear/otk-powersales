@@ -3,10 +3,10 @@ package com.otoki.internal.schedule.service
 import com.otoki.internal.schedule.entity.*
 import com.otoki.internal.common.entity.*
 import com.otoki.internal.sap.entity.*
-import com.otoki.internal.auth.exception.UserNotFoundException
+import com.otoki.internal.auth.exception.EmployeeNotFoundException
 import com.otoki.internal.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.repository.EmployeeRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -25,7 +25,7 @@ import java.util.Optional
 class MyScheduleServiceTest {
 
     @Mock
-    private lateinit var userRepository: UserRepository
+    private lateinit var employeeRepository: EmployeeRepository
 
     @Mock
     private lateinit var displayWorkScheduleRepository: DisplayWorkScheduleRepository
@@ -49,14 +49,14 @@ class MyScheduleServiceTest {
             val userId = 1L
             val year = 2020
             val month = 8
-            val mockUser = createMockUser(userId, "최금주", "20030117", sfid = "a0B000000012345")
+            val mockUser = createMockEmployee(userId, "최금주", "20030117", sfid = "a0B000000012345")
             val workDates = listOf(
                 LocalDate.of(2020, 8, 1),
                 LocalDate.of(2020, 8, 4),
                 LocalDate.of(2020, 8, 10)
             )
 
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(mockUser))
             whenever(displayWorkScheduleRepository.findDistinctStartDatesByEmployeeNumberAndDateBetween(
                 eq("20030117"),
                 eq(LocalDate.of(2020, 8, 1)),
@@ -89,9 +89,9 @@ class MyScheduleServiceTest {
             val userId = 1L
             val year = 2020
             val month = 8
-            val mockUser = createMockUser(userId, "최금주", "20030117", sfid = "a0B000000012345")
+            val mockUser = createMockEmployee(userId, "최금주", "20030117", sfid = "a0B000000012345")
 
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(mockUser))
             whenever(displayWorkScheduleRepository.findDistinctStartDatesByEmployeeNumberAndDateBetween(
                 eq("20030117"),
                 any(),
@@ -119,9 +119,9 @@ class MyScheduleServiceTest {
             val userId = 1L
             val year = 2021
             val month = 2
-            val mockUser = createMockUser(userId, "최금주", "20030117", sfid = "a0B000000012345")
+            val mockUser = createMockEmployee(userId, "최금주", "20030117", sfid = "a0B000000012345")
 
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(mockUser))
             whenever(displayWorkScheduleRepository.findDistinctStartDatesByEmployeeNumberAndDateBetween(
                 eq("20030117"),
                 any(),
@@ -145,9 +145,9 @@ class MyScheduleServiceTest {
             val userId = 1L
             val year = 2026
             val month = 3
-            val mockUser = createMockUser(userId, "최금주", "20030117", sfid = "a0B000000012345")
+            val mockUser = createMockEmployee(userId, "최금주", "20030117", sfid = "a0B000000012345")
 
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(mockUser))
             whenever(displayWorkScheduleRepository.findDistinctStartDatesByEmployeeNumberAndDateBetween(
                 eq("20030117"), any(), any()
             )).thenReturn(listOf(LocalDate.of(2026, 3, 5), LocalDate.of(2026, 3, 10)))
@@ -183,10 +183,10 @@ class MyScheduleServiceTest {
         fun getMonthlySchedule_userNotFound() {
             // Given
             val userId = 999L
-            whenever(userRepository.findById(userId)).thenReturn(Optional.empty())
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.empty())
 
             // When & Then
-            assertThrows<UserNotFoundException> {
+            assertThrows<EmployeeNotFoundException> {
                 myScheduleService.getMonthlySchedule(userId, 2020, 8)
             }
         }
@@ -204,14 +204,14 @@ class MyScheduleServiceTest {
             // Given
             val userId = 1L
             val date = LocalDate.of(2020, 8, 4)
-            val mockUser = createMockUser(userId, "최금주", "20030117", sfid = "a0B000000012345")
+            val mockUser = createMockEmployee(userId, "최금주", "20030117", sfid = "a0B000000012345")
             val mockSchedules = listOf(
                 createMockSchedule(account = "ACC001", typeOfWork1 = "진열", startDate = date),
                 createMockSchedule(account = "ACC002", typeOfWork1 = "진열", startDate = date),
                 createMockSchedule(account = "ACC003", typeOfWork1 = "진열", startDate = date)
             )
 
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(mockUser))
             whenever(displayWorkScheduleRepository.findByEmployeeNumberAndStartDate("20030117", date))
                 .thenReturn(mockSchedules)
 
@@ -236,9 +236,9 @@ class MyScheduleServiceTest {
             // Given
             val userId = 1L
             val date = LocalDate.of(2020, 8, 4)
-            val mockUser = createMockUser(userId, "최금주", "20030117", sfid = "a0B000000012345")
+            val mockUser = createMockEmployee(userId, "최금주", "20030117", sfid = "a0B000000012345")
 
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(mockUser))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(mockUser))
             whenever(displayWorkScheduleRepository.findByEmployeeNumberAndStartDate("20030117", date))
                 .thenReturn(emptyList())
 
@@ -259,10 +259,10 @@ class MyScheduleServiceTest {
             val userId = 999L
             val date = LocalDate.of(2020, 8, 4)
 
-            whenever(userRepository.findById(userId)).thenReturn(Optional.empty())
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.empty())
 
             // When & Then
-            assertThrows<UserNotFoundException> {
+            assertThrows<EmployeeNotFoundException> {
                 myScheduleService.getDailySchedule(userId, date)
             }
         }
@@ -270,8 +270,8 @@ class MyScheduleServiceTest {
 
     // ========== Helper Methods ==========
 
-    private fun createMockUser(userId: Long, name: String, employeeNumber: String, sfid: String? = null): User {
-        return User(
+    private fun createMockEmployee(userId: Long, name: String, employeeNumber: String, sfid: String? = null): Employee {
+        return Employee(
             id = userId,
             employeeNumber = employeeNumber,
             password = "encoded",

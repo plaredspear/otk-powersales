@@ -14,13 +14,13 @@ import com.otoki.internal.auth.dto.response.*
 import com.otoki.internal.common.dto.response.*
 import com.otoki.internal.common.entity.AgreementHistory
 import com.otoki.internal.common.entity.LoginHistory
-import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.auth.exception.*
 import com.otoki.internal.common.exception.*
 import com.otoki.internal.common.repository.AgreementHistoryRepository
 import com.otoki.internal.common.repository.AgreementWordRepository
 import com.otoki.internal.common.repository.LoginHistoryRepository
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.common.security.JwtTokenProvider
 import org.slf4j.LoggerFactory
 import org.springframework.security.crypto.password.PasswordEncoder
@@ -34,7 +34,7 @@ import java.util.*
  */
 @Service
 class AuthService(
-    private val userRepository: UserRepository,
+    private val employeeRepository: EmployeeRepository,
     private val loginHistoryRepository: LoginHistoryRepository,
     private val agreementWordRepository: AgreementWordRepository,
     private val agreementHistoryRepository: AgreementHistoryRepository,
@@ -56,45 +56,45 @@ class AuthService(
      */
     @Transactional
     fun login(request: LoginRequest): LoginResponse {
-        val user = userRepository.findByEmployeeNumber(request.employeeNumber)
+        val employee = employeeRepository.findByEmployeeNumber(request.employeeNumber)
             .orElseThrow { InvalidCredentialsException() }
 
-        if (!passwordEncoder.matches(request.password, user.password)) {
+        if (!passwordEncoder.matches(request.password, employee.password)) {
             throw InvalidCredentialsException()
         }
 
         // 로그인 권한 검증 (비밀번호 검증 이후, 단말기 바인딩 이전)
-        validateLoginAuthority(user, request.deviceId)
+        validateLoginAuthority(employee, request.deviceId)
 
         // 단말기 바인딩 검증 (비밀번호 검증 이후)
-        validateDeviceBinding(user, request.deviceId)
+        validateDeviceBinding(employee, request.deviceId)
 
         // 로그인 이력 기록 (실패해도 로그인에 영향 없음)
         try {
-            loginHistoryRepository.save(LoginHistory(employeeId = user.employeeNumber))
+            loginHistoryRepository.save(LoginHistory(employeeId = employee.employeeNumber))
         } catch (e: Exception) {
-            log.warn("로그인 이력 기록 실패: employeeNumber={}", user.employeeNumber, e)
+            log.warn("로그인 이력 기록 실패: employeeNumber={}", employee.employeeNumber, e)
         }
 
-        val accessToken = jwtTokenProvider.createAccessToken(user.id, user.role, user.agreementFlag == true)
+        val accessToken = jwtTokenProvider.createAccessToken(employee.id, employee.role, employee.agreementFlag == true)
 
         // Refresh Token Rotation: familyId + tokenId 생성
         val familyId = UUID.randomUUID().toString()
         val tokenId = UUID.randomUUID().toString()
-        val refreshToken = jwtTokenProvider.createRefreshToken(user.id, familyId, tokenId)
+        val refreshToken = jwtTokenProvider.createRefreshToken(employee.id, familyId, tokenId)
 
         // Redis에 Refresh Token 메타데이터 저장
-        jwtTokenProvider.storeRefreshToken(tokenId, user.id, familyId)
+        jwtTokenProvider.storeRefreshToken(tokenId, employee.id, familyId)
 
         return LoginResponse(
-            user = UserInfo.from(user),
+            user = UserInfo.from(employee),
             token = TokenInfo(
                 accessToken = accessToken,
                 refreshToken = refreshToken,
                 expiresIn = jwtTokenProvider.getAccessTokenExpirationSeconds()
             ),
-            requiresPasswordChange = user.passwordChangeRequired ?: true,
-            requiresGpsConsent = user.requiresGpsConsent()
+            requiresPasswordChange = employee.passwordChangeRequired ?: true,
+            requiresGpsConsent = employee.requiresGpsConsent()
         )
     }
 
@@ -109,33 +109,33 @@ class AuthService(
      */
     @Transactional
     fun adminLogin(request: LoginRequest): AdminLoginResponse {
-        val user = userRepository.findByEmployeeNumber(request.employeeNumber)
+        val employee = employeeRepository.findByEmployeeNumber(request.employeeNumber)
             .orElseThrow { InvalidCredentialsException() }
 
-        if (!passwordEncoder.matches(request.password, user.password)) {
+        if (!passwordEncoder.matches(request.password, employee.password)) {
             throw InvalidCredentialsException()
         }
 
-        if (user.appAuthority == null || AdminRolePermissions.getPermissions(user.appAuthority).isEmpty()) {
+        if (employee.appAuthority == null || AdminRolePermissions.getPermissions(employee.appAuthority).isEmpty()) {
             throw WebLoginNotAllowedException()
         }
 
         try {
-            loginHistoryRepository.save(LoginHistory(employeeId = user.employeeNumber))
+            loginHistoryRepository.save(LoginHistory(employeeId = employee.employeeNumber))
         } catch (e: Exception) {
-            log.warn("로그인 이력 기록 실패: employeeNumber={}", user.employeeNumber, e)
+            log.warn("로그인 이력 기록 실패: employeeNumber={}", employee.employeeNumber, e)
         }
 
-        val accessToken = jwtTokenProvider.createAccessToken(user.id, user.role, user.agreementFlag == true)
+        val accessToken = jwtTokenProvider.createAccessToken(employee.id, employee.role, employee.agreementFlag == true)
 
         val familyId = UUID.randomUUID().toString()
         val tokenId = UUID.randomUUID().toString()
-        val refreshToken = jwtTokenProvider.createRefreshToken(user.id, familyId, tokenId)
+        val refreshToken = jwtTokenProvider.createRefreshToken(employee.id, familyId, tokenId)
 
-        jwtTokenProvider.storeRefreshToken(tokenId, user.id, familyId)
+        jwtTokenProvider.storeRefreshToken(tokenId, employee.id, familyId)
 
         return AdminLoginResponse(
-            user = AdminUserInfo.from(user),
+            user = AdminUserInfo.from(employee),
             token = AdminTokenInfo(
                 accessToken = accessToken,
                 refreshToken = refreshToken,
@@ -153,18 +153,18 @@ class AuthService(
      * 5. 일치 → 정상
      * 6. 불일치 → DEVICE_MISMATCH 에러
      */
-    private fun validateDeviceBinding(user: User, deviceId: String?) {
+    private fun validateDeviceBinding(employee: Employee, deviceId: String?) {
         if (deviceId.isNullOrBlank()) return
         if (!deviceBindingProperties.enabled) return
-        if (deviceBindingProperties.isExcluded(user.employeeNumber)) return
+        if (deviceBindingProperties.isExcluded(employee.employeeNumber)) return
 
-        if (user.deviceUuid == null) {
-            user.bindDevice(deviceId)
-            userRepository.save(user)
+        if (employee.deviceUuid == null) {
+            employee.bindDevice(deviceId)
+            employeeRepository.save(employee)
             return
         }
 
-        if (user.deviceUuid != deviceId) {
+        if (employee.deviceUuid != deviceId) {
             throw DeviceMismatchException()
         }
     }
@@ -174,15 +174,15 @@ class AuthService(
      * - WEB (deviceId 미전달): appAuthority가 허용 목록에 포함되어야 함
      * - Mobile (deviceId 전달): appLoginActive가 true여야 함
      */
-    private fun validateLoginAuthority(user: User, deviceId: String?) {
+    private fun validateLoginAuthority(employee: Employee, deviceId: String?) {
         if (deviceId.isNullOrBlank()) {
             // WEB 로그인
-            if (user.appAuthority == null || AdminRolePermissions.getPermissions(user.appAuthority).isEmpty()) {
+            if (employee.appAuthority == null || AdminRolePermissions.getPermissions(employee.appAuthority).isEmpty()) {
                 throw WebLoginNotAllowedException()
             }
         } else {
             // Mobile 로그인
-            if (user.appLoginActive != true) {
+            if (employee.appLoginActive != true) {
                 throw AppLoginNotActiveException()
             }
         }
@@ -197,18 +197,18 @@ class AuthService(
      */
     @Transactional
     fun changePassword(userId: Long, request: ChangePasswordRequest) {
-        val user = userRepository.findById(userId)
-            .orElseThrow { UserNotFoundException() }
+        val employee = employeeRepository.findById(userId)
+            .orElseThrow { EmployeeNotFoundException() }
 
-        if (!passwordEncoder.matches(request.currentPassword, user.password)) {
+        if (!passwordEncoder.matches(request.currentPassword, employee.password)) {
             throw InvalidCurrentPasswordException()
         }
 
         validateNewPassword(request.newPassword)
 
         val encodedPassword = passwordEncoder.encode(request.newPassword)
-        user.changePassword(encodedPassword)
-        userRepository.save(user)
+        employee.changePassword(encodedPassword)
+        employeeRepository.save(employee)
     }
 
     /**
@@ -255,16 +255,16 @@ class AuthService(
 
         // 6. 사용자 정보 조회
         val userId = jwtTokenProvider.getUserIdFromToken(request.refreshToken)
-        val user = userRepository.findById(userId)
+        val employee = employeeRepository.findById(userId)
             .orElseThrow { InvalidTokenException() }
 
         // 7. 새 토큰 발급 (동일 familyId, 새 tokenId)
         val newTokenId = UUID.randomUUID().toString()
-        val newAccessToken = jwtTokenProvider.createAccessToken(user.id, user.role, user.agreementFlag == true)
-        val newRefreshToken = jwtTokenProvider.createRefreshToken(user.id, familyId, newTokenId)
+        val newAccessToken = jwtTokenProvider.createAccessToken(employee.id, employee.role, employee.agreementFlag == true)
+        val newRefreshToken = jwtTokenProvider.createRefreshToken(employee.id, familyId, newTokenId)
 
         // 8. Redis에 새 Refresh Token 저장
-        jwtTokenProvider.storeRefreshToken(newTokenId, user.id, familyId)
+        jwtTokenProvider.storeRefreshToken(newTokenId, employee.id, familyId)
 
         return TokenResponse(
             accessToken = newAccessToken,
@@ -298,10 +298,10 @@ class AuthService(
      */
     @Transactional(readOnly = true)
     fun verifyPassword(userId: Long, request: VerifyPasswordRequest) {
-        val user = userRepository.findById(userId)
-            .orElseThrow { UserNotFoundException() }
+        val employee = employeeRepository.findById(userId)
+            .orElseThrow { EmployeeNotFoundException() }
 
-        if (!passwordEncoder.matches(request.password, user.password)) {
+        if (!passwordEncoder.matches(request.password, employee.password)) {
             throw InvalidCurrentPasswordException()
         }
     }
@@ -325,11 +325,11 @@ class AuthService(
      */
     @Transactional(readOnly = true)
     fun getGpsConsentStatus(userId: Long): GpsConsentStatusResponse {
-        val user = userRepository.findById(userId)
-            .orElseThrow { UserNotFoundException() }
+        val employee = employeeRepository.findById(userId)
+            .orElseThrow { EmployeeNotFoundException() }
 
         return GpsConsentStatusResponse(
-            requiresGpsConsent = user.requiresGpsConsent()
+            requiresGpsConsent = employee.requiresGpsConsent()
         )
     }
 
@@ -343,8 +343,8 @@ class AuthService(
      */
     @Transactional
     fun recordGpsConsent(userId: Long, request: GpsConsentRequest? = null): GpsConsentRecordResponse {
-        val user = userRepository.findById(userId)
-            .orElseThrow { UserNotFoundException() }
+        val employee = employeeRepository.findById(userId)
+            .orElseThrow { EmployeeNotFoundException() }
 
         val agreementNumber = request?.agreementNumber?.takeIf { it.isNotBlank() }
         val terms = if (agreementNumber != null) {
@@ -357,17 +357,17 @@ class AuthService(
 
         agreementHistoryRepository.save(
             AgreementHistory(
-                employeeId = user.id,
+                employeeId = employee.id,
                 agreementFlag = true,
                 agreementDate = LocalDate.now(),
                 agreementWordId = terms.id.toLong()
             )
         )
 
-        user.recordGpsConsent(terms.name)
-        userRepository.save(user)
+        employee.recordGpsConsent(terms.name)
+        employeeRepository.save(employee)
 
-        val accessToken = jwtTokenProvider.createAccessToken(user.id, user.role, true)
+        val accessToken = jwtTokenProvider.createAccessToken(employee.id, employee.role, true)
 
         return GpsConsentRecordResponse(
             accessToken = accessToken,
@@ -380,11 +380,11 @@ class AuthService(
      */
     @Transactional
     fun resetDevice(employeeNumber: String) {
-        val user = userRepository.findByEmployeeNumber(employeeNumber)
-            .orElseThrow { UserNotFoundException() }
+        val employee = employeeRepository.findByEmployeeNumber(employeeNumber)
+            .orElseThrow { EmployeeNotFoundException() }
 
-        user.resetDevice()
-        userRepository.save(user)
+        employee.resetDevice()
+        employeeRepository.save(employee)
     }
 
     /**

@@ -8,7 +8,7 @@ import com.otoki.internal.event.dto.response.EventListResponse
 import com.otoki.internal.event.exception.EventNotFoundException
 import com.otoki.internal.event.repository.EventProductRepository
 import com.otoki.internal.event.repository.EventRepository
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.repository.EmployeeRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
@@ -24,7 +24,7 @@ import kotlin.math.min
 class EventService(
     private val eventRepository: EventRepository,
     private val eventProductRepository: EventProductRepository,
-    private val userRepository: UserRepository
+    private val employeeRepository: EmployeeRepository
 ) {
 
     / **
@@ -36,7 +36,7 @@ class EventService(
      * /
     @Transactional(readOnly = true)
     fun getEvents(userId: Long, request: EventListRequest): EventListResponse {
-        val user = userRepository.findById(userId)
+        val employee = employeeRepository.findById(userId)
             .orElseThrow { RuntimeException("사용자를 찾을 수 없습니다") }
 
         val pageable = PageRequest.of(
@@ -47,7 +47,7 @@ class EventService(
 
         val date = request.getDateOrToday()
         val eventPage = eventRepository.findEventsByAssignee(
-            assigneeId = user.employeeNumber,
+            assigneeId = employee.employeeNumber,
             customerId = request.customerId,
             date = date,
             pageable = pageable
@@ -70,7 +70,7 @@ class EventService(
      * /
     @Transactional(readOnly = true)
     fun getEventDetail(userId: Long, eventId: String): EventDetailResponse {
-        val user = userRepository.findById(userId)
+        val employee = employeeRepository.findById(userId)
             .orElseThrow { RuntimeException("사용자를 찾을 수 없습니다") }
 
         val event = eventRepository.findByEventId(eventId)
@@ -99,7 +99,7 @@ class EventService(
 
         // 오늘 등록 가능 여부
         val canRegisterToday = today in event.startDate..event.endDate &&
-            event.assigneeId == user.employeeNumber
+            event.assigneeId == employee.employeeNumber
 
         // TODO: DailySales 구현 후 실제 등록 여부 확인 (F51)
         val isTodayRegistered = false

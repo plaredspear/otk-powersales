@@ -11,10 +11,10 @@ import com.otoki.internal.promotion.repository.PromotionRepository
 import com.otoki.internal.promotion.repository.PromotionTypeRepository
 import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.sap.entity.Product
-import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.sap.repository.ProductRepository
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.repository.EmployeeRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
@@ -50,14 +50,14 @@ class MobilePromotionServiceTest {
     private lateinit var productRepository: ProductRepository
 
     @Mock
-    private lateinit var userRepository: UserRepository
+    private lateinit var employeeRepository: EmployeeRepository
 
     @InjectMocks
     private lateinit var service: MobilePromotionService
 
     // --- Helper factories ---
 
-    private fun createUser(
+    private fun createEmployee(
         id: Long = 1L,
         sfid: String? = "USR_SFID_001",
         employeeNumber: String = "20030117",
@@ -65,7 +65,7 @@ class MobilePromotionServiceTest {
         status: String? = "재직",
         appAuthority: String? = null,
         costCenterCode: String? = "1234"
-    ): User = User(
+    ): Employee = Employee(
         id = id,
         sfid = sfid,
         employeeNumber = employeeNumber,
@@ -177,14 +177,14 @@ class MobilePromotionServiceTest {
         @DisplayName("조장 행사 목록 조회 - 동일 지점 행사 반환, myScheduleDate null")
         fun getPromotions_leader_returnsPromotionsWithNullMyScheduleDate() {
             // Given
-            val leader = createUser(id = 10L, employeeNumber = "20030001", appAuthority = "조장", costCenterCode = "1234")
+            val leader = createEmployee(id = 10L, employeeNumber = "20030001", appAuthority = "조장", costCenterCode = "1234")
             val promotion = createPromotion(id = 1L, accountId = 100, promotionTypeId = 1L)
             val account = createAccount(id = 100, name = "이마트 성수점")
             val promotionType = createPromotionType(id = 1L, name = "시식")
             val pageable = PageRequest.of(0, 20)
             val page = PageImpl(listOf(promotion), pageable, 1)
 
-            whenever(userRepository.findById(10L)).thenReturn(Optional.of(leader))
+            whenever(employeeRepository.findById(10L)).thenReturn(Optional.of(leader))
             whenever(promotionRepository.searchForMobile(
                 employeeId = eq(10L),
                 costCenterCode = eq("1234"),
@@ -216,7 +216,7 @@ class MobilePromotionServiceTest {
         @DisplayName("여사원 행사 목록 조회 - 배정 행사 반환, myScheduleDate 포함")
         fun getPromotions_woman_returnsPromotionsWithMyScheduleDate() {
             // Given
-            val woman = createUser(id = 20L, employeeNumber = "20030002", appAuthority = "여사원", costCenterCode = "1234")
+            val woman = createEmployee(id = 20L, employeeNumber = "20030002", appAuthority = "여사원", costCenterCode = "1234")
             val promotion = createPromotion(id = 1L, accountId = 100, promotionTypeId = 1L)
             val account = createAccount(id = 100)
             val promotionType = createPromotionType(id = 1L)
@@ -224,7 +224,7 @@ class MobilePromotionServiceTest {
             val page = PageImpl(listOf(promotion), pageable, 1)
             val myScheduleDate = LocalDate.of(2026, 3, 5)
 
-            whenever(userRepository.findById(20L)).thenReturn(Optional.of(woman))
+            whenever(employeeRepository.findById(20L)).thenReturn(Optional.of(woman))
             whenever(promotionRepository.searchForMobile(
                 employeeId = eq(20L),
                 costCenterCode = eq("1234"),
@@ -253,11 +253,11 @@ class MobilePromotionServiceTest {
         @DisplayName("날짜 필터 - start_date, end_date 전달")
         fun getPromotions_withDateFilter_passesToRepository() {
             // Given
-            val leader = createUser(id = 10L, employeeNumber = "20030001", appAuthority = "조장", costCenterCode = "1234")
+            val leader = createEmployee(id = 10L, employeeNumber = "20030001", appAuthority = "조장", costCenterCode = "1234")
             val pageable = PageRequest.of(0, 20)
             val page = PageImpl<Promotion>(emptyList(), pageable, 0)
 
-            whenever(userRepository.findById(10L)).thenReturn(Optional.of(leader))
+            whenever(employeeRepository.findById(10L)).thenReturn(Optional.of(leader))
             whenever(promotionRepository.searchForMobile(
                 employeeId = eq(10L),
                 costCenterCode = eq("1234"),
@@ -295,11 +295,11 @@ class MobilePromotionServiceTest {
         @DisplayName("키워드 검색 - keyword 전달")
         fun getPromotions_withKeyword_passesToRepository() {
             // Given
-            val leader = createUser(id = 10L, employeeNumber = "20030001", appAuthority = "조장", costCenterCode = "1234")
+            val leader = createEmployee(id = 10L, employeeNumber = "20030001", appAuthority = "조장", costCenterCode = "1234")
             val pageable = PageRequest.of(0, 20)
             val page = PageImpl<Promotion>(emptyList(), pageable, 0)
 
-            whenever(userRepository.findById(10L)).thenReturn(Optional.of(leader))
+            whenever(employeeRepository.findById(10L)).thenReturn(Optional.of(leader))
             whenever(promotionRepository.searchForMobile(
                 employeeId = eq(10L),
                 costCenterCode = eq("1234"),
@@ -383,7 +383,7 @@ class MobilePromotionServiceTest {
         @DisplayName("조장 행사 상세 조회 - 같은 지점 행사 조회 성공 + 조원 목록 반환")
         fun getPromotion_leader_sameBranch_returnsDetailWithEmployees() {
             // Given
-            val leader = createUser(id = 10L, employeeNumber = "20030001", appAuthority = "조장", costCenterCode = "1234")
+            val leader = createEmployee(id = 10L, employeeNumber = "20030001", appAuthority = "조장", costCenterCode = "1234")
             val promotion = createPromotion(
                 id = 1L,
                 costCenterCode = "1234",
@@ -406,17 +406,17 @@ class MobilePromotionServiceTest {
                 employeeId = 21L,
                 scheduleDate = LocalDate.of(2026, 3, 6)
             )
-            val empUser1 = createUser(id = 20L, employeeNumber = "20030002", name = "김영희")
-            val empUser2 = createUser(id = 21L, employeeNumber = "20030003", name = "이수진")
+            val empUser1 = createEmployee(id = 20L, employeeNumber = "20030002", name = "김영희")
+            val empUser2 = createEmployee(id = 21L, employeeNumber = "20030003", name = "이수진")
 
-            whenever(userRepository.findById(10L)).thenReturn(Optional.of(leader))
+            whenever(employeeRepository.findById(10L)).thenReturn(Optional.of(leader))
             whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
             whenever(accountRepository.findById(100)).thenReturn(Optional.of(account))
             whenever(productRepository.findById(5L)).thenReturn(Optional.of(product))
             whenever(promotionTypeRepository.findById(1L)).thenReturn(Optional.of(promotionType))
             whenever(promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(1L))
                 .thenReturn(listOf(employee1, employee2))
-            whenever(userRepository.findAllById(listOf(20L, 21L)))
+            whenever(employeeRepository.findAllById(listOf(20L, 21L)))
                 .thenReturn(listOf(empUser1, empUser2))
 
             // When
@@ -438,18 +438,18 @@ class MobilePromotionServiceTest {
         @DisplayName("여사원 행사 상세 조회 - 배정된 행사 조회 성공")
         fun getPromotion_woman_assigned_returnsDetail() {
             // Given
-            val woman = createUser(id = 20L, employeeNumber = "20030002", appAuthority = "여사원", costCenterCode = "1234")
+            val woman = createEmployee(id = 20L, employeeNumber = "20030002", appAuthority = "여사원", costCenterCode = "1234")
             val promotion = createPromotion(id = 1L, costCenterCode = "1234", accountId = 100)
             val account = createAccount(id = 100)
             val employee = createPromotionEmployee(id = 10L, promotionId = 1L, employeeId = 20L)
 
-            whenever(userRepository.findById(20L)).thenReturn(Optional.of(woman))
+            whenever(employeeRepository.findById(20L)).thenReturn(Optional.of(woman))
             whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
             whenever(promotionEmployeeRepository.existsByPromotionIdAndEmployeeId(1L, 20L)).thenReturn(true)
             whenever(accountRepository.findById(100)).thenReturn(Optional.of(account))
             whenever(promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(1L))
                 .thenReturn(listOf(employee))
-            whenever(userRepository.findAllById(listOf(20L)))
+            whenever(employeeRepository.findAllById(listOf(20L)))
                 .thenReturn(listOf(woman))
 
             // When
@@ -466,10 +466,10 @@ class MobilePromotionServiceTest {
         @DisplayName("삭제된 행사 상세 조회 - PROMOTION_NOT_FOUND 예외 발생")
         fun getPromotion_deleted_throwsNotFound() {
             // Given
-            val leader = createUser(id = 10L, employeeNumber = "20030001", appAuthority = "조장", costCenterCode = "1234")
+            val leader = createEmployee(id = 10L, employeeNumber = "20030001", appAuthority = "조장", costCenterCode = "1234")
             val deletedPromotion = createPromotion(id = 1L, isDeleted = true)
 
-            whenever(userRepository.findById(10L)).thenReturn(Optional.of(leader))
+            whenever(employeeRepository.findById(10L)).thenReturn(Optional.of(leader))
             whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(deletedPromotion))
 
             // When & Then
@@ -481,10 +481,10 @@ class MobilePromotionServiceTest {
         @DisplayName("다른 지점 행사 조회 (조장) - PROMOTION_FORBIDDEN 예외 발생")
         fun getPromotion_leader_differentBranch_throwsForbidden() {
             // Given
-            val leader = createUser(id = 10L, employeeNumber = "20030001", appAuthority = "조장", costCenterCode = "1234")
+            val leader = createEmployee(id = 10L, employeeNumber = "20030001", appAuthority = "조장", costCenterCode = "1234")
             val promotion = createPromotion(id = 1L, costCenterCode = "5678")
 
-            whenever(userRepository.findById(10L)).thenReturn(Optional.of(leader))
+            whenever(employeeRepository.findById(10L)).thenReturn(Optional.of(leader))
             whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
 
             // When & Then
@@ -496,10 +496,10 @@ class MobilePromotionServiceTest {
         @DisplayName("미배정 행사 조회 (여사원) - PROMOTION_FORBIDDEN 예외 발생")
         fun getPromotion_woman_notAssigned_throwsForbidden() {
             // Given
-            val woman = createUser(id = 20L, employeeNumber = "20030002", appAuthority = "여사원", costCenterCode = "1234")
+            val woman = createEmployee(id = 20L, employeeNumber = "20030002", appAuthority = "여사원", costCenterCode = "1234")
             val promotion = createPromotion(id = 1L, costCenterCode = "1234")
 
-            whenever(userRepository.findById(20L)).thenReturn(Optional.of(woman))
+            whenever(employeeRepository.findById(20L)).thenReturn(Optional.of(woman))
             whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
             whenever(promotionEmployeeRepository.existsByPromotionIdAndEmployeeId(1L, 20L)).thenReturn(false)
 
@@ -512,9 +512,9 @@ class MobilePromotionServiceTest {
         @DisplayName("존재하지 않는 행사 조회 - PROMOTION_NOT_FOUND 예외 발생")
         fun getPromotion_nonExistent_throwsNotFound() {
             // Given
-            val leader = createUser(id = 10L, employeeNumber = "20030001", appAuthority = "조장", costCenterCode = "1234")
+            val leader = createEmployee(id = 10L, employeeNumber = "20030001", appAuthority = "조장", costCenterCode = "1234")
 
-            whenever(userRepository.findById(10L)).thenReturn(Optional.of(leader))
+            whenever(employeeRepository.findById(10L)).thenReturn(Optional.of(leader))
             whenever(promotionRepository.findById(999L)).thenReturn(Optional.empty())
 
             // When & Then

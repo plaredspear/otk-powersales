@@ -1,6 +1,6 @@
 package com.otoki.internal.admin.service
 
-import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.entity.Employee
 import org.apache.poi.ss.usermodel.FillPatternType
 import org.apache.poi.ss.usermodel.IndexedColors
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
@@ -24,8 +24,8 @@ class ScheduleTemplateGeneratorTest {
         fun generate_withEmployees() {
             // Given
             val employees = listOf(
-                createUser(employeeNumber = "20030001", name = "홍길동"),
-                createUser(employeeNumber = "20030002", name = "김철수")
+                createEmployee(employeeNumber = "20030001", name = "홍길동"),
+                createEmployee(employeeNumber = "20030002", name = "김철수")
             )
 
             // When
@@ -81,7 +81,7 @@ class ScheduleTemplateGeneratorTest {
         @DisplayName("필수 입력 셀 노란 배경 - C, E, F, G열에 노란 배경 적용")
         fun generate_yellowBackground() {
             // Given
-            val employees = listOf(createUser())
+            val employees = listOf(createEmployee())
 
             // When
             val bytes = generator.generate(employees)
@@ -100,7 +100,7 @@ class ScheduleTemplateGeneratorTest {
         @DisplayName("드롭다운 유효성 검사 - E, F열에 설정됨")
         fun generate_dropdownValidation() {
             // When
-            val bytes = generator.generate(listOf(createUser()))
+            val bytes = generator.generate(listOf(createEmployee()))
             val workbook = XSSFWorkbook(ByteArrayInputStream(bytes))
             val sheet = workbook.getSheetAt(0)
 
@@ -136,13 +136,13 @@ class ScheduleTemplateGeneratorTest {
         }
     }
 
-    private fun createUser(
+    private fun createEmployee(
         id: Long = 1L,
         employeeNumber: String = "20030001",
         name: String = "테스트사원",
         costCenterCode: String = "1234",
         orgName: String = "테스트팀"
-    ): User = User(
+    ): Employee = Employee(
         id = id,
         employeeNumber = employeeNumber,
         name = name,

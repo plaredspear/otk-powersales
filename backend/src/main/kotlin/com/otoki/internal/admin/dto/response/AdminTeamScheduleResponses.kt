@@ -1,6 +1,6 @@
 package com.otoki.internal.admin.dto.response
 
-import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
 import java.time.LocalDate
@@ -10,9 +10,9 @@ data class TeamMemberDto(
     val name: String
 ) {
     companion object {
-        fun from(user: User): TeamMemberDto = TeamMemberDto(
-            employeeNumber = user.employeeNumber,
-            name = user.name
+        fun from(employee: Employee): TeamMemberDto = TeamMemberDto(
+            employeeNumber = employee.employeeNumber,
+            name = employee.name
         )
     }
 }
@@ -48,15 +48,15 @@ data class TeamScheduleDto(
     companion object {
         fun from(
             schedule: TeamMemberSchedule,
-            userMap: Map<Long, User>,
+            employeeMap: Map<Long, Employee>,
             accountMap: Map<Int, Account>
         ): TeamScheduleDto {
-            val user = schedule.employeeId?.let { userMap[it] }
+            val employee = schedule.employeeId?.let { employeeMap[it] }
             val account = schedule.accountId?.let { accountMap[it] }
             return TeamScheduleDto(
                 id = schedule.id,
-                employeeNumber = user?.employeeNumber ?: "",
-                employeeName = user?.name ?: "",
+                employeeNumber = employee?.employeeNumber ?: "",
+                employeeName = employee?.name ?: "",
                 workingDate = schedule.workingDate?.toString() ?: "",
                 workingType = schedule.workingType ?: "",
                 workingCategory1 = schedule.workingCategory1,

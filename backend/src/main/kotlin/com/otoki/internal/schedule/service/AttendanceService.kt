@@ -4,7 +4,7 @@ import com.otoki.internal.common.dto.response.AccountInfo
 import com.otoki.internal.common.dto.response.AccountListResponse
 import com.otoki.internal.common.util.GeoUtils
 import com.otoki.internal.sap.entity.Account
-import com.otoki.internal.auth.exception.UserNotFoundException
+import com.otoki.internal.auth.exception.EmployeeNotFoundException
 import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.schedule.dto.response.CommuteResponse
 import com.otoki.internal.schedule.dto.response.CommuteStatusItem
@@ -15,7 +15,7 @@ import com.otoki.internal.schedule.exception.DistanceExceededException
 import com.otoki.internal.schedule.exception.TeamMemberScheduleNotFoundException
 import com.otoki.internal.schedule.integration.OroraApiService
 import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.repository.EmployeeRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -24,7 +24,7 @@ import java.time.format.DateTimeFormatter
 @Service
 @Transactional(readOnly = true)
 class AttendanceService(
-    private val userRepository: UserRepository,
+    private val employeeRepository: EmployeeRepository,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
     private val accountRepository: AccountRepository,
     private val ororaApiService: OroraApiService
@@ -47,13 +47,13 @@ class AttendanceService(
      * 오늘 출근 거래처 목록 조회
      */
     fun getAccountList(userId: Long, keyword: String?): AccountListResponse {
-        val user = userRepository.findById(userId)
-            .orElseThrow { UserNotFoundException() }
+        val employee = employeeRepository.findById(userId)
+            .orElseThrow { EmployeeNotFoundException() }
 
         val today = LocalDate.now()
 
         // 오늘 스케줄 조회
-        val teamMemberSchedules = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(user.id, today)
+        val teamMemberSchedules = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(employee.id, today)
 
         // Account 정보 batch fetch
         val accountIds = teamMemberSchedules.mapNotNull { it.accountId }.distinct()
@@ -107,8 +107,8 @@ class AttendanceService(
      */
     @Transactional
     fun registerCommute(userId: Long, scheduleId: Long, latitude: Double, longitude: Double, workType: String?): CommuteResponse {
-        val user = userRepository.findById(userId)
-            .orElseThrow { UserNotFoundException() }
+        val employee = employeeRepository.findById(userId)
+            .orElseThrow { EmployeeNotFoundException() }
 
         // 1. 스케줄 조회
         val teamMemberSchedule = teamMemberScheduleRepository.findById(scheduleId)
@@ -128,7 +128,7 @@ class AttendanceService(
 
         // 5. 출근 현황 집계 (commuteLogId 업데이트 후)
         val today = LocalDate.now()
-        val todayTeamMemberSchedules = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(user.id, today)
+        val todayTeamMemberSchedules = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(employee.id, today)
         val totalCount = todayTeamMemberSchedules.size
         val registeredCount = todayTeamMemberSchedules.count { it.commuteLogId != null || it.id == scheduleId }
 
@@ -146,12 +146,12 @@ class AttendanceService(
      * 출근 현황 조회
      */
     fun getCommuteStatus(userId: Long): CommuteStatusResponse {
-        val user = userRepository.findById(userId)
-            .orElseThrow { UserNotFoundException() }
+        val employee = employeeRepository.findById(userId)
+            .orElseThrow { EmployeeNotFoundException() }
 
         val today = LocalDate.now()
 
-        val teamMemberSchedules = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(user.id, today)
+        val teamMemberSchedules = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(employee.id, today)
 
         // Account 정보 batch fetch
         val accountIds = teamMemberSchedules.mapNotNull { it.accountId }.distinct()

@@ -1,8 +1,8 @@
 package com.otoki.internal.shelflife.service
 
-import com.otoki.internal.auth.exception.UserNotFoundException
-import com.otoki.internal.sap.entity.User
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.auth.exception.EmployeeNotFoundException
+import com.otoki.internal.sap.entity.Employee
+import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.shelflife.dto.request.ShelfLifeBatchDeleteRequest
 import com.otoki.internal.shelflife.dto.request.ShelfLifeCreateRequest
 import com.otoki.internal.shelflife.dto.request.ShelfLifeUpdateRequest
@@ -35,7 +35,7 @@ class ShelfLifeServiceTest {
     private lateinit var shelfLifeRepository: ShelfLifeRepository
 
     @Mock
-    private lateinit var userRepository: UserRepository
+    private lateinit var employeeRepository: EmployeeRepository
 
     @InjectMocks
     private lateinit var shelfLifeService: ShelfLifeService
@@ -43,8 +43,8 @@ class ShelfLifeServiceTest {
     private val userId = 1L
     private val employeeNumberVal = "20030117"
 
-    private fun createUser(id: Long = userId, sfid: String? = "EMP_SFID_001"): User {
-        return User(id = id, sfid = sfid, employeeNumber = employeeNumberVal, name = "테스트사원")
+    private fun createEmployee(id: Long = userId, sfid: String? = "EMP_SFID_001"): Employee {
+        return Employee(id = id, sfid = sfid, employeeNumber = employeeNumberVal, name = "테스트사원")
     }
 
     private fun createShelfLife(
@@ -72,7 +72,7 @@ class ShelfLifeServiceTest {
     }
 
     private fun stubUser(id: Long = userId) {
-        whenever(userRepository.findById(id)).thenReturn(Optional.of(createUser(id = id)))
+        whenever(employeeRepository.findById(id)).thenReturn(Optional.of(createEmployee(id = id)))
     }
 
     @Nested
@@ -211,9 +211,9 @@ class ShelfLifeServiceTest {
         }
 
         @Test
-        @DisplayName("사용자 없음 - 존재하지 않는 userId -> UserNotFoundException")
+        @DisplayName("사용자 없음 - 존재하지 않는 userId -> EmployeeNotFoundException")
         fun create_userNotFound() {
-            whenever(userRepository.findById(999L)).thenReturn(Optional.empty())
+            whenever(employeeRepository.findById(999L)).thenReturn(Optional.empty())
 
             val request = ShelfLifeCreateRequest(
                 accountCode = "1025172",
@@ -226,7 +226,7 @@ class ShelfLifeServiceTest {
 
             assertThatThrownBy {
                 shelfLifeService.createShelfLife(999L, request)
-            }.isInstanceOf(UserNotFoundException::class.java)
+            }.isInstanceOf(EmployeeNotFoundException::class.java)
         }
     }
 

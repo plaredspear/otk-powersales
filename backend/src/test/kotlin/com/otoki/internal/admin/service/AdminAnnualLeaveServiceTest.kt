@@ -1,7 +1,7 @@
 package com.otoki.internal.admin.service
 
-import com.otoki.internal.sap.entity.User
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.entity.Employee
+import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
 import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
@@ -25,19 +25,19 @@ class AdminAnnualLeaveServiceTest {
     private lateinit var teamMemberScheduleRepository: TeamMemberScheduleRepository
 
     @Mock
-    private lateinit var userRepository: UserRepository
+    private lateinit var employeeRepository: EmployeeRepository
 
     @InjectMocks
     private lateinit var adminAnnualLeaveService: AdminAnnualLeaveService
 
     // --- Helper ---
 
-    private fun createUser(
+    private fun createEmployee(
         id: Long = 1L,
         employeeNumber: String = "12345678",
         name: String = "홍길동",
         orgName: String? = "서울1팀"
-    ) = User(id = id, employeeNumber = employeeNumber, name = name, orgName = orgName)
+    ) = Employee(id = id, employeeNumber = employeeNumber, name = name, orgName = orgName)
 
     private fun createSchedule(
         id: Long = 1L,
@@ -68,10 +68,10 @@ class AdminAnnualLeaveServiceTest {
                 eq(LocalDate.of(2026, 3, 31))
             )).thenReturn(listOf(schedule1, schedule2, schedule3))
 
-            val user1 = createUser(id = 1L, employeeNumber = "EMP001", name = "홍길동", orgName = "서울1팀")
-            val user2 = createUser(id = 2L, employeeNumber = "EMP002", name = "김철수", orgName = "부산1팀")
-            whenever(userRepository.findAllById(listOf(1L, 2L)))
-                .thenReturn(listOf(user1, user2))
+            val employee1 = createEmployee(id = 1L, employeeNumber = "EMP001", name = "홍길동", orgName = "서울1팀")
+            val employee2 = createEmployee(id = 2L, employeeNumber = "EMP002", name = "김철수", orgName = "부산1팀")
+            whenever(employeeRepository.findAllById(listOf(1L, 2L)))
+                .thenReturn(listOf(employee1, employee2))
 
             // When
             val result = adminAnnualLeaveService.getSummary("2026-03", null)
@@ -96,8 +96,8 @@ class AdminAnnualLeaveServiceTest {
         @DisplayName("성공 - orgCode 지정 → 해당 조직 사원만 반환")
         fun withOrgCode_returnsFilteredEmployees() {
             // Given
-            val user1 = createUser(id = 1L, employeeNumber = "EMP001", name = "홍길동", orgName = "서울1팀")
-            whenever(userRepository.findByOrgName("서울1팀")).thenReturn(listOf(user1))
+            val employee1 = createEmployee(id = 1L, employeeNumber = "EMP001", name = "홍길동", orgName = "서울1팀")
+            whenever(employeeRepository.findByOrgName("서울1팀")).thenReturn(listOf(employee1))
 
             val schedule1 = createSchedule(id = 1L, employeeId = 1L, workingDate = LocalDate.of(2026, 3, 5))
             whenever(teamMemberScheduleRepository.findAnnualLeaveByDateRangeAndEmployeeIds(
@@ -106,8 +106,8 @@ class AdminAnnualLeaveServiceTest {
                 eq(listOf(1L))
             )).thenReturn(listOf(schedule1))
 
-            whenever(userRepository.findAllById(listOf(1L)))
-                .thenReturn(listOf(user1))
+            whenever(employeeRepository.findAllById(listOf(1L)))
+                .thenReturn(listOf(employee1))
 
             // When
             val result = adminAnnualLeaveService.getSummary("2026-03", "서울1팀")
@@ -140,7 +140,7 @@ class AdminAnnualLeaveServiceTest {
         @DisplayName("빈 결과 - orgCode에 해당하는 사용자 없음 → 빈 리스트 반환")
         fun orgCodeWithNoUsers_returnsEmptyList() {
             // Given
-            whenever(userRepository.findByOrgName("존재하지않는팀")).thenReturn(emptyList())
+            whenever(employeeRepository.findByOrgName("존재하지않는팀")).thenReturn(emptyList())
 
             // When
             val result = adminAnnualLeaveService.getSummary("2026-03", "존재하지않는팀")

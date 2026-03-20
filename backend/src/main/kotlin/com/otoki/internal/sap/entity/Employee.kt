@@ -10,7 +10,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 /**
- * 사용자 Entity
+ * 사원 Entity
  *
  * 레거시 스키마 2개 테이블에 매핑:
  * - Primary: employee (사원 마스터)
@@ -23,7 +23,7 @@ import java.time.LocalDateTime
 @Table(name = "employee")
 @SFObject("DKRetail__Employee__c")
 @HCTable("dkretail__employee__c")
-class User(
+class Employee(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

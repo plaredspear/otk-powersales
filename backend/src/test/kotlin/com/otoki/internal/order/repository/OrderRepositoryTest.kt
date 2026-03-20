@@ -4,7 +4,7 @@ package com.otoki.internal.order.repository
 import com.otoki.internal.order.entity.ApprovalStatus
 import com.otoki.internal.order.entity.Order
 import com.otoki.internal.entity.Store
-import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.entity.Employee
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -34,8 +34,8 @@ class OrderRepositoryTest {
     @Autowired
     private lateinit var testEntityManager: TestEntityManager
 
-    private lateinit var testUser1: User
-    private lateinit var testUser2: User
+    private lateinit var testUser1: Employee
+    private lateinit var testUser2: Employee
     private lateinit var testStore1: Store
     private lateinit var testStore2: Store
 
@@ -45,14 +45,14 @@ class OrderRepositoryTest {
         testEntityManager.clear()
 
         // 테스트 사용자 생성
-        testUser1 = testEntityManager.persistAndFlush(User(
+        testUser1 = testEntityManager.persistAndFlush(Employee(
             employeeNumber = "10000001",
             password = "encoded",
             name = "홍길동",
             orgName = "서울지점"
         ))
 
-        testUser2 = testEntityManager.persistAndFlush(User(
+        testUser2 = testEntityManager.persistAndFlush(Employee(
             employeeNumber = "10000002",
             password = "encoded",
             name = "김영희",
@@ -457,7 +457,7 @@ class OrderRepositoryTest {
 
     private fun createOrder(
         orderRequestNumber: String,
-        user: User,
+        user: Employee,
         store: Store,
         approvalStatus: ApprovalStatus,
         orderDate: LocalDate,

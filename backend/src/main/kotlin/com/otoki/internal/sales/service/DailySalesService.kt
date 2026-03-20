@@ -9,7 +9,7 @@ import com.otoki.internal.common.exception.*
 import com.otoki.internal.sales.repository.DailySalesRepository
 import com.otoki.internal.event.repository.EventProductRepository
 import com.otoki.internal.event.repository.EventRepository
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.repository.EmployeeRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -23,7 +23,7 @@ class DailySalesService(
     private val dailySalesRepository: DailySalesRepository,
     private val eventRepository: EventRepository,
     private val eventProductRepository: EventProductRepository,
-    private val userRepository: UserRepository,
+    private val employeeRepository: EmployeeRepository,
     private val fileStorageService: FileStorageService
 ) {
 
@@ -46,9 +46,9 @@ class DailySalesService(
         request: DailySalesCreateRequest
     ): DailySalesCreateResponse {
         // 1. 사용자 조회
-        val user = userRepository.findById(userId)
+        val employee = employeeRepository.findById(userId)
             .orElseThrow { RuntimeException("사용자를 찾을 수 없습니다") }
-        val employeeNumber = user.employeeNumber
+        val employeeNumber = employee.employeeNumber
         // 1. 행사 존재 여부 확인
         val event = eventRepository.findByEventId(eventId)
             .orElseThrow { EventNotFoundException() }
@@ -147,9 +147,9 @@ class DailySalesService(
         request: DailySalesCreateRequest
     ): DailySalesCreateResponse {
         // 1. 사용자 조회
-        val user = userRepository.findById(userId)
+        val employee = employeeRepository.findById(userId)
             .orElseThrow { RuntimeException("사용자를 찾을 수 없습니다") }
-        val employeeNumber = user.employeeNumber
+        val employeeNumber = employee.employeeNumber
 
         // 2. 행사 존재 여부 확인
         val event = eventRepository.findByEventId(eventId)

@@ -14,7 +14,7 @@ import com.otoki.internal.exception.ProductNotFoundException
 import com.otoki.internal.order.repository.OrderDraftRepository
 import com.otoki.internal.sap.repository.ProductRepository
 import com.otoki.internal.repository.StoreRepository
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.repository.EmployeeRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
@@ -44,15 +44,15 @@ class OrderDraftServiceTest {
     private lateinit var storeRepository: StoreRepository
 
     @Mock
-    private lateinit var userRepository: UserRepository
+    private lateinit var employeeRepository: EmployeeRepository
 
     @InjectMocks
     private lateinit var orderDraftService: OrderDraftService
 
     // --- Helper methods ---
 
-    private fun createTestUser(id: Long = 1L): User {
-        return User(
+    private fun createTestEmployee(id: Long = 1L): Employee {
+        return Employee(
             id = id,
             employeeNumber = "20010585",
             password = "encodedPassword",
@@ -98,7 +98,7 @@ class OrderDraftServiceTest {
     }
 
     private fun createTestOrderDraft(
-        user: User,
+        user: Employee,
         store: Store,
         deliveryDate: LocalDate = LocalDate.now().plusDays(1),
         totalAmount: Long = 0
@@ -142,7 +142,7 @@ class OrderDraftServiceTest {
     fun getMyDraft_whenDraftExists_returnsOrderDraftResponse() {
         // given
         val userId = 1L
-        val user = createTestUser(userId)
+        val user = createTestEmployee(userId)
         val store = createTestStore()
         val product = createTestProduct()
         val draft = createTestOrderDraft(user, store, totalAmount = 1300000L)
@@ -195,7 +195,7 @@ class OrderDraftServiceTest {
         val userId = 1L
         val clientId = 1L
         val tomorrow = LocalDate.now().plusDays(1)
-        val user = createTestUser(userId)
+        val user = createTestEmployee(userId)
         val store = createTestStore(clientId)
         val product = createTestProduct()
 
@@ -208,7 +208,7 @@ class OrderDraftServiceTest {
         )
 
         whenever(storeRepository.findById(clientId)).thenReturn(Optional.of(store))
-        whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+        whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(user))
         whenever(productRepository.findByProductCodeIn(listOf("01101123"))).thenReturn(listOf(product))
         whenever(orderDraftRepository.save(any<OrderDraft>())).thenAnswer { it.arguments[0] as OrderDraft }
 
@@ -221,7 +221,7 @@ class OrderDraftServiceTest {
 
         verify(orderDraftRepository).deleteByUserId(userId)
         verify(storeRepository).findById(clientId)
-        verify(userRepository).findById(userId)
+        verify(employeeRepository).findById(userId)
         verify(productRepository).findByProductCodeIn(listOf("01101123"))
         verify(orderDraftRepository).save(any<OrderDraft>())
     }
@@ -233,7 +233,7 @@ class OrderDraftServiceTest {
         val userId = 1L
         val clientId = 1L
         val tomorrow = LocalDate.now().plusDays(1)
-        val user = createTestUser(userId)
+        val user = createTestEmployee(userId)
         val store = createTestStore(clientId)
         val product = createTestProduct()
 
@@ -246,7 +246,7 @@ class OrderDraftServiceTest {
         )
 
         whenever(storeRepository.findById(clientId)).thenReturn(Optional.of(store))
-        whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+        whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(user))
         whenever(productRepository.findByProductCodeIn(listOf("01101123"))).thenReturn(listOf(product))
         whenever(orderDraftRepository.save(any<OrderDraft>())).thenAnswer { it.arguments[0] as OrderDraft }
 
@@ -289,7 +289,7 @@ class OrderDraftServiceTest {
         val userId = 1L
         val clientId = 1L
         val tomorrow = LocalDate.now().plusDays(1)
-        val user = createTestUser(userId)
+        val user = createTestEmployee(userId)
         val store = createTestStore(clientId)
         val product = createTestProduct("01101123")
 
@@ -303,7 +303,7 @@ class OrderDraftServiceTest {
         )
 
         whenever(storeRepository.findById(clientId)).thenReturn(Optional.of(store))
-        whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+        whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(user))
         whenever(productRepository.findByProductCodeIn(listOf("01101123", "INVALID99")))
             .thenReturn(listOf(product))
 
@@ -365,7 +365,7 @@ class OrderDraftServiceTest {
         val userId = 1L
         val clientId = 1L
         val tomorrow = LocalDate.now().plusDays(1)
-        val user = createTestUser(userId)
+        val user = createTestEmployee(userId)
         val store = createTestStore(clientId)
         val product = createTestProduct(piecesPerBox = 50, unitPrice = 5000)
 
@@ -378,7 +378,7 @@ class OrderDraftServiceTest {
         )
 
         whenever(storeRepository.findById(clientId)).thenReturn(Optional.of(store))
-        whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+        whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(user))
         whenever(productRepository.findByProductCodeIn(listOf("01101123"))).thenReturn(listOf(product))
 
         // ArgumentCaptor 대신 answer로 저장된 OrderDraft를 캡처
@@ -405,7 +405,7 @@ class OrderDraftServiceTest {
     fun deleteDraft_success() {
         // given
         val userId = 1L
-        val user = createTestUser(userId)
+        val user = createTestEmployee(userId)
         val store = createTestStore()
         val draft = createTestOrderDraft(user, store)
 

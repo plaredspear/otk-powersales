@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.otoki.internal.admin.scope.DataScopeHolder
 import com.otoki.internal.admin.service.AdminDataScopeService
 import com.otoki.internal.common.dto.ApiResponse
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.common.security.UserPrincipal
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
@@ -18,7 +18,7 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 
 @Component
 class AdminAuthorityFilter(
-    private val userRepository: UserRepository,
+    private val employeeRepository: EmployeeRepository,
     private val objectMapper: ObjectMapper,
     private val adminDataScopeService: AdminDataScopeService,
     private val dataScopeHolder: DataScopeHolder,
@@ -42,8 +42,8 @@ class AdminAuthorityFilter(
             return
         }
 
-        val user = userRepository.findById(principal.userId).orElse(null)
-        val appAuthority = user?.appAuthority
+        val employee = employeeRepository.findById(principal.userId).orElse(null)
+        val appAuthority = employee?.appAuthority
 
         val permissions = AdminRolePermissions.getPermissions(appAuthority)
 

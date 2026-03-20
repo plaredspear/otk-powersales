@@ -12,7 +12,7 @@ import java.time.LocalDateTime
 @Table(
     name = "suggestions",
     indexes = [
-        Index(name = "idx_suggestion_user_created", columnList = "user_id,created_at")
+        Index(name = "idx_suggestion_employee_created", columnList = "employee_id,created_at")
     ]
 )
 class Suggestion(
@@ -22,8 +22,8 @@ class Suggestion(
     val id: Long = 0,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    val user: User,
+    @JoinColumn(name = "employee_id", nullable = false)
+    val employee: Employee,
 
     @Enumerated(EnumType.STRING)
     @Column(name = "category", nullable = false, length = 20)

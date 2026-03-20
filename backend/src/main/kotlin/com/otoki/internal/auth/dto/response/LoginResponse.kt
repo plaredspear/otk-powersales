@@ -1,6 +1,6 @@
 package com.otoki.internal.auth.dto.response
 
-import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.entity.Employee
 
 /**
  * 로그인 응답 DTO
@@ -23,13 +23,13 @@ data class UserInfo(
     val role: String
 ) {
     companion object {
-        fun from(user: User): UserInfo {
+        fun from(employee: Employee): UserInfo {
             return UserInfo(
-                id = user.id,
-                employeeNumber = user.employeeNumber,
-                name = user.name,
-                orgName = user.orgName,
-                role = user.role.name
+                id = employee.id,
+                employeeNumber = employee.employeeNumber,
+                name = employee.name,
+                orgName = employee.orgName,
+                role = employee.role.name
             )
         }
     }

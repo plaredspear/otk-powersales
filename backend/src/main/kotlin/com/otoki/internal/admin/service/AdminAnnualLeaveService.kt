@@ -2,7 +2,7 @@ package com.otoki.internal.admin.service
 
 import com.otoki.internal.admin.dto.response.AnnualLeaveDayDto
 import com.otoki.internal.admin.dto.response.EmployeeAnnualLeaveDto
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -14,7 +14,7 @@ import java.time.format.DateTimeFormatter
 @Transactional(readOnly = true)
 class AdminAnnualLeaveService(
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
-    private val userRepository: UserRepository
+    private val employeeRepository: EmployeeRepository
 ) {
 
     fun getSummary(yearMonth: String, orgCode: String?): List<EmployeeAnnualLeaveDto> {
@@ -23,7 +23,7 @@ class AdminAnnualLeaveService(
         val to = ym.atEndOfMonth()
 
         val schedules = if (orgCode != null) {
-            val users = userRepository.findByOrgName(orgCode)
+            val users = employeeRepository.findByOrgName(orgCode)
             if (users.isEmpty()) return emptyList()
             val employeeIds = users.map { it.id }
             teamMemberScheduleRepository.findAnnualLeaveByDateRangeAndEmployeeIds(from, to, employeeIds)
@@ -34,13 +34,13 @@ class AdminAnnualLeaveService(
         if (schedules.isEmpty()) return emptyList()
 
         val employeeIds = schedules.mapNotNull { it.employeeId }.distinct()
-        val userMap = userRepository.findAllById(employeeIds).associateBy { it.id }
+        val userMap = employeeRepository.findAllById(employeeIds).associateBy { it.id }
 
         return schedules
             .groupBy { it.employeeId ?: 0L }
             .filter { it.key != 0L }
             .map { (employeeId, employeeSchedules) ->
-                val user = userMap[employeeId]
+                val employee = userMap[employeeId]
                 val days = employeeSchedules
                     .sortedBy { it.workingDate }
                     .map { schedule ->
@@ -50,9 +50,9 @@ class AdminAnnualLeaveService(
                         )
                     }
                 EmployeeAnnualLeaveDto(
-                    employeeNumber = user?.employeeNumber ?: "",
-                    employeeName = user?.name ?: "",
-                    orgName = user?.orgName ?: "",
+                    employeeNumber = employee?.employeeNumber ?: "",
+                    employeeName = employee?.name ?: "",
+                    orgName = employee?.orgName ?: "",
                     annualLeaveDays = days,
                     totalCount = days.size
                 )

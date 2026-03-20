@@ -15,12 +15,12 @@ import java.time.LocalDateTime
     name = "inspections",
     indexes = [
         Index(
-            name = "idx_inspection_user_date",
-            columnList = "user_id, inspection_date"
+            name = "idx_inspection_employee_date",
+            columnList = "employee_id, inspection_date"
         ),
         Index(
-            name = "idx_inspection_user_date_category",
-            columnList = "user_id, inspection_date, category"
+            name = "idx_inspection_employee_date_category",
+            columnList = "employee_id, inspection_date, category"
         )
     ]
 )
@@ -31,8 +31,8 @@ class Inspection(
     val id: Long = 0,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    val user: User,
+    @JoinColumn(name = "employee_id", nullable = false)
+    val employee: Employee,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "store_id", nullable = false)

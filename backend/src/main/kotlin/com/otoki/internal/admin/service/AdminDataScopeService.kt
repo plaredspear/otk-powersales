@@ -1,14 +1,14 @@
 package com.otoki.internal.admin.service
 
 import com.otoki.internal.admin.dto.DataScope
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.repository.EmployeeRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
 @Transactional(readOnly = true)
 class AdminDataScopeService(
-    private val userRepository: UserRepository
+    private val employeeRepository: EmployeeRepository
 ) {
 
     companion object {
@@ -17,10 +17,10 @@ class AdminDataScopeService(
     }
 
     fun resolve(userId: Long): DataScope {
-        val user = userRepository.findById(userId)
+        val employee = employeeRepository.findById(userId)
             .orElseThrow { IllegalStateException("사용자를 찾을 수 없습니다: $userId") }
 
-        val authority = user.appAuthority
+        val authority = employee.appAuthority
 
         return when {
             authority in ALL_BRANCHES_AUTHORITIES -> DataScope(
@@ -28,11 +28,11 @@ class AdminDataScopeService(
                 isAllBranches = true
             )
             authority in BRANCH_ONLY_AUTHORITIES || authority == null -> DataScope(
-                branchCodes = listOfNotNull(user.costCenterCode),
+                branchCodes = listOfNotNull(employee.costCenterCode),
                 isAllBranches = false
             )
             else -> DataScope(
-                branchCodes = listOfNotNull(user.costCenterCode),
+                branchCodes = listOfNotNull(employee.costCenterCode),
                 isAllBranches = false
             )
         }

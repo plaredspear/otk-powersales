@@ -1,6 +1,6 @@
 package com.otoki.internal.admin.dto.response
 
-import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.entity.Employee
 
 data class AdminLoginResponse(
     val user: AdminUserInfo,
@@ -17,15 +17,15 @@ data class AdminUserInfo(
     val costCenterCode: String?
 ) {
     companion object {
-        fun from(user: User): AdminUserInfo {
+        fun from(employee: Employee): AdminUserInfo {
             return AdminUserInfo(
-                id = user.id,
-                employeeNumber = user.employeeNumber,
-                name = user.name,
-                orgName = user.orgName,
-                role = user.role.name,
-                appAuthority = user.appAuthority,
-                costCenterCode = user.costCenterCode
+                id = employee.id,
+                employeeNumber = employee.employeeNumber,
+                name = employee.name,
+                orgName = employee.orgName,
+                role = employee.role.name,
+                appAuthority = employee.appAuthority,
+                costCenterCode = employee.costCenterCode
             )
         }
     }

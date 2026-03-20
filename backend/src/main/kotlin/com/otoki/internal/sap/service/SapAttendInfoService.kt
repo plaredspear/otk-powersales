@@ -8,7 +8,7 @@ import com.otoki.internal.sap.entity.AttendType
 import com.otoki.internal.sap.repository.AttendInfoRepository
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
 import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.repository.EmployeeRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation
@@ -20,7 +20,7 @@ import java.time.format.DateTimeFormatter
 class SapAttendInfoService(
     private val attendInfoRepository: AttendInfoRepository,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
-    private val userRepository: UserRepository
+    private val employeeRepository: EmployeeRepository
 ) : SapSyncService<SapAttendInfoRequest.ReqItem> {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -120,16 +120,16 @@ class SapAttendInfoService(
         if (dates.isEmpty()) return
 
         val employeeCode = attendInfo.employeeCode
-        val user = userRepository.findByEmployeeNumber(employeeCode).orElse(null)
-        if (user == null) {
+        val employee = employeeRepository.findByEmployeeNumber(employeeCode).orElse(null)
+        if (employee == null) {
             log.warn("연차 스케줄 처리 실패 - 사원 조회 불가: employeeCode={}", employeeCode)
             return
         }
 
         if (attendInfo.status == "Y") {
-            deleteAnnualLeaveSchedules(user.id, employeeCode, dates)
+            deleteAnnualLeaveSchedules(employee.id, employeeCode, dates)
         } else {
-            createAnnualLeaveSchedules(user.id, employeeCode, dates)
+            createAnnualLeaveSchedules(employee.id, employeeCode, dates)
         }
     }
 

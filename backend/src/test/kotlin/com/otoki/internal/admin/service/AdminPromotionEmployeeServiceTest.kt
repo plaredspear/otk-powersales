@@ -8,8 +8,8 @@ import com.otoki.internal.promotion.entity.PromotionEmployee
 import com.otoki.internal.promotion.exception.*
 import com.otoki.internal.promotion.repository.PromotionEmployeeRepository
 import com.otoki.internal.promotion.repository.PromotionRepository
-import com.otoki.internal.sap.entity.User
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.entity.Employee
+import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -30,7 +30,7 @@ class AdminPromotionEmployeeServiceTest {
 
     @Mock private lateinit var promotionEmployeeRepository: PromotionEmployeeRepository
     @Mock private lateinit var promotionRepository: PromotionRepository
-    @Mock private lateinit var userRepository: UserRepository
+    @Mock private lateinit var employeeRepository: EmployeeRepository
     @Mock private lateinit var teamMemberScheduleRepository: TeamMemberScheduleRepository
 
     @InjectMocks private lateinit var service: AdminPromotionEmployeeService
@@ -48,7 +48,7 @@ class AdminPromotionEmployeeServiceTest {
                 createPe(id = 2L, scheduleDate = LocalDate.of(2026, 3, 16))
             )
             whenever(promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(10L)).thenReturn(employees)
-            whenever(userRepository.findAllById(listOf(1L))).thenReturn(listOf(createUser()))
+            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(createEmployee()))
 
             val result = service.getEmployees(10L)
             assertThat(result).hasSize(2)
@@ -74,7 +74,7 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion(category = "라면")))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
             stubRollup()
 
             val result = service.createEmployee(10L, createRequest(professionalPromotionTeam = "라면세일조"))
@@ -87,7 +87,7 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion(category = "라면")))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
             stubRollup()
 
             val result = service.createEmployee(10L, createRequest(professionalPromotionTeam = null))
@@ -100,7 +100,7 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion(category = "냉장")))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
             stubRollup()
 
             service.createEmployee(10L, createRequest(professionalPromotionTeam = "일반"))
@@ -112,7 +112,7 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion(category = "만두")))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
             stubRollup()
 
             service.createEmployee(10L, createRequest(professionalPromotionTeam = "프레시세일조_냉동"))
@@ -124,7 +124,7 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion(category = "라면")))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
             stubRollup()
 
             val result = service.createEmployee(10L, createRequest(professionalPromotionTeam = "프레시세일조_냉장"))
@@ -137,7 +137,7 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
             stubRollup()
 
             val result = service.createEmployee(10L, createRequest(workStatus = "잘못된상태"))
@@ -150,7 +150,7 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
             stubRollup()
 
             val result = service.createEmployee(10L, createRequest(workType1 = null))
@@ -163,7 +163,7 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
             stubRollup()
 
             val result = service.createEmployee(10L, createRequest(workType1 = "진열"))
@@ -176,7 +176,7 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
             stubRollup()
 
             val result = service.createEmployee(10L, createRequest(workStatus = null))
@@ -189,7 +189,7 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
             stubRollup()
 
             val result = service.createEmployee(10L, createRequest(workStatus = "연차"))
@@ -218,7 +218,7 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
             stubRollup()
 
             val result = service.createEmployee(10L, createRequest(scheduleDate = LocalDate.of(2026, 3, 9)))
@@ -231,7 +231,7 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
             stubRollup()
 
             val result = service.createEmployee(10L, createRequest(scheduleDate = LocalDate.of(2026, 3, 10)))
@@ -244,7 +244,7 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
             stubRollup()
 
             val result = service.createEmployee(10L, createRequest(scheduleDate = LocalDate.of(2026, 3, 20)))
@@ -257,7 +257,7 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
             stubRollup()
 
             val result = service.createEmployee(10L, createRequest(
@@ -272,7 +272,7 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
             stubRollup()
 
             val result = service.createEmployee(10L, createRequest(
@@ -287,7 +287,7 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
             stubRollup()
 
             val result = service.createEmployee(10L, createRequest(basePrice = null, dailyTargetCount = 10))
@@ -300,7 +300,7 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
             stubRollup()
 
             val result = service.createEmployee(10L, createRequest(basePrice = 5000, dailyTargetCount = null))
@@ -313,7 +313,7 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
             stubRollup()
 
             val result = service.createEmployee(10L, createRequest(basePrice = 5000, dailyTargetCount = 0))
@@ -326,7 +326,7 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
             stubRollup()
 
             val result = service.createEmployee(10L, createRequest(
@@ -341,7 +341,7 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
             stubRollup()
 
             val result = service.createEmployee(10L, createRequest(
@@ -356,7 +356,7 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
             stubRollup()
 
             val result = service.createEmployee(10L, createRequest(employeeNumber = "20030117"))
@@ -370,7 +370,7 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
-            whenever(userRepository.findByEmployeeNumber("99999999")).thenReturn(Optional.empty())
+            whenever(employeeRepository.findByEmployeeNumber("99999999")).thenReturn(Optional.empty())
             stubRollup()
 
             val result = service.createEmployee(10L, createRequest(employeeNumber = "99999999"))
@@ -393,11 +393,11 @@ class AdminPromotionEmployeeServiceTest {
         @Test
         @DisplayName("sfid null인 User의 employeeNumber -> sfid=null, name 정상")
         fun createEmployee_sfidNullUser() {
-            val sfidNullUser = User(id = 2L, sfid = null, employeeNumber = "00000002", name = "여사원테스트")
+            val sfidNullEmployee = Employee(id = 2L, sfid = null, employeeNumber = "00000002", name = "여사원테스트")
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
-            whenever(userRepository.findByEmployeeNumber("00000002")).thenReturn(Optional.of(sfidNullUser))
+            whenever(employeeRepository.findByEmployeeNumber("00000002")).thenReturn(Optional.of(sfidNullEmployee))
             stubRollup()
 
             val result = service.createEmployee(10L, createRequest(employeeNumber = "00000002"))
@@ -415,8 +415,8 @@ class AdminPromotionEmployeeServiceTest {
         fun updateEmployee_success() {
             val pe = createPe()
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
@@ -431,8 +431,8 @@ class AdminPromotionEmployeeServiceTest {
         fun updateEmployee_closedNonCritical_success() {
             val pe = createPe(scheduleId = 100L, promoCloseByTm = true)
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
@@ -448,8 +448,8 @@ class AdminPromotionEmployeeServiceTest {
         fun updateEmployee_closedCriticalField() {
             val pe = createPe(scheduleId = 100L, promoCloseByTm = true)
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeNumber("DIFFEREN")).thenReturn(Optional.empty())
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
+            whenever(employeeRepository.findByEmployeeNumber("DIFFEREN")).thenReturn(Optional.empty())
 
             assertThatThrownBy { service.updateEmployee(1L, 1L, createRequest(employeeNumber = "DIFFEREN")) }
                 .isInstanceOf(ClosedEmployeeModificationException::class.java)
@@ -460,8 +460,8 @@ class AdminPromotionEmployeeServiceTest {
         fun updateEmployee_closedScheduleDate() {
             val pe = createPe(scheduleId = 100L, promoCloseByTm = true)
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
 
             assertThatThrownBy { service.updateEmployee(1L, 1L, createRequest(scheduleDate = LocalDate.of(2026, 4, 1))) }
                 .isInstanceOf(ClosedEmployeeModificationException::class.java)
@@ -472,8 +472,8 @@ class AdminPromotionEmployeeServiceTest {
         fun updateEmployee_adminClosedCriticalField_allowed() {
             val pe = createPe(scheduleId = 100L, promoCloseByTm = true)
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser(appAuthority = "지점장")))
-            whenever(userRepository.findByEmployeeNumber("DIFFEREN")).thenReturn(Optional.empty())
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee(appAuthority = "지점장")))
+            whenever(employeeRepository.findByEmployeeNumber("DIFFEREN")).thenReturn(Optional.empty())
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
@@ -488,8 +488,8 @@ class AdminPromotionEmployeeServiceTest {
         fun updateEmployee_adminClosedScheduleDate_allowed() {
             val pe = createPe(scheduleId = 100L, promoCloseByTm = true)
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser(appAuthority = "지점장")))
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee(appAuthority = "지점장")))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
@@ -504,8 +504,8 @@ class AdminPromotionEmployeeServiceTest {
         fun updateEmployee_criticalFieldChange_scheduleDeleted() {
             val pe = createPe(scheduleId = 100L)
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeNumber("DIFFEREN")).thenReturn(Optional.empty())
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
+            whenever(employeeRepository.findByEmployeeNumber("DIFFEREN")).thenReturn(Optional.empty())
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
@@ -522,8 +522,8 @@ class AdminPromotionEmployeeServiceTest {
         fun updateEmployee_teamChange_noScheduleDelete() {
             val pe = createPe(scheduleId = 100L)
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeNumber("DIFFEREN")).thenReturn(Optional.empty())
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
+            whenever(employeeRepository.findByEmployeeNumber("DIFFEREN")).thenReturn(Optional.empty())
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
@@ -544,8 +544,8 @@ class AdminPromotionEmployeeServiceTest {
         fun updateEmployee_scheduleDateBeforeStart() {
             val pe = createPe()
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
 
             assertThatThrownBy { service.updateEmployee(1L, 1L, createRequest(scheduleDate = LocalDate.of(2026, 3, 5))) }
@@ -557,8 +557,8 @@ class AdminPromotionEmployeeServiceTest {
         fun updateEmployee_workType3Null_success() {
             val pe = createPe()
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
@@ -573,8 +573,8 @@ class AdminPromotionEmployeeServiceTest {
         fun updateEmployee_workType3Empty_savedAsNull() {
             val pe = createPe()
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
@@ -589,7 +589,7 @@ class AdminPromotionEmployeeServiceTest {
         fun updateEmployee_employeeNumberNull_success() {
             val pe = createPe()
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
@@ -604,7 +604,7 @@ class AdminPromotionEmployeeServiceTest {
         fun updateEmployee_workType3Invalid() {
             val pe = createPe()
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
 
             assertThatThrownBy { service.updateEmployee(1L, 1L, createRequest(workType3 = "잘못된값")) }
                 .isInstanceOf(InvalidWorkType3Exception::class.java)
@@ -615,8 +615,8 @@ class AdminPromotionEmployeeServiceTest {
         fun updateEmployee_workStatusNull_keepsExisting() {
             val pe = createPe(workStatus = "연차")
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
@@ -631,8 +631,8 @@ class AdminPromotionEmployeeServiceTest {
         fun updateEmployee_workType1Null_keepsExisting() {
             val pe = createPe(workType1 = "시음")
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
@@ -647,8 +647,8 @@ class AdminPromotionEmployeeServiceTest {
         fun updateEmployee_scheduleDateAfterEnd() {
             val pe = createPe()
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
 
             assertThatThrownBy { service.updateEmployee(1L, 1L, createRequest(scheduleDate = LocalDate.of(2026, 3, 25))) }
@@ -660,8 +660,8 @@ class AdminPromotionEmployeeServiceTest {
         fun updateEmployee_targetAmountCalculated() {
             val pe = createPe()
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
@@ -678,8 +678,8 @@ class AdminPromotionEmployeeServiceTest {
         fun updateEmployee_actualAmountCalculated() {
             val pe = createPe()
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
@@ -703,7 +703,7 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
             stubRollup(targetSum = 100000, actualSum = 80000)
 
             service.createEmployee(10L, createRequest(targetAmount = 100000, actualAmount = 80000))
@@ -718,8 +718,8 @@ class AdminPromotionEmployeeServiceTest {
             val promotion = createPromotion()
             val pe = createPe()
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
@@ -798,9 +798,9 @@ class AdminPromotionEmployeeServiceTest {
             val pe1 = createPe(id = 1L, scheduleDate = LocalDate.of(2026, 3, 15))
             val pe2 = createPe(id = 2L, scheduleDate = LocalDate.of(2026, 3, 16))
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findAllById(listOf(1L))).thenReturn(listOf(createUser()))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
+            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(createEmployee()))
 
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe1))
             whenever(promotionEmployeeRepository.findById(2L)).thenReturn(Optional.of(pe2))
@@ -848,7 +848,7 @@ class AdminPromotionEmployeeServiceTest {
         @DisplayName("수정 대상 미존재 -> BATCH_VALIDATION_FAILED")
         fun batchUpdate_notFound() {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
 
             whenever(promotionEmployeeRepository.findById(999L)).thenReturn(Optional.empty())
 
@@ -865,7 +865,7 @@ class AdminPromotionEmployeeServiceTest {
             val pe1 = createPe(id = 1L)
             val pe2 = createPe(id = 2L)
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
 
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe1))
             whenever(promotionEmployeeRepository.findById(2L)).thenReturn(Optional.of(pe2))
@@ -888,9 +888,9 @@ class AdminPromotionEmployeeServiceTest {
         fun batchUpdate_nullWorkStatusAndType1_keepsExisting() {
             val pe = createPe(id = 1L, workStatus = "연차", workType1 = "시음")
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findAllById(listOf(1L))).thenReturn(listOf(createUser()))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
+            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(createEmployee()))
 
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
@@ -914,7 +914,7 @@ class AdminPromotionEmployeeServiceTest {
         fun batchUpdate_invalidWorkStatusButNullAllowed() {
             val pe = createPe(id = 1L)
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
 
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
 
@@ -933,7 +933,7 @@ class AdminPromotionEmployeeServiceTest {
         fun batchUpdate_scheduleDateOutOfRange() {
             val pe = createPe(id = 1L)
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
 
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
 
@@ -953,8 +953,8 @@ class AdminPromotionEmployeeServiceTest {
         fun batchUpdate_closedEmployeeModification() {
             val pe = createPe(id = 1L, scheduleId = 100L, promoCloseByTm = true)
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeNumber("DIFFEREN")).thenReturn(Optional.empty())
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
+            whenever(employeeRepository.findByEmployeeNumber("DIFFEREN")).thenReturn(Optional.empty())
 
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
 
@@ -973,8 +973,8 @@ class AdminPromotionEmployeeServiceTest {
         fun batchUpdate_adminClosedEmployeeModification_allowed() {
             val pe = createPe(id = 1L, scheduleId = 100L, promoCloseByTm = true)
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser(appAuthority = "지점장")))
-            whenever(userRepository.findByEmployeeNumber("DIFFEREN")).thenReturn(Optional.empty())
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee(appAuthority = "지점장")))
+            whenever(employeeRepository.findByEmployeeNumber("DIFFEREN")).thenReturn(Optional.empty())
 
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
@@ -996,8 +996,8 @@ class AdminPromotionEmployeeServiceTest {
         fun batchUpdate_criticalFieldChange_scheduleDeleted() {
             val pe = createPe(id = 1L, scheduleId = 100L)
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeNumber("NEW_EMP")).thenReturn(Optional.empty())
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
+            whenever(employeeRepository.findByEmployeeNumber("NEW_EMP")).thenReturn(Optional.empty())
 
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
@@ -1021,9 +1021,9 @@ class AdminPromotionEmployeeServiceTest {
         fun batchUpdate_workType3Null_success() {
             val pe = createPe(id = 1L)
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findAllById(listOf(1L))).thenReturn(listOf(createUser()))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
+            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(createEmployee()))
 
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
@@ -1046,9 +1046,9 @@ class AdminPromotionEmployeeServiceTest {
         fun batchUpdate_workType3Empty_savedAsNull() {
             val pe = createPe(id = 1L)
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findAllById(listOf(1L))).thenReturn(listOf(createUser()))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
+            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(createEmployee()))
 
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
@@ -1071,9 +1071,9 @@ class AdminPromotionEmployeeServiceTest {
         fun batchUpdate_workType1BothNull_defaultApplied() {
             val pe = createPe(id = 1L, workType1 = null)
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findAllById(listOf(1L))).thenReturn(listOf(createUser()))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
+            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(createEmployee()))
 
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
@@ -1095,9 +1095,9 @@ class AdminPromotionEmployeeServiceTest {
         fun batchUpdate_workStatusBothNull_defaultApplied() {
             val pe = createPe(id = 1L, workStatus = null)
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findAllById(listOf(1L))).thenReturn(listOf(createUser()))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
+            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(createEmployee()))
 
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
@@ -1119,7 +1119,7 @@ class AdminPromotionEmployeeServiceTest {
         fun batchUpdate_employeeNumberNull_success() {
             val pe = createPe(id = 1L)
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
@@ -1141,7 +1141,7 @@ class AdminPromotionEmployeeServiceTest {
         fun batchUpdate_workType3Invalid() {
             val pe = createPe(id = 1L)
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
 
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
 
@@ -1160,9 +1160,9 @@ class AdminPromotionEmployeeServiceTest {
         fun batchUpdate_calculatedFields() {
             val pe = createPe(id = 1L)
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findAllById(listOf(1L))).thenReturn(listOf(createUser()))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
+            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(createEmployee()))
 
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
@@ -1190,9 +1190,9 @@ class AdminPromotionEmployeeServiceTest {
             val promotion = createPromotion()
             val pe = createPe(id = 1L)
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createUser()))
-            whenever(userRepository.findAllById(listOf(1L))).thenReturn(listOf(createUser()))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
+            whenever(employeeRepository.findByEmployeeNumber("20030117")).thenReturn(Optional.of(createEmployee()))
+            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(createEmployee()))
 
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
@@ -1242,7 +1242,7 @@ class AdminPromotionEmployeeServiceTest {
         scheduleId = scheduleId, promoCloseByTm = promoCloseByTm
     )
 
-    private fun createUser(appAuthority: String? = null) = User(id = 1L, sfid = "a0B5g00000XYZabc", employeeNumber = "20030117", name = "김여사").also {
+    private fun createEmployee(appAuthority: String? = null) = Employee(id = 1L, sfid = "a0B5g00000XYZabc", employeeNumber = "20030117", name = "김여사").also {
         it.appAuthority = appAuthority
     }
 

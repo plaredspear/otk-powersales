@@ -1,6 +1,6 @@
 package com.otoki.internal.sap.service
 
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.sap.dto.SapAppointmentRequest
 import com.otoki.internal.sap.dto.SapSyncError
 import com.otoki.internal.sap.dto.SapSyncResult
@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class SapAppointmentService(
     private val appointmentRepository: AppointmentRepository,
-    private val userRepository: UserRepository,
+    private val employeeRepository: EmployeeRepository,
     private val appointmentUserProfileUpdater: AppointmentUserProfileUpdater
 ) : SapSyncService<SapAppointmentRequest.ReqItem> {
 
@@ -21,7 +21,7 @@ class SapAppointmentService(
 
     @Transactional
     override fun sync(items: List<SapAppointmentRequest.ReqItem>): SapSyncResult {
-        val employeeNumbers = userRepository.findAllEmployeeNumbers().toSet()
+        val employeeNumbers = employeeRepository.findAllEmployeeNumbers().toSet()
         var successCount = 0
         val errors = mutableListOf<SapSyncError>()
         val savedAppointments = mutableListOf<Appointment>()

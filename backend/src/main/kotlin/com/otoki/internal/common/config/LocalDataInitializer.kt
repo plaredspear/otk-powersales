@@ -1,9 +1,9 @@
 package com.otoki.internal.common.config
 
 import com.otoki.internal.common.entity.AgreementWord
-import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.common.repository.AgreementWordRepository
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.notice.entity.Notice
 import com.otoki.internal.notice.entity.NoticeCategory
 import com.otoki.internal.notice.repository.NoticeRepository
@@ -22,7 +22,7 @@ import java.time.LocalDateTime
 @Component
 @Profile("local")
 class LocalDataInitializer(
-    private val userRepository: UserRepository,
+    private val employeeRepository: EmployeeRepository,
     private val passwordEncoder: PasswordEncoder,
     private val agreementWordRepository: AgreementWordRepository,
     private val noticeRepository: NoticeRepository,
@@ -43,9 +43,9 @@ class LocalDataInitializer(
         val encodedPassword = passwordEncoder.encode("1234")
 
         // 영업지원실 (ADMIN - 웹 관리자 전체 조회용)
-        if (!userRepository.existsByEmployeeNumber("00000001")) {
-            userRepository.save(
-                User(
+        if (!employeeRepository.existsByEmployeeNumber("00000001")) {
+            employeeRepository.save(
+                Employee(
                     employeeNumber = "00000001",
                     name = "개발테스트",
                     status = "재직",
@@ -65,9 +65,9 @@ class LocalDataInitializer(
         }
 
         // 여사원 (USER)
-        if (!userRepository.existsByEmployeeNumber("00000002")) {
-            userRepository.save(
-                User(
+        if (!employeeRepository.existsByEmployeeNumber("00000002")) {
+            employeeRepository.save(
+                Employee(
                     employeeNumber = "00000002",
                     name = "여사원테스트",
                     status = "재직",
@@ -87,9 +87,9 @@ class LocalDataInitializer(
         }
 
         // 지점장 (ADMIN)
-        if (!userRepository.existsByEmployeeNumber("00000003")) {
-            userRepository.save(
-                User(
+        if (!employeeRepository.existsByEmployeeNumber("00000003")) {
+            employeeRepository.save(
+                Employee(
                     employeeNumber = "00000003",
                     name = "지점장테스트",
                     status = "재직",
@@ -109,9 +109,9 @@ class LocalDataInitializer(
         }
 
         // 강남지점 조장
-        if (!userRepository.existsByEmployeeNumber("00000004")) {
-            userRepository.save(
-                User(
+        if (!employeeRepository.existsByEmployeeNumber("00000004")) {
+            employeeRepository.save(
+                Employee(
                     employeeNumber = "00000004",
                     name = "강남조장",
                     status = "재직",
@@ -131,9 +131,9 @@ class LocalDataInitializer(
         }
 
         // 강남지점 여사원
-        if (!userRepository.existsByEmployeeNumber("00000005")) {
-            userRepository.save(
-                User(
+        if (!employeeRepository.existsByEmployeeNumber("00000005")) {
+            employeeRepository.save(
+                Employee(
                     employeeNumber = "00000005",
                     name = "강남여사원",
                     status = "재직",

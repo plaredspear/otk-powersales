@@ -1,7 +1,7 @@
 package com.otoki.internal.product.repository
 
 import com.otoki.internal.product.entity.ExpiryProduct
-import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.entity.Employee
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -37,13 +37,13 @@ class ExpiryProductRepositoryTest {
         expiryProductRepository.deleteAll()
         testEntityManager.clear()
 
-        val user = User(
+        val employee = Employee(
             employeeNumber = "20030117",
             password = "encodedPassword",
             name = "최금주",
             orgName = "부산1지점"
         )
-        testUserId = testEntityManager.persistAndFlush(user).id
+        testUserId = testEntityManager.persistAndFlush(employee).id
         testEntityManager.clear()
     }
 
@@ -112,13 +112,13 @@ class ExpiryProductRepositoryTest {
     fun countByUserIdAndExpiryDateBetween_differentUser() {
         // Given
         val today = LocalDate.now()
-        val otherUser = User(
+        val otherEmployee = Employee(
             employeeNumber = "20030118",
             password = "encodedPassword",
             name = "김영희",
             orgName = "서울1지점"
         )
-        val otherUserId = testEntityManager.persistAndFlush(otherUser).id
+        val otherUserId = testEntityManager.persistAndFlush(otherEmployee).id
 
         val product = ExpiryProduct(
             userId = otherUserId,

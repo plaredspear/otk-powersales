@@ -1,7 +1,7 @@
 /* Order 모듈 전체 비활성화 — DB 테이블 미존재
 package com.otoki.internal.order.entity
 
-import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.entity.Employee
 import jakarta.persistence.*
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -14,7 +14,7 @@ import java.time.LocalDateTime
 @Table(
     name = "orders",
     indexes = [
-        Index(name = "idx_orders_user_id", columnList = "user_id"),
+        Index(name = "idx_orders_employee_id", columnList = "employee_id"),
         Index(name = "idx_orders_account_id", columnList = "account_id"),
         Index(name = "idx_orders_order_date", columnList = "order_date"),
         Index(name = "idx_orders_delivery_date", columnList = "delivery_date"),
@@ -31,8 +31,8 @@ class Order(
     val orderRequestNumber: String,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    val user: User,
+    @JoinColumn(name = "employee_id", nullable = false)
+    val employee: Employee,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "account_id", nullable = false)

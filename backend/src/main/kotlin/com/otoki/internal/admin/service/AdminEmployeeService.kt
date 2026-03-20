@@ -4,7 +4,7 @@ import com.otoki.internal.admin.dto.EffectiveBranchResult
 import com.otoki.internal.admin.dto.response.EmployeeListItem
 import com.otoki.internal.admin.dto.response.EmployeeListResponse
 import com.otoki.internal.admin.scope.DataScopeHolder
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.repository.EmployeeRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional
 @Transactional(readOnly = true)
 class AdminEmployeeService(
     private val dataScopeHolder: DataScopeHolder,
-    private val userRepository: UserRepository
+    private val employeeRepository: EmployeeRepository
 ) {
 
     fun getEmployees(
@@ -34,7 +34,7 @@ class AdminEmployeeService(
         }
 
         val pageable = PageRequest.of(page, size, Sort.by("name").ascending())
-        val userPage = userRepository.findEmployees(status, effectiveBranchCodes, keyword, appAuthority, pageable)
+        val userPage = employeeRepository.findEmployees(status, effectiveBranchCodes, keyword, appAuthority, pageable)
 
         return EmployeeListResponse(
             content = userPage.content.map { EmployeeListItem.from(it) },

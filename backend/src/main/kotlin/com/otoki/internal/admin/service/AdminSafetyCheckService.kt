@@ -11,9 +11,9 @@ import com.otoki.internal.safetycheck.repository.SafetyCheckSubmissionRepository
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
 import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.internal.sap.entity.Account
-import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.sap.repository.AccountRepository
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.repository.EmployeeRepository
 import jakarta.annotation.PostConstruct
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -22,7 +22,7 @@ import java.time.LocalDate
 @Service
 @Transactional(readOnly = true)
 class AdminSafetyCheckService(
-    private val userRepository: UserRepository,
+    private val employeeRepository: EmployeeRepository,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
     private val safetyCheckSubmissionRepository: SafetyCheckSubmissionRepository,
     private val safetyCheckItemRepository: SafetyCheckItemRepository,
@@ -40,12 +40,12 @@ class AdminSafetyCheckService(
     }
 
     fun getStatus(userId: Long, date: LocalDate): SafetyCheckStatusResponse {
-        val currentUser = findUserById(userId)
-        val costCenterCode = currentUser.costCenterCode
+        val currentEmployee = findEmployeeById(userId)
+        val costCenterCode = currentEmployee.costCenterCode
             ?: return emptyResponse(date)
 
         // 1. 소속 여사원 조회
-        val members = userRepository.findByCostCenterCodeAndAppAuthority(costCenterCode, "여사원")
+        val members = employeeRepository.findByCostCenterCodeAndAppAuthority(costCenterCode, "여사원")
             .filter { it.isDeleted != true }
         if (members.isEmpty()) return emptyResponse(date)
 
@@ -72,16 +72,16 @@ class AdminSafetyCheckService(
         } else emptyMap()
 
         // 5. 사원 Map
-        val userMap = members.associateBy { it.id }
+        val employeeMap = members.associateBy { it.id }
 
         // 6. 응답 생성
         val memberStatuses = scheduledEmployeeIds.mapNotNull { empId ->
-            val user = userMap[empId] ?: return@mapNotNull null
+            val employee = employeeMap[empId] ?: return@mapNotNull null
             val schedule = scheduleByEmployee[empId] ?: return@mapNotNull null
             val submission = submissionByEmployee[empId]
             val account = schedule.accountId?.let { accountMap[it] }
 
-            buildMemberStatus(user, submission, account, schedule)
+            buildMemberStatus(employee, submission, account, schedule)
         }.sortedBy { it.employeeName }
 
         val submittedCount = memberStatuses.count { it.submitted }
@@ -106,7 +106,7 @@ class AdminSafetyCheckService(
     }
 
     private fun buildMemberStatus(
-        user: User,
+        employee: Employee,
         submission: SafetyCheckSubmission?,
         account: Account?,
         schedule: TeamMemberSchedule
@@ -115,9 +115,9 @@ class AdminSafetyCheckService(
         val equipments = if (submitted) buildEquipmentList(submission!!) else emptyList()
 
         return MemberStatus(
-            id = user.id,
-            employeeNumber = user.employeeNumber,
-            employeeName = user.name,
+            id = employee.id,
+            employeeNumber = employee.employeeNumber,
+            employeeName = employee.name,
             accountName = account?.name,
             submitted = submitted,
             submittedAt = submission?.completeTime,
@@ -157,8 +157,8 @@ class AdminSafetyCheckService(
         )
     }
 
-    private fun findUserById(userId: Long): User {
-        return userRepository.findById(userId)
+    private fun findEmployeeById(userId: Long): Employee {
+        return employeeRepository.findById(userId)
             .orElseThrow { TeamScheduleEmployeeNotFoundException() }
     }
 }

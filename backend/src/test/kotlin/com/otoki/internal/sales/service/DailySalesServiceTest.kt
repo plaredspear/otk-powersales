@@ -8,7 +8,7 @@ import com.otoki.internal.common.exception.*
 import com.otoki.internal.sales.repository.DailySalesRepository
 import com.otoki.internal.event.repository.EventProductRepository
 import com.otoki.internal.event.repository.EventRepository
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.repository.EmployeeRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
@@ -38,7 +38,7 @@ class DailySalesServiceTest {
     private lateinit var eventProductRepository: EventProductRepository
 
     @Mock
-    private lateinit var userRepository: UserRepository
+    private lateinit var employeeRepository: EmployeeRepository
 
     @Mock
     private lateinit var fileStorageService: FileStorageService
@@ -97,7 +97,7 @@ class DailySalesServiceTest {
             photo = photo
         )
 
-        whenever(userRepository.findById(testUserId)).thenReturn(Optional.of(user))
+        whenever(employeeRepository.findById(testUserId)).thenReturn(Optional.of(user))
         whenever(eventRepository.findByEventId(testEventId)).thenReturn(Optional.of(event))
         whenever(dailySalesRepository.existsByEventIdAndEmployeeIdAndSalesDateAndStatus(
             any(), any(), any(), any()
@@ -150,7 +150,7 @@ class DailySalesServiceTest {
             photo = photo
         )
 
-        whenever(userRepository.findById(testUserId)).thenReturn(Optional.of(user))
+        whenever(employeeRepository.findById(testUserId)).thenReturn(Optional.of(user))
         whenever(eventRepository.findByEventId(testEventId)).thenReturn(Optional.of(event))
         whenever(dailySalesRepository.existsByEventIdAndEmployeeIdAndSalesDateAndStatus(
             any(), any(), any(), any()
@@ -201,7 +201,7 @@ class DailySalesServiceTest {
             photo = createTestPhoto()
         )
 
-        whenever(userRepository.findById(testUserId)).thenReturn(Optional.of(user))
+        whenever(employeeRepository.findById(testUserId)).thenReturn(Optional.of(user))
         whenever(eventRepository.findByEventId(testEventId)).thenReturn(Optional.empty())
 
         // When & Then
@@ -230,7 +230,7 @@ class DailySalesServiceTest {
             photo = createTestPhoto()
         )
 
-        whenever(userRepository.findById(testUserId)).thenReturn(Optional.of(
+        whenever(employeeRepository.findById(testUserId)).thenReturn(Optional.of(
             com.otoki.internal.common.entity.User(
                 id = testUserId,
                 employeeNumber = "99999",
@@ -269,7 +269,7 @@ class DailySalesServiceTest {
             photo = createTestPhoto()
         )
 
-        whenever(userRepository.findById(testUserId)).thenReturn(Optional.of(user))
+        whenever(employeeRepository.findById(testUserId)).thenReturn(Optional.of(user))
         whenever(eventRepository.findByEventId(testEventId)).thenReturn(Optional.of(expiredEvent))
 
         // When & Then
@@ -290,7 +290,7 @@ class DailySalesServiceTest {
             photo = createTestPhoto()
         )
 
-        whenever(userRepository.findById(testUserId)).thenReturn(Optional.of(user))
+        whenever(employeeRepository.findById(testUserId)).thenReturn(Optional.of(user))
         whenever(eventRepository.findByEventId(testEventId)).thenReturn(Optional.of(event))
         whenever(dailySalesRepository.existsByEventIdAndEmployeeIdAndSalesDateAndStatus(
             any(), any(), any(), any()
@@ -312,7 +312,7 @@ class DailySalesServiceTest {
             photo = createTestPhoto()
         )
 
-        whenever(userRepository.findById(testUserId)).thenReturn(Optional.of(user))
+        whenever(employeeRepository.findById(testUserId)).thenReturn(Optional.of(user))
         whenever(eventRepository.findByEventId(testEventId)).thenReturn(Optional.of(event))
         whenever(dailySalesRepository.existsByEventIdAndEmployeeIdAndSalesDateAndStatus(
             any(), any(), any(), any()
@@ -337,7 +337,7 @@ class DailySalesServiceTest {
             photo = createTestPhoto()
         )
 
-        whenever(userRepository.findById(testUserId)).thenReturn(Optional.of(user))
+        whenever(employeeRepository.findById(testUserId)).thenReturn(Optional.of(user))
         whenever(eventRepository.findByEventId(testEventId)).thenReturn(Optional.of(event))
         whenever(dailySalesRepository.existsByEventIdAndEmployeeIdAndSalesDateAndStatus(
             any(), any(), any(), any()
@@ -361,7 +361,7 @@ class DailySalesServiceTest {
             mainProductQuantity = 10
         )
 
-        whenever(userRepository.findById(testUserId)).thenReturn(Optional.of(user))
+        whenever(employeeRepository.findById(testUserId)).thenReturn(Optional.of(user))
         whenever(eventRepository.findByEventId(testEventId)).thenReturn(Optional.of(event))
         whenever(dailySalesRepository.existsByEventIdAndEmployeeIdAndSalesDateAndStatus(
             any(), any(), any(), any()
@@ -386,7 +386,7 @@ class DailySalesServiceTest {
             photo = createTestPhoto()
         )
 
-        whenever(userRepository.findById(testUserId)).thenReturn(Optional.of(user))
+        whenever(employeeRepository.findById(testUserId)).thenReturn(Optional.of(user))
         whenever(eventRepository.findByEventId(testEventId)).thenReturn(Optional.of(event))
         whenever(dailySalesRepository.existsByEventIdAndEmployeeIdAndSalesDateAndStatus(
             any(), any(), any(), any()
@@ -410,7 +410,7 @@ class DailySalesServiceTest {
             mainProductPrice = 500
         )
 
-        whenever(userRepository.findById(testUserId)).thenReturn(Optional.of(user))
+        whenever(employeeRepository.findById(testUserId)).thenReturn(Optional.of(user))
         whenever(eventRepository.findByEventId(testEventId)).thenReturn(Optional.of(event))
         whenever(dailySalesRepository.findByEventIdAndEmployeeIdAndSalesDateAndStatus(
             any(), any(), any(), any()
@@ -465,7 +465,7 @@ class DailySalesServiceTest {
             mainProductQuantity = 10
         )
 
-        whenever(userRepository.findById(testUserId)).thenReturn(Optional.of(user))
+        whenever(employeeRepository.findById(testUserId)).thenReturn(Optional.of(user))
         whenever(eventRepository.findByEventId(testEventId)).thenReturn(Optional.of(event))
         whenever(dailySalesRepository.findByEventIdAndEmployeeIdAndSalesDateAndStatus(
             any(), any(), any(), any()

@@ -2,7 +2,7 @@ package com.otoki.internal.schedule.repository
 
 import com.otoki.internal.schedule.entity.DisplayWorkSchedule
 import com.otoki.internal.schedule.entity.QDisplayWorkSchedule.displayWorkSchedule
-import com.otoki.internal.sap.entity.QUser.user
+import com.otoki.internal.sap.entity.QEmployee.employee
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.dsl.BooleanExpression
 import com.querydsl.jpa.JPAExpressions
@@ -125,9 +125,9 @@ class DisplayWorkScheduleRepositoryCustomImpl(
         if (employeeCode.isNullOrBlank()) return null
         // employee 테이블 서브쿼리로 사번 부분 매칭 → employeeId in (...)
         val matchingIds = JPAExpressions
-            .select(user.id)
-            .from(user)
-            .where(user.employeeNumber.containsIgnoreCase(employeeCode))
+            .select(employee.id)
+            .from(employee)
+            .where(employee.employeeNumber.containsIgnoreCase(employeeCode))
         return displayWorkSchedule.employeeId.`in`(matchingIds)
     }
 

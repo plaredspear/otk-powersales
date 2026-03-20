@@ -8,7 +8,7 @@ import com.otoki.internal.education.exception.*
 import com.otoki.internal.education.repository.EducationCodeRepository
 import com.otoki.internal.education.repository.EducationPostAttachmentRepository
 import com.otoki.internal.education.repository.EducationPostRepository
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.repository.EmployeeRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -46,7 +46,7 @@ class EducationServiceTest {
     private lateinit var fileStorageService: FileStorageService
 
     @Mock
-    private lateinit var userRepository: UserRepository
+    private lateinit var employeeRepository: EmployeeRepository
 
     private lateinit var testPost: EducationPost
 
@@ -282,13 +282,13 @@ class EducationServiceTest {
     @DisplayName("createPost - 교육 자료 작성")
     inner class CreatePostTests {
 
-        private val testUser = User(id = 1L, employeeNumber = "12345678", name = "테스트")
+        private val testEmployee = Employee(id = 1L, employeeNumber = "12345678", name = "테스트")
 
         @Test
         @DisplayName("정상 작성 - 파일 없이 교육 자료 생성")
         fun createPost_success_noFiles() {
             whenever(educationCodeRepository.existsById("c00001")).thenReturn(true)
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(testUser))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(testEmployee))
             whenever(educationPostRepository.save(any<EducationPost>())).thenAnswer { it.getArgument<EducationPost>(0) }
             whenever(educationCodeRepository.findById("c00001"))
                 .thenReturn(Optional.of(EducationCode(eduCode = "c00001", eduCodeNm = "시식매뉴얼")))
@@ -309,7 +309,7 @@ class EducationServiceTest {
             val file = MockMultipartFile("files", "test.pdf", "application/pdf", ByteArray(100))
 
             whenever(educationCodeRepository.existsById("c00004")).thenReturn(true)
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(testUser))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(testEmployee))
             whenever(educationPostRepository.save(any<EducationPost>())).thenAnswer { it.getArgument<EducationPost>(0) }
             whenever(fileStorageService.uploadEducationFile(any(), any())).thenReturn("uuid-file.pdf")
             whenever(educationPostAttachmentRepository.save(any<EducationPostAttachment>()))
