@@ -4,12 +4,12 @@ import jakarta.persistence.*
 import java.time.LocalDateTime
 
 /**
- * 디바이스 버전 관리 Entity (device_version_mng 테이블)
+ * 디바이스 버전 관리 Entity (device_version 테이블, 구: device_version_mng)
  *
  * 앱 버전 관리. 복합 PK (version + device)로 최신 버전 조회.
  */
 @Entity
-@Table(name = "device_version_mng")
+@Table(name = "device_version")
 @IdClass(DeviceVersionId::class)
 class DeviceVersion(
 

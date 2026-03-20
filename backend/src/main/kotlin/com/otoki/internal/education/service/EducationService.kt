@@ -48,7 +48,7 @@ class EducationService(
         page: Int = 1,
         size: Int = 10
     ): EducationPostListResponse {
-        // 1. 카테고리 유효성 검증 (education_code_mng 테이블 참조)
+        // 1. 카테고리 유효성 검증 (education_code 테이블 참조)
         if (!educationCodeRepository.existsById(category)) {
             throw InvalidEducationCategoryException()
         }

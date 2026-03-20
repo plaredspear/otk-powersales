@@ -6,7 +6,7 @@ import java.time.LocalDateTime
 /**
  * 교육 조회 이력 복합 키
  *
- * education_member_history 테이블에 PK가 없으므로
+ * education_view_history 테이블에 PK가 없으므로
  * (communityId, empCode, instDate)를 복합 키로 사용.
  */
 class EducationViewHistoryId(

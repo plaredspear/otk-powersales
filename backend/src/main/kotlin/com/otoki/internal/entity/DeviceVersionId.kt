@@ -5,7 +5,7 @@ import java.io.Serializable
 /**
  * DeviceVersion 복합 키
  *
- * device_version_mng 테이블의 (version, device) 복합 PK.
+ * device_version 테이블의 (version, device) 복합 PK.
  */
 class DeviceVersionId(
     val version: String = "",
