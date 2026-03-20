@@ -11,6 +11,10 @@ group = "com.otoki"
 version = "0.0.1-SNAPSHOT"
 description = "Demo project for Spring Boot"
 
+springBoot {
+	mainClass.set("com.otoki.internal.OtokiInternalApplicationKt")
+}
+
 java {
 	toolchain {
 		languageVersion = JavaLanguageVersion.of(17)
