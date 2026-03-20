@@ -20,7 +20,7 @@ class DisplayWorkSchedule(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @HCColumn("id")
+    @Column(name = "display_work_schedule_id")
     val id: Long = 0,
 
     @HCColumn("sfid")
@@ -87,8 +87,7 @@ class DisplayWorkSchedule(
     @Column(name = "last_month_revenue")
     val lastMonthRevenue: Long? = null,
 
-    @HCColumn("isdeleted")
-    @Column(name = "isdeleted")
+    @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 
 ) : BaseEntity()
