@@ -12,7 +12,8 @@ CREATE TABLE organization (
     cc_cd5     VARCHAR(10),
     org_cd5    VARCHAR(20),
     org_nm5    VARCHAR(100),
-    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_organization_cc_cd3 ON organization (cc_cd3);

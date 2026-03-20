@@ -16,7 +16,8 @@ CREATE TABLE IF NOT EXISTS salesforce2.appointment (
     job_name        VARCHAR(100),
     ord_detail_code VARCHAR(20),
     ord_detail_node VARCHAR(100),
-    created_at      TIMESTAMP    NOT NULL DEFAULT NOW()
+    created_at      TIMESTAMP    NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMP    NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_appointment_employee ON salesforce2.appointment (employee_code);
@@ -29,7 +30,8 @@ CREATE TABLE IF NOT EXISTS salesforce2.attend_info (
     end_date        VARCHAR(8),
     attend_type     VARCHAR(50),
     status          VARCHAR(20),
-    created_at      TIMESTAMP   NOT NULL DEFAULT NOW()
+    created_at      TIMESTAMP   NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMP   NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_attend_info_employee ON salesforce2.attend_info (employee_code);
