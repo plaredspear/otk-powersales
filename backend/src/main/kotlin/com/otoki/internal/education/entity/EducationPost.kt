@@ -6,11 +6,11 @@ import jakarta.persistence.*
 /**
  * 교육 게시물 Entity
  *
- * V1 테이블: education_mng
+ * V1 테이블: education_post (구: education_mng)
  * PK: edu_id (VARCHAR)
  */
 @Entity
-@Table(name = "education_mng")
+@Table(name = "education_post")
 class EducationPost(
 
     @Id

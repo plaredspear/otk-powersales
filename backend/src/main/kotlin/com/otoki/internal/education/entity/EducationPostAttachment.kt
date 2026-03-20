@@ -5,10 +5,10 @@ import jakarta.persistence.*
 /**
  * 교육 첨부파일 Entity
  *
- * V1 테이블: education_file_mng (PK 없음 → @IdClass 복합 키)
+ * V1 테이블: education_post_attachment (구: education_file_mng, PK 없음 → @IdClass 복합 키)
  */
 @Entity
-@Table(name = "education_file_mng")
+@Table(name = "education_post_attachment")
 @IdClass(EducationFileId::class)
 class EducationPostAttachment(
 

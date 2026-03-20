@@ -6,10 +6,10 @@ import java.time.LocalDateTime
 /**
  * 교육 조회 이력 Entity
  *
- * V1 테이블: education_member_history (PK 없음 → @IdClass 복합 키)
+ * V1 테이블: education_view_history (구: education_member_history, PK 없음 → @IdClass 복합 키)
  */
 @Entity
-@Table(name = "education_member_history")
+@Table(name = "education_view_history")
 @IdClass(EducationViewHistoryId::class)
 class EducationViewHistory(
 
