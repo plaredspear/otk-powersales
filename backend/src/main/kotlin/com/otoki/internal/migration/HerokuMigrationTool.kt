@@ -3,6 +3,8 @@ package com.otoki.internal.migration
 import com.otoki.internal.common.salesforce.HCTable
 import com.otoki.internal.common.salesforce.SFSchemaUtils
 import com.otoki.internal.sap.entity.Account
+import com.otoki.internal.sap.entity.Product
+import jakarta.persistence.Id
 import java.io.File
 import java.sql.Connection
 import java.sql.DriverManager
@@ -20,7 +22,11 @@ object HerokuMigrationTool {
     /** @HCTable 엔티티 등록. 추가 엔티티는 여기에 추가 */
     private val entities = listOf(
         "account" to Account::class.java,
+        "product" to Product::class.java,
     )
+
+    /** 마이그레이션에서 제외할 HC 전용 컬럼 (JPA @Column name 기준) */
+    private val EXCLUDED_HC_COLUMNS = setOf("_hc_lastop", "_hc_err")
 
     private const val HEROKU_SCHEMA = "salesforce2"
     private const val TARGET_SCHEMA = "salesforce2"
@@ -76,16 +82,26 @@ object HerokuMigrationTool {
     ) {
         val tableName = entityClass.getAnnotation(HCTable::class.java)?.value
             ?: throw IllegalArgumentException("$name: @HCTable 어노테이션 없음")
-        val mappings = SFSchemaUtils.getHCFieldMappings(entityClass)
-        val jpaColumns = mappings.map { it.jpaColumnName }
 
-        // 1. Heroku DB에서 읽기 (@HCColumn 매핑 + 타임스탬프)
-        val baseSql = SFSchemaUtils.generateImportSql(entityClass, HEROKU_SCHEMA)
-        val selectSql = baseSql.replace(
-            " FROM ",
-            ", createddate AS created_at, systemmodstamp AS updated_at FROM "
-        )
-        val allColumns = jpaColumns + listOf("created_at", "updated_at")
+        // @Id 필드의 JPA 컬럼명 수집 (PK 제외용)
+        val idColumnNames = entityClass.declaredFields
+            .filter { it.isAnnotationPresent(Id::class.java) }
+            .mapNotNull { it.getAnnotation(jakarta.persistence.Column::class.java)?.name }
+            .toSet()
+
+        // @HCColumn 매핑에서 PK + HC 전용 컬럼 제외
+        val mappings = SFSchemaUtils.getHCFieldMappings(entityClass)
+            .filter { it.jpaColumnName !in idColumnNames }
+            .filter { it.jpaColumnName !in EXCLUDED_HC_COLUMNS }
+
+        // 1. Heroku DB에서 읽기 (필터링된 매핑 + 타임스탬프)
+        val selectColumns = mappings.map { m ->
+            if (m.hcColumnName == m.jpaColumnName) m.hcColumnName
+            else "${m.hcColumnName} AS ${m.jpaColumnName}"
+        } + listOf("createddate AS created_at", "systemmodstamp AS updated_at")
+
+        val allJpaColumns = mappings.map { it.jpaColumnName } + listOf("created_at", "updated_at")
+        val selectSql = "SELECT ${selectColumns.joinToString(", ")} FROM $HEROKU_SCHEMA.$tableName"
 
         println("[$name] Heroku DB 조회 중...")
 
@@ -93,7 +109,7 @@ object HerokuMigrationTool {
         herokuConn.createStatement().use { stmt ->
             stmt.executeQuery(selectSql).use { rs ->
                 while (rs.next()) {
-                    rows.add(allColumns.map { col -> rs.getObject(col) }.toTypedArray())
+                    rows.add(allJpaColumns.map { col -> rs.getObject(col) }.toTypedArray())
                 }
             }
         }
@@ -104,16 +120,15 @@ object HerokuMigrationTool {
             return
         }
 
-        // 2. 대상 테이블 초기화 + 시퀀스 리셋
+        // 2. 대상 테이블 초기화 (PK는 IDENTITY 자동 채번이므로 시퀀스 리셋 불필요)
         targetConn.createStatement().use { stmt ->
             stmt.execute("TRUNCATE TABLE $TARGET_SCHEMA.$tableName CASCADE")
-            stmt.execute("ALTER SEQUENCE $TARGET_SCHEMA.${tableName}_id_seq RESTART WITH 1")
         }
 
-        // 3. 배치 INSERT (ID 포함, 원본 그대로 보존)
+        // 3. 배치 INSERT (PK 제외 — IDENTITY 자동 채번)
         val insertSql = "INSERT INTO $TARGET_SCHEMA.$tableName " +
-            "(${allColumns.joinToString(", ")}) VALUES " +
-            "(${allColumns.indices.joinToString(", ") { "?" }})"
+            "(${allJpaColumns.joinToString(", ")}) VALUES " +
+            "(${allJpaColumns.indices.joinToString(", ") { "?" }})"
 
         targetConn.autoCommit = false
         var inserted = 0
