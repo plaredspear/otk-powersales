@@ -5,16 +5,13 @@ import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.sap.dto.SapAccountMasterRequest
 import com.otoki.internal.sap.dto.SapSyncError
 import com.otoki.internal.sap.dto.SapSyncResult
-import com.otoki.internal.sap.entity.Organization
-import com.otoki.internal.sap.repository.OrganizationRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
 class SapAccountMasterService(
-    private val accountRepository: AccountRepository,
-    private val organizationRepository: OrganizationRepository
+    private val accountRepository: AccountRepository
 ) : SapSyncService<SapAccountMasterRequest.ReqItem> {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -57,16 +54,14 @@ class SapAccountMasterService(
 
         val existing = accountRepository.findByExternalKey(sapAccountCode)
 
-        val org = resolveOrg(item.branchCode, item.salesDeptCode)
-
         if (existing != null) {
-            mapFields(existing, item, accountName, org)
+            mapFields(existing, item, accountName)
             accountRepository.save(existing)
         } else {
             val account = Account(
                 externalKey = sapAccountCode
             )
-            mapFields(account, item, accountName, org)
+            mapFields(account, item, accountName)
             accountRepository.save(account)
         }
     }
@@ -74,29 +69,19 @@ class SapAccountMasterService(
     private fun mapFields(
         account: Account,
         item: SapAccountMasterRequest.ReqItem,
-        name: String,
-        org: Organization?
+        name: String
     ) {
         account.name = name
         account.accountType = item.accountType
-        account.accountStatusCode = item.accountStatusCode
         account.accountStatusName = item.accountStatusName
         account.accountGroup = item.accountGroup
         account.phone = item.phone
         account.mobilePhone = item.mobilePhone
-        account.email = item.email
-        account.businessType = item.businessType
-        account.businessCategory = item.businessCategory
         account.employeeCode = item.employeeCode
-        account.businessLicenseNumber = item.businessLicenseNumber
         account.representative = item.representative
         account.zipCode = item.zipcode
         account.address1 = item.address1
         account.address2 = item.address2
-        account.divisionCode = item.divisionCode
-        account.divisionName = item.divisionName
-        account.salesDeptCode = item.salesDeptCode
-        account.salesDeptName = item.salesDeptName
         account.branchCode = item.branchCode
         account.branchName = item.branchName
         account.closingTime1 = item.closingTime1
@@ -105,29 +90,8 @@ class SapAccountMasterService(
         account.abcType = item.abcType
         account.abcTypeCode = item.abcTypeCode
         account.distribution = item.distribution
-        account.consignmentAcc = item.consignmentAcc
-        account.werk1 = item.werk1
-        account.werk2 = item.werk2
-        account.werk3 = item.werk3
         account.werk1Tx = item.werk1Tx
         account.werk2Tx = item.werk2Tx
         account.werk3Tx = item.werk3Tx
-
-        account.orgCd3 = org?.orgCodeLevel3
-        account.orgCd4 = org?.orgCodeLevel4
-        account.orgCd5 = org?.orgCodeLevel5
-    }
-
-    internal fun resolveOrg(branchCode: String?, salesDeptCode: String?): Organization? {
-        if (branchCode.isNullOrBlank()) return null
-
-        organizationRepository.findFirstByCostCenterLevel5(branchCode)?.let { return it }
-        organizationRepository.findFirstByCostCenterLevel4(branchCode)?.let { return it }
-
-        if (!salesDeptCode.isNullOrBlank()) {
-            organizationRepository.findFirstByCostCenterLevel4(salesDeptCode)?.let { return it }
-        }
-
-        return null
     }
 }
