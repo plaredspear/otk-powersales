@@ -2,6 +2,7 @@ package com.otoki.internal.notice.entity
 
 import com.otoki.internal.common.entity.BaseEntity
 import com.otoki.internal.common.salesforce.HCColumn
+import com.otoki.internal.common.salesforce.HCTable
 import com.otoki.internal.common.salesforce.SFField
 import com.otoki.internal.common.salesforce.SFObject
 import jakarta.persistence.*
@@ -9,6 +10,7 @@ import jakarta.persistence.*
 @Entity
 @Table(name = "notice")
 @SFObject("DKRetail__Notice__c")
+@HCTable("dkretail__notice__c")
 class Notice(
 
     @Id
