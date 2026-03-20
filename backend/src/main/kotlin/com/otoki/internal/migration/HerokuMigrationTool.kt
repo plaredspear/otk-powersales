@@ -33,6 +33,8 @@ object HerokuMigrationTool {
     private data class EntityRegistration(
         val name: String,
         val entityClass: Class<*>,
+        /** FK 없이 연관된 테이블 목록 — TRUNCATE 시 함께 정리 (DB FK CASCADE 미적용 대상) */
+        val dependentTables: List<String> = emptyList(),
         val columnTransformProvider: ((Connection) -> Map<String, Map<String, Any?>>)? = null,
     )
 
@@ -41,7 +43,7 @@ object HerokuMigrationTool {
         EntityRegistration("account", Account::class.java),
         EntityRegistration("product", Product::class.java),
         EntityRegistration("safetyCheckItem", SafetyCheckItem::class.java),
-        EntityRegistration("employee", Employee::class.java),
+        EntityRegistration("employee", Employee::class.java, dependentTables = listOf("employee_mng")),
         EntityRegistration("productBarcode", ProductBarcode::class.java) { targetConn ->
             val sfidToPk = mutableMapOf<String, Any?>()
             targetConn.createStatement().use { stmt ->
@@ -94,7 +96,7 @@ object HerokuMigrationTool {
             createConnection(TARGET_URL, TARGET_USER, TARGET_PASSWORD).use { targetConn ->
                 entities.forEach { reg ->
                     val columnTransforms = reg.columnTransformProvider?.invoke(targetConn) ?: emptyMap()
-                    migrateEntity(reg.name, reg.entityClass, herokuConn, targetConn, columnTransforms)
+                    migrateEntity(reg.name, reg.entityClass, herokuConn, targetConn, columnTransforms, reg.dependentTables)
                 }
             }
         }
@@ -108,6 +110,7 @@ object HerokuMigrationTool {
         herokuConn: Connection,
         targetConn: Connection,
         columnTransforms: Map<String, Map<String, Any?>> = emptyMap(),
+        dependentTables: List<String> = emptyList(),
     ) {
         val hcTableName = entityClass.getAnnotation(HCTable::class.java)?.value
             ?: throw IllegalArgumentException("$name: @HCTable 어노테이션 없음")
@@ -155,6 +158,11 @@ object HerokuMigrationTool {
 
         // 2. 대상 테이블 초기화 (PK는 IDENTITY 자동 채번이므로 시퀀스 리셋 불필요)
         targetConn.createStatement().use { stmt ->
+            // FK 없이 연관된 종속 테이블 먼저 TRUNCATE (DB CASCADE 미적용 대상)
+            dependentTables.forEach { depTable ->
+                stmt.execute("TRUNCATE TABLE $TARGET_SCHEMA.$depTable CASCADE")
+                println("[$name] 종속 테이블 $depTable TRUNCATE 완료")
+            }
             stmt.execute("TRUNCATE TABLE $TARGET_SCHEMA.$targetTableName CASCADE")
         }
 
