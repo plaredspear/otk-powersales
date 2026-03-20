@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.otoki.internal.common.dto.response.MyAccountInfo
 import com.otoki.internal.common.dto.response.MyAccountListResponse
 import com.otoki.internal.sap.entity.UserRole
-import com.otoki.internal.auth.exception.UserNotFoundException
+import com.otoki.internal.auth.exception.EmployeeNotFoundException
 import com.otoki.internal.common.exception.AccountInvalidParameterException
 import com.otoki.internal.common.security.GpsConsentFilter
 import com.otoki.internal.common.security.JwtAuthenticationFilter
@@ -175,7 +175,7 @@ class AccountControllerTest {
         fun getMyAccounts_UserNotFound() {
             // given
             whenever(myAccountService.getMyAccounts(eq(1L), eq(null)))
-                .thenThrow(UserNotFoundException())
+                .thenThrow(EmployeeNotFoundException())
 
             // when & then
             mockMvc.perform(

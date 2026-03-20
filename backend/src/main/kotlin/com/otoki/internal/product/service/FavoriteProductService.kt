@@ -13,7 +13,7 @@ import com.otoki.internal.order.exception.InvalidOrderParameterException
 import com.otoki.internal.exception.ProductNotFoundException
 import com.otoki.internal.product.repository.FavoriteProductRepository
 import com.otoki.internal.sap.repository.ProductRepository
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.repository.EmployeeRepository
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
@@ -24,7 +24,7 @@ import org.springframework.transaction.annotation.Transactional
 class FavoriteProductService(
     private val favoriteProductRepository: FavoriteProductRepository,
     private val productRepository: ProductRepository,
-    private val userRepository: UserRepository
+    private val employeeRepository: EmployeeRepository
 ) {
 
     companion object {
@@ -57,11 +57,11 @@ class FavoriteProductService(
             throw AlreadyFavoritedException()
         }
 
-        val user = userRepository.findById(userId)
+        val employee = employeeRepository.findById(userId)
             .orElseThrow { IllegalStateException("사용자를 찾을 수 없습니다") }
 
         val favorite = FavoriteProduct(
-            user = user,
+            user = employee,
             product = product,
             productCode = productCode
         )

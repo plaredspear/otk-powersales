@@ -13,7 +13,7 @@ import com.otoki.internal.promotion.repository.PromotionTypeRepository
 import com.otoki.internal.sap.entity.UserRole
 import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.sap.repository.ProductRepository
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
@@ -28,7 +28,7 @@ class AdminPromotionService(
     private val promotionEmployeeRepository: PromotionEmployeeRepository,
     private val accountRepository: AccountRepository,
     private val productRepository: ProductRepository,
-    private val userRepository: UserRepository,
+    private val employeeRepository: EmployeeRepository,
     private val dataScopeHolder: DataScopeHolder,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository
 ) {
@@ -135,10 +135,10 @@ class AdminPromotionService(
         val product = productRepository.findById(request.primaryProductId!!)
             .orElseThrow { ProductNotFoundException() }
 
-        val user = userRepository.findById(userId)
+        val employee = employeeRepository.findById(userId)
             .orElseThrow { IllegalStateException("사용자를 찾을 수 없습니다: $userId") }
 
-        val costCenterCode = user.costCenterCode
+        val costCenterCode = employee.costCenterCode
             ?: throw CostCenterNotFoundException()
 
         val seq = promotionRepository.getNextPromotionNumberSeq()
@@ -195,9 +195,9 @@ class AdminPromotionService(
             promotion.endDate != request.endDate
         if (criticalFieldChanged) {
             if (promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(id)) {
-                val user = userRepository.findById(userId)
+                val employee = employeeRepository.findById(userId)
                     .orElseThrow { IllegalStateException("사용자를 찾을 수 없습니다: $userId") }
-                if (user.role != UserRole.ADMIN) {
+                if (employee.role != UserRole.ADMIN) {
                     throw ClosedPromotionModificationException()
                 }
             }

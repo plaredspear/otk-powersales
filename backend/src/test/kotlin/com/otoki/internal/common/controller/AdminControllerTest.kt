@@ -1,7 +1,7 @@
 package com.otoki.internal.common.controller
 
 import com.otoki.internal.sap.entity.UserRole
-import com.otoki.internal.auth.exception.UserNotFoundException
+import com.otoki.internal.auth.exception.EmployeeNotFoundException
 import com.otoki.internal.common.security.GpsConsentFilter
 import com.otoki.internal.common.security.JwtAuthenticationFilter
 import com.otoki.internal.admin.security.AdminAuthorityFilter
@@ -72,7 +72,7 @@ class AdminControllerTest {
         fun resetDevice_userNotFound() {
             // Given
             setSecurityContext(UserRole.ADMIN)
-            doThrow(UserNotFoundException()).`when`(authService).resetDevice("99999999")
+            doThrow(EmployeeNotFoundException()).`when`(authService).resetDevice("99999999")
 
             // When & Then
             mockMvc.perform(post("/api/v1/admin/users/99999999/reset-device"))

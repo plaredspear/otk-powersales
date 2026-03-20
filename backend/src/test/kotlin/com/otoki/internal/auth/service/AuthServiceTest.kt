@@ -9,14 +9,14 @@ import com.otoki.internal.auth.dto.request.VerifyPasswordRequest
 import com.otoki.internal.common.entity.AgreementHistory
 import com.otoki.internal.common.entity.AgreementWord
 import com.otoki.internal.common.entity.LoginHistory
-import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.sap.entity.UserRole
 import com.otoki.internal.auth.exception.*
 import com.otoki.internal.common.exception.*
 import com.otoki.internal.common.repository.AgreementHistoryRepository
 import com.otoki.internal.common.repository.AgreementWordRepository
 import com.otoki.internal.common.repository.LoginHistoryRepository
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.common.security.JwtTokenProvider
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -42,7 +42,7 @@ import java.util.*
 class AuthServiceTest {
 
     @Mock
-    private lateinit var userRepository: UserRepository
+    private lateinit var employeeRepository: EmployeeRepository
 
     @Mock
     private lateinit var loginHistoryRepository: LoginHistoryRepository
@@ -66,7 +66,7 @@ class AuthServiceTest {
     private lateinit var authService: AuthService
 
     @Captor
-    private lateinit var userCaptor: ArgumentCaptor<User>
+    private lateinit var employeeCaptor: ArgumentCaptor<Employee>
 
     // ========== Login Tests ==========
 
@@ -77,7 +77,7 @@ class AuthServiceTest {
         val employeeNumber = "12345678"
         val rawPassword = "password123"
         val encodedPassword = "encoded_password"
-        val user = createTestUser(
+        val employee = createTestEmployee(
             id = 1L,
             employeeNumber = employeeNumber,
             password = encodedPassword,
@@ -90,10 +90,10 @@ class AuthServiceTest {
         val refreshToken = "refresh_token_123"
         val expiresIn = 3600
 
-        whenever(userRepository.findByEmployeeNumber(employeeNumber)).thenReturn(Optional.of(user))
+        whenever(employeeRepository.findByEmployeeNumber(employeeNumber)).thenReturn(Optional.of(employee))
         whenever(passwordEncoder.matches(rawPassword, encodedPassword)).thenReturn(true)
-        whenever(jwtTokenProvider.createAccessToken(user.id, user.role, false)).thenReturn(accessToken)
-        whenever(jwtTokenProvider.createRefreshToken(eq(user.id), any(), any())).thenReturn(refreshToken)
+        whenever(jwtTokenProvider.createAccessToken(employee.id, employee.role, false)).thenReturn(accessToken)
+        whenever(jwtTokenProvider.createRefreshToken(eq(employee.id), any(), any())).thenReturn(refreshToken)
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(expiresIn)
 
         // When
@@ -111,7 +111,7 @@ class AuthServiceTest {
         assertThat(response.requiresPasswordChange).isTrue()
         assertThat(response.requiresGpsConsent).isTrue()
         verify(loginHistoryRepository).save(any<LoginHistory>())
-        verify(jwtTokenProvider).storeRefreshToken(any(), eq(user.id), any())
+        verify(jwtTokenProvider).storeRefreshToken(any(), eq(employee.id), any())
     }
 
     @Test
@@ -119,14 +119,14 @@ class AuthServiceTest {
     fun login_success_savesLoginHistory() {
         // Given
         val employeeNumber = "12345678"
-        val user = createTestUser(id = 1L, employeeNumber = employeeNumber)
+        val employee = createTestEmployee(id = 1L, employeeNumber = employeeNumber)
         val loginRequest = LoginRequest(employeeNumber, "password123")
         val historyCaptor = ArgumentCaptor.forClass(LoginHistory::class.java)
 
-        whenever(userRepository.findByEmployeeNumber(employeeNumber)).thenReturn(Optional.of(user))
+        whenever(employeeRepository.findByEmployeeNumber(employeeNumber)).thenReturn(Optional.of(employee))
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
-        whenever(jwtTokenProvider.createAccessToken(user.id, user.role)).thenReturn("token")
-        whenever(jwtTokenProvider.createRefreshToken(eq(user.id), any(), any())).thenReturn("refresh")
+        whenever(jwtTokenProvider.createAccessToken(employee.id, employee.role)).thenReturn("token")
+        whenever(jwtTokenProvider.createRefreshToken(eq(employee.id), any(), any())).thenReturn("refresh")
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
         // When
@@ -144,14 +144,14 @@ class AuthServiceTest {
     fun login_historyFailure_stillReturnsResponse() {
         // Given
         val employeeNumber = "12345678"
-        val user = createTestUser(id = 1L, employeeNumber = employeeNumber)
+        val employee = createTestEmployee(id = 1L, employeeNumber = employeeNumber)
         val loginRequest = LoginRequest(employeeNumber, "password123")
 
-        whenever(userRepository.findByEmployeeNumber(employeeNumber)).thenReturn(Optional.of(user))
+        whenever(employeeRepository.findByEmployeeNumber(employeeNumber)).thenReturn(Optional.of(employee))
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
         whenever(loginHistoryRepository.save(any<LoginHistory>())).thenThrow(RuntimeException("DB error"))
-        whenever(jwtTokenProvider.createAccessToken(user.id, user.role)).thenReturn("token")
-        whenever(jwtTokenProvider.createRefreshToken(eq(user.id), any(), any())).thenReturn("refresh")
+        whenever(jwtTokenProvider.createAccessToken(employee.id, employee.role)).thenReturn("token")
+        whenever(jwtTokenProvider.createRefreshToken(eq(employee.id), any(), any())).thenReturn("refresh")
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
         // When
@@ -168,7 +168,7 @@ class AuthServiceTest {
         // Given
         val loginRequest = LoginRequest("99999999", "password123")
 
-        whenever(userRepository.findByEmployeeNumber("99999999")).thenReturn(Optional.empty())
+        whenever(employeeRepository.findByEmployeeNumber("99999999")).thenReturn(Optional.empty())
 
         // When & Then
         assertThatThrownBy { authService.login(loginRequest) }
@@ -180,10 +180,10 @@ class AuthServiceTest {
     @DisplayName("로그인 실패 - 비밀번호 불일치 시 InvalidCredentialsException 발생")
     fun login_passwordMismatch() {
         // Given
-        val user = createTestUser(password = "encoded_password")
+        val employee = createTestEmployee(password = "encoded_password")
         val loginRequest = LoginRequest("12345678", "wrong_password")
 
-        whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(user))
+        whenever(employeeRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(employee))
         whenever(passwordEncoder.matches("wrong_password", "encoded_password")).thenReturn(false)
 
         // When & Then
@@ -199,22 +199,22 @@ class AuthServiceTest {
     fun changePassword_success() {
         // Given
         val userId = 1L
-        val user = createTestUser(id = userId, password = "encoded_old", passwordChangeRequired = true)
+        val employee = createTestEmployee(id = userId, password = "encoded_old", passwordChangeRequired = true)
         val request = ChangePasswordRequest("old_password", "new_pass")
 
-        whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+        whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
         whenever(passwordEncoder.matches("old_password", "encoded_old")).thenReturn(true)
         whenever(passwordEncoder.encode("new_pass")).thenReturn("encoded_new")
-        whenever(userRepository.save(any<User>())).thenAnswer { it.arguments[0] }
+        whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.arguments[0] }
 
         // When
         authService.changePassword(userId, request)
 
         // Then
-        verify(userRepository).save(userCaptor.capture())
-        val savedUser = userCaptor.value
-        assertThat(savedUser.password).isEqualTo("encoded_new")
-        assertThat(savedUser.passwordChangeRequired).isFalse()
+        verify(employeeRepository).save(employeeCaptor.capture())
+        val savedEmployee = employeeCaptor.value
+        assertThat(savedEmployee.password).isEqualTo("encoded_new")
+        assertThat(savedEmployee.passwordChangeRequired).isFalse()
     }
 
     @Test
@@ -222,10 +222,10 @@ class AuthServiceTest {
     fun changePassword_currentPasswordMismatch() {
         // Given
         val userId = 1L
-        val user = createTestUser(id = userId, password = "encoded_old")
+        val employee = createTestEmployee(id = userId, password = "encoded_old")
         val request = ChangePasswordRequest("wrong_password", "new_pass")
 
-        whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+        whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
         whenever(passwordEncoder.matches("wrong_password", "encoded_old")).thenReturn(false)
 
         // When & Then
@@ -238,10 +238,10 @@ class AuthServiceTest {
     fun changePassword_passwordTooShort() {
         // Given
         val userId = 1L
-        val user = createTestUser(id = userId, password = "encoded_old")
+        val employee = createTestEmployee(id = userId, password = "encoded_old")
         val request = ChangePasswordRequest("old_password", "123")
 
-        whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+        whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
         whenever(passwordEncoder.matches("old_password", "encoded_old")).thenReturn(true)
 
         // When & Then
@@ -255,10 +255,10 @@ class AuthServiceTest {
     fun changePassword_repeatedCharacters() {
         // Given
         val userId = 1L
-        val user = createTestUser(id = userId, password = "encoded_old")
+        val employee = createTestEmployee(id = userId, password = "encoded_old")
         val request = ChangePasswordRequest("old_password", "1111")
 
-        whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+        whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
         whenever(passwordEncoder.matches("old_password", "encoded_old")).thenReturn(true)
 
         // When & Then
@@ -282,7 +282,7 @@ class AuthServiceTest {
             val newAccessToken = "new_access_token"
             val newRefreshToken = "new_refresh_token"
             val expiresIn = 3600
-            val user = createTestUser(id = userId)
+            val employee = createTestEmployee(id = userId)
             val request = RefreshTokenRequest(refreshToken)
             val tokenId = "token-id-123"
             val familyId = "family-id-456"
@@ -294,7 +294,7 @@ class AuthServiceTest {
             whenever(jwtTokenProvider.isTokenFamilyRevoked(familyId)).thenReturn(false)
             whenever(jwtTokenProvider.isRefreshTokenStored(tokenId)).thenReturn(true)
             whenever(jwtTokenProvider.getUserIdFromToken(refreshToken)).thenReturn(userId)
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(jwtTokenProvider.createAccessToken(userId, UserRole.USER, false)).thenReturn(newAccessToken)
             whenever(jwtTokenProvider.createRefreshToken(eq(userId), eq(familyId), any())).thenReturn(newRefreshToken)
             whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(expiresIn)
@@ -388,10 +388,10 @@ class AuthServiceTest {
     fun verifyPassword_success() {
         // Given
         val userId = 1L
-        val user = createTestUser(id = userId, password = "encoded_password")
+        val employee = createTestEmployee(id = userId, password = "encoded_password")
         val request = VerifyPasswordRequest("correct_password")
 
-        whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+        whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
         whenever(passwordEncoder.matches("correct_password", "encoded_password")).thenReturn(true)
 
         // When & Then (예외 없이 정상 완료)
@@ -403,10 +403,10 @@ class AuthServiceTest {
     fun verifyPassword_passwordMismatch() {
         // Given
         val userId = 1L
-        val user = createTestUser(id = userId, password = "encoded_password")
+        val employee = createTestEmployee(id = userId, password = "encoded_password")
         val request = VerifyPasswordRequest("wrong_password")
 
-        whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+        whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
         whenever(passwordEncoder.matches("wrong_password", "encoded_password")).thenReturn(false)
 
         // When & Then
@@ -420,11 +420,11 @@ class AuthServiceTest {
         // Given
         val request = VerifyPasswordRequest("some_password")
 
-        whenever(userRepository.findById(999L)).thenReturn(Optional.empty())
+        whenever(employeeRepository.findById(999L)).thenReturn(Optional.empty())
 
         // When & Then
         assertThatThrownBy { authService.verifyPassword(999L, request) }
-            .isInstanceOf(UserNotFoundException::class.java)
+            .isInstanceOf(EmployeeNotFoundException::class.java)
     }
 
     // ========== GPS Consent Tests ==========
@@ -467,8 +467,8 @@ class AuthServiceTest {
     @DisplayName("GPS 동의 상태 - 미동의 사용자")
     fun getGpsConsentStatus_requiresConsent() {
         // Given
-        val user = createTestUser(id = 1L, agreementFlag = null)
-        whenever(userRepository.findById(1L)).thenReturn(Optional.of(user))
+        val employee = createTestEmployee(id = 1L, agreementFlag = null)
+        whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
 
         // When
         val response = authService.getGpsConsentStatus(1L)
@@ -481,8 +481,8 @@ class AuthServiceTest {
     @DisplayName("GPS 동의 상태 - 동의 완료 사용자")
     fun getGpsConsentStatus_consentGiven() {
         // Given
-        val user = createTestUser(id = 1L, agreementFlag = true)
-        whenever(userRepository.findById(1L)).thenReturn(Optional.of(user))
+        val employee = createTestEmployee(id = 1L, agreementFlag = true)
+        whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
 
         // When
         val response = authService.getGpsConsentStatus(1L)
@@ -504,13 +504,13 @@ class AuthServiceTest {
         fun recordGpsConsent_success() {
             // Given
             val userId = 1L
-            val user = createTestUser(id = userId, agreementFlag = null)
+            val employee = createTestEmployee(id = userId, agreementFlag = null)
 
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
                 .thenReturn(Optional.of(activeTerms))
             whenever(agreementHistoryRepository.save(any<AgreementHistory>())).thenAnswer { it.arguments[0] }
-            whenever(userRepository.save(any<User>())).thenAnswer { it.arguments[0] }
+            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.arguments[0] }
             whenever(jwtTokenProvider.createAccessToken(userId, UserRole.USER, true)).thenReturn("new-token")
             whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
@@ -518,10 +518,10 @@ class AuthServiceTest {
             val response = authService.recordGpsConsent(userId)
 
             // Then
-            verify(userRepository).save(userCaptor.capture())
-            val savedUser = userCaptor.value
-            assertThat(savedUser.agreementFlag).isTrue()
-            assertThat(savedUser.lastAgreementNumber).isEqualTo("AGR-2026-001")
+            verify(employeeRepository).save(employeeCaptor.capture())
+            val savedEmployee = employeeCaptor.value
+            assertThat(savedEmployee.agreementFlag).isTrue()
+            assertThat(savedEmployee.lastAgreementNumber).isEqualTo("AGR-2026-001")
             assertThat(response.accessToken).isEqualTo("new-token")
             assertThat(response.expiresIn).isEqualTo(3600)
 
@@ -538,17 +538,17 @@ class AuthServiceTest {
         fun recordGpsConsent_withAgreementNumber() {
             // Given
             val userId = 1L
-            val user = createTestUser(id = userId, agreementFlag = null)
+            val employee = createTestEmployee(id = userId, agreementFlag = null)
             val namedTerms = AgreementWord(
                 id = 20, name = "AGR-CUSTOM", contents = "커스텀 약관", active = true, isDeleted = false
             )
             val request = GpsConsentRequest(agreementNumber = "AGR-CUSTOM")
 
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(agreementWordRepository.findByNameAndIsDeletedFalse("AGR-CUSTOM"))
                 .thenReturn(Optional.of(namedTerms))
             whenever(agreementHistoryRepository.save(any<AgreementHistory>())).thenAnswer { it.arguments[0] }
-            whenever(userRepository.save(any<User>())).thenAnswer { it.arguments[0] }
+            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.arguments[0] }
             whenever(jwtTokenProvider.createAccessToken(userId, UserRole.USER, true)).thenReturn("new-token")
             whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
@@ -556,8 +556,8 @@ class AuthServiceTest {
             authService.recordGpsConsent(userId, request)
 
             // Then
-            verify(userRepository).save(userCaptor.capture())
-            assertThat(userCaptor.value.lastAgreementNumber).isEqualTo("AGR-CUSTOM")
+            verify(employeeRepository).save(employeeCaptor.capture())
+            assertThat(employeeCaptor.value.lastAgreementNumber).isEqualTo("AGR-CUSTOM")
 
             val historyCaptor = ArgumentCaptor.forClass(AgreementHistory::class.java)
             verify(agreementHistoryRepository).save(historyCaptor.capture())
@@ -568,11 +568,11 @@ class AuthServiceTest {
         @DisplayName("실패 - 존재하지 않는 사용자 → UserNotFoundException")
         fun recordGpsConsent_userNotFound() {
             // Given
-            whenever(userRepository.findById(999L)).thenReturn(Optional.empty())
+            whenever(employeeRepository.findById(999L)).thenReturn(Optional.empty())
 
             // When & Then
             assertThatThrownBy { authService.recordGpsConsent(999L) }
-                .isInstanceOf(UserNotFoundException::class.java)
+                .isInstanceOf(EmployeeNotFoundException::class.java)
         }
 
         @Test
@@ -580,8 +580,8 @@ class AuthServiceTest {
         fun recordGpsConsent_noActiveTerms() {
             // Given
             val userId = 1L
-            val user = createTestUser(id = userId)
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            val employee = createTestEmployee(id = userId)
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
                 .thenReturn(Optional.empty())
 
@@ -595,10 +595,10 @@ class AuthServiceTest {
         fun recordGpsConsent_invalidAgreementNumber() {
             // Given
             val userId = 1L
-            val user = createTestUser(id = userId)
+            val employee = createTestEmployee(id = userId)
             val request = GpsConsentRequest(agreementNumber = "INVALID")
 
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(agreementWordRepository.findByNameAndIsDeletedFalse("INVALID"))
                 .thenReturn(Optional.empty())
 
@@ -648,14 +648,14 @@ class AuthServiceTest {
     @DisplayName("최초 모바일 로그인 - device_id 전달 시 deviceUuid 저장 후 로그인 성공")
     fun login_firstMobileLogin_bindsDevice() {
         // Given
-        val user = createTestUser(id = 1L, deviceUuid = null)
+        val employee = createTestEmployee(id = 1L, deviceUuid = null)
         val request = LoginRequest("12345678", "password123", deviceId = "device-abc-123")
 
-        whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(user))
+        whenever(employeeRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(employee))
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
         whenever(deviceBindingProperties.enabled).thenReturn(true)
         whenever(deviceBindingProperties.isExcluded("12345678")).thenReturn(false)
-        whenever(userRepository.save(any<User>())).thenAnswer { it.arguments[0] }
+        whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.arguments[0] }
         whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER, false)).thenReturn("token")
         whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
@@ -665,18 +665,18 @@ class AuthServiceTest {
 
         // Then
         assertThat(response.token.accessToken).isEqualTo("token")
-        verify(userRepository).save(userCaptor.capture())
-        assertThat(userCaptor.value.deviceUuid).isEqualTo("device-abc-123")
+        verify(employeeRepository).save(employeeCaptor.capture())
+        assertThat(employeeCaptor.value.deviceUuid).isEqualTo("device-abc-123")
     }
 
     @Test
     @DisplayName("동일 단말기 로그인 - 등록된 device_id와 일치 시 로그인 성공")
     fun login_sameDevice_success() {
         // Given
-        val user = createTestUser(id = 1L, deviceUuid = "device-abc-123")
+        val employee = createTestEmployee(id = 1L, deviceUuid = "device-abc-123")
         val request = LoginRequest("12345678", "password123", deviceId = "device-abc-123")
 
-        whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(user))
+        whenever(employeeRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(employee))
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
         whenever(deviceBindingProperties.enabled).thenReturn(true)
         whenever(deviceBindingProperties.isExcluded("12345678")).thenReturn(false)
@@ -695,10 +695,10 @@ class AuthServiceTest {
     @DisplayName("다른 단말기 로그인 - 등록된 device_id와 불일치 시 DeviceMismatchException 발생")
     fun login_differentDevice_throwsDeviceMismatch() {
         // Given
-        val user = createTestUser(id = 1L, deviceUuid = "device-abc-123")
+        val employee = createTestEmployee(id = 1L, deviceUuid = "device-abc-123")
         val request = LoginRequest("12345678", "password123", deviceId = "device-xyz-789")
 
-        whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(user))
+        whenever(employeeRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(employee))
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
         whenever(deviceBindingProperties.enabled).thenReturn(true)
         whenever(deviceBindingProperties.isExcluded("12345678")).thenReturn(false)
@@ -712,10 +712,10 @@ class AuthServiceTest {
     @DisplayName("웹 로그인 - device_id 미전달 시 단말기 검증 스킵, 로그인 성공")
     fun login_webLogin_skipsDeviceBinding() {
         // Given
-        val user = createTestUser(id = 1L, deviceUuid = "device-abc-123")
+        val employee = createTestEmployee(id = 1L, deviceUuid = "device-abc-123")
         val request = LoginRequest("12345678", "password123")
 
-        whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(user))
+        whenever(employeeRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(employee))
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
         whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER, false)).thenReturn("token")
         whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
@@ -732,10 +732,10 @@ class AuthServiceTest {
     @DisplayName("바인딩 비활성화 - enabled=false일 때 device_id 불일치여도 로그인 성공")
     fun login_bindingDisabled_skipsValidation() {
         // Given
-        val user = createTestUser(id = 1L, deviceUuid = "device-abc-123")
+        val employee = createTestEmployee(id = 1L, deviceUuid = "device-abc-123")
         val request = LoginRequest("12345678", "password123", deviceId = "device-xyz-789")
 
-        whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(user))
+        whenever(employeeRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(employee))
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
         whenever(deviceBindingProperties.enabled).thenReturn(false)
         whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER, false)).thenReturn("token")
@@ -753,10 +753,10 @@ class AuthServiceTest {
     @DisplayName("예외 사번 로그인 - excluded-ids에 포함된 사번은 device_id 불일치여도 로그인 성공")
     fun login_excludedEmployee_skipsValidation() {
         // Given
-        val user = createTestUser(id = 1L, employeeNumber = "20010585", deviceUuid = "device-abc-123")
+        val employee = createTestEmployee(id = 1L, employeeNumber = "20010585", deviceUuid = "device-abc-123")
         val request = LoginRequest("20010585", "password123", deviceId = "device-xyz-789")
 
-        whenever(userRepository.findByEmployeeNumber("20010585")).thenReturn(Optional.of(user))
+        whenever(employeeRepository.findByEmployeeNumber("20010585")).thenReturn(Optional.of(employee))
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
         whenever(deviceBindingProperties.enabled).thenReturn(true)
         whenever(deviceBindingProperties.isExcluded("20010585")).thenReturn(true)
@@ -781,10 +781,10 @@ class AuthServiceTest {
         @DisplayName("WEB 로그인 성공 - 허용 권한(영업부장)으로 로그인 시 정상 반환")
         fun webLogin_allowedAuthority_success() {
             // Given
-            val user = createTestUser(id = 1L, appAuthority = "영업부장")
+            val employee = createTestEmployee(id = 1L, appAuthority = "영업부장")
             val request = LoginRequest("12345678", "password123")
 
-            whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(user))
+            whenever(employeeRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(employee))
             whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
             whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER, false)).thenReturn("token")
             whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
@@ -801,14 +801,14 @@ class AuthServiceTest {
         @DisplayName("Mobile 로그인 성공 - appLoginActive=true로 로그인 시 정상 반환")
         fun mobileLogin_active_success() {
             // Given
-            val user = createTestUser(id = 1L, appLoginActive = true, deviceUuid = null)
+            val employee = createTestEmployee(id = 1L, appLoginActive = true, deviceUuid = null)
             val request = LoginRequest("12345678", "password123", deviceId = "device-123")
 
-            whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(user))
+            whenever(employeeRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(employee))
             whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
             whenever(deviceBindingProperties.enabled).thenReturn(true)
             whenever(deviceBindingProperties.isExcluded("12345678")).thenReturn(false)
-            whenever(userRepository.save(any<User>())).thenAnswer { it.arguments[0] }
+            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.arguments[0] }
             whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER, false)).thenReturn("token")
             whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
             whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
@@ -824,10 +824,10 @@ class AuthServiceTest {
         @DisplayName("WEB 미허용 권한 - appAuthority가 허용 목록에 없으면 WebLoginNotAllowedException")
         fun webLogin_notAllowedAuthority_throws() {
             // Given
-            val user = createTestUser(id = 1L, appAuthority = "여사원")
+            val employee = createTestEmployee(id = 1L, appAuthority = "여사원")
             val request = LoginRequest("12345678", "password123")
 
-            whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(user))
+            whenever(employeeRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(employee))
             whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
 
             // When & Then
@@ -839,10 +839,10 @@ class AuthServiceTest {
         @DisplayName("WEB 권한 null - appAuthority가 null이면 WebLoginNotAllowedException")
         fun webLogin_nullAuthority_throws() {
             // Given
-            val user = createTestUser(id = 1L, appAuthority = null)
+            val employee = createTestEmployee(id = 1L, appAuthority = null)
             val request = LoginRequest("12345678", "password123")
 
-            whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(user))
+            whenever(employeeRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(employee))
             whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
 
             // When & Then
@@ -854,10 +854,10 @@ class AuthServiceTest {
         @DisplayName("Mobile 비활성 - appLoginActive=false이면 AppLoginNotActiveException")
         fun mobileLogin_inactive_throws() {
             // Given
-            val user = createTestUser(id = 1L, appLoginActive = false)
+            val employee = createTestEmployee(id = 1L, appLoginActive = false)
             val request = LoginRequest("12345678", "password123", deviceId = "device-123")
 
-            whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(user))
+            whenever(employeeRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(employee))
             whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
 
             // When & Then
@@ -869,10 +869,10 @@ class AuthServiceTest {
         @DisplayName("Mobile null - appLoginActive=null이면 AppLoginNotActiveException")
         fun mobileLogin_nullActive_throws() {
             // Given
-            val user = createTestUser(id = 1L, appLoginActive = null)
+            val employee = createTestEmployee(id = 1L, appLoginActive = null)
             val request = LoginRequest("12345678", "password123", deviceId = "device-123")
 
-            whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(user))
+            whenever(employeeRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(employee))
             whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
 
             // When & Then
@@ -891,10 +891,10 @@ class AuthServiceTest {
         @DisplayName("성공 - 허용 권한(조장)으로 관리자 로그인 시 AdminLoginResponse 반환")
         fun adminLogin_success() {
             // Given
-            val user = createTestUser(id = 1L, appAuthority = "조장", costCenterCode = "CC001")
+            val employee = createTestEmployee(id = 1L, appAuthority = "조장", costCenterCode = "CC001")
             val request = LoginRequest("12345678", "password123")
 
-            whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(user))
+            whenever(employeeRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(employee))
             whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
             whenever(jwtTokenProvider.createAccessToken(1L, UserRole.LEADER, false)).thenReturn("admin-token")
             whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("admin-refresh")
@@ -921,7 +921,7 @@ class AuthServiceTest {
         fun adminLogin_userNotFound() {
             // Given
             val request = LoginRequest("99999999", "password123")
-            whenever(userRepository.findByEmployeeNumber("99999999")).thenReturn(Optional.empty())
+            whenever(employeeRepository.findByEmployeeNumber("99999999")).thenReturn(Optional.empty())
 
             // When & Then
             assertThatThrownBy { authService.adminLogin(request) }
@@ -932,10 +932,10 @@ class AuthServiceTest {
         @DisplayName("실패 - 비밀번호 불일치 시 InvalidCredentialsException")
         fun adminLogin_passwordMismatch() {
             // Given
-            val user = createTestUser(id = 1L, appAuthority = "조장")
+            val employee = createTestEmployee(id = 1L, appAuthority = "조장")
             val request = LoginRequest("12345678", "wrong")
 
-            whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(user))
+            whenever(employeeRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(employee))
             whenever(passwordEncoder.matches("wrong", "encoded_password")).thenReturn(false)
 
             // When & Then
@@ -947,10 +947,10 @@ class AuthServiceTest {
         @DisplayName("실패 - appAuthority가 허용 목록에 없으면 WebLoginNotAllowedException")
         fun adminLogin_notAllowed() {
             // Given
-            val user = createTestUser(id = 1L, appAuthority = "여사원")
+            val employee = createTestEmployee(id = 1L, appAuthority = "여사원")
             val request = LoginRequest("12345678", "password123")
 
-            whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(user))
+            whenever(employeeRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(employee))
             whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
 
             // When & Then
@@ -962,10 +962,10 @@ class AuthServiceTest {
         @DisplayName("실패 - appAuthority가 null이면 WebLoginNotAllowedException")
         fun adminLogin_nullAuthority() {
             // Given
-            val user = createTestUser(id = 1L, appAuthority = null)
+            val employee = createTestEmployee(id = 1L, appAuthority = null)
             val request = LoginRequest("12345678", "password123")
 
-            whenever(userRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(user))
+            whenever(employeeRepository.findByEmployeeNumber("12345678")).thenReturn(Optional.of(employee))
             whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
 
             // When & Then
@@ -980,33 +980,33 @@ class AuthServiceTest {
     @DisplayName("단말기 초기화 성공 - 유효한 사번의 deviceUuid를 NULL로 초기화")
     fun resetDevice_success() {
         // Given
-        val user = createTestUser(id = 1L, employeeNumber = "20010585", deviceUuid = "device-abc-123")
+        val employee = createTestEmployee(id = 1L, employeeNumber = "20010585", deviceUuid = "device-abc-123")
 
-        whenever(userRepository.findByEmployeeNumber("20010585")).thenReturn(Optional.of(user))
-        whenever(userRepository.save(any<User>())).thenAnswer { it.arguments[0] }
+        whenever(employeeRepository.findByEmployeeNumber("20010585")).thenReturn(Optional.of(employee))
+        whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.arguments[0] }
 
         // When
         authService.resetDevice("20010585")
 
         // Then
-        verify(userRepository).save(userCaptor.capture())
-        assertThat(userCaptor.value.deviceUuid).isNull()
+        verify(employeeRepository).save(employeeCaptor.capture())
+        assertThat(employeeCaptor.value.deviceUuid).isNull()
     }
 
     @Test
     @DisplayName("단말기 초기화 실패 - 존재하지 않는 사번 시 UserNotFoundException 발생")
     fun resetDevice_userNotFound() {
         // Given
-        whenever(userRepository.findByEmployeeNumber("99999999")).thenReturn(Optional.empty())
+        whenever(employeeRepository.findByEmployeeNumber("99999999")).thenReturn(Optional.empty())
 
         // When & Then
         assertThatThrownBy { authService.resetDevice("99999999") }
-            .isInstanceOf(UserNotFoundException::class.java)
+            .isInstanceOf(EmployeeNotFoundException::class.java)
     }
 
     // ========== Helper ==========
 
-    private fun createTestUser(
+    private fun createTestEmployee(
         id: Long = 1L,
         employeeNumber: String = "12345678",
         password: String = "encoded_password",
@@ -1018,8 +1018,8 @@ class AuthServiceTest {
         agreementFlag: Boolean? = null,
         deviceUuid: String? = null,
         costCenterCode: String? = null
-    ): User {
-        return User(
+    ): Employee {
+        return Employee(
             id = id,
             employeeNumber = employeeNumber,
             password = password,

@@ -2,7 +2,7 @@ package com.otoki.internal.common.controller
 
 import com.otoki.internal.common.dto.response.HomeResponse
 import com.otoki.internal.sap.entity.UserRole
-import com.otoki.internal.auth.exception.UserNotFoundException
+import com.otoki.internal.auth.exception.EmployeeNotFoundException
 import com.otoki.internal.common.security.GpsConsentFilter
 import com.otoki.internal.common.security.JwtAuthenticationFilter
 import com.otoki.internal.admin.security.AdminAuthorityFilter
@@ -331,7 +331,7 @@ class HomeControllerTest {
         @DisplayName("사용자 없음 - 404 USER_NOT_FOUND")
         fun getHomeData_userNotFound() {
             // Given
-            whenever(homeService.getHomeData(1L)).thenThrow(UserNotFoundException())
+            whenever(homeService.getHomeData(1L)).thenThrow(EmployeeNotFoundException())
 
             // When & Then
             mockMvc.perform(

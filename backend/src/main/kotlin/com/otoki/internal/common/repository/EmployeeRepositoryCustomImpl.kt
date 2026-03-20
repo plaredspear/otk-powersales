@@ -1,8 +1,8 @@
 package com.otoki.internal.common.repository
 
 import com.otoki.internal.branch.dto.response.BranchResponse
-import com.otoki.internal.sap.entity.QUser.user
-import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.entity.QEmployee.employee
+import com.otoki.internal.sap.entity.Employee
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.Projections
 import com.querydsl.core.types.dsl.Expressions
@@ -11,9 +11,9 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.support.PageableExecutionUtils
 
-class UserRepositoryCustomImpl(
+class EmployeeRepositoryCustomImpl(
     private val queryFactory: JPAQueryFactory
-) : UserRepositoryCustom {
+) : EmployeeRepositoryCustom {
 
     override fun findDistinctBranches(): List<BranchResponse> {
         return queryFactory
@@ -21,26 +21,26 @@ class UserRepositoryCustomImpl(
                 Projections.constructor(
                     BranchResponse::class.java,
                     Expressions.cases()
-                        .`when`(user.costCenterCode.isNotNull)
-                        .then(user.costCenterCode)
-                        .otherwise(user.orgName),
-                    user.orgName
+                        .`when`(employee.costCenterCode.isNotNull)
+                        .then(employee.costCenterCode)
+                        .otherwise(employee.orgName),
+                    employee.orgName
                 )
             )
-            .from(user)
+            .from(employee)
             .where(
-                user.orgName.isNotNull,
-                user.isDeleted.isNull.or(user.isDeleted.isFalse)
+                employee.orgName.isNotNull,
+                employee.isDeleted.isNull.or(employee.isDeleted.isFalse)
             )
-            .groupBy(user.orgName, user.costCenterCode)
-            .orderBy(user.orgName.asc())
+            .groupBy(employee.orgName, employee.costCenterCode)
+            .orderBy(employee.orgName.asc())
             .fetch()
     }
 
     override fun findAllEmployeeNumbers(): List<String> {
         return queryFactory
-            .select(user.employeeNumber)
-            .from(user)
+            .select(employee.employeeNumber)
+            .from(employee)
             .fetch()
     }
 
@@ -50,37 +50,37 @@ class UserRepositoryCustomImpl(
         keyword: String?,
         appAuthority: String?,
         pageable: Pageable
-    ): Page<User> {
+    ): Page<Employee> {
         val where = BooleanBuilder()
-            .and(user.isDeleted.isNull.or(user.isDeleted.isFalse))
+            .and(employee.isDeleted.isNull.or(employee.isDeleted.isFalse))
 
         if (status != null) {
-            where.and(user.status.eq(status))
+            where.and(employee.status.eq(status))
         }
         if (branchCodes != null) {
-            where.and(user.costCenterCode.`in`(branchCodes))
+            where.and(employee.costCenterCode.`in`(branchCodes))
         }
         if (!keyword.isNullOrBlank()) {
             where.and(
-                user.employeeNumber.containsIgnoreCase(keyword)
-                    .or(user.name.containsIgnoreCase(keyword))
+                employee.employeeNumber.containsIgnoreCase(keyword)
+                    .or(employee.name.containsIgnoreCase(keyword))
             )
         }
         if (appAuthority != null) {
-            where.and(user.appAuthority.eq(appAuthority))
+            where.and(employee.appAuthority.eq(appAuthority))
         }
 
         val content = queryFactory
-            .selectFrom(user)
+            .selectFrom(employee)
             .where(where)
-            .orderBy(user.name.asc())
+            .orderBy(employee.name.asc())
             .offset(pageable.offset)
             .limit(pageable.pageSize.toLong())
             .fetch()
 
         val countQuery = queryFactory
-            .select(user.count())
-            .from(user)
+            .select(employee.count())
+            .from(employee)
             .where(where)
 
         return PageableExecutionUtils.getPage(content, pageable) {

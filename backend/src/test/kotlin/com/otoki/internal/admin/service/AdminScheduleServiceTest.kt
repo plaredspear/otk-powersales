@@ -4,15 +4,15 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.otoki.internal.admin.dto.response.RowError
 import com.otoki.internal.admin.dto.response.RowPreview
 import com.otoki.internal.admin.exception.*
-import com.otoki.internal.auth.exception.UserNotFoundException
+import com.otoki.internal.auth.exception.EmployeeNotFoundException
 import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.sap.entity.Organization
-import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.sap.entity.MonthlySalesHistory
 import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.sap.repository.MonthlySalesHistoryRepository
 import com.otoki.internal.sap.repository.OrganizationRepository
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.schedule.entity.DisplayWorkSchedule
 import com.otoki.internal.schedule.repository.DisplayWorkScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
@@ -39,7 +39,7 @@ import java.util.*
 class AdminScheduleServiceTest {
 
     @Mock
-    private lateinit var userRepository: UserRepository
+    private lateinit var employeeRepository: EmployeeRepository
 
     @Mock
     private lateinit var accountRepository: AccountRepository
@@ -85,17 +85,17 @@ class AdminScheduleServiceTest {
         fun generateTemplate_success() {
             val userId = 1L
             val costCenterCode = "1234"
-            val user = createUser(id = userId, costCenterCode = costCenterCode)
+            val employee = createEmployee(id = userId, costCenterCode = costCenterCode)
             val org = Organization(id = 1, costCenterLevel5 = costCenterCode)
             val employees = listOf(
-                createUser(employeeNumber = "20030001", name = "홍길동", orgName = "A팀"),
-                createUser(employeeNumber = "20030002", name = "김철수", orgName = "B팀")
+                createEmployee(employeeNumber = "20030001", name = "홍길동", orgName = "A팀"),
+                createEmployee(employeeNumber = "20030002", name = "김철수", orgName = "B팀")
             )
 
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(organizationRepository.findFirstByCostCenterLevel5(costCenterCode)).thenReturn(org)
             whenever(
-                userRepository.findByCostCenterCodeAndAppAuthorityIsNullAndAppLoginActiveTrueAndStatus(
+                employeeRepository.findByCostCenterCodeAndAppAuthorityIsNullAndAppLoginActiveTrueAndStatus(
                     costCenterCode, "재직"
                 )
             ).thenReturn(employees)
@@ -110,19 +110,19 @@ class AdminScheduleServiceTest {
         }
 
         @Test
-        @DisplayName("사용자 미존재 - UserNotFoundException")
+        @DisplayName("사용자 미존재 - EmployeeNotFoundException")
         fun generateTemplate_userNotFound() {
-            whenever(userRepository.findById(999L)).thenReturn(Optional.empty())
+            whenever(employeeRepository.findById(999L)).thenReturn(Optional.empty())
 
             assertThatThrownBy { adminScheduleService.generateTemplate(999L) }
-                .isInstanceOf(UserNotFoundException::class.java)
+                .isInstanceOf(EmployeeNotFoundException::class.java)
         }
 
         @Test
         @DisplayName("소속 지점 미설정 - MissingCostCenterException")
         fun generateTemplate_missingCostCenter() {
-            val user = createUser(costCenterCode = null)
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(user))
+            val employee = createEmployee(costCenterCode = null)
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
 
             assertThatThrownBy { adminScheduleService.generateTemplate(1L) }
                 .isInstanceOf(MissingCostCenterException::class.java)
@@ -131,8 +131,8 @@ class AdminScheduleServiceTest {
         @Test
         @DisplayName("소속 지점 빈 문자열 - MissingCostCenterException")
         fun generateTemplate_emptyCostCenter() {
-            val user = createUser(costCenterCode = "")
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(user))
+            val employee = createEmployee(costCenterCode = "")
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
 
             assertThatThrownBy { adminScheduleService.generateTemplate(1L) }
                 .isInstanceOf(MissingCostCenterException::class.java)
@@ -142,8 +142,8 @@ class AdminScheduleServiceTest {
         @DisplayName("존재하지 않는 지점 - OrganizationNotFoundException")
         fun generateTemplate_orgNotFound() {
             val costCenterCode = "0000"
-            val user = createUser(costCenterCode = costCenterCode)
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(user))
+            val employee = createEmployee(costCenterCode = costCenterCode)
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
             whenever(organizationRepository.findFirstByCostCenterLevel5(costCenterCode)).thenReturn(null)
             whenever(organizationRepository.findFirstByCostCenterLevel4(costCenterCode)).thenReturn(null)
 
@@ -156,13 +156,13 @@ class AdminScheduleServiceTest {
         fun generateTemplate_noEmployees() {
             val userId = 1L
             val costCenterCode = "1234"
-            val user = createUser(id = userId, costCenterCode = costCenterCode)
+            val employee = createEmployee(id = userId, costCenterCode = costCenterCode)
             val org = Organization(id = 1, costCenterLevel5 = costCenterCode)
 
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(organizationRepository.findFirstByCostCenterLevel5(costCenterCode)).thenReturn(org)
             whenever(
-                userRepository.findByCostCenterCodeAndAppAuthorityIsNullAndAppLoginActiveTrueAndStatus(
+                employeeRepository.findByCostCenterCodeAndAppAuthorityIsNullAndAppLoginActiveTrueAndStatus(
                     costCenterCode, "재직"
                 )
             ).thenReturn(emptyList())
@@ -188,11 +188,11 @@ class AdminScheduleServiceTest {
                 ScheduleExcelParser.ParsedRow(4, "20030001", "홍길동", "ACC001", "이마트 강남점", "고정", "상시", "2026-04-01", null, LocalDate.of(2026, 4, 1), null)
             )
             val parseResult = ScheduleExcelParser.ParseResult(parsedRows, 1)
-            val user = createUser(employeeNumber = "20030001", name = "홍길동", sfid = "USR001")
+            val employee = createEmployee(employeeNumber = "20030001", name = "홍길동", sfid = "USR001")
             val account = createAccount(externalKey = "ACC001", sfid = "ACC_SFID_001", name = "이마트 강남점")
 
             whenever(excelParser.parse(any())).thenReturn(parseResult)
-            whenever(userRepository.findByEmployeeNumberIn(listOf("20030001"))).thenReturn(listOf(user))
+            whenever(employeeRepository.findByEmployeeNumberIn(listOf("20030001"))).thenReturn(listOf(employee))
             whenever(accountRepository.findByExternalKeyIn(listOf("ACC001"))).thenReturn(listOf(account))
             whenever(scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L))).thenReturn(emptyList())
             whenever(uploadValidator.validate(eq(parsedRows), any(), any(), any())).thenReturn(
@@ -350,7 +350,7 @@ class AdminScheduleServiceTest {
 
             whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
             whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
-            whenever(userRepository.findByCostCenterCodeInAndAppAuthority(listOf("A10010"), "조장"))
+            whenever(employeeRepository.findByCostCenterCodeInAndAppAuthority(listOf("A10010"), "조장"))
                 .thenReturn(emptyList())
             whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountExternalKeyIn(any(), any(), any()))
                 .thenReturn(emptyList())
@@ -379,11 +379,11 @@ class AdminScheduleServiceTest {
                 errorCount = 0
             )
             val json = objectMapper.writeValueAsString(cacheData)
-            val manager = createUser(employeeNumber = "20030099", name = "조장사원", costCenterCode = "A10010", appAuthority = "조장")
+            val manager = createEmployee(employeeNumber = "20030099", name = "조장사원", costCenterCode = "A10010", appAuthority = "조장")
 
             whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
             whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
-            whenever(userRepository.findByCostCenterCodeInAndAppAuthority(listOf("A10010"), "조장"))
+            whenever(employeeRepository.findByCostCenterCodeInAndAppAuthority(listOf("A10010"), "조장"))
                 .thenReturn(listOf(manager))
             whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountExternalKeyIn(any(), any(), any()))
                 .thenReturn(emptyList())
@@ -415,7 +415,7 @@ class AdminScheduleServiceTest {
 
             whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
             whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
-            whenever(userRepository.findByCostCenterCodeInAndAppAuthority(listOf("A10010"), "조장"))
+            whenever(employeeRepository.findByCostCenterCodeInAndAppAuthority(listOf("A10010"), "조장"))
                 .thenReturn(emptyList())
             whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountExternalKeyIn(any(), any(), any()))
                 .thenReturn(emptyList())
@@ -452,7 +452,7 @@ class AdminScheduleServiceTest {
 
             whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
             whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
-            whenever(userRepository.findByCostCenterCodeInAndAppAuthority(listOf("A10010"), "조장"))
+            whenever(employeeRepository.findByCostCenterCodeInAndAppAuthority(listOf("A10010"), "조장"))
                 .thenReturn(emptyList())
             whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountExternalKeyIn(any(), any(), eq(listOf("EXT001"))))
                 .thenReturn(listOf(salesHistory))
@@ -484,7 +484,7 @@ class AdminScheduleServiceTest {
 
             whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
             whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
-            whenever(userRepository.findByCostCenterCodeInAndAppAuthority(listOf("A10010"), "조장"))
+            whenever(employeeRepository.findByCostCenterCodeInAndAppAuthority(listOf("A10010"), "조장"))
                 .thenReturn(emptyList())
             whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountExternalKeyIn(any(), any(), eq(listOf("EXT001"))))
                 .thenReturn(emptyList())
@@ -538,12 +538,12 @@ class AdminScheduleServiceTest {
         fun listSchedules_success() {
             val schedule = createSchedule(id = 1L, employeeId = 1L, accountId = 100, confirmed = false)
             val page = PageImpl(listOf(schedule), PageRequest.of(0, 20), 1)
-            val user = createUser(id = 1L, employeeNumber = "20030001", name = "홍길동")
+            val employee = createEmployee(id = 1L, employeeNumber = "20030001", name = "홍길동")
             val account = createAccount(id = 100, externalKey = "SAP001", name = "이마트 성수점")
 
             whenever(scheduleRepository.findScheduleList(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any()))
                 .thenReturn(page)
-            whenever(userRepository.findAllById(listOf(1L))).thenReturn(listOf(user))
+            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(employee))
             whenever(accountRepository.findByIdIn(listOf(100))).thenReturn(listOf(account))
 
             val result = adminScheduleService.listSchedules(0, 20, null, null, null, null, null, null)
@@ -733,7 +733,7 @@ class AdminScheduleServiceTest {
         isDeleted = isDeleted
     )
 
-    private fun createUser(
+    private fun createEmployee(
         id: Long = 1L,
         employeeNumber: String = "20030001",
         name: String = "테스트사원",
@@ -742,7 +742,7 @@ class AdminScheduleServiceTest {
         sfid: String? = "USR_SFID_001",
         status: String = "재직",
         appAuthority: String? = null
-    ): User = User(
+    ): Employee = Employee(
         id = id,
         employeeNumber = employeeNumber,
         name = name,

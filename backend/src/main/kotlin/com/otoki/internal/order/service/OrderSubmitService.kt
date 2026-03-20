@@ -19,7 +19,7 @@ import com.otoki.internal.order.repository.OrderItemRepository
 import com.otoki.internal.order.repository.OrderRepository
 import com.otoki.internal.sap.repository.ProductRepository
 import com.otoki.internal.repository.AccountRepository
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.repository.EmployeeRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -38,7 +38,7 @@ class OrderSubmitService(
     private val orderDraftRepository: OrderDraftRepository,
     private val productRepository: ProductRepository,
     private val accountRepository: AccountRepository,
-    private val userRepository: UserRepository,
+    private val employeeRepository: EmployeeRepository,
     private val sapOrderClient: SapOrderClient
 ) {
 
@@ -142,7 +142,7 @@ class OrderSubmitService(
             .orElseThrow { ClientNotFoundException() }
 
         // 4. 사용자 조회
-        val user = userRepository.findById(userId)
+        val employee = employeeRepository.findById(userId)
             .orElseThrow { IllegalStateException("사용자를 찾을 수 없습니다") }
 
         // 5. 제품 일괄 조회
@@ -157,7 +157,7 @@ class OrderSubmitService(
         var totalAmount = 0L
         val order = Order(
             orderRequestNumber = orderRequestNumber,
-            user = user,
+            user = employee,
             account = account,
             orderDate = LocalDate.now(),
             deliveryDate = deliveryDate,
@@ -192,7 +192,7 @@ class OrderSubmitService(
         // 8. Order에 totalAmount 설정 (val이므로 새 인스턴스 생성)
         val orderWithTotal = Order(
             orderRequestNumber = orderRequestNumber,
-            user = user,
+            user = employee,
             account = account,
             orderDate = LocalDate.now(),
             deliveryDate = deliveryDate,

@@ -1,7 +1,7 @@
 package com.otoki.internal.shelflife.service
 
-import com.otoki.internal.auth.exception.UserNotFoundException
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.auth.exception.EmployeeNotFoundException
+import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.shelflife.dto.request.ShelfLifeBatchDeleteRequest
 import com.otoki.internal.shelflife.dto.request.ShelfLifeCreateRequest
 import com.otoki.internal.shelflife.dto.request.ShelfLifeUpdateRequest
@@ -24,7 +24,7 @@ import java.time.temporal.ChronoUnit
 @Transactional(readOnly = true)
 class ShelfLifeService(
     private val shelfLifeRepository: ShelfLifeRepository,
-    private val userRepository: UserRepository
+    private val employeeRepository: EmployeeRepository
 ) {
 
     fun getShelfLifeList(
@@ -53,7 +53,7 @@ class ShelfLifeService(
     @Transactional
     fun createShelfLife(userId: Long, request: ShelfLifeCreateRequest): ShelfLifeItemResponse {
         val employeeId = getUserId(userId)
-            ?: throw UserNotFoundException()
+            ?: throw EmployeeNotFoundException()
 
         val expirationDate = parseDate(request.expirationDate)
         val alarmDate = parseDate(request.alarmDate)
@@ -80,7 +80,7 @@ class ShelfLifeService(
     @Transactional
     fun updateShelfLife(userId: Long, seq: Int, request: ShelfLifeUpdateRequest): ShelfLifeItemResponse {
         val employeeId = getUserId(userId)
-            ?: throw UserNotFoundException()
+            ?: throw EmployeeNotFoundException()
         val shelfLife = findBySeq(seq)
         validateOwnership(shelfLife, employeeId)
 
@@ -98,7 +98,7 @@ class ShelfLifeService(
     @Transactional
     fun deleteShelfLife(userId: Long, seq: Int) {
         val employeeId = getUserId(userId)
-            ?: throw UserNotFoundException()
+            ?: throw EmployeeNotFoundException()
         val shelfLife = findBySeq(seq)
         validateOwnership(shelfLife, employeeId)
         shelfLifeRepository.delete(shelfLife)
@@ -107,7 +107,7 @@ class ShelfLifeService(
     @Transactional
     fun deleteShelfLifeBatch(userId: Long, request: ShelfLifeBatchDeleteRequest): ShelfLifeBatchDeleteResponse {
         val employeeId = getUserId(userId)
-            ?: throw UserNotFoundException()
+            ?: throw EmployeeNotFoundException()
 
         val items = shelfLifeRepository.findBySeqInAndEmployeeId(request.ids, employeeId)
 
@@ -126,9 +126,9 @@ class ShelfLifeService(
     }
 
     private fun getUserId(userId: Long): Long? {
-        val user = userRepository.findById(userId)
-            .orElseThrow { UserNotFoundException() }
-        return user.id
+        val employee = employeeRepository.findById(userId)
+            .orElseThrow { EmployeeNotFoundException() }
+        return employee.id
     }
 
     private fun findBySeq(seq: Int): ShelfLife {

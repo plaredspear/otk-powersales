@@ -2,7 +2,7 @@ package com.otoki.internal.schedule.repository
 
 import com.otoki.internal.schedule.entity.Attendance
 import com.otoki.internal.schedule.entity.AttendanceWorkType
-import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.entity.Employee
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -36,13 +36,13 @@ class AttendanceRepositoryTest {
         attendanceRepository.deleteAll()
         testEntityManager.clear()
 
-        val user = User(
+        val employee = Employee(
             employeeNumber = "20030117",
             password = "encodedPassword",
             name = "테스트 사용자",
             orgName = "부산1지점"
         )
-        testUserId = testEntityManager.persistAndFlush(user).id
+        testUserId = testEntityManager.persistAndFlush(employee).id
         testEntityManager.clear()
     }
 
@@ -153,13 +153,13 @@ class AttendanceRepositoryTest {
     @DisplayName("다른 사용자의 등록 건은 조회되지 않는다")
     fun findByUserIdAndAttendanceDate_differentUser() {
         // Given
-        val otherUser = User(
+        val otherEmployee = Employee(
             employeeNumber = "20030118",
             password = "encodedPassword",
             name = "다른 사용자",
             orgName = "서울1지점"
         )
-        val otherUserId = testEntityManager.persistAndFlush(otherUser).id
+        val otherUserId = testEntityManager.persistAndFlush(otherEmployee).id
 
         val att = Attendance(
             userId = otherUserId, storeId = 101,

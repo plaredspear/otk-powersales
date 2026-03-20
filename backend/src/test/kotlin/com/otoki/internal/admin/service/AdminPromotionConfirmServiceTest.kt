@@ -5,8 +5,8 @@ import com.otoki.internal.promotion.entity.PromotionEmployee
 import com.otoki.internal.promotion.exception.*
 import com.otoki.internal.promotion.repository.PromotionEmployeeRepository
 import com.otoki.internal.promotion.repository.PromotionRepository
-import com.otoki.internal.sap.entity.User
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.entity.Employee
+import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
 import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
@@ -29,7 +29,7 @@ class AdminPromotionConfirmServiceTest {
     @Mock private lateinit var promotionRepository: PromotionRepository
     @Mock private lateinit var promotionEmployeeRepository: PromotionEmployeeRepository
     @Mock private lateinit var teamMemberScheduleRepository: TeamMemberScheduleRepository
-    @Mock private lateinit var userRepository: UserRepository
+    @Mock private lateinit var employeeRepository: EmployeeRepository
     @InjectMocks private lateinit var service: AdminPromotionConfirmService
 
     private val startDate = LocalDate.of(2026, 3, 1)
@@ -53,10 +53,10 @@ class AdminPromotionConfirmServiceTest {
             whenever(promotionEmployeeRepository.findByPromotionId(10L)).thenReturn(employees)
             whenever(teamMemberScheduleRepository.findByPromotionEmployeeIdIn(any())).thenReturn(emptyList())
             whenever(teamMemberScheduleRepository.findByEmployeeIdInAndWorkingDateIn(any(), any())).thenReturn(emptyList())
-            whenever(userRepository.findAllById(any())).thenReturn(listOf(
-                createUser(id = 1L, employeeNumber = "EMP001", name = "김철수"),
-                createUser(id = 2L, employeeNumber = "EMP002", name = "이영희"),
-                createUser(id = 3L, employeeNumber = "EMP003", name = "박민수")
+            whenever(employeeRepository.findAllById(any())).thenReturn(listOf(
+                createEmployee(id = 1L, employeeNumber = "EMP001", name = "김철수"),
+                createEmployee(id = 2L, employeeNumber = "EMP002", name = "이영희"),
+                createEmployee(id = 3L, employeeNumber = "EMP003", name = "박민수")
             ))
             whenever(teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>())).thenAnswer { invocation ->
                 val teamMemberSchedules = invocation.getArgument<List<TeamMemberSchedule>>(0)
@@ -108,7 +108,7 @@ class AdminPromotionConfirmServiceTest {
             whenever(promotionEmployeeRepository.findByPromotionId(10L)).thenReturn(employees)
             whenever(teamMemberScheduleRepository.findByPromotionEmployeeIdIn(listOf(1L))).thenReturn(listOf(existingTeamMemberSchedule))
             whenever(teamMemberScheduleRepository.findByEmployeeIdInAndWorkingDateIn(any(), any())).thenReturn(listOf(existingTeamMemberSchedule))
-            whenever(userRepository.findAllById(any())).thenReturn(listOf(createUser(id = 1L, employeeNumber = "EMP001", name = "김철수")))
+            whenever(employeeRepository.findAllById(any())).thenReturn(listOf(createEmployee(id = 1L, employeeNumber = "EMP001", name = "김철수")))
             whenever(teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>())).thenAnswer { it.getArgument<List<TeamMemberSchedule>>(0) }
             whenever(promotionEmployeeRepository.saveAll(any<List<PromotionEmployee>>())).thenAnswer { it.getArgument<List<PromotionEmployee>>(0) }
 
@@ -477,10 +477,10 @@ class AdminPromotionConfirmServiceTest {
         org.mockito.Mockito.lenient().`when`(teamMemberScheduleRepository.findByEmployeeIdInAndWorkingDateIn(any(), any())).thenReturn(existingTeamMemberSchedules)
 
         val employeeIds = employees.mapNotNull { it.employeeId }.distinct()
-        val users = employeeIds.mapIndexed { _, id ->
-            createUser(id = id, employeeNumber = "EMP${String.format("%03d", id)}", name = "EMP${String.format("%03d", id)}이름", status = userStatus)
+        val employees = employeeIds.mapIndexed { _, id ->
+            createEmployee(id = id, employeeNumber = "EMP${String.format("%03d", id)}", name = "EMP${String.format("%03d", id)}이름", status = userStatus)
         }
-        org.mockito.Mockito.lenient().`when`(userRepository.findAllById(any())).thenReturn(users)
+        org.mockito.Mockito.lenient().`when`(employeeRepository.findAllById(any())).thenReturn(employees)
     }
 
     private fun setupMocksForSuccess(
@@ -541,12 +541,12 @@ class AdminPromotionConfirmServiceTest {
         workType4 = workType4
     )
 
-    private fun createUser(
+    private fun createEmployee(
         id: Long = 1L,
         employeeNumber: String = "EMP001",
         name: String = "테스트사원",
         status: String? = null
-    ): User = User(
+    ): Employee = Employee(
         id = id,
         employeeNumber = employeeNumber,
         name = name,

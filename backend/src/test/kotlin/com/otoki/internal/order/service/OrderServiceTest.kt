@@ -8,7 +8,7 @@ import com.otoki.internal.order.entity.OrderItem
 import com.otoki.internal.order.entity.OrderProcessingRecord
 import com.otoki.internal.order.entity.OrderRejection
 import com.otoki.internal.entity.Store
-import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.order.dto.response.OrderCancelResponse
 import com.otoki.internal.exception.AlreadyCancelledException
 import com.otoki.internal.order.exception.ForbiddenOrderAccessException
@@ -22,7 +22,7 @@ import com.otoki.internal.order.repository.OrderItemRepository
 import com.otoki.internal.order.repository.OrderProcessingRecordRepository
 import com.otoki.internal.order.repository.OrderRejectionRepository
 import com.otoki.internal.order.repository.OrderRepository
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.repository.EmployeeRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
@@ -64,12 +64,12 @@ class OrderServiceTest {
     private lateinit var orderRejectionRepository: OrderRejectionRepository
 
     @Mock
-    private lateinit var userRepository: UserRepository
+    private lateinit var employeeRepository: EmployeeRepository
 
     @Mock
     private lateinit var clock: Clock
 
-    private val testUser = User(
+    private val testEmployee = Employee(
         id = 1L,
         employeeNumber = "12345678",
         password = "encoded",
@@ -89,7 +89,7 @@ class OrderServiceTest {
             orderItemRepository = orderItemRepository,
             orderProcessingRecordRepository = orderProcessingRecordRepository,
             orderRejectionRepository = orderRejectionRepository,
-            userRepository = userRepository,
+            employeeRepository = employeeRepository,
             clock = customClock ?: clock
         )
     }
@@ -705,7 +705,7 @@ class OrderServiceTest {
         fun getOrderDetail_differentUser_throwsException() {
             // Given
             val orderService = createOrderService()
-            val otherUser = User(
+            val otherEmployee = Employee(
                 id = 2L,
                 employeeNumber = "87654321",
                 password = "encoded",
@@ -716,7 +716,7 @@ class OrderServiceTest {
                 id = 1L,
                 orderRequestNumber = "OP00000001",
                 approvalStatus = ApprovalStatus.APPROVED,
-                user = otherUser
+                user = otherEmployee
             )
 
             whenever(orderRepository.findById(1L)).thenReturn(Optional.of(order))
@@ -827,7 +827,7 @@ class OrderServiceTest {
         fun resendOrder_differentUser_throwsException() {
             // Given
             val orderService = createOrderService()
-            val otherUser = User(
+            val otherEmployee = Employee(
                 id = 2L,
                 employeeNumber = "87654321",
                 password = "encoded",
@@ -838,7 +838,7 @@ class OrderServiceTest {
                 id = 1L,
                 orderRequestNumber = "OP00000001",
                 approvalStatus = ApprovalStatus.SEND_FAILED,
-                user = otherUser
+                user = otherEmployee
             )
 
             whenever(orderRepository.findById(1L)).thenReturn(Optional.of(order))
@@ -958,7 +958,7 @@ class OrderServiceTest {
 
             whenever(orderRepository.findById(1L)).thenReturn(Optional.of(order))
             whenever(orderItemRepository.findByOrderId(1L)).thenReturn(items)
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(testUser))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(testEmployee))
 
             // When
             val result = orderService.cancelOrder(userId = 1L, orderId = 1L, productCodes = listOf("P001"))
@@ -994,7 +994,7 @@ class OrderServiceTest {
 
             whenever(orderRepository.findById(1L)).thenReturn(Optional.of(order))
             whenever(orderItemRepository.findByOrderId(1L)).thenReturn(items)
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(testUser))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(testEmployee))
 
             // When
             val result = orderService.cancelOrder(
@@ -1031,7 +1031,7 @@ class OrderServiceTest {
         fun cancelOrder_differentUser_throwsException() {
             // Given
             val orderService = createOrderService()
-            val otherUser = User(
+            val otherEmployee = Employee(
                 id = 2L,
                 employeeNumber = "87654321",
                 password = "encoded",
@@ -1042,7 +1042,7 @@ class OrderServiceTest {
                 id = 1L,
                 orderRequestNumber = "OP00000001",
                 approvalStatus = ApprovalStatus.APPROVED,
-                user = otherUser
+                user = otherEmployee
             )
 
             whenever(orderRepository.findById(1L)).thenReturn(Optional.of(order))
@@ -1318,7 +1318,7 @@ class OrderServiceTest {
         totalAmount: Long = 100000L,
         isClosed: Boolean = false,
         clientDeadlineTime: String? = null,
-        user: User = testUser
+        user: Employee = testEmployee
     ): Order {
         return Order(
             id = id,

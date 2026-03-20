@@ -11,7 +11,7 @@ import com.otoki.internal.leave.entity.AlternativeHoliday
 import com.otoki.internal.leave.exception.*
 import com.otoki.internal.leave.repository.AlternativeHolidayRepository
 import com.otoki.internal.leave.service.AlternativeHolidayValidator
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
 import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
 import org.springframework.stereotype.Service
@@ -22,7 +22,7 @@ import java.time.LocalDate
 @Transactional(readOnly = true)
 class AdminAlternativeHolidayService(
     private val alternativeHolidayRepository: AlternativeHolidayRepository,
-    private val userRepository: UserRepository,
+    private val employeeRepository: EmployeeRepository,
     private val validator: AlternativeHolidayValidator,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository
 ) {
@@ -42,10 +42,10 @@ class AdminAlternativeHolidayService(
         request: AlternativeHolidayCreateRequest,
         adminUserId: Long
     ): AlternativeHolidayCreateResponse {
-        val employee = userRepository.findByEmployeeNumber(request.employeeNumber)
+        val employee = employeeRepository.findByEmployeeNumber(request.employeeNumber)
             .orElseThrow { com.otoki.internal.leave.exception.EmployeeNotFoundException() }
 
-        val admin = userRepository.findById(adminUserId)
+        val admin = employeeRepository.findById(adminUserId)
             .orElseThrow { com.otoki.internal.leave.exception.EmployeeNotFoundException() }
 
         validator.validateConfirmDate(request.targetAltHolidayDate)

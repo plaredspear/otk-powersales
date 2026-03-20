@@ -1,8 +1,8 @@
 package com.otoki.internal.admin.service
 
 import com.otoki.internal.admin.dto.DataScope
-import com.otoki.internal.sap.entity.User
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.entity.Employee
+import com.otoki.internal.sap.repository.EmployeeRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
@@ -20,7 +20,7 @@ import java.util.*
 class AdminDataScopeServiceTest {
 
     @Mock
-    private lateinit var userRepository: UserRepository
+    private lateinit var employeeRepository: EmployeeRepository
 
     @InjectMocks
     private lateinit var adminDataScopeService: AdminDataScopeService
@@ -36,8 +36,8 @@ class AdminDataScopeServiceTest {
         fun resolve_withSalesDirector_returnsAllBranches() {
             // Given
             val userId = 1L
-            val user = createTestUser(id = userId, appAuthority = "영업부장", costCenterCode = "B001")
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            val employee = createTestEmployee(id = userId, appAuthority = "영업부장", costCenterCode = "B001")
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
 
             // When
             val result = adminDataScopeService.resolve(userId)
@@ -52,8 +52,8 @@ class AdminDataScopeServiceTest {
         fun resolve_withDivisionDirector_returnsAllBranches() {
             // Given
             val userId = 2L
-            val user = createTestUser(id = userId, appAuthority = "사업부장", costCenterCode = "B002")
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            val employee = createTestEmployee(id = userId, appAuthority = "사업부장", costCenterCode = "B002")
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
 
             // When
             val result = adminDataScopeService.resolve(userId)
@@ -68,8 +68,8 @@ class AdminDataScopeServiceTest {
         fun resolve_withSalesHeadquartersDirector_returnsAllBranches() {
             // Given
             val userId = 3L
-            val user = createTestUser(id = userId, appAuthority = "영업본부장", costCenterCode = "B003")
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            val employee = createTestEmployee(id = userId, appAuthority = "영업본부장", costCenterCode = "B003")
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
 
             // When
             val result = adminDataScopeService.resolve(userId)
@@ -84,8 +84,8 @@ class AdminDataScopeServiceTest {
         fun resolve_withSalesSupportOffice_returnsAllBranches() {
             // Given
             val userId = 4L
-            val user = createTestUser(id = userId, appAuthority = "영업지원실", costCenterCode = "B004")
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            val employee = createTestEmployee(id = userId, appAuthority = "영업지원실", costCenterCode = "B004")
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
 
             // When
             val result = adminDataScopeService.resolve(userId)
@@ -102,8 +102,8 @@ class AdminDataScopeServiceTest {
         fun resolve_withLeaderAndCostCenter_returnsBranchScope() {
             // Given
             val userId = 5L
-            val user = createTestUser(id = userId, appAuthority = "조장", costCenterCode = "B100")
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            val employee = createTestEmployee(id = userId, appAuthority = "조장", costCenterCode = "B100")
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
 
             // When
             val result = adminDataScopeService.resolve(userId)
@@ -118,8 +118,8 @@ class AdminDataScopeServiceTest {
         fun resolve_withBranchManagerAndCostCenter_returnsBranchScope() {
             // Given
             val userId = 6L
-            val user = createTestUser(id = userId, appAuthority = "지점장", costCenterCode = "B200")
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            val employee = createTestEmployee(id = userId, appAuthority = "지점장", costCenterCode = "B200")
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
 
             // When
             val result = adminDataScopeService.resolve(userId)
@@ -134,8 +134,8 @@ class AdminDataScopeServiceTest {
         fun resolve_withLeaderAndNullCostCenter_returnsEmptyBranchCodes() {
             // Given
             val userId = 7L
-            val user = createTestUser(id = userId, appAuthority = "조장", costCenterCode = null)
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            val employee = createTestEmployee(id = userId, appAuthority = "조장", costCenterCode = null)
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
 
             // When
             val result = adminDataScopeService.resolve(userId)
@@ -152,8 +152,8 @@ class AdminDataScopeServiceTest {
         fun resolve_withNullAuthorityAndCostCenter_returnsBranchScope() {
             // Given
             val userId = 8L
-            val user = createTestUser(id = userId, appAuthority = null, costCenterCode = "B300")
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            val employee = createTestEmployee(id = userId, appAuthority = null, costCenterCode = "B300")
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
 
             // When
             val result = adminDataScopeService.resolve(userId)
@@ -168,8 +168,8 @@ class AdminDataScopeServiceTest {
         fun resolve_withNullAuthorityAndNullCostCenter_returnsEmptyBranchCodes() {
             // Given
             val userId = 9L
-            val user = createTestUser(id = userId, appAuthority = null, costCenterCode = null)
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            val employee = createTestEmployee(id = userId, appAuthority = null, costCenterCode = null)
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
 
             // When
             val result = adminDataScopeService.resolve(userId)
@@ -186,8 +186,8 @@ class AdminDataScopeServiceTest {
         fun resolve_withUnknownAuthorityAndCostCenter_returnsBranchScope() {
             // Given
             val userId = 10L
-            val user = createTestUser(id = userId, appAuthority = "기타권한", costCenterCode = "B400")
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            val employee = createTestEmployee(id = userId, appAuthority = "기타권한", costCenterCode = "B400")
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
 
             // When
             val result = adminDataScopeService.resolve(userId)
@@ -202,8 +202,8 @@ class AdminDataScopeServiceTest {
         fun resolve_withUnknownAuthorityAndNullCostCenter_returnsEmptyBranchCodes() {
             // Given
             val userId = 11L
-            val user = createTestUser(id = userId, appAuthority = "기타권한", costCenterCode = null)
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            val employee = createTestEmployee(id = userId, appAuthority = "기타권한", costCenterCode = null)
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
 
             // When
             val result = adminDataScopeService.resolve(userId)
@@ -220,7 +220,7 @@ class AdminDataScopeServiceTest {
         fun resolve_withNonExistentUser_throwsException() {
             // Given
             val userId = 999L
-            whenever(userRepository.findById(userId)).thenReturn(Optional.empty())
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.empty())
 
             // When & Then
             assertThatThrownBy { adminDataScopeService.resolve(userId) }
@@ -232,14 +232,14 @@ class AdminDataScopeServiceTest {
 
     // ========== Helper Methods ==========
 
-    private fun createTestUser(
+    private fun createTestEmployee(
         id: Long = 1L,
         employeeNumber: String = "12345678",
         name: String = "홍길동",
         appAuthority: String? = null,
         costCenterCode: String? = null
-    ): User {
-        return User(
+    ): Employee {
+        return Employee(
             id = id,
             employeeNumber = employeeNumber,
             name = name,

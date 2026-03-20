@@ -2,7 +2,7 @@ package com.otoki.internal.leave.repository
 
 import com.otoki.internal.admin.dto.response.AlternativeHolidayListItem
 import com.otoki.internal.leave.entity.QAlternativeHoliday.alternativeHoliday
-import com.otoki.internal.sap.entity.QUser.user
+import com.otoki.internal.sap.entity.QEmployee.employee
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.Projections
 import com.querydsl.jpa.impl.JPAQueryFactory
@@ -30,9 +30,9 @@ class AlternativeHolidayRepositoryCustomImpl(
                 Projections.constructor(
                     AlternativeHolidayListItem::class.java,
                     alternativeHoliday.id,
-                    user.employeeNumber,
+                    employee.employeeNumber,
                     alternativeHoliday.employeeName,
-                    user.orgName,
+                    employee.orgName,
                     alternativeHoliday.actualWorkDate,
                     alternativeHoliday.targetAltHolidayDate,
                     alternativeHoliday.confirmAltHolidayDate,
@@ -43,7 +43,7 @@ class AlternativeHolidayRepositoryCustomImpl(
                 )
             )
             .from(alternativeHoliday)
-            .leftJoin(user).on(user.id.eq(alternativeHoliday.employeeId))
+            .leftJoin(employee).on(employee.id.eq(alternativeHoliday.employeeId))
             .where(condition)
             .orderBy(alternativeHoliday.actualWorkDate.desc(), alternativeHoliday.id.desc())
             .fetch()
@@ -53,8 +53,8 @@ class AlternativeHolidayRepositoryCustomImpl(
         status?.let { alternativeHoliday.status.eq(it) }
 
     private fun buildEmployeeNumberCondition(employeeNumber: String?) =
-        employeeNumber?.let { user.employeeNumber.eq(it) }
+        employeeNumber?.let { employee.employeeNumber.eq(it) }
 
     private fun buildOrgCodeCondition(orgCode: String?) =
-        orgCode?.let { user.costCenterCode.eq(it) }
+        orgCode?.let { employee.costCenterCode.eq(it) }
 }

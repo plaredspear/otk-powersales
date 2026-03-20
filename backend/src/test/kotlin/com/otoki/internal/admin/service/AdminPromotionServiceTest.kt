@@ -13,10 +13,10 @@ import com.otoki.internal.promotion.repository.PromotionRepository
 import com.otoki.internal.promotion.repository.PromotionTypeRepository
 import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.sap.entity.Product
-import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.sap.repository.ProductRepository
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -43,7 +43,7 @@ class AdminPromotionServiceTest {
     @Mock private lateinit var promotionEmployeeRepository: PromotionEmployeeRepository
     @Mock private lateinit var accountRepository: AccountRepository
     @Mock private lateinit var productRepository: ProductRepository
-    @Mock private lateinit var userRepository: UserRepository
+    @Mock private lateinit var employeeRepository: EmployeeRepository
     @Mock private lateinit var dataScopeHolder: DataScopeHolder
     @Mock private lateinit var teamMemberScheduleRepository: TeamMemberScheduleRepository
 
@@ -212,13 +212,13 @@ class AdminPromotionServiceTest {
             val request = createRequest(promotionTypeId = 1L)
             val account = createAccount()
             val product = createProduct(name = "꿀배청 680G")
-            val user = createUser(costCenterCode = "1101")
+            val employee = createEmployee(costCenterCode = "1101")
             val promotionType = createPromotionType()
 
             whenever(promotionTypeRepository.findById(1L)).thenReturn(Optional.of(promotionType))
             whenever(accountRepository.findById(100)).thenReturn(Optional.of(account))
             whenever(productRepository.findById(200L)).thenReturn(Optional.of(product))
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(1L)
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
 
@@ -239,13 +239,13 @@ class AdminPromotionServiceTest {
             val request = createRequest(promotionTypeId = 1L)
             val account = createAccount(branchName = "서초21지점")
             val product = createProduct(name = "진라면")
-            val user = createUser(costCenterCode = "1101")
+            val employee = createEmployee(costCenterCode = "1101")
             val promotionType = createPromotionType()
 
             whenever(promotionTypeRepository.findById(1L)).thenReturn(Optional.of(promotionType))
             whenever(accountRepository.findById(100)).thenReturn(Optional.of(account))
             whenever(productRepository.findById(200L)).thenReturn(Optional.of(product))
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(1L)
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
 
@@ -261,13 +261,13 @@ class AdminPromotionServiceTest {
             val request = createRequest(promotionTypeId = 1L)
             val account = createAccount(branchName = null)
             val product = createProduct(name = "진라면")
-            val user = createUser(costCenterCode = "1101")
+            val employee = createEmployee(costCenterCode = "1101")
             val promotionType = createPromotionType()
 
             whenever(promotionTypeRepository.findById(1L)).thenReturn(Optional.of(promotionType))
             whenever(accountRepository.findById(100)).thenReturn(Optional.of(account))
             whenever(productRepository.findById(200L)).thenReturn(Optional.of(product))
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(1L)
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
 
@@ -314,11 +314,11 @@ class AdminPromotionServiceTest {
         @DisplayName("CC코드 없는 사용자 -> CostCenterNotFoundException")
         fun createPromotion_noCostCenter() {
             val request = createRequest()
-            val user = createUser(costCenterCode = null)
+            val employee = createEmployee(costCenterCode = null)
 
             whenever(accountRepository.findById(100)).thenReturn(Optional.of(createAccount()))
             whenever(productRepository.findById(200L)).thenReturn(Optional.of(createProduct()))
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
 
             assertThatThrownBy { adminPromotionService.createPromotion(userId, request) }
                 .isInstanceOf(CostCenterNotFoundException::class.java)
@@ -360,11 +360,11 @@ class AdminPromotionServiceTest {
             val request = createRequest(standLocation = "냉동행사장")
             val account = createAccount()
             val product = createProduct()
-            val user = createUser(costCenterCode = "1101")
+            val employee = createEmployee(costCenterCode = "1101")
 
             whenever(accountRepository.findById(100)).thenReturn(Optional.of(account))
             whenever(productRepository.findById(200L)).thenReturn(Optional.of(product))
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(1L)
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
 
@@ -389,13 +389,13 @@ class AdminPromotionServiceTest {
             val request = createRequest(otherProduct = null, promotionTypeId = 1L)
             val account = createAccount()
             val product = createProduct()
-            val user = createUser(costCenterCode = "1101")
+            val employee = createEmployee(costCenterCode = "1101")
             val promotionType = createPromotionType()
 
             whenever(promotionTypeRepository.findById(1L)).thenReturn(Optional.of(promotionType))
             whenever(accountRepository.findById(100)).thenReturn(Optional.of(account))
             whenever(productRepository.findById(200L)).thenReturn(Optional.of(product))
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(1L)
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
 
@@ -411,13 +411,13 @@ class AdminPromotionServiceTest {
             val request = createRequest(otherProduct = "참깨라면 \"대용량\"", promotionTypeId = 1L)
             val account = createAccount()
             val product = createProduct()
-            val user = createUser(costCenterCode = "1101")
+            val employee = createEmployee(costCenterCode = "1101")
             val promotionType = createPromotionType()
 
             whenever(promotionTypeRepository.findById(1L)).thenReturn(Optional.of(promotionType))
             whenever(accountRepository.findById(100)).thenReturn(Optional.of(account))
             whenever(productRepository.findById(200L)).thenReturn(Optional.of(product))
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(1L)
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
 
@@ -433,11 +433,11 @@ class AdminPromotionServiceTest {
             val request = createRequest(standLocation = null)
             val account = createAccount()
             val product = createProduct()
-            val user = createUser(costCenterCode = "1101")
+            val employee = createEmployee(costCenterCode = "1101")
 
             whenever(accountRepository.findById(100)).thenReturn(Optional.of(account))
             whenever(productRepository.findById(200L)).thenReturn(Optional.of(product))
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(1L)
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
 
@@ -584,7 +584,7 @@ class AdminPromotionServiceTest {
             val promotion = createPromotion()
             whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
             whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(true)
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee()))
 
             val request = createRequest(accountId = 200)
 
@@ -601,7 +601,7 @@ class AdminPromotionServiceTest {
             val promotion = createPromotion()
             whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
             whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(true)
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee()))
 
             val request = createRequest(startDate = LocalDate.of(2026, 3, 5))
 
@@ -618,7 +618,7 @@ class AdminPromotionServiceTest {
             val promotion = createPromotion()
             whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
             whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(true)
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(createUser(appAuthority = "지점장")))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee(appAuthority = "지점장")))
 
             val newAccount = createAccount(id = 200, name = "GS25 강남점")
             whenever(accountRepository.findById(200)).thenReturn(Optional.of(newAccount))
@@ -648,7 +648,7 @@ class AdminPromotionServiceTest {
             val promotion = createPromotion()
             whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
             whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(true)
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(createUser(appAuthority = "지점장")))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee(appAuthority = "지점장")))
             whenever(promotionEmployeeRepository.findMinScheduleDateByPromotionId(1L)).thenReturn(LocalDate.of(2026, 3, 10))
             whenever(promotionEmployeeRepository.findMaxScheduleDateByPromotionId(1L)).thenReturn(LocalDate.of(2026, 3, 18))
             whenever(accountRepository.findById(100)).thenReturn(Optional.of(createAccount()))
@@ -670,7 +670,7 @@ class AdminPromotionServiceTest {
             val promotion = createPromotion()
             whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
             whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(true)
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(createUser(appAuthority = "조장")))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee(appAuthority = "조장")))
 
             val request = createRequest(startDate = LocalDate.of(2026, 3, 5))
 
@@ -854,12 +854,12 @@ class AdminPromotionServiceTest {
         category1: String = "라면"
     ) = Product(id = id, name = name).also { it.category1 = category1 }
 
-    private fun createUser(
+    private fun createEmployee(
         id: Long = 1L,
         employeeNumber: String = "20030117",
         costCenterCode: String? = "1101",
         appAuthority: String? = null
-    ) = User(id = id, employeeNumber = employeeNumber, name = "테스트 사용자").also {
+    ) = Employee(id = id, employeeNumber = employeeNumber, name = "테스트 사용자").also {
         it.costCenterCode = costCenterCode
         it.appAuthority = appAuthority
     }

@@ -1,7 +1,7 @@
 package com.otoki.internal.sap.service
 
-import com.otoki.internal.sap.entity.User
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.entity.Employee
+import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.sap.dto.SapEmployeeMasterRequest.ReqItem
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
@@ -23,7 +23,7 @@ import java.util.Optional
 class SapEmployeeMasterServiceTest {
 
     @Mock
-    private lateinit var userRepository: UserRepository
+    private lateinit var employeeRepository: EmployeeRepository
 
     @InjectMocks
     private lateinit var sapEmployeeMasterService: SapEmployeeMasterService
@@ -36,15 +36,15 @@ class SapEmployeeMasterServiceTest {
         @DisplayName("정상 등록 - DB에 없는 사원코드 -> User + EmployeeMng 생성")
         fun sync_newEmployee_createsUser() {
             val items = listOf(createReqItem(employeeCode = "100234", employeeName = "홍길동", status = "1"))
-            whenever(userRepository.findByEmployeeNumber("100234")).thenReturn(Optional.empty())
-            whenever(userRepository.save(any<User>())).thenAnswer { it.getArgument<User>(0) }
+            whenever(employeeRepository.findByEmployeeNumber("100234")).thenReturn(Optional.empty())
+            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
 
             val result = sapEmployeeMasterService.sync(items)
 
             assertThat(result.successCount).isEqualTo(1)
             assertThat(result.failCount).isEqualTo(0)
-            val captor = argumentCaptor<User>()
-            verify(userRepository).save(captor.capture())
+            val captor = argumentCaptor<Employee>()
+            verify(employeeRepository).save(captor.capture())
             val saved = captor.firstValue
             assertThat(saved.employeeNumber).isEqualTo("100234")
             assertThat(saved.name).isEqualTo("홍길동")
@@ -66,13 +66,13 @@ class SapEmployeeMasterServiceTest {
                 orgCode = "1111",
                 startDate = "20150301"
             ))
-            whenever(userRepository.findByEmployeeNumber("100234")).thenReturn(Optional.empty())
-            whenever(userRepository.save(any<User>())).thenAnswer { it.getArgument<User>(0) }
+            whenever(employeeRepository.findByEmployeeNumber("100234")).thenReturn(Optional.empty())
+            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
 
             sapEmployeeMasterService.sync(items)
 
-            val captor = argumentCaptor<User>()
-            verify(userRepository).save(captor.capture())
+            val captor = argumentCaptor<Employee>()
+            verify(employeeRepository).save(captor.capture())
             val saved = captor.firstValue
             assertThat(saved.birthDate).isEqualTo("19900115")
             assertThat(saved.homePhone).isEqualTo("02-1234-5678")
@@ -89,7 +89,7 @@ class SapEmployeeMasterServiceTest {
         @Test
         @DisplayName("기존 사원 업데이트 - 필드 변경, EmployeeMng 미변경")
         fun sync_existingEmployee_updates() {
-            val existingUser = createUser(employeeNumber = "100234", name = "홍길동")
+            val existingEmployee = createEmployee(employeeNumber = "100234", name = "홍길동")
             val items = listOf(createReqItem(
                 employeeCode = "100234",
                 employeeName = "홍길동수정",
@@ -97,15 +97,15 @@ class SapEmployeeMasterServiceTest {
                 homePhone = "02-1111-2222",
                 orgCode = "2222"
             ))
-            whenever(userRepository.findByEmployeeNumber("100234")).thenReturn(Optional.of(existingUser))
-            whenever(userRepository.save(any<User>())).thenAnswer { it.getArgument<User>(0) }
+            whenever(employeeRepository.findByEmployeeNumber("100234")).thenReturn(Optional.of(existingEmployee))
+            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
 
             val result = sapEmployeeMasterService.sync(items)
 
             assertThat(result.successCount).isEqualTo(1)
-            assertThat(existingUser.name).isEqualTo("홍길동수정")
-            assertThat(existingUser.homePhone).isEqualTo("02-1111-2222")
-            assertThat(existingUser.costCenterCode).isEqualTo("2222")
+            assertThat(existingEmployee.name).isEqualTo("홍길동수정")
+            assertThat(existingEmployee.homePhone).isEqualTo("02-1111-2222")
+            assertThat(existingEmployee.costCenterCode).isEqualTo("2222")
         }
     }
 
@@ -117,13 +117,13 @@ class SapEmployeeMasterServiceTest {
         @DisplayName("재직 - status=1 -> 재직, appLoginActive=true")
         fun sync_status1_active() {
             val items = listOf(createReqItem(employeeCode = "100001", employeeName = "테스트", status = "1"))
-            whenever(userRepository.findByEmployeeNumber("100001")).thenReturn(Optional.empty())
-            whenever(userRepository.save(any<User>())).thenAnswer { it.getArgument<User>(0) }
+            whenever(employeeRepository.findByEmployeeNumber("100001")).thenReturn(Optional.empty())
+            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
 
             sapEmployeeMasterService.sync(items)
 
-            val captor = argumentCaptor<User>()
-            verify(userRepository).save(captor.capture())
+            val captor = argumentCaptor<Employee>()
+            verify(employeeRepository).save(captor.capture())
             assertThat(captor.firstValue.status).isEqualTo("재직")
             assertThat(captor.firstValue.appLoginActive).isTrue()
         }
@@ -132,13 +132,13 @@ class SapEmployeeMasterServiceTest {
         @DisplayName("휴직 - status=2 -> 휴직, appLoginActive=false")
         fun sync_status2_inactive() {
             val items = listOf(createReqItem(employeeCode = "100001", employeeName = "테스트", status = "2"))
-            whenever(userRepository.findByEmployeeNumber("100001")).thenReturn(Optional.empty())
-            whenever(userRepository.save(any<User>())).thenAnswer { it.getArgument<User>(0) }
+            whenever(employeeRepository.findByEmployeeNumber("100001")).thenReturn(Optional.empty())
+            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
 
             sapEmployeeMasterService.sync(items)
 
-            val captor = argumentCaptor<User>()
-            verify(userRepository).save(captor.capture())
+            val captor = argumentCaptor<Employee>()
+            verify(employeeRepository).save(captor.capture())
             assertThat(captor.firstValue.status).isEqualTo("휴직")
             assertThat(captor.firstValue.appLoginActive).isFalse()
         }
@@ -147,13 +147,13 @@ class SapEmployeeMasterServiceTest {
         @DisplayName("퇴직 - status=3 -> 퇴직, appLoginActive=false")
         fun sync_status3_inactive() {
             val items = listOf(createReqItem(employeeCode = "100001", employeeName = "테스트", status = "3"))
-            whenever(userRepository.findByEmployeeNumber("100001")).thenReturn(Optional.empty())
-            whenever(userRepository.save(any<User>())).thenAnswer { it.getArgument<User>(0) }
+            whenever(employeeRepository.findByEmployeeNumber("100001")).thenReturn(Optional.empty())
+            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
 
             sapEmployeeMasterService.sync(items)
 
-            val captor = argumentCaptor<User>()
-            verify(userRepository).save(captor.capture())
+            val captor = argumentCaptor<Employee>()
+            verify(employeeRepository).save(captor.capture())
             assertThat(captor.firstValue.status).isEqualTo("퇴직")
             assertThat(captor.firstValue.appLoginActive).isFalse()
         }
@@ -165,13 +165,13 @@ class SapEmployeeMasterServiceTest {
                 employeeCode = "100001", employeeName = "테스트",
                 status = "1", lockingFlag = "Y"
             ))
-            whenever(userRepository.findByEmployeeNumber("100001")).thenReturn(Optional.empty())
-            whenever(userRepository.save(any<User>())).thenAnswer { it.getArgument<User>(0) }
+            whenever(employeeRepository.findByEmployeeNumber("100001")).thenReturn(Optional.empty())
+            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
 
             sapEmployeeMasterService.sync(items)
 
-            val captor = argumentCaptor<User>()
-            verify(userRepository).save(captor.capture())
+            val captor = argumentCaptor<Employee>()
+            verify(employeeRepository).save(captor.capture())
             assertThat(captor.firstValue.appLoginActive).isFalse()
         }
 
@@ -182,13 +182,13 @@ class SapEmployeeMasterServiceTest {
                 employeeCode = "100001", employeeName = "테스트",
                 status = "1", lockingFlag = "N"
             ))
-            whenever(userRepository.findByEmployeeNumber("100001")).thenReturn(Optional.empty())
-            whenever(userRepository.save(any<User>())).thenAnswer { it.getArgument<User>(0) }
+            whenever(employeeRepository.findByEmployeeNumber("100001")).thenReturn(Optional.empty())
+            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
 
             sapEmployeeMasterService.sync(items)
 
-            val captor = argumentCaptor<User>()
-            verify(userRepository).save(captor.capture())
+            val captor = argumentCaptor<Employee>()
+            verify(employeeRepository).save(captor.capture())
             assertThat(captor.firstValue.appLoginActive).isTrue()
         }
     }
@@ -217,9 +217,9 @@ class SapEmployeeMasterServiceTest {
                 createReqItem(employeeCode = null, employeeName = "실패", status = "1"),
                 createReqItem(employeeCode = "100003", employeeName = "성공2", status = "1")
             )
-            whenever(userRepository.findByEmployeeNumber("100001")).thenReturn(Optional.empty())
-            whenever(userRepository.findByEmployeeNumber("100003")).thenReturn(Optional.empty())
-            whenever(userRepository.save(any<User>())).thenAnswer { it.getArgument<User>(0) }
+            whenever(employeeRepository.findByEmployeeNumber("100001")).thenReturn(Optional.empty())
+            whenever(employeeRepository.findByEmployeeNumber("100003")).thenReturn(Optional.empty())
+            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
 
             val result = sapEmployeeMasterService.sync(items)
 
@@ -271,13 +271,13 @@ class SapEmployeeMasterServiceTest {
             val items = newItems + existingItems
 
             (1..5).forEach {
-                whenever(userRepository.findByEmployeeNumber("NEW00$it")).thenReturn(Optional.empty())
+                whenever(employeeRepository.findByEmployeeNumber("NEW00$it")).thenReturn(Optional.empty())
             }
             (1..5).forEach {
-                val user = createUser(employeeNumber = "EXT00$it", name = "기존$it")
-                whenever(userRepository.findByEmployeeNumber("EXT00$it")).thenReturn(Optional.of(user))
+                val employee = createEmployee(employeeNumber = "EXT00$it", name = "기존$it")
+                whenever(employeeRepository.findByEmployeeNumber("EXT00$it")).thenReturn(Optional.of(employee))
             }
-            whenever(userRepository.save(any<User>())).thenAnswer { it.getArgument<User>(0) }
+            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
 
             val result = sapEmployeeMasterService.sync(items)
 
@@ -310,11 +310,11 @@ class SapEmployeeMasterServiceTest {
         lockingFlag = lockingFlag
     )
 
-    private fun createUser(
+    private fun createEmployee(
         id: Long = 1L,
         employeeNumber: String = "100234",
         name: String = "테스트"
-    ) = User(
+    ) = Employee(
         id = id,
         employeeNumber = employeeNumber,
         name = name,

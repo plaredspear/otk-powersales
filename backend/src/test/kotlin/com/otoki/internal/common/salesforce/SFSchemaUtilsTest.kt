@@ -2,7 +2,7 @@ package com.otoki.internal.common.salesforce
 
 import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.sap.entity.Product
-import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.schedule.entity.DisplayWorkSchedule
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
 import org.assertj.core.api.Assertions.assertThat
@@ -33,7 +33,7 @@ class SFSchemaUtilsTest {
         @Test
         @DisplayName("User 엔티티 - 13개 SF Field 매핑 반환")
         fun getSFMapping_user() {
-            val mapping = SFSchemaUtils.getSFMapping(User::class.java)
+            val mapping = SFSchemaUtils.getSFMapping(Employee::class.java)
 
             assertThat(mapping).hasSize(13)
             assertThat(mapping["DKRetail__EmpCode__c"]).isEqualTo("employee_number")
@@ -144,7 +144,7 @@ class SFSchemaUtilsTest {
         @Test
         @DisplayName("User 엔티티 - 18개 HC Column 매핑 반환")
         fun getHCMapping_user() {
-            val mapping = SFSchemaUtils.getHCMapping(User::class.java)
+            val mapping = SFSchemaUtils.getHCMapping(Employee::class.java)
 
             assertThat(mapping).hasSize(18)
             assertThat(mapping["id"]).isEqualTo("id")

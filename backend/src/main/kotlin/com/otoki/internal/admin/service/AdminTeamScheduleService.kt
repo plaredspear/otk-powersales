@@ -8,9 +8,9 @@ import com.otoki.internal.branch.dto.response.BranchResponse
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
 import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.internal.sap.entity.Account
-import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.sap.repository.AccountRepository
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.repository.EmployeeRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -21,22 +21,22 @@ import java.time.format.DateTimeFormatter
 @Transactional(readOnly = true)
 class AdminTeamScheduleService(
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
-    private val userRepository: UserRepository,
+    private val employeeRepository: EmployeeRepository,
     private val accountRepository: AccountRepository
 ) {
 
     fun getMembers(userId: Long): List<TeamMemberDto> {
-        val currentUser = findUserById(userId)
-        val costCenterCode = currentUser.costCenterCode ?: return emptyList()
-        return userRepository.findByCostCenterCodeAndAppAuthority(costCenterCode, "여사원")
+        val currentEmployee = findEmployeeById(userId)
+        val costCenterCode = currentEmployee.costCenterCode ?: return emptyList()
+        return employeeRepository.findByCostCenterCodeAndAppAuthority(costCenterCode, "여사원")
             .filter { it.isDeleted != true }
             .map { TeamMemberDto.from(it) }
     }
 
     fun getAccounts(userId: Long, branchCode: String?): List<TeamScheduleAccountDto> {
         val effectiveBranchCode = branchCode ?: run {
-            val currentUser = findUserById(userId)
-            currentUser.costCenterCode ?: return emptyList()
+            val currentEmployee = findEmployeeById(userId)
+            currentEmployee.costCenterCode ?: return emptyList()
         }
         return accountRepository.findByBranchCodeAndAccountGroupIn(
             effectiveBranchCode, listOf("1010", "1000")
@@ -46,7 +46,7 @@ class AdminTeamScheduleService(
     }
 
     fun getBranches(): List<BranchResponse> {
-        return userRepository.findDistinctBranches()
+        return employeeRepository.findDistinctBranches()
     }
 
     fun getMonthlySchedules(
@@ -81,10 +81,10 @@ class AdminTeamScheduleService(
         }
 
         val uniqueSchedules = schedules.distinctBy { it.id }
-        val userMap = buildUserMap(uniqueSchedules)
+        val employeeMap = buildEmployeeMap(uniqueSchedules)
         val accountMap = buildAccountMap(uniqueSchedules)
 
-        return uniqueSchedules.map { TeamScheduleDto.from(it, userMap, accountMap) }
+        return uniqueSchedules.map { TeamScheduleDto.from(it, employeeMap, accountMap) }
     }
 
     fun getDailySummary(
@@ -141,7 +141,7 @@ class AdminTeamScheduleService(
 
     @Transactional
     fun createSchedule(userId: Long, request: TeamScheduleCreateRequest): TeamScheduleCreateResultDto {
-        val employee = userRepository.findByEmployeeNumber(request.employeeNumber)
+        val employee = employeeRepository.findByEmployeeNumber(request.employeeNumber)
             .orElseThrow { TeamScheduleEmployeeNotFoundException() }
 
         validateEmployeeStatus(employee)
@@ -156,7 +156,7 @@ class AdminTeamScheduleService(
                 .orElseThrow { TeamScheduleAccountNotFoundException() }
         }
 
-        val currentUser = findUserById(userId)
+        val currentEmployee = findEmployeeById(userId)
         val schedule = TeamMemberSchedule(
             employeeId = employee.id,
             workingDate = workingDate,
@@ -165,7 +165,7 @@ class AdminTeamScheduleService(
             workingCategory2 = request.workingCategory2,
             workingCategory3 = request.workingCategory3,
             accountId = request.accountId,
-            teamLeaderId = currentUser.id
+            teamLeaderId = currentEmployee.id
         )
         val saved = teamMemberScheduleRepository.save(schedule)
         return TeamScheduleCreateResultDto(id = saved.id)
@@ -176,7 +176,7 @@ class AdminTeamScheduleService(
         val schedule = teamMemberScheduleRepository.findById(scheduleId)
             .orElseThrow { TeamScheduleNotFoundException() }
 
-        val employee = schedule.employeeId?.let { userRepository.findById(it).orElse(null) }
+        val employee = schedule.employeeId?.let { employeeRepository.findById(it).orElse(null) }
         if (employee != null) {
             validateEmployeeStatus(employee)
         }
@@ -203,8 +203,8 @@ class AdminTeamScheduleService(
 
     @Transactional
     fun deleteSchedule(userId: Long, scheduleId: Long) {
-        val currentUser = findUserById(userId)
-        if (currentUser.appAuthority == "지점장") {
+        val currentEmployee = findEmployeeById(userId)
+        if (currentEmployee.appAuthority == "지점장") {
             throw TeamScheduleDeleteForbiddenException()
         }
 
@@ -216,12 +216,12 @@ class AdminTeamScheduleService(
 
     // --- Private helpers ---
 
-    private fun findUserById(userId: Long): User {
-        return userRepository.findById(userId)
+    private fun findEmployeeById(userId: Long): Employee {
+        return employeeRepository.findById(userId)
             .orElseThrow { TeamScheduleEmployeeNotFoundException() }
     }
 
-    private fun validateEmployeeStatus(employee: User) {
+    private fun validateEmployeeStatus(employee: Employee) {
         when (employee.status) {
             "휴직" -> throw TeamScheduleEmployeeOnLeaveException()
             "퇴직" -> throw TeamScheduleEmployeeResignedException()
@@ -264,10 +264,10 @@ class AdminTeamScheduleService(
         }
     }
 
-    private fun buildUserMap(schedules: List<TeamMemberSchedule>): Map<Long, User> {
+    private fun buildEmployeeMap(schedules: List<TeamMemberSchedule>): Map<Long, Employee> {
         val employeeIds = schedules.mapNotNull { it.employeeId }.distinct()
         if (employeeIds.isEmpty()) return emptyMap()
-        return userRepository.findAllById(employeeIds).associateBy { it.id }
+        return employeeRepository.findAllById(employeeIds).associateBy { it.id }
     }
 
     private fun buildAccountMap(schedules: List<TeamMemberSchedule>): Map<Int, Account> {

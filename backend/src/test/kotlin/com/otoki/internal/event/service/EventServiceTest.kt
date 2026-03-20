@@ -8,7 +8,7 @@ import com.otoki.internal.sap.entity.*
 import com.otoki.internal.event.exception.EventNotFoundException
 import com.otoki.internal.event.repository.EventProductRepository
 import com.otoki.internal.event.repository.EventRepository
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.repository.EmployeeRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
@@ -38,7 +38,7 @@ class EventServiceTest {
     private lateinit var eventProductRepository: EventProductRepository
 
     @Mock
-    private lateinit var userRepository: UserRepository
+    private lateinit var employeeRepository: EmployeeRepository
 
     @InjectMocks
     private lateinit var eventService: EventService
@@ -55,7 +55,7 @@ class EventServiceTest {
             // Given
             val userId = 1L
             val employeeNumber = "EMP001"
-            val user = createUser(id = userId, employeeNumber = employeeNumber)
+            val employee = createEmployee(id = userId, employeeNumber = employeeNumber)
             val request = EventListRequest(
                 customerId = null,
                 date = "2026-02-12",
@@ -75,7 +75,7 @@ class EventServiceTest {
             )
             val page = PageImpl(events, PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "startDate")), 1)
 
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(eventRepository.findEventsByAssignee(
                 eq(employeeNumber),
                 eq(null),
@@ -100,7 +100,7 @@ class EventServiceTest {
             // Given
             val userId = 1L
             val employeeNumber = "EMP001"
-            val user = createUser(id = userId, employeeNumber = employeeNumber)
+            val employee = createEmployee(id = userId, employeeNumber = employeeNumber)
             val request = EventListRequest(
                 customerId = "C001",
                 date = null,
@@ -110,7 +110,7 @@ class EventServiceTest {
 
             val page = PageImpl<Event>(emptyList(), PageRequest.of(0, 10), 0)
 
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(eventRepository.findEventsByAssignee(
                 eq(employeeNumber),
                 eq("C001"),
@@ -139,7 +139,7 @@ class EventServiceTest {
             val userId = 1L
             val employeeNumber = "EMP001"
             val eventId = "EVT001"
-            val user = createUser(id = userId, employeeNumber = employeeNumber)
+            val employee = createEmployee(id = userId, employeeNumber = employeeNumber)
             val event = createEvent(
                 id = 1,
                 eventId = eventId,
@@ -154,7 +154,7 @@ class EventServiceTest {
                 createEventProduct(id = 2, eventId = eventId, productCode = "P002", isMainProduct = false)
             )
 
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(eventRepository.findByEventId(eventId)).thenReturn(Optional.of(event))
             whenever(eventProductRepository.findByEventId(eventId)).thenReturn(products)
 
@@ -178,7 +178,7 @@ class EventServiceTest {
             val userId = 1L
             val employeeNumber = "EMP001"
             val eventId = "EVT001"
-            val user = createUser(id = userId, employeeNumber = employeeNumber)
+            val employee = createEmployee(id = userId, employeeNumber = employeeNumber)
             val event = createEvent(
                 id = 1,
                 eventId = eventId,
@@ -187,7 +187,7 @@ class EventServiceTest {
                 endDate = LocalDate.now().plusDays(10)
             )
 
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(eventRepository.findByEventId(eventId)).thenReturn(Optional.of(event))
             whenever(eventProductRepository.findByEventId(eventId)).thenReturn(emptyList())
 
@@ -205,9 +205,9 @@ class EventServiceTest {
             val userId = 1L
             val employeeNumber = "EMP001"
             val eventId = "EVT999"
-            val user = createUser(id = userId, employeeNumber = employeeNumber)
+            val employee = createEmployee(id = userId, employeeNumber = employeeNumber)
 
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(eventRepository.findByEventId(eventId)).thenReturn(Optional.empty())
 
             // When & Then
@@ -258,13 +258,13 @@ class EventServiceTest {
 
     // ========== Helper Functions ==========
 
-    private fun createUser(
+    private fun createEmployee(
         id: Long,
         employeeNumber: String = "EMP001",
         name: String = "홍길동",
         orgName: String = "서울지점"
-    ): User {
-        return User(
+    ): Employee {
+        return Employee(
             id = id,
             employeeNumber = employeeNumber,
             password = "encoded_password",

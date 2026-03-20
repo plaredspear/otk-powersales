@@ -1,6 +1,6 @@
 package com.otoki.internal.admin.dto.response
 
-import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.entity.Employee
 
 data class EmployeeListResponse(
     val content: List<EmployeeListItem>,
@@ -22,16 +22,16 @@ data class EmployeeListItem(
     val workPhone: String?
 ) {
     companion object {
-        fun from(user: User): EmployeeListItem = EmployeeListItem(
-            employeeNumber = user.employeeNumber,
-            name = user.name,
-            status = user.status,
-            orgName = user.orgName,
-            costCenterCode = user.costCenterCode,
-            appAuthority = user.appAuthority,
-            startDate = user.startDate?.toString(),
-            appLoginActive = user.appLoginActive,
-            workPhone = user.workPhone
+        fun from(employee: Employee): EmployeeListItem = EmployeeListItem(
+            employeeNumber = employee.employeeNumber,
+            name = employee.name,
+            status = employee.status,
+            orgName = employee.orgName,
+            costCenterCode = employee.costCenterCode,
+            appAuthority = employee.appAuthority,
+            startDate = employee.startDate?.toString(),
+            appLoginActive = employee.appLoginActive,
+            workPhone = employee.workPhone
         )
     }
 }

@@ -10,7 +10,7 @@ import com.otoki.internal.education.repository.EducationPostAttachmentRepository
 // import com.otoki.internal.education.repository.EducationPostImageRepository  // Phase2: PG 대응 테이블 없음
 import com.otoki.internal.education.repository.EducationCodeRepository
 import com.otoki.internal.education.repository.EducationPostRepository
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.repository.EmployeeRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -29,7 +29,7 @@ class EducationService(
     private val educationPostAttachmentRepository: EducationPostAttachmentRepository,
     private val educationCodeRepository: EducationCodeRepository,
     private val fileStorageService: FileStorageService,
-    private val userRepository: UserRepository
+    private val employeeRepository: EmployeeRepository
 ) {
 
     /**
@@ -200,7 +200,7 @@ class EducationService(
         validatePostInput(title, content, category)
         validateFiles(files)
 
-        val user = userRepository.findById(userId)
+        val employee = employeeRepository.findById(userId)
             .orElseThrow { InvalidEducationParameterException("사용자를 찾을 수 없습니다") }
 
         val now = LocalDateTime.now()
@@ -211,7 +211,7 @@ class EducationService(
             eduTitle = title,
             eduContent = content,
             eduCode = category,
-            empCode = user.employeeNumber
+            empCode = employee.employeeNumber
         )
         educationPostRepository.save(post)
 

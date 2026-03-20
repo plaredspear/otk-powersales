@@ -1,7 +1,7 @@
 package com.otoki.internal.schedule.repository
 
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
-import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.entity.Employee
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName

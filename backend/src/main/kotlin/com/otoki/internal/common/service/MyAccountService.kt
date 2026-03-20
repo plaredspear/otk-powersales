@@ -2,12 +2,12 @@ package com.otoki.internal.common.service
 
 import com.otoki.internal.common.dto.response.MyAccountInfo
 import com.otoki.internal.common.dto.response.MyAccountListResponse
-import com.otoki.internal.auth.exception.UserNotFoundException
+import com.otoki.internal.auth.exception.EmployeeNotFoundException
 import com.otoki.internal.common.exception.AccountInvalidParameterException
 import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.schedule.repository.DisplayWorkScheduleRepositoryCustom
 import com.otoki.internal.schedule.repository.TeamMemberScheduleRepositoryCustom
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.repository.EmployeeRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -18,7 +18,7 @@ import java.time.LocalDate
  */
 @Service
 class MyAccountService(
-    private val userRepository: UserRepository,
+    private val employeeRepository: EmployeeRepository,
     private val accountRepository: AccountRepository,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepositoryCustom,
     private val displayWorkScheduleRepository: DisplayWorkScheduleRepositoryCustom
@@ -30,13 +30,13 @@ class MyAccountService(
             throw AccountInvalidParameterException("검색 키워드는 2자 이상이어야 합니다")
         }
 
-        val user = userRepository.findById(userId)
-            .orElseThrow { UserNotFoundException() }
+        val employee = employeeRepository.findById(userId)
+            .orElseThrow { EmployeeNotFoundException() }
 
-        val accounts = if (user.appAuthority == "조장") {
-            getLeaderAccounts(user.costCenterCode)
+        val accounts = if (employee.appAuthority == "조장") {
+            getLeaderAccounts(employee.costCenterCode)
         } else {
-            getEmployeeAccounts(user.id)
+            getEmployeeAccounts(employee.id)
         }
 
         val filteredList = if (!keyword.isNullOrBlank()) {

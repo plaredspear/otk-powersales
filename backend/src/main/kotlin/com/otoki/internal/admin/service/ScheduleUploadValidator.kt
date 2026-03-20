@@ -3,7 +3,7 @@ package com.otoki.internal.admin.service
 import com.otoki.internal.admin.dto.response.RowError
 import com.otoki.internal.admin.dto.response.RowPreview
 import com.otoki.internal.sap.entity.Account
-import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.schedule.entity.DisplayWorkSchedule
 import org.springframework.stereotype.Component
 import java.time.LocalDate
@@ -36,7 +36,7 @@ class ScheduleUploadValidator {
 
     fun validate(
         parsedRows: List<ScheduleExcelParser.ParsedRow>,
-        usersByEmployeeNumber: Map<String, User>,
+        usersByEmployeeNumber: Map<String, Employee>,
         accountsByExternalKey: Map<String, Account>,
         existingSchedules: List<DisplayWorkSchedule>
     ): ValidationResult {
@@ -85,18 +85,18 @@ class ScheduleUploadValidator {
             val endDate = row.endDate
 
             // V1: 사원번호 존재
-            val user = usersByEmployeeNumber[employeeCode]
-            if (user == null) {
+            val employee = usersByEmployeeNumber[employeeCode]
+            if (employee == null) {
                 rowErrors.add(RowError(row.rowNumber, "A", "사원번호", employeeCode, "사원번호 $employeeCode: 존재하지 않는 사원"))
             }
 
             // V2: 재직 상태
-            if (user != null && user.status != "재직") {
+            if (employee != null && employee.status != "재직") {
                 rowErrors.add(RowError(row.rowNumber, "A", "사원번호", employeeCode, "사원번호 $employeeCode: 퇴직한 사원"))
             }
 
             // V2a: 사원 앱 로그인 활성화
-            if (user != null && user.status == "재직" && user.appLoginActive != true) {
+            if (employee != null && employee.status == "재직" && employee.appLoginActive != true) {
                 rowErrors.add(RowError(row.rowNumber, "A", "사원번호", employeeCode, "사원번호 $employeeCode: 앱 로그인이 비활성화된 사원입니다"))
             }
 
@@ -141,8 +141,8 @@ class ScheduleUploadValidator {
                 continue
             }
 
-            val userId = user!!.id
-            val userEmployeeNumber = user.employeeNumber
+            val userId = employee!!.id
+            val userEmployeeNumber = employee.employeeNumber
             val accountIdVal = account!!.id
 
             // V8: DB 기존 레코드와 기간 중복 검사
@@ -202,7 +202,7 @@ class ScheduleUploadValidator {
                     typeOfWork5 = typeOfWork5,
                     startDate = startDate,
                     endDate = endDate,
-                    costCenterCode = user.costCenterCode,
+                    costCenterCode = employee.costCenterCode,
                     accountExternalKey = accountCode
                 )
                 validRows.add(validatedRow)
@@ -222,7 +222,7 @@ class ScheduleUploadValidator {
                     RowPreview(
                         row = row.rowNumber,
                         employeeCode = employeeCode,
-                        employeeName = user.name,
+                        employeeName = employee.name,
                         accountCode = accountCode,
                         accountName = account.name ?: "",
                         typeOfWork3 = typeOfWork3,

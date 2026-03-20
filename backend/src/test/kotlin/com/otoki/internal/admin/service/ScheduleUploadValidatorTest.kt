@@ -1,7 +1,7 @@
 package com.otoki.internal.admin.service
 
 import com.otoki.internal.sap.entity.Account
-import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.schedule.entity.DisplayWorkSchedule
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
@@ -14,10 +14,10 @@ class ScheduleUploadValidatorTest {
 
     private val validator = ScheduleUploadValidator()
 
-    private val userMap = mapOf(
-        "20030001" to createUser("20030001", "홍길동", "USR001", "재직"),
-        "20030002" to createUser("20030002", "김철수", "USR002", "재직"),
-        "99999999" to createUser("99999999", "퇴직자", "USR999", "퇴직")
+    private val employeeMap = mapOf(
+        "20030001" to createEmployee("20030001", "홍길동", "USR001", "재직"),
+        "20030002" to createEmployee("20030002", "김철수", "USR002", "재직"),
+        "99999999" to createEmployee("99999999", "퇴직자", "USR999", "퇴직")
     )
 
     private val accountMap = mapOf(
@@ -36,7 +36,7 @@ class ScheduleUploadValidatorTest {
                 createParsedRow(4, "20030001", "홍길동", "ACC001", "이마트 강남점", "고정", "상시", "2026-04-01", null)
             )
 
-            val result = validator.validate(rows, userMap, accountMap, emptyList())
+            val result = validator.validate(rows, employeeMap, accountMap, emptyList())
 
             assertThat(result.errors).isEmpty()
             assertThat(result.validRows).hasSize(1)
@@ -52,7 +52,7 @@ class ScheduleUploadValidatorTest {
                 createParsedRow(4, "20030001", "홍길동", "ACC001", null, "순회", "상시", "2026-04-01", null)
             )
 
-            val result = validator.validate(rows, userMap, accountMap, emptyList())
+            val result = validator.validate(rows, employeeMap, accountMap, emptyList())
 
             assertThat(result.errors).isEmpty()
             assertThat(result.validRows[0].endDate).isNull()
@@ -70,7 +70,7 @@ class ScheduleUploadValidatorTest {
                 createParsedRow(4, "88888888", "없는사원", "ACC001", null, "고정", "상시", "2026-04-01", null)
             )
 
-            val result = validator.validate(rows, userMap, accountMap, emptyList())
+            val result = validator.validate(rows, employeeMap, accountMap, emptyList())
 
             assertThat(result.errors).hasSize(1)
             assertThat(result.errors[0].message).contains("존재하지 않는 사원")
@@ -88,7 +88,7 @@ class ScheduleUploadValidatorTest {
                 createParsedRow(4, "99999999", "퇴직자", "ACC001", null, "고정", "상시", "2026-04-01", null)
             )
 
-            val result = validator.validate(rows, userMap, accountMap, emptyList())
+            val result = validator.validate(rows, employeeMap, accountMap, emptyList())
 
             assertThat(result.errors).hasSize(1)
             assertThat(result.errors[0].message).contains("퇴직한 사원")
@@ -102,14 +102,14 @@ class ScheduleUploadValidatorTest {
         @Test
         @DisplayName("appLoginActive가 false인 사원 - 에러")
         fun v2a_inactiveEmployee() {
-            val inactiveUserMap = mapOf(
-                "20030001" to createUser("20030001", "홍길동", "USR001", "재직", appLoginActive = false)
+            val inactiveEmployeeMap = mapOf(
+                "20030001" to createEmployee("20030001", "홍길동", "USR001", "재직", appLoginActive = false)
             )
             val rows = listOf(
                 createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상시", "2026-04-01", null)
             )
 
-            val result = validator.validate(rows, inactiveUserMap, accountMap, emptyList())
+            val result = validator.validate(rows, inactiveEmployeeMap, accountMap, emptyList())
 
             assertThat(result.errors).hasSize(1)
             assertThat(result.errors[0].message).contains("앱 로그인이 비활성화된 사원입니다")
@@ -118,14 +118,14 @@ class ScheduleUploadValidatorTest {
         @Test
         @DisplayName("appLoginActive가 null인 사원 - 에러")
         fun v2a_nullAppLoginActive() {
-            val nullActiveUserMap = mapOf(
-                "20030001" to createUser("20030001", "홍길동", "USR001", "재직", appLoginActive = null)
+            val nullActiveEmployeeMap = mapOf(
+                "20030001" to createEmployee("20030001", "홍길동", "USR001", "재직", appLoginActive = null)
             )
             val rows = listOf(
                 createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상시", "2026-04-01", null)
             )
 
-            val result = validator.validate(rows, nullActiveUserMap, accountMap, emptyList())
+            val result = validator.validate(rows, nullActiveEmployeeMap, accountMap, emptyList())
 
             assertThat(result.errors).hasSize(1)
             assertThat(result.errors[0].message).contains("앱 로그인이 비활성화된 사원입니다")
@@ -138,7 +138,7 @@ class ScheduleUploadValidatorTest {
                 createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상시", "2026-04-01", null)
             )
 
-            val result = validator.validate(rows, userMap, accountMap, emptyList())
+            val result = validator.validate(rows, employeeMap, accountMap, emptyList())
 
             assertThat(result.errors).isEmpty()
         }
@@ -150,7 +150,7 @@ class ScheduleUploadValidatorTest {
                 createParsedRow(4, "99999999", "퇴직자", "ACC001", null, "고정", "상시", "2026-04-01", null)
             )
 
-            val result = validator.validate(rows, userMap, accountMap, emptyList())
+            val result = validator.validate(rows, employeeMap, accountMap, emptyList())
 
             assertThat(result.errors).hasSize(1)
             assertThat(result.errors[0].message).contains("퇴직한 사원")
@@ -169,7 +169,7 @@ class ScheduleUploadValidatorTest {
                 createParsedRow(4, "20030001", "홍길동", "INVALID", null, "고정", "상시", "2026-04-01", null)
             )
 
-            val result = validator.validate(rows, userMap, accountMap, emptyList())
+            val result = validator.validate(rows, employeeMap, accountMap, emptyList())
 
             assertThat(result.errors).hasSize(1)
             assertThat(result.errors[0].message).contains("존재하지 않는 거래처")
@@ -190,7 +190,7 @@ class ScheduleUploadValidatorTest {
                 createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상시", "2026-04-01", null)
             )
 
-            val result = validator.validate(rows, userMap, closedAccountMap, emptyList())
+            val result = validator.validate(rows, employeeMap, closedAccountMap, emptyList())
 
             assertThat(result.errors).hasSize(1)
             assertThat(result.errors[0].message).contains("폐업 상태의 거래처입니다")
@@ -206,7 +206,7 @@ class ScheduleUploadValidatorTest {
                 createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상시", "2026-04-01", null)
             )
 
-            val result = validator.validate(rows, userMap, exemptAccountMap, emptyList())
+            val result = validator.validate(rows, employeeMap, exemptAccountMap, emptyList())
 
             assertThat(result.errors).isEmpty()
         }
@@ -221,7 +221,7 @@ class ScheduleUploadValidatorTest {
                 createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상시", "2026-04-01", null)
             )
 
-            val result = validator.validate(rows, userMap, exemptAccountMap, emptyList())
+            val result = validator.validate(rows, employeeMap, exemptAccountMap, emptyList())
 
             assertThat(result.errors).isEmpty()
         }
@@ -236,7 +236,7 @@ class ScheduleUploadValidatorTest {
                 createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상시", "2026-04-01", null)
             )
 
-            val result = validator.validate(rows, userMap, accountMap, emptyList())
+            val result = validator.validate(rows, employeeMap, accountMap, emptyList())
 
             assertThat(result.errors).hasSize(1)
             assertThat(result.errors[0].message).contains("폐업 상태의 거래처입니다")
@@ -249,7 +249,7 @@ class ScheduleUploadValidatorTest {
                 createParsedRow(4, "20030001", "홍길동", "INVALID", null, "고정", "상시", "2026-04-01", null)
             )
 
-            val result = validator.validate(rows, userMap, accountMap, emptyList())
+            val result = validator.validate(rows, employeeMap, accountMap, emptyList())
 
             assertThat(result.errors).hasSize(1)
             assertThat(result.errors[0].message).contains("존재하지 않는 거래처")
@@ -259,8 +259,8 @@ class ScheduleUploadValidatorTest {
         @Test
         @DisplayName("비활성 사원 + 폐업 거래처 동시 - 에러 2건")
         fun v3a_inactiveEmployeeAndClosedAccountBothErrors() {
-            val inactiveUserMap = mapOf(
-                "20030001" to createUser("20030001", "홍길동", "USR001", "재직", appLoginActive = false)
+            val inactiveEmployeeMap = mapOf(
+                "20030001" to createEmployee("20030001", "홍길동", "USR001", "재직", appLoginActive = false)
             )
             val closedAccountMap = mapOf(
                 "ACC001" to createAccount("ACC001", "ACC_SFID_001", "이마트 강남점", accountStatusName = "폐업", accountGroup = "2000")
@@ -269,7 +269,7 @@ class ScheduleUploadValidatorTest {
                 createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상시", "2026-04-01", null)
             )
 
-            val result = validator.validate(rows, inactiveUserMap, closedAccountMap, emptyList())
+            val result = validator.validate(rows, inactiveEmployeeMap, closedAccountMap, emptyList())
 
             assertThat(result.errors).hasSize(2)
             assertThat(result.errors.map { it.message }).anySatisfy { assertThat(it).contains("앱 로그인이 비활성화된 사원입니다") }
@@ -283,7 +283,7 @@ class ScheduleUploadValidatorTest {
                 createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상시", "2026-04-01", null)
             )
 
-            val result = validator.validate(rows, userMap, accountMap, emptyList())
+            val result = validator.validate(rows, employeeMap, accountMap, emptyList())
 
             assertThat(result.errors).isEmpty()
         }
@@ -300,7 +300,7 @@ class ScheduleUploadValidatorTest {
                 createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상시", "2026-04-01", "2026-03-01")
             )
 
-            val result = validator.validate(rows, userMap, accountMap, emptyList())
+            val result = validator.validate(rows, employeeMap, accountMap, emptyList())
 
             assertThat(result.errors).hasSize(1)
             assertThat(result.errors[0].message).contains("시작일이 종료일보다 이후")
@@ -318,7 +318,7 @@ class ScheduleUploadValidatorTest {
                 createParsedRow(4, "20030001", "홍길동", "ACC001", null, "파견", "상시", "2026-04-01", null)
             )
 
-            val result = validator.validate(rows, userMap, accountMap, emptyList())
+            val result = validator.validate(rows, employeeMap, accountMap, emptyList())
 
             assertThat(result.errors).hasSize(1)
             assertThat(result.errors[0].message).contains("유효하지 않은 근무유형3 '파견'")
@@ -336,7 +336,7 @@ class ScheduleUploadValidatorTest {
                 createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "임시", "2026-04-01", null)
             )
 
-            val result = validator.validate(rows, userMap, accountMap, emptyList())
+            val result = validator.validate(rows, employeeMap, accountMap, emptyList())
 
             assertThat(result.errors).hasSize(1)
             assertThat(result.errors[0].message).contains("임시 배치는 순회만 가능")
@@ -349,7 +349,7 @@ class ScheduleUploadValidatorTest {
                 createParsedRow(4, "20030001", "홍길동", "ACC001", null, "순회", "임시", "2026-04-01", "2026-04-30")
             )
 
-            val result = validator.validate(rows, userMap, accountMap, emptyList())
+            val result = validator.validate(rows, employeeMap, accountMap, emptyList())
 
             assertThat(result.errors).isEmpty()
         }
@@ -376,7 +376,7 @@ class ScheduleUploadValidatorTest {
                 createParsedRow(4, "20030001", "홍길동", "ACC001", null, "순회", "상시", "2026-04-01", "2026-06-01")
             )
 
-            val result = validator.validate(rows, userMap, accountMap, existingSchedules)
+            val result = validator.validate(rows, employeeMap, accountMap, existingSchedules)
 
             assertThat(result.errors).hasSize(1)
             assertThat(result.errors[0].message).contains("기존 스케줄과 기간 중복")
@@ -395,7 +395,7 @@ class ScheduleUploadValidatorTest {
                 createParsedRow(5, "20030001", "홍길동", "ACC001", null, "순회", "상시", "2026-04-15", "2026-05-15")
             )
 
-            val result = validator.validate(rows, userMap, accountMap, emptyList())
+            val result = validator.validate(rows, employeeMap, accountMap, emptyList())
 
             assertThat(result.errors).hasSize(1)
             assertThat(result.errors[0].message).contains("파일 내 중복")
@@ -426,7 +426,7 @@ class ScheduleUploadValidatorTest {
                 createParsedRow(4, "20030001", "홍길동", "ACC001", null, "순회", "상시", "2026-04-01", "2026-04-30")
             )
 
-            val result = validator.validate(rows, userMap, accountMap, existingSchedules)
+            val result = validator.validate(rows, employeeMap, accountMap, existingSchedules)
 
             assertThat(result.errors).hasSize(1)
             assertThat(result.errors[0].message).contains("고정 배치가 이미 존재")
@@ -450,7 +450,7 @@ class ScheduleUploadValidatorTest {
                 createParsedRow(4, "20030001", "홍길동", "ACC001", null, "격고", "상시", "2026-04-01", "2026-04-30")
             )
 
-            val result = validator.validate(rows, userMap, accountMap, existingSchedules)
+            val result = validator.validate(rows, employeeMap, accountMap, existingSchedules)
 
             assertThat(result.errors).hasSize(1)
             assertThat(result.errors[0].message).contains("격고 배치가 이미 2개 존재")
@@ -473,7 +473,7 @@ class ScheduleUploadValidatorTest {
                 createParsedRow(4, "20030001", "홍길동", "ACC001", null, "순회", "임시", "2026-04-01", "2026-04-30")
             )
 
-            val result = validator.validate(rows, userMap, accountMap, existingSchedules)
+            val result = validator.validate(rows, employeeMap, accountMap, existingSchedules)
 
             assertThat(result.errors).hasSize(1)
             assertThat(result.errors[0].message).contains("임시 배치가 이미 존재")
@@ -508,13 +508,13 @@ class ScheduleUploadValidatorTest {
         )
     }
 
-    private fun createUser(
+    private fun createEmployee(
         employeeNumber: String,
         name: String,
         sfid: String,
         status: String,
         appLoginActive: Boolean? = true
-    ): User = User(
+    ): Employee = Employee(
         id = 1L,
         employeeNumber = employeeNumber,
         name = name,

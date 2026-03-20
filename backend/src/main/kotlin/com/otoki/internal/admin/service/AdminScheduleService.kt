@@ -6,11 +6,11 @@ import com.otoki.internal.admin.dto.response.ScheduleConfirmResultDto
 import com.otoki.internal.admin.dto.response.ScheduleListItemDto
 import com.otoki.internal.admin.dto.response.ScheduleUploadResultDto
 import com.otoki.internal.admin.exception.*
-import com.otoki.internal.auth.exception.UserNotFoundException
+import com.otoki.internal.auth.exception.EmployeeNotFoundException
 import com.otoki.internal.common.exception.BusinessException
 import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.sap.repository.OrganizationRepository
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.schedule.entity.DisplayWorkSchedule
 import com.otoki.internal.schedule.repository.DisplayWorkScheduleRepository
 import org.springframework.data.domain.Page
@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit
 @Service
 @Transactional(readOnly = true)
 class AdminScheduleService(
-    private val userRepository: UserRepository,
+    private val employeeRepository: EmployeeRepository,
     private val accountRepository: AccountRepository,
     private val organizationRepository: OrganizationRepository,
     private val templateGenerator: ScheduleTemplateGenerator,
@@ -50,10 +50,10 @@ class AdminScheduleService(
     }
 
     fun generateTemplate(userId: Long): TemplateResult {
-        val user = userRepository.findById(userId)
-            .orElseThrow { UserNotFoundException() }
+        val employee = employeeRepository.findById(userId)
+            .orElseThrow { EmployeeNotFoundException() }
 
-        val costCenterCode = user.costCenterCode
+        val costCenterCode = employee.costCenterCode
         if (costCenterCode.isNullOrBlank()) {
             throw MissingCostCenterException()
         }
@@ -62,7 +62,7 @@ class AdminScheduleService(
             ?: organizationRepository.findFirstByCostCenterLevel4(costCenterCode)
             ?: throw OrganizationNotFoundException()
 
-        val employees = userRepository.findByCostCenterCodeAndAppAuthorityIsNullAndAppLoginActiveTrueAndStatus(
+        val employees = employeeRepository.findByCostCenterCodeAndAppAuthorityIsNullAndAppLoginActiveTrueAndStatus(
             costCenterCode, "재직"
         ).sortedWith(compareBy({ it.orgName }, { it.employeeNumber }))
 
@@ -92,7 +92,7 @@ class AdminScheduleService(
         val accountCodes = parseResult.rows.mapNotNull { it.accountCode }.distinct()
 
         val usersByEmployeeNumber = if (employeeCodes.isNotEmpty()) {
-            userRepository.findByEmployeeNumberIn(employeeCodes).associateBy { it.employeeNumber }
+            employeeRepository.findByEmployeeNumberIn(employeeCodes).associateBy { it.employeeNumber }
         } else {
             emptyMap()
         }
@@ -154,7 +154,7 @@ class AdminScheduleService(
         // 조장 일괄 조회: costCenterCode 목록 → appAuthority="조장" 사원
         val costCenterCodes = cacheData.validRows.mapNotNull { it.costCenterCode }.distinct()
         val managersByCostCenter = if (costCenterCodes.isNotEmpty()) {
-            userRepository.findByCostCenterCodeInAndAppAuthority(costCenterCodes, "조장")
+            employeeRepository.findByCostCenterCodeInAndAppAuthority(costCenterCodes, "조장")
                 .groupBy { it.costCenterCode }
         } else {
             emptyMap()
@@ -233,7 +233,7 @@ class AdminScheduleService(
         val scheduleAccountIds = schedulePage.content.mapNotNull { it.accountId }.distinct()
 
         val userMap = if (employeeIds.isNotEmpty()) {
-            userRepository.findAllById(employeeIds).associateBy { it.id }
+            employeeRepository.findAllById(employeeIds).associateBy { it.id }
         } else {
             emptyMap()
         }
@@ -245,12 +245,12 @@ class AdminScheduleService(
         }
 
         return schedulePage.map { schedule ->
-            val user = schedule.employeeId?.let { userMap[it] }
+            val employee = schedule.employeeId?.let { userMap[it] }
             val account = schedule.accountId?.let { accountMap[it] }
             ScheduleListItemDto(
                 id = schedule.id,
-                employeeCode = user?.employeeNumber ?: "",
-                employeeName = user?.name ?: "",
+                employeeCode = employee?.employeeNumber ?: "",
+                employeeName = employee?.name ?: "",
                 accountCode = account?.externalKey,
                 accountName = account?.name,
                 typeOfWork3 = schedule.typeOfWork3,

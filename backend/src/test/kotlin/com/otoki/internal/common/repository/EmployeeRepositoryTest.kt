@@ -1,8 +1,8 @@
 package com.otoki.internal.common.repository
 
-import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.sap.entity.UserRole
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.repository.EmployeeRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -22,10 +22,10 @@ import com.otoki.internal.common.config.QueryDslConfig
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
 @ActiveProfiles("test")
 @Import(QueryDslConfig::class)
-class UserRepositoryTest {
+class EmployeeRepositoryTest {
 
     @Autowired
-    private lateinit var userRepository: UserRepository
+    private lateinit var employeeRepository: EmployeeRepository
 
     @Autowired
     private lateinit var testEntityManager: TestEntityManager
@@ -33,7 +33,7 @@ class UserRepositoryTest {
     @BeforeEach
     fun setUp() {
         // 각 테스트 전에 데이터 초기화
-        userRepository.deleteAll()
+        employeeRepository.deleteAll()
         testEntityManager.clear()
     }
 
@@ -41,16 +41,16 @@ class UserRepositoryTest {
     @DisplayName("findByEmployeeNumber - 존재하는 사번으로 사용자를 조회하면 User를 반환한다")
     fun findByEmployeeNumber_WithExistingEmployeeNumber_ReturnsUser() {
         // Given
-        val testUser = createTestUser(
+        val testEmployee = createTestEmployee(
             employeeNumber = "20010585",
             name = "홍길동",
             orgName = "부산1지점"
         )
-        testEntityManager.persistAndFlush(testUser)
+        testEntityManager.persistAndFlush(testEmployee)
         testEntityManager.clear()
 
         // When
-        val result = userRepository.findByEmployeeNumber("20010585")
+        val result = employeeRepository.findByEmployeeNumber("20010585")
 
         // Then
         assertThat(result).isPresent
@@ -63,12 +63,12 @@ class UserRepositoryTest {
     @DisplayName("findByEmployeeNumber - 존재하지 않는 사번으로 조회하면 Optional.empty()를 반환한다")
     fun findByEmployeeNumber_WithNonExistingEmployeeNumber_ReturnsEmpty() {
         // Given
-        val testUser = createTestUser(employeeNumber = "20010585")
-        testEntityManager.persistAndFlush(testUser)
+        val testEmployee = createTestEmployee(employeeNumber = "20010585")
+        testEntityManager.persistAndFlush(testEmployee)
         testEntityManager.clear()
 
         // When
-        val result = userRepository.findByEmployeeNumber("99999999")
+        val result = employeeRepository.findByEmployeeNumber("99999999")
 
         // Then
         assertThat(result).isEmpty
@@ -78,12 +78,12 @@ class UserRepositoryTest {
     @DisplayName("existsByEmployeeNumber - 존재하는 사번으로 확인하면 true를 반환한다")
     fun existsByEmployeeNumber_WithExistingEmployeeNumber_ReturnsTrue() {
         // Given
-        val testUser = createTestUser(employeeNumber = "20010585")
-        testEntityManager.persistAndFlush(testUser)
+        val testEmployee = createTestEmployee(employeeNumber = "20010585")
+        testEntityManager.persistAndFlush(testEmployee)
         testEntityManager.clear()
 
         // When
-        val result = userRepository.existsByEmployeeNumber("20010585")
+        val result = employeeRepository.existsByEmployeeNumber("20010585")
 
         // Then
         assertThat(result).isTrue()
@@ -93,12 +93,12 @@ class UserRepositoryTest {
     @DisplayName("existsByEmployeeNumber - 존재하지 않는 사번으로 확인하면 false를 반환한다")
     fun existsByEmployeeNumber_WithNonExistingEmployeeNumber_ReturnsFalse() {
         // Given
-        val testUser = createTestUser(employeeNumber = "20010585")
-        testEntityManager.persistAndFlush(testUser)
+        val testEmployee = createTestEmployee(employeeNumber = "20010585")
+        testEntityManager.persistAndFlush(testEmployee)
         testEntityManager.clear()
 
         // When
-        val result = userRepository.existsByEmployeeNumber("99999999")
+        val result = employeeRepository.existsByEmployeeNumber("99999999")
 
         // Then
         assertThat(result).isFalse()
@@ -108,28 +108,28 @@ class UserRepositoryTest {
     @DisplayName("findByOrgName - 해당 조직에 사용자가 있으면 사용자 목록을 반환한다")
     fun findByOrgName_WithExistingOrg_ReturnsUserList() {
         // Given
-        val user1 = createTestUser(
+        val employee1 = createTestEmployee(
             employeeNumber = "20010585",
             name = "홍길동",
             orgName = "부산1지점"
         )
-        val user2 = createTestUser(
+        val employee2 = createTestEmployee(
             employeeNumber = "20010586",
             name = "김영희",
             orgName = "부산1지점"
         )
-        val user3 = createTestUser(
+        val employee3 = createTestEmployee(
             employeeNumber = "20010587",
             name = "이철수",
             orgName = "서울1지점"
         )
-        testEntityManager.persistAndFlush(user1)
-        testEntityManager.persistAndFlush(user2)
-        testEntityManager.persistAndFlush(user3)
+        testEntityManager.persistAndFlush(employee1)
+        testEntityManager.persistAndFlush(employee2)
+        testEntityManager.persistAndFlush(employee3)
         testEntityManager.clear()
 
         // When
-        val result = userRepository.findByOrgName("부산1지점")
+        val result = employeeRepository.findByOrgName("부산1지점")
 
         // Then
         assertThat(result).hasSize(2)
@@ -142,15 +142,15 @@ class UserRepositoryTest {
     @DisplayName("findByOrgName - 해당 조직에 사용자가 없으면 빈 목록을 반환한다")
     fun findByOrgName_WithNonExistingOrg_ReturnsEmptyList() {
         // Given
-        val user1 = createTestUser(
+        val employee1 = createTestEmployee(
             employeeNumber = "20010585",
             orgName = "부산1지점"
         )
-        testEntityManager.persistAndFlush(user1)
+        testEntityManager.persistAndFlush(employee1)
         testEntityManager.clear()
 
         // When
-        val result = userRepository.findByOrgName("대구1지점")
+        val result = employeeRepository.findByOrgName("대구1지점")
 
         // Then
         assertThat(result).isEmpty()
@@ -160,31 +160,31 @@ class UserRepositoryTest {
     @DisplayName("findByOrgName - 다양한 역할의 사용자가 같은 조직에 있으면 모두 조회된다")
     fun findByOrgName_WithVariousRoles_ReturnsAllUsers() {
         // Given
-        val user = createTestUser(
+        val emp = createTestEmployee(
             employeeNumber = "20010585",
             name = "일반사원",
             orgName = "서울1지점",
             appAuthority = null
         )
-        val leader = createTestUser(
+        val leader = createTestEmployee(
             employeeNumber = "20010586",
             name = "팀장",
             orgName = "서울1지점",
             appAuthority = "조장"
         )
-        val admin = createTestUser(
+        val admin = createTestEmployee(
             employeeNumber = "20010587",
             name = "관리자",
             orgName = "서울1지점",
             appAuthority = "지점장"
         )
-        testEntityManager.persistAndFlush(user)
+        testEntityManager.persistAndFlush(emp)
         testEntityManager.persistAndFlush(leader)
         testEntityManager.persistAndFlush(admin)
         testEntityManager.clear()
 
         // When
-        val result = userRepository.findByOrgName("서울1지점")
+        val result = employeeRepository.findByOrgName("서울1지점")
 
         // Then
         assertThat(result).hasSize(3)
@@ -198,13 +198,13 @@ class UserRepositoryTest {
     /**
      * 테스트용 User 생성 헬퍼 함수
      */
-    private fun createTestUser(
+    private fun createTestEmployee(
         employeeNumber: String = "20010585",
         name: String = "홍길동",
         orgName: String = "부산1지점",
         appAuthority: String? = null
-    ): User {
-        return User(
+    ): Employee {
+        return Employee(
             employeeNumber = employeeNumber,
             password = "encodedPassword",
             name = name,

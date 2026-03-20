@@ -7,7 +7,7 @@ import com.otoki.internal.order.exception.*
 import com.otoki.internal.order.repository.OrderProcessingRecordRepository
 import com.otoki.internal.order.repository.OrderRejectionRepository
 import com.otoki.internal.order.repository.OrderRepository
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.repository.EmployeeRepository
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
@@ -27,7 +27,7 @@ class OrderService(
     private val orderRepository: OrderRepository,
     private val orderProcessingRecordRepository: OrderProcessingRecordRepository,
     private val orderRejectionRepository: OrderRejectionRepository,
-    private val userRepository: UserRepository,
+    private val employeeRepository: EmployeeRepository,
     private val clock: Clock = Clock.systemDefaultZone()
 ) {
 

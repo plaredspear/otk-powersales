@@ -13,7 +13,7 @@ import java.time.LocalDateTime
 @Table(
     name = "order_drafts",
     indexes = [
-        Index(name = "idx_order_drafts_user_id", columnList = "user_id", unique = true)
+        Index(name = "idx_order_drafts_employee_id", columnList = "employee_id", unique = true)
     ]
 )
 class OrderDraft(
@@ -23,8 +23,8 @@ class OrderDraft(
     val id: Long = 0,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    val user: User,
+    @JoinColumn(name = "employee_id", nullable = false)
+    val employee: Employee,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "store_id", nullable = false)

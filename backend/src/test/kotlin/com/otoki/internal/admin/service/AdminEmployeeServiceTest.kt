@@ -2,8 +2,8 @@ package com.otoki.internal.admin.service
 
 import com.otoki.internal.admin.dto.DataScope
 import com.otoki.internal.admin.scope.DataScopeHolder
-import com.otoki.internal.sap.entity.User
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.entity.Employee
+import com.otoki.internal.sap.repository.EmployeeRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -27,7 +27,7 @@ class AdminEmployeeServiceTest {
     private lateinit var dataScopeHolder: DataScopeHolder
 
     @Mock
-    private lateinit var userRepository: UserRepository
+    private lateinit var employeeRepository: EmployeeRepository
 
     @InjectMocks
     private lateinit var adminEmployeeService: AdminEmployeeService
@@ -43,9 +43,9 @@ class AdminEmployeeServiceTest {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
-            val users = listOf(createUser(employeeNumber = "10000001", name = "홍길동"))
-            val page = PageImpl(users, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
-            whenever(userRepository.findEmployees(eq(null), eq(null), eq(null), eq(null), any())).thenReturn(page)
+            val employees = listOf(createEmployee(employeeNumber = "10000001", name = "홍길동"))
+            val page = PageImpl(employees, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
+            whenever(employeeRepository.findEmployees(eq(null), eq(null), eq(null), eq(null), any())).thenReturn(page)
 
             // When
             val result = adminEmployeeService.getEmployees(null, null, null, null, 0, 20)
@@ -63,9 +63,9 @@ class AdminEmployeeServiceTest {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
-            val users = listOf(createUser(employeeNumber = "10000001", costCenterCode = "A001"))
-            val page = PageImpl(users, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
-            whenever(userRepository.findEmployees(eq(null), eq(listOf("A001")), eq(null), eq(null), any())).thenReturn(page)
+            val employees = listOf(createEmployee(employeeNumber = "10000001", costCenterCode = "A001"))
+            val page = PageImpl(employees, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
+            whenever(employeeRepository.findEmployees(eq(null), eq(listOf("A001")), eq(null), eq(null), any())).thenReturn(page)
 
             val result = adminEmployeeService.getEmployees(null, "A001", null, null, 0, 20)
 
@@ -79,9 +79,9 @@ class AdminEmployeeServiceTest {
             val scope = DataScope(branchCodes = listOf("A001"), isAllBranches = false)
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
-            val users = listOf(createUser(employeeNumber = "10000001", costCenterCode = "A001"))
-            val page = PageImpl(users, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
-            whenever(userRepository.findEmployees(eq(null), eq(listOf("A001")), eq(null), eq(null), any())).thenReturn(page)
+            val employees = listOf(createEmployee(employeeNumber = "10000001", costCenterCode = "A001"))
+            val page = PageImpl(employees, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
+            whenever(employeeRepository.findEmployees(eq(null), eq(listOf("A001")), eq(null), eq(null), any())).thenReturn(page)
 
             val result = adminEmployeeService.getEmployees(null, null, null, null, 0, 20)
 
@@ -118,9 +118,9 @@ class AdminEmployeeServiceTest {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
-            val users = listOf(createUser(employeeNumber = "10000001", status = "재직"))
-            val page = PageImpl(users, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
-            whenever(userRepository.findEmployees(eq("재직"), eq(null), eq(null), eq(null), any())).thenReturn(page)
+            val employees = listOf(createEmployee(employeeNumber = "10000001", status = "재직"))
+            val page = PageImpl(employees, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
+            whenever(employeeRepository.findEmployees(eq("재직"), eq(null), eq(null), eq(null), any())).thenReturn(page)
 
             val result = adminEmployeeService.getEmployees("재직", null, null, null, 0, 20)
 
@@ -133,9 +133,9 @@ class AdminEmployeeServiceTest {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
-            val users = listOf(createUser(employeeNumber = "10000001", name = "홍길동"))
-            val page = PageImpl(users, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
-            whenever(userRepository.findEmployees(eq(null), eq(null), eq("홍"), eq(null), any())).thenReturn(page)
+            val employees = listOf(createEmployee(employeeNumber = "10000001", name = "홍길동"))
+            val page = PageImpl(employees, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
+            whenever(employeeRepository.findEmployees(eq(null), eq(null), eq("홍"), eq(null), any())).thenReturn(page)
 
             val result = adminEmployeeService.getEmployees(null, null, "홍", null, 0, 20)
 
@@ -148,9 +148,9 @@ class AdminEmployeeServiceTest {
             val scope = DataScope(branchCodes = listOf("A001", "A002"), isAllBranches = false)
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
-            val users = listOf(createUser(employeeNumber = "10000001", costCenterCode = "A001"))
-            val page = PageImpl(users, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
-            whenever(userRepository.findEmployees(eq(null), eq(listOf("A001")), eq(null), eq(null), any())).thenReturn(page)
+            val employees = listOf(createEmployee(employeeNumber = "10000001", costCenterCode = "A001"))
+            val page = PageImpl(employees, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
+            whenever(employeeRepository.findEmployees(eq(null), eq(listOf("A001")), eq(null), eq(null), any())).thenReturn(page)
 
             val result = adminEmployeeService.getEmployees(null, "A001", null, null, 0, 20)
 
@@ -158,14 +158,14 @@ class AdminEmployeeServiceTest {
         }
     }
 
-    private fun createUser(
+    private fun createEmployee(
         id: Long = 1L,
         employeeNumber: String = "10000001",
         name: String = "테스트",
         status: String? = "재직",
         costCenterCode: String? = "A001",
         appAuthority: String? = null
-    ): User = User(
+    ): Employee = Employee(
         id = id,
         employeeNumber = employeeNumber,
         name = name,

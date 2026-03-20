@@ -1,7 +1,7 @@
 package com.otoki.internal.notice.service
 
-import com.otoki.internal.sap.entity.User
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.entity.Employee
+import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.notice.dto.request.NoticeCreateRequest
 import com.otoki.internal.notice.dto.request.NoticeUpdateRequest
 import com.otoki.internal.notice.entity.Notice
@@ -43,7 +43,7 @@ class NoticeServiceTest {
     private lateinit var uploadFileRepository: UploadFileRepository
 
     @Mock
-    private lateinit var userRepository: UserRepository
+    private lateinit var employeeRepository: EmployeeRepository
 
     @Mock
     private lateinit var organizationRepository: OrganizationRepository
@@ -52,7 +52,7 @@ class NoticeServiceTest {
 
     @BeforeEach
     fun setUp() {
-        noticeService = NoticeService(noticeRepository, uploadFileRepository, userRepository, organizationRepository, "test-bucket")
+        noticeService = NoticeService(noticeRepository, uploadFileRepository, employeeRepository, organizationRepository, "test-bucket")
     }
 
     @Nested
@@ -244,11 +244,11 @@ class NoticeServiceTest {
     inner class GetPostsTests {
 
         private val userId = 1L
-        private val testUser = User(id = userId, employeeNumber = "20030117", name = "테스트사원", orgName = "테스트지점")
+        private val testEmployee = Employee(id = userId, employeeNumber = "20030117", name = "테스트사원", orgName = "테스트지점")
 
         @BeforeEach
         fun setUpUser() {
-            whenever(userRepository.findById(userId)).thenReturn(Optional.of(testUser))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(testEmployee))
         }
 
         @Test

@@ -9,7 +9,7 @@ import com.otoki.internal.admin.service.AdminScheduleService
 import com.otoki.internal.admin.service.MissingCostCenterException
 import com.otoki.internal.admin.service.OrganizationNotFoundException
 import com.otoki.internal.admin.security.AdminAuthorityFilter
-import com.otoki.internal.auth.exception.UserNotFoundException
+import com.otoki.internal.auth.exception.EmployeeNotFoundException
 import com.otoki.internal.common.security.GpsConsentFilter
 import com.otoki.internal.common.security.JwtAuthenticationFilter
 import com.otoki.internal.common.security.JwtTokenProvider
@@ -265,7 +265,7 @@ class AdminScheduleControllerTest {
         @DisplayName("실패 - 사용자 미존재")
         fun downloadTemplate_userNotFound() {
             whenever(adminScheduleService.generateTemplate(eq(1L)))
-                .thenThrow(UserNotFoundException())
+                .thenThrow(EmployeeNotFoundException())
 
             mockMvc.perform(get("/api/v1/admin/schedule/template"))
                 .andExpect(status().isNotFound)

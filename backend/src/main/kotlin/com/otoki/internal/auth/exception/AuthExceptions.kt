@@ -41,9 +41,9 @@ class InvalidTokenException : BusinessException(
 )
 
 /**
- * 사용자 없음
+ * 사원 없음
  */
-class UserNotFoundException : BusinessException(
+class EmployeeNotFoundException : BusinessException(
     errorCode = "USER_NOT_FOUND",
     message = "사용자를 찾을 수 없습니다",
     httpStatus = HttpStatus.NOT_FOUND

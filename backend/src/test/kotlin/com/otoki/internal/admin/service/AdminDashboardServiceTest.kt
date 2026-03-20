@@ -2,8 +2,8 @@ package com.otoki.internal.admin.service
 
 import com.otoki.internal.admin.dto.DataScope
 import com.otoki.internal.admin.scope.DataScopeHolder
-import com.otoki.internal.sap.entity.User
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.entity.Employee
+import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.sap.entity.MonthlySalesHistory
@@ -40,7 +40,7 @@ class AdminDashboardServiceTest {
     private lateinit var accountRepository: AccountRepository
 
     @Mock
-    private lateinit var userRepository: UserRepository
+    private lateinit var employeeRepository: EmployeeRepository
 
     @InjectMocks
     private lateinit var adminDashboardService: AdminDashboardService
@@ -82,14 +82,14 @@ class AdminDashboardServiceTest {
                 createDisplayWorkSchedule(accountId = 1, employeeId = 1L, typeOfWork1 = "고정")
             )
 
-            val activeUsers = listOf(
-                createUser(id = 10L, sfid = "EMP001", status = "재직", costCenterCode = "B001",
+            val activeEmployees = listOf(
+                createEmployee(id = 10L, sfid = "EMP001", status = "재직", costCenterCode = "B001",
                     birthDate = "1990-05-15"),
-                createUser(id = 11L, sfid = "EMP002", status = "재직", costCenterCode = "B002",
+                createEmployee(id = 11L, sfid = "EMP002", status = "재직", costCenterCode = "B002",
                     birthDate = "1985-03-20")
             )
-            val onLeaveUsers = listOf(
-                createUser(id = 12L, sfid = "EMP003", status = "휴직", costCenterCode = "B001")
+            val onLeaveEmployees = listOf(
+                createEmployee(id = 12L, sfid = "EMP003", status = "휴직", costCenterCode = "B001")
             )
 
             whenever(dataScopeHolder.require()).thenReturn(scope)
@@ -117,8 +117,8 @@ class AdminDashboardServiceTest {
             whenever(accountRepository.findByIdIn(any())).thenReturn(accounts)
 
             // Users
-            whenever(userRepository.findByStatus("재직")).thenReturn(activeUsers)
-            whenever(userRepository.findByStatus("휴직")).thenReturn(onLeaveUsers)
+            whenever(employeeRepository.findByStatus("재직")).thenReturn(activeEmployees)
+            whenever(employeeRepository.findByStatus("휴직")).thenReturn(onLeaveEmployees)
 
             // When
             val result = adminDashboardService.getDashboard(yearMonth, null)
@@ -172,8 +172,8 @@ class AdminDashboardServiceTest {
                 createDisplayWorkSchedule(accountId = 1, employeeId = 1L, typeOfWork1 = "고정")
             )
 
-            val activeUsers = listOf(
-                createUser(id = 10L, sfid = "EMP001", status = "재직", costCenterCode = "B001",
+            val activeEmployees = listOf(
+                createEmployee(id = 10L, sfid = "EMP001", status = "재직", costCenterCode = "B001",
                     birthDate = "1992-07-10")
             )
 
@@ -205,9 +205,9 @@ class AdminDashboardServiceTest {
             whenever(accountRepository.findByIdIn(any())).thenReturn(branchAccounts)
 
             // Users (filtered by costCenterCode)
-            whenever(userRepository.findByCostCenterCodeInAndStatus(listOf("B001"), "재직"))
-                .thenReturn(activeUsers)
-            whenever(userRepository.findByCostCenterCodeInAndStatus(listOf("B001"), "휴직"))
+            whenever(employeeRepository.findByCostCenterCodeInAndStatus(listOf("B001"), "재직"))
+                .thenReturn(activeEmployees)
+            whenever(employeeRepository.findByCostCenterCodeInAndStatus(listOf("B001"), "휴직"))
                 .thenReturn(emptyList())
 
             // When
@@ -245,8 +245,8 @@ class AdminDashboardServiceTest {
                 .thenReturn(emptyList())
 
             // No users
-            whenever(userRepository.findByStatus("재직")).thenReturn(emptyList())
-            whenever(userRepository.findByStatus("휴직")).thenReturn(emptyList())
+            whenever(employeeRepository.findByStatus("재직")).thenReturn(emptyList())
+            whenever(employeeRepository.findByStatus("휴직")).thenReturn(emptyList())
 
             // When
             val result = adminDashboardService.getDashboard(yearMonth, null)
@@ -319,9 +319,9 @@ class AdminDashboardServiceTest {
             )).thenReturn(emptyList())
 
             // Users filtered by costCenterCode
-            whenever(userRepository.findByCostCenterCodeInAndStatus(listOf("B002"), "재직"))
+            whenever(employeeRepository.findByCostCenterCodeInAndStatus(listOf("B002"), "재직"))
                 .thenReturn(emptyList())
-            whenever(userRepository.findByCostCenterCodeInAndStatus(listOf("B002"), "휴직"))
+            whenever(employeeRepository.findByCostCenterCodeInAndStatus(listOf("B002"), "휴직"))
                 .thenReturn(emptyList())
 
             // When
@@ -368,9 +368,9 @@ class AdminDashboardServiceTest {
             )).thenReturn(emptyList())
 
             // Users
-            whenever(userRepository.findByCostCenterCodeInAndStatus(listOf("B001"), "재직"))
+            whenever(employeeRepository.findByCostCenterCodeInAndStatus(listOf("B001"), "재직"))
                 .thenReturn(emptyList())
-            whenever(userRepository.findByCostCenterCodeInAndStatus(listOf("B001"), "휴직"))
+            whenever(employeeRepository.findByCostCenterCodeInAndStatus(listOf("B001"), "휴직"))
                 .thenReturn(emptyList())
 
             // When
@@ -418,8 +418,8 @@ class AdminDashboardServiceTest {
                 .thenReturn(emptyList())
 
             // Users
-            whenever(userRepository.findByStatus("재직")).thenReturn(emptyList())
-            whenever(userRepository.findByStatus("휴직")).thenReturn(emptyList())
+            whenever(employeeRepository.findByStatus("재직")).thenReturn(emptyList())
+            whenever(employeeRepository.findByStatus("휴직")).thenReturn(emptyList())
 
             // When
             val result = adminDashboardService.getDashboard(yearMonth, null)
@@ -454,8 +454,8 @@ class AdminDashboardServiceTest {
             whenever(displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(any(), any()))
                 .thenReturn(emptyList())
 
-            whenever(userRepository.findByStatus("재직")).thenReturn(emptyList())
-            whenever(userRepository.findByStatus("휴직")).thenReturn(emptyList())
+            whenever(employeeRepository.findByStatus("재직")).thenReturn(emptyList())
+            whenever(employeeRepository.findByStatus("휴직")).thenReturn(emptyList())
 
             // When
             val result = adminDashboardService.getDashboard(yearMonth, null)
@@ -478,8 +478,8 @@ class AdminDashboardServiceTest {
                 .thenReturn(emptyList())
             whenever(displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(any(), any()))
                 .thenReturn(emptyList())
-            whenever(userRepository.findByStatus("재직")).thenReturn(emptyList())
-            whenever(userRepository.findByStatus("휴직")).thenReturn(emptyList())
+            whenever(employeeRepository.findByStatus("재직")).thenReturn(emptyList())
+            whenever(employeeRepository.findByStatus("휴직")).thenReturn(emptyList())
 
             // When
             val result = adminDashboardService.getDashboard(null, null)
@@ -523,8 +523,8 @@ class AdminDashboardServiceTest {
             whenever(accountRepository.findAll()).thenReturn(accounts)
             whenever(displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(any(), any()))
                 .thenReturn(emptyList())
-            whenever(userRepository.findByStatus("재직")).thenReturn(emptyList())
-            whenever(userRepository.findByStatus("휴직")).thenReturn(emptyList())
+            whenever(employeeRepository.findByStatus("재직")).thenReturn(emptyList())
+            whenever(employeeRepository.findByStatus("휴직")).thenReturn(emptyList())
 
             // When
             val result = adminDashboardService.getDashboard(yearMonth, null)
@@ -563,8 +563,8 @@ class AdminDashboardServiceTest {
             whenever(accountRepository.findAll()).thenReturn(emptyList())
             whenever(displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(any(), any()))
                 .thenReturn(emptyList())
-            whenever(userRepository.findByStatus("재직")).thenReturn(emptyList())
-            whenever(userRepository.findByStatus("휴직")).thenReturn(emptyList())
+            whenever(employeeRepository.findByStatus("재직")).thenReturn(emptyList())
+            whenever(employeeRepository.findByStatus("휴직")).thenReturn(emptyList())
 
             // When
             val result = adminDashboardService.getDashboard(yearMonth, null)
@@ -593,8 +593,8 @@ class AdminDashboardServiceTest {
             whenever(accountRepository.findAll()).thenReturn(emptyList())
             whenever(displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(any(), any()))
                 .thenReturn(emptyList())
-            whenever(userRepository.findByStatus("재직")).thenReturn(emptyList())
-            whenever(userRepository.findByStatus("휴직")).thenReturn(emptyList())
+            whenever(employeeRepository.findByStatus("재직")).thenReturn(emptyList())
+            whenever(employeeRepository.findByStatus("휴직")).thenReturn(emptyList())
 
             // When
             val result = adminDashboardService.getDashboard(yearMonth, null)
@@ -676,7 +676,7 @@ class AdminDashboardServiceTest {
         )
     }
 
-    private fun createUser(
+    private fun createEmployee(
         id: Long = 0,
         employeeNumber: String = "EMP001",
         name: String = "테스트사원",
@@ -685,8 +685,8 @@ class AdminDashboardServiceTest {
         sfid: String? = null,
         birthDate: String? = null,
         status: String? = null
-    ): User {
-        return User(
+    ): Employee {
+        return Employee(
             id = id,
             employeeNumber = employeeNumber,
             name = name,

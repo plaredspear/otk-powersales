@@ -1,6 +1,6 @@
 package com.otoki.internal.safetycheck.service
 
-import com.otoki.internal.auth.exception.UserNotFoundException
+import com.otoki.internal.auth.exception.EmployeeNotFoundException
 import com.otoki.internal.safetycheck.dto.request.SafetyCheckSubmitRequest
 import com.otoki.internal.safetycheck.dto.response.SafetyCheckItemsResponse
 import com.otoki.internal.safetycheck.dto.response.SafetyCheckSubmitResponse
@@ -10,7 +10,7 @@ import com.otoki.internal.safetycheck.exception.AlreadySubmittedException
 import com.otoki.internal.safetycheck.exception.RequiredItemsMissingException
 import com.otoki.internal.safetycheck.repository.SafetyCheckItemRepository
 import com.otoki.internal.safetycheck.repository.SafetyCheckSubmissionRepository
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.repository.EmployeeRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -20,7 +20,7 @@ import java.time.LocalDate
 class SafetyCheckService(
     private val itemRepository: SafetyCheckItemRepository,
     private val submissionRepository: SafetyCheckSubmissionRepository,
-    private val userRepository: UserRepository
+    private val employeeRepository: EmployeeRepository
 ) {
 
     fun getChecklistItems(): SafetyCheckItemsResponse {
@@ -47,10 +47,10 @@ class SafetyCheckService(
     }
 
     fun getTodayStatus(userId: Long): SafetyCheckTodayResponse {
-        val user = userRepository.findById(userId)
-            .orElseThrow { UserNotFoundException() }
+        val employee = employeeRepository.findById(userId)
+            .orElseThrow { EmployeeNotFoundException() }
         val today = LocalDate.now()
-        val submission = submissionRepository.findByEmployeeIdAndWorkingDate(user.id, today)
+        val submission = submissionRepository.findByEmployeeIdAndWorkingDate(employee.id, today)
 
         return if (submission.isPresent) {
             SafetyCheckTodayResponse(
@@ -67,11 +67,11 @@ class SafetyCheckService(
 
     @Transactional
     fun submitSafetyCheck(userId: Long, request: SafetyCheckSubmitRequest): SafetyCheckSubmitResponse {
-        val user = userRepository.findById(userId)
-            .orElseThrow { UserNotFoundException() }
+        val employee = employeeRepository.findById(userId)
+            .orElseThrow { EmployeeNotFoundException() }
         val today = LocalDate.now()
 
-        if (submissionRepository.existsByEmployeeIdAndWorkingDate(user.id, today)) {
+        if (submissionRepository.existsByEmployeeIdAndWorkingDate(employee.id, today)) {
             throw AlreadySubmittedException()
         }
 
@@ -96,7 +96,7 @@ class SafetyCheckService(
 
         val submission = SafetyCheckSubmission(
             masterId = "",
-            employeeId = user.id,
+            employeeId = employee.id,
             workingDate = today,
             startTime = request.startTime,
             completeTime = request.completeTime,

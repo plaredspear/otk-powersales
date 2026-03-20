@@ -1,6 +1,6 @@
 package com.otoki.internal.admin.service
 
-import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.entity.Employee
 import org.apache.poi.ss.usermodel.*
 import org.apache.poi.ss.util.CellRangeAddress
 import org.apache.poi.ss.util.CellRangeAddressList
@@ -25,7 +25,7 @@ class ScheduleTemplateGenerator {
         private const val DROPDOWN_END_ROW = 1003 // 0-based (1004행)
     }
 
-    fun generate(employees: List<User>): ByteArray {
+    fun generate(employees: List<Employee>): ByteArray {
         val workbook = XSSFWorkbook()
         val sheet = workbook.createSheet("Template")
 
@@ -60,14 +60,14 @@ class ScheduleTemplateGenerator {
         }
 
         // 4행~: 사원 데이터
-        employees.forEachIndexed { index, user ->
+        employees.forEachIndexed { index, employee ->
             val rowIdx = DATA_START_ROW + index
             val row = sheet.createRow(rowIdx)
 
             // A: 사원번호
-            row.createCell(0).setCellValue(user.employeeNumber)
+            row.createCell(0).setCellValue(employee.employeeNumber)
             // B: 사원명
-            row.createCell(1).setCellValue(user.name)
+            row.createCell(1).setCellValue(employee.name)
 
             // C, E, F열: 노란 배경 (필수 입력)
             for (colIdx in listOf(2, 4, 5)) {

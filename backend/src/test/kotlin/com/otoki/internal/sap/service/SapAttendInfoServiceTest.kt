@@ -2,9 +2,9 @@ package com.otoki.internal.sap.service
 
 import com.otoki.internal.sap.dto.SapAttendInfoRequest.ReqItem
 import com.otoki.internal.sap.entity.AttendInfo
-import com.otoki.internal.sap.entity.User
+import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.sap.repository.AttendInfoRepository
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
 import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
@@ -36,7 +36,7 @@ class SapAttendInfoServiceTest {
     private lateinit var teamMemberScheduleRepository: TeamMemberScheduleRepository
 
     @Mock
-    private lateinit var userRepository: UserRepository
+    private lateinit var employeeRepository: EmployeeRepository
 
     @InjectMocks
     private lateinit var sapAttendInfoService: SapAttendInfoService
@@ -149,8 +149,8 @@ class SapAttendInfoServiceTest {
             // Given
             whenever(attendInfoRepository.save(any<AttendInfo>()))
                 .thenAnswer { it.getArgument<AttendInfo>(0) }
-            whenever(userRepository.findByEmployeeNumber("100234"))
-                .thenReturn(Optional.of(createUser(id = 100L, employeeNumber = "100234")))
+            whenever(employeeRepository.findByEmployeeNumber("100234"))
+                .thenReturn(Optional.of(createEmployee(id = 100L, employeeNumber = "100234")))
             whenever(teamMemberScheduleRepository.existsByEmployeeIdAndWorkingDateAndWorkingType(
                 any(), any(), any()
             )).thenReturn(false)
@@ -193,8 +193,8 @@ class SapAttendInfoServiceTest {
             // Given
             whenever(attendInfoRepository.save(any<AttendInfo>()))
                 .thenAnswer { it.getArgument<AttendInfo>(0) }
-            whenever(userRepository.findByEmployeeNumber("100500"))
-                .thenReturn(Optional.of(createUser(id = 200L, employeeNumber = "100500")))
+            whenever(employeeRepository.findByEmployeeNumber("100500"))
+                .thenReturn(Optional.of(createEmployee(id = 200L, employeeNumber = "100500")))
             whenever(teamMemberScheduleRepository.existsByEmployeeIdAndWorkingDateAndWorkingType(
                 any(), any(), any()
             )).thenReturn(false)
@@ -229,8 +229,8 @@ class SapAttendInfoServiceTest {
             // Given
             whenever(attendInfoRepository.save(any<AttendInfo>()))
                 .thenAnswer { it.getArgument<AttendInfo>(0) }
-            whenever(userRepository.findByEmployeeNumber("100234"))
-                .thenReturn(Optional.of(createUser(id = 100L, employeeNumber = "100234")))
+            whenever(employeeRepository.findByEmployeeNumber("100234"))
+                .thenReturn(Optional.of(createEmployee(id = 100L, employeeNumber = "100234")))
             whenever(teamMemberScheduleRepository.existsByEmployeeIdAndWorkingDateAndWorkingType(
                 any(), any(), any()
             )).thenReturn(false)
@@ -270,8 +270,8 @@ class SapAttendInfoServiceTest {
             // Given
             whenever(attendInfoRepository.save(any<AttendInfo>()))
                 .thenAnswer { it.getArgument<AttendInfo>(0) }
-            whenever(userRepository.findByEmployeeNumber("100234"))
-                .thenReturn(Optional.of(createUser(id = 100L, employeeNumber = "100234")))
+            whenever(employeeRepository.findByEmployeeNumber("100234"))
+                .thenReturn(Optional.of(createEmployee(id = 100L, employeeNumber = "100234")))
             whenever(teamMemberScheduleRepository.deleteAnnualLeaveByEmployeeIdAndDateRange(
                 any(), any(), any()
             )).thenReturn(3L)
@@ -310,8 +310,8 @@ class SapAttendInfoServiceTest {
             // Given
             whenever(attendInfoRepository.save(any<AttendInfo>()))
                 .thenAnswer { it.getArgument<AttendInfo>(0) }
-            whenever(userRepository.findByEmployeeNumber("100234"))
-                .thenReturn(Optional.of(createUser(id = 100L, employeeNumber = "100234")))
+            whenever(employeeRepository.findByEmployeeNumber("100234"))
+                .thenReturn(Optional.of(createEmployee(id = 100L, employeeNumber = "100234")))
             whenever(teamMemberScheduleRepository.existsByEmployeeIdAndWorkingDateAndWorkingType(
                 any(), any(), any()
             )).thenReturn(true)
@@ -401,10 +401,10 @@ class SapAttendInfoServiceTest {
         }
     }
 
-    private fun createUser(
+    private fun createEmployee(
         id: Long = 100L,
         employeeNumber: String = "100234"
-    ): User = User(
+    ): Employee = Employee(
         id = id,
         employeeNumber = employeeNumber,
         name = "테스트사원"

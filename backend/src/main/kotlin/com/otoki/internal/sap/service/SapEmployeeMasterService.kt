@@ -1,7 +1,7 @@
 package com.otoki.internal.sap.service
 
-import com.otoki.internal.sap.entity.User
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.entity.Employee
+import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.sap.dto.SapEmployeeMasterRequest
 import com.otoki.internal.sap.dto.SapSyncError
 import com.otoki.internal.sap.dto.SapSyncResult
@@ -13,7 +13,7 @@ import java.time.format.DateTimeFormatter
 
 @Service
 class SapEmployeeMasterService(
-    private val userRepository: UserRepository
+    private val employeeRepository: EmployeeRepository
 ) : SapSyncService<SapEmployeeMasterRequest.ReqItem> {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -69,13 +69,13 @@ class SapEmployeeMasterService(
         val isActive = resolveAppLoginActive(statusCode, item.lockingFlag)
         val startDate = parseDate(item.startDate)
 
-        val existingUser = userRepository.findByEmployeeNumber(employeeCode).orElse(null)
+        val existingEmployee = employeeRepository.findByEmployeeNumber(employeeCode).orElse(null)
 
-        if (existingUser != null) {
-            updateUser(existingUser, employeeName, statusName, isActive, item, startDate)
-            userRepository.save(existingUser)
+        if (existingEmployee != null) {
+            updateEmployee(existingEmployee, employeeName, statusName, isActive, item, startDate)
+            employeeRepository.save(existingEmployee)
         } else {
-            val newUser = User(
+            val newEmployee = Employee(
                 employeeNumber = employeeCode,
                 name = employeeName,
                 status = statusName,
@@ -87,26 +87,26 @@ class SapEmployeeMasterService(
                 startDate = startDate,
                 passwordChangeRequired = true
             )
-            userRepository.save(newUser)
+            employeeRepository.save(newEmployee)
         }
     }
 
-    private fun updateUser(
-        user: User,
+    private fun updateEmployee(
+        employee: Employee,
         name: String,
         status: String,
         isActive: Boolean,
         item: SapEmployeeMasterRequest.ReqItem,
         startDate: LocalDate?
     ) {
-        user.name = name
-        user.status = status
-        user.appLoginActive = isActive
-        user.birthDate = item.birthdate
-        user.homePhone = item.homePhone
-        user.workPhone = item.workPhone
-        user.costCenterCode = item.orgCode
-        user.startDate = startDate
+        employee.name = name
+        employee.status = status
+        employee.appLoginActive = isActive
+        employee.birthDate = item.birthdate
+        employee.homePhone = item.homePhone
+        employee.workPhone = item.workPhone
+        employee.costCenterCode = item.orgCode
+        employee.startDate = startDate
     }
 
     private fun resolveAppLoginActive(statusCode: String, lockingFlag: String?): Boolean {

@@ -1,7 +1,7 @@
 package com.otoki.internal.sap.service
 
-import com.otoki.internal.sap.entity.User
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.entity.Employee
+import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.sap.entity.Appointment
 import com.otoki.internal.sap.entity.Organization
 import com.otoki.internal.sap.repository.OrganizationRepository
@@ -21,7 +21,7 @@ import java.util.Optional
 class AppointmentUserProfileUpdaterTest {
 
     @Mock
-    private lateinit var userRepository: UserRepository
+    private lateinit var employeeRepository: EmployeeRepository
 
     @Mock
     private lateinit var organizationRepository: OrganizationRepository
@@ -170,8 +170,8 @@ class AppointmentUserProfileUpdaterTest {
             val org = createOrg(costCenterLevel5 = "1111", orgCodeLevel3 = "5066")
             whenever(organizationRepository.findAll()).thenReturn(listOf(org))
 
-            val user = createUser(employeeNumber = "100234")
-            whenever(userRepository.findByEmployeeNumber("100234")).thenReturn(Optional.of(user))
+            val employee = createEmployee(employeeNumber = "100234")
+            whenever(employeeRepository.findByEmployeeNumber("100234")).thenReturn(Optional.of(employee))
 
             val appointment = createAppointment(
                 employeeCode = "100234",
@@ -183,9 +183,9 @@ class AppointmentUserProfileUpdaterTest {
 
             updater.updateUserProfiles(listOf(appointment))
 
-            assertThat(user.appAuthority).isEqualTo("마케팅")
-            assertThat(user.costCenterCode).isEqualTo("1111")
-            assertThat(user.orgName).isEqualTo("마케팅1팀")
+            assertThat(employee.appAuthority).isEqualTo("마케팅")
+            assertThat(employee.costCenterCode).isEqualTo("1111")
+            assertThat(employee.orgName).isEqualTo("마케팅1팀")
         }
 
         @Test
@@ -222,8 +222,8 @@ class AppointmentUserProfileUpdaterTest {
         fun orgNotFound() {
             whenever(organizationRepository.findAll()).thenReturn(emptyList())
 
-            val user = createUser(employeeNumber = "100234", appAuthority = "영업사원")
-            whenever(userRepository.findByEmployeeNumber("100234")).thenReturn(Optional.of(user))
+            val employee = createEmployee(employeeNumber = "100234", appAuthority = "영업사원")
+            whenever(employeeRepository.findByEmployeeNumber("100234")).thenReturn(Optional.of(employee))
 
             val appointment = createAppointment(
                 employeeCode = "100234",
@@ -234,9 +234,9 @@ class AppointmentUserProfileUpdaterTest {
 
             updater.updateUserProfiles(listOf(appointment))
 
-            assertThat(user.appAuthority).isEqualTo("영업사원")
-            assertThat(user.costCenterCode).isEqualTo("9999")
-            assertThat(user.orgName).isEqualTo("신규조직")
+            assertThat(employee.appAuthority).isEqualTo("영업사원")
+            assertThat(employee.costCenterCode).isEqualTo("9999")
+            assertThat(employee.orgName).isEqualTo("신규조직")
         }
 
         @Test
@@ -245,8 +245,8 @@ class AppointmentUserProfileUpdaterTest {
             val org = createOrg(costCenterLevel4 = "2222", orgCodeLevel3 = "3472")
             whenever(organizationRepository.findAll()).thenReturn(listOf(org))
 
-            val user = createUser(employeeNumber = "100234")
-            whenever(userRepository.findByEmployeeNumber("100234")).thenReturn(Optional.of(user))
+            val employee = createEmployee(employeeNumber = "100234")
+            whenever(employeeRepository.findByEmployeeNumber("100234")).thenReturn(Optional.of(employee))
 
             val appointment = createAppointment(
                 employeeCode = "100234",
@@ -257,7 +257,7 @@ class AppointmentUserProfileUpdaterTest {
 
             updater.updateUserProfiles(listOf(appointment))
 
-            assertThat(user.appAuthority).isEqualTo("Staff")
+            assertThat(employee.appAuthority).isEqualTo("Staff")
         }
 
         @Test
@@ -267,8 +267,8 @@ class AppointmentUserProfileUpdaterTest {
             val org2 = createOrg(costCenterLevel5 = "2222", orgCodeLevel3 = "9999")
             whenever(organizationRepository.findAll()).thenReturn(listOf(org1, org2))
 
-            val user = createUser(employeeNumber = "100234")
-            whenever(userRepository.findByEmployeeNumber("100234")).thenReturn(Optional.of(user))
+            val employee = createEmployee(employeeNumber = "100234")
+            whenever(employeeRepository.findByEmployeeNumber("100234")).thenReturn(Optional.of(employee))
 
             val appointments = listOf(
                 createAppointment(
@@ -283,16 +283,16 @@ class AppointmentUserProfileUpdaterTest {
 
             updater.updateUserProfiles(appointments)
 
-            assertThat(user.appAuthority).isEqualTo("지점장")
-            assertThat(user.orgName).isEqualTo("영업1지점")
+            assertThat(employee.appAuthority).isEqualTo("지점장")
+            assertThat(employee.orgName).isEqualTo("영업1지점")
         }
     }
 
-    private fun createUser(
+    private fun createEmployee(
         id: Long = 1L,
         employeeNumber: String = "100234",
         appAuthority: String? = null
-    ): User = User(
+    ): Employee = Employee(
         id = id,
         employeeNumber = employeeNumber,
         name = "테스트사원",

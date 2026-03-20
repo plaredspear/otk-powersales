@@ -3,8 +3,8 @@ package com.otoki.internal.admin.service
 import com.otoki.internal.admin.dto.DataScope
 import com.otoki.internal.admin.dto.response.*
 import com.otoki.internal.admin.scope.DataScopeHolder
-import com.otoki.internal.sap.entity.User
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.entity.Employee
+import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.sap.entity.MonthlySalesHistory
@@ -25,7 +25,7 @@ class AdminDashboardService(
     private val monthlySalesHistoryRepository: MonthlySalesHistoryRepository,
     private val displayWorkScheduleRepository: DisplayWorkScheduleRepository,
     private val accountRepository: AccountRepository,
-    private val userRepository: UserRepository
+    private val employeeRepository: EmployeeRepository
 ) {
 
     fun getDashboard(yearMonth: String?, branchCode: String?): DashboardResponse {
@@ -255,37 +255,37 @@ class AdminDashboardService(
     // --- Basic Stats ---
 
     private fun buildBasicStats(scope: DataScope, branchName: String?): BasicStats {
-        val activeUsers = fetchUsersByStatus(scope, "재직")
-        val onLeaveUsers = fetchUsersByStatus(scope, "휴직")
+        val activeEmployees = fetchEmployeesByStatus(scope, "재직")
+        val onLeaveEmployees = fetchEmployeesByStatus(scope, "휴직")
 
-        val promotionCount = activeUsers.size
+        val promotionCount = activeEmployees.size
         val oscCount = 0 // Phase 1: 모두 판촉직
 
-        val byAgeGroup = buildByAgeGroup(activeUsers)
-        val byWorkType = buildUserWorkTypeStats(activeUsers)
+        val byAgeGroup = buildByAgeGroup(activeEmployees)
+        val byWorkType = buildEmployeeWorkTypeStats(activeEmployees)
 
         return BasicStats(
             branchName = branchName,
             staffType = StaffTypeCount(promotion = promotionCount, osc = oscCount),
-            totalByPosition = TotalByPosition(active = activeUsers.size, onLeave = onLeaveUsers.size),
+            totalByPosition = TotalByPosition(active = activeEmployees.size, onLeave = onLeaveEmployees.size),
             byAgeGroup = byAgeGroup,
             byWorkType = byWorkType
         )
     }
 
-    private fun fetchUsersByStatus(scope: DataScope, status: String): List<User> {
+    private fun fetchEmployeesByStatus(scope: DataScope, status: String): List<Employee> {
         return if (scope.isAllBranches) {
-            userRepository.findByStatus(status)
+            employeeRepository.findByStatus(status)
         } else {
             if (scope.branchCodes.isEmpty()) return emptyList()
-            userRepository.findByCostCenterCodeInAndStatus(scope.branchCodes, status)
+            employeeRepository.findByCostCenterCodeInAndStatus(scope.branchCodes, status)
         }
     }
 
-    private fun buildByAgeGroup(users: List<User>): List<AgeGroupCount> {
+    private fun buildByAgeGroup(employees: List<Employee>): List<AgeGroupCount> {
         val today = LocalDate.now()
-        val grouped = users.groupBy { user ->
-            val age = calculateAge(user.birthDate, today)
+        val grouped = employees.groupBy { employee ->
+            val age = calculateAge(employee.birthDate, today)
             if (age == null) "기타" else classifyAgeGroup(age)
         }
         return grouped.map { (group, list) ->
@@ -314,8 +314,8 @@ class AdminDashboardService(
         }
     }
 
-    private fun buildUserWorkTypeStats(users: List<User>): WorkTypeStats {
-        val employeeIds = users.map { it.id }
+    private fun buildEmployeeWorkTypeStats(employees: List<Employee>): WorkTypeStats {
+        val employeeIds = employees.map { it.id }
         if (employeeIds.isEmpty()) return WorkTypeStats(fixed = 0, alternating = 0, visiting = 0)
 
         val today = LocalDate.now()
@@ -324,9 +324,9 @@ class AdminDashboardService(
         val monthEnd = ym.atEndOfMonth()
 
         val schedules = displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(monthEnd, monthStart)
-        val userSchedules = schedules.filter { it.employeeId in employeeIds }
+        val filteredSchedules = schedules.filter { it.employeeId in employeeIds }
 
-        val byWorkType = userSchedules
+        val byWorkType = filteredSchedules
             .groupBy { normalizeWorkType(it.typeOfWork1) }
             .mapValues { (_, records) -> records.mapNotNull { it.employeeId }.distinct().size }
 

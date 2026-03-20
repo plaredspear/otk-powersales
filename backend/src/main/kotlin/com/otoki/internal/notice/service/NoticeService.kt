@@ -1,7 +1,7 @@
 package com.otoki.internal.notice.service
 
-import com.otoki.internal.auth.exception.UserNotFoundException
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.auth.exception.EmployeeNotFoundException
+import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.notice.dto.request.NoticeCreateRequest
 import com.otoki.internal.notice.dto.request.NoticeUpdateRequest
 import com.otoki.internal.notice.dto.response.NoticeImageResponse
@@ -33,7 +33,7 @@ import java.time.format.DateTimeFormatter
 class NoticeService(
     private val noticeRepository: NoticeRepository,
     private val uploadFileRepository: UploadFileRepository,
-    private val userRepository: UserRepository,
+    private val employeeRepository: EmployeeRepository,
     private val organizationRepository: OrganizationRepository,
     @Value("\${aws.s3.bucket.name:otoki-bucket}")
     private val s3BucketName: String
@@ -78,9 +78,9 @@ class NoticeService(
     }
 
     fun getPosts(userId: Long, category: String?, search: String?, page: Int, size: Int): NoticePostListResponse {
-        val user = userRepository.findById(userId)
-            .orElseThrow { UserNotFoundException() }
-        val branch = user.orgName ?: ""
+        val employee = employeeRepository.findById(userId)
+            .orElseThrow { EmployeeNotFoundException() }
+        val branch = employee.orgName ?: ""
 
         val parsedCategory = if (category != null) parseCategory(category) else null
 

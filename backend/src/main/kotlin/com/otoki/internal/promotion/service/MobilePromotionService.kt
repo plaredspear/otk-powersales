@@ -9,7 +9,7 @@ import com.otoki.internal.promotion.repository.PromotionRepository
 import com.otoki.internal.promotion.repository.PromotionTypeRepository
 import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.sap.repository.ProductRepository
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.repository.EmployeeRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -24,7 +24,7 @@ class MobilePromotionService(
     private val promotionTypeRepository: PromotionTypeRepository,
     private val accountRepository: AccountRepository,
     private val productRepository: ProductRepository,
-    private val userRepository: UserRepository
+    private val employeeRepository: EmployeeRepository
 ) {
 
     fun getPromotions(
@@ -41,15 +41,15 @@ class MobilePromotionService(
             throw PromotionInvalidParameterException()
         }
 
-        val user = userRepository.findById(userId)
+        val employee = employeeRepository.findById(userId)
             .orElseThrow { IllegalStateException("사용자를 찾을 수 없습니다: $userId") }
 
-        val isWoman = user.appAuthority == "여사원"
+        val isWoman = employee.appAuthority == "여사원"
 
         val pageable = PageRequest.of(page, size)
         val promotionPage = promotionRepository.searchForMobile(
-            employeeId = user.id,
-            costCenterCode = user.costCenterCode,
+            employeeId = employee.id,
+            costCenterCode = employee.costCenterCode,
             isWoman = isWoman,
             keyword = keyword,
             startDate = startDate,
@@ -73,7 +73,7 @@ class MobilePromotionService(
                 val typeName = promotion.promotionTypeId?.let { typeMap[it]?.name }
                 val myScheduleDate = if (isWoman) {
                     promotionEmployeeRepository.findMinScheduleDateByPromotionIdAndEmployeeId(
-                        promotion.id, user.id
+                        promotion.id, employee.id
                     )
                 } else null
 
@@ -92,22 +92,22 @@ class MobilePromotionService(
     }
 
     fun getPromotion(userId: Long, promotionId: Long): MobilePromotionDetailResponse {
-        val user = userRepository.findById(userId)
+        val employee = employeeRepository.findById(userId)
             .orElseThrow { IllegalStateException("사용자를 찾을 수 없습니다: $userId") }
 
         val promotion = promotionRepository.findById(promotionId)
             .filter { !it.isDeleted }
             .orElseThrow { PromotionNotFoundException() }
 
-        val isWoman = user.appAuthority == "여사원"
+        val isWoman = employee.appAuthority == "여사원"
 
         // 권한 검증
         if (isWoman) {
-            if (!promotionEmployeeRepository.existsByPromotionIdAndEmployeeId(promotionId, user.id)) {
+            if (!promotionEmployeeRepository.existsByPromotionIdAndEmployeeId(promotionId, employee.id)) {
                 throw PromotionForbiddenException()
             }
         } else {
-            if (user.costCenterCode != promotion.costCenterCode) {
+            if (employee.costCenterCode != promotion.costCenterCode) {
                 throw PromotionForbiddenException()
             }
         }
@@ -122,7 +122,7 @@ class MobilePromotionService(
         val employees = promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(promotionId)
         val empIds = employees.mapNotNull { it.employeeId }.distinct()
         val userMap = if (empIds.isNotEmpty()) {
-            userRepository.findAllById(empIds).associateBy { it.id }
+            employeeRepository.findAllById(empIds).associateBy { it.id }
         } else emptyMap()
 
         val employeeItems = employees.map { emp ->

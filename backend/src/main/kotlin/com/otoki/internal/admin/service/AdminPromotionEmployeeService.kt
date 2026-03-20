@@ -13,7 +13,7 @@ import com.otoki.internal.promotion.exception.*
 import com.otoki.internal.promotion.repository.PromotionEmployeeRepository
 import com.otoki.internal.promotion.repository.PromotionRepository
 import com.otoki.internal.sap.entity.UserRole
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -23,7 +23,7 @@ import org.springframework.transaction.annotation.Transactional
 class AdminPromotionEmployeeService(
     private val promotionEmployeeRepository: PromotionEmployeeRepository,
     private val promotionRepository: PromotionRepository,
-    private val userRepository: UserRepository,
+    private val employeeRepository: EmployeeRepository,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository
 ) {
 
@@ -55,10 +55,10 @@ class AdminPromotionEmployeeService(
         findActivePromotion(promotionId)
 
         val employees = promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(promotionId)
-        val userInfoMap = resolveEmployeeInfo(employees)
+        val employeeInfoMap = resolveEmployeeInfo(employees)
 
         return employees.map { pe ->
-            val info = userInfoMap[pe.id]
+            val info = employeeInfoMap[pe.id]
             PromotionEmployeeListResponse.from(pe, info?.first, info?.second)
         }
     }
@@ -117,11 +117,11 @@ class AdminPromotionEmployeeService(
         validateWorkType3(normalizedWorkType3)
 
         // 1-2-A: 마감 보호 — 핵심필드 수정 차단 (ADMIN 예외)
-        val user = userRepository.findById(userId)
+        val employee = employeeRepository.findById(userId)
             .orElseThrow { IllegalStateException("사용자를 찾을 수 없습니다: $userId") }
         validateClosedEmployeeModification(
             pe, resolved?.id, request.scheduleDate, normalizedWorkType3,
-            request.basePrice, request.dailyTargetCount, user.role == UserRole.ADMIN
+            request.basePrice, request.dailyTargetCount, employee.role == UserRole.ADMIN
         )
 
         // 1-1: 전문행사조 매칭 검증
@@ -188,9 +188,9 @@ class AdminPromotionEmployeeService(
         }
 
         // 권한 확인
-        val user = userRepository.findById(userId)
+        val employee = employeeRepository.findById(userId)
             .orElseThrow { IllegalStateException("사용자를 찾을 수 없습니다: $userId") }
-        val isAdmin = user.role == UserRole.ADMIN
+        val isAdmin = employee.role == UserRole.ADMIN
 
         // 전체 항목 검증 (에러 수집)
         val errors = mutableListOf<BatchItemError>()
@@ -250,9 +250,9 @@ class AdminPromotionEmployeeService(
 
         // 전체 행사사원 목록 조회하여 응답
         val allEmployees = promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(promotionId)
-        val userInfoMap = resolveEmployeeInfo(allEmployees)
+        val employeeInfoMap = resolveEmployeeInfo(allEmployees)
         val responseItems = allEmployees.map { pe ->
-            val info = userInfoMap[pe.id]
+            val info = employeeInfoMap[pe.id]
             PromotionEmployeeListResponse.from(pe, info?.first, info?.second)
         }
 
@@ -287,16 +287,16 @@ class AdminPromotionEmployeeService(
 
     private fun resolveEmployee(employeeNumber: String?): ResolvedEmployee? {
         if (employeeNumber == null) return null
-        val user = userRepository.findByEmployeeNumber(employeeNumber).orElse(null)
+        val employee = employeeRepository.findByEmployeeNumber(employeeNumber).orElse(null)
             ?: return ResolvedEmployee(id = null, name = null, employeeNumber = employeeNumber)
-        return ResolvedEmployee(id = user.id, name = user.name, employeeNumber = user.employeeNumber)
+        return ResolvedEmployee(id = employee.id, name = employee.name, employeeNumber = employee.employeeNumber)
     }
 
     private fun resolveEmployeeById(employeeId: Long?): ResolvedEmployee? {
         if (employeeId == null) return null
-        val user = userRepository.findById(employeeId).orElse(null)
+        val employee = employeeRepository.findById(employeeId).orElse(null)
             ?: return ResolvedEmployee(id = employeeId, name = null, employeeNumber = null)
-        return ResolvedEmployee(id = user.id, name = user.name, employeeNumber = user.employeeNumber)
+        return ResolvedEmployee(id = employee.id, name = employee.name, employeeNumber = employee.employeeNumber)
     }
 
     private fun calculateTargetAmount(basePrice: Long?, dailyTargetCount: Int?): Long? {
@@ -482,13 +482,13 @@ class AdminPromotionEmployeeService(
     /** Returns Map<PE.id, Pair<name, employeeNumber>> */
     private fun resolveEmployeeInfo(employees: List<PromotionEmployee>): Map<Long, Pair<String, String>> {
         val employeeIds = employees.mapNotNull { it.employeeId }.distinct()
-        val userMap = if (employeeIds.isNotEmpty()) {
-            userRepository.findAllById(employeeIds).associateBy { it.id }
+        val employeeMap = if (employeeIds.isNotEmpty()) {
+            employeeRepository.findAllById(employeeIds).associateBy { it.id }
         } else emptyMap()
 
         return employees.mapNotNull { pe ->
-            val user = pe.employeeId?.let { userMap[it] }
-            if (user != null) pe.id to Pair(user.name, user.employeeNumber) else null
+            val employee = pe.employeeId?.let { employeeMap[it] }
+            if (employee != null) pe.id to Pair(employee.name, employee.employeeNumber) else null
         }.toMap()
     }
 }

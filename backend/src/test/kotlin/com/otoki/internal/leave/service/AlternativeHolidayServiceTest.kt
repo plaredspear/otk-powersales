@@ -5,8 +5,8 @@ import com.otoki.internal.leave.exception.AltHolidayConfirmDateIsHolidayExceptio
 import com.otoki.internal.leave.exception.AltHolidayDuplicateException
 import com.otoki.internal.leave.exception.EmployeeNotFoundException
 import com.otoki.internal.leave.repository.AlternativeHolidayRepository
-import com.otoki.internal.sap.entity.User
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.entity.Employee
+import com.otoki.internal.sap.repository.EmployeeRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
@@ -27,7 +27,7 @@ import java.util.*
 class AlternativeHolidayServiceTest {
 
     @Mock private lateinit var alternativeHolidayRepository: AlternativeHolidayRepository
-    @Mock private lateinit var userRepository: UserRepository
+    @Mock private lateinit var employeeRepository: EmployeeRepository
     @Mock private lateinit var validator: AlternativeHolidayValidator
     @InjectMocks private lateinit var service: AlternativeHolidayService
 
@@ -42,8 +42,8 @@ class AlternativeHolidayServiceTest {
         @Test
         @DisplayName("정상 신청 - 토요일 근무 대휴 -> 신규 생성, createdBy=본인 사번")
         fun create_success() {
-            val user = createUser()
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(user))
+            val employee = createEmployee()
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
             whenever(alternativeHolidayRepository.save(any<AlternativeHoliday>()))
                 .thenAnswer { it.getArgument<AlternativeHoliday>(0) }
 
@@ -57,7 +57,7 @@ class AlternativeHolidayServiceTest {
         @Test
         @DisplayName("사용자 없음 - 존재하지 않는 userId -> EmployeeNotFoundException")
         fun create_userNotFound() {
-            whenever(userRepository.findById(999L)).thenReturn(Optional.empty())
+            whenever(employeeRepository.findById(999L)).thenReturn(Optional.empty())
 
             assertThatThrownBy { service.createAlternativeHoliday(999L, saturday, monday) }
                 .isInstanceOf(EmployeeNotFoundException::class.java)
@@ -66,7 +66,7 @@ class AlternativeHolidayServiceTest {
         @Test
         @DisplayName("검증 실패 - 신청일이 공휴일 -> AltHolidayConfirmDateIsHolidayException")
         fun create_validationFails() {
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
             doThrow(AltHolidayConfirmDateIsHolidayException()).whenever(validator).validateConfirmDate(monday)
 
             assertThatThrownBy { service.createAlternativeHoliday(1L, saturday, monday) }
@@ -76,7 +76,7 @@ class AlternativeHolidayServiceTest {
         @Test
         @DisplayName("중복 신청 -> AltHolidayDuplicateException")
         fun create_duplicate() {
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(createUser()))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
             doThrow(AltHolidayDuplicateException()).whenever(validator).validateNoDuplicate(1L, saturday)
 
             assertThatThrownBy { service.createAlternativeHoliday(1L, saturday, monday) }
@@ -91,8 +91,8 @@ class AlternativeHolidayServiceTest {
         @Test
         @DisplayName("정상 조회 - 기간 지정 -> 해당 기간 이력 반환")
         fun get_withDateRange() {
-            val user = createUser()
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(user))
+            val employee = createEmployee()
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
             val altHoliday = createAltHoliday()
             whenever(alternativeHolidayRepository.findByEmployeeIdAndActualWorkDateBetweenOrderByCreatedAtDesc(
                 1L, LocalDate.of(2026, 1, 1), LocalDate.of(2026, 3, 31)
@@ -107,8 +107,8 @@ class AlternativeHolidayServiceTest {
         @Test
         @DisplayName("기간 미지정 - 최근 3개월~오늘 기본값 적용")
         fun get_defaultDateRange() {
-            val user = createUser()
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(user))
+            val employee = createEmployee()
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
             whenever(alternativeHolidayRepository.findByEmployeeIdAndActualWorkDateBetweenOrderByCreatedAtDesc(
                 org.mockito.kotlin.eq(1L), any(), any()
             )).thenReturn(emptyList())
@@ -121,18 +121,18 @@ class AlternativeHolidayServiceTest {
         @Test
         @DisplayName("사용자 없음 -> EmployeeNotFoundException")
         fun get_userNotFound() {
-            whenever(userRepository.findById(999L)).thenReturn(Optional.empty())
+            whenever(employeeRepository.findById(999L)).thenReturn(Optional.empty())
 
             assertThatThrownBy { service.getAlternativeHolidays(999L, null, null) }
                 .isInstanceOf(EmployeeNotFoundException::class.java)
         }
     }
 
-    private fun createUser(
+    private fun createEmployee(
         id: Long = 1L,
         employeeNumber: String = "12345678",
         name: String = "홍길동"
-    ): User = User(
+    ): Employee = Employee(
         id = id,
         sfid = "SF001",
         employeeNumber = employeeNumber,

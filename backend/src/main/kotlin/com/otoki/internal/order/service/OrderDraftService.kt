@@ -13,7 +13,7 @@ import com.otoki.internal.exception.ProductNotFoundException
 import com.otoki.internal.order.repository.OrderDraftRepository
 import com.otoki.internal.sap.repository.ProductRepository
 import com.otoki.internal.repository.AccountRepository
-import com.otoki.internal.sap.repository.UserRepository
+import com.otoki.internal.sap.repository.EmployeeRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -30,7 +30,7 @@ class OrderDraftService(
     private val orderDraftRepository: OrderDraftRepository,
     private val productRepository: ProductRepository,
     private val accountRepository: AccountRepository,
-    private val userRepository: UserRepository
+    private val employeeRepository: EmployeeRepository
 ) {
 
     / **
@@ -69,7 +69,7 @@ class OrderDraftService(
             .orElseThrow { ClientNotFoundException() }
 
         // 3. 사용자 확인
-        val user = userRepository.findById(userId)
+        val employee = employeeRepository.findById(userId)
             .orElseThrow { IllegalStateException("사용자를 찾을 수 없습니다") }
 
         // 4. 제품 목록 일괄 조회
@@ -91,7 +91,7 @@ class OrderDraftService(
         val draftItems = mutableListOf<OrderDraftItem>()
 
         val draft = OrderDraft(
-            user = user,
+            user = employee,
             account = account,
             deliveryDate = deliveryDate,
             totalAmount = 0 // 아래에서 계산 후 업데이트
@@ -122,7 +122,7 @@ class OrderDraftService(
 
         // 8. totalAmount가 있는 새 OrderDraft 생성 (val이므로 재생성)
         val draftWithTotal = OrderDraft(
-            user = user,
+            user = employee,
             account = account,
             deliveryDate = deliveryDate,
             totalAmount = totalAmount
