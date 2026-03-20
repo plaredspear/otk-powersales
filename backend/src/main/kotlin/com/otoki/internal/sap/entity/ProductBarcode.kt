@@ -24,7 +24,7 @@ class ProductBarcode(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @HCColumn("id")
+    @Column(name = "product_barcode_id")
     val id: Int = 0,
 
     @HCColumn("sfid")
