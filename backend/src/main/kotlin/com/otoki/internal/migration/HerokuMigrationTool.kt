@@ -4,6 +4,7 @@ import com.otoki.internal.common.salesforce.HCTable
 import com.otoki.internal.common.salesforce.SFSchemaUtils
 import com.otoki.internal.safetycheck.entity.SafetyCheckItem
 import com.otoki.internal.sap.entity.Account
+import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.sap.entity.Product
 import com.otoki.internal.sap.entity.ProductBarcode
 import jakarta.persistence.Id
@@ -40,6 +41,7 @@ object HerokuMigrationTool {
         EntityRegistration("account", Account::class.java),
         EntityRegistration("product", Product::class.java),
         EntityRegistration("safetyCheckItem", SafetyCheckItem::class.java),
+        EntityRegistration("employee", Employee::class.java),
         EntityRegistration("productBarcode", ProductBarcode::class.java) { targetConn ->
             val sfidToPk = mutableMapOf<String, Any?>()
             targetConn.createStatement().use { stmt ->
