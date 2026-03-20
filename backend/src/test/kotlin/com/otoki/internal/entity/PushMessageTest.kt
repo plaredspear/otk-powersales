@@ -67,8 +67,6 @@ class PushMessageTest {
         assertThat(found.isDeleted).isNull()
         assertThat(found.createdAt).isNotNull()
         assertThat(found.updatedAt).isNotNull()
-        assertThat(found.hcLastOp).isNull()
-        assertThat(found.hcErr).isNull()
     }
 
     @Test
@@ -78,9 +76,7 @@ class PushMessageTest {
         val now = LocalDateTime.now().truncatedTo(ChronoUnit.MICROS)
         val pushMessage = PushMessage(
             sfid = "a0B5g000001ABC",
-            isDeleted = false,
-            hcLastOp = "SYNCED",
-            hcErr = null
+            isDeleted = false
         ).apply {
             createdAt = now
             updatedAt = now
@@ -96,7 +92,5 @@ class PushMessageTest {
         assertThat(found.isDeleted).isFalse()
         assertThat(found.createdAt).isEqualTo(now)
         assertThat(found.updatedAt).isEqualTo(now)
-        assertThat(found.hcLastOp).isEqualTo("SYNCED")
-        assertThat(found.hcErr).isNull()
     }
 }

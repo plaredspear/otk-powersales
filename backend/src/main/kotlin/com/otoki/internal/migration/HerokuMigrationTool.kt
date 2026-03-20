@@ -55,9 +55,6 @@ object HerokuMigrationTool {
         },
     )
 
-    /** 마이그레이션에서 제외할 HC 전용 컬럼 (JPA @Column name 기준) */
-    private val EXCLUDED_HC_COLUMNS = setOf("_hc_lastop", "_hc_err")
-
     private const val HEROKU_SCHEMA = "salesforce2"
     private const val TARGET_SCHEMA = "salesforce2"
     private const val BATCH_SIZE = 1000
@@ -123,10 +120,9 @@ object HerokuMigrationTool {
             .mapNotNull { it.getAnnotation(jakarta.persistence.Column::class.java)?.name }
             .toSet()
 
-        // @HCColumn 매핑에서 PK + HC 전용 컬럼 제외
+        // @HCColumn 매핑에서 PK 제외
         val mappings = SFSchemaUtils.getHCFieldMappings(entityClass)
             .filter { it.jpaColumnName !in idColumnNames }
-            .filter { it.jpaColumnName !in EXCLUDED_HC_COLUMNS }
 
         // 1. Heroku DB에서 읽기 (필터링된 매핑 + 타임스탬프 조건부)
         val hasTimestamp = hasColumn(herokuConn, HEROKU_SCHEMA, hcTableName, "createddate")
