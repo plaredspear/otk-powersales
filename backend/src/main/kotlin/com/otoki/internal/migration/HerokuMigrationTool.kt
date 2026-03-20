@@ -2,6 +2,7 @@ package com.otoki.internal.migration
 
 import com.otoki.internal.common.salesforce.HCTable
 import com.otoki.internal.common.salesforce.SFSchemaUtils
+import com.otoki.internal.safetycheck.entity.SafetyCheckItem
 import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.sap.entity.Product
 import jakarta.persistence.Id
@@ -24,6 +25,7 @@ object HerokuMigrationTool {
     private val entities = listOf(
         "account" to Account::class.java,
         "product" to Product::class.java,
+        "safetyCheckItem" to SafetyCheckItem::class.java,
     )
 
     /** 마이그레이션에서 제외할 HC 전용 컬럼 (JPA @Column name 기준) */
@@ -97,13 +99,16 @@ object HerokuMigrationTool {
             .filter { it.jpaColumnName !in idColumnNames }
             .filter { it.jpaColumnName !in EXCLUDED_HC_COLUMNS }
 
-        // 1. Heroku DB에서 읽기 (필터링된 매핑 + 타임스탬프)
+        // 1. Heroku DB에서 읽기 (필터링된 매핑 + 타임스탬프 조건부)
+        val hasTimestamp = hasColumn(herokuConn, HEROKU_SCHEMA, hcTableName, "createddate")
+
         val selectColumns = mappings.map { m ->
             if (m.hcColumnName == m.jpaColumnName) m.hcColumnName
             else "${m.hcColumnName} AS ${m.jpaColumnName}"
-        } + listOf("createddate AS created_at", "systemmodstamp AS updated_at")
+        } + if (hasTimestamp) listOf("createddate AS created_at", "systemmodstamp AS updated_at") else emptyList()
 
-        val allJpaColumns = mappings.map { it.jpaColumnName } + listOf("created_at", "updated_at")
+        val allJpaColumns = mappings.map { it.jpaColumnName } +
+            if (hasTimestamp) listOf("created_at", "updated_at") else emptyList()
         val selectSql = "SELECT ${selectColumns.joinToString(", ")} FROM $HEROKU_SCHEMA.$hcTableName"
 
         println("[$name] Heroku DB 조회 중...")
@@ -155,6 +160,12 @@ object HerokuMigrationTool {
         targetConn.autoCommit = true
         println("[$name] $inserted / ${rows.size}")
         println("[$name] 완료: ${rows.size}건")
+    }
+
+    private fun hasColumn(conn: Connection, schema: String, table: String, column: String): Boolean {
+        val rs = conn.metaData.getColumns(null, schema, table, column)
+        val exists = rs.use { it.next() }
+        return exists
     }
 
     private fun createConnection(url: String, user: String, password: String): Connection {
