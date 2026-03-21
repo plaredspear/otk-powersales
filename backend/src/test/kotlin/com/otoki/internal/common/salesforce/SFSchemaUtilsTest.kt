@@ -98,7 +98,7 @@ class SFSchemaUtilsTest {
 
             assertThat(mapping).hasSize(12)
             assertThat(mapping["Account__c"]).isEqualTo("account_sfid")
-            assertThat(mapping["FullName__c"]).isEqualTo("employee_id")
+            assertThat(mapping["FullName__c"]).isEqualTo("employee_sfid")
             assertThat(mapping["StartDate__c"]).isEqualTo("start_date")
             assertThat(mapping["EndDate__c"]).isEqualTo("end_date")
             assertThat(mapping["Confirmed__c"]).isEqualTo("confirmed")
@@ -106,7 +106,7 @@ class SFSchemaUtilsTest {
             assertThat(mapping["TypeOfWork3__c"]).isEqualTo("type_of_work3")
             assertThat(mapping["TypeOfWork5__c"]).isEqualTo("type_of_work5")
             assertThat(mapping["Name"]).isEqualTo("name")
-            assertThat(mapping["OwnerId"]).isEqualTo("owner_id")
+            assertThat(mapping["OwnerId"]).isEqualTo("owner_sfid")
             assertThat(mapping["CostCenterCode__c"]).isEqualTo("cost_center_code")
             assertThat(mapping["LastMonthRevenue__c"]).isEqualTo("last_month_revenue")
         }
@@ -202,15 +202,16 @@ class SFSchemaUtilsTest {
         }
 
         @Test
-        @DisplayName("DisplayWorkSchedule 엔티티 - 11개 HC Column 매핑 반환")
+        @DisplayName("DisplayWorkSchedule 엔티티 - 12개 HC Column 매핑 반환")
         fun getHCMapping_displayWorkSchedule() {
             val mapping = SFSchemaUtils.getHCMapping(DisplayWorkSchedule::class.java)
 
-            assertThat(mapping).hasSize(11)
+            assertThat(mapping).hasSize(12)
             assertThat(mapping["sfid"]).isEqualTo("sfid")
             assertThat(mapping["name"]).isEqualTo("name")
             assertThat(mapping["account__c"]).isEqualTo("account_sfid")
-            assertThat(mapping["fullname__c"]).isEqualTo("employee_id")
+            assertThat(mapping["fullname__c"]).isEqualTo("employee_sfid")
+            assertThat(mapping["ownerid"]).isEqualTo("owner_sfid")
             assertThat(mapping["startdate__c"]).isEqualTo("start_date")
             assertThat(mapping["enddate__c"]).isEqualTo("end_date")
             assertThat(mapping["confirmed__c"]).isEqualTo("confirmed")

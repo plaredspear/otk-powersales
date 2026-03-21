@@ -31,7 +31,8 @@ import java.util.Properties
  * │ dkretail__employee__c              │ employee                    │ Employee                │ —                                                             │  YES    │ 종속: employee_mng │
  * │ productbarcode__c                  │ product_barcode             │ ProductBarcode          │ product__c → product.sfid                                     │  YES    │ UPDATE: product_id │
  * │ dkretail__notice__c                │ notice                      │ Notice                  │ employeeid__c → employee.sfid                                 │  YES    │ FK: employee_id    │
- * │ displayworkschedulemaster__c       │ display_work_schedule       │ DisplayWorkSchedule     │ account__c → account.sfid, ownerid → employee.sfid            │  YES    │ FK: account_id, employee_id │
+ * │ displayworkschedulemaster__c       │ display_work_schedule       │ DisplayWorkSchedule     │ account__c → account.sfid, fullname__c → employee.sfid,       │  YES    │ UPDATE: account_id, employee_id │
+ * │                                    │                             │                         │   ownerid → (owner_sfid 저장만)                               │         │                    │
  * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
  * │ dkretail__teammemberschedule__c    │ team_member_schedule        │ TeamMemberSchedule      │ accountid__c → account.sfid, dkretail__employeeid__c →         │   no    │                    │
  * │                                    │                             │                         │   employee.sfid, teamleadersfid__c → employee.sfid,           │         │                    │
@@ -109,17 +110,7 @@ object HerokuMigrationTool {
             }
             mapOf("employee_id" to sfidToPk)
         },
-        EntityRegistration("displayWorkSchedule", DisplayWorkSchedule::class.java) { targetConn ->
-            val employeeSfidToPk = mutableMapOf<String, Any?>()
-            targetConn.createStatement().use { stmt ->
-                stmt.executeQuery("SELECT sfid, id FROM $TARGET_SCHEMA.employee WHERE sfid IS NOT NULL").use { rs ->
-                    while (rs.next()) {
-                        employeeSfidToPk[rs.getString("sfid")] = rs.getLong("id")
-                    }
-                }
-            }
-            mapOf("employee_id" to employeeSfidToPk)
-        },
+        EntityRegistration("displayWorkSchedule", DisplayWorkSchedule::class.java),
         EntityRegistration("agreementWord", AgreementWord::class.java),
         EntityRegistration("pushMessage", PushMessage::class.java),
     )
@@ -188,6 +179,18 @@ object HerokuMigrationTool {
                             "WHERE d.account_sfid = a.sfid"
                     )
                     println("[displayWorkSchedule] account_id UPDATE 완료: ${updated}건")
+                }
+
+                // DisplayWorkSchedule: employee_sfid → employee_id 역참조 UPDATE
+                println("[displayWorkSchedule] employee_sfid → employee_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.display_work_schedule d " +
+                            "SET employee_id = e.employee_id " +
+                            "FROM $TARGET_SCHEMA.employee e " +
+                            "WHERE d.employee_sfid = e.sfid"
+                    )
+                    println("[displayWorkSchedule] employee_id UPDATE 완료: ${updated}건")
                 }
             }
         }
