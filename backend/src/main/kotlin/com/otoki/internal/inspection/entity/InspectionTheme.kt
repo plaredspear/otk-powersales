@@ -1,8 +1,15 @@
 package com.otoki.internal.inspection.entity
 
 import com.otoki.internal.common.entity.BaseEntity
+import com.otoki.internal.common.salesforce.HCColumn
+import com.otoki.internal.common.salesforce.HCTable
+import com.otoki.internal.common.salesforce.SFField
+import com.otoki.internal.common.salesforce.SFObject
 import jakarta.persistence.*
+import org.springframework.data.annotation.CreatedDate
+import org.springframework.data.annotation.LastModifiedDate
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 /**
  * 현장 점검 테마 Entity
@@ -10,37 +17,65 @@ import java.time.LocalDate
  */
 @Entity
 @Table(name = "inspection_theme")
+@SFObject("Theme__c")
+@HCTable("theme__c")
 class InspectionTheme(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @HCColumn("id")
     val id: Long = 0,
 
+    @HCColumn("sfid")
     @Column(name = "sfid", length = 18)
     val sfid: String? = null,
 
+    @SFField("Name")
+    @HCColumn("name")
     @Column(name = "name", length = 80)
     val name: String? = null,
 
+    @SFField("Title__c")
+    @HCColumn("title__c")
     @Column(name = "title__c", length = 250)
     val title: String? = null,
 
+    @SFField("StartDate__c")
+    @HCColumn("startdate__c")
     @Column(name = "startdate__c")
     val startDate: LocalDate? = null,
 
+    @SFField("EndDate__c")
+    @HCColumn("enddate__c")
     @Column(name = "enddate__c")
     val endDate: LocalDate? = null,
 
+    @SFField("Department__c")
+    @HCColumn("department__c")
     @Column(name = "department__c", length = 100)
     val department: String? = null,
 
+    @SFField("BranchCode__c")
+    @HCColumn("branchcode__c")
     @Column(name = "branchcode__c", length = 30)
     val branchCode: String? = null,
 
+    @SFField("PublicFlag__c")
+    @HCColumn("publicflag__c")
     @Column(name = "publicflag__c")
     val publicFlag: Boolean? = null,
 
+    @HCColumn("isdeleted")
     @Column(name = "isdeleted")
     val isDeleted: Boolean? = null,
 
+    @HCColumn("createddate")
+    @CreatedDate
+    @Column(name = "created_at", nullable = false, updatable = false)
+    override var createdAt: LocalDateTime = LocalDateTime.now(),
+
+    @HCColumn("systemmodstamp")
+    @LastModifiedDate
+    @Column(name = "updated_at", nullable = false)
+    override var updatedAt: LocalDateTime = LocalDateTime.now()
 ) : BaseEntity()
