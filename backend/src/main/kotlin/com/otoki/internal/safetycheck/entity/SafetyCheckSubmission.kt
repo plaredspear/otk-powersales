@@ -25,17 +25,23 @@ class SafetyCheckSubmission(
     @Column(name = "safety_check_submission_id")
     val id: Long = 0,
 
-    @HCColumn("employeeid__c")
     @Column(name = "employee_id", nullable = false)
     val employeeId: Long = 0,
+
+    @HCColumn("employeeid__c")
+    @Column(name = "employee_sfid", length = 18)
+    val employeeSfid: String? = null,
 
     @HCColumn("working__date")
     @Column(name = "working_date", nullable = false)
     val workingDate: LocalDate? = null,
 
-    @HCColumn("masterId")
     @Column(name = "display_work_schedule_id")
     val displayWorkScheduleId: Long? = null,
+
+    @HCColumn("masterId")
+    @Column(name = "display_work_schedule_sfid", length = 18)
+    val displayWorkScheduleSfid: String? = null,
 
     @HCColumn("starttime")
     @Column(name = "start_time")
@@ -101,9 +107,12 @@ class SafetyCheckSubmission(
     @Column(name = "traversal_flag", length = 255)
     val traversalFlag: String? = null,
 
-    @HCColumn("eventmasterid")
     @Column(name = "team_member_schedule_id")
     val teamMemberScheduleId: Long? = null,
+
+    @HCColumn("eventmasterid")
+    @Column(name = "team_member_schedule_sfid", length = 18)
+    val teamMemberScheduleSfid: String? = null,
 
     @HCColumn("completeworkyn")
     @Column(name = "complete_work_yn", length = 18)

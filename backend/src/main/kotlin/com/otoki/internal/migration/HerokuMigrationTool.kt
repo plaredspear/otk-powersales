@@ -38,7 +38,8 @@ import java.util.Properties
  * │ dkretail__teammemberschedule__c    │ team_member_schedule        │ TeamMemberSchedule      │ accountid__c → account.sfid, dkretail__employeeid__c →         │  YES    │ UPDATE: account_id, employee_id, team_leader_id, promotion_employee_id │
  * │                                    │                             │                         │   employee.sfid, teamleadersfid__c → employee.sfid,           │         │                    │
  * │                                    │                             │                         │   dkretail__promotionempid__c → employee.sfid                 │         │                    │
- * │ safetycheck__workschedule__member  │ safety_check_submission     │ SafetyCheckSubmission   │ employeeid__c → employee.sfid, eventmasterid → sfid           │   no    │                    │
+ * │ safetycheck__workschedule__member  │ safety_check_submission     │ SafetyCheckSubmission   │ employeeid__c → employee.sfid, masterId →                     │   no    │ V21: sfid 컬럼 추가 │
+ * │                                    │                             │                         │   displayworkschedulemaster__c.sfid, eventmasterid → sfid     │         │                    │
  * │ education_mng                      │ education_post              │ EducationPost           │ —                                                             │   no    │                    │
  * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
  * │ agreementword__c                   │ agreement_word              │ AgreementWord           │ —                                                             │  YES    │                    │
