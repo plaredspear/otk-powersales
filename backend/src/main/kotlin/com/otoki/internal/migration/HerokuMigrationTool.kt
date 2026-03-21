@@ -117,15 +117,7 @@ object HerokuMigrationTool {
             mapOf("employee_id" to sfidToPk)
         },
         EntityRegistration("displayWorkSchedule", DisplayWorkSchedule::class.java) { targetConn ->
-            val accountSfidToPk = mutableMapOf<String, Any?>()
             val employeeSfidToPk = mutableMapOf<String, Any?>()
-            targetConn.createStatement().use { stmt ->
-                stmt.executeQuery("SELECT sfid, account_id FROM $TARGET_SCHEMA.account WHERE sfid IS NOT NULL").use { rs ->
-                    while (rs.next()) {
-                        accountSfidToPk[rs.getString("sfid")] = rs.getInt("account_id")
-                    }
-                }
-            }
             targetConn.createStatement().use { stmt ->
                 stmt.executeQuery("SELECT sfid, id FROM $TARGET_SCHEMA.employee WHERE sfid IS NOT NULL").use { rs ->
                     while (rs.next()) {
@@ -133,7 +125,7 @@ object HerokuMigrationTool {
                     }
                 }
             }
-            mapOf("account_id" to accountSfidToPk, "employee_id" to employeeSfidToPk)
+            mapOf("employee_id" to employeeSfidToPk)
         },
         EntityRegistration("agreementWord", AgreementWord::class.java),
     )
@@ -178,6 +170,18 @@ object HerokuMigrationTool {
                 entities.forEach { reg ->
                     val columnTransforms = reg.columnTransformProvider?.invoke(targetConn) ?: emptyMap()
                     migrateEntity(reg.name, reg.entityClass, herokuConn, targetConn, columnTransforms, reg.dependentTables)
+                }
+
+                // DisplayWorkSchedule: account_sfid → account_id 역참조 UPDATE
+                println("[displayWorkSchedule] account_sfid → account_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.display_work_schedule d " +
+                            "SET account_id = a.account_id " +
+                            "FROM $TARGET_SCHEMA.account a " +
+                            "WHERE d.account_sfid = a.sfid"
+                    )
+                    println("[displayWorkSchedule] account_id UPDATE 완료: ${updated}건")
                 }
             }
         }
