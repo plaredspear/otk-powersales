@@ -181,7 +181,7 @@ class AdminNoticeControllerTest {
                 branchCode = null,
                 createdAt = "2026-03-04T10:00:00"
             )
-            whenever(noticeService.createNotice(any())).thenReturn(mutationResponse)
+            whenever(noticeService.createNotice(any(), eq(1L))).thenReturn(mutationResponse)
 
             val request = NoticeCreateRequest(
                 title = "새 공지",
@@ -217,7 +217,7 @@ class AdminNoticeControllerTest {
         @Test
         @DisplayName("실패 - 지점 누락")
         fun createNotice_branchRequired() {
-            whenever(noticeService.createNotice(any())).thenThrow(BranchRequiredException())
+            whenever(noticeService.createNotice(any(), eq(1L))).thenThrow(BranchRequiredException())
 
             val request = NoticeCreateRequest(
                 title = "지점 공지",
@@ -237,7 +237,7 @@ class AdminNoticeControllerTest {
         @Test
         @DisplayName("실패 - 잘못된 카테고리")
         fun createNotice_invalidCategory() {
-            whenever(noticeService.createNotice(any())).thenThrow(InvalidNoticeCategoryException())
+            whenever(noticeService.createNotice(any(), eq(1L))).thenThrow(InvalidNoticeCategoryException())
 
             val request = NoticeCreateRequest(
                 title = "공지",
