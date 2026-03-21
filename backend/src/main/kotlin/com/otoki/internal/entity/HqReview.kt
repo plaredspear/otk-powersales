@@ -1,8 +1,13 @@
 package com.otoki.internal.entity
 
 import com.otoki.internal.common.entity.BaseEntity
+import com.otoki.internal.common.salesforce.HCColumn
+import com.otoki.internal.common.salesforce.HCTable
 import jakarta.persistence.*
+import org.springframework.data.annotation.CreatedDate
+import org.springframework.data.annotation.LastModifiedDate
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 /**
  * 본사 평가 Entity
@@ -10,37 +15,57 @@ import java.time.LocalDate
  */
 @Entity
 @Table(name = "hq_review")
+@HCTable("hqreview__c")
 class HqReview(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @HCColumn("id")
     val id: Int = 0,
 
+    @HCColumn("sfid")
     @Column(name = "sfid", length = 18)
     val sfid: String? = null,
 
+    @HCColumn("name")
     @Column(name = "name", length = 80)
     val name: String? = null,
 
+    @HCColumn("branchcode__c")
     @Column(name = "branchcode__c", length = 100)
     val branchCode: String? = null,
 
+    @HCColumn("branchname__c")
     @Column(name = "branchname__c", length = 100)
     val branchName: String? = null,
 
+    @HCColumn("firstdayofmonth__c")
     @Column(name = "firstdayofmonth__c")
     val firstDayOfMonth: LocalDate? = null,
 
+    @HCColumn("evaluationytype__c")
     @Column(name = "evaluationytype__c", length = 255)
     val evaluationType: String? = null,
 
+    @HCColumn("abctypecode__c")
     @Column(name = "abctypecode__c", length = 255)
     val abcTypeCode: String? = null,
 
+    @HCColumn("hr_code_c__c")
     @Column(name = "hr_code_c__c", length = 255)
     val hrCode: String? = null,
 
+    @HCColumn("isdeleted")
     @Column(name = "isdeleted")
     val isDeleted: Boolean? = null,
 
+    @HCColumn("createddate")
+    @CreatedDate
+    @Column(name = "created_at", nullable = false, updatable = false)
+    override var createdAt: LocalDateTime = LocalDateTime.now(),
+
+    @HCColumn("systemmodstamp")
+    @LastModifiedDate
+    @Column(name = "updated_at", nullable = false)
+    override var updatedAt: LocalDateTime = LocalDateTime.now()
 ) : BaseEntity()
