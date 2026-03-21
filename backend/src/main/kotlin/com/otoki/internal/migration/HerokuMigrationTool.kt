@@ -1,5 +1,6 @@
 package com.otoki.internal.migration
 
+import com.otoki.internal.common.entity.AgreementWord
 import com.otoki.internal.common.salesforce.HCTable
 import com.otoki.internal.common.salesforce.SFSchemaUtils
 import com.otoki.internal.safetycheck.entity.SafetyCheckItem
@@ -35,7 +36,7 @@ import java.util.Properties
  * │ safetycheck__workschedule__member  │ safety_check_submission     │ SafetyCheckSubmission   │   no    │ @HCTable 미등록 │
  * │ education_mng                      │ education_post              │ EducationPost           │   no    │ @HCTable 미등록 │
  * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
- * │ agreementword__c                   │ agreement_word              │ AgreementWord           │   no    │             │
+ * │ agreementword__c                   │ agreement_word              │ AgreementWord           │  YES    │             │
  * │ commute_distance                   │ —                           │ —                       │   no    │             │
  * │ device_version_mng                 │ device_version              │ DeviceVersion           │   no    │             │
  * │ education_code_mng                 │ education_code              │ EducationCode           │   no    │             │
@@ -134,6 +135,7 @@ object HerokuMigrationTool {
             }
             mapOf("account_id" to accountSfidToPk, "employee_id" to employeeSfidToPk)
         },
+        EntityRegistration("agreementWord", AgreementWord::class.java),
     )
 
     private const val HEROKU_SCHEMA = "salesforce2"
