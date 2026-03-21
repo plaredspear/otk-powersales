@@ -3,6 +3,8 @@ package com.otoki.internal.entity
 import com.otoki.internal.common.entity.BaseEntity
 import com.otoki.internal.common.salesforce.HCColumn
 import com.otoki.internal.common.salesforce.HCTable
+import com.otoki.internal.common.salesforce.SFField
+import com.otoki.internal.common.salesforce.SFObject
 import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
@@ -15,6 +17,7 @@ import java.time.LocalDateTime
 @Entity
 @Table(name = "push_message")
 @HCTable("pushmessage__c")
+@SFObject("PushMessage__c")
 class PushMessage(
 
     @Id
@@ -27,14 +30,17 @@ class PushMessage(
     val sfid: String? = null,
 
     @HCColumn("name")
+    @SFField("Name")
     @Column(name = "name", length = 80)
     val name: String? = null,
 
     @HCColumn("message__c")
+    @SFField("Message__c")
     @Column(name = "message__c", length = 500)
     val message: String? = null,
 
     @HCColumn("scheduledate__c")
+    @SFField("ScheduleDate__c")
     @Column(name = "scheduledate__c")
     val scheduleDate: LocalDateTime? = null,
 
