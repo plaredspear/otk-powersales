@@ -29,6 +29,9 @@ class Notice(
 
     @SFField("EmployeeId__c")
     @HCColumn("employeeid__c")
+    @Column(name = "employee_sfid", length = 18)
+    val employeeSfid: String? = null,
+
     @Column(name = "employee_id")
     val employeeId: Long? = null,
 
