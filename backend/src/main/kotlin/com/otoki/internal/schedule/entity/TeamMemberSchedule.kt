@@ -33,10 +33,13 @@ class TeamMemberSchedule(
     @Column(name = "name", length = 80)
     val name: String? = null,
 
-    @SFField("DKRetail__EmployeeId__c")
-    @HCColumn("dkretail__employeeid__c")
     @Column(name = "employee_id")
     var employeeId: Long? = null,
+
+    @SFField("DKRetail__EmployeeId__c")
+    @HCColumn("dkretail__employeeid__c")
+    @Column(name = "employee_sfid", length = 18)
+    val employeeSfid: String? = null,
 
     @SFField("DKRetail__WorkingDate__c")
     @HCColumn("dkretail__workingdate__c")
@@ -76,25 +79,34 @@ class TeamMemberSchedule(
     @Column(name = "account_sfid", length = 18)
     val accountSfid: String? = null,
 
-    @SFField("teamleadersfid__c")
-    @HCColumn("teamleadersfid__c")
     @Column(name = "team_leader_id")
     val teamLeaderId: Long? = null,
 
-    @SFField("DKRetail__AltHolidayId__c")
-    @HCColumn("dkretail__altholidayid__c")
+    @SFField("teamleadersfid__c")
+    @HCColumn("teamleadersfid__c")
+    @Column(name = "team_leader_sfid", length = 18)
+    val teamLeaderSfid: String? = null,
+
     @Column(name = "alt_holiday_id")
     val altHolidayId: Long? = null,
+
+    @SFField("DKRetail__AltHolidayId__c")
+    @HCColumn("dkretail__altholidayid__c")
+    @Column(name = "alt_holiday_sfid", length = 18)
+    val altHolidaySfid: String? = null,
 
     @SFField("DKRetail__CommuteLogId__c")
     @HCColumn("dkretail__commutelogid__c")
     @Column(name = "commute_log_id", length = 18)
     var commuteLogId: String? = null,
 
-    @SFField("DKRetail__PromotionEmpId__c")
-    @HCColumn("dkretail__promotionempid__c")
     @Column(name = "promotion_employee_id")
     var promotionEmployeeId: Long? = null,
+
+    @SFField("DKRetail__PromotionEmpId__c")
+    @HCColumn("dkretail__promotionempid__c")
+    @Column(name = "promotion_employee_sfid", length = 18)
+    val promotionEmployeeSfid: String? = null,
 
     @SFField("CommuteReportDateTime__c")
     @HCColumn("commutereportdatetime__c")

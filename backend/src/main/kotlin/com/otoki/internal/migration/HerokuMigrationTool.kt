@@ -34,7 +34,7 @@ import java.util.Properties
  * │ displayworkschedulemaster__c       │ display_work_schedule       │ DisplayWorkSchedule     │ account__c → account.sfid, fullname__c → employee.sfid,       │  YES    │ UPDATE: account_id, employee_id │
  * │                                    │                             │                         │   ownerid → (owner_sfid 저장만)                               │         │                    │
  * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
- * │ dkretail__teammemberschedule__c    │ team_member_schedule        │ TeamMemberSchedule      │ accountid__c → account.sfid, dkretail__employeeid__c →         │   no    │                    │
+ * │ dkretail__teammemberschedule__c    │ team_member_schedule        │ TeamMemberSchedule      │ accountid__c → account.sfid, dkretail__employeeid__c →         │   no    │ V18: sfid 컬럼 추가 │
  * │                                    │                             │                         │   employee.sfid, teamleadersfid__c → employee.sfid,           │         │                    │
  * │                                    │                             │                         │   dkretail__promotionempid__c → employee.sfid                 │         │                    │
  * │ safetycheck__workschedule__member  │ safety_check_submission     │ SafetyCheckSubmission   │ employeeid__c → employee.sfid, eventmasterid → sfid           │   no    │                    │
