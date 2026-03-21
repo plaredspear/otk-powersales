@@ -1,6 +1,8 @@
 package com.otoki.internal.entity
 
 import com.otoki.internal.common.entity.BaseEntity
+import com.otoki.internal.common.salesforce.HCColumn
+import com.otoki.internal.common.salesforce.HCTable
 import jakarta.persistence.*
 
 /**
@@ -10,9 +12,11 @@ import jakarta.persistence.*
  */
 @Entity
 @Table(name = "employee_admin")
+@HCTable("employee_admin_mng")
 class EmployeeAdmin(
 
     @Id
+    @HCColumn("empcode__c")
     @Column(name = "empcode__c", length = 40)
     val empCode: String
 ) : BaseEntity()
