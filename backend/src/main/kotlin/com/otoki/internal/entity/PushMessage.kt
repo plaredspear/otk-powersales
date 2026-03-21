@@ -22,7 +22,7 @@ class PushMessage(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @HCColumn("id")
+    @Column(name = "push_message_id")
     val id: Int = 0,
 
     @HCColumn("sfid")
@@ -36,16 +36,16 @@ class PushMessage(
 
     @HCColumn("message__c")
     @SFField("Message__c")
-    @Column(name = "message__c", length = 500)
+    @Column(name = "message", length = 500)
     val message: String? = null,
 
     @HCColumn("scheduledate__c")
     @SFField("ScheduleDate__c")
-    @Column(name = "scheduledate__c")
+    @Column(name = "schedule_date")
     val scheduleDate: LocalDateTime? = null,
 
     @HCColumn("isdeleted")
-    @Column(name = "isdeleted")
+    @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 
     @HCColumn("createddate")
