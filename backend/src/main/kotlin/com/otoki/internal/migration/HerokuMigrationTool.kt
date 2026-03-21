@@ -188,7 +188,7 @@ object HerokuMigrationTool {
                 targetConn.createStatement().use { stmt ->
                     val updated = stmt.executeUpdate(
                         "UPDATE $TARGET_SCHEMA.display_work_schedule d " +
-                            "SET employee_id = e.employee_id " +
+                            "SET employee_id = e.id " +
                             "FROM $TARGET_SCHEMA.employee e " +
                             "WHERE d.employee_sfid = e.sfid"
                     )
@@ -212,7 +212,7 @@ object HerokuMigrationTool {
                 targetConn.createStatement().use { stmt ->
                     val updated = stmt.executeUpdate(
                         "UPDATE $TARGET_SCHEMA.team_member_schedule t " +
-                            "SET employee_id = e.employee_id " +
+                            "SET employee_id = e.id " +
                             "FROM $TARGET_SCHEMA.employee e " +
                             "WHERE t.employee_sfid = e.sfid"
                     )
@@ -224,7 +224,7 @@ object HerokuMigrationTool {
                 targetConn.createStatement().use { stmt ->
                     val updated = stmt.executeUpdate(
                         "UPDATE $TARGET_SCHEMA.team_member_schedule t " +
-                            "SET team_leader_id = e.employee_id " +
+                            "SET team_leader_id = e.id " +
                             "FROM $TARGET_SCHEMA.employee e " +
                             "WHERE t.team_leader_sfid = e.sfid"
                     )
@@ -236,9 +236,9 @@ object HerokuMigrationTool {
                 targetConn.createStatement().use { stmt ->
                     val updated = stmt.executeUpdate(
                         "UPDATE $TARGET_SCHEMA.team_member_schedule t " +
-                            "SET promotion_employee_id = e.employee_id " +
-                            "FROM $TARGET_SCHEMA.employee e " +
-                            "WHERE t.promotion_employee_sfid = e.sfid"
+                            "SET promotion_employee_id = pe.id " +
+                            "FROM $TARGET_SCHEMA.promotion_employee pe " +
+                            "WHERE t.promotion_employee_sfid = pe.sfid"
                     )
                     println("[teamMemberSchedule] promotion_employee_id UPDATE 완료: ${updated}건")
                 }
@@ -272,7 +272,9 @@ object HerokuMigrationTool {
             .filter { it.jpaColumnName !in idColumnNames }
 
         // 1. Heroku DB에서 읽기 (필터링된 매핑 + 타임스탬프 조건부)
+        val mappedJpaColumns = mappings.map { it.jpaColumnName }.toSet()
         val hasTimestamp = hasColumn(herokuConn, HEROKU_SCHEMA, hcTableName, "createddate")
+            && "created_at" !in mappedJpaColumns // @HCColumn로 이미 매핑된 경우 중복 방지
 
         val selectColumns = mappings.map { m ->
             if (m.hcColumnName == m.jpaColumnName) m.hcColumnName
