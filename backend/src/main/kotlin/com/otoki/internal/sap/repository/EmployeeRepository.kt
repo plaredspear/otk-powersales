@@ -68,4 +68,10 @@ interface EmployeeRepository : JpaRepository<Employee, Long>, EmployeeRepository
      * 조직 목록(costCenterCode IN) + 권한(appAuthority)으로 사원 일괄 조회 (진열스케줄 업로드 - 조장 조회)
      */
     fun findByCostCenterCodeInAndAppAuthority(costCenterCodes: List<String>, appAuthority: String): List<Employee>
+
+    /**
+     * 조직 목록(costCenterCode IN) + 권한(appAuthority) + 앱 로그인 활성(appLoginActive=true)으로 사원 조회
+     * 진열스케줄 업로드 확정 시 활성 조장만 ownerId로 설정하기 위해 사용
+     */
+    fun findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrue(costCenterCodes: List<String>, appAuthority: String): List<Employee>
 }
