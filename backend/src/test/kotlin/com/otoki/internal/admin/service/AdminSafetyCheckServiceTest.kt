@@ -343,7 +343,7 @@ class AdminSafetyCheckServiceTest {
         workingDate: LocalDate
     ): SafetyCheckSubmission {
         return SafetyCheckSubmission(
-            masterId = "MASTER001",
+            displayWorkScheduleId = 1L,
             employeeId = employeeId,
             workingDate = workingDate,
             completeTime = LocalDateTime.of(2026, 3, 17, 9, 15, 30),

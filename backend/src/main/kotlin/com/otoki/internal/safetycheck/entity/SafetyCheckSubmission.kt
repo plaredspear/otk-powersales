@@ -33,9 +33,9 @@ class SafetyCheckSubmission(
     @HCColumn("working__date")
     val workingDate: LocalDate? = null,
 
-    @Column(name = "master_id", length = 18)
+    @Column(name = "display_work_schedule_id")
     @HCColumn("masterId")
-    val masterId: String? = null,
+    val displayWorkScheduleId: Long? = null,
 
     @Column(name = "start_time")
     @HCColumn("starttime")

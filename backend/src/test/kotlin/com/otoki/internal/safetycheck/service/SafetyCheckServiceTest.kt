@@ -271,13 +271,13 @@ class SafetyCheckServiceTest {
     }
 
     private fun createSubmission(
-        masterId: String = "",
+        displayWorkScheduleId: Long? = null,
         employeeId: Long = userId,
         workingDate: LocalDate = LocalDate.now(),
         completeTime: LocalDateTime? = LocalDateTime.now()
     ): SafetyCheckSubmission {
         return SafetyCheckSubmission(
-            masterId = masterId,
+            displayWorkScheduleId = displayWorkScheduleId,
             employeeId = employeeId,
             workingDate = workingDate,
             completeTime = completeTime
