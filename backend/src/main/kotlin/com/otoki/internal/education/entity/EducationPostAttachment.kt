@@ -1,5 +1,7 @@
 package com.otoki.internal.education.entity
 
+import com.otoki.internal.common.salesforce.HCColumn
+import com.otoki.internal.common.salesforce.HCTable
 import jakarta.persistence.*
 
 /**
@@ -10,19 +12,24 @@ import jakarta.persistence.*
 @Entity
 @Table(name = "education_post_attachment")
 @IdClass(EducationFileId::class)
+@HCTable("education_file_mng")
 class EducationPostAttachment(
 
     @Id
+    @HCColumn("edu_id")
     @Column(name = "edu_id", length = 20)
     val eduId: String,
 
     @Id
+    @HCColumn("edu_file_key")
     @Column(name = "edu_file_key", length = 30)
     val eduFileKey: String,
 
+    @HCColumn("edu_file_type")
     @Column(name = "edu_file_type", length = 10)
     val eduFileType: String? = null,
 
+    @HCColumn("edu_file_orgnm")
     @Column(name = "edu_file_orgnm", length = 200)
     val eduFileOrgNm: String? = null
 
