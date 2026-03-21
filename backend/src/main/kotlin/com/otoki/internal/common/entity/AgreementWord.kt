@@ -2,6 +2,8 @@ package com.otoki.internal.common.entity
 
 import com.otoki.internal.common.salesforce.HCColumn
 import com.otoki.internal.common.salesforce.HCTable
+import com.otoki.internal.common.salesforce.SFField
+import com.otoki.internal.common.salesforce.SFObject
 import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
@@ -11,6 +13,7 @@ import java.time.LocalDateTime
 @Entity
 @Table(name = "agreement_word")
 @HCTable("agreementword__c")
+@SFObject("AgreementWord__c")
 class AgreementWord(
 
     @Id
@@ -20,22 +23,27 @@ class AgreementWord(
     val id: Int = 0,
 
     @HCColumn("name")
+    @SFField("Name")
     @Column(name = "name", length = 80)
     val name: String? = null,
 
     @HCColumn("contents__c")
+    @SFField("Contents__c")
     @Column(name = "contents", length = 8000)
     val contents: String? = null,
 
     @HCColumn("active__c")
+    @SFField("Active__c")
     @Column(name = "active")
     val active: Boolean? = null,
 
     @HCColumn("activedate__c")
+    @SFField("ActiveDate__c")
     @Column(name = "active_date")
     val activeDate: LocalDate? = null,
 
     @HCColumn("afteractivedate__c")
+    @SFField("AfterActiveDate__c")
     @Column(name = "after_active_date")
     val afterActiveDate: LocalDate? = null,
 
