@@ -18,7 +18,6 @@ class AgreementWord(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @HCColumn("id")
     @Column(name = "agreement_word_id")
     val id: Int = 0,
 
