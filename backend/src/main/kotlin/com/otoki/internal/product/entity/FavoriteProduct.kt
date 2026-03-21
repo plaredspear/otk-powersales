@@ -1,7 +1,12 @@
 package com.otoki.internal.product.entity
 
 import com.otoki.internal.common.entity.BaseEntity
+import com.otoki.internal.common.salesforce.HCColumn
+import com.otoki.internal.common.salesforce.HCTable
 import jakarta.persistence.*
+import org.springframework.data.annotation.CreatedDate
+import org.springframework.data.annotation.LastModifiedDate
+import java.time.LocalDateTime
 
 /**
  * 즐겨찾기 제품 Entity
@@ -12,13 +17,26 @@ import jakarta.persistence.*
 @Entity
 @Table(name = "product_favorites")
 @IdClass(ProductFavoriteId::class)
+@HCTable("product_favorites")
 class FavoriteProduct(
 
     @Id
+    @HCColumn("employeecode")
     @Column(name = "employeecode", length = 80)
     val employeeCode: String = "",
 
     @Id
+    @HCColumn("productcode")
     @Column(name = "productcode", length = 80)
-    val productCode: String = ""
+    val productCode: String = "",
+
+    @HCColumn("inst_date")
+    @CreatedDate
+    @Column(name = "created_at", nullable = false, updatable = false)
+    override var createdAt: LocalDateTime = LocalDateTime.now(),
+
+    @HCColumn("upd_date")
+    @LastModifiedDate
+    @Column(name = "updated_at", nullable = false)
+    override var updatedAt: LocalDateTime = LocalDateTime.now()
 ) : BaseEntity()
