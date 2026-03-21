@@ -20,6 +20,15 @@ import java.util.Properties
  * Heroku DB → Dev DB 데이터 마이그레이션 도구
  * Spring 컨텍스트 없이 독립 실행. @HCTable/@HCColumn 어노테이션 기반 매핑.
  *
+ * 마이그레이션 대상 테이블 (entities 등록 순서 = 마이그레이션 실행 순서):
+ *   1. Account (account)
+ *   2. Product (product)
+ *   3. SafetyCheckItem (safetyCheckItem)
+ *   4. Employee (employee) — 종속 테이블: employee_mng
+ *   5. ProductBarcode (productBarcode) — FK 변환: product_id (Product.sfid → PK)
+ *   6. Notice (notice) — FK 변환: employee_id (Employee.sfid → PK)
+ *   7. DisplayWorkSchedule (displayWorkSchedule) — FK 변환: account_id (Account.sfid → PK), employee_id (Employee.sfid → PK)
+ *
  * 실행:
  *   HEROKU_DB_PASSWORD=$(jq -r '.["dev-heroku-db"].PASSWORD' docs/plan/old-accounts.json) ./gradlew migrateHeroku
  */
