@@ -10,6 +10,7 @@ import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.sap.entity.Product
 import com.otoki.internal.notice.entity.Notice
 import com.otoki.internal.schedule.entity.DisplayWorkSchedule
+import com.otoki.internal.schedule.entity.TeamMemberSchedule
 import com.otoki.internal.sap.entity.ProductBarcode
 import jakarta.persistence.Id
 import jakarta.persistence.Table
@@ -34,7 +35,7 @@ import java.util.Properties
  * │ displayworkschedulemaster__c       │ display_work_schedule       │ DisplayWorkSchedule     │ account__c → account.sfid, fullname__c → employee.sfid,       │  YES    │ UPDATE: account_id, employee_id │
  * │                                    │                             │                         │   ownerid → (owner_sfid 저장만)                               │         │                    │
  * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
- * │ dkretail__teammemberschedule__c    │ team_member_schedule        │ TeamMemberSchedule      │ accountid__c → account.sfid, dkretail__employeeid__c →         │   no    │ V18: sfid 컬럼 추가 │
+ * │ dkretail__teammemberschedule__c    │ team_member_schedule        │ TeamMemberSchedule      │ accountid__c → account.sfid, dkretail__employeeid__c →         │  YES    │ UPDATE: account_id, employee_id, team_leader_id, promotion_employee_id │
  * │                                    │                             │                         │   employee.sfid, teamleadersfid__c → employee.sfid,           │         │                    │
  * │                                    │                             │                         │   dkretail__promotionempid__c → employee.sfid                 │         │                    │
  * │ safetycheck__workschedule__member  │ safety_check_submission     │ SafetyCheckSubmission   │ employeeid__c → employee.sfid, eventmasterid → sfid           │   no    │                    │
@@ -111,6 +112,7 @@ object HerokuMigrationTool {
             mapOf("employee_id" to sfidToPk)
         },
         EntityRegistration("displayWorkSchedule", DisplayWorkSchedule::class.java),
+        EntityRegistration("teamMemberSchedule", TeamMemberSchedule::class.java),
         EntityRegistration("agreementWord", AgreementWord::class.java),
         EntityRegistration("pushMessage", PushMessage::class.java),
     )
@@ -191,6 +193,54 @@ object HerokuMigrationTool {
                             "WHERE d.employee_sfid = e.sfid"
                     )
                     println("[displayWorkSchedule] employee_id UPDATE 완료: ${updated}건")
+                }
+
+                // TeamMemberSchedule: account_sfid → account_id 역참조 UPDATE
+                println("[teamMemberSchedule] account_sfid → account_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.team_member_schedule t " +
+                            "SET account_id = a.account_id " +
+                            "FROM $TARGET_SCHEMA.account a " +
+                            "WHERE t.account_sfid = a.sfid"
+                    )
+                    println("[teamMemberSchedule] account_id UPDATE 완료: ${updated}건")
+                }
+
+                // TeamMemberSchedule: employee_sfid → employee_id 역참조 UPDATE
+                println("[teamMemberSchedule] employee_sfid → employee_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.team_member_schedule t " +
+                            "SET employee_id = e.employee_id " +
+                            "FROM $TARGET_SCHEMA.employee e " +
+                            "WHERE t.employee_sfid = e.sfid"
+                    )
+                    println("[teamMemberSchedule] employee_id UPDATE 완료: ${updated}건")
+                }
+
+                // TeamMemberSchedule: team_leader_sfid → team_leader_id 역참조 UPDATE
+                println("[teamMemberSchedule] team_leader_sfid → team_leader_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.team_member_schedule t " +
+                            "SET team_leader_id = e.employee_id " +
+                            "FROM $TARGET_SCHEMA.employee e " +
+                            "WHERE t.team_leader_sfid = e.sfid"
+                    )
+                    println("[teamMemberSchedule] team_leader_id UPDATE 완료: ${updated}건")
+                }
+
+                // TeamMemberSchedule: promotion_employee_sfid → promotion_employee_id 역참조 UPDATE
+                println("[teamMemberSchedule] promotion_employee_sfid → promotion_employee_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.team_member_schedule t " +
+                            "SET promotion_employee_id = e.employee_id " +
+                            "FROM $TARGET_SCHEMA.employee e " +
+                            "WHERE t.promotion_employee_sfid = e.sfid"
+                    )
+                    println("[teamMemberSchedule] promotion_employee_id UPDATE 완료: ${updated}건")
                 }
             }
         }
