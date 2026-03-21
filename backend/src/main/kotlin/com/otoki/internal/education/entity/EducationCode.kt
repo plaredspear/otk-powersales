@@ -22,7 +22,7 @@ class EducationCode(
     val eduCode: String,
 
     @HCColumn("edu_code_nm")
-    @Column(name = "edu_code_nm", length = 50)
+    @Column(name = "edu_code_name", length = 50)
     val eduCodeNm: String? = null,
 
     @HCColumn("edu_type")
