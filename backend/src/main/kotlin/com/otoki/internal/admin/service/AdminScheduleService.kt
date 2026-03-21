@@ -154,7 +154,7 @@ class AdminScheduleService(
         // 조장 일괄 조회: costCenterCode 목록 → appAuthority="조장" 사원
         val costCenterCodes = cacheData.validRows.mapNotNull { it.costCenterCode }.distinct()
         val managersByCostCenter = if (costCenterCodes.isNotEmpty()) {
-            employeeRepository.findByCostCenterCodeInAndAppAuthority(costCenterCodes, "조장")
+            employeeRepository.findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrue(costCenterCodes, "조장")
                 .groupBy { it.costCenterCode }
         } else {
             emptyMap()

@@ -350,7 +350,7 @@ class AdminScheduleServiceTest {
 
             whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
             whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
-            whenever(employeeRepository.findByCostCenterCodeInAndAppAuthority(listOf("A10010"), "조장"))
+            whenever(employeeRepository.findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrue(listOf("A10010"), "조장"))
                 .thenReturn(emptyList())
             whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountExternalKeyIn(any(), any(), any()))
                 .thenReturn(emptyList())
@@ -383,7 +383,7 @@ class AdminScheduleServiceTest {
 
             whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
             whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
-            whenever(employeeRepository.findByCostCenterCodeInAndAppAuthority(listOf("A10010"), "조장"))
+            whenever(employeeRepository.findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrue(listOf("A10010"), "조장"))
                 .thenReturn(listOf(manager))
             whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountExternalKeyIn(any(), any(), any()))
                 .thenReturn(emptyList())
@@ -415,7 +415,7 @@ class AdminScheduleServiceTest {
 
             whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
             whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
-            whenever(employeeRepository.findByCostCenterCodeInAndAppAuthority(listOf("A10010"), "조장"))
+            whenever(employeeRepository.findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrue(listOf("A10010"), "조장"))
                 .thenReturn(emptyList())
             whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountExternalKeyIn(any(), any(), any()))
                 .thenReturn(emptyList())
@@ -452,7 +452,7 @@ class AdminScheduleServiceTest {
 
             whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
             whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
-            whenever(employeeRepository.findByCostCenterCodeInAndAppAuthority(listOf("A10010"), "조장"))
+            whenever(employeeRepository.findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrue(listOf("A10010"), "조장"))
                 .thenReturn(emptyList())
             whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountExternalKeyIn(any(), any(), eq(listOf("EXT001"))))
                 .thenReturn(listOf(salesHistory))
@@ -484,7 +484,7 @@ class AdminScheduleServiceTest {
 
             whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
             whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
-            whenever(employeeRepository.findByCostCenterCodeInAndAppAuthority(listOf("A10010"), "조장"))
+            whenever(employeeRepository.findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrue(listOf("A10010"), "조장"))
                 .thenReturn(emptyList())
             whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountExternalKeyIn(any(), any(), eq(listOf("EXT001"))))
                 .thenReturn(emptyList())
