@@ -3,6 +3,8 @@ package com.otoki.internal.entity
 import com.otoki.internal.common.entity.BaseEntity
 import com.otoki.internal.common.salesforce.HCColumn
 import com.otoki.internal.common.salesforce.HCTable
+import com.otoki.internal.common.salesforce.SFField
+import com.otoki.internal.common.salesforce.SFObject
 import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
@@ -16,6 +18,7 @@ import java.time.LocalDateTime
 @Entity
 @Table(name = "hq_review")
 @HCTable("hqreview__c")
+@SFObject("HQReview__c")
 class HqReview(
 
     @Id
@@ -28,30 +31,37 @@ class HqReview(
     val sfid: String? = null,
 
     @HCColumn("name")
+    @SFField("Name")
     @Column(name = "name", length = 80)
     val name: String? = null,
 
     @HCColumn("branchcode__c")
+    @SFField("BranchCode__c")
     @Column(name = "branchcode__c", length = 100)
     val branchCode: String? = null,
 
     @HCColumn("branchname__c")
+    @SFField("BranchName__c")
     @Column(name = "branchname__c", length = 100)
     val branchName: String? = null,
 
     @HCColumn("firstdayofmonth__c")
+    @SFField("FirstDayofMonth__c")
     @Column(name = "firstdayofmonth__c")
     val firstDayOfMonth: LocalDate? = null,
 
     @HCColumn("evaluationytype__c")
+    @SFField("EvaluationyType__c")
     @Column(name = "evaluationytype__c", length = 255)
     val evaluationType: String? = null,
 
     @HCColumn("abctypecode__c")
+    @SFField("ABCTypeCode__c")
     @Column(name = "abctypecode__c", length = 255)
     val abcTypeCode: String? = null,
 
     @HCColumn("hr_code_c__c")
+    @SFField("HR_Code_c__c")
     @Column(name = "hr_code_c__c", length = 255)
     val hrCode: String? = null,
 
