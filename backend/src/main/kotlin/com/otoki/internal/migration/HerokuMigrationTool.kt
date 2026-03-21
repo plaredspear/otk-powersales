@@ -22,52 +22,54 @@ import java.util.Properties
  * Heroku DB → Dev DB 데이터 마이그레이션 도구
  * Spring 컨텍스트 없이 독립 실행. @HCTable/@HCColumn 어노테이션 기반 매핑.
  *
- * ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
- * │ Heroku DB (salesforce2)            │ Dev DB (salesforce2)        │ Entity                  │ Migrate │ 비고        │
- * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
- * │ account                            │ account                     │ Account                 │  YES    │             │
- * │ dkretail__product__c               │ product                     │ Product                 │  YES    │             │
- * │ safetycheck_list                   │ safety_check_item           │ SafetyCheckItem         │  YES    │             │
- * │ dkretail__employee__c              │ employee                    │ Employee                │  YES    │ 종속: employee_mng │
- * │ productbarcode__c                  │ product_barcode             │ ProductBarcode          │  YES    │ UPDATE: product_id │
- * │ dkretail__notice__c                │ notice                      │ Notice                  │  YES    │ FK: employee_id │
- * │ displayworkschedulemaster__c       │ display_work_schedule       │ DisplayWorkSchedule     │  YES    │ FK: account_id, employee_id │
- * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
- * │ dkretail__teammemberschedule__c    │ team_member_schedule        │ TeamMemberSchedule      │   no    │ @HCTable 미등록 │
- * │ safetycheck__workschedule__member  │ safety_check_submission     │ SafetyCheckSubmission   │   no    │ @HCTable 미등록 │
- * │ education_mng                      │ education_post              │ EducationPost           │   no    │ @HCTable 미등록 │
- * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
- * │ agreementword__c                   │ agreement_word              │ AgreementWord           │  YES    │             │
- * │ commute_distance                   │ —                           │ —                       │   no    │             │
- * │ device_version_mng                 │ device_version              │ DeviceVersion           │   no    │             │
- * │ education_code_mng                 │ education_code              │ EducationCode           │   no    │             │
- * │ education_file_mng                 │ education_post_attachment   │ EducationPostAttachment │   no    │             │
- * │ education_member_history           │ education_view_history      │ EducationViewHistory    │   no    │             │
- * │ employee_admin_mng                 │ employee_admin              │ EmployeeAdmin           │   no    │             │
- * │ employee_his                       │ employee_his                │ LoginHistory            │   no    │             │
- * │ employee_mng                       │ employee_mng                │ EmployeeMng             │   no    │ Employee 종속 테이블 │
- * │ expirationdate__mng                │ expirationdate__mng         │ ShelfLife               │   no    │             │
- * │ hqreview__c                        │ hq_review                   │ HqReview                │   no    │             │
- * │ if_product__c                      │ if_product                  │ InterfaceProduct        │   no    │             │
- * │ monthlysaleshistory__c             │ monthly_sales_history       │ MonthlySalesHistory     │   no    │             │
- * │ product_favorites                  │ product_favorites           │ FavoriteProduct         │   no    │             │
- * │ pushmessage__c                     │ push_message                │ PushMessage             │  YES    │             │
- * │ pushmessagereceiver__c             │ push_message_receiver       │ PushMessageReceiver     │   no    │             │
- * │ staffreview__c                     │ staff_review                │ StaffReview             │   no    │             │
- * │ theme__c                           │ inspection_theme            │ InspectionTheme         │   no    │             │
- * │ tmp_claim                          │ tmp_claim                   │ TmpClaim                │   no    │             │
- * │ tmp_claimcode                      │ tmp_claimcode               │ —                       │   no    │             │
- * │ tmp_onsite                         │ —                           │ —                       │   no    │ Heroku 전용  │
- * │ tmp_order                          │ —                           │ —                       │   no    │ Heroku 전용  │
- * │ tmp_order_product                  │ —                           │ —                       │   no    │ Heroku 전용  │
- * │ tmp_promotion                      │ —                           │ —                       │   no    │ Heroku 전용  │
- * │ tmp_suggest                        │ —                           │ —                       │   no    │ Heroku 전용  │
- * │ uploadfile__c                      │ upload_file                 │ UploadFile              │   no    │             │
- * │ _hcmeta                            │ —                           │ —                       │   no    │ 시스템       │
- * │ _sf_event_log                      │ —                           │ —                       │   no    │ 시스템       │
- * │ _trigger_log                       │ —                           │ —                       │   no    │ 시스템       │
- * │ _trigger_log_archive               │ —                           │ —                       │   no    │ 시스템       │
- * └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+ * ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+ * │ Heroku DB (salesforce2)            │ Dev DB (salesforce2)        │ Entity                  │ 참조키 (sfid FK)                                              │ Migrate │ 비고               │
+ * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+ * │ account                            │ account                     │ Account                 │ —                                                             │  YES    │                    │
+ * │ dkretail__product__c               │ product                     │ Product                 │ —                                                             │  YES    │                    │
+ * │ safetycheck_list                   │ safety_check_item           │ SafetyCheckItem         │ —                                                             │  YES    │                    │
+ * │ dkretail__employee__c              │ employee                    │ Employee                │ —                                                             │  YES    │ 종속: employee_mng │
+ * │ productbarcode__c                  │ product_barcode             │ ProductBarcode          │ product__c → product.sfid                                     │  YES    │ UPDATE: product_id │
+ * │ dkretail__notice__c                │ notice                      │ Notice                  │ employeeid__c → employee.sfid                                 │  YES    │ FK: employee_id    │
+ * │ displayworkschedulemaster__c       │ display_work_schedule       │ DisplayWorkSchedule     │ account__c → account.sfid, ownerid → employee.sfid            │  YES    │ FK: account_id, employee_id │
+ * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+ * │ dkretail__teammemberschedule__c    │ team_member_schedule        │ TeamMemberSchedule      │ accountid__c → account.sfid, dkretail__employeeid__c →         │   no    │                    │
+ * │                                    │                             │                         │   employee.sfid, teamleadersfid__c → employee.sfid,           │         │                    │
+ * │                                    │                             │                         │   dkretail__promotionempid__c → employee.sfid                 │         │                    │
+ * │ safetycheck__workschedule__member  │ safety_check_submission     │ SafetyCheckSubmission   │ employeeid__c → employee.sfid, eventmasterid → sfid           │   no    │                    │
+ * │ education_mng                      │ education_post              │ EducationPost           │ —                                                             │   no    │                    │
+ * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+ * │ agreementword__c                   │ agreement_word              │ AgreementWord           │ —                                                             │  YES    │                    │
+ * │ commute_distance                   │ —                           │ —                       │ —                                                             │   no    │                    │
+ * │ device_version_mng                 │ device_version              │ DeviceVersion           │ —                                                             │   no    │                    │
+ * │ education_code_mng                 │ education_code              │ EducationCode           │ —                                                             │   no    │                    │
+ * │ education_file_mng                 │ education_post_attachment   │ EducationPostAttachment │ edu_id → education_mng (코드값, sfid 아님)                    │   no    │                    │
+ * │ education_member_history           │ education_view_history      │ EducationViewHistory    │ community_id → education_mng (코드값, sfid 아님)              │   no    │                    │
+ * │ employee_admin_mng                 │ employee_admin              │ EmployeeAdmin           │ —                                                             │   no    │                    │
+ * │ employee_his                       │ employee_his                │ LoginHistory            │ —                                                             │   no    │                    │
+ * │ employee_mng                       │ employee_mng                │ EmployeeMng             │ —                                                             │   no    │ Employee 종속 테이블 │
+ * │ expirationdate__mng                │ expirationdate__mng         │ ShelfLife               │ employee_id → employee.sfid                                   │   no    │                    │
+ * │ hqreview__c                        │ hq_review                   │ HqReview                │ —                                                             │   no    │                    │
+ * │ if_product__c                      │ if_product                  │ InterfaceProduct        │ —                                                             │   no    │                    │
+ * │ monthlysaleshistory__c             │ monthly_sales_history       │ MonthlySalesHistory     │ —                                                             │   no    │                    │
+ * │ product_favorites                  │ product_favorites           │ FavoriteProduct         │ —                                                             │   no    │                    │
+ * │ pushmessage__c                     │ push_message                │ PushMessage             │ —                                                             │  YES    │                    │
+ * │ pushmessagereceiver__c             │ push_message_receiver       │ PushMessageReceiver     │ employeeid__c → employee.sfid, messageid__c → pushmessage.sfid │   no    │                    │
+ * │ staffreview__c                     │ staff_review                │ StaffReview             │ dkretail_employeeid__c → employee.sfid                        │   no    │                    │
+ * │ theme__c                           │ inspection_theme            │ InspectionTheme         │ —                                                             │   no    │                    │
+ * │ tmp_claim                          │ tmp_claim                   │ TmpClaim                │ —                                                             │   no    │                    │
+ * │ tmp_claimcode                      │ tmp_claimcode               │ —                       │ —                                                             │   no    │                    │
+ * │ tmp_onsite                         │ —                           │ —                       │ —                                                             │   no    │ Heroku 전용        │
+ * │ tmp_order                          │ —                           │ —                       │ —                                                             │   no    │ Heroku 전용        │
+ * │ tmp_order_product                  │ —                           │ —                       │ —                                                             │   no    │ Heroku 전용        │
+ * │ tmp_promotion                      │ —                           │ —                       │ —                                                             │   no    │ Heroku 전용        │
+ * │ tmp_suggest                        │ —                           │ —                       │ —                                                             │   no    │ Heroku 전용        │
+ * │ uploadfile__c                      │ upload_file                 │ UploadFile              │ recordid__c → 다형성 sfid (여러 오브젝트 참조)                 │   no    │                    │
+ * │ _hcmeta                            │ —                           │ —                       │ —                                                             │   no    │ 시스템             │
+ * │ _sf_event_log                      │ —                           │ —                       │ —                                                             │   no    │ 시스템             │
+ * │ _trigger_log                       │ —                           │ —                       │ —                                                             │   no    │ 시스템             │
+ * │ _trigger_log_archive               │ —                           │ —                       │ —                                                             │   no    │ 시스템             │
+ * └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
  *
  * 실행:
  *   HEROKU_DB_PASSWORD=$(jq -r '.["dev-heroku-db"].PASSWORD' docs/plan/old-accounts.json) ./gradlew migrateHeroku
