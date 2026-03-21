@@ -68,10 +68,13 @@ class TeamMemberSchedule(
     @Column(name = "working_category4", length = 255)
     var workingCategory4: String? = null,
 
-    @SFField("AccountId__c")
-    @HCColumn("accountid__c")
     @Column(name = "account_id")
     var accountId: Int? = null,
+
+    @SFField("AccountId__c")
+    @HCColumn("accountid__c")
+    @Column(name = "account_sfid", length = 18)
+    val accountSfid: String? = null,
 
     @SFField("teamleadersfid__c")
     @HCColumn("teamleadersfid__c")
