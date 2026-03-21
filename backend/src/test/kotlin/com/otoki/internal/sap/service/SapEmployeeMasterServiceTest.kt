@@ -33,7 +33,7 @@ class SapEmployeeMasterServiceTest {
     inner class NewEmployeeTests {
 
         @Test
-        @DisplayName("정상 등록 - DB에 없는 사원코드 -> User + EmployeeMng 생성")
+        @DisplayName("정상 등록 - DB에 없는 사원코드 -> User + EmployeeInfo 생성")
         fun sync_newEmployee_createsUser() {
             val items = listOf(createReqItem(employeeCode = "100234", employeeName = "홍길동", status = "1"))
             whenever(employeeRepository.findByEmployeeNumber("100234")).thenReturn(Optional.empty())
@@ -87,7 +87,7 @@ class SapEmployeeMasterServiceTest {
     inner class ExistingEmployeeTests {
 
         @Test
-        @DisplayName("기존 사원 업데이트 - 필드 변경, EmployeeMng 미변경")
+        @DisplayName("기존 사원 업데이트 - 필드 변경, EmployeeInfo 미변경")
         fun sync_existingEmployee_updates() {
             val existingEmployee = createEmployee(employeeNumber = "100234", name = "홍길동")
             val items = listOf(createReqItem(

@@ -7,14 +7,14 @@ import jakarta.persistence.*
 import java.time.LocalDateTime
 
 /**
- * 사원 인증/기기 정보 Entity (employee_mng 테이블)
+ * 사원 인증/기기 정보 Entity (employee_info 테이블)
  *
  * User와 1:1 관계. employee_number = employee_number 로 조인.
  */
 @Entity
-@Table(name = "employee_mng")
+@Table(name = "employee_info")
 @HCTable("employee_mng")
-class EmployeeMng(
+class EmployeeInfo(
 
     @Id
     @HCColumn("empcode__c")

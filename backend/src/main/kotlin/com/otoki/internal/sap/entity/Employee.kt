@@ -14,9 +14,9 @@ import java.time.LocalDateTime
  *
  * 레거시 스키마 2개 테이블에 매핑:
  * - Primary: employee (사원 마스터)
- * - Secondary: employee_mng (인증/기기 정보) — @OneToOne 관계
+ * - Secondary: employee_info (인증/기기 정보) — @OneToOne 관계
  *
- * employee_mng 조인은 employee_number = employee_number (non-PK 컬럼).
+ * employee_info 조인은 employee_number = employee_number (non-PK 컬럼).
  * JPA @SecondaryTable은 PK 기반 조인만 지원하므로, @OneToOne + delegate property로 구현.
  */
 @Entity
@@ -103,7 +103,7 @@ class Employee(
     @Column(name = "isdeleted")
     val isDeleted: Boolean? = null,
 
-    // --- Secondary Table (employee_mng) 필드: constructor param only (JPA 미매핑) ---
+    // --- Secondary Table (employee_info) 필드: constructor param only (JPA 미매핑) ---
 
     password: String = "",
     passwordChangeRequired: Boolean? = true,
@@ -112,7 +112,7 @@ class Employee(
     lastAgreementNumber: String? = null
 ) : BaseEntity() {
 
-    // --- employee_mng @OneToOne 관계 ---
+    // --- employee_info @OneToOne 관계 ---
 
     @OneToOne(cascade = [CascadeType.ALL], fetch = FetchType.EAGER, optional = true)
     @JoinColumn(
@@ -122,7 +122,7 @@ class Employee(
         updatable = false,
         foreignKey = ForeignKey(ConstraintMode.NO_CONSTRAINT)
     )
-    var employeeMng: EmployeeMng? = EmployeeMng(
+    var employeeInfo: EmployeeInfo? = EmployeeInfo(
         employeeNumber = employeeNumber,
         password = password,
         passwordChangeRequired = passwordChangeRequired,
@@ -134,36 +134,36 @@ class Employee(
     // --- Delegate properties (기존 인터페이스 유지) ---
 
     var password: String
-        get() = employeeMng?.password ?: ""
-        set(value) { ensureEmployeeMng().password = value }
+        get() = employeeInfo?.password ?: ""
+        set(value) { ensureEmployeeInfo().password = value }
 
     var passwordChangeRequired: Boolean?
-        get() = employeeMng?.passwordChangeRequired
-        set(value) { ensureEmployeeMng().passwordChangeRequired = value }
+        get() = employeeInfo?.passwordChangeRequired
+        set(value) { ensureEmployeeInfo().passwordChangeRequired = value }
 
     var deviceUuid: String?
-        get() = employeeMng?.deviceUuid
-        set(value) { ensureEmployeeMng().deviceUuid = value }
+        get() = employeeInfo?.deviceUuid
+        set(value) { ensureEmployeeInfo().deviceUuid = value }
 
     var fcmToken: String?
-        get() = employeeMng?.fcmToken
-        set(value) { ensureEmployeeMng().fcmToken = value }
+        get() = employeeInfo?.fcmToken
+        set(value) { ensureEmployeeInfo().fcmToken = value }
 
     var lastAgreementNumber: String?
-        get() = employeeMng?.lastAgreementNumber
-        set(value) { ensureEmployeeMng().lastAgreementNumber = value }
+        get() = employeeInfo?.lastAgreementNumber
+        set(value) { ensureEmployeeInfo().lastAgreementNumber = value }
 
     val gpsYn: Boolean?
-        get() = employeeMng?.gpsYn
+        get() = employeeInfo?.gpsYn
 
     val gpsYnDate: LocalDateTime?
-        get() = employeeMng?.gpsYnDate
+        get() = employeeInfo?.gpsYnDate
 
-    private fun ensureEmployeeMng(): EmployeeMng {
-        if (employeeMng == null) {
-            employeeMng = EmployeeMng(employeeNumber = employeeNumber)
+    private fun ensureEmployeeInfo(): EmployeeInfo {
+        if (employeeInfo == null) {
+            employeeInfo = EmployeeInfo(employeeNumber = employeeNumber)
         }
-        return employeeMng!!
+        return employeeInfo!!
     }
 
     // --- Computed properties ---
