@@ -102,8 +102,8 @@ class SafetyCheckSubmission(
     val traversalFlag: String? = null,
 
     @HCColumn("eventmasterid")
-    @Column(name = "event_master_id", length = 18)
-    val eventMasterId: String? = null,
+    @Column(name = "team_member_schedule_id")
+    val teamMemberScheduleId: Long? = null,
 
     @HCColumn("completeworkyn")
     @Column(name = "complete_work_yn", length = 18)
