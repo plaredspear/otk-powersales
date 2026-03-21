@@ -22,27 +22,27 @@ class EmployeeInfo(
     val employeeNumber: String,
 
     @HCColumn("emp_pwd")
-    @Column(name = "emp_pwd", length = 200)
+    @Column(name = "password", length = 200)
     var password: String? = null,
 
     @HCColumn("pwd_yn")
-    @Column(name = "pwd_yn")
+    @Column(name = "password_change_required")
     var passwordChangeRequired: Boolean? = true,
 
     @HCColumn("emp_uuid")
-    @Column(name = "emp_uuid", length = 200)
+    @Column(name = "device_uuid", length = 200)
     var deviceUuid: String? = null,
 
     @HCColumn("emp_token")
-    @Column(name = "emp_token", length = 200)
+    @Column(name = "fcm_token", length = 200)
     var fcmToken: String? = null,
 
     @HCColumn("gps_yn")
-    @Column(name = "gps_yn")
+    @Column(name = "gps_consent")
     val gpsYn: Boolean? = null,
 
     @HCColumn("gps_yn_date")
-    @Column(name = "gps_yn_date")
+    @Column(name = "gps_consent_date")
     val gpsYnDate: LocalDateTime? = null,
 
     @Column(name = "last_agreement_number", length = 80)
