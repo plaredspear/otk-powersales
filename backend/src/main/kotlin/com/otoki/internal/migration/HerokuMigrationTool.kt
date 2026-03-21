@@ -29,7 +29,7 @@ import java.util.Properties
  * │ dkretail__product__c               │ product                     │ Product                 │  YES    │             │
  * │ safetycheck_list                   │ safety_check_item           │ SafetyCheckItem         │  YES    │             │
  * │ dkretail__employee__c              │ employee                    │ Employee                │  YES    │ 종속: employee_mng │
- * │ productbarcode__c                  │ product_barcode             │ ProductBarcode          │  YES    │ FK: product_id │
+ * │ productbarcode__c                  │ product_barcode             │ ProductBarcode          │  YES    │ UPDATE: product_id │
  * │ dkretail__notice__c                │ notice                      │ Notice                  │  YES    │ FK: employee_id │
  * │ displayworkschedulemaster__c       │ display_work_schedule       │ DisplayWorkSchedule     │  YES    │ FK: account_id, employee_id │
  * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
@@ -95,17 +95,7 @@ object HerokuMigrationTool {
         EntityRegistration("product", Product::class.java),
         EntityRegistration("safetyCheckItem", SafetyCheckItem::class.java),
         EntityRegistration("employee", Employee::class.java, dependentTables = listOf("employee_mng")),
-        EntityRegistration("productBarcode", ProductBarcode::class.java) { targetConn ->
-            val sfidToPk = mutableMapOf<String, Any?>()
-            targetConn.createStatement().use { stmt ->
-                stmt.executeQuery("SELECT sfid, product_id FROM $TARGET_SCHEMA.product WHERE sfid IS NOT NULL").use { rs ->
-                    while (rs.next()) {
-                        sfidToPk[rs.getString("sfid")] = rs.getLong("product_id")
-                    }
-                }
-            }
-            mapOf("product_id" to sfidToPk)
-        },
+        EntityRegistration("productBarcode", ProductBarcode::class.java),
         EntityRegistration("notice", Notice::class.java) { targetConn ->
             val sfidToPk = mutableMapOf<String, Any?>()
             targetConn.createStatement().use { stmt ->
@@ -172,6 +162,18 @@ object HerokuMigrationTool {
                 entities.forEach { reg ->
                     val columnTransforms = reg.columnTransformProvider?.invoke(targetConn) ?: emptyMap()
                     migrateEntity(reg.name, reg.entityClass, herokuConn, targetConn, columnTransforms, reg.dependentTables)
+                }
+
+                // ProductBarcode: product_sfid → product_id 역참조 UPDATE
+                println("[productBarcode] product_sfid → product_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.product_barcode pb " +
+                            "SET product_id = p.product_id " +
+                            "FROM $TARGET_SCHEMA.product p " +
+                            "WHERE pb.product_sfid = p.sfid"
+                    )
+                    println("[productBarcode] product_id UPDATE 완료: ${updated}건")
                 }
 
                 // DisplayWorkSchedule: account_sfid → account_id 역참조 UPDATE
