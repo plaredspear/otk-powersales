@@ -1,6 +1,7 @@
 package com.otoki.internal.migration
 
 import com.otoki.internal.common.entity.AgreementWord
+import com.otoki.internal.entity.PushMessage
 import com.otoki.internal.common.salesforce.HCTable
 import com.otoki.internal.common.salesforce.SFSchemaUtils
 import com.otoki.internal.safetycheck.entity.SafetyCheckItem
@@ -50,7 +51,7 @@ import java.util.Properties
  * │ if_product__c                      │ if_product                  │ InterfaceProduct        │   no    │             │
  * │ monthlysaleshistory__c             │ monthly_sales_history       │ MonthlySalesHistory     │   no    │             │
  * │ product_favorites                  │ product_favorites           │ FavoriteProduct         │   no    │             │
- * │ pushmessage__c                     │ push_message                │ PushMessage             │   no    │             │
+ * │ pushmessage__c                     │ push_message                │ PushMessage             │  YES    │             │
  * │ pushmessagereceiver__c             │ push_message_receiver       │ PushMessageReceiver     │   no    │             │
  * │ staffreview__c                     │ staff_review                │ StaffReview             │   no    │             │
  * │ theme__c                           │ inspection_theme            │ InspectionTheme         │   no    │             │
@@ -128,6 +129,7 @@ object HerokuMigrationTool {
             mapOf("employee_id" to employeeSfidToPk)
         },
         EntityRegistration("agreementWord", AgreementWord::class.java),
+        EntityRegistration("pushMessage", PushMessage::class.java),
     )
 
     private const val HEROKU_SCHEMA = "salesforce2"
