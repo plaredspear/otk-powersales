@@ -11,6 +11,7 @@ import com.otoki.internal.sap.entity.MonthlySalesHistory
 import com.otoki.internal.sap.repository.MonthlySalesHistoryRepository
 import com.otoki.internal.schedule.entity.DisplayWorkSchedule
 import com.otoki.internal.schedule.repository.DisplayWorkScheduleRepository
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -28,16 +29,31 @@ class AdminDashboardService(
     private val employeeRepository: EmployeeRepository
 ) {
 
+    private val log = LoggerFactory.getLogger(javaClass)
+
     fun getDashboard(yearMonth: String?, branchCode: String?): DashboardResponse {
         val scope = dataScopeHolder.require()
         val effectiveScope = applyBranchFilter(scope, branchCode)
         val ym = yearMonth ?: YearMonth.now().format(DateTimeFormatter.ofPattern("yyyy-MM"))
         val branchName = resolveBranchName(effectiveScope)
 
+        val basicStats = try {
+            buildBasicStats(effectiveScope, branchName)
+        } catch (e: Exception) {
+            log.warn("기본현황 조회 실패 (employee_info 누락 가능): {}", e.message)
+            BasicStats(
+                branchName = branchName,
+                staffType = StaffTypeCount(promotion = 0, osc = 0),
+                totalByPosition = TotalByPosition(active = 0, onLeave = 0),
+                byAgeGroup = emptyList(),
+                byWorkType = WorkTypeStats(fixed = 0, alternating = 0, visiting = 0)
+            )
+        }
+
         return DashboardResponse(
             salesSummary = buildSalesSummary(effectiveScope, ym, branchName),
             staffDeployment = buildStaffDeployment(effectiveScope, ym, branchName),
-            basicStats = buildBasicStats(effectiveScope, branchName)
+            basicStats = basicStats
         )
     }
 
