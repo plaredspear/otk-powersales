@@ -27,7 +27,7 @@ class Employee(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @HCColumn("id")
+    @Column(name = "employee_id")
     val id: Long = 0,
 
     @HCColumn("sfid")
@@ -100,7 +100,7 @@ class Employee(
     var agreementFlag: Boolean? = null,
 
     @HCColumn("isdeleted")
-    @Column(name = "isdeleted")
+    @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 
     // --- Secondary Table (employee_info) 필드: constructor param only (JPA 미매핑) ---
