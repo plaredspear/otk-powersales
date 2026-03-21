@@ -20,14 +20,52 @@ import java.util.Properties
  * Heroku DB → Dev DB 데이터 마이그레이션 도구
  * Spring 컨텍스트 없이 독립 실행. @HCTable/@HCColumn 어노테이션 기반 매핑.
  *
- * 마이그레이션 대상 테이블 (entities 등록 순서 = 마이그레이션 실행 순서):
- *   1. Account (account)
- *   2. Product (product)
- *   3. SafetyCheckItem (safetyCheckItem)
- *   4. Employee (employee) — 종속 테이블: employee_mng
- *   5. ProductBarcode (productBarcode) — FK 변환: product_id (Product.sfid → PK)
- *   6. Notice (notice) — FK 변환: employee_id (Employee.sfid → PK)
- *   7. DisplayWorkSchedule (displayWorkSchedule) — FK 변환: account_id (Account.sfid → PK), employee_id (Employee.sfid → PK)
+ * ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+ * │ Heroku DB (salesforce2)            │ Dev DB (salesforce2)        │ Entity                  │ Migrate │ 비고        │
+ * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+ * │ account                            │ account                     │ Account                 │  YES    │             │
+ * │ dkretail__product__c               │ product                     │ Product                 │  YES    │             │
+ * │ safetycheck_list                   │ safety_check_item           │ SafetyCheckItem         │  YES    │             │
+ * │ dkretail__employee__c              │ employee                    │ Employee                │  YES    │ 종속: employee_mng │
+ * │ productbarcode__c                  │ product_barcode             │ ProductBarcode          │  YES    │ FK: product_id │
+ * │ dkretail__notice__c                │ notice                      │ Notice                  │  YES    │ FK: employee_id │
+ * │ displayworkschedulemaster__c       │ display_work_schedule       │ DisplayWorkSchedule     │  YES    │ FK: account_id, employee_id │
+ * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+ * │ dkretail__teammemberschedule__c    │ team_member_schedule        │ TeamMemberSchedule      │   no    │ @HCTable 미등록 │
+ * │ safetycheck__workschedule__member  │ safety_check_submission     │ SafetyCheckSubmission   │   no    │ @HCTable 미등록 │
+ * │ education_mng                      │ education_post              │ EducationPost           │   no    │ @HCTable 미등록 │
+ * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+ * │ agreementword__c                   │ agreement_word              │ AgreementWord           │   no    │             │
+ * │ commute_distance                   │ —                           │ —                       │   no    │             │
+ * │ device_version_mng                 │ device_version              │ DeviceVersion           │   no    │             │
+ * │ education_code_mng                 │ education_code              │ EducationCode           │   no    │             │
+ * │ education_file_mng                 │ education_post_attachment   │ EducationPostAttachment │   no    │             │
+ * │ education_member_history           │ education_view_history      │ EducationViewHistory    │   no    │             │
+ * │ employee_admin_mng                 │ employee_admin              │ EmployeeAdmin           │   no    │             │
+ * │ employee_his                       │ employee_his                │ LoginHistory            │   no    │             │
+ * │ employee_mng                       │ employee_mng                │ EmployeeMng             │   no    │ Employee 종속 테이블 │
+ * │ expirationdate__mng                │ expirationdate__mng         │ ShelfLife               │   no    │             │
+ * │ hqreview__c                        │ hq_review                   │ HqReview                │   no    │             │
+ * │ if_product__c                      │ if_product                  │ InterfaceProduct        │   no    │             │
+ * │ monthlysaleshistory__c             │ monthly_sales_history       │ MonthlySalesHistory     │   no    │             │
+ * │ product_favorites                  │ product_favorites           │ FavoriteProduct         │   no    │             │
+ * │ pushmessage__c                     │ push_message                │ PushMessage             │   no    │             │
+ * │ pushmessagereceiver__c             │ push_message_receiver       │ PushMessageReceiver     │   no    │             │
+ * │ staffreview__c                     │ staff_review                │ StaffReview             │   no    │             │
+ * │ theme__c                           │ inspection_theme            │ InspectionTheme         │   no    │             │
+ * │ tmp_claim                          │ tmp_claim                   │ TmpClaim                │   no    │             │
+ * │ tmp_claimcode                      │ tmp_claimcode               │ —                       │   no    │             │
+ * │ tmp_onsite                         │ —                           │ —                       │   no    │ Heroku 전용  │
+ * │ tmp_order                          │ —                           │ —                       │   no    │ Heroku 전용  │
+ * │ tmp_order_product                  │ —                           │ —                       │   no    │ Heroku 전용  │
+ * │ tmp_promotion                      │ —                           │ —                       │   no    │ Heroku 전용  │
+ * │ tmp_suggest                        │ —                           │ —                       │   no    │ Heroku 전용  │
+ * │ uploadfile__c                      │ upload_file                 │ UploadFile              │   no    │             │
+ * │ _hcmeta                            │ —                           │ —                       │   no    │ 시스템       │
+ * │ _sf_event_log                      │ —                           │ —                       │   no    │ 시스템       │
+ * │ _trigger_log                       │ —                           │ —                       │   no    │ 시스템       │
+ * │ _trigger_log_archive               │ —                           │ —                       │   no    │ 시스템       │
+ * └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
  *
  * 실행:
  *   HEROKU_DB_PASSWORD=$(jq -r '.["dev-heroku-db"].PASSWORD' docs/plan/old-accounts.json) ./gradlew migrateHeroku
