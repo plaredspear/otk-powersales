@@ -27,7 +27,7 @@ class DeviceVersion(
     val device: String,
 
     @HCColumn("createdate")
-    @Column(name = "createdate", nullable = false)
+    @Column(name = "create_date", nullable = false)
     val createDate: LocalDateTime,
 
     @HCColumn("contents")
