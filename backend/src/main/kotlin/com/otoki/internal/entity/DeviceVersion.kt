@@ -1,5 +1,7 @@
 package com.otoki.internal.entity
 
+import com.otoki.internal.common.salesforce.HCColumn
+import com.otoki.internal.common.salesforce.HCTable
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
@@ -11,31 +13,40 @@ import java.time.LocalDateTime
 @Entity
 @Table(name = "device_version")
 @IdClass(DeviceVersionId::class)
+@HCTable("device_version_mng")
 class DeviceVersion(
 
     @Id
+    @HCColumn("version")
     @Column(name = "version", nullable = false, length = 10)
     val version: String,
 
     @Id
+    @HCColumn("device")
     @Column(name = "device", nullable = false, length = 10)
     val device: String,
 
+    @HCColumn("createdate")
     @Column(name = "createdate", nullable = false)
     val createDate: LocalDateTime,
 
+    @HCColumn("contents")
     @Column(name = "contents", nullable = false, length = 1000)
     val contents: String,
 
+    @HCColumn("s3_key")
     @Column(name = "s3_key", nullable = false, length = 200)
     val s3Key: String,
 
+    @HCColumn("file_url")
     @Column(name = "file_url", length = 300)
     val fileUrl: String? = null,
 
+    @HCColumn("s3_key_ipa")
     @Column(name = "s3_key_ipa", length = 200)
     val s3KeyIpa: String? = null,
 
+    @HCColumn("file_url_ipa")
     @Column(name = "file_url_ipa", length = 300)
     val fileUrlIpa: String? = null
 )
