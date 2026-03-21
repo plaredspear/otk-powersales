@@ -5,9 +5,6 @@ import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.sap.entity.UserRole
 import com.otoki.internal.common.repository.AgreementWordRepository
 import com.otoki.internal.sap.repository.EmployeeRepository
-import com.otoki.internal.notice.entity.Notice
-import com.otoki.internal.notice.entity.NoticeCategory
-import com.otoki.internal.notice.repository.NoticeRepository
 import com.otoki.internal.sap.entity.Organization
 import com.otoki.internal.sap.repository.OrganizationRepository
 import org.assertj.core.api.Assertions.assertThat
@@ -15,6 +12,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.BeforeEach
 import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
@@ -26,6 +24,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.security.crypto.password.PasswordEncoder
+import org.springframework.transaction.support.TransactionTemplate
 import java.util.Optional
 
 @ExtendWith(MockitoExtension::class)
@@ -42,13 +41,22 @@ class LocalDataInitializerTest {
     private lateinit var agreementWordRepository: AgreementWordRepository
 
     @Mock
-    private lateinit var noticeRepository: NoticeRepository
+    private lateinit var organizationRepository: OrganizationRepository
 
     @Mock
-    private lateinit var organizationRepository: OrganizationRepository
+    private lateinit var transactionTemplate: TransactionTemplate
 
     @InjectMocks
     private lateinit var localDataInitializer: LocalDataInitializer
+
+    @BeforeEach
+    fun setUp() {
+        whenever(transactionTemplate.executeWithoutResult(any())).thenAnswer { invocation ->
+            val callback = invocation.getArgument<java.util.function.Consumer<org.springframework.transaction.TransactionStatus>>(0)
+            callback.accept(org.mockito.Mockito.mock(org.springframework.transaction.TransactionStatus::class.java))
+            null
+        }
+    }
 
     private fun stubAllUsersNotExist() {
         whenever(employeeRepository.existsByEmployeeNumber("00000001")).thenReturn(false)
@@ -388,86 +396,6 @@ class LocalDataInitializerTest {
                 assertThat(aw.isDeleted).isFalse()
                 assertThat(aw.activeDate).isNotNull()
                 assertThat(aw.createdAt).isNotNull()
-            })
-        }
-    }
-
-    @Nested
-    @DisplayName("run - 공지사항 시드 생성")
-    inner class NoticeSeedTests {
-
-        @Test
-        @DisplayName("정상 생성 - 공지 없음 -> Notice 5건 생성")
-        fun run_createsNotices_whenNotExists() {
-            // Given
-            stubAllUsersExist()
-            stubOtherSeedsExist()
-            whenever(noticeRepository.count()).thenReturn(0L)
-
-            // When
-            localDataInitializer.run(null)
-
-            // Then
-            verify(noticeRepository).saveAll(check<List<Notice>> { notices ->
-                assertThat(notices).hasSize(5)
-            })
-        }
-
-        @Test
-        @DisplayName("멱등성 - 공지 이미 존재 -> 저장 skip")
-        fun run_skipsNotices_whenAlreadyExists() {
-            // Given
-            stubAllUsersExist()
-            stubOtherSeedsExist()
-            whenever(noticeRepository.count()).thenReturn(3L)
-
-            // When
-            localDataInitializer.run(null)
-
-            // Then
-            verify(noticeRepository, never()).saveAll(any<List<Notice>>())
-        }
-
-        @Test
-        @DisplayName("정상 생성 - 시드 데이터 필드 검증")
-        fun run_createsNoticesWithCorrectData() {
-            // Given
-            stubAllUsersExist()
-            stubOtherSeedsExist()
-            whenever(noticeRepository.count()).thenReturn(0L)
-
-            // When
-            localDataInitializer.run(null)
-
-            // Then
-            verify(noticeRepository).saveAll(check<List<Notice>> { notices ->
-                val companyNotices = notices.filter { it.category == NoticeCategory.COMPANY }
-                val educationNotices = notices.filter { it.category == NoticeCategory.EDUCATION }
-                assertThat(companyNotices).hasSize(2)
-                assertThat(educationNotices).hasSize(1)
-                (companyNotices + educationNotices).forEach { notice ->
-                    assertThat(notice.scope).isEqualTo("전체")
-                    assertThat(notice.branch).isNull()
-                    assertThat(notice.branchCode).isNull()
-                    assertThat(notice.isDeleted).isFalse()
-                    assertThat(notice.contents).contains("[LOCAL 개발용]")
-                }
-
-                val branchNotices = notices.filter { it.category == NoticeCategory.BRANCH }
-                assertThat(branchNotices).hasSize(2)
-                branchNotices.forEach { notice ->
-                    assertThat(notice.scope).isEqualTo("지점")
-                    assertThat(notice.branch).isEqualTo("테스트지점")
-                    assertThat(notice.branchCode).isEqualTo("BR-TEST-001")
-                    assertThat(notice.isDeleted).isFalse()
-                }
-
-                val eduNotice = notices.find { it.name == "NTC-LOCAL-003" }
-                assertThat(eduNotice?.eduCategory).isEqualTo("교육")
-
-                val dates = notices.mapNotNull { it.createdAt }
-                assertThat(dates).hasSize(5)
-                assertThat(dates).isSorted()
             })
         }
     }
