@@ -40,10 +40,13 @@ class DisplayWorkSchedule(
     @Column(name = "account_sfid", length = 18)
     val accountSfid: String? = null,
 
-    @SFField("FullName__c")
-    @HCColumn("fullname__c")
     @Column(name = "employee_id")
     val employeeId: Long? = null,
+
+    @SFField("FullName__c")
+    @HCColumn("fullname__c")
+    @Column(name = "employee_sfid", length = 18)
+    val employeeSfid: String? = null,
 
     @SFField("StartDate__c")
     @HCColumn("startdate__c")
@@ -75,9 +78,13 @@ class DisplayWorkSchedule(
     @Column(name = "type_of_work5", length = 255)
     val typeOfWork5: String? = null,
 
-    @SFField("OwnerId")
     @Column(name = "owner_id")
     val ownerId: Long? = null,
+
+    @SFField("OwnerId")
+    @HCColumn("ownerid")
+    @Column(name = "owner_sfid", length = 18)
+    val ownerSfid: String? = null,
 
     @SFField("CostCenterCode__c")
     @Column(name = "cost_center_code", length = 20)
