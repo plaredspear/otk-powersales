@@ -49,7 +49,7 @@ import java.util.Properties
  * │ education_member_history           │ education_view_history      │ EducationViewHistory    │ community_id → education_mng (코드값, sfid 아님)              │   no    │                    │
  * │ employee_admin_mng                 │ employee_admin              │ EmployeeAdmin           │ —                                                             │   no    │                    │
  * │ employee_his                       │ employee_his                │ LoginHistory            │ —                                                             │   no    │                    │
- * │ employee_mng                       │ employee_mng                │ EmployeeMng             │ —                                                             │   no    │ Employee 종속 테이블 │
+ * │ employee_mng                       │ employee_info               │ EmployeeInfo            │ —                                                             │   no    │ Employee 종속 테이블 │
  * │ expirationdate__mng                │ expirationdate__mng         │ ShelfLife               │ employee_id → employee.sfid                                   │   no    │                    │
  * │ hqreview__c                        │ hq_review                   │ HqReview                │ —                                                             │   no    │                    │
  * │ if_product__c                      │ if_product                  │ InterfaceProduct        │ —                                                             │   no    │                    │
@@ -98,7 +98,7 @@ object HerokuMigrationTool {
         EntityRegistration("account", Account::class.java),
         EntityRegistration("product", Product::class.java),
         EntityRegistration("safetyCheckItem", SafetyCheckItem::class.java),
-        EntityRegistration("employee", Employee::class.java, dependentTables = listOf("employee_mng")),
+        EntityRegistration("employee", Employee::class.java, dependentTables = listOf("employee_info")),
         EntityRegistration("productBarcode", ProductBarcode::class.java),
         EntityRegistration("notice", Notice::class.java) { targetConn ->
             val sfidToPk = mutableMapOf<String, Any?>()
