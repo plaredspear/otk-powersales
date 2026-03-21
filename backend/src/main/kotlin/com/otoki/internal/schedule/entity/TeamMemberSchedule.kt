@@ -21,7 +21,7 @@ class TeamMemberSchedule(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @HCColumn("id")
+    @Column(name = "team_member_schedule_id")
     val id: Long = 0,
 
     @HCColumn("sfid")
@@ -196,7 +196,7 @@ class TeamMemberSchedule(
     val completeTime: LocalDateTime? = null,
 
     @HCColumn("isdeleted")
-    @Column(name = "isdeleted")
+    @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 
 ) : BaseEntity() {

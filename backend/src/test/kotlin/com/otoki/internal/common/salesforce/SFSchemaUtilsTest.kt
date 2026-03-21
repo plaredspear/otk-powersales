@@ -166,12 +166,12 @@ class SFSchemaUtilsTest {
         }
 
         @Test
-        @DisplayName("TeamMemberSchedule 엔티티 - 38개 HC Column 매핑 반환")
+        @DisplayName("TeamMemberSchedule 엔티티 - 37개 HC Column 매핑 반환")
         fun getHCMapping_teamMemberSchedule() {
             val mapping = SFSchemaUtils.getHCMapping(TeamMemberSchedule::class.java)
 
-            assertThat(mapping).hasSize(36)
-            assertThat(mapping["id"]).isEqualTo("id")
+            assertThat(mapping).hasSize(35)
+            assertThat(mapping["id"]).isNull()
             assertThat(mapping["sfid"]).isEqualTo("sfid")
             assertThat(mapping["name"]).isEqualTo("name")
             assertThat(mapping["dkretail__employeeid__c"]).isEqualTo("employee_id")
@@ -198,7 +198,7 @@ class SFSchemaUtilsTest {
             assertThat(mapping["precaution__c"]).isEqualTo("precaution")
             assertThat(mapping["starttime__c"]).isEqualTo("start_time")
             assertThat(mapping["completetime__c"]).isEqualTo("complete_time")
-            assertThat(mapping["isdeleted"]).isEqualTo("isdeleted")
+            assertThat(mapping["isdeleted"]).isEqualTo("is_deleted")
         }
 
         @Test
