@@ -16,6 +16,7 @@ class AgreementWord(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @HCColumn("id")
+    @Column(name = "agreement_word_id")
     val id: Int = 0,
 
     @HCColumn("name")
@@ -23,23 +24,23 @@ class AgreementWord(
     val name: String? = null,
 
     @HCColumn("contents__c")
-    @Column(name = "contents__c", length = 8000)
+    @Column(name = "contents", length = 8000)
     val contents: String? = null,
 
     @HCColumn("active__c")
-    @Column(name = "active__c")
+    @Column(name = "active")
     val active: Boolean? = null,
 
     @HCColumn("activedate__c")
-    @Column(name = "activedate__c")
+    @Column(name = "active_date")
     val activeDate: LocalDate? = null,
 
     @HCColumn("afteractivedate__c")
-    @Column(name = "afteractivedate__c")
+    @Column(name = "after_active_date")
     val afterActiveDate: LocalDate? = null,
 
     @HCColumn("isdeleted")
-    @Column(name = "isdeleted")
+    @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 
     @HCColumn("sfid")
