@@ -8,8 +8,10 @@ import com.otoki.internal.notice.dto.response.NoticeMutationResponse
 import com.otoki.internal.notice.dto.response.NoticePostDetailResponse
 import com.otoki.internal.notice.dto.response.NoticePostListResponse
 import com.otoki.internal.notice.exception.InvalidNoticeIdException
+import com.otoki.internal.common.security.UserPrincipal
 import com.otoki.internal.notice.service.NoticeService
 import jakarta.validation.Valid
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -48,9 +50,10 @@ class AdminNoticeController(
 
     @PostMapping
     fun createNotice(
+        @AuthenticationPrincipal principal: UserPrincipal,
         @Valid @RequestBody request: NoticeCreateRequest
     ): ResponseEntity<ApiResponse<NoticeMutationResponse>> {
-        val response = noticeService.createNotice(request)
+        val response = noticeService.createNotice(request, principal.userId)
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response))
     }
 

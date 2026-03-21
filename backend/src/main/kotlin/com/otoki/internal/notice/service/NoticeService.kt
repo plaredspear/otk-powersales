@@ -134,7 +134,7 @@ class NoticeService(
     }
 
     @Transactional
-    fun createNotice(request: NoticeCreateRequest): NoticeMutationResponse {
+    fun createNotice(request: NoticeCreateRequest, creatorId: Long): NoticeMutationResponse {
         val cat = parseCategory(request.category)
         validateBranch(cat, request.branch, request.branchCode)
 
@@ -143,7 +143,8 @@ class NoticeService(
             category = cat,
             contents = request.content,
             branch = if (cat == NoticeCategory.BRANCH) request.branch else null,
-            branchCode = if (cat == NoticeCategory.BRANCH) request.branchCode else null
+            branchCode = if (cat == NoticeCategory.BRANCH) request.branchCode else null,
+            employeeId = creatorId
         )
         val saved = noticeRepository.save(notice)
         return NoticeMutationResponse.from(saved)

@@ -423,7 +423,7 @@ class NoticeServiceTest {
             )
             whenever(noticeRepository.save(any<Notice>())).thenAnswer { it.getArgument<Notice>(0) }
 
-            val result = noticeService.createNotice(request)
+            val result = noticeService.createNotice(request, 1L)
 
             assertThat(result.title).isEqualTo("테스트 공지")
             assertThat(result.category).isEqualTo("COMPANY")
@@ -444,7 +444,7 @@ class NoticeServiceTest {
             )
             whenever(noticeRepository.save(any<Notice>())).thenAnswer { it.getArgument<Notice>(0) }
 
-            val result = noticeService.createNotice(request)
+            val result = noticeService.createNotice(request, 1L)
 
             assertThat(result.category).isEqualTo("BRANCH")
             assertThat(result.categoryName).isEqualTo("지점공지")
@@ -462,7 +462,7 @@ class NoticeServiceTest {
             )
             whenever(noticeRepository.save(any<Notice>())).thenAnswer { it.getArgument<Notice>(0) }
 
-            val result = noticeService.createNotice(request)
+            val result = noticeService.createNotice(request, 1L)
 
             assertThat(result.category).isEqualTo("EDUCATION")
             assertThat(result.categoryName).isEqualTo("교육")
@@ -482,7 +482,7 @@ class NoticeServiceTest {
             )
             whenever(noticeRepository.save(any<Notice>())).thenAnswer { it.getArgument<Notice>(0) }
 
-            val result = noticeService.createNotice(request)
+            val result = noticeService.createNotice(request, 1L)
 
             assertThat(result.branch).isNull()
             assertThat(result.branchCode).isNull()
@@ -493,7 +493,7 @@ class NoticeServiceTest {
         fun createNotice_invalidCategory() {
             val request = NoticeCreateRequest(title = "공지", category = "UNKNOWN", content = "내용")
 
-            assertThatThrownBy { noticeService.createNotice(request) }
+            assertThatThrownBy { noticeService.createNotice(request, 1L) }
                 .isInstanceOf(InvalidNoticeCategoryException::class.java)
         }
 
@@ -508,7 +508,7 @@ class NoticeServiceTest {
                 branchCode = null
             )
 
-            assertThatThrownBy { noticeService.createNotice(request) }
+            assertThatThrownBy { noticeService.createNotice(request, 1L) }
                 .isInstanceOf(BranchRequiredException::class.java)
         }
     }
