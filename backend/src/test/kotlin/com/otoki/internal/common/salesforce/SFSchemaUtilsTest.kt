@@ -142,12 +142,11 @@ class SFSchemaUtilsTest {
         }
 
         @Test
-        @DisplayName("User 엔티티 - 18개 HC Column 매핑 반환")
+        @DisplayName("Employee 엔티티 - 15개 HC Column 매핑 반환")
         fun getHCMapping_user() {
             val mapping = SFSchemaUtils.getHCMapping(Employee::class.java)
 
-            assertThat(mapping).hasSize(16)
-            assertThat(mapping["id"]).isEqualTo("id")
+            assertThat(mapping).hasSize(15)
             assertThat(mapping["sfid"]).isEqualTo("sfid")
             assertThat(mapping["dkretail__empcode__c"]).isEqualTo("employee_number")
             assertThat(mapping["name"]).isEqualTo("name")
@@ -162,7 +161,7 @@ class SFSchemaUtilsTest {
             assertThat(mapping["dkretail__homephone__c"]).isEqualTo("home_phone")
             assertThat(mapping["dkretail__startdate__c"]).isEqualTo("start_date")
             assertThat(mapping["agreementflag__c"]).isEqualTo("agreement_flag")
-            assertThat(mapping["isdeleted"]).isEqualTo("isdeleted")
+            assertThat(mapping["isdeleted"]).isEqualTo("is_deleted")
         }
 
         @Test
