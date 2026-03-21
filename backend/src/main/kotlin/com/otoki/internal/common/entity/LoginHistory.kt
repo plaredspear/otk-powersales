@@ -1,5 +1,7 @@
 package com.otoki.internal.common.entity
 
+import com.otoki.internal.common.salesforce.HCColumn
+import com.otoki.internal.common.salesforce.HCTable
 import jakarta.persistence.*
 import java.io.Serializable
 import java.time.LocalDateTime
@@ -37,13 +39,16 @@ class LoginHistoryId(
 @Entity
 @Table(name = "employee_his")
 @IdClass(LoginHistoryId::class)
+@HCTable("employee_his")
 class LoginHistory(
 
     @Id
+    @HCColumn("empcode__c")
     @Column(name = "empcode__c", length = 80)
     val employeeId: String,
 
     @Id
+    @HCColumn("inst_date")
     @Column(name = "inst_date")
     val loginAt: LocalDateTime = LocalDateTime.now()
 )
