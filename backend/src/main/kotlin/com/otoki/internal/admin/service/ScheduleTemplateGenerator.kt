@@ -65,7 +65,7 @@ class ScheduleTemplateGenerator {
             val row = sheet.createRow(rowIdx)
 
             // A: 사원번호
-            row.createCell(0).setCellValue(employee.employeeNumber)
+            row.createCell(0).setCellValue(employee.employeeCode)
             // B: 사원명
             row.createCell(1).setCellValue(employee.name)
 

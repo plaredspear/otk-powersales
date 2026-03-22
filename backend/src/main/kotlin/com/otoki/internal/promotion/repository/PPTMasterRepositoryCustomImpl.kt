@@ -18,7 +18,7 @@ class PPTMasterRepositoryCustomImpl(
 
     override fun searchMasters(
         employeeName: String?,
-        employeeNumber: String?,
+        employeeCode: String?,
         teamType: String?,
         branchCode: String?,
         validOnly: Boolean,
@@ -31,8 +31,8 @@ class PPTMasterRepositoryCustomImpl(
             builder.and(employee.name.containsIgnoreCase(employeeName))
         }
 
-        if (!employeeNumber.isNullOrBlank()) {
-            builder.and(employee.employeeNumber.eq(employeeNumber))
+        if (!employeeCode.isNullOrBlank()) {
+            builder.and(employee.employeeCode.eq(employeeCode))
         }
 
         if (!teamType.isNullOrBlank()) {
@@ -58,7 +58,7 @@ class PPTMasterRepositoryCustomImpl(
                 Projections.constructor(
                     PPTMasterSearchResult::class.java,
                     professionalPromotionTeamMaster,
-                    employee.employeeNumber,
+                    employee.employeeCode,
                     employee.name,
                     account.externalKey,
                     account.name

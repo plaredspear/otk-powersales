@@ -856,10 +856,10 @@ class AdminPromotionServiceTest {
 
     private fun createEmployee(
         id: Long = 1L,
-        employeeNumber: String = "20030117",
+        employeeCode: String = "20030117",
         costCenterCode: String? = "1101",
         appAuthority: String? = null
-    ) = Employee(id = id, employeeNumber = employeeNumber, name = "테스트 사용자").also {
+    ) = Employee(id = id, employeeCode = employeeCode, name = "테스트 사용자").also {
         it.costCenterCode = costCenterCode
         it.appAuthority = appAuthority
     }

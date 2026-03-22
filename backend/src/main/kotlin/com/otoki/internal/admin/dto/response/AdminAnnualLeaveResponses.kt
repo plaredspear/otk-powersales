@@ -6,7 +6,7 @@ data class AnnualLeaveDayDto(
 )
 
 data class EmployeeAnnualLeaveDto(
-    val employeeNumber: String,
+    val employeeCode: String,
     val employeeName: String,
     val orgName: String,
     val annualLeaveDays: List<AnnualLeaveDayDto>,

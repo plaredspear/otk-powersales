@@ -54,8 +54,8 @@ class EventServiceTest {
         fun getEvents_success() {
             // Given
             val userId = 1L
-            val employeeNumber = "EMP001"
-            val employee = createEmployee(id = userId, employeeNumber = employeeNumber)
+            val employeeCode = "EMP001"
+            val employee = createEmployee(id = userId, employeeCode = employeeCode)
             val request = EventListRequest(
                 customerId = null,
                 date = "2026-02-12",
@@ -67,7 +67,7 @@ class EventServiceTest {
                 createEvent(
                     id = 1,
                     eventId = "EVT001",
-                    assigneeId = employeeNumber,
+                    assigneeId = employeeCode,
                     customerId = "C001",
                     startDate = LocalDate.of(2026, 2, 10),
                     endDate = LocalDate.of(2026, 2, 28)
@@ -77,7 +77,7 @@ class EventServiceTest {
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(eventRepository.findEventsByAssignee(
-                eq(employeeNumber),
+                eq(employeeCode),
                 eq(null),
                 eq(LocalDate.of(2026, 2, 12)),
                 any()
@@ -99,8 +99,8 @@ class EventServiceTest {
         fun getEvents_withCustomerFilter() {
             // Given
             val userId = 1L
-            val employeeNumber = "EMP001"
-            val employee = createEmployee(id = userId, employeeNumber = employeeNumber)
+            val employeeCode = "EMP001"
+            val employee = createEmployee(id = userId, employeeCode = employeeCode)
             val request = EventListRequest(
                 customerId = "C001",
                 date = null,
@@ -112,7 +112,7 @@ class EventServiceTest {
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(eventRepository.findEventsByAssignee(
-                eq(employeeNumber),
+                eq(employeeCode),
                 eq("C001"),
                 any(),
                 any()
@@ -137,13 +137,13 @@ class EventServiceTest {
         fun getEventDetail_success() {
             // Given
             val userId = 1L
-            val employeeNumber = "EMP001"
+            val employeeCode = "EMP001"
             val eventId = "EVT001"
-            val employee = createEmployee(id = userId, employeeNumber = employeeNumber)
+            val employee = createEmployee(id = userId, employeeCode = employeeCode)
             val event = createEvent(
                 id = 1,
                 eventId = eventId,
-                assigneeId = employeeNumber,
+                assigneeId = employeeCode,
                 customerId = "C001",
                 targetAmount = 5000000L,
                 startDate = LocalDate.now().minusDays(5),
@@ -163,7 +163,7 @@ class EventServiceTest {
 
             // Then
             assertThat(result.event.eventId).isEqualTo(eventId)
-            assertThat(result.event.assigneeId).isEqualTo(employeeNumber)
+            assertThat(result.event.assigneeId).isEqualTo(employeeCode)
             assertThat(result.salesInfo.targetAmount).isEqualTo(5000000L)
             assertThat(result.products.mainProduct).isNotNull
             assertThat(result.products.mainProduct!!.productCode).isEqualTo("P001")
@@ -176,13 +176,13 @@ class EventServiceTest {
         fun getEventDetail_progressRateCalculation() {
             // Given
             val userId = 1L
-            val employeeNumber = "EMP001"
+            val employeeCode = "EMP001"
             val eventId = "EVT001"
-            val employee = createEmployee(id = userId, employeeNumber = employeeNumber)
+            val employee = createEmployee(id = userId, employeeCode = employeeCode)
             val event = createEvent(
                 id = 1,
                 eventId = eventId,
-                assigneeId = employeeNumber,
+                assigneeId = employeeCode,
                 startDate = LocalDate.now().minusDays(10),
                 endDate = LocalDate.now().plusDays(10)
             )
@@ -203,9 +203,9 @@ class EventServiceTest {
         fun getEventDetail_notFound() {
             // Given
             val userId = 1L
-            val employeeNumber = "EMP001"
+            val employeeCode = "EMP001"
             val eventId = "EVT999"
-            val employee = createEmployee(id = userId, employeeNumber = employeeNumber)
+            val employee = createEmployee(id = userId, employeeCode = employeeCode)
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(eventRepository.findByEventId(eventId)).thenReturn(Optional.empty())
@@ -260,13 +260,13 @@ class EventServiceTest {
 
     private fun createEmployee(
         id: Long,
-        employeeNumber: String = "EMP001",
+        employeeCode: String = "EMP001",
         name: String = "홍길동",
         orgName: String = "서울지점"
     ): Employee {
         return Employee(
             id = id,
-            employeeNumber = employeeNumber,
+            employeeCode = employeeCode,
             password = "encoded_password",
             name = name,
             orgName = orgName

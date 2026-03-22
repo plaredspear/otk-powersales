@@ -9,7 +9,7 @@ interface AlternativeHolidayRepositoryCustom {
         startDate: LocalDate,
         endDate: LocalDate,
         status: String?,
-        employeeNumber: String?,
+        employeeCode: String?,
         orgCode: String?
     ): List<AlternativeHolidayListItem>
 }

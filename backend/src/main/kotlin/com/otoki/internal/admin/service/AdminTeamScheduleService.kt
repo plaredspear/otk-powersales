@@ -141,7 +141,7 @@ class AdminTeamScheduleService(
 
     @Transactional
     fun createSchedule(userId: Long, request: TeamScheduleCreateRequest): TeamScheduleCreateResultDto {
-        val employee = employeeRepository.findByEmployeeNumber(request.employeeNumber)
+        val employee = employeeRepository.findByEmployeeCode(request.employeeCode)
             .orElseThrow { TeamScheduleEmployeeNotFoundException() }
 
         validateEmployeeStatus(employee)

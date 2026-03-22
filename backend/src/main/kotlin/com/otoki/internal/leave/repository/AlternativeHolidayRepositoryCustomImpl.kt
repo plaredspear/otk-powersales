@@ -16,13 +16,13 @@ class AlternativeHolidayRepositoryCustomImpl(
         startDate: LocalDate,
         endDate: LocalDate,
         status: String?,
-        employeeNumber: String?,
+        employeeCode: String?,
         orgCode: String?
     ): List<AlternativeHolidayListItem> {
         val condition = BooleanBuilder()
             .and(alternativeHoliday.actualWorkDate.between(startDate, endDate))
             .and(buildStatusCondition(status))
-            .and(buildEmployeeNumberCondition(employeeNumber))
+            .and(buildEmployeeNumberCondition(employeeCode))
             .and(buildOrgCodeCondition(orgCode))
 
         return queryFactory
@@ -30,7 +30,7 @@ class AlternativeHolidayRepositoryCustomImpl(
                 Projections.constructor(
                     AlternativeHolidayListItem::class.java,
                     alternativeHoliday.id,
-                    employee.employeeNumber,
+                    employee.employeeCode,
                     alternativeHoliday.employeeName,
                     employee.orgName,
                     alternativeHoliday.actualWorkDate,
@@ -52,8 +52,8 @@ class AlternativeHolidayRepositoryCustomImpl(
     private fun buildStatusCondition(status: String?) =
         status?.let { alternativeHoliday.status.eq(it) }
 
-    private fun buildEmployeeNumberCondition(employeeNumber: String?) =
-        employeeNumber?.let { employee.employeeNumber.eq(it) }
+    private fun buildEmployeeNumberCondition(employeeCode: String?) =
+        employeeCode?.let { employee.employeeCode.eq(it) }
 
     private fun buildOrgCodeCondition(orgCode: String?) =
         orgCode?.let { employee.costCenterCode.eq(it) }

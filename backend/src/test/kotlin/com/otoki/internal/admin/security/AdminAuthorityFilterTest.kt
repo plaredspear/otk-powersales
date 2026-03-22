@@ -221,7 +221,7 @@ class AdminAuthorityFilterTest {
     private fun createEmployee(id: Long, appAuthority: String?): Employee {
         return Employee(
             id = id,
-            employeeNumber = "12345678",
+            employeeCode = "12345678",
             name = "테스트",
             appAuthority = appAuthority
         )

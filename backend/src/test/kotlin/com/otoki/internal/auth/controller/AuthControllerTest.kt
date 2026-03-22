@@ -87,7 +87,7 @@ class AuthControllerTest {
     @DisplayName("정상 로그인 - 200 OK, 사용자 정보 및 토큰 반환")
     fun login_success() {
         // Given
-        val request = LoginRequest(employeeNumber = "12345678", password = "password123")
+        val request = LoginRequest(employeeCode = "12345678", password = "password123")
         val mockResponse = LoginResponse(
             user = UserInfo(1L, "12345678", "홍길동", "서울지점", "USER"),
             token = TokenInfo("access-token", "refresh-token", 3600),
@@ -107,7 +107,7 @@ class AuthControllerTest {
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.message").value("로그인 성공"))
             .andExpect(jsonPath("$.data.user.id").value(1))
-            .andExpect(jsonPath("$.data.user.employee_number").value("12345678"))
+            .andExpect(jsonPath("$.data.user.employee_code").value("12345678"))
             .andExpect(jsonPath("$.data.user.name").value("홍길동"))
             .andExpect(jsonPath("$.data.user.org_name").value("서울지점"))
             .andExpect(jsonPath("$.data.user.role").value("USER"))
@@ -135,7 +135,7 @@ class AuthControllerTest {
         mockMvc.perform(
             post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"employee_number": "87654321", "password": "otg1"}""")
+                .content("""{"employee_code": "87654321", "password": "otg1"}""")
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.requires_password_change").value(true))
@@ -152,7 +152,7 @@ class AuthControllerTest {
         mockMvc.perform(
             post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"employee_number": "99999999", "password": "password123"}""")
+                .content("""{"employee_code": "99999999", "password": "password123"}""")
         )
             .andExpect(status().isUnauthorized)
             .andExpect(jsonPath("$.success").value(false))
@@ -160,13 +160,13 @@ class AuthControllerTest {
     }
 
     @Test
-    @DisplayName("필수 필드 누락 (employeeNumber 빈 값) - 400 INVALID_PARAMETER")
+    @DisplayName("필수 필드 누락 (employeeCode 빈 값) - 400 INVALID_PARAMETER")
     fun login_missingEmployeeNumber() {
         // When & Then
         mockMvc.perform(
             post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"employee_number": "", "password": "password123"}""")
+                .content("""{"employee_code": "", "password": "password123"}""")
         )
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.success").value(false))
@@ -180,7 +180,7 @@ class AuthControllerTest {
         mockMvc.perform(
             post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"employee_number": "123456", "password": "password123"}""")
+                .content("""{"employee_code": "123456", "password": "password123"}""")
         )
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.success").value(false))
@@ -195,7 +195,7 @@ class AuthControllerTest {
         mockMvc.perform(
             post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"employee_number": "12345678", "password": "123"}""")
+                .content("""{"employee_code": "12345678", "password": "123"}""")
         )
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.success").value(false))

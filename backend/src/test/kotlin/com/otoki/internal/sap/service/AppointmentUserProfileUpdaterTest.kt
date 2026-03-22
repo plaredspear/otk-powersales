@@ -66,7 +66,7 @@ class AppointmentUserProfileUpdaterTest {
         @DisplayName("조장 - jobCode=A055, jikchak=D0052 -> appAuthority=조장, appLoginActive=true")
         fun immediateLeader() {
             val employee = createEmployee()
-            whenever(employeeRepository.findByEmployeeNumber("100234")).thenReturn(Optional.of(employee))
+            whenever(employeeRepository.findByEmployeeCode("100234")).thenReturn(Optional.of(employee))
 
             val appointment = createAppointment(
                 afterOrgCode = "1111", afterOrgName = "제1영업지점",
@@ -98,7 +98,7 @@ class AppointmentUserProfileUpdaterTest {
         @DisplayName("여사원 - jobCode=A049, jikchak!=D0052, ordDetailNode=전보 -> 여사원, professionalPromotionTeam=일반")
         fun immediateWorker() {
             val employee = createEmployee()
-            whenever(employeeRepository.findByEmployeeNumber("100234")).thenReturn(Optional.of(employee))
+            whenever(employeeRepository.findByEmployeeCode("100234")).thenReturn(Optional.of(employee))
 
             val appointment = createAppointment(
                 afterOrgCode = "1111", afterOrgName = "제2영업지점",
@@ -117,7 +117,7 @@ class AppointmentUserProfileUpdaterTest {
         @DisplayName("일반직 - jobCode=B001 -> appAuthority/appLoginActive 변경 없음")
         fun immediateGeneral() {
             val employee = createEmployee(appAuthority = "영업사원", appLoginActive = false)
-            whenever(employeeRepository.findByEmployeeNumber("100234")).thenReturn(Optional.of(employee))
+            whenever(employeeRepository.findByEmployeeCode("100234")).thenReturn(Optional.of(employee))
 
             val appointment = createAppointment(
                 afterOrgCode = "1111", afterOrgName = "본사",
@@ -138,7 +138,7 @@ class AppointmentUserProfileUpdaterTest {
         @DisplayName("승진 발령 - ordDetailNode=승진 -> professionalPromotionTeam 기존 값 유지")
         fun promotionKeepsPPT() {
             val employee = createEmployee(professionalPromotionTeam = "특별반")
-            whenever(employeeRepository.findByEmployeeNumber("100234")).thenReturn(Optional.of(employee))
+            whenever(employeeRepository.findByEmployeeCode("100234")).thenReturn(Optional.of(employee))
 
             val appointment = createAppointment(
                 afterOrgCode = "1111", afterOrgName = "지점",
@@ -221,7 +221,7 @@ class AppointmentUserProfileUpdaterTest {
         @DisplayName("예약 발령 - crmWorkStartDate 설정, AppAuthority 즉시, 나머지 미변경")
         fun reservedAppointment() {
             val employee = createEmployee(orgName = "기존지점", costCenterCode = "0000")
-            whenever(employeeRepository.findByEmployeeNumber("100234")).thenReturn(Optional.of(employee))
+            whenever(employeeRepository.findByEmployeeCode("100234")).thenReturn(Optional.of(employee))
 
             val appointment = createAppointment(
                 afterOrgCode = "1111", afterOrgName = "신규지점",
@@ -336,7 +336,7 @@ class AppointmentUserProfileUpdaterTest {
         @DisplayName("appointDate 파싱 실패 -> skip")
         fun skipOnInvalidDate() {
             val employee = createEmployee()
-            whenever(employeeRepository.findByEmployeeNumber("100234")).thenReturn(Optional.of(employee))
+            whenever(employeeRepository.findByEmployeeCode("100234")).thenReturn(Optional.of(employee))
 
             val appointment = createAppointment(
                 afterOrgCode = "1111", appointDate = "invalid"
@@ -373,7 +373,7 @@ class AppointmentUserProfileUpdaterTest {
 
     private fun createEmployee(
         id: Long = 1L,
-        employeeNumber: String = "100234",
+        employeeCode: String = "100234",
         appAuthority: String? = null,
         appLoginActive: Boolean? = null,
         orgName: String? = null,
@@ -381,7 +381,7 @@ class AppointmentUserProfileUpdaterTest {
         professionalPromotionTeam: String? = null
     ): Employee = Employee(
         id = id,
-        employeeNumber = employeeNumber,
+        employeeCode = employeeCode,
         name = "테스트사원",
         appAuthority = appAuthority,
         appLoginActive = appLoginActive,

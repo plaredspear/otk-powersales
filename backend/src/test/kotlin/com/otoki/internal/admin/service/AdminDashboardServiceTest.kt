@@ -678,7 +678,7 @@ class AdminDashboardServiceTest {
 
     private fun createEmployee(
         id: Long = 0,
-        employeeNumber: String = "EMP001",
+        employeeCode: String = "EMP001",
         name: String = "테스트사원",
         appAuthority: String? = null,
         costCenterCode: String? = null,
@@ -688,7 +688,7 @@ class AdminDashboardServiceTest {
     ): Employee {
         return Employee(
             id = id,
-            employeeNumber = employeeNumber,
+            employeeCode = employeeCode,
             name = name,
             appAuthority = appAuthority,
             costCenterCode = costCenterCode,

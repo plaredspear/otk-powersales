@@ -9,7 +9,7 @@ interface PPTMasterRepositoryCustom {
 
     fun searchMasters(
         employeeName: String?,
-        employeeNumber: String?,
+        employeeCode: String?,
         teamType: String?,
         branchCode: String?,
         validOnly: Boolean,
@@ -34,7 +34,7 @@ interface PPTMasterRepositoryCustom {
 
 data class PPTMasterSearchResult(
     val master: ProfessionalPromotionTeamMaster,
-    val employeeNumber: String?,
+    val employeeCode: String?,
     val employeeName: String?,
     val accountCode: String?,
     val accountName: String?

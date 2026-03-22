@@ -29,11 +29,11 @@ class AdminAlternativeHolidayController(
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) startDate: LocalDate,
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) endDate: LocalDate,
         @RequestParam(required = false) status: String?,
-        @RequestParam(required = false) employeeNumber: String?,
+        @RequestParam(required = false) employeeCode: String?,
         @RequestParam(required = false) orgCode: String?
     ): ResponseEntity<ApiResponse<List<AlternativeHolidayListItem>>> {
         val response = adminAlternativeHolidayService.getAlternativeHolidays(
-            startDate, endDate, status, employeeNumber, orgCode
+            startDate, endDate, status, employeeCode, orgCode
         )
         return ResponseEntity.ok(ApiResponse.success(response))
     }

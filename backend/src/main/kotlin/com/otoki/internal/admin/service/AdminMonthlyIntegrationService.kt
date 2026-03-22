@@ -104,7 +104,7 @@ class AdminMonthlyIntegrationService(
             row.createCell(1).setCellValue(item.accountBranchName ?: "")
             row.createCell(2).setCellValue(item.accountCode)
             row.createCell(3).setCellValue(item.accountName)
-            row.createCell(4).setCellValue(item.employeeNumber)
+            row.createCell(4).setCellValue(item.employeeCode)
             row.createCell(5).setCellValue(item.title ?: "")
             row.createCell(6).setCellValue(item.employeeName)
             row.createCell(7).setCellValue(item.workingCategory1)
@@ -335,7 +335,7 @@ class AdminMonthlyIntegrationService(
                 accountBranchName = account?.branchName,
                 accountCode = account?.externalKey ?: "",
                 accountName = account?.name ?: "",
-                employeeNumber = employee?.employeeNumber ?: "",
+                employeeCode = employee?.employeeCode ?: "",
                 title = null,
                 employeeName = employee?.name ?: "",
                 workingCategory1 = key.workingCategory1 ?: "",
@@ -347,7 +347,7 @@ class AdminMonthlyIntegrationService(
                 convertedHeadcount = convertedHeadcount,
                 avgClosingAmount = avgAmount
             )
-        }.sortedWith(compareBy({ it.branchName }, { it.accountCode }, { it.employeeNumber }))
+        }.sortedWith(compareBy({ it.branchName }, { it.accountCode }, { it.employeeCode }))
 
         return items
     }

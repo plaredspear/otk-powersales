@@ -142,7 +142,7 @@ class ScheduleUploadValidator {
             }
 
             val userId = employee!!.id
-            val userEmployeeNumber = employee.employeeNumber
+            val userEmployeeNumber = employee.employeeCode
             val accountIdVal = account!!.id
 
             // V8: DB 기존 레코드와 기간 중복 검사

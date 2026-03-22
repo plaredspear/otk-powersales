@@ -54,9 +54,9 @@ class AdminPromotionConfirmServiceTest {
             whenever(teamMemberScheduleRepository.findByPromotionEmployeeIdIn(any())).thenReturn(emptyList())
             whenever(teamMemberScheduleRepository.findByEmployeeIdInAndWorkingDateIn(any(), any())).thenReturn(emptyList())
             whenever(employeeRepository.findAllById(any())).thenReturn(listOf(
-                createEmployee(id = 1L, employeeNumber = "EMP001", name = "김철수"),
-                createEmployee(id = 2L, employeeNumber = "EMP002", name = "이영희"),
-                createEmployee(id = 3L, employeeNumber = "EMP003", name = "박민수")
+                createEmployee(id = 1L, employeeCode = "EMP001", name = "김철수"),
+                createEmployee(id = 2L, employeeCode = "EMP002", name = "이영희"),
+                createEmployee(id = 3L, employeeCode = "EMP003", name = "박민수")
             ))
             whenever(teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>())).thenAnswer { invocation ->
                 val teamMemberSchedules = invocation.getArgument<List<TeamMemberSchedule>>(0)
@@ -108,7 +108,7 @@ class AdminPromotionConfirmServiceTest {
             whenever(promotionEmployeeRepository.findByPromotionId(10L)).thenReturn(employees)
             whenever(teamMemberScheduleRepository.findByPromotionEmployeeIdIn(listOf(1L))).thenReturn(listOf(existingTeamMemberSchedule))
             whenever(teamMemberScheduleRepository.findByEmployeeIdInAndWorkingDateIn(any(), any())).thenReturn(listOf(existingTeamMemberSchedule))
-            whenever(employeeRepository.findAllById(any())).thenReturn(listOf(createEmployee(id = 1L, employeeNumber = "EMP001", name = "김철수")))
+            whenever(employeeRepository.findAllById(any())).thenReturn(listOf(createEmployee(id = 1L, employeeCode = "EMP001", name = "김철수")))
             whenever(teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>())).thenAnswer { it.getArgument<List<TeamMemberSchedule>>(0) }
             whenever(promotionEmployeeRepository.saveAll(any<List<PromotionEmployee>>())).thenAnswer { it.getArgument<List<PromotionEmployee>>(0) }
 
@@ -478,7 +478,7 @@ class AdminPromotionConfirmServiceTest {
 
         val employeeIds = employees.mapNotNull { it.employeeId }.distinct()
         val employees = employeeIds.mapIndexed { _, id ->
-            createEmployee(id = id, employeeNumber = "EMP${String.format("%03d", id)}", name = "EMP${String.format("%03d", id)}이름", status = userStatus)
+            createEmployee(id = id, employeeCode = "EMP${String.format("%03d", id)}", name = "EMP${String.format("%03d", id)}이름", status = userStatus)
         }
         org.mockito.Mockito.lenient().`when`(employeeRepository.findAllById(any())).thenReturn(employees)
     }
@@ -543,12 +543,12 @@ class AdminPromotionConfirmServiceTest {
 
     private fun createEmployee(
         id: Long = 1L,
-        employeeNumber: String = "EMP001",
+        employeeCode: String = "EMP001",
         name: String = "테스트사원",
         status: String? = null
     ): Employee = Employee(
         id = id,
-        employeeNumber = employeeNumber,
+        employeeCode = employeeCode,
         name = name,
         status = status
     )

@@ -57,7 +57,7 @@ class AppointmentUserProfileUpdater(
                     continue
                 }
 
-                val employee = employeeRepository.findByEmployeeNumber(appointment.employeeCode).orElse(null)
+                val employee = employeeRepository.findByEmployeeCode(appointment.employeeCode).orElse(null)
                 if (employee == null) {
                     skippedCount++
                     continue

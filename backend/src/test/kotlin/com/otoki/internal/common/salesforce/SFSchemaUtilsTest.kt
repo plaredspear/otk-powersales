@@ -36,7 +36,7 @@ class SFSchemaUtilsTest {
             val mapping = SFSchemaUtils.getSFMapping(Employee::class.java)
 
             assertThat(mapping).hasSize(25)
-            assertThat(mapping["DKRetail__EmpCode__c"]).isEqualTo("employee_number")
+            assertThat(mapping["DKRetail__EmpCode__c"]).isEqualTo("employee_code")
             assertThat(mapping["Name"]).isEqualTo("name")
             assertThat(mapping["DKRetail__Birthdate__c"]).isEqualTo("birth_date")
             assertThat(mapping["DKRetail__Status__c"]).isEqualTo("status")
@@ -148,7 +148,7 @@ class SFSchemaUtilsTest {
 
             assertThat(mapping).hasSize(27)
             assertThat(mapping["sfid"]).isEqualTo("sfid")
-            assertThat(mapping["dkretail__empcode__c"]).isEqualTo("employee_number")
+            assertThat(mapping["dkretail__empcode__c"]).isEqualTo("employee_code")
             assertThat(mapping["name"]).isEqualTo("name")
             assertThat(mapping["dkretail__birthdate__c"]).isEqualTo("birth_date")
             assertThat(mapping["dkretail__status__c"]).isEqualTo("status")

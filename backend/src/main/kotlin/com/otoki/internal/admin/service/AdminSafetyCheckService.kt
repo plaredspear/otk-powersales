@@ -116,7 +116,7 @@ class AdminSafetyCheckService(
 
         return MemberStatus(
             id = employee.id,
-            employeeNumber = employee.employeeNumber,
+            employeeCode = employee.employeeCode,
             employeeName = employee.name,
             accountCode = account?.externalKey,
             accountName = account?.name,

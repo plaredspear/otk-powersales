@@ -509,14 +509,14 @@ class ScheduleUploadValidatorTest {
     }
 
     private fun createEmployee(
-        employeeNumber: String,
+        employeeCode: String,
         name: String,
         sfid: String,
         status: String,
         appLoginActive: Boolean? = true
     ): Employee = Employee(
         id = 1L,
-        employeeNumber = employeeNumber,
+        employeeCode = employeeCode,
         name = name,
         sfid = sfid,
         status = status,

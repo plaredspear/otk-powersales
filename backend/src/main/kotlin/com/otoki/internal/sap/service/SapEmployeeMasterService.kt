@@ -69,7 +69,7 @@ class SapEmployeeMasterService(
         val isActive = resolveAppLoginActive(statusCode, item.lockingFlag)
         val startDate = parseDate(item.startDate)
 
-        val existingEmployee = employeeRepository.findByEmployeeNumber(employeeCode).orElse(null)
+        val existingEmployee = employeeRepository.findByEmployeeCode(employeeCode).orElse(null)
 
         val sex = when (item.sex) {
             "1" -> "남"
@@ -83,7 +83,7 @@ class SapEmployeeMasterService(
             employeeRepository.save(existingEmployee)
         } else {
             val newEmployee = Employee(
-                employeeNumber = employeeCode,
+                employeeCode = employeeCode,
                 name = employeeName,
                 status = statusName,
                 appLoginActive = isActive,

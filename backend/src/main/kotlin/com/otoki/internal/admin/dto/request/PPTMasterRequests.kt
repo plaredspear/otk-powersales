@@ -50,7 +50,7 @@ data class PPTMasterBulkValidateRequest(
 
 data class PPTMasterBulkItem(
     @field:NotBlank(message = "사번은 필수입니다")
-    val employeeNumber: String,
+    val employeeCode: String,
 
     @field:NotBlank(message = "거래처코드는 필수입니다")
     val accountCode: String,

@@ -194,13 +194,13 @@ class AdminMonthlyIntegrationServiceTest {
 
     private fun createEmployee(
         id: Long = 1L,
-        employeeNumber: String = "200001",
+        employeeCode: String = "200001",
         name: String = "김영희",
         costCenterCode: String = "CC001"
     ): Employee {
         return Employee(
             id = id,
-            employeeNumber = employeeNumber,
+            employeeCode = employeeCode,
             name = name,
             costCenterCode = costCenterCode,
             status = "재직"

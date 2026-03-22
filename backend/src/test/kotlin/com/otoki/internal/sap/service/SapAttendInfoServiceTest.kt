@@ -149,8 +149,8 @@ class SapAttendInfoServiceTest {
             // Given
             whenever(attendInfoRepository.save(any<AttendInfo>()))
                 .thenAnswer { it.getArgument<AttendInfo>(0) }
-            whenever(employeeRepository.findByEmployeeNumber("100234"))
-                .thenReturn(Optional.of(createEmployee(id = 100L, employeeNumber = "100234")))
+            whenever(employeeRepository.findByEmployeeCode("100234"))
+                .thenReturn(Optional.of(createEmployee(id = 100L, employeeCode = "100234")))
             whenever(teamMemberScheduleRepository.existsByEmployeeIdAndWorkingDateAndWorkingType(
                 any(), any(), any()
             )).thenReturn(false)
@@ -193,8 +193,8 @@ class SapAttendInfoServiceTest {
             // Given
             whenever(attendInfoRepository.save(any<AttendInfo>()))
                 .thenAnswer { it.getArgument<AttendInfo>(0) }
-            whenever(employeeRepository.findByEmployeeNumber("100500"))
-                .thenReturn(Optional.of(createEmployee(id = 200L, employeeNumber = "100500")))
+            whenever(employeeRepository.findByEmployeeCode("100500"))
+                .thenReturn(Optional.of(createEmployee(id = 200L, employeeCode = "100500")))
             whenever(teamMemberScheduleRepository.existsByEmployeeIdAndWorkingDateAndWorkingType(
                 any(), any(), any()
             )).thenReturn(false)
@@ -229,8 +229,8 @@ class SapAttendInfoServiceTest {
             // Given
             whenever(attendInfoRepository.save(any<AttendInfo>()))
                 .thenAnswer { it.getArgument<AttendInfo>(0) }
-            whenever(employeeRepository.findByEmployeeNumber("100234"))
-                .thenReturn(Optional.of(createEmployee(id = 100L, employeeNumber = "100234")))
+            whenever(employeeRepository.findByEmployeeCode("100234"))
+                .thenReturn(Optional.of(createEmployee(id = 100L, employeeCode = "100234")))
             whenever(teamMemberScheduleRepository.existsByEmployeeIdAndWorkingDateAndWorkingType(
                 any(), any(), any()
             )).thenReturn(false)
@@ -270,8 +270,8 @@ class SapAttendInfoServiceTest {
             // Given
             whenever(attendInfoRepository.save(any<AttendInfo>()))
                 .thenAnswer { it.getArgument<AttendInfo>(0) }
-            whenever(employeeRepository.findByEmployeeNumber("100234"))
-                .thenReturn(Optional.of(createEmployee(id = 100L, employeeNumber = "100234")))
+            whenever(employeeRepository.findByEmployeeCode("100234"))
+                .thenReturn(Optional.of(createEmployee(id = 100L, employeeCode = "100234")))
             whenever(teamMemberScheduleRepository.deleteAnnualLeaveByEmployeeIdAndDateRange(
                 any(), any(), any()
             )).thenReturn(3L)
@@ -310,8 +310,8 @@ class SapAttendInfoServiceTest {
             // Given
             whenever(attendInfoRepository.save(any<AttendInfo>()))
                 .thenAnswer { it.getArgument<AttendInfo>(0) }
-            whenever(employeeRepository.findByEmployeeNumber("100234"))
-                .thenReturn(Optional.of(createEmployee(id = 100L, employeeNumber = "100234")))
+            whenever(employeeRepository.findByEmployeeCode("100234"))
+                .thenReturn(Optional.of(createEmployee(id = 100L, employeeCode = "100234")))
             whenever(teamMemberScheduleRepository.existsByEmployeeIdAndWorkingDateAndWorkingType(
                 any(), any(), any()
             )).thenReturn(true)
@@ -403,10 +403,10 @@ class SapAttendInfoServiceTest {
 
     private fun createEmployee(
         id: Long = 100L,
-        employeeNumber: String = "100234"
+        employeeCode: String = "100234"
     ): Employee = Employee(
         id = id,
-        employeeNumber = employeeNumber,
+        employeeCode = employeeCode,
         name = "테스트사원"
     )
 

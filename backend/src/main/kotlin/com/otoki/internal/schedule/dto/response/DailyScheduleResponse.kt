@@ -11,8 +11,8 @@ data class DailyScheduleResponse(
     val dayOfWeek: String,
     @JsonProperty("member_name")
     val memberName: String,
-    @JsonProperty("employee_number")
-    val employeeNumber: String,
+    @JsonProperty("employee_code")
+    val employeeCode: String,
     @JsonProperty("report_progress")
     val reportProgress: ReportProgressDto,
     val accounts: List<DisplayWorkScheduleItemDto>

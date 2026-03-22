@@ -12,7 +12,7 @@ data class EmployeeListResponse(
 
 data class EmployeeListItem(
     val id: Long,
-    val employeeNumber: String,
+    val employeeCode: String,
     val name: String,
     val status: String?,
     val sex: String?,
@@ -33,7 +33,7 @@ data class EmployeeListItem(
     companion object {
         fun from(employee: Employee): EmployeeListItem = EmployeeListItem(
             id = employee.id,
-            employeeNumber = employee.employeeNumber,
+            employeeCode = employee.employeeCode,
             name = employee.name,
             status = employee.status,
             sex = employee.sex,

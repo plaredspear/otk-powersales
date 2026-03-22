@@ -341,7 +341,7 @@ class ClientOrderServiceTest {
         )
         val user = User(
             id = testUserId,
-            employeeNumber = "EMP001",
+            employeeCode = "EMP001",
             password = "password",
             name = "테스트 사용자",
             orgName = "서울지점"
@@ -446,7 +446,7 @@ class ClientOrderServiceTest {
         )
         val user = User(
             id = testUserId,
-            employeeNumber = "EMP001",
+            employeeCode = "EMP001",
             password = "password",
             name = "테스트 사용자",
             orgName = "서울지점"
@@ -507,7 +507,7 @@ class ClientOrderServiceTest {
         )
         val user = User(
             id = testUserId,
-            employeeNumber = "EMP999",
+            employeeCode = "EMP999",
             password = "password",
             name = "매핑 테스트 사용자",
             orgName = "부산지점",

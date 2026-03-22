@@ -282,7 +282,7 @@ class EducationServiceTest {
     @DisplayName("createPost - 교육 자료 작성")
     inner class CreatePostTests {
 
-        private val testEmployee = Employee(id = 1L, employeeNumber = "12345678", name = "테스트")
+        private val testEmployee = Employee(id = 1L, employeeCode = "12345678", name = "테스트")
 
         @Test
         @DisplayName("정상 작성 - 파일 없이 교육 자료 생성")

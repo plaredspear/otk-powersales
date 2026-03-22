@@ -125,7 +125,7 @@ class MyScheduleService(
             date = date.toString(),
             dayOfWeek = dayOfWeek,
             memberName = employee.name,
-            employeeNumber = employee.employeeNumber,
+            employeeCode = employee.employeeCode,
             reportProgress = ReportProgressDto(
                 completed = completed,
                 total = total,

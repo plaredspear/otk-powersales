@@ -44,7 +44,7 @@ class AdminTeamScheduleServiceTest {
     private fun createEmployee(
         id: Long = 1L,
         sfid: String? = "USR_SFID_001",
-        employeeNumber: String = "20030001",
+        employeeCode: String = "20030001",
         name: String = "테스트사원",
         status: String? = "재직",
         appAuthority: String? = null,
@@ -53,7 +53,7 @@ class AdminTeamScheduleServiceTest {
     ): Employee = Employee(
         id = id,
         sfid = sfid,
-        employeeNumber = employeeNumber,
+        employeeCode = employeeCode,
         name = name,
         status = status,
         appAuthority = appAuthority,
@@ -114,8 +114,8 @@ class AdminTeamScheduleServiceTest {
         fun getMembers_success() {
             // Given
             val leader = createEmployee(id = 10L, costCenterCode = "1234", appAuthority = "조장")
-            val member1 = createEmployee(id = 2L, sfid = "USR_002", employeeNumber = "20030002", name = "김영희", appAuthority = "여사원")
-            val member2 = createEmployee(id = 3L, sfid = "USR_003", employeeNumber = "20030003", name = "이수진", appAuthority = "여사원")
+            val member1 = createEmployee(id = 2L, sfid = "USR_002", employeeCode = "20030002", name = "김영희", appAuthority = "여사원")
+            val member2 = createEmployee(id = 3L, sfid = "USR_003", employeeCode = "20030003", name = "이수진", appAuthority = "여사원")
 
             whenever(employeeRepository.findById(10L)).thenReturn(Optional.of(leader))
             whenever(employeeRepository.findByCostCenterCodeAndAppAuthority("1234", "여사원"))
@@ -126,9 +126,9 @@ class AdminTeamScheduleServiceTest {
 
             // Then
             assertThat(result).hasSize(2)
-            assertThat(result[0].employeeNumber).isEqualTo("20030002")
+            assertThat(result[0].employeeCode).isEqualTo("20030002")
             assertThat(result[0].name).isEqualTo("김영희")
-            assertThat(result[1].employeeNumber).isEqualTo("20030003")
+            assertThat(result[1].employeeCode).isEqualTo("20030003")
             assertThat(result[1].name).isEqualTo("이수진")
         }
 
@@ -205,7 +205,7 @@ class AdminTeamScheduleServiceTest {
         fun getMonthlySchedules_byEmployeeIds() {
             // Given
             val schedule = createSchedule(id = 1L, employeeId = 1L)
-            val employee = createEmployee(sfid = "USR_001", employeeNumber = "20030001", name = "홍길동")
+            val employee = createEmployee(sfid = "USR_001", employeeCode = "20030001", name = "홍길동")
 
             whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(
                 eq(listOf(1L)),
@@ -222,7 +222,7 @@ class AdminTeamScheduleServiceTest {
 
             // Then
             assertThat(result).hasSize(1)
-            assertThat(result[0].employeeNumber).isEqualTo("20030001")
+            assertThat(result[0].employeeCode).isEqualTo("20030001")
             assertThat(result[0].employeeName).isEqualTo("홍길동")
         }
 
@@ -315,13 +315,13 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("정상 등록 - 유효한 요청 -> 일정 ID 반환")
         fun createSchedule_success() {
             // Given
-            val employee = createEmployee(employeeNumber = "20030001", status = "재직")
+            val employee = createEmployee(employeeCode = "20030001", status = "재직")
             val leader = createEmployee(id = 10L, sfid = "LEADER_SFID")
             val account = createAccount(sfid = "ACC_SFID_001")
             val savedSchedule = createSchedule(id = 100L)
 
             val request = TeamScheduleCreateRequest(
-                employeeNumber = "20030001",
+                employeeCode = "20030001",
                 workingDate = "2026-04-01",
                 workingType = "근무",
                 workingCategory1 = "진열",
@@ -329,7 +329,7 @@ class AdminTeamScheduleServiceTest {
                 accountId = 1
             )
 
-            whenever(employeeRepository.findByEmployeeNumber("20030001")).thenReturn(Optional.of(employee))
+            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(employee))
             whenever(teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(1L, LocalDate.of(2026, 4, 1)))
                 .thenReturn(emptyList())
             whenever(accountRepository.findById(1)).thenReturn(Optional.of(account))
@@ -348,14 +348,14 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("휴직 사원 등록 - EMPLOYEE_ON_LEAVE")
         fun createSchedule_employeeOnLeave() {
             // Given
-            val employee = createEmployee(employeeNumber = "20030001", status = "휴직")
+            val employee = createEmployee(employeeCode = "20030001", status = "휴직")
             val request = TeamScheduleCreateRequest(
-                employeeNumber = "20030001",
+                employeeCode = "20030001",
                 workingDate = "2026-04-01",
                 workingType = "근무"
             )
 
-            whenever(employeeRepository.findByEmployeeNumber("20030001")).thenReturn(Optional.of(employee))
+            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(employee))
 
             // When & Then
             assertThatThrownBy { service.createSchedule(10L, request) }
@@ -366,14 +366,14 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("퇴직 사원 등록 - EMPLOYEE_RESIGNED")
         fun createSchedule_employeeResigned() {
             // Given
-            val employee = createEmployee(employeeNumber = "20030001", status = "퇴직")
+            val employee = createEmployee(employeeCode = "20030001", status = "퇴직")
             val request = TeamScheduleCreateRequest(
-                employeeNumber = "20030001",
+                employeeCode = "20030001",
                 workingDate = "2026-04-01",
                 workingType = "근무"
             )
 
-            whenever(employeeRepository.findByEmployeeNumber("20030001")).thenReturn(Optional.of(employee))
+            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(employee))
 
             // When & Then
             assertThatThrownBy { service.createSchedule(10L, request) }
@@ -384,18 +384,18 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("고정 중복 등록 (D1) - SCHEDULE_CONFLICT")
         fun createSchedule_fixedDuplicate() {
             // Given
-            val employee = createEmployee(employeeNumber = "20030001", status = "재직")
+            val employee = createEmployee(employeeCode = "20030001", status = "재직")
             val existingSchedule = createSchedule(id = 50L, workingCategory3 = "고정")
 
             val request = TeamScheduleCreateRequest(
-                employeeNumber = "20030001",
+                employeeCode = "20030001",
                 workingDate = "2026-04-01",
                 workingType = "근무",
                 workingCategory1 = "진열",
                 workingCategory3 = "고정"
             )
 
-            whenever(employeeRepository.findByEmployeeNumber("20030001")).thenReturn(Optional.of(employee))
+            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(employee))
             whenever(teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(1L, LocalDate.of(2026, 4, 1)))
                 .thenReturn(listOf(existingSchedule))
 
@@ -408,18 +408,18 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("고정과 격고/순회 공존 불가 (D2/D3) - SCHEDULE_CONFLICT")
         fun createSchedule_fixedWithOtherTypes() {
             // Given
-            val employee = createEmployee(employeeNumber = "20030001", status = "재직")
+            val employee = createEmployee(employeeCode = "20030001", status = "재직")
             val existingSchedule = createSchedule(id = 50L, workingCategory3 = "격고")
 
             val request = TeamScheduleCreateRequest(
-                employeeNumber = "20030001",
+                employeeCode = "20030001",
                 workingDate = "2026-04-01",
                 workingType = "근무",
                 workingCategory1 = "진열",
                 workingCategory3 = "고정"
             )
 
-            whenever(employeeRepository.findByEmployeeNumber("20030001")).thenReturn(Optional.of(employee))
+            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(employee))
             whenever(teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(1L, LocalDate.of(2026, 4, 1)))
                 .thenReturn(listOf(existingSchedule))
 
@@ -432,19 +432,19 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("격고 3건 초과 (D4) - SCHEDULE_CONFLICT")
         fun createSchedule_alternateExceedsLimit() {
             // Given
-            val employee = createEmployee(employeeNumber = "20030001", status = "재직")
+            val employee = createEmployee(employeeCode = "20030001", status = "재직")
             val existing1 = createSchedule(id = 50L, workingCategory3 = "격고")
             val existing2 = createSchedule(id = 51L, workingCategory3 = "격고")
 
             val request = TeamScheduleCreateRequest(
-                employeeNumber = "20030001",
+                employeeCode = "20030001",
                 workingDate = "2026-04-01",
                 workingType = "근무",
                 workingCategory1 = "진열",
                 workingCategory3 = "격고"
             )
 
-            whenever(employeeRepository.findByEmployeeNumber("20030001")).thenReturn(Optional.of(employee))
+            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(employee))
             whenever(teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(1L, LocalDate.of(2026, 4, 1)))
                 .thenReturn(listOf(existing1, existing2))
 
@@ -458,12 +458,12 @@ class AdminTeamScheduleServiceTest {
         fun createSchedule_employeeNotFound() {
             // Given
             val request = TeamScheduleCreateRequest(
-                employeeNumber = "NONEXISTENT",
+                employeeCode = "NONEXISTENT",
                 workingDate = "2026-04-01",
                 workingType = "근무"
             )
 
-            whenever(employeeRepository.findByEmployeeNumber("NONEXISTENT")).thenReturn(Optional.empty())
+            whenever(employeeRepository.findByEmployeeCode("NONEXISTENT")).thenReturn(Optional.empty())
 
             // When & Then
             assertThatThrownBy { service.createSchedule(10L, request) }
@@ -490,7 +490,7 @@ class AdminTeamScheduleServiceTest {
                 workingCategory3 = "고정",
                 accountId = 1
             )
-            val employee = createEmployee(employeeNumber = "20030001", status = "재직")
+            val employee = createEmployee(employeeCode = "20030001", status = "재직")
             val newAccount = createAccount(id = 2, sfid = "ACC_NEW")
 
             val request = TeamScheduleUpdateRequest(

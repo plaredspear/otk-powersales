@@ -39,7 +39,7 @@ class AlternativeHolidayService(
                 actualWorkDate = actualWorkDate,
                 targetAltHolidayDate = targetAltHolidayDate,
                 status = "신규",
-                createdBy = employee.employeeNumber
+                createdBy = employee.employeeCode
             )
         )
 

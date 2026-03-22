@@ -38,9 +38,9 @@ class PostponedAppointmentScheduler(
 
         for (employee in employees) {
             try {
-                val appointment = appointmentRepository.findFirstByEmployeeCodeOrderByAppointDateDesc(employee.employeeNumber)
+                val appointment = appointmentRepository.findFirstByEmployeeCodeOrderByAppointDateDesc(employee.employeeCode)
                 if (appointment == null) {
-                    log.warn("예약 발령 Appointment 없음: employeeNumber={}", employee.employeeNumber)
+                    log.warn("예약 발령 Appointment 없음: employeeCode={}", employee.employeeCode)
                     employee.crmWorkStartDate = null
                     skippedCount++
                     continue
@@ -51,7 +51,7 @@ class PostponedAppointmentScheduler(
                 )
                 processedCount++
             } catch (e: Exception) {
-                log.warn("예약 발령 처리 실패: employeeNumber={}, error={}", employee.employeeNumber, e.message)
+                log.warn("예약 발령 처리 실패: employeeCode={}, error={}", employee.employeeCode, e.message)
                 skippedCount++
             }
         }

@@ -130,12 +130,12 @@ class AlternativeHolidayServiceTest {
 
     private fun createEmployee(
         id: Long = 1L,
-        employeeNumber: String = "12345678",
+        employeeCode: String = "12345678",
         name: String = "홍길동"
     ): Employee = Employee(
         id = id,
         sfid = "SF001",
-        employeeNumber = employeeNumber,
+        employeeCode = employeeCode,
         name = name,
         status = "재직"
     )

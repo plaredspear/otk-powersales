@@ -41,10 +41,10 @@ class ShelfLifeServiceTest {
     private lateinit var shelfLifeService: ShelfLifeService
 
     private val userId = 1L
-    private val employeeNumberVal = "20030117"
+    private val employeeCodeVal = "20030117"
 
     private fun createEmployee(id: Long = userId, sfid: String? = "EMP_SFID_001"): Employee {
-        return Employee(id = id, sfid = sfid, employeeNumber = employeeNumberVal, name = "테스트사원")
+        return Employee(id = id, sfid = sfid, employeeCode = employeeCodeVal, name = "테스트사원")
     }
 
     private fun createShelfLife(
@@ -128,7 +128,7 @@ class ShelfLifeServiceTest {
         }
 
         @Test
-        @DisplayName("데이터 없음 - employeeNumber로 조회 결과 없음 -> 빈 리스트 반환")
+        @DisplayName("데이터 없음 - employeeCode로 조회 결과 없음 -> 빈 리스트 반환")
         fun getList_noData_returnsEmpty() {
             stubUser()
             whenever(
@@ -254,7 +254,7 @@ class ShelfLifeServiceTest {
         }
 
         @Test
-        @DisplayName("타인 데이터 수정 - employeeNumber 불일치 -> ShelfLifeForbiddenException")
+        @DisplayName("타인 데이터 수정 - employeeCode 불일치 -> ShelfLifeForbiddenException")
         fun update_forbidden() {
             stubUser()
             val entity = createShelfLife(seq = 1, employeeId = 999L)
@@ -313,7 +313,7 @@ class ShelfLifeServiceTest {
         }
 
         @Test
-        @DisplayName("타인 데이터 삭제 - employeeNumber 불일치 -> ShelfLifeForbiddenException")
+        @DisplayName("타인 데이터 삭제 - employeeCode 불일치 -> ShelfLifeForbiddenException")
         fun delete_forbidden() {
             stubUser()
             val entity = createShelfLife(seq = 1, employeeId = 999L)

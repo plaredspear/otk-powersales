@@ -59,7 +59,7 @@ class AdminMonthlyIntegrationControllerTest {
                         accountBranchName = "강남지점",
                         accountCode = "1234567",
                         accountName = "이마트 강남점",
-                        employeeNumber = "200001",
+                        employeeCode = "200001",
                         title = null,
                         employeeName = "김영희",
                         workingCategory1 = "진열",
@@ -89,7 +89,7 @@ class AdminMonthlyIntegrationControllerTest {
                 .andExpect(jsonPath("$.data.month").value(3))
                 .andExpect(jsonPath("$.data.total_count").value(1))
                 .andExpect(jsonPath("$.data.items[0].branch_name").value("서울1지점"))
-                .andExpect(jsonPath("$.data.items[0].employee_number").value("200001"))
+                .andExpect(jsonPath("$.data.items[0].employee_code").value("200001"))
                 .andExpect(jsonPath("$.data.items[0].total_input_count").value(22))
         }
 

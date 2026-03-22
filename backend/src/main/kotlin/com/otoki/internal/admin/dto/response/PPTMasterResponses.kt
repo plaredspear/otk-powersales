@@ -9,7 +9,7 @@ import java.time.LocalDateTime
 data class PPTMasterResponse(
     val id: Long,
     val employeeId: Long,
-    val employeeNumber: String?,
+    val employeeCode: String?,
     val employeeName: String?,
     val accountId: Int,
     val accountCode: String?,
@@ -29,7 +29,7 @@ data class PPTMasterResponse(
             return PPTMasterResponse(
                 id = m.id,
                 employeeId = m.employeeId,
-                employeeNumber = result.employeeNumber,
+                employeeCode = result.employeeCode,
                 employeeName = result.employeeName,
                 accountId = m.accountId,
                 accountCode = result.accountCode,
@@ -47,7 +47,7 @@ data class PPTMasterResponse(
 
         fun from(
             master: ProfessionalPromotionTeamMaster,
-            employeeNumber: String?,
+            employeeCode: String?,
             employeeName: String?,
             accountCode: String?,
             accountName: String?
@@ -55,7 +55,7 @@ data class PPTMasterResponse(
             return PPTMasterResponse(
                 id = master.id,
                 employeeId = master.employeeId,
-                employeeNumber = employeeNumber,
+                employeeCode = employeeCode,
                 employeeName = employeeName,
                 accountId = master.accountId,
                 accountCode = accountCode,

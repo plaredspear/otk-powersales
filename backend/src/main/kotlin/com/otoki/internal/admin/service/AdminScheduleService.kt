@@ -64,7 +64,7 @@ class AdminScheduleService(
 
         val employees = employeeRepository.findByCostCenterCodeAndAppAuthorityIsNullAndAppLoginActiveTrueAndStatus(
             costCenterCode, "재직"
-        ).sortedWith(compareBy({ it.orgName }, { it.employeeNumber }))
+        ).sortedWith(compareBy({ it.orgName }, { it.employeeCode }))
 
         val excelBytes = templateGenerator.generate(employees)
         val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
@@ -92,7 +92,7 @@ class AdminScheduleService(
         val accountCodes = parseResult.rows.mapNotNull { it.accountCode }.distinct()
 
         val usersByEmployeeNumber = if (employeeCodes.isNotEmpty()) {
-            employeeRepository.findByEmployeeNumberIn(employeeCodes).associateBy { it.employeeNumber }
+            employeeRepository.findByEmployeeCodeIn(employeeCodes).associateBy { it.employeeCode }
         } else {
             emptyMap()
         }
@@ -249,7 +249,7 @@ class AdminScheduleService(
             val account = schedule.accountId?.let { accountMap[it] }
             ScheduleListItemDto(
                 id = schedule.id,
-                employeeCode = employee?.employeeNumber ?: "",
+                employeeCode = employee?.employeeCode ?: "",
                 employeeName = employee?.name ?: "",
                 accountCode = account?.externalKey,
                 accountName = account?.name,
