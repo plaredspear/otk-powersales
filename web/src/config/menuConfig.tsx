@@ -14,6 +14,7 @@ import {
   NotificationOutlined,
   ReadOutlined,
   SettingOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
 
 export interface MenuItem {
@@ -64,6 +65,14 @@ export const menuRoute: MenuRoute = {
         { path: '/sales/monthly', name: '물류배부' },
         { path: '/sales/electronic', name: '전산실적' },
         { path: '/sales/pos', name: 'POS매출' },
+      ],
+    },
+    {
+      name: '여사원관리',
+      icon: <UserOutlined />,
+      children: [
+        { path: '/monthly-integration', name: '월별 통합일정' },
+        { path: '/monthly-integration/category', name: '근무형태별 인원현황' },
       ],
     },
     { path: '/safety-check', name: '안전점검', icon: <SafetyCertificateOutlined /> },
