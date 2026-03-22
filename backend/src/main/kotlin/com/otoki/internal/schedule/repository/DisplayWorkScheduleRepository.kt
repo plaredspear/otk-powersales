@@ -30,6 +30,11 @@ interface DisplayWorkScheduleRepository : JpaRepository<DisplayWorkSchedule, Lon
         startDateEnd: LocalDate
     ): List<DisplayWorkSchedule>
 
+    fun findByEmployeeIdInAndAccountIdIn(
+        employeeIds: List<Long>,
+        accountIds: List<Int>
+    ): List<DisplayWorkSchedule>
+
     /**
      * 특정 월에 겹치는 확정 스케줄 조회 (전체)
      * confirmed = true AND startDate <= monthEnd AND endDate >= monthStart

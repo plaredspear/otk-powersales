@@ -63,4 +63,21 @@ class OrganizationRepositoryCustomImpl(
             )
             .fetch()
     }
+
+    override fun expandCostCenterCodes(costCenterCodes: List<String>): List<String> {
+        if (costCenterCodes.isEmpty()) return emptyList()
+
+        val builder = BooleanBuilder()
+        builder.or(organization.costCenterLevel2.`in`(costCenterCodes))
+        builder.or(organization.costCenterLevel3.`in`(costCenterCodes))
+        builder.or(organization.costCenterLevel4.`in`(costCenterCodes))
+        builder.or(organization.costCenterLevel5.`in`(costCenterCodes))
+
+        return queryFactory
+            .select(organization.costCenterLevel5).distinct()
+            .from(organization)
+            .where(builder, organization.costCenterLevel5.isNotNull)
+            .fetch()
+            .filterNotNull()
+    }
 }

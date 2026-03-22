@@ -122,11 +122,30 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             .filterNotNull()
     }
 
+    override fun findIntegrationScheduleRecords(
+        employeeIds: List<Long>,
+        from: LocalDate,
+        to: LocalDate
+    ): List<TeamMemberSchedule> {
+        return queryFactory
+            .selectFrom(teamMemberSchedule)
+            .where(
+                teamMemberSchedule.employeeId.`in`(employeeIds),
+                teamMemberSchedule.workingDate.between(from, to),
+                teamMemberSchedule.workingType.eq(WORKING_TYPE_WORK),
+                teamMemberSchedule.commuteLogId.isNotNull,
+                teamMemberSchedule.accountId.isNotNull,
+                isNotDeleted()
+            )
+            .fetch()
+    }
+
     private fun isNotDeleted(): BooleanExpression {
         return teamMemberSchedule.isDeleted.isNull.or(teamMemberSchedule.isDeleted.eq(false))
     }
 
     companion object {
         const val WORKING_TYPE_ANNUAL_LEAVE = "연차"
+        const val WORKING_TYPE_WORK = "근무"
     }
 }
