@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:54918",
+    "url" : "http://localhost:55235",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -2985,6 +2985,188 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseListTeamScheduleAccountDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/schedules/monthly-integration" : {
+      "get" : {
+        "tags" : [ "admin-monthly-integration-controller" ],
+        "operationId" : "getMonthlyIntegration",
+        "parameters" : [ {
+          "name" : "year",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "month",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "costCenterCodes",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseMonthlyIntegrationScheduleResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/schedules/monthly-integration/export" : {
+      "get" : {
+        "tags" : [ "admin-monthly-integration-controller" ],
+        "operationId" : "exportMonthlyIntegration",
+        "parameters" : [ {
+          "name" : "year",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "month",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "costCenterCodes",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "byte"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/schedules/monthly-integration/category" : {
+      "get" : {
+        "tags" : [ "admin-monthly-integration-controller" ],
+        "operationId" : "getCategorySchedule",
+        "parameters" : [ {
+          "name" : "year",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "month",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "costCenterCodes",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseCategoryScheduleResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/schedules/monthly-integration/category/export" : {
+      "get" : {
+        "tags" : [ "admin-monthly-integration-controller" ],
+        "operationId" : "exportCategorySchedule",
+        "parameters" : [ {
+          "name" : "year",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "month",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "costCenterCodes",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "byte"
                 }
               }
             }
@@ -6489,6 +6671,9 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
+          "unpaged" : {
+            "type" : "boolean"
+          },
           "pageSize" : {
             "type" : "integer",
             "format" : "int32"
@@ -6499,9 +6684,6 @@
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "unpaged" : {
-            "type" : "boolean"
           },
           "offset" : {
             "type" : "integer",
@@ -7719,6 +7901,198 @@
           }
         },
         "required" : [ "accountId", "externalKey", "name" ]
+      },
+      "ApiResponseMonthlyIntegrationScheduleResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "$ref" : "#/components/schemas/MonthlyIntegrationScheduleResponse"
+          },
+          "error" : {
+            "$ref" : "#/components/schemas/ErrorDetail"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "success", "timestamp" ]
+      },
+      "MonthlyIntegrationScheduleItem" : {
+        "type" : "object",
+        "properties" : {
+          "branchName" : {
+            "type" : "string"
+          },
+          "accountBranchName" : {
+            "type" : "string"
+          },
+          "accountCode" : {
+            "type" : "string"
+          },
+          "accountName" : {
+            "type" : "string"
+          },
+          "employeeNumber" : {
+            "type" : "string"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "employeeName" : {
+            "type" : "string"
+          },
+          "workingCategory1" : {
+            "type" : "string"
+          },
+          "workingCategory3" : {
+            "type" : "string"
+          },
+          "workingCategory4" : {
+            "type" : "string"
+          },
+          "workingCategory5" : {
+            "type" : "string"
+          },
+          "totalInputCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "equivalentWorkingDays" : {
+            "type" : "number"
+          },
+          "convertedHeadcount" : {
+            "type" : "number"
+          },
+          "avgClosingAmount" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "accountCode", "accountName", "avgClosingAmount", "branchName", "convertedHeadcount", "employeeName", "employeeNumber", "equivalentWorkingDays", "totalInputCount", "workingCategory1" ]
+      },
+      "MonthlyIntegrationScheduleResponse" : {
+        "type" : "object",
+        "properties" : {
+          "year" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "month" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/MonthlyIntegrationScheduleItem"
+            }
+          },
+          "totalCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "items", "month", "totalCount", "year" ]
+      },
+      "ApiResponseCategoryScheduleResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "$ref" : "#/components/schemas/CategoryScheduleResponse"
+          },
+          "error" : {
+            "$ref" : "#/components/schemas/ErrorDetail"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "success", "timestamp" ]
+      },
+      "CategoryScheduleItem" : {
+        "type" : "object",
+        "properties" : {
+          "branchName" : {
+            "type" : "string"
+          },
+          "currentMonthTotal" : {
+            "type" : "number"
+          },
+          "previousMonthTotal" : {
+            "type" : "number"
+          },
+          "totalChange" : {
+            "type" : "number"
+          },
+          "displayFixed" : {
+            "type" : "number"
+          },
+          "displayAlternate" : {
+            "type" : "number"
+          },
+          "displayPatrol" : {
+            "type" : "number"
+          },
+          "currentMonthDisplayTotal" : {
+            "type" : "number"
+          },
+          "previousMonthDisplayTotal" : {
+            "type" : "number"
+          },
+          "displayChange" : {
+            "type" : "number"
+          },
+          "eventAmbient" : {
+            "type" : "number"
+          },
+          "eventFrozenChilled" : {
+            "type" : "number"
+          },
+          "currentMonthEventTotal" : {
+            "type" : "number"
+          },
+          "previousMonthEventTotal" : {
+            "type" : "number"
+          },
+          "eventChange" : {
+            "type" : "number"
+          }
+        },
+        "required" : [ "branchName", "currentMonthDisplayTotal", "currentMonthEventTotal", "currentMonthTotal", "displayAlternate", "displayChange", "displayFixed", "displayPatrol", "eventAmbient", "eventChange", "eventFrozenChilled", "previousMonthDisplayTotal", "previousMonthEventTotal", "previousMonthTotal", "totalChange" ]
+      },
+      "CategoryScheduleResponse" : {
+        "type" : "object",
+        "properties" : {
+          "year" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "month" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/CategoryScheduleItem"
+            }
+          }
+        },
+        "required" : [ "items", "month", "year" ]
       },
       "ApiResponsePageScheduleListItemDto" : {
         "type" : "object",
