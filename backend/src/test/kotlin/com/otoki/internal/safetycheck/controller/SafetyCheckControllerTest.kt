@@ -1,6 +1,10 @@
 package com.otoki.internal.safetycheck.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.otoki.internal.admin.dto.response.EquipmentStatus
+import com.otoki.internal.admin.dto.response.MemberStatus
+import com.otoki.internal.admin.dto.response.SafetyCheckStatusResponse
+import com.otoki.internal.admin.service.AdminSafetyCheckService
 import com.otoki.internal.safetycheck.dto.response.SafetyCheckItemsResponse
 import com.otoki.internal.safetycheck.dto.response.SafetyCheckSubmitResponse
 import com.otoki.internal.safetycheck.dto.response.SafetyCheckTodayResponse
@@ -47,6 +51,9 @@ class SafetyCheckControllerTest {
 
     @MockitoBean
     private lateinit var safetyCheckService: SafetyCheckService
+
+    @MockitoBean
+    private lateinit var adminSafetyCheckService: AdminSafetyCheckService
 
     @MockitoBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
@@ -248,6 +255,96 @@ class SafetyCheckControllerTest {
                 .andExpect(status().isConflict)
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error.code").value("ALREADY_SUBMITTED"))
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/safety-check/status - 안전점검 현황 조회")
+    inner class GetStatusTests {
+
+        @Test
+        @DisplayName("성공 - 특정 날짜 조회")
+        fun getStatus_withDate() {
+            val response = SafetyCheckStatusResponse(
+                date = "2026-03-21",
+                totalCount = 2,
+                submittedCount = 1,
+                notSubmittedCount = 1,
+                members = listOf(
+                    MemberStatus(
+                        id = 101L,
+                        employeeNumber = "123456",
+                        employeeName = "김영희",
+                        accountName = "이마트 강남점",
+                        submitted = true,
+                        submittedAt = LocalDateTime.of(2026, 3, 21, 8, 30, 0),
+                        equipments = listOf(
+                            EquipmentStatus(1, "손목보호대 착용", "예"),
+                            EquipmentStatus(2, "숨수건 소지", "예")
+                        ),
+                        yesCount = 7,
+                        noCount = 2,
+                        precautions = "소화기 위치 확인;비상구 확인",
+                        precautionCount = 2,
+                        workReportStatus = "Y"
+                    ),
+                    MemberStatus(
+                        id = 102L,
+                        employeeNumber = "654321",
+                        employeeName = "박철수",
+                        accountName = "홈플러스 역삼점",
+                        submitted = false,
+                        submittedAt = null,
+                        equipments = emptyList(),
+                        yesCount = 0,
+                        noCount = 0,
+                        precautions = null,
+                        precautionCount = 0,
+                        workReportStatus = null
+                    )
+                )
+            )
+            whenever(adminSafetyCheckService.getStatus(eq(1L), any())).thenReturn(response)
+
+            mockMvc.perform(get("/api/v1/safety-check/status").param("date", "2026-03-21"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("조회 성공"))
+                .andExpect(jsonPath("$.data.date").value("2026-03-21"))
+                .andExpect(jsonPath("$.data.total_count").value(2))
+                .andExpect(jsonPath("$.data.submitted_count").value(1))
+                .andExpect(jsonPath("$.data.not_submitted_count").value(1))
+                .andExpect(jsonPath("$.data.members[0].employee_number").value("123456"))
+                .andExpect(jsonPath("$.data.members[0].submitted").value(true))
+                .andExpect(jsonPath("$.data.members[0].equipments[0].seq_num").value(1))
+                .andExpect(jsonPath("$.data.members[1].submitted").value(false))
+                .andExpect(jsonPath("$.data.members[1].equipments").isEmpty)
+        }
+
+        @Test
+        @DisplayName("성공 - date 미지정 시 오늘 기준")
+        fun getStatus_noDate() {
+            val response = SafetyCheckStatusResponse(
+                date = "2026-03-22",
+                totalCount = 0,
+                submittedCount = 0,
+                notSubmittedCount = 0,
+                members = emptyList()
+            )
+            whenever(adminSafetyCheckService.getStatus(eq(1L), any())).thenReturn(response)
+
+            mockMvc.perform(get("/api/v1/safety-check/status"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.members").isEmpty)
+        }
+
+        @Test
+        @DisplayName("실패 - 잘못된 날짜 형식")
+        fun getStatus_invalidDateFormat() {
+            mockMvc.perform(get("/api/v1/safety-check/status").param("date", "20260321"))
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.error.code").value("INVALID_DATE_FORMAT"))
         }
     }
 
