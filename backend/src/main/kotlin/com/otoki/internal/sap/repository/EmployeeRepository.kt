@@ -3,6 +3,7 @@ package com.otoki.internal.sap.repository
 import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.common.repository.EmployeeRepositoryCustom
 import org.springframework.data.jpa.repository.JpaRepository
+import java.time.LocalDate
 import java.util.Optional
 
 /**
@@ -79,4 +80,6 @@ interface EmployeeRepository : JpaRepository<Employee, Long>, EmployeeRepository
      * 권한(appAuthority) + 상태(status)로 사원 조회 (전문행사조 엑셀 템플릿용)
      */
     fun findByAppAuthorityAndStatus(appAuthority: String, status: String): List<Employee>
+
+    fun findByCrmWorkStartDateIsNotNullAndCrmWorkStartDateLessThanEqual(date: LocalDate): List<Employee>
 }
