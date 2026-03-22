@@ -9,4 +9,6 @@ interface OrganizationRepositoryCustom {
         level: String?,
         branchCodes: List<String>?
     ): List<Organization>
+
+    fun expandCostCenterCodes(costCenterCodes: List<String>): List<String>
 }

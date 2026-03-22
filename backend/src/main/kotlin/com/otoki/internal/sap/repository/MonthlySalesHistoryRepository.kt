@@ -19,4 +19,9 @@ interface MonthlySalesHistoryRepository : JpaRepository<MonthlySalesHistory, Lon
     ): List<MonthlySalesHistory>
 
     fun findByExternalkeyC(externalkeyC: String): MonthlySalesHistory?
+
+    fun findByAccountExternalKeyInAndSalesYearIn(
+        accountExternalKeys: List<String>,
+        salesYears: List<String>
+    ): List<MonthlySalesHistory>
 }
