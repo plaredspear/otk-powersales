@@ -103,6 +103,9 @@ class Employee(
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 
+    @Column(name = "professional_promotion_team", length = 50)
+    var professionalPromotionTeam: String? = null,
+
     // --- Secondary Table (employee_info) 필드: constructor param only (JPA 미매핑) ---
 
     password: String = "",

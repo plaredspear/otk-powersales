@@ -74,4 +74,9 @@ interface EmployeeRepository : JpaRepository<Employee, Long>, EmployeeRepository
      * 진열스케줄 업로드 확정 시 활성 조장만 ownerId로 설정하기 위해 사용
      */
     fun findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrue(costCenterCodes: List<String>, appAuthority: String): List<Employee>
+
+    /**
+     * 권한(appAuthority) + 상태(status)로 사원 조회 (전문행사조 엑셀 템플릿용)
+     */
+    fun findByAppAuthorityAndStatus(appAuthority: String, status: String): List<Employee>
 }
