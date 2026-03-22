@@ -24,7 +24,7 @@ class FakeAuthLocalDataSource implements AuthLocalDataSource {
   Future<void> clearTokens() async {}
 
   @override
-  Future<void> saveEmployeeNumber(String employeeNumber) async {}
+  Future<void> saveEmployeeNumber(String employeeCode) async {}
 
   @override
   Future<String?> getSavedEmployeeNumber() async => null;

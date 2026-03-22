@@ -6,13 +6,13 @@ import '../../domain/entities/expiry_alert.dart';
 class ExpiryAlertModel {
   final String branchName;
   final String employeeName;
-  final String employeeNumber;
+  final String employeeCode;
   final int expiryCount;
 
   const ExpiryAlertModel({
     required this.branchName,
     required this.employeeName,
-    required this.employeeNumber,
+    required this.employeeCode,
     required this.expiryCount,
   });
 
@@ -20,7 +20,7 @@ class ExpiryAlertModel {
     return ExpiryAlertModel(
       branchName: json['branch_name'] as String,
       employeeName: json['employee_name'] as String,
-      employeeNumber: json['employee_number'] as String,
+      employeeCode: json['employee_code'] as String,
       expiryCount: json['expiry_count'] as int,
     );
   }
@@ -29,7 +29,7 @@ class ExpiryAlertModel {
     return {
       'branch_name': branchName,
       'employee_name': employeeName,
-      'employee_number': employeeNumber,
+      'employee_code': employeeCode,
       'expiry_count': expiryCount,
     };
   }
@@ -38,7 +38,7 @@ class ExpiryAlertModel {
     return ExpiryAlert(
       branchName: branchName,
       employeeName: employeeName,
-      employeeNumber: employeeNumber,
+      employeeCode: employeeCode,
       expiryCount: expiryCount,
     );
   }
@@ -47,7 +47,7 @@ class ExpiryAlertModel {
     return ExpiryAlertModel(
       branchName: entity.branchName,
       employeeName: entity.employeeName,
-      employeeNumber: entity.employeeNumber,
+      employeeCode: entity.employeeCode,
       expiryCount: entity.expiryCount,
     );
   }
@@ -58,7 +58,7 @@ class ExpiryAlertModel {
     return other is ExpiryAlertModel &&
         other.branchName == branchName &&
         other.employeeName == employeeName &&
-        other.employeeNumber == employeeNumber &&
+        other.employeeCode == employeeCode &&
         other.expiryCount == expiryCount;
   }
 
@@ -67,13 +67,13 @@ class ExpiryAlertModel {
     return Object.hash(
       branchName,
       employeeName,
-      employeeNumber,
+      employeeCode,
       expiryCount,
     );
   }
 
   @override
   String toString() {
-    return 'ExpiryAlertModel(branchName: $branchName, employeeName: $employeeName, employeeNumber: $employeeNumber, expiryCount: $expiryCount)';
+    return 'ExpiryAlertModel(branchName: $branchName, employeeName: $employeeName, employeeCode: $employeeCode, expiryCount: $expiryCount)';
   }
 }

@@ -63,7 +63,7 @@ class SafetyCheckMemberCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  '${member.employeeName} (${member.employeeNumber})',
+                  '${member.employeeName} (${member.employeeCode})',
                   style: AppTypography.headlineSmall,
                 ),
               ),

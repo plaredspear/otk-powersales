@@ -163,7 +163,7 @@ class _MyScheduleDetailPageState extends ConsumerState<MyScheduleDetailPage>
           child: Row(
             children: [
               Text(
-                '${info.memberName} (${info.employeeNumber})',
+                '${info.memberName} (${info.employeeCode})',
                 style: AppTypography.bodyMedium.copyWith(
                   fontWeight: FontWeight.w600,
                 ),

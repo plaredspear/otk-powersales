@@ -29,7 +29,7 @@ class SafetyCheckStatusModel {
 
 class MemberStatusModel {
   final int id;
-  final String employeeNumber;
+  final String employeeCode;
   final String employeeName;
   final String? accountName;
   final bool submitted;
@@ -43,7 +43,7 @@ class MemberStatusModel {
 
   const MemberStatusModel({
     required this.id,
-    required this.employeeNumber,
+    required this.employeeCode,
     required this.employeeName,
     this.accountName,
     required this.submitted,
@@ -59,7 +59,7 @@ class MemberStatusModel {
   factory MemberStatusModel.fromJson(Map<String, dynamic> json) {
     return MemberStatusModel(
       id: json['id'] as int,
-      employeeNumber: json['employee_number'] as String,
+      employeeCode: json['employee_code'] as String,
       employeeName: json['employee_name'] as String,
       accountName: json['account_name'] as String?,
       submitted: json['submitted'] as bool,

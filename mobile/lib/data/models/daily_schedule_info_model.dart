@@ -152,7 +152,7 @@ class DailyScheduleInfoModel {
   final String date;
   final String dayOfWeek;
   final String memberName;
-  final String employeeNumber;
+  final String employeeCode;
   final ReportProgressModel reportProgress;
   final List<ScheduleAccountDetailModel> accounts;
 
@@ -160,7 +160,7 @@ class DailyScheduleInfoModel {
     required this.date,
     required this.dayOfWeek,
     required this.memberName,
-    required this.employeeNumber,
+    required this.employeeCode,
     required this.reportProgress,
     required this.accounts,
   });
@@ -171,7 +171,7 @@ class DailyScheduleInfoModel {
       date: json['date'] as String,
       dayOfWeek: json['day_of_week'] as String,
       memberName: json['member_name'] as String,
-      employeeNumber: json['employee_number'] as String,
+      employeeCode: json['employee_code'] as String,
       reportProgress: ReportProgressModel.fromJson(
         json['report_progress'] as Map<String, dynamic>,
       ),
@@ -189,7 +189,7 @@ class DailyScheduleInfoModel {
       'date': date,
       'day_of_week': dayOfWeek,
       'member_name': memberName,
-      'employee_number': employeeNumber,
+      'employee_code': employeeCode,
       'report_progress': reportProgress.toJson(),
       'accounts': accounts.map((account) => account.toJson()).toList(),
     };
@@ -208,7 +208,7 @@ class DailyScheduleInfoModel {
     return DailyScheduleInfo(
       date: formattedDate,
       memberName: memberName,
-      employeeNumber: employeeNumber,
+      employeeCode: employeeCode,
       reportProgress: reportProgress.toEntity(),
       accounts: accounts.map((account) => account.toEntity()).toList(),
     );
@@ -232,7 +232,7 @@ class DailyScheduleInfoModel {
       date: date,
       dayOfWeek: dayOfWeek,
       memberName: entity.memberName,
-      employeeNumber: entity.employeeNumber,
+      employeeCode: entity.employeeCode,
       reportProgress: ReportProgressModel.fromEntity(entity.reportProgress),
       accounts: entity.accounts
           .map((account) => ScheduleAccountDetailModel.fromEntity(account))
@@ -247,7 +247,7 @@ class DailyScheduleInfoModel {
         other.date == date &&
         other.dayOfWeek == dayOfWeek &&
         other.memberName == memberName &&
-        other.employeeNumber == employeeNumber &&
+        other.employeeCode == employeeCode &&
         other.reportProgress == reportProgress &&
         _listEquals(other.accounts, accounts);
   }
@@ -266,7 +266,7 @@ class DailyScheduleInfoModel {
       date,
       dayOfWeek,
       memberName,
-      employeeNumber,
+      employeeCode,
       reportProgress,
       Object.hashAll(accounts),
     );
@@ -275,7 +275,7 @@ class DailyScheduleInfoModel {
   @override
   String toString() {
     return 'DailyScheduleInfoModel(date: $date, dayOfWeek: $dayOfWeek, '
-        'memberName: $memberName, employeeNumber: $employeeNumber, '
+        'memberName: $memberName, employeeCode: $employeeCode, '
         'reportProgress: $reportProgress, accounts: $accounts)';
   }
 }

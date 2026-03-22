@@ -18,8 +18,8 @@ class MockAuthRepository implements AuthRepository {
   bool recordGpsConsentCalled = false;
 
   @override
-  Future<LoginResult> login(String employeeNumber, String password) async {
-    lastLoginEmployeeNumber = employeeNumber;
+  Future<LoginResult> login(String employeeCode, String password) async {
+    lastLoginEmployeeNumber = employeeCode;
     lastLoginPassword = password;
     if (exceptionToThrow != null) throw exceptionToThrow!;
     return loginResult!;

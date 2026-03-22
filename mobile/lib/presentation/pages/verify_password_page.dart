@@ -77,7 +77,7 @@ class _VerifyPasswordPageState extends ConsumerState<VerifyPasswordPage> {
 
   @override
   Widget build(BuildContext context) {
-    final employeeNumber = ref.watch(authProvider).user?.employeeNumber ?? '';
+    final employeeCode = ref.watch(authProvider).user?.employeeCode ?? '';
 
     return Scaffold(
       appBar: AppBar(
@@ -96,7 +96,7 @@ class _VerifyPasswordPageState extends ConsumerState<VerifyPasswordPage> {
             children: [
               // 아이디 표시 (읽기 전용)
               TextFormField(
-                initialValue: employeeNumber,
+                initialValue: employeeCode,
                 decoration: const InputDecoration(
                   labelText: '아이디',
                   filled: true,

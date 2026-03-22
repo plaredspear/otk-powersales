@@ -167,12 +167,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   /// 로그인 수행
   ///
-  /// [employeeNumber]: 사번
+  /// [employeeCode]: 사번
   /// [password]: 비밀번호
   /// [rememberEmployeeNumber]: 아이디 기억하기
   /// [autoLogin]: 자동 로그인
   Future<void> login({
-    required String employeeNumber,
+    required String employeeCode,
     required String password,
     required bool rememberEmployeeNumber,
     required bool autoLogin,
@@ -181,7 +181,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
     try {
       final result = await _loginUseCase(
-        employeeNumber: employeeNumber,
+        employeeCode: employeeCode,
         password: password,
         rememberEmployeeNumber: rememberEmployeeNumber,
         autoLogin: autoLogin,
@@ -193,7 +193,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       // 아이디 기억하기 처리
       if (rememberEmployeeNumber) {
-        await _localDataSource.saveEmployeeNumber(employeeNumber);
+        await _localDataSource.saveEmployeeNumber(employeeCode);
       } else {
         await _localDataSource.clearSavedEmployeeNumber();
       }

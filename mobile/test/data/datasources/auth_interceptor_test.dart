@@ -61,7 +61,7 @@ void main() {
       fakeLocalDataSource.accessToken = _mockAccessToken;
 
       await dio.post('/api/v1/auth/login', data: {
-        'employee_number': '20010585',
+        'employee_code': '20010585',
         'password': 'test1234',
       });
 
@@ -245,8 +245,8 @@ class FakeAuthLocalDataSource implements AuthLocalDataSource {
   }
 
   @override
-  Future<void> saveEmployeeNumber(String employeeNumber) async {
-    savedEmployeeNumber = employeeNumber;
+  Future<void> saveEmployeeNumber(String employeeCode) async {
+    savedEmployeeNumber = employeeCode;
     rememberEmployeeNumber = true;
   }
 

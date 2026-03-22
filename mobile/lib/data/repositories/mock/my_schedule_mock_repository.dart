@@ -115,7 +115,7 @@ class MyScheduleMockRepository implements MyScheduleRepository {
     return DailyScheduleInfo(
       date: formattedDate,
       memberName: '최금주',
-      employeeNumber: '20030117',
+      employeeCode: '20030117',
       reportProgress: const ReportProgress(
         completed: 1,
         total: 3,

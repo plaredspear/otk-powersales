@@ -11,7 +11,7 @@ class LoginUseCase {
 
   /// 로그인 실행
   ///
-  /// [employeeNumber]: 사번 (8자리 숫자, 필수)
+  /// [employeeCode]: 사번 (8자리 숫자, 필수)
   /// [password]: 비밀번호 (필수)
   /// [rememberEmployeeNumber]: 사번 저장 여부 (Presentation 레이어에서 처리)
   /// [autoLogin]: 자동 로그인 여부 (Presentation 레이어에서 처리)
@@ -21,13 +21,13 @@ class LoginUseCase {
   /// Throws:
   /// - [ArgumentError] 사번 또는 비밀번호가 비어있는 경우
   Future<LoginResult> call({
-    required String employeeNumber,
+    required String employeeCode,
     required String password,
     required bool rememberEmployeeNumber,
     required bool autoLogin,
   }) async {
     // 입력값 검증
-    if (employeeNumber.isEmpty) {
+    if (employeeCode.isEmpty) {
       throw ArgumentError('사번을 입력해주세요');
     }
 
@@ -36,6 +36,6 @@ class LoginUseCase {
     }
 
     // Repository에서 로그인 수행
-    return await _repository.login(employeeNumber, password);
+    return await _repository.login(employeeCode, password);
   }
 }
