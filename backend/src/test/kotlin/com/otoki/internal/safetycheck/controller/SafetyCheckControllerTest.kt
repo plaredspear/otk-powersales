@@ -275,9 +275,11 @@ class SafetyCheckControllerTest {
                         id = 101L,
                         employeeNumber = "123456",
                         employeeName = "김영희",
+                        accountCode = "1234567890",
                         accountName = "이마트 강남점",
                         submitted = true,
                         submittedAt = LocalDateTime.of(2026, 3, 21, 8, 30, 0),
+                        startTime = LocalDateTime.of(2026, 3, 21, 8, 25, 0),
                         equipments = listOf(
                             EquipmentStatus(1, "손목보호대 착용", "예"),
                             EquipmentStatus(2, "숨수건 소지", "예")
@@ -292,9 +294,11 @@ class SafetyCheckControllerTest {
                         id = 102L,
                         employeeNumber = "654321",
                         employeeName = "박철수",
+                        accountCode = "9876543210",
                         accountName = "홈플러스 역삼점",
                         submitted = false,
                         submittedAt = null,
+                        startTime = null,
                         equipments = emptyList(),
                         yesCount = 0,
                         noCount = 0,
