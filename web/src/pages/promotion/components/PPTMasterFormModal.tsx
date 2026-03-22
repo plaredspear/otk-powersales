@@ -1,0 +1,229 @@
+import { useEffect, useState, useCallback } from 'react';
+import { Modal, Form, Select, DatePicker, Checkbox, Button, message } from 'antd';
+import dayjs from 'dayjs';
+import { fetchEmployees, type Employee } from '@/api/employee';
+import { fetchAccounts, type Account } from '@/api/account';
+import { useCreatePPTMaster, useUpdatePPTMaster } from '@/hooks/promotion/usePPTMasters';
+import type { PPTMaster } from '@/api/pptMaster';
+import { AxiosError } from 'axios';
+
+const TEAM_TYPES = [
+  { value: '라면세일조', label: '라면세일조' },
+  { value: '프레시세일조_냉장', label: '프레시세일조_냉장' },
+  { value: '프레시세일조_냉동', label: '프레시세일조_냉동' },
+  { value: '프레시세일조_만두', label: '프레시세일조_만두' },
+  { value: '카레행사조', label: '카레행사조' },
+];
+
+interface FormValues {
+  employeeId: number;
+  accountId: number;
+  teamType: string;
+  startDate: dayjs.Dayjs;
+  endDate: dayjs.Dayjs | null;
+  isConfirmed: boolean;
+}
+
+interface Props {
+  open: boolean;
+  editingItem: PPTMaster | null;
+  onClose: () => void;
+}
+
+export default function PPTMasterFormModal({ open, editingItem, onClose }: Props) {
+  const [form] = Form.useForm<FormValues>();
+  const createMutation = useCreatePPTMaster();
+  const updateMutation = useUpdatePPTMaster();
+
+  const [employeeOptions, setEmployeeOptions] = useState<Employee[]>([]);
+  const [accountOptions, setAccountOptions] = useState<Account[]>([]);
+  const [employeeLoading, setEmployeeLoading] = useState(false);
+  const [accountLoading, setAccountLoading] = useState(false);
+
+  useEffect(() => {
+    if (open && editingItem) {
+      form.setFieldsValue({
+        employeeId: editingItem.employeeId,
+        accountId: editingItem.accountId,
+        teamType: editingItem.teamType,
+        startDate: dayjs(editingItem.startDate),
+        endDate: editingItem.endDate ? dayjs(editingItem.endDate) : null,
+        isConfirmed: editingItem.isConfirmed,
+      });
+      setEmployeeOptions([
+        {
+          id: editingItem.employeeId,
+          employeeNumber: editingItem.employeeNumber,
+          name: editingItem.employeeName,
+          status: null,
+          orgName: editingItem.branchName,
+          costCenterCode: editingItem.branchCode,
+          appAuthority: null,
+          startDate: null,
+          appLoginActive: null,
+          workPhone: null,
+        },
+      ]);
+      setAccountOptions([
+        {
+          id: editingItem.accountId,
+          externalKey: editingItem.accountCode,
+          name: editingItem.accountName,
+          abcType: null,
+          branchCode: null,
+          branchName: null,
+          employeeCode: null,
+          address1: null,
+          phone: null,
+          accountStatusName: null,
+        },
+      ]);
+    } else if (open) {
+      form.resetFields();
+      form.setFieldValue('isConfirmed', false);
+      setEmployeeOptions([]);
+      setAccountOptions([]);
+    }
+  }, [open, editingItem, form]);
+
+  const searchEmployees = useCallback(async (keyword: string) => {
+    if (!keyword || keyword.length < 2) return;
+    setEmployeeLoading(true);
+    try {
+      const result = await fetchEmployees({ keyword, size: 20 });
+      setEmployeeOptions(result.content);
+    } catch {
+      // ignore
+    } finally {
+      setEmployeeLoading(false);
+    }
+  }, []);
+
+  const searchAccounts = useCallback(async (keyword: string) => {
+    if (!keyword || keyword.length < 2) return;
+    setAccountLoading(true);
+    try {
+      const result = await fetchAccounts({ keyword, size: 20 });
+      setAccountOptions(result.content);
+    } catch {
+      // ignore
+    } finally {
+      setAccountLoading(false);
+    }
+  }, []);
+
+  const handleSave = async () => {
+    try {
+      const values = await form.validateFields();
+      const payload = {
+        employee_id: values.employeeId,
+        account_id: values.accountId,
+        team_type: values.teamType,
+        start_date: values.startDate.format('YYYY-MM-DD'),
+        end_date: values.endDate ? values.endDate.format('YYYY-MM-DD') : null,
+        is_confirmed: values.isConfirmed ?? false,
+      };
+
+      if (editingItem) {
+        await updateMutation.mutateAsync({ id: editingItem.id, data: payload });
+        message.success('수정되었습니다');
+      } else {
+        await createMutation.mutateAsync(payload);
+        message.success('등록되었습니다');
+      }
+      onClose();
+    } catch (err) {
+      if (err instanceof AxiosError && err.response?.status === 409) {
+        message.error('중복으로 유효한 마스터가 존재합니다');
+      } else if (
+        err &&
+        typeof err === 'object' &&
+        'message' in err &&
+        typeof (err as { message: unknown }).message === 'string'
+      ) {
+        message.error((err as { message: string }).message);
+      }
+    }
+  };
+
+  const isSaving = createMutation.isPending || updateMutation.isPending;
+
+  return (
+    <Modal
+      title={editingItem ? '전문행사조 마스터 수정' : '전문행사조 마스터 등록'}
+      open={open}
+      onCancel={onClose}
+      width={520}
+      footer={
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <Button onClick={onClose}>취소</Button>
+          <Button type="primary" onClick={handleSave} loading={isSaving}>
+            저장
+          </Button>
+        </div>
+      }
+    >
+      <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
+        <Form.Item
+          name="employeeId"
+          label="사원"
+          rules={[{ required: true, message: '사원을 선택해주세요' }]}
+        >
+          <Select
+            showSearch
+            placeholder="사번 또는 이름으로 검색 (2자 이상)"
+            filterOption={false}
+            onSearch={searchEmployees}
+            loading={employeeLoading}
+            options={employeeOptions.map((emp) => ({
+              value: emp.id,
+              label: `${emp.name} (${emp.employeeNumber})${emp.orgName ? ` ${emp.orgName}` : ''}`,
+            }))}
+          />
+        </Form.Item>
+
+        <Form.Item
+          name="accountId"
+          label="거래처"
+          rules={[{ required: true, message: '거래처를 선택해주세요' }]}
+        >
+          <Select
+            showSearch
+            placeholder="거래처코드 또는 거래처명으로 검색 (2자 이상)"
+            filterOption={false}
+            onSearch={searchAccounts}
+            loading={accountLoading}
+            options={accountOptions.map((acc) => ({
+              value: acc.id,
+              label: `${acc.name ?? ''} (${acc.externalKey ?? ''})`,
+            }))}
+          />
+        </Form.Item>
+
+        <Form.Item
+          name="teamType"
+          label="전문행사조"
+          rules={[{ required: true, message: '전문행사조를 선택해주세요' }]}
+        >
+          <Select placeholder="전문행사조 선택" options={TEAM_TYPES} />
+        </Form.Item>
+
+        <Form.Item
+          name="startDate"
+          label="시작일"
+          rules={[{ required: true, message: '시작일을 선택해주세요' }]}
+        >
+          <DatePicker style={{ width: '100%' }} />
+        </Form.Item>
+
+        <Form.Item name="endDate" label="종료일">
+          <DatePicker style={{ width: '100%' }} />
+        </Form.Item>
+
+        <Form.Item name="isConfirmed" valuePropName="checked">
+          <Checkbox>확정 여부</Checkbox>
+        </Form.Item>
+      </Form>
+    </Modal>
+  );
+}
