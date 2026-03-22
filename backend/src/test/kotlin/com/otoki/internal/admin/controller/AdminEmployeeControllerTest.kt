@@ -71,6 +71,7 @@ class AdminEmployeeControllerTest {
             val response = EmployeeListResponse(
                 content = listOf(
                     EmployeeListItem(
+                        id = 1L,
                         employeeNumber = "10000001",
                         name = "홍길동",
                         status = "재직",

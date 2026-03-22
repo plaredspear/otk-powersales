@@ -48,6 +48,7 @@ export const menuRoute: MenuRoute = {
       children: [{ path: '/attendance', name: '등록현황' }],
     },
     { path: '/event-team', name: '전문행사조', icon: <CalendarOutlined /> },
+    { path: '/promotion/ppt-masters', name: '전문행사조 관리', icon: <TeamOutlined /> },
     { path: '/claim', name: '클레임 현황', icon: <ExclamationCircleOutlined /> },
     { path: '/suggestion', name: '제안사항', icon: <BulbOutlined /> },
     {
