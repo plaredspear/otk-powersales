@@ -14,7 +14,7 @@ interface MonthlyIntegrationScheduleItemRaw {
   account_branch_name: string | null;
   account_code: string;
   account_name: string;
-  employee_number: string;
+  employee_code: string;
   title: string | null;
   employee_name: string;
   working_category1: string;
@@ -65,7 +65,7 @@ export interface MonthlyIntegrationScheduleItem {
   accountBranchName: string | null;
   accountCode: string;
   accountName: string;
-  employeeNumber: string;
+  employeeCode: string;
   title: string | null;
   employeeName: string;
   workingCategory1: string;
@@ -117,7 +117,7 @@ function mapIntegrationItem(raw: MonthlyIntegrationScheduleItemRaw): MonthlyInte
     accountBranchName: raw.account_branch_name,
     accountCode: raw.account_code,
     accountName: raw.account_name,
-    employeeNumber: raw.employee_number,
+    employeeCode: raw.employee_code,
     title: raw.title,
     employeeName: raw.employee_name,
     workingCategory1: raw.working_category1,

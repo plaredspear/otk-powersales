@@ -10,7 +10,7 @@ export function useAlternativeHolidays(params: AlternativeHolidayListParams) {
       params.startDate,
       params.endDate,
       params.status,
-      params.employeeNumber,
+      params.employeeCode,
       params.orgCode,
     ],
     queryFn: () => fetchAlternativeHolidays(params),

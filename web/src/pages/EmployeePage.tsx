@@ -46,7 +46,7 @@ export default function EmployeePage() {
   });
 
   const columns: ColumnsType<Employee> = [
-    { title: '사번', dataIndex: 'employeeNumber', width: 100 },
+    { title: '사번', dataIndex: 'employeeCode', width: 100 },
     { title: '이름', dataIndex: 'name', width: 120 },
     { title: '성별', dataIndex: 'sex', width: 60, align: 'center', render: (val: string | null) => val ?? '-' },
     {
@@ -128,7 +128,7 @@ export default function EmployeePage() {
       </div>
 
       <Table
-        rowKey="employeeNumber"
+        rowKey="employeeCode"
         columns={columns}
         dataSource={data?.content}
         loading={isLoading}

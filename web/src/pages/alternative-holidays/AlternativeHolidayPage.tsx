@@ -41,21 +41,21 @@ const STATUS_COLORS: Record<string, string> = {
 interface FilterState {
   dateRange: [Dayjs, Dayjs];
   status: string;
-  employeeNumber: string;
+  employeeCode: string;
 }
 
 export default function AlternativeHolidayPage() {
   const [filters, setFilters] = useState<FilterState>({
     dateRange: [dayjs().startOf('month'), dayjs().endOf('month')],
     status: '',
-    employeeNumber: '',
+    employeeCode: '',
   });
 
   const { data, isLoading } = useAlternativeHolidays({
     startDate: filters.dateRange[0].format('YYYY-MM-DD'),
     endDate: filters.dateRange[1].format('YYYY-MM-DD'),
     status: filters.status || undefined,
-    employeeNumber: filters.employeeNumber || undefined,
+    employeeCode: filters.employeeCode || undefined,
   });
 
   // Create modal
@@ -79,7 +79,7 @@ export default function AlternativeHolidayPage() {
     try {
       const values = await createForm.validateFields();
       await createMutation.mutateAsync({
-        employee_number: values.employeeNumber,
+        employee_code: values.employeeCode,
         actual_work_date: values.actualWorkDate.format('YYYY-MM-DD'),
         target_alt_holiday_date: values.targetAltHolidayDate.format('YYYY-MM-DD'),
       });
@@ -145,7 +145,7 @@ export default function AlternativeHolidayPage() {
   const canAction = (status: string) => status === '신규' || status === '조정';
 
   const columns: ColumnsType<AlternativeHolidayItem> = [
-    { title: '사번', dataIndex: 'employeeNumber', width: 100 },
+    { title: '사번', dataIndex: 'employeeCode', width: 100 },
     { title: '사원명', dataIndex: 'employeeName', width: 80 },
     { title: '조직', dataIndex: 'orgName', width: 100 },
     {
@@ -215,8 +215,8 @@ export default function AlternativeHolidayPage() {
         <Input
           style={{ width: 160 }}
           placeholder="사번"
-          value={filters.employeeNumber}
-          onChange={(e) => setFilters((prev) => ({ ...prev, employeeNumber: e.target.value }))}
+          value={filters.employeeCode}
+          onChange={(e) => setFilters((prev) => ({ ...prev, employeeCode: e.target.value }))}
           allowClear
         />
         <Button type="primary" icon={<SearchOutlined />}>
@@ -251,7 +251,7 @@ export default function AlternativeHolidayPage() {
       >
         <Form form={createForm} layout="vertical" style={{ marginTop: 16 }}>
           <Form.Item
-            name="employeeNumber"
+            name="employeeCode"
             label="사번"
             rules={[{ required: true, message: '사번을 입력하세요' }]}
           >
@@ -287,7 +287,7 @@ export default function AlternativeHolidayPage() {
         {approveTarget && (
           <div style={{ marginBottom: 16 }}>
             <p>
-              <strong>사원:</strong> {approveTarget.employeeName} ({approveTarget.employeeNumber})
+              <strong>사원:</strong> {approveTarget.employeeName} ({approveTarget.employeeCode})
             </p>
             <p>
               <strong>대상일:</strong> {dayjs(approveTarget.actualWorkDate).format('YYYY-MM-DD (dd)')}
@@ -318,7 +318,7 @@ export default function AlternativeHolidayPage() {
         {rejectTarget && (
           <div style={{ marginBottom: 16 }}>
             <p>
-              <strong>사원:</strong> {rejectTarget.employeeName} ({rejectTarget.employeeNumber})
+              <strong>사원:</strong> {rejectTarget.employeeName} ({rejectTarget.employeeCode})
             </p>
             <p>
               <strong>대상일:</strong> {dayjs(rejectTarget.actualWorkDate).format('YYYY-MM-DD (dd)')}

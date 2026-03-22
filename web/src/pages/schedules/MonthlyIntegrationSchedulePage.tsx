@@ -21,7 +21,7 @@ const columns: ColumnsType<MonthlyIntegrationScheduleItem> = [
   { title: '거래처 지점명', dataIndex: 'accountBranchName', width: 110, render: (v) => v ?? '-' },
   { title: '거래처코드', dataIndex: 'accountCode', width: 100 },
   { title: '거래처명', dataIndex: 'accountName', width: 140 },
-  { title: '사번', dataIndex: 'employeeNumber', width: 90 },
+  { title: '사번', dataIndex: 'employeeCode', width: 90 },
   { title: '직위', dataIndex: 'title', width: 70, render: (v) => v ?? '-' },
   { title: '이름', dataIndex: 'employeeName', width: 80 },
   { title: '근무형태1', dataIndex: 'workingCategory1', width: 90 },

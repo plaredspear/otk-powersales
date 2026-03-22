@@ -18,7 +18,7 @@ interface EmployeeListRaw {
 
 interface EmployeeItemRaw {
   id: number;
-  employee_number: string;
+  employee_code: string;
   name: string;
   status: string | null;
   sex: string | null;
@@ -50,7 +50,7 @@ export interface FetchEmployeesParams {
 
 export interface Employee {
   id: number;
-  employeeNumber: string;
+  employeeCode: string;
   name: string;
   status: string | null;
   sex: string | null;
@@ -83,7 +83,7 @@ function mapEmployeeList(raw: EmployeeListRaw): EmployeeListData {
   return {
     content: raw.content.map((item) => ({
       id: item.id,
-      employeeNumber: item.employee_number,
+      employeeCode: item.employee_code,
       name: item.name,
       status: item.status,
       sex: item.sex,

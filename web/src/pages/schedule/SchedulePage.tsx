@@ -49,7 +49,7 @@ export default function SchedulePage() {
     () => ({
       year,
       month,
-      employeeNumbers: filterTab === 'member' ? debouncedEmployeeNumbers : [],
+      employeeCodes: filterTab === 'member' ? debouncedEmployeeNumbers : [],
       accountSfids: filterTab === 'account' ? debouncedAccountSfids : [],
     }),
     [year, month, filterTab, debouncedEmployeeNumbers, debouncedAccountSfids],
