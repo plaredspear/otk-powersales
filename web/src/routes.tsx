@@ -10,7 +10,6 @@ const SalesQueryPage = lazy(() => import('@/pages/SalesQueryPage'));
 const SchedulePage = lazy(() => import('@/pages/schedule/SchedulePage'));
 const DeploymentPage = lazy(() => import('@/pages/DeploymentPage'));
 const AttendancePage = lazy(() => import('@/pages/AttendancePage'));
-const EventTeamPage = lazy(() => import('@/pages/EventTeamPage'));
 const ClaimPage = lazy(() => import('@/pages/ClaimPage'));
 const SuggestionPage = lazy(() => import('@/pages/SuggestionPage'));
 const LeavePage = lazy(() => import('@/pages/LeavePage'));
@@ -76,7 +75,6 @@ export const router = createBrowserRouter(
             { path: '/schedule', element: <LazyWrapper><SchedulePage /></LazyWrapper> },
             { path: '/deployment', element: <LazyWrapper><DeploymentPage /></LazyWrapper> },
             { path: '/attendance', element: <LazyWrapper><AttendancePage /></LazyWrapper> },
-            { path: '/event-team', element: <LazyWrapper><EventTeamPage /></LazyWrapper> },
             { path: '/claim', element: <LazyWrapper><ClaimPage /></LazyWrapper> },
             { path: '/suggestion', element: <LazyWrapper><SuggestionPage /></LazyWrapper> },
             { path: '/leave', element: <LazyWrapper><LeavePage /></LazyWrapper> },
