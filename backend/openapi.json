@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:55643",
+    "url" : "http://localhost:57884",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -7202,18 +7202,18 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "size" : {
             "type" : "integer",
@@ -7244,14 +7244,14 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "paged" : {
+            "type" : "boolean"
+          },
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
           },
           "unpaged" : {
-            "type" : "boolean"
-          },
-          "paged" : {
             "type" : "boolean"
           },
           "offset" : {
@@ -8696,18 +8696,18 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "size" : {
             "type" : "integer",
@@ -9484,6 +9484,9 @@
           "status" : {
             "type" : "string"
           },
+          "sex" : {
+            "type" : "string"
+          },
           "orgName" : {
             "type" : "string"
           },
@@ -9496,10 +9499,31 @@
           "startDate" : {
             "type" : "string"
           },
+          "endDate" : {
+            "type" : "string"
+          },
           "appLoginActive" : {
             "type" : "boolean"
           },
           "workPhone" : {
+            "type" : "string"
+          },
+          "jikchak" : {
+            "type" : "string"
+          },
+          "jikwee" : {
+            "type" : "string"
+          },
+          "jikgub" : {
+            "type" : "string"
+          },
+          "jobCode" : {
+            "type" : "string"
+          },
+          "appointmentDate" : {
+            "type" : "string"
+          },
+          "ordDetailNode" : {
             "type" : "string"
           }
         },
