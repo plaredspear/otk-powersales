@@ -8,7 +8,7 @@ void main() {
         final json = {
           'schedule_id': 12345,
           'employee_name': '홍길동',
-          'employee_number': '005xxxxxxxxx',
+          'employee_code': '005xxxxxxxxx',
           'account_name': '이마트 부산점',
           'account_sfid': '001xxxxxxxxx',
           'work_category': '방판',
@@ -21,7 +21,7 @@ void main() {
 
         expect(model.scheduleId, 12345);
         expect(model.employeeName, '홍길동');
-        expect(model.employeeNumber, '005xxxxxxxxx');
+        expect(model.employeeCode, '005xxxxxxxxx');
         expect(model.accountName, '이마트 부산점');
         expect(model.accountSfid, '001xxxxxxxxx');
         expect(model.workCategory, '방판');
@@ -34,7 +34,7 @@ void main() {
         final json = {
           'schedule_id': 12345,
           'employee_name': '홍길동',
-          'employee_number': '005xxxxxxxxx',
+          'employee_code': '005xxxxxxxxx',
           'account_name': null,
           'account_sfid': null,
           'work_category': '방판',
@@ -58,7 +58,7 @@ void main() {
         const model = ScheduleModel(
           scheduleId: 12345,
           employeeName: '홍길동',
-          employeeNumber: '005x',
+          employeeCode: '005x',
           accountName: '이마트 부산점',
           accountSfid: '001x',
           workCategory: '방판',
@@ -83,7 +83,7 @@ void main() {
         const model = ScheduleModel(
           scheduleId: 12345,
           employeeName: '홍길동',
-          employeeNumber: '005x',
+          employeeCode: '005x',
           workCategory: '방판',
           isCommuteRegistered: true,
         );
@@ -102,14 +102,14 @@ void main() {
         const model1 = ScheduleModel(
           scheduleId: 12345,
           employeeName: '홍길동',
-          employeeNumber: '005x',
+          employeeCode: '005x',
           workCategory: '방판',
           isCommuteRegistered: false,
         );
         const model2 = ScheduleModel(
           scheduleId: 12345,
           employeeName: '홍길동',
-          employeeNumber: '005x',
+          employeeCode: '005x',
           workCategory: '방판',
           isCommuteRegistered: false,
         );

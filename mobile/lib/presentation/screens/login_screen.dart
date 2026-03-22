@@ -21,7 +21,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _employeeNumberController = TextEditingController();
+  final _employeeCodeController = TextEditingController();
   final _passwordController = TextEditingController();
   final _passwordFocusNode = FocusNode();
 
@@ -31,7 +31,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   void dispose() {
-    _employeeNumberController.dispose();
+    _employeeCodeController.dispose();
     _passwordController.dispose();
     _passwordFocusNode.dispose();
     super.dispose();
@@ -45,7 +45,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final authState = ref.read(authProvider);
     if (authState.savedEmployeeNumber != null &&
         authState.savedEmployeeNumber!.isNotEmpty) {
-      _employeeNumberController.text = authState.savedEmployeeNumber!;
+      _employeeCodeController.text = authState.savedEmployeeNumber!;
       _rememberEmployeeNumber = true;
     }
     if (authState.rememberEmployeeNumber) {
@@ -59,7 +59,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     ref.read(authProvider.notifier).login(
-          employeeNumber: _employeeNumberController.text.trim(),
+          employeeCode: _employeeCodeController.text.trim(),
           password: _passwordController.text,
           rememberEmployeeNumber: _rememberEmployeeNumber,
           autoLogin: _autoLogin,
@@ -181,7 +181,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   /// 아이디(사번) 입력 필드
   Widget _buildEmployeeNumberField() {
     return TextFormField(
-      controller: _employeeNumberController,
+      controller: _employeeCodeController,
       keyboardType: TextInputType.number,
       inputFormatters: [
         FilteringTextInputFormatter.digitsOnly,

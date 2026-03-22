@@ -19,8 +19,8 @@ class MockAuthRepository implements AuthRepository {
   bool recordGpsConsentCalled = false;
 
   @override
-  Future<LoginResult> login(String employeeNumber, String password) async {
-    lastLoginEmployeeNumber = employeeNumber;
+  Future<LoginResult> login(String employeeCode, String password) async {
+    lastLoginEmployeeNumber = employeeCode;
     lastLoginPassword = password;
     if (exceptionToThrow != null) throw exceptionToThrow!;
     return loginResult!;
@@ -78,7 +78,7 @@ void main() {
       // Arrange
       const expectedUser = User(
         id: 1,
-        employeeNumber: '20010585',
+        employeeCode: '20010585',
         name: '홍길동',
         orgName: '부산1지점',
         role: 'USER',
@@ -98,7 +98,7 @@ void main() {
 
       // Act
       final result = await loginUseCase.call(
-        employeeNumber: '20010585',
+        employeeCode: '20010585',
         password: 'test1234',
         rememberEmployeeNumber: false,
         autoLogin: false,
@@ -114,7 +114,7 @@ void main() {
       // Act & Assert
       expect(
         () => loginUseCase.call(
-          employeeNumber: '',
+          employeeCode: '',
           password: 'test1234',
           rememberEmployeeNumber: false,
           autoLogin: false,
@@ -133,7 +133,7 @@ void main() {
       // Act & Assert
       expect(
         () => loginUseCase.call(
-          employeeNumber: '20010585',
+          employeeCode: '20010585',
           password: '',
           rememberEmployeeNumber: false,
           autoLogin: false,
@@ -155,7 +155,7 @@ void main() {
       const mockLoginResult = LoginResult(
         user: User(
           id: 1,
-          employeeNumber: testEmployeeNumber,
+          employeeCode: testEmployeeNumber,
           name: '홍길동',
           orgName: '부산1지점',
           role: 'USER',
@@ -172,7 +172,7 @@ void main() {
 
       // Act
       await loginUseCase.call(
-        employeeNumber: testEmployeeNumber,
+        employeeCode: testEmployeeNumber,
         password: testPassword,
         rememberEmployeeNumber: true,
         autoLogin: true,
@@ -190,7 +190,7 @@ void main() {
       // Act & Assert
       expect(
         () => loginUseCase.call(
-          employeeNumber: '20010585',
+          employeeCode: '20010585',
           password: 'test1234',
           rememberEmployeeNumber: false,
           autoLogin: false,

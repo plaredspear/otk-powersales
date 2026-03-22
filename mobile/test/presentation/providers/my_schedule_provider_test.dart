@@ -110,7 +110,7 @@ void main() {
       final scheduleInfo = DailyScheduleInfo(
         date: '2026년 02월 04일(수)',
         memberName: '최금주',
-        employeeNumber: '20030117',
+        employeeCode: '20030117',
         reportProgress: const ReportProgress(
           completed: 0,
           total: 2,
@@ -145,7 +145,7 @@ void main() {
       final scheduleInfo = DailyScheduleInfo(
         date: '2026년 02월 04일(수)',
         memberName: '최금주',
-        employeeNumber: '20030117',
+        employeeCode: '20030117',
         reportProgress: const ReportProgress(
           completed: 0,
           total: 2,
@@ -183,7 +183,7 @@ void main() {
       final scheduleInfo = DailyScheduleInfo(
         date: '2026년 02월 04일(수)',
         memberName: '최금주',
-        employeeNumber: '20030117',
+        employeeCode: '20030117',
         reportProgress: const ReportProgress(
           completed: 0,
           total: 2,

@@ -5,7 +5,7 @@ class User {
   final int id;
 
   /// 사번 (8자리 숫자)
-  final String employeeNumber;
+  final String employeeCode;
 
   /// 이름
   final String name;
@@ -18,7 +18,7 @@ class User {
 
   const User({
     required this.id,
-    required this.employeeNumber,
+    required this.employeeCode,
     required this.name,
     this.orgName,
     required this.role,
@@ -26,7 +26,7 @@ class User {
 
   User copyWith({
     int? id,
-    String? employeeNumber,
+    String? employeeCode,
     String? name,
     String? orgName,
     bool clearOrgName = false,
@@ -34,7 +34,7 @@ class User {
   }) {
     return User(
       id: id ?? this.id,
-      employeeNumber: employeeNumber ?? this.employeeNumber,
+      employeeCode: employeeCode ?? this.employeeCode,
       name: name ?? this.name,
       orgName: clearOrgName ? null : (orgName ?? this.orgName),
       role: role ?? this.role,
@@ -44,7 +44,7 @@ class User {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'employeeNumber': employeeNumber,
+      'employeeCode': employeeCode,
       'name': name,
       'orgName': orgName,
       'role': role,
@@ -54,7 +54,7 @@ class User {
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: json['id'] as int,
-      employeeNumber: json['employeeNumber'] as String,
+      employeeCode: json['employeeCode'] as String,
       name: json['name'] as String,
       orgName: json['orgName'] as String?,
       role: json['role'] as String,
@@ -66,7 +66,7 @@ class User {
     if (identical(this, other)) return true;
     return other is User &&
         other.id == id &&
-        other.employeeNumber == employeeNumber &&
+        other.employeeCode == employeeCode &&
         other.name == name &&
         other.orgName == orgName &&
         other.role == role;
@@ -76,7 +76,7 @@ class User {
   int get hashCode {
     return Object.hash(
       id,
-      employeeNumber,
+      employeeCode,
       name,
       orgName,
       role,
@@ -85,6 +85,6 @@ class User {
 
   @override
   String toString() {
-    return 'User(id: $id, employeeNumber: $employeeNumber, name: $name, orgName: $orgName, role: $role)';
+    return 'User(id: $id, employeeCode: $employeeCode, name: $name, orgName: $orgName, role: $role)';
   }
 }

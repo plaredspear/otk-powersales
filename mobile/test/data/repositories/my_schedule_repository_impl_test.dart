@@ -76,7 +76,7 @@ void main() {
           date: '2026-02-04',
           dayOfWeek: '화',
           memberName: '최금주',
-          employeeNumber: '20030117',
+          employeeCode: '20030117',
           reportProgress: const ReportProgressModel(
             completed: 0,
             total: 3,
@@ -103,7 +103,7 @@ void main() {
         expect(fakeRemoteDataSource.lastDateString, '2026-02-04');
         expect(result.date, '2026년 02월 04일(화)');
         expect(result.memberName, '최금주');
-        expect(result.employeeNumber, '20030117');
+        expect(result.employeeCode, '20030117');
         expect(result.accounts.length, 1);
         expect(result.accounts[0].accountName, '이마트');
       });
@@ -114,7 +114,7 @@ void main() {
           date: '2026-12-25',
           dayOfWeek: '금',
           memberName: '홍길동',
-          employeeNumber: '12345678',
+          employeeCode: '12345678',
           reportProgress: const ReportProgressModel(
             completed: 0,
             total: 0,
@@ -137,7 +137,7 @@ void main() {
           date: '2026-01-05',
           dayOfWeek: '월',
           memberName: '홍길동',
-          employeeNumber: '12345678',
+          employeeCode: '12345678',
           reportProgress: const ReportProgressModel(
             completed: 0,
             total: 0,

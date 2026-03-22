@@ -122,9 +122,9 @@ class AuthLocalDataSource {
   }
 
   /// 사번 저장 (아이디 기억하기)
-  Future<void> saveEmployeeNumber(String employeeNumber) async {
+  Future<void> saveEmployeeNumber(String employeeCode) async {
     final box = await _openBox();
-    await box.put(_savedEmployeeNumberKey, employeeNumber);
+    await box.put(_savedEmployeeNumberKey, employeeCode);
     await box.put(_rememberEmployeeNumberKey, true);
   }
 
