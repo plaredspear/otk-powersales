@@ -8,4 +8,6 @@ import org.springframework.stereotype.Repository
 interface SystemCodeMasterRepository : JpaRepository<SystemCodeMaster, Long> {
 
     fun findByExternalKey(externalKey: String): SystemCodeMaster?
+
+    fun findByGroupCodeIn(groupCodes: List<String>): List<SystemCodeMaster>
 }

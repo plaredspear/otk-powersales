@@ -1,11 +1,13 @@
 package com.otoki.internal.sap.service
 
-import com.otoki.internal.sap.entity.Employee
-import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.sap.entity.Appointment
-import com.otoki.internal.sap.entity.Organization
+import com.otoki.internal.sap.entity.Employee
+import com.otoki.internal.sap.entity.SystemCodeMaster
+import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.sap.repository.OrganizationRepository
+import com.otoki.internal.sap.repository.SystemCodeMasterRepository
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -14,6 +16,7 @@ import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.whenever
+import java.time.LocalDate
 import java.util.Optional
 
 @ExtendWith(MockitoExtension::class)
@@ -26,295 +29,365 @@ class AppointmentUserProfileUpdaterTest {
     @Mock
     private lateinit var organizationRepository: OrganizationRepository
 
+    @Mock
+    private lateinit var systemCodeMasterRepository: SystemCodeMasterRepository
+
     @InjectMocks
     private lateinit var updater: AppointmentUserProfileUpdater
 
+    private val today = LocalDate.of(2026, 3, 22)
+
+    private fun setupSystemCodeMaster() {
+        whenever(systemCodeMasterRepository.findByGroupCodeIn(
+            listOf("H20020", "H20030", "H20010", "H10050", "H10060")
+        )).thenReturn(listOf(
+            createSystemCodeMaster("H20020", "D0052", "조장"),
+            createSystemCodeMaster("H20020", "D0053", "사원"),
+            createSystemCodeMaster("H20030", "W0010", "사원"),
+            createSystemCodeMaster("H20010", "G0030", "3급"),
+            createSystemCodeMaster("H10050", "T0010", "영업직"),
+            createSystemCodeMaster("H10060", "A055", "OSC직"),
+            createSystemCodeMaster("H10060", "A049", "판촉직"),
+            createSystemCodeMaster("H10060", "A053", "레이디직"),
+            createSystemCodeMaster("H10060", "B001", "일반직")
+        ))
+    }
+
     @Nested
-    @DisplayName("determineAuthority - 프로필 결정 로직")
-    inner class DetermineAuthorityTests {
+    @DisplayName("즉시 반영 - 발령일 <= 오늘")
+    inner class ImmediateAppointmentTests {
 
-        @Test
-        @DisplayName("마케팅실 소속 - orgCodeLevel3=5066 -> 마케팅")
-        fun marketing() {
-            val result = updater.determineAuthority("5066", "1234", "사원")
-            assertThat(result).isEqualTo("마케팅")
+        @BeforeEach
+        fun setUp() {
+            setupSystemCodeMaster()
         }
 
         @Test
-        @DisplayName("지원실 일반직 - orgCodeLevel3=3475, 사원 -> Staff")
-        fun supportStaff() {
-            val result = updater.determineAuthority("3475", "1234", "사원")
-            assertThat(result).isEqualTo("Staff")
+        @DisplayName("조장 - jobCode=A055, jikchak=D0052 -> appAuthority=조장, appLoginActive=true")
+        fun immediateLeader() {
+            val employee = createEmployee()
+            whenever(employeeRepository.findByEmployeeNumber("100234")).thenReturn(Optional.of(employee))
+
+            val appointment = createAppointment(
+                afterOrgCode = "1111", afterOrgName = "제1영업지점",
+                jikchak = "D0052", jikwee = "W0010", jikgub = "G0030",
+                workType = "T0010", jobCode = "A055",
+                workArea = "서울", jikjong = "영업",
+                appointDate = "20260322", ordDetailNode = "전보"
+            )
+
+            updater.updateUserProfiles(listOf(appointment), today)
+
+            assertThat(employee.appAuthority).isEqualTo("조장")
+            assertThat(employee.appLoginActive).isTrue()
+            assertThat(employee.jikchak).isEqualTo("조장")
+            assertThat(employee.jikwee).isEqualTo("사원")
+            assertThat(employee.jikgub).isEqualTo("3급")
+            assertThat(employee.workType).isEqualTo("영업직")
+            assertThat(employee.jobCode).isEqualTo("OSC직")
+            assertThat(employee.workArea).isEqualTo("서울")
+            assertThat(employee.jikjong).isEqualTo("영업")
+            assertThat(employee.appointmentDate).isEqualTo(today)
+            assertThat(employee.ordDetailNode).isEqualTo("전보")
+            assertThat(employee.costCenterCode).isEqualTo("1111")
+            assertThat(employee.orgName).isEqualTo("제1영업지점")
+            assertThat(employee.crmWorkStartDate).isNull()
         }
 
         @Test
-        @DisplayName("지원실 조장 - orgCodeLevel3=3475, 조장 -> 조장")
-        fun supportLeader() {
-            val result = updater.determineAuthority("3475", "1234", "조장")
-            assertThat(result).isEqualTo("조장")
+        @DisplayName("여사원 - jobCode=A049, jikchak!=D0052, ordDetailNode=전보 -> 여사원, professionalPromotionTeam=일반")
+        fun immediateWorker() {
+            val employee = createEmployee()
+            whenever(employeeRepository.findByEmployeeNumber("100234")).thenReturn(Optional.of(employee))
+
+            val appointment = createAppointment(
+                afterOrgCode = "1111", afterOrgName = "제2영업지점",
+                jikchak = "D0053", jobCode = "A049",
+                appointDate = "20260322", ordDetailNode = "전보"
+            )
+
+            updater.updateUserProfiles(listOf(appointment), today)
+
+            assertThat(employee.appAuthority).isEqualTo("여사원")
+            assertThat(employee.appLoginActive).isTrue()
+            assertThat(employee.professionalPromotionTeam).isEqualTo("일반")
         }
 
         @Test
-        @DisplayName("지원실 판매 - orgCodeLevel3=3475, 판매 -> 직책 기반")
-        fun supportSales() {
-            val result = updater.determineAuthority("3475", "1234", "판매")
-            assertThat(result).isEqualTo("영업사원")
+        @DisplayName("일반직 - jobCode=B001 -> appAuthority/appLoginActive 변경 없음")
+        fun immediateGeneral() {
+            val employee = createEmployee(appAuthority = "영업사원", appLoginActive = false)
+            whenever(employeeRepository.findByEmployeeNumber("100234")).thenReturn(Optional.of(employee))
+
+            val appointment = createAppointment(
+                afterOrgCode = "1111", afterOrgName = "본사",
+                jikchak = "D0053", jobCode = "B001",
+                appointDate = "20260322"
+            )
+
+            updater.updateUserProfiles(listOf(appointment), today)
+
+            assertThat(employee.appAuthority).isEqualTo("영업사원")
+            assertThat(employee.appLoginActive).isFalse()
+            assertThat(employee.costCenterCode).isEqualTo("1111")
+            assertThat(employee.jikchak).isEqualTo("사원")
+            assertThat(employee.jobCode).isEqualTo("일반직")
         }
 
         @Test
-        @DisplayName("판매전략팀 - orgCodeLevel3=3472 -> Staff")
-        fun salesStrategy() {
-            val result = updater.determineAuthority("3472", "1234", "사원")
-            assertThat(result).isEqualTo("Staff")
-        }
+        @DisplayName("승진 발령 - ordDetailNode=승진 -> professionalPromotionTeam 기존 값 유지")
+        fun promotionKeepsPPT() {
+            val employee = createEmployee(professionalPromotionTeam = "특별반")
+            whenever(employeeRepository.findByEmployeeNumber("100234")).thenReturn(Optional.of(employee))
 
-        @Test
-        @DisplayName("BS팀 5397 -> Staff")
-        fun bsTeam5397() {
-            val result = updater.determineAuthority("9999", "5397", "사원")
-            assertThat(result).isEqualTo("Staff")
-        }
+            val appointment = createAppointment(
+                afterOrgCode = "1111", afterOrgName = "지점",
+                jikchak = "D0053", jobCode = "A055",
+                appointDate = "20260322", ordDetailNode = "승진"
+            )
 
-        @Test
-        @DisplayName("BS팀 5398 -> Staff")
-        fun bsTeam5398() {
-            val result = updater.determineAuthority("9999", "5398", "사원")
-            assertThat(result).isEqualTo("Staff")
-        }
+            updater.updateUserProfiles(listOf(appointment), today)
 
-        @Test
-        @DisplayName("SP팀 5639 -> Staff")
-        fun spTeam5639() {
-            val result = updater.determineAuthority("9999", "5639", "사원")
-            assertThat(result).isEqualTo("Staff")
-        }
-
-        @Test
-        @DisplayName("조장 -> 조장")
-        fun leader() {
-            val result = updater.determineAuthority("9999", "1234", "조장")
-            assertThat(result).isEqualTo("조장")
-        }
-
-        @Test
-        @DisplayName("판매팀장 -> 조장")
-        fun salesTeamLeader() {
-            val result = updater.determineAuthority("9999", "1234", "판매팀장")
-            assertThat(result).isEqualTo("조장")
-        }
-
-        @Test
-        @DisplayName("지점장 -> 지점장")
-        fun branchManager() {
-            val result = updater.determineAuthority("9999", "1234", "지점장")
-            assertThat(result).isEqualTo("지점장")
-        }
-
-        @Test
-        @DisplayName("팀장 -> 지점장")
-        fun teamManager() {
-            val result = updater.determineAuthority("9999", "1234", "팀장")
-            assertThat(result).isEqualTo("지점장")
-        }
-
-        @Test
-        @DisplayName("영업부장 -> 영업부장")
-        fun salesDirector() {
-            val result = updater.determineAuthority("9999", "1234", "부장")
-            assertThat(result).isEqualTo("영업부장")
-        }
-
-        @Test
-        @DisplayName("사업부장 -> 사업부장")
-        fun businessDirector() {
-            val result = updater.determineAuthority("9999", "1234", "사업부장")
-            assertThat(result).isEqualTo("사업부장")
-        }
-
-        @Test
-        @DisplayName("실장 -> 사업부장")
-        fun divisionHead() {
-            val result = updater.determineAuthority("9999", "1234", "실장")
-            assertThat(result).isEqualTo("영업사원")
-        }
-
-        @Test
-        @DisplayName("본부장 -> 영업본부장")
-        fun headquartersHead() {
-            val result = updater.determineAuthority("9999", "1234", "본부장")
-            assertThat(result).isEqualTo("영업본부장")
-        }
-
-        @Test
-        @DisplayName("일반 사원 -> 영업사원")
-        fun generalEmployee() {
-            val result = updater.determineAuthority("9999", "1234", "사원")
-            assertThat(result).isEqualTo("영업사원")
-        }
-
-        @Test
-        @DisplayName("jikchak null 처리 -> 영업사원")
-        fun nullJikchak() {
-            val result = updater.determineAuthority("9999", "1234", "")
-            assertThat(result).isEqualTo("영업사원")
+            assertThat(employee.appAuthority).isEqualTo("여사원")
+            assertThat(employee.professionalPromotionTeam).isEqualTo("특별반")
         }
     }
 
     @Nested
-    @DisplayName("updateUserProfiles - 후처리 흐름")
-    inner class UpdateUserProfilesTests {
+    @DisplayName("조직명 특수규칙")
+    inner class OrgNameSpecialRulesTests {
 
         @Test
-        @DisplayName("정상 갱신 - Org 매칭, User 존재 -> appAuthority, costCenterCode, orgName 갱신")
-        fun normalUpdate() {
-            val org = createOrg(costCenterLevel5 = "1111", orgCodeLevel3 = "5066")
-            whenever(organizationRepository.findAll()).thenReturn(listOf(org))
+        @DisplayName("유통총괄1부 - afterOrgCode=3228 -> 유통총괄1부+afterOrgName")
+        fun orgGroup1() {
+            val result = updater.resolveOrgName("3228", "제1영업지점")
+            assertThat(result).isEqualTo("유통총괄1부제1영업지점")
+        }
 
-            val employee = createEmployee(employeeNumber = "100234")
+        @Test
+        @DisplayName("유통총괄2부 - afterOrgCode=3233 -> 유통총괄2부+afterOrgName")
+        fun orgGroup2() {
+            val result = updater.resolveOrgName("3233", "제2영업지점")
+            assertThat(result).isEqualTo("유통총괄2부제2영업지점")
+        }
+
+        @Test
+        @DisplayName("일반 조직 - 그 외 코드 -> afterOrgName 그대로")
+        fun orgGeneral() {
+            val result = updater.resolveOrgName("9999", "일반지점")
+            assertThat(result).isEqualTo("일반지점")
+        }
+    }
+
+    @Nested
+    @DisplayName("SystemCodeMaster 코드 변환")
+    inner class CodeResolutionTests {
+
+        @Test
+        @DisplayName("코드 변환 성공 - 매칭 존재 -> detailCodeName 반환")
+        fun codeResolutionSuccess() {
+            val codeMap = mapOf("H20020:D0052" to "조장")
+            val result = updater.resolveCode(codeMap, "H20020", "D0052")
+            assertThat(result).isEqualTo("조장")
+        }
+
+        @Test
+        @DisplayName("코드 변환 실패 - 매칭 없음 -> 원본 코드 반환")
+        fun codeResolutionFallback() {
+            val codeMap = mapOf("H20020:D0052" to "조장")
+            val result = updater.resolveCode(codeMap, "H20020", "UNKNOWN")
+            assertThat(result).isEqualTo("UNKNOWN")
+        }
+
+        @Test
+        @DisplayName("null 코드 -> null 반환")
+        fun nullCode() {
+            val codeMap = mapOf("H20020:D0052" to "조장")
+            val result = updater.resolveCode(codeMap, "H20020", null)
+            assertThat(result).isNull()
+        }
+    }
+
+    @Nested
+    @DisplayName("예약 발령 - 발령일 > 오늘")
+    inner class ReservedAppointmentTests {
+
+        @BeforeEach
+        fun setUp() {
+            setupSystemCodeMaster()
+        }
+
+        @Test
+        @DisplayName("예약 발령 - crmWorkStartDate 설정, AppAuthority 즉시, 나머지 미변경")
+        fun reservedAppointment() {
+            val employee = createEmployee(orgName = "기존지점", costCenterCode = "0000")
             whenever(employeeRepository.findByEmployeeNumber("100234")).thenReturn(Optional.of(employee))
 
             val appointment = createAppointment(
-                employeeCode = "100234",
-                empCodeExist = true,
-                afterOrgCode = "1111",
-                afterOrgName = "마케팅1팀",
-                jikchak = "사원"
+                afterOrgCode = "1111", afterOrgName = "신규지점",
+                jikchak = "D0052", jobCode = "A055",
+                appointDate = "20260323"
             )
 
-            updater.updateUserProfiles(listOf(appointment))
+            updater.updateUserProfiles(listOf(appointment), today)
 
-            assertThat(employee.appAuthority).isEqualTo("마케팅")
-            assertThat(employee.costCenterCode).isEqualTo("1111")
-            assertThat(employee.orgName).isEqualTo("마케팅1팀")
+            assertThat(employee.crmWorkStartDate).isEqualTo(LocalDate.of(2026, 3, 23))
+            assertThat(employee.appAuthority).isEqualTo("조장")
+            assertThat(employee.appLoginActive).isTrue()
+            assertThat(employee.orgName).isEqualTo("기존지점")
+            assertThat(employee.costCenterCode).isEqualTo("0000")
+            assertThat(employee.jikchak).isNull()
+        }
+    }
+
+    @Nested
+    @DisplayName("AppAuthority 결정 (jobCode 기반)")
+    inner class JobCodeAuthorityTests {
+
+        @Test
+        @DisplayName("판촉직 조장 - A049 + D0052 -> 조장")
+        fun promotionLeader() {
+            val employee = createEmployee()
+            updater.applyJobCodeAuthority(employee, "A049", "D0052")
+            assertThat(employee.appAuthority).isEqualTo("조장")
+            assertThat(employee.appLoginActive).isTrue()
         }
 
         @Test
-        @DisplayName("User 미존재 - empCodeExist=false -> 건너뜀")
-        fun skipWhenEmpCodeExistFalse() {
-            whenever(organizationRepository.findAll()).thenReturn(emptyList())
-
-            val appointment = createAppointment(
-                employeeCode = "100234",
-                empCodeExist = false,
-                afterOrgCode = "1111"
-            )
-
-            updater.updateUserProfiles(listOf(appointment))
-            // no exception, just skipped
+        @DisplayName("레이디직 여사원 - A053 + D0053 -> 여사원")
+        fun ladyWorker() {
+            val employee = createEmployee()
+            updater.applyJobCodeAuthority(employee, "A053", "D0053")
+            assertThat(employee.appAuthority).isEqualTo("여사원")
+            assertThat(employee.appLoginActive).isTrue()
         }
 
         @Test
-        @DisplayName("afterOrgCode null -> 건너뜀")
-        fun skipWhenAfterOrgCodeNull() {
-            whenever(organizationRepository.findAll()).thenReturn(emptyList())
-
-            val appointment = createAppointment(
-                employeeCode = "100234",
-                empCodeExist = true,
-                afterOrgCode = null
-            )
-
-            updater.updateUserProfiles(listOf(appointment))
-        }
-
-        @Test
-        @DisplayName("Org 미존재 - appAuthority 미변경, costCenterCode/orgName은 갱신")
-        fun orgNotFound() {
-            whenever(organizationRepository.findAll()).thenReturn(emptyList())
-
-            val employee = createEmployee(employeeNumber = "100234", appAuthority = "영업사원")
-            whenever(employeeRepository.findByEmployeeNumber("100234")).thenReturn(Optional.of(employee))
-
-            val appointment = createAppointment(
-                employeeCode = "100234",
-                empCodeExist = true,
-                afterOrgCode = "9999",
-                afterOrgName = "신규조직"
-            )
-
-            updater.updateUserProfiles(listOf(appointment))
-
+        @DisplayName("일반직 - B001 -> 변경 없음")
+        fun generalNoChange() {
+            val employee = createEmployee(appAuthority = "영업사원", appLoginActive = false)
+            updater.applyJobCodeAuthority(employee, "B001", "D0053")
             assertThat(employee.appAuthority).isEqualTo("영업사원")
-            assertThat(employee.costCenterCode).isEqualTo("9999")
-            assertThat(employee.orgName).isEqualTo("신규조직")
+            assertThat(employee.appLoginActive).isFalse()
         }
 
         @Test
-        @DisplayName("costCenterLevel4 매칭 - Level5 없으면 Level4로 검색")
-        fun matchByCostCenterLevel4() {
-            val org = createOrg(costCenterLevel4 = "2222", orgCodeLevel3 = "3472")
-            whenever(organizationRepository.findAll()).thenReturn(listOf(org))
+        @DisplayName("jobCode null -> 변경 없음")
+        fun nullJobCode() {
+            val employee = createEmployee(appAuthority = "영업사원")
+            updater.applyJobCodeAuthority(employee, null, "D0052")
+            assertThat(employee.appAuthority).isEqualTo("영업사원")
+        }
+    }
 
-            val employee = createEmployee(employeeNumber = "100234")
+    @Nested
+    @DisplayName("ProfessionalPromotionTeam 초기화")
+    inner class PPTResetTests {
+
+        @Test
+        @DisplayName("여사원 + 전보 -> 일반으로 초기화")
+        fun resetToGeneral() {
+            val employee = createEmployee(appAuthority = "여사원", professionalPromotionTeam = "특별반")
+            updater.applyProfessionalPromotionTeamReset(employee, "전보")
+            assertThat(employee.professionalPromotionTeam).isEqualTo("일반")
+        }
+
+        @Test
+        @DisplayName("여사원 + 승진 -> 기존 값 유지")
+        fun keepOnPromotion() {
+            val employee = createEmployee(appAuthority = "여사원", professionalPromotionTeam = "특별반")
+            updater.applyProfessionalPromotionTeamReset(employee, "승진")
+            assertThat(employee.professionalPromotionTeam).isEqualTo("특별반")
+        }
+
+        @Test
+        @DisplayName("조장 -> 초기화 안 함")
+        fun leaderNoReset() {
+            val employee = createEmployee(appAuthority = "조장", professionalPromotionTeam = "특별반")
+            updater.applyProfessionalPromotionTeamReset(employee, "전보")
+            assertThat(employee.professionalPromotionTeam).isEqualTo("특별반")
+        }
+    }
+
+    @Nested
+    @DisplayName("스킵 케이스")
+    inner class SkipTests {
+
+        @BeforeEach
+        fun setUp() {
+            setupSystemCodeMaster()
+        }
+
+        @Test
+        @DisplayName("empCodeExist=false -> skip")
+        fun skipWhenEmpCodeExistFalse() {
+            val appointment = createAppointment(empCodeExist = false, afterOrgCode = "1111")
+            updater.updateUserProfiles(listOf(appointment), today)
+        }
+
+        @Test
+        @DisplayName("afterOrgCode=null -> skip")
+        fun skipWhenAfterOrgCodeNull() {
+            val appointment = createAppointment(afterOrgCode = null)
+            updater.updateUserProfiles(listOf(appointment), today)
+        }
+
+        @Test
+        @DisplayName("appointDate 파싱 실패 -> skip")
+        fun skipOnInvalidDate() {
+            val employee = createEmployee()
             whenever(employeeRepository.findByEmployeeNumber("100234")).thenReturn(Optional.of(employee))
 
             val appointment = createAppointment(
-                employeeCode = "100234",
-                empCodeExist = true,
-                afterOrgCode = "2222",
-                jikchak = "사원"
+                afterOrgCode = "1111", appointDate = "invalid"
             )
 
-            updater.updateUserProfiles(listOf(appointment))
+            updater.updateUserProfiles(listOf(appointment), today)
+            assertThat(employee.costCenterCode).isNull()
+        }
+    }
 
-            assertThat(employee.appAuthority).isEqualTo("Staff")
+    @Nested
+    @DisplayName("parseAppointDate")
+    inner class ParseAppointDateTests {
+
+        @Test
+        @DisplayName("유효한 날짜 파싱")
+        fun validDate() {
+            val result = updater.parseAppointDate("20260322")
+            assertThat(result).isEqualTo(LocalDate.of(2026, 3, 22))
         }
 
         @Test
-        @DisplayName("복수 발령 - 마지막 발령이 최종 반영")
-        fun multipleAppointments() {
-            val org1 = createOrg(costCenterLevel5 = "1111", orgCodeLevel3 = "5066")
-            val org2 = createOrg(costCenterLevel5 = "2222", orgCodeLevel3 = "9999")
-            whenever(organizationRepository.findAll()).thenReturn(listOf(org1, org2))
+        @DisplayName("null 입력 -> null")
+        fun nullInput() {
+            assertThat(updater.parseAppointDate(null)).isNull()
+        }
 
-            val employee = createEmployee(employeeNumber = "100234")
-            whenever(employeeRepository.findByEmployeeNumber("100234")).thenReturn(Optional.of(employee))
-
-            val appointments = listOf(
-                createAppointment(
-                    employeeCode = "100234", empCodeExist = true,
-                    afterOrgCode = "1111", afterOrgName = "마케팅", jikchak = "사원"
-                ),
-                createAppointment(
-                    employeeCode = "100234", empCodeExist = true,
-                    afterOrgCode = "2222", afterOrgName = "영업1지점", jikchak = "지점장"
-                )
-            )
-
-            updater.updateUserProfiles(appointments)
-
-            assertThat(employee.appAuthority).isEqualTo("지점장")
-            assertThat(employee.orgName).isEqualTo("영업1지점")
+        @Test
+        @DisplayName("잘못된 형식 -> null")
+        fun invalidFormat() {
+            assertThat(updater.parseAppointDate("2026-03-22")).isNull()
         }
     }
 
     private fun createEmployee(
         id: Long = 1L,
         employeeNumber: String = "100234",
-        appAuthority: String? = null
+        appAuthority: String? = null,
+        appLoginActive: Boolean? = null,
+        orgName: String? = null,
+        costCenterCode: String? = null,
+        professionalPromotionTeam: String? = null
     ): Employee = Employee(
         id = id,
         employeeNumber = employeeNumber,
         name = "테스트사원",
-        appAuthority = appAuthority
-    )
-
-    private fun createOrg(
-        id: Long = 0L,
-        costCenterLevel3: String? = null,
-        orgCodeLevel3: String? = null,
-        costCenterLevel4: String? = null,
-        orgCodeLevel4: String? = null,
-        costCenterLevel5: String? = null,
-        orgCodeLevel5: String? = null
-    ): Organization = Organization(
-        id = id,
-        costCenterLevel3 = costCenterLevel3,
-        orgCodeLevel3 = orgCodeLevel3,
-        costCenterLevel4 = costCenterLevel4,
-        orgCodeLevel4 = orgCodeLevel4,
-        costCenterLevel5 = costCenterLevel5,
-        orgCodeLevel5 = orgCodeLevel5
+        appAuthority = appAuthority,
+        appLoginActive = appLoginActive,
+        orgName = orgName,
+        costCenterCode = costCenterCode,
+        professionalPromotionTeam = professionalPromotionTeam
     )
 
     private fun createAppointment(
@@ -322,13 +395,40 @@ class AppointmentUserProfileUpdaterTest {
         empCodeExist: Boolean = true,
         afterOrgCode: String? = null,
         afterOrgName: String? = null,
-        jikchak: String? = null
+        jikchak: String? = null,
+        jikwee: String? = null,
+        jikgub: String? = null,
+        workType: String? = null,
+        jobCode: String? = null,
+        workArea: String? = null,
+        jikjong: String? = null,
+        appointDate: String = "20260322",
+        ordDetailNode: String? = null
     ): Appointment = Appointment(
         employeeCode = employeeCode,
         empCodeExist = empCodeExist,
         afterOrgCode = afterOrgCode,
         afterOrgName = afterOrgName,
         jikchak = jikchak,
-        appointDate = "20260301"
+        jikwee = jikwee,
+        jikgub = jikgub,
+        workType = workType,
+        jobCode = jobCode,
+        workArea = workArea,
+        jikjong = jikjong,
+        appointDate = appointDate,
+        ordDetailNode = ordDetailNode
+    )
+
+    private fun createSystemCodeMaster(
+        groupCode: String,
+        detailCode: String,
+        detailCodeName: String
+    ): SystemCodeMaster = SystemCodeMaster(
+        companyCode = "1000",
+        groupCode = groupCode,
+        detailCode = detailCode,
+        detailCodeName = detailCodeName,
+        externalKey = "1000_${groupCode}_${detailCode}"
     )
 }

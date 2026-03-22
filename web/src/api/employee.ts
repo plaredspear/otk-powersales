@@ -29,6 +29,12 @@ interface EmployeeItemRaw {
   end_date: string | null;
   app_login_active: boolean | null;
   work_phone: string | null;
+  jikchak: string | null;
+  jikwee: string | null;
+  jikgub: string | null;
+  job_code: string | null;
+  appointment_date: string | null;
+  ord_detail_node: string | null;
 }
 
 // --- Frontend interfaces (camelCase) ---
@@ -55,6 +61,12 @@ export interface Employee {
   endDate: string | null;
   appLoginActive: boolean | null;
   workPhone: string | null;
+  jikchak: string | null;
+  jikwee: string | null;
+  jikgub: string | null;
+  jobCode: string | null;
+  appointmentDate: string | null;
+  ordDetailNode: string | null;
 }
 
 export interface EmployeeListData {
@@ -82,6 +94,12 @@ function mapEmployeeList(raw: EmployeeListRaw): EmployeeListData {
       endDate: item.end_date,
       appLoginActive: item.app_login_active,
       workPhone: item.work_phone,
+      jikchak: item.jikchak,
+      jikwee: item.jikwee,
+      jikgub: item.jikgub,
+      jobCode: item.job_code,
+      appointmentDate: item.appointment_date,
+      ordDetailNode: item.ord_detail_node,
     })),
     page: raw.page,
     size: raw.size,

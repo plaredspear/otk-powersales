@@ -22,7 +22,13 @@ data class EmployeeListItem(
     val startDate: String?,
     val endDate: String?,
     val appLoginActive: Boolean?,
-    val workPhone: String?
+    val workPhone: String?,
+    val jikchak: String?,
+    val jikwee: String?,
+    val jikgub: String?,
+    val jobCode: String?,
+    val appointmentDate: String?,
+    val ordDetailNode: String?
 ) {
     companion object {
         fun from(employee: Employee): EmployeeListItem = EmployeeListItem(
@@ -37,7 +43,13 @@ data class EmployeeListItem(
             startDate = employee.startDate?.toString(),
             endDate = employee.endDate?.toString(),
             appLoginActive = employee.appLoginActive,
-            workPhone = employee.workPhone
+            workPhone = employee.workPhone,
+            jikchak = employee.jikchak,
+            jikwee = employee.jikwee,
+            jikgub = employee.jikgub,
+            jobCode = employee.jobCode,
+            appointmentDate = employee.appointmentDate?.toString(),
+            ordDetailNode = employee.ordDetailNode
         )
     }
 }

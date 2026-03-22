@@ -75,12 +75,20 @@ class AdminEmployeeControllerTest {
                         employeeNumber = "10000001",
                         name = "홍길동",
                         status = "재직",
+                        sex = "남",
                         orgName = "서울1지점",
                         costCenterCode = "A001",
                         appAuthority = "조장",
                         startDate = "2020-03-15",
+                        endDate = null,
                         appLoginActive = true,
-                        workPhone = "010-1234-5678"
+                        workPhone = "010-1234-5678",
+                        jikchak = null,
+                        jikwee = null,
+                        jikgub = null,
+                        jobCode = null,
+                        appointmentDate = null,
+                        ordDetailNode = null
                     )
                 ),
                 page = 0,
