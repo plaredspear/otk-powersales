@@ -11,6 +11,12 @@ import org.hibernate.annotations.Comment
 /**
  * 조직 마스터 Entity
  * Salesforce 조직(Organization) 커스텀 오브젝트 — SAP HR 조직 마스터 동기화 대상 테이블.
+ *
+ * **주의: organization_id(PK)를 FK로 참조하지 마세요.**
+ * 이 테이블은 SAP 동기화 시 전체 삭제 후 재삽입(DELETE_INSERT)되므로
+ * PK가 매 동기화마다 변경됩니다. 다른 테이블에서 organization_id를
+ * FK로 참조하면 데이터 무결성이 깨집니다.
+ * 조직 정보를 참조할 때는 [costCenterLevel5](cc_cd5) 등 코드값을 문자열로 사용하세요.
  */
 @Entity
 @Table(name = "organization")
