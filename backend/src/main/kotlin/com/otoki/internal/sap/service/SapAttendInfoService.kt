@@ -120,7 +120,7 @@ class SapAttendInfoService(
         if (dates.isEmpty()) return
 
         val employeeCode = attendInfo.employeeCode
-        val employee = employeeRepository.findByEmployeeNumber(employeeCode).orElse(null)
+        val employee = employeeRepository.findByEmployeeCode(employeeCode).orElse(null)
         if (employee == null) {
             log.warn("연차 스케줄 처리 실패 - 사원 조회 불가: employeeCode={}", employeeCode)
             return

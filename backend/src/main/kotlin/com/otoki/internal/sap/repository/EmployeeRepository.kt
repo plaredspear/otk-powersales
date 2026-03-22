@@ -14,12 +14,12 @@ interface EmployeeRepository : JpaRepository<Employee, Long>, EmployeeRepository
     /**
      * 사번으로 사원 조회
      */
-    fun findByEmployeeNumber(employeeNumber: String): Optional<Employee>
+    fun findByEmployeeCode(employeeCode: String): Optional<Employee>
 
     /**
      * 사번 존재 여부 확인
      */
-    fun existsByEmployeeNumber(employeeNumber: String): Boolean
+    fun existsByEmployeeCode(employeeCode: String): Boolean
 
     /**
      * 조직별 사원 목록 조회
@@ -53,7 +53,7 @@ interface EmployeeRepository : JpaRepository<Employee, Long>, EmployeeRepository
     /**
      * 사원번호 목록으로 일괄 조회 (Excel 업로드 검증용)
      */
-    fun findByEmployeeNumberIn(employeeNumbers: List<String>): List<Employee>
+    fun findByEmployeeCodeIn(employeeCodes: List<String>): List<Employee>
 
     /**
      * 조직(costCenterCode) + 권한(appAuthority)으로 사원 조회 (여사원 일정관리)

@@ -212,7 +212,7 @@ class MyScheduleServiceTest {
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(displayWorkScheduleRepository.findByEmployeeNumberAndStartDate("20030117", date))
+            whenever(displayWorkScheduleRepository.findByEmployeeCodeAndStartDate("20030117", date))
                 .thenReturn(mockSchedules)
 
             // When
@@ -222,7 +222,7 @@ class MyScheduleServiceTest {
             assertThat(result.date).isEqualTo("2020-08-04")
             assertThat(result.dayOfWeek).isEqualTo("화")
             assertThat(result.memberName).isEqualTo("최금주")
-            assertThat(result.employeeNumber).isEqualTo("20030117")
+            assertThat(result.employeeCode).isEqualTo("20030117")
             assertThat(result.reportProgress.completed).isEqualTo(0)
             assertThat(result.reportProgress.total).isEqualTo(3)
             assertThat(result.reportProgress.workType).isEqualTo("진열")
@@ -239,7 +239,7 @@ class MyScheduleServiceTest {
             val mockUser = createMockEmployee(userId, "최금주", "20030117", sfid = "a0B000000012345")
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(displayWorkScheduleRepository.findByEmployeeNumberAndStartDate("20030117", date))
+            whenever(displayWorkScheduleRepository.findByEmployeeCodeAndStartDate("20030117", date))
                 .thenReturn(emptyList())
 
             // When
@@ -270,10 +270,10 @@ class MyScheduleServiceTest {
 
     // ========== Helper Methods ==========
 
-    private fun createMockEmployee(userId: Long, name: String, employeeNumber: String, sfid: String? = null): Employee {
+    private fun createMockEmployee(userId: Long, name: String, employeeCode: String, sfid: String? = null): Employee {
         return Employee(
             id = userId,
-            employeeNumber = employeeNumber,
+            employeeCode = employeeCode,
             password = "encoded",
             name = name,
             orgName = "서울지점",
@@ -282,12 +282,12 @@ class MyScheduleServiceTest {
     }
 
     private fun createMockMemberSchedule(
-        employeeNumber: String = "20030117",
+        employeeCode: String = "20030117",
         workingDate: LocalDate = LocalDate.now(),
         workingType: String = "근무"
     ): TeamMemberSchedule {
         return TeamMemberSchedule(
-            employeeNumber = employeeNumber,
+            employeeCode = employeeCode,
             workingDate = workingDate,
             workingType = workingType
         )
@@ -301,7 +301,7 @@ class MyScheduleServiceTest {
     ): DisplayWorkSchedule {
         return DisplayWorkSchedule(
             id = id,
-            employeeNumber = "a0B000000012345",
+            employeeCode = "a0B000000012345",
             account = account,
             typeOfWork1 = typeOfWork1,
             startDate = startDate

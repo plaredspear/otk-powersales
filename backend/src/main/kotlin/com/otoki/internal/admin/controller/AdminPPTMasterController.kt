@@ -32,13 +32,13 @@ class AdminPPTMasterController(
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "20") size: Int,
         @RequestParam(required = false) employeeName: String?,
-        @RequestParam(required = false) employeeNumber: String?,
+        @RequestParam(required = false) employeeCode: String?,
         @RequestParam(required = false) teamType: String?,
         @RequestParam(required = false) branchCode: String?,
         @RequestParam(defaultValue = "true") validOnly: Boolean
     ): ResponseEntity<ApiResponse<PPTMasterListResponse>> {
         val response = adminPPTMasterService.getMasters(
-            employeeName, employeeNumber, teamType, branchCode, validOnly,
+            employeeName, employeeCode, teamType, branchCode, validOnly,
             PageRequest.of(page, size)
         )
         return ResponseEntity.ok(ApiResponse.success(response))

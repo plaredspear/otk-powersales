@@ -9,7 +9,7 @@ import java.time.LocalDateTime
 /**
  * 사원 인증/기기 정보 Entity (employee_info 테이블)
  *
- * User와 1:1 관계. employee_number = employee_number 로 조인.
+ * User와 1:1 관계. employee_code = employee_code 로 조인.
  */
 @Entity
 @Table(name = "employee_info")
@@ -18,8 +18,8 @@ class EmployeeInfo(
 
     @Id
     @HCColumn("empcode__c")
-    @Column(name = "employee_number", length = 40)
-    val employeeNumber: String,
+    @Column(name = "employee_code", length = 40)
+    val employeeCode: String,
 
     @HCColumn("emp_pwd")
     @Column(name = "password", length = 200)

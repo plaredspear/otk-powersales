@@ -127,7 +127,7 @@ class DisplayWorkScheduleRepositoryCustomImpl(
         val matchingIds = JPAExpressions
             .select(employee.id)
             .from(employee)
-            .where(employee.employeeNumber.containsIgnoreCase(employeeCode))
+            .where(employee.employeeCode.containsIgnoreCase(employeeCode))
         return displayWorkSchedule.employeeId.`in`(matchingIds)
     }
 

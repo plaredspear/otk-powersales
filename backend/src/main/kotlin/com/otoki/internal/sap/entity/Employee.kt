@@ -16,7 +16,7 @@ import java.time.LocalDateTime
  * - Primary: employee (사원 마스터)
  * - Secondary: employee_info (인증/기기 정보) — @OneToOne 관계
  *
- * employee_info 조인은 employee_number = employee_number (non-PK 컬럼).
+ * employee_info 조인은 employee_code = employee_code (non-PK 컬럼).
  * JPA @SecondaryTable은 PK 기반 조인만 지원하므로, @OneToOne + delegate property로 구현.
  */
 @Entity
@@ -36,8 +36,8 @@ class Employee(
 
     @SFField("DKRetail__EmpCode__c")
     @HCColumn("dkretail__empcode__c")
-    @Column(name = "employee_number", unique = true, length = 100)
-    val employeeNumber: String,
+    @Column(name = "employee_code", unique = true, length = 100)
+    val employeeCode: String,
 
     @SFField("Name")
     @HCColumn("name")
@@ -179,14 +179,14 @@ class Employee(
 
     @OneToOne(cascade = [CascadeType.ALL], fetch = FetchType.EAGER, optional = true)
     @JoinColumn(
-        name = "employee_number",
-        referencedColumnName = "employee_number",
+        name = "employee_code",
+        referencedColumnName = "employee_code",
         insertable = false,
         updatable = false,
         foreignKey = ForeignKey(ConstraintMode.NO_CONSTRAINT)
     )
     var employeeInfo: EmployeeInfo? = EmployeeInfo(
-        employeeNumber = employeeNumber,
+        employeeCode = employeeCode,
         password = password,
         passwordChangeRequired = passwordChangeRequired,
         deviceUuid = deviceUuid,
@@ -224,7 +224,7 @@ class Employee(
 
     private fun ensureEmployeeInfo(): EmployeeInfo {
         if (employeeInfo == null) {
-            employeeInfo = EmployeeInfo(employeeNumber = employeeNumber)
+            employeeInfo = EmployeeInfo(employeeCode = employeeCode)
         }
         return employeeInfo!!
     }

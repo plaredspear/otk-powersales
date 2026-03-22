@@ -211,7 +211,7 @@ class EducationService(
             eduTitle = title,
             eduContent = content,
             eduCode = category,
-            empCode = employee.employeeNumber
+            empCode = employee.employeeCode
         )
         educationPostRepository.save(post)
 

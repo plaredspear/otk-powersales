@@ -134,7 +134,7 @@ class MyScheduleControllerTest {
             date = "2020-08-04",
             dayOfWeek = "화",
             memberName = "최금주",
-            employeeNumber = "20030117",
+            employeeCode = "20030117",
             reportProgress = ReportProgressDto(
                 completed = 0,
                 total = 3,
@@ -166,7 +166,7 @@ class MyScheduleControllerTest {
             .andExpect(jsonPath("$.data.date").value("2020-08-04"))
             .andExpect(jsonPath("$.data.day_of_week").value("화"))
             .andExpect(jsonPath("$.data.member_name").value("최금주"))
-            .andExpect(jsonPath("$.data.employee_number").value("20030117"))
+            .andExpect(jsonPath("$.data.employee_code").value("20030117"))
             .andExpect(jsonPath("$.data.report_progress.completed").value(0))
             .andExpect(jsonPath("$.data.report_progress.total").value(3))
             .andExpect(jsonPath("$.data.accounts").isArray)

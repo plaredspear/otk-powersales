@@ -71,7 +71,7 @@ class AdminPromotionEmployeeControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data[0].id").value(1))
-                .andExpect(jsonPath("$.data[0].employee_number").value("20030117"))
+                .andExpect(jsonPath("$.data[0].employee_code").value("20030117"))
                 .andExpect(jsonPath("$.data[0].employee_name").value("김여사"))
                 .andExpect(jsonPath("$.data[0].work_status").value("근무"))
         }
@@ -252,7 +252,7 @@ class AdminPromotionEmployeeControllerTest {
     private fun createListResponse() = PromotionEmployeeListResponse(
         id = 1L,
         promotionId = 10L,
-        employeeNumber = "20030117",
+        employeeCode = "20030117",
         employeeName = "김여사",
         scheduleDate = LocalDate.of(2026, 3, 15),
         workStatus = "근무",
@@ -277,7 +277,7 @@ class AdminPromotionEmployeeControllerTest {
     private fun createDetailResponse() = PromotionEmployeeDetailResponse(
         id = 1L,
         promotionId = 10L,
-        employeeNumber = "20030117",
+        employeeCode = "20030117",
         employeeName = "김여사",
         scheduleDate = LocalDate.of(2026, 3, 15),
         workStatus = "근무",
@@ -302,7 +302,7 @@ class AdminPromotionEmployeeControllerTest {
     )
 
     private fun createRequest() = PromotionEmployeeRequest(
-        employeeNumber = "20030117",
+        employeeCode = "20030117",
         scheduleDate = LocalDate.of(2026, 3, 15),
         workStatus = "근무",
         workType1 = "시식",

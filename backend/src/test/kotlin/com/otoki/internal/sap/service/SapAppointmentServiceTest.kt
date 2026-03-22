@@ -40,7 +40,7 @@ class SapAppointmentServiceTest {
         @Test
         @DisplayName("사원 존재 - emp_code_exist=true로 Insert")
         fun sync_employeeExists_empCodeExistTrue() {
-            whenever(employeeRepository.findAllEmployeeNumbers()).thenReturn(listOf("100234"))
+            whenever(employeeRepository.findAllEmployeeCodes()).thenReturn(listOf("100234"))
             whenever(appointmentRepository.save(any<Appointment>()))
                 .thenAnswer { it.getArgument<Appointment>(0) }
 
@@ -59,7 +59,7 @@ class SapAppointmentServiceTest {
         @Test
         @DisplayName("사원 미존재 - emp_code_exist=false로 Insert")
         fun sync_employeeNotExists_empCodeExistFalse() {
-            whenever(employeeRepository.findAllEmployeeNumbers()).thenReturn(listOf("999999"))
+            whenever(employeeRepository.findAllEmployeeCodes()).thenReturn(listOf("999999"))
             whenever(appointmentRepository.save(any<Appointment>()))
                 .thenAnswer { it.getArgument<Appointment>(0) }
 
@@ -75,7 +75,7 @@ class SapAppointmentServiceTest {
         @Test
         @DisplayName("모든 필드 매핑 확인")
         fun sync_allFieldsMapped() {
-            whenever(employeeRepository.findAllEmployeeNumbers()).thenReturn(emptyList())
+            whenever(employeeRepository.findAllEmployeeCodes()).thenReturn(emptyList())
             whenever(appointmentRepository.save(any<Appointment>()))
                 .thenAnswer { it.getArgument<Appointment>(0) }
 
@@ -124,7 +124,7 @@ class SapAppointmentServiceTest {
         @Test
         @DisplayName("employee_code 누락 - 해당 레코드 실패")
         fun sync_missingEmployeeCode_fails() {
-            whenever(employeeRepository.findAllEmployeeNumbers()).thenReturn(emptyList())
+            whenever(employeeRepository.findAllEmployeeCodes()).thenReturn(emptyList())
 
             val items = listOf(createReqItem(employeeCode = null, appointDate = "20260301"))
             val result = sapAppointmentService.sync(items)
@@ -136,7 +136,7 @@ class SapAppointmentServiceTest {
         @Test
         @DisplayName("appoint_date 누락 - 해당 레코드 실패")
         fun sync_missingAppointDate_fails() {
-            whenever(employeeRepository.findAllEmployeeNumbers()).thenReturn(emptyList())
+            whenever(employeeRepository.findAllEmployeeCodes()).thenReturn(emptyList())
 
             val items = listOf(createReqItem(employeeCode = "100234", appointDate = null))
             val result = sapAppointmentService.sync(items)
@@ -148,7 +148,7 @@ class SapAppointmentServiceTest {
         @Test
         @DisplayName("부분 실패 - 3건 중 1건 에러")
         fun sync_partialFailure() {
-            whenever(employeeRepository.findAllEmployeeNumbers()).thenReturn(emptyList())
+            whenever(employeeRepository.findAllEmployeeCodes()).thenReturn(emptyList())
             whenever(appointmentRepository.save(any<Appointment>()))
                 .thenAnswer { it.getArgument<Appointment>(0) }
 

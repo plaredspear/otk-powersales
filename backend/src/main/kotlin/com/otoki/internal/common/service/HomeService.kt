@@ -92,7 +92,7 @@ class HomeService(
         val expiryAlert = HomeResponse.ExpiryAlertInfo(
             branchName = employee.orgName ?: "",
             employeeName = employee.name,
-            employeeNumber = employee.employeeNumber,
+            employeeCode = employee.employeeCode,
             expiryCount = expiryCount.toInt()
         )
 
@@ -167,7 +167,7 @@ class HomeService(
         return HomeResponse.TeamMemberScheduleInfo(
             scheduleId = teamMemberSchedule.id,
             employeeName = matchedEmployee?.name ?: "",
-            employeeNumber = matchedEmployee?.employeeNumber ?: "",
+            employeeCode = matchedEmployee?.employeeCode ?: "",
             accountName = teamMemberSchedule.accountId?.let { accountMap[it] },
             accountSfid = teamMemberSchedule.accountId?.toString(),
             workCategory = teamMemberSchedule.workingCategory1 ?: "",

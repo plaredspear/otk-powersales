@@ -40,7 +40,7 @@ class SuggestionPhotoRepositoryTest {
         // 테스트 사용자 생성
         testUser = testEntityManager.persistAndFlush(
             User(
-                employeeNumber = "10000001",
+                employeeCode = "10000001",
                 password = "encoded",
                 name = "홍길동",
                 orgName = "서울지점"

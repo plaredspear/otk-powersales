@@ -68,13 +68,13 @@ class AdminAuthControllerTest {
             mockMvc.perform(
                 post("/api/v1/admin/auth/login")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content("""{"employee_number": "00000001", "password": "1234"}""")
+                    .content("""{"employee_code": "00000001", "password": "1234"}""")
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("관리자 로그인 성공"))
                 .andExpect(jsonPath("$.data.user.id").value(1))
-                .andExpect(jsonPath("$.data.user.employee_number").value("00000001"))
+                .andExpect(jsonPath("$.data.user.employee_code").value("00000001"))
                 .andExpect(jsonPath("$.data.user.name").value("홍길동"))
                 .andExpect(jsonPath("$.data.user.org_name").value("서울지점"))
                 .andExpect(jsonPath("$.data.user.role").value("LEADER"))
@@ -95,7 +95,7 @@ class AdminAuthControllerTest {
             mockMvc.perform(
                 post("/api/v1/admin/auth/login")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content("""{"employee_number": "00000001", "password": "wrong"}""")
+                    .content("""{"employee_code": "00000001", "password": "wrong"}""")
             )
                 .andExpect(status().isUnauthorized)
                 .andExpect(jsonPath("$.success").value(false))
@@ -112,7 +112,7 @@ class AdminAuthControllerTest {
             mockMvc.perform(
                 post("/api/v1/admin/auth/login")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content("""{"employee_number": "00000002", "password": "1234"}""")
+                    .content("""{"employee_code": "00000002", "password": "1234"}""")
             )
                 .andExpect(status().isForbidden)
                 .andExpect(jsonPath("$.success").value(false))
@@ -126,7 +126,7 @@ class AdminAuthControllerTest {
             mockMvc.perform(
                 post("/api/v1/admin/auth/login")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content("""{"employee_number": "abc", "password": "1234"}""")
+                    .content("""{"employee_code": "abc", "password": "1234"}""")
             )
                 .andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.success").value(false))

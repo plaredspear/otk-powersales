@@ -7,7 +7,7 @@ import java.time.LocalDateTime
 data class PromotionEmployeeListResponse(
     val id: Long,
     val promotionId: Long,
-    val employeeNumber: String?,
+    val employeeCode: String?,
     val employeeName: String?,
     val scheduleDate: LocalDate?,
     val workStatus: String?,
@@ -29,11 +29,11 @@ data class PromotionEmployeeListResponse(
     val s3ImageUniqueKey: String?
 ) {
     companion object {
-        fun from(entity: PromotionEmployee, employeeName: String?, employeeNumber: String? = null): PromotionEmployeeListResponse =
+        fun from(entity: PromotionEmployee, employeeName: String?, employeeCode: String? = null): PromotionEmployeeListResponse =
             PromotionEmployeeListResponse(
                 id = entity.id,
                 promotionId = entity.promotionId,
-                employeeNumber = employeeNumber,
+                employeeCode = employeeCode,
                 employeeName = employeeName,
                 scheduleDate = entity.scheduleDate,
                 workStatus = entity.workStatus,
@@ -60,7 +60,7 @@ data class PromotionEmployeeListResponse(
 data class PromotionEmployeeDetailResponse(
     val id: Long,
     val promotionId: Long,
-    val employeeNumber: String?,
+    val employeeCode: String?,
     val employeeName: String?,
     val scheduleDate: LocalDate?,
     val workStatus: String?,
@@ -84,11 +84,11 @@ data class PromotionEmployeeDetailResponse(
     val updatedAt: LocalDateTime
 ) {
     companion object {
-        fun from(entity: PromotionEmployee, employeeName: String?, employeeNumber: String? = null): PromotionEmployeeDetailResponse =
+        fun from(entity: PromotionEmployee, employeeName: String?, employeeCode: String? = null): PromotionEmployeeDetailResponse =
             PromotionEmployeeDetailResponse(
                 id = entity.id,
                 promotionId = entity.promotionId,
-                employeeNumber = employeeNumber,
+                employeeCode = employeeCode,
                 employeeName = employeeName,
                 scheduleDate = entity.scheduleDate,
                 workStatus = entity.workStatus,

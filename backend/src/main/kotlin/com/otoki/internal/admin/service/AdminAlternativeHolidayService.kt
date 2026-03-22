@@ -31,10 +31,10 @@ class AdminAlternativeHolidayService(
         startDate: LocalDate,
         endDate: LocalDate,
         status: String?,
-        employeeNumber: String?,
+        employeeCode: String?,
         orgCode: String?
     ): List<AlternativeHolidayListItem> {
-        return alternativeHolidayRepository.findByFilters(startDate, endDate, status, employeeNumber, orgCode)
+        return alternativeHolidayRepository.findByFilters(startDate, endDate, status, employeeCode, orgCode)
     }
 
     @Transactional
@@ -42,7 +42,7 @@ class AdminAlternativeHolidayService(
         request: AlternativeHolidayCreateRequest,
         adminUserId: Long
     ): AlternativeHolidayCreateResponse {
-        val employee = employeeRepository.findByEmployeeNumber(request.employeeNumber)
+        val employee = employeeRepository.findByEmployeeCode(request.employeeCode)
             .orElseThrow { com.otoki.internal.leave.exception.EmployeeNotFoundException() }
 
         val admin = employeeRepository.findById(adminUserId)
@@ -60,7 +60,7 @@ class AdminAlternativeHolidayService(
                 actualWorkDate = request.actualWorkDate,
                 targetAltHolidayDate = request.targetAltHolidayDate,
                 status = "신규",
-                createdBy = admin.employeeNumber
+                createdBy = admin.employeeCode
             )
         )
 

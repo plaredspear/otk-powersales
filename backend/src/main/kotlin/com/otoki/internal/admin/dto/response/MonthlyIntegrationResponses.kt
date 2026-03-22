@@ -14,7 +14,7 @@ data class MonthlyIntegrationScheduleItem(
     val accountBranchName: String?,
     val accountCode: String,
     val accountName: String,
-    val employeeNumber: String,
+    val employeeCode: String,
     val title: String?,
     val employeeName: String,
     val workingCategory1: String,

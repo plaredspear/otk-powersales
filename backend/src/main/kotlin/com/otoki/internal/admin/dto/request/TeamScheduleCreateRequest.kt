@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotBlank
 
 data class TeamScheduleCreateRequest(
     @field:NotBlank(message = "사원 ID는 필수입니다")
-    val employeeNumber: String,
+    val employeeCode: String,
 
     @field:NotBlank(message = "근무일자는 필수입니다")
     val workingDate: String,

@@ -246,7 +246,7 @@ class ClaimServiceTest {
 
     private fun createMockUser() = User(
         id = 1L,
-        employeeNumber = "10000001",
+        employeeCode = "10000001",
         password = "encoded",
         name = "테스트",
         orgName = "서울"

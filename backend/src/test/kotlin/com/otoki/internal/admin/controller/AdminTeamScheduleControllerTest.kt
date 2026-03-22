@@ -72,8 +72,8 @@ class AdminTeamScheduleControllerTest {
         @DisplayName("성공 - 여사원 목록 반환")
         fun getMembers_success() {
             val members = listOf(
-                TeamMemberDto(employeeNumber = "20030001", name = "홍길동"),
-                TeamMemberDto(employeeNumber = "20030002", name = "김영희")
+                TeamMemberDto(employeeCode = "20030001", name = "홍길동"),
+                TeamMemberDto(employeeCode = "20030002", name = "김영희")
             )
             whenever(adminTeamScheduleService.getMembers(1L)).thenReturn(members)
 
@@ -82,9 +82,9 @@ class AdminTeamScheduleControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
                 .andExpect(jsonPath("$.data.length()").value(2))
-                .andExpect(jsonPath("$.data[0].employee_number").value("20030001"))
+                .andExpect(jsonPath("$.data[0].employee_code").value("20030001"))
                 .andExpect(jsonPath("$.data[0].name").value("홍길동"))
-                .andExpect(jsonPath("$.data[1].employee_number").value("20030002"))
+                .andExpect(jsonPath("$.data[1].employee_code").value("20030002"))
                 .andExpect(jsonPath("$.data[1].name").value("김영희"))
         }
     }
@@ -168,7 +168,7 @@ class AdminTeamScheduleControllerTest {
             val schedules = listOf(
                 TeamScheduleDto(
                     id = 1L,
-                    employeeNumber = "20030001",
+                    employeeCode = "20030001",
                     employeeName = "홍길동",
                     workingDate = "2026-03-15",
                     workingType = "진열",
@@ -197,7 +197,7 @@ class AdminTeamScheduleControllerTest {
                 .andExpect(jsonPath("$.data").isArray)
                 .andExpect(jsonPath("$.data.length()").value(1))
                 .andExpect(jsonPath("$.data[0].id").value(1))
-                .andExpect(jsonPath("$.data[0].employee_number").value("20030001"))
+                .andExpect(jsonPath("$.data[0].employee_code").value("20030001"))
                 .andExpect(jsonPath("$.data[0].employee_name").value("홍길동"))
                 .andExpect(jsonPath("$.data[0].working_date").value("2026-03-15"))
                 .andExpect(jsonPath("$.data[0].working_type").value("진열"))
@@ -278,7 +278,7 @@ class AdminTeamScheduleControllerTest {
         @DisplayName("성공 - 일정 등록")
         fun createSchedule_success() {
             val request = TeamScheduleCreateRequest(
-                employeeNumber = "SF001",
+                employeeCode = "SF001",
                 workingDate = "2026-03-20",
                 workingType = "진열",
                 workingCategory1 = "고정",
@@ -303,7 +303,7 @@ class AdminTeamScheduleControllerTest {
         @DisplayName("실패 - 휴직 사원 등록")
         fun createSchedule_employeeOnLeave() {
             val request = TeamScheduleCreateRequest(
-                employeeNumber = "SF001",
+                employeeCode = "SF001",
                 workingDate = "2026-03-20",
                 workingType = "진열"
             )
@@ -323,7 +323,7 @@ class AdminTeamScheduleControllerTest {
         @DisplayName("실패 - 중복 일정 등록")
         fun createSchedule_scheduleConflict() {
             val request = TeamScheduleCreateRequest(
-                employeeNumber = "SF001",
+                employeeCode = "SF001",
                 workingDate = "2026-03-20",
                 workingType = "진열"
             )

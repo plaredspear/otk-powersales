@@ -50,13 +50,13 @@ class AdminAnnualLeaveService(
                         )
                     }
                 EmployeeAnnualLeaveDto(
-                    employeeNumber = employee?.employeeNumber ?: "",
+                    employeeCode = employee?.employeeCode ?: "",
                     employeeName = employee?.name ?: "",
                     orgName = employee?.orgName ?: "",
                     annualLeaveDays = days,
                     totalCount = days.size
                 )
             }
-            .sortedBy { it.employeeNumber }
+            .sortedBy { it.employeeCode }
     }
 }

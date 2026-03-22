@@ -56,7 +56,7 @@ class AuthService(
      */
     @Transactional
     fun login(request: LoginRequest): LoginResponse {
-        val employee = employeeRepository.findByEmployeeNumber(request.employeeNumber)
+        val employee = employeeRepository.findByEmployeeCode(request.employeeCode)
             .orElseThrow { InvalidCredentialsException() }
 
         if (!passwordEncoder.matches(request.password, employee.password)) {
@@ -71,9 +71,9 @@ class AuthService(
 
         // 로그인 이력 기록 (실패해도 로그인에 영향 없음)
         try {
-            loginHistoryRepository.save(LoginHistory(employeeId = employee.employeeNumber))
+            loginHistoryRepository.save(LoginHistory(employeeId = employee.employeeCode))
         } catch (e: Exception) {
-            log.warn("로그인 이력 기록 실패: employeeNumber={}", employee.employeeNumber, e)
+            log.warn("로그인 이력 기록 실패: employeeCode={}", employee.employeeCode, e)
         }
 
         val accessToken = jwtTokenProvider.createAccessToken(employee.id, employee.role, employee.agreementFlag == true)
@@ -109,7 +109,7 @@ class AuthService(
      */
     @Transactional
     fun adminLogin(request: LoginRequest): AdminLoginResponse {
-        val employee = employeeRepository.findByEmployeeNumber(request.employeeNumber)
+        val employee = employeeRepository.findByEmployeeCode(request.employeeCode)
             .orElseThrow { InvalidCredentialsException() }
 
         if (!passwordEncoder.matches(request.password, employee.password)) {
@@ -121,9 +121,9 @@ class AuthService(
         }
 
         try {
-            loginHistoryRepository.save(LoginHistory(employeeId = employee.employeeNumber))
+            loginHistoryRepository.save(LoginHistory(employeeId = employee.employeeCode))
         } catch (e: Exception) {
-            log.warn("로그인 이력 기록 실패: employeeNumber={}", employee.employeeNumber, e)
+            log.warn("로그인 이력 기록 실패: employeeCode={}", employee.employeeCode, e)
         }
 
         val accessToken = jwtTokenProvider.createAccessToken(employee.id, employee.role, employee.agreementFlag == true)
@@ -156,7 +156,7 @@ class AuthService(
     private fun validateDeviceBinding(employee: Employee, deviceId: String?) {
         if (deviceId.isNullOrBlank()) return
         if (!deviceBindingProperties.enabled) return
-        if (deviceBindingProperties.isExcluded(employee.employeeNumber)) return
+        if (deviceBindingProperties.isExcluded(employee.employeeCode)) return
 
         if (employee.deviceUuid == null) {
             employee.bindDevice(deviceId)
@@ -379,8 +379,8 @@ class AuthService(
      * 단말기 초기화 (관리자 전용)
      */
     @Transactional
-    fun resetDevice(employeeNumber: String) {
-        val employee = employeeRepository.findByEmployeeNumber(employeeNumber)
+    fun resetDevice(employeeCode: String) {
+        val employee = employeeRepository.findByEmployeeCode(employeeCode)
             .orElseThrow { EmployeeNotFoundException() }
 
         employee.resetDevice()

@@ -54,7 +54,7 @@ class OrderDraftServiceTest {
     private fun createTestEmployee(id: Long = 1L): Employee {
         return Employee(
             id = id,
-            employeeNumber = "20010585",
+            employeeCode = "20010585",
             password = "encodedPassword",
             name = "홍길동",
             orgName = "서울지점"

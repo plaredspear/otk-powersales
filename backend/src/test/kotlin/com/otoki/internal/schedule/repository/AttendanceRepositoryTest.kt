@@ -37,7 +37,7 @@ class AttendanceRepositoryTest {
         testEntityManager.clear()
 
         val employee = Employee(
-            employeeNumber = "20030117",
+            employeeCode = "20030117",
             password = "encodedPassword",
             name = "테스트 사용자",
             orgName = "부산1지점"
@@ -154,7 +154,7 @@ class AttendanceRepositoryTest {
     fun findByUserIdAndAttendanceDate_differentUser() {
         // Given
         val otherEmployee = Employee(
-            employeeNumber = "20030118",
+            employeeCode = "20030118",
             password = "encodedPassword",
             name = "다른 사용자",
             orgName = "서울1지점"

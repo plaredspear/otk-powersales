@@ -43,11 +43,11 @@ class AdminPPTMasterServiceTest {
 
     private fun createEmployee(
         id: Long = 1L,
-        employeeNumber: String = "12345678",
+        employeeCode: String = "12345678",
         name: String = "홍길동",
         professionalPromotionTeam: String? = null
     ): Employee {
-        val emp = Employee(id = id, employeeNumber = employeeNumber, name = name)
+        val emp = Employee(id = id, employeeCode = employeeCode, name = name)
         emp.costCenterCode = "1100"
         emp.orgName = "서울지점"
         emp.status = "재직"

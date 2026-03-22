@@ -54,7 +54,7 @@ class AdminPPTMasterControllerTest {
     private fun createResponse(): PPTMasterResponse = PPTMasterResponse(
         id = 1L,
         employeeId = 1L,
-        employeeNumber = "12345678",
+        employeeCode = "12345678",
         employeeName = "홍길동",
         accountId = 1,
         accountCode = "SAP001",
@@ -211,7 +211,7 @@ class AdminPPTMasterControllerTest {
             )
             whenever(adminPPTMasterService.validateBulk(any())).thenReturn(response)
 
-            val requestJson = """{"items":[{"employee_number":"12345678","account_code":"SAP001","team_type":"라면세일조","start_date":"2026-04-01"}]}"""
+            val requestJson = """{"items":[{"employee_code":"12345678","account_code":"SAP001","team_type":"라면세일조","start_date":"2026-04-01"}]}"""
 
             mockMvc.perform(
                 post("/api/v1/admin/ppt-masters/bulk")
@@ -232,7 +232,7 @@ class AdminPPTMasterControllerTest {
         fun confirmBulk_success() {
             whenever(adminPPTMasterService.confirmBulk(any())).thenReturn(BulkConfirmResponse(createdCount = 3))
 
-            val requestJson = """{"items":[{"employee_number":"12345678","account_code":"SAP001","team_type":"라면세일조","start_date":"2026-04-01"}]}"""
+            val requestJson = """{"items":[{"employee_code":"12345678","account_code":"SAP001","team_type":"라면세일조","start_date":"2026-04-01"}]}"""
 
             mockMvc.perform(
                 post("/api/v1/admin/ppt-masters/bulk/confirm")

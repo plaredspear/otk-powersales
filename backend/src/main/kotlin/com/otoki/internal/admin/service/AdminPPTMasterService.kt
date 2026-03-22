@@ -41,14 +41,14 @@ class AdminPPTMasterService(
 
     fun getMasters(
         employeeName: String?,
-        employeeNumber: String?,
+        employeeCode: String?,
         teamType: String?,
         branchCode: String?,
         validOnly: Boolean,
         pageable: Pageable
     ): PPTMasterListResponse {
         val page = pptMasterRepository.searchMasters(
-            employeeName, employeeNumber, teamType, branchCode, validOnly, LocalDate.now(), pageable
+            employeeName, employeeCode, teamType, branchCode, validOnly, LocalDate.now(), pageable
         )
         return PPTMasterListResponse(
             content = page.content.map { PPTMasterResponse.from(it) },
@@ -64,7 +64,7 @@ class AdminPPTMasterService(
         val employee = employeeRepository.findById(master.employeeId).orElse(null)
         val account = accountRepository.findById(master.accountId).orElse(null)
         return PPTMasterResponse.from(
-            master, employee?.employeeNumber, employee?.name,
+            master, employee?.employeeCode, employee?.name,
             account?.externalKey, account?.name
         )
     }
@@ -100,7 +100,7 @@ class AdminPPTMasterService(
         }
 
         return PPTMasterResponse.from(
-            master, employee.employeeNumber, employee.name,
+            master, employee.employeeCode, employee.name,
             account.externalKey, account.name
         )
     }
@@ -132,7 +132,7 @@ class AdminPPTMasterService(
         }
 
         return PPTMasterResponse.from(
-            master, employee.employeeNumber, employee.name,
+            master, employee.employeeCode, employee.name,
             account.externalKey, account.name
         )
     }
@@ -183,7 +183,7 @@ class AdminPPTMasterService(
         employees.forEachIndexed { index, emp ->
             val row = sheet.createRow(index + 1)
             row.createCell(0).setCellValue(emp.orgName ?: "")
-            row.createCell(1).setCellValue(emp.employeeNumber)
+            row.createCell(1).setCellValue(emp.employeeCode)
             row.createCell(2).setCellValue(emp.name)
             row.createCell(3).setCellValue(emp.appAuthority ?: "")
         }
@@ -197,9 +197,9 @@ class AdminPPTMasterService(
         val results = mutableListOf<BulkValidationResultItem>()
 
         // Pre-fetch employees and accounts for batch lookup
-        val employeeNumbers = request.items.map { it.employeeNumber }.distinct()
+        val employeeCodes = request.items.map { it.employeeCode }.distinct()
         val accountCodes = request.items.map { it.accountCode }.distinct()
-        val employeeMap = employeeRepository.findByEmployeeNumberIn(employeeNumbers).associateBy { it.employeeNumber }
+        val employeeMap = employeeRepository.findByEmployeeCodeIn(employeeCodes).associateBy { it.employeeCode }
         val accountMap = accountRepository.findByExternalKeyIn(accountCodes).associateBy { it.externalKey }
 
         request.items.forEachIndexed { index, item ->
@@ -225,14 +225,14 @@ class AdminPPTMasterService(
             throw PPTMasterBulkValidationFailedException()
         }
 
-        val employeeNumbers = request.items.map { it.employeeNumber }.distinct()
+        val employeeCodes = request.items.map { it.employeeCode }.distinct()
         val accountCodes = request.items.map { it.accountCode }.distinct()
-        val employeeMap = employeeRepository.findByEmployeeNumberIn(employeeNumbers).associateBy { it.employeeNumber }
+        val employeeMap = employeeRepository.findByEmployeeCodeIn(employeeCodes).associateBy { it.employeeCode }
         val accountMap = accountRepository.findByExternalKeyIn(accountCodes).associateBy { it.externalKey }
 
         var createdCount = 0
         for (item in request.items) {
-            val employee = employeeMap[item.employeeNumber]!!
+            val employee = employeeMap[item.employeeCode]!!
             val account = accountMap[item.accountCode]!!
 
             // 중복 검증 (생성 규칙 5번)
@@ -360,12 +360,12 @@ class AdminPPTMasterService(
         accountMap: Map<String?, Account>
     ): String? {
         // 사번 검증
-        val employee = employeeMap[item.employeeNumber]
+        val employee = employeeMap[item.employeeCode]
         if (employee == null) {
-            return "사번 ${item.employeeNumber}에 해당하는 사원이 존재하지 않습니다"
+            return "사번 ${item.employeeCode}에 해당하는 사원이 존재하지 않습니다"
         }
         if (employee.status != "재직") {
-            return "사번 ${item.employeeNumber} 사원이 재직 중이 아닙니다"
+            return "사번 ${item.employeeCode} 사원이 재직 중이 아닙니다"
         }
 
         // 거래처 검증

@@ -48,7 +48,7 @@ class AdminControllerTest {
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
     @Nested
-    @DisplayName("POST /api/v1/admin/users/{employeeNumber}/reset-device - 단말기 초기화")
+    @DisplayName("POST /api/v1/admin/users/{employeeCode}/reset-device - 단말기 초기화")
     inner class ResetDevice {
 
         @Test

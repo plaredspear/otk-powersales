@@ -10,7 +10,7 @@ import jakarta.validation.constraints.Size
 data class LoginRequest(
     @field:NotBlank(message = "사번은 필수입니다")
     @field:Pattern(regexp = "^\\d{8}$", message = "사번은 8자리 숫자여야 합니다")
-    val employeeNumber: String,
+    val employeeCode: String,
 
     @field:NotBlank(message = "비밀번호는 필수입니다")
     @field:Size(min = 4, message = "비밀번호는 4글자 이상이어야 합니다")

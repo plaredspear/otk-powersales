@@ -100,7 +100,7 @@ class AdminSafetyCheckServiceTest {
             assertThat(result.members).hasSize(2)
 
             val submitted = result.members.first { it.submitted }
-            assertThat(submitted.employeeNumber).isEqualTo("123456")
+            assertThat(submitted.employeeCode).isEqualTo("123456")
             assertThat(submitted.employeeName).isEqualTo("홍길동")
             assertThat(submitted.accountName).isEqualTo("이마트 강남점")
             assertThat(submitted.equipments).hasSize(9)
@@ -111,7 +111,7 @@ class AdminSafetyCheckServiceTest {
             assertThat(submitted.noCount).isEqualTo(2)
 
             val notSubmitted = result.members.first { !it.submitted }
-            assertThat(notSubmitted.employeeNumber).isEqualTo("654321")
+            assertThat(notSubmitted.employeeCode).isEqualTo("654321")
             assertThat(notSubmitted.equipments).isEmpty()
             assertThat(notSubmitted.yesCount).isEqualTo(0)
         }
@@ -200,7 +200,7 @@ class AdminSafetyCheckServiceTest {
 
             assertThat(result.totalCount).isEqualTo(1)
             assertThat(result.members).hasSize(1)
-            assertThat(result.members[0].employeeNumber).isEqualTo("123456")
+            assertThat(result.members[0].employeeCode).isEqualTo("123456")
         }
 
         @Test
@@ -305,13 +305,13 @@ class AdminSafetyCheckServiceTest {
 
     private fun createEmployee(
         id: Long,
-        employeeNumber: String,
+        employeeCode: String,
         name: String,
         appAuthority: String?,
         costCenterCode: String?,
         isDeleted: Boolean? = null
     ): Employee {
-        val employee = Employee(id = id, employeeNumber = employeeNumber, name = name)
+        val employee = Employee(id = id, employeeCode = employeeCode, name = name)
         employee.appAuthority = appAuthority
         employee.costCenterCode = costCenterCode
         val isDeletedField = Employee::class.java.getDeclaredField("isDeleted")

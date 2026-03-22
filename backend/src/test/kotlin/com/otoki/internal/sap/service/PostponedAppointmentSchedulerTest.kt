@@ -93,11 +93,11 @@ class PostponedAppointmentSchedulerTest {
     }
 
     private fun createEmployee(
-        employeeNumber: String = "100234",
+        employeeCode: String = "100234",
         crmWorkStartDate: LocalDate? = null
     ): Employee = Employee(
         id = 1L,
-        employeeNumber = employeeNumber,
+        employeeCode = employeeCode,
         name = "테스트사원",
         crmWorkStartDate = crmWorkStartDate
     )

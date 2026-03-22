@@ -52,7 +52,7 @@ class MyAccountServiceTest {
         fun getMyAccounts_employee_mergedSchedules() {
             // Given
             val userId = 1L
-            val employee = createEmployee(id = userId, employeeNumber = "20030117", sfid = "SF001")
+            val employee = createEmployee(id = userId, employeeCode = "20030117", sfid = "SF001")
             val accounts = listOf(
                 createAccount(id = 1, name = "(유)경산식품", externalKey = "1025172"),
                 createAccount(id = 2, name = "(주)대한식품", externalKey = "1025173"),
@@ -84,7 +84,7 @@ class MyAccountServiceTest {
         fun getMyAccounts_employee_teamScheduleOnly() {
             // Given
             val userId = 1L
-            val employee = createEmployee(id = userId, employeeNumber = "20030117", sfid = "SF001")
+            val employee = createEmployee(id = userId, employeeCode = "20030117", sfid = "SF001")
             val accounts = listOf(createAccount(id = 1, name = "경산농협", externalKey = "1025172"))
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
@@ -108,7 +108,7 @@ class MyAccountServiceTest {
         fun getMyAccounts_employee_displayScheduleOnly() {
             // Given
             val userId = 1L
-            val employee = createEmployee(id = userId, employeeNumber = "20030117", sfid = "SF001")
+            val employee = createEmployee(id = userId, employeeCode = "20030117", sfid = "SF001")
             val accounts = listOf(createAccount(id = 3, name = "나라마트", externalKey = "1025174"))
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
@@ -132,7 +132,7 @@ class MyAccountServiceTest {
         fun getMyAccounts_employee_noSchedules() {
             // Given
             val userId = 1L
-            val employee = createEmployee(id = userId, employeeNumber = "20030117", sfid = "SF001")
+            val employee = createEmployee(id = userId, employeeCode = "20030117", sfid = "SF001")
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(eq(userId), any(), any()))
@@ -153,7 +153,7 @@ class MyAccountServiceTest {
         fun getMyAccounts_employee_displayScheduleByUserId() {
             // Given
             val userId = 1L
-            val employee = createEmployee(id = userId, employeeNumber = "20030117", sfid = null)
+            val employee = createEmployee(id = userId, employeeCode = "20030117", sfid = null)
             val accounts = listOf(createAccount(id = 1, name = "경산농협", externalKey = "1025172"))
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
@@ -177,7 +177,7 @@ class MyAccountServiceTest {
         fun getMyAccounts_includesAddressDetail() {
             // Given
             val userId = 1L
-            val employee = createEmployee(id = userId, employeeNumber = "20030117", sfid = "SF001")
+            val employee = createEmployee(id = userId, employeeCode = "20030117", sfid = "SF001")
             val accounts = listOf(
                 createAccount(id = 1, name = "경산농협", externalKey = "1025172",
                     address1 = "전라남도 목포시 용해동 123", address2 = "1층")
@@ -209,7 +209,7 @@ class MyAccountServiceTest {
         fun getMyAccounts_leader_branchAccounts() {
             // Given
             val userId = 1L
-            val employee = createEmployee(id = userId, employeeNumber = "20030117", appAuthority = "조장", costCenterCode = "1100")
+            val employee = createEmployee(id = userId, employeeCode = "20030117", appAuthority = "조장", costCenterCode = "1100")
             val accounts = listOf(
                 createAccount(id = 10, name = "A마트", externalKey = "2001"),
                 createAccount(id = 11, name = "B식품", externalKey = "2002")
@@ -236,7 +236,7 @@ class MyAccountServiceTest {
         fun getMyAccounts_leader_noCostCenterCode() {
             // Given
             val userId = 1L
-            val employee = createEmployee(id = userId, employeeNumber = "20030117", appAuthority = "조장", costCenterCode = null)
+            val employee = createEmployee(id = userId, employeeCode = "20030117", appAuthority = "조장", costCenterCode = null)
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
 
@@ -258,7 +258,7 @@ class MyAccountServiceTest {
         fun getMyAccounts_searchByName() {
             // Given
             val userId = 1L
-            val employee = createEmployee(id = userId, employeeNumber = "20030117", appAuthority = "조장", costCenterCode = "1100")
+            val employee = createEmployee(id = userId, employeeCode = "20030117", appAuthority = "조장", costCenterCode = "1100")
             val accounts = listOf(
                 createAccount(id = 1, name = "(유)경산식품", externalKey = "1025172"),
                 createAccount(id = 2, name = "(주)대한식품", externalKey = "1025173")
@@ -281,7 +281,7 @@ class MyAccountServiceTest {
         fun getMyAccounts_searchByCode() {
             // Given
             val userId = 1L
-            val employee = createEmployee(id = userId, employeeNumber = "20030117", appAuthority = "조장", costCenterCode = "1100")
+            val employee = createEmployee(id = userId, employeeCode = "20030117", appAuthority = "조장", costCenterCode = "1100")
             val accounts = listOf(
                 createAccount(id = 1, name = "A마트", externalKey = "1025172"),
                 createAccount(id = 2, name = "B식품", externalKey = "2001")
@@ -333,7 +333,7 @@ class MyAccountServiceTest {
         fun getMyAccounts_sortedByAccountName() {
             // Given
             val userId = 1L
-            val employee = createEmployee(id = userId, employeeNumber = "20030117", appAuthority = "조장", costCenterCode = "1100")
+            val employee = createEmployee(id = userId, employeeCode = "20030117", appAuthority = "조장", costCenterCode = "1100")
             val accounts = listOf(
                 createAccount(id = 1, name = "홈플러스 서면점", externalKey = "1025173"),
                 createAccount(id = 2, name = "가나다식품", externalKey = "1025172"),
@@ -359,14 +359,14 @@ class MyAccountServiceTest {
 
     private fun createEmployee(
         id: Long = 1L,
-        employeeNumber: String = "12345678",
+        employeeCode: String = "12345678",
         sfid: String? = null,
         appAuthority: String? = null,
         costCenterCode: String? = null
     ): Employee {
         return Employee(
             id = id,
-            employeeNumber = employeeNumber,
+            employeeCode = employeeCode,
             password = "encodedPassword",
             name = "테스트 사용자",
             orgName = "부산지점",

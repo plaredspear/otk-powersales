@@ -64,8 +64,8 @@ class HomeServiceTest {
         fun user_onlyOwnSchedules() {
             // Given
             val userId = 1L
-            val employeeNumber = "20030117"
-            val employee = createEmployee(id = userId, employeeNumber = employeeNumber, appAuthority = null)
+            val employeeCode = "20030117"
+            val employee = createEmployee(id = userId, employeeCode = employeeCode, appAuthority = null)
             val account = createAccount(id = 8938, name = "이마트 부산점")
 
             val teamMemberSchedules = listOf(
@@ -87,7 +87,7 @@ class HomeServiceTest {
 
             // Then
             assertThat(result.todaySchedules).hasSize(2)
-            assertThat(result.todaySchedules).allMatch { it.employeeNumber == employeeNumber }
+            assertThat(result.todaySchedules).allMatch { it.employeeCode == employeeCode }
             assertThat(result.todaySchedules[0].accountName).isEqualTo("이마트 부산점")
         }
 
@@ -103,9 +103,9 @@ class HomeServiceTest {
             val member2EmpNum = "00000003"
             val orgName = "부산1지점"
 
-            val leader = createEmployee(id = userId, employeeNumber = leaderEmpNum, orgName = orgName, appAuthority = "조장")
-            val member1 = createEmployee(id = member1Id, employeeNumber = member1EmpNum, orgName = orgName, name = "김영희")
-            val member2 = createEmployee(id = member2Id, employeeNumber = member2EmpNum, orgName = orgName, name = "박미나")
+            val leader = createEmployee(id = userId, employeeCode = leaderEmpNum, orgName = orgName, appAuthority = "조장")
+            val member1 = createEmployee(id = member1Id, employeeCode = member1EmpNum, orgName = orgName, name = "김영희")
+            val member2 = createEmployee(id = member2Id, employeeCode = member2EmpNum, orgName = orgName, name = "박미나")
             val teamEmployees = listOf(leader, member1, member2)
 
             val teamMemberSchedules = listOf(
@@ -132,8 +132,8 @@ class HomeServiceTest {
 
             // Then
             assertThat(result.todaySchedules).hasSize(3)
-            val employeeNumbers = result.todaySchedules.map { it.employeeNumber }
-            assertThat(employeeNumbers).containsExactlyInAnyOrder(member1EmpNum, member2EmpNum, leaderEmpNum)
+            val employeeCodes = result.todaySchedules.map { it.employeeCode }
+            assertThat(employeeCodes).containsExactlyInAnyOrder(member1EmpNum, member2EmpNum, leaderEmpNum)
         }
 
         // ========== 안전점검 ==========
@@ -230,7 +230,7 @@ class HomeServiceTest {
             assertThat(result.expiryAlert!!.expiryCount).isEqualTo(3)
             assertThat(result.expiryAlert!!.branchName).isEqualTo("부산1지점")
             assertThat(result.expiryAlert!!.employeeName).isEqualTo("최금주")
-            assertThat(result.expiryAlert!!.employeeNumber).isEqualTo("20030117")
+            assertThat(result.expiryAlert!!.employeeCode).isEqualTo("20030117")
         }
 
         @Test
@@ -479,7 +479,7 @@ class HomeServiceTest {
 
     private fun createEmployee(
         id: Long = 1L,
-        employeeNumber: String = "20030117",
+        employeeCode: String = "20030117",
         name: String = "최금주",
         orgName: String? = "부산1지점",
         sfid: String? = null,
@@ -487,7 +487,7 @@ class HomeServiceTest {
     ): Employee {
         return Employee(
             id = id,
-            employeeNumber = employeeNumber,
+            employeeCode = employeeCode,
             password = "encoded_password",
             name = name,
             orgName = orgName,

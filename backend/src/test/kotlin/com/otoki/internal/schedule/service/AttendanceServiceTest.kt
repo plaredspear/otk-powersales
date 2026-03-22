@@ -670,7 +670,7 @@ class AttendanceServiceTest {
     private fun createEmployee(
         id: Long = 1L,
         sfid: String? = "USR001",
-        employeeNumber: String = "USR001",
+        employeeCode: String = "USR001",
         name: String = "테스트 사용자",
         orgName: String? = "서울지점",
         appAuthority: String? = null
@@ -678,7 +678,7 @@ class AttendanceServiceTest {
         return Employee(
             id = id,
             sfid = sfid,
-            employeeNumber = employeeNumber,
+            employeeCode = employeeCode,
             name = name,
             orgName = orgName,
             appAuthority = appAuthority,

@@ -38,11 +38,11 @@ class EmployeeRepositoryTest {
     }
 
     @Test
-    @DisplayName("findByEmployeeNumber - 존재하는 사번으로 사용자를 조회하면 User를 반환한다")
-    fun findByEmployeeNumber_WithExistingEmployeeNumber_ReturnsUser() {
+    @DisplayName("findByEmployeeCode - 존재하는 사번으로 사용자를 조회하면 User를 반환한다")
+    fun findByEmployeeCode_WithExistingEmployeeNumber_ReturnsUser() {
         // Given
         val testEmployee = createTestEmployee(
-            employeeNumber = "20010585",
+            employeeCode = "20010585",
             name = "홍길동",
             orgName = "부산1지점"
         )
@@ -50,55 +50,55 @@ class EmployeeRepositoryTest {
         testEntityManager.clear()
 
         // When
-        val result = employeeRepository.findByEmployeeNumber("20010585")
+        val result = employeeRepository.findByEmployeeCode("20010585")
 
         // Then
         assertThat(result).isPresent
-        assertThat(result.get().employeeNumber).isEqualTo("20010585")
+        assertThat(result.get().employeeCode).isEqualTo("20010585")
         assertThat(result.get().name).isEqualTo("홍길동")
         assertThat(result.get().orgName).isEqualTo("부산1지점")
     }
 
     @Test
-    @DisplayName("findByEmployeeNumber - 존재하지 않는 사번으로 조회하면 Optional.empty()를 반환한다")
-    fun findByEmployeeNumber_WithNonExistingEmployeeNumber_ReturnsEmpty() {
+    @DisplayName("findByEmployeeCode - 존재하지 않는 사번으로 조회하면 Optional.empty()를 반환한다")
+    fun findByEmployeeCode_WithNonExistingEmployeeNumber_ReturnsEmpty() {
         // Given
-        val testEmployee = createTestEmployee(employeeNumber = "20010585")
+        val testEmployee = createTestEmployee(employeeCode = "20010585")
         testEntityManager.persistAndFlush(testEmployee)
         testEntityManager.clear()
 
         // When
-        val result = employeeRepository.findByEmployeeNumber("99999999")
+        val result = employeeRepository.findByEmployeeCode("99999999")
 
         // Then
         assertThat(result).isEmpty
     }
 
     @Test
-    @DisplayName("existsByEmployeeNumber - 존재하는 사번으로 확인하면 true를 반환한다")
-    fun existsByEmployeeNumber_WithExistingEmployeeNumber_ReturnsTrue() {
+    @DisplayName("existsByEmployeeCode - 존재하는 사번으로 확인하면 true를 반환한다")
+    fun existsByEmployeeCode_WithExistingEmployeeNumber_ReturnsTrue() {
         // Given
-        val testEmployee = createTestEmployee(employeeNumber = "20010585")
+        val testEmployee = createTestEmployee(employeeCode = "20010585")
         testEntityManager.persistAndFlush(testEmployee)
         testEntityManager.clear()
 
         // When
-        val result = employeeRepository.existsByEmployeeNumber("20010585")
+        val result = employeeRepository.existsByEmployeeCode("20010585")
 
         // Then
         assertThat(result).isTrue()
     }
 
     @Test
-    @DisplayName("existsByEmployeeNumber - 존재하지 않는 사번으로 확인하면 false를 반환한다")
-    fun existsByEmployeeNumber_WithNonExistingEmployeeNumber_ReturnsFalse() {
+    @DisplayName("existsByEmployeeCode - 존재하지 않는 사번으로 확인하면 false를 반환한다")
+    fun existsByEmployeeCode_WithNonExistingEmployeeNumber_ReturnsFalse() {
         // Given
-        val testEmployee = createTestEmployee(employeeNumber = "20010585")
+        val testEmployee = createTestEmployee(employeeCode = "20010585")
         testEntityManager.persistAndFlush(testEmployee)
         testEntityManager.clear()
 
         // When
-        val result = employeeRepository.existsByEmployeeNumber("99999999")
+        val result = employeeRepository.existsByEmployeeCode("99999999")
 
         // Then
         assertThat(result).isFalse()
@@ -109,17 +109,17 @@ class EmployeeRepositoryTest {
     fun findByOrgName_WithExistingOrg_ReturnsUserList() {
         // Given
         val employee1 = createTestEmployee(
-            employeeNumber = "20010585",
+            employeeCode = "20010585",
             name = "홍길동",
             orgName = "부산1지점"
         )
         val employee2 = createTestEmployee(
-            employeeNumber = "20010586",
+            employeeCode = "20010586",
             name = "김영희",
             orgName = "부산1지점"
         )
         val employee3 = createTestEmployee(
-            employeeNumber = "20010587",
+            employeeCode = "20010587",
             name = "이철수",
             orgName = "서울1지점"
         )
@@ -133,7 +133,7 @@ class EmployeeRepositoryTest {
 
         // Then
         assertThat(result).hasSize(2)
-        assertThat(result.map { it.employeeNumber }).containsExactlyInAnyOrder("20010585", "20010586")
+        assertThat(result.map { it.employeeCode }).containsExactlyInAnyOrder("20010585", "20010586")
         assertThat(result.map { it.name }).containsExactlyInAnyOrder("홍길동", "김영희")
         assertThat(result.all { it.orgName == "부산1지점" }).isTrue()
     }
@@ -143,7 +143,7 @@ class EmployeeRepositoryTest {
     fun findByOrgName_WithNonExistingOrg_ReturnsEmptyList() {
         // Given
         val employee1 = createTestEmployee(
-            employeeNumber = "20010585",
+            employeeCode = "20010585",
             orgName = "부산1지점"
         )
         testEntityManager.persistAndFlush(employee1)
@@ -161,19 +161,19 @@ class EmployeeRepositoryTest {
     fun findByOrgName_WithVariousRoles_ReturnsAllUsers() {
         // Given
         val emp = createTestEmployee(
-            employeeNumber = "20010585",
+            employeeCode = "20010585",
             name = "일반사원",
             orgName = "서울1지점",
             appAuthority = null
         )
         val leader = createTestEmployee(
-            employeeNumber = "20010586",
+            employeeCode = "20010586",
             name = "팀장",
             orgName = "서울1지점",
             appAuthority = "조장"
         )
         val admin = createTestEmployee(
-            employeeNumber = "20010587",
+            employeeCode = "20010587",
             name = "관리자",
             orgName = "서울1지점",
             appAuthority = "지점장"
@@ -199,13 +199,13 @@ class EmployeeRepositoryTest {
      * 테스트용 User 생성 헬퍼 함수
      */
     private fun createTestEmployee(
-        employeeNumber: String = "20010585",
+        employeeCode: String = "20010585",
         name: String = "홍길동",
         orgName: String = "부산1지점",
         appAuthority: String? = null
     ): Employee {
         return Employee(
-            employeeNumber = employeeNumber,
+            employeeCode = employeeCode,
             password = "encodedPassword",
             name = name,
             orgName = orgName,

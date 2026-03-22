@@ -34,10 +34,10 @@ class AdminAnnualLeaveServiceTest {
 
     private fun createEmployee(
         id: Long = 1L,
-        employeeNumber: String = "12345678",
+        employeeCode: String = "12345678",
         name: String = "홍길동",
         orgName: String? = "서울1팀"
-    ) = Employee(id = id, employeeNumber = employeeNumber, name = name, orgName = orgName)
+    ) = Employee(id = id, employeeCode = employeeCode, name = name, orgName = orgName)
 
     private fun createSchedule(
         id: Long = 1L,
@@ -68,8 +68,8 @@ class AdminAnnualLeaveServiceTest {
                 eq(LocalDate.of(2026, 3, 31))
             )).thenReturn(listOf(schedule1, schedule2, schedule3))
 
-            val employee1 = createEmployee(id = 1L, employeeNumber = "EMP001", name = "홍길동", orgName = "서울1팀")
-            val employee2 = createEmployee(id = 2L, employeeNumber = "EMP002", name = "김철수", orgName = "부산1팀")
+            val employee1 = createEmployee(id = 1L, employeeCode = "EMP001", name = "홍길동", orgName = "서울1팀")
+            val employee2 = createEmployee(id = 2L, employeeCode = "EMP002", name = "김철수", orgName = "부산1팀")
             whenever(employeeRepository.findAllById(listOf(1L, 2L)))
                 .thenReturn(listOf(employee1, employee2))
 
@@ -79,7 +79,7 @@ class AdminAnnualLeaveServiceTest {
             // Then
             assertThat(result).hasSize(2)
 
-            val emp1 = result.find { it.employeeNumber == "EMP001" }!!
+            val emp1 = result.find { it.employeeCode == "EMP001" }!!
             assertThat(emp1.employeeName).isEqualTo("홍길동")
             assertThat(emp1.orgName).isEqualTo("서울1팀")
             assertThat(emp1.annualLeaveDays).hasSize(2)
@@ -87,7 +87,7 @@ class AdminAnnualLeaveServiceTest {
             assertThat(emp1.annualLeaveDays[0].date).isEqualTo("2026-03-05")
             assertThat(emp1.annualLeaveDays[1].date).isEqualTo("2026-03-10")
 
-            val emp2 = result.find { it.employeeNumber == "EMP002" }!!
+            val emp2 = result.find { it.employeeCode == "EMP002" }!!
             assertThat(emp2.employeeName).isEqualTo("김철수")
             assertThat(emp2.totalCount).isEqualTo(1)
         }
@@ -96,7 +96,7 @@ class AdminAnnualLeaveServiceTest {
         @DisplayName("성공 - orgCode 지정 → 해당 조직 사원만 반환")
         fun withOrgCode_returnsFilteredEmployees() {
             // Given
-            val employee1 = createEmployee(id = 1L, employeeNumber = "EMP001", name = "홍길동", orgName = "서울1팀")
+            val employee1 = createEmployee(id = 1L, employeeCode = "EMP001", name = "홍길동", orgName = "서울1팀")
             whenever(employeeRepository.findByOrgName("서울1팀")).thenReturn(listOf(employee1))
 
             val schedule1 = createSchedule(id = 1L, employeeId = 1L, workingDate = LocalDate.of(2026, 3, 5))
@@ -114,7 +114,7 @@ class AdminAnnualLeaveServiceTest {
 
             // Then
             assertThat(result).hasSize(1)
-            assertThat(result[0].employeeNumber).isEqualTo("EMP001")
+            assertThat(result[0].employeeCode).isEqualTo("EMP001")
             assertThat(result[0].employeeName).isEqualTo("홍길동")
             assertThat(result[0].orgName).isEqualTo("서울1팀")
             assertThat(result[0].totalCount).isEqualTo(1)

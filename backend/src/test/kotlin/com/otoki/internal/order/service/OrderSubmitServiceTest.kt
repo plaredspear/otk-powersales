@@ -67,7 +67,7 @@ class OrderSubmitServiceTest {
     private fun createTestUser(id: Long = 1L): User {
         return User(
             id = id,
-            employeeNumber = "20010585",
+            employeeCode = "20010585",
             password = "encodedPassword",
             name = "홍길동",
             orgName = "서울지점"

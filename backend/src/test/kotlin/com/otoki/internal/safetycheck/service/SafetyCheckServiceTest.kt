@@ -42,7 +42,7 @@ class SafetyCheckServiceTest {
     private lateinit var safetyCheckService: SafetyCheckService
 
     private val userId = 1L
-    private val employeeNumber = "20030117"
+    private val employeeCode = "20030117"
 
     @Nested
     @DisplayName("getChecklistItems - 점검 항목 목록 조회")
@@ -250,10 +250,10 @@ class SafetyCheckServiceTest {
 
     private fun createEmployee(
         id: Long = userId,
-        employeeNumber: String = this.employeeNumber,
+        employeeCode: String = this.employeeCode,
         name: String = "테스트 사용자"
     ): Employee {
-        return Employee(id = id, employeeNumber = employeeNumber, name = name)
+        return Employee(id = id, employeeCode = employeeCode, name = name)
     }
 
     private fun createItem(
