@@ -15,7 +15,7 @@ interface ApiResponse<T> {
 interface PPTMasterRaw {
   id: number;
   employee_id: number;
-  employee_number: string;
+  employee_code: string;
   employee_name: string;
   account_id: number;
   account_code: string | null;
@@ -61,7 +61,7 @@ interface BulkConfirmResultRaw {
 export interface PPTMaster {
   id: number;
   employeeId: number;
-  employeeNumber: string;
+  employeeCode: string;
   employeeName: string;
   accountId: number;
   accountCode: string | null;
@@ -97,14 +97,14 @@ export interface PPTMasterSearchParams {
   page?: number;
   size?: number;
   employee_name?: string;
-  employee_number?: string;
+  employee_code?: string;
   team_type?: string;
   branch_code?: string;
   valid_only?: boolean;
 }
 
 export interface PPTMasterBulkItem {
-  employee_number: string;
+  employee_code: string;
   account_code: string;
   team_type: string;
   start_date: string;
@@ -135,7 +135,7 @@ function mapPPTMaster(raw: PPTMasterRaw): PPTMaster {
   return {
     id: raw.id,
     employeeId: raw.employee_id,
-    employeeNumber: raw.employee_number,
+    employeeCode: raw.employee_code,
     employeeName: raw.employee_name,
     accountId: raw.account_id,
     accountCode: raw.account_code,

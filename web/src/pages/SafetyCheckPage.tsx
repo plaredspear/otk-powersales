@@ -54,7 +54,7 @@ export default function SafetyCheckPage() {
   }
 
   const columns: ColumnsType<MemberStatus> = [
-    { title: '사번', dataIndex: 'employeeNumber', width: 90, fixed: 'left' },
+    { title: '사번', dataIndex: 'employeeCode', width: 90, fixed: 'left' },
     { title: '사원명', dataIndex: 'employeeName', width: 80, fixed: 'left' },
     { title: '거래처코드', dataIndex: 'accountCode', width: 100, render: (v) => v ?? '-' },
     { title: '거래처명', dataIndex: 'accountName', width: 140, render: (v) => v ?? '-' },

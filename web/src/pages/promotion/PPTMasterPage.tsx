@@ -52,7 +52,7 @@ export default function PPTMasterPage() {
       ...searchParams,
       page: 0,
       employee_name: filterEmployeeName || undefined,
-      employee_number: filterEmployeeNumber || undefined,
+      employee_code: filterEmployeeNumber || undefined,
       team_type: filterTeamType || undefined,
       valid_only: filterValidOnly,
     });
@@ -106,7 +106,7 @@ export default function PPTMasterPage() {
       align: 'center',
       render: (_, __, index) => (searchParams.page ?? 0) * (searchParams.size ?? 20) + index + 1,
     },
-    { title: '사번', dataIndex: 'employeeNumber', width: 100, align: 'center' },
+    { title: '사번', dataIndex: 'employeeCode', width: 100, align: 'center' },
     { title: '사원명', dataIndex: 'employeeName', width: 100, align: 'center' },
     { title: '거래처코드', dataIndex: 'accountCode', width: 120, align: 'center' },
     {

@@ -18,7 +18,7 @@ interface SafetyCheckStatusRaw {
 
 interface MemberStatusRaw {
   id: number;
-  employee_number: string;
+  employee_code: string;
   employee_name: string;
   account_code: string | null;
   account_name: string | null;
@@ -51,7 +51,7 @@ export interface SafetyCheckStatusData {
 
 export interface MemberStatus {
   id: number;
-  employeeNumber: string;
+  employeeCode: string;
   employeeName: string;
   accountCode: string | null;
   accountName: string | null;
@@ -85,7 +85,7 @@ function mapEquipment(raw: EquipmentStatusRaw): EquipmentStatus {
 function mapMember(raw: MemberStatusRaw): MemberStatus {
   return {
     id: raw.id,
-    employeeNumber: raw.employee_number,
+    employeeCode: raw.employee_code,
     employeeName: raw.employee_name,
     accountCode: raw.account_code,
     accountName: raw.account_name,

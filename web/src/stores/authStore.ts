@@ -3,7 +3,7 @@ import { login as loginApi } from '@/api/auth';
 
 export interface AuthUser {
   id: number;
-  employeeNumber: string;
+  employeeCode: string;
   name: string;
   orgName: string | null;
   role: string;
@@ -15,7 +15,7 @@ interface AuthState {
   user: AuthUser | null;
   accessToken: string | null;
   isAuthenticated: boolean;
-  login: (employeeNumber: string, password: string) => Promise<void>;
+  login: (employeeCode: string, password: string) => Promise<void>;
   logout: () => void;
   setTokens: (accessToken: string, refreshToken: string) => void;
   initialize: () => void;
@@ -26,12 +26,12 @@ export const useAuthStore = create<AuthState>((set) => ({
   accessToken: null,
   isAuthenticated: false,
 
-  login: async (employeeNumber: string, password: string) => {
-    const data = await loginApi({ employee_number: employeeNumber, password });
+  login: async (employeeCode: string, password: string) => {
+    const data = await loginApi({ employee_code: employeeCode, password });
 
     const user: AuthUser = {
       id: data.user.id,
-      employeeNumber: data.user.employee_number,
+      employeeCode: data.user.employee_code,
       name: data.user.name,
       orgName: data.user.org_name,
       role: data.user.role,

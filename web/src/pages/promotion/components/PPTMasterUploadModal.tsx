@@ -79,7 +79,7 @@ export default function PPTMasterUploadModal({ open, onClose }: Props) {
 
       const items: ParsedRow[] = rows.map((row, index) => ({
         _rowIndex: index + 1,
-        employee_number: String(row['사번'] ?? ''),
+        employee_code: String(row['사번'] ?? ''),
         account_code: String(row['거래처코드'] ?? ''),
         team_type: String(row['전문행사조'] ?? ''),
         start_date: formatExcelDate(row['시작일']),
@@ -136,7 +136,7 @@ export default function PPTMasterUploadModal({ open, onClose }: Props) {
 
   const columns: ColumnsType<ParsedRow> = [
     { title: '#', dataIndex: '_rowIndex', width: 50, align: 'center' },
-    { title: '사번', dataIndex: 'employee_number', width: 100, align: 'center' },
+    { title: '사번', dataIndex: 'employee_code', width: 100, align: 'center' },
     { title: '거래처코드', dataIndex: 'account_code', width: 120, align: 'center' },
     { title: '전문행사조', dataIndex: 'team_type', width: 130, align: 'center' },
     { title: '시작일', dataIndex: 'start_date', width: 120, align: 'center' },

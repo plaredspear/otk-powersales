@@ -11,7 +11,7 @@ interface ApiResponse<T> {
 
 interface AlternativeHolidayItemRaw {
   id: number;
-  employee_number: string;
+  employee_code: string;
   employee_name: string;
   org_name: string | null;
   actual_work_date: string;
@@ -43,7 +43,7 @@ interface AlternativeHolidayRejectResultRaw {
 
 export interface AlternativeHolidayItem {
   id: number;
-  employeeNumber: string;
+  employeeCode: string;
   employeeName: string;
   orgName: string | null;
   actualWorkDate: string;
@@ -59,12 +59,12 @@ export interface AlternativeHolidayListParams {
   startDate: string;
   endDate: string;
   status?: string;
-  employeeNumber?: string;
+  employeeCode?: string;
   orgCode?: string;
 }
 
 export interface CreateAlternativeHolidayPayload {
-  employee_number: string;
+  employee_code: string;
   actual_work_date: string;
   target_alt_holiday_date: string;
 }
@@ -82,7 +82,7 @@ export interface RejectAlternativeHolidayPayload {
 function mapItem(raw: AlternativeHolidayItemRaw): AlternativeHolidayItem {
   return {
     id: raw.id,
-    employeeNumber: raw.employee_number,
+    employeeCode: raw.employee_code,
     employeeName: raw.employee_name,
     orgName: raw.org_name,
     actualWorkDate: raw.actual_work_date,
@@ -105,7 +105,7 @@ export async function fetchAlternativeHolidays(
     endDate: params.endDate,
   };
   if (params.status) queryParams.status = params.status;
-  if (params.employeeNumber) queryParams.employeeNumber = params.employeeNumber;
+  if (params.employeeCode) queryParams.employeeCode = params.employeeCode;
   if (params.orgCode) queryParams.orgCode = params.orgCode;
 
   const res = await client.get<ApiResponse<AlternativeHolidayItemRaw[]>>(

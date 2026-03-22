@@ -1,13 +1,13 @@
 import axios, { AxiosError } from 'axios';
 
 interface LoginRequest {
-  employee_number: string;
+  employee_code: string;
   password: string;
 }
 
 interface AdminUserInfo {
   id: number;
-  employee_number: string;
+  employee_code: string;
   name: string;
   org_name: string | null;
   role: string;

@@ -53,7 +53,7 @@ export default function PPTMasterFormModal({ open, editingItem, onClose }: Props
       setEmployeeOptions([
         {
           id: editingItem.employeeId,
-          employeeNumber: editingItem.employeeNumber,
+          employeeCode: editingItem.employeeCode,
           name: editingItem.employeeName,
           status: null,
           sex: null,
@@ -64,6 +64,12 @@ export default function PPTMasterFormModal({ open, editingItem, onClose }: Props
           endDate: null,
           appLoginActive: null,
           workPhone: null,
+          jikchak: null,
+          jikwee: null,
+          jikgub: null,
+          jobCode: null,
+          appointmentDate: null,
+          ordDetailNode: null,
         },
       ]);
       setAccountOptions([
@@ -179,7 +185,7 @@ export default function PPTMasterFormModal({ open, editingItem, onClose }: Props
             loading={employeeLoading}
             options={employeeOptions.map((emp) => ({
               value: emp.id,
-              label: `${emp.name} (${emp.employeeNumber})${emp.orgName ? ` ${emp.orgName}` : ''}`,
+              label: `${emp.name} (${emp.employeeCode})${emp.orgName ? ` ${emp.orgName}` : ''}`,
             }))}
           />
         </Form.Item>
