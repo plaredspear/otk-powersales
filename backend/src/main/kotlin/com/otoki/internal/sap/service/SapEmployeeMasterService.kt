@@ -71,8 +71,15 @@ class SapEmployeeMasterService(
 
         val existingEmployee = employeeRepository.findByEmployeeNumber(employeeCode).orElse(null)
 
+        val sex = when (item.sex) {
+            "1" -> "남"
+            "2" -> "여"
+            else -> null
+        }
+        val endDate = parseDate(item.endDate)
+
         if (existingEmployee != null) {
-            updateEmployee(existingEmployee, employeeName, statusName, isActive, item, startDate)
+            updateEmployee(existingEmployee, employeeName, statusName, isActive, item, startDate, sex, endDate)
             employeeRepository.save(existingEmployee)
         } else {
             val newEmployee = Employee(
@@ -85,6 +92,8 @@ class SapEmployeeMasterService(
                 workPhone = item.workPhone,
                 costCenterCode = item.orgCode,
                 startDate = startDate,
+                sex = sex,
+                endDate = endDate,
                 passwordChangeRequired = true
             )
             employeeRepository.save(newEmployee)
@@ -97,7 +106,9 @@ class SapEmployeeMasterService(
         status: String,
         isActive: Boolean,
         item: SapEmployeeMasterRequest.ReqItem,
-        startDate: LocalDate?
+        startDate: LocalDate?,
+        sex: String?,
+        endDate: LocalDate?
     ) {
         employee.name = name
         employee.status = status
@@ -107,6 +118,8 @@ class SapEmployeeMasterService(
         employee.workPhone = item.workPhone
         employee.costCenterCode = item.orgCode
         employee.startDate = startDate
+        employee.sex = sex
+        employee.endDate = endDate
     }
 
     private fun resolveAppLoginActive(statusCode: String, lockingFlag: String?): Boolean {

@@ -48,6 +48,7 @@ export default function EmployeePage() {
   const columns: ColumnsType<Employee> = [
     { title: '사번', dataIndex: 'employeeNumber', width: 100 },
     { title: '이름', dataIndex: 'name', width: 120 },
+    { title: '성별', dataIndex: 'sex', width: 60, align: 'center', render: (val: string | null) => val ?? '-' },
     {
       title: '상태',
       dataIndex: 'status',
@@ -66,6 +67,7 @@ export default function EmployeePage() {
       render: (val: string | null) => val ?? '-',
     },
     { title: '입사일', dataIndex: 'startDate', width: 110, align: 'center', render: (val: string | null) => val ?? '-' },
+    { title: '퇴사일', dataIndex: 'endDate', width: 110, align: 'center', render: (val: string | null) => val ?? '-' },
     {
       title: '앱활성',
       dataIndex: 'appLoginActive',

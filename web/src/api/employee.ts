@@ -21,10 +21,12 @@ interface EmployeeItemRaw {
   employee_number: string;
   name: string;
   status: string | null;
+  sex: string | null;
   org_name: string | null;
   cost_center_code: string | null;
   app_authority: string | null;
   start_date: string | null;
+  end_date: string | null;
   app_login_active: boolean | null;
   work_phone: string | null;
 }
@@ -45,10 +47,12 @@ export interface Employee {
   employeeNumber: string;
   name: string;
   status: string | null;
+  sex: string | null;
   orgName: string | null;
   costCenterCode: string | null;
   appAuthority: string | null;
   startDate: string | null;
+  endDate: string | null;
   appLoginActive: boolean | null;
   workPhone: string | null;
 }
@@ -70,10 +74,12 @@ function mapEmployeeList(raw: EmployeeListRaw): EmployeeListData {
       employeeNumber: item.employee_number,
       name: item.name,
       status: item.status,
+      sex: item.sex,
       orgName: item.org_name,
       costCenterCode: item.cost_center_code,
       appAuthority: item.app_authority,
       startDate: item.start_date,
+      endDate: item.end_date,
       appLoginActive: item.app_login_active,
       workPhone: item.work_phone,
     })),

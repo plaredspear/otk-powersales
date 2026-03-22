@@ -76,6 +76,13 @@ export const menuRoute: MenuRoute = {
       ],
     },
     { path: '/safety-check', name: '안전점검', icon: <SafetyCertificateOutlined /> },
+    {
+      name: '사원',
+      icon: <UserOutlined />,
+      children: [
+        { path: '/employee', name: '여사원 현황' },
+      ],
+    },
     { path: '/field-inspection', name: '현장점검', icon: <SearchOutlined /> },
     { path: '/report', name: '보고서', icon: <FileTextOutlined /> },
     { path: '/notices', name: '공지사항', icon: <NotificationOutlined /> },
@@ -86,7 +93,6 @@ export const menuRoute: MenuRoute = {
       children: [
         { path: '/product', name: '제품' },
         { path: '/account', name: '거래처' },
-        { path: '/employee', name: '사원' },
         { path: '/settings/organizations', name: '조직마스터' },
       ],
     },

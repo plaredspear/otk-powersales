@@ -89,10 +89,20 @@ class Employee(
     @Column(name = "home_phone", length = 255)
     var homePhone: String? = null,
 
+    @SFField("DKRetail__Sex__c")
+    @HCColumn("dkretail__sex__c")
+    @Column(name = "sex", length = 10)
+    var sex: String? = null,
+
     @SFField("DKRetail__StartDate__c")
     @HCColumn("dkretail__startdate__c")
     @Column(name = "start_date")
     var startDate: LocalDate? = null,
+
+    @SFField("DKRetail__EndDate__c")
+    @HCColumn("dkretail__enddate__c")
+    @Column(name = "end_date")
+    var endDate: LocalDate? = null,
 
     @SFField("AgreementFlag__c")
     @HCColumn("agreementflag__c")
