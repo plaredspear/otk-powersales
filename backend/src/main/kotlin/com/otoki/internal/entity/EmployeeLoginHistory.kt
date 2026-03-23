@@ -1,5 +1,7 @@
 package com.otoki.internal.entity
 
+import com.otoki.internal.common.salesforce.HCColumn
+import com.otoki.internal.common.salesforce.HCTable
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
@@ -13,13 +15,16 @@ import java.time.LocalDateTime
 @Entity
 @Table(name = "employee_his")
 @IdClass(EmployeeLoginHistoryId::class)
+@HCTable("employee_his")
 class EmployeeLoginHistory(
 
     @Id
-    @Column(name = "empcode__c", nullable = false, length = 80)
+    @HCColumn("empcode__c")
+    @Column(name = "emp_code", nullable = false, length = 80)
     val empCode: String,
 
     @Id
+    @HCColumn("inst_date")
     @Column(name = "inst_date", nullable = false)
-    val instDate: LocalDateTime
+    val instDate: LocalDateTime = LocalDateTime.now()
 )
