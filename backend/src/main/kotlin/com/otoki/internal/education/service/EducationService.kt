@@ -73,7 +73,7 @@ class EducationService(
         // 4. Entity → DTO 변환
         val summaries = postsPage.content.map { post ->
             EducationPostSummaryResponse(
-                id = post.eduId,
+                id = post.eduId ?: "",
                 title = post.eduTitle ?: "",
                 createdAt = post.createdAt?.format(DATE_TIME_FORMATTER) ?: ""
             )
@@ -97,8 +97,8 @@ class EducationService(
      */
     fun getPostDetail(postId: String): EducationPostDetailResponse {
         // 1. 게시물 조회
-        val post = educationPostRepository.findById(postId)
-            .orElseThrow { EducationPostNotFoundException() }
+        val post = educationPostRepository.findByEduId(postId)
+            ?: throw EducationPostNotFoundException()
 
         // Phase2: EducationPostImage PG 대응 테이블 없음 - 주석 처리
         // val images = educationPostImageRepository.findByPostIdOrderBySortOrderAsc(postId)
@@ -129,7 +129,7 @@ class EducationService(
 
         // 5. 응답 생성
         return EducationPostDetailResponse(
-            id = post.eduId,
+            id = post.eduId ?: "",
             category = post.eduCode ?: "",
             categoryName = categoryName,
             title = post.eduTitle ?: "",
@@ -159,7 +159,7 @@ class EducationService(
         )
 
         val attachmentCounts = postsPage.content.associate { post ->
-            post.eduId to educationPostAttachmentRepository.findByEduId(post.eduId).size
+            post.eduId to educationPostAttachmentRepository.findByEduId(post.eduId ?: "").size
         }
 
         val summaries = postsPage.content.map { post ->
@@ -168,7 +168,7 @@ class EducationService(
             } ?: ""
 
             AdminEducationPostSummary(
-                eduId = post.eduId,
+                eduId = post.eduId ?: "",
                 eduTitle = post.eduTitle ?: "",
                 eduCode = post.eduCode ?: "",
                 eduCodeNm = categoryName,
@@ -234,8 +234,8 @@ class EducationService(
         files: List<MultipartFile>?,
         keepFileKeys: List<String>?
     ): EducationMutationResponse {
-        val post = educationPostRepository.findById(postId)
-            .orElseThrow { EducationPostNotFoundException() }
+        val post = educationPostRepository.findByEduId(postId)
+            ?: throw EducationPostNotFoundException()
 
         validatePostInput(title, content, category)
 
@@ -269,6 +269,7 @@ class EducationService(
 
         // 엔티티 업데이트 (val 필드이므로 새 인스턴스 생성 후 merge)
         val updated = EducationPost(
+            id = post.id,
             eduId = post.eduId,
             eduTitle = title,
             eduContent = content,
@@ -292,8 +293,8 @@ class EducationService(
      */
     @Transactional
     fun deletePost(postId: String) {
-        val post = educationPostRepository.findById(postId)
-            .orElseThrow { EducationPostNotFoundException() }
+        val post = educationPostRepository.findByEduId(postId)
+            ?: throw EducationPostNotFoundException()
 
         val attachments = educationPostAttachmentRepository.findByEduId(postId)
         attachments.forEach { attachment ->
@@ -379,7 +380,7 @@ class EducationService(
         attachments: List<EducationPostAttachment>
     ): EducationMutationResponse {
         return EducationMutationResponse(
-            eduId = post.eduId,
+            eduId = post.eduId ?: "",
             eduTitle = post.eduTitle ?: "",
             eduContent = post.eduContent ?: "",
             eduCode = post.eduCode ?: "",
