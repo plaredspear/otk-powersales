@@ -6,4 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 /**
  * 교육 코드 Repository
  */
-interface EducationCodeRepository : JpaRepository<EducationCode, String>
+interface EducationCodeRepository : JpaRepository<EducationCode, Long> {
+    fun findByEduCode(eduCode: String): EducationCode?
+    fun existsByEduCode(eduCode: String): Boolean
+}
