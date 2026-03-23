@@ -126,13 +126,14 @@ class EducationPostRepositoryTest {
 
         @Test
         @DisplayName("정상 조회 - 게시글별 첨부파일 목록")
-        fun findByEduId_success() {
+        fun findByEducationPost_success() {
             // Given
-            persistPost(eduId = "EDU001", eduCode = "TASTING_MANUAL", eduTitle = "진짬뽕")
+            val post = persistPost(eduId = "EDU001", eduCode = "TASTING_MANUAL", eduTitle = "진짬뽕")
+            val reloadedPost = educationPostRepository.findByEduId("EDU001")!!
 
             testEntityManager.persistAndFlush(
                 EducationPostAttachment(
-                    educationPostId = "EDU001",
+                    educationPost = reloadedPost,
                     fileKey = "file-key-001",
                     fileType = "pdf",
                     fileOriginalName = "guide.pdf"
@@ -140,7 +141,7 @@ class EducationPostRepositoryTest {
             )
             testEntityManager.persistAndFlush(
                 EducationPostAttachment(
-                    educationPostId = "EDU001",
+                    educationPost = reloadedPost,
                     fileKey = "file-key-002",
                     fileType = "docx",
                     fileOriginalName = "manual.docx"
@@ -149,7 +150,8 @@ class EducationPostRepositoryTest {
             testEntityManager.clear()
 
             // When
-            val attachments = educationPostAttachmentRepository.findByEducationPostId("EDU001")
+            val foundPost = educationPostRepository.findByEduId("EDU001")!!
+            val attachments = educationPostAttachmentRepository.findByEducationPost(foundPost)
 
             // Then
             assertThat(attachments).hasSize(2)

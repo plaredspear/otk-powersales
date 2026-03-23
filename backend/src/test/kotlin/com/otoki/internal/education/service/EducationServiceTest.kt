@@ -172,7 +172,7 @@ class EducationServiceTest {
             // Given
             val attachments = listOf(
                 EducationPostAttachment(
-                    educationPostId = "EDU001",
+                    educationPost = testPost,
                     fileKey = "file-key-001",
                     fileType = "pdf",
                     fileOriginalName = "guide.pdf"
@@ -186,7 +186,7 @@ class EducationServiceTest {
 
             whenever(educationPostRepository.findByEduId("EDU001"))
                 .thenReturn(testPost)
-            whenever(educationPostAttachmentRepository.findByEducationPostId("EDU001"))
+            whenever(educationPostAttachmentRepository.findByEducationPost(testPost))
                 .thenReturn(attachments)
             whenever(educationCodeRepository.findByEduCode("TASTING_MANUAL"))
                 .thenReturn(eduCode)
@@ -232,7 +232,7 @@ class EducationServiceTest {
 
             whenever(educationPostRepository.findByOptionalEduCodeAndSearchWithPaging(isNull(), isNull(), any()))
                 .thenReturn(page)
-            whenever(educationPostAttachmentRepository.findByEducationPostId("EDU001"))
+            whenever(educationPostAttachmentRepository.findByEducationPost(testPost))
                 .thenReturn(emptyList())
             whenever(educationCodeRepository.findByEduCode("TASTING_MANUAL"))
                 .thenReturn(eduCode)
@@ -254,9 +254,9 @@ class EducationServiceTest {
             whenever(educationCodeRepository.existsByEduCode("TASTING_MANUAL")).thenReturn(true)
             whenever(educationPostRepository.findByOptionalEduCodeAndSearchWithPaging(eq("TASTING_MANUAL"), isNull(), any()))
                 .thenReturn(page)
-            whenever(educationPostAttachmentRepository.findByEducationPostId("EDU001"))
+            whenever(educationPostAttachmentRepository.findByEducationPost(testPost))
                 .thenReturn(listOf(
-                    EducationPostAttachment(educationPostId = "EDU001", fileKey = "key1", fileType = "f00003", fileOriginalName = "doc.pdf")
+                    EducationPostAttachment(educationPost = testPost, fileKey = "key1", fileType = "f00003", fileOriginalName = "doc.pdf")
                 ))
             whenever(educationCodeRepository.findByEduCode("TASTING_MANUAL"))
                 .thenReturn(eduCode)
@@ -381,12 +381,12 @@ class EducationServiceTest {
         @DisplayName("정상 수정 - 기존 파일 유지 + 신규 파일 추가")
         fun updatePost_success() {
             val existingAttachment = EducationPostAttachment(
-                educationPostId = "EDU001", fileKey = "existing-key", fileType = "f00003", fileOriginalName = "old.pdf"
+                educationPost = testPost, fileKey = "existing-key", fileType = "f00003", fileOriginalName = "old.pdf"
             )
 
             whenever(educationPostRepository.findByEduId("EDU001")).thenReturn(testPost)
             whenever(educationCodeRepository.existsByEduCode("TASTING_MANUAL")).thenReturn(true)
-            whenever(educationPostAttachmentRepository.findByEducationPostId("EDU001"))
+            whenever(educationPostAttachmentRepository.findByEducationPost(any<EducationPost>()))
                 .thenReturn(listOf(existingAttachment))
                 .thenReturn(listOf(existingAttachment)) // second call after save
             whenever(educationPostRepository.save(any<EducationPost>())).thenAnswer { it.getArgument<EducationPost>(0) }
@@ -415,12 +415,12 @@ class EducationServiceTest {
         @DisplayName("잘못된 keep_file_keys - InvalidFileKeyException")
         fun updatePost_invalidFileKey() {
             val existingAttachment = EducationPostAttachment(
-                educationPostId = "EDU001", fileKey = "existing-key", fileType = "f00003", fileOriginalName = "old.pdf"
+                educationPost = testPost, fileKey = "existing-key", fileType = "f00003", fileOriginalName = "old.pdf"
             )
 
             whenever(educationPostRepository.findByEduId("EDU001")).thenReturn(testPost)
             whenever(educationCodeRepository.existsByEduCode("TASTING_MANUAL")).thenReturn(true)
-            whenever(educationPostAttachmentRepository.findByEducationPostId("EDU001"))
+            whenever(educationPostAttachmentRepository.findByEducationPost(any<EducationPost>()))
                 .thenReturn(listOf(existingAttachment))
 
             assertThatThrownBy {
@@ -432,13 +432,13 @@ class EducationServiceTest {
         @DisplayName("파일 수 합산 초과 - FileLimitExceededException")
         fun updatePost_combinedFileLimitExceeded() {
             val existingAttachments = (1..15).map {
-                EducationPostAttachment(educationPostId = "EDU001", fileKey = "key$it", fileType = "f00003", fileOriginalName = "file$it.pdf")
+                EducationPostAttachment(educationPost = testPost, fileKey = "key$it", fileType = "f00003", fileOriginalName = "file$it.pdf")
             }
             val newFiles = (1..6).map { MockMultipartFile("files", "new$it.pdf", "application/pdf", ByteArray(10)) }
 
             whenever(educationPostRepository.findByEduId("EDU001")).thenReturn(testPost)
             whenever(educationCodeRepository.existsByEduCode("TASTING_MANUAL")).thenReturn(true)
-            whenever(educationPostAttachmentRepository.findByEducationPostId("EDU001"))
+            whenever(educationPostAttachmentRepository.findByEducationPost(any<EducationPost>()))
                 .thenReturn(existingAttachments)
 
             assertThatThrownBy {
@@ -458,11 +458,11 @@ class EducationServiceTest {
         @DisplayName("정상 삭제 - 교육 자료 + 첨부파일 삭제")
         fun deletePost_success() {
             val attachments = listOf(
-                EducationPostAttachment(educationPostId = "EDU001", fileKey = "key1", fileType = "f00003", fileOriginalName = "doc.pdf")
+                EducationPostAttachment(educationPost = testPost, fileKey = "key1", fileType = "f00003", fileOriginalName = "doc.pdf")
             )
 
             whenever(educationPostRepository.findByEduId("EDU001")).thenReturn(testPost)
-            whenever(educationPostAttachmentRepository.findByEducationPostId("EDU001")).thenReturn(attachments)
+            whenever(educationPostAttachmentRepository.findByEducationPost(testPost)).thenReturn(attachments)
 
             educationService.deletePost("EDU001")
 

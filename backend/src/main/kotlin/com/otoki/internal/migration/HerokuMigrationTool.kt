@@ -49,7 +49,7 @@ import java.util.Properties
  * │  YES    │ agreementword__c                   │ agreement_word              │ AgreementWord           │ —                                                             │                    │
  * │   no    │ commute_distance                   │ —                           │ —                       │ —                                                             │                    │
  * │  YES    │ education_code_mng                 │ education_code              │ EducationCode           │ —                                                             │                    │
- * │   no    │ education_file_mng                 │ education_post_attachment   │ EducationPostAttachment │ edu_id → education_mng (코드값, sfid 아님)                    │                    │
+ * │   no    │ education_file_mng                 │ education_post_attachment   │ EducationPostAttachment │ education_post_id → education_post FK (BIGINT)                │                    │
  * │   no    │ education_member_history           │ education_view_history      │ EducationViewHistory    │ community_id → education_mng (코드값, sfid 아님)              │                    │
  * │   no    │ employee_admin_mng                 │ employee_admin              │ EmployeeAdmin           │ —                                                             │                    │
  * │   no    │ employee_his                       │ login_history               │ LoginHistory                    │ —                                                             │                    │
