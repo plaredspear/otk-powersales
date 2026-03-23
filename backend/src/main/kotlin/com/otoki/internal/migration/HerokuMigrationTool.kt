@@ -5,6 +5,7 @@ import com.otoki.internal.entity.PushMessage
 import com.otoki.internal.common.salesforce.HCTable
 import com.otoki.internal.common.salesforce.SFSchemaUtils
 import com.otoki.internal.safetycheck.entity.SafetyCheckItem
+import com.otoki.internal.safetycheck.entity.SafetyCheckSubmission
 import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.sap.entity.Product
@@ -38,7 +39,7 @@ import java.util.Properties
  * │ dkretail__teammemberschedule__c    │ team_member_schedule        │ TeamMemberSchedule      │ accountid__c → account.sfid, dkretail__employeeid__c →         │  YES    │ UPDATE: account_id, employee_id, team_leader_id, promotion_employee_id │
  * │                                    │                             │                         │   employee.sfid, teamleadersfid__c → employee.sfid,           │         │                    │
  * │                                    │                             │                         │   dkretail__promotionempid__c → employee.sfid                 │         │                    │
- * │ safetycheck__workschedule__member  │ safety_check_submission     │ SafetyCheckSubmission   │ employeeid__c → employee.sfid, masterId →                     │   no    │ V21: sfid 컬럼 추가 │
+ * │ safetycheck__workschedule__member  │ safety_check_submission     │ SafetyCheckSubmission   │ employeeid__c → employee.sfid, masterId →                     │  YES    │ FK: employee_id(inline), display_work_schedule_id/team_member_schedule_id(post-UPDATE) │
  * │                                    │                             │                         │   displayworkschedulemaster__c.sfid, eventmasterid → sfid     │         │                    │
  * │ education_mng                      │ education_post              │ EducationPost           │ —                                                             │   no    │                    │
  * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
@@ -116,6 +117,17 @@ object HerokuMigrationTool {
         EntityRegistration("teamMemberSchedule", TeamMemberSchedule::class.java),
         EntityRegistration("agreementWord", AgreementWord::class.java),
         EntityRegistration("pushMessage", PushMessage::class.java),
+        EntityRegistration("safetyCheckSubmission", SafetyCheckSubmission::class.java) { targetConn ->
+            val sfidToPk = mutableMapOf<String, Any?>()
+            targetConn.createStatement().use { stmt ->
+                stmt.executeQuery("SELECT sfid, id FROM $TARGET_SCHEMA.employee WHERE sfid IS NOT NULL").use { rs ->
+                    while (rs.next()) {
+                        sfidToPk[rs.getString("sfid")] = rs.getLong("id")
+                    }
+                }
+            }
+            mapOf("employee_id" to sfidToPk)
+        },
     )
 
     private const val HEROKU_SCHEMA = "salesforce2"
@@ -242,6 +254,30 @@ object HerokuMigrationTool {
                             "WHERE t.promotion_employee_sfid = pe.sfid"
                     )
                     println("[teamMemberSchedule] promotion_employee_id UPDATE 완료: ${updated}건")
+                }
+
+                // SafetyCheckSubmission: display_work_schedule_sfid → display_work_schedule_id 역참조 UPDATE
+                println("[safetyCheckSubmission] display_work_schedule_sfid → display_work_schedule_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.safety_check_submission s " +
+                            "SET display_work_schedule_id = d.display_work_schedule_id " +
+                            "FROM $TARGET_SCHEMA.display_work_schedule d " +
+                            "WHERE s.display_work_schedule_sfid = d.sfid"
+                    )
+                    println("[safetyCheckSubmission] display_work_schedule_id UPDATE 완료: ${updated}건")
+                }
+
+                // SafetyCheckSubmission: team_member_schedule_sfid → team_member_schedule_id 역참조 UPDATE
+                println("[safetyCheckSubmission] team_member_schedule_sfid → team_member_schedule_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.safety_check_submission s " +
+                            "SET team_member_schedule_id = t.team_member_schedule_id " +
+                            "FROM $TARGET_SCHEMA.team_member_schedule t " +
+                            "WHERE s.team_member_schedule_sfid = t.sfid"
+                    )
+                    println("[safetyCheckSubmission] team_member_schedule_id UPDATE 완료: ${updated}건")
                 }
             }
         }
