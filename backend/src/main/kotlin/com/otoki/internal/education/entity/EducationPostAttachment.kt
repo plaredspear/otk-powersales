@@ -7,22 +7,26 @@ import jakarta.persistence.*
 /**
  * 교육 첨부파일 Entity
  *
- * V1 테이블: education_post_attachment (구: education_file_mng, PK 없음 → @IdClass 복합 키)
+ * V1 테이블: education_post_attachment (구: education_file_mng)
+ * PK: education_post_attachment_id (BIGINT IDENTITY)
  */
 @Entity
 @Table(name = "education_post_attachment")
-@IdClass(EducationFileId::class)
 @HCTable("education_file_mng")
 class EducationPostAttachment(
 
     @Id
-    @HCColumn("edu_id")
-    @Column(name = "education_post_id", length = 20)
-    val educationPostId: String,
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "education_post_attachment_id")
+    val id: Long = 0,
 
-    @Id
+    @HCColumn("edu_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "education_post_id", nullable = false)
+    val educationPost: EducationPost,
+
     @HCColumn("edu_file_key")
-    @Column(name = "file_key", length = 30)
+    @Column(name = "file_key", length = 30, nullable = false)
     val fileKey: String,
 
     @HCColumn("edu_file_type")

@@ -112,7 +112,7 @@ class EducationService(
         val images = emptyList<Any>()
 
         // 3. 첨부파일 목록 조회
-        val attachments = educationPostAttachmentRepository.findByEducationPostId(postId)
+        val attachments = educationPostAttachmentRepository.findByEducationPost(post)
             .map { attachment ->
                 EducationAttachmentResponse(
                     id = attachment.fileKey,
@@ -159,7 +159,7 @@ class EducationService(
         )
 
         val attachmentCounts = postsPage.content.associate { post ->
-            post.eduId to educationPostAttachmentRepository.findByEducationPostId(post.eduId ?: "").size
+            post.eduId to educationPostAttachmentRepository.findByEducationPost(post).size
         }
 
         val summaries = postsPage.content.map { post ->
@@ -214,12 +214,12 @@ class EducationService(
             employee = employee,
             empCode = employee.employeeCode
         )
-        educationPostRepository.save(post)
+        val savedPost = educationPostRepository.save(post)
 
-        val attachments = saveAttachments(eduId, files)
+        val attachments = saveAttachments(savedPost, files)
         val categoryName = educationCodeRepository.findByEduCode(category)?.eduCodeNm ?: ""
 
-        return toMutationResponse(post, categoryName, attachments)
+        return toMutationResponse(savedPost, categoryName, attachments)
     }
 
     /**
@@ -239,7 +239,7 @@ class EducationService(
 
         validatePostInput(title, content, category)
 
-        val existingAttachments = educationPostAttachmentRepository.findByEducationPostId(postId)
+        val existingAttachments = educationPostAttachmentRepository.findByEducationPost(post)
         val keysToKeep = keepFileKeys ?: emptyList()
 
         // keep_file_keys 유효성 검증
@@ -265,7 +265,7 @@ class EducationService(
         }
 
         // 신규 파일 저장
-        saveAttachments(postId, files)
+        saveAttachments(post, files)
 
         // 엔티티 업데이트 (val 필드이므로 새 인스턴스 생성 후 merge)
         val updated = EducationPost(
@@ -282,7 +282,7 @@ class EducationService(
         }
         educationPostRepository.save(updated)
 
-        val allAttachments = educationPostAttachmentRepository.findByEducationPostId(postId)
+        val allAttachments = educationPostAttachmentRepository.findByEducationPost(updated)
         val categoryName = educationCodeRepository.findByEduCode(category)?.eduCodeNm ?: ""
 
         return toMutationResponse(updated, categoryName, allAttachments)
@@ -296,7 +296,7 @@ class EducationService(
         val post = educationPostRepository.findByEduId(postId)
             ?: throw EducationPostNotFoundException()
 
-        val attachments = educationPostAttachmentRepository.findByEducationPostId(postId)
+        val attachments = educationPostAttachmentRepository.findByEducationPost(post)
         attachments.forEach { attachment ->
             fileStorageService.deleteEducationFile(postId, attachment.fileKey)
         }
@@ -344,18 +344,18 @@ class EducationService(
     }
 
     private fun saveAttachments(
-        eduId: String,
+        post: EducationPost,
         files: List<MultipartFile>?
     ): List<EducationPostAttachment> {
         if (files.isNullOrEmpty()) return emptyList()
 
         return files.map { file ->
-            val fileKey = fileStorageService.uploadEducationFile(file, eduId)
+            val fileKey = fileStorageService.uploadEducationFile(file, post.eduId ?: "")
             val originalName = file.originalFilename ?: "unknown"
             val fileType = determineFileType(originalName)
 
             val attachment = EducationPostAttachment(
-                educationPostId = eduId,
+                educationPost = post,
                 fileKey = fileKey,
                 fileType = fileType,
                 fileOriginalName = originalName
