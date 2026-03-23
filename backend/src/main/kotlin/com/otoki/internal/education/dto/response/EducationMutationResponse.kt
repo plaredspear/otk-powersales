@@ -19,7 +19,7 @@ data class EducationMutationResponse(
  * 첨부파일 정보
  */
 data class AttachmentInfo(
-    val eduFileKey: String,
-    val eduFileType: String,
-    val eduFileOrgNm: String
+    val fileKey: String,
+    val fileType: String,
+    val fileOriginalName: String
 )

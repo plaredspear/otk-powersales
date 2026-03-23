@@ -217,7 +217,7 @@ class AdminEducationControllerTest {
                 instDate = "2026-03-09T10:00:00",
                 updDate = null,
                 attachments = listOf(
-                    AttachmentInfo(eduFileKey = "uuid.pdf", eduFileType = "f00003", eduFileOrgNm = "test.pdf")
+                    AttachmentInfo(fileKey = "uuid.pdf", fileType = "f00003", fileOriginalName = "test.pdf")
                 )
             )
 
@@ -232,7 +232,7 @@ class AdminEducationControllerTest {
                     .param("category", "c00004")
             )
                 .andExpect(status().isCreated)
-                .andExpect(jsonPath("$.data.attachments[0].edu_file_key").value("uuid.pdf"))
+                .andExpect(jsonPath("$.data.attachments[0].file_key").value("uuid.pdf"))
         }
 
         @Test

@@ -12,10 +12,7 @@ interface EducationPostAttachmentRepository : JpaRepository<EducationPostAttachm
     /**
      * 교육 게시글별 첨부파일 조회
      */
-    fun findByEduId(eduId: String): List<EducationPostAttachment>
+    fun findByEducationPostId(educationPostId: String): List<EducationPostAttachment>
 
-    fun deleteByEduId(eduId: String)
-
-    // --- 주석 처리: V1 스키마 변경으로 불필요 ---
-    // fun findByPostId(postId: Long): List<EducationPostAttachment>
+    fun deleteByEducationPostId(educationPostId: String)
 }

@@ -112,12 +112,12 @@ class EducationService(
         val images = emptyList<Any>()
 
         // 3. 첨부파일 목록 조회
-        val attachments = educationPostAttachmentRepository.findByEduId(postId)
+        val attachments = educationPostAttachmentRepository.findByEducationPostId(postId)
             .map { attachment ->
                 EducationAttachmentResponse(
-                    id = attachment.eduFileKey,
-                    fileName = attachment.eduFileOrgNm ?: "",
-                    fileUrl = attachment.eduFileKey,
+                    id = attachment.fileKey,
+                    fileName = attachment.fileOriginalName ?: "",
+                    fileUrl = attachment.fileKey,
                     fileSize = 0
                 )
             }
@@ -159,7 +159,7 @@ class EducationService(
         )
 
         val attachmentCounts = postsPage.content.associate { post ->
-            post.eduId to educationPostAttachmentRepository.findByEduId(post.eduId ?: "").size
+            post.eduId to educationPostAttachmentRepository.findByEducationPostId(post.eduId ?: "").size
         }
 
         val summaries = postsPage.content.map { post ->
@@ -239,11 +239,11 @@ class EducationService(
 
         validatePostInput(title, content, category)
 
-        val existingAttachments = educationPostAttachmentRepository.findByEduId(postId)
+        val existingAttachments = educationPostAttachmentRepository.findByEducationPostId(postId)
         val keysToKeep = keepFileKeys ?: emptyList()
 
         // keep_file_keys 유효성 검증
-        val existingKeys = existingAttachments.map { it.eduFileKey }.toSet()
+        val existingKeys = existingAttachments.map { it.fileKey }.toSet()
         keysToKeep.forEach { key ->
             if (key !in existingKeys) {
                 throw InvalidFileKeyException()
@@ -259,8 +259,8 @@ class EducationService(
         validateFileSizes(files)
 
         // 유지하지 않는 파일 삭제
-        existingAttachments.filter { it.eduFileKey !in keysToKeep }.forEach { attachment ->
-            fileStorageService.deleteEducationFile(postId, attachment.eduFileKey)
+        existingAttachments.filter { it.fileKey !in keysToKeep }.forEach { attachment ->
+            fileStorageService.deleteEducationFile(postId, attachment.fileKey)
             educationPostAttachmentRepository.delete(attachment)
         }
 
@@ -282,7 +282,7 @@ class EducationService(
         }
         educationPostRepository.save(updated)
 
-        val allAttachments = educationPostAttachmentRepository.findByEduId(postId)
+        val allAttachments = educationPostAttachmentRepository.findByEducationPostId(postId)
         val categoryName = educationCodeRepository.findByEduCode(category)?.eduCodeNm ?: ""
 
         return toMutationResponse(updated, categoryName, allAttachments)
@@ -296,9 +296,9 @@ class EducationService(
         val post = educationPostRepository.findByEduId(postId)
             ?: throw EducationPostNotFoundException()
 
-        val attachments = educationPostAttachmentRepository.findByEduId(postId)
+        val attachments = educationPostAttachmentRepository.findByEducationPostId(postId)
         attachments.forEach { attachment ->
-            fileStorageService.deleteEducationFile(postId, attachment.eduFileKey)
+            fileStorageService.deleteEducationFile(postId, attachment.fileKey)
         }
         educationPostAttachmentRepository.deleteAll(attachments)
         educationPostRepository.delete(post)
@@ -355,10 +355,10 @@ class EducationService(
             val fileType = determineFileType(originalName)
 
             val attachment = EducationPostAttachment(
-                eduId = eduId,
-                eduFileKey = fileKey,
-                eduFileType = fileType,
-                eduFileOrgNm = originalName
+                educationPostId = eduId,
+                fileKey = fileKey,
+                fileType = fileType,
+                fileOriginalName = originalName
             )
             educationPostAttachmentRepository.save(attachment)
         }
@@ -390,9 +390,9 @@ class EducationService(
             updDate = post.updatedAt?.format(DATE_TIME_FORMATTER),
             attachments = attachments.map {
                 AttachmentInfo(
-                    eduFileKey = it.eduFileKey,
-                    eduFileType = it.eduFileType ?: "",
-                    eduFileOrgNm = it.eduFileOrgNm ?: ""
+                    fileKey = it.fileKey,
+                    fileType = it.fileType ?: "",
+                    fileOriginalName = it.fileOriginalName ?: ""
                 )
             }
         )

@@ -5,22 +5,22 @@ import java.io.Serializable
 /**
  * 교육 첨부파일 복합 키
  *
- * education_post_attachment 테이블에 PK가 없으므로 (eduId, eduFileKey)를 복합 키로 사용.
+ * education_post_attachment 테이블에 PK가 없으므로 (educationPostId, fileKey)를 복합 키로 사용.
  */
 class EducationFileId(
-    val eduId: String = "",
-    val eduFileKey: String = ""
+    val educationPostId: String = "",
+    val fileKey: String = ""
 ) : Serializable {
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is EducationFileId) return false
-        return eduId == other.eduId && eduFileKey == other.eduFileKey
+        return educationPostId == other.educationPostId && fileKey == other.fileKey
     }
 
     override fun hashCode(): Int {
-        var result = eduId.hashCode()
-        result = 31 * result + eduFileKey.hashCode()
+        var result = educationPostId.hashCode()
+        result = 31 * result + fileKey.hashCode()
         return result
     }
 }
