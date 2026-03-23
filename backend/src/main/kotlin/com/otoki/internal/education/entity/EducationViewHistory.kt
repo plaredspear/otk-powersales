@@ -23,7 +23,7 @@ class EducationViewHistory(
 
     @Id
     @HCColumn("empcode__c")
-    @Column(name = "empcode__c", length = 40)
+    @Column(name = "emp_code", length = 40)
     val empCode: String,
 
     @Id
@@ -36,6 +36,6 @@ class EducationViewHistory(
     val name: String? = null,
 
     @HCColumn("costcentercode__c")
-    @Column(name = "costcentercode__c", length = 10)
+    @Column(name = "cost_center_code", length = 10)
     val costCenterCode: String? = null
 )
