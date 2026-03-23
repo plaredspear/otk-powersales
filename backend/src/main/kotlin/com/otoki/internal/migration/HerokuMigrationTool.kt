@@ -13,6 +13,7 @@ import com.otoki.internal.sap.entity.Product
 import com.otoki.internal.notice.entity.Notice
 import com.otoki.internal.schedule.entity.DisplayWorkSchedule
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
+import com.otoki.internal.education.entity.EducationCode
 import com.otoki.internal.education.entity.EducationPost
 import com.otoki.internal.sap.entity.ProductBarcode
 import jakarta.persistence.Id
@@ -47,7 +48,7 @@ import java.util.Properties
  * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
  * │  YES    │ agreementword__c                   │ agreement_word              │ AgreementWord           │ —                                                             │                    │
  * │   no    │ commute_distance                   │ —                           │ —                       │ —                                                             │                    │
- * │   no    │ education_code_mng                 │ education_code              │ EducationCode           │ —                                                             │                    │
+ * │  YES    │ education_code_mng                 │ education_code              │ EducationCode           │ —                                                             │                    │
  * │   no    │ education_file_mng                 │ education_post_attachment   │ EducationPostAttachment │ edu_id → education_mng (코드값, sfid 아님)                    │                    │
  * │   no    │ education_member_history           │ education_view_history      │ EducationViewHistory    │ community_id → education_mng (코드값, sfid 아님)              │                    │
  * │   no    │ employee_admin_mng                 │ employee_admin              │ EmployeeAdmin           │ —                                                             │                    │
@@ -118,6 +119,7 @@ object HerokuMigrationTool {
         EntityRegistration("displayWorkSchedule", DisplayWorkSchedule::class.java),
         EntityRegistration("teamMemberSchedule", TeamMemberSchedule::class.java),
         EntityRegistration("educationPost", EducationPost::class.java),
+        EntityRegistration("educationCode", EducationCode::class.java),
         EntityRegistration("agreementWord", AgreementWord::class.java),
         EntityRegistration("pushMessage", PushMessage::class.java),
         EntityRegistration("safetyCheckSubmission", SafetyCheckSubmission::class.java),
