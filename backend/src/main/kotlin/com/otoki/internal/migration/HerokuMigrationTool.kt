@@ -13,6 +13,7 @@ import com.otoki.internal.sap.entity.Product
 import com.otoki.internal.notice.entity.Notice
 import com.otoki.internal.schedule.entity.DisplayWorkSchedule
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
+import com.otoki.internal.education.entity.EducationPost
 import com.otoki.internal.sap.entity.ProductBarcode
 import jakarta.persistence.Id
 import jakarta.persistence.Table
@@ -42,7 +43,7 @@ import java.util.Properties
  * │         │                                    │                             │                         │   dkretail__promotionempid__c → employee.sfid                 │                    │
  * │  YES    │ safetycheck__workschedule__member  │ safety_check_submission     │ SafetyCheckSubmission   │ employeeid__c → employee.sfid, masterId →                     │ FK: employee_id(inline), display_work_schedule_id/team_member_schedule_id(post-UPDATE) │
  * │         │                                    │                             │                         │   displayworkschedulemaster__c.sfid, eventmasterid → sfid     │                    │
- * │   no    │ education_mng                      │ education_post              │ EducationPost           │ —                                                             │                    │
+ * │  YES    │ education_mng                      │ education_post              │ EducationPost           │ empcode__c → employee.employee_code                           │ UPDATE: employee_id │
  * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
  * │  YES    │ agreementword__c                   │ agreement_word              │ AgreementWord           │ —                                                             │                    │
  * │   no    │ commute_distance                   │ —                           │ —                       │ —                                                             │                    │
@@ -116,6 +117,7 @@ object HerokuMigrationTool {
         EntityRegistration("notice", Notice::class.java),
         EntityRegistration("displayWorkSchedule", DisplayWorkSchedule::class.java),
         EntityRegistration("teamMemberSchedule", TeamMemberSchedule::class.java),
+        EntityRegistration("educationPost", EducationPost::class.java),
         EntityRegistration("agreementWord", AgreementWord::class.java),
         EntityRegistration("pushMessage", PushMessage::class.java),
         EntityRegistration("safetyCheckSubmission", SafetyCheckSubmission::class.java),
@@ -314,6 +316,18 @@ object HerokuMigrationTool {
                             "WHERE s.team_member_schedule_sfid = t.sfid"
                     )
                     println("[safetyCheckSubmission] team_member_schedule_id UPDATE 완료: ${updated}건")
+                }
+
+                // EducationPost: emp_code → employee.employee_code 매칭으로 employee_id UPDATE
+                println("[educationPost] emp_code → employee_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.education_post ep " +
+                            "SET employee_id = e.employee_id " +
+                            "FROM $TARGET_SCHEMA.employee e " +
+                            "WHERE ep.emp_code = e.employee_code"
+                    )
+                    println("[educationPost] employee_id UPDATE 완료: ${updated}건")
                 }
             }
         }

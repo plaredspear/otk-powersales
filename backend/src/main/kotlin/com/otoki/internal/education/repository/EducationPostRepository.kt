@@ -8,7 +8,9 @@ import org.springframework.data.jpa.repository.JpaRepository
 /**
  * 교육 게시물 Repository
  */
-interface EducationPostRepository : JpaRepository<EducationPost, String>, EducationPostRepositoryCustom {
+interface EducationPostRepository : JpaRepository<EducationPost, Long>, EducationPostRepositoryCustom {
+
+    fun findByEduId(eduId: String): EducationPost?
 
     /**
      * 카테고리별 게시물 조회 (페이지네이션)

@@ -184,8 +184,8 @@ class EducationServiceTest {
                 eduCodeNm = "시식 매뉴얼"
             )
 
-            whenever(educationPostRepository.findById("EDU001"))
-                .thenReturn(Optional.of(testPost))
+            whenever(educationPostRepository.findByEduId("EDU001"))
+                .thenReturn(testPost)
             whenever(educationPostAttachmentRepository.findByEduId("EDU001"))
                 .thenReturn(attachments)
             whenever(educationCodeRepository.findById("TASTING_MANUAL"))
@@ -209,8 +209,8 @@ class EducationServiceTest {
         @DisplayName("게시물 미존재 - EducationPostNotFoundException")
         fun getPostDetail_notFound() {
             // Given
-            whenever(educationPostRepository.findById("NONEXIST"))
-                .thenReturn(Optional.empty())
+            whenever(educationPostRepository.findByEduId("NONEXIST"))
+                .thenReturn(null)
 
             // When & Then
             assertThatThrownBy {
@@ -384,7 +384,7 @@ class EducationServiceTest {
                 eduId = "EDU001", eduFileKey = "existing-key", eduFileType = "f00003", eduFileOrgNm = "old.pdf"
             )
 
-            whenever(educationPostRepository.findById("EDU001")).thenReturn(Optional.of(testPost))
+            whenever(educationPostRepository.findByEduId("EDU001")).thenReturn(testPost)
             whenever(educationCodeRepository.existsById("TASTING_MANUAL")).thenReturn(true)
             whenever(educationPostAttachmentRepository.findByEduId("EDU001"))
                 .thenReturn(listOf(existingAttachment))
@@ -404,7 +404,7 @@ class EducationServiceTest {
         @Test
         @DisplayName("미존재 교육 수정 - EducationPostNotFoundException")
         fun updatePost_notFound() {
-            whenever(educationPostRepository.findById("NONEXIST")).thenReturn(Optional.empty())
+            whenever(educationPostRepository.findByEduId("NONEXIST")).thenReturn(null)
 
             assertThatThrownBy {
                 educationService.updatePost("NONEXIST", "제목", "내용", "c00001", null, null)
@@ -418,7 +418,7 @@ class EducationServiceTest {
                 eduId = "EDU001", eduFileKey = "existing-key", eduFileType = "f00003", eduFileOrgNm = "old.pdf"
             )
 
-            whenever(educationPostRepository.findById("EDU001")).thenReturn(Optional.of(testPost))
+            whenever(educationPostRepository.findByEduId("EDU001")).thenReturn(testPost)
             whenever(educationCodeRepository.existsById("TASTING_MANUAL")).thenReturn(true)
             whenever(educationPostAttachmentRepository.findByEduId("EDU001"))
                 .thenReturn(listOf(existingAttachment))
@@ -436,7 +436,7 @@ class EducationServiceTest {
             }
             val newFiles = (1..6).map { MockMultipartFile("files", "new$it.pdf", "application/pdf", ByteArray(10)) }
 
-            whenever(educationPostRepository.findById("EDU001")).thenReturn(Optional.of(testPost))
+            whenever(educationPostRepository.findByEduId("EDU001")).thenReturn(testPost)
             whenever(educationCodeRepository.existsById("TASTING_MANUAL")).thenReturn(true)
             whenever(educationPostAttachmentRepository.findByEduId("EDU001"))
                 .thenReturn(existingAttachments)
@@ -461,7 +461,7 @@ class EducationServiceTest {
                 EducationPostAttachment(eduId = "EDU001", eduFileKey = "key1", eduFileType = "f00003", eduFileOrgNm = "doc.pdf")
             )
 
-            whenever(educationPostRepository.findById("EDU001")).thenReturn(Optional.of(testPost))
+            whenever(educationPostRepository.findByEduId("EDU001")).thenReturn(testPost)
             whenever(educationPostAttachmentRepository.findByEduId("EDU001")).thenReturn(attachments)
 
             educationService.deletePost("EDU001")
@@ -474,7 +474,7 @@ class EducationServiceTest {
         @Test
         @DisplayName("미존재 교육 삭제 - EducationPostNotFoundException")
         fun deletePost_notFound() {
-            whenever(educationPostRepository.findById("NONEXIST")).thenReturn(Optional.empty())
+            whenever(educationPostRepository.findByEduId("NONEXIST")).thenReturn(null)
 
             assertThatThrownBy {
                 educationService.deletePost("NONEXIST")

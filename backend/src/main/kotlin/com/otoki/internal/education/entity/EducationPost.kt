@@ -13,7 +13,7 @@ import java.time.LocalDateTime
  * 교육 게시물 Entity
  *
  * V1 테이블: education_post (구: education_mng)
- * PK: education_post_id (VARCHAR, 구: edu_id)
+ * PK: education_post_id (BIGINT IDENTITY)
  */
 @Entity
 @Table(name = "education_post")
@@ -21,9 +21,13 @@ import java.time.LocalDateTime
 class EducationPost(
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "education_post_id", nullable = false)
+    val id: Long = 0,
+
     @HCColumn("edu_id")
-    @Column(name = "education_post_id", length = 20, nullable = false)
-    val eduId: String,
+    @Column(name = "edu_id", length = 20)
+    val eduId: String? = null,
 
     @HCColumn("edu_title")
     @Column(name = "title", length = 150)
