@@ -211,6 +211,7 @@ class EducationService(
             eduTitle = title,
             eduContent = content,
             eduCode = category,
+            employee = employee,
             empCode = employee.employeeCode
         )
         educationPostRepository.save(post)
@@ -272,6 +273,7 @@ class EducationService(
             eduTitle = title,
             eduContent = content,
             eduCode = category,
+            employee = post.employee,
             empCode = post.empCode
         ).apply {
             createdAt = post.createdAt
@@ -382,7 +384,7 @@ class EducationService(
             eduContent = post.eduContent ?: "",
             eduCode = post.eduCode ?: "",
             eduCodeNm = categoryName,
-            empCode = post.empCode ?: "",
+            employeeId = post.employee?.id,
             instDate = post.createdAt?.format(DATE_TIME_FORMATTER) ?: "",
             updDate = post.updatedAt?.format(DATE_TIME_FORMATTER),
             attachments = attachments.map {

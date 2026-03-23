@@ -9,7 +9,7 @@ data class EducationMutationResponse(
     val eduContent: String,
     val eduCode: String,
     val eduCodeNm: String,
-    val empCode: String,
+    val employeeId: Long?,
     val instDate: String,
     val updDate: String?,
     val attachments: List<AttachmentInfo>

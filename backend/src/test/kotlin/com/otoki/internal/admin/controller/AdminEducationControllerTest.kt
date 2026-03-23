@@ -182,7 +182,7 @@ class AdminEducationControllerTest {
                 eduContent = "내용",
                 eduCode = "c00001",
                 eduCodeNm = "시식매뉴얼",
-                empCode = "12345678",
+                employeeId = 1L,
                 instDate = "2026-03-09T10:00:00",
                 updDate = null,
                 attachments = emptyList()
@@ -213,7 +213,7 @@ class AdminEducationControllerTest {
                 eduContent = "내용",
                 eduCode = "c00004",
                 eduCodeNm = "신제품소개",
-                empCode = "12345678",
+                employeeId = 1L,
                 instDate = "2026-03-09T10:00:00",
                 updDate = null,
                 attachments = listOf(
@@ -281,7 +281,7 @@ class AdminEducationControllerTest {
                 eduContent = "수정 내용",
                 eduCode = "c00001",
                 eduCodeNm = "시식매뉴얼",
-                empCode = "12345678",
+                employeeId = 1L,
                 instDate = "2026-03-09T10:00:00",
                 updDate = "2026-03-09T14:00:00",
                 attachments = emptyList()

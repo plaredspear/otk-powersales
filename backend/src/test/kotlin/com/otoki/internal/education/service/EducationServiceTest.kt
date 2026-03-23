@@ -299,7 +299,7 @@ class EducationServiceTest {
             assertThat(result.eduContent).isEqualTo("교육 내용")
             assertThat(result.eduCode).isEqualTo("c00001")
             assertThat(result.eduCodeNm).isEqualTo("시식매뉴얼")
-            assertThat(result.empCode).isEqualTo("12345678")
+            assertThat(result.employeeId).isNotNull()
             assertThat(result.attachments).isEmpty()
         }
 
