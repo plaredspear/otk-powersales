@@ -51,7 +51,7 @@ import java.util.Properties
  * │   no    │ education_file_mng                 │ education_post_attachment   │ EducationPostAttachment │ edu_id → education_mng (코드값, sfid 아님)                    │                    │
  * │   no    │ education_member_history           │ education_view_history      │ EducationViewHistory    │ community_id → education_mng (코드값, sfid 아님)              │                    │
  * │   no    │ employee_admin_mng                 │ employee_admin              │ EmployeeAdmin           │ —                                                             │                    │
- * │   no    │ employee_his                       │ employee_his                │ EmployeeLoginHistory            │ —                                                             │                    │
+ * │   no    │ employee_his                       │ login_history               │ LoginHistory                    │ —                                                             │                    │
  * │  YES    │ employee_mng                       │ employee_info               │ EmployeeInfo            │ —                                                             │ Employee 종속 테이블, 자연키 PK │
  * │   no    │ expirationdate__mng                │ expirationdate__mng         │ ShelfLife               │ employee_id → employee.sfid                                   │                    │
  * │   no    │ hqreview__c                        │ hq_review                   │ HqReview                │ —                                                             │                    │
