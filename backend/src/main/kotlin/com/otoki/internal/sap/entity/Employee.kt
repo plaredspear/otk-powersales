@@ -90,7 +90,6 @@ class Employee(
     var homePhone: String? = null,
 
     @SFField("DKRetail__Sex__c")
-    @HCColumn("dkretail__sex__c")
     @Column(name = "sex", length = 10)
     var sex: String? = null,
 
@@ -100,7 +99,6 @@ class Employee(
     var startDate: LocalDate? = null,
 
     @SFField("DKRetail__EndDate__c")
-    @HCColumn("dkretail__enddate__c")
     @Column(name = "end_date")
     var endDate: LocalDate? = null,
 
@@ -117,52 +115,42 @@ class Employee(
     var professionalPromotionTeam: String? = null,
 
     @SFField("DKRetail__Jikchak__c")
-    @HCColumn("dkretail__jikchak__c")
     @Column(name = "jikchak", length = 100)
     var jikchak: String? = null,
 
     @SFField("DKRetail__Jikwee__c")
-    @HCColumn("dkretail__jikwee__c")
     @Column(name = "jikwee", length = 40)
     var jikwee: String? = null,
 
     @SFField("DKRetail__Jikgub__c")
-    @HCColumn("dkretail__jikgub__c")
     @Column(name = "jikgub", length = 40)
     var jikgub: String? = null,
 
     @SFField("DKRetail__WorkType__c")
-    @HCColumn("dkretail__worktype__c")
     @Column(name = "work_type", length = 40)
     var workType: String? = null,
 
     @SFField("DKRetail__JobCode__c")
-    @HCColumn("dkretail__jobcode__c")
     @Column(name = "job_code", length = 40)
     var jobCode: String? = null,
 
     @SFField("DKRetail__WorkArea__c")
-    @HCColumn("dkretail__workarea__c")
     @Column(name = "work_area", length = 100)
     var workArea: String? = null,
 
     @SFField("DKRetail__Jikjong__c")
-    @HCColumn("dkretail__jikjong__c")
     @Column(name = "jikjong", length = 40)
     var jikjong: String? = null,
 
     @SFField("DKRetail__AppointmentDate__c")
-    @HCColumn("dkretail__appointmentdate__c")
     @Column(name = "appointment_date")
     var appointmentDate: LocalDate? = null,
 
     @SFField("OrdDetailNode__c")
-    @HCColumn("orddetailnode__c")
     @Column(name = "ord_detail_node", length = 255)
     var ordDetailNode: String? = null,
 
     @SFField("DKRetail__CRM_WorkStartDate__c")
-    @HCColumn("dkretail__crm_workstartdate__c")
     @Column(name = "crm_work_start_date")
     var crmWorkStartDate: LocalDate? = null,
 

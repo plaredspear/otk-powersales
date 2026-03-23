@@ -12,8 +12,8 @@ import java.time.LocalDateTime
     name = "safety_check_submission",
     uniqueConstraints = [
         UniqueConstraint(
-            name = "uq_safety_check_employee_date",
-            columnNames = ["employee_id", "working_date"]
+            name = "uq_safety_check_employee_date_schedule",
+            columnNames = ["employee_id", "working_date", "display_work_schedule_id"]
         )
     ]
 )
@@ -25,15 +25,15 @@ class SafetyCheckSubmission(
     @Column(name = "safety_check_submission_id")
     val id: Long = 0,
 
-    @Column(name = "employee_id", nullable = false)
-    val employeeId: Long = 0,
+    @Column(name = "employee_id")
+    val employeeId: Long? = null,
 
     @HCColumn("employeeid__c")
     @Column(name = "employee_sfid", length = 18)
     val employeeSfid: String? = null,
 
     @HCColumn("working__date")
-    @Column(name = "working_date", nullable = false)
+    @Column(name = "working_date")
     val workingDate: LocalDate? = null,
 
     @Column(name = "display_work_schedule_id")

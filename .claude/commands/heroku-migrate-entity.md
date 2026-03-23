@@ -40,17 +40,31 @@ HerokuMigrationTool에 엔티티를 등록하여 Heroku DB → Dev DB 데이터 
 
 Entity 필드를 분석하여 FK 참조를 식별합니다:
 
+**sfid와 PK/FK의 관계**:
+- Heroku DB는 Salesforce의 `sfid`(18자리 문자열)를 레코드 식별자로 사용
+- Dev DB는 `IDENTITY` 자동 채번 PK(Long)를 사용하므로, sfid는 **데이터 마이그레이션 및 연결 참조용으로만 저장**
+- 마이그레이션 시 sfid를 그대로 가져오되, PK는 새로 생성하고, FK는 sfid를 기준으로 참조 테이블을 검색하여 새 PK 값으로 다시 채움
+
+**예시 (Notice → Employee FK)**:
+```
+1. INSERT 단계: Heroku employeeid__c 값("a03xx...") → Dev DB employee_sfid 컬럼에 저장 (employee_id는 NULL)
+2. post-UPDATE 단계: employee_sfid로 employee 테이블을 검색하여 새로 생성된 employee_id(PK)를 채움
+   → UPDATE notice n SET employee_id = e.employee_id FROM employee e WHERE n.employee_sfid = e.sfid
+```
+
 **FK 판별 기준**:
 - `@HCColumn`이 있는 sfid 저장 필드 (예: `account_sfid`, `employee_sfid`)와 대응하는 PK 저장 필드 (예: `account_id`, `employee_id`)가 쌍으로 존재
-- PK 저장 필드에는 `@HCColumn`이 없음 (INSERT에서 제외, 후속 UPDATE로 채움)
+- sfid 저장 필드: `@HCColumn`이 있으므로 INSERT 시 Heroku 값이 그대로 저장됨
+- PK 저장 필드: `@HCColumn`이 없으므로 INSERT에서 제외, **후속 UPDATE로 sfid 기준 검색하여 새 PK 값을 채움**
 - HerokuMigrationTool KDoc 매핑 테이블의 "참조키" 컬럼에 기록된 sfid FK 정보
 
 **FK가 있는 경우**:
 - 참조 대상 테이블의 PK 컬럼명을 확인 (Dev DB에서 `\d <테이블>` 또는 Entity 확인)
-- 후속 UPDATE 패턴 적용 (DisplayWorkSchedule, ProductBarcode 사례 참조)
+- 후속 UPDATE 패턴 적용 (Notice, DisplayWorkSchedule, ProductBarcode 사례 참조)
+- columnTransformProvider는 사용하지 않음 (allJpaColumns에 포함되지 않아 동작 불가)
 
 **FK가 없는 경우**:
-- columnTransformProvider 없이 단순 등록 (AgreementWord, PushMessage 사례 참조)
+- 단순 등록 (AgreementWord, PushMessage 사례 참조)
 
 ### 4. Heroku DB 데이터 건수 확인
 

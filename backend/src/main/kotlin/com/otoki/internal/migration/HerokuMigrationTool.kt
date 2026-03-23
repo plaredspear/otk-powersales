@@ -113,32 +113,12 @@ object HerokuMigrationTool {
             timestampColumns = Pair("inst_date", "upd_date"),
         ),
         EntityRegistration("productBarcode", ProductBarcode::class.java),
-        EntityRegistration("notice", Notice::class.java) { targetConn ->
-            val sfidToPk = mutableMapOf<String, Any?>()
-            targetConn.createStatement().use { stmt ->
-                stmt.executeQuery("SELECT sfid, id FROM $TARGET_SCHEMA.employee WHERE sfid IS NOT NULL").use { rs ->
-                    while (rs.next()) {
-                        sfidToPk[rs.getString("sfid")] = rs.getLong("id")
-                    }
-                }
-            }
-            mapOf("employee_id" to sfidToPk)
-        },
+        EntityRegistration("notice", Notice::class.java),
         EntityRegistration("displayWorkSchedule", DisplayWorkSchedule::class.java),
         EntityRegistration("teamMemberSchedule", TeamMemberSchedule::class.java),
         EntityRegistration("agreementWord", AgreementWord::class.java),
         EntityRegistration("pushMessage", PushMessage::class.java),
-        EntityRegistration("safetyCheckSubmission", SafetyCheckSubmission::class.java) { targetConn ->
-            val sfidToPk = mutableMapOf<String, Any?>()
-            targetConn.createStatement().use { stmt ->
-                stmt.executeQuery("SELECT sfid, id FROM $TARGET_SCHEMA.employee WHERE sfid IS NOT NULL").use { rs ->
-                    while (rs.next()) {
-                        sfidToPk[rs.getString("sfid")] = rs.getLong("id")
-                    }
-                }
-            }
-            mapOf("employee_id" to sfidToPk)
-        },
+        EntityRegistration("safetyCheckSubmission", SafetyCheckSubmission::class.java),
     )
 
     private const val HEROKU_SCHEMA = "salesforce2"
@@ -183,6 +163,18 @@ object HerokuMigrationTool {
                     migrateEntity(reg.name, reg.entityClass, herokuConn, targetConn, columnTransforms, reg.dependentTables, reg.includeId, reg.timestampColumns)
                 }
 
+                // Notice: employee_sfid → employee_id 역참조 UPDATE
+                println("[notice] employee_sfid → employee_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.notice n " +
+                            "SET employee_id = e.employee_id " +
+                            "FROM $TARGET_SCHEMA.employee e " +
+                            "WHERE n.employee_sfid = e.sfid"
+                    )
+                    println("[notice] employee_id UPDATE 완료: ${updated}건")
+                }
+
                 // ProductBarcode: product_sfid → product_id 역참조 UPDATE
                 println("[productBarcode] product_sfid → product_id UPDATE 중...")
                 targetConn.createStatement().use { stmt ->
@@ -212,7 +204,7 @@ object HerokuMigrationTool {
                 targetConn.createStatement().use { stmt ->
                     val updated = stmt.executeUpdate(
                         "UPDATE $TARGET_SCHEMA.display_work_schedule d " +
-                            "SET employee_id = e.id " +
+                            "SET employee_id = e.employee_id " +
                             "FROM $TARGET_SCHEMA.employee e " +
                             "WHERE d.employee_sfid = e.sfid"
                     )
@@ -236,7 +228,7 @@ object HerokuMigrationTool {
                 targetConn.createStatement().use { stmt ->
                     val updated = stmt.executeUpdate(
                         "UPDATE $TARGET_SCHEMA.team_member_schedule t " +
-                            "SET employee_id = e.id " +
+                            "SET employee_id = e.employee_id " +
                             "FROM $TARGET_SCHEMA.employee e " +
                             "WHERE t.employee_sfid = e.sfid"
                     )
@@ -248,7 +240,7 @@ object HerokuMigrationTool {
                 targetConn.createStatement().use { stmt ->
                     val updated = stmt.executeUpdate(
                         "UPDATE $TARGET_SCHEMA.team_member_schedule t " +
-                            "SET team_leader_id = e.id " +
+                            "SET team_leader_id = e.employee_id " +
                             "FROM $TARGET_SCHEMA.employee e " +
                             "WHERE t.team_leader_sfid = e.sfid"
                     )
@@ -260,11 +252,23 @@ object HerokuMigrationTool {
                 targetConn.createStatement().use { stmt ->
                     val updated = stmt.executeUpdate(
                         "UPDATE $TARGET_SCHEMA.team_member_schedule t " +
-                            "SET promotion_employee_id = pe.id " +
-                            "FROM $TARGET_SCHEMA.promotion_employee pe " +
-                            "WHERE t.promotion_employee_sfid = pe.sfid"
+                            "SET promotion_employee_id = e.employee_id " +
+                            "FROM $TARGET_SCHEMA.employee e " +
+                            "WHERE t.promotion_employee_sfid = e.sfid"
                     )
                     println("[teamMemberSchedule] promotion_employee_id UPDATE 완료: ${updated}건")
+                }
+
+                // SafetyCheckSubmission: employee_sfid → employee_id 역참조 UPDATE
+                println("[safetyCheckSubmission] employee_sfid → employee_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.safety_check_submission s " +
+                            "SET employee_id = e.employee_id " +
+                            "FROM $TARGET_SCHEMA.employee e " +
+                            "WHERE s.employee_sfid = e.sfid"
+                    )
+                    println("[safetyCheckSubmission] employee_id UPDATE 완료: ${updated}건")
                 }
 
                 // SafetyCheckSubmission: display_work_schedule_sfid → display_work_schedule_id 역참조 UPDATE
@@ -333,8 +337,8 @@ object HerokuMigrationTool {
         val tsUpdated = timestampColumns?.second ?: "systemmodstamp"
 
         val selectColumns = mappings.map { m ->
-            if (m.hcColumnName == m.jpaColumnName) m.hcColumnName
-            else "${m.hcColumnName} AS ${m.jpaColumnName}"
+            if (m.hcColumnName == m.jpaColumnName) "\"${m.hcColumnName}\""
+            else "\"${m.hcColumnName}\" AS ${m.jpaColumnName}"
         } + if (hasTimestamp) listOf("$tsCreated AS created_at", "$tsUpdated AS updated_at") else emptyList()
 
         val allJpaColumns = mappings.map { it.jpaColumnName } +
