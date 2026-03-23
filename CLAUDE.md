@@ -134,6 +134,7 @@ git rebase main
 - **상태 전환**:
   - **승인**: ① `backlog/` → `ready/` 폴더 이동 ② spec.md 승인 이력 테이블의 `사람 리뷰` 행을 `APPROVED | 사용자 | 날짜 | 승인`으로 업데이트
   - **구현 완료**: `ready/` → `completed/` 폴더 이동
+- **Flyway 마이그레이션 버전**: 스펙에서 마이그레이션 파일명은 `V{next}__<설명>.sql` 플레이스홀더를 사용한다. 구체적 버전 번호(V26, V27 등)는 스펙에 포함하지 않는다. 구현 시점에 `db/migration/` 폴더의 최신 버전을 확인하여 다음 번호를 부여한다.
 - **스펙 작성 금지사항**:
   - 구현 코드 포함 금지: Java, Kotlin, Dart, TypeScript, SQL, HCL 코드 블록 불가
   - 허용: JSON 예시(API 계약), 설정 키-값 테이블, ASCII 와이어프레임
