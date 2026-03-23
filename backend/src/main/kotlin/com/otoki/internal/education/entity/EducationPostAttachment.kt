@@ -17,20 +17,20 @@ class EducationPostAttachment(
 
     @Id
     @HCColumn("edu_id")
-    @Column(name = "edu_id", length = 20)
+    @Column(name = "education_post_id", length = 20)
     val eduId: String,
 
     @Id
     @HCColumn("edu_file_key")
-    @Column(name = "edu_file_key", length = 30)
+    @Column(name = "file_key", length = 30)
     val eduFileKey: String,
 
     @HCColumn("edu_file_type")
-    @Column(name = "edu_file_type", length = 10)
+    @Column(name = "file_type", length = 10)
     val eduFileType: String? = null,
 
     @HCColumn("edu_file_orgnm")
-    @Column(name = "edu_file_orgnm", length = 200)
+    @Column(name = "file_original_name", length = 200)
     val eduFileOrgNm: String? = null
 
     // --- 주석 처리: V1 스키마에 없는 필드 ---
