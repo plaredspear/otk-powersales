@@ -383,14 +383,14 @@ object HerokuMigrationTool {
             return
         }
 
-        // 2. 대상 테이블 초기화 (PK는 IDENTITY 자동 채번이므로 시퀀스 리셋 불필요)
+        // 2. 대상 테이블 초기화 (RESTART IDENTITY로 PK 시퀀스도 1부터 리셋)
         targetConn.createStatement().use { stmt ->
             // FK 없이 연관된 종속 테이블 먼저 TRUNCATE (DB CASCADE 미적용 대상)
             dependentTables.forEach { depTable ->
-                stmt.execute("TRUNCATE TABLE $TARGET_SCHEMA.$depTable CASCADE")
+                stmt.execute("TRUNCATE TABLE $TARGET_SCHEMA.$depTable RESTART IDENTITY CASCADE")
                 println("[$name] 종속 테이블 $depTable TRUNCATE 완료")
             }
-            stmt.execute("TRUNCATE TABLE $TARGET_SCHEMA.$targetTableName CASCADE")
+            stmt.execute("TRUNCATE TABLE $TARGET_SCHEMA.$targetTableName RESTART IDENTITY CASCADE")
         }
 
         // 3. 배치 INSERT (PK 제외 — IDENTITY 자동 채번)
