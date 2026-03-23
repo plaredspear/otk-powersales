@@ -6,17 +6,17 @@ import jakarta.persistence.*
 import java.time.LocalDateTime
 
 /**
- * 사원 로그인 이력 Entity (employee_his 테이블)
+ * 로그인 이력 Entity (login_history 테이블)
  *
  * 원본 테이블에 PK가 없으므로 @IdClass 전략으로
  * (empCode, instDate) 논리적 복합 키를 구성.
  * EmployeeInfo.empCode 논리적 참조 (외래 키 제약 없음).
  */
 @Entity
-@Table(name = "employee_his")
-@IdClass(EmployeeLoginHistoryId::class)
+@Table(name = "login_history")
+@IdClass(LoginHistoryId::class)
 @HCTable("employee_his")
-class EmployeeLoginHistory(
+class LoginHistory(
 
     @Id
     @HCColumn("empcode__c")

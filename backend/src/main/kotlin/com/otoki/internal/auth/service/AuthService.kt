@@ -13,13 +13,13 @@ import com.otoki.internal.admin.dto.response.AdminUserInfo
 import com.otoki.internal.auth.dto.response.*
 import com.otoki.internal.common.dto.response.*
 import com.otoki.internal.common.entity.AgreementHistory
-import com.otoki.internal.entity.EmployeeLoginHistory
+import com.otoki.internal.entity.LoginHistory
 import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.auth.exception.*
 import com.otoki.internal.common.exception.*
 import com.otoki.internal.common.repository.AgreementHistoryRepository
 import com.otoki.internal.common.repository.AgreementWordRepository
-import com.otoki.internal.repository.EmployeeLoginHistoryRepository
+import com.otoki.internal.repository.LoginHistoryRepository
 import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.common.security.JwtTokenProvider
 import org.slf4j.LoggerFactory
@@ -35,7 +35,7 @@ import java.util.*
 @Service
 class AuthService(
     private val employeeRepository: EmployeeRepository,
-    private val employeeLoginHistoryRepository: EmployeeLoginHistoryRepository,
+    private val loginHistoryRepository: LoginHistoryRepository,
     private val agreementWordRepository: AgreementWordRepository,
     private val agreementHistoryRepository: AgreementHistoryRepository,
     private val passwordEncoder: PasswordEncoder,
@@ -71,7 +71,7 @@ class AuthService(
 
         // 로그인 이력 기록 (실패해도 로그인에 영향 없음)
         try {
-            employeeLoginHistoryRepository.save(EmployeeLoginHistory(empCode = employee.employeeCode))
+            loginHistoryRepository.save(LoginHistory(empCode = employee.employeeCode))
         } catch (e: Exception) {
             log.warn("로그인 이력 기록 실패: employeeCode={}", employee.employeeCode, e)
         }
@@ -121,7 +121,7 @@ class AuthService(
         }
 
         try {
-            employeeLoginHistoryRepository.save(EmployeeLoginHistory(empCode = employee.employeeCode))
+            loginHistoryRepository.save(LoginHistory(empCode = employee.employeeCode))
         } catch (e: Exception) {
             log.warn("로그인 이력 기록 실패: employeeCode={}", employee.employeeCode, e)
         }
