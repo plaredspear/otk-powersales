@@ -46,7 +46,6 @@ import java.util.Properties
  * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
  * │  YES    │ agreementword__c                   │ agreement_word              │ AgreementWord           │ —                                                             │                    │
  * │   no    │ commute_distance                   │ —                           │ —                       │ —                                                             │                    │
- * │   no    │ device_version_mng                 │ device_version              │ DeviceVersion           │ —                                                             │                    │
  * │   no    │ education_code_mng                 │ education_code              │ EducationCode           │ —                                                             │                    │
  * │   no    │ education_file_mng                 │ education_post_attachment   │ EducationPostAttachment │ edu_id → education_mng (코드값, sfid 아님)                    │                    │
  * │   no    │ education_member_history           │ education_view_history      │ EducationViewHistory    │ community_id → education_mng (코드값, sfid 아님)              │                    │
@@ -74,6 +73,8 @@ import java.util.Properties
  * │   no    │ _sf_event_log                      │ —                           │ —                       │ —                                                             │ 시스템             │
  * │   no    │ _trigger_log                       │ —                           │ —                       │ —                                                             │ 시스템             │
  * │   no    │ _trigger_log_archive               │ —                           │ —                       │ —                                                             │ 시스템             │
+ * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+ * │   예외  │ device_version_mng                 │ device_version              │ DeviceVersion           │ —                                                             │ migration 대상 아님 │
  * └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
  *
  * 실행:
