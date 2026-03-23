@@ -74,7 +74,7 @@ class EducationServiceTest {
             val posts = listOf(testPost)
             val page = PageImpl(posts, PageRequest.of(0, 10), 1)
 
-            whenever(educationCodeRepository.existsById("TASTING_MANUAL")).thenReturn(true)
+            whenever(educationCodeRepository.existsByEduCode("TASTING_MANUAL")).thenReturn(true)
             whenever(educationPostRepository.findByEduCodeOrderByCreatedAtDesc(any(), any()))
                 .thenReturn(page)
 
@@ -104,7 +104,7 @@ class EducationServiceTest {
             val posts = listOf(testPost)
             val page = PageImpl(posts, PageRequest.of(0, 10), 1)
 
-            whenever(educationCodeRepository.existsById("TASTING_MANUAL")).thenReturn(true)
+            whenever(educationCodeRepository.existsByEduCode("TASTING_MANUAL")).thenReturn(true)
             whenever(educationPostRepository.findByEduCodeAndSearchWithPaging(any(), any(), any()))
                 .thenReturn(page)
 
@@ -125,7 +125,7 @@ class EducationServiceTest {
         @DisplayName("유효하지 않은 카테고리 - InvalidEducationCategoryException")
         fun getPosts_invalidCategory() {
             // Given
-            whenever(educationCodeRepository.existsById("INVALID_CATEGORY")).thenReturn(false)
+            whenever(educationCodeRepository.existsByEduCode("INVALID_CATEGORY")).thenReturn(false)
 
             // When & Then
             assertThatThrownBy {
@@ -144,7 +144,7 @@ class EducationServiceTest {
             // Given
             val emptyPage = PageImpl<EducationPost>(emptyList(), PageRequest.of(0, 10), 0)
 
-            whenever(educationCodeRepository.existsById("TASTING_MANUAL")).thenReturn(true)
+            whenever(educationCodeRepository.existsByEduCode("TASTING_MANUAL")).thenReturn(true)
             whenever(educationPostRepository.findByEduCodeOrderByCreatedAtDesc(any(), any()))
                 .thenReturn(emptyPage)
 
@@ -188,8 +188,8 @@ class EducationServiceTest {
                 .thenReturn(testPost)
             whenever(educationPostAttachmentRepository.findByEduId("EDU001"))
                 .thenReturn(attachments)
-            whenever(educationCodeRepository.findById("TASTING_MANUAL"))
-                .thenReturn(Optional.of(eduCode))
+            whenever(educationCodeRepository.findByEduCode("TASTING_MANUAL"))
+                .thenReturn(eduCode)
 
             // When
             val result = educationService.getPostDetail("EDU001")
@@ -234,8 +234,8 @@ class EducationServiceTest {
                 .thenReturn(page)
             whenever(educationPostAttachmentRepository.findByEduId("EDU001"))
                 .thenReturn(emptyList())
-            whenever(educationCodeRepository.findById("TASTING_MANUAL"))
-                .thenReturn(Optional.of(eduCode))
+            whenever(educationCodeRepository.findByEduCode("TASTING_MANUAL"))
+                .thenReturn(eduCode)
 
             val result = educationService.getPostsForAdmin(null, null, 1, 10)
 
@@ -251,15 +251,15 @@ class EducationServiceTest {
             val page = PageImpl(posts, PageRequest.of(0, 10), 1)
             val eduCode = EducationCode(eduCode = "TASTING_MANUAL", eduCodeNm = "시식 매뉴얼")
 
-            whenever(educationCodeRepository.existsById("TASTING_MANUAL")).thenReturn(true)
+            whenever(educationCodeRepository.existsByEduCode("TASTING_MANUAL")).thenReturn(true)
             whenever(educationPostRepository.findByOptionalEduCodeAndSearchWithPaging(eq("TASTING_MANUAL"), isNull(), any()))
                 .thenReturn(page)
             whenever(educationPostAttachmentRepository.findByEduId("EDU001"))
                 .thenReturn(listOf(
                     EducationPostAttachment(eduId = "EDU001", eduFileKey = "key1", eduFileType = "f00003", eduFileOrgNm = "doc.pdf")
                 ))
-            whenever(educationCodeRepository.findById("TASTING_MANUAL"))
-                .thenReturn(Optional.of(eduCode))
+            whenever(educationCodeRepository.findByEduCode("TASTING_MANUAL"))
+                .thenReturn(eduCode)
 
             val result = educationService.getPostsForAdmin("TASTING_MANUAL", null, 1, 10)
 
@@ -270,7 +270,7 @@ class EducationServiceTest {
         @Test
         @DisplayName("유효하지 않은 카테고리 - InvalidEducationCategoryException")
         fun getPostsForAdmin_invalidCategory() {
-            whenever(educationCodeRepository.existsById("INVALID")).thenReturn(false)
+            whenever(educationCodeRepository.existsByEduCode("INVALID")).thenReturn(false)
 
             assertThatThrownBy {
                 educationService.getPostsForAdmin("INVALID", null, 1, 10)
@@ -287,11 +287,11 @@ class EducationServiceTest {
         @Test
         @DisplayName("정상 작성 - 파일 없이 교육 자료 생성")
         fun createPost_success_noFiles() {
-            whenever(educationCodeRepository.existsById("c00001")).thenReturn(true)
+            whenever(educationCodeRepository.existsByEduCode("c00001")).thenReturn(true)
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(testEmployee))
             whenever(educationPostRepository.save(any<EducationPost>())).thenAnswer { it.getArgument<EducationPost>(0) }
-            whenever(educationCodeRepository.findById("c00001"))
-                .thenReturn(Optional.of(EducationCode(eduCode = "c00001", eduCodeNm = "시식매뉴얼")))
+            whenever(educationCodeRepository.findByEduCode("c00001"))
+                .thenReturn(EducationCode(eduCode = "c00001", eduCodeNm = "시식매뉴얼"))
 
             val result = educationService.createPost(1L, "테스트 교육", "교육 내용", "c00001", null)
 
@@ -308,14 +308,14 @@ class EducationServiceTest {
         fun createPost_success_withFiles() {
             val file = MockMultipartFile("files", "test.pdf", "application/pdf", ByteArray(100))
 
-            whenever(educationCodeRepository.existsById("c00004")).thenReturn(true)
+            whenever(educationCodeRepository.existsByEduCode("c00004")).thenReturn(true)
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(testEmployee))
             whenever(educationPostRepository.save(any<EducationPost>())).thenAnswer { it.getArgument<EducationPost>(0) }
             whenever(fileStorageService.uploadEducationFile(any(), any())).thenReturn("uuid-file.pdf")
             whenever(educationPostAttachmentRepository.save(any<EducationPostAttachment>()))
                 .thenAnswer { it.getArgument<EducationPostAttachment>(0) }
-            whenever(educationCodeRepository.findById("c00004"))
-                .thenReturn(Optional.of(EducationCode(eduCode = "c00004", eduCodeNm = "신제품소개")))
+            whenever(educationCodeRepository.findByEduCode("c00004"))
+                .thenReturn(EducationCode(eduCode = "c00004", eduCodeNm = "신제품소개"))
 
             val result = educationService.createPost(1L, "신제품 교육", "내용", "c00004", listOf(file))
 
@@ -343,7 +343,7 @@ class EducationServiceTest {
         @Test
         @DisplayName("잘못된 카테고리 - InvalidEducationCategoryException")
         fun createPost_invalidCategory() {
-            whenever(educationCodeRepository.existsById("c99999")).thenReturn(false)
+            whenever(educationCodeRepository.existsByEduCode("c99999")).thenReturn(false)
 
             assertThatThrownBy {
                 educationService.createPost(1L, "제목", "내용", "c99999", null)
@@ -353,7 +353,7 @@ class EducationServiceTest {
         @Test
         @DisplayName("파일 수 초과 - FileLimitExceededException")
         fun createPost_fileLimitExceeded() {
-            whenever(educationCodeRepository.existsById("c00001")).thenReturn(true)
+            whenever(educationCodeRepository.existsByEduCode("c00001")).thenReturn(true)
             val files = (1..21).map { MockMultipartFile("files", "file$it.txt", "text/plain", ByteArray(10)) }
 
             assertThatThrownBy {
@@ -364,7 +364,7 @@ class EducationServiceTest {
         @Test
         @DisplayName("파일 크기 초과 - FileSizeExceededException")
         fun createPost_fileSizeExceeded() {
-            whenever(educationCodeRepository.existsById("c00001")).thenReturn(true)
+            whenever(educationCodeRepository.existsByEduCode("c00001")).thenReturn(true)
             val largeFile = MockMultipartFile("files", "big.pdf", "application/pdf", ByteArray(51 * 1024 * 1024))
 
             assertThatThrownBy {
@@ -385,13 +385,13 @@ class EducationServiceTest {
             )
 
             whenever(educationPostRepository.findByEduId("EDU001")).thenReturn(testPost)
-            whenever(educationCodeRepository.existsById("TASTING_MANUAL")).thenReturn(true)
+            whenever(educationCodeRepository.existsByEduCode("TASTING_MANUAL")).thenReturn(true)
             whenever(educationPostAttachmentRepository.findByEduId("EDU001"))
                 .thenReturn(listOf(existingAttachment))
                 .thenReturn(listOf(existingAttachment)) // second call after save
             whenever(educationPostRepository.save(any<EducationPost>())).thenAnswer { it.getArgument<EducationPost>(0) }
-            whenever(educationCodeRepository.findById("TASTING_MANUAL"))
-                .thenReturn(Optional.of(EducationCode(eduCode = "TASTING_MANUAL", eduCodeNm = "시식 매뉴얼")))
+            whenever(educationCodeRepository.findByEduCode("TASTING_MANUAL"))
+                .thenReturn(EducationCode(eduCode = "TASTING_MANUAL", eduCodeNm = "시식 매뉴얼"))
 
             val result = educationService.updatePost(
                 "EDU001", "수정된 제목", "수정된 내용", "TASTING_MANUAL", null, listOf("existing-key")
@@ -419,7 +419,7 @@ class EducationServiceTest {
             )
 
             whenever(educationPostRepository.findByEduId("EDU001")).thenReturn(testPost)
-            whenever(educationCodeRepository.existsById("TASTING_MANUAL")).thenReturn(true)
+            whenever(educationCodeRepository.existsByEduCode("TASTING_MANUAL")).thenReturn(true)
             whenever(educationPostAttachmentRepository.findByEduId("EDU001"))
                 .thenReturn(listOf(existingAttachment))
 
@@ -437,7 +437,7 @@ class EducationServiceTest {
             val newFiles = (1..6).map { MockMultipartFile("files", "new$it.pdf", "application/pdf", ByteArray(10)) }
 
             whenever(educationPostRepository.findByEduId("EDU001")).thenReturn(testPost)
-            whenever(educationCodeRepository.existsById("TASTING_MANUAL")).thenReturn(true)
+            whenever(educationCodeRepository.existsByEduCode("TASTING_MANUAL")).thenReturn(true)
             whenever(educationPostAttachmentRepository.findByEduId("EDU001"))
                 .thenReturn(existingAttachments)
 

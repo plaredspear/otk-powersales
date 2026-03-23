@@ -9,7 +9,7 @@ import jakarta.persistence.*
  * 교육 코드 Entity
  *
  * V1 테이블: education_code (구: education_code_mng)
- * PK: education_code_id (VARCHAR, 구: edu_code)
+ * PK: education_code_id (BIGINT IDENTITY)
  */
 @Entity
 @Table(name = "education_code")
@@ -17,8 +17,12 @@ import jakarta.persistence.*
 class EducationCode(
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "education_code_id")
+    val id: Long = 0,
+
     @HCColumn("edu_code")
-    @Column(name = "education_code_id", length = 20, nullable = false)
+    @Column(name = "edu_code", length = 20, nullable = false, unique = true)
     val eduCode: String,
 
     @HCColumn("edu_code_nm")

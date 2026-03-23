@@ -49,7 +49,7 @@ class EducationService(
         size: Int = 10
     ): EducationPostListResponse {
         // 1. 카테고리 유효성 검증 (education_code 테이블 참조)
-        if (!educationCodeRepository.existsById(category)) {
+        if (!educationCodeRepository.existsByEduCode(category)) {
             throw InvalidEducationCategoryException()
         }
 
@@ -124,7 +124,7 @@ class EducationService(
 
         // 4. 카테고리명 조회
         val categoryName = post.eduCode?.let { code ->
-            educationCodeRepository.findById(code).orElse(null)?.eduCodeNm
+            educationCodeRepository.findByEduCode(code)?.eduCodeNm
         } ?: ""
 
         // 5. 응답 생성
@@ -149,7 +149,7 @@ class EducationService(
         page: Int = 1,
         size: Int = 10
     ): AdminEducationListResponse {
-        if (!category.isNullOrBlank() && !educationCodeRepository.existsById(category)) {
+        if (!category.isNullOrBlank() && !educationCodeRepository.existsByEduCode(category)) {
             throw InvalidEducationCategoryException()
         }
 
@@ -164,7 +164,7 @@ class EducationService(
 
         val summaries = postsPage.content.map { post ->
             val categoryName = post.eduCode?.let { code ->
-                educationCodeRepository.findById(code).orElse(null)?.eduCodeNm
+                educationCodeRepository.findByEduCode(code)?.eduCodeNm
             } ?: ""
 
             AdminEducationPostSummary(
@@ -217,7 +217,7 @@ class EducationService(
         educationPostRepository.save(post)
 
         val attachments = saveAttachments(eduId, files)
-        val categoryName = educationCodeRepository.findById(category).orElse(null)?.eduCodeNm ?: ""
+        val categoryName = educationCodeRepository.findByEduCode(category)?.eduCodeNm ?: ""
 
         return toMutationResponse(post, categoryName, attachments)
     }
@@ -283,7 +283,7 @@ class EducationService(
         educationPostRepository.save(updated)
 
         val allAttachments = educationPostAttachmentRepository.findByEduId(postId)
-        val categoryName = educationCodeRepository.findById(category).orElse(null)?.eduCodeNm ?: ""
+        val categoryName = educationCodeRepository.findByEduCode(category)?.eduCodeNm ?: ""
 
         return toMutationResponse(updated, categoryName, allAttachments)
     }
@@ -322,7 +322,7 @@ class EducationService(
         if (content.isBlank()) {
             throw InvalidEducationParameterException("본문은 필수입니다")
         }
-        if (!educationCodeRepository.existsById(category)) {
+        if (!educationCodeRepository.existsByEduCode(category)) {
             throw InvalidEducationCategoryException()
         }
     }
