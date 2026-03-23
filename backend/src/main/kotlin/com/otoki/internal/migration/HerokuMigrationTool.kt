@@ -8,6 +8,7 @@ import com.otoki.internal.safetycheck.entity.SafetyCheckItem
 import com.otoki.internal.safetycheck.entity.SafetyCheckSubmission
 import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.sap.entity.Employee
+import com.otoki.internal.sap.entity.EmployeeInfo
 import com.otoki.internal.sap.entity.Product
 import com.otoki.internal.notice.entity.Notice
 import com.otoki.internal.schedule.entity.DisplayWorkSchedule
@@ -51,7 +52,7 @@ import java.util.Properties
  * │ education_member_history           │ education_view_history      │ EducationViewHistory    │ community_id → education_mng (코드값, sfid 아님)              │   no    │                    │
  * │ employee_admin_mng                 │ employee_admin              │ EmployeeAdmin           │ —                                                             │   no    │                    │
  * │ employee_his                       │ employee_his                │ LoginHistory            │ —                                                             │   no    │                    │
- * │ employee_mng                       │ employee_info               │ EmployeeInfo            │ —                                                             │   no    │ Employee 종속 테이블 │
+ * │ employee_mng                       │ employee_info               │ EmployeeInfo            │ —                                                             │  YES    │ Employee 종속 테이블, 자연키 PK │
  * │ expirationdate__mng                │ expirationdate__mng         │ ShelfLife               │ employee_id → employee.sfid                                   │   no    │                    │
  * │ hqreview__c                        │ hq_review                   │ HqReview                │ —                                                             │   no    │                    │
  * │ if_product__c                      │ if_product                  │ InterfaceProduct        │ —                                                             │   no    │                    │
@@ -92,6 +93,10 @@ object HerokuMigrationTool {
         val entityClass: Class<*>,
         /** FK 없이 연관된 테이블 목록 — TRUNCATE 시 함께 정리 (DB FK CASCADE 미적용 대상) */
         val dependentTables: List<String> = emptyList(),
+        /** true이면 @Id 필드를 INSERT에 포함 (자연키 PK). false(기본)이면 제외 (IDENTITY 자동채번) */
+        val includeId: Boolean = false,
+        /** Heroku 타임스탬프 소스 컬럼명. null이면 createddate/systemmodstamp 자동감지 */
+        val timestampColumns: Pair<String, String>? = null,
         val columnTransformProvider: ((Connection) -> Map<String, Map<String, Any?>>)? = null,
     )
 
@@ -101,6 +106,11 @@ object HerokuMigrationTool {
         EntityRegistration("product", Product::class.java),
         EntityRegistration("safetyCheckItem", SafetyCheckItem::class.java),
         EntityRegistration("employee", Employee::class.java, dependentTables = listOf("employee_info")),
+        EntityRegistration(
+            "employeeInfo", EmployeeInfo::class.java,
+            includeId = true,
+            timestampColumns = Pair("inst_date", "upd_date"),
+        ),
         EntityRegistration("productBarcode", ProductBarcode::class.java),
         EntityRegistration("notice", Notice::class.java) { targetConn ->
             val sfidToPk = mutableMapOf<String, Any?>()
@@ -169,7 +179,7 @@ object HerokuMigrationTool {
             createConnection(TARGET_URL, TARGET_USER, TARGET_PASSWORD).use { targetConn ->
                 entities.forEach { reg ->
                     val columnTransforms = reg.columnTransformProvider?.invoke(targetConn) ?: emptyMap()
-                    migrateEntity(reg.name, reg.entityClass, herokuConn, targetConn, columnTransforms, reg.dependentTables)
+                    migrateEntity(reg.name, reg.entityClass, herokuConn, targetConn, columnTransforms, reg.dependentTables, reg.includeId, reg.timestampColumns)
                 }
 
                 // ProductBarcode: product_sfid → product_id 역참조 UPDATE
@@ -292,31 +302,39 @@ object HerokuMigrationTool {
         targetConn: Connection,
         columnTransforms: Map<String, Map<String, Any?>> = emptyMap(),
         dependentTables: List<String> = emptyList(),
+        includeId: Boolean = false,
+        timestampColumns: Pair<String, String>? = null,
     ) {
         val hcTableName = entityClass.getAnnotation(HCTable::class.java)?.value
             ?: throw IllegalArgumentException("$name: @HCTable 어노테이션 없음")
         val targetTableName = entityClass.getAnnotation(Table::class.java)?.name
             ?: hcTableName
 
-        // @Id 필드의 JPA 컬럼명 수집 (PK 제외용)
-        val idColumnNames = entityClass.declaredFields
+        // @Id 필드의 JPA 컬럼명 수집 (PK 제외용 — includeId=true이면 제외하지 않음)
+        val idColumnNames = if (includeId) emptySet() else entityClass.declaredFields
             .filter { it.isAnnotationPresent(Id::class.java) }
             .mapNotNull { it.getAnnotation(jakarta.persistence.Column::class.java)?.name }
             .toSet()
 
-        // @HCColumn 매핑에서 PK 제외
+        // @HCColumn 매핑에서 PK 제외 (includeId=true이면 PK도 포함)
         val mappings = SFSchemaUtils.getHCFieldMappings(entityClass)
             .filter { it.jpaColumnName !in idColumnNames }
 
         // 1. Heroku DB에서 읽기 (필터링된 매핑 + 타임스탬프 조건부)
         val mappedJpaColumns = mappings.map { it.jpaColumnName }.toSet()
-        val hasTimestamp = hasColumn(herokuConn, HEROKU_SCHEMA, hcTableName, "createddate")
-            && "created_at" !in mappedJpaColumns // @HCColumn로 이미 매핑된 경우 중복 방지
+        val hasTimestamp = if (timestampColumns != null) {
+            true // 명시적 타임스탬프 컬럼 지정
+        } else {
+            hasColumn(herokuConn, HEROKU_SCHEMA, hcTableName, "createddate")
+                && "created_at" !in mappedJpaColumns // @HCColumn로 이미 매핑된 경우 중복 방지
+        }
+        val tsCreated = timestampColumns?.first ?: "createddate"
+        val tsUpdated = timestampColumns?.second ?: "systemmodstamp"
 
         val selectColumns = mappings.map { m ->
             if (m.hcColumnName == m.jpaColumnName) m.hcColumnName
             else "${m.hcColumnName} AS ${m.jpaColumnName}"
-        } + if (hasTimestamp) listOf("createddate AS created_at", "systemmodstamp AS updated_at") else emptyList()
+        } + if (hasTimestamp) listOf("$tsCreated AS created_at", "$tsUpdated AS updated_at") else emptyList()
 
         val allJpaColumns = mappings.map { it.jpaColumnName } +
             if (hasTimestamp) listOf("created_at", "updated_at") else emptyList()
