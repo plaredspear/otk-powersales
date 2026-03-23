@@ -26,54 +26,54 @@ import java.util.Properties
  * Spring 컨텍스트 없이 독립 실행. @HCTable/@HCColumn 어노테이션 기반 매핑.
  *
  * ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
- * │ Heroku DB (salesforce2)            │ Dev DB (salesforce2)        │ Entity                  │ 참조키 (sfid FK)                                              │ Migrate │ 비고               │
+ * │ Migrate │ Heroku DB (salesforce2)            │ Dev DB (salesforce2)        │ Entity                  │ 참조키 (sfid FK)                                              │ 비고               │
  * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
- * │ account                            │ account                     │ Account                 │ —                                                             │  YES    │                    │
- * │ dkretail__product__c               │ product                     │ Product                 │ —                                                             │  YES    │                    │
- * │ safetycheck_list                   │ safety_check_item           │ SafetyCheckItem         │ —                                                             │  YES    │                    │
- * │ dkretail__employee__c              │ employee                    │ Employee                │ —                                                             │  YES    │ 종속: employee_mng │
- * │ productbarcode__c                  │ product_barcode             │ ProductBarcode          │ product__c → product.sfid                                     │  YES    │ UPDATE: product_id │
- * │ dkretail__notice__c                │ notice                      │ Notice                  │ employeeid__c → employee.sfid                                 │  YES    │ FK: employee_id    │
- * │ displayworkschedulemaster__c       │ display_work_schedule       │ DisplayWorkSchedule     │ account__c → account.sfid, fullname__c → employee.sfid,       │  YES    │ UPDATE: account_id, employee_id │
- * │                                    │                             │                         │   ownerid → (owner_sfid 저장만)                               │         │                    │
+ * │  YES    │ account                            │ account                     │ Account                 │ —                                                             │                    │
+ * │  YES    │ dkretail__product__c               │ product                     │ Product                 │ —                                                             │                    │
+ * │  YES    │ safetycheck_list                   │ safety_check_item           │ SafetyCheckItem         │ —                                                             │                    │
+ * │  YES    │ dkretail__employee__c              │ employee                    │ Employee                │ —                                                             │ 종속: employee_mng │
+ * │  YES    │ productbarcode__c                  │ product_barcode             │ ProductBarcode          │ product__c → product.sfid                                     │ UPDATE: product_id │
+ * │  YES    │ dkretail__notice__c                │ notice                      │ Notice                  │ employeeid__c → employee.sfid                                 │ FK: employee_id    │
+ * │  YES    │ displayworkschedulemaster__c       │ display_work_schedule       │ DisplayWorkSchedule     │ account__c → account.sfid, fullname__c → employee.sfid,       │ UPDATE: account_id, employee_id │
+ * │         │                                    │                             │                         │   ownerid → (owner_sfid 저장만)                               │                    │
  * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
- * │ dkretail__teammemberschedule__c    │ team_member_schedule        │ TeamMemberSchedule      │ accountid__c → account.sfid, dkretail__employeeid__c →         │  YES    │ UPDATE: account_id, employee_id, team_leader_id, promotion_employee_id │
- * │                                    │                             │                         │   employee.sfid, teamleadersfid__c → employee.sfid,           │         │                    │
- * │                                    │                             │                         │   dkretail__promotionempid__c → employee.sfid                 │         │                    │
- * │ safetycheck__workschedule__member  │ safety_check_submission     │ SafetyCheckSubmission   │ employeeid__c → employee.sfid, masterId →                     │  YES    │ FK: employee_id(inline), display_work_schedule_id/team_member_schedule_id(post-UPDATE) │
- * │                                    │                             │                         │   displayworkschedulemaster__c.sfid, eventmasterid → sfid     │         │                    │
- * │ education_mng                      │ education_post              │ EducationPost           │ —                                                             │   no    │                    │
+ * │  YES    │ dkretail__teammemberschedule__c    │ team_member_schedule        │ TeamMemberSchedule      │ accountid__c → account.sfid, dkretail__employeeid__c →         │ UPDATE: account_id, employee_id, team_leader_id, promotion_employee_id │
+ * │         │                                    │                             │                         │   employee.sfid, teamleadersfid__c → employee.sfid,           │                    │
+ * │         │                                    │                             │                         │   dkretail__promotionempid__c → employee.sfid                 │                    │
+ * │  YES    │ safetycheck__workschedule__member  │ safety_check_submission     │ SafetyCheckSubmission   │ employeeid__c → employee.sfid, masterId →                     │ FK: employee_id(inline), display_work_schedule_id/team_member_schedule_id(post-UPDATE) │
+ * │         │                                    │                             │                         │   displayworkschedulemaster__c.sfid, eventmasterid → sfid     │                    │
+ * │   no    │ education_mng                      │ education_post              │ EducationPost           │ —                                                             │                    │
  * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
- * │ agreementword__c                   │ agreement_word              │ AgreementWord           │ —                                                             │  YES    │                    │
- * │ commute_distance                   │ —                           │ —                       │ —                                                             │   no    │                    │
- * │ device_version_mng                 │ device_version              │ DeviceVersion           │ —                                                             │   no    │                    │
- * │ education_code_mng                 │ education_code              │ EducationCode           │ —                                                             │   no    │                    │
- * │ education_file_mng                 │ education_post_attachment   │ EducationPostAttachment │ edu_id → education_mng (코드값, sfid 아님)                    │   no    │                    │
- * │ education_member_history           │ education_view_history      │ EducationViewHistory    │ community_id → education_mng (코드값, sfid 아님)              │   no    │                    │
- * │ employee_admin_mng                 │ employee_admin              │ EmployeeAdmin           │ —                                                             │   no    │                    │
- * │ employee_his                       │ employee_his                │ LoginHistory            │ —                                                             │   no    │                    │
- * │ employee_mng                       │ employee_info               │ EmployeeInfo            │ —                                                             │  YES    │ Employee 종속 테이블, 자연키 PK │
- * │ expirationdate__mng                │ expirationdate__mng         │ ShelfLife               │ employee_id → employee.sfid                                   │   no    │                    │
- * │ hqreview__c                        │ hq_review                   │ HqReview                │ —                                                             │   no    │                    │
- * │ if_product__c                      │ if_product                  │ InterfaceProduct        │ —                                                             │   no    │                    │
- * │ monthlysaleshistory__c             │ monthly_sales_history       │ MonthlySalesHistory     │ —                                                             │   no    │                    │
- * │ product_favorites                  │ product_favorites           │ FavoriteProduct         │ —                                                             │   no    │                    │
- * │ pushmessage__c                     │ push_message                │ PushMessage             │ —                                                             │  YES    │                    │
- * │ pushmessagereceiver__c             │ push_message_receiver       │ PushMessageReceiver     │ employeeid__c → employee.sfid, messageid__c → pushmessage.sfid │   no    │                    │
- * │ staffreview__c                     │ staff_review                │ StaffReview             │ dkretail_employeeid__c → employee.sfid                        │   no    │                    │
- * │ theme__c                           │ inspection_theme            │ InspectionTheme         │ —                                                             │   no    │                    │
- * │ tmp_claim                          │ tmp_claim                   │ TmpClaim                │ —                                                             │   no    │                    │
- * │ tmp_claimcode                      │ tmp_claimcode               │ —                       │ —                                                             │   no    │                    │
- * │ tmp_onsite                         │ —                           │ —                       │ —                                                             │   no    │ Heroku 전용        │
- * │ tmp_order                          │ —                           │ —                       │ —                                                             │   no    │ Heroku 전용        │
- * │ tmp_order_product                  │ —                           │ —                       │ —                                                             │   no    │ Heroku 전용        │
- * │ tmp_promotion                      │ —                           │ —                       │ —                                                             │   no    │ Heroku 전용        │
- * │ tmp_suggest                        │ —                           │ —                       │ —                                                             │   no    │ Heroku 전용        │
- * │ uploadfile__c                      │ upload_file                 │ UploadFile              │ recordid__c → 다형성 sfid (여러 오브젝트 참조)                 │   no    │                    │
- * │ _hcmeta                            │ —                           │ —                       │ —                                                             │   no    │ 시스템             │
- * │ _sf_event_log                      │ —                           │ —                       │ —                                                             │   no    │ 시스템             │
- * │ _trigger_log                       │ —                           │ —                       │ —                                                             │   no    │ 시스템             │
- * │ _trigger_log_archive               │ —                           │ —                       │ —                                                             │   no    │ 시스템             │
+ * │  YES    │ agreementword__c                   │ agreement_word              │ AgreementWord           │ —                                                             │                    │
+ * │   no    │ commute_distance                   │ —                           │ —                       │ —                                                             │                    │
+ * │   no    │ device_version_mng                 │ device_version              │ DeviceVersion           │ —                                                             │                    │
+ * │   no    │ education_code_mng                 │ education_code              │ EducationCode           │ —                                                             │                    │
+ * │   no    │ education_file_mng                 │ education_post_attachment   │ EducationPostAttachment │ edu_id → education_mng (코드값, sfid 아님)                    │                    │
+ * │   no    │ education_member_history           │ education_view_history      │ EducationViewHistory    │ community_id → education_mng (코드값, sfid 아님)              │                    │
+ * │   no    │ employee_admin_mng                 │ employee_admin              │ EmployeeAdmin           │ —                                                             │                    │
+ * │   no    │ employee_his                       │ employee_his                │ LoginHistory            │ —                                                             │                    │
+ * │  YES    │ employee_mng                       │ employee_info               │ EmployeeInfo            │ —                                                             │ Employee 종속 테이블, 자연키 PK │
+ * │   no    │ expirationdate__mng                │ expirationdate__mng         │ ShelfLife               │ employee_id → employee.sfid                                   │                    │
+ * │   no    │ hqreview__c                        │ hq_review                   │ HqReview                │ —                                                             │                    │
+ * │   no    │ if_product__c                      │ if_product                  │ InterfaceProduct        │ —                                                             │                    │
+ * │   no    │ monthlysaleshistory__c             │ monthly_sales_history       │ MonthlySalesHistory     │ —                                                             │                    │
+ * │   no    │ product_favorites                  │ product_favorites           │ FavoriteProduct         │ —                                                             │                    │
+ * │  YES    │ pushmessage__c                     │ push_message                │ PushMessage             │ —                                                             │                    │
+ * │   no    │ pushmessagereceiver__c             │ push_message_receiver       │ PushMessageReceiver     │ employeeid__c → employee.sfid, messageid__c → pushmessage.sfid │                    │
+ * │   no    │ staffreview__c                     │ staff_review                │ StaffReview             │ dkretail_employeeid__c → employee.sfid                        │                    │
+ * │   no    │ theme__c                           │ inspection_theme            │ InspectionTheme         │ —                                                             │                    │
+ * │   no    │ tmp_claim                          │ tmp_claim                   │ TmpClaim                │ —                                                             │                    │
+ * │   no    │ tmp_claimcode                      │ tmp_claimcode               │ —                       │ —                                                             │                    │
+ * │   no    │ tmp_onsite                         │ —                           │ —                       │ —                                                             │ Heroku 전용        │
+ * │   no    │ tmp_order                          │ —                           │ —                       │ —                                                             │ Heroku 전용        │
+ * │   no    │ tmp_order_product                  │ —                           │ —                       │ —                                                             │ Heroku 전용        │
+ * │   no    │ tmp_promotion                      │ —                           │ —                       │ —                                                             │ Heroku 전용        │
+ * │   no    │ tmp_suggest                        │ —                           │ —                       │ —                                                             │ Heroku 전용        │
+ * │   no    │ uploadfile__c                      │ upload_file                 │ UploadFile              │ recordid__c → 다형성 sfid (여러 오브젝트 참조)                 │                    │
+ * │   no    │ _hcmeta                            │ —                           │ —                       │ —                                                             │ 시스템             │
+ * │   no    │ _sf_event_log                      │ —                           │ —                       │ —                                                             │ 시스템             │
+ * │   no    │ _trigger_log                       │ —                           │ —                       │ —                                                             │ 시스템             │
+ * │   no    │ _trigger_log_archive               │ —                           │ —                       │ —                                                             │ 시스템             │
  * └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
  *
  * 실행:
