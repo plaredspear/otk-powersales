@@ -132,28 +132,28 @@ class EducationPostRepositoryTest {
 
             testEntityManager.persistAndFlush(
                 EducationPostAttachment(
-                    eduId = "EDU001",
-                    eduFileKey = "file-key-001",
-                    eduFileType = "pdf",
-                    eduFileOrgNm = "guide.pdf"
+                    educationPostId = "EDU001",
+                    fileKey = "file-key-001",
+                    fileType = "pdf",
+                    fileOriginalName = "guide.pdf"
                 )
             )
             testEntityManager.persistAndFlush(
                 EducationPostAttachment(
-                    eduId = "EDU001",
-                    eduFileKey = "file-key-002",
-                    eduFileType = "docx",
-                    eduFileOrgNm = "manual.docx"
+                    educationPostId = "EDU001",
+                    fileKey = "file-key-002",
+                    fileType = "docx",
+                    fileOriginalName = "manual.docx"
                 )
             )
             testEntityManager.clear()
 
             // When
-            val attachments = educationPostAttachmentRepository.findByEduId("EDU001")
+            val attachments = educationPostAttachmentRepository.findByEducationPostId("EDU001")
 
             // Then
             assertThat(attachments).hasSize(2)
-            assertThat(attachments.map { it.eduFileOrgNm }).containsExactlyInAnyOrder("guide.pdf", "manual.docx")
+            assertThat(attachments.map { it.fileOriginalName }).containsExactlyInAnyOrder("guide.pdf", "manual.docx")
         }
     }
 
