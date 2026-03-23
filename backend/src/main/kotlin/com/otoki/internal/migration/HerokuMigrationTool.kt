@@ -271,6 +271,27 @@ object HerokuMigrationTool {
                     println("[safetyCheckSubmission] employee_id UPDATE 완료: ${updated}건")
                 }
 
+                // SafetyCheckSubmission: (employee_sfid, working_date, display_work_schedule_sfid) 중복 행 제거
+                // — 레거시에 유니크 제약이 없어 중복 삽입된 불완전 행(start_time IS NULL) 삭제
+                println("[safetyCheckSubmission] 중복 행 제거 중...")
+                targetConn.createStatement().use { stmt ->
+                    val deleted = stmt.executeUpdate(
+                        """DELETE FROM $TARGET_SCHEMA.safety_check_submission
+                           WHERE safety_check_submission_id IN (
+                               SELECT safety_check_submission_id FROM (
+                                   SELECT safety_check_submission_id,
+                                          ROW_NUMBER() OVER (
+                                              PARTITION BY employee_sfid, working_date, display_work_schedule_sfid
+                                              ORDER BY start_time IS NULL, safety_check_submission_id
+                                          ) AS rn
+                                   FROM $TARGET_SCHEMA.safety_check_submission
+                                   WHERE display_work_schedule_sfid IS NOT NULL
+                               ) sub WHERE sub.rn > 1
+                           )"""
+                    )
+                    if (deleted > 0) println("[safetyCheckSubmission] 중복 ${deleted}건 삭제")
+                }
+
                 // SafetyCheckSubmission: display_work_schedule_sfid → display_work_schedule_id 역참조 UPDATE
                 println("[safetyCheckSubmission] display_work_schedule_sfid → display_work_schedule_id UPDATE 중...")
                 targetConn.createStatement().use { stmt ->
