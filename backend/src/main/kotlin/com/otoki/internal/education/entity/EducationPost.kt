@@ -3,6 +3,7 @@ package com.otoki.internal.education.entity
 import com.otoki.internal.common.entity.BaseEntity
 import com.otoki.internal.common.salesforce.HCColumn
 import com.otoki.internal.common.salesforce.HCTable
+import com.otoki.internal.sap.entity.Employee
 import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
@@ -35,6 +36,10 @@ class EducationPost(
     @HCColumn("edu_code")
     @Column(name = "education_code", length = 50)
     val eduCode: String? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employee_id")
+    val employee: Employee? = null,
 
     @HCColumn("empcode__c")
     @Column(name = "emp_code", length = 40)
