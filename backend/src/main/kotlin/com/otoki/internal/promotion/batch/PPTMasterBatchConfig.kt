@@ -4,10 +4,12 @@ import com.otoki.internal.admin.service.AdminPPTMasterService
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.scheduling.annotation.Scheduled
+import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Component
 
 @Component
 @EnableScheduling
+@Profile("!local")
 class PPTMasterBatchConfig(
     private val adminPPTMasterService: AdminPPTMasterService
 ) {
