@@ -394,6 +394,15 @@ object HerokuMigrationTool {
         }
         println("[$name] ${rows.size}건 조회 완료")
 
+        // updated_at이 NULL이면 created_at으로 대체 (Heroku 데이터 일부 NULL 존재)
+        val createdAtIdx = allJpaColumns.indexOf("created_at")
+        val updatedAtIdx = allJpaColumns.indexOf("updated_at")
+        if (createdAtIdx >= 0 && updatedAtIdx >= 0) {
+            rows.forEach { row ->
+                if (row[updatedAtIdx] == null) row[updatedAtIdx] = row[createdAtIdx]
+            }
+        }
+
         if (rows.isEmpty()) {
             println("[$name] 데이터 없음 — 건너뜀")
             return
