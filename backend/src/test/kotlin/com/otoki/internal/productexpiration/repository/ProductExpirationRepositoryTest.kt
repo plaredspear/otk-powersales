@@ -1,6 +1,6 @@
-package com.otoki.internal.shelflife.repository
+package com.otoki.internal.productexpiration.repository
 
-import com.otoki.internal.shelflife.entity.ShelfLife
+import com.otoki.internal.productexpiration.entity.ProductExpiration
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -17,7 +17,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 /**
- * ShelfLife V1 리매핑 테스트
+ * ProductExpiration V1 리매핑 테스트
  *
  * expirationdate__mng 테이블 매핑, seq(Int) PK, raw String 컬럼 검증.
  */
@@ -25,18 +25,18 @@ import java.time.LocalDateTime
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
 @ActiveProfiles("test")
 @Import(QueryDslConfig::class)
-@DisplayName("ShelfLifeRepository 테스트 (V1 리매핑)")
-class ShelfLifeRepositoryTest {
+@DisplayName("ProductExpirationRepository 테스트 (V1 리매핑)")
+class ProductExpirationRepositoryTest {
 
     @Autowired
-    private lateinit var shelfLifeRepository: ShelfLifeRepository
+    private lateinit var productExpirationRepository: ProductExpirationRepository
 
     @Autowired
     private lateinit var testEntityManager: TestEntityManager
 
     @BeforeEach
     fun setUp() {
-        shelfLifeRepository.deleteAll()
+        productExpirationRepository.deleteAll()
         testEntityManager.clear()
     }
 
@@ -48,7 +48,7 @@ class ShelfLifeRepositoryTest {
         @DisplayName("저장 후 seq PK로 조회 - 정상 매핑")
         fun save_andFindBySeq_success() {
             // Given
-            val shelfLife = ShelfLife(
+            val productExpiration = ProductExpiration(
                 accountId = "ACC001",
                 accountCode = "1025",
                 employeeId = 1L,
@@ -63,12 +63,12 @@ class ShelfLifeRepositoryTest {
             }
 
             // When
-            val saved = shelfLifeRepository.save(shelfLife)
+            val saved = productExpirationRepository.save(productExpiration)
             testEntityManager.flush()
             testEntityManager.clear()
 
             // Then
-            val found = shelfLifeRepository.findById(saved.seq)
+            val found = productExpirationRepository.findById(saved.seq)
             assertThat(found).isPresent
             assertThat(found.get().seq).isEqualTo(saved.seq)
             assertThat(found.get().accountId).isEqualTo("ACC001")
@@ -85,18 +85,18 @@ class ShelfLifeRepositoryTest {
         @DisplayName("nullable 필드 - null 값 저장/조회 정상")
         fun save_withNullableFields_success() {
             // Given
-            val shelfLife = ShelfLife(
+            val productExpiration = ProductExpiration(
                 employeeId = 1L,
                 productCode = "30310009"
             )
 
             // When
-            val saved = shelfLifeRepository.save(shelfLife)
+            val saved = productExpirationRepository.save(productExpiration)
             testEntityManager.flush()
             testEntityManager.clear()
 
             // Then
-            val found = shelfLifeRepository.findById(saved.seq)
+            val found = productExpirationRepository.findById(saved.seq)
             assertThat(found).isPresent
             assertThat(found.get().accountId).isNull()
             assertThat(found.get().expirationDate).isNull()
@@ -120,13 +120,13 @@ class ShelfLifeRepositoryTest {
 
             repeat(3) {
                 testEntityManager.persistAndFlush(
-                    ShelfLife(employeeId = employeeId, alarmDate = today, productCode = "P00$it")
+                    ProductExpiration(employeeId = employeeId, alarmDate = today, productCode = "P00$it")
                 )
             }
             testEntityManager.clear()
 
             // When
-            val count = shelfLifeRepository.countByEmployeeIdAndAlarmDate(employeeId, today)
+            val count = productExpirationRepository.countByEmployeeIdAndAlarmDate(employeeId, today)
 
             // Then
             assertThat(count).isEqualTo(3L)
@@ -139,7 +139,7 @@ class ShelfLifeRepositoryTest {
             val today = LocalDate.now()
 
             // When
-            val count = shelfLifeRepository.countByEmployeeIdAndAlarmDate(100L, today)
+            val count = productExpirationRepository.countByEmployeeIdAndAlarmDate(100L, today)
 
             // Then
             assertThat(count).isEqualTo(0L)
@@ -154,12 +154,12 @@ class ShelfLifeRepositoryTest {
             val employeeId = 100L
 
             testEntityManager.persistAndFlush(
-                ShelfLife(employeeId = employeeId, alarmDate = yesterday, productCode = "P001")
+                ProductExpiration(employeeId = employeeId, alarmDate = yesterday, productCode = "P001")
             )
             testEntityManager.clear()
 
             // When
-            val count = shelfLifeRepository.countByEmployeeIdAndAlarmDate(employeeId, today)
+            val count = productExpirationRepository.countByEmployeeIdAndAlarmDate(employeeId, today)
 
             // Then
             assertThat(count).isEqualTo(0L)
@@ -172,15 +172,15 @@ class ShelfLifeRepositoryTest {
             val today = LocalDate.now()
 
             testEntityManager.persistAndFlush(
-                ShelfLife(employeeId = 100L, alarmDate = today, productCode = "P001")
+                ProductExpiration(employeeId = 100L, alarmDate = today, productCode = "P001")
             )
             testEntityManager.persistAndFlush(
-                ShelfLife(employeeId = 200L, alarmDate = today, productCode = "P002")
+                ProductExpiration(employeeId = 200L, alarmDate = today, productCode = "P002")
             )
             testEntityManager.clear()
 
             // When
-            val count = shelfLifeRepository.countByEmployeeIdAndAlarmDate(100L, today)
+            val count = productExpirationRepository.countByEmployeeIdAndAlarmDate(100L, today)
 
             // Then
             assertThat(count).isEqualTo(1L)
@@ -195,7 +195,7 @@ class ShelfLifeRepositoryTest {
         @DisplayName("FK 없는 raw String 필드 - 임의 값 저장 가능")
         fun rawStringFields_noFkConstraint() {
             // Given - FK 제약 없이 임의의 문자열 저장 가능
-            val shelfLife = ShelfLife(
+            val productExpiration = ProductExpiration(
                 accountId = "NON_EXISTENT_ACCOUNT",
                 employeeId = 99999L,
                 productId = "NON_EXISTENT_PRODUCT",
@@ -203,12 +203,12 @@ class ShelfLifeRepositoryTest {
             )
 
             // When
-            val saved = shelfLifeRepository.save(shelfLife)
+            val saved = productExpirationRepository.save(productExpiration)
             testEntityManager.flush()
             testEntityManager.clear()
 
             // Then
-            val found = shelfLifeRepository.findById(saved.seq)
+            val found = productExpirationRepository.findById(saved.seq)
             assertThat(found).isPresent
             assertThat(found.get().accountId).isEqualTo("NON_EXISTENT_ACCOUNT")
             assertThat(found.get().employeeId).isEqualTo(99999L)

@@ -1,15 +1,15 @@
-package com.otoki.internal.shelflife.exception
+package com.otoki.internal.productexpiration.exception
 
 import com.otoki.internal.common.exception.BusinessException
 import org.springframework.http.HttpStatus
 
-class ShelfLifeNotFoundException : BusinessException(
+class ProductExpirationNotFoundException : BusinessException(
     errorCode = "NOT_FOUND",
     message = "유통기한 데이터를 찾을 수 없습니다",
     httpStatus = HttpStatus.NOT_FOUND
 )
 
-class ShelfLifeForbiddenException : BusinessException(
+class ProductExpirationForbiddenException : BusinessException(
     errorCode = "FORBIDDEN",
     message = "권한이 없습니다",
     httpStatus = HttpStatus.FORBIDDEN
@@ -21,7 +21,7 @@ class InvalidAlertDateException : BusinessException(
     httpStatus = HttpStatus.BAD_REQUEST
 )
 
-class InvalidShelfLifeDateRangeException(detail: String? = null) : BusinessException(
+class InvalidProductExpirationDateRangeException(detail: String? = null) : BusinessException(
     errorCode = "INVALID_DATE_RANGE",
     message = detail ?: "날짜 범위가 올바르지 않습니다",
     httpStatus = HttpStatus.BAD_REQUEST

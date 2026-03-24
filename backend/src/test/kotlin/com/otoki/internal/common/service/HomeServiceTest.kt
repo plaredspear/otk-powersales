@@ -11,7 +11,7 @@ import com.otoki.internal.safetycheck.dto.response.SafetyCheckTodayResponse
 import com.otoki.internal.safetycheck.service.SafetyCheckService
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
 import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
-import com.otoki.internal.shelflife.repository.ShelfLifeRepository
+import com.otoki.internal.productexpiration.repository.ProductExpirationRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
@@ -48,7 +48,7 @@ class HomeServiceTest {
     private lateinit var safetyCheckService: SafetyCheckService
 
     @Mock
-    private lateinit var shelfLifeRepository: ShelfLifeRepository
+    private lateinit var productExpirationRepository: ProductExpirationRepository
 
     @InjectMocks
     private lateinit var homeService: HomeService
@@ -219,7 +219,7 @@ class HomeServiceTest {
                 .thenReturn(SafetyCheckTodayResponse(completed = true))
             whenever(noticeRepository.findRecentNotices(any(), any()))
                 .thenReturn(emptyList())
-            whenever(shelfLifeRepository.countByEmployeeIdAndAlarmDate(eq(userId), any()))
+            whenever(productExpirationRepository.countByEmployeeIdAndAlarmDate(eq(userId), any()))
                 .thenReturn(3L)
 
             // When
@@ -247,7 +247,7 @@ class HomeServiceTest {
                 .thenReturn(SafetyCheckTodayResponse(completed = true))
             whenever(noticeRepository.findRecentNotices(any(), any()))
                 .thenReturn(emptyList())
-            whenever(shelfLifeRepository.countByEmployeeIdAndAlarmDate(eq(userId), any()))
+            whenever(productExpirationRepository.countByEmployeeIdAndAlarmDate(eq(userId), any()))
                 .thenReturn(0L)
 
             // When
@@ -272,7 +272,7 @@ class HomeServiceTest {
                 .thenReturn(SafetyCheckTodayResponse(completed = true))
             whenever(noticeRepository.findRecentNotices(any(), any()))
                 .thenReturn(emptyList())
-            whenever(shelfLifeRepository.countByEmployeeIdAndAlarmDate(eq(userId), any()))
+            whenever(productExpirationRepository.countByEmployeeIdAndAlarmDate(eq(userId), any()))
                 .thenReturn(5L)
 
             // When
@@ -297,7 +297,7 @@ class HomeServiceTest {
                 .thenReturn(SafetyCheckTodayResponse(completed = true))
             whenever(noticeRepository.findRecentNotices(any(), any()))
                 .thenReturn(emptyList())
-            whenever(shelfLifeRepository.countByEmployeeIdAndAlarmDate(eq(userId), any()))
+            whenever(productExpirationRepository.countByEmployeeIdAndAlarmDate(eq(userId), any()))
                 .thenReturn(1L)
 
             // When
