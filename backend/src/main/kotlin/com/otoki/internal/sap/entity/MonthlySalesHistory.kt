@@ -23,7 +23,7 @@ class MonthlySalesHistory(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @HCColumn("id")
+    @Column(name = "monthly_sales_history_id")
     val id: Long = 0,
 
     @HCColumn("sfid")
@@ -35,82 +35,82 @@ class MonthlySalesHistory(
     val name: String? = null,
 
     @HCColumn("account_externalkey__c")
-    @Column(name = "account_externalkey__c", length = 1300)
+    @Column(name = "account_external_key", length = 1300)
     var accountExternalKey: String? = null,
 
     @HCColumn("account_branchname__c")
-    @Column(name = "account_branchname__c", length = 1300)
+    @Column(name = "account_branch_name", length = 1300)
     val accountBranchName: String? = null,
 
     @HCColumn("account_type__c")
-    @Column(name = "account_type__c", length = 1300)
+    @Column(name = "account_type", length = 1300)
     val accountType: String? = null,
 
     @HCColumn("salesyear__c")
-    @Column(name = "salesyear__c", length = 255)
+    @Column(name = "sales_year", length = 255)
     var salesYear: String? = null,
 
     @HCColumn("salesmonth__c")
-    @Column(name = "salesmonth__c", length = 255)
+    @Column(name = "sales_month", length = 255)
     var salesMonth: String? = null,
 
     @HCColumn("fm_year__c")
-    @Column(name = "fm_year__c")
+    @Column(name = "fm_year")
     val fmYear: Double? = null,
 
     @HCColumn("fm_month__c")
-    @Column(name = "fm_month__c")
+    @Column(name = "fm_month")
     val fmMonth: Double? = null,
 
     @HCColumn("targetmonthresults__c")
-    @Column(name = "targetmonthresults__c")
+    @Column(name = "target_month_results")
     val targetMonthResults: Double? = null,
 
     @HCColumn("lastmonthresults__c")
-    @Column(name = "lastmonthresults__c")
+    @Column(name = "last_month_results")
     val lastMonthResults: Double? = null,
 
     @HCColumn("lastmonthtargetfomula__c")
-    @Column(name = "lastmonthtargetfomula__c")
+    @Column(name = "last_month_target_formula")
     val lastMonthTargetFormula: Double? = null,
 
     @HCColumn("lastmonthtargetachievedratio__c")
-    @Column(name = "lastmonthtargetachievedratio__c")
+    @Column(name = "last_month_target_achieved_ratio")
     val lastMonthTargetAchievedRatio: Double? = null,
 
     @HCColumn("shipclosingamount__c")
-    @Column(name = "shipclosingamount__c")
+    @Column(name = "ship_closing_amount")
     var shipClosingAmount: Double? = null,
 
     @HCColumn("abcclosingamount1__c")
-    @Column(name = "abcclosingamount1__c")
+    @Column(name = "abc_closing_amount1")
     var abcClosingAmount1: Double? = null,
 
     @HCColumn("abcclosingamount2__c")
-    @Column(name = "abcclosingamount2__c")
+    @Column(name = "abc_closing_amount2")
     var abcClosingAmount2: Double? = null,
 
     @HCColumn("abcclosingamount3__c")
-    @Column(name = "abcclosingamount3__c")
+    @Column(name = "abc_closing_amount3")
     var abcClosingAmount3: Double? = null,
 
     @HCColumn("ambientpurpose__c")
-    @Column(name = "ambientpurpose__c")
+    @Column(name = "ambient_purpose")
     val ambientPurpose: Double? = null,
 
     @HCColumn("fridgepurpose__c")
-    @Column(name = "fridgepurpose__c")
+    @Column(name = "fridge_purpose")
     val fridgePurpose: Double? = null,
 
     @HCColumn("isdeleted")
-    @Column(name = "isdeleted")
+    @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 
     @SAPUpsertKey(composite = true, components = ["sapAccountCode", "salesYearMonth"])
-    @Column(name = "externalkey__c", unique = true, length = 30)
+    @Column(name = "external_key", unique = true, length = 30)
     var externalkeyC: String? = null,
 
-    @Column(name = "rlsales__c")
+    @Column(name = "rl_sales")
     var rlsalesC: Double? = null,
 
     @HCColumn("createddate")
