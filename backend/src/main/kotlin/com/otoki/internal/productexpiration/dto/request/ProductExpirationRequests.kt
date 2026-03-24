@@ -1,11 +1,11 @@
-package com.otoki.internal.shelflife.dto.request
+package com.otoki.internal.productexpiration.dto.request
 
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotEmpty
 import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
 
-data class ShelfLifeCreateRequest(
+data class ProductExpirationCreateRequest(
     @field:NotBlank(message = "거래처 코드는 필수입니다")
     val accountCode: String,
 
@@ -36,7 +36,7 @@ data class ShelfLifeCreateRequest(
     val description: String? = null
 )
 
-data class ShelfLifeUpdateRequest(
+data class ProductExpirationUpdateRequest(
     @field:NotBlank(message = "유통기한은 필수입니다")
     @field:Pattern(
         regexp = "^\\d{4}-\\d{2}-\\d{2}$",
@@ -55,7 +55,7 @@ data class ShelfLifeUpdateRequest(
     val description: String? = null
 )
 
-data class ShelfLifeBatchDeleteRequest(
+data class ProductExpirationBatchDeleteRequest(
     @field:NotEmpty(message = "삭제할 항목을 선택해주세요")
     val ids: List<Int>
 )

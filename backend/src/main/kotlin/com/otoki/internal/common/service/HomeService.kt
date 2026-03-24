@@ -10,7 +10,7 @@ import com.otoki.internal.safetycheck.service.SafetyCheckService
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
 import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.internal.sap.repository.EmployeeRepository
-import com.otoki.internal.shelflife.repository.ShelfLifeRepository
+import com.otoki.internal.productexpiration.repository.ProductExpirationRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -29,7 +29,7 @@ class HomeService(
     private val noticeRepository: NoticeRepository,
     private val accountRepository: AccountRepository,
     private val safetyCheckService: SafetyCheckService,
-    private val shelfLifeRepository: ShelfLifeRepository
+    private val productExpirationRepository: ProductExpirationRepository
 ) {
 
     companion object {
@@ -87,7 +87,7 @@ class HomeService(
             else -> false
         }
 
-        val expiryCount = shelfLifeRepository.countByEmployeeIdAndAlarmDate(employee.id, today)
+        val expiryCount = productExpirationRepository.countByEmployeeIdAndAlarmDate(employee.id, today)
 
         val expiryAlert = HomeResponse.ExpiryAlertInfo(
             branchName = employee.orgName ?: "",

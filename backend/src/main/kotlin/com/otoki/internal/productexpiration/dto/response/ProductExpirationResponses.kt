@@ -1,10 +1,10 @@
-package com.otoki.internal.shelflife.dto.response
+package com.otoki.internal.productexpiration.dto.response
 
-import com.otoki.internal.shelflife.entity.ShelfLife
+import com.otoki.internal.productexpiration.entity.ProductExpiration
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
-data class ShelfLifeItemResponse(
+data class ProductExpirationItemResponse(
     val seq: Int,
     val productCode: String,
     val productName: String,
@@ -17,11 +17,11 @@ data class ShelfLifeItemResponse(
     val isExpired: Boolean
 ) {
     companion object {
-        fun from(entity: ShelfLife): ShelfLifeItemResponse = from(entity, LocalDate.now())
+        fun from(entity: ProductExpiration): ProductExpirationItemResponse = from(entity, LocalDate.now())
 
-        fun from(entity: ShelfLife, today: LocalDate): ShelfLifeItemResponse {
+        fun from(entity: ProductExpiration, today: LocalDate): ProductExpirationItemResponse {
             val dDay = ChronoUnit.DAYS.between(today, entity.expirationDate).toInt()
-            return ShelfLifeItemResponse(
+            return ProductExpirationItemResponse(
                 seq = entity.seq,
                 productCode = entity.productCode ?: "",
                 productName = entity.productId ?: "",
@@ -37,6 +37,6 @@ data class ShelfLifeItemResponse(
     }
 }
 
-data class ShelfLifeBatchDeleteResponse(
+data class ProductExpirationBatchDeleteResponse(
     val deletedCount: Int
 )

@@ -1,4 +1,4 @@
-package com.otoki.internal.shelflife.entity
+package com.otoki.internal.productexpiration.entity
 
 import com.otoki.internal.common.entity.BaseEntity
 import com.otoki.internal.common.salesforce.HCColumn
@@ -17,7 +17,7 @@ import java.time.LocalDateTime
 @Entity
 @Table(name = "expirationdate__mng")
 @HCTable("expirationdate__mng")
-class ShelfLife(
+class ProductExpiration(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
