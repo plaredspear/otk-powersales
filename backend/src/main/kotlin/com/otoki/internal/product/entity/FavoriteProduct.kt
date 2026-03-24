@@ -15,19 +15,19 @@ import java.time.LocalDateTime
  * @ManyToOne 관계를 raw String 컬럼으로 전환.
  */
 @Entity
-@Table(name = "product_favorites")
+@Table(name = "product_favorite")
 @IdClass(ProductFavoriteId::class)
-@HCTable("product_favorites")
+@HCTable("product_favorite")
 class FavoriteProduct(
 
     @Id
     @HCColumn("employeecode")
-    @Column(name = "employeecode", length = 80)
+    @Column(name = "employee_code", length = 80)
     val employeeCode: String = "",
 
     @Id
     @HCColumn("productcode")
-    @Column(name = "productcode", length = 80)
+    @Column(name = "product_code", length = 80)
     val productCode: String = "",
 
     @HCColumn("inst_date")
