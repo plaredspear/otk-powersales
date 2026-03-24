@@ -20,11 +20,11 @@ class LoginHistory(
 
     @Id
     @HCColumn("empcode__c")
-    @Column(name = "emp_code", nullable = false, length = 80)
+    @Column(name = "employee_code", nullable = false, length = 80)
     val empCode: String,
 
     @Id
     @HCColumn("inst_date")
-    @Column(name = "inst_date", nullable = false)
+    @Column(name = "login_at", nullable = false)
     val instDate: LocalDateTime = LocalDateTime.now()
 )
