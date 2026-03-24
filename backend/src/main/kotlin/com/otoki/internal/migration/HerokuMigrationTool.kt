@@ -58,7 +58,7 @@ import java.util.Properties
  * │  YES    │ employee_mng                       │ employee_info               │ EmployeeInfo            │ —                                                             │ Employee 종속 테이블, 자연키 PK │
  * │   no    │ expirationdate__mng                │ expirationdate__mng         │ ProductExpiration       │ employee_id → employee.sfid                                   │                    │
  * │   no    │ hqreview__c                        │ hq_review                   │ HqReview                │ —                                                             │                    │
- * │   no    │ if_product__c                      │ if_product                  │ InterfaceProduct        │ —                                                             │                    │
+ * │   no    │ if_product__c                      │ product_sync_buffer         │ ProductSyncBuffer       │ —                                                             │                    │
  * │   no    │ monthlysaleshistory__c             │ monthly_sales_history       │ MonthlySalesHistory     │ —                                                             │                    │
  * │   no    │ product_favorites                  │ product_favorites           │ FavoriteProduct         │ —                                                             │                    │
  * │  YES    │ pushmessage__c                     │ push_message                │ PushMessage             │ —                                                             │                    │
