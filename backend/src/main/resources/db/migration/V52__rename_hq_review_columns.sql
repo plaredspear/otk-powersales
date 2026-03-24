@@ -1,0 +1,9 @@
+-- hq_review: PK 및 레거시 컬럼명 정리 (#420)
+ALTER TABLE hq_review RENAME COLUMN id TO hq_review_id;
+ALTER TABLE hq_review RENAME COLUMN branchcode__c TO branch_code;
+ALTER TABLE hq_review RENAME COLUMN branchname__c TO branch_name;
+ALTER TABLE hq_review RENAME COLUMN firstdayofmonth__c TO first_day_of_month;
+ALTER TABLE hq_review RENAME COLUMN evaluationytype__c TO evaluation_type;
+ALTER TABLE hq_review RENAME COLUMN abctypecode__c TO abc_type_code;
+ALTER TABLE hq_review RENAME COLUMN hr_code_c__c TO hr_code;
+ALTER TABLE hq_review RENAME COLUMN isdeleted TO is_deleted;

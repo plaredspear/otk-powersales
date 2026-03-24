@@ -23,7 +23,7 @@ class HqReview(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @HCColumn("id")
+    @Column(name = "hq_review_id")
     val id: Int = 0,
 
     @HCColumn("sfid")
@@ -37,36 +37,36 @@ class HqReview(
 
     @HCColumn("branchcode__c")
     @SFField("BranchCode__c")
-    @Column(name = "branchcode__c", length = 100)
+    @Column(name = "branch_code", length = 100)
     val branchCode: String? = null,
 
     @HCColumn("branchname__c")
     @SFField("BranchName__c")
-    @Column(name = "branchname__c", length = 100)
+    @Column(name = "branch_name", length = 100)
     val branchName: String? = null,
 
     @HCColumn("firstdayofmonth__c")
     @SFField("FirstDayofMonth__c")
-    @Column(name = "firstdayofmonth__c")
+    @Column(name = "first_day_of_month")
     val firstDayOfMonth: LocalDate? = null,
 
     @HCColumn("evaluationytype__c")
     @SFField("EvaluationyType__c")
-    @Column(name = "evaluationytype__c", length = 255)
+    @Column(name = "evaluation_type", length = 255)
     val evaluationType: String? = null,
 
     @HCColumn("abctypecode__c")
     @SFField("ABCTypeCode__c")
-    @Column(name = "abctypecode__c", length = 255)
+    @Column(name = "abc_type_code", length = 255)
     val abcTypeCode: String? = null,
 
     @HCColumn("hr_code_c__c")
     @SFField("HR_Code_c__c")
-    @Column(name = "hr_code_c__c", length = 255)
+    @Column(name = "hr_code", length = 255)
     val hrCode: String? = null,
 
     @HCColumn("isdeleted")
-    @Column(name = "isdeleted")
+    @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 
     @HCColumn("createddate")
