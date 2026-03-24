@@ -17,6 +17,7 @@ import com.otoki.internal.schedule.entity.TeamMemberSchedule
 import com.otoki.internal.education.entity.EducationCode
 import com.otoki.internal.education.entity.EducationPost
 import com.otoki.internal.education.entity.EducationPostAttachment
+import com.otoki.internal.education.entity.EducationViewHistory
 import com.otoki.internal.sap.entity.ProductBarcode
 import jakarta.persistence.Id
 import jakarta.persistence.Table
@@ -52,7 +53,7 @@ import java.util.Properties
  * │   no    │ commute_distance                   │ —                           │ —                       │ —                                                             │                    │
  * │  YES    │ education_code_mng                 │ education_code              │ EducationCode           │ —                                                             │                    │
  * │  YES    │ education_file_mng                 │ education_post_attachment   │ EducationPostAttachment │ edu_id → education_post.edu_id                                │ UPDATE: education_post_id │
- * │   no    │ education_member_history           │ education_view_history      │ EducationViewHistory    │ community_id → education_post FK, empcode__c → employee FK    │                    │
+ * │  YES    │ education_member_history           │ education_view_history      │ EducationViewHistory    │ community_id → education_post.edu_id, empcode__c → employee.employee_code │ UPDATE: education_post_id, employee_id │
  * │  YES    │ employee_admin_mng                 │ employee_admin              │ EmployeeAdmin           │ —                                                             │                    │
  * │   no    │ employee_his                       │ login_history               │ LoginHistory                    │ —                                                             │                    │
  * │  YES    │ employee_mng                       │ employee_info               │ EmployeeInfo            │ —                                                             │ Employee 종속 테이블, 자연키 PK │
@@ -122,6 +123,7 @@ object HerokuMigrationTool {
         EntityRegistration("teamMemberSchedule", TeamMemberSchedule::class.java),
         EntityRegistration("educationPost", EducationPost::class.java),
         EntityRegistration("educationPostAttachment", EducationPostAttachment::class.java),
+        EntityRegistration("educationViewHistory", EducationViewHistory::class.java),
         EntityRegistration("educationCode", EducationCode::class.java),
         EntityRegistration("employeeAdmin", EmployeeAdmin::class.java, includeId = true),
         EntityRegistration("agreementWord", AgreementWord::class.java),
@@ -346,6 +348,30 @@ object HerokuMigrationTool {
                             "WHERE epa.edu_id = ep.edu_id"
                     )
                     println("[educationPostAttachment] education_post_id UPDATE 완료: ${updated}건")
+                }
+
+                // EducationViewHistory: edu_id → education_post.edu_id 매칭으로 education_post_id UPDATE
+                println("[educationViewHistory] edu_id → education_post_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.education_view_history evh " +
+                            "SET education_post_id = ep.education_post_id " +
+                            "FROM $TARGET_SCHEMA.education_post ep " +
+                            "WHERE evh.edu_id = ep.edu_id"
+                    )
+                    println("[educationViewHistory] education_post_id UPDATE 완료: ${updated}건")
+                }
+
+                // EducationViewHistory: emp_code → employee.employee_code 매칭으로 employee_id UPDATE
+                println("[educationViewHistory] emp_code → employee_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.education_view_history evh " +
+                            "SET employee_id = e.employee_id " +
+                            "FROM $TARGET_SCHEMA.employee e " +
+                            "WHERE evh.emp_code = e.employee_code"
+                    )
+                    println("[educationViewHistory] employee_id UPDATE 완료: ${updated}건")
                 }
             }
         }
