@@ -1,7 +1,6 @@
 package com.otoki.internal.sap.repository
 
 import com.otoki.internal.sap.entity.Employee
-import com.otoki.internal.common.repository.EmployeeRepositoryCustom
 import org.springframework.data.jpa.repository.JpaRepository
 import java.time.LocalDate
 import java.util.Optional

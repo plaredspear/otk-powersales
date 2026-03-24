@@ -6,6 +6,7 @@ import com.otoki.internal.common.repository.AgreementWordRepository
 import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.sap.entity.Organization
 import com.otoki.internal.sap.repository.OrganizationRepository
+import jakarta.persistence.EntityManager
 import org.slf4j.LoggerFactory
 import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner
@@ -22,7 +23,8 @@ class LocalDataInitializer(
     private val passwordEncoder: PasswordEncoder,
     private val agreementWordRepository: AgreementWordRepository,
     private val organizationRepository: OrganizationRepository,
-    private val transactionTemplate: TransactionTemplate
+    private val transactionTemplate: TransactionTemplate,
+    private val entityManager: EntityManager
 ) : ApplicationRunner {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -41,117 +43,46 @@ class LocalDataInitializer(
         }
     }
 
+    private fun employeeInfoExists(employeeCode: String): Boolean {
+        val count = entityManager.createNativeQuery(
+            "SELECT COUNT(*) FROM salesforce2.employee_info WHERE employee_code = :code"
+        ).setParameter("code", employeeCode).singleResult as Number
+        return count.toLong() > 0
+    }
+
     private fun seedUser() {
         val encodedPassword = passwordEncoder.encode("1234")
 
-        // 영업지원실 (ADMIN - 웹 관리자 전체 조회용)
-        if (!employeeRepository.existsByEmployeeCode("00000001")) {
-            employeeRepository.save(
-                Employee(
-                    employeeCode = "00000001",
-                    name = "개발테스트",
-                    status = "재직",
-                    appLoginActive = true,
-                    orgName = "테스트지점",
-                    appAuthority = "영업지원실",
-                    birthDate = "19850315",
-                    homePhone = "02-1234-5678",
-                    workPhone = "02-9876-5432",
-                    startDate = LocalDate.of(2015, 3, 1),
-                    costCenterCode = "1111",
-                    password = encodedPassword,
-                    passwordChangeRequired = false
-                )
-            )
-            log.info("시드 계정 생성 완료: employeeCode=00000001, name=개발테스트, role=LEADER")
-        }
+        data class SeedEmployee(
+            val code: String, val name: String, val authority: String,
+            val orgName: String, val costCenterCode: String, val birthDate: String,
+            val homePhone: String, val workPhone: String, val startDate: LocalDate
+        )
 
-        // 여사원 (USER)
-        if (!employeeRepository.existsByEmployeeCode("00000002")) {
-            employeeRepository.save(
-                Employee(
-                    employeeCode = "00000002",
-                    name = "여사원테스트",
-                    status = "재직",
-                    appLoginActive = true,
-                    orgName = "테스트지점",
-                    appAuthority = "여사원",
-                    birthDate = "19920820",
-                    homePhone = "02-2345-6789",
-                    workPhone = "02-8765-4321",
-                    startDate = LocalDate.of(2018, 7, 1),
-                    costCenterCode = "1111",
-                    password = encodedPassword,
-                    passwordChangeRequired = false
-                )
-            )
-            log.info("시드 계정 생성 완료: employeeCode=00000002, name=여사원테스트, role=USER")
-        }
+        val seeds = listOf(
+            SeedEmployee("00000001", "개발테스트", "영업지원실", "테스트지점", "1111", "19850315", "02-1234-5678", "02-9876-5432", LocalDate.of(2015, 3, 1)),
+            SeedEmployee("00000002", "여사원테스트", "여사원", "테스트지점", "1111", "19920820", "02-2345-6789", "02-8765-4321", LocalDate.of(2018, 7, 1)),
+            SeedEmployee("00000003", "지점장테스트", "지점장", "테스트지점", "1111", "19780105", "02-3456-7890", "02-7654-3210", LocalDate.of(2010, 1, 15)),
+            SeedEmployee("00000004", "강남조장", "조장", "강남지점", "1112", "19880510", "02-4567-8901", "02-6543-2109", LocalDate.of(2016, 5, 1)),
+            SeedEmployee("00000005", "강남여사원", "여사원", "강남지점", "1112", "19950320", "02-5678-9012", "02-5432-1098", LocalDate.of(2020, 3, 1))
+        )
 
-        // 지점장 (ADMIN)
-        if (!employeeRepository.existsByEmployeeCode("00000003")) {
-            employeeRepository.save(
-                Employee(
-                    employeeCode = "00000003",
-                    name = "지점장테스트",
-                    status = "재직",
-                    appLoginActive = true,
-                    orgName = "테스트지점",
-                    appAuthority = "지점장",
-                    birthDate = "19780105",
-                    homePhone = "02-3456-7890",
-                    workPhone = "02-7654-3210",
-                    startDate = LocalDate.of(2010, 1, 15),
-                    costCenterCode = "1111",
-                    password = encodedPassword,
-                    passwordChangeRequired = false
-                )
-            )
-            log.info("시드 계정 생성 완료: employeeCode=00000003, name=지점장테스트, role=ADMIN")
-        }
+        for (seed in seeds) {
+            if (employeeRepository.existsByEmployeeCode(seed.code)) continue
 
-        // 강남지점 조장
-        if (!employeeRepository.existsByEmployeeCode("00000004")) {
-            employeeRepository.save(
-                Employee(
-                    employeeCode = "00000004",
-                    name = "강남조장",
-                    status = "재직",
-                    appLoginActive = true,
-                    orgName = "강남지점",
-                    appAuthority = "조장",
-                    birthDate = "19880510",
-                    homePhone = "02-4567-8901",
-                    workPhone = "02-6543-2109",
-                    startDate = LocalDate.of(2016, 5, 1),
-                    costCenterCode = "1112",
-                    password = encodedPassword,
-                    passwordChangeRequired = false
-                )
+            val infoExists = employeeInfoExists(seed.code)
+            val employee = Employee(
+                employeeCode = seed.code, name = seed.name, status = "재직",
+                appLoginActive = true, orgName = seed.orgName, appAuthority = seed.authority,
+                birthDate = seed.birthDate, homePhone = seed.homePhone, workPhone = seed.workPhone,
+                startDate = seed.startDate, costCenterCode = seed.costCenterCode,
+                password = encodedPassword, passwordChangeRequired = false
             )
-            log.info("시드 계정 생성 완료: employeeCode=00000004, name=강남조장, role=LEADER")
-        }
-
-        // 강남지점 여사원
-        if (!employeeRepository.existsByEmployeeCode("00000005")) {
-            employeeRepository.save(
-                Employee(
-                    employeeCode = "00000005",
-                    name = "강남여사원",
-                    status = "재직",
-                    appLoginActive = true,
-                    orgName = "강남지점",
-                    appAuthority = "여사원",
-                    birthDate = "19950320",
-                    homePhone = "02-5678-9012",
-                    workPhone = "02-5432-1098",
-                    startDate = LocalDate.of(2020, 3, 1),
-                    costCenterCode = "1112",
-                    password = encodedPassword,
-                    passwordChangeRequired = false
-                )
-            )
-            log.info("시드 계정 생성 완료: employeeCode=00000005, name=강남여사원, role=USER")
+            if (infoExists) {
+                employee.employeeInfo = null
+            }
+            employeeRepository.save(employee)
+            log.info("시드 계정 생성 완료: employeeCode={}, name={}", seed.code, seed.name)
         }
     }
 

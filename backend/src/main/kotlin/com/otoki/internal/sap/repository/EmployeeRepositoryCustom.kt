@@ -1,4 +1,4 @@
-package com.otoki.internal.common.repository
+package com.otoki.internal.sap.repository
 
 import com.otoki.internal.branch.dto.response.BranchResponse
 import com.otoki.internal.sap.entity.Employee
