@@ -12,7 +12,7 @@ import java.time.LocalDateTime
 
 /**
  * 푸시 메시지 수신자 Entity
- * V1 스키마: push_message_receiver (V42 리네이밍)
+ * V1 스키마: push_message_receiver (V43 PK/컬럼명 정리)
  *
  * PushMessage N:1 관계 (PK 참조, DB FK 없음)
  */
@@ -24,7 +24,7 @@ class PushMessageReceiver(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @HCColumn("id")
+    @Column(name = "push_message_receiver_id")
     val id: Int = 0,
 
     @HCColumn("sfid")
@@ -47,7 +47,7 @@ class PushMessageReceiver(
     val messageId: Int? = null,
 
     @HCColumn("isdeleted")
-    @Column(name = "isdeleted")
+    @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 
     @HCColumn("createddate")
