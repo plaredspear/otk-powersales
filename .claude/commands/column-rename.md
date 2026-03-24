@@ -58,7 +58,23 @@ Entity가 사용되는 Repository, Service, Controller 파일을 탐색합니다
 
 Kotlin 필드명 기반인지 DB 컬럼명 직접 참조인지 판별합니다.
 
-### 5. 컬럼명 변경 매핑 분석
+### 5. 테이블명 단수형 정규화
+
+테이블명이 복수형(`-s`, `-es`, `-ies` 등)이면 단수형으로 변경한다.
+
+**변경 대상:**
+- 복수형 테이블명 (예: `product_favorites` → `product_favorite`, `claim_photos` → `claim_photo`)
+
+**변경 방법:**
+1. DB 마이그레이션에 `ALTER TABLE ... RENAME TO ...` 추가
+2. Entity의 `@Table(name = "...")` 값 변경
+3. Entity의 `@HCTable("...")` 값 변경
+4. `@IdClass`용 별도 클래스가 있으면, 해당 클래스의 문서 주석도 업데이트
+
+**변경하지 않는 경우:**
+- 이미 단수형인 테이블명
+
+### 6. 컬럼명 변경 매핑 분석
 
 가독성 개선이 필요한 컬럼을 식별합니다:
 
@@ -77,7 +93,7 @@ Kotlin 필드명 기반인지 DB 컬럼명 직접 참조인지 판별합니다.
 - PK 컬럼은 `{table_name}_id` 형식으로 변경
 - `@HCColumn("id")` 가 있으면 제거 (heroku DB의 `id`를 사용하지 않음)
 
-### 6. 스펙 파일 작성
+### 7. 스펙 파일 작성
 
 `docs/specs/backlog/` 에 스펙을 생성합니다.
 
@@ -96,11 +112,11 @@ Kotlin 필드명 기반인지 DB 컬럼명 직접 참조인지 판별합니다.
 7. **완료 조건**: 검증 가능한 체크리스트
 8. **테스트 시나리오**: Happy Path + Error Path
 
-### 7. 자동 리뷰
+### 8. 자동 리뷰
 
 스펙 작성 완료 후 `.claude/commands/spec-review.md`를 읽고 자동 리뷰를 수행합니다.
 
-### 9. 완료 안내
+### 10. 완료 안내
 
 ```
 ✅ 컬럼명 가독성 개선 스펙이 생성되었습니다.
