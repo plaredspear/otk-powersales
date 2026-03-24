@@ -23,7 +23,7 @@ class InspectionTheme(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @HCColumn("id")
+    @Column(name = "inspection_theme_id")
     val id: Long = 0,
 
     @HCColumn("sfid")
@@ -37,36 +37,36 @@ class InspectionTheme(
 
     @SFField("Title__c")
     @HCColumn("title__c")
-    @Column(name = "title__c", length = 250)
+    @Column(name = "title", length = 250)
     val title: String? = null,
 
     @SFField("StartDate__c")
     @HCColumn("startdate__c")
-    @Column(name = "startdate__c")
+    @Column(name = "start_date")
     val startDate: LocalDate? = null,
 
     @SFField("EndDate__c")
     @HCColumn("enddate__c")
-    @Column(name = "enddate__c")
+    @Column(name = "end_date")
     val endDate: LocalDate? = null,
 
     @SFField("Department__c")
     @HCColumn("department__c")
-    @Column(name = "department__c", length = 100)
+    @Column(name = "department", length = 100)
     val department: String? = null,
 
     @SFField("BranchCode__c")
     @HCColumn("branchcode__c")
-    @Column(name = "branchcode__c", length = 30)
+    @Column(name = "branch_code", length = 30)
     val branchCode: String? = null,
 
     @SFField("PublicFlag__c")
     @HCColumn("publicflag__c")
-    @Column(name = "publicflag__c")
+    @Column(name = "public_flag")
     val publicFlag: Boolean? = null,
 
     @HCColumn("isdeleted")
-    @Column(name = "isdeleted")
+    @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 
     @HCColumn("createddate")
