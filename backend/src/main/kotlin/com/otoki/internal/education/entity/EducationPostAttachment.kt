@@ -20,10 +20,13 @@ class EducationPostAttachment(
     @Column(name = "education_post_attachment_id")
     val id: Long = 0,
 
-    @HCColumn("edu_id")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "education_post_id", nullable = false)
     val educationPost: EducationPost,
+
+    @HCColumn("edu_id")
+    @Column(name = "edu_id", length = 20)
+    val eduId: String? = null,
 
     @HCColumn("edu_file_key")
     @Column(name = "file_key", length = 30, nullable = false)
