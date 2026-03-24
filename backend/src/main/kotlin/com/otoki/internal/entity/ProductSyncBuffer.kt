@@ -10,15 +10,14 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 /**
- * 인터페이스 제품 Entity
- * V1 스키마 if_product 테이블에 매핑.
+ * PLM 연동용 제품 동기화 버퍼 Entity.
  * product 테이블의 트리거(if__product)가 INSERT 시 id를 복사하므로 외부 할당 PK.
  * 읽기 전용 — 앱에서 INSERT/UPDATE 하지 않음.
  */
 @Entity
-@Table(name = "if_product")
+@Table(name = "product_sync_buffer")
 @HCTable("if_product__c")
-class InterfaceProduct(
+class ProductSyncBuffer(
 
     @Id
     @HCColumn("id")
