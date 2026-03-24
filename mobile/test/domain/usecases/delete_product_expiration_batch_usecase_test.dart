@@ -1,0 +1,151 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/domain/entities/product_expiration_item.dart';
+import 'package:mobile/domain/entities/product_expiration_form.dart';
+import 'package:mobile/domain/repositories/product_expiration_repository.dart';
+import 'package:mobile/domain/usecases/delete_product_expiration_usecase.dart';
+import 'package:mobile/domain/usecases/delete_product_expiration_batch_usecase.dart';
+
+class _MockProductExpirationRepository implements ProductExpirationRepository {
+  List<ProductExpirationItem>? listResult;
+  ProductExpirationItem? itemResult;
+  int? deleteCount;
+  Exception? error;
+
+  @override
+  Future<List<ProductExpirationItem>> getProductExpirationList(ProductExpirationFilter filter) async {
+    if (error != null) throw error!;
+    return listResult!;
+  }
+
+  @override
+  Future<ProductExpirationItem> registerProductExpiration(ProductExpirationRegisterForm form) async {
+    if (error != null) throw error!;
+    return itemResult!;
+  }
+
+  @override
+  Future<ProductExpirationItem> updateProductExpiration(int seq, ProductExpirationUpdateForm form) async {
+    if (error != null) throw error!;
+    return itemResult!;
+  }
+
+  @override
+  Future<void> deleteProductExpiration(int seq) async {
+    if (error != null) throw error!;
+  }
+
+  @override
+  Future<int> deleteProductExpirationBatch(List<int> seqs) async {
+    if (error != null) throw error!;
+    return deleteCount!;
+  }
+}
+
+void main() {
+  late _MockProductExpirationRepository repository;
+
+  setUp(() {
+    repository = _MockProductExpirationRepository();
+  });
+
+  group('DeleteProductExpiration', () {
+    late DeleteProductExpiration useCase;
+
+    setUp(() {
+      useCase = DeleteProductExpiration(repository);
+    });
+
+    test('유통기한을 성공적으로 삭제한다', () async {
+      // Given
+      const itemSeq = 1;
+
+      // When
+      await useCase(itemSeq);
+
+      // Then
+      // 예외가 발생하지 않으면 성공
+    });
+
+    test('seq가 0 이하일 때 예외를 발생시킨다', () async {
+      // Given
+      const invalidSeq = 0;
+
+      // When & Then
+      expect(
+        () => useCase(invalidSeq),
+        throwsA(isA<Exception>().having(
+          (e) => e.toString(),
+          'message',
+          contains('유효하지 않은 유통기한 시퀀스입니다'),
+        )),
+      );
+    });
+
+    test('Repository 에러를 전파한다', () async {
+      // Given
+      const itemSeq = 1;
+      repository.error = Exception('삭제 실패');
+
+      // When & Then
+      expect(
+        () => useCase(itemSeq),
+        throwsA(isA<Exception>().having(
+          (e) => e.toString(),
+          'message',
+          contains('삭제 실패'),
+        )),
+      );
+    });
+  });
+
+  group('DeleteProductExpirationBatch', () {
+    late DeleteProductExpirationBatch useCase;
+
+    setUp(() {
+      useCase = DeleteProductExpirationBatch(repository);
+    });
+
+    test('유통기한을 성공적으로 일괄 삭제한다', () async {
+      // Given
+      final seqs = [1, 2, 3];
+      repository.deleteCount = 3;
+
+      // When
+      final result = await useCase(seqs);
+
+      // Then
+      expect(result, 3);
+    });
+
+    test('빈 seq 목록일 때 예외를 발생시킨다', () async {
+      // Given
+      final emptySeqs = <int>[];
+
+      // When & Then
+      expect(
+        () => useCase(emptySeqs),
+        throwsA(isA<Exception>().having(
+          (e) => e.toString(),
+          'message',
+          contains('삭제할 항목을 선택해주세요'),
+        )),
+      );
+    });
+
+    test('Repository 에러를 전파한다', () async {
+      // Given
+      final seqs = [1, 2, 3];
+      repository.error = Exception('일괄 삭제 실패');
+
+      // When & Then
+      expect(
+        () => useCase(seqs),
+        throwsA(isA<Exception>().having(
+          (e) => e.toString(),
+          'message',
+          contains('일괄 삭제 실패'),
+        )),
+      );
+    });
+  });
+}
