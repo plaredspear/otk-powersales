@@ -20,7 +20,7 @@ import java.time.LocalDateTime
 class ProductSyncBuffer(
 
     @Id
-    @HCColumn("id")
+    @Column(name = "product_sync_buffer_id")
     val id: Int = 0,
 
     @HCColumn("sfid")
