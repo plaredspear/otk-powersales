@@ -6,17 +6,17 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:59659",
+    "url" : "http://localhost:55258",
     "description" : "Generated server url"
   } ],
   "security" : [ {
     "Bearer Authentication" : [ ]
   } ],
   "paths" : {
-    "/api/v1/shelf-life/{seq}" : {
+    "/api/v1/product-expiration/{seq}" : {
       "put" : {
-        "tags" : [ "shelf-life-controller" ],
-        "operationId" : "updateShelfLife",
+        "tags" : [ "product-expiration-controller" ],
+        "operationId" : "updateProductExpiration",
         "parameters" : [ {
           "name" : "seq",
           "in" : "path",
@@ -30,7 +30,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/ShelfLifeUpdateRequest"
+                "$ref" : "#/components/schemas/ProductExpirationUpdateRequest"
               }
             }
           },
@@ -42,7 +42,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseShelfLifeItemResponse"
+                  "$ref" : "#/components/schemas/ApiResponseProductExpirationItemResponse"
                 }
               }
             }
@@ -50,8 +50,8 @@
         }
       },
       "delete" : {
-        "tags" : [ "shelf-life-controller" ],
-        "operationId" : "deleteShelfLife",
+        "tags" : [ "product-expiration-controller" ],
+        "operationId" : "deleteProductExpiration",
         "parameters" : [ {
           "name" : "seq",
           "in" : "path",
@@ -755,100 +755,6 @@
         }
       }
     },
-    "/api/v1/shelf-life" : {
-      "get" : {
-        "tags" : [ "shelf-life-controller" ],
-        "operationId" : "getShelfLifeList",
-        "parameters" : [ {
-          "name" : "accountCode",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "fromDate",
-          "in" : "query",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "toDate",
-          "in" : "query",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseListShelfLifeItemResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post" : {
-        "tags" : [ "shelf-life-controller" ],
-        "operationId" : "createShelfLife",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/ShelfLifeCreateRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseShelfLifeItemResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/shelf-life/batch-delete" : {
-      "post" : {
-        "tags" : [ "shelf-life-controller" ],
-        "operationId" : "deleteShelfLifeBatch",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/ShelfLifeBatchDeleteRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseShelfLifeBatchDeleteResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/sap/system-code-master" : {
       "post" : {
         "tags" : [ "sap-system-code-master-controller" ],
@@ -1234,6 +1140,100 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseSafetyCheckSubmitResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/product-expiration" : {
+      "get" : {
+        "tags" : [ "product-expiration-controller" ],
+        "operationId" : "getProductExpirationList",
+        "parameters" : [ {
+          "name" : "accountCode",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "fromDate",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "toDate",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListProductExpirationItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "product-expiration-controller" ],
+        "operationId" : "createProductExpiration",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ProductExpirationCreateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseProductExpirationItemResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/product-expiration/batch-delete" : {
+      "post" : {
+        "tags" : [ "product-expiration-controller" ],
+        "operationId" : "deleteProductExpirationBatch",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ProductExpirationBatchDeleteRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseProductExpirationBatchDeleteResponse"
                 }
               }
             }
@@ -4013,7 +4013,7 @@
   },
   "components" : {
     "schemas" : {
-      "ShelfLifeUpdateRequest" : {
+      "ProductExpirationUpdateRequest" : {
         "type" : "object",
         "properties" : {
           "expirationDate" : {
@@ -4032,14 +4032,14 @@
         },
         "required" : [ "alarmDate", "expirationDate" ]
       },
-      "ApiResponseShelfLifeItemResponse" : {
+      "ApiResponseProductExpirationItemResponse" : {
         "type" : "object",
         "properties" : {
           "success" : {
             "type" : "boolean"
           },
           "data" : {
-            "$ref" : "#/components/schemas/ShelfLifeItemResponse"
+            "$ref" : "#/components/schemas/ProductExpirationItemResponse"
           },
           "error" : {
             "$ref" : "#/components/schemas/ErrorDetail"
@@ -4066,7 +4066,7 @@
         },
         "required" : [ "code", "message" ]
       },
-      "ShelfLifeItemResponse" : {
+      "ProductExpirationItemResponse" : {
         "type" : "object",
         "properties" : {
           "seq" : {
@@ -5077,17 +5077,17 @@
       "AttachmentInfo" : {
         "type" : "object",
         "properties" : {
-          "eduFileKey" : {
+          "fileKey" : {
             "type" : "string"
           },
-          "eduFileType" : {
+          "fileType" : {
             "type" : "string"
           },
-          "eduFileOrgNm" : {
+          "fileOriginalName" : {
             "type" : "string"
           }
         },
-        "required" : [ "eduFileKey", "eduFileOrgNm", "eduFileType" ]
+        "required" : [ "fileKey", "fileOriginalName", "fileType" ]
       },
       "EducationMutationResponse" : {
         "type" : "object",
@@ -5107,8 +5107,9 @@
           "eduCodeNm" : {
             "type" : "string"
           },
-          "empCode" : {
-            "type" : "string"
+          "employeeId" : {
+            "type" : "integer",
+            "format" : "int64"
           },
           "instDate" : {
             "type" : "string"
@@ -5123,83 +5124,7 @@
             }
           }
         },
-        "required" : [ "attachments", "eduCode", "eduCodeNm", "eduContent", "eduId", "eduTitle", "empCode", "instDate" ]
-      },
-      "ShelfLifeCreateRequest" : {
-        "type" : "object",
-        "properties" : {
-          "accountCode" : {
-            "type" : "string"
-          },
-          "accountName" : {
-            "type" : "string"
-          },
-          "productCode" : {
-            "type" : "string"
-          },
-          "productName" : {
-            "type" : "string"
-          },
-          "expirationDate" : {
-            "type" : "string",
-            "pattern" : "^\\d{4}-\\d{2}-\\d{2}$"
-          },
-          "alarmDate" : {
-            "type" : "string",
-            "pattern" : "^\\d{4}-\\d{2}-\\d{2}$"
-          },
-          "description" : {
-            "type" : "string",
-            "maxLength" : 500,
-            "minLength" : 0
-          }
-        },
-        "required" : [ "accountCode", "accountName", "alarmDate", "expirationDate", "productCode", "productName" ]
-      },
-      "ShelfLifeBatchDeleteRequest" : {
-        "type" : "object",
-        "properties" : {
-          "ids" : {
-            "type" : "array",
-            "items" : {
-              "type" : "integer",
-              "format" : "int32"
-            }
-          }
-        },
-        "required" : [ "ids" ]
-      },
-      "ApiResponseShelfLifeBatchDeleteResponse" : {
-        "type" : "object",
-        "properties" : {
-          "success" : {
-            "type" : "boolean"
-          },
-          "data" : {
-            "$ref" : "#/components/schemas/ShelfLifeBatchDeleteResponse"
-          },
-          "error" : {
-            "$ref" : "#/components/schemas/ErrorDetail"
-          },
-          "message" : {
-            "type" : "string"
-          },
-          "timestamp" : {
-            "type" : "string",
-            "format" : "date-time"
-          }
-        },
-        "required" : [ "success", "timestamp" ]
-      },
-      "ShelfLifeBatchDeleteResponse" : {
-        "type" : "object",
-        "properties" : {
-          "deletedCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          }
-        },
-        "required" : [ "deletedCount" ]
+        "required" : [ "attachments", "eduCode", "eduCodeNm", "eduContent", "eduId", "eduTitle", "instDate" ]
       },
       "ReqItem" : {
         "type" : "object",
@@ -5499,6 +5424,82 @@
           }
         },
         "required" : [ "safetyCheckCompleted", "submittedAt" ]
+      },
+      "ProductExpirationCreateRequest" : {
+        "type" : "object",
+        "properties" : {
+          "accountCode" : {
+            "type" : "string"
+          },
+          "accountName" : {
+            "type" : "string"
+          },
+          "productCode" : {
+            "type" : "string"
+          },
+          "productName" : {
+            "type" : "string"
+          },
+          "expirationDate" : {
+            "type" : "string",
+            "pattern" : "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "alarmDate" : {
+            "type" : "string",
+            "pattern" : "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "description" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "accountCode", "accountName", "alarmDate", "expirationDate", "productCode", "productName" ]
+      },
+      "ProductExpirationBatchDeleteRequest" : {
+        "type" : "object",
+        "properties" : {
+          "ids" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int32"
+            }
+          }
+        },
+        "required" : [ "ids" ]
+      },
+      "ApiResponseProductExpirationBatchDeleteResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "$ref" : "#/components/schemas/ProductExpirationBatchDeleteResponse"
+          },
+          "error" : {
+            "$ref" : "#/components/schemas/ErrorDetail"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "success", "timestamp" ]
+      },
+      "ProductExpirationBatchDeleteResponse" : {
+        "type" : "object",
+        "properties" : {
+          "deletedCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "deletedCount" ]
       },
       "VerifyPasswordRequest" : {
         "type" : "object",
@@ -6538,31 +6539,6 @@
         },
         "required" : [ "updatedCount" ]
       },
-      "ApiResponseListShelfLifeItemResponse" : {
-        "type" : "object",
-        "properties" : {
-          "success" : {
-            "type" : "boolean"
-          },
-          "data" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/ShelfLifeItemResponse"
-            }
-          },
-          "error" : {
-            "$ref" : "#/components/schemas/ErrorDetail"
-          },
-          "message" : {
-            "type" : "string"
-          },
-          "timestamp" : {
-            "type" : "string",
-            "format" : "date-time"
-          }
-        },
-        "required" : [ "success", "timestamp" ]
-      },
       "MonthlySalesRequest" : {
         "type" : "object",
         "properties" : {
@@ -7208,12 +7184,12 @@
           "last" : {
             "type" : "boolean"
           },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
           },
           "size" : {
             "type" : "integer",
@@ -7240,12 +7216,12 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
-          "paged" : {
-            "type" : "boolean"
-          },
           "pageSize" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "paged" : {
+            "type" : "boolean"
           },
           "pageNumber" : {
             "type" : "integer",
@@ -7302,6 +7278,31 @@
             "type" : "boolean"
           }
         }
+      },
+      "ApiResponseListProductExpirationItemResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ProductExpirationItemResponse"
+            }
+          },
+          "error" : {
+            "$ref" : "#/components/schemas/ErrorDetail"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "success", "timestamp" ]
       },
       "ApiResponseNoticePostListResponse" : {
         "type" : "object",
@@ -8702,12 +8703,12 @@
           "last" : {
             "type" : "boolean"
           },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
           },
           "size" : {
             "type" : "integer",
