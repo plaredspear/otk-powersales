@@ -21,8 +21,8 @@ class EducationPostAttachment(
     val id: Long = 0,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "education_post_id", nullable = false)
-    val educationPost: EducationPost,
+    @JoinColumn(name = "education_post_id")
+    val educationPost: EducationPost? = null,
 
     @HCColumn("edu_id")
     @Column(name = "edu_id", length = 20)
