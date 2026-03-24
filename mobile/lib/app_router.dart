@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'domain/entities/education_category.dart';
-import 'domain/entities/shelf_life_item.dart';
+import 'domain/entities/product_expiration_item.dart';
 import 'presentation/pages/attendance_page.dart';
 import 'presentation/pages/attendance_complete_page.dart';
 import 'presentation/pages/claim_register_page.dart';
@@ -19,11 +19,11 @@ import 'presentation/pages/order_form_page.dart';
 import 'presentation/pages/product_search_page.dart';
 import 'presentation/pages/my_accounts_page.dart';
 import 'presentation/pages/product_search_result_page.dart';
-import 'presentation/pages/shelf_life_list_page.dart';
+import 'presentation/pages/product_expiration_list_page.dart';
 import 'presentation/pages/suggestion_register_page.dart';
-import 'presentation/pages/shelf_life_delete_page.dart';
-import 'presentation/pages/shelf_life_register_page.dart';
-import 'presentation/pages/shelf_life_edit_page.dart';
+import 'presentation/pages/product_expiration_delete_page.dart';
+import 'presentation/pages/product_expiration_register_page.dart';
+import 'presentation/pages/product_expiration_edit_page.dart';
 import 'presentation/pages/change_password_page.dart';
 import 'presentation/pages/verify_password_page.dart';
 import 'presentation/pages/alt_holiday_history_page.dart';
@@ -63,10 +63,10 @@ class AppRouter {
   static const String orderCancel = '/order-cancel';
   static const String orderForm = '/order-form';
   static const String clientOrderDetail = '/client-order-detail';
-  static const String shelfLife = '/shelf-life';
-  static const String shelfLifeRegister = '/shelf-life/register';
-  static const String shelfLifeEdit = '/shelf-life/edit';
-  static const String shelfLifeDelete = '/shelf-life/delete';
+  static const String productExpiration = '/product-expiration';
+  static const String productExpirationRegister = '/product-expiration/register';
+  static const String productExpirationEdit = '/product-expiration/edit';
+  static const String productExpirationDelete = '/product-expiration/delete';
   static const String inspectionList = '/inspection-list';
   static const String inspectionDetail = '/inspection-detail';
   static const String inspectionRegister = '/inspection-register';
@@ -124,17 +124,17 @@ class AppRouter {
               ModalRoute.of(context)!.settings.arguments as String;
           return ClientOrderDetailPage(sapOrderNumber: sapOrderNumber);
         },
-        shelfLife: (context) => const ShelfLifeListPage(),
-        shelfLifeRegister: (context) => const ShelfLifeRegisterPage(),
-        shelfLifeEdit: (context) {
+        productExpiration: (context) => const ProductExpirationListPage(),
+        productExpirationRegister: (context) => const ProductExpirationRegisterPage(),
+        productExpirationEdit: (context) {
           final item = ModalRoute.of(context)!.settings.arguments
-              as ShelfLifeItem;
-          return ShelfLifeEditPage(item: item);
+              as ProductExpirationItem;
+          return ProductExpirationEditPage(item: item);
         },
-        shelfLifeDelete: (context) {
+        productExpirationDelete: (context) {
           final items = ModalRoute.of(context)!.settings.arguments
-              as List<ShelfLifeItem>;
-          return ShelfLifeDeletePage(items: items);
+              as List<ProductExpirationItem>;
+          return ProductExpirationDeletePage(items: items);
         },
         inspectionList: (context) => const InspectionListPage(),
         inspectionDetail: (context) {

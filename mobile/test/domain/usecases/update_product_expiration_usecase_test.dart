@@ -1,0 +1,147 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/domain/entities/product_expiration_item.dart';
+import 'package:mobile/domain/entities/product_expiration_form.dart';
+import 'package:mobile/domain/repositories/product_expiration_repository.dart';
+import 'package:mobile/domain/usecases/update_product_expiration_usecase.dart';
+
+class _MockProductExpirationRepository implements ProductExpirationRepository {
+  List<ProductExpirationItem>? listResult;
+  ProductExpirationItem? itemResult;
+  int? deleteCount;
+  Exception? error;
+
+  @override
+  Future<List<ProductExpirationItem>> getProductExpirationList(ProductExpirationFilter filter) async {
+    if (error != null) throw error!;
+    return listResult!;
+  }
+
+  @override
+  Future<ProductExpirationItem> registerProductExpiration(ProductExpirationRegisterForm form) async {
+    if (error != null) throw error!;
+    return itemResult!;
+  }
+
+  @override
+  Future<ProductExpirationItem> updateProductExpiration(int seq, ProductExpirationUpdateForm form) async {
+    if (error != null) throw error!;
+    return itemResult!;
+  }
+
+  @override
+  Future<void> deleteProductExpiration(int seq) async {
+    if (error != null) throw error!;
+  }
+
+  @override
+  Future<int> deleteProductExpirationBatch(List<int> seqs) async {
+    if (error != null) throw error!;
+    return deleteCount!;
+  }
+}
+
+ProductExpirationItem _createTestItem({
+  int seq = 1,
+  String productCode = '30310009',
+  String productName = '고등어김치&무조림(캔)280G',
+  String accountName = '그린유통D',
+  String accountCode = 'ACC1025',
+  DateTime? expiryDate,
+  DateTime? alertDate,
+  int dDay = 0,
+  String description = '',
+  bool isExpired = true,
+}) {
+  return ProductExpirationItem(
+    seq: seq,
+    productCode: productCode,
+    productName: productName,
+    accountName: accountName,
+    accountCode: accountCode,
+    expiryDate: expiryDate ?? DateTime(2026, 2, 15),
+    alertDate: alertDate ?? DateTime(2026, 2, 14),
+    dDay: dDay,
+    description: description,
+    isExpired: isExpired,
+  );
+}
+
+void main() {
+  late _MockProductExpirationRepository repository;
+  late UpdateProductExpiration useCase;
+
+  setUp(() {
+    repository = _MockProductExpirationRepository();
+    useCase = UpdateProductExpiration(repository);
+  });
+
+  group('UpdateProductExpiration', () {
+    test('유통기한을 성공적으로 수정한다', () async {
+      // Given
+      const itemSeq = 1;
+      final form = ProductExpirationUpdateForm(
+        expiryDate: DateTime(2027, 1, 31),
+        alertDate: DateTime(2027, 1, 1),
+        description: '수정된 설명',
+      );
+      final expectedItem = _createTestItem(
+        seq: itemSeq,
+        expiryDate: DateTime(2027, 1, 31),
+        alertDate: DateTime(2027, 1, 1),
+        description: '수정된 설명',
+      );
+      repository.itemResult = expectedItem;
+
+      // When
+      final result = await useCase(itemSeq, form);
+
+      // Then
+      expect(result, expectedItem);
+      expect(result.seq, itemSeq);
+      expect(result.expiryDate, DateTime(2027, 1, 31));
+      expect(result.alertDate, DateTime(2027, 1, 1));
+      expect(result.description, '수정된 설명');
+    });
+
+    test('seq가 0 이하일 때 예외를 발생시킨다', () async {
+      // Given
+      const invalidSeq = 0;
+      final form = ProductExpirationUpdateForm(
+        expiryDate: DateTime(2027, 1, 31),
+        alertDate: DateTime(2027, 1, 1),
+        description: '설명',
+      );
+
+      // When & Then
+      expect(
+        () => useCase(invalidSeq, form),
+        throwsA(isA<Exception>().having(
+          (e) => e.toString(),
+          'message',
+          contains('유효하지 않은 유통기한 시퀀스입니다'),
+        )),
+      );
+    });
+
+    test('Repository 에러를 전파한다', () async {
+      // Given
+      const itemSeq = 1;
+      final form = ProductExpirationUpdateForm(
+        expiryDate: DateTime(2027, 1, 31),
+        alertDate: DateTime(2027, 1, 1),
+        description: '설명',
+      );
+      repository.error = Exception('데이터베이스 오류');
+
+      // When & Then
+      expect(
+        () => useCase(itemSeq, form),
+        throwsA(isA<Exception>().having(
+          (e) => e.toString(),
+          'message',
+          contains('데이터베이스 오류'),
+        )),
+      );
+    });
+  });
+}

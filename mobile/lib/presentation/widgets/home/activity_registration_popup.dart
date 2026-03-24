@@ -42,7 +42,7 @@ class ActivityRegistrationPopup extends StatelessWidget {
     ActivityMenuItem(
       icon: Icons.access_time,
       label: '유통기한 관리',
-      route: AppRouter.shelfLife,
+      route: AppRouter.productExpiration,
     ),
     ActivityMenuItem(
       icon: Icons.fact_check_outlined,

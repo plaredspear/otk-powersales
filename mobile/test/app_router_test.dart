@@ -90,10 +90,10 @@ void main() {
       expect(routes.containsKey(AppRouter.orderCancel), true);
       expect(routes.containsKey(AppRouter.orderForm), true);
       expect(routes.containsKey(AppRouter.clientOrderDetail), true);
-      expect(routes.containsKey(AppRouter.shelfLife), true);
-      expect(routes.containsKey(AppRouter.shelfLifeRegister), true);
-      expect(routes.containsKey(AppRouter.shelfLifeEdit), true);
-      expect(routes.containsKey(AppRouter.shelfLifeDelete), true);
+      expect(routes.containsKey(AppRouter.productExpiration), true);
+      expect(routes.containsKey(AppRouter.productExpirationRegister), true);
+      expect(routes.containsKey(AppRouter.productExpirationEdit), true);
+      expect(routes.containsKey(AppRouter.productExpirationDelete), true);
       expect(routes.containsKey(AppRouter.inspectionList), true);
       expect(routes.containsKey(AppRouter.inspectionDetail), true);
       expect(routes.containsKey(AppRouter.inspectionRegister), true);
