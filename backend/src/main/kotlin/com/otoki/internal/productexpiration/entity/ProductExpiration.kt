@@ -12,15 +12,18 @@ import java.time.LocalDateTime
 /**
  * 유통기한 관리 Entity
  *
- * V1 테이블: salesforce2.expirationdate__mng (sequence PK: seq)
+ * V1 테이블: salesforce2.product_expiration (원본: expirationdate__mng)
  */
 @Entity
-@Table(name = "expirationdate__mng")
+@Table(name = "product_expiration")
 @HCTable("expirationdate__mng")
 class ProductExpiration(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "product_expiration_id")
+    val productExpirationId: Int = 0,
+
     @HCColumn("seq")
     @Column(name = "seq")
     val seq: Int = 0,

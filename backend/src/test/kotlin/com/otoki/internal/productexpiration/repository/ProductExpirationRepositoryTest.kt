@@ -68,9 +68,9 @@ class ProductExpirationRepositoryTest {
             testEntityManager.clear()
 
             // Then
-            val found = productExpirationRepository.findById(saved.seq)
+            val found = productExpirationRepository.findById(saved.productExpirationId)
             assertThat(found).isPresent
-            assertThat(found.get().seq).isEqualTo(saved.seq)
+            assertThat(found.get().productExpirationId).isEqualTo(saved.productExpirationId)
             assertThat(found.get().accountId).isEqualTo("ACC001")
             assertThat(found.get().accountCode).isEqualTo("1025")
             assertThat(found.get().employeeId).isEqualTo(1L)
@@ -96,7 +96,7 @@ class ProductExpirationRepositoryTest {
             testEntityManager.clear()
 
             // Then
-            val found = productExpirationRepository.findById(saved.seq)
+            val found = productExpirationRepository.findById(saved.productExpirationId)
             assertThat(found).isPresent
             assertThat(found.get().accountId).isNull()
             assertThat(found.get().expirationDate).isNull()
@@ -208,7 +208,7 @@ class ProductExpirationRepositoryTest {
             testEntityManager.clear()
 
             // Then
-            val found = productExpirationRepository.findById(saved.seq)
+            val found = productExpirationRepository.findById(saved.productExpirationId)
             assertThat(found).isPresent
             assertThat(found.get().accountId).isEqualTo("NON_EXISTENT_ACCOUNT")
             assertThat(found.get().employeeId).isEqualTo(99999L)
