@@ -1,0 +1,9 @@
+-- StaffReview 평가 점수 컬럼명 가독성 개선 (#433)
+ALTER TABLE staff_review RENAME COLUMN attendance TO attendance_score;
+ALTER TABLE staff_review RENAME COLUMN instructions_default TO instruction_disobedience_score;
+ALTER TABLE staff_review RENAME COLUMN priority_event_item_manage TO priority_item_event_score;
+ALTER TABLE staff_review RENAME COLUMN display_manage_event_goals TO display_event_goal_score;
+ALTER TABLE staff_review RENAME COLUMN business_partner_ties TO account_partnership_score;
+ALTER TABLE staff_review RENAME COLUMN clothes_satellite TO clothes_hygiene_score;
+ALTER TABLE staff_review RENAME COLUMN product_manage_callment TO product_manage_callment_score;
+ALTER TABLE staff_review RENAME COLUMN educational_evaluation TO education_evaluation_score;
