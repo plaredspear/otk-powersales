@@ -20,6 +20,7 @@ import com.otoki.internal.education.entity.EducationCode
 import com.otoki.internal.education.entity.EducationPost
 import com.otoki.internal.education.entity.EducationPostAttachment
 import com.otoki.internal.education.entity.EducationViewHistory
+import com.otoki.internal.sap.entity.MonthlySalesHistory
 import com.otoki.internal.sap.entity.ProductBarcode
 import jakarta.persistence.Id
 import jakarta.persistence.Table
@@ -62,7 +63,7 @@ import java.util.Properties
  * │   no    │ expirationdate__mng                │ product_expiration          │ ProductExpiration       │ employee_id → employee.sfid                                   │                    │
  * │  YES    │ hqreview__c                        │ hq_review                   │ HqReview                │ —                                                             │                    │
  * │   no    │ if_product__c                      │ product_sync_buffer         │ ProductSyncBuffer       │ —                                                             │                    │
- * │   no    │ monthlysaleshistory__c             │ monthly_sales_history       │ MonthlySalesHistory     │ —                                                             │                    │
+ * │  YES    │ monthlysaleshistory__c             │ monthly_sales_history       │ MonthlySalesHistory     │ —                                                             │                    │
  * │   no    │ product_favorites                  │ product_favorites           │ FavoriteProduct         │ —                                                             │                    │
  * │  YES    │ pushmessage__c                     │ push_message                │ PushMessage             │ —                                                             │                    │
  * │   no    │ pushmessagereceiver__c             │ push_message_receiver       │ PushMessageReceiver     │ employeeid__c → employee.sfid, messageid__c → pushmessage.sfid │                    │
@@ -133,6 +134,7 @@ object HerokuMigrationTool {
         EntityRegistration("hqReview", HqReview::class.java),
         EntityRegistration("loginHistory", LoginHistory::class.java),
         EntityRegistration("safetyCheckSubmission", SafetyCheckSubmission::class.java),
+        EntityRegistration("monthlySalesHistory", MonthlySalesHistory::class.java),
     )
 
     private const val HEROKU_SCHEMA = "salesforce2"
