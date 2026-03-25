@@ -13,6 +13,8 @@ import com.otoki.internal.draft.entity.TmpClaimCode
 import com.otoki.internal.draft.entity.TmpOnsite
 import com.otoki.internal.draft.entity.TmpOrder
 import com.otoki.internal.draft.entity.TmpOrderProduct
+import com.otoki.internal.draft.entity.TmpPromotion
+import com.otoki.internal.draft.entity.TmpSuggest
 import com.otoki.internal.inspection.entity.InspectionTheme
 import com.otoki.internal.common.salesforce.HCTable
 import com.otoki.internal.common.salesforce.SFSchemaUtils
@@ -85,8 +87,8 @@ import java.util.Properties
  * │  YES    │ tmp_onsite                         │ tmp_onsite                  │ TmpOnsite               │ sap_account_code → account.external_key, employee_code → employee.employee_code, product_code → product.product_code, theme_code → inspection_theme.name │ UPDATE: account_id, employee_id, product_id, inspection_theme_id │
  * │  YES    │ tmp_order                          │ tmp_order                   │ TmpOrder                │ employee_code → employee.employee_code, account_code → account.external_key │ UPDATE: employee_id, account_id │
  * │  YES    │ tmp_order_product                  │ tmp_order_product           │ TmpOrderProduct         │ employee_code → employee.employee_code, product_code → product.product_code │ UPDATE: employee_id, product_id │
- * │   no    │ tmp_promotion                      │ —                           │ —                       │ —                                                             │ Heroku 전용        │
- * │   no    │ tmp_suggest                        │ —                           │ —                       │ —                                                             │ Heroku 전용        │
+ * │  YES    │ tmp_promotion                      │ tmp_promotion               │ TmpPromotion            │ employee_code → employee.employee_code, promotion_product_code → product.product_code │ UPDATE: employee_id, product_id │
+ * │  YES    │ tmp_suggest                        │ tmp_suggest                 │ TmpSuggest              │ employee_code → employee.employee_code, product_code → product.product_code, account_code → account.external_key │ UPDATE: employee_id, product_id, account_id │
  * │   no    │ uploadfile__c                      │ upload_file                 │ UploadFile              │ recordid__c → 다형성 sfid (여러 오브젝트 참조)                 │                    │
  * │   no    │ _hcmeta                            │ —                           │ —                       │ —                                                             │ 시스템             │
  * │   no    │ _sf_event_log                      │ —                           │ —                       │ —                                                             │ 시스템             │
@@ -170,6 +172,14 @@ object HerokuMigrationTool {
         ),
         EntityRegistration(
             "tmpOrderProduct", TmpOrderProduct::class.java,
+            timestampColumns = Pair("inst_date", "upd_date"),
+        ),
+        EntityRegistration(
+            "tmpPromotion", TmpPromotion::class.java,
+            timestampColumns = Pair("inst_date", "upd_date"),
+        ),
+        EntityRegistration(
+            "tmpSuggest", TmpSuggest::class.java,
             timestampColumns = Pair("inst_date", "upd_date"),
         ),
     )
@@ -607,6 +617,66 @@ object HerokuMigrationTool {
                             "WHERE t.product_code = p.product_code"
                     )
                     println("[tmpOrderProduct] product_id UPDATE 완료: ${updated}건")
+                }
+
+                // TmpPromotion: employee_code → employee.employee_code 매칭으로 employee_id UPDATE
+                println("[tmpPromotion] employee_code → employee_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.tmp_promotion tp " +
+                            "SET employee_id = e.employee_id " +
+                            "FROM $TARGET_SCHEMA.employee e " +
+                            "WHERE tp.employee_code = e.employee_code"
+                    )
+                    println("[tmpPromotion] employee_id UPDATE 완료: ${updated}건")
+                }
+
+                // TmpPromotion: promotion_product_code → product.product_code 매칭으로 product_id UPDATE
+                println("[tmpPromotion] promotion_product_code → product_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.tmp_promotion tp " +
+                            "SET product_id = p.product_id " +
+                            "FROM $TARGET_SCHEMA.product p " +
+                            "WHERE tp.promotion_product_code = p.product_code"
+                    )
+                    println("[tmpPromotion] product_id UPDATE 완료: ${updated}건")
+                }
+
+                // TmpSuggest: employee_code → employee.employee_code 매칭으로 employee_id UPDATE
+                println("[tmpSuggest] employee_code → employee_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.tmp_suggest ts " +
+                            "SET employee_id = e.employee_id " +
+                            "FROM $TARGET_SCHEMA.employee e " +
+                            "WHERE ts.employee_code = e.employee_code"
+                    )
+                    println("[tmpSuggest] employee_id UPDATE 완료: ${updated}건")
+                }
+
+                // TmpSuggest: product_code → product.product_code 매칭으로 product_id UPDATE
+                println("[tmpSuggest] product_code → product_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.tmp_suggest ts " +
+                            "SET product_id = p.product_id " +
+                            "FROM $TARGET_SCHEMA.product p " +
+                            "WHERE ts.product_code = p.product_code"
+                    )
+                    println("[tmpSuggest] product_id UPDATE 완료: ${updated}건")
+                }
+
+                // TmpSuggest: account_code → account.external_key 매칭으로 account_id UPDATE
+                println("[tmpSuggest] account_code → account_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.tmp_suggest ts " +
+                            "SET account_id = a.account_id " +
+                            "FROM $TARGET_SCHEMA.account a " +
+                            "WHERE ts.account_code = a.external_key"
+                    )
+                    println("[tmpSuggest] account_id UPDATE 완료: ${updated}건")
                 }
             }
         }
