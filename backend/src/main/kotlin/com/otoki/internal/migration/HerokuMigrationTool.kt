@@ -10,6 +10,7 @@ import com.otoki.internal.entity.ProductSyncBuffer
 import com.otoki.internal.entity.StaffReview
 import com.otoki.internal.draft.entity.TmpClaim
 import com.otoki.internal.draft.entity.TmpClaimCode
+import com.otoki.internal.draft.entity.TmpOnsite
 import com.otoki.internal.inspection.entity.InspectionTheme
 import com.otoki.internal.common.salesforce.HCTable
 import com.otoki.internal.common.salesforce.SFSchemaUtils
@@ -79,7 +80,7 @@ import java.util.Properties
  * │  YES    │ theme__c                           │ inspection_theme            │ InspectionTheme         │ —                                                             │                    │
  * │  YES    │ tmp_claim                          │ tmp_claim                   │ TmpClaim                │ sap_account_code → account.external_key, employee_code → employee.employee_code, product_code → product.product_code │ UPDATE: account_id, employee_id, product_id │
  * │  YES    │ tmp_claimcode                      │ tmp_claim_code              │ TmpClaimCode            │ —                                                             │                    │
- * │   no    │ tmp_onsite                         │ —                           │ —                       │ —                                                             │ Heroku 전용        │
+ * │  YES    │ tmp_onsite                         │ tmp_onsite                  │ TmpOnsite               │ sap_account_code → account.external_key, employee_code → employee.employee_code, product_code → product.product_code, theme_code → inspection_theme.name │ UPDATE: account_id, employee_id, product_id, inspection_theme_id │
  * │   no    │ tmp_order                          │ —                           │ —                       │ —                                                             │ Heroku 전용        │
  * │   no    │ tmp_order_product                  │ —                           │ —                       │ —                                                             │ Heroku 전용        │
  * │   no    │ tmp_promotion                      │ —                           │ —                       │ —                                                             │ Heroku 전용        │
@@ -155,6 +156,10 @@ object HerokuMigrationTool {
         ),
         EntityRegistration(
             "tmpClaimCode", TmpClaimCode::class.java,
+            timestampColumns = Pair("inst_date", "upd_date"),
+        ),
+        EntityRegistration(
+            "tmpOnsite", TmpOnsite::class.java,
             timestampColumns = Pair("inst_date", "upd_date"),
         ),
     )
@@ -496,6 +501,54 @@ object HerokuMigrationTool {
                             "WHERE tc.product_code = p.product_code"
                     )
                     println("[tmpClaim] product_id UPDATE 완료: ${updated}건")
+                }
+
+                // TmpOnsite: sap_account_code → account.external_key 매칭으로 account_id UPDATE
+                println("[tmpOnsite] sap_account_code → account_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.tmp_onsite t " +
+                            "SET account_id = a.account_id " +
+                            "FROM $TARGET_SCHEMA.account a " +
+                            "WHERE t.sap_account_code = a.external_key"
+                    )
+                    println("[tmpOnsite] account_id UPDATE 완료: ${updated}건")
+                }
+
+                // TmpOnsite: employee_code → employee.employee_code 매칭으로 employee_id UPDATE
+                println("[tmpOnsite] employee_code → employee_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.tmp_onsite t " +
+                            "SET employee_id = e.employee_id " +
+                            "FROM $TARGET_SCHEMA.employee e " +
+                            "WHERE t.employee_code = e.employee_code"
+                    )
+                    println("[tmpOnsite] employee_id UPDATE 완료: ${updated}건")
+                }
+
+                // TmpOnsite: product_code → product.product_code 매칭으로 product_id UPDATE
+                println("[tmpOnsite] product_code → product_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.tmp_onsite t " +
+                            "SET product_id = p.product_id " +
+                            "FROM $TARGET_SCHEMA.product p " +
+                            "WHERE t.product_code = p.product_code"
+                    )
+                    println("[tmpOnsite] product_id UPDATE 완료: ${updated}건")
+                }
+
+                // TmpOnsite: theme_code → inspection_theme.name 매칭으로 inspection_theme_id UPDATE
+                println("[tmpOnsite] theme_code → inspection_theme_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.tmp_onsite t " +
+                            "SET inspection_theme_id = it.inspection_theme_id " +
+                            "FROM $TARGET_SCHEMA.inspection_theme it " +
+                            "WHERE t.theme_code = it.name"
+                    )
+                    println("[tmpOnsite] inspection_theme_id UPDATE 완료: ${updated}건")
                 }
             }
         }
