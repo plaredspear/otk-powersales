@@ -11,6 +11,7 @@ import com.otoki.internal.entity.StaffReview
 import com.otoki.internal.draft.entity.TmpClaim
 import com.otoki.internal.draft.entity.TmpClaimCode
 import com.otoki.internal.draft.entity.TmpOnsite
+import com.otoki.internal.draft.entity.TmpOrder
 import com.otoki.internal.inspection.entity.InspectionTheme
 import com.otoki.internal.common.salesforce.HCTable
 import com.otoki.internal.common.salesforce.SFSchemaUtils
@@ -81,7 +82,7 @@ import java.util.Properties
  * │  YES    │ tmp_claim                          │ tmp_claim                   │ TmpClaim                │ sap_account_code → account.external_key, employee_code → employee.employee_code, product_code → product.product_code │ UPDATE: account_id, employee_id, product_id │
  * │  YES    │ tmp_claimcode                      │ tmp_claim_code              │ TmpClaimCode            │ —                                                             │                    │
  * │  YES    │ tmp_onsite                         │ tmp_onsite                  │ TmpOnsite               │ sap_account_code → account.external_key, employee_code → employee.employee_code, product_code → product.product_code, theme_code → inspection_theme.name │ UPDATE: account_id, employee_id, product_id, inspection_theme_id │
- * │   no    │ tmp_order                          │ —                           │ —                       │ —                                                             │ Heroku 전용        │
+ * │  YES    │ tmp_order                          │ tmp_order                   │ TmpOrder                │ employee_code → employee.employee_code, account_code → account.external_key │ UPDATE: employee_id, account_id │
  * │   no    │ tmp_order_product                  │ —                           │ —                       │ —                                                             │ Heroku 전용        │
  * │   no    │ tmp_promotion                      │ —                           │ —                       │ —                                                             │ Heroku 전용        │
  * │   no    │ tmp_suggest                        │ —                           │ —                       │ —                                                             │ Heroku 전용        │
@@ -160,6 +161,10 @@ object HerokuMigrationTool {
         ),
         EntityRegistration(
             "tmpOnsite", TmpOnsite::class.java,
+            timestampColumns = Pair("inst_date", "upd_date"),
+        ),
+        EntityRegistration(
+            "tmpOrder", TmpOrder::class.java,
             timestampColumns = Pair("inst_date", "upd_date"),
         ),
     )
@@ -549,6 +554,30 @@ object HerokuMigrationTool {
                             "WHERE t.theme_code = it.name"
                     )
                     println("[tmpOnsite] inspection_theme_id UPDATE 완료: ${updated}건")
+                }
+
+                // TmpOrder: employee_code → employee.employee_code 매칭으로 employee_id UPDATE
+                println("[tmpOrder] employee_code → employee_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.tmp_order t " +
+                            "SET employee_id = e.employee_id " +
+                            "FROM $TARGET_SCHEMA.employee e " +
+                            "WHERE t.employee_code = e.employee_code"
+                    )
+                    println("[tmpOrder] employee_id UPDATE 완료: ${updated}건")
+                }
+
+                // TmpOrder: account_code → account.external_key 매칭으로 account_id UPDATE
+                println("[tmpOrder] account_code → account_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.tmp_order t " +
+                            "SET account_id = a.account_id " +
+                            "FROM $TARGET_SCHEMA.account a " +
+                            "WHERE t.account_code = a.external_key"
+                    )
+                    println("[tmpOrder] account_id UPDATE 완료: ${updated}건")
                 }
             }
         }
