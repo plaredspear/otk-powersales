@@ -24,9 +24,9 @@ data class ProductExpirationItemResponse(
             return ProductExpirationItemResponse(
                 seq = entity.seq,
                 productCode = entity.productCode ?: "",
-                productName = entity.productId ?: "",
+                productName = entity.productName ?: "",
                 accountCode = entity.accountCode ?: "",
-                accountName = entity.accountId ?: "",
+                accountName = entity.accountName ?: "",
                 expirationDate = entity.expirationDate.toString(),
                 alarmDate = entity.alarmDate.toString(),
                 dDay = dDay,
