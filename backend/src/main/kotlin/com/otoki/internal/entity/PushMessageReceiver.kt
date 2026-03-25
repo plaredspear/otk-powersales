@@ -36,15 +36,21 @@ class PushMessageReceiver(
     @Column(name = "name", length = 80)
     val name: String? = null,
 
-    @HCColumn("employeeid__c")
-    @SFField("EmployeeId__c")
     @Column(name = "employee_id")
     val employeeId: Long? = null,
 
+    @HCColumn("employeeid__c")
+    @SFField("EmployeeId__c")
+    @Column(name = "employee_sfid", length = 18)
+    val employeeSfid: String? = null,
+
+    @Column(name = "push_message_id")
+    val pushMessageId: Int? = null,
+
     @HCColumn("messageid__c")
     @SFField("MessageId__c")
-    @Column(name = "message_id")
-    val messageId: Int? = null,
+    @Column(name = "push_message_sfid", length = 18)
+    val pushMessageSfid: String? = null,
 
     @HCColumn("isdeleted")
     @Column(name = "is_deleted")

@@ -67,7 +67,7 @@ import java.util.Properties
  * │  YES    │ monthlysaleshistory__c             │ monthly_sales_history       │ MonthlySalesHistory     │ —                                                             │                    │
  * │   no    │ product_favorites                  │ product_favorites           │ FavoriteProduct         │ —                                                             │                    │
  * │  YES    │ pushmessage__c                     │ push_message                │ PushMessage             │ —                                                             │                    │
- * │   no    │ pushmessagereceiver__c             │ push_message_receiver       │ PushMessageReceiver     │ employeeid__c → employee.sfid, messageid__c → pushmessage.sfid │                    │
+ * │   no    │ pushmessagereceiver__c             │ push_message_receiver       │ PushMessageReceiver     │ employeeid__c → employee.sfid, messageid__c → pushmessage.sfid │ V57: sfid 컬럼 추가, message_id → push_message_id 리네이밍 │
  * │   no    │ staffreview__c                     │ staff_review                │ StaffReview             │ dkretail_employeeid__c → employee.sfid                        │                    │
  * │   no    │ theme__c                           │ inspection_theme            │ InspectionTheme         │ —                                                             │                    │
  * │   no    │ tmp_claim                          │ tmp_claim                   │ TmpClaim                │ —                                                             │                    │

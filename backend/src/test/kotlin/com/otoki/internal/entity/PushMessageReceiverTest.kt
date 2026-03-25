@@ -30,7 +30,7 @@ class PushMessageReceiverTest {
         val receiver = PushMessageReceiver(
             name = "RCV-001",
             employeeId = 100L,
-            messageId = 200
+            pushMessageId = 200
         )
 
         // When
@@ -43,7 +43,7 @@ class PushMessageReceiverTest {
         assertThat(found.id).isGreaterThan(0)
         assertThat(found.name).isEqualTo("RCV-001")
         assertThat(found.employeeId).isEqualTo(100L)
-        assertThat(found.messageId).isEqualTo(200)
+        assertThat(found.pushMessageId).isEqualTo(200)
     }
 
     @Test
@@ -62,7 +62,9 @@ class PushMessageReceiverTest {
         assertThat(found.sfid).isNull()
         assertThat(found.name).isNull()
         assertThat(found.employeeId).isNull()
-        assertThat(found.messageId).isNull()
+        assertThat(found.pushMessageId).isNull()
+        assertThat(found.employeeSfid).isNull()
+        assertThat(found.pushMessageSfid).isNull()
         assertThat(found.isDeleted).isNull()
         assertThat(found.createdAt).isNotNull()
         assertThat(found.updatedAt).isNotNull()
@@ -99,7 +101,7 @@ class PushMessageReceiverTest {
         // Given
         val receiver = PushMessageReceiver(
             employeeId = 99999L,
-            messageId = 88888
+            pushMessageId = 88888
         )
 
         // When
@@ -110,6 +112,6 @@ class PushMessageReceiverTest {
         // Then
         assertThat(found).isNotNull
         assertThat(found.employeeId).isEqualTo(99999L)
-        assertThat(found.messageId).isEqualTo(88888)
+        assertThat(found.pushMessageId).isEqualTo(88888)
     }
 }
