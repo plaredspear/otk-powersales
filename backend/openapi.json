@@ -951,34 +951,6 @@
         }
       }
     },
-    "/api/v1/sap/claim" : {
-      "post" : {
-        "tags" : [ "sap-claim-controller" ],
-        "operationId" : "syncClaim",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/SapClaimRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SapClaimResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/sap/barcode-master" : {
       "post" : {
         "tags" : [ "sap-barcode-master-controller" ],
@@ -5244,52 +5216,6 @@
           }
         },
         "required" : [ "reqItemList" ]
-      },
-      "ClaimItem" : {
-        "type" : "object",
-        "properties" : {
-          "name" : {
-            "type" : "string"
-          },
-          "claimSequence" : {
-            "type" : "string"
-          },
-          "actionCode" : {
-            "type" : "string"
-          },
-          "claimStatus" : {
-            "type" : "string"
-          },
-          "content" : {
-            "type" : "string"
-          },
-          "reasonType" : {
-            "type" : "string"
-          },
-          "cosmosKey" : {
-            "type" : "string"
-          }
-        }
-      },
-      "SapClaimRequest" : {
-        "type" : "object",
-        "properties" : {
-          "request" : {
-            "$ref" : "#/components/schemas/ClaimItem"
-          }
-        }
-      },
-      "SapClaimResponse" : {
-        "type" : "object",
-        "properties" : {
-          "resultCode" : {
-            "type" : "string"
-          },
-          "resultMsg" : {
-            "type" : "string"
-          }
-        },
-        "required" : [ "resultCode", "resultMsg" ]
       },
       "SapBarcodeMasterRequest" : {
         "type" : "object",

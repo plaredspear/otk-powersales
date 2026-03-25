@@ -86,15 +86,6 @@ class SAPAnnotationTest {
         }
 
         @Test
-        @DisplayName("TmpClaim — UPDATE_ONLY, /sap/ClaimReceive")
-        fun tmpClaim() {
-            val annotation = TmpClaim::class.java.getAnnotation(SAPSource::class.java)
-            assertThat(annotation).isNotNull
-            assertThat(annotation.api).isEqualTo("/sap/ClaimReceive")
-            assertThat(annotation.syncMode).isEqualTo(SyncMode.UPDATE_ONLY)
-        }
-
-        @Test
         @DisplayName("Appointment — INSERT_ONLY, /sap/Appointment")
         fun appointment() {
             val annotation = Appointment::class.java.getAnnotation(SAPSource::class.java)

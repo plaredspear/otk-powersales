@@ -1,10 +1,8 @@
-package com.otoki.internal.sap.entity
+package com.otoki.internal.draft.entity
 
 import com.otoki.internal.common.entity.BaseEntity
 import com.otoki.internal.common.salesforce.HCColumn
 import com.otoki.internal.common.salesforce.HCTable
-import com.otoki.internal.common.sap.SAPSource
-import com.otoki.internal.common.sap.SyncMode
 import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
@@ -12,7 +10,6 @@ import java.time.LocalDateTime
 
 @Entity
 @Table(name = "tmp_claim")
-@SAPSource(api = "/sap/ClaimReceive", syncMode = SyncMode.UPDATE_ONLY)
 @HCTable("tmp_claim")
 class TmpClaim(
 
@@ -124,28 +121,6 @@ class TmpClaim(
     @HCColumn("tmp_manufacturingdate")
     @Column(name = "manufacturing_date", length = 80)
     var tmpManufacturingDate: String? = null,
-
-    // SAP 연동 컬럼
-    @Column(name = "claim_name", length = 80)
-    var claimName: String? = null,
-
-    @Column(name = "claim_sequence", length = 80)
-    var claimSequence: String? = null,
-
-    @Column(name = "action_code", length = 20)
-    var actionCode: String? = null,
-
-    @Column(name = "claim_status", length = 40)
-    var claimStatus: String? = null,
-
-    @Column(name = "claim_content", columnDefinition = "TEXT")
-    var claimContent: String? = null,
-
-    @Column(name = "reason_type", length = 80)
-    var reasonType: String? = null,
-
-    @Column(name = "cosmos_key", length = 80)
-    var cosmosKey: String? = null,
 
     @HCColumn("inst_date")
     @CreatedDate
