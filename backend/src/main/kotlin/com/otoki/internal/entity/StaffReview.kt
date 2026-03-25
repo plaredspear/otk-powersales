@@ -36,8 +36,8 @@ class StaffReview(
 
     @SFField("DKRetail_EmployeeId__c")
     @HCColumn("dkretail_employeeid__c")
-    @Column(name = "employee_id")
-    val employeeId: Long? = null,
+    @Column(name = "employee_sfid", length = 18)
+    val employeeSfid: String? = null,
 
     @SFField("EmployeeName__c")
     @HCColumn("employeename__c")
@@ -56,8 +56,8 @@ class StaffReview(
 
     @SFField("BranchReviews__c")
     @HCColumn("branchreviews__c")
-    @Column(name = "branch_reviews", length = 18)
-    val branchReviews: String? = null,
+    @Column(name = "branch_review_sfid", length = 18)
+    val branchReviewSfid: String? = null,
 
     @SFField("CostCenterCode__c")
     @HCColumn("costcentercode__c")

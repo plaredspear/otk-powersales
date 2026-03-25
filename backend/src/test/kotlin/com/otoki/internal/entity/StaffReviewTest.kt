@@ -29,7 +29,7 @@ class StaffReviewTest {
         // Given
         val staffReview = StaffReview(
             name = "2026-01 영업사원 평가",
-            employeeId = 100L,
+            employeeSfid = "a032x000006SZeHAAW",
             employeeName = "홍길동",
             employeeNumber = "EMP001",
             branch = "서울지점",
@@ -46,7 +46,7 @@ class StaffReviewTest {
         assertThat(found).isNotNull
         assertThat(found.employeeTotalScore).isEqualTo(85.5)
         assertThat(found.name).isEqualTo("2026-01 영업사원 평가")
-        assertThat(found.employeeId).isEqualTo(100L)
+        assertThat(found.employeeSfid).isEqualTo("a032x000006SZeHAAW")
         assertThat(found.employeeName).isEqualTo("홍길동")
         assertThat(found.employeeNumber).isEqualTo("EMP001")
         assertThat(found.branch).isEqualTo("서울지점")
@@ -54,11 +54,11 @@ class StaffReviewTest {
     }
 
     @Test
-    @DisplayName("StaffReview branchReviews - sfid 형식 문자열 저장 확인")
-    fun createStaffReview_branchReviews() {
+    @DisplayName("StaffReview branchReviewSfid - sfid 형식 문자열 저장 확인")
+    fun createStaffReview_branchReviewSfid() {
         // Given
         val staffReview = StaffReview(
-            branchReviews = "a1B000000001234"
+            branchReviewSfid = "a1B000000001234"
         )
 
         // When
@@ -68,7 +68,7 @@ class StaffReviewTest {
 
         // Then
         assertThat(found).isNotNull
-        assertThat(found.branchReviews).isEqualTo("a1B000000001234")
+        assertThat(found.branchReviewSfid).isEqualTo("a1B000000001234")
     }
 
     @Test
@@ -86,11 +86,11 @@ class StaffReviewTest {
         assertThat(found).isNotNull
         assertThat(found.sfid).isNull()
         assertThat(found.name).isNull()
-        assertThat(found.employeeId).isNull()
+        assertThat(found.employeeSfid).isNull()
         assertThat(found.employeeName).isNull()
         assertThat(found.employeeNumber).isNull()
         assertThat(found.branch).isNull()
-        assertThat(found.branchReviews).isNull()
+        assertThat(found.branchReviewSfid).isNull()
         assertThat(found.costCenterCode).isNull()
         assertThat(found.employeeTotalScore).isNull()
         assertThat(found.attendance).isNull()
