@@ -3,6 +3,7 @@ package com.otoki.internal.migration
 import com.otoki.internal.common.entity.AgreementWord
 import com.otoki.internal.entity.EmployeeAdmin
 import com.otoki.internal.entity.LoginHistory
+import com.otoki.internal.entity.HqReview
 import com.otoki.internal.entity.PushMessage
 import com.otoki.internal.common.salesforce.HCTable
 import com.otoki.internal.common.salesforce.SFSchemaUtils
@@ -59,7 +60,7 @@ import java.util.Properties
  * │  YES    │ employee_his                       │ login_history               │ LoginHistory                    │ —                                                             │                    │
  * │  YES    │ employee_mng                       │ employee_info               │ EmployeeInfo            │ —                                                             │ Employee 종속 테이블, 자연키 PK │
  * │   no    │ expirationdate__mng                │ product_expiration          │ ProductExpiration       │ employee_id → employee.sfid                                   │                    │
- * │   no    │ hqreview__c                        │ hq_review                   │ HqReview                │ —                                                             │                    │
+ * │  YES    │ hqreview__c                        │ hq_review                   │ HqReview                │ —                                                             │                    │
  * │   no    │ if_product__c                      │ product_sync_buffer         │ ProductSyncBuffer       │ —                                                             │                    │
  * │   no    │ monthlysaleshistory__c             │ monthly_sales_history       │ MonthlySalesHistory     │ —                                                             │                    │
  * │   no    │ product_favorites                  │ product_favorites           │ FavoriteProduct         │ —                                                             │                    │
@@ -129,6 +130,7 @@ object HerokuMigrationTool {
         EntityRegistration("employeeAdmin", EmployeeAdmin::class.java, includeId = true),
         EntityRegistration("agreementWord", AgreementWord::class.java),
         EntityRegistration("pushMessage", PushMessage::class.java),
+        EntityRegistration("hqReview", HqReview::class.java),
         EntityRegistration("loginHistory", LoginHistory::class.java),
         EntityRegistration("safetyCheckSubmission", SafetyCheckSubmission::class.java),
     )
