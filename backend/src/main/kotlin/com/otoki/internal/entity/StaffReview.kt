@@ -71,43 +71,43 @@ class StaffReview(
 
     @SFField("Attendance__c")
     @HCColumn("attendance__c")
-    @Column(name = "attendance")
-    val attendance: Double? = null,
+    @Column(name = "attendance_score")
+    val attendanceScore: Double? = null,
 
     @SFField("InstructionsDefault__c")
     @HCColumn("instructionsdefault__c")
-    @Column(name = "instructions_default")
-    val instructionsDefault: Double? = null,
+    @Column(name = "instruction_disobedience_score")
+    val instructionDisobedienceScore: Double? = null,
 
     @SFField("Priority_EventItemManage__c")
     @HCColumn("priority_eventitemmanage__c")
-    @Column(name = "priority_event_item_manage")
-    val priorityEventItemManage: Double? = null,
+    @Column(name = "priority_item_event_score")
+    val priorityItemEventScore: Double? = null,
 
     @SFField("DisplayManageEventGoals__c")
     @HCColumn("displaymanageeventgoals__c")
-    @Column(name = "display_manage_event_goals")
-    val displayManageEventGoals: Double? = null,
+    @Column(name = "display_event_goal_score")
+    val displayEventGoalScore: Double? = null,
 
     @SFField("BusinessPartnerTies__c")
     @HCColumn("businesspartnerties__c")
-    @Column(name = "business_partner_ties")
-    val businessPartnerTies: Double? = null,
+    @Column(name = "account_partnership_score")
+    val accountPartnershipScore: Double? = null,
 
     @SFField("ClothesSatellite__c")
     @HCColumn("clothessatellite__c")
-    @Column(name = "clothes_satellite")
-    val clothesSatellite: Double? = null,
+    @Column(name = "clothes_hygiene_score")
+    val clothesHygieneScore: Double? = null,
 
     @SFField("ProductManageCallment__c")
     @HCColumn("productmanagecallment__c")
-    @Column(name = "product_manage_callment")
-    val productManageCallment: Double? = null,
+    @Column(name = "product_manage_callment_score")
+    val productManageCallmentScore: Double? = null,
 
     @SFField("EducationalEvaluation__c")
     @HCColumn("educationalevaluation__c")
-    @Column(name = "educational_evaluation")
-    val educationalEvaluation: Double? = null,
+    @Column(name = "education_evaluation_score")
+    val educationEvaluationScore: Double? = null,
 
     @HCColumn("isdeleted")
     @Column(name = "is_deleted")
