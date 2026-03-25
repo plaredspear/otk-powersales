@@ -37,7 +37,6 @@ export const menuRoute: MenuRoute = {
       icon: <TeamOutlined />,
       children: [
         { path: '/schedule', name: '일정관리' },
-        { path: '/deployment', name: '배치' },
         { path: '/promotions', name: '행사마스터' },
         { path: '/display-schedules', name: '진열스케줄마스터' },
       ],
