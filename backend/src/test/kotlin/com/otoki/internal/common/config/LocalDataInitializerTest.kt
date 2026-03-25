@@ -23,6 +23,8 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import jakarta.persistence.EntityManager
+import jakarta.persistence.Query
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.transaction.support.TransactionTemplate
 import java.util.Optional
@@ -46,6 +48,9 @@ class LocalDataInitializerTest {
     @Mock
     private lateinit var transactionTemplate: TransactionTemplate
 
+    @Mock
+    private lateinit var entityManager: EntityManager
+
     @InjectMocks
     private lateinit var localDataInitializer: LocalDataInitializer
 
@@ -58,6 +63,13 @@ class LocalDataInitializerTest {
         }
     }
 
+    private fun stubEmployeeInfoExists() {
+        val mockQuery = org.mockito.Mockito.mock(Query::class.java)
+        whenever(entityManager.createNativeQuery(any<String>())).thenReturn(mockQuery)
+        whenever(mockQuery.setParameter(any<String>(), any())).thenReturn(mockQuery)
+        whenever(mockQuery.singleResult).thenReturn(0L)
+    }
+
     private fun stubAllUsersNotExist() {
         whenever(employeeRepository.existsByEmployeeCode("00000001")).thenReturn(false)
         whenever(employeeRepository.existsByEmployeeCode("00000002")).thenReturn(false)
@@ -66,6 +78,7 @@ class LocalDataInitializerTest {
         whenever(employeeRepository.existsByEmployeeCode("00000005")).thenReturn(false)
         whenever(passwordEncoder.encode("1234")).thenReturn("encoded_password")
         whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
+        stubEmployeeInfoExists()
     }
 
     private fun stubAllUsersExist() {
@@ -198,6 +211,7 @@ class LocalDataInitializerTest {
             whenever(employeeRepository.existsByEmployeeCode("00000005")).thenReturn(false)
             whenever(passwordEncoder.encode("1234")).thenReturn("encoded_password")
             whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
+            stubEmployeeInfoExists()
             stubOtherSeedsExist()
 
             // When
@@ -264,6 +278,7 @@ class LocalDataInitializerTest {
             whenever(employeeRepository.existsByEmployeeCode("00000005")).thenReturn(false)
             whenever(passwordEncoder.encode("1234")).thenReturn("encoded_password")
             whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
+            stubEmployeeInfoExists()
             stubOtherSeedsExist()
 
             // When
@@ -292,6 +307,7 @@ class LocalDataInitializerTest {
             whenever(employeeRepository.existsByEmployeeCode("00000005")).thenReturn(false)
             whenever(passwordEncoder.encode("1234")).thenReturn("encoded_password")
             whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
+            stubEmployeeInfoExists()
             stubOtherSeedsExist()
 
             // When
