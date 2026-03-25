@@ -8,6 +8,7 @@ import com.otoki.internal.entity.PushMessage
 import com.otoki.internal.entity.PushMessageReceiver
 import com.otoki.internal.entity.ProductSyncBuffer
 import com.otoki.internal.entity.StaffReview
+import com.otoki.internal.draft.entity.TmpClaim
 import com.otoki.internal.inspection.entity.InspectionTheme
 import com.otoki.internal.common.salesforce.HCTable
 import com.otoki.internal.common.salesforce.SFSchemaUtils
@@ -75,7 +76,7 @@ import java.util.Properties
  * │  YES    │ pushmessagereceiver__c             │ push_message_receiver       │ PushMessageReceiver     │ employeeid__c → employee.sfid, messageid__c → pushmessage.sfid │ UPDATE: employee_id, push_message_id │
  * │  YES    │ staffreview__c                     │ staff_review                │ StaffReview             │ dkretail_employeeid__c → employee.sfid                        │                    │
  * │  YES    │ theme__c                           │ inspection_theme            │ InspectionTheme         │ —                                                             │                    │
- * │   no    │ tmp_claim                          │ tmp_claim                   │ TmpClaim                │ —                                                             │                    │
+ * │  YES    │ tmp_claim                          │ tmp_claim                   │ TmpClaim                │ sap_account_code → account.external_key, employee_code → employee.employee_code, product_code → product.product_code │ UPDATE: account_id, employee_id, product_id │
  * │   no    │ tmp_claimcode                      │ tmp_claimcode               │ —                       │ —                                                             │                    │
  * │   no    │ tmp_onsite                         │ —                           │ —                       │ —                                                             │ Heroku 전용        │
  * │   no    │ tmp_order                          │ —                           │ —                       │ —                                                             │ Heroku 전용        │
@@ -147,6 +148,10 @@ object HerokuMigrationTool {
         EntityRegistration("inspectionTheme", InspectionTheme::class.java),
         EntityRegistration("productSyncBuffer", ProductSyncBuffer::class.java),
         EntityRegistration("staffReview", StaffReview::class.java),
+        EntityRegistration(
+            "tmpClaim", TmpClaim::class.java,
+            timestampColumns = Pair("inst_date", "upd_date"),
+        ),
     )
 
     private const val HEROKU_SCHEMA = "salesforce2"
@@ -450,6 +455,42 @@ object HerokuMigrationTool {
                             "WHERE r.push_message_sfid = pm.sfid"
                     )
                     println("[pushMessageReceiver] push_message_id UPDATE 완료: ${updated}건")
+                }
+
+                // TmpClaim: sap_account_code → account.external_key 매칭으로 account_id UPDATE
+                println("[tmpClaim] sap_account_code → account_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.tmp_claim tc " +
+                            "SET account_id = a.account_id " +
+                            "FROM $TARGET_SCHEMA.account a " +
+                            "WHERE tc.sap_account_code = a.external_key"
+                    )
+                    println("[tmpClaim] account_id UPDATE 완료: ${updated}건")
+                }
+
+                // TmpClaim: employee_code → employee.employee_code 매칭으로 employee_id UPDATE
+                println("[tmpClaim] employee_code → employee_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.tmp_claim tc " +
+                            "SET employee_id = e.employee_id " +
+                            "FROM $TARGET_SCHEMA.employee e " +
+                            "WHERE tc.employee_code = e.employee_code"
+                    )
+                    println("[tmpClaim] employee_id UPDATE 완료: ${updated}건")
+                }
+
+                // TmpClaim: product_code → product.product_code 매칭으로 product_id UPDATE
+                println("[tmpClaim] product_code → product_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.tmp_claim tc " +
+                            "SET product_id = p.product_id " +
+                            "FROM $TARGET_SCHEMA.product p " +
+                            "WHERE tc.product_code = p.product_code"
+                    )
+                    println("[tmpClaim] product_id UPDATE 완료: ${updated}건")
                 }
             }
         }
