@@ -73,7 +73,7 @@ otoki/                          # 프로젝트 루트
 
 ### 개발 환경 특이사항
 - **RDS 퍼블릭 접근 (dev only)**: dev 환경 RDS PostgreSQL은 `publicly_accessible = true`로 설정되어 있음. 로컬 IDE에서 직접 DB 접속 가능. 허용 IP는 `infra/envs/dev.tfvars`의 `rds_allowed_cidrs`로 제한. (Spec #89)
-- **Heroku DB (레거시) — 읽기 전용**: Heroku Connect DB는 **SELECT(조회)만 허용**한다. INSERT, UPDATE, DELETE, TRUNCATE, DROP 등 데이터를 변경하는 모든 조작을 절대 수행하지 않는다. 이 DB는 기존 프로덕션 시스템의 원본 데이터이며, 복구 불가능하다.
+- **Heroku DB (레거시) — 읽기 전용**: Heroku Connect DB는 **SELECT(조회)만 허용**한다. INSERT, UPDATE, DELETE, TRUNCATE, DROP 등 데이터를 변경하는 모든 조작을 절대 수행하지 않는다. 이 DB는 기존 프로덕션 시스템의 원본 데이터이며, 복구 불가능하다. 사용 스키마는 **`salesforce2`만 해당**한다. `salesforce` 스키마는 Heroku Connect 초기 동기화의 잔재로 앱에서 사용하지 않는다.
 
 ---
 
