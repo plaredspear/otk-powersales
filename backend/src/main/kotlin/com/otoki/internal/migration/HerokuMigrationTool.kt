@@ -9,6 +9,7 @@ import com.otoki.internal.entity.PushMessageReceiver
 import com.otoki.internal.entity.ProductSyncBuffer
 import com.otoki.internal.entity.StaffReview
 import com.otoki.internal.draft.entity.TmpClaim
+import com.otoki.internal.draft.entity.TmpClaimCode
 import com.otoki.internal.inspection.entity.InspectionTheme
 import com.otoki.internal.common.salesforce.HCTable
 import com.otoki.internal.common.salesforce.SFSchemaUtils
@@ -77,7 +78,7 @@ import java.util.Properties
  * │  YES    │ staffreview__c                     │ staff_review                │ StaffReview             │ dkretail_employeeid__c → employee.sfid                        │                    │
  * │  YES    │ theme__c                           │ inspection_theme            │ InspectionTheme         │ —                                                             │                    │
  * │  YES    │ tmp_claim                          │ tmp_claim                   │ TmpClaim                │ sap_account_code → account.external_key, employee_code → employee.employee_code, product_code → product.product_code │ UPDATE: account_id, employee_id, product_id │
- * │   no    │ tmp_claimcode                      │ tmp_claimcode               │ —                       │ —                                                             │                    │
+ * │  YES    │ tmp_claimcode                      │ tmp_claim_code              │ TmpClaimCode            │ —                                                             │                    │
  * │   no    │ tmp_onsite                         │ —                           │ —                       │ —                                                             │ Heroku 전용        │
  * │   no    │ tmp_order                          │ —                           │ —                       │ —                                                             │ Heroku 전용        │
  * │   no    │ tmp_order_product                  │ —                           │ —                       │ —                                                             │ Heroku 전용        │
@@ -150,6 +151,10 @@ object HerokuMigrationTool {
         EntityRegistration("staffReview", StaffReview::class.java),
         EntityRegistration(
             "tmpClaim", TmpClaim::class.java,
+            timestampColumns = Pair("inst_date", "upd_date"),
+        ),
+        EntityRegistration(
+            "tmpClaimCode", TmpClaimCode::class.java,
             timestampColumns = Pair("inst_date", "upd_date"),
         ),
     )
