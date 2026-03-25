@@ -21,6 +21,7 @@ import com.otoki.internal.education.entity.EducationPost
 import com.otoki.internal.education.entity.EducationPostAttachment
 import com.otoki.internal.education.entity.EducationViewHistory
 import com.otoki.internal.sap.entity.MonthlySalesHistory
+import com.otoki.internal.product.entity.FavoriteProduct
 import com.otoki.internal.productexpiration.entity.ProductExpiration
 import com.otoki.internal.sap.entity.ProductBarcode
 import jakarta.persistence.Id
@@ -65,7 +66,7 @@ import java.util.Properties
  * │  YES    │ hqreview__c                        │ hq_review                   │ HqReview                │ —                                                             │                    │
  * │   no    │ if_product__c                      │ product_sync_buffer         │ ProductSyncBuffer       │ —                                                             │                    │
  * │  YES    │ monthlysaleshistory__c             │ monthly_sales_history       │ MonthlySalesHistory     │ —                                                             │                    │
- * │   no    │ product_favorites                  │ product_favorites           │ FavoriteProduct         │ —                                                             │                    │
+ * │  YES    │ product_favorites                  │ product_favorite            │ FavoriteProduct         │ —                                                             │                    │
  * │  YES    │ pushmessage__c                     │ push_message                │ PushMessage             │ —                                                             │                    │
  * │   no    │ pushmessagereceiver__c             │ push_message_receiver       │ PushMessageReceiver     │ employeeid__c → employee.sfid, messageid__c → pushmessage.sfid │ V57: sfid 컬럼 추가, message_id → push_message_id 리네이밍 │
  * │   no    │ staffreview__c                     │ staff_review                │ StaffReview             │ dkretail_employeeid__c → employee.sfid                        │                    │
@@ -137,6 +138,7 @@ object HerokuMigrationTool {
         EntityRegistration("safetyCheckSubmission", SafetyCheckSubmission::class.java),
         EntityRegistration("monthlySalesHistory", MonthlySalesHistory::class.java),
         EntityRegistration("productExpiration", ProductExpiration::class.java),
+        EntityRegistration("favoriteProduct", FavoriteProduct::class.java, includeId = true),
     )
 
     private const val HEROKU_SCHEMA = "salesforce2"
