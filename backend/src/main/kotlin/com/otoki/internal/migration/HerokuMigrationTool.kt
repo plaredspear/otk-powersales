@@ -21,6 +21,7 @@ import com.otoki.internal.education.entity.EducationPost
 import com.otoki.internal.education.entity.EducationPostAttachment
 import com.otoki.internal.education.entity.EducationViewHistory
 import com.otoki.internal.sap.entity.MonthlySalesHistory
+import com.otoki.internal.productexpiration.entity.ProductExpiration
 import com.otoki.internal.sap.entity.ProductBarcode
 import jakarta.persistence.Id
 import jakarta.persistence.Table
@@ -60,7 +61,7 @@ import java.util.Properties
  * │  YES    │ employee_admin_mng                 │ employee_admin              │ EmployeeAdmin           │ —                                                             │                    │
  * │  YES    │ employee_his                       │ login_history               │ LoginHistory                    │ —                                                             │                    │
  * │  YES    │ employee_mng                       │ employee_info               │ EmployeeInfo            │ —                                                             │ Employee 종속 테이블, 자연키 PK │
- * │   no    │ expirationdate__mng                │ product_expiration          │ ProductExpiration       │ employee_id → employee.sfid                                   │                    │
+ * │  YES    │ expirationdate__mng                │ product_expiration          │ ProductExpiration       │ account_code → account.external_key, product_code → product.product_code, employee_id → employee.sfid │ UPDATE: account_id, product_id, employee_id │
  * │  YES    │ hqreview__c                        │ hq_review                   │ HqReview                │ —                                                             │                    │
  * │   no    │ if_product__c                      │ product_sync_buffer         │ ProductSyncBuffer       │ —                                                             │                    │
  * │  YES    │ monthlysaleshistory__c             │ monthly_sales_history       │ MonthlySalesHistory     │ —                                                             │                    │
@@ -135,6 +136,7 @@ object HerokuMigrationTool {
         EntityRegistration("loginHistory", LoginHistory::class.java),
         EntityRegistration("safetyCheckSubmission", SafetyCheckSubmission::class.java),
         EntityRegistration("monthlySalesHistory", MonthlySalesHistory::class.java),
+        EntityRegistration("productExpiration", ProductExpiration::class.java),
     )
 
     private const val HEROKU_SCHEMA = "salesforce2"
@@ -378,6 +380,42 @@ object HerokuMigrationTool {
                             "WHERE evh.emp_code = e.employee_code"
                     )
                     println("[educationViewHistory] employee_id UPDATE 완료: ${updated}건")
+                }
+
+                // ProductExpiration: account_code → account_id 역참조 UPDATE
+                println("[productExpiration] account_code → account_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.product_expiration pe " +
+                            "SET account_id = a.account_id " +
+                            "FROM $TARGET_SCHEMA.account a " +
+                            "WHERE pe.account_code = a.external_key"
+                    )
+                    println("[productExpiration] account_id UPDATE 완료: ${updated}건")
+                }
+
+                // ProductExpiration: product_code → product_id 역참조 UPDATE
+                println("[productExpiration] product_code → product_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.product_expiration pe " +
+                            "SET product_id = p.product_id " +
+                            "FROM $TARGET_SCHEMA.product p " +
+                            "WHERE pe.product_code = p.product_code"
+                    )
+                    println("[productExpiration] product_id UPDATE 완료: ${updated}건")
+                }
+
+                // ProductExpiration: employee_sfid → employee_id 역참조 UPDATE
+                println("[productExpiration] employee_sfid → employee_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.product_expiration pe " +
+                            "SET employee_id = e.employee_id " +
+                            "FROM $TARGET_SCHEMA.employee e " +
+                            "WHERE pe.employee_sfid = e.sfid"
+                    )
+                    println("[productExpiration] employee_id UPDATE 완료: ${updated}건")
                 }
             }
         }
