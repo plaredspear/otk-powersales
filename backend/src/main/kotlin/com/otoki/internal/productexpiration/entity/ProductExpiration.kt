@@ -29,20 +29,29 @@ class ProductExpiration(
     val seq: Int = 0,
 
     @HCColumn("account_id")
-    @Column(name = "account_id", length = 100)
-    val accountId: String? = null,
+    @Column(name = "account_name", length = 100)
+    val accountName: String? = null,
+
+    @Column(name = "account_id")
+    val accountId: Int? = null,
 
     @HCColumn("account_code")
     @Column(name = "account_code", length = 100)
     val accountCode: String? = null,
 
-    @HCColumn("employee_id")
     @Column(name = "employee_id")
     val employeeId: Long? = null,
 
+    @HCColumn("employee_id")
+    @Column(name = "employee_sfid", length = 18)
+    val employeeSfid: String? = null,
+
     @HCColumn("product_id")
-    @Column(name = "product_id", length = 100)
-    val productId: String? = null,
+    @Column(name = "product_name", length = 100)
+    val productName: String? = null,
+
+    @Column(name = "product_id")
+    val productId: Long? = null,
 
     @HCColumn("product_code")
     @Column(name = "product_code", length = 100)

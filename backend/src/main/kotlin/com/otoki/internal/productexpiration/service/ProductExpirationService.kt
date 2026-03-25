@@ -65,9 +65,9 @@ class ProductExpirationService(
         val productExpiration = ProductExpiration(
             employeeId = employeeId,
             accountCode = request.accountCode,
-            accountId = request.accountName,
+            accountName = request.accountName,
             productCode = request.productCode,
-            productId = request.productName,
+            productName = request.productName,
             expirationDate = expirationDate,
             alarmDate = alarmDate,
             description = request.description

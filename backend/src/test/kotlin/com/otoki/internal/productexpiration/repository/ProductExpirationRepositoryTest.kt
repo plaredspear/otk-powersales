@@ -49,10 +49,10 @@ class ProductExpirationRepositoryTest {
         fun save_andFindBySeq_success() {
             // Given
             val productExpiration = ProductExpiration(
-                accountId = "ACC001",
+                accountName = "ACC001",
                 accountCode = "1025",
                 employeeId = 1L,
-                productId = "PROD001",
+                productName = "PROD001",
                 productCode = "30310009",
                 expirationDate = LocalDate.of(2026, 6, 1),
                 alarmDate = LocalDate.of(2026, 5, 25),
@@ -71,10 +71,10 @@ class ProductExpirationRepositoryTest {
             val found = productExpirationRepository.findById(saved.productExpirationId)
             assertThat(found).isPresent
             assertThat(found.get().productExpirationId).isEqualTo(saved.productExpirationId)
-            assertThat(found.get().accountId).isEqualTo("ACC001")
+            assertThat(found.get().accountName).isEqualTo("ACC001")
             assertThat(found.get().accountCode).isEqualTo("1025")
             assertThat(found.get().employeeId).isEqualTo(1L)
-            assertThat(found.get().productId).isEqualTo("PROD001")
+            assertThat(found.get().productName).isEqualTo("PROD001")
             assertThat(found.get().productCode).isEqualTo("30310009")
             assertThat(found.get().expirationDate).isEqualTo(LocalDate.of(2026, 6, 1))
             assertThat(found.get().alarmDate).isEqualTo(LocalDate.of(2026, 5, 25))
@@ -98,7 +98,7 @@ class ProductExpirationRepositoryTest {
             // Then
             val found = productExpirationRepository.findById(saved.productExpirationId)
             assertThat(found).isPresent
-            assertThat(found.get().accountId).isNull()
+            assertThat(found.get().accountName).isNull()
             assertThat(found.get().expirationDate).isNull()
             assertThat(found.get().alarmDate).isNull()
             assertThat(found.get().description).isNull()
@@ -196,9 +196,9 @@ class ProductExpirationRepositoryTest {
         fun rawStringFields_noFkConstraint() {
             // Given - FK 제약 없이 임의의 문자열 저장 가능
             val productExpiration = ProductExpiration(
-                accountId = "NON_EXISTENT_ACCOUNT",
+                accountName = "NON_EXISTENT_ACCOUNT",
                 employeeId = 99999L,
-                productId = "NON_EXISTENT_PRODUCT",
+                productName = "NON_EXISTENT_PRODUCT",
                 productCode = "ARBITRARY_CODE"
             )
 
@@ -210,9 +210,9 @@ class ProductExpirationRepositoryTest {
             // Then
             val found = productExpirationRepository.findById(saved.productExpirationId)
             assertThat(found).isPresent
-            assertThat(found.get().accountId).isEqualTo("NON_EXISTENT_ACCOUNT")
+            assertThat(found.get().accountName).isEqualTo("NON_EXISTENT_ACCOUNT")
             assertThat(found.get().employeeId).isEqualTo(99999L)
-            assertThat(found.get().productId).isEqualTo("NON_EXISTENT_PRODUCT")
+            assertThat(found.get().productName).isEqualTo("NON_EXISTENT_PRODUCT")
         }
     }
 }

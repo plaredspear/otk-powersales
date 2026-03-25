@@ -51,9 +51,9 @@ class ProductExpirationServiceTest {
         seq: Int = 1,
         employeeId: Long = userId,
         accountCode: String = "1025172",
-        accountId: String = "(유)경산식품",
+        accountName: String = "(유)경산식품",
         productCode: String = "30310009",
-        productId: String = "고등어김치&무조림(캔)280G",
+        productName: String = "고등어김치&무조림(캔)280G",
         expirationDate: LocalDate = LocalDate.of(2026, 3, 10),
         alarmDate: LocalDate = LocalDate.of(2026, 3, 9),
         description: String? = null
@@ -62,9 +62,9 @@ class ProductExpirationServiceTest {
             seq = seq,
             employeeId = employeeId,
             accountCode = accountCode,
-            accountId = accountId,
+            accountName = accountName,
             productCode = productCode,
-            productId = productId,
+            productName = productName,
             expirationDate = expirationDate,
             alarmDate = alarmDate,
             description = description
