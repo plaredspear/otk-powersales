@@ -6,6 +6,7 @@ import com.otoki.internal.entity.LoginHistory
 import com.otoki.internal.entity.HqReview
 import com.otoki.internal.entity.PushMessage
 import com.otoki.internal.entity.PushMessageReceiver
+import com.otoki.internal.entity.ProductSyncBuffer
 import com.otoki.internal.inspection.entity.InspectionTheme
 import com.otoki.internal.common.salesforce.HCTable
 import com.otoki.internal.common.salesforce.SFSchemaUtils
@@ -66,7 +67,7 @@ import java.util.Properties
  * │  YES    │ employee_mng                       │ employee_info               │ EmployeeInfo            │ —                                                             │ Employee 종속 테이블, 자연키 PK │
  * │  YES    │ expirationdate__mng                │ product_expiration          │ ProductExpiration       │ account_code → account.external_key, product_code → product.product_code, employee_id → employee.sfid │ UPDATE: account_id, product_id, employee_id │
  * │  YES    │ hqreview__c                        │ hq_review                   │ HqReview                │ —                                                             │                    │
- * │   no    │ if_product__c                      │ product_sync_buffer         │ ProductSyncBuffer       │ —                                                             │                    │
+ * │  YES    │ if_product__c                      │ product_sync_buffer         │ ProductSyncBuffer       │ —                                                             │                    │
  * │  YES    │ monthlysaleshistory__c             │ monthly_sales_history       │ MonthlySalesHistory     │ —                                                             │                    │
  * │  YES    │ product_favorites                  │ product_favorite            │ FavoriteProduct         │ —                                                             │                    │
  * │  YES    │ pushmessage__c                     │ push_message                │ PushMessage             │ —                                                             │                    │
@@ -143,6 +144,7 @@ object HerokuMigrationTool {
         EntityRegistration("productExpiration", ProductExpiration::class.java),
         EntityRegistration("favoriteProduct", FavoriteProduct::class.java, includeId = true),
         EntityRegistration("inspectionTheme", InspectionTheme::class.java),
+        EntityRegistration("productSyncBuffer", ProductSyncBuffer::class.java),
     )
 
     private const val HEROKU_SCHEMA = "salesforce2"
