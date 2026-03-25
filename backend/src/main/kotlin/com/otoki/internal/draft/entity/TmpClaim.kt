@@ -82,6 +82,15 @@ class TmpClaim(
     @Column(name = "employee_code", length = 80)
     var tmpEmployeeCode: String? = null,
 
+    @Column(name = "account_id")
+    var accountId: Long? = null,
+
+    @Column(name = "employee_id")
+    var employeeId: Long? = null,
+
+    @Column(name = "product_id")
+    var productId: Long? = null,
+
     @HCColumn("tmp_claimtype1_name")
     @Column(name = "claim_type1_name", length = 80)
     var tmpClaimType1Name: String? = null,
