@@ -5,6 +5,7 @@ import com.otoki.internal.entity.EmployeeAdmin
 import com.otoki.internal.entity.LoginHistory
 import com.otoki.internal.entity.HqReview
 import com.otoki.internal.entity.PushMessage
+import com.otoki.internal.entity.PushMessageReceiver
 import com.otoki.internal.common.salesforce.HCTable
 import com.otoki.internal.common.salesforce.SFSchemaUtils
 import com.otoki.internal.safetycheck.entity.SafetyCheckItem
@@ -68,7 +69,7 @@ import java.util.Properties
  * │  YES    │ monthlysaleshistory__c             │ monthly_sales_history       │ MonthlySalesHistory     │ —                                                             │                    │
  * │  YES    │ product_favorites                  │ product_favorite            │ FavoriteProduct         │ —                                                             │                    │
  * │  YES    │ pushmessage__c                     │ push_message                │ PushMessage             │ —                                                             │                    │
- * │   no    │ pushmessagereceiver__c             │ push_message_receiver       │ PushMessageReceiver     │ employeeid__c → employee.sfid, messageid__c → pushmessage.sfid │ V57: sfid 컬럼 추가, message_id → push_message_id 리네이밍 │
+ * │  YES    │ pushmessagereceiver__c             │ push_message_receiver       │ PushMessageReceiver     │ employeeid__c → employee.sfid, messageid__c → pushmessage.sfid │ UPDATE: employee_id, push_message_id │
  * │   no    │ staffreview__c                     │ staff_review                │ StaffReview             │ dkretail_employeeid__c → employee.sfid                        │                    │
  * │   no    │ theme__c                           │ inspection_theme            │ InspectionTheme         │ —                                                             │                    │
  * │   no    │ tmp_claim                          │ tmp_claim                   │ TmpClaim                │ —                                                             │                    │
@@ -133,6 +134,7 @@ object HerokuMigrationTool {
         EntityRegistration("employeeAdmin", EmployeeAdmin::class.java, includeId = true),
         EntityRegistration("agreementWord", AgreementWord::class.java),
         EntityRegistration("pushMessage", PushMessage::class.java),
+        EntityRegistration("pushMessageReceiver", PushMessageReceiver::class.java),
         EntityRegistration("hqReview", HqReview::class.java),
         EntityRegistration("loginHistory", LoginHistory::class.java),
         EntityRegistration("safetyCheckSubmission", SafetyCheckSubmission::class.java),
@@ -418,6 +420,30 @@ object HerokuMigrationTool {
                             "WHERE pe.employee_sfid = e.sfid"
                     )
                     println("[productExpiration] employee_id UPDATE 완료: ${updated}건")
+                }
+
+                // PushMessageReceiver: employee_sfid → employee_id 역참조 UPDATE
+                println("[pushMessageReceiver] employee_sfid → employee_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.push_message_receiver r " +
+                            "SET employee_id = e.employee_id " +
+                            "FROM $TARGET_SCHEMA.employee e " +
+                            "WHERE r.employee_sfid = e.sfid"
+                    )
+                    println("[pushMessageReceiver] employee_id UPDATE 완료: ${updated}건")
+                }
+
+                // PushMessageReceiver: push_message_sfid → push_message_id 역참조 UPDATE
+                println("[pushMessageReceiver] push_message_sfid → push_message_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.push_message_receiver r " +
+                            "SET push_message_id = pm.push_message_id " +
+                            "FROM $TARGET_SCHEMA.push_message pm " +
+                            "WHERE r.push_message_sfid = pm.sfid"
+                    )
+                    println("[pushMessageReceiver] push_message_id UPDATE 완료: ${updated}건")
                 }
             }
         }
