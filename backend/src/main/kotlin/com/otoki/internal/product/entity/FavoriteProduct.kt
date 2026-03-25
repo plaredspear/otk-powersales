@@ -17,7 +17,7 @@ import java.time.LocalDateTime
 @Entity
 @Table(name = "product_favorite")
 @IdClass(ProductFavoriteId::class)
-@HCTable("product_favorite")
+@HCTable("product_favorites")
 class FavoriteProduct(
 
     @Id
