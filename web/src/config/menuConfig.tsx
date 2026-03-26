@@ -32,11 +32,11 @@ export interface MenuRoute {
 export const menuRoute: MenuRoute = {
   path: '/',
   children: [
+    { path: '/schedule', name: '여사원 일정관리', icon: <CalendarOutlined /> },
     {
       name: '여사원 배치',
       icon: <TeamOutlined />,
       children: [
-        { path: '/schedule', name: '일정관리' },
         { path: '/promotions', name: '행사마스터' },
         { path: '/display-schedules', name: '진열스케줄마스터' },
       ],
