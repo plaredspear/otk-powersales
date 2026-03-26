@@ -62,7 +62,7 @@ class AdminPromotionEmployeeService(
     }
 
     fun getEmployee(id: Long): PromotionEmployeeDetailResponse {
-        val pe = findEmployeeById(id)
+        val pe = findPromotionEmployeeById(id)
         return PromotionEmployeeDetailResponse.from(pe, pe.employee?.name, pe.employee?.employeeCode)
     }
 
@@ -102,7 +102,7 @@ class AdminPromotionEmployeeService(
 
     @Transactional
     fun updateEmployee(id: Long, userId: Long, request: PromotionEmployeeRequest): PromotionEmployeeDetailResponse {
-        val pe = findEmployeeById(id)
+        val pe = findPromotionEmployeeById(id)
 
         // employeeId로 사원 해소
         val resolved = resolveEmployee(request.employeeId)
@@ -260,7 +260,7 @@ class AdminPromotionEmployeeService(
 
     @Transactional
     fun deleteEmployee(id: Long) {
-        val pe = findEmployeeById(id)
+        val pe = findPromotionEmployeeById(id)
         val promotionId = pe.promotionId
 
         // 1-2-B: 마감 보호 — 삭제 차단
@@ -381,7 +381,7 @@ class AdminPromotionEmployeeService(
         return promotion
     }
 
-    private fun findEmployeeById(id: Long): PromotionEmployee {
+    private fun findPromotionEmployeeById(id: Long): PromotionEmployee {
         return promotionEmployeeRepository.findById(id)
             .orElseThrow { PromotionEmployeeNotFoundException() }
     }
