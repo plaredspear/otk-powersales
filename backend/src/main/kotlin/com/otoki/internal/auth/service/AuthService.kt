@@ -56,8 +56,8 @@ class AuthService(
      */
     @Transactional
     fun login(request: LoginRequest): LoginResponse {
-        val employee = employeeRepository.findByEmployeeCode(request.employeeCode)
-            .orElseThrow { InvalidCredentialsException() }
+        val employee = employeeRepository.findWithEmployeeInfoByEmployeeCode(request.employeeCode)
+            ?: throw InvalidCredentialsException()
 
         if (!passwordEncoder.matches(request.password, employee.password)) {
             throw InvalidCredentialsException()
@@ -109,8 +109,8 @@ class AuthService(
      */
     @Transactional
     fun adminLogin(request: LoginRequest): AdminLoginResponse {
-        val employee = employeeRepository.findByEmployeeCode(request.employeeCode)
-            .orElseThrow { InvalidCredentialsException() }
+        val employee = employeeRepository.findWithEmployeeInfoByEmployeeCode(request.employeeCode)
+            ?: throw InvalidCredentialsException()
 
         if (!passwordEncoder.matches(request.password, employee.password)) {
             throw InvalidCredentialsException()
@@ -197,8 +197,8 @@ class AuthService(
      */
     @Transactional
     fun changePassword(userId: Long, request: ChangePasswordRequest) {
-        val employee = employeeRepository.findById(userId)
-            .orElseThrow { EmployeeNotFoundException() }
+        val employee = employeeRepository.findWithEmployeeInfoById(userId)
+            ?: throw EmployeeNotFoundException()
 
         if (!passwordEncoder.matches(request.currentPassword, employee.password)) {
             throw InvalidCurrentPasswordException()
@@ -298,8 +298,8 @@ class AuthService(
      */
     @Transactional(readOnly = true)
     fun verifyPassword(userId: Long, request: VerifyPasswordRequest) {
-        val employee = employeeRepository.findById(userId)
-            .orElseThrow { EmployeeNotFoundException() }
+        val employee = employeeRepository.findWithEmployeeInfoById(userId)
+            ?: throw EmployeeNotFoundException()
 
         if (!passwordEncoder.matches(request.password, employee.password)) {
             throw InvalidCurrentPasswordException()
@@ -343,8 +343,8 @@ class AuthService(
      */
     @Transactional
     fun recordGpsConsent(userId: Long, request: GpsConsentRequest? = null): GpsConsentRecordResponse {
-        val employee = employeeRepository.findById(userId)
-            .orElseThrow { EmployeeNotFoundException() }
+        val employee = employeeRepository.findWithEmployeeInfoById(userId)
+            ?: throw EmployeeNotFoundException()
 
         val agreementNumber = request?.agreementNumber?.takeIf { it.isNotBlank() }
         val terms = if (agreementNumber != null) {
@@ -380,8 +380,8 @@ class AuthService(
      */
     @Transactional
     fun resetDevice(employeeCode: String) {
-        val employee = employeeRepository.findByEmployeeCode(employeeCode)
-            .orElseThrow { EmployeeNotFoundException() }
+        val employee = employeeRepository.findWithEmployeeInfoByEmployeeCode(employeeCode)
+            ?: throw EmployeeNotFoundException()
 
         employee.resetDevice()
         employeeRepository.save(employee)

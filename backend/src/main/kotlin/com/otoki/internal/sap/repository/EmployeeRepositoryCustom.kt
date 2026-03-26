@@ -7,6 +7,10 @@ import org.springframework.data.domain.Pageable
 
 interface EmployeeRepositoryCustom {
 
+    fun findWithEmployeeInfoByEmployeeCode(employeeCode: String): Employee?
+
+    fun findWithEmployeeInfoById(id: Long): Employee?
+
     fun findDistinctBranches(): List<BranchResponse>
 
     fun findAllEmployeeCodes(): List<String>
