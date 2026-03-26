@@ -9,10 +9,13 @@ import { ScheduleFilterPanel } from './components/ScheduleFilterPanel';
 import { ScheduleCalendar } from './components/ScheduleCalendar';
 import { DayScheduleListModal } from './components/DayScheduleListModal';
 import { ScheduleEditModal } from './components/ScheduleEditModal';
+import { usePermission } from '@/hooks/usePermission';
 
 type FilterTab = 'member' | 'account';
 
 export default function SchedulePage() {
+  const { hasPermission } = usePermission();
+  const canWrite = hasPermission('SCHEDULE_WRITE');
   const [currentDate, setCurrentDate] = useState<Dayjs>(dayjs());
   const [filterTab, setFilterTab] = useState<FilterTab>('member');
   const [selectedEmployeeNumbers, setSelectedEmployeeNumbers] = useState<string[]>([]);
@@ -118,6 +121,7 @@ export default function SchedulePage() {
         }}
         schedule={editSchedule}
         accounts={accounts}
+        readOnly={!canWrite}
       />
     </div>
   );

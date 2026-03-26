@@ -10,6 +10,7 @@ interface ScheduleEditModalProps {
   onClose: () => void;
   schedule: TeamSchedule | null;
   accounts: TeamScheduleAccount[];
+  readOnly?: boolean;
 }
 
 const WORKING_TYPE_OPTIONS = [
@@ -39,6 +40,7 @@ export function ScheduleEditModal({
   onClose,
   schedule,
   accounts,
+  readOnly = false,
 }: ScheduleEditModalProps) {
   const [form] = Form.useForm();
   const [error, setError] = useState<string | null>(null);
@@ -126,22 +128,26 @@ export function ScheduleEditModal({
 
   return (
     <Modal
-      title="일정 수정"
+      title={readOnly ? '일정 상세' : '일정 수정'}
       open={open}
       onCancel={onClose}
       destroyOnClose
       footer={
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <Button danger onClick={handleDelete} loading={deleteMutation.isPending}>
-            삭제
-          </Button>
-          <Space>
-            <Button onClick={onClose}>취소</Button>
-            <Button type="primary" onClick={handleUpdate} loading={updateMutation.isPending}>
-              수정
+        readOnly ? (
+          <Button onClick={onClose}>닫기</Button>
+        ) : (
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Button danger onClick={handleDelete} loading={deleteMutation.isPending}>
+              삭제
             </Button>
-          </Space>
-        </div>
+            <Space>
+              <Button onClick={onClose}>취소</Button>
+              <Button type="primary" onClick={handleUpdate} loading={updateMutation.isPending}>
+                수정
+              </Button>
+            </Space>
+          </div>
+        )
       }
     >
       {error && (
@@ -154,7 +160,7 @@ export function ScheduleEditModal({
         />
       )}
 
-      <Form form={form} layout="vertical">
+      <Form form={form} layout="vertical" disabled={readOnly}>
         <Form.Item label="근무일자" name="workingDate">
           <Input readOnly />
         </Form.Item>
