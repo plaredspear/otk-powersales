@@ -252,6 +252,7 @@ class AdminPromotionEmployeeControllerTest {
     private fun createListResponse() = PromotionEmployeeListResponse(
         id = 1L,
         promotionId = 10L,
+        employeeId = 100L,
         employeeCode = "20030117",
         employeeName = "김여사",
         scheduleDate = LocalDate.of(2026, 3, 15),
@@ -277,6 +278,7 @@ class AdminPromotionEmployeeControllerTest {
     private fun createDetailResponse() = PromotionEmployeeDetailResponse(
         id = 1L,
         promotionId = 10L,
+        employeeId = 100L,
         employeeCode = "20030117",
         employeeName = "김여사",
         scheduleDate = LocalDate.of(2026, 3, 15),
@@ -302,7 +304,7 @@ class AdminPromotionEmployeeControllerTest {
     )
 
     private fun createRequest() = PromotionEmployeeRequest(
-        employeeCode = "20030117",
+        employeeId = 100L,
         scheduleDate = LocalDate.of(2026, 3, 15),
         workStatus = "근무",
         workType1 = "시식",

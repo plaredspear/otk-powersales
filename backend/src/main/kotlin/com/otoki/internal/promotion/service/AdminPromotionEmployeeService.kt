@@ -70,12 +70,12 @@ class AdminPromotionEmployeeService(
     fun createEmployee(promotionId: Long, request: PromotionEmployeeRequest): PromotionEmployeeDetailResponse {
         findActivePromotion(promotionId)
 
-        val resolved = resolveEmployee(request.employeeCode)
+        val resolved = resolveEmployee(request.employeeId)
 
         val pe = promotionEmployeeRepository.save(
             PromotionEmployee(
                 promotionId = promotionId,
-                employeeId = resolved?.id,
+                employeeId = resolved?.id ?: request.employeeId,
                 scheduleDate = request.scheduleDate,
                 workStatus = request.workStatus ?: DEFAULT_WORK_STATUS,
                 workType1 = request.workType1 ?: DEFAULT_WORK_TYPE1,
@@ -104,8 +104,8 @@ class AdminPromotionEmployeeService(
     fun updateEmployee(id: Long, userId: Long, request: PromotionEmployeeRequest): PromotionEmployeeDetailResponse {
         val pe = findEmployeeById(id)
 
-        // employeeCode로 사원 해소
-        val resolved = resolveEmployee(request.employeeCode)
+        // employeeId로 사원 해소
+        val resolved = resolveEmployee(request.employeeId)
 
         // 빈 문자열 → null 정규화
         val normalizedWorkType3 = request.workType3?.takeIf { it.isNotBlank() }
@@ -213,7 +213,7 @@ class AdminPromotionEmployeeService(
             // 빈 문자열 → null 정규화
             val normalizedWorkType3 = item.workType3?.takeIf { it.isNotBlank() }
 
-            val resolved = resolveEmployee(item.employeeCode)
+            val resolved = resolveEmployee(item.employeeId)
 
             removeScheduleOnCriticalFieldChange(
                 pe, resolved?.id, item.scheduleDate, normalizedWorkType3,
@@ -281,10 +281,10 @@ class AdminPromotionEmployeeService(
 
     // --- Private helpers ---
 
-    private fun resolveEmployee(employeeCode: String?): ResolvedEmployee? {
-        if (employeeCode == null) return null
-        val employee = employeeRepository.findByEmployeeCode(employeeCode).orElse(null)
-            ?: return ResolvedEmployee(id = null, name = null, employeeCode = employeeCode)
+    private fun resolveEmployee(employeeId: Long?): ResolvedEmployee? {
+        if (employeeId == null) return null
+        val employee = employeeRepository.findById(employeeId).orElse(null)
+            ?: return ResolvedEmployee(id = employeeId, name = null, employeeCode = null)
         return ResolvedEmployee(id = employee.id, name = employee.name, employeeCode = employee.employeeCode)
     }
 
@@ -310,30 +310,30 @@ class AdminPromotionEmployeeService(
 
         // 1. 존재 여부
         val pe = promotionEmployeeRepository.findById(item.id).orElse(null)
-            ?: return BatchItemError(index, item.employeeCode, "NOT_FOUND", "행사조원을 찾을 수 없습니다")
+            ?: return BatchItemError(index, item.employeeId, "NOT_FOUND", "행사조원을 찾을 수 없습니다")
         employeeMap[item.id] = pe
 
         // 2. 소속 행사 일치
         if (pe.promotionId != promotionId) {
-            return BatchItemError(index, item.employeeCode, "INVALID_PARAMETER", "유효하지 않은 파라미터")
+            return BatchItemError(index, item.employeeId, "INVALID_PARAMETER", "유효하지 않은 파라미터")
         }
 
         // 3. 투입일 범위
         if (item.scheduleDate.isBefore(promotion.startDate) || item.scheduleDate.isAfter(promotion.endDate)) {
             return BatchItemError(
-                index, item.employeeCode, "SCHEDULE_DATE_OUT_OF_RANGE",
+                index, item.employeeId, "SCHEDULE_DATE_OUT_OF_RANGE",
                 "투입일(${item.scheduleDate})이 행사 기간(${promotion.startDate} ~ ${promotion.endDate})을 벗어납니다"
             )
         }
 
         // 4. 근무상태 (null 허용)
         if (item.workStatus != null && item.workStatus.isNotBlank() && item.workStatus !in VALID_WORK_STATUSES) {
-            return BatchItemError(index, item.employeeCode, "INVALID_WORK_STATUS", "근무상태는 근무, 연차, 대휴 중 하나여야 합니다")
+            return BatchItemError(index, item.employeeId, "INVALID_WORK_STATUS", "근무상태는 근무, 연차, 대휴 중 하나여야 합니다")
         }
 
         // 5. 근무유형3 (null 허용)
         if (normalizedWorkType3 != null && normalizedWorkType3 !in VALID_WORK_TYPE3) {
-            return BatchItemError(index, item.employeeCode, "INVALID_WORK_TYPE3", "근무유형3은 고정, 격고, 순회 중 하나여야 합니다")
+            return BatchItemError(index, item.employeeId, "INVALID_WORK_TYPE3", "근무유형3은 고정, 격고, 순회 중 하나여야 합니다")
         }
 
         // 6. 전문행사조-카테고리 매칭
@@ -346,7 +346,7 @@ class AdminPromotionEmployeeService(
                     val matches = allowedKeywords.any { keyword -> team.contains(keyword) }
                     if (!matches) {
                         return BatchItemError(
-                            index, item.employeeCode, "TEAM_CATEGORY_MISMATCH",
+                            index, item.employeeId, "TEAM_CATEGORY_MISMATCH",
                             CATEGORY_TEAM_MESSAGES[category] ?: "전문행사조가 행사 카테고리와 일치하지 않습니다"
                         )
                     }
@@ -356,8 +356,8 @@ class AdminPromotionEmployeeService(
 
         // 7. 마감 보호
         if (pe.teamMemberScheduleId != null && pe.promoCloseByTm) {
-            val resolvedForValidation = resolveEmployee(item.employeeCode)
-            val criticalChanged = pe.employeeId != resolvedForValidation?.id ||
+            val resolvedForValidation = resolveEmployee(item.employeeId)
+            val criticalChanged = pe.employeeId != (resolvedForValidation?.id ?: item.employeeId) ||
                 pe.scheduleDate != item.scheduleDate ||
                 pe.workType3 != normalizedWorkType3 ||
                 pe.basePrice != item.basePrice ||
@@ -365,7 +365,7 @@ class AdminPromotionEmployeeService(
 
             if (criticalChanged && !isAdmin) {
                 return BatchItemError(
-                    index, item.employeeCode, "CLOSED_EMPLOYEE_MODIFICATION",
+                    index, item.employeeId, "CLOSED_EMPLOYEE_MODIFICATION",
                     "확정되었고 여사원이 마감한 행사조원은 수정할 수 없습니다"
                 )
             }
