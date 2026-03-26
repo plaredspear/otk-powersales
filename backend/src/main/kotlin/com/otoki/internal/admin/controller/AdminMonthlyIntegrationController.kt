@@ -1,8 +1,8 @@
 package com.otoki.internal.admin.controller
 
-import com.otoki.internal.admin.dto.response.CategoryScheduleResponse
-import com.otoki.internal.admin.dto.response.MonthlyIntegrationScheduleResponse
-import com.otoki.internal.admin.service.AdminMonthlyIntegrationService
+import com.otoki.internal.schedule.dto.response.CategoryScheduleResponse
+import com.otoki.internal.schedule.dto.response.MonthlyIntegrationScheduleResponse
+import com.otoki.internal.schedule.service.AdminMonthlyIntegrationService
 import com.otoki.internal.common.dto.ApiResponse
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType

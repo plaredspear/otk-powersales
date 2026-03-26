@@ -1,9 +1,9 @@
 package com.otoki.internal.admin.controller
 
-import com.otoki.internal.admin.dto.response.*
 import com.otoki.internal.admin.security.AdminAuthorityFilter
-import com.otoki.internal.admin.service.AdminMonthlyIntegrationService
-import com.otoki.internal.admin.service.InvalidParameterException
+import com.otoki.internal.schedule.dto.response.*
+import com.otoki.internal.schedule.service.AdminMonthlyIntegrationService
+import com.otoki.internal.schedule.service.InvalidParameterException
 import com.otoki.internal.common.security.JwtAuthenticationFilter
 import com.otoki.internal.common.security.JwtTokenProvider
 import com.otoki.internal.common.security.UserPrincipal

@@ -1,4 +1,4 @@
-package com.otoki.internal.admin.dto.response
+package com.otoki.internal.schedule.dto.response
 
 import java.math.BigDecimal
 
