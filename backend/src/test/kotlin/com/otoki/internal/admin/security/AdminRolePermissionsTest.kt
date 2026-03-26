@@ -20,14 +20,33 @@ class AdminRolePermissionsTest {
         fun jojangReturnsAllPermissions() {
             val permissions = AdminRolePermissions.getPermissions("조장")
 
-            assertThat(permissions).containsExactlyInAnyOrder(
-                AdminPermission.DASHBOARD_READ,
-                AdminPermission.EMPLOYEE_READ,
-                AdminPermission.ACCOUNT_READ,
-                AdminPermission.PROMOTION_READ,
-                AdminPermission.PROMOTION_WRITE,
-                AdminPermission.SAFETY_CHECK_READ
-            )
+            assertThat(permissions).containsExactlyInAnyOrder(*AdminPermission.entries.toTypedArray())
+        }
+
+        @Test
+        @DisplayName("영업지원실 역할 - 모든 권한 반환")
+        fun supportReturnsAllPermissions() {
+            val permissions = AdminRolePermissions.getPermissions("영업지원실")
+
+            assertThat(permissions).containsExactlyInAnyOrder(*AdminPermission.entries.toTypedArray())
+        }
+
+        @Test
+        @DisplayName("지점장 역할 - SCHEDULE_WRITE 제외 모든 권한 반환")
+        fun branchManagerReturnsReadOnlySchedule() {
+            val permissions = AdminRolePermissions.getPermissions("지점장")
+
+            assertThat(permissions).contains(AdminPermission.SCHEDULE_READ)
+            assertThat(permissions).doesNotContain(AdminPermission.SCHEDULE_WRITE)
+        }
+
+        @Test
+        @DisplayName("영업부장 역할 - SCHEDULE_WRITE 제외 모든 권한 반환")
+        fun salesManagerReturnsReadOnlySchedule() {
+            val permissions = AdminRolePermissions.getPermissions("영업부장")
+
+            assertThat(permissions).contains(AdminPermission.SCHEDULE_READ)
+            assertThat(permissions).doesNotContain(AdminPermission.SCHEDULE_WRITE)
         }
 
         @Test
