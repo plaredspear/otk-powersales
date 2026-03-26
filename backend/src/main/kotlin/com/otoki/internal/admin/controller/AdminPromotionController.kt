@@ -1,12 +1,12 @@
 package com.otoki.internal.admin.controller
 
-import com.otoki.internal.admin.dto.request.PromotionCreateRequest
-import com.otoki.internal.admin.dto.response.PromotionDetailResponse
-import com.otoki.internal.admin.dto.response.PromotionFormMetaResponse
-import com.otoki.internal.admin.dto.response.PromotionListResponse
+import com.otoki.internal.promotion.dto.request.PromotionCreateRequest
+import com.otoki.internal.promotion.dto.response.PromotionDetailResponse
+import com.otoki.internal.promotion.dto.response.PromotionFormMetaResponse
+import com.otoki.internal.promotion.dto.response.PromotionListResponse
 import com.otoki.internal.admin.security.AdminPermission
 import com.otoki.internal.admin.security.RequiresPermission
-import com.otoki.internal.admin.service.AdminPromotionService
+import com.otoki.internal.promotion.service.AdminPromotionService
 import com.otoki.internal.common.dto.ApiResponse
 import com.otoki.internal.common.security.UserPrincipal
 import jakarta.validation.Valid

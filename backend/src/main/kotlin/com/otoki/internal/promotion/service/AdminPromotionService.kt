@@ -1,8 +1,8 @@
-package com.otoki.internal.admin.service
+package com.otoki.internal.promotion.service
 
 import com.otoki.internal.admin.dto.EffectiveBranchResult
-import com.otoki.internal.admin.dto.request.PromotionCreateRequest
-import com.otoki.internal.admin.dto.response.*
+import com.otoki.internal.promotion.dto.request.PromotionCreateRequest
+import com.otoki.internal.promotion.dto.response.*
 import com.otoki.internal.admin.scope.DataScopeHolder
 import com.otoki.internal.promotion.entity.Promotion
 import com.otoki.internal.promotion.entity.StandLocation

@@ -1,10 +1,10 @@
 package com.otoki.internal.admin.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.otoki.internal.admin.dto.request.PromotionTypeRequest
-import com.otoki.internal.admin.dto.response.PromotionTypeResponse
+import com.otoki.internal.promotion.dto.request.PromotionTypeRequest
+import com.otoki.internal.promotion.dto.response.PromotionTypeResponse
 import com.otoki.internal.admin.security.AdminAuthorityFilter
-import com.otoki.internal.admin.service.AdminPromotionTypeService
+import com.otoki.internal.promotion.service.AdminPromotionTypeService
 import com.otoki.internal.common.security.GpsConsentFilter
 import com.otoki.internal.common.security.JwtAuthenticationFilter
 import com.otoki.internal.common.security.JwtTokenProvider

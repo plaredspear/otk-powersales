@@ -1,4 +1,4 @@
-package com.otoki.internal.admin.dto.request
+package com.otoki.internal.promotion.dto.request
 
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull

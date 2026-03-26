@@ -1,8 +1,8 @@
-package com.otoki.internal.admin.service
+package com.otoki.internal.promotion.service
 
-import com.otoki.internal.admin.dto.request.BatchUpdatePromotionEmployeeItem
-import com.otoki.internal.admin.dto.request.BatchUpdatePromotionEmployeeRequest
-import com.otoki.internal.admin.dto.request.PromotionEmployeeRequest
+import com.otoki.internal.promotion.dto.request.BatchUpdatePromotionEmployeeItem
+import com.otoki.internal.promotion.dto.request.BatchUpdatePromotionEmployeeRequest
+import com.otoki.internal.promotion.dto.request.PromotionEmployeeRequest
 import com.otoki.internal.promotion.entity.Promotion
 import com.otoki.internal.promotion.entity.PromotionEmployee
 import com.otoki.internal.promotion.exception.*
