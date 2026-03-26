@@ -59,7 +59,7 @@ class AdminAuthControllerTest {
         fun adminLogin_success() {
             // Given
             val mockResponse = AdminLoginResponse(
-                user = AdminUserInfo(1L, "00000001", "홍길동", "서울지점", "LEADER", "조장", "CC001"),
+                user = AdminUserInfo(1L, "00000001", "홍길동", "서울지점", "LEADER", "조장", "CC001", listOf("DASHBOARD_READ", "EMPLOYEE_READ", "ACCOUNT_READ", "PROMOTION_READ", "PROMOTION_WRITE", "SAFETY_CHECK_READ", "SCHEDULE_READ", "SCHEDULE_WRITE")),
                 token = AdminTokenInfo("access-token", "refresh-token", 3600)
             )
             whenever(authService.adminLogin(any())).thenReturn(mockResponse)

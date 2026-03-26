@@ -3,6 +3,8 @@ package com.otoki.internal.admin.controller
 import com.otoki.internal.admin.dto.request.TeamScheduleCreateRequest
 import com.otoki.internal.admin.dto.request.TeamScheduleUpdateRequest
 import com.otoki.internal.admin.dto.response.*
+import com.otoki.internal.admin.security.AdminPermission
+import com.otoki.internal.admin.security.RequiresPermission
 import com.otoki.internal.admin.service.AdminTeamScheduleService
 import com.otoki.internal.branch.dto.response.BranchResponse
 import com.otoki.internal.common.dto.ApiResponse
@@ -19,6 +21,7 @@ class AdminTeamScheduleController(
     private val adminTeamScheduleService: AdminTeamScheduleService
 ) {
 
+    @RequiresPermission(AdminPermission.SCHEDULE_READ)
     @GetMapping("/members")
     fun getMembers(
         @AuthenticationPrincipal principal: UserPrincipal
@@ -27,6 +30,7 @@ class AdminTeamScheduleController(
         return ResponseEntity.ok(ApiResponse.success(result))
     }
 
+    @RequiresPermission(AdminPermission.SCHEDULE_READ)
     @GetMapping("/accounts")
     fun getAccounts(
         @AuthenticationPrincipal principal: UserPrincipal,
@@ -36,6 +40,7 @@ class AdminTeamScheduleController(
         return ResponseEntity.ok(ApiResponse.success(result))
     }
 
+    @RequiresPermission(AdminPermission.SCHEDULE_READ)
     @GetMapping("/branches")
     fun getBranches(
         @AuthenticationPrincipal principal: UserPrincipal
@@ -44,6 +49,7 @@ class AdminTeamScheduleController(
         return ResponseEntity.ok(ApiResponse.success(result))
     }
 
+    @RequiresPermission(AdminPermission.SCHEDULE_READ)
     @GetMapping
     fun getMonthlySchedules(
         @AuthenticationPrincipal principal: UserPrincipal,
@@ -60,6 +66,7 @@ class AdminTeamScheduleController(
         return ResponseEntity.ok(ApiResponse.success(result))
     }
 
+    @RequiresPermission(AdminPermission.SCHEDULE_READ)
     @GetMapping("/summary")
     fun getDailySummary(
         @AuthenticationPrincipal principal: UserPrincipal,
@@ -76,6 +83,7 @@ class AdminTeamScheduleController(
         return ResponseEntity.ok(ApiResponse.success(result))
     }
 
+    @RequiresPermission(AdminPermission.SCHEDULE_WRITE)
     @PostMapping
     fun createSchedule(
         @AuthenticationPrincipal principal: UserPrincipal,
@@ -86,6 +94,7 @@ class AdminTeamScheduleController(
             .body(ApiResponse.success(result, "일정이 등록되었습니다"))
     }
 
+    @RequiresPermission(AdminPermission.SCHEDULE_WRITE)
     @PutMapping("/{id}")
     fun updateSchedule(
         @AuthenticationPrincipal principal: UserPrincipal,
@@ -96,6 +105,7 @@ class AdminTeamScheduleController(
         return ResponseEntity.ok(ApiResponse.success(null as Any?, "일정이 수정되었습니다"))
     }
 
+    @RequiresPermission(AdminPermission.SCHEDULE_WRITE)
     @DeleteMapping("/{id}")
     fun deleteSchedule(
         @AuthenticationPrincipal principal: UserPrincipal,

@@ -7,6 +7,8 @@ import com.otoki.internal.admin.dto.response.ScheduleConfirmResultDto
 import com.otoki.internal.admin.dto.response.ScheduleListItemDto
 import com.otoki.internal.admin.dto.response.ScheduleUploadResultDto
 import com.otoki.internal.admin.exception.ScheduleFileRequiredException
+import com.otoki.internal.admin.security.AdminPermission
+import com.otoki.internal.admin.security.RequiresPermission
 import com.otoki.internal.admin.service.AdminScheduleService
 import com.otoki.internal.common.dto.ApiResponse
 import com.otoki.internal.common.security.UserPrincipal
@@ -26,6 +28,7 @@ class AdminScheduleController(
     private val adminScheduleService: AdminScheduleService
 ) {
 
+    @RequiresPermission(AdminPermission.SCHEDULE_READ)
     @GetMapping("/list")
     fun listSchedules(
         @RequestParam(defaultValue = "0") page: Int,
@@ -43,6 +46,7 @@ class AdminScheduleController(
         return ResponseEntity.ok(ApiResponse.success(result))
     }
 
+    @RequiresPermission(AdminPermission.SCHEDULE_WRITE)
     @PatchMapping("/confirm")
     fun batchConfirm(
         @Valid @RequestBody request: ScheduleBatchConfirmRequest
@@ -51,6 +55,7 @@ class AdminScheduleController(
         return ResponseEntity.ok(ApiResponse.success(result, "${result.updatedCount}건이 확정되었습니다"))
     }
 
+    @RequiresPermission(AdminPermission.SCHEDULE_WRITE)
     @PatchMapping("/unconfirm")
     fun batchUnconfirm(
         @Valid @RequestBody request: ScheduleBatchConfirmRequest
@@ -59,6 +64,7 @@ class AdminScheduleController(
         return ResponseEntity.ok(ApiResponse.success(result, "${result.updatedCount}건이 확정 해제되었습니다"))
     }
 
+    @RequiresPermission(AdminPermission.SCHEDULE_READ)
     @GetMapping("/template")
     fun downloadTemplate(
         @AuthenticationPrincipal principal: UserPrincipal
@@ -77,6 +83,7 @@ class AdminScheduleController(
             .body(result.bytes)
     }
 
+    @RequiresPermission(AdminPermission.SCHEDULE_WRITE)
     @PostMapping("/upload")
     fun uploadExcel(
         @RequestParam("file", required = false) file: MultipartFile?
@@ -88,6 +95,7 @@ class AdminScheduleController(
         return ResponseEntity.ok(ApiResponse.success(result, "검증 완료"))
     }
 
+    @RequiresPermission(AdminPermission.SCHEDULE_WRITE)
     @PostMapping("/upload/confirm")
     fun confirmUpload(
         @Valid @RequestBody request: ScheduleConfirmRequest
