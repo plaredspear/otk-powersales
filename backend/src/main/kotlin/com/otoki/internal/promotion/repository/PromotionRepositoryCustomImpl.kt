@@ -3,7 +3,9 @@ package com.otoki.internal.promotion.repository
 import com.otoki.internal.promotion.entity.Promotion
 import com.otoki.internal.promotion.entity.QPromotion.promotion
 import com.otoki.internal.promotion.entity.QPromotionEmployee.promotionEmployee
+import com.otoki.internal.promotion.entity.QPromotionType.promotionType
 import com.otoki.internal.sap.entity.QAccount.account
+import com.otoki.internal.sap.entity.QProduct.product
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.jpa.JPAExpressions
 import com.querydsl.jpa.impl.JPAQueryFactory
@@ -15,6 +17,16 @@ import java.time.LocalDate
 class PromotionRepositoryCustomImpl(
     private val queryFactory: JPAQueryFactory
 ) : PromotionRepositoryCustom {
+
+    override fun findByIdWithRelations(id: Long): Promotion? {
+        return queryFactory
+            .selectFrom(promotion)
+            .leftJoin(promotion.promotionType, promotionType).fetchJoin()
+            .leftJoin(promotion.account, account).fetchJoin()
+            .leftJoin(promotion.primaryProduct, product).fetchJoin()
+            .where(promotion.id.eq(id))
+            .fetchOne()
+    }
 
     override fun searchForAdmin(
         keyword: String?,
@@ -61,6 +73,8 @@ class PromotionRepositoryCustomImpl(
 
         val content = queryFactory
             .selectFrom(promotion)
+            .leftJoin(promotion.promotionType, promotionType).fetchJoin()
+            .leftJoin(promotion.account, account).fetchJoin()
             .where(builder)
             .orderBy(promotion.createdAt.desc())
             .offset(pageable.offset)
@@ -107,19 +121,13 @@ class PromotionRepositoryCustomImpl(
         }
 
         // 키워드 검색 (행사명, 행사번호, 거래처명)
-        if (!keyword.isNullOrBlank()) {
-            val lowerPattern = "%${keyword.lowercase()}%"
+        val hasKeyword = !keyword.isNullOrBlank()
+        if (hasKeyword) {
+            val lowerPattern = "%${keyword!!.lowercase()}%"
             builder.and(
                 promotion.promotionName.lower().like(lowerPattern)
                     .or(promotion.promotionNumber.lower().like(lowerPattern))
-                    .or(
-                        promotion.accountId.`in`(
-                            JPAExpressions
-                                .select(account.id)
-                                .from(account)
-                                .where(account.name.lower().like(lowerPattern))
-                        )
-                    )
+                    .or(account.name.lower().like(lowerPattern))
             )
         }
 
@@ -136,6 +144,7 @@ class PromotionRepositoryCustomImpl(
 
         val content = queryFactory
             .selectFrom(promotion)
+            .leftJoin(promotion.account, account).fetchJoin()
             .where(builder)
             .orderBy(promotion.startDate.desc(), promotion.promotionNumber.desc())
             .offset(pageable.offset)
@@ -145,6 +154,7 @@ class PromotionRepositoryCustomImpl(
         val countQuery = queryFactory
             .select(promotion.count())
             .from(promotion)
+            .leftJoin(promotion.account, account)
             .where(builder)
 
         return PageableExecutionUtils.getPage(content, pageable) {

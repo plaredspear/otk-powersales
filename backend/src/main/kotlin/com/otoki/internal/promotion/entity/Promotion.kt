@@ -3,6 +3,8 @@ package com.otoki.internal.promotion.entity
 import com.otoki.internal.common.entity.BaseEntity
 import com.otoki.internal.common.salesforce.SFField
 import com.otoki.internal.common.salesforce.SFObject
+import com.otoki.internal.sap.entity.Account
+import com.otoki.internal.sap.entity.Product
 import jakarta.persistence.*
 import java.time.LocalDate
 
@@ -124,6 +126,19 @@ class Promotion(
     @Column(name = "is_deleted", nullable = false)
     var isDeleted: Boolean = false
 ) : BaseEntity() {
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "promotion_type_id", insertable = false, updatable = false)
+    var promotionType: PromotionType? = null
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id", insertable = false, updatable = false)
+    var account: Account? = null
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "primary_product_id", insertable = false, updatable = false)
+    var primaryProduct: Product? = null
+
     fun update(
         promotionName: String?,
         promotionTypeId: Long?,
