@@ -19,4 +19,6 @@ object AdminRolePermissions {
         if (role == null) return emptySet()
         return ROLE_PERMISSIONS[role] ?: emptySet()
     }
+
+    fun getAllRolePermissions(): Map<String, Set<AdminPermission>> = ROLE_PERMISSIONS
 }
