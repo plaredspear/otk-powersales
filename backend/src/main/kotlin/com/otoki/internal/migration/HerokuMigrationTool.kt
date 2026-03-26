@@ -154,34 +154,13 @@ object HerokuMigrationTool {
         EntityRegistration("inspectionTheme", InspectionTheme::class.java),
         EntityRegistration("productSyncBuffer", ProductSyncBuffer::class.java),
         EntityRegistration("staffReview", StaffReview::class.java),
-        EntityRegistration(
-            "tmpClaim", TmpClaim::class.java,
-            timestampColumns = Pair("inst_date", "upd_date"),
-        ),
-        EntityRegistration(
-            "tmpClaimCode", TmpClaimCode::class.java,
-            timestampColumns = Pair("inst_date", "upd_date"),
-        ),
-        EntityRegistration(
-            "tmpOnsite", TmpOnsite::class.java,
-            timestampColumns = Pair("inst_date", "upd_date"),
-        ),
-        EntityRegistration(
-            "tmpOrder", TmpOrder::class.java,
-            timestampColumns = Pair("inst_date", "upd_date"),
-        ),
-        EntityRegistration(
-            "tmpOrderProduct", TmpOrderProduct::class.java,
-            timestampColumns = Pair("inst_date", "upd_date"),
-        ),
-        EntityRegistration(
-            "tmpPromotion", TmpPromotion::class.java,
-            timestampColumns = Pair("inst_date", "upd_date"),
-        ),
-        EntityRegistration(
-            "tmpSuggest", TmpSuggest::class.java,
-            timestampColumns = Pair("inst_date", "upd_date"),
-        ),
+        EntityRegistration("tmpClaim", TmpClaim::class.java),
+        EntityRegistration("tmpClaimCode", TmpClaimCode::class.java),
+        EntityRegistration("tmpOnsite", TmpOnsite::class.java),
+        EntityRegistration("tmpOrder", TmpOrder::class.java),
+        EntityRegistration("tmpOrderProduct", TmpOrderProduct::class.java),
+        EntityRegistration("tmpPromotion", TmpPromotion::class.java),
+        EntityRegistration("tmpSuggest", TmpSuggest::class.java),
     )
 
     private const val HEROKU_SCHEMA = "salesforce2"
@@ -741,11 +720,13 @@ object HerokuMigrationTool {
         }
         println("[$name] ${rows.size}건 조회 완료")
 
-        // updated_at이 NULL이면 created_at으로 대체 (Heroku 데이터 일부 NULL 존재)
+        // 타임스탬프 NULL 보정 (Heroku 데이터 일부 NULL 존재)
         val createdAtIdx = allJpaColumns.indexOf("created_at")
         val updatedAtIdx = allJpaColumns.indexOf("updated_at")
         if (createdAtIdx >= 0 && updatedAtIdx >= 0) {
+            val now = java.sql.Timestamp.valueOf(java.time.LocalDateTime.now())
             rows.forEach { row ->
+                if (row[createdAtIdx] == null) row[createdAtIdx] = now
                 if (row[updatedAtIdx] == null) row[updatedAtIdx] = row[createdAtIdx]
             }
         }

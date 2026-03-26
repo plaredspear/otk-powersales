@@ -10,7 +10,7 @@ import java.time.LocalDateTime
 
 @Entity
 @Table(name = "tmp_claim_code")
-@HCTable("tmp_claim_code")
+@HCTable("tmp_claimcode")
 class TmpClaimCode(
 
     @Id
