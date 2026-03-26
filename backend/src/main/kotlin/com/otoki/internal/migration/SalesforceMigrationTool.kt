@@ -29,7 +29,7 @@ import com.otoki.internal.sap.entity.Organization
  * │  YES    │ DKRetail__Promotion__c                      │ promotion                   │ Promotion               │ AccId__c → account.sfid, DKRetail__PrimaryProductId__c →      │ UPDATE: account_id, product_id │
  * │         │                                             │                             │                         │   product.sfid                                                │                               │
  * │  YES    │ DKRetail__PromotionEmployee__c              │ promotion_employee          │ PromotionEmployee       │ DKRetail__PromotionId__c → promotion.sfid,                    │ UPDATE: promotion_id          │
- * │         │                                             │                             │                         │   DKRetail__ScheduleId__c → team_member_schedule.sfid         │                               │
+ * │         │                                             │                             │                         │   DKRetail__ScheduleId__c → team_member_schedule.sfid         │ V73: sfid 컬럼 추가, schedule_id → team_member_schedule_id 리네이밍 │
  * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
  * │         │ ── Agreement / Upload ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
  * │  YES    │ AgreementHistory__c                         │ agreement_history           │ AgreementHistory        │ AgreementWordId__c → agreement_word.sfid                      │ UPDATE: agreement_word_id     │

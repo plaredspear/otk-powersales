@@ -81,9 +81,9 @@ class AdminPromotionConfirmServiceTest {
             assertThat(result.promotionId).isEqualTo(10L)
             assertThat(result.totalEmployees).isEqualTo(3)
             assertThat(result.upsertedTeamMemberSchedules).isEqualTo(3)
-            assertThat(employees[0].scheduleId).isEqualTo(100L)
-            assertThat(employees[1].scheduleId).isEqualTo(101L)
-            assertThat(employees[2].scheduleId).isEqualTo(102L)
+            assertThat(employees[0].teamMemberScheduleId).isEqualTo(100L)
+            assertThat(employees[1].teamMemberScheduleId).isEqualTo(101L)
+            assertThat(employees[2].teamMemberScheduleId).isEqualTo(102L)
         }
 
         @Test
@@ -115,7 +115,7 @@ class AdminPromotionConfirmServiceTest {
             val result = service.confirmPromotion(10L)
 
             assertThat(result.upsertedTeamMemberSchedules).isEqualTo(1)
-            assertThat(employees[0].scheduleId).isEqualTo(50L)
+            assertThat(employees[0].teamMemberScheduleId).isEqualTo(50L)
         }
 
         @Test

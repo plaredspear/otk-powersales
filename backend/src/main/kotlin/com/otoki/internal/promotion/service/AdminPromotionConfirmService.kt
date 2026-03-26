@@ -116,7 +116,7 @@ class AdminPromotionConfirmService(
         for (pe in employees) {
             val teamMemberSchedule = teamMemberScheduleByPeId[pe.id]
             if (teamMemberSchedule != null) {
-                pe.scheduleId = teamMemberSchedule.id
+                pe.teamMemberScheduleId = teamMemberSchedule.id
             }
         }
         promotionEmployeeRepository.saveAll(employees)

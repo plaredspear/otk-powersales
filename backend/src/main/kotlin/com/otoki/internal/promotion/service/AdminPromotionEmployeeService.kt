@@ -268,13 +268,13 @@ class AdminPromotionEmployeeService(
         val promotionId = pe.promotionId
 
         // 1-2-B: 마감 보호 — 삭제 차단
-        if (pe.scheduleId != null && pe.promoCloseByTm) {
+        if (pe.teamMemberScheduleId != null && pe.promoCloseByTm) {
             throw ClosedEmployeeDeleteException()
         }
 
         // 1-4-B: 연쇄 삭제 — 스케줄 삭제
-        if (pe.scheduleId != null) {
-            teamMemberScheduleRepository.deleteAllByIdIn(listOf(pe.scheduleId!!))
+        if (pe.teamMemberScheduleId != null) {
+            teamMemberScheduleRepository.deleteAllByIdIn(listOf(pe.teamMemberScheduleId!!))
         }
 
         promotionEmployeeRepository.delete(pe)
@@ -366,7 +366,7 @@ class AdminPromotionEmployeeService(
         }
 
         // 7. 마감 보호
-        if (pe.scheduleId != null && pe.promoCloseByTm) {
+        if (pe.teamMemberScheduleId != null && pe.promoCloseByTm) {
             val resolvedForValidation = resolveEmployee(item.employeeCode)
             val criticalChanged = pe.employeeId != resolvedForValidation?.id ||
                 pe.scheduleDate != item.scheduleDate ||
@@ -439,7 +439,7 @@ class AdminPromotionEmployeeService(
         dailyTargetCount: Int?,
         isAdmin: Boolean
     ) {
-        if (pe.scheduleId == null || !pe.promoCloseByTm) return
+        if (pe.teamMemberScheduleId == null || !pe.promoCloseByTm) return
 
         val criticalChanged = pe.employeeId != newEmployeeId ||
             pe.scheduleDate != scheduleDate ||
@@ -457,7 +457,7 @@ class AdminPromotionEmployeeService(
         workType3: String?,
         professionalPromotionTeam: String?
     ) {
-        if (pe.scheduleId == null) return
+        if (pe.teamMemberScheduleId == null) return
         if (pe.professionalPromotionTeam != professionalPromotionTeam) return
 
         val criticalChanged = pe.employeeId != newEmployeeId ||
@@ -465,8 +465,8 @@ class AdminPromotionEmployeeService(
             pe.workType3 != workType3
 
         if (criticalChanged) {
-            teamMemberScheduleRepository.deleteAllByIdIn(listOf(pe.scheduleId!!))
-            pe.scheduleId = null
+            teamMemberScheduleRepository.deleteAllByIdIn(listOf(pe.teamMemberScheduleId!!))
+            pe.teamMemberScheduleId = null
         }
     }
 
