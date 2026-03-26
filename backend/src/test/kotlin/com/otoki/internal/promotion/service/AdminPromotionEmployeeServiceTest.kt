@@ -429,7 +429,7 @@ class AdminPromotionEmployeeServiceTest {
         @Test
         @DisplayName("마감 조원 비핵심필드 수정 -> 허용")
         fun updateEmployee_closedNonCritical_success() {
-            val pe = createPe(scheduleId = 100L, promoCloseByTm = true)
+            val pe = createPe(teamMemberScheduleId = 100L, promoCloseByTm = true)
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
             whenever(employeeRepository.findByEmployeeCode("20030117")).thenReturn(Optional.of(createEmployee()))
@@ -446,7 +446,7 @@ class AdminPromotionEmployeeServiceTest {
         @Test
         @DisplayName("USER가 마감 조원 핵심필드(employeeCode) 수정 -> CLOSED_EMPLOYEE_MODIFICATION")
         fun updateEmployee_closedCriticalField() {
-            val pe = createPe(scheduleId = 100L, promoCloseByTm = true)
+            val pe = createPe(teamMemberScheduleId = 100L, promoCloseByTm = true)
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
             whenever(employeeRepository.findByEmployeeCode("DIFFEREN")).thenReturn(Optional.empty())
@@ -458,7 +458,7 @@ class AdminPromotionEmployeeServiceTest {
         @Test
         @DisplayName("USER가 마감 조원 핵심필드(schedule_date) 수정 -> CLOSED_EMPLOYEE_MODIFICATION")
         fun updateEmployee_closedScheduleDate() {
-            val pe = createPe(scheduleId = 100L, promoCloseByTm = true)
+            val pe = createPe(teamMemberScheduleId = 100L, promoCloseByTm = true)
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
             whenever(employeeRepository.findByEmployeeCode("20030117")).thenReturn(Optional.of(createEmployee()))
@@ -470,7 +470,7 @@ class AdminPromotionEmployeeServiceTest {
         @Test
         @DisplayName("ADMIN이 마감 조원 핵심필드(employeeCode) 수정 -> 수정 허용")
         fun updateEmployee_adminClosedCriticalField_allowed() {
-            val pe = createPe(scheduleId = 100L, promoCloseByTm = true)
+            val pe = createPe(teamMemberScheduleId = 100L, promoCloseByTm = true)
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee(appAuthority = "지점장")))
             whenever(employeeRepository.findByEmployeeCode("DIFFEREN")).thenReturn(Optional.empty())
@@ -486,7 +486,7 @@ class AdminPromotionEmployeeServiceTest {
         @Test
         @DisplayName("ADMIN이 마감 조원 핵심필드(투입일) 수정 -> 수정 허용")
         fun updateEmployee_adminClosedScheduleDate_allowed() {
-            val pe = createPe(scheduleId = 100L, promoCloseByTm = true)
+            val pe = createPe(teamMemberScheduleId = 100L, promoCloseByTm = true)
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee(appAuthority = "지점장")))
             whenever(employeeRepository.findByEmployeeCode("20030117")).thenReturn(Optional.of(createEmployee()))
@@ -502,7 +502,7 @@ class AdminPromotionEmployeeServiceTest {
         @Test
         @DisplayName("확정 조원 핵심필드 변경 -> 스케줄 삭제 + schedule_id null")
         fun updateEmployee_criticalFieldChange_scheduleDeleted() {
-            val pe = createPe(scheduleId = 100L)
+            val pe = createPe(teamMemberScheduleId = 100L)
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
             whenever(employeeRepository.findByEmployeeCode("DIFFEREN")).thenReturn(Optional.empty())
@@ -514,13 +514,13 @@ class AdminPromotionEmployeeServiceTest {
             service.updateEmployee(1L, 1L, createRequest(employeeCode = "DIFFEREN"))
 
             verify(teamMemberScheduleRepository).deleteAllByIdIn(listOf(100L))
-            assertThat(pe.scheduleId).isNull()
+            assertThat(pe.teamMemberScheduleId).isNull()
         }
 
         @Test
         @DisplayName("professionalPromotionTeam 변경 시 -> 스케줄 삭제 안 함")
         fun updateEmployee_teamChange_noScheduleDelete() {
-            val pe = createPe(scheduleId = 100L)
+            val pe = createPe(teamMemberScheduleId = 100L)
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
             whenever(employeeRepository.findByEmployeeCode("DIFFEREN")).thenReturn(Optional.empty())
@@ -536,7 +536,7 @@ class AdminPromotionEmployeeServiceTest {
             ))
 
             verify(teamMemberScheduleRepository, never()).deleteAllByIdIn(any())
-            assertThat(pe.scheduleId).isEqualTo(100L)
+            assertThat(pe.teamMemberScheduleId).isEqualTo(100L)
         }
 
         @Test
@@ -766,7 +766,7 @@ class AdminPromotionEmployeeServiceTest {
         @Test
         @DisplayName("확정 조원(미마감) 삭제 -> 스케줄 연쇄 삭제")
         fun deleteEmployee_withSchedule_cascadeDelete() {
-            val pe = createPe(scheduleId = 100L)
+            val pe = createPe(teamMemberScheduleId = 100L)
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             stubRollup()
@@ -780,7 +780,7 @@ class AdminPromotionEmployeeServiceTest {
         @Test
         @DisplayName("마감 조원 삭제 -> CLOSED_EMPLOYEE_DELETE")
         fun deleteEmployee_closed() {
-            val pe = createPe(scheduleId = 100L, promoCloseByTm = true)
+            val pe = createPe(teamMemberScheduleId = 100L, promoCloseByTm = true)
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
 
             assertThatThrownBy { service.deleteEmployee(1L) }
@@ -951,7 +951,7 @@ class AdminPromotionEmployeeServiceTest {
         @Test
         @DisplayName("비관리자 마감 행사사원 핵심필드 수정 -> CLOSED_EMPLOYEE_MODIFICATION")
         fun batchUpdate_closedEmployeeModification() {
-            val pe = createPe(id = 1L, scheduleId = 100L, promoCloseByTm = true)
+            val pe = createPe(id = 1L, teamMemberScheduleId = 100L, promoCloseByTm = true)
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
             whenever(employeeRepository.findByEmployeeCode("DIFFEREN")).thenReturn(Optional.empty())
@@ -971,7 +971,7 @@ class AdminPromotionEmployeeServiceTest {
         @Test
         @DisplayName("관리자 마감 행사사원 핵심필드 수정 -> 수정 허용")
         fun batchUpdate_adminClosedEmployeeModification_allowed() {
-            val pe = createPe(id = 1L, scheduleId = 100L, promoCloseByTm = true)
+            val pe = createPe(id = 1L, teamMemberScheduleId = 100L, promoCloseByTm = true)
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee(appAuthority = "지점장")))
             whenever(employeeRepository.findByEmployeeCode("DIFFEREN")).thenReturn(Optional.empty())
@@ -994,7 +994,7 @@ class AdminPromotionEmployeeServiceTest {
         @Test
         @DisplayName("핵심필드 변경 시 스케줄 삭제")
         fun batchUpdate_criticalFieldChange_scheduleDeleted() {
-            val pe = createPe(id = 1L, scheduleId = 100L)
+            val pe = createPe(id = 1L, teamMemberScheduleId = 100L)
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
             whenever(employeeRepository.findByEmployeeCode("NEW_EMP")).thenReturn(Optional.empty())
@@ -1013,7 +1013,7 @@ class AdminPromotionEmployeeServiceTest {
             service.batchUpdateEmployees(10L, 1L, request)
 
             verify(teamMemberScheduleRepository).deleteAllByIdIn(listOf(100L))
-            assertThat(pe.scheduleId).isNull()
+            assertThat(pe.teamMemberScheduleId).isNull()
         }
 
         @Test
@@ -1232,14 +1232,14 @@ class AdminPromotionEmployeeServiceTest {
 
     private fun createPe(
         id: Long = 1L, promotionId: Long = 10L, employeeId: Long? = 1L,
-        scheduleDate: LocalDate = LocalDate.of(2026, 3, 15), scheduleId: Long? = null,
+        scheduleDate: LocalDate = LocalDate.of(2026, 3, 15), teamMemberScheduleId: Long? = null,
         promoCloseByTm: Boolean = false, workStatus: String? = "근무", workType1: String? = "시식"
     ) = PromotionEmployee(
         id = id, promotionId = promotionId, employeeId = employeeId,
         scheduleDate = scheduleDate,
         workStatus = workStatus, workType1 = workType1, workType3 = "고정", workType4 = "냉장",
         professionalPromotionTeam = "라면세일조", basePrice = 1500, dailyTargetCount = 100,
-        scheduleId = scheduleId, promoCloseByTm = promoCloseByTm
+        teamMemberScheduleId = teamMemberScheduleId, promoCloseByTm = promoCloseByTm
     )
 
     private fun createEmployee(appAuthority: String? = null) = Employee(id = 1L, sfid = "a0B5g00000XYZabc", employeeCode = "20030117", name = "김여사").also {

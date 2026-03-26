@@ -15,9 +15,12 @@ class PromotionEmployee(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,
 
-    @SFField("DKRetail__PromotionId__c")
     @Column(name = "promotion_id", nullable = false)
     val promotionId: Long,
+
+    @SFField("DKRetail__PromotionId__c")
+    @Column(name = "promotion_sfid", length = 18)
+    var promotionSfid: String? = null,
 
     @Column(name = "employee_id")
     var employeeId: Long? = null,
@@ -46,9 +49,12 @@ class PromotionEmployee(
     @Column(name = "professional_promotion_team", length = 100)
     var professionalPromotionTeam: String? = null,
 
+    @Column(name = "team_member_schedule_id")
+    var teamMemberScheduleId: Long? = null,
+
     @SFField("DKRetail__ScheduleId__c")
-    @Column(name = "schedule_id")
-    var scheduleId: Long? = null,
+    @Column(name = "team_member_schedule_sfid", length = 18)
+    var teamMemberScheduleSfid: String? = null,
 
     @SFField("PromoCloseByTm__c")
     @Column(name = "promo_close_by_tm", nullable = false)

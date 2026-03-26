@@ -251,7 +251,7 @@ class AdminPromotionService(
 
         // 1-4-A: 연쇄 삭제 — 스케줄 + 조원
         val employees = promotionEmployeeRepository.findByPromotionId(id)
-        val scheduleIds = employees.mapNotNull { it.scheduleId }
+        val scheduleIds = employees.mapNotNull { it.teamMemberScheduleId }
         if (scheduleIds.isNotEmpty()) {
             teamMemberScheduleRepository.deleteAllByIdIn(scheduleIds)
         }
@@ -263,13 +263,13 @@ class AdminPromotionService(
 
     private fun resetSchedulesForPromotion(promotionId: Long) {
         val employees = promotionEmployeeRepository.findByPromotionId(promotionId)
-        val scheduleIds = employees.mapNotNull { it.scheduleId }
+        val scheduleIds = employees.mapNotNull { it.teamMemberScheduleId }
         if (scheduleIds.isNotEmpty()) {
             teamMemberScheduleRepository.deleteAllByIdIn(scheduleIds)
         }
         employees.forEach { pe ->
-            if (pe.scheduleId != null) {
-                pe.scheduleId = null
+            if (pe.teamMemberScheduleId != null) {
+                pe.teamMemberScheduleId = null
                 promotionEmployeeRepository.save(pe)
             }
         }
