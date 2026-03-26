@@ -13,6 +13,7 @@ class Promotion(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "promotion_id")
     val id: Long = 0,
 
     @SFField("Name")
