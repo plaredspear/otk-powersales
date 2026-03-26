@@ -1,4 +1,4 @@
-package com.otoki.internal.admin.service
+package com.otoki.internal.schedule.service
 
 import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.sap.entity.Employee

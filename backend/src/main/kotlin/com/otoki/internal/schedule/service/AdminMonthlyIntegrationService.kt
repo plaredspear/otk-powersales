@@ -1,6 +1,6 @@
-package com.otoki.internal.admin.service
+package com.otoki.internal.schedule.service
 
-import com.otoki.internal.admin.dto.response.*
+import com.otoki.internal.schedule.dto.response.*
 import com.otoki.internal.common.exception.BusinessException
 import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.sap.entity.Employee
