@@ -1,4 +1,4 @@
-package com.otoki.internal.admin.service
+package com.otoki.internal.sap.service
 
 import com.otoki.internal.sap.entity.Product
 import com.otoki.internal.sap.repository.CategoryRow

@@ -1,8 +1,8 @@
 package com.otoki.internal.admin.controller
 
-import com.otoki.internal.admin.dto.response.*
 import com.otoki.internal.admin.security.AdminAuthorityFilter
-import com.otoki.internal.admin.service.AdminProductService
+import com.otoki.internal.sap.dto.response.*
+import com.otoki.internal.sap.service.AdminProductService
 import com.otoki.internal.common.security.GpsConsentFilter
 import com.otoki.internal.common.security.JwtAuthenticationFilter
 import com.otoki.internal.common.security.JwtTokenProvider

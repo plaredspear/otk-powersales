@@ -1,9 +1,9 @@
-package com.otoki.internal.admin.service
+package com.otoki.internal.sap.service
 
-import com.otoki.internal.admin.dto.response.Category2Node
-import com.otoki.internal.admin.dto.response.CategoryTree
-import com.otoki.internal.admin.dto.response.ProductListItem
-import com.otoki.internal.admin.dto.response.ProductListResponse
+import com.otoki.internal.sap.dto.response.Category2Node
+import com.otoki.internal.sap.dto.response.CategoryTree
+import com.otoki.internal.sap.dto.response.ProductListItem
+import com.otoki.internal.sap.dto.response.ProductListResponse
 import com.otoki.internal.sap.repository.ProductRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
