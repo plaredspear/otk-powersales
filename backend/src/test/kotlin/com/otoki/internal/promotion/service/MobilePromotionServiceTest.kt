@@ -414,10 +414,10 @@ class MobilePromotionServiceTest {
             whenever(accountRepository.findById(100)).thenReturn(Optional.of(account))
             whenever(productRepository.findById(5L)).thenReturn(Optional.of(product))
             whenever(promotionTypeRepository.findById(1L)).thenReturn(Optional.of(promotionType))
-            whenever(promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(1L))
+            employee1.employee = empUser1
+            employee2.employee = empUser2
+            whenever(promotionEmployeeRepository.findWithEmployeeByPromotionId(1L))
                 .thenReturn(listOf(employee1, employee2))
-            whenever(employeeRepository.findAllById(listOf(20L, 21L)))
-                .thenReturn(listOf(empUser1, empUser2))
 
             // When
             val result = service.getPromotion(userId = 10L, promotionId = 1L)
@@ -447,10 +447,9 @@ class MobilePromotionServiceTest {
             whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
             whenever(promotionEmployeeRepository.existsByPromotionIdAndEmployeeId(1L, 20L)).thenReturn(true)
             whenever(accountRepository.findById(100)).thenReturn(Optional.of(account))
-            whenever(promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(1L))
+            employee.employee = woman
+            whenever(promotionEmployeeRepository.findWithEmployeeByPromotionId(1L))
                 .thenReturn(listOf(employee))
-            whenever(employeeRepository.findAllById(listOf(20L)))
-                .thenReturn(listOf(woman))
 
             // When
             val result = service.getPromotion(userId = 20L, promotionId = 1L)

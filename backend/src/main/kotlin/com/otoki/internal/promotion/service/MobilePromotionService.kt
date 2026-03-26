@@ -118,16 +118,11 @@ class MobilePromotionService(
             promotionTypeRepository.findById(it).orElse(null)?.name
         }
 
-        // 조원 목록 + 사원명 매핑
-        val employees = promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(promotionId)
-        val empIds = employees.mapNotNull { it.employeeId }.distinct()
-        val userMap = if (empIds.isNotEmpty()) {
-            employeeRepository.findAllById(empIds).associateBy { it.id }
-        } else emptyMap()
+        // 조원 목록 + 사원명 매핑 (fetchJoin으로 N+1 방지)
+        val employees = promotionEmployeeRepository.findWithEmployeeByPromotionId(promotionId)
 
         val employeeItems = employees.map { emp ->
-            val empName = emp.employeeId?.let { userMap[it]?.name }
-            MobilePromotionEmployeeItem.from(emp, empName)
+            MobilePromotionEmployeeItem.from(emp, emp.employee?.name)
         }
 
         return MobilePromotionDetailResponse.from(
