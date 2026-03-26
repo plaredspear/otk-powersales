@@ -6,13 +6,13 @@ import com.otoki.internal.notice.dto.request.NoticeCreateRequest
 import com.otoki.internal.notice.dto.request.NoticeUpdateRequest
 import com.otoki.internal.notice.entity.Notice
 import com.otoki.internal.notice.entity.NoticeCategory
-import com.otoki.internal.notice.entity.UploadFile
+import com.otoki.internal.common.entity.UploadFile
 import com.otoki.internal.notice.exception.BranchRequiredException
 import com.otoki.internal.notice.exception.InvalidNoticeCategoryException
 import com.otoki.internal.notice.exception.InvalidNoticeIdException
 import com.otoki.internal.notice.exception.NoticePostNotFoundException
 import com.otoki.internal.notice.repository.NoticeRepository
-import com.otoki.internal.notice.repository.UploadFileRepository
+import com.otoki.internal.common.repository.UploadFileRepository
 import com.otoki.internal.sap.entity.Organization
 import com.otoki.internal.sap.repository.OrganizationRepository
 import org.assertj.core.api.Assertions.assertThat
@@ -65,7 +65,6 @@ class NoticeServiceTest {
             // Given
             val notice = createNotice(
                 id = 42L,
-                sfid = "a0B5g000001XXXAAA",
                 name = "2026년 상반기 영업 목표 안내",
                 category = NoticeCategory.COMPANY,
                 contents = "상반기 영업 목표가 확정되었습니다.",
@@ -77,7 +76,7 @@ class NoticeServiceTest {
             )
 
             whenever(noticeRepository.findById(42L)).thenReturn(Optional.of(notice))
-            whenever(uploadFileRepository.findByRecordIdAndIsDeletedFalse("a0B5g000001XXXAAA")).thenReturn(files)
+            whenever(uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("NOTICE", 42L)).thenReturn(files)
 
             // When
             val result = noticeService.getNoticeDetail(42L)
@@ -97,31 +96,13 @@ class NoticeServiceTest {
         }
 
         @Test
-        @DisplayName("이미지 없음 - sfid null -> images 빈 배열 반환")
-        fun getNoticeDetail_noSfid() {
-            // Given
-            val notice = createNotice(id = 10L, sfid = null, name = "공지", category = NoticeCategory.BRANCH)
-
-            whenever(noticeRepository.findById(10L)).thenReturn(Optional.of(notice))
-
-            // When
-            val result = noticeService.getNoticeDetail(10L)
-
-            // Then
-            assertThat(result.id).isEqualTo(10L)
-            assertThat(result.category).isEqualTo("BRANCH")
-            assertThat(result.categoryName).isEqualTo("지점공지")
-            assertThat(result.images).isEmpty()
-        }
-
-        @Test
-        @DisplayName("이미지 없음 - sfid에 매칭 파일 없음 -> images 빈 배열 반환")
+        @DisplayName("이미지 없음 - 매칭 파일 없음 -> images 빈 배열 반환")
         fun getNoticeDetail_noMatchingFiles() {
             // Given
-            val notice = createNotice(id = 10L, sfid = "some-sfid", name = "공지", category = NoticeCategory.COMPANY)
+            val notice = createNotice(id = 10L, name = "공지", category = NoticeCategory.COMPANY)
 
             whenever(noticeRepository.findById(10L)).thenReturn(Optional.of(notice))
-            whenever(uploadFileRepository.findByRecordIdAndIsDeletedFalse("some-sfid")).thenReturn(emptyList())
+            whenever(uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("NOTICE", 10L)).thenReturn(emptyList())
 
             // When
             val result = noticeService.getNoticeDetail(10L)
@@ -134,7 +115,7 @@ class NoticeServiceTest {
         @DisplayName("이미지 URL 무효 - uniqueKey null/빈 문자열인 이미지 제외")
         fun getNoticeDetail_filterInvalidImages() {
             // Given
-            val notice = createNotice(id = 10L, sfid = "sfid-1", category = NoticeCategory.COMPANY)
+            val notice = createNotice(id = 10L, category = NoticeCategory.COMPANY)
             val files = listOf(
                 createUploadFile(id = 1L, uniqueKey = "valid/img.jpg", createdDate = LocalDateTime.of(2026, 1, 1, 0, 0)),
                 createUploadFile(id = 2L, uniqueKey = null, createdDate = LocalDateTime.of(2026, 1, 2, 0, 0)),
@@ -143,7 +124,7 @@ class NoticeServiceTest {
             )
 
             whenever(noticeRepository.findById(10L)).thenReturn(Optional.of(notice))
-            whenever(uploadFileRepository.findByRecordIdAndIsDeletedFalse("sfid-1")).thenReturn(files)
+            whenever(uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("NOTICE", 10L)).thenReturn(files)
 
             // When
             val result = noticeService.getNoticeDetail(10L)
@@ -757,10 +738,14 @@ class NoticeServiceTest {
     private fun createUploadFile(
         id: Long = 1L,
         uniqueKey: String? = "test/file.jpg",
+        parentType: String = "NOTICE",
+        parentId: Long? = null,
         createdDate: LocalDateTime? = LocalDateTime.of(2026, 1, 1, 0, 0, 0)
     ): UploadFile = UploadFile(
         id = id,
-        uniqueKey = uniqueKey
+        uniqueKey = uniqueKey,
+        parentType = parentType,
+        parentId = parentId
     ).apply {
         if (createdDate != null) createdAt = createdDate
     }

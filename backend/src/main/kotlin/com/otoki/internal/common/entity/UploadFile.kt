@@ -1,6 +1,5 @@
-package com.otoki.internal.notice.entity
+package com.otoki.internal.common.entity
 
-import com.otoki.internal.common.entity.BaseEntity
 import com.otoki.internal.common.salesforce.HCColumn
 import com.otoki.internal.common.salesforce.HCTable
 import com.otoki.internal.common.salesforce.SFField
@@ -44,6 +43,12 @@ class UploadFile(
     @HCColumn("size__c")
     @Column(name = "size", length = 50)
     val fileSize: String? = null,
+
+    @Column(name = "parent_type", nullable = false, length = 30)
+    val parentType: String = "UNKNOWN",
+
+    @Column(name = "parent_id")
+    val parentId: Long? = null,
 
     @HCColumn("isdeleted")
     @Column(name = "is_deleted")
