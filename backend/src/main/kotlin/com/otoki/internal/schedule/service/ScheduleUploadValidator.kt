@@ -1,7 +1,7 @@
-package com.otoki.internal.admin.service
+package com.otoki.internal.schedule.service
 
-import com.otoki.internal.admin.dto.response.RowError
-import com.otoki.internal.admin.dto.response.RowPreview
+import com.otoki.internal.schedule.dto.response.RowError
+import com.otoki.internal.schedule.dto.response.RowPreview
 import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.schedule.entity.DisplayWorkSchedule

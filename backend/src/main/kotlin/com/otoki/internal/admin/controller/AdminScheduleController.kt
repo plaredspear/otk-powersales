@@ -1,15 +1,15 @@
 package com.otoki.internal.admin.controller
 
-import com.otoki.internal.admin.dto.request.ScheduleBatchConfirmRequest
-import com.otoki.internal.admin.dto.request.ScheduleConfirmRequest
-import com.otoki.internal.admin.dto.response.ScheduleBatchConfirmResultDto
-import com.otoki.internal.admin.dto.response.ScheduleConfirmResultDto
-import com.otoki.internal.admin.dto.response.ScheduleListItemDto
-import com.otoki.internal.admin.dto.response.ScheduleUploadResultDto
-import com.otoki.internal.admin.exception.ScheduleFileRequiredException
+import com.otoki.internal.schedule.dto.request.ScheduleBatchConfirmRequest
+import com.otoki.internal.schedule.dto.request.ScheduleConfirmRequest
+import com.otoki.internal.schedule.dto.response.ScheduleBatchConfirmResultDto
+import com.otoki.internal.schedule.dto.response.ScheduleConfirmResultDto
+import com.otoki.internal.schedule.dto.response.ScheduleListItemDto
+import com.otoki.internal.schedule.dto.response.ScheduleUploadResultDto
+import com.otoki.internal.schedule.exception.ScheduleFileRequiredException
 import com.otoki.internal.admin.security.AdminPermission
 import com.otoki.internal.admin.security.RequiresPermission
-import com.otoki.internal.admin.service.AdminScheduleService
+import com.otoki.internal.schedule.service.AdminScheduleService
 import com.otoki.internal.common.dto.ApiResponse
 import com.otoki.internal.common.security.UserPrincipal
 import jakarta.validation.Valid

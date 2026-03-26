@@ -1,13 +1,13 @@
 package com.otoki.internal.admin.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.otoki.internal.admin.dto.request.ScheduleBatchConfirmRequest
-import com.otoki.internal.admin.dto.request.ScheduleConfirmRequest
-import com.otoki.internal.admin.dto.response.*
-import com.otoki.internal.admin.exception.*
-import com.otoki.internal.admin.service.AdminScheduleService
-import com.otoki.internal.admin.service.MissingCostCenterException
-import com.otoki.internal.admin.service.OrganizationNotFoundException
+import com.otoki.internal.schedule.dto.request.ScheduleBatchConfirmRequest
+import com.otoki.internal.schedule.dto.request.ScheduleConfirmRequest
+import com.otoki.internal.schedule.dto.response.*
+import com.otoki.internal.schedule.exception.*
+import com.otoki.internal.schedule.service.AdminScheduleService
+import com.otoki.internal.schedule.service.MissingCostCenterException
+import com.otoki.internal.schedule.service.OrganizationNotFoundException
 import com.otoki.internal.admin.security.AdminAuthorityFilter
 import com.otoki.internal.auth.exception.EmployeeNotFoundException
 import com.otoki.internal.common.security.GpsConsentFilter
