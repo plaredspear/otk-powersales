@@ -6,6 +6,8 @@ import org.springframework.data.domain.Pageable
 
 interface PromotionRepositoryCustom {
 
+    fun findByIdWithRelations(id: Long): Promotion?
+
     fun searchForAdmin(
         keyword: String?,
         promotionTypeId: Long?,

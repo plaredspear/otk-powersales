@@ -88,19 +88,16 @@ class AdminPromotionServiceTest {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
-            val promotion = createPromotion(promotionTypeId = 1L)
+            val promotion = createPromotion(promotionTypeId = 1L).apply {
+                account = createAccount()
+                promotionType = createPromotionType()
+            }
             val pageable = PageRequest.of(0, 20, Sort.by("createdAt").descending())
             val page = PageImpl(listOf(promotion), pageable, 1)
             whenever(promotionRepository.searchForAdmin(
                 keyword = null, promotionTypeId = null, category = null,
                 startDate = null, endDate = null, branchCodes = null, pageable = pageable
             )).thenReturn(page)
-
-            val account = createAccount()
-            whenever(accountRepository.findByIdIn(listOf(100))).thenReturn(listOf(account))
-
-            val promotionType = createPromotionType()
-            whenever(promotionTypeRepository.findAllById(listOf(1L))).thenReturn(listOf(promotionType))
 
             val result = adminPromotionService.getPromotions(
                 keyword = null, promotionTypeId = null, category = null,
@@ -141,17 +138,12 @@ class AdminPromotionServiceTest {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
-            val promotion = createPromotion(promotionTypeId = 1L)
-            whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
-
-            val account = createAccount()
-            whenever(accountRepository.findById(100)).thenReturn(Optional.of(account))
-
-            val product = createProduct()
-            whenever(productRepository.findById(200L)).thenReturn(Optional.of(product))
-
-            val promotionType = createPromotionType()
-            whenever(promotionTypeRepository.findById(1L)).thenReturn(Optional.of(promotionType))
+            val promotion = createPromotion(promotionTypeId = 1L).apply {
+                account = createAccount()
+                primaryProduct = createProduct()
+                promotionType = createPromotionType()
+            }
+            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
 
             val result = adminPromotionService.getPromotion(1L)
 
@@ -172,7 +164,7 @@ class AdminPromotionServiceTest {
         @Test
         @DisplayName("미존재 ID - id=999 -> PromotionNotFoundException")
         fun getPromotion_notFound() {
-            whenever(promotionRepository.findById(999L)).thenReturn(Optional.empty())
+            whenever(promotionRepository.findByIdWithRelations(999L)).thenReturn(null)
 
             assertThatThrownBy { adminPromotionService.getPromotion(999L) }
                 .isInstanceOf(PromotionNotFoundException::class.java)
@@ -182,7 +174,7 @@ class AdminPromotionServiceTest {
         @DisplayName("삭제된 행사마스터 조회 -> PromotionNotFoundException")
         fun getPromotion_deleted() {
             val promotion = createPromotion(isDeleted = true)
-            whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
+            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
 
             assertThatThrownBy { adminPromotionService.getPromotion(1L) }
                 .isInstanceOf(PromotionNotFoundException::class.java)
@@ -195,7 +187,7 @@ class AdminPromotionServiceTest {
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
             val promotion = createPromotion(costCenterCode = "1101")
-            whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
+            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
 
             assertThatThrownBy { adminPromotionService.getPromotion(1L) }
                 .isInstanceOf(PromotionForbiddenException::class.java)
@@ -459,7 +451,7 @@ class AdminPromotionServiceTest {
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
             val promotion = createPromotion()
-            whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
+            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
             whenever(accountRepository.findById(100)).thenReturn(Optional.of(createAccount()))
             whenever(productRepository.findById(200L)).thenReturn(Optional.of(createProduct()))
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
@@ -477,7 +469,7 @@ class AdminPromotionServiceTest {
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
             val promotion = createPromotion()
-            whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
+            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
 
             val newAccount = createAccount(id = 200, name = "GS25 강남점", branchName = "서초21지점")
             whenever(accountRepository.findById(200)).thenReturn(Optional.of(newAccount))
@@ -499,7 +491,7 @@ class AdminPromotionServiceTest {
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
             val promotion = createPromotion(primaryProductId = 200L)
-            whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
+            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
             whenever(accountRepository.findById(100)).thenReturn(Optional.of(createAccount()))
 
             val newProduct = createProduct(id = 300L, name = "진라면 매운맛")
@@ -519,7 +511,7 @@ class AdminPromotionServiceTest {
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
             val promotion = createPromotion(primaryProductId = 200L)
-            whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
+            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
             whenever(accountRepository.findById(100)).thenReturn(Optional.of(createAccount()))
 
             val newProduct = createProduct(id = 300L, name = "새 상품", category1 = "냉동")
@@ -539,7 +531,7 @@ class AdminPromotionServiceTest {
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
             val promotion = createPromotion()
-            whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
+            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
 
             val request = createRequest(otherProduct = "라면's")
 
@@ -551,7 +543,7 @@ class AdminPromotionServiceTest {
         @DisplayName("삭제된 행사마스터 수정 -> PromotionNotFoundException")
         fun updatePromotion_deleted() {
             val promotion = createPromotion(isDeleted = true)
-            whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
+            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
 
             assertThatThrownBy { adminPromotionService.updatePromotion(1L, userId, createRequest()) }
                 .isInstanceOf(PromotionNotFoundException::class.java)
@@ -564,7 +556,7 @@ class AdminPromotionServiceTest {
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
             val promotion = createPromotion()
-            whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
+            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
 
             val inactiveType = createPromotionType(id = 5L, name = "기타", isActive = false)
             whenever(promotionTypeRepository.findById(5L)).thenReturn(Optional.of(inactiveType))
@@ -582,7 +574,7 @@ class AdminPromotionServiceTest {
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
             val promotion = createPromotion()
-            whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
+            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
             whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(true)
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee()))
 
@@ -599,7 +591,7 @@ class AdminPromotionServiceTest {
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
             val promotion = createPromotion()
-            whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
+            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
             whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(true)
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee()))
 
@@ -616,7 +608,7 @@ class AdminPromotionServiceTest {
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
             val promotion = createPromotion()
-            whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
+            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
             whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(true)
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee(appAuthority = "지점장")))
 
@@ -646,7 +638,7 @@ class AdminPromotionServiceTest {
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
             val promotion = createPromotion()
-            whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
+            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
             whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(true)
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee(appAuthority = "지점장")))
             whenever(promotionEmployeeRepository.findMinScheduleDateByPromotionId(1L)).thenReturn(LocalDate.of(2026, 3, 10))
@@ -668,7 +660,7 @@ class AdminPromotionServiceTest {
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
             val promotion = createPromotion()
-            whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
+            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
             whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(true)
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee(appAuthority = "조장")))
 
@@ -685,7 +677,7 @@ class AdminPromotionServiceTest {
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
             val promotion = createPromotion()
-            whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
+            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
             whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(false)
             whenever(promotionEmployeeRepository.findMinScheduleDateByPromotionId(1L)).thenReturn(LocalDate.of(2026, 3, 12))
             whenever(promotionEmployeeRepository.findMaxScheduleDateByPromotionId(1L)).thenReturn(LocalDate.of(2026, 3, 18))
@@ -704,7 +696,7 @@ class AdminPromotionServiceTest {
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
             val promotion = createPromotion()
-            whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
+            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
             whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(false)
 
             val pe = PromotionEmployee(
@@ -738,7 +730,7 @@ class AdminPromotionServiceTest {
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
             val promotion = createPromotion()
-            whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
+            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
             whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(false)
 
             val pe = PromotionEmployee(
@@ -764,7 +756,7 @@ class AdminPromotionServiceTest {
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
             val promotion = createPromotion()
-            whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
+            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
             whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(true)
 
             assertThatThrownBy { adminPromotionService.deletePromotion(1L) }
@@ -775,7 +767,7 @@ class AdminPromotionServiceTest {
         @DisplayName("이미 삭제된 행사마스터 -> PromotionNotFoundException")
         fun deletePromotion_alreadyDeleted() {
             val promotion = createPromotion(isDeleted = true)
-            whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
+            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
 
             assertThatThrownBy { adminPromotionService.deletePromotion(1L) }
                 .isInstanceOf(PromotionNotFoundException::class.java)
@@ -795,7 +787,7 @@ class AdminPromotionServiceTest {
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
             val promotion = createPromotion(costCenterCode = "1101")
-            whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
+            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
 
             assertThatThrownBy { adminPromotionService.deletePromotion(1L) }
                 .isInstanceOf(PromotionForbiddenException::class.java)

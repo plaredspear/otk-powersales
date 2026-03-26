@@ -75,24 +75,12 @@ class AdminPromotionService(
             pageable = pageable
         )
 
-        val accountIds = promotionPage.content.map { it.accountId }.distinct()
-        val accountMap = if (accountIds.isNotEmpty()) {
-            accountRepository.findByIdIn(accountIds).associateBy { it.id }
-        } else emptyMap()
-
-        val typeIds = promotionPage.content.mapNotNull { it.promotionTypeId }.distinct()
-        val typeMap = if (typeIds.isNotEmpty()) {
-            promotionTypeRepository.findAllById(typeIds).associateBy { it.id }
-        } else emptyMap()
-
         return PromotionListResponse(
             content = promotionPage.content.map { promotion ->
-                val account = accountMap[promotion.accountId]
-                val typeName = promotion.promotionTypeId?.let { typeMap[it]?.name }
                 PromotionListItem.from(
                     promotion = promotion,
-                    accountName = account?.name,
-                    promotionTypeName = typeName
+                    accountName = promotion.account?.name,
+                    promotionTypeName = promotion.promotionType?.name
                 )
             },
             page = page,
@@ -108,17 +96,11 @@ class AdminPromotionService(
         val promotion = findActivePromotion(id)
         validateDataScope(promotion)
 
-        val account = accountRepository.findById(promotion.accountId).orElse(null)
-        val product = promotion.primaryProductId?.let { productRepository.findById(it).orElse(null) }
-        val typeName = promotion.promotionTypeId?.let {
-            promotionTypeRepository.findById(it).orElse(null)?.name
-        }
-
         return PromotionDetailResponse.from(
             promotion = promotion,
-            accountName = account?.name,
-            primaryProductName = product?.name,
-            promotionTypeName = typeName
+            accountName = promotion.account?.name,
+            primaryProductName = promotion.primaryProduct?.name,
+            promotionTypeName = promotion.promotionType?.name
         )
     }
 
@@ -303,8 +285,8 @@ class AdminPromotionService(
     }
 
     private fun findActivePromotion(id: Long): Promotion {
-        val promotion = promotionRepository.findById(id)
-            .orElseThrow { PromotionNotFoundException() }
+        val promotion = promotionRepository.findByIdWithRelations(id)
+            ?: throw PromotionNotFoundException()
         if (promotion.isDeleted) throw PromotionNotFoundException()
         return promotion
     }
