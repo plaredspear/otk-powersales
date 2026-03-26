@@ -2,6 +2,7 @@ package com.otoki.internal.sap.repository
 
 import com.otoki.internal.branch.dto.response.BranchResponse
 import com.otoki.internal.sap.entity.QEmployee.employee
+import com.otoki.internal.sap.entity.QEmployeeInfo.employeeInfo
 import com.otoki.internal.sap.entity.Employee
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.Projections
@@ -14,6 +15,22 @@ import org.springframework.data.support.PageableExecutionUtils
 class EmployeeRepositoryCustomImpl(
     private val queryFactory: JPAQueryFactory
 ) : EmployeeRepositoryCustom {
+
+    override fun findWithEmployeeInfoByEmployeeCode(employeeCode: String): Employee? {
+        return queryFactory
+            .selectFrom(employee)
+            .leftJoin(employee.employeeInfo, employeeInfo).fetchJoin()
+            .where(employee.employeeCode.eq(employeeCode))
+            .fetchOne()
+    }
+
+    override fun findWithEmployeeInfoById(id: Long): Employee? {
+        return queryFactory
+            .selectFrom(employee)
+            .leftJoin(employee.employeeInfo, employeeInfo).fetchJoin()
+            .where(employee.id.eq(id))
+            .fetchOne()
+    }
 
     override fun findDistinctBranches(): List<BranchResponse> {
         return queryFactory

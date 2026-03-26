@@ -167,7 +167,7 @@ class Employee(
 
     // --- employee_info @OneToOne 관계 ---
 
-    @OneToOne(cascade = [CascadeType.ALL], fetch = FetchType.EAGER, optional = true)
+    @OneToOne(cascade = [CascadeType.ALL], fetch = FetchType.LAZY, optional = true)
     @JoinColumn(
         name = "employee_code",
         referencedColumnName = "employee_code",
