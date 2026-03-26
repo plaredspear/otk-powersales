@@ -3,8 +3,8 @@ package com.otoki.internal.promotion.dto.request
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotEmpty
 import jakarta.validation.constraints.NotNull
-import jakarta.validation.constraints.Size
 import jakarta.validation.constraints.Min
+import jakarta.validation.constraints.Size
 import java.time.LocalDate
 
 data class BatchUpdatePromotionEmployeeRequest(
@@ -17,8 +17,8 @@ data class BatchUpdatePromotionEmployeeItem(
     @field:NotNull(message = "id는 필수입니다")
     val id: Long,
 
-    @field:Size(max = 8, message = "여사원 사번은 최대 8자입니다")
-    val employeeCode: String? = null,
+    @field:Min(value = 1, message = "사원 ID는 1 이상이어야 합니다")
+    val employeeId: Long? = null,
 
     @field:NotNull(message = "투입일은 필수입니다")
     val scheduleDate: LocalDate,

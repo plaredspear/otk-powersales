@@ -1,12 +1,12 @@
 package com.otoki.internal.promotion.dto.request
 
-import jakarta.validation.constraints.Size
 import jakarta.validation.constraints.Min
+import jakarta.validation.constraints.Size
 import java.time.LocalDate
 
 data class PromotionEmployeeRequest(
-    @field:Size(max = 8, message = "여사원 사번은 최대 8자입니다")
-    val employeeCode: String? = null,
+    @field:Min(value = 1, message = "사원 ID는 1 이상이어야 합니다")
+    val employeeId: Long? = null,
 
     val scheduleDate: LocalDate? = null,
 
