@@ -1,8 +1,8 @@
-package com.otoki.internal.admin.service
+package com.otoki.internal.safetycheck.service
 
-import com.otoki.internal.admin.dto.response.EquipmentStatus
-import com.otoki.internal.admin.dto.response.MemberStatus
-import com.otoki.internal.admin.dto.response.SafetyCheckStatusResponse
+import com.otoki.internal.safetycheck.dto.response.EquipmentStatus
+import com.otoki.internal.safetycheck.dto.response.MemberStatus
+import com.otoki.internal.safetycheck.dto.response.SafetyCheckStatusResponse
 import com.otoki.internal.admin.exception.TeamScheduleEmployeeNotFoundException
 import com.otoki.internal.safetycheck.entity.SafetyCheckItem
 import com.otoki.internal.safetycheck.entity.SafetyCheckSubmission

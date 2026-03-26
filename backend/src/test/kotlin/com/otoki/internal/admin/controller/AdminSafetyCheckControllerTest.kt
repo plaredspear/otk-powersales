@@ -1,10 +1,10 @@
 package com.otoki.internal.admin.controller
 
-import com.otoki.internal.admin.dto.response.EquipmentStatus
-import com.otoki.internal.admin.dto.response.MemberStatus
-import com.otoki.internal.admin.dto.response.SafetyCheckStatusResponse
+import com.otoki.internal.safetycheck.dto.response.EquipmentStatus
+import com.otoki.internal.safetycheck.dto.response.MemberStatus
+import com.otoki.internal.safetycheck.dto.response.SafetyCheckStatusResponse
 import com.otoki.internal.admin.security.AdminAuthorityFilter
-import com.otoki.internal.admin.service.AdminSafetyCheckService
+import com.otoki.internal.safetycheck.service.AdminSafetyCheckService
 import com.otoki.internal.common.security.GpsConsentFilter
 import com.otoki.internal.common.security.JwtAuthenticationFilter
 import com.otoki.internal.common.security.JwtTokenProvider

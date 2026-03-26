@@ -1,10 +1,10 @@
 package com.otoki.internal.safetycheck.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.otoki.internal.admin.dto.response.EquipmentStatus
-import com.otoki.internal.admin.dto.response.MemberStatus
-import com.otoki.internal.admin.dto.response.SafetyCheckStatusResponse
-import com.otoki.internal.admin.service.AdminSafetyCheckService
+import com.otoki.internal.safetycheck.dto.response.EquipmentStatus
+import com.otoki.internal.safetycheck.dto.response.MemberStatus
+import com.otoki.internal.safetycheck.dto.response.SafetyCheckStatusResponse
+import com.otoki.internal.safetycheck.service.AdminSafetyCheckService
 import com.otoki.internal.safetycheck.dto.response.SafetyCheckItemsResponse
 import com.otoki.internal.safetycheck.dto.response.SafetyCheckSubmitResponse
 import com.otoki.internal.safetycheck.dto.response.SafetyCheckTodayResponse
