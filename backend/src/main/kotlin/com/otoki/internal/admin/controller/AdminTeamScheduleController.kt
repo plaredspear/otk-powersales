@@ -1,11 +1,11 @@
 package com.otoki.internal.admin.controller
 
-import com.otoki.internal.admin.dto.request.TeamScheduleCreateRequest
-import com.otoki.internal.admin.dto.request.TeamScheduleUpdateRequest
-import com.otoki.internal.admin.dto.response.*
+import com.otoki.internal.schedule.dto.request.TeamScheduleCreateRequest
+import com.otoki.internal.schedule.dto.request.TeamScheduleUpdateRequest
+import com.otoki.internal.schedule.dto.response.*
 import com.otoki.internal.admin.security.AdminPermission
 import com.otoki.internal.admin.security.RequiresPermission
-import com.otoki.internal.admin.service.AdminTeamScheduleService
+import com.otoki.internal.schedule.service.AdminTeamScheduleService
 import com.otoki.internal.branch.dto.response.BranchResponse
 import com.otoki.internal.common.dto.ApiResponse
 import com.otoki.internal.common.security.UserPrincipal
