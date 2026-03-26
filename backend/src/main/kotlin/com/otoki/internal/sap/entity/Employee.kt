@@ -6,6 +6,8 @@ import com.otoki.internal.common.salesforce.HCTable
 import com.otoki.internal.common.salesforce.SFField
 import com.otoki.internal.common.salesforce.SFObject
 import jakarta.persistence.*
+import org.hibernate.annotations.NotFound
+import org.hibernate.annotations.NotFoundAction
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -173,6 +175,7 @@ class Employee(
         updatable = false,
         foreignKey = ForeignKey(ConstraintMode.NO_CONSTRAINT)
     )
+    @NotFound(action = NotFoundAction.IGNORE)
     var employeeInfo: EmployeeInfo? = EmployeeInfo(
         employeeCode = employeeCode,
         password = password,
