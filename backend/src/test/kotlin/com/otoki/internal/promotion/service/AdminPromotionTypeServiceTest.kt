@@ -1,6 +1,6 @@
-package com.otoki.internal.admin.service
+package com.otoki.internal.promotion.service
 
-import com.otoki.internal.admin.dto.request.PromotionTypeRequest
+import com.otoki.internal.promotion.dto.request.PromotionTypeRequest
 import com.otoki.internal.promotion.entity.PromotionType
 import com.otoki.internal.promotion.exception.PromotionTypeDuplicateException
 import com.otoki.internal.promotion.exception.PromotionTypeNotFoundException

@@ -1,10 +1,10 @@
 package com.otoki.internal.admin.controller
 
-import com.otoki.internal.admin.dto.response.PromotionConfirmResponse
+import com.otoki.internal.promotion.dto.response.PromotionConfirmResponse
 import com.otoki.internal.admin.scope.DataScopeHolder
 import com.otoki.internal.admin.security.AdminAuthorityFilter
-import com.otoki.internal.admin.service.AdminPromotionConfirmService
-import com.otoki.internal.admin.service.AdminPromotionEmployeeService
+import com.otoki.internal.promotion.service.AdminPromotionConfirmService
+import com.otoki.internal.promotion.service.AdminPromotionEmployeeService
 import com.otoki.internal.common.security.GpsConsentFilter
 import com.otoki.internal.common.security.JwtAuthenticationFilter
 import com.otoki.internal.common.security.JwtTokenProvider

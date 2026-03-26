@@ -1,4 +1,4 @@
-package com.otoki.internal.admin.dto.response
+package com.otoki.internal.promotion.dto.response
 
 data class BatchUpdatePromotionEmployeeResponse(
     val updatedCount: Int,

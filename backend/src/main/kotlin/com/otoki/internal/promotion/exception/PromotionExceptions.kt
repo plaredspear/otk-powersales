@@ -186,7 +186,7 @@ class InvalidOtherProductException : BusinessException(
 )
 
 class BatchValidationException(
-    val errors: List<com.otoki.internal.admin.dto.response.BatchItemError>
+    val errors: List<com.otoki.internal.promotion.dto.response.BatchItemError>
 ) : BusinessException(
     errorCode = "BATCH_VALIDATION_FAILED",
     message = "${errors.size}건의 항목에서 검증 오류가 발생했습니다",

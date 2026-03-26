@@ -1,15 +1,15 @@
 package com.otoki.internal.admin.controller
 
-import com.otoki.internal.admin.dto.request.BatchUpdatePromotionEmployeeRequest
-import com.otoki.internal.admin.dto.request.PromotionEmployeeRequest
-import com.otoki.internal.admin.dto.response.BatchUpdatePromotionEmployeeResponse
-import com.otoki.internal.admin.dto.response.PromotionConfirmResponse
-import com.otoki.internal.admin.dto.response.PromotionEmployeeDetailResponse
-import com.otoki.internal.admin.dto.response.PromotionEmployeeListResponse
+import com.otoki.internal.promotion.dto.request.BatchUpdatePromotionEmployeeRequest
+import com.otoki.internal.promotion.dto.request.PromotionEmployeeRequest
+import com.otoki.internal.promotion.dto.response.BatchUpdatePromotionEmployeeResponse
+import com.otoki.internal.promotion.dto.response.PromotionConfirmResponse
+import com.otoki.internal.promotion.dto.response.PromotionEmployeeDetailResponse
+import com.otoki.internal.promotion.dto.response.PromotionEmployeeListResponse
 import com.otoki.internal.admin.security.AdminPermission
 import com.otoki.internal.admin.security.RequiresPermission
-import com.otoki.internal.admin.service.AdminPromotionConfirmService
-import com.otoki.internal.admin.service.AdminPromotionEmployeeService
+import com.otoki.internal.promotion.service.AdminPromotionConfirmService
+import com.otoki.internal.promotion.service.AdminPromotionEmployeeService
 import com.otoki.internal.common.dto.ApiResponse
 import com.otoki.internal.common.security.UserPrincipal
 import jakarta.validation.Valid

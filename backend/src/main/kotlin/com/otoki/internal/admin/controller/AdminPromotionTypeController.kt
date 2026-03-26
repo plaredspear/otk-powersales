@@ -1,8 +1,8 @@
 package com.otoki.internal.admin.controller
 
-import com.otoki.internal.admin.dto.request.PromotionTypeRequest
-import com.otoki.internal.admin.dto.response.PromotionTypeResponse
-import com.otoki.internal.admin.service.AdminPromotionTypeService
+import com.otoki.internal.promotion.dto.request.PromotionTypeRequest
+import com.otoki.internal.promotion.dto.response.PromotionTypeResponse
+import com.otoki.internal.promotion.service.AdminPromotionTypeService
 import com.otoki.internal.common.dto.ApiResponse
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus

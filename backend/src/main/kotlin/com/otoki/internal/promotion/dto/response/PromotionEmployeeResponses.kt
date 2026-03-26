@@ -1,4 +1,4 @@
-package com.otoki.internal.admin.dto.response
+package com.otoki.internal.promotion.dto.response
 
 import com.otoki.internal.promotion.entity.PromotionEmployee
 import java.time.LocalDate
