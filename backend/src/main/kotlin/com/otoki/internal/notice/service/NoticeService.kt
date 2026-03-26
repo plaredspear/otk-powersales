@@ -19,7 +19,7 @@ import com.otoki.internal.notice.exception.InvalidNoticeCategoryException
 import com.otoki.internal.notice.exception.InvalidNoticeIdException
 import com.otoki.internal.notice.exception.NoticePostNotFoundException
 import com.otoki.internal.notice.repository.NoticeRepository
-import com.otoki.internal.notice.repository.UploadFileRepository
+import com.otoki.internal.common.repository.UploadFileRepository
 import com.otoki.internal.sap.repository.OrganizationRepository
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageRequest
@@ -49,20 +49,16 @@ class NoticeService(
             .filter { it.isDeleted != true }
             .orElseThrow { NoticePostNotFoundException() }
 
-        val images = if (!notice.sfid.isNullOrBlank()) {
-            uploadFileRepository.findByRecordIdAndIsDeletedFalse(notice.sfid!!)
-                .filter { !it.uniqueKey.isNullOrBlank() }
-                .sortedBy { it.createdAt }
-                .mapIndexed { index, file ->
-                    NoticeImageResponse(
-                        id = file.id,
-                        url = "https://${s3BucketName}.s3.ap-northeast-2.amazonaws.com/${file.uniqueKey}",
-                        sortOrder = index
-                    )
-                }
-        } else {
-            emptyList()
-        }
+        val images = uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("NOTICE", notice.id)
+            .filter { !it.uniqueKey.isNullOrBlank() }
+            .sortedBy { it.createdAt }
+            .mapIndexed { index, file ->
+                NoticeImageResponse(
+                    id = file.id,
+                    url = "https://${s3BucketName}.s3.ap-northeast-2.amazonaws.com/${file.uniqueKey}",
+                    sortOrder = index
+                )
+            }
 
         return NoticePostDetailResponse(
             id = notice.id,
