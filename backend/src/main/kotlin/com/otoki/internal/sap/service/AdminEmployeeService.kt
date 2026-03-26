@@ -1,8 +1,8 @@
-package com.otoki.internal.admin.service
+package com.otoki.internal.sap.service
 
 import com.otoki.internal.admin.dto.EffectiveBranchResult
-import com.otoki.internal.admin.dto.response.EmployeeListItem
-import com.otoki.internal.admin.dto.response.EmployeeListResponse
+import com.otoki.internal.sap.dto.response.EmployeeListItem
+import com.otoki.internal.sap.dto.response.EmployeeListResponse
 import com.otoki.internal.admin.scope.DataScopeHolder
 import com.otoki.internal.sap.repository.EmployeeRepository
 import org.springframework.data.domain.PageRequest

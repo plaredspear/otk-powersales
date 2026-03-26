@@ -1,9 +1,9 @@
 package com.otoki.internal.admin.controller
 
-import com.otoki.internal.admin.dto.response.EmployeeListResponse
 import com.otoki.internal.admin.security.AdminPermission
 import com.otoki.internal.admin.security.RequiresPermission
-import com.otoki.internal.admin.service.AdminEmployeeService
+import com.otoki.internal.sap.dto.response.EmployeeListResponse
+import com.otoki.internal.sap.service.AdminEmployeeService
 import com.otoki.internal.common.dto.ApiResponse
 import com.otoki.internal.common.security.UserPrincipal
 import org.springframework.http.ResponseEntity
