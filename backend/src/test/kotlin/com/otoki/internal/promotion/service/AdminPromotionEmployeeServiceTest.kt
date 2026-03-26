@@ -47,8 +47,8 @@ class AdminPromotionEmployeeServiceTest {
                 createPe(id = 1L, scheduleDate = LocalDate.of(2026, 3, 15)),
                 createPe(id = 2L, scheduleDate = LocalDate.of(2026, 3, 16))
             )
-            whenever(promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(10L)).thenReturn(employees)
-            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(createEmployee()))
+            whenever(promotionEmployeeRepository.findWithEmployeeByPromotionId(10L)).thenReturn(employees)
+
 
             val result = service.getEmployees(10L)
             assertThat(result).hasSize(2)
@@ -546,7 +546,6 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
             whenever(employeeRepository.findByEmployeeCode("20030117")).thenReturn(Optional.of(createEmployee()))
-            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
 
             assertThatThrownBy { service.updateEmployee(1L, 1L, createRequest(scheduleDate = LocalDate.of(2026, 3, 5))) }
                 .isInstanceOf(ScheduleDateOutOfRangeException::class.java)
@@ -649,7 +648,6 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
             whenever(employeeRepository.findByEmployeeCode("20030117")).thenReturn(Optional.of(createEmployee()))
-            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
 
             assertThatThrownBy { service.updateEmployee(1L, 1L, createRequest(scheduleDate = LocalDate.of(2026, 3, 25))) }
                 .isInstanceOf(ScheduleDateOutOfRangeException::class.java)
@@ -800,13 +798,13 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
             whenever(employeeRepository.findByEmployeeCode("20030117")).thenReturn(Optional.of(createEmployee()))
-            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(createEmployee()))
+
 
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe1))
             whenever(promotionEmployeeRepository.findById(2L)).thenReturn(Optional.of(pe2))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
-            whenever(promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(10L))
+            whenever(promotionEmployeeRepository.findWithEmployeeByPromotionId(10L))
                 .thenReturn(listOf(pe1, pe2))
             stubRollup()
 
@@ -890,12 +888,12 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
             whenever(employeeRepository.findByEmployeeCode("20030117")).thenReturn(Optional.of(createEmployee()))
-            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(createEmployee()))
+
 
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
-            whenever(promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(10L))
+            whenever(promotionEmployeeRepository.findWithEmployeeByPromotionId(10L))
                 .thenReturn(listOf(pe))
             stubRollup()
 
@@ -979,7 +977,7 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
-            whenever(promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(10L))
+            whenever(promotionEmployeeRepository.findWithEmployeeByPromotionId(10L))
                 .thenReturn(listOf(pe))
             stubRollup()
 
@@ -1002,7 +1000,7 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
-            whenever(promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(10L))
+            whenever(promotionEmployeeRepository.findWithEmployeeByPromotionId(10L))
                 .thenReturn(listOf(pe))
             stubRollup()
 
@@ -1023,12 +1021,12 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
             whenever(employeeRepository.findByEmployeeCode("20030117")).thenReturn(Optional.of(createEmployee()))
-            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(createEmployee()))
+
 
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
-            whenever(promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(10L))
+            whenever(promotionEmployeeRepository.findWithEmployeeByPromotionId(10L))
                 .thenReturn(listOf(pe))
             stubRollup()
 
@@ -1048,12 +1046,12 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
             whenever(employeeRepository.findByEmployeeCode("20030117")).thenReturn(Optional.of(createEmployee()))
-            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(createEmployee()))
+
 
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
-            whenever(promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(10L))
+            whenever(promotionEmployeeRepository.findWithEmployeeByPromotionId(10L))
                 .thenReturn(listOf(pe))
             stubRollup()
 
@@ -1073,12 +1071,12 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
             whenever(employeeRepository.findByEmployeeCode("20030117")).thenReturn(Optional.of(createEmployee()))
-            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(createEmployee()))
+
 
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
-            whenever(promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(10L))
+            whenever(promotionEmployeeRepository.findWithEmployeeByPromotionId(10L))
                 .thenReturn(listOf(pe))
             stubRollup()
 
@@ -1097,12 +1095,12 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
             whenever(employeeRepository.findByEmployeeCode("20030117")).thenReturn(Optional.of(createEmployee()))
-            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(createEmployee()))
+
 
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
-            whenever(promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(10L))
+            whenever(promotionEmployeeRepository.findWithEmployeeByPromotionId(10L))
                 .thenReturn(listOf(pe))
             stubRollup()
 
@@ -1123,7 +1121,7 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
-            whenever(promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(10L))
+            whenever(promotionEmployeeRepository.findWithEmployeeByPromotionId(10L))
                 .thenReturn(listOf(pe))
             stubRollup()
 
@@ -1162,12 +1160,12 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
             whenever(employeeRepository.findByEmployeeCode("20030117")).thenReturn(Optional.of(createEmployee()))
-            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(createEmployee()))
+
 
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
-            whenever(promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(10L))
+            whenever(promotionEmployeeRepository.findWithEmployeeByPromotionId(10L))
                 .thenReturn(listOf(pe))
             stubRollup()
 
@@ -1192,12 +1190,12 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
             whenever(employeeRepository.findByEmployeeCode("20030117")).thenReturn(Optional.of(createEmployee()))
-            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(createEmployee()))
+
 
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
-            whenever(promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(10L))
+            whenever(promotionEmployeeRepository.findWithEmployeeByPromotionId(10L))
                 .thenReturn(listOf(pe))
             stubRollup(targetSum = 200000, actualSum = 150000)
 
@@ -1240,7 +1238,10 @@ class AdminPromotionEmployeeServiceTest {
         workStatus = workStatus, workType1 = workType1, workType3 = "고정", workType4 = "냉장",
         professionalPromotionTeam = "라면세일조", basePrice = 1500, dailyTargetCount = 100,
         teamMemberScheduleId = teamMemberScheduleId, promoCloseByTm = promoCloseByTm
-    )
+    ).also {
+        it.promotion = createPromotion()
+        if (employeeId != null) it.employee = createEmployee()
+    }
 
     private fun createEmployee(appAuthority: String? = null) = Employee(id = 1L, sfid = "a0B5g00000XYZabc", employeeCode = "20030117", name = "김여사").also {
         it.appAuthority = appAuthority

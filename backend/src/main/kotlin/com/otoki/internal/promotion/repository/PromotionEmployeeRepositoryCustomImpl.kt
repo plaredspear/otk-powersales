@@ -1,12 +1,23 @@
 package com.otoki.internal.promotion.repository
 
+import com.otoki.internal.promotion.entity.PromotionEmployee
 import com.otoki.internal.promotion.entity.QPromotionEmployee.promotionEmployee
+import com.otoki.internal.sap.entity.QEmployee.employee
 import com.querydsl.jpa.impl.JPAQueryFactory
 import java.time.LocalDate
 
 class PromotionEmployeeRepositoryCustomImpl(
     private val queryFactory: JPAQueryFactory
 ) : PromotionEmployeeRepositoryCustom {
+
+    override fun findWithEmployeeByPromotionId(promotionId: Long): List<PromotionEmployee> {
+        return queryFactory
+            .selectFrom(promotionEmployee)
+            .leftJoin(promotionEmployee.employee, employee).fetchJoin()
+            .where(promotionEmployee.promotionId.eq(promotionId))
+            .orderBy(promotionEmployee.scheduleDate.asc())
+            .fetch()
+    }
 
     override fun findMinScheduleDateByPromotionId(promotionId: Long): LocalDate? {
         return queryFactory

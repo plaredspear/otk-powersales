@@ -54,19 +54,16 @@ class AdminPromotionEmployeeService(
     fun getEmployees(promotionId: Long): List<PromotionEmployeeListResponse> {
         findActivePromotion(promotionId)
 
-        val employees = promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(promotionId)
-        val employeeInfoMap = resolveEmployeeInfo(employees)
+        val employees = promotionEmployeeRepository.findWithEmployeeByPromotionId(promotionId)
 
         return employees.map { pe ->
-            val info = employeeInfoMap[pe.id]
-            PromotionEmployeeListResponse.from(pe, info?.first, info?.second)
+            PromotionEmployeeListResponse.from(pe, pe.employee?.name, pe.employee?.employeeCode)
         }
     }
 
     fun getEmployee(id: Long): PromotionEmployeeDetailResponse {
         val pe = findEmployeeById(id)
-        val resolved = resolveEmployeeById(pe.employeeId)
-        return PromotionEmployeeDetailResponse.from(pe, resolved?.name, resolved?.employeeCode)
+        return PromotionEmployeeDetailResponse.from(pe, pe.employee?.name, pe.employee?.employeeCode)
     }
 
     @Transactional
@@ -125,7 +122,8 @@ class AdminPromotionEmployeeService(
         )
 
         // 1-1: 전문행사조 매칭 검증
-        val promotion = findActivePromotion(pe.promotionId)
+        val promotion = pe.promotion ?: throw PromotionNotFoundException()
+        if (promotion.isDeleted) throw PromotionNotFoundException()
         validateScheduleDateRange(request.scheduleDate, promotion)
         validateTeamCategory(promotion, request.professionalPromotionTeam)
 
@@ -249,11 +247,9 @@ class AdminPromotionEmployeeService(
         recalculatePromotionAmounts(promotionId)
 
         // 전체 행사사원 목록 조회하여 응답
-        val allEmployees = promotionEmployeeRepository.findByPromotionIdOrderByScheduleDateAsc(promotionId)
-        val employeeInfoMap = resolveEmployeeInfo(allEmployees)
+        val allEmployees = promotionEmployeeRepository.findWithEmployeeByPromotionId(promotionId)
         val responseItems = allEmployees.map { pe ->
-            val info = employeeInfoMap[pe.id]
-            PromotionEmployeeListResponse.from(pe, info?.first, info?.second)
+            PromotionEmployeeListResponse.from(pe, pe.employee?.name, pe.employee?.employeeCode)
         }
 
         return BatchUpdatePromotionEmployeeResponse(
@@ -289,13 +285,6 @@ class AdminPromotionEmployeeService(
         if (employeeCode == null) return null
         val employee = employeeRepository.findByEmployeeCode(employeeCode).orElse(null)
             ?: return ResolvedEmployee(id = null, name = null, employeeCode = employeeCode)
-        return ResolvedEmployee(id = employee.id, name = employee.name, employeeCode = employee.employeeCode)
-    }
-
-    private fun resolveEmployeeById(employeeId: Long?): ResolvedEmployee? {
-        if (employeeId == null) return null
-        val employee = employeeRepository.findById(employeeId).orElse(null)
-            ?: return ResolvedEmployee(id = employeeId, name = null, employeeCode = null)
         return ResolvedEmployee(id = employee.id, name = employee.name, employeeCode = employee.employeeCode)
     }
 
@@ -479,16 +468,4 @@ class AdminPromotionEmployeeService(
         promotionRepository.save(promotion)
     }
 
-    /** Returns Map<PE.id, Pair<name, employeeCode>> */
-    private fun resolveEmployeeInfo(employees: List<PromotionEmployee>): Map<Long, Pair<String, String>> {
-        val employeeIds = employees.mapNotNull { it.employeeId }.distinct()
-        val employeeMap = if (employeeIds.isNotEmpty()) {
-            employeeRepository.findAllById(employeeIds).associateBy { it.id }
-        } else emptyMap()
-
-        return employees.mapNotNull { pe ->
-            val employee = pe.employeeId?.let { employeeMap[it] }
-            if (employee != null) pe.id to Pair(employee.name, employee.employeeCode) else null
-        }.toMap()
-    }
 }

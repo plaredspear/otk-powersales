@@ -3,6 +3,7 @@ package com.otoki.internal.promotion.entity
 import com.otoki.internal.common.salesforce.SFField
 import com.otoki.internal.common.salesforce.SFObject
 import com.otoki.internal.common.entity.BaseEntity
+import com.otoki.internal.sap.entity.Employee
 import jakarta.persistence.*
 import java.time.LocalDate
 
@@ -100,6 +101,15 @@ class PromotionEmployee(
     var s3ImageUniqueKey: String? = null,
 
 ) : BaseEntity() {
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "promotion_id", insertable = false, updatable = false)
+    var promotion: Promotion? = null
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employee_id", insertable = false, updatable = false)
+    var employee: Employee? = null
+
     fun update(
         employeeId: Long?,
         scheduleDate: LocalDate?,
