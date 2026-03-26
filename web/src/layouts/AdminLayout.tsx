@@ -1,12 +1,15 @@
 import './AdminLayout.css';
+import { useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import ProLayout from '@ant-design/pro-layout';
 import { Button, Space, Typography } from 'antd';
 import { useAuthStore } from '@/stores/authStore';
+import { useForbiddenStore } from '@/stores/forbiddenStore';
 import { menuRoute } from '@/config/menuConfig';
 import queryClient from '@/lib/queryClient';
 import { BreadcrumbProvider } from '@/contexts/BreadcrumbContext';
 import AppBreadcrumb from '@/components/AppBreadcrumb';
+import ForbiddenResult from '@/components/ForbiddenResult';
 
 const { Text } = Typography;
 
@@ -15,6 +18,11 @@ export default function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
+  const { forbidden, setForbidden } = useForbiddenStore();
+
+  useEffect(() => {
+    setForbidden(false);
+  }, [location.pathname, setForbidden]);
   const handleLogout = () => {
     queryClient.clear();
     logout();
@@ -52,7 +60,7 @@ export default function AdminLayout() {
         </div>
         <AppBreadcrumb />
         <div style={{ padding: 24 }}>
-          <Outlet />
+          {forbidden ? <ForbiddenResult /> : <Outlet />}
         </div>
       </ProLayout>
     </BreadcrumbProvider>
