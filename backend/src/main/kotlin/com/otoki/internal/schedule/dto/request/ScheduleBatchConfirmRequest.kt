@@ -1,4 +1,4 @@
-package com.otoki.internal.admin.dto.request
+package com.otoki.internal.schedule.dto.request
 
 import jakarta.validation.constraints.NotEmpty
 import jakarta.validation.constraints.Size
