@@ -22,6 +22,7 @@ export interface MenuItem {
   name: string;
   icon?: ReactNode;
   children?: MenuItem[];
+  requiredPermission?: string;
 }
 
 export interface MenuRoute {
@@ -32,13 +33,13 @@ export interface MenuRoute {
 export const menuRoute: MenuRoute = {
   path: '/',
   children: [
-    { path: '/schedule', name: '여사원 일정관리', icon: <CalendarOutlined /> },
+    { path: '/schedule', name: '여사원 일정관리', icon: <CalendarOutlined />, requiredPermission: 'SCHEDULE_READ' },
     {
       name: '여사원 배치',
       icon: <TeamOutlined />,
       children: [
         { path: '/promotions', name: '행사마스터' },
-        { path: '/display-schedules', name: '진열스케줄마스터' },
+        { path: '/display-schedules', name: '진열스케줄마스터', requiredPermission: 'SCHEDULE_WRITE' },
       ],
     },
     {
@@ -70,8 +71,8 @@ export const menuRoute: MenuRoute = {
       name: '여사원관리',
       icon: <UserOutlined />,
       children: [
-        { path: '/monthly-integration', name: '월별 통합일정' },
-        { path: '/monthly-integration/category', name: '근무형태별 인원현황' },
+        { path: '/monthly-integration', name: '월별 통합일정', requiredPermission: 'SCHEDULE_READ' },
+        { path: '/monthly-integration/category', name: '근무형태별 인원현황', requiredPermission: 'SCHEDULE_READ' },
       ],
     },
     { path: '/safety-check', name: '안전점검', icon: <SafetyCertificateOutlined /> },

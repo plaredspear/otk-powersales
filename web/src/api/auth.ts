@@ -13,6 +13,7 @@ interface AdminUserInfo {
   role: string;
   app_authority: string | null;
   cost_center_code: string | null;
+  permissions: string[];
 }
 
 interface AdminTokenInfo {

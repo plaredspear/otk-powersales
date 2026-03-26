@@ -9,6 +9,7 @@ export interface AuthUser {
   role: string;
   appAuthority: string | null;
   costCenterCode: string | null;
+  permissions: string[];
 }
 
 interface AuthState {
@@ -37,6 +38,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       role: data.user.role,
       appAuthority: data.user.app_authority,
       costCenterCode: data.user.cost_center_code,
+      permissions: data.user.permissions ?? [],
     };
 
     localStorage.setItem('accessToken', data.token.access_token);
