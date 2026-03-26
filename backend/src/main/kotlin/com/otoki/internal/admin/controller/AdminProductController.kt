@@ -1,8 +1,8 @@
 package com.otoki.internal.admin.controller
 
-import com.otoki.internal.admin.dto.response.CategoryTree
-import com.otoki.internal.admin.dto.response.ProductListResponse
-import com.otoki.internal.admin.service.AdminProductService
+import com.otoki.internal.sap.dto.response.CategoryTree
+import com.otoki.internal.sap.dto.response.ProductListResponse
+import com.otoki.internal.sap.service.AdminProductService
 import com.otoki.internal.common.dto.ApiResponse
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
