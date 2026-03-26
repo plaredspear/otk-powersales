@@ -336,9 +336,12 @@ interface UserRepository : JpaRepository<User, Long> {
 |------|------|
 | 단순 조건 조회 (1~2개 필드) | Spring Data 메서드 네이밍 (`findByXxx`) |
 | 동적 조건, 검색, 페이징, 복합 조건 | **QueryDSL** (Custom Repository) |
+| 연관 엔티티 즉시 로딩 (N+1 방지) | **QueryDSL** `leftJoin().fetchJoin()` |
 | DB 전용 함수/시퀀스 (Spring Data/QueryDSL로 불가) | `@Query(nativeQuery = true)` |
 
 > **`@Query` JPQL 사용 금지**: 동적 조건이나 복합 조건이 필요한 경우 `@Query` 대신 QueryDSL을 사용한다. `@Query`는 네이티브 쿼리가 반드시 필요한 경우에만 허용.
+>
+> **`@EntityGraph` 사용 금지**: `attributePaths`가 문자열 기반이라 필드명 변경 시 런타임에서만 오류가 발견된다. 연관 엔티티 즉시 로딩이 필요한 경우 QueryDSL `fetchJoin()`을 사용한다.
 
 ---
 
