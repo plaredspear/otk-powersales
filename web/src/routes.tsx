@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { Spin } from 'antd';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import PermissionRoute from '@/components/PermissionRoute';
 import AdminLayout from '@/layouts/AdminLayout';
 
 const LoginPage = lazy(() => import('@/pages/LoginPage'));
@@ -78,21 +79,13 @@ export const router = createBrowserRouter(
             { path: '/claim', element: <LazyWrapper><ClaimPage /></LazyWrapper> },
             { path: '/suggestion', element: <LazyWrapper><SuggestionPage /></LazyWrapper> },
             { path: '/leave', element: <LazyWrapper><LeavePage /></LazyWrapper> },
-            { path: '/safety-check', element: <LazyWrapper><SafetyCheckPage /></LazyWrapper> },
             { path: '/product', element: <LazyWrapper><ProductPage /></LazyWrapper> },
-            { path: '/account', element: <LazyWrapper><AccountPage /></LazyWrapper> },
-            { path: '/employee', element: <LazyWrapper><EmployeePage /></LazyWrapper> },
             { path: '/field-inspection', element: <LazyWrapper><FieldInspectionPage /></LazyWrapper> },
             { path: '/report', element: <LazyWrapper><ReportPage /></LazyWrapper> },
             { path: '/notices', element: <LazyWrapper><NoticeListPage /></LazyWrapper> },
             { path: '/notices/new', element: <LazyWrapper><NoticeFormPage /></LazyWrapper> },
             { path: '/notices/:id', element: <LazyWrapper><NoticeDetailPage /></LazyWrapper> },
             { path: '/notices/:id/edit', element: <LazyWrapper><NoticeFormPage /></LazyWrapper> },
-            { path: '/promotions', element: <LazyWrapper><PromotionListPage /></LazyWrapper> },
-            { path: '/promotions/new', element: <LazyWrapper><PromotionFormPage /></LazyWrapper> },
-            { path: '/promotions/:id', element: <LazyWrapper><PromotionDetailPage /></LazyWrapper> },
-            { path: '/promotions/:id/edit', element: <LazyWrapper><PromotionFormPage /></LazyWrapper> },
-            { path: '/display-schedules', element: <LazyWrapper><DisplaySchedulePage /></LazyWrapper> },
             { path: '/education', element: <LazyWrapper><EducationListPage /></LazyWrapper> },
             { path: '/education/new', element: <LazyWrapper><EducationFormPage /></LazyWrapper> },
             { path: '/education/:id', element: <LazyWrapper><EducationDetailPage /></LazyWrapper> },
@@ -104,6 +97,40 @@ export const router = createBrowserRouter(
             { path: '/monthly-integration', element: <LazyWrapper><MonthlyIntegrationSchedulePage /></LazyWrapper> },
             { path: '/monthly-integration/category', element: <LazyWrapper><CategorySchedulePage /></LazyWrapper> },
             { path: '/promotion/ppt-masters', element: <LazyWrapper><PPTMasterPage /></LazyWrapper> },
+            // Permission-guarded routes
+            {
+              element: <PermissionRoute requiredPermission="PROMOTION_READ" />,
+              children: [
+                { path: '/promotions', element: <LazyWrapper><PromotionListPage /></LazyWrapper> },
+                { path: '/promotions/:id', element: <LazyWrapper><PromotionDetailPage /></LazyWrapper> },
+                { path: '/promotions/new', element: <LazyWrapper><PromotionFormPage /></LazyWrapper> },
+                { path: '/promotions/:id/edit', element: <LazyWrapper><PromotionFormPage /></LazyWrapper> },
+              ],
+            },
+            {
+              element: <PermissionRoute requiredPermission="PROMOTION_WRITE" />,
+              children: [
+                { path: '/display-schedules', element: <LazyWrapper><DisplaySchedulePage /></LazyWrapper> },
+              ],
+            },
+            {
+              element: <PermissionRoute requiredPermission="EMPLOYEE_READ" />,
+              children: [
+                { path: '/employee', element: <LazyWrapper><EmployeePage /></LazyWrapper> },
+              ],
+            },
+            {
+              element: <PermissionRoute requiredPermission="SAFETY_CHECK_READ" />,
+              children: [
+                { path: '/safety-check', element: <LazyWrapper><SafetyCheckPage /></LazyWrapper> },
+              ],
+            },
+            {
+              element: <PermissionRoute requiredPermission="ACCOUNT_READ" />,
+              children: [
+                { path: '/account', element: <LazyWrapper><AccountPage /></LazyWrapper> },
+              ],
+            },
             { path: '*', element: <Navigate to="/" replace /> },
           ],
         },

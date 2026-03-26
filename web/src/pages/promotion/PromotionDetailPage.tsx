@@ -38,6 +38,7 @@ import {
 import type { PromotionFormData } from '@/api/promotion';
 import { fetchEmployees, type Employee } from '@/api/employee';
 import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
+import { usePermission } from '@/hooks/usePermission';
 import PromotionDetailSection, {
   type DetailFormValues,
 } from './sections/PromotionDetailSection';
@@ -119,6 +120,8 @@ export default function PromotionDetailPage() {
   const updateMutation = useUpdatePromotion();
   const { data: formMeta } = usePromotionFormMeta();
   const { setDynamicTitle } = useContext(BreadcrumbContext);
+  const { hasPermission } = usePermission();
+  const canWrite = hasPermission('PROMOTION_WRITE');
 
   // --- 행사 인라인 편집 상태 ---
   const [promotionEditing, setPromotionEditing] = useState(false);
@@ -1081,14 +1084,14 @@ export default function PromotionDetailPage() {
               저장
             </Button>
           </Space>
-        ) : (
+        ) : canWrite ? (
           <Space>
             <Button onClick={enterPromotionEdit}>수정</Button>
             <Button danger onClick={handleDelete}>
               삭제
             </Button>
           </Space>
-        )}
+        ) : null}
       </div>
 
       {/* 3개 섹션: Collapse */}

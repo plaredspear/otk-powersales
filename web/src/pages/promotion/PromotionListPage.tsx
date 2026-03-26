@@ -5,6 +5,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined } from '@ant-design/icons';
 import { usePromotions } from '@/hooks/promotion/usePromotions';
 import { usePromotionTypes } from '@/hooks/promotion/usePromotionTypes';
+import { usePermission } from '@/hooks/usePermission';
 import type { PromotionListItem } from '@/api/promotion';
 import dayjs from 'dayjs';
 
@@ -43,6 +44,8 @@ function formatDateRange(start: string, end: string): string {
 
 export default function PromotionListPage() {
   const navigate = useNavigate();
+  const { hasPermission } = usePermission();
+  const canWrite = hasPermission('PROMOTION_WRITE');
   const [promotionTypeId, setPromotionTypeId] = useState<number | undefined>();
   const [category, setCategory] = useState<string | undefined>();
   const [startDate, setStartDate] = useState<string | undefined>();
@@ -164,9 +167,11 @@ export default function PromotionListPage() {
           marginBottom: 16,
         }}
       >
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/promotions/new')}>
-          행사마스터 등록
-        </Button>
+        {canWrite && (
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/promotions/new')}>
+            행사마스터 등록
+          </Button>
+        )}
       </div>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
