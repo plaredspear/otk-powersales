@@ -19,21 +19,21 @@ import com.otoki.internal.sap.entity.Organization
  * │ Migrate │ Salesforce Object (API Name)               │ Dev DB (salesforce2)        │ Entity                  │ 참조키 (sfid FK)                                              │ 비고                          │
  * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
  * │         │ ── 마스터 데이터 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
- * │  YES    │ Organization__c                             │ organization                │ Organization            │ —                                                             │ @SAPSource 병행               │
+ * │  NO     │ Organization__c                             │ organization                │ Organization            │ —                                                             │ @SAPSource 병행               │
  * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
  * │         │ ── Employee 참조 ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
- * │  YES    │ AttendInfo__c                               │ attend_info                 │ AttendInfo              │ EmployeeCode__c → employee.employee_code                      │ @SAPSource 병행               │
- * │  YES    │ DKRetail__AlternativeHoliday__c             │ alternative_holiday         │ AlternativeHoliday      │ DKRetail__EmployeeId__c → employee.sfid                       │                               │
+ * │  NO     │ AttendInfo__c                               │ attend_info                 │ AttendInfo              │ EmployeeCode__c → employee.employee_code                      │ @SAPSource 병행               │
+ * │  NO     │ DKRetail__AlternativeHoliday__c             │ alternative_holiday         │ AlternativeHoliday      │ DKRetail__EmployeeId__c → employee.sfid                       │                               │
  * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
  * │         │ ── Promotion 관련 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
- * │  YES    │ DKRetail__Promotion__c                      │ promotion                   │ Promotion               │ AccId__c → account.sfid, DKRetail__PrimaryProductId__c →      │ UPDATE: account_id, product_id │
+ * │  NO     │ DKRetail__Promotion__c                      │ promotion                   │ Promotion               │ AccId__c → account.sfid, DKRetail__PrimaryProductId__c →      │ UPDATE: account_id, product_id │
  * │         │                                             │                             │                         │   product.sfid                                                │                               │
- * │  YES    │ DKRetail__PromotionEmployee__c              │ promotion_employee          │ PromotionEmployee       │ DKRetail__PromotionId__c → promotion.sfid,                    │ UPDATE: promotion_id          │
+ * │  NO     │ DKRetail__PromotionEmployee__c              │ promotion_employee          │ PromotionEmployee       │ DKRetail__PromotionId__c → promotion.sfid,                    │ UPDATE: promotion_id          │
  * │         │                                             │                             │                         │   DKRetail__ScheduleId__c → team_member_schedule.sfid         │ V73: sfid 컬럼 추가, schedule_id → team_member_schedule_id 리네이밍 │
  * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
  * │         │ ── Agreement / Upload ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
- * │  YES    │ AgreementHistory__c                         │ agreement_history           │ AgreementHistory        │ AgreementWordId__c → agreement_word.sfid                      │ UPDATE: agreement_word_id     │
- * │  YES    │ UploadFile__c                               │ upload_file                 │ UploadFile              │ RecordId__c → 다형성 sfid (여러 오브젝트 참조)                 │                               │
+ * │  NO     │ AgreementHistory__c                         │ agreement_history           │ AgreementHistory        │ AgreementWordId__c → agreement_word.sfid                      │ UPDATE: agreement_word_id     │
+ * │  NO     │ UploadFile__c                               │ upload_file                 │ UploadFile              │ RecordId__c → 다형성 sfid (여러 오브젝트 참조)                 │                               │
  * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
  * │         │ ── HerokuMigrationTool 대상 (본 도구 제외) ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
  * │  제외   │ Account                                     │ account                     │ Account                 │ —                                                             │ Heroku 경유 마이그레이션      │
