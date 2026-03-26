@@ -1,7 +1,7 @@
 package com.otoki.internal.admin.controller
 
-import com.otoki.internal.admin.dto.response.OrganizationResponse
-import com.otoki.internal.admin.service.AdminOrganizationService
+import com.otoki.internal.sap.dto.response.OrganizationResponse
+import com.otoki.internal.sap.service.AdminOrganizationService
 import com.otoki.internal.common.dto.ApiResponse
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
