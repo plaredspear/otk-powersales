@@ -38,8 +38,8 @@ export const menuRoute: MenuRoute = {
       name: '여사원 배치',
       icon: <TeamOutlined />,
       children: [
-        { path: '/promotions', name: '행사마스터' },
-        { path: '/display-schedules', name: '진열스케줄마스터', requiredPermission: 'SCHEDULE_WRITE' },
+        { path: '/promotions', name: '행사마스터', requiredPermission: 'PROMOTION_READ' },
+        { path: '/display-schedules', name: '진열스케줄마스터', requiredPermission: 'PROMOTION_WRITE' },
       ],
     },
     {
@@ -75,12 +75,12 @@ export const menuRoute: MenuRoute = {
         { path: '/monthly-integration/category', name: '근무형태별 인원현황', requiredPermission: 'SCHEDULE_READ' },
       ],
     },
-    { path: '/safety-check', name: '안전점검', icon: <SafetyCertificateOutlined /> },
+    { path: '/safety-check', name: '안전점검', icon: <SafetyCertificateOutlined />, requiredPermission: 'SAFETY_CHECK_READ' },
     {
       name: '사원',
       icon: <UserOutlined />,
       children: [
-        { path: '/employee', name: '여사원 현황' },
+        { path: '/employee', name: '여사원 현황', requiredPermission: 'EMPLOYEE_READ' },
       ],
     },
     { path: '/field-inspection', name: '현장점검', icon: <SearchOutlined /> },
@@ -92,7 +92,7 @@ export const menuRoute: MenuRoute = {
       icon: <DatabaseOutlined />,
       children: [
         { path: '/product', name: '제품' },
-        { path: '/account', name: '거래처' },
+        { path: '/account', name: '거래처', requiredPermission: 'ACCOUNT_READ' },
         { path: '/settings/organizations', name: '조직마스터' },
       ],
     },
