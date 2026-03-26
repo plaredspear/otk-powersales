@@ -1,4 +1,4 @@
-package com.otoki.internal.admin.service
+package com.otoki.internal.safetycheck.service
 
 import com.otoki.internal.admin.exception.TeamScheduleEmployeeNotFoundException
 import com.otoki.internal.safetycheck.entity.SafetyCheckItem

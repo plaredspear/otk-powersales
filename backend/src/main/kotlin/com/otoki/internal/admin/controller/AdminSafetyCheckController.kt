@@ -1,9 +1,9 @@
 package com.otoki.internal.admin.controller
 
-import com.otoki.internal.admin.dto.response.SafetyCheckStatusResponse
+import com.otoki.internal.safetycheck.dto.response.SafetyCheckStatusResponse
 import com.otoki.internal.admin.security.AdminPermission
 import com.otoki.internal.admin.security.RequiresPermission
-import com.otoki.internal.admin.service.AdminSafetyCheckService
+import com.otoki.internal.safetycheck.service.AdminSafetyCheckService
 import com.otoki.internal.common.dto.ApiResponse
 import com.otoki.internal.common.exception.BusinessException
 import com.otoki.internal.common.security.UserPrincipal
