@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:55258",
+    "url" : "http://localhost:49275",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -3684,6 +3684,24 @@
         }
       }
     },
+    "/api/v1/admin/permissions/matrix" : {
+      "get" : {
+        "tags" : [ "admin-permission-matrix-controller" ],
+        "operationId" : "getMatrix",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePermissionMatrixResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/organizations" : {
       "get" : {
         "tags" : [ "admin-organization-controller" ],
@@ -4135,10 +4153,10 @@
             "type" : "integer",
             "format" : "int64"
           },
-          "employeeCode" : {
-            "type" : "string",
-            "maxLength" : 8,
-            "minLength" : 0
+          "employeeId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "minimum" : 1
           },
           "scheduleDate" : {
             "type" : "string",
@@ -4279,6 +4297,10 @@
             "type" : "integer",
             "format" : "int64"
           },
+          "employeeId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
           "employeeCode" : {
             "type" : "string"
           },
@@ -4304,7 +4326,7 @@
           "professionalPromotionTeam" : {
             "type" : "string"
           },
-          "scheduleId" : {
+          "teamMemberScheduleId" : {
             "type" : "integer",
             "format" : "int64"
           },
@@ -4583,10 +4605,10 @@
       "PromotionEmployeeRequest" : {
         "type" : "object",
         "properties" : {
-          "employeeCode" : {
-            "type" : "string",
-            "maxLength" : 8,
-            "minLength" : 0
+          "employeeId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "minimum" : 1
           },
           "scheduleDate" : {
             "type" : "string",
@@ -4698,6 +4720,10 @@
             "type" : "integer",
             "format" : "int64"
           },
+          "employeeId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
           "employeeCode" : {
             "type" : "string"
           },
@@ -4723,7 +4749,7 @@
           "professionalPromotionTeam" : {
             "type" : "string"
           },
-          "scheduleId" : {
+          "teamMemberScheduleId" : {
             "type" : "integer",
             "format" : "int64"
           },
@@ -6279,9 +6305,15 @@
           },
           "costCenterCode" : {
             "type" : "string"
+          },
+          "permissions" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
           }
         },
-        "required" : [ "employeeCode", "id", "name", "role" ]
+        "required" : [ "employeeCode", "id", "name", "permissions", "role" ]
       },
       "ApiResponseAdminLoginResponse" : {
         "type" : "object",
@@ -7104,18 +7136,18 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "pageable" : {
             "$ref" : "#/components/schemas/PageableObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "size" : {
             "type" : "integer",
@@ -7142,12 +7174,12 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
+          "paged" : {
+            "type" : "boolean"
+          },
           "pageSize" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "paged" : {
-            "type" : "boolean"
           },
           "pageNumber" : {
             "type" : "integer",
@@ -8623,18 +8655,18 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "pageable" : {
             "$ref" : "#/components/schemas/PageableObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "size" : {
             "type" : "integer",
@@ -9208,6 +9240,97 @@
           }
         },
         "required" : [ "changedAt", "employeeId", "id", "newValue" ]
+      },
+      "ApiResponsePermissionMatrixResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "$ref" : "#/components/schemas/PermissionMatrixResponse"
+          },
+          "error" : {
+            "$ref" : "#/components/schemas/ErrorDetail"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "success", "timestamp" ]
+      },
+      "CurrentUserPermission" : {
+        "type" : "object",
+        "properties" : {
+          "role" : {
+            "type" : "string"
+          },
+          "permissions" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        },
+        "required" : [ "permissions", "role" ]
+      },
+      "PermissionDetail" : {
+        "type" : "object",
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "menus" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        },
+        "required" : [ "code", "description", "menus" ]
+      },
+      "PermissionMatrixResponse" : {
+        "type" : "object",
+        "properties" : {
+          "permissions" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PermissionDetail"
+            }
+          },
+          "roles" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/RolePermissions"
+            }
+          },
+          "currentUser" : {
+            "$ref" : "#/components/schemas/CurrentUserPermission"
+          }
+        },
+        "required" : [ "currentUser", "permissions", "roles" ]
+      },
+      "RolePermissions" : {
+        "type" : "object",
+        "properties" : {
+          "role" : {
+            "type" : "string"
+          },
+          "permissions" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        },
+        "required" : [ "permissions", "role" ]
       },
       "ApiResponseListOrganizationResponse" : {
         "type" : "object",

@@ -16,7 +16,7 @@ interface ApiResponse<T> {
 interface PromotionEmployeeRaw {
   id: number;
   promotion_id: number;
-  employee_sfid: string | null;
+  employee_id: number | null;
   employee_code: string | null;
   employee_name: string | null;
   schedule_date: string | null;
@@ -44,7 +44,7 @@ interface PromotionEmployeeRaw {
 export interface PromotionEmployee {
   id: number;
   promotionId: number;
-  employeeSfid: string | null;
+  employeeId: number | null;
   employeeCode: string | null;
   employeeName: string | null;
   scheduleDate: string | null;
@@ -68,7 +68,7 @@ export interface PromotionEmployee {
 }
 
 export interface PromotionEmployeeFormData {
-  employee_code?: string | null;
+  employee_id?: number | null;
   schedule_date?: string | null;
   work_status?: string | null;
   work_type1?: string | null;
@@ -83,7 +83,7 @@ export interface PromotionEmployeeFormData {
 
 export interface BatchUpdatePromotionEmployeeItem {
   id: number;
-  employee_code: string | null;
+  employee_id: number | null;
   schedule_date: string;
   work_status: string;
   work_type1: string;
@@ -118,7 +118,7 @@ export interface BatchUpdatePromotionEmployeeResponse {
 
 export interface BatchItemError {
   item_index: number;
-  employee_code: string | null;
+  employee_id: number | null;
   error_code: string;
   message: string;
 }
@@ -146,7 +146,7 @@ function mapPromotionEmployee(raw: PromotionEmployeeRaw): PromotionEmployee {
   return {
     id: raw.id,
     promotionId: raw.promotion_id,
-    employeeSfid: raw.employee_sfid,
+    employeeId: raw.employee_id,
     employeeCode: raw.employee_code,
     employeeName: raw.employee_name,
     scheduleDate: raw.schedule_date,
