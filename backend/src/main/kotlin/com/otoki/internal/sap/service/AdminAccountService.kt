@@ -1,9 +1,9 @@
-package com.otoki.internal.admin.service
+package com.otoki.internal.sap.service
 
 import com.otoki.internal.admin.dto.EffectiveBranchResult
-import com.otoki.internal.admin.dto.response.AccountListItem
-import com.otoki.internal.admin.dto.response.AccountListResponse
 import com.otoki.internal.admin.scope.DataScopeHolder
+import com.otoki.internal.sap.dto.response.AccountListItem
+import com.otoki.internal.sap.dto.response.AccountListResponse
 import com.otoki.internal.sap.repository.AccountRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort

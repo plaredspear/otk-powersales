@@ -1,4 +1,4 @@
-package com.otoki.internal.admin.dto.response
+package com.otoki.internal.sap.dto.response
 
 import com.otoki.internal.sap.entity.Account
 
