@@ -1,4 +1,4 @@
-package com.otoki.internal.admin.service
+package com.otoki.internal.sap.service
 
 import com.otoki.internal.admin.dto.DataScope
 import com.otoki.internal.admin.scope.DataScopeHolder
