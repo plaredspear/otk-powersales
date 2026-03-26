@@ -1,6 +1,6 @@
 package com.otoki.internal.safetycheck.service
 
-import com.otoki.internal.admin.exception.TeamScheduleEmployeeNotFoundException
+import com.otoki.internal.schedule.exception.TeamScheduleEmployeeNotFoundException
 import com.otoki.internal.safetycheck.entity.SafetyCheckItem
 import com.otoki.internal.safetycheck.entity.SafetyCheckSubmission
 import com.otoki.internal.safetycheck.repository.SafetyCheckItemRepository

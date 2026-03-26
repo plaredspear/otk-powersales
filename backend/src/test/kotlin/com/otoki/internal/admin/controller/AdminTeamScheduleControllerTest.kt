@@ -1,11 +1,11 @@
 package com.otoki.internal.admin.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.otoki.internal.admin.dto.request.TeamScheduleCreateRequest
-import com.otoki.internal.admin.dto.request.TeamScheduleUpdateRequest
-import com.otoki.internal.admin.dto.response.*
-import com.otoki.internal.admin.exception.*
-import com.otoki.internal.admin.service.AdminTeamScheduleService
+import com.otoki.internal.schedule.dto.request.TeamScheduleCreateRequest
+import com.otoki.internal.schedule.dto.request.TeamScheduleUpdateRequest
+import com.otoki.internal.schedule.dto.response.*
+import com.otoki.internal.schedule.exception.*
+import com.otoki.internal.schedule.service.AdminTeamScheduleService
 import com.otoki.internal.admin.security.AdminAuthorityFilter
 import com.otoki.internal.branch.dto.response.BranchResponse
 import com.otoki.internal.common.security.GpsConsentFilter
