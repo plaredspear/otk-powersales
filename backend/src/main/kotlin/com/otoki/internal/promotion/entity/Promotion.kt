@@ -30,10 +30,6 @@ class Promotion(
     @Column(name = "promotion_type_id")
     var promotionTypeId: Long? = null,
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "account_id", nullable = false)
-    var account: Account,
-
     @SFField("AccId__c")
     @Column(name = "account_sfid", length = 18)
     var accountSfid: String? = null,
@@ -125,7 +121,13 @@ class Promotion(
     var isClosed: Boolean = false,
 
     @Column(name = "is_deleted", nullable = false)
-    var isDeleted: Boolean = false
+    var isDeleted: Boolean = false,
+
+    // -- Relations --
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id", nullable = false)
+    var account: Account,
 ) : BaseEntity() {
 
     @ManyToOne(fetch = FetchType.LAZY)

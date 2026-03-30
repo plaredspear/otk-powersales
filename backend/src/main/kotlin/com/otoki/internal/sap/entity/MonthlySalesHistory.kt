@@ -34,10 +34,6 @@ class MonthlySalesHistory(
     @Column(name = "name", length = 80)
     val name: String? = null,
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "account_id")
-    var account: Account? = null,
-
     @HCColumn("account_externalkey__c")
     @Column(name = "account_external_key", length = 1300)
     var accountExternalKey: String? = null,
@@ -125,5 +121,11 @@ class MonthlySalesHistory(
     @HCColumn("systemmodstamp")
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
-    override var updatedAt: LocalDateTime = LocalDateTime.now()
+    override var updatedAt: LocalDateTime = LocalDateTime.now(),
+
+    // -- Relations --
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id")
+    var account: Account? = null,
 ) : BaseEntity()
