@@ -34,18 +34,10 @@ class DisplayWorkSchedule(
     @Column(name = "name", length = 80)
     val name: String? = null,
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "account_id")
-    val account: Account? = null,
-
     @SFField("Account__c")
     @HCColumn("account__c")
     @Column(name = "account_sfid", length = 18)
     val accountSfid: String? = null,
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "employee_id")
-    val employee: Employee? = null,
 
     @SFField("FullName__c")
     @HCColumn("fullname__c")
@@ -82,10 +74,6 @@ class DisplayWorkSchedule(
     @Column(name = "type_of_work5", length = 255)
     val typeOfWork5: String? = null,
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id")
-    val owner: Employee? = null,
-
     @SFField("OwnerId")
     @HCColumn("ownerid")
     @Column(name = "owner_sfid", length = 18)
@@ -102,5 +90,19 @@ class DisplayWorkSchedule(
     @HCColumn("isdeleted")
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
+
+    // -- Relations --
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id")
+    val account: Account? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employee_id")
+    val employee: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id")
+    val owner: Employee? = null,
 
 ) : BaseEntity()

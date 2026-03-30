@@ -37,10 +37,6 @@ class TeamMemberSchedule(
     @Column(name = "name", length = 80)
     val name: String? = null,
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "employee_id")
-    var employee: Employee? = null,
-
     @SFField("DKRetail__EmployeeId__c")
     @HCColumn("dkretail__employeeid__c")
     @Column(name = "employee_sfid", length = 18)
@@ -76,27 +72,15 @@ class TeamMemberSchedule(
     @Column(name = "working_category4", length = 255)
     var workingCategory4: String? = null,
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "account_id")
-    var account: Account? = null,
-
     @SFField("AccountId__c")
     @HCColumn("accountid__c")
     @Column(name = "account_sfid", length = 18)
     val accountSfid: String? = null,
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "team_leader_id")
-    val teamLeader: Employee? = null,
-
     @SFField("teamleadersfid__c")
     @HCColumn("teamleadersfid__c")
     @Column(name = "team_leader_sfid", length = 18)
     val teamLeaderSfid: String? = null,
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "alt_holiday_id")
-    val altHoliday: AlternativeHoliday? = null,
 
     @SFField("DKRetail__AltHolidayId__c")
     @HCColumn("dkretail__altholidayid__c")
@@ -107,10 +91,6 @@ class TeamMemberSchedule(
     @HCColumn("dkretail__commutelogid__c")
     @Column(name = "commute_log_id", length = 18)
     var commuteLogId: String? = null,
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "promotion_employee_id")
-    var promotionEmployee: PromotionEmployee? = null,
 
     @SFField("DKRetail__PromotionEmpId__c")
     @HCColumn("dkretail__promotionempid__c")
@@ -219,6 +199,28 @@ class TeamMemberSchedule(
     @HCColumn("isdeleted")
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
+
+    // -- Relations --
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employee_id")
+    var employee: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id")
+    var account: Account? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "team_leader_id")
+    val teamLeader: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "alt_holiday_id")
+    val altHoliday: AlternativeHoliday? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "promotion_employee_id")
+    var promotionEmployee: PromotionEmployee? = null,
 
 ) : BaseEntity() {
     fun updateForPromotion(

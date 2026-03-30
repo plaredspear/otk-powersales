@@ -33,10 +33,6 @@ class Notice(
     @Column(name = "employee_sfid", length = 18)
     val employeeSfid: String? = null,
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "employee_id")
-    val employee: Employee? = null,
-
     @SFField("DKRetail__Scope__c")
     @HCColumn("dkretail__scope__c")
     @Column(name = "scope", length = 255)
@@ -70,5 +66,11 @@ class Notice(
     @HCColumn("isdeleted")
     @Column(name = "is_deleted")
     var isDeleted: Boolean? = null,
+
+    // -- Relations --
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employee_id")
+    val employee: Employee? = null,
 
 ) : BaseEntity()
