@@ -174,6 +174,7 @@ docs/
 | 구현 가이드 | `.claude/guides/impl-mode.md` | 구현 |
 | Backend 컨벤션 | `.claude/guides/backend-conventions.md` | 구현 (Backend) |
 | Mobile 컨벤션 | `.claude/guides/mobile-conventions.md` | 구현 (Flutter) |
+| Web 컨벤션 | `.claude/guides/web-conventions.md` | 구현 (React) |
 | 스펙 작성 가이드 | `.claude/guides/spec-writing-guide.md` | 스펙 작성 |
 | 스펙 리뷰 기준 | `.claude/guides/spec-review-criteria.md` | 스펙 리뷰 |
 
