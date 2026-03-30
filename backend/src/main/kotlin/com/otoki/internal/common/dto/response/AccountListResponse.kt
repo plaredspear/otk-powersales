@@ -19,6 +19,7 @@ data class AccountInfo(
     val accountName: String,
     val accountTypeCode: String?,
     val workCategory: String,
+    val workCategory3: String? = null,
     val address: String?,
     val latitude: Double?,
     val longitude: Double?,

@@ -97,6 +97,36 @@ class AttendanceServiceTest {
         }
 
         @Test
+        @DisplayName("workCategory3 매핑 - 스케줄의 workingCategory3가 '고정' -> 응답에 포함")
+        fun getAccountList_workCategory3_mapped() {
+            // Given
+            val userId = 1L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            val teamMemberSchedules = listOf(
+                createTeamMemberSchedule(id = 1L, sfid = "SCH001", employeeId = userId, accountId = 8938, workingCategory3 = "고정"),
+                createTeamMemberSchedule(id = 2L, sfid = "SCH002", employeeId = userId, accountId = 8939, workingCategory3 = null)
+            )
+
+            val accounts = listOf(
+                createAccount(id = 8938, name = "테스트 거래처A"),
+                createAccount(id = 8939, name = "테스트 거래처B")
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
+            whenever(accountRepository.findByIdIn(listOf(8938, 8939))).thenReturn(accounts)
+
+            // When
+            val result = attendanceService.getAccountList(userId, null)
+
+            // Then
+            assertThat(result.accounts[0].workCategory3).isEqualTo("고정")
+            assertThat(result.accounts[1].workCategory3).isNull()
+        }
+
+        @Test
         @DisplayName("키워드='이마트' - 3건 중 이마트 포함 결과만 -> 이마트 매장만 반환")
         fun getAccountList_withKeyword_returnsFilteredResults() {
             // Given
@@ -820,6 +850,7 @@ class AttendanceServiceTest {
         workingDate: LocalDate = LocalDate.now(),
         workingType: String? = "상온",
         workingCategory1: String? = "진열",
+        workingCategory3: String? = null,
         accountId: Int? = 1,
         commuteLogId: String? = null
     ): TeamMemberSchedule {
@@ -830,6 +861,7 @@ class AttendanceServiceTest {
             workingDate = workingDate,
             workingType = workingType,
             workingCategory1 = workingCategory1,
+            workingCategory3 = workingCategory3,
             accountId = accountId,
             commuteLogId = commuteLogId
         )
