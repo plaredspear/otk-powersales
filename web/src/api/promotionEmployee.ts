@@ -25,7 +25,7 @@ interface PromotionEmployeeRaw {
   work_type3: string | null;
   work_type4: string | null;
   professional_promotion_team: string | null;
-  schedule_id: number | null;
+  team_member_schedule_id: number | null;
   promo_close_by_tm: boolean;
   base_price: number | null;
   daily_target_count: number | null;
@@ -155,7 +155,7 @@ function mapPromotionEmployee(raw: PromotionEmployeeRaw): PromotionEmployee {
     workType3: raw.work_type3,
     workType4: raw.work_type4,
     professionalPromotionTeam: raw.professional_promotion_team,
-    scheduleId: raw.schedule_id,
+    scheduleId: raw.team_member_schedule_id,
     promoCloseByTm: raw.promo_close_by_tm,
     basePrice: raw.base_price,
     dailyTargetCount: raw.daily_target_count,
