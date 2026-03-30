@@ -130,6 +130,132 @@ class AttendanceServiceTest {
         }
 
         @Test
+        @DisplayName("키워드='강남' - 주소에 '강남' 포함 거래처 -> 주소 매칭 결과 반환")
+        fun getAccountList_withAddressKeyword_returnsFilteredResults() {
+            // Given
+            val userId = 1L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            val teamMemberSchedules = listOf(
+                createTeamMemberSchedule(sfid = "SCH001", employeeId = userId, accountId = 8938),
+                createTeamMemberSchedule(sfid = "SCH002", employeeId = userId, accountId = 8939),
+                createTeamMemberSchedule(sfid = "SCH003", employeeId = userId, accountId = 8940)
+            )
+
+            val accounts = listOf(
+                createAccount(id = 8938, name = "이마트 강남점", address = "서울시 강남구 역삼동"),
+                createAccount(id = 8939, name = "홈플러스 서초점", address = "서울시 서초구 반포동"),
+                createAccount(id = 8940, name = "롯데마트 송파점", address = "서울시 송파구 잠실동")
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
+            whenever(accountRepository.findByIdIn(listOf(8938, 8939, 8940))).thenReturn(accounts)
+
+            // When
+            val result = attendanceService.getAccountList(userId, "강남")
+
+            // Then
+            assertThat(result.accounts).hasSize(1)
+            assertThat(result.accounts[0].accountName).isEqualTo("이마트 강남점")
+            assertThat(result.accounts[0].address).isEqualTo("서울시 강남구 역삼동")
+        }
+
+        @Test
+        @DisplayName("키워드='2001' - 거래처코드 매칭 -> 해당 거래처만 반환")
+        fun getAccountList_withAccountTypeCodeKeyword_returnsFilteredResults() {
+            // Given
+            val userId = 1L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            val teamMemberSchedules = listOf(
+                createTeamMemberSchedule(sfid = "SCH001", employeeId = userId, accountId = 8938),
+                createTeamMemberSchedule(sfid = "SCH002", employeeId = userId, accountId = 8939)
+            )
+
+            val accounts = listOf(
+                createAccount(id = 8938, name = "이마트 강남점", abcTypeCode = "2001"),
+                createAccount(id = 8939, name = "홈플러스 서초점", abcTypeCode = "3001")
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
+            whenever(accountRepository.findByIdIn(listOf(8938, 8939))).thenReturn(accounts)
+
+            // When
+            val result = attendanceService.getAccountList(userId, "2001")
+
+            // Then
+            assertThat(result.accounts).hasSize(1)
+            assertThat(result.accounts[0].accountName).isEqualTo("이마트 강남점")
+            assertThat(result.accounts[0].accountTypeCode).isEqualTo("2001")
+        }
+
+        @Test
+        @DisplayName("키워드='서울' - 거래처명+주소 복합 매칭 -> 중복 없이 모두 반환")
+        fun getAccountList_withKeywordMatchingMultipleFields_returnsAllMatches() {
+            // Given
+            val userId = 1L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            val teamMemberSchedules = listOf(
+                createTeamMemberSchedule(sfid = "SCH001", employeeId = userId, accountId = 8938),
+                createTeamMemberSchedule(sfid = "SCH002", employeeId = userId, accountId = 8939),
+                createTeamMemberSchedule(sfid = "SCH003", employeeId = userId, accountId = 8940)
+            )
+
+            val accounts = listOf(
+                createAccount(id = 8938, name = "서울마트", address = "경기도 수원시"),
+                createAccount(id = 8939, name = "홈플러스 부산점", address = "서울시 강남구"),
+                createAccount(id = 8940, name = "롯데마트 대전점", address = "대전시 유성구")
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
+            whenever(accountRepository.findByIdIn(listOf(8938, 8939, 8940))).thenReturn(accounts)
+
+            // When
+            val result = attendanceService.getAccountList(userId, "서울")
+
+            // Then
+            assertThat(result.accounts).hasSize(2)
+            assertThat(result.accounts.map { it.accountName }).containsExactlyInAnyOrder("서울마트", "홈플러스 부산점")
+        }
+
+        @Test
+        @DisplayName("키워드='1234' + accountTypeCode null -> NPE 미발생, 해당 거래처 제외")
+        fun getAccountList_withNullAccountTypeCode_noNpe() {
+            // Given
+            val userId = 1L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            val teamMemberSchedules = listOf(
+                createTeamMemberSchedule(sfid = "SCH001", employeeId = userId, accountId = 8938),
+                createTeamMemberSchedule(sfid = "SCH002", employeeId = userId, accountId = 8939)
+            )
+
+            val accounts = listOf(
+                createAccount(id = 8938, name = "이마트", address = "서울시", abcTypeCode = null),
+                createAccount(id = 8939, name = "홈플러스", address = "부산시", abcTypeCode = "1234")
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
+            whenever(accountRepository.findByIdIn(listOf(8938, 8939))).thenReturn(accounts)
+
+            // When
+            val result = attendanceService.getAccountList(userId, "1234")
+
+            // Then
+            assertThat(result.accounts).hasSize(1)
+            assertThat(result.accounts[0].accountName).isEqualTo("홈플러스")
+        }
+
+        @Test
         @DisplayName("존재하지 않는 사용자 -> EmployeeNotFoundException 발생")
         fun getAccountList_userNotFound_throwsException() {
             // Given

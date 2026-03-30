@@ -68,10 +68,15 @@ class AttendanceService(
             val account = teamMemberSchedule.accountId?.let { accountMap[it] }
             val accountName = account?.name ?: ""
 
-            // 키워드 필터링
+            // 키워드 필터링 (거래처명, 주소, 거래처코드)
             if (!keyword.isNullOrBlank()) {
                 val lowerKeyword = keyword.lowercase()
-                if (!accountName.lowercase().contains(lowerKeyword)) return@mapNotNull null
+                val address = account?.address1 ?: ""
+                val accountTypeCode = account?.abcTypeCode ?: ""
+                val matches = accountName.lowercase().contains(lowerKeyword) ||
+                    address.lowercase().contains(lowerKeyword) ||
+                    accountTypeCode.lowercase().contains(lowerKeyword)
+                if (!matches) return@mapNotNull null
             }
 
             AccountInfo(
