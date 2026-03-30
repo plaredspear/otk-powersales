@@ -22,13 +22,11 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
     required int scheduleId,
     required double latitude,
     required double longitude,
-    String? workType,
   }) {
     return _dataSource.registerAttendance(
       scheduleId: scheduleId,
       latitude: latitude,
       longitude: longitude,
-      workType: workType,
     );
   }
 

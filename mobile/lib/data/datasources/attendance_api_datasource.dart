@@ -49,16 +49,12 @@ class AttendanceApiDataSource {
     required int scheduleId,
     required double latitude,
     required double longitude,
-    String? workType,
   }) async {
     final body = <String, dynamic>{
       'schedule_id': scheduleId,
       'latitude': latitude,
       'longitude': longitude,
     };
-    if (workType != null) {
-      body['workType'] = workType;
-    }
 
     final response = await _dio.post(
       '/api/v1/attendance',

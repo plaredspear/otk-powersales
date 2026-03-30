@@ -116,12 +116,6 @@ void main() {
       expect(notifier.state.filteredAccounts, notifier.state.allAccounts);
     });
 
-    test('selectWorkType 근무유형 선택', () {
-      notifier.selectWorkType('REFRIGERATED');
-
-      expect(notifier.state.selectedWorkType, 'REFRIGERATED');
-    });
-
     test('selectAccount 거래처 선택', () {
       notifier.selectAccount(12345);
 
@@ -131,7 +125,6 @@ void main() {
     test('register 출근등록 성공', () async {
       await notifier.loadAccounts();
       notifier.selectAccount(12345);
-      notifier.selectWorkType('ROOM_TEMP');
 
       await notifier.register(latitude: 35.1696, longitude: 129.1318);
 
@@ -140,7 +133,6 @@ void main() {
       expect(notifier.state.registrationResult?.scheduleId,
           12345);
       expect(notifier.state.registrationResult?.accountName, '이마트 해운대점');
-      expect(notifier.state.registrationResult?.workType, 'ROOM_TEMP');
       expect(notifier.state.registrationResult?.distanceKm, 0.12);
       expect(notifier.state.registrationResult?.totalCount, 5);
       expect(notifier.state.registrationResult?.registeredCount, 1);
@@ -266,16 +258,12 @@ void main() {
       notifier.selectAccount(12345);
       expect(notifier.state.selectedScheduleId, 12345);
 
-      // 4. 근무유형 선택
-      notifier.selectWorkType('REFRIGERATED');
-      expect(notifier.state.selectedWorkType, 'REFRIGERATED');
-
-      // 5. 출근등록
+      // 4. 출근등록
       await notifier.register(latitude: 35.1696, longitude: 129.1318);
       expect(notifier.state.registrationResult, isNotNull);
       expect(notifier.state.registeredCount, 1);
 
-      // 6. 현황 조회
+      // 5. 현황 조회
       await notifier.loadAttendanceStatus();
       expect(notifier.state.statusList.length, 5);
       expect(
@@ -283,7 +271,7 @@ void main() {
         1,
       );
 
-      // 7. 다음 등록 준비
+      // 6. 다음 등록 준비
       await notifier.prepareNextRegistration();
       expect(notifier.state.searchKeyword, '');
     });
@@ -313,7 +301,6 @@ class FakeAttendanceRepository implements AttendanceRepository {
     required int scheduleId,
     required double latitude,
     required double longitude,
-    String? workType,
   }) async {
     if (exceptionToThrow != null) {
       final e = exceptionToThrow!;
@@ -327,7 +314,7 @@ class FakeAttendanceRepository implements AttendanceRepository {
     return AttendanceResult(
       scheduleId: scheduleId,
       accountName: account.accountName,
-      workType: workType ?? 'ROOM_TEMP',
+      workType: 'ROOM_TEMP',
       distanceKm: 0.12,
       totalCount: _mockAccounts.length,
       registeredCount: _registeredIds.length,
