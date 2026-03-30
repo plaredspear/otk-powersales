@@ -57,7 +57,7 @@ class MobilePromotionService(
             pageable = pageable
         )
 
-        val accountIds = promotionPage.content.map { it.accountId }.distinct()
+        val accountIds = promotionPage.content.map { it.account.id }.distinct()
         val accountMap = if (accountIds.isNotEmpty()) {
             accountRepository.findByIdIn(accountIds).associateBy { it.id }
         } else emptyMap()
@@ -69,7 +69,7 @@ class MobilePromotionService(
 
         return MobilePromotionListResponse(
             content = promotionPage.content.map { promotion ->
-                val accountName = accountMap[promotion.accountId]?.name
+                val accountName = accountMap[promotion.account.id]?.name
                 val typeName = promotion.promotionTypeId?.let { typeMap[it]?.name }
                 val myScheduleDate = if (isWoman) {
                     promotionEmployeeRepository.findMinScheduleDateByPromotionIdAndEmployeeId(
@@ -112,7 +112,7 @@ class MobilePromotionService(
             }
         }
 
-        val account = accountRepository.findById(promotion.accountId).orElse(null)
+        val account = promotion.account
         val product = promotion.primaryProductId?.let { productRepository.findById(it).orElse(null) }
         val typeName = promotion.promotionTypeId?.let {
             promotionTypeRepository.findById(it).orElse(null)?.name

@@ -5,6 +5,7 @@ import com.otoki.internal.promotion.dto.request.BatchUpdatePromotionEmployeeRequ
 import com.otoki.internal.promotion.dto.request.PromotionEmployeeRequest
 import com.otoki.internal.promotion.entity.Promotion
 import com.otoki.internal.promotion.entity.PromotionEmployee
+import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.promotion.exception.*
 import com.otoki.internal.promotion.repository.PromotionEmployeeRepository
 import com.otoki.internal.promotion.repository.PromotionRepository
@@ -1225,7 +1226,7 @@ class AdminPromotionEmployeeServiceTest {
         category: String? = "라면"
     ) = Promotion(
         id = id, promotionNumber = "PM00000001", promotionName = "테스트 행사",
-        accountId = 100, startDate = LocalDate.of(2026, 3, 10), endDate = LocalDate.of(2026, 3, 20),
+        account = Account(id = 100, name = "테스트거래처"), startDate = LocalDate.of(2026, 3, 10), endDate = LocalDate.of(2026, 3, 20),
         isDeleted = isDeleted, category = category
     )
 

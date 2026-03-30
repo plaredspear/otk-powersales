@@ -80,7 +80,7 @@ class MobilePromotionServiceTest {
         promotionNumber: String = "PM00000001",
         promotionName: String? = "테스트 행사",
         promotionTypeId: Long? = 1L,
-        accountId: Int = 100,
+        account: Account = createAccount(),
         startDate: LocalDate = LocalDate.of(2026, 3, 1),
         endDate: LocalDate = LocalDate.of(2026, 3, 15),
         costCenterCode: String? = "1234",
@@ -99,7 +99,7 @@ class MobilePromotionServiceTest {
         promotionNumber = promotionNumber,
         promotionName = promotionName,
         promotionTypeId = promotionTypeId,
-        accountId = accountId,
+        account = account,
         startDate = startDate,
         endDate = endDate,
         costCenterCode = costCenterCode,
@@ -178,7 +178,7 @@ class MobilePromotionServiceTest {
         fun getPromotions_leader_returnsPromotionsWithNullMyScheduleDate() {
             // Given
             val leader = createEmployee(id = 10L, employeeCode = "20030001", appAuthority = "조장", costCenterCode = "1234")
-            val promotion = createPromotion(id = 1L, accountId = 100, promotionTypeId = 1L)
+            val promotion = createPromotion(id = 1L, account = createAccount(id = 100), promotionTypeId = 1L)
             val account = createAccount(id = 100, name = "이마트 성수점")
             val promotionType = createPromotionType(id = 1L, name = "시식")
             val pageable = PageRequest.of(0, 20)
@@ -217,7 +217,7 @@ class MobilePromotionServiceTest {
         fun getPromotions_woman_returnsPromotionsWithMyScheduleDate() {
             // Given
             val woman = createEmployee(id = 20L, employeeCode = "20030002", appAuthority = "여사원", costCenterCode = "1234")
-            val promotion = createPromotion(id = 1L, accountId = 100, promotionTypeId = 1L)
+            val promotion = createPromotion(id = 1L, account = createAccount(id = 100), promotionTypeId = 1L)
             val account = createAccount(id = 100)
             val promotionType = createPromotionType(id = 1L)
             val pageable = PageRequest.of(0, 20)
@@ -384,14 +384,14 @@ class MobilePromotionServiceTest {
         fun getPromotion_leader_sameBranch_returnsDetailWithEmployees() {
             // Given
             val leader = createEmployee(id = 10L, employeeCode = "20030001", appAuthority = "조장", costCenterCode = "1234")
+            val account = createAccount(id = 100, name = "이마트 성수점")
             val promotion = createPromotion(
                 id = 1L,
                 costCenterCode = "1234",
-                accountId = 100,
+                account = account,
                 promotionTypeId = 1L,
                 primaryProductId = 5L
             )
-            val account = createAccount(id = 100, name = "이마트 성수점")
             val product = createProduct(id = 5L, name = "진라면")
             val promotionType = createPromotionType(id = 1L, name = "시식")
             val employee1 = createPromotionEmployee(
@@ -411,7 +411,6 @@ class MobilePromotionServiceTest {
 
             whenever(employeeRepository.findById(10L)).thenReturn(Optional.of(leader))
             whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
-            whenever(accountRepository.findById(100)).thenReturn(Optional.of(account))
             whenever(productRepository.findById(5L)).thenReturn(Optional.of(product))
             whenever(promotionTypeRepository.findById(1L)).thenReturn(Optional.of(promotionType))
             employee1.employee = empUser1
@@ -439,14 +438,12 @@ class MobilePromotionServiceTest {
         fun getPromotion_woman_assigned_returnsDetail() {
             // Given
             val woman = createEmployee(id = 20L, employeeCode = "20030002", appAuthority = "여사원", costCenterCode = "1234")
-            val promotion = createPromotion(id = 1L, costCenterCode = "1234", accountId = 100)
-            val account = createAccount(id = 100)
+            val promotion = createPromotion(id = 1L, costCenterCode = "1234", account = createAccount(id = 100))
             val employee = createPromotionEmployee(id = 10L, promotionId = 1L, employeeId = 20L)
 
             whenever(employeeRepository.findById(20L)).thenReturn(Optional.of(woman))
             whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
             whenever(promotionEmployeeRepository.existsByPromotionIdAndEmployeeId(1L, 20L)).thenReturn(true)
-            whenever(accountRepository.findById(100)).thenReturn(Optional.of(account))
             employee.employee = woman
             whenever(promotionEmployeeRepository.findWithEmployeeByPromotionId(1L))
                 .thenReturn(listOf(employee))

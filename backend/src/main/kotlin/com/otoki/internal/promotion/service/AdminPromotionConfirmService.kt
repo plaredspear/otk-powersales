@@ -85,7 +85,7 @@ class AdminPromotionConfirmService(
             if (existing != null) {
                 existing.updateForPromotion(
                     employeeId = empId,
-                    accountId = promotion.accountId,
+                    accountId = promotion.account.id,
                     workingDate = pe.scheduleDate!!,
                     workingType = pe.workStatus!!,
                     workingCategory1 = pe.workType1!!,
@@ -97,7 +97,7 @@ class AdminPromotionConfirmService(
             } else {
                 val newTeamMemberSchedule = TeamMemberSchedule(
                     employeeId = empId,
-                    accountId = promotion.accountId,
+                    accountId = promotion.account.id,
                     workingDate = pe.scheduleDate!!,
                     workingType = pe.workStatus!!,
                     workingCategory1 = pe.workType1!!,
@@ -284,7 +284,7 @@ class AdminPromotionConfirmService(
             val duplicate = externalTeamMemberSchedules.any {
                 it.employeeId == pe.employeeId &&
                     it.workingDate == pe.scheduleDate!! &&
-                    it.accountId == promotion.accountId
+                    it.accountId == promotion.account.id
             }
             if (duplicate) {
                 val name = resolveEmployeeName(pe.employeeId!!, userByIdMap)

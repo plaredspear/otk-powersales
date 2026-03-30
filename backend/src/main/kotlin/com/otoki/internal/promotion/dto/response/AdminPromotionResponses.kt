@@ -99,7 +99,7 @@ data class PromotionDetailResponse(
             promotionName = promotion.promotionName,
             promotionTypeId = promotion.promotionTypeId,
             promotionTypeName = promotionTypeName,
-            accountId = promotion.accountId,
+            accountId = promotion.account.id,
             accountName = accountName,
             startDate = promotion.startDate,
             endDate = promotion.endDate,

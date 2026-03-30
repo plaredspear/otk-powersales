@@ -30,8 +30,9 @@ class Promotion(
     @Column(name = "promotion_type_id")
     var promotionTypeId: Long? = null,
 
-    @Column(name = "account_id", nullable = false)
-    var accountId: Int,
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id", nullable = false)
+    var account: Account,
 
     @SFField("AccId__c")
     @Column(name = "account_sfid", length = 18)
@@ -132,17 +133,13 @@ class Promotion(
     var promotionType: PromotionType? = null
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "account_id", insertable = false, updatable = false)
-    var account: Account? = null
-
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "primary_product_id", insertable = false, updatable = false)
     var primaryProduct: Product? = null
 
     fun update(
         promotionName: String?,
         promotionTypeId: Long?,
-        accountId: Int,
+        account: Account,
         startDate: LocalDate,
         endDate: LocalDate,
         primaryProductId: Long?,
@@ -156,7 +153,7 @@ class Promotion(
     ) {
         this.promotionName = promotionName
         this.promotionTypeId = promotionTypeId
-        this.accountId = accountId
+        this.account = account
         this.startDate = startDate
         this.endDate = endDate
         this.primaryProductId = primaryProductId
