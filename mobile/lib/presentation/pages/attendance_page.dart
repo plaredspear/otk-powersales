@@ -10,6 +10,7 @@ import '../widgets/attendance/attendance_status_popup.dart';
 import '../widgets/attendance/account_list_item.dart';
 import '../widgets/attendance/account_search_bar.dart';
 import '../widgets/common/primary_button.dart';
+import '../../core/utils/throttled_tap_mixin.dart';
 import '../../app_router.dart';
 
 /// 출근등록 화면 (메인)
@@ -20,7 +21,8 @@ class AttendancePage extends ConsumerStatefulWidget {
   ConsumerState<AttendancePage> createState() => _AttendancePageState();
 }
 
-class _AttendancePageState extends ConsumerState<AttendancePage> {
+class _AttendancePageState extends ConsumerState<AttendancePage>
+    with ThrottledTapMixin {
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -101,7 +103,7 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
               child: AttendanceStatusCounter(
                 registeredCount: state.registeredCount,
                 totalCount: state.totalCount,
-                onTap: () async {
+                onTap: () => throttledTapAsync(() async {
                   await notifier.loadAttendanceStatus();
                   if (context.mounted) {
                     AttendanceStatusPopup.show(
@@ -111,7 +113,7 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
                       registeredCount: state.registeredCount,
                     );
                   }
-                },
+                }),
               ),
             ),
         ],
@@ -246,7 +248,7 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
         text: '등록하기',
         isLoading: state.isRegistering,
         onPressed: canRegister && !state.isRegistering
-            ? () => _handleRegister(notifier, state)
+            ? () => throttledTapAsync(() => _handleRegister(notifier, state))
             : null,
       ),
     );

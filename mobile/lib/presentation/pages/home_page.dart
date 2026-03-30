@@ -14,6 +14,7 @@ import '../widgets/home/notice_carousel.dart';
 import '../widgets/home/product_search_bar.dart';
 import '../widgets/home/quick_menu_grid.dart';
 import '../widgets/home/activity_registration_popup.dart';
+import '../../core/utils/throttled_tap_mixin.dart';
 import '../../app_router.dart';
 import '../providers/safety_check_provider.dart';
 
@@ -28,7 +29,8 @@ class HomePage extends ConsumerStatefulWidget {
   ConsumerState<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends ConsumerState<HomePage> {
+class _HomePageState extends ConsumerState<HomePage>
+    with ThrottledTapMixin {
   @override
   void initState() {
     super.initState();
@@ -122,12 +124,12 @@ class _HomePageState extends ConsumerState<HomePage> {
                 currentDate: homeData.currentDate,
                 attendanceSummary: homeData.attendanceSummary,
                 userRole: userRole,
-                onRegisterTap: () async {
+                onRegisterTap: () => throttledTapAsync(() async {
                   await _handleRegisterTap(userRole);
                   if (mounted) {
                     ref.read(homeProvider.notifier).refresh();
                   }
-                },
+                }),
                 onScheduleTap: (schedule) {
                   final date = DateTime.tryParse(homeData.currentDate) ?? DateTime.now();
                   AppRouter.navigateTo(
@@ -193,7 +195,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                     child: QuickMenuGrid(
                       userRole: userRole,
                       onMenuTap: (item) {
-                        _handleQuickMenuTap(item, userRole);
+                        throttledTap(() => _handleQuickMenuTap(item, userRole));
                       },
                     ),
                   ),
