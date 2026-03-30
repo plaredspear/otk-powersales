@@ -4,11 +4,11 @@ import { fetchTeamScheduleSummary } from '@/api/team-schedule';
 export function useTeamScheduleSummary(params: {
   year: number;
   month: number;
-  employeeCodes: string[];
-  accountSfids: string[];
+  employeeIds: number[];
+  accountIds: number[];
 }) {
   return useQuery({
-    queryKey: ['admin', 'team-schedule', 'summary', params.year, params.month, params.employeeCodes, params.accountSfids],
+    queryKey: ['admin', 'team-schedule', 'summary', params.year, params.month, params.employeeIds, params.accountIds],
     queryFn: () => fetchTeamScheduleSummary(params),
   });
 }

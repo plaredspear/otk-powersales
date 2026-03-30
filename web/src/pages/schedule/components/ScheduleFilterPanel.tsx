@@ -7,10 +7,10 @@ type FilterTab = 'member' | 'account';
 interface ScheduleFilterPanelProps {
   filterTab: FilterTab;
   onFilterTabChange: (tab: FilterTab) => void;
-  selectedEmployeeNumbers: string[];
-  onSelectedEmployeeNumbersChange: (ids: string[]) => void;
-  selectedAccountSfids: string[];
-  onSelectedAccountSfidsChange: (ids: string[]) => void;
+  selectedEmployeeIds: number[];
+  onSelectedEmployeeIdsChange: (ids: number[]) => void;
+  selectedAccountIds: number[];
+  onSelectedAccountIdsChange: (ids: number[]) => void;
   selectedBranchCode: string;
   onSelectedBranchCodeChange: (code: string) => void;
 }
@@ -23,10 +23,10 @@ const TAB_OPTIONS = [
 export function ScheduleFilterPanel({
   filterTab,
   onFilterTabChange,
-  selectedEmployeeNumbers,
-  onSelectedEmployeeNumbersChange,
-  selectedAccountSfids,
-  onSelectedAccountSfidsChange,
+  selectedEmployeeIds,
+  onSelectedEmployeeIdsChange,
+  selectedAccountIds,
+  onSelectedAccountIdsChange,
   selectedBranchCode,
   onSelectedBranchCodeChange,
 }: ScheduleFilterPanelProps) {
@@ -53,13 +53,13 @@ export function ScheduleFilterPanel({
       <div style={{ flex: 1, overflow: 'auto' }}>
         {filterTab === 'member' ? (
           <MemberFilterTab
-            selectedIds={selectedEmployeeNumbers}
-            onChange={onSelectedEmployeeNumbersChange}
+            selectedIds={selectedEmployeeIds}
+            onChange={onSelectedEmployeeIdsChange}
           />
         ) : (
           <AccountFilterTab
-            selectedIds={selectedAccountSfids}
-            onChange={onSelectedAccountSfidsChange}
+            selectedIds={selectedAccountIds}
+            onChange={onSelectedAccountIdsChange}
             branchCode={selectedBranchCode}
             onBranchCodeChange={onSelectedBranchCodeChange}
           />

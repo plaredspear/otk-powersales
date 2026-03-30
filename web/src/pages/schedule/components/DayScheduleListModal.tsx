@@ -16,7 +16,7 @@ const columns: ColumnsType<TeamSchedule> = [
   {
     title: '사원명',
     width: 140,
-    render: (_, record) => `${record.employeeName}(${record.empCode})`,
+    render: (_, record) => `${record.employeeName}(${record.employeeCode})`,
   },
   {
     title: '근무형태',

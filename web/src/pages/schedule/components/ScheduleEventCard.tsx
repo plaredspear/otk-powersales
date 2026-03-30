@@ -7,7 +7,7 @@ interface ScheduleEventCardProps {
 export function ScheduleEventCard({ schedule }: ScheduleEventCardProps) {
   const {
     employeeName,
-    empCode,
+    employeeCode,
     workingType,
     workingCategory1,
     workingCategory2,
@@ -35,7 +35,7 @@ export function ScheduleEventCard({ schedule }: ScheduleEventCardProps) {
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
         <span style={{ fontWeight: 600 }}>
-          {employeeName}({empCode})
+          {employeeName}({employeeCode})
         </span>
         {isWork && (
           <span style={{ fontSize: 10 }}>

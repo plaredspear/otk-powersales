@@ -3,8 +3,8 @@ import { Checkbox, Spin } from 'antd';
 import { useTeamMembers } from '@/hooks/team-schedule/useTeamMembers';
 
 interface MemberFilterTabProps {
-  selectedIds: string[];
-  onChange: (ids: string[]) => void;
+  selectedIds: number[];
+  onChange: (ids: number[]) => void;
 }
 
 export function MemberFilterTab({ selectedIds, onChange }: MemberFilterTabProps) {
@@ -15,7 +15,7 @@ export function MemberFilterTab({ selectedIds, onChange }: MemberFilterTabProps)
   useEffect(() => {
     if (members.length > 0 && !initializedRef.current) {
       initializedRef.current = true;
-      onChange(members.map((m) => m.employeeCode));
+      onChange(members.map((m) => m.employeeId));
     }
   }, [members, onChange]);
 
@@ -31,14 +31,14 @@ export function MemberFilterTab({ selectedIds, onChange }: MemberFilterTabProps)
   const indeterminate = selectedIds.length > 0 && selectedIds.length < members.length;
 
   const handleSelectAll = (checked: boolean) => {
-    onChange(checked ? members.map((m) => m.employeeCode) : []);
+    onChange(checked ? members.map((m) => m.employeeId) : []);
   };
 
-  const handleToggle = (employeeCode: string, checked: boolean) => {
+  const handleToggle = (employeeId: number, checked: boolean) => {
     if (checked) {
-      onChange([...selectedIds, employeeCode]);
+      onChange([...selectedIds, employeeId]);
     } else {
-      onChange(selectedIds.filter((id) => id !== employeeCode));
+      onChange(selectedIds.filter((id) => id !== employeeId));
     }
   };
 
@@ -60,12 +60,12 @@ export function MemberFilterTab({ selectedIds, onChange }: MemberFilterTabProps)
         </Checkbox>
       </div>
       {members.map((member) => (
-        <div key={member.employeeCode} style={{ padding: '3px 0' }}>
+        <div key={member.employeeId} style={{ padding: '3px 0' }}>
           <Checkbox
-            checked={selectedIds.includes(member.employeeCode)}
-            onChange={(e) => handleToggle(member.employeeCode, e.target.checked)}
+            checked={selectedIds.includes(member.employeeId)}
+            onChange={(e) => handleToggle(member.employeeId, e.target.checked)}
           >
-            {member.name}({member.empCode})
+            {member.name}({member.employeeCode})
           </Checkbox>
         </div>
       ))}

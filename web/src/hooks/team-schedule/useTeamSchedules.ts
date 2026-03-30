@@ -4,11 +4,11 @@ import { fetchTeamSchedules } from '@/api/team-schedule';
 export function useTeamSchedules(params: {
   year: number;
   month: number;
-  employeeCodes: string[];
-  accountSfids: string[];
+  employeeIds: number[];
+  accountIds: number[];
 }) {
   return useQuery({
-    queryKey: ['admin', 'team-schedule', 'list', params.year, params.month, params.employeeCodes, params.accountSfids],
+    queryKey: ['admin', 'team-schedule', 'list', params.year, params.month, params.employeeIds, params.accountIds],
     queryFn: () => fetchTeamSchedules(params),
   });
 }

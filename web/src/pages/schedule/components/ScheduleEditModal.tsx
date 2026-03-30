@@ -54,19 +54,19 @@ export function ScheduleEditModal({
     if (open && schedule) {
       form.setFieldsValue({
         workingDate: schedule.workingDate,
-        employeeName: `${schedule.employeeName}(${schedule.empCode})`,
+        employeeName: `${schedule.employeeName}(${schedule.employeeCode})`,
         workingType: schedule.workingType,
         workingCategory1: schedule.workingCategory1,
         workingCategory2: schedule.workingCategory2,
         workingCategory3: schedule.workingCategory3,
-        accountSfid: schedule.accountSfid,
+        accountId: schedule.accountId,
       });
       setError(null);
     }
   }, [open, schedule, form]);
 
   const accountOptions = accounts.map((a) => ({
-    value: a.accountSfid,
+    value: a.accountId,
     label: a.name,
   }));
 
@@ -93,7 +93,7 @@ export function ScheduleEditModal({
             working_category1: values.workingCategory1,
             working_category2: values.workingCategory2,
             working_category3: values.workingCategory3,
-            account_sfid: values.accountSfid,
+            account_id: values.accountId,
           }),
         },
       });
@@ -195,7 +195,7 @@ export function ScheduleEditModal({
               <Select placeholder="근무유형3 선택" options={CATEGORY3_OPTIONS} allowClear />
             </Form.Item>
 
-            <Form.Item label="거래처" name="accountSfid">
+            <Form.Item label="거래처" name="accountId">
               <Select
                 placeholder="거래처 선택"
                 options={accountOptions}

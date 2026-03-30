@@ -18,25 +18,25 @@ export default function SchedulePage() {
   const canWrite = hasPermission('SCHEDULE_WRITE');
   const [currentDate, setCurrentDate] = useState<Dayjs>(dayjs());
   const [filterTab, setFilterTab] = useState<FilterTab>('member');
-  const [selectedEmployeeNumbers, setSelectedEmployeeNumbers] = useState<string[]>([]);
-  const [selectedAccountSfids, setSelectedAccountSfids] = useState<string[]>([]);
+  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<number[]>([]);
+  const [selectedAccountIds, setSelectedAccountIds] = useState<number[]>([]);
   const [selectedBranchCode, setSelectedBranchCode] = useState<string>('');
 
   // Debounce filter values
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const [debouncedEmployeeNumbers, setDebouncedEmployeeNumbers] = useState<string[]>([]);
-  const [debouncedAccountSfids, setDebouncedAccountSfids] = useState<string[]>([]);
+  const [debouncedEmployeeIds, setDebouncedEmployeeIds] = useState<number[]>([]);
+  const [debouncedAccountIds, setDebouncedAccountIds] = useState<number[]>([]);
 
-  const handleEmployeeNumbersChange = useCallback((ids: string[]) => {
-    setSelectedEmployeeNumbers(ids);
+  const handleEmployeeIdsChange = useCallback((ids: number[]) => {
+    setSelectedEmployeeIds(ids);
     clearTimeout(debounceTimer.current);
-    debounceTimer.current = setTimeout(() => setDebouncedEmployeeNumbers(ids), 300);
+    debounceTimer.current = setTimeout(() => setDebouncedEmployeeIds(ids), 300);
   }, []);
 
-  const handleAccountSfidsChange = useCallback((ids: string[]) => {
-    setSelectedAccountSfids(ids);
+  const handleAccountIdsChange = useCallback((ids: number[]) => {
+    setSelectedAccountIds(ids);
     clearTimeout(debounceTimer.current);
-    debounceTimer.current = setTimeout(() => setDebouncedAccountSfids(ids), 300);
+    debounceTimer.current = setTimeout(() => setDebouncedAccountIds(ids), 300);
   }, []);
 
   // Modal state
@@ -52,10 +52,10 @@ export default function SchedulePage() {
     () => ({
       year,
       month,
-      employeeCodes: filterTab === 'member' ? debouncedEmployeeNumbers : [],
-      accountSfids: filterTab === 'account' ? debouncedAccountSfids : [],
+      employeeIds: filterTab === 'member' ? debouncedEmployeeIds : [],
+      accountIds: filterTab === 'account' ? debouncedAccountIds : [],
     }),
-    [year, month, filterTab, debouncedEmployeeNumbers, debouncedAccountSfids],
+    [year, month, filterTab, debouncedEmployeeIds, debouncedAccountIds],
   );
 
   const { data: schedules = [], isLoading: schedulesLoading } = useTeamSchedules(queryParams);
@@ -83,10 +83,10 @@ export default function SchedulePage() {
         <ScheduleFilterPanel
           filterTab={filterTab}
           onFilterTabChange={setFilterTab}
-          selectedEmployeeNumbers={selectedEmployeeNumbers}
-          onSelectedEmployeeNumbersChange={handleEmployeeNumbersChange}
-          selectedAccountSfids={selectedAccountSfids}
-          onSelectedAccountSfidsChange={handleAccountSfidsChange}
+          selectedEmployeeIds={selectedEmployeeIds}
+          onSelectedEmployeeIdsChange={handleEmployeeIdsChange}
+          selectedAccountIds={selectedAccountIds}
+          onSelectedAccountIdsChange={handleAccountIdsChange}
           selectedBranchCode={selectedBranchCode}
           onSelectedBranchCodeChange={setSelectedBranchCode}
         />

@@ -4,8 +4,8 @@ import { useTeamScheduleBranches } from '@/hooks/team-schedule/useTeamScheduleBr
 import { useTeamScheduleAccounts } from '@/hooks/team-schedule/useTeamScheduleAccounts';
 
 interface AccountFilterTabProps {
-  selectedIds: string[];
-  onChange: (ids: string[]) => void;
+  selectedIds: number[];
+  onChange: (ids: number[]) => void;
   branchCode: string;
   onBranchCodeChange: (code: string) => void;
 }
@@ -27,7 +27,7 @@ export function AccountFilterTab({
       if (!initializedRef.current || prevBranchCode.current !== branchCode) {
         initializedRef.current = true;
         prevBranchCode.current = branchCode;
-        onChange(accounts.map((a) => a.accountSfid));
+        onChange(accounts.map((a) => a.accountId));
       }
     }
   }, [accounts, branchCode, onChange]);
@@ -41,14 +41,14 @@ export function AccountFilterTab({
   const indeterminate = selectedIds.length > 0 && selectedIds.length < accounts.length;
 
   const handleSelectAll = (checked: boolean) => {
-    onChange(checked ? accounts.map((a) => a.accountSfid) : []);
+    onChange(checked ? accounts.map((a) => a.accountId) : []);
   };
 
-  const handleToggle = (sfid: string, checked: boolean) => {
+  const handleToggle = (accountId: number, checked: boolean) => {
     if (checked) {
-      onChange([...selectedIds, sfid]);
+      onChange([...selectedIds, accountId]);
     } else {
-      onChange(selectedIds.filter((id) => id !== sfid));
+      onChange(selectedIds.filter((id) => id !== accountId));
     }
   };
 
@@ -85,10 +85,10 @@ export function AccountFilterTab({
             </Checkbox>
           </div>
           {accounts.map((account) => (
-            <div key={account.accountSfid} style={{ padding: '3px 0' }}>
+            <div key={account.accountId} style={{ padding: '3px 0' }}>
               <Checkbox
-                checked={selectedIds.includes(account.accountSfid)}
-                onChange={(e) => handleToggle(account.accountSfid, e.target.checked)}
+                checked={selectedIds.includes(account.accountId)}
+                onChange={(e) => handleToggle(account.accountId, e.target.checked)}
               >
                 {account.name}
               </Checkbox>

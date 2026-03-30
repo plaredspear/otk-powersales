@@ -10,13 +10,13 @@ interface ApiResponse<T> {
 }
 
 interface TeamMemberRaw {
+  employee_id: number;
   employee_code: string;
-  emp_code: string;
   name: string;
 }
 
 interface TeamScheduleAccountRaw {
-  account_sfid: string;
+  account_id: number;
   external_key: string;
   name: string;
 }
@@ -30,13 +30,12 @@ interface TeamScheduleRaw {
   id: number;
   employee_code: string;
   employee_name: string;
-  emp_code: string;
   working_date: string;
   working_type: string;
   working_category1: string | null;
   working_category2: string | null;
   working_category3: string | null;
-  account_sfid: string | null;
+  account_id: number | null;
   account_name: string | null;
   account_external_key: string | null;
   is_clock_in: boolean;
@@ -55,13 +54,13 @@ interface DailySummaryRaw {
 // --- Frontend interfaces (camelCase) ---
 
 export interface TeamMember {
+  employeeId: number;
   employeeCode: string;
-  empCode: string;
   name: string;
 }
 
 export interface TeamScheduleAccount {
-  accountSfid: string;
+  accountId: number;
   externalKey: string;
   name: string;
 }
@@ -75,13 +74,12 @@ export interface TeamSchedule {
   id: number;
   employeeCode: string;
   employeeName: string;
-  empCode: string;
   workingDate: string;
   workingType: string;
   workingCategory1: string | null;
   workingCategory2: string | null;
   workingCategory3: string | null;
-  accountSfid: string | null;
+  accountId: number | null;
   accountName: string | null;
   accountExternalKey: string | null;
   isClockIn: boolean;
@@ -103,22 +101,22 @@ export interface TeamScheduleUpdateRequest {
   working_category1?: string;
   working_category2?: string;
   working_category3?: string;
-  account_sfid?: string;
+  account_id?: number;
 }
 
 // --- Mappers ---
 
 function mapMembers(raw: TeamMemberRaw[]): TeamMember[] {
   return raw.map((m) => ({
+    employeeId: m.employee_id,
     employeeCode: m.employee_code,
-    empCode: m.emp_code,
     name: m.name,
   }));
 }
 
 function mapAccounts(raw: TeamScheduleAccountRaw[]): TeamScheduleAccount[] {
   return raw.map((a) => ({
-    accountSfid: a.account_sfid,
+    accountId: a.account_id,
     externalKey: a.external_key,
     name: a.name,
   }));
@@ -136,13 +134,12 @@ function mapSchedules(raw: TeamScheduleRaw[]): TeamSchedule[] {
     id: s.id,
     employeeCode: s.employee_code,
     employeeName: s.employee_name,
-    empCode: s.emp_code,
     workingDate: s.working_date,
     workingType: s.working_type,
     workingCategory1: s.working_category1,
     workingCategory2: s.working_category2,
     workingCategory3: s.working_category3,
-    accountSfid: s.account_sfid,
+    accountId: s.account_id,
     accountName: s.account_name,
     accountExternalKey: s.account_external_key,
     isClockIn: s.is_clock_in,
@@ -197,8 +194,8 @@ export async function fetchTeamScheduleBranches(): Promise<Branch[]> {
 export async function fetchTeamSchedules(params: {
   year: number;
   month: number;
-  employeeCodes: string[];
-  accountSfids: string[];
+  employeeIds: number[];
+  accountIds: number[];
 }): Promise<TeamSchedule[]> {
   const res = await client.get<ApiResponse<TeamScheduleRaw[]>>(
     '/api/v1/admin/team-schedule',
@@ -206,8 +203,8 @@ export async function fetchTeamSchedules(params: {
       params: {
         year: params.year,
         month: params.month,
-        employeeCodes: params.employeeCodes.join(','),
-        accountSfids: params.accountSfids.join(','),
+        employeeIds: params.employeeIds.join(','),
+        accountIds: params.accountIds.join(','),
       },
     },
   );
@@ -220,8 +217,8 @@ export async function fetchTeamSchedules(params: {
 export async function fetchTeamScheduleSummary(params: {
   year: number;
   month: number;
-  employeeCodes: string[];
-  accountSfids: string[];
+  employeeIds: number[];
+  accountIds: number[];
 }): Promise<DailySummary[]> {
   const res = await client.get<ApiResponse<DailySummaryRaw[]>>(
     '/api/v1/admin/team-schedule/summary',
@@ -229,8 +226,8 @@ export async function fetchTeamScheduleSummary(params: {
       params: {
         year: params.year,
         month: params.month,
-        employeeCodes: params.employeeCodes.join(','),
-        accountSfids: params.accountSfids.join(','),
+        employeeIds: params.employeeIds.join(','),
+        accountIds: params.accountIds.join(','),
       },
     },
   );

@@ -6,11 +6,13 @@ import com.otoki.internal.schedule.entity.TeamMemberSchedule
 import java.time.LocalDate
 
 data class TeamMemberDto(
+    val employeeId: Long,
     val employeeCode: String,
     val name: String
 ) {
     companion object {
         fun from(employee: Employee): TeamMemberDto = TeamMemberDto(
+            employeeId = employee.id,
             employeeCode = employee.employeeCode,
             name = employee.name
         )
