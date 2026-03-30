@@ -6,6 +6,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import { usePromotions } from '@/hooks/promotion/usePromotions';
 import { usePromotionTypes } from '@/hooks/promotion/usePromotionTypes';
 import { usePermission } from '@/hooks/usePermission';
+import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import type { PromotionListItem } from '@/api/promotion';
 import dayjs from 'dayjs';
 
@@ -54,6 +55,8 @@ export default function PromotionListPage() {
   const [page, setPage] = useState(0);
 
   const { data: promotionTypes } = usePromotionTypes();
+  const handleRowClick = useThrottleClick((id: number) => navigate(`/promotions/${id}`));
+  const handleCreate = useThrottleClick(() => navigate('/promotions/new'));
   const { data, isLoading } = usePromotions({
     keyword: keyword || undefined,
     promotionTypeId,
@@ -76,7 +79,7 @@ export default function PromotionListPage() {
       dataIndex: 'promotionNumber',
       width: 130,
       render: (val: string, record) => (
-        <a onClick={() => navigate(`/promotions/${record.id}`)}>{val}</a>
+        <a onClick={() => handleRowClick(record.id)}>{val}</a>
       ),
     },
     {
@@ -168,7 +171,7 @@ export default function PromotionListPage() {
         }}
       >
         {canWrite && (
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/promotions/new')}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
             행사마스터 등록
           </Button>
         )}
@@ -233,7 +236,7 @@ export default function PromotionListPage() {
           onChange: (p) => setPage(p - 1),
         }}
         onRow={(record) => ({
-          onClick: () => navigate(`/promotions/${record.id}`),
+          onClick: () => handleRowClick(record.id),
           style: { cursor: 'pointer' },
         })}
       />

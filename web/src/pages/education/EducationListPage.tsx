@@ -5,6 +5,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined } from '@ant-design/icons';
 import { useEducationPosts } from '@/hooks/education/useEducationPosts';
 import { useEducationCategories } from '@/hooks/education/useEducationCategories';
+import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import type { EducationSummary } from '@/api/education';
 
 const CATEGORY_TAG: Record<string, { color: string; label: string }> = {
@@ -22,6 +23,8 @@ export default function EducationListPage() {
 
   const { data, isLoading } = useEducationPosts({ category, search: search || undefined, page, size: 10 });
   const { data: categories } = useEducationCategories();
+  const handleRowClick = useThrottleClick((id: string) => navigate(`/education/${id}`));
+  const handleCreate = useThrottleClick(() => navigate('/education/new'));
 
   const columns: ColumnsType<EducationSummary> = [
     {
@@ -65,7 +68,7 @@ export default function EducationListPage() {
   return (
     <div style={{ padding: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/education/new')}>
+        <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
           교육 등록
         </Button>
       </div>
@@ -104,7 +107,7 @@ export default function EducationListPage() {
           onChange: (p) => setPage(p),
         }}
         onRow={(record) => ({
-          onClick: () => navigate(`/education/${record.eduId}`),
+          onClick: () => handleRowClick(record.eduId),
           style: { cursor: 'pointer' },
         })}
       />
