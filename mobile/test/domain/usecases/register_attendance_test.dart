@@ -19,12 +19,10 @@ void main() {
           scheduleId: 12345,
           latitude: 35.1696,
           longitude: 129.1318,
-          workType: 'ROOM_TEMP',
         );
 
         expect(result.scheduleId, 12345);
         expect(result.accountName, '이마트 해운대점');
-        expect(result.workType, 'ROOM_TEMP');
         expect(result.distanceKm, 0.12);
         expect(result.totalCount, 5);
         expect(result.registeredCount, 1);
@@ -46,7 +44,6 @@ void main() {
           scheduleId: 12345,
           latitude: 35.0,
           longitude: 129.0,
-          workType: 'ROOM_TEMP',
         );
 
         expect(result.isAllRegistered, false);
@@ -107,13 +104,12 @@ class FakeAttendanceRepository implements AttendanceRepository {
     required int scheduleId,
     required double latitude,
     required double longitude,
-    String? workType,
   }) async {
     if (exceptionToThrow != null) throw exceptionToThrow!;
     return AttendanceResult(
       scheduleId: scheduleId,
       accountName: '이마트 해운대점',
-      workType: workType ?? '진열',
+      workType: 'ROOM_TEMP',
       distanceKm: 0.12,
       totalCount: 5,
       registeredCount: 1,

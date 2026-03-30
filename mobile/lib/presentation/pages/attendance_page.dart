@@ -9,7 +9,6 @@ import '../widgets/attendance/attendance_status_counter.dart';
 import '../widgets/attendance/attendance_status_popup.dart';
 import '../widgets/attendance/account_list_item.dart';
 import '../widgets/attendance/account_search_bar.dart';
-import '../widgets/attendance/work_type_selector.dart';
 import '../widgets/common/primary_button.dart';
 import '../../app_router.dart';
 
@@ -135,14 +134,7 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              // #1 근무유형 선택
-              WorkTypeSelector(
-                selectedWorkType: state.selectedWorkType,
-                onChanged: notifier.selectWorkType,
-              ),
-              const SizedBox(height: 12),
-
-              // #2 검색 바
+              // 검색 바
               AccountSearchBar(
                 controller: _searchController,
                 onChanged: notifier.searchAccounts,

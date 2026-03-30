@@ -42,7 +42,6 @@ abstract class AttendanceRepository {
     required int scheduleId,
     required double latitude,
     required double longitude,
-    String? workType,
   });
 
   /// 출근등록 현황 조회

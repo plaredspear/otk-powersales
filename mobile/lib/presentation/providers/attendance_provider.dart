@@ -89,11 +89,6 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
     );
   }
 
-  /// 근무유형 선택
-  void selectWorkType(String workType) {
-    state = state.copyWith(selectedWorkType: workType);
-  }
-
   /// 거래처 선택
   void selectAccount(int scheduleId) {
     state = state.copyWith(selectedScheduleId: scheduleId);
@@ -116,7 +111,6 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
         scheduleId: scheduleId,
         latitude: latitude,
         longitude: longitude,
-        workType: state.selectedWorkType,
       );
 
       state = state.copyWith(
@@ -153,7 +147,6 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
       filteredAccounts: state.allAccounts,
       totalCount: state.totalCount,
       registeredCount: state.registeredCount,
-      selectedWorkType: state.selectedWorkType,
     );
   }
 
