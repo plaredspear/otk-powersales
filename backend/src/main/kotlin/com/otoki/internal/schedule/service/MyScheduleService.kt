@@ -93,7 +93,7 @@ class MyScheduleService(
             .orElseThrow { EmployeeNotFoundException() }
 
         // 해당 날짜의 거래처 일정 목록 조회
-        val schedules = displayWorkScheduleRepository.findByEmployeeIdAndStartDate(employee.id, date)
+        val schedules = displayWorkScheduleRepository.findByEmployeeAndStartDate(employee.id, date)
 
         // Phase2: Attendance PG 대응 테이블 없음 - 주석 처리
         // val attendances = attendanceRepository.findByUserIdAndAttendanceDate(userId, date)

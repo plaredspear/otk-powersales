@@ -1,5 +1,7 @@
 package com.otoki.internal.schedule.repository
 
+import com.otoki.internal.sap.entity.Account
+import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.schedule.entity.DisplayWorkSchedule
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -26,83 +28,63 @@ class DisplayWorkScheduleRepositoryTest {
     @Autowired
     private lateinit var testEntityManager: TestEntityManager
 
-    private val testEmployeeId = 12345L
+    private lateinit var testEmployee: Employee
+    private lateinit var testAccount1: Account
+    private lateinit var testAccount2: Account
+    private lateinit var testAccount3: Account
     private val today = LocalDate.now()
 
     @BeforeEach
     fun setUp() {
         displayWorkScheduleRepository.deleteAll()
         testEntityManager.clear()
+
+        testEmployee = testEntityManager.persistAndFlush(Employee(employeeCode = "20030117", name = "테스트사원"))
+        testAccount1 = testEntityManager.persistAndFlush(Account(externalKey = "ACC001", name = "거래처1"))
+        testAccount2 = testEntityManager.persistAndFlush(Account(externalKey = "ACC002", name = "거래처2"))
+        testAccount3 = testEntityManager.persistAndFlush(Account(externalKey = "ACC003", name = "거래처3"))
+        testEntityManager.clear()
     }
 
     @Test
-    @DisplayName("findByEmployeeIdAndStartDate - 해당 날짜 스케줄이 있으면 목록 반환")
-    fun findByEmployeeIdAndStartDate_withSchedules() {
+    @DisplayName("findByEmployeeAndStartDate - 해당 날짜 스케줄이 있으면 목록 반환")
+    fun findByEmployeeAndStartDate_withSchedules() {
         // Given
-        val schedule1 = createDisplayWorkSchedule(accountId = 1001)
-        val schedule2 = createDisplayWorkSchedule(accountId = 1002)
-        testEntityManager.persistAndFlush(schedule1)
-        testEntityManager.persistAndFlush(schedule2)
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1))
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount2))
         testEntityManager.clear()
 
         // When
-        val result = displayWorkScheduleRepository.findByEmployeeIdAndStartDate(testEmployeeId, today)
+        val result = displayWorkScheduleRepository.findByEmployeeAndStartDate(testEmployee.id, today)
 
         // Then
         assertThat(result).hasSize(2)
-        assertThat(result.map { it.accountId }).containsExactlyInAnyOrder(1001, 1002)
+        assertThat(result.map { it.account?.id }).containsExactlyInAnyOrder(testAccount1.id, testAccount2.id)
     }
 
     @Test
-    @DisplayName("findByEmployeeIdAndStartDate - 다른 날짜 스케줄만 있으면 빈 목록 반환")
-    fun findByEmployeeIdAndStartDate_differentDate() {
+    @DisplayName("findByEmployeeAndStartDate - 다른 날짜 스케줄만 있으면 빈 목록 반환")
+    fun findByEmployeeAndStartDate_differentDate() {
         // Given
-        val schedule = createDisplayWorkSchedule(accountId = 1001, startDate = today.plusDays(1))
-        testEntityManager.persistAndFlush(schedule)
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, startDate = today.plusDays(1)))
         testEntityManager.clear()
 
         // When
-        val result = displayWorkScheduleRepository.findByEmployeeIdAndStartDate(testEmployeeId, today)
+        val result = displayWorkScheduleRepository.findByEmployeeAndStartDate(testEmployee.id, today)
 
         // Then
         assertThat(result).isEmpty()
     }
 
     @Test
-    @DisplayName("existsByEmployeeIdAndAccountIdAndStartDate - 스케줄 존재 시 true")
-    fun existsByEmployeeIdAndAccountIdAndStartDate_exists() {
+    @DisplayName("findByEmployeeAndAccountAndStartDate - 스케줄 조회 성공")
+    fun findByEmployeeAndAccountAndStartDate_found() {
         // Given
-        val schedule = createDisplayWorkSchedule(accountId = 1001)
-        testEntityManager.persistAndFlush(schedule)
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, typeOfWork1 = "진열"))
         testEntityManager.clear()
 
         // When
-        val result = displayWorkScheduleRepository.existsByEmployeeIdAndAccountIdAndStartDate(testEmployeeId, 1001, today)
-
-        // Then
-        assertThat(result).isTrue()
-    }
-
-    @Test
-    @DisplayName("existsByEmployeeIdAndAccountIdAndStartDate - 스케줄 미존재 시 false")
-    fun existsByEmployeeIdAndAccountIdAndStartDate_notExists() {
-        // When
-        val result = displayWorkScheduleRepository.existsByEmployeeIdAndAccountIdAndStartDate(testEmployeeId, 9999, today)
-
-        // Then
-        assertThat(result).isFalse()
-    }
-
-    @Test
-    @DisplayName("findByEmployeeIdAndAccountIdAndStartDate - 스케줄 조회 성공")
-    fun findByEmployeeIdAndAccountIdAndStartDate_found() {
-        // Given
-        val schedule = createDisplayWorkSchedule(accountId = 1001, typeOfWork1 = "진열")
-        testEntityManager.persistAndFlush(schedule)
-        testEntityManager.clear()
-
-        // When
-        val result = displayWorkScheduleRepository.findByEmployeeIdAndAccountIdAndStartDate(testEmployeeId, 1001, today)
+        val result = displayWorkScheduleRepository.findByEmployeeAndAccountAndStartDate(testEmployee.id, testAccount1.id, today)
 
         // Then
         assertThat(result).isNotNull
@@ -110,83 +92,76 @@ class DisplayWorkScheduleRepositoryTest {
     }
 
     @Test
-    @DisplayName("findByEmployeeIdAndAccountIdAndStartDate - 스케줄 미존재 시 null")
-    fun findByEmployeeIdAndAccountIdAndStartDate_notFound() {
+    @DisplayName("findByEmployeeAndAccountAndStartDate - 스케줄 미존재 시 null")
+    fun findByEmployeeAndAccountAndStartDate_notFound() {
         // When
-        val result = displayWorkScheduleRepository.findByEmployeeIdAndAccountIdAndStartDate(testEmployeeId, 9999, today)
+        val result = displayWorkScheduleRepository.findByEmployeeAndAccountAndStartDate(testEmployee.id, 9999, today)
 
         // Then
         assertThat(result).isNull()
     }
 
     @Test
-    @DisplayName("findByEmployeeIdAndStartDateBetween - 기간 내 스케줄 조회")
-    fun findByEmployeeIdAndStartDateBetween_withinRange() {
+    @DisplayName("findByEmployeeAndStartDateBetween - 기간 내 스케줄 조회")
+    fun findByEmployeeAndStartDateBetween_withinRange() {
         // Given
         val startDate = today
         val endDate = today.plusDays(6)
 
-        val schedule1 = createDisplayWorkSchedule(accountId = 1001, startDate = today)
-        val schedule2 = createDisplayWorkSchedule(accountId = 1002, startDate = today.plusDays(3))
-        val schedule3 = createDisplayWorkSchedule(accountId = 1003, startDate = today.plusDays(6))
-        testEntityManager.persistAndFlush(schedule1)
-        testEntityManager.persistAndFlush(schedule2)
-        testEntityManager.persistAndFlush(schedule3)
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, startDate = today))
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount2, startDate = today.plusDays(3)))
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount3, startDate = today.plusDays(6)))
         testEntityManager.clear()
 
         // When
-        val result = displayWorkScheduleRepository.findByEmployeeIdAndStartDateBetween(testEmployeeId, startDate, endDate)
+        val result = displayWorkScheduleRepository.findByEmployeeAndStartDateBetween(testEmployee.id, startDate, endDate)
 
         // Then
         assertThat(result).hasSize(3)
-        assertThat(result.map { it.accountId }).containsExactlyInAnyOrder(1001, 1002, 1003)
+        assertThat(result.map { it.account?.id }).containsExactlyInAnyOrder(testAccount1.id, testAccount2.id, testAccount3.id)
     }
 
     @Test
-    @DisplayName("findByEmployeeIdAndStartDateBetween - 기간 외 스케줄은 제외")
-    fun findByEmployeeIdAndStartDateBetween_outsideRange() {
+    @DisplayName("findByEmployeeAndStartDateBetween - 기간 외 스케줄은 제외")
+    fun findByEmployeeAndStartDateBetween_outsideRange() {
         // Given
         val startDate = today.plusDays(1)
         val endDate = today.plusDays(3)
 
-        val schedule1 = createDisplayWorkSchedule(accountId = 1001, startDate = today)
-        val schedule2 = createDisplayWorkSchedule(accountId = 1002, startDate = today.plusDays(2))
-        val schedule3 = createDisplayWorkSchedule(accountId = 1003, startDate = today.plusDays(5))
-        testEntityManager.persistAndFlush(schedule1)
-        testEntityManager.persistAndFlush(schedule2)
-        testEntityManager.persistAndFlush(schedule3)
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, startDate = today))
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount2, startDate = today.plusDays(2)))
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount3, startDate = today.plusDays(5)))
         testEntityManager.clear()
 
         // When
-        val result = displayWorkScheduleRepository.findByEmployeeIdAndStartDateBetween(testEmployeeId, startDate, endDate)
+        val result = displayWorkScheduleRepository.findByEmployeeAndStartDateBetween(testEmployee.id, startDate, endDate)
 
         // Then
         assertThat(result).hasSize(1)
-        assertThat(result[0].accountId).isEqualTo(1002)
+        assertThat(result[0].account?.id).isEqualTo(testAccount2.id)
     }
 
     @Test
-    @DisplayName("findDistinctAccountIdsByEmployeeIdAndStartDateBetween - 월별 중복 제거 거래처 account 조회")
+    @DisplayName("findDistinctAccountIdsByEmployeeIdAndStartDateBetween - 월별 중복 제거 거래처 조회")
     fun findDistinctAccounts_removeDuplicates() {
         // Given
         val startDate = today
         val endDate = today.plusDays(10)
 
-        // 같은 거래처에 여러 날짜 스케줄
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(accountId = 1001, startDate = today))
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(accountId = 1001, startDate = today.plusDays(3)))
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(accountId = 1001, startDate = today.plusDays(7)))
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(accountId = 1002, startDate = today.plusDays(2)))
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(accountId = 1002, startDate = today.plusDays(5)))
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(accountId = 1003, startDate = today.plusDays(9)))
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, startDate = today))
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, startDate = today.plusDays(3)))
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, startDate = today.plusDays(7)))
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount2, startDate = today.plusDays(2)))
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount2, startDate = today.plusDays(5)))
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount3, startDate = today.plusDays(9)))
         testEntityManager.clear()
 
         // When
-        val result = displayWorkScheduleRepository.findDistinctAccountIdsByEmployeeIdAndStartDateBetween(testEmployeeId, startDate, endDate)
+        val result = displayWorkScheduleRepository.findDistinctAccountIdsByEmployeeIdAndStartDateBetween(testEmployee.id, startDate, endDate)
 
         // Then
         assertThat(result).hasSize(3)
-        assertThat(result).containsExactlyInAnyOrder(1001, 1002, 1003)
+        assertThat(result).containsExactlyInAnyOrder(testAccount1.id, testAccount2.id, testAccount3.id)
     }
 
     @Test
@@ -197,8 +172,7 @@ class DisplayWorkScheduleRepositoryTest {
         val endDate = today.plusDays(10)
         val otherEmployeeId = 99999L
 
-        val schedule = createDisplayWorkSchedule(accountId = 1001, startDate = today)
-        testEntityManager.persistAndFlush(schedule)
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, startDate = today))
         testEntityManager.clear()
 
         // When
@@ -209,18 +183,17 @@ class DisplayWorkScheduleRepositoryTest {
     }
 
     @Test
-    @DisplayName("findByEmployeeIdAndStartDateBetween - 스케줄 없는 기간 조회 시 빈 리스트")
-    fun findByEmployeeIdAndStartDateBetween_noSchedules() {
+    @DisplayName("findByEmployeeAndStartDateBetween - 스케줄 없는 기간 조회 시 빈 리스트")
+    fun findByEmployeeAndStartDateBetween_noSchedules() {
         // Given
         val startDate = today.plusMonths(1)
         val endDate = today.plusMonths(1).plusDays(10)
 
-        val schedule = createDisplayWorkSchedule(accountId = 1001, startDate = today)
-        testEntityManager.persistAndFlush(schedule)
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, startDate = today))
         testEntityManager.clear()
 
         // When
-        val result = displayWorkScheduleRepository.findByEmployeeIdAndStartDateBetween(testEmployeeId, startDate, endDate)
+        val result = displayWorkScheduleRepository.findByEmployeeAndStartDateBetween(testEmployee.id, startDate, endDate)
 
         // Then
         assertThat(result).isEmpty()
@@ -233,14 +206,14 @@ class DisplayWorkScheduleRepositoryTest {
         val startDate = today
         val endDate = today.plusDays(10)
 
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(accountId = 1001, startDate = today))
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(accountId = 1002, startDate = today))
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(accountId = 1003, startDate = today.plusDays(3)))
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(accountId = 1001, startDate = today.plusDays(7)))
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, startDate = today))
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount2, startDate = today))
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount3, startDate = today.plusDays(3)))
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, startDate = today.plusDays(7)))
         testEntityManager.clear()
 
         // When
-        val result = displayWorkScheduleRepository.findDistinctStartDatesByEmployeeIdAndDateBetween(testEmployeeId, startDate, endDate)
+        val result = displayWorkScheduleRepository.findDistinctStartDatesByEmployeeIdAndDateBetween(testEmployee.id, startDate, endDate)
 
         // Then
         assertThat(result).hasSize(3)
@@ -258,12 +231,12 @@ class DisplayWorkScheduleRepositoryTest {
         val startDate = today
         val endDate = today.plusDays(1)
 
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(accountId = 1001, startDate = today))
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(accountId = 1002, startDate = today))
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, startDate = today))
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount2, startDate = today))
         testEntityManager.clear()
 
         // When
-        val result = displayWorkScheduleRepository.findDistinctStartDatesByEmployeeIdAndDateBetween(testEmployeeId, startDate, endDate)
+        val result = displayWorkScheduleRepository.findDistinctStartDatesByEmployeeIdAndDateBetween(testEmployee.id, startDate, endDate)
 
         // Then
         assertThat(result).hasSize(1)
@@ -277,13 +250,13 @@ class DisplayWorkScheduleRepositoryTest {
         val startDate = today
         val endDate = today.plusDays(10)
 
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(accountId = 1001, startDate = today.plusDays(7)))
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(accountId = 1002, startDate = today))
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(accountId = 1003, startDate = today.plusDays(3)))
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, startDate = today.plusDays(7)))
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount2, startDate = today))
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount3, startDate = today.plusDays(3)))
         testEntityManager.clear()
 
         // When
-        val result = displayWorkScheduleRepository.findDistinctStartDatesByEmployeeIdAndDateBetween(testEmployeeId, startDate, endDate)
+        val result = displayWorkScheduleRepository.findDistinctStartDatesByEmployeeIdAndDateBetween(testEmployee.id, startDate, endDate)
 
         // Then
         assertThat(result).hasSize(3)
@@ -303,7 +276,7 @@ class DisplayWorkScheduleRepositoryTest {
         val endDate = today.plusMonths(1).plusDays(10)
 
         // When
-        val result = displayWorkScheduleRepository.findDistinctStartDatesByEmployeeIdAndDateBetween(testEmployeeId, startDate, endDate)
+        val result = displayWorkScheduleRepository.findDistinctStartDatesByEmployeeIdAndDateBetween(testEmployee.id, startDate, endDate)
 
         // Then
         assertThat(result).isEmpty()
@@ -317,8 +290,7 @@ class DisplayWorkScheduleRepositoryTest {
         val startDate = today
         val endDate = today.plusDays(10)
 
-        val schedule = createDisplayWorkSchedule(accountId = 1001, startDate = today)
-        testEntityManager.persistAndFlush(schedule)
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, startDate = today))
         testEntityManager.clear()
 
         // When
@@ -331,13 +303,13 @@ class DisplayWorkScheduleRepositoryTest {
     // ========== Helpers ==========
 
     private fun createDisplayWorkSchedule(
-        accountId: Int = 1001,
+        account: Account = testAccount1,
         typeOfWork1: String = "진열",
         startDate: LocalDate = today
     ): DisplayWorkSchedule {
         return DisplayWorkSchedule(
-            employeeId = testEmployeeId,
-            accountId = accountId,
+            employee = testEmployee,
+            account = account,
             typeOfWork1 = typeOfWork1,
             startDate = startDate
         )

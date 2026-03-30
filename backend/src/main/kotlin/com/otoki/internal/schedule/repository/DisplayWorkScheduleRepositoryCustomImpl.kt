@@ -1,5 +1,6 @@
 package com.otoki.internal.schedule.repository
 
+import com.otoki.internal.sap.entity.QAccount.account
 import com.otoki.internal.schedule.entity.DisplayWorkSchedule
 import com.otoki.internal.schedule.entity.QDisplayWorkSchedule.displayWorkSchedule
 import com.otoki.internal.sap.entity.QEmployee.employee
@@ -22,10 +23,10 @@ class DisplayWorkScheduleRepositoryCustomImpl(
         endDate: LocalDate
     ): List<Int> {
         return queryFactory
-            .select(displayWorkSchedule.accountId).distinct()
+            .select(displayWorkSchedule.account.id).distinct()
             .from(displayWorkSchedule)
             .where(
-                displayWorkSchedule.employeeId.eq(employeeId),
+                displayWorkSchedule.employee.id.eq(employeeId),
                 displayWorkSchedule.startDate.between(startDate, endDate)
             )
             .fetch()
@@ -41,7 +42,7 @@ class DisplayWorkScheduleRepositoryCustomImpl(
             .select(displayWorkSchedule.startDate).distinct()
             .from(displayWorkSchedule)
             .where(
-                displayWorkSchedule.employeeId.eq(employeeId),
+                displayWorkSchedule.employee.id.eq(employeeId),
                 displayWorkSchedule.startDate.between(startDate, endDate)
             )
             .orderBy(displayWorkSchedule.startDate.asc())
@@ -55,20 +56,17 @@ class DisplayWorkScheduleRepositoryCustomImpl(
         toDate: LocalDate
     ): List<Int> {
         val dateCondition = BooleanBuilder()
-            // startDate가 범위 이내
             .or(displayWorkSchedule.startDate.goe(fromDate).and(displayWorkSchedule.startDate.lt(toDate)))
-            // endDate가 범위 이내
             .or(displayWorkSchedule.endDate.goe(fromDate).and(displayWorkSchedule.endDate.lt(toDate)))
-            // endDate IS NULL이고 startDate가 범위 종료 전
             .or(displayWorkSchedule.endDate.isNull.and(displayWorkSchedule.startDate.lt(toDate)))
 
         return queryFactory
-            .select(displayWorkSchedule.accountId).distinct()
+            .select(displayWorkSchedule.account.id).distinct()
             .from(displayWorkSchedule)
             .where(
-                displayWorkSchedule.employeeId.eq(employeeId),
+                displayWorkSchedule.employee.id.eq(employeeId),
                 dateCondition,
-                displayWorkSchedule.accountId.isNotNull,
+                displayWorkSchedule.account.id.isNotNull,
                 isNotDeleted()
             )
             .fetch()
@@ -79,7 +77,7 @@ class DisplayWorkScheduleRepositoryCustomImpl(
         return queryFactory
             .selectFrom(displayWorkSchedule)
             .where(
-                displayWorkSchedule.employeeId.`in`(employeeIds),
+                displayWorkSchedule.employee.id.`in`(employeeIds),
                 isNotDeleted()
             )
             .fetch()
@@ -105,6 +103,8 @@ class DisplayWorkScheduleRepositoryCustomImpl(
 
         val content = queryFactory
             .selectFrom(displayWorkSchedule)
+            .leftJoin(displayWorkSchedule.employee).fetchJoin()
+            .leftJoin(displayWorkSchedule.account).fetchJoin()
             .where(where)
             .orderBy(displayWorkSchedule.startDate.desc(), displayWorkSchedule.id.desc())
             .offset(pageable.offset)
@@ -121,20 +121,91 @@ class DisplayWorkScheduleRepositoryCustomImpl(
         }
     }
 
+    override fun findByEmployeeAndStartDate(employeeId: Long, startDate: LocalDate): List<DisplayWorkSchedule> {
+        return queryFactory
+            .selectFrom(displayWorkSchedule)
+            .leftJoin(displayWorkSchedule.account).fetchJoin()
+            .where(
+                displayWorkSchedule.employee.id.eq(employeeId),
+                displayWorkSchedule.startDate.eq(startDate)
+            )
+            .fetch()
+    }
+
+    override fun findByEmployeeAndAccountAndStartDate(
+        employeeId: Long,
+        accountId: Int,
+        startDate: LocalDate
+    ): DisplayWorkSchedule? {
+        return queryFactory
+            .selectFrom(displayWorkSchedule)
+            .where(
+                displayWorkSchedule.employee.id.eq(employeeId),
+                displayWorkSchedule.account.id.eq(accountId),
+                displayWorkSchedule.startDate.eq(startDate)
+            )
+            .fetchOne()
+    }
+
+    override fun findByEmployeeAndStartDateBetween(
+        employeeId: Long,
+        start: LocalDate,
+        end: LocalDate
+    ): List<DisplayWorkSchedule> {
+        return queryFactory
+            .selectFrom(displayWorkSchedule)
+            .leftJoin(displayWorkSchedule.account).fetchJoin()
+            .where(
+                displayWorkSchedule.employee.id.eq(employeeId),
+                displayWorkSchedule.startDate.between(start, end)
+            )
+            .fetch()
+    }
+
+    override fun findByEmployeeIdsAndAccountIds(
+        employeeIds: List<Long>,
+        accountIds: List<Int>
+    ): List<DisplayWorkSchedule> {
+        return queryFactory
+            .selectFrom(displayWorkSchedule)
+            .leftJoin(displayWorkSchedule.employee).fetchJoin()
+            .leftJoin(displayWorkSchedule.account).fetchJoin()
+            .where(
+                displayWorkSchedule.employee.id.`in`(employeeIds),
+                displayWorkSchedule.account.id.`in`(accountIds)
+            )
+            .fetch()
+    }
+
+    override fun findConfirmedByDateRangeAndAccountIds(
+        monthEnd: LocalDate,
+        monthStart: LocalDate,
+        accountIds: List<Int>
+    ): List<DisplayWorkSchedule> {
+        return queryFactory
+            .selectFrom(displayWorkSchedule)
+            .where(
+                displayWorkSchedule.confirmed.eq(true),
+                displayWorkSchedule.startDate.loe(monthEnd),
+                displayWorkSchedule.endDate.goe(monthStart),
+                displayWorkSchedule.account.id.`in`(accountIds)
+            )
+            .fetch()
+    }
+
     private fun buildEmployeeCodeCondition(employeeCode: String?): BooleanExpression? {
         if (employeeCode.isNullOrBlank()) return null
-        // employee 테이블 서브쿼리로 사번 부분 매칭 → employeeId in (...)
         val matchingIds = JPAExpressions
             .select(employee.id)
             .from(employee)
             .where(employee.employeeCode.containsIgnoreCase(employeeCode))
-        return displayWorkSchedule.employeeId.`in`(matchingIds)
+        return displayWorkSchedule.employee.id.`in`(matchingIds)
     }
 
     private fun buildAccountIdsCondition(accountIds: List<Int>?): BooleanExpression? {
         if (accountIds == null) return null
-        if (accountIds.isEmpty()) return displayWorkSchedule.accountId.eq(-1) // no match
-        return displayWorkSchedule.accountId.`in`(accountIds)
+        if (accountIds.isEmpty()) return displayWorkSchedule.account.id.eq(-1) // no match
+        return displayWorkSchedule.account.id.`in`(accountIds)
     }
 
     private fun buildConfirmedCondition(confirmed: Boolean?): BooleanExpression? {

@@ -32,4 +32,14 @@ interface DisplayWorkScheduleRepositoryCustom {
         startDateTo: LocalDate?,
         pageable: Pageable
     ): Page<DisplayWorkSchedule>
+
+    fun findByEmployeeAndStartDate(employeeId: Long, startDate: LocalDate): List<DisplayWorkSchedule>
+
+    fun findByEmployeeAndAccountAndStartDate(employeeId: Long, accountId: Int, startDate: LocalDate): DisplayWorkSchedule?
+
+    fun findByEmployeeAndStartDateBetween(employeeId: Long, start: LocalDate, end: LocalDate): List<DisplayWorkSchedule>
+
+    fun findByEmployeeIdsAndAccountIds(employeeIds: List<Long>, accountIds: List<Int>): List<DisplayWorkSchedule>
+
+    fun findConfirmedByDateRangeAndAccountIds(monthEnd: LocalDate, monthStart: LocalDate, accountIds: List<Int>): List<DisplayWorkSchedule>
 }

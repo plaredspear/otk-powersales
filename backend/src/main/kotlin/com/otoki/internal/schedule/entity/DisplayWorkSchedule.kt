@@ -5,6 +5,8 @@ import com.otoki.internal.common.salesforce.HCColumn
 import com.otoki.internal.common.salesforce.HCTable
 import com.otoki.internal.common.salesforce.SFField
 import com.otoki.internal.common.salesforce.SFObject
+import com.otoki.internal.sap.entity.Account
+import com.otoki.internal.sap.entity.Employee
 import jakarta.persistence.*
 import java.time.LocalDate
 
@@ -32,16 +34,18 @@ class DisplayWorkSchedule(
     @Column(name = "name", length = 80)
     val name: String? = null,
 
-    @Column(name = "account_id")
-    val accountId: Int? = null,
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id")
+    val account: Account? = null,
 
     @SFField("Account__c")
     @HCColumn("account__c")
     @Column(name = "account_sfid", length = 18)
     val accountSfid: String? = null,
 
-    @Column(name = "employee_id")
-    val employeeId: Long? = null,
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employee_id")
+    val employee: Employee? = null,
 
     @SFField("FullName__c")
     @HCColumn("fullname__c")
@@ -78,8 +82,9 @@ class DisplayWorkSchedule(
     @Column(name = "type_of_work5", length = 255)
     val typeOfWork5: String? = null,
 
-    @Column(name = "owner_id")
-    val ownerId: Long? = null,
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id")
+    val owner: Employee? = null,
 
     @SFField("OwnerId")
     @HCColumn("ownerid")

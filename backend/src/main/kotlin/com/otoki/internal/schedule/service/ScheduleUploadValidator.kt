@@ -147,8 +147,8 @@ class ScheduleUploadValidator {
 
             // V8: DB 기존 레코드와 기간 중복 검사
             val overlappingDb = existingSchedules.filter { schedule ->
-                schedule.employeeId == userId &&
-                    schedule.accountId == accountIdVal &&
+                schedule.employee?.id == userId &&
+                    schedule.account?.id == accountIdVal &&
                     periodsOverlap(schedule.startDate, schedule.endDate, startDate, endDate)
             }
             if (overlappingDb.isNotEmpty()) {
@@ -178,7 +178,7 @@ class ScheduleUploadValidator {
             // C1~C3: 근무유형 조합 규칙 (DB + 파일 내 선행 행)
             if (rowErrors.isEmpty()) {
                 val sameEmployeeSamePeriod = existingSchedules.filter { schedule ->
-                    schedule.employeeId == userId &&
+                    schedule.employee?.id == userId &&
                         periodsOverlap(schedule.startDate, schedule.endDate, startDate, endDate)
                 } + validatedInFile.filter { prev ->
                     prev.userId == userId &&

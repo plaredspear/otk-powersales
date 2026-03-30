@@ -165,7 +165,7 @@ class AdminDashboardService(
         val monthEnd = ym.atEndOfMonth()
 
         val schedules = fetchScheduleData(scope, monthStart, monthEnd)
-        val accountIds = schedules.mapNotNull { it.accountId }.distinct()
+        val accountIds = schedules.mapNotNull { it.account?.id }.distinct()
         val accountMap = if (accountIds.isNotEmpty()) {
             accountRepository.findByIdIn(accountIds).associateBy { it.id }
         } else {
@@ -200,17 +200,17 @@ class AdminDashboardService(
             val accounts = accountRepository.findByBranchCodeIn(scope.branchCodes)
             val accountIds = accounts.map { it.id }
             if (accountIds.isEmpty()) return emptyList()
-            displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndAccountIdIn(monthEnd, monthStart, accountIds)
+            displayWorkScheduleRepository.findConfirmedByDateRangeAndAccountIds(monthEnd, monthStart, accountIds)
         }
     }
 
     private fun buildByAccountType(schedules: List<DisplayWorkSchedule>, accountMap: Map<Int, Account>): List<AccountTypeCount> {
         val employeesByAccountType = schedules
             .groupBy { schedule ->
-                val account = schedule.accountId?.let { accountMap[it] }
+                val account = schedule.account?.id?.let { accountMap[it] }
                 classifyChannel(account?.abcType)
             }
-            .mapValues { (_, records) -> records.mapNotNull { it.employeeId }.distinct().size }
+            .mapValues { (_, records) -> records.mapNotNull { it.employee?.id }.distinct().size }
 
         return employeesByAccountType.map { (type, count) ->
             AccountTypeCount(accountType = type, count = count)
@@ -220,7 +220,7 @@ class AdminDashboardService(
     private fun buildByWorkType(schedules: List<DisplayWorkSchedule>): List<WorkTypeCount> {
         val employeesByWorkType = schedules
             .groupBy { normalizeWorkType(it.typeOfWork1) }
-            .mapValues { (_, records) -> records.mapNotNull { it.employeeId }.distinct().size }
+            .mapValues { (_, records) -> records.mapNotNull { it.employee?.id }.distinct().size }
 
         return employeesByWorkType.map { (type, count) ->
             WorkTypeCount(workType = type, count = count)
@@ -232,7 +232,7 @@ class AdminDashboardService(
         accountMap: Map<Int, Account>
     ): List<ChannelWorkTypeItem> {
         val grouped = schedules.groupBy { schedule ->
-            val account = schedule.accountId?.let { accountMap[it] }
+            val account = schedule.account?.id?.let { accountMap[it] }
             classifyChannel(account?.abcType)
         }
 
@@ -240,9 +240,9 @@ class AdminDashboardService(
             val byWork = records.groupBy { normalizeWorkType(it.typeOfWork1) }
             ChannelWorkTypeItem(
                 channelName = channelName,
-                fixed = byWork["고정"]?.mapNotNull { it.employeeId }?.distinct()?.size ?: 0,
-                alternating = byWork["격고"]?.mapNotNull { it.employeeId }?.distinct()?.size ?: 0,
-                visiting = byWork["순회"]?.mapNotNull { it.employeeId }?.distinct()?.size ?: 0
+                fixed = byWork["고정"]?.mapNotNull { it.employee?.id }?.distinct()?.size ?: 0,
+                alternating = byWork["격고"]?.mapNotNull { it.employee?.id }?.distinct()?.size ?: 0,
+                visiting = byWork["순회"]?.mapNotNull { it.employee?.id }?.distinct()?.size ?: 0
             )
         }.sortedBy { it.channelName }
     }
@@ -329,11 +329,11 @@ class AdminDashboardService(
         val monthEnd = ym.atEndOfMonth()
 
         val schedules = displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(monthEnd, monthStart)
-        val filteredSchedules = schedules.filter { it.employeeId in employeeIds }
+        val filteredSchedules = schedules.filter { it.employee?.id in employeeIds }
 
         val byWorkType = filteredSchedules
             .groupBy { normalizeWorkType(it.typeOfWork1) }
-            .mapValues { (_, records) -> records.mapNotNull { it.employeeId }.distinct().size }
+            .mapValues { (_, records) -> records.mapNotNull { it.employee?.id }.distinct().size }
 
         return WorkTypeStats(
             fixed = byWorkType["고정"] ?: 0,

@@ -359,15 +359,15 @@ class AdminMonthlyIntegrationService(
         val employeeIds = employeeAccountPairs.map { it.first }.distinct()
         val accountIds = employeeAccountPairs.map { it.second }.distinct()
 
-        val displaySchedules = displayWorkScheduleRepository.findByEmployeeIdInAndAccountIdIn(
+        val displaySchedules = displayWorkScheduleRepository.findByEmployeeIdsAndAccountIds(
             employeeIds, accountIds
         )
 
         val result = mutableMapOf<Long, String?>()
         for (rec in records) {
             val matching = displaySchedules.find { dws ->
-                dws.employeeId == rec.employeeId &&
-                    dws.accountId == rec.accountId &&
+                dws.employee?.id == rec.employeeId &&
+                    dws.account?.id == rec.accountId &&
                     dws.confirmed == true &&
                     rec.workingDate != null &&
                     dws.startDate != null &&

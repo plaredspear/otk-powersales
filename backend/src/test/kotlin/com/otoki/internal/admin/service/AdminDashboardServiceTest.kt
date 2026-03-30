@@ -80,11 +80,11 @@ class AdminDashboardServiceTest {
             )
 
             val schedules = listOf(
-                createDisplayWorkSchedule(accountId = 1, employeeId = 1L, typeOfWork1 = "고정"),
-                createDisplayWorkSchedule(accountId = 2, employeeId = 2L, typeOfWork1 = "순회")
+                createDisplayWorkSchedule(account = Account(id = 1), employee = Employee(id = 1L, employeeCode = "E001", name = "사원1"), typeOfWork1 = "고정"),
+                createDisplayWorkSchedule(account = Account(id = 2), employee = Employee(id = 2L, employeeCode = "E002", name = "사원2"), typeOfWork1 = "순회")
             )
             val prevSchedules = listOf(
-                createDisplayWorkSchedule(accountId = 1, employeeId = 1L, typeOfWork1 = "고정")
+                createDisplayWorkSchedule(account = Account(id = 1), employee = Employee(id = 1L, employeeCode = "E001", name = "사원1"), typeOfWork1 = "고정")
             )
 
             val activeEmployees = listOf(
@@ -172,7 +172,7 @@ class AdminDashboardServiceTest {
             )
 
             val schedules = listOf(
-                createDisplayWorkSchedule(accountId = 1, employeeId = 1L, typeOfWork1 = "고정")
+                createDisplayWorkSchedule(account = Account(id = 1), employee = Employee(id = 1L, employeeCode = "E001", name = "사원1"), typeOfWork1 = "고정")
             )
 
             val activeEmployees = listOf(
@@ -194,10 +194,10 @@ class AdminDashboardServiceTest {
             )).thenReturn(lastYearSalesData)
 
             // Schedules (filtered by accountIds)
-            whenever(displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndAccountIdIn(
+            whenever(displayWorkScheduleRepository.findConfirmedByDateRangeAndAccountIds(
                 eq(LocalDate.of(2026, 3, 31)), eq(LocalDate.of(2026, 3, 1)), eq(listOf(1))
             )).thenReturn(schedules)
-            whenever(displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndAccountIdIn(
+            whenever(displayWorkScheduleRepository.findConfirmedByDateRangeAndAccountIds(
                 eq(LocalDate.of(2026, 2, 28)), eq(LocalDate.of(2026, 2, 1)), eq(listOf(1))
             )).thenReturn(emptyList())
 
@@ -308,10 +308,10 @@ class AdminDashboardServiceTest {
             )).thenReturn(emptyList())
 
             // Schedules filtered by accountIds
-            whenever(displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndAccountIdIn(
+            whenever(displayWorkScheduleRepository.findConfirmedByDateRangeAndAccountIds(
                 eq(LocalDate.of(2026, 3, 31)), eq(LocalDate.of(2026, 3, 1)), eq(listOf(2))
             )).thenReturn(emptyList())
-            whenever(displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndAccountIdIn(
+            whenever(displayWorkScheduleRepository.findConfirmedByDateRangeAndAccountIds(
                 eq(LocalDate.of(2026, 2, 28)), eq(LocalDate.of(2026, 2, 1)), eq(listOf(2))
             )).thenReturn(emptyList())
 
@@ -357,10 +357,10 @@ class AdminDashboardServiceTest {
             )).thenReturn(emptyList())
 
             // Schedules
-            whenever(displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndAccountIdIn(
+            whenever(displayWorkScheduleRepository.findConfirmedByDateRangeAndAccountIds(
                 eq(LocalDate.of(2026, 3, 31)), eq(LocalDate.of(2026, 3, 1)), eq(listOf(1))
             )).thenReturn(emptyList())
-            whenever(displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndAccountIdIn(
+            whenever(displayWorkScheduleRepository.findConfirmedByDateRangeAndAccountIds(
                 eq(LocalDate.of(2026, 2, 28)), eq(LocalDate.of(2026, 2, 1)), eq(listOf(1))
             )).thenReturn(emptyList())
 
@@ -631,9 +631,9 @@ class AdminDashboardServiceTest {
     private fun createDisplayWorkSchedule(
         id: Long = 0,
         sfid: String? = null,
-        accountId: Int? = null,
+        account: Account? = null,
         confirmed: Boolean? = true,
-        employeeId: Long? = null,
+        employee: Employee? = null,
         typeOfWork1: String? = null,
         startDate: LocalDate? = null,
         endDate: LocalDate? = null
@@ -641,9 +641,9 @@ class AdminDashboardServiceTest {
         return DisplayWorkSchedule(
             id = id,
             sfid = sfid,
-            accountId = accountId,
+            account = account,
             confirmed = confirmed,
-            employeeId = employeeId,
+            employee = employee,
             typeOfWork1 = typeOfWork1,
             startDate = startDate,
             endDate = endDate
