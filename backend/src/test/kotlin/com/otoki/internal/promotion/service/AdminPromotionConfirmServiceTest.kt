@@ -5,6 +5,7 @@ import com.otoki.internal.promotion.entity.PromotionEmployee
 import com.otoki.internal.promotion.exception.*
 import com.otoki.internal.promotion.repository.PromotionEmployeeRepository
 import com.otoki.internal.promotion.repository.PromotionRepository
+import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
@@ -417,7 +418,7 @@ class AdminPromotionConfirmServiceTest {
         @Test
         @DisplayName("동일 거래처+사원+날짜 스케줄 존재 -> 400 DUPLICATE_SCHEDULE")
         fun confirm_duplicateTeamMemberSchedule() {
-            val promotion = createPromotion(accountId = 100)
+            val promotion = createPromotion(account = createAccount(id = 100))
             val employees = listOf(
                 createPE(id = 1L, employeeId = 1L, scheduleDate = startDate, workType3 = "순회")
             )
@@ -509,13 +510,13 @@ class AdminPromotionConfirmServiceTest {
 
     private fun createPromotion(
         id: Long = 10L,
-        accountId: Int = 100,
+        account: Account = createAccount(),
         isDeleted: Boolean = false
     ): Promotion = Promotion(
         id = id,
         promotionNumber = "PRO-0001",
         promotionName = "테스트행사",
-        accountId = accountId,
+        account = account,
         startDate = startDate,
         endDate = endDate,
         isDeleted = isDeleted
@@ -539,6 +540,14 @@ class AdminPromotionConfirmServiceTest {
         workType1 = workType1,
         workType3 = workType3,
         workType4 = workType4
+    )
+
+    private fun createAccount(
+        id: Int = 100,
+        name: String? = "테스트거래처"
+    ): Account = Account(
+        id = id,
+        name = name
     )
 
     private fun createEmployee(
