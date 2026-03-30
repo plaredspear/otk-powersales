@@ -1,5 +1,6 @@
 package com.otoki.internal.schedule.service
 
+import com.otoki.internal.admin.scope.AdminEmployeeHolder
 import com.otoki.internal.schedule.dto.request.TeamScheduleCreateRequest
 import com.otoki.internal.schedule.dto.request.TeamScheduleUpdateRequest
 import com.otoki.internal.schedule.exception.*
@@ -35,6 +36,9 @@ class AdminTeamScheduleServiceTest {
 
     @Mock
     private lateinit var accountRepository: AccountRepository
+
+    @Mock
+    private lateinit var adminEmployeeHolder: AdminEmployeeHolder
 
     @InjectMocks
     private lateinit var service: AdminTeamScheduleService

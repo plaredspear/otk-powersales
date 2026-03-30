@@ -7,8 +7,10 @@ export function useTeamScheduleSummary(params: {
   employeeIds: number[];
   accountIds: number[];
 }) {
+  const hasFilter = params.employeeIds.length > 0 || params.accountIds.length > 0;
   return useQuery({
     queryKey: ['admin', 'team-schedule', 'summary', params.year, params.month, params.employeeIds, params.accountIds],
     queryFn: () => fetchTeamScheduleSummary(params),
+    enabled: hasFilter,
   });
 }

@@ -1,5 +1,6 @@
 package com.otoki.internal.schedule.service
 
+import com.otoki.internal.admin.scope.AdminEmployeeHolder
 import com.otoki.internal.schedule.dto.request.TeamScheduleCreateRequest
 import com.otoki.internal.schedule.dto.request.TeamScheduleUpdateRequest
 import com.otoki.internal.schedule.dto.response.*
@@ -21,7 +22,8 @@ import java.time.format.DateTimeFormatter
 class AdminTeamScheduleService(
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
     private val employeeRepository: EmployeeRepository,
-    private val accountRepository: AccountRepository
+    private val accountRepository: AccountRepository,
+    private val adminEmployeeHolder: AdminEmployeeHolder
 ) {
 
     fun getMembers(userId: Long): List<TeamMemberDto> {
@@ -218,7 +220,8 @@ class AdminTeamScheduleService(
     // --- Private helpers ---
 
     private fun findEmployeeById(userId: Long): Employee {
-        return employeeRepository.findWithEmployeeInfoById(userId)
+        return adminEmployeeHolder.employee
+            ?: employeeRepository.findWithEmployeeInfoById(userId)
             ?: throw TeamScheduleEmployeeNotFoundException()
     }
 

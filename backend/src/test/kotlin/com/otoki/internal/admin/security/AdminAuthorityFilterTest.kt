@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.otoki.internal.admin.dto.DataScope
+import com.otoki.internal.admin.scope.AdminEmployeeHolder
 import com.otoki.internal.admin.scope.DataScopeHolder
 import com.otoki.internal.admin.service.AdminDataScopeService
 import com.otoki.internal.sap.entity.Employee
@@ -41,6 +42,7 @@ class AdminAuthorityFilterTest {
     @Mock
     private lateinit var requestMappingHandlerMapping: RequestMappingHandlerMapping
 
+    private lateinit var adminEmployeeHolder: AdminEmployeeHolder
     private lateinit var dataScopeHolder: DataScopeHolder
     private lateinit var filter: AdminAuthorityFilter
     private lateinit var objectMapper: ObjectMapper
@@ -52,8 +54,9 @@ class AdminAuthorityFilterTest {
             registerModule(JavaTimeModule())
             disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
         }
+        adminEmployeeHolder = AdminEmployeeHolder()
         dataScopeHolder = DataScopeHolder()
-        filter = AdminAuthorityFilter(employeeRepository, objectMapper, adminDataScopeService, dataScopeHolder, requestMappingHandlerMapping)
+        filter = AdminAuthorityFilter(employeeRepository, objectMapper, adminDataScopeService, adminEmployeeHolder, dataScopeHolder, requestMappingHandlerMapping)
         SecurityContextHolder.clearContext()
     }
 

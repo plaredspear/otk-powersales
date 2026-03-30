@@ -1,6 +1,7 @@
 package com.otoki.internal.admin.security
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.otoki.internal.admin.scope.AdminEmployeeHolder
 import com.otoki.internal.admin.scope.DataScopeHolder
 import com.otoki.internal.admin.service.AdminDataScopeService
 import com.otoki.internal.common.dto.ApiResponse
@@ -21,6 +22,7 @@ class AdminAuthorityFilter(
     private val employeeRepository: EmployeeRepository,
     private val objectMapper: ObjectMapper,
     private val adminDataScopeService: AdminDataScopeService,
+    private val adminEmployeeHolder: AdminEmployeeHolder,
     private val dataScopeHolder: DataScopeHolder,
     private val requestMappingHandlerMapping: RequestMappingHandlerMapping
 ) : OncePerRequestFilter() {
@@ -69,7 +71,8 @@ class AdminAuthorityFilter(
             }
         }
 
-        // DataScope resolve + holder에 저장 (이미 로드된 employee 재사용)
+        // Employee + DataScope를 holder에 저장 (서비스에서 재사용)
+        adminEmployeeHolder.employee = employee
         val dataScope = adminDataScopeService.resolve(employee)
         dataScopeHolder.dataScope = dataScope
 
