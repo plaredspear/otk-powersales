@@ -7,6 +7,7 @@ import com.otoki.internal.promotion.entity.Promotion
 import com.otoki.internal.promotion.entity.PromotionEmployee
 import com.otoki.internal.sap.entity.AttendInfo
 import com.otoki.internal.sap.entity.Organization
+import com.otoki.internal.schedule.entity.AttendanceLog
 
 /**
  * Salesforce API → Dev DB 데이터 마이그레이션 도구
@@ -49,6 +50,10 @@ import com.otoki.internal.sap.entity.Organization
  * │  제외   │ PushMessageReceiver__c                      │ push_message_receiver       │ PushMessageReceiver     │ —                                                             │ Heroku 경유 마이그레이션      │
  * │  제외   │ StaffReview__c                              │ staff_review                │ StaffReview             │ —                                                             │ Heroku 경유 마이그레이션      │
  * │  제외   │ HQReview__c                                 │ hq_review                   │ HqReview                │ —                                                             │ Heroku 경유 마이그레이션      │
+ * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+ * │         │ ── 출근현황 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
+ * │  NO     │ DKRetail__CommuteLog__c                     │ attendance_log              │ AttendanceLog           │ DKRetail__EmployeeId__c → employee.sfid,                      │ Heroku 미동기화 SF 전용        │
+ * │         │                                             │                             │                         │   DKRetail__AccId__c → account.sfid                           │                               │
  * └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
  *
  * HerokuMigrationTool과의 차이:
@@ -97,5 +102,8 @@ object SalesforceMigrationTool {
         // ── Agreement / Upload ──
         EntityRegistration("agreementHistory", AgreementHistory::class.java),
         EntityRegistration("uploadFile", UploadFile::class.java),
+
+        // ── 출근현황 (Employee, Account는 HerokuMigrationTool에서 먼저 적재) ──
+        EntityRegistration("attendanceLog", AttendanceLog::class.java),
     )
 }
