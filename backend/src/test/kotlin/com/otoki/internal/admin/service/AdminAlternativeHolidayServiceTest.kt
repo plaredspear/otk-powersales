@@ -138,7 +138,7 @@ class AdminAlternativeHolidayServiceTest {
             )
             whenever(employeeRepository.findByEmployeeCode("12345678")).thenReturn(Optional.of(createEmployee()))
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createAdmin()))
-            doThrow(AltHolidayNoWorkScheduleException()).whenever(validator).validateWorkScheduleExists(10L, saturday)
+            doThrow(AltHolidayNoWorkScheduleException()).whenever(validator).validateWorkScheduleExists(any(), any())
 
             assertThatThrownBy { service.createAlternativeHoliday(request, 1L) }
                 .isInstanceOf(AltHolidayNoWorkScheduleException::class.java)
@@ -170,6 +170,7 @@ class AdminAlternativeHolidayServiceTest {
         fun approve_success_noConfirmDate() {
             val altHoliday = createAltHoliday(status = "신규")
             whenever(alternativeHolidayRepository.findById(1L)).thenReturn(Optional.of(altHoliday))
+            whenever(employeeRepository.findById(10L)).thenReturn(Optional.of(createEmployee()))
             whenever(teamMemberScheduleRepository.save(any<TeamMemberSchedule>()))
                 .thenAnswer { it.getArgument<TeamMemberSchedule>(0) }
 
@@ -185,6 +186,7 @@ class AdminAlternativeHolidayServiceTest {
         fun approve_success_withAdjustedDate() {
             val altHoliday = createAltHoliday(status = "신규")
             whenever(alternativeHolidayRepository.findById(1L)).thenReturn(Optional.of(altHoliday))
+            whenever(employeeRepository.findById(10L)).thenReturn(Optional.of(createEmployee()))
             whenever(teamMemberScheduleRepository.save(any<TeamMemberSchedule>()))
                 .thenAnswer { it.getArgument<TeamMemberSchedule>(0) }
 

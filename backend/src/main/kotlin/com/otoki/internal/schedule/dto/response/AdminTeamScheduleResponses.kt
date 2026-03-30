@@ -3,7 +3,6 @@ package com.otoki.internal.schedule.dto.response
 import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
-import java.time.LocalDate
 
 data class TeamMemberDto(
     val employeeId: Long,
@@ -48,25 +47,19 @@ data class TeamScheduleDto(
     val isClockIn: Boolean
 ) {
     companion object {
-        fun from(
-            schedule: TeamMemberSchedule,
-            employeeMap: Map<Long, Employee>,
-            accountMap: Map<Int, Account>
-        ): TeamScheduleDto {
-            val employee = schedule.employeeId?.let { employeeMap[it] }
-            val account = schedule.accountId?.let { accountMap[it] }
+        fun from(schedule: TeamMemberSchedule): TeamScheduleDto {
             return TeamScheduleDto(
                 id = schedule.id,
-                employeeCode = employee?.employeeCode ?: "",
-                employeeName = employee?.name ?: "",
+                employeeCode = schedule.employee?.employeeCode ?: "",
+                employeeName = schedule.employee?.name ?: "",
                 workingDate = schedule.workingDate?.toString() ?: "",
                 workingType = schedule.workingType ?: "",
                 workingCategory1 = schedule.workingCategory1,
                 workingCategory2 = schedule.workingCategory2,
                 workingCategory3 = schedule.workingCategory3,
-                accountId = schedule.accountId,
-                accountName = account?.name,
-                accountExternalKey = account?.externalKey,
+                accountId = schedule.account?.id,
+                accountName = schedule.account?.name,
+                accountExternalKey = schedule.account?.externalKey,
                 isClockIn = schedule.commuteLogId != null
             )
         }

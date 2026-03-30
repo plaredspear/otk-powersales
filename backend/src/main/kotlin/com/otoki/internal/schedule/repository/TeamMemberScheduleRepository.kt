@@ -1,5 +1,7 @@
 package com.otoki.internal.schedule.repository
 
+import com.otoki.internal.promotion.entity.PromotionEmployee
+import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
 import org.springframework.data.jpa.repository.JpaRepository
 import java.time.LocalDate
@@ -9,15 +11,13 @@ import java.time.LocalDate
  */
 interface TeamMemberScheduleRepository : JpaRepository<TeamMemberSchedule, Long>, TeamMemberScheduleRepositoryCustom {
 
-    fun findByEmployeeIdAndWorkingDate(employeeId: Long, workingDate: LocalDate): List<TeamMemberSchedule>
-
-    fun findByWorkingDateAndEmployeeIdIn(workingDate: LocalDate, employeeIds: List<Long>): List<TeamMemberSchedule>
+    fun findByWorkingDateAndEmployeeIn(workingDate: LocalDate, employees: List<Employee>): List<TeamMemberSchedule>
 
     fun deleteAllByIdIn(ids: List<Long>)
 
-    fun findByPromotionEmployeeIdIn(promotionEmployeeIds: List<Long>): List<TeamMemberSchedule>
+    fun findByPromotionEmployeeIn(promotionEmployees: List<PromotionEmployee>): List<TeamMemberSchedule>
 
-    fun findByEmployeeIdInAndWorkingDateIn(employeeIds: List<Long>, workingDates: List<LocalDate>): List<TeamMemberSchedule>
+    fun findByEmployeeInAndWorkingDateIn(employees: List<Employee>, workingDates: List<LocalDate>): List<TeamMemberSchedule>
 
-    fun existsByEmployeeIdAndWorkingDateAndWorkingType(employeeId: Long, workingDate: LocalDate, workingType: String): Boolean
+    fun existsByEmployeeAndWorkingDateAndWorkingType(employee: Employee, workingDate: LocalDate, workingType: String): Boolean
 }

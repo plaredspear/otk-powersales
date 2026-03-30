@@ -218,8 +218,8 @@ class AdminMonthlyIntegrationServiceTest {
     ): TeamMemberSchedule {
         return TeamMemberSchedule(
             id = id,
-            employeeId = employeeId,
-            accountId = accountId,
+            employee = Employee(id = employeeId, employeeCode = "EMP$employeeId", name = "테스트$employeeId"),
+            account = Account(id = accountId),
             workingDate = workingDate,
             workingType = "근무",
             workingCategory1 = workingCategory1,

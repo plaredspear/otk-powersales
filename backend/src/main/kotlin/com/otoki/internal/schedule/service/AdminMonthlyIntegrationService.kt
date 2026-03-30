@@ -264,12 +264,12 @@ class AdminMonthlyIntegrationService(
         // 5. Calculate equivalent working days denominator:
         //    for each employee + each working_date → count of distinct accounts
         val employeeDateAccountCount = records
-            .groupBy { it.employeeId!! to it.workingDate!! }
-            .mapValues { (_, recs) -> recs.map { it.accountId!! }.distinct().size }
+            .groupBy { it.employee!!.id to it.workingDate!! }
+            .mapValues { (_, recs) -> recs.map { it.account!!.id }.distinct().size }
 
         // 6. Calculate monthly working days per employee (distinct working dates for the employee in month)
         val monthlyWorkingDays = records
-            .groupBy { it.employeeId!! }
+            .groupBy { it.employee!!.id }
             .mapValues { (_, recs) -> recs.map { it.workingDate!! }.distinct().size }
 
         // 7. Grouping key → aggregate
@@ -284,8 +284,8 @@ class AdminMonthlyIntegrationService(
 
         val grouped = records.groupBy { rec ->
             GroupKey(
-                employeeId = rec.employeeId!!,
-                accountId = rec.accountId!!,
+                employeeId = rec.employee!!.id,
+                accountId = rec.account!!.id,
                 workingCategory1 = rec.workingCategory1,
                 workingCategory3 = rec.workingCategory3,
                 workingCategory4 = rec.workingCategory4,
@@ -312,7 +312,7 @@ class AdminMonthlyIntegrationService(
 
             var equivalentWorkingDays = BigDecimal.ZERO
             for (rec in recs) {
-                val n = employeeDateAccountCount[rec.employeeId!! to rec.workingDate!!] ?: 1
+                val n = employeeDateAccountCount[rec.employee!!.id to rec.workingDate!!] ?: 1
                 equivalentWorkingDays = equivalentWorkingDays.add(
                     BigDecimal.ONE.divide(BigDecimal(n), 6, RoundingMode.HALF_UP)
                 )
@@ -352,7 +352,7 @@ class AdminMonthlyIntegrationService(
     }
 
     private fun resolveWorkingCategory5(records: List<TeamMemberSchedule>): Map<Long, String?> {
-        val employeeAccountPairs = records.map { (it.employeeId!! to it.accountId!!) }.distinct()
+        val employeeAccountPairs = records.map { (it.employee!!.id to it.account!!.id) }.distinct()
 
         if (employeeAccountPairs.isEmpty()) return emptyMap()
 
@@ -366,8 +366,8 @@ class AdminMonthlyIntegrationService(
         val result = mutableMapOf<Long, String?>()
         for (rec in records) {
             val matching = displaySchedules.find { dws ->
-                dws.employee?.id == rec.employeeId &&
-                    dws.account?.id == rec.accountId &&
+                dws.employee?.id == rec.employee?.id &&
+                    dws.account?.id == rec.account?.id &&
                     dws.confirmed == true &&
                     rec.workingDate != null &&
                     dws.startDate != null &&

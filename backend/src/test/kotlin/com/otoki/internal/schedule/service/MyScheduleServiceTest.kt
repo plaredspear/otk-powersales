@@ -282,12 +282,12 @@ class MyScheduleServiceTest {
     }
 
     private fun createMockMemberSchedule(
-        employeeId: Long = 1L,
+        employeeCode: String = "20030117",
         workingDate: LocalDate = LocalDate.now(),
         workingType: String = "근무"
     ): TeamMemberSchedule {
         return TeamMemberSchedule(
-            employeeId = employeeId,
+            employee = Employee(id = 1L, employeeCode = employeeCode, name = "테스트"),
             workingDate = workingDate,
             workingType = workingType
         )

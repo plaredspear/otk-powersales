@@ -50,7 +50,7 @@ class AdminAlternativeHolidayService(
 
         validator.validateConfirmDate(request.targetAltHolidayDate)
         validator.validateActualWorkDate(request.actualWorkDate)
-        validator.validateWorkScheduleExists(employee.id, request.actualWorkDate)
+        validator.validateWorkScheduleExists(employee, request.actualWorkDate)
         validator.validateNoDuplicate(employee.id, request.actualWorkDate)
 
         val altHoliday = alternativeHolidayRepository.save(
@@ -87,12 +87,15 @@ class AdminAlternativeHolidayService(
 
         altHoliday.approve(confirmDate, changeReason)
 
+        val employee = employeeRepository.findById(altHoliday.employeeId)
+            .orElseThrow { IllegalStateException("Employee not found: ${altHoliday.employeeId}") }
+
         teamMemberScheduleRepository.save(
             TeamMemberSchedule(
-                employeeId = altHoliday.employeeId,
+                employee = employee,
                 workingDate = confirmDate,
                 workingType = "대휴",
-                altHolidayId = altHoliday.id
+                altHoliday = altHoliday
             )
         )
 

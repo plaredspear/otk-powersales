@@ -2,6 +2,7 @@ package com.otoki.internal.leave.service
 
 import com.otoki.internal.leave.exception.*
 import com.otoki.internal.leave.repository.AlternativeHolidayRepository
+import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
 import org.springframework.stereotype.Component
 import java.time.DayOfWeek
@@ -31,9 +32,9 @@ class AlternativeHolidayValidator(
         }
     }
 
-    fun validateWorkScheduleExists(employeeId: Long, actualWorkDate: LocalDate) {
-        if (!teamMemberScheduleRepository.existsByEmployeeIdAndWorkingDateAndWorkingType(
-                employeeId, actualWorkDate, "근무"
+    fun validateWorkScheduleExists(employee: Employee, actualWorkDate: LocalDate) {
+        if (!teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(
+                employee, actualWorkDate, "근무"
             )
         ) {
             throw AltHolidayNoWorkScheduleException()

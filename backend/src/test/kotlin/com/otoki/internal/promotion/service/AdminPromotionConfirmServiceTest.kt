@@ -52,8 +52,8 @@ class AdminPromotionConfirmServiceTest {
 
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
             whenever(promotionEmployeeRepository.findByPromotionId(10L)).thenReturn(employees)
-            whenever(teamMemberScheduleRepository.findByPromotionEmployeeIdIn(any())).thenReturn(emptyList())
-            whenever(teamMemberScheduleRepository.findByEmployeeIdInAndWorkingDateIn(any(), any())).thenReturn(emptyList())
+            whenever(teamMemberScheduleRepository.findByPromotionEmployeeIn(any())).thenReturn(emptyList())
+            whenever(teamMemberScheduleRepository.findByEmployeeInAndWorkingDateIn(any(), any())).thenReturn(emptyList())
             whenever(employeeRepository.findAllById(any())).thenReturn(listOf(
                 createEmployee(id = 1L, employeeCode = "EMP001", name = "김철수"),
                 createEmployee(id = 2L, employeeCode = "EMP002", name = "이영희"),
@@ -64,14 +64,14 @@ class AdminPromotionConfirmServiceTest {
                 teamMemberSchedules.mapIndexed { index, s ->
                     TeamMemberSchedule(
                         id = (100L + index),
-                        employeeId = s.employeeId,
-                        accountId = s.accountId,
+                        employee = s.employee,
+                        account = s.account,
                         workingDate = s.workingDate,
                         workingType = s.workingType,
                         workingCategory1 = s.workingCategory1,
                         workingCategory3 = s.workingCategory3,
                         workingCategory4 = s.workingCategory4,
-                        promotionEmployeeId = s.promotionEmployeeId
+                        promotionEmployee = s.promotionEmployee
                     )
                 }
             }
@@ -96,19 +96,19 @@ class AdminPromotionConfirmServiceTest {
             )
             val existingTeamMemberSchedule = TeamMemberSchedule(
                 id = 50L,
-                employeeId = 1L,
-                accountId = 100,
+                employee = Employee(id = 1L, employeeCode = "EMP001", name = "테스트1"),
+                account = Account(id = 100),
                 workingDate = startDate,
                 workingType = "근무",
                 workingCategory1 = "행사",
                 workingCategory3 = "고정",
-                promotionEmployeeId = 1L
+                promotionEmployee = PromotionEmployee(id = 1L, promotionId = 10L)
             )
 
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
             whenever(promotionEmployeeRepository.findByPromotionId(10L)).thenReturn(employees)
-            whenever(teamMemberScheduleRepository.findByPromotionEmployeeIdIn(listOf(1L))).thenReturn(listOf(existingTeamMemberSchedule))
-            whenever(teamMemberScheduleRepository.findByEmployeeIdInAndWorkingDateIn(any(), any())).thenReturn(listOf(existingTeamMemberSchedule))
+            whenever(teamMemberScheduleRepository.findByPromotionEmployeeIn(any())).thenReturn(listOf(existingTeamMemberSchedule))
+            whenever(teamMemberScheduleRepository.findByEmployeeInAndWorkingDateIn(any(), any())).thenReturn(listOf(existingTeamMemberSchedule))
             whenever(employeeRepository.findAllById(any())).thenReturn(listOf(createEmployee(id = 1L, employeeCode = "EMP001", name = "김철수")))
             whenever(teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>())).thenAnswer { it.getArgument<List<TeamMemberSchedule>>(0) }
             whenever(promotionEmployeeRepository.saveAll(any<List<PromotionEmployee>>())).thenAnswer { it.getArgument<List<PromotionEmployee>>(0) }
@@ -474,8 +474,8 @@ class AdminPromotionConfirmServiceTest {
         whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
         whenever(promotionEmployeeRepository.findByPromotionId(10L)).thenReturn(employees)
         org.mockito.Mockito.lenient().`when`(promotionEmployeeRepository.saveAll(any<List<PromotionEmployee>>())).thenAnswer { it.getArgument<List<PromotionEmployee>>(0) }
-        org.mockito.Mockito.lenient().`when`(teamMemberScheduleRepository.findByPromotionEmployeeIdIn(any())).thenReturn(emptyList())
-        org.mockito.Mockito.lenient().`when`(teamMemberScheduleRepository.findByEmployeeIdInAndWorkingDateIn(any(), any())).thenReturn(existingTeamMemberSchedules)
+        org.mockito.Mockito.lenient().`when`(teamMemberScheduleRepository.findByPromotionEmployeeIn(any())).thenReturn(emptyList())
+        org.mockito.Mockito.lenient().`when`(teamMemberScheduleRepository.findByEmployeeInAndWorkingDateIn(any(), any())).thenReturn(existingTeamMemberSchedules)
 
         val employeeIds = employees.mapNotNull { it.employeeId }.distinct()
         val employees = employeeIds.mapIndexed { _, id ->
@@ -494,14 +494,14 @@ class AdminPromotionConfirmServiceTest {
             schedules.mapIndexed { index, s ->
                 TeamMemberSchedule(
                     id = (100L + index),
-                    employeeId = s.employeeId,
-                    accountId = s.accountId,
+                    employee = s.employee,
+                    account = s.account,
                     workingDate = s.workingDate,
                     workingType = s.workingType,
                     workingCategory1 = s.workingCategory1,
                     workingCategory3 = s.workingCategory3,
                     workingCategory4 = s.workingCategory4,
-                    promotionEmployeeId = s.promotionEmployeeId
+                    promotionEmployee = s.promotionEmployee
                 )
             }
         }
@@ -572,11 +572,11 @@ class AdminPromotionConfirmServiceTest {
         promotionEmployeeId: Long? = null
     ): TeamMemberSchedule = TeamMemberSchedule(
         id = id,
-        employeeId = employeeId,
+        employee = Employee(id = employeeId, employeeCode = "EMP${String.format("%03d", employeeId)}", name = "테스트$employeeId"),
         workingDate = workingDate,
         workingType = workingType,
         workingCategory3 = workingCategory3,
-        accountId = accountId,
-        promotionEmployeeId = promotionEmployeeId
+        account = accountId?.let { Account(id = it) },
+        promotionEmployee = promotionEmployeeId?.let { PromotionEmployee(id = it, promotionId = 10L) }
     )
 }

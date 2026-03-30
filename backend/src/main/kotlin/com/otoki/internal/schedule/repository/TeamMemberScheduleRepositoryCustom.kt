@@ -7,6 +7,8 @@ interface TeamMemberScheduleRepositoryCustom {
 
     fun updateCommuteLogId(sfid: String, commuteLogId: String)
 
+    fun findByEmployeeIdAndWorkingDate(employeeId: Long, workingDate: LocalDate): List<TeamMemberSchedule>
+
     fun findMonthlyByEmployeeIds(employeeIds: List<Long>, from: LocalDate, to: LocalDate): List<TeamMemberSchedule>
 
     fun findMonthlyByAccountIds(accountIds: List<Int>, from: LocalDate, to: LocalDate): List<TeamMemberSchedule>

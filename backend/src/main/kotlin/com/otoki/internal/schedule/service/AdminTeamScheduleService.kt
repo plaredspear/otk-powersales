@@ -7,7 +7,6 @@ import com.otoki.internal.schedule.exception.*
 import com.otoki.internal.branch.dto.response.BranchResponse
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
 import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
-import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.sap.repository.EmployeeRepository
@@ -81,10 +80,8 @@ class AdminTeamScheduleService(
         }
 
         val uniqueSchedules = schedules.distinctBy { it.id }
-        val employeeMap = buildEmployeeMap(uniqueSchedules)
-        val accountMap = buildAccountMap(uniqueSchedules)
 
-        return uniqueSchedules.map { TeamScheduleDto.from(it, employeeMap, accountMap) }
+        return uniqueSchedules.map { TeamScheduleDto.from(it) }
     }
 
     fun getDailySummary(
@@ -151,21 +148,21 @@ class AdminTeamScheduleService(
             validateScheduleConflict(employee.id, workingDate, request.workingCategory3, null)
         }
 
-        if (request.accountId != null) {
+        val account = if (request.accountId != null) {
             accountRepository.findById(request.accountId)
                 .orElseThrow { TeamScheduleAccountNotFoundException() }
-        }
+        } else null
 
         val currentEmployee = findEmployeeById(userId)
         val schedule = TeamMemberSchedule(
-            employeeId = employee.id,
+            employee = employee,
             workingDate = workingDate,
             workingType = request.workingType,
             workingCategory1 = request.workingCategory1,
             workingCategory2 = request.workingCategory2,
             workingCategory3 = request.workingCategory3,
-            accountId = request.accountId,
-            teamLeaderId = currentEmployee.id
+            account = account,
+            teamLeader = currentEmployee
         )
         val saved = teamMemberScheduleRepository.save(schedule)
         return TeamScheduleCreateResultDto(id = saved.id)
@@ -176,7 +173,7 @@ class AdminTeamScheduleService(
         val schedule = teamMemberScheduleRepository.findById(scheduleId)
             .orElseThrow { TeamScheduleNotFoundException() }
 
-        val employee = schedule.employeeId?.let { employeeRepository.findById(it).orElse(null) }
+        val employee = schedule.employee
         if (employee != null) {
             validateEmployeeStatus(employee)
         }
@@ -186,19 +183,23 @@ class AdminTeamScheduleService(
         val category3Changed = schedule.workingCategory3 != request.workingCategory3
 
         if (request.workingType == "근무" && request.workingCategory1 == "진열" && (dateChanged || category3Changed)) {
-            validateScheduleConflict(schedule.employeeId!!, newWorkingDate, request.workingCategory3, scheduleId)
+            validateScheduleConflict(schedule.employee!!.id, newWorkingDate, request.workingCategory3, scheduleId)
         }
 
-        if (request.accountId != null && request.accountId != schedule.accountId) {
+        val newAccount = if (request.accountId != null && request.accountId != schedule.account?.id) {
             accountRepository.findById(request.accountId)
                 .orElseThrow { TeamScheduleAccountNotFoundException() }
+        } else if (request.accountId == null) {
+            null
+        } else {
+            schedule.account
         }
 
         schedule.workingDate = newWorkingDate
         schedule.workingType = request.workingType
         schedule.workingCategory1 = request.workingCategory1
         schedule.workingCategory3 = request.workingCategory3
-        schedule.accountId = request.accountId
+        schedule.account = newAccount
     }
 
     @Transactional
@@ -264,15 +265,4 @@ class AdminTeamScheduleService(
         }
     }
 
-    private fun buildEmployeeMap(schedules: List<TeamMemberSchedule>): Map<Long, Employee> {
-        val employeeIds = schedules.mapNotNull { it.employeeId }.distinct()
-        if (employeeIds.isEmpty()) return emptyMap()
-        return employeeRepository.findAllById(employeeIds).associateBy { it.id }
-    }
-
-    private fun buildAccountMap(schedules: List<TeamMemberSchedule>): Map<Int, Account> {
-        val accountIds = schedules.mapNotNull { it.accountId }.distinct()
-        if (accountIds.isEmpty()) return emptyMap()
-        return accountRepository.findByIdIn(accountIds).associateBy { it.id }
-    }
 }

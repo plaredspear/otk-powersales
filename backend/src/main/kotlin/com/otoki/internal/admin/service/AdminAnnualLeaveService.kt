@@ -33,14 +33,11 @@ class AdminAnnualLeaveService(
 
         if (schedules.isEmpty()) return emptyList()
 
-        val employeeIds = schedules.mapNotNull { it.employeeId }.distinct()
-        val userMap = employeeRepository.findAllById(employeeIds).associateBy { it.id }
-
         return schedules
-            .groupBy { it.employeeId ?: 0L }
+            .groupBy { it.employee?.id ?: 0L }
             .filter { it.key != 0L }
-            .map { (employeeId, employeeSchedules) ->
-                val employee = userMap[employeeId]
+            .map { (_, employeeSchedules) ->
+                val employee = employeeSchedules.firstOrNull()?.employee
                 val days = employeeSchedules
                     .sortedBy { it.workingDate }
                     .map { schedule ->
