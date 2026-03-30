@@ -58,6 +58,9 @@ dependencies:
   # Device Info
   device_info_plus: ^11.0.0
 
+  # HTML Rendering
+  flutter_widget_from_html_core: ^0.15.2
+
   # Utilities
   intl: ^0.20.2
   logger: ^2.0.2+1

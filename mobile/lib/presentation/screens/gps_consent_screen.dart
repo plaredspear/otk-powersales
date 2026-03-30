@@ -1,6 +1,7 @@
 import '../../core/utils/error_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -152,9 +153,9 @@ class _GpsConsentScreenState extends ConsumerState<GpsConsentScreen> {
         borderRadius: AppSpacing.cardBorderRadius,
         border: Border.all(color: AppColors.border),
       ),
-      child: Text(
+      child: HtmlWidget(
         _contents,
-        style: AppTypography.bodyMedium.copyWith(
+        textStyle: AppTypography.bodyMedium.copyWith(
           height: 1.6,
         ),
       ),
