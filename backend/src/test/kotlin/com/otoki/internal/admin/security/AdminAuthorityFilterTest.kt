@@ -27,7 +27,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.method.HandlerMethod
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping
-import java.util.*
 
 @ExtendWith(MockitoExtension::class)
 @DisplayName("AdminAuthorityFilter 테스트")
@@ -66,9 +65,10 @@ class AdminAuthorityFilterTest {
         @DisplayName("조장 권한 - 정상 통과 + DataScope 설정")
         fun allowJojang() {
             setAuthentication(1L)
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee(1L, "조장")))
+            val employee = createEmployee(1L, "조장")
+            whenever(employeeRepository.findWithEmployeeInfoById(1L)).thenReturn(employee)
             val scope = DataScope(branchCodes = listOf("A001"), isAllBranches = false)
-            whenever(adminDataScopeService.resolve(1L)).thenReturn(scope)
+            whenever(adminDataScopeService.resolve(employee)).thenReturn(scope)
 
             val request = MockHttpServletRequest()
             val response = MockHttpServletResponse()
@@ -85,9 +85,10 @@ class AdminAuthorityFilterTest {
         @DisplayName("영업지원실 권한 - 정상 통과")
         fun allowSalesSupport() {
             setAuthentication(2L)
-            whenever(employeeRepository.findById(2L)).thenReturn(Optional.of(createEmployee(2L, "영업지원실")))
+            val employee = createEmployee(2L, "영업지원실")
+            whenever(employeeRepository.findWithEmployeeInfoById(2L)).thenReturn(employee)
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-            whenever(adminDataScopeService.resolve(2L)).thenReturn(scope)
+            whenever(adminDataScopeService.resolve(employee)).thenReturn(scope)
 
             val request = MockHttpServletRequest()
             val response = MockHttpServletResponse()
@@ -109,7 +110,7 @@ class AdminAuthorityFilterTest {
         @DisplayName("appAuthority가 null - 403 Forbidden")
         fun nullAuthority() {
             setAuthentication(1L)
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee(1L, null)))
+            whenever(employeeRepository.findWithEmployeeInfoById(1L)).thenReturn(createEmployee(1L, null))
 
             val request = MockHttpServletRequest()
             val response = MockHttpServletResponse()
@@ -127,7 +128,7 @@ class AdminAuthorityFilterTest {
         @DisplayName("허용 목록에 없는 권한 - 403 Forbidden")
         fun unknownAuthority() {
             setAuthentication(1L)
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee(1L, "일반사원")))
+            whenever(employeeRepository.findWithEmployeeInfoById(1L)).thenReturn(createEmployee(1L, "일반사원"))
 
             val request = MockHttpServletRequest()
             val response = MockHttpServletResponse()
@@ -144,7 +145,7 @@ class AdminAuthorityFilterTest {
         @DisplayName("사용자 미존재 - 403 Forbidden")
         fun userNotFound() {
             setAuthentication(999L)
-            whenever(employeeRepository.findById(999L)).thenReturn(Optional.empty())
+            whenever(employeeRepository.findWithEmployeeInfoById(999L)).thenReturn(null)
 
             val request = MockHttpServletRequest()
             val response = MockHttpServletResponse()
@@ -183,9 +184,10 @@ class AdminAuthorityFilterTest {
         @DisplayName("정상 요청 시 DataScopeHolder에 저장")
         fun dataScopeStoredInHolder() {
             setAuthentication(1L)
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee(1L, "조장")))
+            val employee = createEmployee(1L, "조장")
+            whenever(employeeRepository.findWithEmployeeInfoById(1L)).thenReturn(employee)
             val scope = DataScope(branchCodes = listOf("B001"), isAllBranches = false)
-            whenever(adminDataScopeService.resolve(1L)).thenReturn(scope)
+            whenever(adminDataScopeService.resolve(employee)).thenReturn(scope)
 
             val request = MockHttpServletRequest()
             val response = MockHttpServletResponse()
@@ -200,7 +202,7 @@ class AdminAuthorityFilterTest {
         @DisplayName("권한 체크 실패 시 DataScope 미설정")
         fun dataScopeNotSetOnForbidden() {
             setAuthentication(1L)
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee(1L, "일반사원")))
+            whenever(employeeRepository.findWithEmployeeInfoById(1L)).thenReturn(createEmployee(1L, "일반사원"))
 
             val request = MockHttpServletRequest()
             val response = MockHttpServletResponse()

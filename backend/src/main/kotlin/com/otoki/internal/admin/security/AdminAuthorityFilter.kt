@@ -42,8 +42,12 @@ class AdminAuthorityFilter(
             return
         }
 
-        val employee = employeeRepository.findById(principal.userId).orElse(null)
-        val appAuthority = employee?.appAuthority
+        val employee = employeeRepository.findWithEmployeeInfoById(principal.userId)
+        if (employee == null) {
+            writeErrorResponse(response, "FORBIDDEN", "관리자 권한이 없습니다")
+            return
+        }
+        val appAuthority = employee.appAuthority
 
         val permissions = AdminRolePermissions.getPermissions(appAuthority)
 
@@ -65,8 +69,8 @@ class AdminAuthorityFilter(
             }
         }
 
-        // DataScope resolve + holder에 저장
-        val dataScope = adminDataScopeService.resolve(principal.userId)
+        // DataScope resolve + holder에 저장 (이미 로드된 employee 재사용)
+        val dataScope = adminDataScopeService.resolve(employee)
         dataScopeHolder.dataScope = dataScope
 
         filterChain.doFilter(request, response)

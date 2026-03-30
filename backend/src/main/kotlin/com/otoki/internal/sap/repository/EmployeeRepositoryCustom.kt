@@ -15,6 +15,8 @@ interface EmployeeRepositoryCustom {
 
     fun findWithEmployeeInfoByCostCenterCodeInAndStatus(costCenterCodes: List<String>, status: String): List<Employee>
 
+    fun findWithEmployeeInfoByCostCenterCodeAndAppAuthority(costCenterCode: String, appAuthority: String): List<Employee>
+
     fun findDistinctBranches(): List<BranchResponse>
 
     fun findAllEmployeeCodes(): List<String>

@@ -2,6 +2,7 @@ package com.otoki.internal.schedule.repository
 
 import com.otoki.internal.sap.entity.QAccount.account
 import com.otoki.internal.sap.entity.QEmployee.employee
+import com.otoki.internal.sap.entity.QEmployeeInfo.employeeInfo
 import com.otoki.internal.schedule.entity.QTeamMemberSchedule.teamMemberSchedule
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
 import com.querydsl.core.types.dsl.BooleanExpression
@@ -45,6 +46,7 @@ open class TeamMemberScheduleRepositoryCustomImpl(
         return queryFactory
             .selectFrom(teamMemberSchedule)
             .leftJoin(teamMemberSchedule.employee, employee).fetchJoin()
+            .leftJoin(employee.employeeInfo, employeeInfo).fetchJoin()
             .leftJoin(teamMemberSchedule.account, account).fetchJoin()
             .where(
                 teamMemberSchedule.employee.id.`in`(employeeIds),
@@ -62,6 +64,7 @@ open class TeamMemberScheduleRepositoryCustomImpl(
         return queryFactory
             .selectFrom(teamMemberSchedule)
             .leftJoin(teamMemberSchedule.employee, employee).fetchJoin()
+            .leftJoin(employee.employeeInfo, employeeInfo).fetchJoin()
             .leftJoin(teamMemberSchedule.account, account).fetchJoin()
             .where(
                 teamMemberSchedule.account.id.`in`(accountIds),

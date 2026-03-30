@@ -1,6 +1,7 @@
 package com.otoki.internal.admin.service
 
 import com.otoki.internal.admin.dto.DataScope
+import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.sap.repository.EmployeeRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -17,9 +18,12 @@ class AdminDataScopeService(
     }
 
     fun resolve(userId: Long): DataScope {
-        val employee = employeeRepository.findById(userId)
-            .orElseThrow { IllegalStateException("사용자를 찾을 수 없습니다: $userId") }
+        val employee = employeeRepository.findWithEmployeeInfoById(userId)
+            ?: throw IllegalStateException("사용자를 찾을 수 없습니다: $userId")
+        return resolve(employee)
+    }
 
+    fun resolve(employee: Employee): DataScope {
         val authority = employee.appAuthority
 
         return when {

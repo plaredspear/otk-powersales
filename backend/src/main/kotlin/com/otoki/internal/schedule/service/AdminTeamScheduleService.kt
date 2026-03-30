@@ -27,7 +27,7 @@ class AdminTeamScheduleService(
     fun getMembers(userId: Long): List<TeamMemberDto> {
         val currentEmployee = findEmployeeById(userId)
         val costCenterCode = currentEmployee.costCenterCode ?: return emptyList()
-        return employeeRepository.findByCostCenterCodeAndAppAuthority(costCenterCode, "여사원")
+        return employeeRepository.findWithEmployeeInfoByCostCenterCodeAndAppAuthority(costCenterCode, "여사원")
             .filter { it.isDeleted != true }
             .map { TeamMemberDto.from(it) }
     }
@@ -218,8 +218,8 @@ class AdminTeamScheduleService(
     // --- Private helpers ---
 
     private fun findEmployeeById(userId: Long): Employee {
-        return employeeRepository.findById(userId)
-            .orElseThrow { TeamScheduleEmployeeNotFoundException() }
+        return employeeRepository.findWithEmployeeInfoById(userId)
+            ?: throw TeamScheduleEmployeeNotFoundException()
     }
 
     private fun validateEmployeeStatus(employee: Employee) {

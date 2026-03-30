@@ -54,6 +54,20 @@ class EmployeeRepositoryCustomImpl(
             .fetch()
     }
 
+    override fun findWithEmployeeInfoByCostCenterCodeAndAppAuthority(
+        costCenterCode: String,
+        appAuthority: String
+    ): List<Employee> {
+        return queryFactory
+            .selectFrom(employee)
+            .leftJoin(employee.employeeInfo, employeeInfo).fetchJoin()
+            .where(
+                employee.costCenterCode.eq(costCenterCode),
+                employee.appAuthority.eq(appAuthority)
+            )
+            .fetch()
+    }
+
     override fun findDistinctBranches(): List<BranchResponse> {
         return queryFactory
             .select(
