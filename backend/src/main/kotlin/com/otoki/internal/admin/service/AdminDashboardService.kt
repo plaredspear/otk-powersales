@@ -121,8 +121,8 @@ class AdminDashboardService(
     private fun buildChannelSales(salesData: List<MonthlySalesHistory>): List<ChannelSalesItem> {
         val accountExternalKeys = salesData.mapNotNull { it.accountExternalKey }.distinct()
         val accountMap = if (accountExternalKeys.isNotEmpty()) {
-            accountRepository.findAll()
-                .filter { it.externalKey != null && it.externalKey in accountExternalKeys }
+            accountRepository.findByExternalKeyIn(accountExternalKeys)
+                .filter { it.externalKey != null }
                 .associateBy { it.externalKey!! }
         } else {
             emptyMap()
@@ -291,10 +291,10 @@ class AdminDashboardService(
 
     private fun fetchEmployeesByStatus(scope: DataScope, status: String): List<Employee> {
         return if (scope.isAllBranches) {
-            employeeRepository.findByStatus(status)
+            employeeRepository.findWithEmployeeInfoByStatus(status)
         } else {
             if (scope.branchCodes.isEmpty()) return emptyList()
-            employeeRepository.findByCostCenterCodeInAndStatus(scope.branchCodes, status)
+            employeeRepository.findWithEmployeeInfoByCostCenterCodeInAndStatus(scope.branchCodes, status)
         }
     }
 

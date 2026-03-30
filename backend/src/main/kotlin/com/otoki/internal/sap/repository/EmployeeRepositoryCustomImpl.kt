@@ -32,6 +32,28 @@ class EmployeeRepositoryCustomImpl(
             .fetchOne()
     }
 
+    override fun findWithEmployeeInfoByStatus(status: String): List<Employee> {
+        return queryFactory
+            .selectFrom(employee)
+            .leftJoin(employee.employeeInfo, employeeInfo).fetchJoin()
+            .where(employee.status.eq(status))
+            .fetch()
+    }
+
+    override fun findWithEmployeeInfoByCostCenterCodeInAndStatus(
+        costCenterCodes: List<String>,
+        status: String
+    ): List<Employee> {
+        return queryFactory
+            .selectFrom(employee)
+            .leftJoin(employee.employeeInfo, employeeInfo).fetchJoin()
+            .where(
+                employee.costCenterCode.`in`(costCenterCodes),
+                employee.status.eq(status)
+            )
+            .fetch()
+    }
+
     override fun findDistinctBranches(): List<BranchResponse> {
         return queryFactory
             .select(

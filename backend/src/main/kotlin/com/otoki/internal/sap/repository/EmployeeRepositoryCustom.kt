@@ -11,6 +11,10 @@ interface EmployeeRepositoryCustom {
 
     fun findWithEmployeeInfoById(id: Long): Employee?
 
+    fun findWithEmployeeInfoByStatus(status: String): List<Employee>
+
+    fun findWithEmployeeInfoByCostCenterCodeInAndStatus(costCenterCodes: List<String>, status: String): List<Employee>
+
     fun findDistinctBranches(): List<BranchResponse>
 
     fun findAllEmployeeCodes(): List<String>
