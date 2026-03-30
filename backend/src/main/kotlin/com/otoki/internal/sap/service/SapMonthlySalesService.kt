@@ -1,6 +1,7 @@
 package com.otoki.internal.sap.service
 
 import com.otoki.internal.sap.entity.MonthlySalesHistory
+import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.sap.repository.MonthlySalesHistoryRepository
 import com.otoki.internal.sap.dto.SapMonthlySalesRequest
 import com.otoki.internal.sap.dto.SapSyncError
@@ -12,7 +13,8 @@ import org.springframework.transaction.annotation.Transactional
 
 @Service
 class SapMonthlySalesService(
-    private val monthlySalesHistoryRepository: MonthlySalesHistoryRepository
+    private val monthlySalesHistoryRepository: MonthlySalesHistoryRepository,
+    private val accountRepository: AccountRepository
 ) : SapSyncService<SapMonthlySalesRequest.ReqItem> {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -91,11 +93,15 @@ class SapMonthlySalesService(
         val externalKey = sapAccountCode + salesYearMonth
         val existing = monthlySalesHistoryRepository.findByExternalkeyC(externalKey)
 
+        val account = accountRepository.findByExternalKey(sapAccountCode)
+
         if (existing != null) {
             mapFields(existing, item, sapAccountCode, salesYearMonth)
+            existing.account = account
             monthlySalesHistoryRepository.save(existing)
         } else {
             val entity = MonthlySalesHistory(
+                account = account,
                 accountExternalKey = sapAccountCode,
                 salesYear = salesYearMonth.substring(0, 4),
                 salesMonth = salesYearMonth.substring(4, 6),

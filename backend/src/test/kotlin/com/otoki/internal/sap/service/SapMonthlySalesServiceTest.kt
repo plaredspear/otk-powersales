@@ -1,6 +1,7 @@
 package com.otoki.internal.sap.service
 
 import com.otoki.internal.sap.entity.MonthlySalesHistory
+import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.sap.repository.MonthlySalesHistoryRepository
 import com.otoki.internal.sap.dto.SapMonthlySalesRequest
 import com.otoki.internal.sap.dto.SapSyncResult
@@ -23,6 +24,9 @@ class SapMonthlySalesServiceTest {
 
     @Mock
     lateinit var monthlySalesHistoryRepository: MonthlySalesHistoryRepository
+
+    @Mock
+    lateinit var accountRepository: AccountRepository
 
     @InjectMocks
     lateinit var service: SapMonthlySalesService

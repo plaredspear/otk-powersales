@@ -466,6 +466,25 @@ object HerokuMigrationTool {
                     println("[pushMessageReceiver] push_message_id UPDATE 완료: ${updated}건")
                 }
 
+                // MonthlySalesHistory: account_external_key → account.external_key 매칭으로 account_id UPDATE
+                println("[monthlySalesHistory] account_external_key → account_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.monthly_sales_history msh " +
+                            "SET account_id = a.account_id " +
+                            "FROM $TARGET_SCHEMA.account a " +
+                            "WHERE msh.account_external_key = a.external_key"
+                    )
+                    println("[monthlySalesHistory] account_id UPDATE 완료: ${updated}건")
+                    val unmatched = stmt.executeQuery(
+                        "SELECT COUNT(*) FROM $TARGET_SCHEMA.monthly_sales_history WHERE account_id IS NULL AND account_external_key IS NOT NULL"
+                    )
+                    if (unmatched.next()) {
+                        val count = unmatched.getInt(1)
+                        if (count > 0) println("[monthlySalesHistory] account_id 매칭 실패: ${count}건")
+                    }
+                }
+
                 // TmpClaim: sap_account_code → account.external_key 매칭으로 account_id UPDATE
                 println("[tmpClaim] sap_account_code → account_id UPDATE 중...")
                 targetConn.createStatement().use { stmt ->

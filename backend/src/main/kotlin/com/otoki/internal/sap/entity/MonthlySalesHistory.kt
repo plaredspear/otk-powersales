@@ -34,6 +34,10 @@ class MonthlySalesHistory(
     @Column(name = "name", length = 80)
     val name: String? = null,
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id")
+    var account: Account? = null,
+
     @HCColumn("account_externalkey__c")
     @Column(name = "account_external_key", length = 1300)
     var accountExternalKey: String? = null,
