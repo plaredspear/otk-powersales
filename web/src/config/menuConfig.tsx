@@ -42,11 +42,6 @@ export const menuRoute: MenuRoute = {
         { path: '/display-schedules', name: '진열스케줄마스터', requiredPermission: 'PROMOTION_WRITE' },
       ],
     },
-    {
-      name: '근무',
-      icon: <ClockCircleOutlined />,
-      children: [{ path: '/attendance', name: '등록현황' }],
-    },
     { path: '/promotion/ppt-masters', name: '전문행사조', icon: <CalendarOutlined /> },
     { path: '/claim', name: '클레임 현황', icon: <ExclamationCircleOutlined /> },
     { path: '/suggestion', name: '제안사항', icon: <BulbOutlined /> },
@@ -68,12 +63,9 @@ export const menuRoute: MenuRoute = {
       ],
     },
     {
-      name: '여사원관리',
-      icon: <UserOutlined />,
-      children: [
-        { path: '/monthly-integration', name: '월별 통합일정', requiredPermission: 'SCHEDULE_READ' },
-        { path: '/monthly-integration/category', name: '근무형태별 인원현황', requiredPermission: 'SCHEDULE_READ' },
-      ],
+      name: '근무',
+      icon: <ClockCircleOutlined />,
+      children: [{ path: '/attendance', name: '등록현황' }],
     },
     { path: '/safety-check', name: '안전점검', icon: <SafetyCertificateOutlined />, requiredPermission: 'SAFETY_CHECK_READ' },
     {
@@ -81,6 +73,14 @@ export const menuRoute: MenuRoute = {
       icon: <UserOutlined />,
       children: [
         { path: '/employee', name: '여사원 현황', requiredPermission: 'EMPLOYEE_READ' },
+      ],
+    },
+    {
+      name: '여사원관리',
+      icon: <UserOutlined />,
+      children: [
+        { path: '/monthly-integration', name: '월별 통합일정', requiredPermission: 'SCHEDULE_READ' },
+        { path: '/monthly-integration/category', name: '근무형태별 인원현황', requiredPermission: 'SCHEDULE_READ' },
       ],
     },
     { path: '/field-inspection', name: '현장점검', icon: <SearchOutlined /> },
