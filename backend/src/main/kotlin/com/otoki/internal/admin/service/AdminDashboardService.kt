@@ -110,27 +110,16 @@ class AdminDashboardService(
         } else {
             if (scope.branchCodes.isEmpty()) return emptyList()
             val accounts = accountRepository.findByBranchCodeIn(scope.branchCodes)
-            val externalKeys = accounts.mapNotNull { it.externalKey }
-            if (externalKeys.isEmpty()) return emptyList()
-            monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountExternalKeyIn(
-                salesYear, salesMonth, externalKeys
+            if (accounts.isEmpty()) return emptyList()
+            monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(
+                salesYear, salesMonth, accounts
             )
         }
     }
 
     private fun buildChannelSales(salesData: List<MonthlySalesHistory>): List<ChannelSalesItem> {
-        val accountExternalKeys = salesData.mapNotNull { it.accountExternalKey }.distinct()
-        val accountMap = if (accountExternalKeys.isNotEmpty()) {
-            accountRepository.findByExternalKeyIn(accountExternalKeys)
-                .filter { it.externalKey != null }
-                .associateBy { it.externalKey!! }
-        } else {
-            emptyMap()
-        }
-
         val grouped = salesData.groupBy { record ->
-            val account = record.accountExternalKey?.let { accountMap[it] }
-            classifyChannel(account?.abcType)
+            classifyChannel(record.account?.abcType)
         }
 
         return grouped.map { (channelName, records) ->

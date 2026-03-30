@@ -49,7 +49,7 @@ class AdminMonthlyIntegrationServiceTest {
             .thenReturn(emptyList())
         whenever(accountRepository.findByIdIn(any()))
             .thenReturn(emptyList())
-        whenever(monthlySalesHistoryRepository.findByAccountExternalKeyInAndSalesYearIn(any(), any()))
+        whenever(monthlySalesHistoryRepository.findByAccountInAndSalesYearIn(any(), any()))
             .thenReturn(emptyList())
         whenever(organizationRepository.searchForAdmin(anyOrNull(), anyOrNull(), anyOrNull()))
             .thenReturn(emptyList())

@@ -296,10 +296,9 @@ class AdminMonthlyIntegrationService(
         // 8. Collect account IDs for ABC closing amount
         val accountIds = grouped.keys.map { it.accountId }.distinct()
         val accounts = accountRepository.findByIdIn(accountIds).associateBy { it.id }
-        val accountExternalKeys = accounts.values.mapNotNull { it.externalKey }
 
         // 9. Calculate 6-month ABC closing amount
-        val avgClosingAmounts = calculateAvgClosingAmounts(year, month, accountExternalKeys)
+        val avgClosingAmounts = calculateAvgClosingAmounts(year, month, accounts.values.toList())
 
         // 10. Get org name map for branch names
         val orgNameMap = getOrgNameMap(expandedCodes)
@@ -327,7 +326,7 @@ class AdminMonthlyIntegrationService(
                 BigDecimal.ZERO
             }
 
-            val avgAmount = account?.externalKey?.let { avgClosingAmounts[it] } ?: 0L
+            val avgAmount = account?.id?.let { avgClosingAmounts[it] } ?: 0L
             val branchName = employee?.costCenterCode?.let { orgNameMap[it] } ?: employee?.orgName ?: ""
 
             MonthlyIntegrationScheduleItem(
@@ -384,9 +383,9 @@ class AdminMonthlyIntegrationService(
     private fun calculateAvgClosingAmounts(
         year: Int,
         month: Int,
-        accountExternalKeys: List<String>
-    ): Map<String, Long> {
-        if (accountExternalKeys.isEmpty()) return emptyMap()
+        accounts: List<Account>
+    ): Map<Int, Long> {
+        if (accounts.isEmpty()) return emptyMap()
 
         val now = YearMonth.now()
         val searchYm = YearMonth.of(year, month)
@@ -407,8 +406,8 @@ class AdminMonthlyIntegrationService(
         }
 
         val salesYears = yearMonthPairs.map { it.year.toString() }.distinct()
-        val allHistory = monthlySalesHistoryRepository.findByAccountExternalKeyInAndSalesYearIn(
-            accountExternalKeys, salesYears
+        val allHistory = monthlySalesHistoryRepository.findByAccountInAndSalesYearIn(
+            accounts, salesYears
         )
 
         // Filter to valid year-month range
@@ -421,9 +420,9 @@ class AdminMonthlyIntegrationService(
                 (h.salesYear!! to h.salesMonth!!) in validYmStrings
         }
 
-        // Group by account and calculate average
-        return filtered.groupBy { it.accountExternalKey ?: "" }
-            .filter { it.key.isNotEmpty() }
+        // Group by account ID and calculate average
+        return filtered.groupBy { it.account?.id ?: 0 }
+            .filter { it.key != 0 }
             .mapValues { (_, histories) ->
                 val sum = histories.sumOf { it.abcClosingAmount1 ?: 0.0 }
                 val divider = histories.size

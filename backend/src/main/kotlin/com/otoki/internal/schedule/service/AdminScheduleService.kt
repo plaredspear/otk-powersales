@@ -165,11 +165,16 @@ class AdminScheduleService(
         val lastMonth = today.minusMonths(1)
         val salesYear = lastMonth.year.toString()
         val salesMonth = String.format("%02d", lastMonth.monthValue)
-        val accountExternalKeys = cacheData.validRows.mapNotNull { it.accountExternalKey }.distinct()
-        val revenueByAccountKey = if (accountExternalKeys.isNotEmpty()) {
-            monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountExternalKeyIn(
-                salesYear, salesMonth, accountExternalKeys
-            ).associateBy { it.accountExternalKey }
+        val accountIds = cacheData.validRows.map { it.accountId }.distinct()
+        val accountsForRevenue = if (accountIds.isNotEmpty()) {
+            accountRepository.findByIdIn(accountIds)
+        } else {
+            emptyList()
+        }
+        val revenueByAccountId = if (accountsForRevenue.isNotEmpty()) {
+            monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(
+                salesYear, salesMonth, accountsForRevenue
+            ).filter { it.account != null }.associateBy { it.account!!.id }
         } else {
             emptyMap()
         }
@@ -181,9 +186,7 @@ class AdminScheduleService(
             } else {
                 null
             }
-            val lastMonthRevenue = row.accountExternalKey?.let { key ->
-                revenueByAccountKey[key]?.lastMonthResults?.toLong()
-            }
+            val lastMonthRevenue = revenueByAccountId[row.accountId]?.lastMonthResults?.toLong()
 
             DisplayWorkSchedule(
                 employeeId = row.userId,

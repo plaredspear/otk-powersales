@@ -352,8 +352,7 @@ class AdminScheduleServiceTest {
             whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
             whenever(employeeRepository.findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrue(listOf("A10010"), "조장"))
                 .thenReturn(emptyList())
-            whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountExternalKeyIn(any(), any(), any()))
-                .thenReturn(emptyList())
+            whenever(accountRepository.findByIdIn(any())).thenReturn(emptyList())
             whenever(scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>())).thenAnswer { it.getArgument<List<DisplayWorkSchedule>>(0) }
             whenever(redisTemplate.delete(any<String>())).thenReturn(true)
 
@@ -385,8 +384,7 @@ class AdminScheduleServiceTest {
             whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
             whenever(employeeRepository.findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrue(listOf("A10010"), "조장"))
                 .thenReturn(listOf(manager))
-            whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountExternalKeyIn(any(), any(), any()))
-                .thenReturn(emptyList())
+            whenever(accountRepository.findByIdIn(any())).thenReturn(emptyList())
             whenever(scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>())).thenAnswer { it.getArgument<List<DisplayWorkSchedule>>(0) }
             whenever(redisTemplate.delete(any<String>())).thenReturn(true)
 
@@ -417,8 +415,7 @@ class AdminScheduleServiceTest {
             whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
             whenever(employeeRepository.findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrue(listOf("A10010"), "조장"))
                 .thenReturn(emptyList())
-            whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountExternalKeyIn(any(), any(), any()))
-                .thenReturn(emptyList())
+            whenever(accountRepository.findByIdIn(any())).thenReturn(emptyList())
             whenever(scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>())).thenAnswer { it.getArgument<List<DisplayWorkSchedule>>(0) }
             whenever(redisTemplate.delete(any<String>())).thenReturn(true)
 
@@ -444,8 +441,10 @@ class AdminScheduleServiceTest {
                 errorCount = 0
             )
             val json = objectMapper.writeValueAsString(cacheData)
+            val account = Account(id = 1, externalKey = "EXT001")
             val salesHistory = MonthlySalesHistory(
                 id = 1,
+                account = account,
                 accountExternalKey = "EXT001",
                 lastMonthResults = 5000000.0
             )
@@ -454,7 +453,8 @@ class AdminScheduleServiceTest {
             whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
             whenever(employeeRepository.findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrue(listOf("A10010"), "조장"))
                 .thenReturn(emptyList())
-            whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountExternalKeyIn(any(), any(), eq(listOf("EXT001"))))
+            whenever(accountRepository.findByIdIn(listOf(1))).thenReturn(listOf(account))
+            whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(any(), any(), eq(listOf(account))))
                 .thenReturn(listOf(salesHistory))
             whenever(scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>())).thenAnswer { it.getArgument<List<DisplayWorkSchedule>>(0) }
             whenever(redisTemplate.delete(any<String>())).thenReturn(true)
@@ -486,8 +486,7 @@ class AdminScheduleServiceTest {
             whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
             whenever(employeeRepository.findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrue(listOf("A10010"), "조장"))
                 .thenReturn(emptyList())
-            whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountExternalKeyIn(any(), any(), eq(listOf("EXT001"))))
-                .thenReturn(emptyList())
+            whenever(accountRepository.findByIdIn(listOf(1))).thenReturn(emptyList())
             whenever(scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>())).thenAnswer { it.getArgument<List<DisplayWorkSchedule>>(0) }
             whenever(redisTemplate.delete(any<String>())).thenReturn(true)
 
@@ -516,8 +515,7 @@ class AdminScheduleServiceTest {
 
             whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
             whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
-            whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountExternalKeyIn(any(), any(), eq(listOf("EXT001"))))
-                .thenReturn(emptyList())
+            whenever(accountRepository.findByIdIn(listOf(1))).thenReturn(emptyList())
             whenever(scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>())).thenAnswer { it.getArgument<List<DisplayWorkSchedule>>(0) }
             whenever(redisTemplate.delete(any<String>())).thenReturn(true)
 

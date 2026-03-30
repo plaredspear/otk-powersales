@@ -18,12 +18,15 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.quality.Strictness
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
 import java.time.LocalDate
 
 @ExtendWith(MockitoExtension::class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("AdminDashboardService 테스트")
 class AdminDashboardServiceTest {
 
@@ -58,20 +61,22 @@ class AdminDashboardServiceTest {
             val yearMonth = "2026-03"
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
 
-            val salesData = listOf(
-                createSalesHistory(targetMonthResults = 1000.0, shipClosingAmount = 800.0,
-                    accountExternalKey = "EK001"),
-                createSalesHistory(targetMonthResults = 2000.0, shipClosingAmount = 1500.0,
-                    accountExternalKey = "EK002")
-            )
-            val lastYearSalesData = listOf(
-                createSalesHistory(shipClosingAmount = 600.0, accountExternalKey = "EK001"),
-                createSalesHistory(shipClosingAmount = 1000.0, accountExternalKey = "EK002")
-            )
-
             val accounts = listOf(
                 createAccount(id = 1, sfid = "ACC001", externalKey = "EK001", abcType = "대형마트"),
                 createAccount(id = 2, sfid = "ACC002", externalKey = "EK002", abcType = "슈퍼")
+            )
+
+            val salesData = listOf(
+                createSalesHistory(targetMonthResults = 1000.0, shipClosingAmount = 800.0,
+                    accountExternalKey = "EK001", account = accounts[0]),
+                createSalesHistory(targetMonthResults = 2000.0, shipClosingAmount = 1500.0,
+                    accountExternalKey = "EK002", account = accounts[1])
+            )
+            val lastYearSalesData = listOf(
+                createSalesHistory(shipClosingAmount = 600.0, accountExternalKey = "EK001",
+                    account = accounts[0]),
+                createSalesHistory(shipClosingAmount = 1000.0, accountExternalKey = "EK002",
+                    account = accounts[1])
             )
 
             val schedules = listOf(
@@ -101,9 +106,6 @@ class AdminDashboardServiceTest {
             whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonth("2025", "03"))
                 .thenReturn(lastYearSalesData)
 
-            // Accounts for channel classification
-            whenever(accountRepository.findAll()).thenReturn(accounts)
-
             // Schedules: current month
             whenever(displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
                 eq(LocalDate.of(2026, 3, 31)), eq(LocalDate.of(2026, 3, 1))
@@ -117,8 +119,8 @@ class AdminDashboardServiceTest {
             whenever(accountRepository.findByIdIn(any())).thenReturn(accounts)
 
             // Users
-            whenever(employeeRepository.findByStatus("재직")).thenReturn(activeEmployees)
-            whenever(employeeRepository.findByStatus("휴직")).thenReturn(onLeaveEmployees)
+            whenever(employeeRepository.findWithEmployeeInfoByStatus("재직")).thenReturn(activeEmployees)
+            whenever(employeeRepository.findWithEmployeeInfoByStatus("휴직")).thenReturn(onLeaveEmployees)
 
             // When
             val result = adminDashboardService.getDashboard(yearMonth, null)
@@ -162,10 +164,11 @@ class AdminDashboardServiceTest {
 
             val salesData = listOf(
                 createSalesHistory(targetMonthResults = 500.0, shipClosingAmount = 300.0,
-                    accountExternalKey = "EK001")
+                    accountExternalKey = "EK001", account = branchAccounts[0])
             )
             val lastYearSalesData = listOf(
-                createSalesHistory(shipClosingAmount = 250.0, accountExternalKey = "EK001")
+                createSalesHistory(shipClosingAmount = 250.0, accountExternalKey = "EK001",
+                    account = branchAccounts[0])
             )
 
             val schedules = listOf(
@@ -182,16 +185,13 @@ class AdminDashboardServiceTest {
             // Branch name resolution
             whenever(accountRepository.findByBranchCodeIn(listOf("B001"))).thenReturn(branchAccounts)
 
-            // Sales (filtered by externalKeys)
-            whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountExternalKeyIn(
-                eq("2026"), eq("03"), eq(listOf("EK001"))
+            // Sales (filtered by accounts)
+            whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(
+                eq("2026"), eq("03"), eq(branchAccounts)
             )).thenReturn(salesData)
-            whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountExternalKeyIn(
-                eq("2025"), eq("03"), eq(listOf("EK001"))
+            whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(
+                eq("2025"), eq("03"), eq(branchAccounts)
             )).thenReturn(lastYearSalesData)
-
-            // Accounts for channel classification
-            whenever(accountRepository.findAll()).thenReturn(branchAccounts)
 
             // Schedules (filtered by accountIds)
             whenever(displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndAccountIdIn(
@@ -205,9 +205,9 @@ class AdminDashboardServiceTest {
             whenever(accountRepository.findByIdIn(any())).thenReturn(branchAccounts)
 
             // Users (filtered by costCenterCode)
-            whenever(employeeRepository.findByCostCenterCodeInAndStatus(listOf("B001"), "재직"))
+            whenever(employeeRepository.findWithEmployeeInfoByCostCenterCodeInAndStatus(listOf("B001"), "재직"))
                 .thenReturn(activeEmployees)
-            whenever(employeeRepository.findByCostCenterCodeInAndStatus(listOf("B001"), "휴직"))
+            whenever(employeeRepository.findWithEmployeeInfoByCostCenterCodeInAndStatus(listOf("B001"), "휴직"))
                 .thenReturn(emptyList())
 
             // When
@@ -245,8 +245,8 @@ class AdminDashboardServiceTest {
                 .thenReturn(emptyList())
 
             // No users
-            whenever(employeeRepository.findByStatus("재직")).thenReturn(emptyList())
-            whenever(employeeRepository.findByStatus("휴직")).thenReturn(emptyList())
+            whenever(employeeRepository.findWithEmployeeInfoByStatus("재직")).thenReturn(emptyList())
+            whenever(employeeRepository.findWithEmployeeInfoByStatus("휴직")).thenReturn(emptyList())
 
             // When
             val result = adminDashboardService.getDashboard(yearMonth, null)
@@ -291,7 +291,7 @@ class AdminDashboardServiceTest {
 
             val salesData = listOf(
                 createSalesHistory(targetMonthResults = 700.0, shipClosingAmount = 400.0,
-                    accountExternalKey = "EK002")
+                    accountExternalKey = "EK002", account = filteredAccounts[0])
             )
 
             whenever(dataScopeHolder.require()).thenReturn(allScope)
@@ -299,16 +299,13 @@ class AdminDashboardServiceTest {
             // Branch name resolution for effective scope
             whenever(accountRepository.findByBranchCodeIn(listOf("B002"))).thenReturn(filteredAccounts)
 
-            // Sales filtered by externalKeys
-            whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountExternalKeyIn(
-                eq("2026"), eq("03"), eq(listOf("EK002"))
+            // Sales filtered by accounts
+            whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(
+                eq("2026"), eq("03"), eq(filteredAccounts)
             )).thenReturn(salesData)
-            whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountExternalKeyIn(
-                eq("2025"), eq("03"), eq(listOf("EK002"))
+            whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(
+                eq("2025"), eq("03"), eq(filteredAccounts)
             )).thenReturn(emptyList())
-
-            // Accounts for channel classification
-            whenever(accountRepository.findAll()).thenReturn(filteredAccounts)
 
             // Schedules filtered by accountIds
             whenever(displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndAccountIdIn(
@@ -319,9 +316,9 @@ class AdminDashboardServiceTest {
             )).thenReturn(emptyList())
 
             // Users filtered by costCenterCode
-            whenever(employeeRepository.findByCostCenterCodeInAndStatus(listOf("B002"), "재직"))
+            whenever(employeeRepository.findWithEmployeeInfoByCostCenterCodeInAndStatus(listOf("B002"), "재직"))
                 .thenReturn(emptyList())
-            whenever(employeeRepository.findByCostCenterCodeInAndStatus(listOf("B002"), "휴직"))
+            whenever(employeeRepository.findWithEmployeeInfoByCostCenterCodeInAndStatus(listOf("B002"), "휴직"))
                 .thenReturn(emptyList())
 
             // When
@@ -352,11 +349,11 @@ class AdminDashboardServiceTest {
             whenever(accountRepository.findByBranchCodeIn(listOf("B001"))).thenReturn(branchAccounts)
 
             // Sales
-            whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountExternalKeyIn(
-                eq("2026"), eq("03"), eq(listOf("EK001"))
+            whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(
+                eq("2026"), eq("03"), eq(branchAccounts)
             )).thenReturn(emptyList())
-            whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountExternalKeyIn(
-                eq("2025"), eq("03"), eq(listOf("EK001"))
+            whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(
+                eq("2025"), eq("03"), eq(branchAccounts)
             )).thenReturn(emptyList())
 
             // Schedules
@@ -368,9 +365,9 @@ class AdminDashboardServiceTest {
             )).thenReturn(emptyList())
 
             // Users
-            whenever(employeeRepository.findByCostCenterCodeInAndStatus(listOf("B001"), "재직"))
+            whenever(employeeRepository.findWithEmployeeInfoByCostCenterCodeInAndStatus(listOf("B001"), "재직"))
                 .thenReturn(emptyList())
-            whenever(employeeRepository.findByCostCenterCodeInAndStatus(listOf("B001"), "휴직"))
+            whenever(employeeRepository.findWithEmployeeInfoByCostCenterCodeInAndStatus(listOf("B001"), "휴직"))
                 .thenReturn(emptyList())
 
             // When
@@ -397,10 +394,6 @@ class AdminDashboardServiceTest {
                 createSalesHistory(shipClosingAmount = 5000.0, accountExternalKey = "EK001")
             )
 
-            val accounts = listOf(
-                createAccount(id = 1, sfid = "ACC001", externalKey = "EK001", abcType = "대형마트")
-            )
-
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
             // Current year sales
@@ -411,15 +404,15 @@ class AdminDashboardServiceTest {
                 .thenReturn(lastYearSales)
 
             // Accounts for channel classification
-            whenever(accountRepository.findAll()).thenReturn(accounts)
+
 
             // Schedules
             whenever(displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(any(), any()))
                 .thenReturn(emptyList())
 
             // Users
-            whenever(employeeRepository.findByStatus("재직")).thenReturn(emptyList())
-            whenever(employeeRepository.findByStatus("휴직")).thenReturn(emptyList())
+            whenever(employeeRepository.findWithEmployeeInfoByStatus("재직")).thenReturn(emptyList())
+            whenever(employeeRepository.findWithEmployeeInfoByStatus("휴직")).thenReturn(emptyList())
 
             // When
             val result = adminDashboardService.getDashboard(yearMonth, null)
@@ -449,13 +442,13 @@ class AdminDashboardServiceTest {
             whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonth("2025", "06"))
                 .thenReturn(emptyList())
 
-            whenever(accountRepository.findAll()).thenReturn(emptyList())
+
 
             whenever(displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(any(), any()))
                 .thenReturn(emptyList())
 
-            whenever(employeeRepository.findByStatus("재직")).thenReturn(emptyList())
-            whenever(employeeRepository.findByStatus("휴직")).thenReturn(emptyList())
+            whenever(employeeRepository.findWithEmployeeInfoByStatus("재직")).thenReturn(emptyList())
+            whenever(employeeRepository.findWithEmployeeInfoByStatus("휴직")).thenReturn(emptyList())
 
             // When
             val result = adminDashboardService.getDashboard(yearMonth, null)
@@ -478,8 +471,8 @@ class AdminDashboardServiceTest {
                 .thenReturn(emptyList())
             whenever(displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(any(), any()))
                 .thenReturn(emptyList())
-            whenever(employeeRepository.findByStatus("재직")).thenReturn(emptyList())
-            whenever(employeeRepository.findByStatus("휴직")).thenReturn(emptyList())
+            whenever(employeeRepository.findWithEmployeeInfoByStatus("재직")).thenReturn(emptyList())
+            whenever(employeeRepository.findWithEmployeeInfoByStatus("휴직")).thenReturn(emptyList())
 
             // When
             val result = adminDashboardService.getDashboard(null, null)
@@ -497,22 +490,22 @@ class AdminDashboardServiceTest {
             val yearMonth = "2026-03"
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
 
-            val salesData = listOf(
-                createSalesHistory(accountExternalKey = "EK001",
-                    abcClosingAmount1 = 100.0, abcClosingAmount2 = 200.0, abcClosingAmount3 = 50.0,
-                    targetMonthResults = 1000.0, shipClosingAmount = 0.0),
-                createSalesHistory(accountExternalKey = "EK002",
-                    abcClosingAmount1 = 300.0, abcClosingAmount2 = 0.0, abcClosingAmount3 = 0.0,
-                    targetMonthResults = 500.0, shipClosingAmount = 0.0),
-                createSalesHistory(accountExternalKey = "EK003",
-                    abcClosingAmount1 = 50.0, abcClosingAmount2 = 0.0, abcClosingAmount3 = 0.0,
-                    targetMonthResults = 200.0, shipClosingAmount = 0.0)
-            )
-
             val accounts = listOf(
                 createAccount(id = 1, sfid = "A1", externalKey = "EK001", abcType = "대형마트"),
                 createAccount(id = 2, sfid = "A2", externalKey = "EK002", abcType = "슈퍼"),
                 createAccount(id = 3, sfid = "A3", externalKey = "EK003", abcType = "편의점")
+            )
+
+            val salesData = listOf(
+                createSalesHistory(accountExternalKey = "EK001", account = accounts[0],
+                    abcClosingAmount1 = 100.0, abcClosingAmount2 = 200.0, abcClosingAmount3 = 50.0,
+                    targetMonthResults = 1000.0, shipClosingAmount = 0.0),
+                createSalesHistory(accountExternalKey = "EK002", account = accounts[1],
+                    abcClosingAmount1 = 300.0, abcClosingAmount2 = 0.0, abcClosingAmount3 = 0.0,
+                    targetMonthResults = 500.0, shipClosingAmount = 0.0),
+                createSalesHistory(accountExternalKey = "EK003", account = accounts[2],
+                    abcClosingAmount1 = 50.0, abcClosingAmount2 = 0.0, abcClosingAmount3 = 0.0,
+                    targetMonthResults = 200.0, shipClosingAmount = 0.0)
             )
 
             whenever(dataScopeHolder.require()).thenReturn(scope)
@@ -520,11 +513,10 @@ class AdminDashboardServiceTest {
                 .thenReturn(salesData)
             whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonth("2025", "03"))
                 .thenReturn(emptyList())
-            whenever(accountRepository.findAll()).thenReturn(accounts)
             whenever(displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(any(), any()))
                 .thenReturn(emptyList())
-            whenever(employeeRepository.findByStatus("재직")).thenReturn(emptyList())
-            whenever(employeeRepository.findByStatus("휴직")).thenReturn(emptyList())
+            whenever(employeeRepository.findWithEmployeeInfoByStatus("재직")).thenReturn(emptyList())
+            whenever(employeeRepository.findWithEmployeeInfoByStatus("휴직")).thenReturn(emptyList())
 
             // When
             val result = adminDashboardService.getDashboard(yearMonth, null)
@@ -560,11 +552,11 @@ class AdminDashboardServiceTest {
                 .thenReturn(salesData)
             whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonth("2025", "03"))
                 .thenReturn(emptyList())
-            whenever(accountRepository.findAll()).thenReturn(emptyList())
+
             whenever(displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(any(), any()))
                 .thenReturn(emptyList())
-            whenever(employeeRepository.findByStatus("재직")).thenReturn(emptyList())
-            whenever(employeeRepository.findByStatus("휴직")).thenReturn(emptyList())
+            whenever(employeeRepository.findWithEmployeeInfoByStatus("재직")).thenReturn(emptyList())
+            whenever(employeeRepository.findWithEmployeeInfoByStatus("휴직")).thenReturn(emptyList())
 
             // When
             val result = adminDashboardService.getDashboard(yearMonth, null)
@@ -590,11 +582,11 @@ class AdminDashboardServiceTest {
                 .thenReturn(salesData)
             whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonth("2025", "03"))
                 .thenReturn(emptyList())
-            whenever(accountRepository.findAll()).thenReturn(emptyList())
+
             whenever(displayWorkScheduleRepository.findByConfirmedTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(any(), any()))
                 .thenReturn(emptyList())
-            whenever(employeeRepository.findByStatus("재직")).thenReturn(emptyList())
-            whenever(employeeRepository.findByStatus("휴직")).thenReturn(emptyList())
+            whenever(employeeRepository.findWithEmployeeInfoByStatus("재직")).thenReturn(emptyList())
+            whenever(employeeRepository.findWithEmployeeInfoByStatus("휴직")).thenReturn(emptyList())
 
             // When
             val result = adminDashboardService.getDashboard(yearMonth, null)
@@ -617,10 +609,12 @@ class AdminDashboardServiceTest {
         abcClosingAmount3: Double? = null,
         accountExternalKey: String? = null,
         accountType: String? = null,
-        accountBranchName: String? = null
+        accountBranchName: String? = null,
+        account: Account? = null
     ): MonthlySalesHistory {
         return MonthlySalesHistory(
             id = id,
+            account = account,
             salesYear = salesYear,
             salesMonth = salesMonth,
             targetMonthResults = targetMonthResults,
