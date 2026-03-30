@@ -3,9 +3,9 @@ package com.otoki.internal.schedule.controller
 import com.otoki.internal.common.dto.ApiResponse
 import com.otoki.internal.common.dto.response.AccountListResponse
 import com.otoki.internal.common.security.UserPrincipal
-import com.otoki.internal.schedule.dto.request.CommuteRequest
-import com.otoki.internal.schedule.dto.response.CommuteResponse
-import com.otoki.internal.schedule.dto.response.CommuteStatusResponse
+import com.otoki.internal.schedule.dto.request.AttendanceRegisterRequest
+import com.otoki.internal.schedule.dto.response.AttendanceRegisterResponse
+import com.otoki.internal.schedule.dto.response.AttendanceStatusResponse
 import com.otoki.internal.schedule.service.AttendanceService
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
@@ -39,11 +39,11 @@ class AttendanceController(
      * POST /api/v1/attendance
      */
     @PostMapping
-    fun registerCommute(
+    fun register(
         @AuthenticationPrincipal principal: UserPrincipal,
-        @Valid @RequestBody request: CommuteRequest
-    ): ResponseEntity<ApiResponse<CommuteResponse>> {
-        val response = attendanceService.registerCommute(
+        @Valid @RequestBody request: AttendanceRegisterRequest
+    ): ResponseEntity<ApiResponse<AttendanceRegisterResponse>> {
+        val response = attendanceService.register(
             userId = principal.userId,
             scheduleId = request.scheduleId!!,
             latitude = request.latitude!!,
@@ -58,10 +58,10 @@ class AttendanceController(
      * GET /api/v1/attendance/status
      */
     @GetMapping("/status")
-    fun getCommuteStatus(
+    fun getStatus(
         @AuthenticationPrincipal principal: UserPrincipal
-    ): ResponseEntity<ApiResponse<CommuteStatusResponse>> {
-        val response = attendanceService.getCommuteStatus(principal.userId)
+    ): ResponseEntity<ApiResponse<AttendanceStatusResponse>> {
+        val response = attendanceService.getStatus(principal.userId)
         return ResponseEntity.ok(ApiResponse.success(response, "조회 성공"))
     }
 }

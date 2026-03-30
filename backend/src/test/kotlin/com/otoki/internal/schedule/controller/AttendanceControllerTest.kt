@@ -9,11 +9,12 @@ import com.otoki.internal.common.security.JwtAuthenticationFilter
 import com.otoki.internal.admin.security.AdminAuthorityFilter
 import com.otoki.internal.common.security.JwtTokenProvider
 import com.otoki.internal.common.security.UserPrincipal
-import com.otoki.internal.schedule.dto.response.CommuteResponse
-import com.otoki.internal.schedule.dto.response.CommuteStatusItem
-import com.otoki.internal.schedule.dto.response.CommuteStatusResponse
+import com.otoki.internal.schedule.dto.response.AttendanceRegisterResponse
+import com.otoki.internal.schedule.dto.response.AttendanceStatusItem
+import com.otoki.internal.schedule.dto.response.AttendanceStatusResponse
 import com.otoki.internal.schedule.exception.AlreadyRegisteredException
 import com.otoki.internal.schedule.exception.DistanceExceededException
+import com.otoki.internal.schedule.exception.SafetyCheckRequiredException
 import com.otoki.internal.schedule.exception.TeamMemberScheduleNotFoundException
 import com.otoki.internal.schedule.service.AttendanceService
 import org.junit.jupiter.api.BeforeEach
@@ -75,13 +76,13 @@ class AttendanceControllerTest {
 
     @Nested
     @DisplayName("POST /api/v1/attendance - 출근등록")
-    inner class RegisterCommuteTests {
+    inner class RegisterTests {
 
         @Test
         @DisplayName("출근 등록 성공 - 200 OK, schedule_id 포함")
-        fun registerCommute_success() {
+        fun register_success() {
             // Given
-            val mockResponse = CommuteResponse(
+            val mockResponse = AttendanceRegisterResponse(
                 scheduleId = 10L,
                 accountName = "이마트 부산점",
                 workType = "ROOM_TEMP",
@@ -91,7 +92,7 @@ class AttendanceControllerTest {
             )
 
             whenever(
-                attendanceService.registerCommute(
+                attendanceService.register(
                     eq(1L), eq(10L), eq(35.1234), eq(129.0567), eq("ROOM_TEMP")
                 )
             ).thenReturn(mockResponse)
@@ -123,11 +124,40 @@ class AttendanceControllerTest {
         }
 
         @Test
-        @DisplayName("거리 초과 - 400 DISTANCE_EXCEEDED")
-        fun registerCommute_distanceExceeded() {
+        @DisplayName("안전점검 미완료 - 400 SAFETY_CHECK_REQUIRED")
+        fun register_safetyCheckRequired() {
             // Given
             whenever(
-                attendanceService.registerCommute(
+                attendanceService.register(
+                    eq(1L), eq(10L), eq(35.1234), eq(129.0567), anyOrNull()
+                )
+            ).thenThrow(SafetyCheckRequiredException())
+
+            val requestJson = """
+                {
+                    "schedule_id": 10,
+                    "latitude": 35.1234,
+                    "longitude": 129.0567
+                }
+            """.trimIndent()
+
+            // When & Then
+            mockMvc.perform(
+                post("/api/v1/attendance")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(requestJson)
+            )
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("SAFETY_CHECK_REQUIRED"))
+        }
+
+        @Test
+        @DisplayName("거리 초과 - 400 DISTANCE_EXCEEDED")
+        fun register_distanceExceeded() {
+            // Given
+            whenever(
+                attendanceService.register(
                     eq(1L), eq(10L), eq(35.1234), eq(129.0567), anyOrNull()
                 )
             ).thenThrow(DistanceExceededException(1.5))
@@ -153,7 +183,7 @@ class AttendanceControllerTest {
 
         @Test
         @DisplayName("필수 필드 누락 (schedule_id 없음) - 400 INVALID_PARAMETER")
-        fun registerCommute_missingScheduleId() {
+        fun register_missingScheduleId() {
             // Given - schedule_id 누락
             val requestJson = """
                 {
@@ -175,10 +205,10 @@ class AttendanceControllerTest {
 
         @Test
         @DisplayName("이미 등록 - 409 ALREADY_REGISTERED")
-        fun registerCommute_alreadyRegistered() {
+        fun register_alreadyRegistered() {
             // Given
             whenever(
-                attendanceService.registerCommute(
+                attendanceService.register(
                     eq(1L), eq(10L), eq(35.1234), eq(129.0567), anyOrNull()
                 )
             ).thenThrow(AlreadyRegisteredException())
@@ -204,10 +234,10 @@ class AttendanceControllerTest {
 
         @Test
         @DisplayName("스케줄 없음 - 404 SCHEDULE_NOT_FOUND")
-        fun registerCommute_scheduleNotFound() {
+        fun register_scheduleNotFound() {
             // Given
             whenever(
-                attendanceService.registerCommute(
+                attendanceService.register(
                     eq(1L), eq(99999L), eq(35.1234), eq(129.0567), anyOrNull()
                 )
             ).thenThrow(TeamMemberScheduleNotFoundException())
@@ -239,10 +269,11 @@ class AttendanceControllerTest {
     inner class GetAccountListTests {
 
         @Test
-        @DisplayName("정상 조회 - 200 OK, latitude/longitude 포함")
+        @DisplayName("정상 조회 + 안전점검 완료 - 200 OK, safety_check_completed=true")
         fun getAccountList_success() {
             // Given
             val mockResponse = AccountListResponse(
+                safetyCheckCompleted = true,
                 accounts = listOf(
                     AccountInfo(
                         scheduleId = 1L,
@@ -282,6 +313,7 @@ class AttendanceControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("조회 성공"))
+                .andExpect(jsonPath("$.data.safety_check_completed").value(true))
                 .andExpect(jsonPath("$.data.accounts").isArray)
                 .andExpect(jsonPath("$.data.accounts[0].schedule_id").value(1))
                 .andExpect(jsonPath("$.data.accounts[0].account_sfid").value("ACC-001"))
@@ -302,6 +334,7 @@ class AttendanceControllerTest {
         fun getAccountList_withKeyword() {
             // Given
             val mockResponse = AccountListResponse(
+                safetyCheckCompleted = false,
                 accounts = listOf(
                     AccountInfo(
                         scheduleId = 1L,
@@ -330,6 +363,7 @@ class AttendanceControllerTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.safety_check_completed").value(false))
                 .andExpect(jsonPath("$.data.accounts").isArray)
                 .andExpect(jsonPath("$.data.accounts[0].account_name").value("이마트 부산점"))
                 .andExpect(jsonPath("$.data.total_count").value(1))
@@ -341,29 +375,29 @@ class AttendanceControllerTest {
 
     @Nested
     @DisplayName("GET /api/v1/attendance/status - 출근 현황 조회")
-    inner class GetCommuteStatusTests {
+    inner class GetStatusTests {
 
         @Test
         @DisplayName("정상 조회 - 200 OK, status_list 포함")
-        fun getCommuteStatus_success() {
+        fun getStatus_success() {
             // Given
-            val mockResponse = CommuteStatusResponse(
+            val mockResponse = AttendanceStatusResponse(
                 totalCount = 3,
                 registeredCount = 1,
                 statusList = listOf(
-                    CommuteStatusItem(
+                    AttendanceStatusItem(
                         scheduleId = 1L,
                         accountName = "이마트 부산점",
                         workCategory = "진열",
                         status = "REGISTERED"
                     ),
-                    CommuteStatusItem(
+                    AttendanceStatusItem(
                         scheduleId = 2L,
                         accountName = "홈플러스 서면점",
                         workCategory = "상시",
                         status = "PENDING"
                     ),
-                    CommuteStatusItem(
+                    AttendanceStatusItem(
                         scheduleId = 3L,
                         accountName = "롯데마트 동래점",
                         workCategory = "상시",
@@ -373,7 +407,7 @@ class AttendanceControllerTest {
                 currentDate = "2026-02-25"
             )
 
-            whenever(attendanceService.getCommuteStatus(1L)).thenReturn(mockResponse)
+            whenever(attendanceService.getStatus(1L)).thenReturn(mockResponse)
 
             // When & Then
             mockMvc.perform(

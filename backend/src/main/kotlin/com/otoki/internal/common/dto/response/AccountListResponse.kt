@@ -4,6 +4,7 @@ package com.otoki.internal.common.dto.response
  * 출근 거래처 목록 응답 DTO
  */
 data class AccountListResponse(
+    val safetyCheckCompleted: Boolean,
     val accounts: List<AccountInfo>,
     val totalCount: Int,
     val registeredCount: Int,
