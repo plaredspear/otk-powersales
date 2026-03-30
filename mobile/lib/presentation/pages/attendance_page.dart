@@ -95,7 +95,7 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
           onPressed: () => AppRouter.goBack(context),
         ),
         actions: [
-          if (state.totalCount > 0)
+          if (state.totalCount > 0 && !state.isFixedWorker)
             Padding(
               padding: const EdgeInsets.only(right: 12),
               child: AttendanceStatusCounter(
