@@ -57,13 +57,13 @@ class MyScheduleServiceTest {
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(displayWorkScheduleRepository.findDistinctStartDatesByEmployeeNumberAndDateBetween(
-                eq("20030117"),
+            whenever(displayWorkScheduleRepository.findDistinctStartDatesByEmployeeIdAndDateBetween(
+                eq(userId),
                 eq(LocalDate.of(2020, 8, 1)),
                 eq(LocalDate.of(2020, 8, 31))
             )).thenReturn(workDates)
-            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeNumbers(
-                eq(listOf("20030117")), any(), any()
+            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(
+                eq(listOf(userId)), any(), any()
             )).thenReturn(emptyList())
 
             // When
@@ -92,13 +92,13 @@ class MyScheduleServiceTest {
             val mockUser = createMockEmployee(userId, "최금주", "20030117", sfid = "a0B000000012345")
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(displayWorkScheduleRepository.findDistinctStartDatesByEmployeeNumberAndDateBetween(
-                eq("20030117"),
+            whenever(displayWorkScheduleRepository.findDistinctStartDatesByEmployeeIdAndDateBetween(
+                eq(userId),
                 any(),
                 any()
             )).thenReturn(emptyList())
-            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeNumbers(
-                eq(listOf("20030117")), any(), any()
+            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(
+                eq(listOf(userId)), any(), any()
             )).thenReturn(emptyList())
 
             // When
@@ -122,13 +122,13 @@ class MyScheduleServiceTest {
             val mockUser = createMockEmployee(userId, "최금주", "20030117", sfid = "a0B000000012345")
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(displayWorkScheduleRepository.findDistinctStartDatesByEmployeeNumberAndDateBetween(
-                eq("20030117"),
+            whenever(displayWorkScheduleRepository.findDistinctStartDatesByEmployeeIdAndDateBetween(
+                eq(userId),
                 any(),
                 any()
             )).thenReturn(emptyList())
-            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeNumbers(
-                eq(listOf("20030117")), any(), any()
+            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(
+                eq(listOf(userId)), any(), any()
             )).thenReturn(emptyList())
 
             // When
@@ -148,11 +148,11 @@ class MyScheduleServiceTest {
             val mockUser = createMockEmployee(userId, "최금주", "20030117", sfid = "a0B000000012345")
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(displayWorkScheduleRepository.findDistinctStartDatesByEmployeeNumberAndDateBetween(
-                eq("20030117"), any(), any()
+            whenever(displayWorkScheduleRepository.findDistinctStartDatesByEmployeeIdAndDateBetween(
+                eq(userId), any(), any()
             )).thenReturn(listOf(LocalDate.of(2026, 3, 5), LocalDate.of(2026, 3, 10)))
-            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeNumbers(
-                eq(listOf("20030117")),
+            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(
+                eq(listOf(userId)),
                 eq(LocalDate.of(2026, 3, 1)),
                 eq(LocalDate.of(2026, 3, 31))
             )).thenReturn(listOf(
@@ -206,13 +206,13 @@ class MyScheduleServiceTest {
             val date = LocalDate.of(2020, 8, 4)
             val mockUser = createMockEmployee(userId, "최금주", "20030117", sfid = "a0B000000012345")
             val mockSchedules = listOf(
-                createMockSchedule(account = "ACC001", typeOfWork1 = "진열", startDate = date),
-                createMockSchedule(account = "ACC002", typeOfWork1 = "진열", startDate = date),
-                createMockSchedule(account = "ACC003", typeOfWork1 = "진열", startDate = date)
+                createMockSchedule(typeOfWork1 = "진열", startDate = date),
+                createMockSchedule(typeOfWork1 = "진열", startDate = date),
+                createMockSchedule(typeOfWork1 = "진열", startDate = date)
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(displayWorkScheduleRepository.findByEmployeeCodeAndStartDate("20030117", date))
+            whenever(displayWorkScheduleRepository.findByEmployeeAndStartDate(userId, date))
                 .thenReturn(mockSchedules)
 
             // When
@@ -226,8 +226,8 @@ class MyScheduleServiceTest {
             assertThat(result.reportProgress.completed).isEqualTo(0)
             assertThat(result.reportProgress.total).isEqualTo(3)
             assertThat(result.reportProgress.workType).isEqualTo("진열")
-            assertThat(result.stores).hasSize(3)
-            assertThat(result.stores.all { !it.isRegistered }).isTrue()
+            assertThat(result.accounts).hasSize(3)
+            assertThat(result.accounts.all { !it.isRegistered }).isTrue()
         }
 
         @Test
@@ -239,7 +239,7 @@ class MyScheduleServiceTest {
             val mockUser = createMockEmployee(userId, "최금주", "20030117", sfid = "a0B000000012345")
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(mockUser))
-            whenever(displayWorkScheduleRepository.findByEmployeeCodeAndStartDate("20030117", date))
+            whenever(displayWorkScheduleRepository.findByEmployeeAndStartDate(userId, date))
                 .thenReturn(emptyList())
 
             // When
@@ -249,7 +249,7 @@ class MyScheduleServiceTest {
             assertThat(result.reportProgress.completed).isEqualTo(0)
             assertThat(result.reportProgress.total).isEqualTo(0)
             assertThat(result.reportProgress.workType).isEmpty()
-            assertThat(result.stores).isEmpty()
+            assertThat(result.accounts).isEmpty()
         }
 
         @Test
@@ -282,12 +282,12 @@ class MyScheduleServiceTest {
     }
 
     private fun createMockMemberSchedule(
-        employeeCode: String = "20030117",
+        employeeId: Long = 1L,
         workingDate: LocalDate = LocalDate.now(),
         workingType: String = "근무"
     ): TeamMemberSchedule {
         return TeamMemberSchedule(
-            employeeCode = employeeCode,
+            employeeId = employeeId,
             workingDate = workingDate,
             workingType = workingType
         )
@@ -295,14 +295,11 @@ class MyScheduleServiceTest {
 
     private fun createMockSchedule(
         id: Long = 0,
-        account: String = "ACC001",
         typeOfWork1: String = "진열",
         startDate: LocalDate = LocalDate.now()
     ): DisplayWorkSchedule {
         return DisplayWorkSchedule(
             id = id,
-            employeeCode = "a0B000000012345",
-            account = account,
             typeOfWork1 = typeOfWork1,
             startDate = startDate
         )

@@ -288,6 +288,8 @@ class AdminScheduleServiceTest {
 
             whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
             whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
+            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(createEmployee(id = 1L)))
+            whenever(accountRepository.findByIdIn(listOf(1))).thenReturn(listOf(createAccount(id = 1)))
             whenever(scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>())).thenAnswer { it.getArgument<List<DisplayWorkSchedule>>(0) }
             whenever(redisTemplate.delete(any<String>())).thenReturn(true)
 
@@ -298,8 +300,8 @@ class AdminScheduleServiceTest {
             assertThat(result.insertedCount).isEqualTo(1)
             verify(scheduleRepository).saveAll(argThat<List<DisplayWorkSchedule>> { list ->
                 list.size == 1 &&
-                    list[0].employeeId == 1L &&
-                    list[0].accountId == 1 &&
+                    list[0].employee?.id == 1L &&
+                    list[0].account?.id == 1 &&
                     list[0].typeOfWork1 == "진열" &&
                     list[0].confirmed == false
             })
@@ -350,9 +352,10 @@ class AdminScheduleServiceTest {
 
             whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
             whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
+            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(createEmployee(id = 1L)))
+            whenever(accountRepository.findByIdIn(listOf(1))).thenReturn(listOf(createAccount(id = 1)))
             whenever(employeeRepository.findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrue(listOf("A10010"), "조장"))
                 .thenReturn(emptyList())
-            whenever(accountRepository.findByIdIn(any())).thenReturn(emptyList())
             whenever(scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>())).thenAnswer { it.getArgument<List<DisplayWorkSchedule>>(0) }
             whenever(redisTemplate.delete(any<String>())).thenReturn(true)
 
@@ -382,16 +385,17 @@ class AdminScheduleServiceTest {
 
             whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
             whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
+            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(createEmployee(id = 1L)))
+            whenever(accountRepository.findByIdIn(listOf(1))).thenReturn(listOf(createAccount(id = 1)))
             whenever(employeeRepository.findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrue(listOf("A10010"), "조장"))
                 .thenReturn(listOf(manager))
-            whenever(accountRepository.findByIdIn(any())).thenReturn(emptyList())
             whenever(scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>())).thenAnswer { it.getArgument<List<DisplayWorkSchedule>>(0) }
             whenever(redisTemplate.delete(any<String>())).thenReturn(true)
 
             adminScheduleService.confirmUpload(uploadId)
 
             verify(scheduleRepository).saveAll(argThat<List<DisplayWorkSchedule>> { list ->
-                list.size == 1 && list[0].ownerId == manager.id
+                list.size == 1 && list[0].owner?.id == manager.id
             })
         }
 
@@ -413,16 +417,17 @@ class AdminScheduleServiceTest {
 
             whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
             whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
+            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(createEmployee(id = 1L)))
+            whenever(accountRepository.findByIdIn(listOf(1))).thenReturn(listOf(createAccount(id = 1)))
             whenever(employeeRepository.findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrue(listOf("A10010"), "조장"))
                 .thenReturn(emptyList())
-            whenever(accountRepository.findByIdIn(any())).thenReturn(emptyList())
             whenever(scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>())).thenAnswer { it.getArgument<List<DisplayWorkSchedule>>(0) }
             whenever(redisTemplate.delete(any<String>())).thenReturn(true)
 
             adminScheduleService.confirmUpload(uploadId)
 
             verify(scheduleRepository).saveAll(argThat<List<DisplayWorkSchedule>> { list ->
-                list.size == 1 && list[0].ownerId == null
+                list.size == 1 && list[0].owner == null
             })
         }
 
@@ -451,6 +456,7 @@ class AdminScheduleServiceTest {
 
             whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
             whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
+            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(createEmployee(id = 1L)))
             whenever(employeeRepository.findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrue(listOf("A10010"), "조장"))
                 .thenReturn(emptyList())
             whenever(accountRepository.findByIdIn(listOf(1))).thenReturn(listOf(account))
@@ -484,6 +490,7 @@ class AdminScheduleServiceTest {
 
             whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
             whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
+            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(createEmployee(id = 1L)))
             whenever(employeeRepository.findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrue(listOf("A10010"), "조장"))
                 .thenReturn(emptyList())
             whenever(accountRepository.findByIdIn(listOf(1))).thenReturn(emptyList())
@@ -498,7 +505,7 @@ class AdminScheduleServiceTest {
         }
 
         @Test
-        @DisplayName("costCenterCode가 null인 사원 - ownerId null, costCenterCode null")
+        @DisplayName("costCenterCode가 null인 사원 - owner null, costCenterCode null")
         fun confirmUpload_nullCostCenterCode() {
             val uploadId = "test-null-cc"
             val cacheData = AdminScheduleService.UploadCacheData(
@@ -515,14 +522,15 @@ class AdminScheduleServiceTest {
 
             whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
             whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
-            whenever(accountRepository.findByIdIn(listOf(1))).thenReturn(emptyList())
+            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(createEmployee(id = 1L)))
+            whenever(accountRepository.findByIdIn(listOf(1))).thenReturn(listOf(createAccount(id = 1)))
             whenever(scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>())).thenAnswer { it.getArgument<List<DisplayWorkSchedule>>(0) }
             whenever(redisTemplate.delete(any<String>())).thenReturn(true)
 
             adminScheduleService.confirmUpload(uploadId)
 
             verify(scheduleRepository).saveAll(argThat<List<DisplayWorkSchedule>> { list ->
-                list.size == 1 && list[0].ownerId == null && list[0].costCenterCode == null
+                list.size == 1 && list[0].owner == null && list[0].costCenterCode == null
             })
         }
     }
@@ -534,15 +542,13 @@ class AdminScheduleServiceTest {
         @Test
         @DisplayName("정상 조회 - 필터 없이 전체 목록 반환")
         fun listSchedules_success() {
-            val schedule = createSchedule(id = 1L, employeeId = 1L, accountId = 100, confirmed = false)
-            val page = PageImpl(listOf(schedule), PageRequest.of(0, 20), 1)
             val employee = createEmployee(id = 1L, employeeCode = "20030001", name = "홍길동")
             val account = createAccount(id = 100, externalKey = "SAP001", name = "이마트 성수점")
+            val schedule = createSchedule(id = 1L, confirmed = false, employee = employee, account = account)
+            val page = PageImpl(listOf(schedule), PageRequest.of(0, 20), 1)
 
             whenever(scheduleRepository.findScheduleList(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any()))
                 .thenReturn(page)
-            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(employee))
-            whenever(accountRepository.findByIdIn(listOf(100))).thenReturn(listOf(account))
 
             val result = adminScheduleService.listSchedules(0, 20, null, null, null, null, null, null)
 
@@ -717,11 +723,13 @@ class AdminScheduleServiceTest {
         employeeId: Long = 1L,
         accountId: Int = 1,
         confirmed: Boolean? = false,
-        isDeleted: Boolean? = null
+        isDeleted: Boolean? = null,
+        employee: Employee? = null,
+        account: Account? = null
     ): DisplayWorkSchedule = DisplayWorkSchedule(
         id = id,
-        employeeId = employeeId,
-        accountId = accountId,
+        employee = employee ?: createEmployee(id = employeeId),
+        account = account ?: createAccount(id = accountId),
         typeOfWork1 = "진열",
         typeOfWork3 = "고정",
         typeOfWork5 = "상시",

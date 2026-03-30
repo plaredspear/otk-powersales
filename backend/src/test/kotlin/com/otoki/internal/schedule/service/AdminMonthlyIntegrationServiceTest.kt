@@ -45,7 +45,7 @@ class AdminMonthlyIntegrationServiceTest {
             .thenReturn(listOf("CC001"))
         whenever(employeeRepository.findByCostCenterCodeInAndStatus(any(), any()))
             .thenReturn(listOf(createEmployee(id = 1L, costCenterCode = "CC001")))
-        whenever(displayWorkScheduleRepository.findByEmployeeIdInAndAccountIdIn(any(), any()))
+        whenever(displayWorkScheduleRepository.findByEmployeeIdsAndAccountIds(any(), any()))
             .thenReturn(emptyList())
         whenever(accountRepository.findByIdIn(any()))
             .thenReturn(emptyList())

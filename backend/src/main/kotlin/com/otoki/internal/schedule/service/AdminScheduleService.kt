@@ -151,6 +151,20 @@ class AdminScheduleService(
             throw ScheduleHasValidationErrorsException()
         }
 
+        // Employee/Account 엔티티 일괄 조회
+        val userIds = cacheData.validRows.map { it.userId }.distinct()
+        val accountIds = cacheData.validRows.map { it.accountId }.distinct()
+        val employeeMap = if (userIds.isNotEmpty()) {
+            employeeRepository.findAllById(userIds).associateBy { it.id }
+        } else {
+            emptyMap()
+        }
+        val accountMap = if (accountIds.isNotEmpty()) {
+            accountRepository.findByIdIn(accountIds).associateBy { it.id }
+        } else {
+            emptyMap()
+        }
+
         // 조장 일괄 조회: costCenterCode 목록 → appAuthority="조장" 사원
         val costCenterCodes = cacheData.validRows.mapNotNull { it.costCenterCode }.distinct()
         val managersByCostCenter = if (costCenterCodes.isNotEmpty()) {
@@ -165,12 +179,7 @@ class AdminScheduleService(
         val lastMonth = today.minusMonths(1)
         val salesYear = lastMonth.year.toString()
         val salesMonth = String.format("%02d", lastMonth.monthValue)
-        val accountIds = cacheData.validRows.map { it.accountId }.distinct()
-        val accountsForRevenue = if (accountIds.isNotEmpty()) {
-            accountRepository.findByIdIn(accountIds)
-        } else {
-            emptyList()
-        }
+        val accountsForRevenue = accountMap.values.toList()
         val revenueByAccountId = if (accountsForRevenue.isNotEmpty()) {
             monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(
                 salesYear, salesMonth, accountsForRevenue
@@ -181,16 +190,16 @@ class AdminScheduleService(
 
         val entities = cacheData.validRows.map { row ->
             val costCenterCode = row.costCenterCode
-            val ownerId = if (!costCenterCode.isNullOrBlank()) {
-                managersByCostCenter[costCenterCode]?.firstOrNull()?.id
+            val owner = if (!costCenterCode.isNullOrBlank()) {
+                managersByCostCenter[costCenterCode]?.firstOrNull()
             } else {
                 null
             }
             val lastMonthRevenue = revenueByAccountId[row.accountId]?.lastMonthResults?.toLong()
 
             DisplayWorkSchedule(
-                employeeId = row.userId,
-                accountId = row.accountId,
+                employee = employeeMap[row.userId],
+                account = accountMap[row.accountId],
                 typeOfWork1 = "진열",
                 typeOfWork3 = row.typeOfWork3,
                 typeOfWork5 = row.typeOfWork5,
@@ -199,7 +208,7 @@ class AdminScheduleService(
                 confirmed = false,
                 costCenterCode = costCenterCode,
                 lastMonthRevenue = lastMonthRevenue,
-                ownerId = ownerId
+                owner = owner
             )
         }
 
@@ -232,30 +241,13 @@ class AdminScheduleService(
             employeeCode, accountIds, confirmed, typeOfWork3, startDateFrom, startDateTo, pageable
         )
 
-        val employeeIds = schedulePage.content.mapNotNull { it.employeeId }.distinct()
-        val scheduleAccountIds = schedulePage.content.mapNotNull { it.accountId }.distinct()
-
-        val userMap = if (employeeIds.isNotEmpty()) {
-            employeeRepository.findAllById(employeeIds).associateBy { it.id }
-        } else {
-            emptyMap()
-        }
-
-        val accountMap = if (scheduleAccountIds.isNotEmpty()) {
-            accountRepository.findByIdIn(scheduleAccountIds).associateBy { it.id }
-        } else {
-            emptyMap()
-        }
-
         return schedulePage.map { schedule ->
-            val employee = schedule.employeeId?.let { userMap[it] }
-            val account = schedule.accountId?.let { accountMap[it] }
             ScheduleListItemDto(
                 id = schedule.id,
-                employeeCode = employee?.employeeCode ?: "",
-                employeeName = employee?.name ?: "",
-                accountCode = account?.externalKey,
-                accountName = account?.name,
+                employeeCode = schedule.employee?.employeeCode ?: "",
+                employeeName = schedule.employee?.name ?: "",
+                accountCode = schedule.account?.externalKey,
+                accountName = schedule.account?.name,
                 typeOfWork3 = schedule.typeOfWork3,
                 typeOfWork5 = schedule.typeOfWork5,
                 startDate = schedule.startDate,
