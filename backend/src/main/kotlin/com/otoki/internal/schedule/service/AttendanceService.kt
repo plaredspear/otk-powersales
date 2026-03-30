@@ -5,12 +5,14 @@ import com.otoki.internal.common.dto.response.AccountListResponse
 import com.otoki.internal.common.util.GeoUtils
 import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.auth.exception.EmployeeNotFoundException
-import com.otoki.internal.schedule.dto.response.CommuteResponse
-import com.otoki.internal.schedule.dto.response.CommuteStatusItem
-import com.otoki.internal.schedule.dto.response.CommuteStatusResponse
+import com.otoki.internal.safetycheck.repository.SafetyCheckSubmissionRepository
+import com.otoki.internal.schedule.dto.response.AttendanceRegisterResponse
+import com.otoki.internal.schedule.dto.response.AttendanceStatusItem
+import com.otoki.internal.schedule.dto.response.AttendanceStatusResponse
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
 import com.otoki.internal.schedule.exception.AlreadyRegisteredException
 import com.otoki.internal.schedule.exception.DistanceExceededException
+import com.otoki.internal.schedule.exception.SafetyCheckRequiredException
 import com.otoki.internal.schedule.exception.TeamMemberScheduleNotFoundException
 import com.otoki.internal.schedule.integration.OroraApiService
 import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
@@ -25,6 +27,7 @@ import java.time.format.DateTimeFormatter
 class AttendanceService(
     private val employeeRepository: EmployeeRepository,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
+    private val safetyCheckSubmissionRepository: SafetyCheckSubmissionRepository,
     private val ororaApiService: OroraApiService
 ) {
 
@@ -49,6 +52,9 @@ class AttendanceService(
             .orElseThrow { EmployeeNotFoundException() }
 
         val today = LocalDate.now()
+
+        // 안전점검 완료 여부 확인
+        val safetyCheckCompleted = safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(employee.id, today)
 
         // 오늘 스케줄 조회 (account fetch join 포함)
         val teamMemberSchedules = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(employee.id, today)
@@ -86,6 +92,7 @@ class AttendanceService(
         val registeredCount = accountInfos.count { it.isRegistered }
 
         return AccountListResponse(
+            safetyCheckCompleted = safetyCheckCompleted,
             accounts = accountInfos,
             totalCount = accountInfos.size,
             registeredCount = registeredCount,
@@ -96,39 +103,45 @@ class AttendanceService(
     /**
      * 출근 등록
      *
-     * 1. 스케줄 조회 + 중복 검증
-     * 2. GPS 거리 검증 (면제 코드 확인)
-     * 3. Orora WorkReport 전송 (Mock)
-     * 4. 응답 반환
+     * 1. 안전점검 완료 여부 검증
+     * 2. 스케줄 조회 + 중복 검증
+     * 3. GPS 거리 검증 (면제 코드 확인)
+     * 4. Orora WorkReport 전송 (Mock)
+     * 5. 응답 반환
      */
     @Transactional
-    fun registerCommute(userId: Long, scheduleId: Long, latitude: Double, longitude: Double, workType: String?): CommuteResponse {
+    fun register(userId: Long, scheduleId: Long, latitude: Double, longitude: Double, workType: String?): AttendanceRegisterResponse {
         val employee = employeeRepository.findById(userId)
             .orElseThrow { EmployeeNotFoundException() }
 
-        // 1. 스케줄 조회
+        // 1. 안전점검 완료 여부 검증
+        val today = LocalDate.now()
+        if (!safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(employee.id, today)) {
+            throw SafetyCheckRequiredException()
+        }
+
+        // 2. 스케줄 조회
         val teamMemberSchedule = teamMemberScheduleRepository.findById(scheduleId)
             .orElseThrow { TeamMemberScheduleNotFoundException() }
 
-        // 2. 중복 등록 검증
+        // 3. 중복 등록 검증
         if (teamMemberSchedule.commuteLogId != null) {
             throw AlreadyRegisteredException()
         }
 
-        // 3. 거래처 정보 조회 + GPS 거리 검증
+        // 4. 거래처 정보 조회 + GPS 거리 검증
         val account = teamMemberSchedule.account
         val distanceKm = validateDistance(latitude, longitude, account)
 
-        // 4. Orora WorkReport 전송
+        // 5. Orora WorkReport 전송
         ororaApiService.sendWorkReport(teamMemberSchedule.sfid ?: "")
 
-        // 5. 출근 현황 집계 (commuteLogId 업데이트 후)
-        val today = LocalDate.now()
+        // 6. 출근 현황 집계 (commuteLogId 업데이트 후)
         val todayTeamMemberSchedules = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(employee.id, today)
         val totalCount = todayTeamMemberSchedules.size
         val registeredCount = todayTeamMemberSchedules.count { it.commuteLogId != null || it.id == scheduleId }
 
-        return CommuteResponse(
+        return AttendanceRegisterResponse(
             scheduleId = scheduleId,
             accountName = account?.name ?: "",
             workType = workType ?: teamMemberSchedule.workingType,
@@ -141,7 +154,7 @@ class AttendanceService(
     /**
      * 출근 현황 조회
      */
-    fun getCommuteStatus(userId: Long): CommuteStatusResponse {
+    fun getStatus(userId: Long): AttendanceStatusResponse {
         val employee = employeeRepository.findById(userId)
             .orElseThrow { EmployeeNotFoundException() }
 
@@ -150,7 +163,7 @@ class AttendanceService(
         val teamMemberSchedules = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(employee.id, today)
 
         val statusList = teamMemberSchedules.map { teamMemberSchedule ->
-            CommuteStatusItem(
+            AttendanceStatusItem(
                 scheduleId = teamMemberSchedule.id,
                 accountName = teamMemberSchedule.account?.name ?: "",
                 workCategory = teamMemberSchedule.workingCategory1 ?: "",
@@ -160,7 +173,7 @@ class AttendanceService(
 
         val registeredCount = statusList.count { it.status == "REGISTERED" }
 
-        return CommuteStatusResponse(
+        return AttendanceStatusResponse(
             totalCount = statusList.size,
             registeredCount = registeredCount,
             statusList = statusList,

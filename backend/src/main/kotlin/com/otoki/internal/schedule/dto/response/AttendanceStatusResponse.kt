@@ -3,17 +3,17 @@ package com.otoki.internal.schedule.dto.response
 /**
  * 출근 현황 응답 DTO
  */
-data class CommuteStatusResponse(
+data class AttendanceStatusResponse(
     val totalCount: Int,
     val registeredCount: Int,
-    val statusList: List<CommuteStatusItem>,
+    val statusList: List<AttendanceStatusItem>,
     val currentDate: String
 )
 
 /**
  * 출근 현황 항목
  */
-data class CommuteStatusItem(
+data class AttendanceStatusItem(
     val scheduleId: Long,
     val accountName: String,
     val workCategory: String,

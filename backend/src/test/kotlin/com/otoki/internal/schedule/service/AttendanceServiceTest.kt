@@ -4,9 +4,11 @@ import com.otoki.internal.auth.exception.EmployeeNotFoundException
 import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.sap.entity.Account
+import com.otoki.internal.safetycheck.repository.SafetyCheckSubmissionRepository
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
 import com.otoki.internal.schedule.exception.AlreadyRegisteredException
 import com.otoki.internal.schedule.exception.DistanceExceededException
+import com.otoki.internal.schedule.exception.SafetyCheckRequiredException
 import com.otoki.internal.schedule.exception.TeamMemberScheduleNotFoundException
 import com.otoki.internal.schedule.integration.OroraApiService
 import com.otoki.internal.schedule.integration.OroraWorkReportResult
@@ -38,6 +40,9 @@ class AttendanceServiceTest {
     private lateinit var teamMemberScheduleRepository: TeamMemberScheduleRepository
 
     @Mock
+    private lateinit var safetyCheckSubmissionRepository: SafetyCheckSubmissionRepository
+
+    @Mock
     private lateinit var ororaApiService: OroraApiService
 
     @InjectMocks
@@ -50,7 +55,7 @@ class AttendanceServiceTest {
     inner class GetAccountListTests {
 
         @Test
-        @DisplayName("오늘 스케줄 3건 - 전체 조회 -> 3건 반환, GPS 좌표 포함")
+        @DisplayName("오늘 스케줄 3건 + 안전점검 완료 - 전체 조회 -> 3건 반환, safetyCheckCompleted=true")
         fun getAccountList_threeSchedules_returnsThreeAccountsWithGps() {
             // Given
             val userId = 1L
@@ -67,12 +72,14 @@ class AttendanceServiceTest {
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
 
             // When
             val result = attendanceService.getAccountList(userId, null)
 
             // Then
+            assertThat(result.safetyCheckCompleted).isTrue()
             assertThat(result.accounts).hasSize(3)
             assertThat(result.totalCount).isEqualTo(3)
             assertThat(result.registeredCount).isEqualTo(0)
@@ -86,6 +93,30 @@ class AttendanceServiceTest {
             assertThat(account1.longitude).isEqualTo(127.0276)
             assertThat(account1.address).isEqualTo("서울시 강남구")
             assertThat(account1.isRegistered).isFalse()
+        }
+
+        @Test
+        @DisplayName("안전점검 미완료 - safetyCheckCompleted=false, 거래처 목록은 정상 반환")
+        fun getAccountList_safetyCheckNotCompleted_returnsFalse() {
+            // Given
+            val userId = 1L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            val teamMemberSchedules = listOf(
+                createTeamMemberSchedule(id = 1L, sfid = "SCH001", employeeId = userId, accountId = 8938, accountName = "이마트 강남점")
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(false)
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
+
+            // When
+            val result = attendanceService.getAccountList(userId, null)
+
+            // Then
+            assertThat(result.safetyCheckCompleted).isFalse()
+            assertThat(result.accounts).hasSize(1)
         }
 
         @Test
@@ -104,6 +135,7 @@ class AttendanceServiceTest {
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
 
             // When
@@ -129,6 +161,7 @@ class AttendanceServiceTest {
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
 
             // When
@@ -155,6 +188,7 @@ class AttendanceServiceTest {
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
 
             // When
@@ -180,6 +214,7 @@ class AttendanceServiceTest {
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
 
             // When
@@ -206,6 +241,7 @@ class AttendanceServiceTest {
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
 
             // When
@@ -230,6 +266,7 @@ class AttendanceServiceTest {
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
 
             // When
@@ -261,6 +298,7 @@ class AttendanceServiceTest {
             val today = LocalDate.now()
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(false)
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(emptyList())
 
             // When
@@ -286,6 +324,7 @@ class AttendanceServiceTest {
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
 
             // When
@@ -299,11 +338,11 @@ class AttendanceServiceTest {
         }
     }
 
-    // ========== registerCommute Tests ==========
+    // ========== register Tests ==========
 
     @Nested
-    @DisplayName("registerCommute - 출근 등록")
-    inner class RegisterCommuteTests {
+    @DisplayName("register - 출근 등록")
+    inner class RegisterTests {
 
         // 강남역 기준 좌표
         private val accountLat = 37.4979
@@ -318,8 +357,8 @@ class AttendanceServiceTest {
         private val farUserLon = 127.0276
 
         @Test
-        @DisplayName("거리 범위 내(0.3km, 허용 0.5km) - 출근 등록 -> 성공")
-        fun registerCommute_withinDistance_success() {
+        @DisplayName("안전점검 완료 + 거리 범위 내(0.3km, 허용 0.5km) - 출근 등록 -> 성공")
+        fun register_withinDistance_success() {
             // Given
             val userId = 1L
             val scheduleId = 10L
@@ -334,6 +373,7 @@ class AttendanceServiceTest {
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
             whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
             doReturn(OroraWorkReportResult("200", "SUCCESS"))
                 .whenever(ororaApiService).sendWorkReport(any(), anyOrNull())
@@ -341,7 +381,7 @@ class AttendanceServiceTest {
                 .thenReturn(listOf(teamMemberSchedule))
 
             // When
-            val result = attendanceService.registerCommute(userId, scheduleId, nearUserLat, nearUserLon, null)
+            val result = attendanceService.register(userId, scheduleId, nearUserLat, nearUserLon, null)
 
             // Then
             assertThat(result.scheduleId).isEqualTo(scheduleId)
@@ -352,12 +392,31 @@ class AttendanceServiceTest {
         }
 
         @Test
-        @DisplayName("거리 초과(1.2km, 허용 0.5km) - 비면제 코드 2110 -> DistanceExceededException")
-        fun registerCommute_exceedsDistance_throwsException() {
+        @DisplayName("안전점검 미완료 - 출근 등록 시도 -> SafetyCheckRequiredException")
+        fun register_safetyCheckNotCompleted_throwsException() {
             // Given
             val userId = 1L
             val scheduleId = 10L
             val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(false)
+
+            // When & Then
+            assertThatThrownBy {
+                attendanceService.register(userId, scheduleId, nearUserLat, nearUserLon, null)
+            }.isInstanceOf(SafetyCheckRequiredException::class.java)
+        }
+
+        @Test
+        @DisplayName("거리 초과(1.2km, 허용 0.5km) - 비면제 코드 2110 -> DistanceExceededException")
+        fun register_exceedsDistance_throwsException() {
+            // Given
+            val userId = 1L
+            val scheduleId = 10L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
 
             val teamMemberSchedule = createTeamMemberSchedule(
                 id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
@@ -367,17 +426,18 @@ class AttendanceServiceTest {
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
             whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
 
             // When & Then
             assertThatThrownBy {
-                attendanceService.registerCommute(userId, scheduleId, farUserLat, farUserLon, null)
+                attendanceService.register(userId, scheduleId, farUserLat, farUserLon, null)
             }.isInstanceOf(DistanceExceededException::class.java)
         }
 
         @Test
         @DisplayName("대리점 면제 코드 1110 - 5km 거리 -> 거리 검증 생략, 성공")
-        fun registerCommute_exemptCode1110_success() {
+        fun register_exemptCode1110_success() {
             // Given
             val userId = 1L
             val scheduleId = 10L
@@ -392,6 +452,7 @@ class AttendanceServiceTest {
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
             whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
             doReturn(OroraWorkReportResult("200", "SUCCESS"))
                 .whenever(ororaApiService).sendWorkReport(any(), anyOrNull())
@@ -403,7 +464,7 @@ class AttendanceServiceTest {
             val farLon = 127.0276
 
             // When
-            val result = attendanceService.registerCommute(userId, scheduleId, farLat, farLon, null)
+            val result = attendanceService.register(userId, scheduleId, farLat, farLon, null)
 
             // Then
             assertThat(result.scheduleId).isEqualTo(scheduleId)
@@ -413,7 +474,7 @@ class AttendanceServiceTest {
 
         @Test
         @DisplayName("대리점 면제 코드 1900 - 10km 거리 -> 거리 검증 생략, 성공")
-        fun registerCommute_exemptCode1900_success() {
+        fun register_exemptCode1900_success() {
             // Given
             val userId = 1L
             val scheduleId = 10L
@@ -428,6 +489,7 @@ class AttendanceServiceTest {
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
             whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
             doReturn(OroraWorkReportResult("200", "SUCCESS"))
                 .whenever(ororaApiService).sendWorkReport(any(), anyOrNull())
@@ -439,7 +501,7 @@ class AttendanceServiceTest {
             val veryFarLon = 127.0276
 
             // When
-            val result = attendanceService.registerCommute(userId, scheduleId, veryFarLat, veryFarLon, null)
+            val result = attendanceService.register(userId, scheduleId, veryFarLat, veryFarLon, null)
 
             // Then
             assertThat(result.scheduleId).isEqualTo(scheduleId)
@@ -449,11 +511,12 @@ class AttendanceServiceTest {
 
         @Test
         @DisplayName("비면제 코드 2110 - 1.2km 거리 -> DistanceExceededException")
-        fun registerCommute_nonExemptCode2110_exceedsDistance_throwsException() {
+        fun register_nonExemptCode2110_exceedsDistance_throwsException() {
             // Given
             val userId = 1L
             val scheduleId = 10L
             val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
 
             val teamMemberSchedule = createTeamMemberSchedule(
                 id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
@@ -463,21 +526,23 @@ class AttendanceServiceTest {
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
             whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
 
             // When & Then
             assertThatThrownBy {
-                attendanceService.registerCommute(userId, scheduleId, farUserLat, farUserLon, null)
+                attendanceService.register(userId, scheduleId, farUserLat, farUserLon, null)
             }.isInstanceOf(DistanceExceededException::class.java)
         }
 
         @Test
         @DisplayName("중복 출근 등록(commuteLogId='OK') -> AlreadyRegisteredException")
-        fun registerCommute_alreadyRegistered_throwsException() {
+        fun register_alreadyRegistered_throwsException() {
             // Given
             val userId = 1L
             val scheduleId = 10L
             val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
 
             val teamMemberSchedule = createTeamMemberSchedule(
                 id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
@@ -485,47 +550,50 @@ class AttendanceServiceTest {
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
             whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
 
             // When & Then
             assertThatThrownBy {
-                attendanceService.registerCommute(userId, scheduleId, nearUserLat, nearUserLon, null)
+                attendanceService.register(userId, scheduleId, nearUserLat, nearUserLon, null)
             }.isInstanceOf(AlreadyRegisteredException::class.java)
         }
 
         @Test
         @DisplayName("스케줄 미존재 -> TeamMemberScheduleNotFoundException")
-        fun registerCommute_scheduleNotFound_throwsException() {
+        fun register_scheduleNotFound_throwsException() {
             // Given
             val userId = 1L
             val scheduleId = 99999L
             val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
             whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.empty())
 
             // When & Then
             assertThatThrownBy {
-                attendanceService.registerCommute(userId, scheduleId, nearUserLat, nearUserLon, null)
+                attendanceService.register(userId, scheduleId, nearUserLat, nearUserLon, null)
             }.isInstanceOf(TeamMemberScheduleNotFoundException::class.java)
         }
 
         @Test
         @DisplayName("존재하지 않는 사용자 -> EmployeeNotFoundException")
-        fun registerCommute_userNotFound_throwsException() {
+        fun register_userNotFound_throwsException() {
             // Given
             val userId = 999L
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.empty())
 
             // When & Then
             assertThatThrownBy {
-                attendanceService.registerCommute(userId, 10L, nearUserLat, nearUserLon, null)
+                attendanceService.register(userId, 10L, nearUserLat, nearUserLon, null)
             }.isInstanceOf(EmployeeNotFoundException::class.java)
         }
 
         @Test
         @DisplayName("workType 파라미터 전달 - workType 우선 반환")
-        fun registerCommute_withWorkType_returnsProvidedWorkType() {
+        fun register_withWorkType_returnsProvidedWorkType() {
             // Given
             val userId = 1L
             val scheduleId = 10L
@@ -540,6 +608,7 @@ class AttendanceServiceTest {
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
             whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
             doReturn(OroraWorkReportResult("200", "SUCCESS"))
                 .whenever(ororaApiService).sendWorkReport(any(), anyOrNull())
@@ -547,7 +616,7 @@ class AttendanceServiceTest {
                 .thenReturn(listOf(teamMemberSchedule))
 
             // When
-            val result = attendanceService.registerCommute(userId, scheduleId, nearUserLat, nearUserLon, "냉장")
+            val result = attendanceService.register(userId, scheduleId, nearUserLat, nearUserLon, "냉장")
 
             // Then
             assertThat(result.workType).isEqualTo("냉장")
@@ -555,7 +624,7 @@ class AttendanceServiceTest {
 
         @Test
         @DisplayName("출근 등록 성공 시 totalCount, registeredCount 정확 반환")
-        fun registerCommute_success_returnsCorrectCounts() {
+        fun register_success_returnsCorrectCounts() {
             // Given
             val userId = 1L
             val scheduleId = 10L
@@ -577,6 +646,7 @@ class AttendanceServiceTest {
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
             whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(targetTeamMemberSchedule))
             doReturn(OroraWorkReportResult("200", "SUCCESS"))
                 .whenever(ororaApiService).sendWorkReport(any(), anyOrNull())
@@ -584,7 +654,7 @@ class AttendanceServiceTest {
                 .thenReturn(allTeamMemberSchedules)
 
             // When
-            val result = attendanceService.registerCommute(userId, scheduleId, nearUserLat, nearUserLon, null)
+            val result = attendanceService.register(userId, scheduleId, nearUserLat, nearUserLon, null)
 
             // Then
             assertThat(result.totalCount).isEqualTo(3)
@@ -593,15 +663,15 @@ class AttendanceServiceTest {
         }
     }
 
-    // ========== getCommuteStatus Tests ==========
+    // ========== getStatus Tests ==========
 
     @Nested
-    @DisplayName("getCommuteStatus - 출근 현황 조회")
-    inner class GetCommuteStatusTests {
+    @DisplayName("getStatus - 출근 현황 조회")
+    inner class GetStatusTests {
 
         @Test
         @DisplayName("3건 중 2건 등록 -> totalCount=3, registeredCount=2")
-        fun getCommuteStatus_threeSchedulesTwoRegistered_returnsCorrectStatus() {
+        fun getStatus_threeSchedulesTwoRegistered_returnsCorrectStatus() {
             // Given
             val userId = 1L
             val employee = createEmployee(id = userId, sfid = "USR001")
@@ -620,7 +690,7 @@ class AttendanceServiceTest {
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
 
             // When
-            val result = attendanceService.getCommuteStatus(userId)
+            val result = attendanceService.getStatus(userId)
 
             // Then
             assertThat(result.totalCount).isEqualTo(3)
@@ -645,7 +715,7 @@ class AttendanceServiceTest {
 
         @Test
         @DisplayName("전체 등록 완료 -> 모든 항목 REGISTERED 상태")
-        fun getCommuteStatus_allRegistered_returnsAllRegistered() {
+        fun getStatus_allRegistered_returnsAllRegistered() {
             // Given
             val userId = 1L
             val employee = createEmployee(id = userId, sfid = "USR001")
@@ -660,7 +730,7 @@ class AttendanceServiceTest {
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
 
             // When
-            val result = attendanceService.getCommuteStatus(userId)
+            val result = attendanceService.getStatus(userId)
 
             // Then
             assertThat(result.totalCount).isEqualTo(2)
@@ -670,7 +740,7 @@ class AttendanceServiceTest {
 
         @Test
         @DisplayName("미등록 상태 -> 모든 항목 PENDING 상태")
-        fun getCommuteStatus_noneRegistered_returnsAllPending() {
+        fun getStatus_noneRegistered_returnsAllPending() {
             // Given
             val userId = 1L
             val employee = createEmployee(id = userId, sfid = "USR001")
@@ -685,7 +755,7 @@ class AttendanceServiceTest {
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
 
             // When
-            val result = attendanceService.getCommuteStatus(userId)
+            val result = attendanceService.getStatus(userId)
 
             // Then
             assertThat(result.totalCount).isEqualTo(2)
@@ -695,19 +765,19 @@ class AttendanceServiceTest {
 
         @Test
         @DisplayName("존재하지 않는 사용자 -> EmployeeNotFoundException 발생")
-        fun getCommuteStatus_userNotFound_throwsException() {
+        fun getStatus_userNotFound_throwsException() {
             // Given
             val userId = 999L
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.empty())
 
             // When & Then
-            assertThatThrownBy { attendanceService.getCommuteStatus(userId) }
+            assertThatThrownBy { attendanceService.getStatus(userId) }
                 .isInstanceOf(EmployeeNotFoundException::class.java)
         }
 
         @Test
         @DisplayName("오늘 스케줄 없음 -> 빈 현황 반환")
-        fun getCommuteStatus_noSchedules_returnsEmptyStatus() {
+        fun getStatus_noSchedules_returnsEmptyStatus() {
             // Given
             val userId = 1L
             val employee = createEmployee(id = userId, sfid = "USR001")
@@ -717,7 +787,7 @@ class AttendanceServiceTest {
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(emptyList())
 
             // When
-            val result = attendanceService.getCommuteStatus(userId)
+            val result = attendanceService.getStatus(userId)
 
             // Then
             assertThat(result.totalCount).isEqualTo(0)

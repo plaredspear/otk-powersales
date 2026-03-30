@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Positive
 /**
  * 출근 등록 요청 DTO
  */
-data class CommuteRequest(
+data class AttendanceRegisterRequest(
 
     @field:NotNull(message = "스케줄 ID는 필수입니다")
     @field:Positive(message = "스케줄 ID는 양수여야 합니다")

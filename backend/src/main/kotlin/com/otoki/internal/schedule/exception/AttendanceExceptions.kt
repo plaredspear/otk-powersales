@@ -22,6 +22,15 @@ class AlreadyRegisteredException : BusinessException(
 )
 
 /**
+ * 안전점검 미완료 상태에서 출근등록 시도
+ */
+class SafetyCheckRequiredException : BusinessException(
+    errorCode = "SAFETY_CHECK_REQUIRED",
+    message = "안전점검을 먼저 완료해 주세요",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+/**
  * GPS 거리 초과
  */
 class DistanceExceededException(distanceKm: Double) : BusinessException(
