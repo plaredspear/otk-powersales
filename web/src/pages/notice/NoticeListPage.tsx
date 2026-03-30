@@ -5,6 +5,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined } from '@ant-design/icons';
 import { useNotices } from '@/hooks/notice/useNotices';
 import { useNoticeFormMeta } from '@/hooks/notice/useNoticeFormMeta';
+import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import type { NoticeSummary } from '@/api/notice';
 
 const CATEGORY_TAG: Record<string, { color: string; label: string }> = {
@@ -20,6 +21,8 @@ export default function NoticeListPage() {
 
   const { data, isLoading } = useNotices({ category, search: search || undefined, page, size: 10 });
   const { data: formMeta } = useNoticeFormMeta();
+  const handleRowClick = useThrottleClick((id: number) => navigate(`/notices/${id}`));
+  const handleCreate = useThrottleClick(() => navigate('/notices/new'));
 
   const columns: ColumnsType<NoticeSummary> = [
     {
@@ -56,7 +59,7 @@ export default function NoticeListPage() {
   return (
     <div style={{ padding: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/notices/new')}>
+        <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
           작성
         </Button>
       </div>
@@ -95,7 +98,7 @@ export default function NoticeListPage() {
           onChange: (p) => setPage(p),
         }}
         onRow={(record) => ({
-          onClick: () => navigate(`/notices/${record.id}`),
+          onClick: () => handleRowClick(record.id),
           style: { cursor: 'pointer' },
         })}
       />
