@@ -9,6 +9,7 @@ class AccountScheduleItemModel {
   final String accountName;
   final String? accountTypeCode;
   final String workCategory;
+  final String? workCategory3;
   final String? address;
   final double? latitude;
   final double? longitude;
@@ -20,6 +21,7 @@ class AccountScheduleItemModel {
     required this.accountName,
     this.accountTypeCode,
     required this.workCategory,
+    this.workCategory3,
     this.address,
     this.latitude,
     this.longitude,
@@ -34,6 +36,7 @@ class AccountScheduleItemModel {
       accountName: json['account_name'] as String,
       accountTypeCode: json['account_type_code'] as String?,
       workCategory: json['work_category'] as String,
+      workCategory3: json['work_category3'] as String?,
       address: json['address'] as String?,
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
@@ -49,6 +52,7 @@ class AccountScheduleItemModel {
       accountName: accountName,
       accountTypeCode: accountTypeCode,
       workCategory: workCategory,
+      workCategory3: workCategory3,
       address: address ?? '',
       latitude: latitude,
       longitude: longitude,
