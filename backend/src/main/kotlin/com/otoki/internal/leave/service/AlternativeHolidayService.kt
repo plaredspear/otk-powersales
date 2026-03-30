@@ -29,7 +29,7 @@ class AlternativeHolidayService(
 
         validator.validateConfirmDate(targetAltHolidayDate)
         validator.validateActualWorkDate(actualWorkDate)
-        validator.validateWorkScheduleExists(employee.id, actualWorkDate)
+        validator.validateWorkScheduleExists(employee, actualWorkDate)
         validator.validateNoDuplicate(employee.id, actualWorkDate)
 
         val altHoliday = alternativeHolidayRepository.save(

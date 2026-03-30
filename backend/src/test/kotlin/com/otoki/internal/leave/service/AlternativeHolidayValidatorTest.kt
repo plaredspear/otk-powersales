@@ -2,6 +2,7 @@ package com.otoki.internal.leave.service
 
 import com.otoki.internal.leave.exception.*
 import com.otoki.internal.leave.repository.AlternativeHolidayRepository
+import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
 import org.assertj.core.api.Assertions.assertThatCode
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
 import java.time.LocalDate
 
@@ -96,23 +98,25 @@ class AlternativeHolidayValidatorTest {
     @DisplayName("validateWorkScheduleExists - 근무 스케줄 확인")
     inner class ValidateWorkScheduleTests {
 
+        private val testEmployee = Employee(id = 1L, employeeCode = "EMP001", name = "테스트")
+
         @Test
         @DisplayName("근무 스케줄 존재 -> 통과")
         fun scheduleExists() {
-            whenever(teamMemberScheduleRepository.existsByEmployeeIdAndWorkingDateAndWorkingType(
-                1L, saturday, "근무"
+            whenever(teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(
+                any(), any(), any()
             )).thenReturn(true)
-            assertThatCode { validator.validateWorkScheduleExists(1L, saturday) }
+            assertThatCode { validator.validateWorkScheduleExists(testEmployee, saturday) }
                 .doesNotThrowAnyException()
         }
 
         @Test
         @DisplayName("근무 스케줄 없음 -> AltHolidayNoWorkScheduleException")
         fun noSchedule() {
-            whenever(teamMemberScheduleRepository.existsByEmployeeIdAndWorkingDateAndWorkingType(
-                1L, saturday, "근무"
+            whenever(teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(
+                any(), any(), any()
             )).thenReturn(false)
-            assertThatThrownBy { validator.validateWorkScheduleExists(1L, saturday) }
+            assertThatThrownBy { validator.validateWorkScheduleExists(testEmployee, saturday) }
                 .isInstanceOf(AltHolidayNoWorkScheduleException::class.java)
         }
     }

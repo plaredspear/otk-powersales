@@ -53,7 +53,7 @@ class AdminSafetyCheckService(
 
         // 2. 스케줄 벌크 조회 + 근무 필터 + 사원당 1건 선택
         val schedules = teamMemberScheduleRepository
-            .findByWorkingDateAndEmployeeIdIn(date, employeeIds)
+            .findByWorkingDateAndEmployeeIn(date, members)
             .filter { it.workingType == "근무" && it.isDeleted != true }
         val scheduleByEmployee = selectOneSchedulePerEmployee(schedules)
 
@@ -66,7 +66,7 @@ class AdminSafetyCheckService(
         val submissionByEmployee = submissions.associateBy { it.employeeId }
 
         // 4. 거래처 벌크 조회
-        val accountIds = scheduleByEmployee.values.mapNotNull { it.accountId }.distinct()
+        val accountIds = scheduleByEmployee.values.mapNotNull { it.account?.id }.distinct()
         val accountMap = if (accountIds.isNotEmpty()) {
             accountRepository.findByIdIn(accountIds).associateBy { it.id }
         } else emptyMap()
@@ -79,7 +79,7 @@ class AdminSafetyCheckService(
             val employee = employeeMap[empId] ?: return@mapNotNull null
             val schedule = scheduleByEmployee[empId] ?: return@mapNotNull null
             val submission = submissionByEmployee[empId]
-            val account = schedule.accountId?.let { accountMap[it] }
+            val account = schedule.account?.id?.let { accountMap[it] }
 
             buildMemberStatus(employee, submission, account, schedule)
         }.sortedBy { it.employeeName }
@@ -96,7 +96,7 @@ class AdminSafetyCheckService(
 
     private fun selectOneSchedulePerEmployee(schedules: List<TeamMemberSchedule>): Map<Long, TeamMemberSchedule> {
         return schedules
-            .groupBy { it.employeeId ?: 0L }
+            .groupBy { it.employee?.id ?: 0L }
             .filterKeys { it != 0L }
             .mapValues { (_, list) ->
                 list.firstOrNull { it.traversalFlag == "O" }

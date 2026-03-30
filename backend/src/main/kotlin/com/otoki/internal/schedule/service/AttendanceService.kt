@@ -5,7 +5,6 @@ import com.otoki.internal.common.dto.response.AccountListResponse
 import com.otoki.internal.common.util.GeoUtils
 import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.auth.exception.EmployeeNotFoundException
-import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.schedule.dto.response.CommuteResponse
 import com.otoki.internal.schedule.dto.response.CommuteStatusItem
 import com.otoki.internal.schedule.dto.response.CommuteStatusResponse
@@ -26,7 +25,6 @@ import java.time.format.DateTimeFormatter
 class AttendanceService(
     private val employeeRepository: EmployeeRepository,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
-    private val accountRepository: AccountRepository,
     private val ororaApiService: OroraApiService
 ) {
 
@@ -52,20 +50,12 @@ class AttendanceService(
 
         val today = LocalDate.now()
 
-        // 오늘 스케줄 조회
+        // 오늘 스케줄 조회 (account fetch join 포함)
         val teamMemberSchedules = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(employee.id, today)
-
-        // Account 정보 batch fetch
-        val accountIds = teamMemberSchedules.mapNotNull { it.accountId }.distinct()
-        val accountMap = if (accountIds.isNotEmpty()) {
-            accountRepository.findByIdIn(accountIds).associateBy { it.id }
-        } else {
-            emptyMap()
-        }
 
         // DTO 변환 + 키워드 필터링
         val accountInfos = teamMemberSchedules.mapNotNull { teamMemberSchedule ->
-            val account = teamMemberSchedule.accountId?.let { accountMap[it] }
+            val account = teamMemberSchedule.account
             val accountName = account?.name ?: ""
 
             // 키워드 필터링 (거래처명, 주소, 거래처코드)
@@ -81,7 +71,7 @@ class AttendanceService(
 
             AccountInfo(
                 scheduleId = teamMemberSchedule.id,
-                accountSfid = teamMemberSchedule.accountId?.toString(),
+                accountSfid = teamMemberSchedule.account?.id?.toString(),
                 accountName = accountName,
                 accountTypeCode = account?.abcTypeCode,
                 workCategory = teamMemberSchedule.workingCategory1 ?: "",
@@ -126,7 +116,7 @@ class AttendanceService(
         }
 
         // 3. 거래처 정보 조회 + GPS 거리 검증
-        val account = teamMemberSchedule.accountId?.let { accountRepository.findById(it).orElse(null) }
+        val account = teamMemberSchedule.account
         val distanceKm = validateDistance(latitude, longitude, account)
 
         // 4. Orora WorkReport 전송
@@ -159,19 +149,10 @@ class AttendanceService(
 
         val teamMemberSchedules = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(employee.id, today)
 
-        // Account 정보 batch fetch
-        val accountIds = teamMemberSchedules.mapNotNull { it.accountId }.distinct()
-        val accountMap = if (accountIds.isNotEmpty()) {
-            accountRepository.findByIdIn(accountIds).associateBy { it.id }
-        } else {
-            emptyMap()
-        }
-
         val statusList = teamMemberSchedules.map { teamMemberSchedule ->
-            val account = teamMemberSchedule.accountId?.let { accountMap[it] }
             CommuteStatusItem(
                 scheduleId = teamMemberSchedule.id,
-                accountName = account?.name ?: "",
+                accountName = teamMemberSchedule.account?.name ?: "",
                 workCategory = teamMemberSchedule.workingCategory1 ?: "",
                 status = if (teamMemberSchedule.commuteLogId != null) "REGISTERED" else "PENDING"
             )

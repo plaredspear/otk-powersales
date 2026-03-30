@@ -1,5 +1,7 @@
 package com.otoki.internal.schedule.repository
 
+import com.otoki.internal.sap.entity.QAccount.account
+import com.otoki.internal.sap.entity.QEmployee.employee
 import com.otoki.internal.schedule.entity.QTeamMemberSchedule.teamMemberSchedule
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
 import com.querydsl.core.types.dsl.BooleanExpression
@@ -20,6 +22,21 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             .execute()
     }
 
+    override fun findByEmployeeIdAndWorkingDate(
+        employeeId: Long,
+        workingDate: LocalDate
+    ): List<TeamMemberSchedule> {
+        return queryFactory
+            .selectFrom(teamMemberSchedule)
+            .leftJoin(teamMemberSchedule.account, account).fetchJoin()
+            .where(
+                teamMemberSchedule.employee.id.eq(employeeId),
+                teamMemberSchedule.workingDate.eq(workingDate),
+                isNotDeleted()
+            )
+            .fetch()
+    }
+
     override fun findMonthlyByEmployeeIds(
         employeeIds: List<Long>,
         from: LocalDate,
@@ -27,8 +44,10 @@ open class TeamMemberScheduleRepositoryCustomImpl(
     ): List<TeamMemberSchedule> {
         return queryFactory
             .selectFrom(teamMemberSchedule)
+            .leftJoin(teamMemberSchedule.employee, employee).fetchJoin()
+            .leftJoin(teamMemberSchedule.account, account).fetchJoin()
             .where(
-                teamMemberSchedule.employeeId.`in`(employeeIds),
+                teamMemberSchedule.employee.id.`in`(employeeIds),
                 teamMemberSchedule.workingDate.between(from, to),
                 isNotDeleted()
             )
@@ -42,8 +61,10 @@ open class TeamMemberScheduleRepositoryCustomImpl(
     ): List<TeamMemberSchedule> {
         return queryFactory
             .selectFrom(teamMemberSchedule)
+            .leftJoin(teamMemberSchedule.employee, employee).fetchJoin()
+            .leftJoin(teamMemberSchedule.account, account).fetchJoin()
             .where(
-                teamMemberSchedule.accountId.`in`(accountIds),
+                teamMemberSchedule.account.id.`in`(accountIds),
                 teamMemberSchedule.workingDate.between(from, to),
                 isNotDeleted()
             )
@@ -56,8 +77,9 @@ open class TeamMemberScheduleRepositoryCustomImpl(
     ): List<TeamMemberSchedule> {
         return queryFactory
             .selectFrom(teamMemberSchedule)
+            .leftJoin(teamMemberSchedule.account, account).fetchJoin()
             .where(
-                teamMemberSchedule.employeeId.eq(employeeId),
+                teamMemberSchedule.employee.id.eq(employeeId),
                 teamMemberSchedule.workingDate.eq(workingDate),
                 isNotDeleted()
             )
@@ -69,7 +91,7 @@ open class TeamMemberScheduleRepositoryCustomImpl(
         return queryFactory
             .delete(teamMemberSchedule)
             .where(
-                teamMemberSchedule.employeeId.eq(employeeId),
+                teamMemberSchedule.employee.id.eq(employeeId),
                 teamMemberSchedule.workingDate.between(from, to),
                 teamMemberSchedule.workingType.eq(WORKING_TYPE_ANNUAL_LEAVE)
             )
@@ -79,6 +101,7 @@ open class TeamMemberScheduleRepositoryCustomImpl(
     override fun findAnnualLeaveByDateRange(from: LocalDate, to: LocalDate): List<TeamMemberSchedule> {
         return queryFactory
             .selectFrom(teamMemberSchedule)
+            .leftJoin(teamMemberSchedule.employee, employee).fetchJoin()
             .where(
                 teamMemberSchedule.workingDate.between(from, to),
                 teamMemberSchedule.workingType.eq(WORKING_TYPE_ANNUAL_LEAVE),
@@ -94,10 +117,11 @@ open class TeamMemberScheduleRepositoryCustomImpl(
     ): List<TeamMemberSchedule> {
         return queryFactory
             .selectFrom(teamMemberSchedule)
+            .leftJoin(teamMemberSchedule.employee, employee).fetchJoin()
             .where(
                 teamMemberSchedule.workingDate.between(from, to),
                 teamMemberSchedule.workingType.eq(WORKING_TYPE_ANNUAL_LEAVE),
-                teamMemberSchedule.employeeId.`in`(employeeIds),
+                teamMemberSchedule.employee.id.`in`(employeeIds),
                 isNotDeleted()
             )
             .fetch()
@@ -109,13 +133,13 @@ open class TeamMemberScheduleRepositoryCustomImpl(
         toDate: LocalDate
     ): List<Int> {
         return queryFactory
-            .select(teamMemberSchedule.accountId).distinct()
+            .select(teamMemberSchedule.account.id).distinct()
             .from(teamMemberSchedule)
             .where(
-                teamMemberSchedule.employeeId.eq(employeeId),
+                teamMemberSchedule.employee.id.eq(employeeId),
                 teamMemberSchedule.workingDate.goe(fromDate),
                 teamMemberSchedule.workingDate.lt(toDate),
-                teamMemberSchedule.accountId.isNotNull,
+                teamMemberSchedule.account.isNotNull,
                 isNotDeleted()
             )
             .fetch()
@@ -129,12 +153,14 @@ open class TeamMemberScheduleRepositoryCustomImpl(
     ): List<TeamMemberSchedule> {
         return queryFactory
             .selectFrom(teamMemberSchedule)
+            .leftJoin(teamMemberSchedule.employee, employee).fetchJoin()
+            .leftJoin(teamMemberSchedule.account, account).fetchJoin()
             .where(
-                teamMemberSchedule.employeeId.`in`(employeeIds),
+                teamMemberSchedule.employee.id.`in`(employeeIds),
                 teamMemberSchedule.workingDate.between(from, to),
                 teamMemberSchedule.workingType.eq(WORKING_TYPE_WORK),
                 teamMemberSchedule.commuteLogId.isNotNull,
-                teamMemberSchedule.accountId.isNotNull,
+                teamMemberSchedule.account.isNotNull,
                 isNotDeleted()
             )
             .fetch()

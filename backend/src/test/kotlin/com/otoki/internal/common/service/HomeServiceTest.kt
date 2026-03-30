@@ -121,7 +121,7 @@ class HomeServiceTest {
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(leader))
             whenever(employeeRepository.findByOrgName(orgName)).thenReturn(teamEmployees)
-            whenever(teamMemberScheduleRepository.findByWorkingDateAndEmployeeIdIn(any(), any()))
+            whenever(teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(any(), any()))
                 .thenReturn(teamMemberSchedules)
             whenever(accountRepository.findByIdIn(any())).thenReturn(accounts)
             whenever(noticeRepository.findRecentNotices(any(), any()))
@@ -191,7 +191,7 @@ class HomeServiceTest {
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(leader))
             whenever(employeeRepository.findByOrgName("부산1지점")).thenReturn(listOf(leader))
-            whenever(teamMemberScheduleRepository.findByWorkingDateAndEmployeeIdIn(any(), any()))
+            whenever(teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(any(), any()))
                 .thenReturn(emptyList())
             whenever(noticeRepository.findRecentNotices(any(), any()))
                 .thenReturn(emptyList())
@@ -511,8 +511,8 @@ class HomeServiceTest {
         return TeamMemberSchedule(
             id = id,
             sfid = sfid,
-            employeeId = employeeId,
-            accountId = accountId,
+            employee = employeeId?.let { Employee(id = it, employeeCode = "EMP$it", name = "테스트$it") },
+            account = accountId?.let { Account(id = it) },
             workingDate = workingDate,
             workingType = workingType,
             workingCategory1 = workingCategory1,

@@ -151,7 +151,7 @@ class SapAttendInfoServiceTest {
                 .thenAnswer { it.getArgument<AttendInfo>(0) }
             whenever(employeeRepository.findByEmployeeCode("100234"))
                 .thenReturn(Optional.of(createEmployee(id = 100L, employeeCode = "100234")))
-            whenever(teamMemberScheduleRepository.existsByEmployeeIdAndWorkingDateAndWorkingType(
+            whenever(teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(
                 any(), any(), any()
             )).thenReturn(false)
             whenever(teamMemberScheduleRepository.save(any<TeamMemberSchedule>()))
@@ -182,7 +182,7 @@ class SapAttendInfoServiceTest {
                 LocalDate.of(2026, 3, 7)
             )
             savedSchedules.forEach { schedule ->
-                assertThat(schedule.employeeId).isEqualTo(100L)
+                assertThat(schedule.employee?.id).isEqualTo(100L)
                 assertThat(schedule.workingType).isEqualTo("연차")
             }
         }
@@ -195,7 +195,7 @@ class SapAttendInfoServiceTest {
                 .thenAnswer { it.getArgument<AttendInfo>(0) }
             whenever(employeeRepository.findByEmployeeCode("100500"))
                 .thenReturn(Optional.of(createEmployee(id = 200L, employeeCode = "100500")))
-            whenever(teamMemberScheduleRepository.existsByEmployeeIdAndWorkingDateAndWorkingType(
+            whenever(teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(
                 any(), any(), any()
             )).thenReturn(false)
             whenever(teamMemberScheduleRepository.save(any<TeamMemberSchedule>()))
@@ -218,7 +218,7 @@ class SapAttendInfoServiceTest {
             verify(teamMemberScheduleRepository, times(1)).save(captor.capture())
 
             val saved = captor.firstValue
-            assertThat(saved.employeeId).isEqualTo(200L)
+            assertThat(saved.employee?.id).isEqualTo(200L)
             assertThat(saved.workingDate).isEqualTo(LocalDate.of(2026, 3, 10))
             assertThat(saved.workingType).isEqualTo("연차")
         }
@@ -231,7 +231,7 @@ class SapAttendInfoServiceTest {
                 .thenAnswer { it.getArgument<AttendInfo>(0) }
             whenever(employeeRepository.findByEmployeeCode("100234"))
                 .thenReturn(Optional.of(createEmployee(id = 100L, employeeCode = "100234")))
-            whenever(teamMemberScheduleRepository.existsByEmployeeIdAndWorkingDateAndWorkingType(
+            whenever(teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(
                 any(), any(), any()
             )).thenReturn(false)
             whenever(teamMemberScheduleRepository.save(any<TeamMemberSchedule>()))
@@ -254,7 +254,7 @@ class SapAttendInfoServiceTest {
             verify(teamMemberScheduleRepository, times(1)).save(captor.capture())
 
             val saved = captor.firstValue
-            assertThat(saved.employeeId).isEqualTo(100L)
+            assertThat(saved.employee?.id).isEqualTo(100L)
             assertThat(saved.workingDate).isEqualTo(LocalDate.of(2026, 3, 15))
             assertThat(saved.workingType).isEqualTo("연차")
         }
@@ -312,7 +312,7 @@ class SapAttendInfoServiceTest {
                 .thenAnswer { it.getArgument<AttendInfo>(0) }
             whenever(employeeRepository.findByEmployeeCode("100234"))
                 .thenReturn(Optional.of(createEmployee(id = 100L, employeeCode = "100234")))
-            whenever(teamMemberScheduleRepository.existsByEmployeeIdAndWorkingDateAndWorkingType(
+            whenever(teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(
                 any(), any(), any()
             )).thenReturn(true)
 
@@ -329,8 +329,8 @@ class SapAttendInfoServiceTest {
             // Then
             assertThat(result.successCount).isEqualTo(1)
 
-            verify(teamMemberScheduleRepository).existsByEmployeeIdAndWorkingDateAndWorkingType(
-                eq(100L),
+            verify(teamMemberScheduleRepository).existsByEmployeeAndWorkingDateAndWorkingType(
+                any(),
                 eq(LocalDate.of(2026, 3, 5)),
                 eq("연차")
             )
@@ -363,7 +363,7 @@ class SapAttendInfoServiceTest {
             assertThat(result.successCount).isEqualTo(1)
 
             verify(teamMemberScheduleRepository, never()).save(any<TeamMemberSchedule>())
-            verify(teamMemberScheduleRepository, never()).existsByEmployeeIdAndWorkingDateAndWorkingType(
+            verify(teamMemberScheduleRepository, never()).existsByEmployeeAndWorkingDateAndWorkingType(
                 any(), any(), any()
             )
             verify(teamMemberScheduleRepository, never()).deleteAnnualLeaveByEmployeeIdAndDateRange(
@@ -392,7 +392,7 @@ class SapAttendInfoServiceTest {
             assertThat(result.successCount).isEqualTo(1)
 
             verify(teamMemberScheduleRepository, never()).save(any<TeamMemberSchedule>())
-            verify(teamMemberScheduleRepository, never()).existsByEmployeeIdAndWorkingDateAndWorkingType(
+            verify(teamMemberScheduleRepository, never()).existsByEmployeeAndWorkingDateAndWorkingType(
                 any(), any(), any()
             )
             verify(teamMemberScheduleRepository, never()).deleteAnnualLeaveByEmployeeIdAndDateRange(

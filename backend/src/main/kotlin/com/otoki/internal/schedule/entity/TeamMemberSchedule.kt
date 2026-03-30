@@ -5,6 +5,10 @@ import com.otoki.internal.common.salesforce.HCColumn
 import com.otoki.internal.common.salesforce.HCTable
 import com.otoki.internal.common.salesforce.SFField
 import com.otoki.internal.common.salesforce.SFObject
+import com.otoki.internal.leave.entity.AlternativeHoliday
+import com.otoki.internal.promotion.entity.PromotionEmployee
+import com.otoki.internal.sap.entity.Account
+import com.otoki.internal.sap.entity.Employee
 import jakarta.persistence.*
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -33,8 +37,9 @@ class TeamMemberSchedule(
     @Column(name = "name", length = 80)
     val name: String? = null,
 
-    @Column(name = "employee_id")
-    var employeeId: Long? = null,
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employee_id")
+    var employee: Employee? = null,
 
     @SFField("DKRetail__EmployeeId__c")
     @HCColumn("dkretail__employeeid__c")
@@ -71,24 +76,27 @@ class TeamMemberSchedule(
     @Column(name = "working_category4", length = 255)
     var workingCategory4: String? = null,
 
-    @Column(name = "account_id")
-    var accountId: Int? = null,
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id")
+    var account: Account? = null,
 
     @SFField("AccountId__c")
     @HCColumn("accountid__c")
     @Column(name = "account_sfid", length = 18)
     val accountSfid: String? = null,
 
-    @Column(name = "team_leader_id")
-    val teamLeaderId: Long? = null,
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "team_leader_id")
+    val teamLeader: Employee? = null,
 
     @SFField("teamleadersfid__c")
     @HCColumn("teamleadersfid__c")
     @Column(name = "team_leader_sfid", length = 18)
     val teamLeaderSfid: String? = null,
 
-    @Column(name = "alt_holiday_id")
-    val altHolidayId: Long? = null,
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "alt_holiday_id")
+    val altHoliday: AlternativeHoliday? = null,
 
     @SFField("DKRetail__AltHolidayId__c")
     @HCColumn("dkretail__altholidayid__c")
@@ -100,8 +108,9 @@ class TeamMemberSchedule(
     @Column(name = "commute_log_id", length = 18)
     var commuteLogId: String? = null,
 
-    @Column(name = "promotion_employee_id")
-    var promotionEmployeeId: Long? = null,
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "promotion_employee_id")
+    var promotionEmployee: PromotionEmployee? = null,
 
     @SFField("DKRetail__PromotionEmpId__c")
     @HCColumn("dkretail__promotionempid__c")
@@ -213,23 +222,23 @@ class TeamMemberSchedule(
 
 ) : BaseEntity() {
     fun updateForPromotion(
-        employeeId: Long,
-        accountId: Int,
+        employee: Employee,
+        account: Account,
         workingDate: LocalDate,
         workingType: String,
         workingCategory1: String,
         workingCategory3: String,
         workingCategory4: String?,
-        promotionEmployeeId: Long
+        promotionEmployee: PromotionEmployee
     ) {
-        this.employeeId = employeeId
-        this.accountId = accountId
+        this.employee = employee
+        this.account = account
         this.workingDate = workingDate
         this.workingType = workingType
         this.workingCategory1 = workingCategory1
         this.workingCategory3 = workingCategory3
         this.workingCategory4 = workingCategory4
-        this.promotionEmployeeId = promotionEmployeeId
+        this.promotionEmployee = promotionEmployee
         this.updatedAt = LocalDateTime.now()
     }
 }

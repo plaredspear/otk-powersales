@@ -82,24 +82,40 @@ class AdminTeamScheduleServiceTest {
     private fun createSchedule(
         id: Long = 1L,
         employeeId: Long? = 1L,
+        employeeCode: String? = null,
+        employeeName: String? = null,
         workingDate: LocalDate? = LocalDate.of(2026, 4, 1),
         workingType: String? = "근무",
         workingCategory1: String? = "진열",
         workingCategory2: String? = null,
         workingCategory3: String? = "고정",
         accountId: Int? = 1,
+        accountName: String? = null,
+        accountExternalKey: String? = null,
         teamLeaderId: Long? = 99L,
         commuteLogId: String? = null
     ): TeamMemberSchedule = TeamMemberSchedule(
         id = id,
-        employeeId = employeeId,
+        employee = employeeId?.let {
+            Employee(
+                id = it,
+                employeeCode = employeeCode ?: "EMP$it",
+                name = employeeName ?: "테스트$it"
+            )
+        },
         workingDate = workingDate,
         workingType = workingType,
         workingCategory1 = workingCategory1,
         workingCategory2 = workingCategory2,
         workingCategory3 = workingCategory3,
-        accountId = accountId,
-        teamLeaderId = teamLeaderId,
+        account = accountId?.let {
+            Account(
+                id = it,
+                name = accountName ?: "거래처$it",
+                externalKey = accountExternalKey
+            )
+        },
+        teamLeader = teamLeaderId?.let { Employee(id = it, employeeCode = "EMP$it", name = "팀장$it") },
         commuteLogId = commuteLogId
     )
 
@@ -204,18 +220,13 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("정상 조회 - employeeIds 지정 시 해당 사원의 일정 반환")
         fun getMonthlySchedules_byEmployeeIds() {
             // Given
-            val schedule = createSchedule(id = 1L, employeeId = 1L)
-            val employee = createEmployee(sfid = "USR_001", employeeCode = "20030001", name = "홍길동")
+            val schedule = createSchedule(id = 1L, employeeId = 1L, employeeCode = "20030001", employeeName = "홍길동")
 
             whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(
                 eq(listOf(1L)),
                 eq(LocalDate.of(2026, 4, 1)),
                 eq(LocalDate.of(2026, 4, 30))
             )).thenReturn(listOf(schedule))
-            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(employee))
-            whenever(accountRepository.findByIdIn(listOf(1))).thenReturn(
-                listOf(createAccount(id = 1))
-            )
 
             // When
             val result = service.getMonthlySchedules(1L, 2026, 4, listOf(1L), null)
@@ -231,17 +242,12 @@ class AdminTeamScheduleServiceTest {
         fun getMonthlySchedules_byAccountIds() {
             // Given
             val schedule = createSchedule(id = 1L, accountId = 10)
-            val employee = createEmployee(sfid = "USR_SFID_001")
 
             whenever(teamMemberScheduleRepository.findMonthlyByAccountIds(
                 eq(listOf(10)),
                 eq(LocalDate.of(2026, 4, 1)),
                 eq(LocalDate.of(2026, 4, 30))
             )).thenReturn(listOf(schedule))
-            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(employee))
-            whenever(accountRepository.findByIdIn(listOf(10))).thenReturn(
-                listOf(createAccount(id = 10))
-            )
 
             // When
             val result = service.getMonthlySchedules(1L, 2026, 4, null, listOf(10))
@@ -490,7 +496,6 @@ class AdminTeamScheduleServiceTest {
                 workingCategory3 = "고정",
                 accountId = 1
             )
-            val employee = createEmployee(employeeCode = "20030001", status = "재직")
             val newAccount = createAccount(id = 2, sfid = "ACC_NEW")
 
             val request = TeamScheduleUpdateRequest(
@@ -502,14 +507,13 @@ class AdminTeamScheduleServiceTest {
             )
 
             whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
             whenever(accountRepository.findById(2)).thenReturn(Optional.of(newAccount))
 
             // When
             service.updateSchedule(1L, 100L, request)
 
             // Then
-            assertThat(schedule.accountId).isEqualTo(2)
+            assertThat(schedule.account?.id).isEqualTo(2)
         }
 
         @Test

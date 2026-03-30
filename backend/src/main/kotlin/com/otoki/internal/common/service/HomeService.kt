@@ -129,8 +129,8 @@ class HomeService(
             UserRole.LEADER -> {
                 val teamEmployees = employeeRepository.findByOrgName(employee.orgName ?: "")
                 val employeeIds = teamEmployees.map { it.id }
-                val teamMemberSchedules = if (employeeIds.isNotEmpty()) {
-                    teamMemberScheduleRepository.findByWorkingDateAndEmployeeIdIn(today, employeeIds)
+                val teamMemberSchedules = if (teamEmployees.isNotEmpty()) {
+                    teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(today, teamEmployees)
                 } else {
                     emptyList()
                 }
@@ -149,7 +149,7 @@ class HomeService(
      * 스케줄의 accountId → Account 이름 매핑 (batch fetch)
      */
     private fun fetchAccountMap(teamMemberSchedules: List<TeamMemberSchedule>): Map<Int, String> {
-        val accountIds = teamMemberSchedules.mapNotNull { it.accountId }.distinct()
+        val accountIds = teamMemberSchedules.mapNotNull { it.account?.id }.distinct()
         if (accountIds.isEmpty()) return emptyMap()
         return accountRepository.findByIdIn(accountIds)
             .associate { it.id to (it.name ?: "") }
@@ -163,13 +163,13 @@ class HomeService(
         employeeMap: Map<Long, Employee>,
         accountMap: Map<Int, String>
     ): HomeResponse.TeamMemberScheduleInfo {
-        val matchedEmployee = teamMemberSchedule.employeeId?.let { employeeMap[it] }
+        val matchedEmployee = teamMemberSchedule.employee?.id?.let { employeeMap[it] }
         return HomeResponse.TeamMemberScheduleInfo(
             scheduleId = teamMemberSchedule.id,
             employeeName = matchedEmployee?.name ?: "",
             employeeCode = matchedEmployee?.employeeCode ?: "",
-            accountName = teamMemberSchedule.accountId?.let { accountMap[it] },
-            accountSfid = teamMemberSchedule.accountId?.toString(),
+            accountName = teamMemberSchedule.account?.id?.let { accountMap[it] },
+            accountSfid = teamMemberSchedule.account?.id?.toString(),
             workCategory = teamMemberSchedule.workingCategory1 ?: "",
             workType = teamMemberSchedule.workingType,
             isCommuteRegistered = teamMemberSchedule.commuteLogId != null,
