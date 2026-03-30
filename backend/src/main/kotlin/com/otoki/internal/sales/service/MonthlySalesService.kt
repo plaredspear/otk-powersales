@@ -11,11 +11,11 @@ import org.springframework.transaction.annotation.Transactional
  * TODO: V1 필드(salesYear, salesMonth, accountExternalKey, targetMonthResults, shipClosingAmount 등) 기반으로 재구현 필요 (후속 스펙)
  */
 @Service
+@Transactional(readOnly = true)
 class MonthlySalesService(
     private val monthlySalesHistoryRepository: MonthlySalesHistoryRepository
 ) {
 
-    @Transactional(readOnly = true)
     fun getMonthlySales(request: MonthlySalesRequest): MonthlySalesResponse {
         // TODO: V1 스키마 필드 기반으로 재구현 (후속 스펙)
         val customerId = request.customerId ?: "ALL"

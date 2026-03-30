@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 
 @Service
+@Transactional(readOnly = true)
 class SapMonthlySalesService(
     private val monthlySalesHistoryRepository: MonthlySalesHistoryRepository,
     private val accountRepository: AccountRepository

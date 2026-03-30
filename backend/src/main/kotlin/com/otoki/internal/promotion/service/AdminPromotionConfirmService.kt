@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
 
 @Service
+@Transactional(readOnly = true)
 class AdminPromotionConfirmService(
     private val promotionRepository: PromotionRepository,
     private val promotionEmployeeRepository: PromotionEmployeeRepository,

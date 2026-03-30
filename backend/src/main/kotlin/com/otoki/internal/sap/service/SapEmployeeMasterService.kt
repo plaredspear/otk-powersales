@@ -12,6 +12,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 @Service
+@Transactional(readOnly = true)
 class SapEmployeeMasterService(
     private val employeeRepository: EmployeeRepository
 ) : SapSyncService<SapEmployeeMasterRequest.ReqItem> {

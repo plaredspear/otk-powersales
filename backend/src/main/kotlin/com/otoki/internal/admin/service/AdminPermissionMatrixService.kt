@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
+@Transactional(readOnly = true)
 class AdminPermissionMatrixService(
     private val employeeRepository: EmployeeRepository
 ) {
@@ -24,7 +25,6 @@ class AdminPermissionMatrixService(
         AdminPermission.SCHEDULE_WRITE to ("일정 생성/수정" to listOf("여사원 배치 > 진열스케줄마스터 일정 확정"))
     )
 
-    @Transactional(readOnly = true)
     fun getMatrix(userId: Long): PermissionMatrixResponse {
         val permissions = AdminPermission.entries.map { perm ->
             val (description, menus) = permissionInfoMap[perm] ?: ("(미정의)" to emptyList())

@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 
 @Service
+@Transactional(readOnly = true)
 class SapDailySalesService(
     private val dailySalesHistoryRepository: DailySalesHistoryRepository
 ) : SapSyncService<SapDailySalesRequest.ReqItem> {
