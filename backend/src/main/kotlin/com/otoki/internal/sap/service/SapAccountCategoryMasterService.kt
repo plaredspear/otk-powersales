@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional
 
 
 @Service
+@Transactional(readOnly = true)
 class SapAccountCategoryMasterService(
     private val accountCategoryMasterRepository: AccountCategoryMasterRepository
 ) : SapSyncService<SapAccountCategoryMasterRequest.ReqItem> {

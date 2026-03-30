@@ -8,10 +8,12 @@ import com.otoki.internal.sap.repository.OrganizationRepository
 import com.otoki.internal.sap.repository.SystemCodeMasterRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 @Service
+@Transactional(readOnly = true)
 class AppointmentUserProfileUpdater(
     private val employeeRepository: EmployeeRepository,
     private val organizationRepository: OrganizationRepository,
@@ -34,10 +36,12 @@ class AppointmentUserProfileUpdater(
         private val DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd")
     }
 
+    @Transactional
     fun updateUserProfiles(appointments: List<Appointment>) {
         updateUserProfiles(appointments, LocalDate.now())
     }
 
+    @Transactional
     internal fun updateUserProfiles(appointments: List<Appointment>, today: LocalDate) {
         val codeMap = loadSystemCodeMap()
 

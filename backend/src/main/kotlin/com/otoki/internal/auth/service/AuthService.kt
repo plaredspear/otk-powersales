@@ -33,6 +33,7 @@ import java.util.*
  * 인증 관련 비즈니스 로직
  */
 @Service
+@Transactional(readOnly = true)
 class AuthService(
     private val employeeRepository: EmployeeRepository,
     private val loginHistoryRepository: LoginHistoryRepository,
@@ -222,7 +223,6 @@ class AuthService(
      * 7. Redis에 새 Refresh Token 저장
      * 8. 새 Access Token + 새 Refresh Token 반환
      */
-    @Transactional(readOnly = true)
     fun refreshAccessToken(request: RefreshTokenRequest): TokenResponse {
         // 1. JWT 서명/만료 검증
         if (!jwtTokenProvider.validateToken(request.refreshToken)) {
@@ -296,7 +296,6 @@ class AuthService(
      * 2. 현재 비밀번호 BCrypt 검증
      * 3. 검증 성공 시 정상 반환, 실패 시 InvalidCurrentPasswordException 발생
      */
-    @Transactional(readOnly = true)
     fun verifyPassword(userId: Long, request: VerifyPasswordRequest) {
         val employee = employeeRepository.findWithEmployeeInfoById(userId)
             ?: throw EmployeeNotFoundException()
@@ -309,7 +308,6 @@ class AuthService(
     /**
      * GPS 동의 약관 조회
      */
-    @Transactional(readOnly = true)
     fun getGpsConsentTerms(): GpsConsentTermsResponse {
         val terms = agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse()
             .orElseThrow { TermsNotFoundException() }
@@ -323,7 +321,6 @@ class AuthService(
     /**
      * GPS 동의 상태 조회
      */
-    @Transactional(readOnly = true)
     fun getGpsConsentStatus(userId: Long): GpsConsentStatusResponse {
         val employee = employeeRepository.findById(userId)
             .orElseThrow { EmployeeNotFoundException() }

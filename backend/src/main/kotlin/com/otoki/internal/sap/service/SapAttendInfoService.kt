@@ -17,6 +17,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 @Service
+@Transactional(readOnly = true)
 class SapAttendInfoService(
     private val attendInfoRepository: AttendInfoRepository,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,

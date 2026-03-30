@@ -14,6 +14,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 
 @Service
+@Transactional(readOnly = true)
 class MyScheduleService(
     private val employeeRepository: EmployeeRepository,
     private val displayWorkScheduleRepository: DisplayWorkScheduleRepository,
@@ -37,7 +38,6 @@ class MyScheduleService(
      * 월간 일정 조회
      * 특정 연/월의 근무일 여부를 날짜별로 반환
      */
-    @Transactional(readOnly = true)
     fun getMonthlySchedule(userId: Long, year: Int, month: Int): MonthlyScheduleResponse {
         val employee = employeeRepository.findById(userId)
             .orElseThrow { EmployeeNotFoundException() }
@@ -88,7 +88,6 @@ class MyScheduleService(
      * 일간 일정 상세 조회
      * 특정 날짜의 거래처별 근무 정보 및 등록 현황 반환
      */
-    @Transactional(readOnly = true)
     fun getDailySchedule(userId: Long, date: LocalDate): DailyScheduleResponse {
         val employee = employeeRepository.findById(userId)
             .orElseThrow { EmployeeNotFoundException() }

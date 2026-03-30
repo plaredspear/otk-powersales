@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 
 @Service
+@Transactional(readOnly = true)
 class SapSyncLogService(
     private val sapSyncLogRepository: SapSyncLogRepository,
     private val objectMapper: ObjectMapper

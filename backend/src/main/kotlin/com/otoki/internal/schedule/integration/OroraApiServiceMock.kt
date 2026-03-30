@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional
  * (실서비스에서는 Orora→Salesforce 동기화로 자동 반영)
  */
 @Service
+@Transactional(readOnly = true)
 @ConditionalOnProperty(name = ["orora.mock.enabled"], havingValue = "true", matchIfMissing = true)
 class OroraApiServiceMock(
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository

@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
+@Transactional(readOnly = true)
 class SapAccountMasterService(
     private val accountRepository: AccountRepository
 ) : SapSyncService<SapAccountMasterRequest.ReqItem> {

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
+@Transactional(readOnly = true)
 class SapAppointmentService(
     private val appointmentRepository: AppointmentRepository,
     private val employeeRepository: EmployeeRepository,

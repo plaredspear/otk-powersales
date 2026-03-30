@@ -17,6 +17,7 @@ import java.time.LocalDate
  * 사원 권한(일반사원/조장)에 따라 다른 조회 로직을 적용한다.
  */
 @Service
+@Transactional(readOnly = true)
 class MyAccountService(
     private val employeeRepository: EmployeeRepository,
     private val accountRepository: AccountRepository,
@@ -24,7 +25,6 @@ class MyAccountService(
     private val displayWorkScheduleRepository: DisplayWorkScheduleRepositoryCustom
 ) {
 
-    @Transactional(readOnly = true)
     fun getMyAccounts(userId: Long, keyword: String?): MyAccountListResponse {
         if (keyword != null && keyword.length == 1) {
             throw AccountInvalidParameterException("검색 키워드는 2자 이상이어야 합니다")
