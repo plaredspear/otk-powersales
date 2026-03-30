@@ -7,6 +7,7 @@ class AccountScheduleItem {
   final String accountName;
   final String? accountTypeCode;
   final String workCategory;
+  final String? workCategory3;
   final String address;
   final double? latitude;
   final double? longitude;
@@ -19,6 +20,7 @@ class AccountScheduleItem {
     required this.accountName,
     this.accountTypeCode,
     required this.workCategory,
+    this.workCategory3,
     required this.address,
     this.latitude,
     this.longitude,
@@ -32,6 +34,7 @@ class AccountScheduleItem {
     String? accountName,
     String? accountTypeCode,
     String? workCategory,
+    String? workCategory3,
     String? address,
     double? latitude,
     double? longitude,
@@ -44,6 +47,7 @@ class AccountScheduleItem {
       accountName: accountName ?? this.accountName,
       accountTypeCode: accountTypeCode ?? this.accountTypeCode,
       workCategory: workCategory ?? this.workCategory,
+      workCategory3: workCategory3 ?? this.workCategory3,
       address: address ?? this.address,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
@@ -59,6 +63,7 @@ class AccountScheduleItem {
       'accountName': accountName,
       'accountTypeCode': accountTypeCode,
       'workCategory': workCategory,
+      'workCategory3': workCategory3,
       'address': address,
       'latitude': latitude,
       'longitude': longitude,
@@ -74,6 +79,7 @@ class AccountScheduleItem {
       accountName: json['accountName'] as String,
       accountTypeCode: json['accountTypeCode'] as String?,
       workCategory: json['workCategory'] as String,
+      workCategory3: json['workCategory3'] as String?,
       address: json['address'] as String? ?? '',
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),

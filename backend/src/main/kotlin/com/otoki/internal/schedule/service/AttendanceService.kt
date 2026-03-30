@@ -85,6 +85,7 @@ class AttendanceService(
                 accountName = accountName,
                 accountTypeCode = account?.abcTypeCode,
                 workCategory = teamMemberSchedule.workingCategory1 ?: "",
+                workCategory3 = teamMemberSchedule.workingCategory3,
                 address = account?.address1,
                 latitude = account?.latitude?.toDoubleOrNull(),
                 longitude = account?.longitude?.toDoubleOrNull(),

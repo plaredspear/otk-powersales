@@ -65,6 +65,14 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
         registeredCount: result.registeredCount,
         errorMessage: null,
       );
+
+      // 고정 근무자: 미등록 거래처가 1개이면 자동 선택
+      if (state.isFixedWorker) {
+        final unregistered = state.unregisteredAccounts;
+        if (unregistered.length == 1) {
+          selectAccount(unregistered.first.scheduleId);
+        }
+      }
     } catch (e) {
       state = state.toError(
         extractErrorMessage(e),

@@ -130,18 +130,19 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
 
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              // 검색 바
-              AccountSearchBar(
-                controller: _searchController,
-                onChanged: notifier.searchAccounts,
-              ),
-            ],
+        if (!state.isFixedWorker)
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                // 검색 바
+                AccountSearchBar(
+                  controller: _searchController,
+                  onChanged: notifier.searchAccounts,
+                ),
+              ],
+            ),
           ),
-        ),
 
         // 거래처 리스트
         Expanded(

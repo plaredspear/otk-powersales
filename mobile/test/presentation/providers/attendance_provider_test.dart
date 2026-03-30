@@ -245,6 +245,44 @@ void main() {
       expect(notifier.state.errorMessage, null);
     });
 
+    group('isFixedWorker', () {
+      test('고정 근무자 - 전부 workCategory3=="고정" -> isFixedWorker true', () async {
+        repository.accountsOverride = _fixedWorkerAccounts;
+        await notifier.loadAccounts();
+
+        expect(notifier.state.isFixedWorker, true);
+      });
+
+      test('고정 근무자 자동 선택 - 미등록 거래처 1개 -> 자동 선택', () async {
+        repository.accountsOverride = _fixedWorkerAccounts;
+        await notifier.loadAccounts();
+
+        expect(notifier.state.selectedScheduleId, 100);
+      });
+
+      test('순회 근무자 - workCategory3가 혼합 -> isFixedWorker false', () async {
+        repository.accountsOverride = _mixedWorkerAccounts;
+        await notifier.loadAccounts();
+
+        expect(notifier.state.isFixedWorker, false);
+        expect(notifier.state.selectedScheduleId, null);
+      });
+
+      test('workCategory3가 null 혼재 -> isFixedWorker false', () async {
+        repository.accountsOverride = _nullMixedAccounts;
+        await notifier.loadAccounts();
+
+        expect(notifier.state.isFixedWorker, false);
+      });
+
+      test('빈 목록 -> isFixedWorker false', () async {
+        repository.accountsOverride = [];
+        await notifier.loadAccounts();
+
+        expect(notifier.state.isFixedWorker, false);
+      });
+    });
+
     test('전체 워크플로우: 로딩 → 검색 → 선택 → 등록 → 현황 조회', () async {
       // 1. 거래처 목록 로딩
       await notifier.loadAccounts();
@@ -283,15 +321,17 @@ void main() {
 class FakeAttendanceRepository implements AttendanceRepository {
   Exception? exceptionToThrow;
   final Set<int> _registeredIds = {};
+  List<AccountScheduleItem>? accountsOverride;
 
   @override
   Future<AccountListResult> getAccountList({String? keyword}) async {
     if (exceptionToThrow != null) throw exceptionToThrow!;
+    final accounts = accountsOverride ?? _mockAccounts;
     return AccountListResult(
-      accounts: _mockAccounts,
-      totalCount: _mockAccounts.length,
+      accounts: accounts,
+      totalCount: accounts.length,
       registeredCount:
-          _mockAccounts.where((s) => s.isRegistered).length,
+          accounts.where((s) => s.isRegistered).length,
       currentDate: '2026-03-01',
     );
   }
@@ -371,6 +411,55 @@ final _mockAccounts = [
     accountName: '홈플러스 센텀시티점',
     workCategory: '진열',
     address: '부산시 해운대구 센텀남대로 59',
+    isRegistered: false,
+  ),
+];
+
+final _fixedWorkerAccounts = [
+  const AccountScheduleItem(
+    scheduleId: 100,
+    accountName: '고정 거래처',
+    accountTypeCode: '2001',
+    workCategory: '행사',
+    workCategory3: '고정',
+    address: '서울 강남구',
+    isRegistered: false,
+  ),
+];
+
+final _mixedWorkerAccounts = [
+  const AccountScheduleItem(
+    scheduleId: 200,
+    accountName: '거래처 A',
+    workCategory: '행사',
+    workCategory3: '고정',
+    address: '서울 강남구',
+    isRegistered: false,
+  ),
+  const AccountScheduleItem(
+    scheduleId: 201,
+    accountName: '거래처 B',
+    workCategory: '순회',
+    workCategory3: '순회',
+    address: '서울 서초구',
+    isRegistered: false,
+  ),
+];
+
+final _nullMixedAccounts = [
+  const AccountScheduleItem(
+    scheduleId: 300,
+    accountName: '거래처 C',
+    workCategory: '행사',
+    workCategory3: '고정',
+    address: '서울 강남구',
+    isRegistered: false,
+  ),
+  const AccountScheduleItem(
+    scheduleId: 301,
+    accountName: '거래처 D',
+    workCategory: '순회',
+    address: '서울 서초구',
     isRegistered: false,
   ),
 ];

@@ -80,6 +80,11 @@ class AttendanceState {
   List<AccountScheduleItem> get unregisteredAccounts =>
       filteredAccounts.where((s) => !s.isRegistered).toList();
 
+  /// 고정 근무자 여부 (모든 거래처의 workCategory3이 "고정")
+  bool get isFixedWorker =>
+      allAccounts.isNotEmpty &&
+      allAccounts.every((a) => a.workCategory3 == '고정');
+
   AttendanceState copyWith({
     bool? isLoading,
     bool? isRegistering,
