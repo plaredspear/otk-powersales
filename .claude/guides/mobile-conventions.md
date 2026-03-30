@@ -661,6 +661,42 @@ class AuthLocalDataSource {
 
 ---
 
+## 탭 중복 실행 방지 (Tap Throttle)
+
+새 화면/위젯을 구현하거나 기존 화면에 onTap 핸들러를 추가할 때, 아래 체크리스트를 반드시 검토한다.
+
+### 판별 기준
+
+| onTap 유형 | 보호 방식 | 비고 |
+|-----------|----------|------|
+| async 작업 (API 호출, GPS 등) | `ThrottledTapMixin.throttledTapAsync` | 작업 완료 전 재호출 차단 |
+| 네비게이션 (화면 push) | `ThrottledTapMixin.throttledTap` | 500ms 쓰로틀 |
+| 팝업 표시 (showModalBottomSheet, showDialog) | `ThrottledTapMixin.throttledTap` | 500ms 쓰로틀 |
+| PrimaryButton + isLoading | 추가 보호 불필요 | 기존 isLoading 비활성화로 충분 |
+| 폼 제출 + state.loading 체크 | 추가 보호 불필요 | 기존 상태 기반 보호로 충분 |
+
+### 적용 방법
+
+1. 위젯이 `ConsumerStatefulWidget`이면 State 클래스에 `ThrottledTapMixin` 추가
+2. `StatefulWidget`이면 State 클래스에 `ThrottledTapMixin` 추가
+3. `StatelessWidget`이면 Mixin 사용 불가 — `isLoading`/상태 기반 보호 또는 `ConsumerStatefulWidget`으로 전환 검토
+
+```
+// 적용 예시 (자연어)
+class _MyPageState extends ConsumerState<MyPage> with ThrottledTapMixin {
+  // onTap에서 throttledTap(() => ...) 또는 throttledTapAsync(() => ...) 사용
+}
+```
+
+### 구현 시 체크리스트
+
+- [ ] 새로 추가하는 onTap/onPressed 핸들러가 async 작업을 트리거하는가? → `throttledTapAsync` 사용
+- [ ] 새로 추가하는 onTap이 네비게이션이나 팝업을 트리거하는가? → `throttledTap` 사용
+- [ ] 이미 `isLoading`/`isSubmitting`으로 보호되는 버튼인가? → 추가 보호 불필요
+- [ ] `throttledTapAsync` 사용 시 action 내부에서 예외가 발생해도 다음 탭이 차단되지 않는가? (Mixin이 try-finally로 보장)
+
+---
+
 ## Navigation (Named Routing)
 
 ```dart
