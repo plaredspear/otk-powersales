@@ -77,6 +77,30 @@ void main() {
       );
     });
 
+    test('searchAccounts 거래처코드로 검색', () async {
+      await notifier.loadAccounts();
+
+      notifier.searchAccounts('2001');
+
+      expect(notifier.state.searchKeyword, '2001');
+      expect(notifier.state.filteredAccounts.length, 2);
+      expect(
+        notifier.state.filteredAccounts
+            .every((s) => s.accountTypeCode == '2001'),
+        true,
+      );
+    });
+
+    test('searchAccounts accountTypeCode가 null인 거래처는 코드 검색에서 제외', () async {
+      await notifier.loadAccounts();
+
+      // 12349는 accountTypeCode가 null
+      notifier.searchAccounts('4001');
+
+      expect(notifier.state.filteredAccounts.length, 1);
+      expect(notifier.state.filteredAccounts.first.scheduleId, 12348);
+    });
+
     test('searchAccounts 빈 문자열로 검색 시 전체 목록 표시', () async {
       await notifier.loadAccounts();
 
@@ -326,6 +350,7 @@ final _mockAccounts = [
   const AccountScheduleItem(
     scheduleId: 12345,
     accountName: '이마트 해운대점',
+    accountTypeCode: '2001',
     workCategory: '진열',
     address: '부산시 해운대구 센텀2로 25',
     isRegistered: false,
@@ -333,6 +358,7 @@ final _mockAccounts = [
   const AccountScheduleItem(
     scheduleId: 12346,
     accountName: '홈플러스 서면점',
+    accountTypeCode: '3001',
     workCategory: '순회',
     address: '부산시 부산진구 서면로 68번길 9',
     isRegistered: false,
@@ -340,6 +366,7 @@ final _mockAccounts = [
   const AccountScheduleItem(
     scheduleId: 12347,
     accountName: '롯데마트 광복점',
+    accountTypeCode: '2001',
     workCategory: '진열',
     address: '부산시 중구 중앙대로 2',
     isRegistered: false,
@@ -347,6 +374,7 @@ final _mockAccounts = [
   const AccountScheduleItem(
     scheduleId: 12348,
     accountName: '이마트 사상점',
+    accountTypeCode: '4001',
     workCategory: '순회',
     address: '부산시 사상구 학감대로 272',
     isRegistered: false,

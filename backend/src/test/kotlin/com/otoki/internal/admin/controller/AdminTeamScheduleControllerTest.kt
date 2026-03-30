@@ -72,8 +72,8 @@ class AdminTeamScheduleControllerTest {
         @DisplayName("성공 - 여사원 목록 반환")
         fun getMembers_success() {
             val members = listOf(
-                TeamMemberDto(employeeCode = "20030001", name = "홍길동"),
-                TeamMemberDto(employeeCode = "20030002", name = "김영희")
+                TeamMemberDto(employeeId = 1L, employeeCode = "20030001", name = "홍길동"),
+                TeamMemberDto(employeeId = 2L, employeeCode = "20030002", name = "김영희")
             )
             whenever(adminTeamScheduleService.getMembers(1L)).thenReturn(members)
 

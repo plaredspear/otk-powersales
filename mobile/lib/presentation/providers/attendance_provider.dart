@@ -78,7 +78,8 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
     final filtered = state.allAccounts.where((account) {
       if (keyword.isEmpty) return true;
       return account.accountName.toLowerCase().contains(lowerKeyword) ||
-          account.address.toLowerCase().contains(lowerKeyword);
+          account.address.toLowerCase().contains(lowerKeyword) ||
+          (account.accountTypeCode?.toLowerCase().contains(lowerKeyword) ?? false);
     }).toList();
 
     state = state.copyWith(
