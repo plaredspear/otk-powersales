@@ -140,7 +140,7 @@ class NoticeService(
             contents = request.content,
             branch = if (cat == NoticeCategory.BRANCH) request.branch else null,
             branchCode = if (cat == NoticeCategory.BRANCH) request.branchCode else null,
-            employeeId = creatorId
+            employee = employeeRepository.getReferenceById(creatorId)
         )
         val saved = noticeRepository.save(notice)
         return NoticeMutationResponse.from(saved)

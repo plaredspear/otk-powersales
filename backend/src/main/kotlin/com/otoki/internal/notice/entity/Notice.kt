@@ -5,6 +5,7 @@ import com.otoki.internal.common.salesforce.HCColumn
 import com.otoki.internal.common.salesforce.HCTable
 import com.otoki.internal.common.salesforce.SFField
 import com.otoki.internal.common.salesforce.SFObject
+import com.otoki.internal.sap.entity.Employee
 import jakarta.persistence.*
 
 @Entity
@@ -32,8 +33,9 @@ class Notice(
     @Column(name = "employee_sfid", length = 18)
     val employeeSfid: String? = null,
 
-    @Column(name = "employee_id")
-    val employeeId: Long? = null,
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employee_id")
+    val employee: Employee? = null,
 
     @SFField("DKRetail__Scope__c")
     @HCColumn("dkretail__scope__c")
