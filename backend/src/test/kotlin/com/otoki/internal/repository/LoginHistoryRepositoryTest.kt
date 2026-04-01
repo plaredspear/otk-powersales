@@ -1,6 +1,6 @@
 package com.otoki.internal.repository
 
-import com.otoki.internal.entity.LoginHistory
+import com.otoki.internal.common.entity.LoginHistory
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName

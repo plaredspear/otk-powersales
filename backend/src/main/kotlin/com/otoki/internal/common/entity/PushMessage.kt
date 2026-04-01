@@ -1,4 +1,4 @@
-package com.otoki.internal.entity
+package com.otoki.internal.common.entity
 
 import com.otoki.internal.common.entity.BaseEntity
 import com.otoki.internal.common.salesforce.HCColumn

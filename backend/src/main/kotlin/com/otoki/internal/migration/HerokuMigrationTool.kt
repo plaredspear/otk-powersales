@@ -1,13 +1,13 @@
 package com.otoki.internal.migration
 
 import com.otoki.internal.common.entity.AgreementWord
-import com.otoki.internal.entity.EmployeeAdmin
-import com.otoki.internal.entity.LoginHistory
-import com.otoki.internal.entity.HqReview
-import com.otoki.internal.entity.PushMessage
-import com.otoki.internal.entity.PushMessageReceiver
-import com.otoki.internal.entity.ProductSyncBuffer
-import com.otoki.internal.entity.StaffReview
+import com.otoki.internal.common.entity.EmployeeAdmin
+import com.otoki.internal.common.entity.LoginHistory
+import com.otoki.internal.common.entity.HqReview
+import com.otoki.internal.common.entity.PushMessage
+import com.otoki.internal.common.entity.PushMessageReceiver
+import com.otoki.internal.common.entity.ProductSyncBuffer
+import com.otoki.internal.common.entity.StaffReview
 import com.otoki.internal.draft.entity.TmpClaim
 import com.otoki.internal.draft.entity.TmpClaimCode
 import com.otoki.internal.draft.entity.TmpOnsite

@@ -10,6 +10,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.ActiveProfiles
 import com.otoki.internal.common.config.QueryDslConfig
+import com.otoki.internal.common.entity.PushMessageReceiver
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 

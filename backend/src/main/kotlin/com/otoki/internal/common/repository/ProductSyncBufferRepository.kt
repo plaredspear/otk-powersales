@@ -1,6 +1,6 @@
 package com.otoki.internal.common.repository
 
-import com.otoki.internal.entity.ProductSyncBuffer
+import com.otoki.internal.common.entity.ProductSyncBuffer
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 

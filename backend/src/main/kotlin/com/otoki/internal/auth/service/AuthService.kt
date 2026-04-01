@@ -13,7 +13,7 @@ import com.otoki.internal.admin.dto.response.AdminUserInfo
 import com.otoki.internal.auth.dto.response.*
 import com.otoki.internal.common.dto.response.*
 import com.otoki.internal.common.entity.AgreementHistory
-import com.otoki.internal.entity.LoginHistory
+import com.otoki.internal.common.entity.LoginHistory
 import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.auth.exception.*
 import com.otoki.internal.common.repository.AgreementHistoryRepository

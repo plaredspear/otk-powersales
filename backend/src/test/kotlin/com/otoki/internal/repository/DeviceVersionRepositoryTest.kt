@@ -1,7 +1,7 @@
 package com.otoki.internal.repository
 
-import com.otoki.internal.entity.DeviceVersion
-import com.otoki.internal.entity.DeviceVersionId
+import com.otoki.internal.common.entity.DeviceVersion
+import com.otoki.internal.common.entity.DeviceVersionId
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName

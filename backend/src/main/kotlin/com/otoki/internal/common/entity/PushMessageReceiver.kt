@@ -1,4 +1,4 @@
-package com.otoki.internal.entity
+package com.otoki.internal.common.entity
 
 import com.otoki.internal.common.entity.BaseEntity
 import com.otoki.internal.common.salesforce.HCColumn
@@ -8,22 +8,23 @@ import com.otoki.internal.common.salesforce.SFObject
 import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
-import java.time.LocalDate
 import java.time.LocalDateTime
 
 /**
- * 본사 평가 Entity
- * V1 스키마: hqreview__c (Heroku Connect 동기화)
+ * 푸시 메시지 수신자 Entity
+ * V1 스키마: push_message_receiver (V43 PK/컬럼명 정리)
+ *
+ * PushMessage N:1 관계 (PK 참조, DB FK 없음)
  */
 @Entity
-@Table(name = "hq_review")
-@HCTable("hqreview__c")
-@SFObject("HQReview__c")
-class HqReview(
+@Table(name = "push_message_receiver")
+@HCTable("pushmessagereceiver__c")
+@SFObject("PushMessageReceiver__c")
+class PushMessageReceiver(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "hq_review_id")
+    @Column(name = "push_message_receiver_id")
     val id: Int = 0,
 
     @HCColumn("sfid")
@@ -35,35 +36,21 @@ class HqReview(
     @Column(name = "name", length = 80)
     val name: String? = null,
 
-    @HCColumn("branchcode__c")
-    @SFField("BranchCode__c")
-    @Column(name = "branch_code", length = 100)
-    val branchCode: String? = null,
+    @Column(name = "employee_id")
+    val employeeId: Long? = null,
 
-    @HCColumn("branchname__c")
-    @SFField("BranchName__c")
-    @Column(name = "branch_name", length = 100)
-    val branchName: String? = null,
+    @HCColumn("employeeid__c")
+    @SFField("EmployeeId__c")
+    @Column(name = "employee_sfid", length = 18)
+    val employeeSfid: String? = null,
 
-    @HCColumn("firstdayofmonth__c")
-    @SFField("FirstDayofMonth__c")
-    @Column(name = "first_day_of_month")
-    val firstDayOfMonth: LocalDate? = null,
+    @Column(name = "push_message_id")
+    val pushMessageId: Int? = null,
 
-    @HCColumn("evaluationytype__c")
-    @SFField("EvaluationyType__c")
-    @Column(name = "evaluation_type", length = 255)
-    val evaluationType: String? = null,
-
-    @HCColumn("abctypecode__c")
-    @SFField("ABCTypeCode__c")
-    @Column(name = "abc_type_code", length = 255)
-    val abcTypeCode: String? = null,
-
-    @HCColumn("hr_code_c__c")
-    @SFField("HR_Code_c__c")
-    @Column(name = "hr_code", length = 255)
-    val hrCode: String? = null,
+    @HCColumn("messageid__c")
+    @SFField("MessageId__c")
+    @Column(name = "push_message_sfid", length = 18)
+    val pushMessageSfid: String? = null,
 
     @HCColumn("isdeleted")
     @Column(name = "is_deleted")

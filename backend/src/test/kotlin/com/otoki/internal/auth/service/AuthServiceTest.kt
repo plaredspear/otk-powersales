@@ -8,7 +8,7 @@ import com.otoki.internal.auth.dto.request.RefreshTokenRequest
 import com.otoki.internal.auth.dto.request.VerifyPasswordRequest
 import com.otoki.internal.common.entity.AgreementHistory
 import com.otoki.internal.common.entity.AgreementWord
-import com.otoki.internal.entity.LoginHistory
+import com.otoki.internal.common.entity.LoginHistory
 import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.sap.entity.UserRole
 import com.otoki.internal.auth.exception.*
