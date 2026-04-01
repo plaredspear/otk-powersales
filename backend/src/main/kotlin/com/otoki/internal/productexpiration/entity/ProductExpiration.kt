@@ -3,6 +3,9 @@ package com.otoki.internal.productexpiration.entity
 import com.otoki.internal.common.entity.BaseEntity
 import com.otoki.internal.common.salesforce.HCColumn
 import com.otoki.internal.common.salesforce.HCTable
+import com.otoki.internal.sap.entity.Account
+import com.otoki.internal.sap.entity.Employee
+import com.otoki.internal.sap.entity.Product
 import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
@@ -79,6 +82,19 @@ class ProductExpiration(
     @Column(name = "updated_at", nullable = false)
     override var updatedAt: LocalDateTime = LocalDateTime.now()
 ) : BaseEntity() {
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id", insertable = false, updatable = false, foreignKey = ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    var account: Account? = null
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employee_id", insertable = false, updatable = false, foreignKey = ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    var employee: Employee? = null
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id", insertable = false, updatable = false, foreignKey = ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    var product: Product? = null
+
     fun update(expirationDate: LocalDate, alarmDate: LocalDate, description: String?) {
         this.expirationDate = expirationDate
         this.alarmDate = alarmDate
