@@ -16,10 +16,9 @@ import com.otoki.internal.common.entity.AgreementHistory
 import com.otoki.internal.entity.LoginHistory
 import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.auth.exception.*
-import com.otoki.internal.common.exception.*
 import com.otoki.internal.common.repository.AgreementHistoryRepository
 import com.otoki.internal.common.repository.AgreementWordRepository
-import com.otoki.internal.repository.LoginHistoryRepository
+import com.otoki.internal.common.repository.LoginHistoryRepository
 import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.common.security.JwtTokenProvider
 import org.slf4j.LoggerFactory

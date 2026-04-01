@@ -1,4 +1,4 @@
-package com.otoki.internal.repository
+package com.otoki.internal.common.repository
 
 import com.otoki.internal.entity.EmployeeAdmin
 import org.springframework.data.jpa.repository.JpaRepository
