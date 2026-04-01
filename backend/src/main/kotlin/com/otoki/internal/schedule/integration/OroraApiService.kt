@@ -10,11 +10,10 @@ interface OroraApiService {
 
     /**
      * 출근 보고 전송
-     * @param scheduleSfid 스케줄 sfid
-     * @param reason 출근 사유
+     * @param request 안전점검 데이터 포함 출근보고 요청
      * @return WorkReport 전송 결과
      */
-    fun sendWorkReport(scheduleSfid: String, reason: String? = null): OroraWorkReportResult
+    fun sendWorkReport(request: OroraWorkReportRequest): OroraWorkReportResult
 }
 
 /**

@@ -4,6 +4,7 @@ import com.otoki.internal.auth.exception.EmployeeNotFoundException
 import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.sap.entity.Account
+import com.otoki.internal.safetycheck.entity.SafetyCheckSubmission
 import com.otoki.internal.safetycheck.repository.SafetyCheckSubmissionRepository
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
 import com.otoki.internal.schedule.exception.AlreadyRegisteredException
@@ -25,8 +26,12 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.never
 import org.mockito.kotlin.whenever
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.util.*
 
 @ExtendWith(MockitoExtension::class)
@@ -374,9 +379,10 @@ class AttendanceServiceTest {
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.empty())
             whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
             doReturn(OroraWorkReportResult("200", "SUCCESS"))
-                .whenever(ororaApiService).sendWorkReport(any(), anyOrNull())
+                .whenever(ororaApiService).sendWorkReport(any())
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
                 .thenReturn(listOf(teamMemberSchedule))
 
@@ -453,9 +459,10 @@ class AttendanceServiceTest {
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.empty())
             whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
             doReturn(OroraWorkReportResult("200", "SUCCESS"))
-                .whenever(ororaApiService).sendWorkReport(any(), anyOrNull())
+                .whenever(ororaApiService).sendWorkReport(any())
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
                 .thenReturn(listOf(teamMemberSchedule))
 
@@ -490,9 +497,10 @@ class AttendanceServiceTest {
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.empty())
             whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
             doReturn(OroraWorkReportResult("200", "SUCCESS"))
-                .whenever(ororaApiService).sendWorkReport(any(), anyOrNull())
+                .whenever(ororaApiService).sendWorkReport(any())
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
                 .thenReturn(listOf(teamMemberSchedule))
 
@@ -609,9 +617,10 @@ class AttendanceServiceTest {
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.empty())
             whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
             doReturn(OroraWorkReportResult("200", "SUCCESS"))
-                .whenever(ororaApiService).sendWorkReport(any(), anyOrNull())
+                .whenever(ororaApiService).sendWorkReport(any())
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
                 .thenReturn(listOf(teamMemberSchedule))
 
@@ -647,9 +656,10 @@ class AttendanceServiceTest {
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.empty())
             whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(targetTeamMemberSchedule))
             doReturn(OroraWorkReportResult("200", "SUCCESS"))
-                .whenever(ororaApiService).sendWorkReport(any(), anyOrNull())
+                .whenever(ororaApiService).sendWorkReport(any())
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
                 .thenReturn(allTeamMemberSchedules)
 
@@ -660,6 +670,244 @@ class AttendanceServiceTest {
             assertThat(result.totalCount).isEqualTo(3)
             // id=20 has commuteLogId="OK", id=10 matches scheduleId => 2 registered
             assertThat(result.registeredCount).isEqualTo(2)
+        }
+    }
+
+    // ========== register - 안전점검 데이터 연동 Tests ==========
+
+    @Nested
+    @DisplayName("register - 안전점검 데이터 연동")
+    inner class RegisterSafetyCheckDataSyncTests {
+
+        private val accountLat = 37.4979
+        private val accountLon = 127.0276
+        private val nearUserLat = 37.4995
+        private val nearUserLon = 127.0300
+
+        @Test
+        @DisplayName("출근등록 성공 시 completeWorkYn 'Y' 업데이트 + TMS 안전점검 데이터 반영")
+        fun register_withSafetyCheck_updatesCompleteWorkYnAndTms() {
+            // Given
+            val userId = 1L
+            val scheduleId = 10L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            val safetyCheck = createSafetyCheckSubmission(
+                employeeId = userId,
+                workingDate = today,
+                equipment1 = "예",
+                equipment2 = "해당없음",
+                yesCheckCount = 7,
+                noCheckCount = 2,
+                startTime = LocalDateTime.of(2026, 4, 1, 8, 0),
+                completeTime = LocalDateTime.of(2026, 4, 1, 8, 10),
+                precaution = "항목1;항목2",
+                precautionCheckCount = 2,
+                traversalFlag = "Y"
+            )
+
+            val teamMemberSchedule = createTeamMemberSchedule(
+                id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
+                commuteLogId = null, accountName = "이마트 강남점", accountAbcTypeCode = "2110",
+                accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.of(safetyCheck))
+            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
+            doReturn(OroraWorkReportResult("200", "SUCCESS"))
+                .whenever(ororaApiService).sendWorkReport(any())
+            whenever(safetyCheckSubmissionRepository.save(any<SafetyCheckSubmission>())).thenAnswer { it.getArgument<SafetyCheckSubmission>(0) }
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
+                .thenReturn(listOf(teamMemberSchedule))
+
+            // When
+            attendanceService.register(userId, scheduleId, nearUserLat, nearUserLon, null)
+
+            // Then - completeWorkYn 업데이트 검증
+            assertThat(safetyCheck.completeWorkYn).isEqualTo("Y")
+            verify(safetyCheckSubmissionRepository).save(safetyCheck)
+
+            // Then - TMS 안전점검 데이터 반영 검증
+            verify(teamMemberScheduleRepository).updateSafetyCheckData(
+                sfid = "SCH001",
+                equipment1 = "예",
+                equipment2 = "해당없음",
+                equipment3 = null,
+                equipment4 = null,
+                equipment5 = null,
+                equipment6 = null,
+                equipment7 = null,
+                equipment8 = null,
+                equipment9 = null,
+                yesChkCnt = 7.0,
+                noChkCnt = 2.0,
+                startTime = LocalDateTime.of(2026, 4, 1, 8, 0),
+                completeTime = LocalDateTime.of(2026, 4, 1, 8, 10),
+                precaution = "항목1;항목2",
+                precautionChk = 2.0,
+                traversalFlag = "Y"
+            )
+        }
+
+        @Test
+        @DisplayName("SafetyCheckSubmission 미존재 시 데이터 연동 스킵, 출근등록 자체는 성공")
+        fun register_withoutSafetyCheck_skipsDataSync() {
+            // Given
+            val userId = 1L
+            val scheduleId = 10L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            val teamMemberSchedule = createTeamMemberSchedule(
+                id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
+                commuteLogId = null, accountName = "이마트 강남점", accountAbcTypeCode = "2110",
+                accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.empty())
+            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
+            doReturn(OroraWorkReportResult("200", "SUCCESS"))
+                .whenever(ororaApiService).sendWorkReport(any())
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
+                .thenReturn(listOf(teamMemberSchedule))
+
+            // When
+            val result = attendanceService.register(userId, scheduleId, nearUserLat, nearUserLon, null)
+
+            // Then - 출근등록 성공
+            assertThat(result.scheduleId).isEqualTo(scheduleId)
+
+            // Then - 데이터 연동 스킵 검증
+            verify(safetyCheckSubmissionRepository, never()).save(any())
+            verify(teamMemberScheduleRepository, never()).updateSafetyCheckData(
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
+                anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull()
+            )
+        }
+
+        @Test
+        @DisplayName("중복 호출 (completeWorkYn 이미 'Y') - 에러 없이 멱등 처리")
+        fun register_alreadyCompleted_idempotent() {
+            // Given
+            val userId = 1L
+            val scheduleId = 10L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            val safetyCheck = createSafetyCheckSubmission(
+                employeeId = userId,
+                workingDate = today,
+                completeWorkYn = "Y",
+                equipment1 = "예",
+                yesCheckCount = 5,
+                noCheckCount = 4
+            )
+
+            val teamMemberSchedule = createTeamMemberSchedule(
+                id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
+                commuteLogId = null, accountName = "이마트 강남점", accountAbcTypeCode = "2110",
+                accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.of(safetyCheck))
+            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
+            doReturn(OroraWorkReportResult("200", "SUCCESS"))
+                .whenever(ororaApiService).sendWorkReport(any())
+            whenever(safetyCheckSubmissionRepository.save(any<SafetyCheckSubmission>())).thenAnswer { it.getArgument<SafetyCheckSubmission>(0) }
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
+                .thenReturn(listOf(teamMemberSchedule))
+
+            // When - 에러 없이 성공
+            val result = attendanceService.register(userId, scheduleId, nearUserLat, nearUserLon, null)
+
+            // Then
+            assertThat(result.scheduleId).isEqualTo(scheduleId)
+            assertThat(safetyCheck.completeWorkYn).isEqualTo("Y")
+            verify(safetyCheckSubmissionRepository).save(safetyCheck)
+            verify(teamMemberScheduleRepository).updateSafetyCheckData(
+                sfid = "SCH001",
+                equipment1 = "예",
+                equipment2 = null,
+                equipment3 = null,
+                equipment4 = null,
+                equipment5 = null,
+                equipment6 = null,
+                equipment7 = null,
+                equipment8 = null,
+                equipment9 = null,
+                yesChkCnt = 5.0,
+                noChkCnt = 4.0,
+                startTime = null,
+                completeTime = null,
+                precaution = null,
+                precautionChk = null,
+                traversalFlag = null
+            )
+        }
+
+        @Test
+        @DisplayName("Int → Double 변환 - null 값은 null 유지")
+        fun register_intToDoubleConversion_nullPreserved() {
+            // Given
+            val userId = 1L
+            val scheduleId = 10L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            val safetyCheck = createSafetyCheckSubmission(
+                employeeId = userId,
+                workingDate = today,
+                yesCheckCount = null,
+                noCheckCount = null,
+                precautionCheckCount = null
+            )
+
+            val teamMemberSchedule = createTeamMemberSchedule(
+                id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
+                commuteLogId = null, accountName = "이마트 강남점", accountAbcTypeCode = "2110",
+                accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.of(safetyCheck))
+            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
+            doReturn(OroraWorkReportResult("200", "SUCCESS"))
+                .whenever(ororaApiService).sendWorkReport(any())
+            whenever(safetyCheckSubmissionRepository.save(any<SafetyCheckSubmission>())).thenAnswer { it.getArgument<SafetyCheckSubmission>(0) }
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
+                .thenReturn(listOf(teamMemberSchedule))
+
+            // When
+            attendanceService.register(userId, scheduleId, nearUserLat, nearUserLon, null)
+
+            // Then - null → null 변환 검증
+            verify(teamMemberScheduleRepository).updateSafetyCheckData(
+                sfid = "SCH001",
+                equipment1 = null,
+                equipment2 = null,
+                equipment3 = null,
+                equipment4 = null,
+                equipment5 = null,
+                equipment6 = null,
+                equipment7 = null,
+                equipment8 = null,
+                equipment9 = null,
+                yesChkCnt = null,
+                noChkCnt = null,
+                startTime = null,
+                completeTime = null,
+                precaution = null,
+                precautionChk = null,
+                traversalFlag = null
+            )
         }
     }
 
@@ -815,6 +1063,52 @@ class AttendanceServiceTest {
             appAuthority = appAuthority,
             password = "encodedPassword",
             passwordChangeRequired = false
+        )
+    }
+
+    private fun createSafetyCheckSubmission(
+        id: Long = 1L,
+        employeeId: Long? = 1L,
+        workingDate: LocalDate = LocalDate.now(),
+        equipment1: String? = null,
+        equipment2: String? = null,
+        equipment3: String? = null,
+        equipment4: String? = null,
+        equipment5: String? = null,
+        equipment6: String? = null,
+        equipment7: String? = null,
+        equipment8: String? = null,
+        equipment9: String? = null,
+        yesCheckCount: Int? = null,
+        noCheckCount: Int? = null,
+        startTime: LocalDateTime? = null,
+        completeTime: LocalDateTime? = null,
+        precaution: String? = null,
+        precautionCheckCount: Int? = null,
+        traversalFlag: String? = null,
+        completeWorkYn: String? = "N"
+    ): SafetyCheckSubmission {
+        return SafetyCheckSubmission(
+            id = id,
+            employeeId = employeeId,
+            workingDate = workingDate,
+            equipment1 = equipment1,
+            equipment2 = equipment2,
+            equipment3 = equipment3,
+            equipment4 = equipment4,
+            equipment5 = equipment5,
+            equipment6 = equipment6,
+            equipment7 = equipment7,
+            equipment8 = equipment8,
+            equipment9 = equipment9,
+            yesCheckCount = yesCheckCount,
+            noCheckCount = noCheckCount,
+            startTime = startTime,
+            completeTime = completeTime,
+            precaution = precaution,
+            precautionCheckCount = precautionCheckCount,
+            traversalFlag = traversalFlag,
+            completeWorkYn = completeWorkYn
         )
     }
 
