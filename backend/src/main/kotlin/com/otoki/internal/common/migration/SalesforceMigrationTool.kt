@@ -1,4 +1,4 @@
-package com.otoki.internal.migration
+package com.otoki.internal.common.migration
 
 import com.otoki.internal.common.entity.AgreementHistory
 import com.otoki.internal.common.entity.UploadFile

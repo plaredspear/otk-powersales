@@ -1,4 +1,4 @@
-package com.otoki.internal.migration
+package com.otoki.internal.common.migration
 
 import com.otoki.internal.common.entity.AgreementWord
 import com.otoki.internal.common.entity.EmployeeAdmin
@@ -35,12 +35,16 @@ import com.otoki.internal.sap.entity.MonthlySalesHistory
 import com.otoki.internal.product.entity.FavoriteProduct
 import com.otoki.internal.productexpiration.entity.ProductExpiration
 import com.otoki.internal.sap.entity.ProductBarcode
+import jakarta.persistence.Column
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import java.io.File
 import java.sql.Connection
 import java.sql.DriverManager
+import java.sql.Timestamp
+import java.time.LocalDateTime
 import java.util.Properties
+import kotlin.collections.iterator
 
 /**
  * Heroku DB → Dev DB 데이터 마이그레이션 도구
@@ -700,7 +704,7 @@ object HerokuMigrationTool {
         // @Id 필드의 JPA 컬럼명 수집 (PK 제외용 — includeId=true이면 제외하지 않음)
         val idColumnNames = if (includeId) emptySet() else entityClass.declaredFields
             .filter { it.isAnnotationPresent(Id::class.java) }
-            .mapNotNull { it.getAnnotation(jakarta.persistence.Column::class.java)?.name }
+            .mapNotNull { it.getAnnotation(Column::class.java)?.name }
             .toSet()
 
         // @HCColumn 매핑에서 PK 제외 (includeId=true이면 PK도 포함)
@@ -743,7 +747,7 @@ object HerokuMigrationTool {
         val createdAtIdx = allJpaColumns.indexOf("created_at")
         val updatedAtIdx = allJpaColumns.indexOf("updated_at")
         if (createdAtIdx >= 0 && updatedAtIdx >= 0) {
-            val now = java.sql.Timestamp.valueOf(java.time.LocalDateTime.now())
+            val now = Timestamp.valueOf(LocalDateTime.now())
             rows.forEach { row ->
                 if (row[createdAtIdx] == null) row[createdAtIdx] = now
                 if (row[updatedAtIdx] == null) row[updatedAtIdx] = row[createdAtIdx]
