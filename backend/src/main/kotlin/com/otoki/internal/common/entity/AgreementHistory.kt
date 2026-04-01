@@ -2,6 +2,7 @@ package com.otoki.internal.common.entity
 
 import com.otoki.internal.common.salesforce.SFField
 import com.otoki.internal.common.salesforce.SFObject
+import com.otoki.internal.sap.entity.Employee
 import jakarta.persistence.*
 import java.time.LocalDate
 
@@ -31,5 +32,14 @@ class AgreementHistory(
     val agreementWordId: Long,
 
     @Column(name = "is_deleted", nullable = false)
-    val isDeleted: Boolean = false
+    val isDeleted: Boolean = false,
+
+    // -- Relations --
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employee_id", insertable = false, updatable = false)
+    val employee: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "agreement_word_id", insertable = false, updatable = false)
+    val agreementWord: AgreementWord? = null
 ) : BaseEntity()
