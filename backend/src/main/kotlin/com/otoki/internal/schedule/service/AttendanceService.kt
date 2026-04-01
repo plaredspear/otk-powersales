@@ -15,6 +15,7 @@ import com.otoki.internal.schedule.exception.DistanceExceededException
 import com.otoki.internal.schedule.exception.SafetyCheckRequiredException
 import com.otoki.internal.schedule.exception.TeamMemberScheduleNotFoundException
 import com.otoki.internal.schedule.integration.OroraApiService
+import com.otoki.internal.schedule.integration.OroraWorkReportRequest
 import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.internal.sap.repository.EmployeeRepository
 import org.springframework.stereotype.Service
@@ -133,10 +134,59 @@ class AttendanceService(
         val account = teamMemberSchedule.account
         val distanceKm = validateDistance(latitude, longitude, account)
 
-        // 5. Orora WorkReport 전송
-        ororaApiService.sendWorkReport(teamMemberSchedule.sfid ?: "")
+        // 5. SafetyCheckSubmission 조회 + OroraWorkReportRequest 구성 + 전송
+        val safetyCheckSubmission = safetyCheckSubmissionRepository
+            .findByEmployeeIdAndWorkingDate(employee.id, today)
+            .orElse(null)
 
-        // 6. 출근 현황 집계 (commuteLogId 업데이트 후)
+        val request = OroraWorkReportRequest(
+            scheduleSfid = teamMemberSchedule.sfid ?: "",
+            equipment1 = safetyCheckSubmission?.equipment1,
+            equipment2 = safetyCheckSubmission?.equipment2,
+            equipment3 = safetyCheckSubmission?.equipment3,
+            equipment4 = safetyCheckSubmission?.equipment4,
+            equipment5 = safetyCheckSubmission?.equipment5,
+            equipment6 = safetyCheckSubmission?.equipment6,
+            equipment7 = safetyCheckSubmission?.equipment7,
+            equipment8 = safetyCheckSubmission?.equipment8,
+            equipment9 = safetyCheckSubmission?.equipment9,
+            yesCount = safetyCheckSubmission?.yesCheckCount,
+            noCount = safetyCheckSubmission?.noCheckCount,
+            startTime = safetyCheckSubmission?.startTime?.toString(),
+            completeTime = safetyCheckSubmission?.completeTime?.toString(),
+            precaution = safetyCheckSubmission?.precaution,
+            precautionCount = safetyCheckSubmission?.precautionCheckCount,
+            traversalFlag = safetyCheckSubmission?.traversalFlag
+        )
+        ororaApiService.sendWorkReport(request)
+
+        // 6. 후속 처리: SafetyCheckSubmission.completeWorkYn = 'Y' + TMS 안전점검 데이터 반영
+        if (safetyCheckSubmission != null) {
+            safetyCheckSubmission.completeWorkYn = "Y"
+            safetyCheckSubmissionRepository.save(safetyCheckSubmission)
+
+            teamMemberScheduleRepository.updateSafetyCheckData(
+                sfid = teamMemberSchedule.sfid ?: "",
+                equipment1 = safetyCheckSubmission.equipment1,
+                equipment2 = safetyCheckSubmission.equipment2,
+                equipment3 = safetyCheckSubmission.equipment3,
+                equipment4 = safetyCheckSubmission.equipment4,
+                equipment5 = safetyCheckSubmission.equipment5,
+                equipment6 = safetyCheckSubmission.equipment6,
+                equipment7 = safetyCheckSubmission.equipment7,
+                equipment8 = safetyCheckSubmission.equipment8,
+                equipment9 = safetyCheckSubmission.equipment9,
+                yesChkCnt = safetyCheckSubmission.yesCheckCount?.toDouble(),
+                noChkCnt = safetyCheckSubmission.noCheckCount?.toDouble(),
+                startTime = safetyCheckSubmission.startTime,
+                completeTime = safetyCheckSubmission.completeTime,
+                precaution = safetyCheckSubmission.precaution,
+                precautionChk = safetyCheckSubmission.precautionCheckCount?.toDouble(),
+                traversalFlag = safetyCheckSubmission.traversalFlag
+            )
+        }
+
+        // 7. 출근 현황 집계 (commuteLogId 업데이트 후)
         val todayTeamMemberSchedules = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(employee.id, today)
         val totalCount = todayTeamMemberSchedules.size
         val registeredCount = todayTeamMemberSchedules.count { it.commuteLogId != null || it.id == scheduleId }

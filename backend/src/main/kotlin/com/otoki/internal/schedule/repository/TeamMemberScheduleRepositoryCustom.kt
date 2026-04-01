@@ -2,10 +2,31 @@ package com.otoki.internal.schedule.repository
 
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 interface TeamMemberScheduleRepositoryCustom {
 
     fun updateCommuteLogId(sfid: String, commuteLogId: String)
+
+    fun updateSafetyCheckData(
+        sfid: String,
+        equipment1: String?,
+        equipment2: String?,
+        equipment3: String?,
+        equipment4: String?,
+        equipment5: String?,
+        equipment6: String?,
+        equipment7: String?,
+        equipment8: String?,
+        equipment9: String?,
+        yesChkCnt: Double?,
+        noChkCnt: Double?,
+        startTime: LocalDateTime?,
+        completeTime: LocalDateTime?,
+        precaution: String?,
+        precautionChk: Double?,
+        traversalFlag: String?
+    )
 
     fun findByEmployeeIdAndWorkingDate(employeeId: Long, workingDate: LocalDate): List<TeamMemberSchedule>
 

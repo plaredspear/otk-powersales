@@ -116,5 +116,5 @@ class SafetyCheckSubmission(
 
     @HCColumn("completeworkyn")
     @Column(name = "complete_work_yn", length = 18)
-    val completeWorkYn: String? = null
+    var completeWorkYn: String? = null
 ) : BaseEntity()
