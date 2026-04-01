@@ -9,6 +9,7 @@ import '../widgets/attendance/attendance_status_counter.dart';
 import '../widgets/attendance/attendance_status_popup.dart';
 import '../widgets/attendance/account_list_item.dart';
 import '../widgets/attendance/account_search_bar.dart';
+import '../widgets/attendance/safety_check_required_banner.dart';
 import '../widgets/common/primary_button.dart';
 import '../../core/utils/throttled_tap_mixin.dart';
 import '../../app_router.dart';
@@ -132,6 +133,14 @@ class _AttendancePageState extends ConsumerState<AttendancePage>
 
     return Column(
       children: [
+        // 안전점검 미완료 배너
+        if (!state.safetyCheckCompleted)
+          SafetyCheckRequiredBanner(
+            onNavigateToSafetyCheck: () => throttledTap(
+              () => AppRouter.navigateTo(context, AppRouter.safetyCheck),
+            ),
+          ),
+
         if (!state.isFixedWorker)
           Padding(
             padding: const EdgeInsets.all(16),
@@ -232,7 +241,8 @@ class _AttendancePageState extends ConsumerState<AttendancePage>
   }
 
   Widget? _buildBottomBar(dynamic state, AttendanceNotifier notifier) {
-    final canRegister = state.selectedScheduleId != null;
+    final canRegister =
+        state.selectedScheduleId != null && state.safetyCheckCompleted;
 
     if (state.allAccounts.isEmpty) return null;
 

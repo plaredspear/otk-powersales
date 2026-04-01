@@ -283,6 +283,26 @@ void main() {
       });
     });
 
+    group('safetyCheckCompleted', () {
+      test('loadAccounts 안전점검 완료 시 safetyCheckCompleted true', () async {
+        repository.safetyCheckCompleted = true;
+        await notifier.loadAccounts();
+
+        expect(notifier.state.safetyCheckCompleted, true);
+      });
+
+      test('loadAccounts 안전점검 미완료 시 safetyCheckCompleted false', () async {
+        repository.safetyCheckCompleted = false;
+        await notifier.loadAccounts();
+
+        expect(notifier.state.safetyCheckCompleted, false);
+      });
+
+      test('초기 상태 safetyCheckCompleted는 false', () {
+        expect(notifier.state.safetyCheckCompleted, false);
+      });
+    });
+
     test('전체 워크플로우: 로딩 → 검색 → 선택 → 등록 → 현황 조회', () async {
       // 1. 거래처 목록 로딩
       await notifier.loadAccounts();
@@ -322,6 +342,7 @@ class FakeAttendanceRepository implements AttendanceRepository {
   Exception? exceptionToThrow;
   final Set<int> _registeredIds = {};
   List<AccountScheduleItem>? accountsOverride;
+  bool safetyCheckCompleted = true;
 
   @override
   Future<AccountListResult> getAccountList({String? keyword}) async {
@@ -333,6 +354,7 @@ class FakeAttendanceRepository implements AttendanceRepository {
       registeredCount:
           accounts.where((s) => s.isRegistered).length,
       currentDate: '2026-03-01',
+      safetyCheckCompleted: safetyCheckCompleted,
     );
   }
 

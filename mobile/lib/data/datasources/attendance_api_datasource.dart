@@ -41,6 +41,7 @@ class AttendanceApiDataSource {
       totalCount: data['total_count'] as int,
       registeredCount: data['registered_count'] as int,
       currentDate: data['current_date'] as String,
+      safetyCheckCompleted: data['safety_check_completed'] as bool? ?? true,
     );
   }
 
