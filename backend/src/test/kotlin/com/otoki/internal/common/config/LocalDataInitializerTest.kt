@@ -7,6 +7,7 @@ import com.otoki.internal.common.repository.AgreementWordRepository
 import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.sap.entity.Organization
 import com.otoki.internal.sap.repository.OrganizationRepository
+import com.otoki.internal.promotion.repository.PromotionTypeRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -44,6 +45,9 @@ class LocalDataInitializerTest {
 
     @Mock
     private lateinit var organizationRepository: OrganizationRepository
+
+    @Mock
+    private lateinit var promotionTypeRepository: PromotionTypeRepository
 
     @Mock
     private lateinit var transactionTemplate: TransactionTemplate
@@ -93,6 +97,7 @@ class LocalDataInitializerTest {
         whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
             .thenReturn(Optional.of(AgreementWord()))
         whenever(organizationRepository.count()).thenReturn(1L)
+        whenever(promotionTypeRepository.count()).thenReturn(1L)
     }
 
     private fun captureAllSavedEmployees(): List<Employee> {
