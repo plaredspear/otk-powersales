@@ -5,6 +5,7 @@ import com.otoki.internal.common.salesforce.HCColumn
 import com.otoki.internal.common.salesforce.HCTable
 import com.otoki.internal.common.salesforce.SFField
 import com.otoki.internal.common.salesforce.SFObject
+import com.otoki.internal.sap.entity.Employee
 import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
@@ -39,6 +40,10 @@ class PushMessageReceiver(
     @Column(name = "employee_id")
     val employeeId: Long? = null,
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employee_id", insertable = false, updatable = false, foreignKey = ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    var employee: Employee? = null,
+
     @HCColumn("employeeid__c")
     @SFField("EmployeeId__c")
     @Column(name = "employee_sfid", length = 18)
@@ -46,6 +51,10 @@ class PushMessageReceiver(
 
     @Column(name = "push_message_id")
     val pushMessageId: Int? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "push_message_id", insertable = false, updatable = false, foreignKey = ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    var pushMessage: PushMessage? = null,
 
     @HCColumn("messageid__c")
     @SFField("MessageId__c")
