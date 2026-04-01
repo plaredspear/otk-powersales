@@ -32,6 +32,9 @@ class AttendanceState {
   /// 출근등록 현황 리스트
   final List<AttendanceStatus> statusList;
 
+  /// 안전점검 완료 여부
+  final bool safetyCheckCompleted;
+
   const AttendanceState({
     this.isLoading = false,
     this.isRegistering = false,
@@ -44,6 +47,7 @@ class AttendanceState {
     this.searchKeyword = '',
     this.registrationResult,
     this.statusList = const [],
+    this.safetyCheckCompleted = false,
   });
 
   factory AttendanceState.initial() {
@@ -97,6 +101,7 @@ class AttendanceState {
     String? searchKeyword,
     AttendanceResult? registrationResult,
     List<AttendanceStatus>? statusList,
+    bool? safetyCheckCompleted,
   }) {
     return AttendanceState(
       isLoading: isLoading ?? this.isLoading,
@@ -110,6 +115,7 @@ class AttendanceState {
       searchKeyword: searchKeyword ?? this.searchKeyword,
       registrationResult: registrationResult ?? this.registrationResult,
       statusList: statusList ?? this.statusList,
+      safetyCheckCompleted: safetyCheckCompleted ?? this.safetyCheckCompleted,
     );
   }
 }

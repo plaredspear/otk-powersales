@@ -8,12 +8,14 @@ class AccountListResult {
   final int totalCount;
   final int registeredCount;
   final String currentDate;
+  final bool safetyCheckCompleted;
 
   const AccountListResult({
     required this.accounts,
     required this.totalCount,
     required this.registeredCount,
     required this.currentDate,
+    required this.safetyCheckCompleted,
   });
 }
 

@@ -63,6 +63,7 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
         filteredAccounts: result.accounts,
         totalCount: result.totalCount,
         registeredCount: result.registeredCount,
+        safetyCheckCompleted: result.safetyCheckCompleted,
         errorMessage: null,
       );
 
