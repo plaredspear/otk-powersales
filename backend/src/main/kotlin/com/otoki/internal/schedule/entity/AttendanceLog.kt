@@ -3,6 +3,8 @@ package com.otoki.internal.schedule.entity
 import com.otoki.internal.common.entity.BaseEntity
 import com.otoki.internal.common.salesforce.SFField
 import com.otoki.internal.common.salesforce.SFObject
+import com.otoki.internal.sap.entity.Account
+import com.otoki.internal.sap.entity.Employee
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
@@ -52,5 +54,14 @@ class AttendanceLog(
     @SFField("DKRetail__Reason__c")
     @Column(name = "reason", length = 255)
     val reason: String? = null,
+
+    // -- Relations --
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employee_id", insertable = false, updatable = false)
+    val employee: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id", insertable = false, updatable = false)
+    val account: Account? = null,
 
 ) : BaseEntity()
