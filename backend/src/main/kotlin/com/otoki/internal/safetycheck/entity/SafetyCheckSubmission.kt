@@ -3,6 +3,9 @@ package com.otoki.internal.safetycheck.entity
 import com.otoki.internal.common.entity.BaseEntity
 import com.otoki.internal.common.salesforce.HCColumn
 import com.otoki.internal.common.salesforce.HCTable
+import com.otoki.internal.sap.entity.Employee
+import com.otoki.internal.schedule.entity.DisplayWorkSchedule
+import com.otoki.internal.schedule.entity.TeamMemberSchedule
 import jakarta.persistence.*
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -116,5 +119,18 @@ class SafetyCheckSubmission(
 
     @HCColumn("completeworkyn")
     @Column(name = "complete_work_yn", length = 18)
-    var completeWorkYn: String? = null
+    var completeWorkYn: String? = null,
+
+    // -- Relations --
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employee_id", insertable = false, updatable = false)
+    val employee: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "display_work_schedule_id", insertable = false, updatable = false)
+    val displayWorkSchedule: DisplayWorkSchedule? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "team_member_schedule_id", insertable = false, updatable = false)
+    val teamMemberSchedule: TeamMemberSchedule? = null
 ) : BaseEntity()
