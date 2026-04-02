@@ -13,7 +13,7 @@ import jakarta.persistence.*
 /**
  * 제품 바코드 Entity
  * V1 스키마 product_barcode 테이블에 매핑.
- * Product와 1:N 관계 (sfid 문자열 참조, FK 없음).
+ * Product와 N:1 관계 (product_id FK).
  */
 @Entity
 @Table(name = "product_barcode")
@@ -70,5 +70,10 @@ class ProductBarcode(
 
     @HCColumn("isdeleted")
     @Column(name = "is_deleted")
-    val isDeleted: Boolean? = null
+    val isDeleted: Boolean? = null,
+
+    // -- Relations --
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id", insertable = false, updatable = false)
+    val product: Product? = null,
 ) : BaseEntity()
