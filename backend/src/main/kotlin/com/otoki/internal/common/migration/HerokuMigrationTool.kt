@@ -93,6 +93,7 @@ import kotlin.collections.iterator
  * │  YES    │ tmp_order_product                  │ tmp_order_product           │ TmpOrderProduct         │ employee_code → employee.employee_code, product_code → product.product_code │ UPDATE: employee_id, product_id │
  * │  YES    │ tmp_promotion                      │ tmp_promotion               │ TmpPromotion            │ employee_code → employee.employee_code, promotion_product_code → product.product_code │ UPDATE: employee_id, product_id │
  * │  YES    │ tmp_suggest                        │ tmp_suggest                 │ TmpSuggest              │ employee_code → employee.employee_code, product_code → product.product_code, account_code → account.external_key │ UPDATE: employee_id, product_id, account_id │
+ * │   no    │ professionalpromotionteammaster__c │ professional_promotion_team_master │ ProfessionalPromotionTeamMaster │ account__c → account.sfid, employeenumber__c → employee.employee_code │ V81: sfid/참조키 컬럼 추가 │
  * │   no    │ uploadfile__c                      │ upload_file                 │ UploadFile              │ recordid__c → 다형성 sfid (여러 오브젝트 참조)                 │                    │
  * │   no    │ _hcmeta                            │ —                           │ —                       │ —                                                             │ 시스템             │
  * │   no    │ _sf_event_log                      │ —                           │ —                       │ —                                                             │ 시스템             │
