@@ -3,6 +3,7 @@ package com.otoki.internal.leave.entity
 import com.otoki.internal.common.salesforce.SFField
 import com.otoki.internal.common.salesforce.SFObject
 import com.otoki.internal.common.entity.BaseEntity
+import com.otoki.internal.sap.entity.Employee
 import jakarta.persistence.*
 import java.time.LocalDate
 
@@ -13,11 +14,15 @@ class AlternativeHoliday(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "alternative_holiday_id")
     val id: Long = 0,
 
-    @SFField("DKRetail__EmployeeId__c")
     @Column(name = "employee_id", nullable = false)
     val employeeId: Long,
+
+    @SFField("DKRetail__EmployeeId__c")
+    @Column(name = "employee_sfid", length = 18)
+    val employeeSfid: String? = null,
 
     @SFField("DKRetail__EmpName__c")
     @Column(name = "employee_name", nullable = false, length = 50)
@@ -44,7 +49,12 @@ class AlternativeHoliday(
     var changeReason: String? = null,
 
     @Column(name = "created_by", nullable = false, length = 20)
-    val createdBy: String
+    val createdBy: String,
+
+    // -- Relations --
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employee_id", insertable = false, updatable = false)
+    val employee: Employee? = null,
 ) : BaseEntity() {
     fun approve(confirmDate: LocalDate, changeReason: String?) {
         this.confirmAltHolidayDate = confirmDate

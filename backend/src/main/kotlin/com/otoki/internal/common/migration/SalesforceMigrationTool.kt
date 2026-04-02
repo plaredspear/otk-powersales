@@ -24,7 +24,7 @@ import com.otoki.internal.schedule.entity.AttendanceLog
  * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
  * │         │ ── Employee 참조 ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
  * │  NO     │ AttendInfo__c                               │ attend_info                 │ AttendInfo              │ EmployeeCode__c → employee.employee_code                      │ @SAPSource 병행               │
- * │  NO     │ DKRetail__AlternativeHoliday__c             │ alternative_holiday         │ AlternativeHoliday      │ DKRetail__EmployeeId__c → employee.sfid                       │                               │
+ * │  NO     │ DKRetail__AlternativeHoliday__c             │ alternative_holiday         │ AlternativeHoliday      │ DKRetail__EmployeeId__c → employee.sfid                       │ V83: sfid 컬럼 추가, employee_id FK │
  * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
  * │         │ ── Promotion 관련 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
  * │  NO     │ DKRetail__Promotion__c                      │ promotion                   │ Promotion               │ AccId__c → account.sfid, DKRetail__PrimaryProductId__c →      │ UPDATE: account_id, product_id │
