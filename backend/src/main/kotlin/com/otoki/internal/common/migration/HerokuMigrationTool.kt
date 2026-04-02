@@ -31,6 +31,7 @@ import com.otoki.internal.education.entity.EducationCode
 import com.otoki.internal.education.entity.EducationPost
 import com.otoki.internal.education.entity.EducationPostAttachment
 import com.otoki.internal.education.entity.EducationViewHistory
+import com.otoki.internal.promotion.entity.ProfessionalPromotionTeamMaster
 import com.otoki.internal.sap.entity.MonthlySalesHistory
 import com.otoki.internal.product.entity.FavoriteProduct
 import com.otoki.internal.productexpiration.entity.ProductExpiration
@@ -93,7 +94,7 @@ import kotlin.collections.iterator
  * │  YES    │ tmp_order_product                  │ tmp_order_product           │ TmpOrderProduct         │ employee_code → employee.employee_code, product_code → product.product_code │ UPDATE: employee_id, product_id │
  * │  YES    │ tmp_promotion                      │ tmp_promotion               │ TmpPromotion            │ employee_code → employee.employee_code, promotion_product_code → product.product_code │ UPDATE: employee_id, product_id │
  * │  YES    │ tmp_suggest                        │ tmp_suggest                 │ TmpSuggest              │ employee_code → employee.employee_code, product_code → product.product_code, account_code → account.external_key │ UPDATE: employee_id, product_id, account_id │
- * │   no    │ professionalpromotionteammaster__c │ professional_promotion_team_master │ ProfessionalPromotionTeamMaster │ account__c → account.sfid, employeenumber__c → employee.employee_code │ V81: sfid/참조키 컬럼 추가 │
+ * │  YES    │ professionalpromotionteammaster__c │ professional_promotion_team_master │ ProfessionalPromotionTeamMaster │ account__c → account.sfid, employeenumber__c → employee.employee_code │ V81: sfid/참조키 컬럼 추가, UPDATE: account_id, employee_id │
  * │   no    │ uploadfile__c                      │ upload_file                 │ UploadFile              │ recordid__c → 다형성 sfid (여러 오브젝트 참조)                 │                    │
  * │   no    │ _hcmeta                            │ —                           │ —                       │ —                                                             │ 시스템             │
  * │   no    │ _sf_event_log                      │ —                           │ —                       │ —                                                             │ 시스템             │
@@ -166,6 +167,7 @@ object HerokuMigrationTool {
         EntityRegistration("tmpOrderProduct", TmpOrderProduct::class.java),
         EntityRegistration("tmpPromotion", TmpPromotion::class.java),
         EntityRegistration("tmpSuggest", TmpSuggest::class.java),
+        EntityRegistration("professionalPromotionTeamMaster", ProfessionalPromotionTeamMaster::class.java),
     )
 
     private const val HEROKU_SCHEMA = "salesforce2"
@@ -680,6 +682,30 @@ object HerokuMigrationTool {
                             "WHERE ts.account_code = a.external_key"
                     )
                     println("[tmpSuggest] account_id UPDATE 완료: ${updated}건")
+                }
+
+                // ProfessionalPromotionTeamMaster: account_sfid → account_id 역참조 UPDATE
+                println("[professionalPromotionTeamMaster] account_sfid → account_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.professional_promotion_team_master p " +
+                            "SET account_id = a.account_id " +
+                            "FROM $TARGET_SCHEMA.account a " +
+                            "WHERE p.account_sfid = a.sfid"
+                    )
+                    println("[professionalPromotionTeamMaster] account_id UPDATE 완료: ${updated}건")
+                }
+
+                // ProfessionalPromotionTeamMaster: employee_number → employee_id 역참조 UPDATE
+                println("[professionalPromotionTeamMaster] employee_number → employee_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.professional_promotion_team_master p " +
+                            "SET employee_id = e.employee_id " +
+                            "FROM $TARGET_SCHEMA.employee e " +
+                            "WHERE p.employee_number = e.employee_code"
+                    )
+                    println("[professionalPromotionTeamMaster] employee_id UPDATE 완료: ${updated}건")
                 }
             }
         }
