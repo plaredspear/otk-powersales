@@ -2,6 +2,7 @@ package com.otoki.internal.promotion.entity
 
 import com.otoki.internal.common.salesforce.SFField
 import com.otoki.internal.common.salesforce.SFObject
+import com.otoki.internal.sap.entity.Employee
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
@@ -29,5 +30,10 @@ class ProfessionalPromotionTeamHistory(
 
     @SFField("updateTime__c")
     @Column(name = "changed_at", nullable = false)
-    val changedAt: LocalDateTime = LocalDateTime.now()
+    val changedAt: LocalDateTime = LocalDateTime.now(),
+
+    // -- Relations --
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employee_id", insertable = false, updatable = false)
+    val employee: Employee? = null,
 )
