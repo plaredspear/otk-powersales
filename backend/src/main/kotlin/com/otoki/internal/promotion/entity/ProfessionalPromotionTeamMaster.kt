@@ -5,6 +5,8 @@ import com.otoki.internal.common.salesforce.HCColumn
 import com.otoki.internal.common.salesforce.HCTable
 import com.otoki.internal.common.salesforce.SFField
 import com.otoki.internal.common.salesforce.SFObject
+import com.otoki.internal.sap.entity.Account
+import com.otoki.internal.sap.entity.Employee
 import jakarta.persistence.*
 import java.time.LocalDate
 
@@ -19,15 +21,21 @@ class ProfessionalPromotionTeamMaster(
     @Column(name = "professional_promotion_team_master_id")
     val id: Long = 0,
 
-    @SFField("EmployeeNumber__c")
-    @HCColumn("employeenumber__c")
     @Column(name = "employee_id", nullable = false)
     val employeeId: Long,
 
-    @SFField("Account__c")
-    @HCColumn("account__c")
+    @SFField("EmployeeNumber__c")
+    @HCColumn("employeenumber__c")
+    @Column(name = "employee_number", length = 20)
+    val employeeNumber: String? = null,
+
     @Column(name = "account_id", nullable = false)
     val accountId: Int,
+
+    @SFField("Account__c")
+    @HCColumn("account__c")
+    @Column(name = "account_sfid", length = 18)
+    val accountSfid: String? = null,
 
     @SFField("ProfessionalPromotionTeam__c")
     @HCColumn("professionalpromotionteam__c")
@@ -57,7 +65,17 @@ class ProfessionalPromotionTeamMaster(
     @SFField("BranchName__c")
     @HCColumn("branchname__c")
     @Column(name = "branch_name", length = 50)
-    var branchName: String? = null
+    var branchName: String? = null,
+
+    // -- Relations --
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employee_id", insertable = false, updatable = false)
+    val employee: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id", insertable = false, updatable = false)
+    val account: Account? = null
 
 ) : BaseEntity() {
 
