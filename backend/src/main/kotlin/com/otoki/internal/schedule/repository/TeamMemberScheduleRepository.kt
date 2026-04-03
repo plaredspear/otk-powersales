@@ -1,6 +1,7 @@
 package com.otoki.internal.schedule.repository
 
 import com.otoki.internal.promotion.entity.PromotionEmployee
+import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
 import org.springframework.data.jpa.repository.JpaRepository
@@ -20,4 +21,6 @@ interface TeamMemberScheduleRepository : JpaRepository<TeamMemberSchedule, Long>
     fun findByEmployeeInAndWorkingDateIn(employees: List<Employee>, workingDates: List<LocalDate>): List<TeamMemberSchedule>
 
     fun existsByEmployeeAndWorkingDateAndWorkingType(employee: Employee, workingDate: LocalDate, workingType: String): Boolean
+
+    fun existsByEmployeeAndAccountAndWorkingDateBetween(employee: Employee, account: Account, startDate: LocalDate, endDate: LocalDate): Boolean
 }

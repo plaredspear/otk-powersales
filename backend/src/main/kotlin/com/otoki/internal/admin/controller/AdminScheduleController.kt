@@ -64,6 +64,16 @@ class AdminScheduleController(
         return ResponseEntity.ok(ApiResponse.success(result, "${result.updatedCount}건이 확정 해제되었습니다"))
     }
 
+    @RequiresPermission(AdminPermission.SCHEDULE_WRITE)
+    @DeleteMapping("/{id}")
+    fun deleteSchedule(
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @PathVariable id: Long
+    ): ResponseEntity<ApiResponse<Any?>> {
+        adminScheduleService.deleteSchedule(principal.userId, id)
+        return ResponseEntity.ok(ApiResponse.success(null as Any?, "스케줄이 삭제되었습니다"))
+    }
+
     @RequiresPermission(AdminPermission.SCHEDULE_READ)
     @GetMapping("/template")
     fun downloadTemplate(

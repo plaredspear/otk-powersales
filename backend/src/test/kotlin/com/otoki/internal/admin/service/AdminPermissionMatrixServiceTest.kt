@@ -46,8 +46,8 @@ class AdminPermissionMatrixServiceTest {
             assertThat(result.permissions[0].description).isNotBlank()
             assertThat(result.permissions[0].menus).isNotEmpty()
 
-            assertThat(result.roles).hasSize(6)
-            assertThat(result.roles.map { it.role }).contains("조장", "지점장", "영업부장")
+            assertThat(result.roles).hasSize(7)
+            assertThat(result.roles.map { it.role }).contains("시스템관리자", "조장", "지점장", "영업부장")
 
             assertThat(result.currentUser.role).isEqualTo("조장")
             assertThat(result.currentUser.permissions).hasSize(AdminPermission.entries.size)

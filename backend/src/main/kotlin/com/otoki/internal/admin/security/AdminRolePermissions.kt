@@ -7,6 +7,7 @@ object AdminRolePermissions {
     private val READ_ONLY_SCHEDULE: Set<AdminPermission> = ALL_PERMISSIONS - AdminPermission.SCHEDULE_WRITE
 
     private val ROLE_PERMISSIONS: Map<String, Set<AdminPermission>> = mapOf(
+        "시스템관리자" to ALL_PERMISSIONS,
         "조장" to ALL_PERMISSIONS,
         "지점장" to READ_ONLY_SCHEDULE,
         "영업부장" to READ_ONLY_SCHEDULE,
