@@ -7,6 +7,7 @@ import com.otoki.internal.schedule.dto.response.*
 import com.otoki.internal.schedule.exception.*
 import com.otoki.internal.branch.dto.response.BranchResponse
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
+import com.otoki.internal.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.sap.repository.AccountRepository
@@ -21,6 +22,7 @@ import java.time.format.DateTimeFormatter
 @Transactional(readOnly = true)
 class AdminTeamScheduleService(
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
+    private val displayWorkScheduleRepository: DisplayWorkScheduleRepository,
     private val employeeRepository: EmployeeRepository,
     private val accountRepository: AccountRepository,
     private val adminEmployeeHolder: AdminEmployeeHolder
@@ -172,8 +174,11 @@ class AdminTeamScheduleService(
 
     @Transactional
     fun updateSchedule(userId: Long, scheduleId: Long, request: TeamScheduleUpdateRequest) {
+        val currentEmployee = findEmployeeById(userId)
         val schedule = teamMemberScheduleRepository.findById(scheduleId)
             .orElseThrow { TeamScheduleNotFoundException() }
+
+        validateDisplayMasterLink(currentEmployee, schedule)
 
         val employee = schedule.employee
         if (employee != null) {
@@ -218,6 +223,8 @@ class AdminTeamScheduleService(
             throw TeamScheduleWorkReportDeleteException()
         }
 
+        validateDisplayMasterLink(currentEmployee, schedule)
+
         teamMemberScheduleRepository.delete(schedule)
     }
 
@@ -227,6 +234,19 @@ class AdminTeamScheduleService(
         return adminEmployeeHolder.employee
             ?: employeeRepository.findWithEmployeeInfoById(userId)
             ?: throw TeamScheduleEmployeeNotFoundException()
+    }
+
+    private fun validateDisplayMasterLink(currentEmployee: Employee, schedule: TeamMemberSchedule) {
+        if (currentEmployee.appAuthority == "시스템관리자" || currentEmployee.appAuthority == "영업지원실") return
+        if (schedule.workingCategory1 != "진열") return
+
+        val employeeId = schedule.employee?.id ?: return
+        val accountId = schedule.account?.id ?: return
+        val workingDate = schedule.workingDate ?: return
+
+        if (displayWorkScheduleRepository.existsConfirmedByEmployeeAndAccountAndDate(employeeId, accountId, workingDate)) {
+            throw TeamScheduleDisplayMasterLinkException()
+        }
     }
 
     private fun validateEmployeeStatus(employee: Employee) {
