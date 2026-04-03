@@ -6,6 +6,7 @@ import com.otoki.internal.schedule.dto.request.TeamScheduleUpdateRequest
 import com.otoki.internal.schedule.exception.*
 import com.otoki.internal.branch.dto.response.BranchResponse
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
+import com.otoki.internal.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.sap.entity.Employee
@@ -30,6 +31,9 @@ class AdminTeamScheduleServiceTest {
 
     @Mock
     private lateinit var teamMemberScheduleRepository: TeamMemberScheduleRepository
+
+    @Mock
+    private lateinit var displayWorkScheduleRepository: DisplayWorkScheduleRepository
 
     @Mock
     private lateinit var employeeRepository: EmployeeRepository
@@ -491,6 +495,7 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("정상 수정 - 거래처 변경")
         fun updateSchedule_success() {
             // Given
+            val currentUser = createEmployee(id = 10L, appAuthority = "조장")
             val schedule = createSchedule(
                 id = 100L,
                 employeeId = 1L,
@@ -510,11 +515,14 @@ class AdminTeamScheduleServiceTest {
                 accountId = 2
             )
 
+            whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(currentUser)
             whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+            whenever(displayWorkScheduleRepository.existsConfirmedByEmployeeAndAccountAndDate(1L, 1, LocalDate.of(2026, 4, 1)))
+                .thenReturn(false)
             whenever(accountRepository.findById(2)).thenReturn(Optional.of(newAccount))
 
             // When
-            service.updateSchedule(1L, 100L, request)
+            service.updateSchedule(10L, 100L, request)
 
             // Then
             assertThat(schedule.account?.id).isEqualTo(2)
@@ -524,16 +532,147 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("미존재 일정 수정 - NOT_FOUND")
         fun updateSchedule_notFound() {
             // Given
+            val currentUser = createEmployee(id = 10L, appAuthority = "조장")
             val request = TeamScheduleUpdateRequest(
                 workingDate = "2026-04-01",
                 workingType = "근무"
             )
 
+            whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(currentUser)
             whenever(teamMemberScheduleRepository.findById(999L)).thenReturn(Optional.empty())
 
             // When & Then
-            assertThatThrownBy { service.updateSchedule(1L, 999L, request) }
+            assertThatThrownBy { service.updateSchedule(10L, 999L, request) }
                 .isInstanceOf(TeamScheduleNotFoundException::class.java)
+        }
+
+        @Test
+        @DisplayName("진열마스터 연결 일정 수정 (일반 사용자) - DISPLAY_MASTER_LINK_CONSTRAINT")
+        fun updateSchedule_displayMasterLinked_forbidden() {
+            // Given
+            val currentUser = createEmployee(id = 10L, appAuthority = "조장")
+            val schedule = createSchedule(
+                id = 100L,
+                employeeId = 1L,
+                workingDate = LocalDate.of(2026, 4, 1),
+                workingType = "근무",
+                workingCategory1 = "진열",
+                accountId = 1
+            )
+
+            val request = TeamScheduleUpdateRequest(
+                workingDate = "2026-04-01",
+                workingType = "근무",
+                workingCategory1 = "진열",
+                workingCategory3 = "고정",
+                accountId = 1
+            )
+
+            whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(currentUser)
+            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+            whenever(displayWorkScheduleRepository.existsConfirmedByEmployeeAndAccountAndDate(1L, 1, LocalDate.of(2026, 4, 1)))
+                .thenReturn(true)
+
+            // When & Then
+            assertThatThrownBy { service.updateSchedule(10L, 100L, request) }
+                .isInstanceOf(TeamScheduleDisplayMasterLinkException::class.java)
+        }
+
+        @Test
+        @DisplayName("진열마스터 연결 일정 수정 (시스템관리자) - 수정 성공")
+        fun updateSchedule_displayMasterLinked_systemAdmin_success() {
+            // Given
+            val admin = createEmployee(id = 10L, appAuthority = "시스템관리자")
+            val schedule = createSchedule(
+                id = 100L,
+                employeeId = 1L,
+                workingDate = LocalDate.of(2026, 4, 1),
+                workingType = "근무",
+                workingCategory1 = "진열",
+                workingCategory3 = "고정",
+                accountId = 1
+            )
+
+            val request = TeamScheduleUpdateRequest(
+                workingDate = "2026-04-01",
+                workingType = "근무",
+                workingCategory1 = "진열",
+                workingCategory3 = "고정",
+                accountId = 1
+            )
+
+            whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(admin)
+            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+
+            // When
+            service.updateSchedule(10L, 100L, request)
+
+            // Then (no exception thrown)
+            verify(displayWorkScheduleRepository, never()).existsConfirmedByEmployeeAndAccountAndDate(any(), any(), any())
+        }
+
+        @Test
+        @DisplayName("진열마스터 연결 일정 수정 (영업지원실) - 수정 성공")
+        fun updateSchedule_displayMasterLinked_salesSupport_success() {
+            // Given
+            val salesSupport = createEmployee(id = 10L, appAuthority = "영업지원실")
+            val schedule = createSchedule(
+                id = 100L,
+                employeeId = 1L,
+                workingDate = LocalDate.of(2026, 4, 1),
+                workingType = "근무",
+                workingCategory1 = "진열",
+                workingCategory3 = "고정",
+                accountId = 1
+            )
+
+            val request = TeamScheduleUpdateRequest(
+                workingDate = "2026-04-01",
+                workingType = "근무",
+                workingCategory1 = "진열",
+                workingCategory3 = "고정",
+                accountId = 1
+            )
+
+            whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(salesSupport)
+            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+
+            // When
+            service.updateSchedule(10L, 100L, request)
+
+            // Then (no exception thrown)
+            verify(displayWorkScheduleRepository, never()).existsConfirmedByEmployeeAndAccountAndDate(any(), any(), any())
+        }
+
+        @Test
+        @DisplayName("비진열 일정 수정 (일반 사용자) - 수정 성공")
+        fun updateSchedule_nonDisplay_success() {
+            // Given
+            val currentUser = createEmployee(id = 10L, appAuthority = "조장")
+            val schedule = createSchedule(
+                id = 100L,
+                employeeId = 1L,
+                workingDate = LocalDate.of(2026, 4, 1),
+                workingType = "근무",
+                workingCategory1 = "행사",
+                accountId = 1
+            )
+
+            val request = TeamScheduleUpdateRequest(
+                workingDate = "2026-04-01",
+                workingType = "근무",
+                workingCategory1 = "행사",
+                accountId = 1
+            )
+
+            whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(currentUser)
+            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+
+            // When
+            service.updateSchedule(10L, 100L, request)
+
+            // Then (no exception, no display master check)
+            verify(displayWorkScheduleRepository, never()).existsConfirmedByEmployeeAndAccountAndDate(any(), any(), any())
         }
     }
 
@@ -552,6 +691,8 @@ class AdminTeamScheduleServiceTest {
 
             whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(leader)
             whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+            whenever(displayWorkScheduleRepository.existsConfirmedByEmployeeAndAccountAndDate(1L, 1, LocalDate.of(2026, 4, 1)))
+                .thenReturn(false)
 
             // When
             service.deleteSchedule(10L, 100L)
@@ -628,12 +769,68 @@ class AdminTeamScheduleServiceTest {
 
             whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(leader)
             whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+            whenever(displayWorkScheduleRepository.existsConfirmedByEmployeeAndAccountAndDate(1L, 1, LocalDate.of(2026, 4, 1)))
+                .thenReturn(false)
 
             // When
             service.deleteSchedule(10L, 100L)
 
             // Then
             verify(teamMemberScheduleRepository).delete(schedule)
+        }
+
+        @Test
+        @DisplayName("진열마스터 연결 일정 삭제 (일반 사용자) - DISPLAY_MASTER_LINK_CONSTRAINT")
+        fun deleteSchedule_displayMasterLinked_forbidden() {
+            // Given
+            val leader = createEmployee(id = 10L, appAuthority = "조장")
+            val schedule = createSchedule(id = 100L, commuteLogId = null, workingCategory1 = "진열")
+
+            whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(leader)
+            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+            whenever(displayWorkScheduleRepository.existsConfirmedByEmployeeAndAccountAndDate(1L, 1, LocalDate.of(2026, 4, 1)))
+                .thenReturn(true)
+
+            // When & Then
+            assertThatThrownBy { service.deleteSchedule(10L, 100L) }
+                .isInstanceOf(TeamScheduleDisplayMasterLinkException::class.java)
+            verify(teamMemberScheduleRepository, never()).delete(any())
+        }
+
+        @Test
+        @DisplayName("진열마스터 연결 일정 삭제 (시스템관리자) - 삭제 성공")
+        fun deleteSchedule_displayMasterLinked_systemAdmin_success() {
+            // Given
+            val admin = createEmployee(id = 10L, appAuthority = "시스템관리자")
+            val schedule = createSchedule(id = 100L, commuteLogId = null, workingCategory1 = "진열")
+
+            whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(admin)
+            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+
+            // When
+            service.deleteSchedule(10L, 100L)
+
+            // Then
+            verify(teamMemberScheduleRepository).delete(schedule)
+            verify(displayWorkScheduleRepository, never()).existsConfirmedByEmployeeAndAccountAndDate(any(), any(), any())
+        }
+
+        @Test
+        @DisplayName("진열마스터 연결 일정 삭제 (영업지원실) - 삭제 성공")
+        fun deleteSchedule_displayMasterLinked_salesSupport_success() {
+            // Given
+            val salesSupport = createEmployee(id = 10L, appAuthority = "영업지원실")
+            val schedule = createSchedule(id = 100L, commuteLogId = null, workingCategory1 = "진열")
+
+            whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(salesSupport)
+            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+
+            // When
+            service.deleteSchedule(10L, 100L)
+
+            // Then
+            verify(teamMemberScheduleRepository).delete(schedule)
+            verify(displayWorkScheduleRepository, never()).existsConfirmedByEmployeeAndAccountAndDate(any(), any(), any())
         }
     }
 }

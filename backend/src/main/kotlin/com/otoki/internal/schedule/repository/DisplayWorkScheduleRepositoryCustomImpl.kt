@@ -193,6 +193,26 @@ class DisplayWorkScheduleRepositoryCustomImpl(
             .fetch()
     }
 
+    override fun existsConfirmedByEmployeeAndAccountAndDate(
+        employeeId: Long,
+        accountId: Int,
+        workingDate: LocalDate
+    ): Boolean {
+        val result = queryFactory
+            .selectOne()
+            .from(displayWorkSchedule)
+            .where(
+                displayWorkSchedule.employee.id.eq(employeeId),
+                displayWorkSchedule.account.id.eq(accountId),
+                displayWorkSchedule.confirmed.eq(true),
+                isNotDeleted(),
+                displayWorkSchedule.startDate.loe(workingDate),
+                displayWorkSchedule.endDate.goe(workingDate)
+            )
+            .fetchFirst()
+        return result != null
+    }
+
     private fun buildEmployeeCodeCondition(employeeCode: String?): BooleanExpression? {
         if (employeeCode.isNullOrBlank()) return null
         val matchingIds = JPAExpressions

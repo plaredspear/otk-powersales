@@ -50,3 +50,9 @@ class TeamScheduleWorkReportDeleteException : BusinessException(
     message = "근무등록이 완료된 일정은 삭제할 수 없습니다",
     httpStatus = HttpStatus.CONFLICT
 )
+
+class TeamScheduleDisplayMasterLinkException : BusinessException(
+    errorCode = "DISPLAY_MASTER_LINK_CONSTRAINT",
+    message = "진열마스터가 연결된 일정은 수정/삭제할 수 없습니다",
+    httpStatus = HttpStatus.CONFLICT
+)
