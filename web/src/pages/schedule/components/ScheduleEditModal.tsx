@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
-import { Alert, Button, Form, Input, message, Modal, Select, Space } from 'antd';
-import { ExclamationCircleOutlined } from '@ant-design/icons';
+import { useEffect, useMemo, useState } from 'react';
+import { Alert, Button, DatePicker, Form, Input, message, Modal, Select, Space, Typography } from 'antd';
+import { ExclamationCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { AxiosError } from 'axios';
+import dayjs from 'dayjs';
 import type { TeamSchedule, TeamScheduleAccount } from '@/api/team-schedule';
 import { useUpdateTeamSchedule, useDeleteTeamSchedule } from '@/hooks/team-schedule/useTeamScheduleMutation';
 
@@ -50,10 +51,17 @@ export function ScheduleEditModal({
   const workingType = Form.useWatch('workingType', form);
   const isWork = workingType === '근무';
 
+  const isPastNonEvent = useMemo(() => {
+    if (!schedule) return false;
+    const isPast = dayjs(schedule.workingDate).isBefore(dayjs(), 'day');
+    const isEvent = schedule.workingCategory1 === '행사';
+    return isPast && !isEvent;
+  }, [schedule]);
+
   useEffect(() => {
     if (open && schedule) {
       form.setFieldsValue({
-        workingDate: schedule.workingDate,
+        workingDate: dayjs(schedule.workingDate),
         employeeName: `${schedule.employeeName}(${schedule.employeeCode})`,
         workingType: schedule.workingType,
         workingCategory1: schedule.workingCategory1,
@@ -71,8 +79,13 @@ export function ScheduleEditModal({
   }));
 
   const extractErrorMessage = (err: unknown): string => {
-    if (err instanceof AxiosError && err.response?.status === 403) {
-      return '지점장님은 스케줄 편집 권한이 없습니다';
+    if (err instanceof AxiosError) {
+      if (err.response?.status === 400 && err.response?.data?.code === 'PAST_DATE_CHANGE_NOT_ALLOWED') {
+        return '과거 근무일자의 날짜는 변경할 수 없습니다';
+      }
+      if (err.response?.status === 403) {
+        return '지점장님은 스케줄 편집 권한이 없습니다';
+      }
     }
     if (err instanceof Error) return err.message;
     return '일정 수정에 실패했습니다';
@@ -87,7 +100,7 @@ export function ScheduleEditModal({
       await updateMutation.mutateAsync({
         id: schedule.id,
         data: {
-          working_date: values.workingDate,
+          working_date: values.workingDate.format('YYYY-MM-DD'),
           working_type: values.workingType,
           ...(isWork && {
             working_category1: values.workingCategory1,
@@ -162,8 +175,18 @@ export function ScheduleEditModal({
 
       <Form form={form} layout="vertical" disabled={readOnly}>
         <Form.Item label="근무일자" name="workingDate">
-          <Input readOnly />
+          <DatePicker
+            format="YYYY-MM-DD"
+            disabled={isPastNonEvent || readOnly}
+            allowClear={false}
+            style={{ width: '100%' }}
+          />
         </Form.Item>
+        {isPastNonEvent && !readOnly && (
+          <Typography.Text type="secondary" style={{ display: 'block', marginTop: -16, marginBottom: 16 }}>
+            <InfoCircleOutlined /> 과거 근무일자의 날짜는 변경할 수 없습니다
+          </Typography.Text>
+        )}
 
         <Form.Item label="여사원" name="employeeName">
           <Input readOnly />
