@@ -56,3 +56,9 @@ class TeamScheduleDisplayMasterLinkException : BusinessException(
     message = "진열마스터가 연결된 일정은 수정/삭제할 수 없습니다",
     httpStatus = HttpStatus.CONFLICT
 )
+
+class TeamSchedulePastDateChangeException : BusinessException(
+    errorCode = "PAST_DATE_CHANGE_NOT_ALLOWED",
+    message = "과거 근무일자의 날짜는 변경할 수 없습니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)

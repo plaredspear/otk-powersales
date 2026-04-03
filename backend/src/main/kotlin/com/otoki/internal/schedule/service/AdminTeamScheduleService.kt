@@ -189,6 +189,10 @@ class AdminTeamScheduleService(
         val dateChanged = schedule.workingDate != newWorkingDate
         val category3Changed = schedule.workingCategory3 != request.workingCategory3
 
+        if (dateChanged && schedule.workingDate?.isBefore(LocalDate.now()) == true && schedule.workingCategory1 != "행사") {
+            throw TeamSchedulePastDateChangeException()
+        }
+
         if (request.workingType == "근무" && request.workingCategory1 == "진열" && (dateChanged || category3Changed)) {
             validateScheduleConflict(schedule.employee!!.id, newWorkingDate, request.workingCategory3, scheduleId)
         }
