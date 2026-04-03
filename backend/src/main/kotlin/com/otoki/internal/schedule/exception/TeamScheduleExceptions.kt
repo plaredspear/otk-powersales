@@ -44,3 +44,9 @@ class TeamScheduleDeleteForbiddenException : BusinessException(
     message = "지점장님은 스케줄 편집 권한이 없습니다",
     httpStatus = HttpStatus.FORBIDDEN
 )
+
+class TeamScheduleWorkReportDeleteException : BusinessException(
+    errorCode = "WORK_REPORT_DELETE_CONSTRAINT",
+    message = "근무등록이 완료된 일정은 삭제할 수 없습니다",
+    httpStatus = HttpStatus.CONFLICT
+)
