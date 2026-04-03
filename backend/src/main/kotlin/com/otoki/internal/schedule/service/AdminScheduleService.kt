@@ -13,6 +13,7 @@ import com.otoki.internal.sap.repository.OrganizationRepository
 import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.schedule.entity.DisplayWorkSchedule
 import com.otoki.internal.schedule.repository.DisplayWorkScheduleRepository
+import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.redis.core.RedisTemplate
@@ -37,6 +38,7 @@ class AdminScheduleService(
     private val excelParser: ScheduleExcelParser,
     private val uploadValidator: ScheduleUploadValidator,
     private val scheduleRepository: DisplayWorkScheduleRepository,
+    private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
     private val monthlySalesHistoryRepository: MonthlySalesHistoryRepository,
     private val redisTemplate: RedisTemplate<String, String>,
     private val objectMapper: ObjectMapper
@@ -289,6 +291,44 @@ class AdminScheduleService(
         }
 
         return ScheduleBatchConfirmResultDto(updatedCount = updatedCount)
+    }
+
+    @Transactional
+    fun deleteSchedule(userId: Long, scheduleId: Long) {
+        val schedule = scheduleRepository.findById(scheduleId)
+            .filter { it.isDeleted != true }
+            .orElseThrow { ScheduleNotFoundException("존재하지 않거나 삭제된 스케줄입니다") }
+
+        val employee = employeeRepository.findById(userId)
+            .orElseThrow { EmployeeNotFoundException() }
+
+        val appAuthority = employee.appAuthority
+
+        if (appAuthority == "시스템관리자" || appAuthority == "영업지원실") {
+            schedule.isDeleted = true
+            return
+        }
+
+        if (appAuthority == "지점장") {
+            throw ScheduleDeleteForbiddenException()
+        }
+
+        if (schedule.confirmed == true) {
+            val scheduleEmployee = schedule.employee
+            val scheduleAccount = schedule.account
+            val startDate = schedule.startDate
+            val endDate = schedule.endDate
+
+            if (scheduleEmployee != null && scheduleAccount != null && startDate != null && endDate != null) {
+                val hasLinkedSchedule = teamMemberScheduleRepository
+                    .existsByEmployeeAndAccountAndWorkingDateBetween(scheduleEmployee, scheduleAccount, startDate, endDate)
+                if (hasLinkedSchedule) {
+                    throw ScheduleDeleteConstraintException()
+                }
+            }
+        }
+
+        schedule.isDeleted = true
     }
 
     private fun validateScheduleIds(ids: List<Long>, schedules: List<DisplayWorkSchedule>) {

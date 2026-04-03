@@ -15,6 +15,7 @@ import com.otoki.internal.sap.repository.OrganizationRepository
 import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.schedule.entity.DisplayWorkSchedule
 import com.otoki.internal.schedule.repository.DisplayWorkScheduleRepository
+import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
@@ -58,6 +59,9 @@ class AdminScheduleServiceTest {
 
     @Mock
     private lateinit var scheduleRepository: DisplayWorkScheduleRepository
+
+    @Mock
+    private lateinit var teamMemberScheduleRepository: TeamMemberScheduleRepository
 
     @Mock
     private lateinit var monthlySalesHistoryRepository: MonthlySalesHistoryRepository
@@ -715,6 +719,136 @@ class AdminScheduleServiceTest {
 
             assertThatThrownBy { adminScheduleService.batchUnconfirm(listOf(1L, 999L)) }
                 .isInstanceOf(ScheduleNotFoundException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("deleteSchedule - 진열마스터 삭제")
+    inner class DeleteScheduleTests {
+
+        private val userId = 1L
+        private val scheduleId = 10L
+
+        @Test
+        @DisplayName("시스템관리자 삭제 - 확정+여사원일정 존재해도 삭제 성공")
+        fun deleteSchedule_systemAdmin_success() {
+            val employee = createEmployee(id = userId, appAuthority = "시스템관리자")
+            val schedule = createSchedule(id = scheduleId, confirmed = true)
+
+            whenever(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+
+            adminScheduleService.deleteSchedule(userId, scheduleId)
+
+            assertThat(schedule.isDeleted).isTrue()
+        }
+
+        @Test
+        @DisplayName("영업지원실 삭제 - 확정+여사원일정 존재해도 삭제 성공")
+        fun deleteSchedule_salesSupport_success() {
+            val employee = createEmployee(id = userId, appAuthority = "영업지원실")
+            val schedule = createSchedule(id = scheduleId, confirmed = true)
+
+            whenever(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+
+            adminScheduleService.deleteSchedule(userId, scheduleId)
+
+            assertThat(schedule.isDeleted).isTrue()
+        }
+
+        @Test
+        @DisplayName("일반 사용자 미확정 삭제 - 삭제 성공")
+        fun deleteSchedule_normalUser_unconfirmed_success() {
+            val employee = createEmployee(id = userId, appAuthority = "조장")
+            val schedule = createSchedule(id = scheduleId, confirmed = false)
+
+            whenever(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+
+            adminScheduleService.deleteSchedule(userId, scheduleId)
+
+            assertThat(schedule.isDeleted).isTrue()
+        }
+
+        @Test
+        @DisplayName("일반 사용자 확정+일정없음 - 삭제 성공")
+        fun deleteSchedule_normalUser_confirmedNoLinked_success() {
+            val scheduleEmployee = createEmployee(id = 2L)
+            val scheduleAccount = createAccount(id = 100)
+            val schedule = createSchedule(
+                id = scheduleId, confirmed = true,
+                employee = scheduleEmployee, account = scheduleAccount
+            )
+            val employee = createEmployee(id = userId, appAuthority = "조장")
+
+            whenever(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(
+                teamMemberScheduleRepository.existsByEmployeeAndAccountAndWorkingDateBetween(
+                    eq(scheduleEmployee), eq(scheduleAccount), any(), any()
+                )
+            ).thenReturn(false)
+
+            adminScheduleService.deleteSchedule(userId, scheduleId)
+
+            assertThat(schedule.isDeleted).isTrue()
+        }
+
+        @Test
+        @DisplayName("미존재 스케줄 - ScheduleNotFoundException")
+        fun deleteSchedule_notFound() {
+            whenever(scheduleRepository.findById(999L)).thenReturn(Optional.empty())
+
+            assertThatThrownBy { adminScheduleService.deleteSchedule(userId, 999L) }
+                .isInstanceOf(ScheduleNotFoundException::class.java)
+        }
+
+        @Test
+        @DisplayName("이미 삭제된 스케줄 - ScheduleNotFoundException")
+        fun deleteSchedule_alreadyDeleted() {
+            val schedule = createSchedule(id = scheduleId, isDeleted = true)
+
+            whenever(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule))
+
+            assertThatThrownBy { adminScheduleService.deleteSchedule(userId, scheduleId) }
+                .isInstanceOf(ScheduleNotFoundException::class.java)
+        }
+
+        @Test
+        @DisplayName("지점장 삭제 시도 - ScheduleDeleteForbiddenException")
+        fun deleteSchedule_branchManager_forbidden() {
+            val employee = createEmployee(id = userId, appAuthority = "지점장")
+            val schedule = createSchedule(id = scheduleId)
+
+            whenever(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+
+            assertThatThrownBy { adminScheduleService.deleteSchedule(userId, scheduleId) }
+                .isInstanceOf(ScheduleDeleteForbiddenException::class.java)
+        }
+
+        @Test
+        @DisplayName("확정+여사원일정 존재 - ScheduleDeleteConstraintException")
+        fun deleteSchedule_confirmedWithLinked_constraint() {
+            val scheduleEmployee = createEmployee(id = 2L)
+            val scheduleAccount = createAccount(id = 100)
+            val schedule = createSchedule(
+                id = scheduleId, confirmed = true,
+                employee = scheduleEmployee, account = scheduleAccount
+            )
+            val employee = createEmployee(id = userId, appAuthority = "조장")
+
+            whenever(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(
+                teamMemberScheduleRepository.existsByEmployeeAndAccountAndWorkingDateBetween(
+                    eq(scheduleEmployee), eq(scheduleAccount), any(), any()
+                )
+            ).thenReturn(true)
+
+            assertThatThrownBy { adminScheduleService.deleteSchedule(userId, scheduleId) }
+                .isInstanceOf(ScheduleDeleteConstraintException::class.java)
         }
     }
 

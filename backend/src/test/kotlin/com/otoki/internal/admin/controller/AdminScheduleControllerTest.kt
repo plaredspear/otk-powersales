@@ -300,10 +300,10 @@ class AdminScheduleControllerTest {
     inner class GetBranches {
 
         @Test
-        @DisplayName("제거 확인 - 404 반환")
+        @DisplayName("제거 확인 - DELETE /{id} 존재로 405 반환")
         fun getBranches_removed() {
             mockMvc.perform(get("/api/v1/admin/schedule/branches"))
-                .andExpect(status().isNotFound)
+                .andExpect(status().isMethodNotAllowed)
         }
     }
 
