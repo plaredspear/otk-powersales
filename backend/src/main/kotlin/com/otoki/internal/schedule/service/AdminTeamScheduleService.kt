@@ -214,6 +214,10 @@ class AdminTeamScheduleService(
         val schedule = teamMemberScheduleRepository.findById(scheduleId)
             .orElseThrow { TeamScheduleNotFoundException() }
 
+        if (currentEmployee.appAuthority != "시스템관리자" && schedule.commuteLogId != null) {
+            throw TeamScheduleWorkReportDeleteException()
+        }
+
         teamMemberScheduleRepository.delete(schedule)
     }
 

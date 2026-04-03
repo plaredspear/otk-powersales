@@ -585,5 +585,55 @@ class AdminTeamScheduleServiceTest {
             assertThatThrownBy { service.deleteSchedule(10L, 999L) }
                 .isInstanceOf(TeamScheduleNotFoundException::class.java)
         }
+
+        @Test
+        @DisplayName("근무등록 완료 일정 삭제 (일반 사용자) - WORK_REPORT_DELETE_CONSTRAINT")
+        fun deleteSchedule_workReportCompleted_forbidden() {
+            // Given
+            val leader = createEmployee(id = 10L, appAuthority = "조장")
+            val schedule = createSchedule(id = 100L, commuteLogId = "CL001")
+
+            whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(leader)
+            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+
+            // When & Then
+            assertThatThrownBy { service.deleteSchedule(10L, 100L) }
+                .isInstanceOf(TeamScheduleWorkReportDeleteException::class.java)
+            verify(teamMemberScheduleRepository, never()).delete(any())
+        }
+
+        @Test
+        @DisplayName("근무등록 완료 일정 삭제 (시스템관리자) - 삭제 성공")
+        fun deleteSchedule_workReportCompleted_systemAdmin_success() {
+            // Given
+            val admin = createEmployee(id = 10L, appAuthority = "시스템관리자")
+            val schedule = createSchedule(id = 100L, commuteLogId = "CL001")
+
+            whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(admin)
+            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+
+            // When
+            service.deleteSchedule(10L, 100L)
+
+            // Then
+            verify(teamMemberScheduleRepository).delete(schedule)
+        }
+
+        @Test
+        @DisplayName("미등록 일정 삭제 (일반 사용자) - 삭제 성공")
+        fun deleteSchedule_noWorkReport_success() {
+            // Given
+            val leader = createEmployee(id = 10L, appAuthority = "조장")
+            val schedule = createSchedule(id = 100L, commuteLogId = null)
+
+            whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(leader)
+            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+
+            // When
+            service.deleteSchedule(10L, 100L)
+
+            // Then
+            verify(teamMemberScheduleRepository).delete(schedule)
+        }
     }
 }
