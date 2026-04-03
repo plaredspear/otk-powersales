@@ -146,6 +146,11 @@ class AdminTeamScheduleService(
             .orElseThrow { TeamScheduleEmployeeNotFoundException() }
 
         validateEmployeeStatus(employee)
+
+        if (request.workingType == "근무" && request.accountId == null) {
+            throw TeamScheduleAccountRequiredException()
+        }
+
         val workingDate = LocalDate.parse(request.workingDate, DateTimeFormatter.ISO_LOCAL_DATE)
 
         if (request.workingType == "근무" && request.workingCategory1 == "진열") {
@@ -183,6 +188,10 @@ class AdminTeamScheduleService(
         val employee = schedule.employee
         if (employee != null) {
             validateEmployeeStatus(employee)
+        }
+
+        if (request.workingType == "근무" && request.accountId == null) {
+            throw TeamScheduleAccountRequiredException()
         }
 
         val newWorkingDate = LocalDate.parse(request.workingDate, DateTimeFormatter.ISO_LOCAL_DATE)
