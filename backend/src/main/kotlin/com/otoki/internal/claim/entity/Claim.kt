@@ -14,7 +14,7 @@ import java.time.LocalDateTime
  */
 @Entity
 @Table(
-    name = "claims",
+    name = "claim",
     indexes = [
         Index(name = "idx_claim_employee_created", columnList = "employee_id,created_at"),
         Index(name = "idx_claim_store", columnList = "store_id")
@@ -25,6 +25,7 @@ class Claim(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "claim_id")
     val id: Long = 0,
 
     @SFField("DKRetail__EmployeeId__c")
