@@ -62,3 +62,9 @@ class TeamSchedulePastDateChangeException : BusinessException(
     message = "과거 근무일자의 날짜는 변경할 수 없습니다",
     httpStatus = HttpStatus.BAD_REQUEST
 )
+
+class TeamScheduleAccountRequiredException : BusinessException(
+    errorCode = "ACCOUNT_REQUIRED",
+    message = "근무 유형이 '근무'인 일정에는 거래처를 지정해야 합니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)

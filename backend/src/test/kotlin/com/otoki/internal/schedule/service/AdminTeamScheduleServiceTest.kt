@@ -406,7 +406,8 @@ class AdminTeamScheduleServiceTest {
                 workingDate = "2026-04-01",
                 workingType = "근무",
                 workingCategory1 = "진열",
-                workingCategory3 = "고정"
+                workingCategory3 = "고정",
+                accountId = 1
             )
 
             whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(employee))
@@ -430,7 +431,8 @@ class AdminTeamScheduleServiceTest {
                 workingDate = "2026-04-01",
                 workingType = "근무",
                 workingCategory1 = "진열",
-                workingCategory3 = "고정"
+                workingCategory3 = "고정",
+                accountId = 1
             )
 
             whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(employee))
@@ -455,7 +457,8 @@ class AdminTeamScheduleServiceTest {
                 workingDate = "2026-04-01",
                 workingType = "근무",
                 workingCategory1 = "진열",
-                workingCategory3 = "격고"
+                workingCategory3 = "격고",
+                accountId = 1
             )
 
             whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(employee))
@@ -465,6 +468,77 @@ class AdminTeamScheduleServiceTest {
             // When & Then
             assertThatThrownBy { service.createSchedule(10L, request) }
                 .isInstanceOf(TeamScheduleConflictException::class.java)
+        }
+
+        @Test
+        @DisplayName("근무+거래처 없음 생성 - ACCOUNT_REQUIRED")
+        fun createSchedule_workTypeWorkWithoutAccount() {
+            // Given
+            val employee = createEmployee(employeeCode = "20030001", status = "재직")
+            val request = TeamScheduleCreateRequest(
+                employeeCode = "20030001",
+                workingDate = "2026-04-01",
+                workingType = "근무",
+                accountId = null
+            )
+
+            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(employee))
+
+            // When & Then
+            assertThatThrownBy { service.createSchedule(10L, request) }
+                .isInstanceOf(TeamScheduleAccountRequiredException::class.java)
+        }
+
+        @Test
+        @DisplayName("연차+거래처 없음 생성 - 정상 허용")
+        fun createSchedule_leaveTypeWithoutAccount_success() {
+            // Given
+            val employee = createEmployee(employeeCode = "20030001", status = "재직")
+            val leader = createEmployee(id = 10L, sfid = "LEADER_SFID")
+            val savedSchedule = createSchedule(id = 100L, workingType = "연차", workingCategory1 = null, workingCategory3 = null, accountId = null)
+
+            val request = TeamScheduleCreateRequest(
+                employeeCode = "20030001",
+                workingDate = "2026-04-01",
+                workingType = "연차",
+                accountId = null
+            )
+
+            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(employee))
+            whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(leader)
+            whenever(teamMemberScheduleRepository.save(any<TeamMemberSchedule>())).thenReturn(savedSchedule)
+
+            // When
+            val result = service.createSchedule(10L, request)
+
+            // Then
+            assertThat(result.id).isEqualTo(100L)
+        }
+
+        @Test
+        @DisplayName("대휴+거래처 없음 생성 - 정상 허용")
+        fun createSchedule_substituteLeaveWithoutAccount_success() {
+            // Given
+            val employee = createEmployee(employeeCode = "20030001", status = "재직")
+            val leader = createEmployee(id = 10L, sfid = "LEADER_SFID")
+            val savedSchedule = createSchedule(id = 101L, workingType = "대휴", workingCategory1 = null, workingCategory3 = null, accountId = null)
+
+            val request = TeamScheduleCreateRequest(
+                employeeCode = "20030001",
+                workingDate = "2026-04-01",
+                workingType = "대휴",
+                accountId = null
+            )
+
+            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(employee))
+            whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(leader)
+            whenever(teamMemberScheduleRepository.save(any<TeamMemberSchedule>())).thenReturn(savedSchedule)
+
+            // When
+            val result = service.createSchedule(10L, request)
+
+            // Then
+            assertThat(result.id).isEqualTo(101L)
         }
 
         @Test
@@ -882,6 +956,100 @@ class AdminTeamScheduleServiceTest {
 
             // Then (no exception, no display master check)
             verify(displayWorkScheduleRepository, never()).existsConfirmedByEmployeeAndAccountAndDate(any(), any(), any())
+        }
+
+        @Test
+        @DisplayName("근무→근무 수정 거래처 미지정 - ACCOUNT_REQUIRED")
+        fun updateSchedule_workTypeWorkWithoutAccount() {
+            // Given
+            val currentUser = createEmployee(id = 10L, appAuthority = "조장")
+            val schedule = createSchedule(
+                id = 100L,
+                employeeId = 1L,
+                workingDate = LocalDate.of(2026, 4, 1),
+                workingType = "근무",
+                workingCategory1 = "진열",
+                accountId = 1
+            )
+
+            val request = TeamScheduleUpdateRequest(
+                workingDate = "2026-04-01",
+                workingType = "근무",
+                workingCategory1 = "진열",
+                accountId = null
+            )
+
+            whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(currentUser)
+            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+            whenever(displayWorkScheduleRepository.existsConfirmedByEmployeeAndAccountAndDate(1L, 1, LocalDate.of(2026, 4, 1)))
+                .thenReturn(false)
+
+            // When & Then
+            assertThatThrownBy { service.updateSchedule(10L, 100L, request) }
+                .isInstanceOf(TeamScheduleAccountRequiredException::class.java)
+        }
+
+        @Test
+        @DisplayName("연차→근무 수정 거래처 미지정 - ACCOUNT_REQUIRED")
+        fun updateSchedule_leaveToWorkWithoutAccount() {
+            // Given
+            val currentUser = createEmployee(id = 10L, appAuthority = "조장")
+            val schedule = createSchedule(
+                id = 100L,
+                employeeId = 1L,
+                workingDate = LocalDate.of(2026, 4, 1),
+                workingType = "연차",
+                workingCategory1 = null,
+                workingCategory3 = null,
+                accountId = null
+            )
+
+            val request = TeamScheduleUpdateRequest(
+                workingDate = "2026-04-01",
+                workingType = "근무",
+                accountId = null
+            )
+
+            whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(currentUser)
+            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+
+            // When & Then
+            assertThatThrownBy { service.updateSchedule(10L, 100L, request) }
+                .isInstanceOf(TeamScheduleAccountRequiredException::class.java)
+        }
+
+        @Test
+        @DisplayName("근무→연차 수정 거래처 제거 - 정상 허용")
+        fun updateSchedule_workToLeaveWithoutAccount_success() {
+            // Given
+            val currentUser = createEmployee(id = 10L, appAuthority = "조장")
+            val schedule = createSchedule(
+                id = 100L,
+                employeeId = 1L,
+                workingDate = LocalDate.of(2026, 4, 1),
+                workingType = "근무",
+                workingCategory1 = "진열",
+                workingCategory3 = "고정",
+                accountId = 1
+            )
+
+            val request = TeamScheduleUpdateRequest(
+                workingDate = "2026-04-01",
+                workingType = "연차",
+                accountId = null
+            )
+
+            whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(currentUser)
+            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+            whenever(displayWorkScheduleRepository.existsConfirmedByEmployeeAndAccountAndDate(1L, 1, LocalDate.of(2026, 4, 1)))
+                .thenReturn(false)
+
+            // When
+            service.updateSchedule(10L, 100L, request)
+
+            // Then
+            assertThat(schedule.workingType).isEqualTo("연차")
+            assertThat(schedule.account).isNull()
         }
     }
 
