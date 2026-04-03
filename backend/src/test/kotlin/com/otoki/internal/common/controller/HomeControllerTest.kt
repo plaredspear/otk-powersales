@@ -78,7 +78,7 @@ class HomeControllerTest {
                         employeeName = "최금주",
                         employeeCode = "20030117",
                         accountName = "이마트 부산점",
-                        accountSfid = "ST-001",
+                        accountId = 1,
                         workCategory = "순회",
                         workType = "진열",
                         isCommuteRegistered = true,
@@ -132,7 +132,7 @@ class HomeControllerTest {
                 .andExpect(jsonPath("$.data.today_schedules[0].employee_name").value("최금주"))
                 .andExpect(jsonPath("$.data.today_schedules[0].employee_code").value("20030117"))
                 .andExpect(jsonPath("$.data.today_schedules[0].account_name").value("이마트 부산점"))
-                .andExpect(jsonPath("$.data.today_schedules[0].account_sfid").value("ST-001"))
+                .andExpect(jsonPath("$.data.today_schedules[0].account_id").value(1))
                 .andExpect(jsonPath("$.data.today_schedules[0].work_category").value("순회"))
                 .andExpect(jsonPath("$.data.today_schedules[0].work_type").value("진열"))
                 .andExpect(jsonPath("$.data.today_schedules[0].is_commute_registered").value(true))
@@ -181,7 +181,7 @@ class HomeControllerTest {
                         employeeName = "최금주",
                         employeeCode = "20030117",
                         accountName = "이마트 부산점",
-                        accountSfid = "ST-001",
+                        accountId = 1,
                         workCategory = "순회",
                         workType = "진열",
                         isCommuteRegistered = true,
@@ -192,7 +192,7 @@ class HomeControllerTest {
                         employeeName = "김영희",
                         employeeCode = "20190523",
                         accountName = "홈플러스 서면점",
-                        accountSfid = "ST-002",
+                        accountId = 2,
                         workCategory = "전담",
                         workType = null,
                         isCommuteRegistered = false,
@@ -203,7 +203,7 @@ class HomeControllerTest {
                         employeeName = "박소현",
                         employeeCode = "20210812",
                         accountName = null,
-                        accountSfid = null,
+                        accountId = null,
                         workCategory = "내근",
                         workType = null,
                         isCommuteRegistered = false,
@@ -246,7 +246,7 @@ class HomeControllerTest {
                 .andExpect(jsonPath("$.data.today_schedules[0].employee_name").value("최금주"))
                 .andExpect(jsonPath("$.data.today_schedules[0].employee_code").value("20030117"))
                 .andExpect(jsonPath("$.data.today_schedules[0].account_name").value("이마트 부산점"))
-                .andExpect(jsonPath("$.data.today_schedules[0].account_sfid").value("ST-001"))
+                .andExpect(jsonPath("$.data.today_schedules[0].account_id").value(1))
                 .andExpect(jsonPath("$.data.today_schedules[0].work_category").value("순회"))
                 .andExpect(jsonPath("$.data.today_schedules[0].work_type").value("진열"))
                 .andExpect(jsonPath("$.data.today_schedules[0].is_commute_registered").value(true))
@@ -265,7 +265,7 @@ class HomeControllerTest {
                 .andExpect(jsonPath("$.data.today_schedules[2].employee_name").value("박소현"))
                 .andExpect(jsonPath("$.data.today_schedules[2].employee_code").value("20210812"))
                 .andExpect(jsonPath("$.data.today_schedules[2].account_name").doesNotExist())
-                .andExpect(jsonPath("$.data.today_schedules[2].account_sfid").doesNotExist())
+                .andExpect(jsonPath("$.data.today_schedules[2].account_id").doesNotExist())
                 .andExpect(jsonPath("$.data.today_schedules[2].work_category").value("내근"))
                 .andExpect(jsonPath("$.data.today_schedules[2].is_commute_registered").value(false))
                 // attendance_summary

@@ -202,7 +202,7 @@ class TeamMemberScheduleRepositoryTest {
     inner class UpdateCommuteLogIdTests {
 
         @Test
-        @DisplayName("정상 업데이트 - sfid 일치 시 commuteLogId 변경")
+        @DisplayName("정상 업데이트 - id 일치 시 commuteLogId 변경")
         fun updateCommuteLogId_success() {
             // Given
             val teamMemberSchedule = TeamMemberSchedule(
@@ -215,7 +215,7 @@ class TeamMemberScheduleRepositoryTest {
             testEntityManager.clear()
 
             // When
-            teamMemberScheduleRepository.updateCommuteLogId("SF001", "OK")
+            teamMemberScheduleRepository.updateCommuteLogId(teamMemberSchedule.id, "OK")
             testEntityManager.clear()
 
             // Then
@@ -225,10 +225,10 @@ class TeamMemberScheduleRepositoryTest {
         }
 
         @Test
-        @DisplayName("존재하지 않는 sfid - 에러 없이 0건 업데이트")
+        @DisplayName("존재하지 않는 id - 에러 없이 0건 업데이트")
         fun updateCommuteLogId_nonExistentSfid() {
             // When & Then (에러 없이 실행)
-            teamMemberScheduleRepository.updateCommuteLogId("NONE", "OK")
+            teamMemberScheduleRepository.updateCommuteLogId(99999L, "OK")
         }
     }
 }

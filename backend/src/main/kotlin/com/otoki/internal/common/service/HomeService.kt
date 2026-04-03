@@ -169,7 +169,7 @@ class HomeService(
             employeeName = matchedEmployee?.name ?: "",
             employeeCode = matchedEmployee?.employeeCode ?: "",
             accountName = teamMemberSchedule.account?.id?.let { accountMap[it] },
-            accountSfid = teamMemberSchedule.account?.id?.toString(),
+            accountId = teamMemberSchedule.account?.id,
             workCategory = teamMemberSchedule.workingCategory1 ?: "",
             workType = teamMemberSchedule.workingType,
             isCommuteRegistered = teamMemberSchedule.commuteLogId != null,

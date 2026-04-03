@@ -23,9 +23,9 @@ class OroraApiServiceMock(
     @Transactional
     override fun sendWorkReport(request: OroraWorkReportRequest): OroraWorkReportResult {
         // Mock: commuteLogId + 안전점검 데이터를 TeamMemberSchedule에 직접 업데이트 (Orora→SF 동기화 시뮬레이션)
-        teamMemberScheduleRepository.updateCommuteLogId(request.scheduleSfid, "OK")
+        teamMemberScheduleRepository.updateCommuteLogId(request.scheduleId, "OK")
         teamMemberScheduleRepository.updateSafetyCheckData(
-            sfid = request.scheduleSfid,
+            id = request.scheduleId,
             equipment1 = request.equipment1,
             equipment2 = request.equipment2,
             equipment3 = request.equipment3,

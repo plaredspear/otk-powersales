@@ -732,7 +732,7 @@ class AttendanceServiceTest {
 
             // Then - TMS 안전점검 데이터 반영 검증
             verify(teamMemberScheduleRepository).updateSafetyCheckData(
-                sfid = "SCH001",
+                id = 10L,
                 equipment1 = "예",
                 equipment2 = "해당없음",
                 equipment3 = null,
@@ -832,7 +832,7 @@ class AttendanceServiceTest {
             assertThat(safetyCheck.completeWorkYn).isEqualTo("Y")
             verify(safetyCheckSubmissionRepository).save(safetyCheck)
             verify(teamMemberScheduleRepository).updateSafetyCheckData(
-                sfid = "SCH001",
+                id = 10L,
                 equipment1 = "예",
                 equipment2 = null,
                 equipment3 = null,
@@ -890,7 +890,7 @@ class AttendanceServiceTest {
 
             // Then - null → null 변환 검증
             verify(teamMemberScheduleRepository).updateSafetyCheckData(
-                sfid = "SCH001",
+                id = 10L,
                 equipment1 = null,
                 equipment2 = null,
                 equipment3 = null,

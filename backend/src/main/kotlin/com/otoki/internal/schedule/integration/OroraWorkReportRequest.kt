@@ -4,7 +4,7 @@ package com.otoki.internal.schedule.integration
  * Orora API 출근보고 요청 데이터 (안전점검 데이터 포함)
  */
 data class OroraWorkReportRequest(
-    val scheduleSfid: String,
+    val scheduleId: Long,
     val reason: String? = null,
     val equipment1: String? = null,
     val equipment2: String? = null,
