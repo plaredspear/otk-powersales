@@ -6,7 +6,7 @@ import com.otoki.internal.schedule.dto.response.*
 import com.otoki.internal.admin.security.AdminPermission
 import com.otoki.internal.admin.security.RequiresPermission
 import com.otoki.internal.schedule.service.AdminTeamScheduleService
-import com.otoki.internal.branch.dto.response.BranchResponse
+import com.otoki.internal.common.dto.response.BranchResponse
 import com.otoki.internal.common.dto.ApiResponse
 import com.otoki.internal.common.security.UserPrincipal
 import jakarta.validation.Valid

@@ -1,4 +1,4 @@
-package com.otoki.internal.branch.dto.response
+package com.otoki.internal.common.dto.response
 
 data class BranchResponse(
     val branchCode: String,

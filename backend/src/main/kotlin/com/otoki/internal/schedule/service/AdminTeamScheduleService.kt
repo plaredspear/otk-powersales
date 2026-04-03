@@ -5,7 +5,7 @@ import com.otoki.internal.schedule.dto.request.TeamScheduleCreateRequest
 import com.otoki.internal.schedule.dto.request.TeamScheduleUpdateRequest
 import com.otoki.internal.schedule.dto.response.*
 import com.otoki.internal.schedule.exception.*
-import com.otoki.internal.branch.dto.response.BranchResponse
+import com.otoki.internal.common.dto.response.BranchResponse
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
 import com.otoki.internal.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository

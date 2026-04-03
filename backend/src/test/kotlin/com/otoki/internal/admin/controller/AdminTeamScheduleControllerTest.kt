@@ -7,7 +7,7 @@ import com.otoki.internal.schedule.dto.response.*
 import com.otoki.internal.schedule.exception.*
 import com.otoki.internal.schedule.service.AdminTeamScheduleService
 import com.otoki.internal.admin.security.AdminAuthorityFilter
-import com.otoki.internal.branch.dto.response.BranchResponse
+import com.otoki.internal.common.dto.response.BranchResponse
 import com.otoki.internal.common.security.GpsConsentFilter
 import com.otoki.internal.common.security.JwtAuthenticationFilter
 import com.otoki.internal.common.security.JwtTokenProvider
