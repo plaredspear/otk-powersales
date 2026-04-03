@@ -8,7 +8,7 @@ class ScheduleModel {
   final String employeeName;
   final String employeeCode;
   final String? accountName;
-  final String? accountSfid;
+  final int? accountId;
   final String workCategory;
   final String? workType;
   final bool isCommuteRegistered;
@@ -19,7 +19,7 @@ class ScheduleModel {
     required this.employeeName,
     required this.employeeCode,
     this.accountName,
-    this.accountSfid,
+    this.accountId,
     required this.workCategory,
     this.workType,
     required this.isCommuteRegistered,
@@ -32,7 +32,7 @@ class ScheduleModel {
       employeeName: json['employee_name'] as String,
       employeeCode: json['employee_code'] as String,
       accountName: json['account_name'] as String?,
-      accountSfid: json['account_sfid'] as String?,
+      accountId: json['account_id'] as int?,
       workCategory: json['work_category'] as String,
       workType: json['work_type'] as String?,
       isCommuteRegistered: json['is_commute_registered'] as bool,
@@ -48,7 +48,7 @@ class ScheduleModel {
       'employee_name': employeeName,
       'employee_code': employeeCode,
       'account_name': accountName,
-      'account_sfid': accountSfid,
+      'account_id': accountId,
       'work_category': workCategory,
       'work_type': workType,
       'is_commute_registered': isCommuteRegistered,
@@ -62,7 +62,7 @@ class ScheduleModel {
       employeeName: employeeName,
       employeeCode: employeeCode,
       accountName: accountName,
-      accountSfid: accountSfid,
+      accountId: accountId,
       workCategory: workCategory,
       workType: workType,
       isCommuteRegistered: isCommuteRegistered,
@@ -76,7 +76,7 @@ class ScheduleModel {
       employeeName: entity.employeeName,
       employeeCode: entity.employeeCode,
       accountName: entity.accountName,
-      accountSfid: entity.accountSfid,
+      accountId: entity.accountId,
       workCategory: entity.workCategory,
       workType: entity.workType,
       isCommuteRegistered: entity.isCommuteRegistered,
@@ -92,7 +92,7 @@ class ScheduleModel {
         other.employeeName == employeeName &&
         other.employeeCode == employeeCode &&
         other.accountName == accountName &&
-        other.accountSfid == accountSfid &&
+        other.accountId == accountId &&
         other.workCategory == workCategory &&
         other.workType == workType &&
         other.isCommuteRegistered == isCommuteRegistered &&
@@ -106,7 +106,7 @@ class ScheduleModel {
       employeeName,
       employeeCode,
       accountName,
-      accountSfid,
+      accountId,
       workCategory,
       workType,
       isCommuteRegistered,

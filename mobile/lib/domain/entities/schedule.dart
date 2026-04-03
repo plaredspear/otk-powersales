@@ -7,7 +7,7 @@ class Schedule {
   final String employeeName;
   final String employeeCode;
   final String? accountName;
-  final String? accountSfid;
+  final int? accountId;
   final String workCategory;
   final String? workType;
   final bool isCommuteRegistered;
@@ -18,7 +18,7 @@ class Schedule {
     required this.employeeName,
     required this.employeeCode,
     this.accountName,
-    this.accountSfid,
+    this.accountId,
     required this.workCategory,
     this.workType,
     required this.isCommuteRegistered,
@@ -30,13 +30,13 @@ class Schedule {
     String? employeeName,
     String? employeeCode,
     String? accountName,
-    String? accountSfid,
+    int? accountId,
     String? workCategory,
     String? workType,
     bool? isCommuteRegistered,
     DateTime? commuteRegisteredAt,
     bool clearAccountName = false,
-    bool clearAccountSfid = false,
+    bool clearAccountId = false,
     bool clearWorkType = false,
     bool clearCommuteRegisteredAt = false,
   }) {
@@ -45,7 +45,7 @@ class Schedule {
       employeeName: employeeName ?? this.employeeName,
       employeeCode: employeeCode ?? this.employeeCode,
       accountName: clearAccountName ? null : (accountName ?? this.accountName),
-      accountSfid: clearAccountSfid ? null : (accountSfid ?? this.accountSfid),
+      accountId: clearAccountId ? null : (accountId ?? this.accountId),
       workCategory: workCategory ?? this.workCategory,
       workType: clearWorkType ? null : (workType ?? this.workType),
       isCommuteRegistered: isCommuteRegistered ?? this.isCommuteRegistered,
@@ -63,7 +63,7 @@ class Schedule {
         other.employeeName == employeeName &&
         other.employeeCode == employeeCode &&
         other.accountName == accountName &&
-        other.accountSfid == accountSfid &&
+        other.accountId == accountId &&
         other.workCategory == workCategory &&
         other.workType == workType &&
         other.isCommuteRegistered == isCommuteRegistered &&
@@ -77,7 +77,7 @@ class Schedule {
       employeeName,
       employeeCode,
       accountName,
-      accountSfid,
+      accountId,
       workCategory,
       workType,
       isCommuteRegistered,
