@@ -1,14 +1,13 @@
-/*
 package com.otoki.internal.claim.entity
 
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
-/ **
+/**
  * 클레임 사진 Entity
  * 클레임 등록 시 첨부된 사진 정보를 관리한다.
  * 사진 유형: 불량 사진, 일부인 사진, 구매 영수증 사진
- * /
+ */
 @Entity
 @Table(name = "claim_photos")
 class ClaimPhoto(
@@ -40,4 +39,3 @@ class ClaimPhoto(
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now()
 )
-*/
