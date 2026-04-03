@@ -645,6 +645,215 @@ class AdminTeamScheduleServiceTest {
         }
 
         @Test
+        @DisplayName("과거 진열 일정 날짜 변경 - PAST_DATE_CHANGE_NOT_ALLOWED")
+        fun updateSchedule_pastDate_displaySchedule_dateChange() {
+            // Given
+            val currentUser = createEmployee(id = 10L, appAuthority = "조장")
+            val yesterday = LocalDate.now().minusDays(1)
+            val schedule = createSchedule(
+                id = 100L,
+                employeeId = 1L,
+                workingDate = yesterday,
+                workingType = "근무",
+                workingCategory1 = "진열",
+                workingCategory3 = "고정",
+                accountId = 1
+            )
+
+            val request = TeamScheduleUpdateRequest(
+                workingDate = LocalDate.now().plusDays(1).toString(),
+                workingType = "근무",
+                workingCategory1 = "진열",
+                workingCategory3 = "고정",
+                accountId = 1
+            )
+
+            whenever(adminEmployeeHolder.employee).thenReturn(currentUser)
+            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+            whenever(displayWorkScheduleRepository.existsConfirmedByEmployeeAndAccountAndDate(1L, 1, yesterday))
+                .thenReturn(false)
+
+            // When & Then
+            assertThatThrownBy { service.updateSchedule(10L, 100L, request) }
+                .isInstanceOf(TeamSchedulePastDateChangeException::class.java)
+        }
+
+        @Test
+        @DisplayName("과거 근무 일정 날짜 변경 (카테고리 null) - PAST_DATE_CHANGE_NOT_ALLOWED")
+        fun updateSchedule_pastDate_nullCategory_dateChange() {
+            // Given
+            val currentUser = createEmployee(id = 10L, appAuthority = "조장")
+            val threeDaysAgo = LocalDate.now().minusDays(3)
+            val schedule = createSchedule(
+                id = 100L,
+                employeeId = 1L,
+                workingDate = threeDaysAgo,
+                workingType = "근무",
+                workingCategory1 = null,
+                accountId = 1
+            )
+
+            val request = TeamScheduleUpdateRequest(
+                workingDate = LocalDate.now().plusDays(1).toString(),
+                workingType = "근무",
+                accountId = 1
+            )
+
+            whenever(adminEmployeeHolder.employee).thenReturn(currentUser)
+            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+
+            // When & Then
+            assertThatThrownBy { service.updateSchedule(10L, 100L, request) }
+                .isInstanceOf(TeamSchedulePastDateChangeException::class.java)
+        }
+
+        @Test
+        @DisplayName("과거 행사 일정 날짜 변경 - 수정 성공 (행사 예외)")
+        fun updateSchedule_pastDate_eventSchedule_dateChange_success() {
+            // Given
+            val currentUser = createEmployee(id = 10L, appAuthority = "조장")
+            val yesterday = LocalDate.now().minusDays(1)
+            val tomorrow = LocalDate.now().plusDays(1)
+            val schedule = createSchedule(
+                id = 100L,
+                employeeId = 1L,
+                workingDate = yesterday,
+                workingType = "근무",
+                workingCategory1 = "행사",
+                accountId = 1
+            )
+
+            val request = TeamScheduleUpdateRequest(
+                workingDate = tomorrow.toString(),
+                workingType = "근무",
+                workingCategory1 = "행사",
+                accountId = 1
+            )
+
+            whenever(adminEmployeeHolder.employee).thenReturn(currentUser)
+            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+
+            // When
+            service.updateSchedule(10L, 100L, request)
+
+            // Then
+            assertThat(schedule.workingDate).isEqualTo(tomorrow)
+        }
+
+        @Test
+        @DisplayName("과거 일자 비날짜 필드 수정 - 수정 성공")
+        fun updateSchedule_pastDate_nonDateFieldChange_success() {
+            // Given
+            val currentUser = createEmployee(id = 10L, appAuthority = "조장")
+            val yesterday = LocalDate.now().minusDays(1)
+            val schedule = createSchedule(
+                id = 100L,
+                employeeId = 1L,
+                workingDate = yesterday,
+                workingType = "근무",
+                workingCategory1 = "진열",
+                workingCategory3 = "고정",
+                accountId = 1
+            )
+
+            val request = TeamScheduleUpdateRequest(
+                workingDate = yesterday.toString(),
+                workingType = "근무",
+                workingCategory1 = "행사",
+                accountId = 1
+            )
+
+            whenever(adminEmployeeHolder.employee).thenReturn(currentUser)
+            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+            whenever(displayWorkScheduleRepository.existsConfirmedByEmployeeAndAccountAndDate(1L, 1, yesterday))
+                .thenReturn(false)
+
+            // When
+            service.updateSchedule(10L, 100L, request)
+
+            // Then
+            assertThat(schedule.workingCategory1).isEqualTo("행사")
+        }
+
+        @Test
+        @DisplayName("오늘 일자 날짜 변경 - 수정 성공")
+        fun updateSchedule_todayDate_dateChange_success() {
+            // Given
+            val currentUser = createEmployee(id = 10L, appAuthority = "조장")
+            val today = LocalDate.now()
+            val tomorrow = LocalDate.now().plusDays(1)
+            val schedule = createSchedule(
+                id = 100L,
+                employeeId = 1L,
+                workingDate = today,
+                workingType = "근무",
+                workingCategory1 = "진열",
+                workingCategory3 = "고정",
+                accountId = 1
+            )
+
+            val request = TeamScheduleUpdateRequest(
+                workingDate = tomorrow.toString(),
+                workingType = "근무",
+                workingCategory1 = "진열",
+                workingCategory3 = "고정",
+                accountId = 1
+            )
+
+            whenever(adminEmployeeHolder.employee).thenReturn(currentUser)
+            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+            whenever(displayWorkScheduleRepository.existsConfirmedByEmployeeAndAccountAndDate(1L, 1, today))
+                .thenReturn(false)
+            whenever(teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(1L, tomorrow))
+                .thenReturn(emptyList())
+
+            // When
+            service.updateSchedule(10L, 100L, request)
+
+            // Then
+            assertThat(schedule.workingDate).isEqualTo(tomorrow)
+        }
+
+        @Test
+        @DisplayName("미래 일자 날짜 변경 - 수정 성공")
+        fun updateSchedule_futureDate_dateChange_success() {
+            // Given
+            val currentUser = createEmployee(id = 10L, appAuthority = "조장")
+            val tomorrow = LocalDate.now().plusDays(1)
+            val dayAfter = LocalDate.now().plusDays(2)
+            val schedule = createSchedule(
+                id = 100L,
+                employeeId = 1L,
+                workingDate = tomorrow,
+                workingType = "근무",
+                workingCategory1 = "진열",
+                workingCategory3 = "고정",
+                accountId = 1
+            )
+
+            val request = TeamScheduleUpdateRequest(
+                workingDate = dayAfter.toString(),
+                workingType = "근무",
+                workingCategory1 = "진열",
+                workingCategory3 = "고정",
+                accountId = 1
+            )
+
+            whenever(adminEmployeeHolder.employee).thenReturn(currentUser)
+            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+            whenever(displayWorkScheduleRepository.existsConfirmedByEmployeeAndAccountAndDate(1L, 1, tomorrow))
+                .thenReturn(false)
+            whenever(teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(1L, dayAfter))
+                .thenReturn(emptyList())
+
+            // When
+            service.updateSchedule(10L, 100L, request)
+
+            // Then
+            assertThat(schedule.workingDate).isEqualTo(dayAfter)
+        }
+
+        @Test
         @DisplayName("비진열 일정 수정 (일반 사용자) - 수정 성공")
         fun updateSchedule_nonDisplay_success() {
             // Given
