@@ -3,6 +3,7 @@ package com.otoki.internal.common.migration
 import com.otoki.internal.common.entity.AgreementHistory
 import com.otoki.internal.common.entity.UploadFile
 import com.otoki.internal.leave.entity.AlternativeHoliday
+import com.otoki.internal.promotion.entity.ProfessionalPromotionTeamMaster
 import com.otoki.internal.promotion.entity.Promotion
 import com.otoki.internal.promotion.entity.PromotionEmployee
 import com.otoki.internal.sap.entity.AttendInfo
@@ -31,6 +32,7 @@ import com.otoki.internal.schedule.entity.AttendanceLog
  * │         │                                             │                             │                         │   product.sfid                                                │                               │
  * │  NO     │ DKRetail__PromotionEmployee__c              │ promotion_employee          │ PromotionEmployee       │ DKRetail__PromotionId__c → promotion.sfid,                    │ UPDATE: promotion_id          │
  * │         │                                             │                             │                         │   DKRetail__ScheduleId__c → team_member_schedule.sfid         │ V73: sfid 컬럼 추가, schedule_id → team_member_schedule_id 리네이밍 │
+ * │  NO     │ ProfessionalPromotionTeamMaster__c          │ professional_promotion_team_master │ ProfessionalPromotionTeamMaster │ Account__c → account.sfid, EmployeeNumber__c → employee.employee_code │ UPDATE: account_id, employee_id │
  * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
  * │         │ ── Agreement / Upload ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
  * │  NO     │ AgreementHistory__c                         │ agreement_history           │ AgreementHistory        │ AgreementWordId__c → agreement_word.sfid                      │ UPDATE: agreement_word_id     │
@@ -98,6 +100,7 @@ object SalesforceMigrationTool {
         // ── Promotion 관련 (account, product, team_member_schedule은 Heroku에서 먼저 적재) ──
         EntityRegistration("promotion", Promotion::class.java),
         EntityRegistration("promotionEmployee", PromotionEmployee::class.java),
+        EntityRegistration("professionalPromotionTeamMaster", ProfessionalPromotionTeamMaster::class.java),
 
         // ── Agreement / Upload ──
         EntityRegistration("agreementHistory", AgreementHistory::class.java),
