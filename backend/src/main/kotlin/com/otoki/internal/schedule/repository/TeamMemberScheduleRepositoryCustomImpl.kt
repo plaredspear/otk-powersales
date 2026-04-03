@@ -16,17 +16,17 @@ open class TeamMemberScheduleRepositoryCustomImpl(
 ) : TeamMemberScheduleRepositoryCustom {
 
     @Transactional
-    override fun updateCommuteLogId(sfid: String, commuteLogId: String) {
+    override fun updateCommuteLogId(id: Long, commuteLogId: String) {
         queryFactory
             .update(teamMemberSchedule)
             .set(teamMemberSchedule.commuteLogId, commuteLogId)
-            .where(teamMemberSchedule.sfid.eq(sfid))
+            .where(teamMemberSchedule.id.eq(id))
             .execute()
     }
 
     @Transactional
     override fun updateSafetyCheckData(
-        sfid: String,
+        id: Long,
         equipment1: String?,
         equipment2: String?,
         equipment3: String?,
@@ -62,7 +62,7 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             .set(teamMemberSchedule.precaution, precaution)
             .set(teamMemberSchedule.precautionChk, precautionChk)
             .set(teamMemberSchedule.traversalFlag, traversalFlag)
-            .where(teamMemberSchedule.sfid.eq(sfid))
+            .where(teamMemberSchedule.id.eq(id))
             .execute()
     }
 

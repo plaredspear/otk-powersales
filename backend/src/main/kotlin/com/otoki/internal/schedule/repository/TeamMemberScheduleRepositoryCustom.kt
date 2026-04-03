@@ -6,10 +6,10 @@ import java.time.LocalDateTime
 
 interface TeamMemberScheduleRepositoryCustom {
 
-    fun updateCommuteLogId(sfid: String, commuteLogId: String)
+    fun updateCommuteLogId(id: Long, commuteLogId: String)
 
     fun updateSafetyCheckData(
-        sfid: String,
+        id: Long,
         equipment1: String?,
         equipment2: String?,
         equipment3: String?,

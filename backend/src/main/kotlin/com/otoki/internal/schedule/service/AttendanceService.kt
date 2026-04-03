@@ -78,7 +78,7 @@ class AttendanceService(
 
             AccountInfo(
                 scheduleId = teamMemberSchedule.id,
-                accountSfid = teamMemberSchedule.account?.id?.toString(),
+                accountId = teamMemberSchedule.account?.id,
                 accountName = accountName,
                 accountTypeCode = account?.abcTypeCode,
                 workCategory = teamMemberSchedule.workingCategory1 ?: "",
@@ -140,7 +140,7 @@ class AttendanceService(
             .orElse(null)
 
         val request = OroraWorkReportRequest(
-            scheduleSfid = teamMemberSchedule.sfid ?: "",
+            scheduleId = teamMemberSchedule.id,
             equipment1 = safetyCheckSubmission?.equipment1,
             equipment2 = safetyCheckSubmission?.equipment2,
             equipment3 = safetyCheckSubmission?.equipment3,
@@ -166,7 +166,7 @@ class AttendanceService(
             safetyCheckSubmissionRepository.save(safetyCheckSubmission)
 
             teamMemberScheduleRepository.updateSafetyCheckData(
-                sfid = teamMemberSchedule.sfid ?: "",
+                id = teamMemberSchedule.id,
                 equipment1 = safetyCheckSubmission.equipment1,
                 equipment2 = safetyCheckSubmission.equipment2,
                 equipment3 = safetyCheckSubmission.equipment3,

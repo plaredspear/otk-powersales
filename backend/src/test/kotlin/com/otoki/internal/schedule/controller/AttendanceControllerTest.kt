@@ -277,7 +277,7 @@ class AttendanceControllerTest {
                 accounts = listOf(
                     AccountInfo(
                         scheduleId = 1L,
-                        accountSfid = "ACC-001",
+                        accountId = 1,
                         accountName = "이마트 부산점",
                         accountTypeCode = "2110",
                         workCategory = "진열",
@@ -288,7 +288,7 @@ class AttendanceControllerTest {
                     ),
                     AccountInfo(
                         scheduleId = 2L,
-                        accountSfid = "ACC-002",
+                        accountId = 2,
                         accountName = "홈플러스 서면점",
                         accountTypeCode = "2120",
                         workCategory = "상시",
@@ -316,7 +316,7 @@ class AttendanceControllerTest {
                 .andExpect(jsonPath("$.data.safety_check_completed").value(true))
                 .andExpect(jsonPath("$.data.accounts").isArray)
                 .andExpect(jsonPath("$.data.accounts[0].schedule_id").value(1))
-                .andExpect(jsonPath("$.data.accounts[0].account_sfid").value("ACC-001"))
+                .andExpect(jsonPath("$.data.accounts[0].account_id").value(1))
                 .andExpect(jsonPath("$.data.accounts[0].account_name").value("이마트 부산점"))
                 .andExpect(jsonPath("$.data.accounts[0].account_type_code").value("2110"))
                 .andExpect(jsonPath("$.data.accounts[0].work_category").value("진열"))
@@ -338,7 +338,7 @@ class AttendanceControllerTest {
                 accounts = listOf(
                     AccountInfo(
                         scheduleId = 1L,
-                        accountSfid = "ACC-001",
+                        accountId = 1,
                         accountName = "이마트 부산점",
                         accountTypeCode = "2110",
                         workCategory = "진열",

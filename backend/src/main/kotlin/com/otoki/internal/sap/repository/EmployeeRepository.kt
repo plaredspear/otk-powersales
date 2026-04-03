@@ -35,12 +35,7 @@ interface EmployeeRepository : JpaRepository<Employee, Long>, EmployeeRepository
      */
     fun findByStatus(status: String): List<Employee>
 
-    /**
-     * sfid 목록으로 사원 조회
-     */
-    fun findBySfidIn(sfids: List<String>): List<Employee>
-
-    /**
+/**
      * 진열스케줄 템플릿용 사원 조회
      * 조건: costCenterCode 일치, appAuthority IS NULL, appLoginActive=true, status 일치
      */
@@ -58,11 +53,6 @@ interface EmployeeRepository : JpaRepository<Employee, Long>, EmployeeRepository
      * 조직(costCenterCode) + 권한(appAuthority)으로 사원 조회 (여사원 일정관리)
      */
     fun findByCostCenterCodeAndAppAuthority(costCenterCode: String, appAuthority: String): List<Employee>
-
-    /**
-     * sfid로 사원 단건 조회 (여사원 일정관리 - 일정 등록 시 사원 검증)
-     */
-    fun findBySfid(sfid: String): Employee?
 
     /**
      * 조직 목록(costCenterCode IN) + 권한(appAuthority)으로 사원 일괄 조회 (진열스케줄 업로드 - 조장 조회)
