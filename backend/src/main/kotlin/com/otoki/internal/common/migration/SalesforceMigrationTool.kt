@@ -1,5 +1,6 @@
 package com.otoki.internal.common.migration
 
+import com.otoki.internal.claim.entity.Claim
 import com.otoki.internal.common.entity.AgreementHistory
 import com.otoki.internal.common.entity.UploadFile
 import com.otoki.internal.leave.entity.AlternativeHoliday
@@ -37,6 +38,10 @@ import com.otoki.internal.schedule.entity.AttendanceLog
  * │         │ ── Agreement / Upload ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
  * │  NO     │ AgreementHistory__c                         │ agreement_history           │ AgreementHistory        │ AgreementWordId__c → agreement_word.sfid                      │ UPDATE: agreement_word_id     │
  * │  NO     │ UploadFile__c                               │ upload_file                 │ UploadFile              │ RecordId__c → 다형성 sfid (여러 오브젝트 참조)                 │                               │
+ * │         │ ── Claim 관련 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
+ * │  NO     │ DKRetail__Claim__c                          │ claim                       │ Claim                   │ DKRetail__EmployeeId__c → employee.sfid,                      │ V88: sfid 컬럼 추가, employee_id/store_id FK │
+ * │         │                                             │                             │                         │   DKRetail__AccountId__c → account.sfid                       │                               │
+ * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
  * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
  * │         │ ── HerokuMigrationTool 대상 (본 도구 제외) ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
  * │  제외   │ Account                                     │ account                     │ Account                 │ —                                                             │ Heroku 경유 마이그레이션      │
@@ -101,6 +106,9 @@ object SalesforceMigrationTool {
         EntityRegistration("promotion", Promotion::class.java),
         EntityRegistration("promotionEmployee", PromotionEmployee::class.java),
         EntityRegistration("professionalPromotionTeamMaster", ProfessionalPromotionTeamMaster::class.java),
+
+        // ── Claim 관련 (Employee, Account는 Heroku에서 먼저 적재) ──
+        EntityRegistration("claim", Claim::class.java),
 
         // ── Agreement / Upload ──
         EntityRegistration("agreementHistory", AgreementHistory::class.java),
