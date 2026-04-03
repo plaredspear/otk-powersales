@@ -5,7 +5,7 @@ import '../../domain/entities/account_schedule_item.dart';
 /// Backend API의 snake_case JSON을 파싱하여 AccountScheduleItem 엔티티로 변환합니다.
 class AccountScheduleItemModel {
   final int scheduleId;
-  final String? accountSfid;
+  final int? accountId;
   final String accountName;
   final String? accountTypeCode;
   final String workCategory;
@@ -17,7 +17,7 @@ class AccountScheduleItemModel {
 
   const AccountScheduleItemModel({
     required this.scheduleId,
-    this.accountSfid,
+    this.accountId,
     required this.accountName,
     this.accountTypeCode,
     required this.workCategory,
@@ -32,7 +32,7 @@ class AccountScheduleItemModel {
   factory AccountScheduleItemModel.fromJson(Map<String, dynamic> json) {
     return AccountScheduleItemModel(
       scheduleId: json['schedule_id'] as int,
-      accountSfid: json['account_sfid'] as String?,
+      accountId: json['account_id'] as int?,
       accountName: json['account_name'] as String,
       accountTypeCode: json['account_type_code'] as String?,
       workCategory: json['work_category'] as String,
@@ -48,7 +48,7 @@ class AccountScheduleItemModel {
   AccountScheduleItem toEntity() {
     return AccountScheduleItem(
       scheduleId: scheduleId,
-      accountSfid: accountSfid,
+      accountId: accountId,
       accountName: accountName,
       accountTypeCode: accountTypeCode,
       workCategory: workCategory,

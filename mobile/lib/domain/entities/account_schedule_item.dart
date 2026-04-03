@@ -3,7 +3,7 @@
 /// 오늘 출근해야 할 거래처 정보를 나타냅니다.
 class AccountScheduleItem {
   final int scheduleId;
-  final String? accountSfid;
+  final int? accountId;
   final String accountName;
   final String? accountTypeCode;
   final String workCategory;
@@ -16,7 +16,7 @@ class AccountScheduleItem {
 
   const AccountScheduleItem({
     required this.scheduleId,
-    this.accountSfid,
+    this.accountId,
     required this.accountName,
     this.accountTypeCode,
     required this.workCategory,
@@ -30,7 +30,7 @@ class AccountScheduleItem {
 
   AccountScheduleItem copyWith({
     int? scheduleId,
-    String? accountSfid,
+    int? accountId,
     String? accountName,
     String? accountTypeCode,
     String? workCategory,
@@ -43,7 +43,7 @@ class AccountScheduleItem {
   }) {
     return AccountScheduleItem(
       scheduleId: scheduleId ?? this.scheduleId,
-      accountSfid: accountSfid ?? this.accountSfid,
+      accountId: accountId ?? this.accountId,
       accountName: accountName ?? this.accountName,
       accountTypeCode: accountTypeCode ?? this.accountTypeCode,
       workCategory: workCategory ?? this.workCategory,
@@ -59,7 +59,7 @@ class AccountScheduleItem {
   Map<String, dynamic> toJson() {
     return {
       'scheduleId': scheduleId,
-      'accountSfid': accountSfid,
+      'accountId': accountId,
       'accountName': accountName,
       'accountTypeCode': accountTypeCode,
       'workCategory': workCategory,
@@ -75,7 +75,7 @@ class AccountScheduleItem {
   factory AccountScheduleItem.fromJson(Map<String, dynamic> json) {
     return AccountScheduleItem(
       scheduleId: json['scheduleId'] as int,
-      accountSfid: json['accountSfid'] as String?,
+      accountId: json['accountId'] as int?,
       accountName: json['accountName'] as String,
       accountTypeCode: json['accountTypeCode'] as String?,
       workCategory: json['workCategory'] as String,
