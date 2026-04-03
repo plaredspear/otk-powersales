@@ -1,6 +1,7 @@
 package com.otoki.internal.admin.config
 
 import com.otoki.internal.admin.security.AdminAuthorityFilter
+import com.otoki.internal.common.security.JwtAuthenticationEntryPoint
 import com.otoki.internal.common.security.JwtAuthenticationFilter
 import org.springframework.boot.web.servlet.FilterRegistrationBean
 import org.springframework.context.annotation.Bean
@@ -15,6 +16,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Order(1)
 class AdminApiSecurityConfig(
     private val jwtAuthenticationFilter: JwtAuthenticationFilter,
+    private val jwtAuthenticationEntryPoint: JwtAuthenticationEntryPoint,
     private val adminAuthorityFilter: AdminAuthorityFilter
 ) {
 
@@ -35,6 +37,7 @@ class AdminApiSecurityConfig(
             .headers { headers ->
                 headers.frameOptions { it.sameOrigin() }
             }
+            .exceptionHandling { it.authenticationEntryPoint(jwtAuthenticationEntryPoint) }
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
             .addFilterAfter(adminAuthorityFilter, JwtAuthenticationFilter::class.java)
 
