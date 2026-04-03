@@ -29,11 +29,19 @@ class Claim(
     val id: Long = 0,
 
     @SFField("DKRetail__EmployeeId__c")
+    @Column(name = "employee_sfid", length = 18)
+    val employeeSfid: String? = null,
+
+    @SFField("DKRetail__AccountId__c")
+    @Column(name = "account_sfid", length = 18)
+    val accountSfid: String? = null,
+
+    // -- Relations --
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "employee_id", nullable = false)
     val employee: Employee,
 
-    @SFField("DKRetail__AccountId__c")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "store_id", nullable = false)
     val account: Account,
