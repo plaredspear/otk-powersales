@@ -51,6 +51,11 @@ interface DailySummaryRaw {
   compensatory_leave: number;
 }
 
+interface MonthlyScheduleWithSummaryRaw {
+  schedules: TeamScheduleRaw[];
+  daily_summary: DailySummaryRaw[];
+}
+
 // --- Frontend interfaces (camelCase) ---
 
 export interface TeamMember {
@@ -93,6 +98,11 @@ export interface DailySummary {
   promotionActual: number;
   annualLeave: number;
   compensatoryLeave: number;
+}
+
+export interface MonthlyScheduleWithSummary {
+  schedules: TeamSchedule[];
+  dailySummary: DailySummary[];
 }
 
 export interface TeamScheduleUpdateRequest {
@@ -196,8 +206,8 @@ export async function fetchTeamSchedules(params: {
   month: number;
   employeeIds: number[];
   accountIds: number[];
-}): Promise<TeamSchedule[]> {
-  const res = await client.get<ApiResponse<TeamScheduleRaw[]>>(
+}): Promise<MonthlyScheduleWithSummary> {
+  const res = await client.get<ApiResponse<MonthlyScheduleWithSummaryRaw>>(
     '/api/v1/admin/team-schedule',
     {
       params: {
@@ -211,30 +221,10 @@ export async function fetchTeamSchedules(params: {
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.message || '팀 일정 조회에 실패했습니다');
   }
-  return mapSchedules(res.data.data);
-}
-
-export async function fetchTeamScheduleSummary(params: {
-  year: number;
-  month: number;
-  employeeIds: number[];
-  accountIds: number[];
-}): Promise<DailySummary[]> {
-  const res = await client.get<ApiResponse<DailySummaryRaw[]>>(
-    '/api/v1/admin/team-schedule/summary',
-    {
-      params: {
-        year: params.year,
-        month: params.month,
-        employeeIds: params.employeeIds.join(','),
-        accountIds: params.accountIds.join(','),
-      },
-    },
-  );
-  if (!res.data.success || !res.data.data) {
-    throw new Error(res.data.message || '일별 요약 조회에 실패했습니다');
-  }
-  return mapSummaries(res.data.data);
+  return {
+    schedules: mapSchedules(res.data.data.schedules),
+    dailySummary: mapSummaries(res.data.data.daily_summary),
+  };
 }
 
 export async function updateTeamSchedule(id: number, data: TeamScheduleUpdateRequest): Promise<void> {
