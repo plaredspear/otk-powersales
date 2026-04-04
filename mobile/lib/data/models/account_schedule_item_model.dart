@@ -5,6 +5,7 @@ import '../../domain/entities/account_schedule_item.dart';
 /// Backend API의 snake_case JSON을 파싱하여 AccountScheduleItem 엔티티로 변환합니다.
 class AccountScheduleItemModel {
   final int scheduleId;
+  final int? displayWorkScheduleId;
   final int? accountId;
   final String accountName;
   final String? accountTypeCode;
@@ -14,9 +15,11 @@ class AccountScheduleItemModel {
   final double? latitude;
   final double? longitude;
   final bool isRegistered;
+  final String source;
 
   const AccountScheduleItemModel({
     required this.scheduleId,
+    this.displayWorkScheduleId,
     this.accountId,
     required this.accountName,
     this.accountTypeCode,
@@ -26,12 +29,14 @@ class AccountScheduleItemModel {
     this.latitude,
     this.longitude,
     required this.isRegistered,
+    this.source = 'schedule',
   });
 
   /// snake_case JSON에서 파싱
   factory AccountScheduleItemModel.fromJson(Map<String, dynamic> json) {
     return AccountScheduleItemModel(
-      scheduleId: json['schedule_id'] as int,
+      scheduleId: (json['schedule_id'] as int?) ?? 0,
+      displayWorkScheduleId: json['display_work_schedule_id'] as int?,
       accountId: json['account_id'] as int?,
       accountName: json['account_name'] as String,
       accountTypeCode: json['account_type_code'] as String?,
@@ -41,6 +46,7 @@ class AccountScheduleItemModel {
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
       isRegistered: json['is_registered'] as bool,
+      source: json['source'] as String? ?? 'schedule',
     );
   }
 
@@ -48,6 +54,7 @@ class AccountScheduleItemModel {
   AccountScheduleItem toEntity() {
     return AccountScheduleItem(
       scheduleId: scheduleId,
+      displayWorkScheduleId: displayWorkScheduleId,
       accountId: accountId,
       accountName: accountName,
       accountTypeCode: accountTypeCode,
@@ -57,6 +64,7 @@ class AccountScheduleItemModel {
       latitude: latitude,
       longitude: longitude,
       isRegistered: isRegistered,
+      source: source,
     );
   }
 }

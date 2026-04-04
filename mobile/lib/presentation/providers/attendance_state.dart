@@ -20,8 +20,11 @@ class AttendanceState {
   /// 등록 완료 수
   final int registeredCount;
 
-  /// 선택된 스케줄 ID
+  /// 선택된 스케줄 ID (source에 따라 scheduleId 또는 displayWorkScheduleId)
   final int? selectedScheduleId;
+
+  /// 선택된 항목의 source ("schedule" 또는 "master")
+  final String? selectedSource;
 
   /// 검색 키워드
   final String searchKeyword;
@@ -44,6 +47,7 @@ class AttendanceState {
     this.totalCount = 0,
     this.registeredCount = 0,
     this.selectedScheduleId,
+    this.selectedSource,
     this.searchKeyword = '',
     this.registrationResult,
     this.statusList = const [],
@@ -84,7 +88,7 @@ class AttendanceState {
   List<AccountScheduleItem> get unregisteredAccounts =>
       filteredAccounts.where((s) => !s.isRegistered).toList();
 
-  /// 고정 근무자 여부 (모든 거래처의 workCategory3이 "고정")
+  /// 고정 근무자 여부 (��든 거래처의 workCategory3이 "고정")
   bool get isFixedWorker =>
       allAccounts.isNotEmpty &&
       allAccounts.every((a) => a.workCategory3 == '고정');
@@ -98,10 +102,12 @@ class AttendanceState {
     int? totalCount,
     int? registeredCount,
     int? selectedScheduleId,
+    String? selectedSource,
     String? searchKeyword,
     AttendanceResult? registrationResult,
     List<AttendanceStatus>? statusList,
     bool? safetyCheckCompleted,
+    bool clearSelection = false,
   }) {
     return AttendanceState(
       isLoading: isLoading ?? this.isLoading,
@@ -111,7 +117,8 @@ class AttendanceState {
       filteredAccounts: filteredAccounts ?? this.filteredAccounts,
       totalCount: totalCount ?? this.totalCount,
       registeredCount: registeredCount ?? this.registeredCount,
-      selectedScheduleId: selectedScheduleId ?? this.selectedScheduleId,
+      selectedScheduleId: clearSelection ? null : (selectedScheduleId ?? this.selectedScheduleId),
+      selectedSource: clearSelection ? null : (selectedSource ?? this.selectedSource),
       searchKeyword: searchKeyword ?? this.searchKeyword,
       registrationResult: registrationResult ?? this.registrationResult,
       statusList: statusList ?? this.statusList,

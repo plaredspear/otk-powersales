@@ -51,6 +51,31 @@ void main() {
       });
     });
 
+    group('진열마스터 기반 등록', () {
+      test('displayWorkScheduleId로 출근 등록 성공', () async {
+        final result = await useCase.call(
+          scheduleId: 0,
+          displayWorkScheduleId: 999,
+          latitude: 35.1696,
+          longitude: 129.1318,
+        );
+
+        expect(result.scheduleId, 0);
+        expect(result.accountName, '이마트 해운대점');
+      });
+
+      test('displayWorkScheduleId가 0이면 scheduleId 기반으로 처리', () async {
+        final result = await useCase.call(
+          scheduleId: 12345,
+          displayWorkScheduleId: 0,
+          latitude: 35.0,
+          longitude: 129.0,
+        );
+
+        expect(result.scheduleId, 12345);
+      });
+    });
+
     group('입력값 검증', () {
       test('유효하지 않은 scheduleId는 ArgumentError 발생', () {
         expect(
@@ -102,6 +127,7 @@ class FakeAttendanceRepository implements AttendanceRepository {
   @override
   Future<AttendanceResult> registerAttendance({
     required int scheduleId,
+    int? displayWorkScheduleId,
     required double latitude,
     required double longitude,
   }) async {
