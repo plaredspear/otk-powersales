@@ -53,18 +53,18 @@ class AdminTeamScheduleService(
         return employeeRepository.findDistinctBranches()
     }
 
-    fun getMonthlySchedules(
+    fun getMonthlySchedulesWithSummary(
         userId: Long,
         year: Int,
         month: Int,
         employeeIds: List<Long>?,
         accountIds: List<Int>?
-    ): List<TeamScheduleDto> {
+    ): MonthlyScheduleWithSummaryDto {
         val hasEmployeeFilter = !employeeIds.isNullOrEmpty()
         val hasAccountFilter = !accountIds.isNullOrEmpty()
 
         if (!hasEmployeeFilter && !hasAccountFilter) {
-            return emptyList()
+            return MonthlyScheduleWithSummaryDto(schedules = emptyList(), dailySummary = emptyList())
         }
 
         val yearMonth = YearMonth.of(year, month)
@@ -86,43 +86,9 @@ class AdminTeamScheduleService(
 
         val uniqueSchedules = schedules.distinctBy { it.id }
 
-        return uniqueSchedules.map { TeamScheduleDto.from(it) }
-    }
+        val scheduleDtos = uniqueSchedules.map { TeamScheduleDto.from(it) }
 
-    fun getDailySummary(
-        userId: Long,
-        year: Int,
-        month: Int,
-        employeeIds: List<Long>?,
-        accountIds: List<Int>?
-    ): List<DailySummaryDto> {
-        val hasEmployeeFilter = !employeeIds.isNullOrEmpty()
-        val hasAccountFilter = !accountIds.isNullOrEmpty()
-
-        if (!hasEmployeeFilter && !hasAccountFilter) {
-            return emptyList()
-        }
-
-        val yearMonth = YearMonth.of(year, month)
-        val from = yearMonth.atDay(1)
-        val to = yearMonth.atEndOfMonth()
-
-        val schedules = mutableSetOf<TeamMemberSchedule>()
-
-        if (hasEmployeeFilter) {
-            schedules.addAll(
-                teamMemberScheduleRepository.findMonthlyByEmployeeIds(employeeIds!!, from, to)
-            )
-        }
-        if (hasAccountFilter) {
-            schedules.addAll(
-                teamMemberScheduleRepository.findMonthlyByAccountIds(accountIds!!, from, to)
-            )
-        }
-
-        val uniqueSchedules = schedules.distinctBy { it.id }
-
-        return uniqueSchedules
+        val dailySummaryDtos = uniqueSchedules
             .groupBy { it.workingDate }
             .map { (date, daySchedules) ->
                 val displaySchedules = daySchedules.filter { it.workingType == "근무" && it.workingCategory1 != "행사" }
@@ -139,6 +105,8 @@ class AdminTeamScheduleService(
                 )
             }
             .sortedBy { it.date }
+
+        return MonthlyScheduleWithSummaryDto(schedules = scheduleDtos, dailySummary = dailySummaryDtos)
     }
 
     @Transactional

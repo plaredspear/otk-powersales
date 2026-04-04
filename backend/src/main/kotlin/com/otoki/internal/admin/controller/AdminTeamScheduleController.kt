@@ -57,27 +57,10 @@ class AdminTeamScheduleController(
         @RequestParam month: Int,
         @RequestParam(required = false) employeeIds: String?,
         @RequestParam(required = false) accountIds: String?
-    ): ResponseEntity<ApiResponse<List<TeamScheduleDto>>> {
+    ): ResponseEntity<ApiResponse<MonthlyScheduleWithSummaryDto>> {
         val employeeIdList = employeeIds?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }?.map { it.toLong() }
         val accountIdList = accountIds?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }?.map { it.toInt() }
-        val result = adminTeamScheduleService.getMonthlySchedules(
-            principal.userId, year, month, employeeIdList, accountIdList
-        )
-        return ResponseEntity.ok(ApiResponse.success(result))
-    }
-
-    @RequiresPermission(AdminPermission.SCHEDULE_READ)
-    @GetMapping("/summary")
-    fun getDailySummary(
-        @AuthenticationPrincipal principal: UserPrincipal,
-        @RequestParam year: Int,
-        @RequestParam month: Int,
-        @RequestParam(required = false) employeeIds: String?,
-        @RequestParam(required = false) accountIds: String?
-    ): ResponseEntity<ApiResponse<List<DailySummaryDto>>> {
-        val employeeIdList = employeeIds?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }?.map { it.toLong() }
-        val accountIdList = accountIds?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }?.map { it.toInt() }
-        val result = adminTeamScheduleService.getDailySummary(
+        val result = adminTeamScheduleService.getMonthlySchedulesWithSummary(
             principal.userId, year, month, employeeIdList, accountIdList
         )
         return ResponseEntity.ok(ApiResponse.success(result))
