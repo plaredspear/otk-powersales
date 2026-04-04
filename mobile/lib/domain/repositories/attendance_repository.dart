@@ -40,8 +40,13 @@ abstract class AttendanceRepository {
   Future<AccountListResult> getAccountList({String? keyword});
 
   /// 출근등록
+  ///
+  /// [scheduleId]와 [displayWorkScheduleId]는 ��호 ���타적:
+  /// - scheduleId > 0: 기존 TeamMemberSchedule ID로 출근 등록
+  /// - displayWorkScheduleId > 0: 진열마스터 ID로 동적 ��성 후 출근 등록
   Future<AttendanceResult> registerAttendance({
     required int scheduleId,
+    int? displayWorkScheduleId,
     required double latitude,
     required double longitude,
   });

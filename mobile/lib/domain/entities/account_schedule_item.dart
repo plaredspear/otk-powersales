@@ -3,6 +3,7 @@
 /// 오늘 출근해야 할 거래처 정보를 나타냅니다.
 class AccountScheduleItem {
   final int scheduleId;
+  final int? displayWorkScheduleId;
   final int? accountId;
   final String accountName;
   final String? accountTypeCode;
@@ -13,9 +14,11 @@ class AccountScheduleItem {
   final double? longitude;
   final bool isRegistered;
   final String? registeredWorkType;
+  final String source;
 
   const AccountScheduleItem({
     required this.scheduleId,
+    this.displayWorkScheduleId,
     this.accountId,
     required this.accountName,
     this.accountTypeCode,
@@ -26,10 +29,12 @@ class AccountScheduleItem {
     this.longitude,
     required this.isRegistered,
     this.registeredWorkType,
+    this.source = 'schedule',
   });
 
   AccountScheduleItem copyWith({
     int? scheduleId,
+    int? displayWorkScheduleId,
     int? accountId,
     String? accountName,
     String? accountTypeCode,
@@ -40,9 +45,11 @@ class AccountScheduleItem {
     double? longitude,
     bool? isRegistered,
     String? registeredWorkType,
+    String? source,
   }) {
     return AccountScheduleItem(
       scheduleId: scheduleId ?? this.scheduleId,
+      displayWorkScheduleId: displayWorkScheduleId ?? this.displayWorkScheduleId,
       accountId: accountId ?? this.accountId,
       accountName: accountName ?? this.accountName,
       accountTypeCode: accountTypeCode ?? this.accountTypeCode,
@@ -53,12 +60,14 @@ class AccountScheduleItem {
       longitude: longitude ?? this.longitude,
       isRegistered: isRegistered ?? this.isRegistered,
       registeredWorkType: registeredWorkType ?? this.registeredWorkType,
+      source: source ?? this.source,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'scheduleId': scheduleId,
+      'displayWorkScheduleId': displayWorkScheduleId,
       'accountId': accountId,
       'accountName': accountName,
       'accountTypeCode': accountTypeCode,
@@ -69,12 +78,14 @@ class AccountScheduleItem {
       'longitude': longitude,
       'isRegistered': isRegistered,
       'registeredWorkType': registeredWorkType,
+      'source': source,
     };
   }
 
   factory AccountScheduleItem.fromJson(Map<String, dynamic> json) {
     return AccountScheduleItem(
       scheduleId: json['scheduleId'] as int,
+      displayWorkScheduleId: json['displayWorkScheduleId'] as int?,
       accountId: json['accountId'] as int?,
       accountName: json['accountName'] as String,
       accountTypeCode: json['accountTypeCode'] as String?,
@@ -85,6 +96,7 @@ class AccountScheduleItem {
       longitude: (json['longitude'] as num?)?.toDouble(),
       isRegistered: json['isRegistered'] as bool,
       registeredWorkType: json['registeredWorkType'] as String?,
+      source: json['source'] as String? ?? 'schedule',
     );
   }
 
@@ -114,6 +126,6 @@ class AccountScheduleItem {
   String toString() {
     return 'AccountScheduleItem(scheduleId: $scheduleId, accountName: $accountName, '
         'workCategory: $workCategory, address: $address, '
-        'isRegistered: $isRegistered)';
+        'isRegistered: $isRegistered, source: $source)';
   }
 }

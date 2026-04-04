@@ -1,8 +1,6 @@
 import 'package:dio/dio.dart';
 
 import '../../domain/entities/attendance_result.dart';
-import '../../domain/entities/account_schedule_item.dart';
-import '../../domain/entities/attendance_status.dart';
 import '../../domain/repositories/attendance_repository.dart';
 import '../models/attendance_result_model.dart';
 import '../models/attendance_status_model.dart';
@@ -46,16 +44,25 @@ class AttendanceApiDataSource {
   }
 
   /// 출근 등록
+  ///
+  /// [displayWorkScheduleId]가 있으면 진열마스터 기반 등록,
+  /// 없으면 기존 schedule_id 기반 등록
   Future<AttendanceResult> registerAttendance({
     required int scheduleId,
+    int? displayWorkScheduleId,
     required double latitude,
     required double longitude,
   }) async {
     final body = <String, dynamic>{
-      'schedule_id': scheduleId,
       'latitude': latitude,
       'longitude': longitude,
     };
+
+    if (displayWorkScheduleId != null) {
+      body['display_work_schedule_id'] = displayWorkScheduleId;
+    } else {
+      body['schedule_id'] = scheduleId;
+    }
 
     final response = await _dio.post(
       '/api/v1/attendance',

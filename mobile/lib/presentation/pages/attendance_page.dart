@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/services/location_permission_helper.dart';
 import '../../core/services/location_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../domain/entities/account_schedule_item.dart';
 import '../providers/attendance_provider.dart';
+import '../providers/attendance_state.dart';
 import '../widgets/attendance/attendance_status_counter.dart';
 import '../widgets/attendance/attendance_status_popup.dart';
 import '../widgets/attendance/account_list_item.dart';
@@ -39,6 +41,16 @@ class _AttendancePageState extends ConsumerState<AttendancePage>
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  bool _isAccountSelected(AccountScheduleItem account, AttendanceState state) {
+    if (state.selectedScheduleId == null) return false;
+    if (account.source == 'master') {
+      return state.selectedSource == 'master' &&
+          account.displayWorkScheduleId == state.selectedScheduleId;
+    }
+    return state.selectedSource != 'master' &&
+        account.scheduleId == state.selectedScheduleId;
   }
 
   Future<void> _handleRegister(
@@ -169,11 +181,10 @@ class _AttendancePageState extends ConsumerState<AttendancePage>
                     final account = state.filteredAccounts[index];
                     return AccountListItem(
                       account: account,
-                      isSelected:
-                          account.scheduleId == state.selectedScheduleId,
+                      isSelected: _isAccountSelected(account, state),
                       onTap: () {
                         if (!account.isRegistered) {
-                          notifier.selectAccount(account.scheduleId);
+                          notifier.selectAccount(account);
                         }
                       },
                     );

@@ -116,15 +116,32 @@ void main() {
       expect(notifier.state.filteredAccounts, notifier.state.allAccounts);
     });
 
-    test('selectAccount 거래처 선택', () {
-      notifier.selectAccount(12345);
+    test('selectAccount schedule 소스 거래처 선택', () {
+      notifier.selectAccount(_mockAccounts[0]);
 
       expect(notifier.state.selectedScheduleId, 12345);
+      expect(notifier.state.selectedSource, 'schedule');
+    });
+
+    test('selectAccount master 소스 거래처 선택', () {
+      const masterAccount = AccountScheduleItem(
+        scheduleId: 0,
+        displayWorkScheduleId: 999,
+        accountName: '진열마스터 거래처',
+        workCategory: '진열',
+        address: '서울시 강남구',
+        isRegistered: false,
+        source: 'master',
+      );
+      notifier.selectAccount(masterAccount);
+
+      expect(notifier.state.selectedScheduleId, 999);
+      expect(notifier.state.selectedSource, 'master');
     });
 
     test('register 출근등록 성공', () async {
       await notifier.loadAccounts();
-      notifier.selectAccount(12345);
+      notifier.selectAccount(_mockAccounts[0]);
 
       await notifier.register(latitude: 35.1696, longitude: 129.1318);
 
@@ -152,7 +169,7 @@ void main() {
 
     test('register GPS 좌표 없이 호출 시 에러', () async {
       await notifier.loadAccounts();
-      notifier.selectAccount(12345);
+      notifier.selectAccount(_mockAccounts[0]);
 
       await notifier.register();
 
@@ -163,13 +180,13 @@ void main() {
       await notifier.loadAccounts();
 
       // 첫 번째 등록
-      notifier.selectAccount(12345);
+      notifier.selectAccount(_mockAccounts[0]);
       await notifier.register(latitude: 35.0, longitude: 129.0);
       expect(notifier.state.registrationResult, isNotNull);
 
       // 동일한 거래처 재등록 시도
       repository.exceptionToThrow = Exception('이미 출근 등록된 스케줄입니다');
-      notifier.selectAccount(12345);
+      notifier.selectAccount(_mockAccounts[0]);
       await notifier.register(latitude: 35.0, longitude: 129.0);
 
       expect(notifier.state.isRegistering, false);
@@ -178,14 +195,13 @@ void main() {
 
     test('prepareNextRegistration 선택 초기화 및 목록 새로고침', () async {
       await notifier.loadAccounts();
-      notifier.selectAccount(12345);
-      notifier.searchAccounts('이마트');
+      notifier.selectAccount(_mockAccounts[0]);
 
       expect(notifier.state.selectedScheduleId, 12345);
-      expect(notifier.state.searchKeyword, '이마트');
 
       await notifier.prepareNextRegistration();
 
+      expect(notifier.state.selectedScheduleId, null);
       expect(notifier.state.searchKeyword, '');
       expect(notifier.state.filteredAccounts.length, 5);
     });
@@ -193,7 +209,7 @@ void main() {
     test('clearRegistrationResult 등록 결과 초기화하지만 거래처 정보 유지',
         () async {
       await notifier.loadAccounts();
-      notifier.selectAccount(12345);
+      notifier.selectAccount(_mockAccounts[0]);
       await notifier.register(latitude: 35.0, longitude: 129.0);
 
       // 등록 완료 상태
@@ -232,10 +248,32 @@ void main() {
       expect(secondStatus.isPending, true);
     });
 
+    test('register master 소스 출근등록 성공', () async {
+      const masterAccount = AccountScheduleItem(
+        scheduleId: 0,
+        displayWorkScheduleId: 999,
+        accountName: '진열마스터 거래처',
+        workCategory: '진열',
+        address: '서울시 강남구',
+        isRegistered: false,
+        source: 'master',
+      );
+      repository.accountsOverride = [masterAccount];
+      await notifier.loadAccounts();
+      notifier.selectAccount(masterAccount);
+
+      await notifier.register(latitude: 35.0, longitude: 129.0);
+
+      expect(notifier.state.isRegistering, false);
+      expect(notifier.state.registrationResult, isNotNull);
+      expect(notifier.state.registrationResult?.accountName, '진열마스터 거래처');
+      expect(notifier.state.errorMessage, null);
+    });
+
     test('clearError 에러 메시지 초기화', () async {
       // 에러 발생 시키기
       repository.exceptionToThrow = Exception('테스트 에러');
-      notifier.selectAccount(99999);
+      notifier.selectAccount(_mockAccounts[0]);
       await notifier.register(latitude: 35.0, longitude: 129.0);
 
       expect(notifier.state.errorMessage, isNotNull);
@@ -313,7 +351,7 @@ void main() {
       expect(notifier.state.filteredAccounts.length, 2);
 
       // 3. 거래처 선택
-      notifier.selectAccount(12345);
+      notifier.selectAccount(_mockAccounts[0]);
       expect(notifier.state.selectedScheduleId, 12345);
 
       // 4. 출근등록
@@ -361,6 +399,7 @@ class FakeAttendanceRepository implements AttendanceRepository {
   @override
   Future<AttendanceResult> registerAttendance({
     required int scheduleId,
+    int? displayWorkScheduleId,
     required double latitude,
     required double longitude,
   }) async {
@@ -369,16 +408,24 @@ class FakeAttendanceRepository implements AttendanceRepository {
       exceptionToThrow = null;
       throw e;
     }
+    final accounts = accountsOverride ?? _mockAccounts;
+    final AccountScheduleItem account;
+    if (displayWorkScheduleId != null && displayWorkScheduleId > 0) {
+      account = accounts.firstWhere(
+        (s) => s.displayWorkScheduleId == displayWorkScheduleId,
+      );
+    } else {
+      account = accounts.firstWhere(
+        (s) => s.scheduleId == scheduleId,
+      );
+    }
     _registeredIds.add(scheduleId);
-    final account = _mockAccounts.firstWhere(
-      (s) => s.scheduleId == scheduleId,
-    );
     return AttendanceResult(
       scheduleId: scheduleId,
       accountName: account.accountName,
       workType: 'ROOM_TEMP',
       distanceKm: 0.12,
-      totalCount: _mockAccounts.length,
+      totalCount: accounts.length,
       registeredCount: _registeredIds.length,
     );
   }

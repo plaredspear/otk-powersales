@@ -2,6 +2,8 @@ import '../../core/network/dio_provider.dart';
 import '../../core/utils/error_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../domain/entities/account_schedule_item.dart';
+
 import '../../data/datasources/attendance_api_datasource.dart';
 import '../../data/repositories/attendance_repository_impl.dart';
 import '../../domain/repositories/attendance_repository.dart';
@@ -71,7 +73,8 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
       if (state.isFixedWorker) {
         final unregistered = state.unregisteredAccounts;
         if (unregistered.length == 1) {
-          selectAccount(unregistered.first.scheduleId);
+          final item = unregistered.first;
+          selectAccount(item);
         }
       }
     } catch (e) {
@@ -94,19 +97,31 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
     state = state.copyWith(
       searchKeyword: keyword,
       filteredAccounts: filtered,
-      selectedScheduleId: null,
+      clearSelection: true,
     );
   }
 
   /// 거래처 선택
-  void selectAccount(int scheduleId) {
-    state = state.copyWith(selectedScheduleId: scheduleId);
+  ///
+  /// source에 따라 scheduleId 또는 displayWorkScheduleId를 선택 상태에 보관
+  void selectAccount(AccountScheduleItem item) {
+    if (item.source == 'master') {
+      state = state.copyWith(
+        selectedScheduleId: item.displayWorkScheduleId,
+        selectedSource: 'master',
+      );
+    } else {
+      state = state.copyWith(
+        selectedScheduleId: item.scheduleId,
+        selectedSource: 'schedule',
+      );
+    }
   }
 
   /// 출근등록
   Future<void> register({double? latitude, double? longitude}) async {
-    final scheduleId = state.selectedScheduleId;
-    if (scheduleId == null) return;
+    final selectedId = state.selectedScheduleId;
+    if (selectedId == null) return;
 
     if (latitude == null || longitude == null) {
       state = state.toError('GPS 좌표를 가져올 수 없습니다');
@@ -117,7 +132,8 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
 
     try {
       final result = await _registerAttendance.call(
-        scheduleId: scheduleId,
+        scheduleId: state.selectedSource == 'master' ? 0 : selectedId,
+        displayWorkScheduleId: state.selectedSource == 'master' ? selectedId : null,
         latitude: latitude,
         longitude: longitude,
       );
@@ -141,7 +157,7 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
   /// 다음 등록 (등록 완료 후 목록으로 복귀)
   Future<void> prepareNextRegistration() async {
     state = state.copyWith(
-      selectedScheduleId: null,
+      clearSelection: true,
       searchKeyword: '',
     );
 
