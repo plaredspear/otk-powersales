@@ -44,6 +44,9 @@ class AdminTeamScheduleServiceTest {
     @Mock
     private lateinit var adminEmployeeHolder: AdminEmployeeHolder
 
+    @Mock
+    private lateinit var adminMonthlyIntegrationService: AdminMonthlyIntegrationService
+
     @InjectMocks
     private lateinit var service: AdminTeamScheduleService
 

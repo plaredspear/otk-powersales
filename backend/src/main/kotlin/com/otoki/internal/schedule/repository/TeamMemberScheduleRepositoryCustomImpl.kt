@@ -212,6 +212,44 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             .fetch()
     }
 
+    override fun findWorkSchedulesByEmployeeAndAccountAndMonth(
+        employeeId: Long,
+        accountId: Int,
+        from: LocalDate,
+        to: LocalDate
+    ): List<TeamMemberSchedule> {
+        return queryFactory
+            .selectFrom(teamMemberSchedule)
+            .leftJoin(teamMemberSchedule.employee, employee).fetchJoin()
+            .leftJoin(teamMemberSchedule.account, account).fetchJoin()
+            .where(
+                teamMemberSchedule.employee.id.eq(employeeId),
+                teamMemberSchedule.account.id.eq(accountId),
+                teamMemberSchedule.workingDate.between(from, to),
+                teamMemberSchedule.workingType.eq(WORKING_TYPE_WORK),
+                isNotDeleted()
+            )
+            .fetch()
+    }
+
+    override fun countWorkSchedulesByEmployeeAndDateAndWorkingType(
+        employeeId: Long,
+        workingDate: LocalDate
+    ): Int {
+        return queryFactory
+            .select(teamMemberSchedule.account.id).distinct()
+            .from(teamMemberSchedule)
+            .where(
+                teamMemberSchedule.employee.id.eq(employeeId),
+                teamMemberSchedule.workingDate.eq(workingDate),
+                teamMemberSchedule.workingType.eq(WORKING_TYPE_WORK),
+                teamMemberSchedule.account.isNotNull,
+                isNotDeleted()
+            )
+            .fetch()
+            .size
+    }
+
     private fun isNotDeleted(): BooleanExpression {
         return teamMemberSchedule.isDeleted.isNull.or(teamMemberSchedule.isDeleted.eq(false))
     }

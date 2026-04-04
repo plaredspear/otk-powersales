@@ -25,7 +25,8 @@ class AdminTeamScheduleService(
     private val displayWorkScheduleRepository: DisplayWorkScheduleRepository,
     private val employeeRepository: EmployeeRepository,
     private val accountRepository: AccountRepository,
-    private val adminEmployeeHolder: AdminEmployeeHolder
+    private val adminEmployeeHolder: AdminEmployeeHolder,
+    private val adminMonthlyIntegrationService: AdminMonthlyIntegrationService
 ) {
 
     fun getMembers(userId: Long): List<TeamMemberDto> {
@@ -174,6 +175,13 @@ class AdminTeamScheduleService(
             teamLeader = currentEmployee
         )
         val saved = teamMemberScheduleRepository.save(schedule)
+
+        if (request.workingType == "근무" && account != null) {
+            adminMonthlyIntegrationService.refreshIntegration(
+                employee.id, account.id, YearMonth.from(workingDate)
+            )
+        }
+
         return TeamScheduleCreateResultDto(id = saved.id)
     }
 
@@ -193,6 +201,10 @@ class AdminTeamScheduleService(
         if (request.workingType == "근무" && request.accountId == null) {
             throw TeamScheduleAccountRequiredException()
         }
+
+        val oldWorkingDate = schedule.workingDate
+        val oldAccountId = schedule.account?.id
+        val oldEmployeeId = schedule.employee?.id
 
         val newWorkingDate = LocalDate.parse(request.workingDate, DateTimeFormatter.ISO_LOCAL_DATE)
         val dateChanged = schedule.workingDate != newWorkingDate
@@ -220,6 +232,21 @@ class AdminTeamScheduleService(
         schedule.workingCategory1 = request.workingCategory1
         schedule.workingCategory3 = request.workingCategory3
         schedule.account = newAccount
+
+        if (oldEmployeeId != null) {
+            val refreshTargets = mutableSetOf<Triple<Long, Int, YearMonth>>()
+
+            if (oldWorkingDate != null && oldAccountId != null) {
+                refreshTargets.add(Triple(oldEmployeeId, oldAccountId, YearMonth.from(oldWorkingDate)))
+            }
+            if (request.workingType == "근무" && newAccount != null) {
+                refreshTargets.add(Triple(oldEmployeeId, newAccount.id, YearMonth.from(newWorkingDate)))
+            }
+
+            for ((empId, accId, ym) in refreshTargets) {
+                adminMonthlyIntegrationService.refreshIntegration(empId, accId, ym)
+            }
+        }
     }
 
     @Transactional
@@ -238,7 +265,15 @@ class AdminTeamScheduleService(
 
         validateDisplayMasterLink(currentEmployee, schedule)
 
+        val employeeId = schedule.employee?.id
+        val accountId = schedule.account?.id
+        val workingDate = schedule.workingDate
+
         teamMemberScheduleRepository.delete(schedule)
+
+        if (employeeId != null && accountId != null && workingDate != null && schedule.workingType == "근무") {
+            adminMonthlyIntegrationService.refreshIntegration(employeeId, accountId, YearMonth.from(workingDate))
+        }
     }
 
     // --- Private helpers ---
