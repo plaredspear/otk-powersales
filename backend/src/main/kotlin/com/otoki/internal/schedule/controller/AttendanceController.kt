@@ -45,7 +45,8 @@ class AttendanceController(
     ): ResponseEntity<ApiResponse<AttendanceRegisterResponse>> {
         val response = attendanceService.register(
             userId = principal.userId,
-            scheduleId = request.scheduleId!!,
+            scheduleId = request.scheduleId,
+            displayWorkScheduleId = request.displayWorkScheduleId,
             latitude = request.latitude!!,
             longitude = request.longitude!!,
             workType = request.workType

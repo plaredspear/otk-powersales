@@ -9,18 +9,18 @@ import com.otoki.internal.safetycheck.repository.SafetyCheckSubmissionRepository
 import com.otoki.internal.schedule.dto.response.AttendanceRegisterResponse
 import com.otoki.internal.schedule.dto.response.AttendanceStatusItem
 import com.otoki.internal.schedule.dto.response.AttendanceStatusResponse
+import com.otoki.internal.schedule.entity.DisplayWorkSchedule
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
-import com.otoki.internal.schedule.exception.AlreadyRegisteredException
-import com.otoki.internal.schedule.exception.DistanceExceededException
-import com.otoki.internal.schedule.exception.SafetyCheckRequiredException
-import com.otoki.internal.schedule.exception.TeamMemberScheduleNotFoundException
+import com.otoki.internal.schedule.exception.*
 import com.otoki.internal.schedule.integration.OroraApiService
 import com.otoki.internal.schedule.integration.OroraWorkReportRequest
+import com.otoki.internal.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.internal.sap.repository.EmployeeRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 
 @Service
@@ -28,8 +28,10 @@ import java.time.format.DateTimeFormatter
 class AttendanceService(
     private val employeeRepository: EmployeeRepository,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
+    private val displayWorkScheduleRepository: DisplayWorkScheduleRepository,
     private val safetyCheckSubmissionRepository: SafetyCheckSubmissionRepository,
-    private val ororaApiService: OroraApiService
+    private val ororaApiService: OroraApiService,
+    private val adminMonthlyIntegrationService: AdminMonthlyIntegrationService
 ) {
 
     companion object {
@@ -47,6 +49,7 @@ class AttendanceService(
 
     /**
      * 오늘 출근 거래처 목록 조회
+     * 기존 TeamMemberSchedule + 진열마스터 기반 거래처를 병합하여 반환
      */
     fun getAccountList(userId: Long, keyword: String?): AccountListResponse {
         val employee = employeeRepository.findById(userId)
@@ -60,42 +63,69 @@ class AttendanceService(
         // 오늘 스케줄 조회 (account fetch join 포함)
         val teamMemberSchedules = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(employee.id, today)
 
-        // DTO 변환 + 키워드 필터링
-        val accountInfos = teamMemberSchedules.mapNotNull { teamMemberSchedule ->
-            val account = teamMemberSchedule.account
+        // 기존 TeamMemberSchedule → AccountInfo (source=schedule)
+        val scheduleAccountInfos = teamMemberSchedules.mapNotNull { tms ->
+            val account = tms.account
             val accountName = account?.name ?: ""
 
-            // 키워드 필터링 (거래처명, 주소, 거래처코드)
-            if (!keyword.isNullOrBlank()) {
-                val lowerKeyword = keyword.lowercase()
-                val address = account?.address1 ?: ""
-                val accountTypeCode = account?.abcTypeCode ?: ""
-                val matches = accountName.lowercase().contains(lowerKeyword) ||
-                    address.lowercase().contains(lowerKeyword) ||
-                    accountTypeCode.lowercase().contains(lowerKeyword)
-                if (!matches) return@mapNotNull null
-            }
+            if (!matchesKeyword(keyword, accountName, account)) return@mapNotNull null
 
             AccountInfo(
-                scheduleId = teamMemberSchedule.id,
-                accountId = teamMemberSchedule.account?.id,
+                scheduleId = tms.id,
+                accountId = tms.account?.id,
                 accountName = accountName,
                 accountTypeCode = account?.abcTypeCode,
-                workCategory = teamMemberSchedule.workingCategory1 ?: "",
-                workCategory3 = teamMemberSchedule.workingCategory3,
+                workCategory = tms.workingCategory1 ?: "",
+                workCategory3 = tms.workingCategory3,
                 address = account?.address1,
                 latitude = account?.latitude?.toDoubleOrNull(),
                 longitude = account?.longitude?.toDoubleOrNull(),
-                isRegistered = teamMemberSchedule.commuteLogId != null
+                isRegistered = tms.commuteLogId != null,
+                source = "schedule"
             )
         }
 
-        val registeredCount = accountInfos.count { it.isRegistered }
+        // 진열마스터 기반 거래처 조회 (confirmed=true, 오늘 유효, 미삭제)
+        val validMasters = displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(employee.id, today)
+
+        // 이미 TeamMemberSchedule에 존재하는 거래처 제외
+        val existingAccountIds = teamMemberSchedules.mapNotNull { it.account?.id }.toSet()
+
+        val masterAccountInfos = validMasters.mapNotNull { master ->
+            val account = master.account
+            val accountId = account?.id ?: return@mapNotNull null
+            if (accountId in existingAccountIds) return@mapNotNull null
+
+            val accountName = account.name ?: ""
+            if (!matchesKeyword(keyword, accountName, account)) return@mapNotNull null
+
+            AccountInfo(
+                displayWorkScheduleId = master.id,
+                accountId = accountId,
+                accountName = accountName,
+                accountTypeCode = account.abcTypeCode,
+                workCategory = "진열",
+                workCategory3 = master.typeOfWork3,
+                address = account.address1,
+                latitude = account.latitude?.toDoubleOrNull(),
+                longitude = account.longitude?.toDoubleOrNull(),
+                isRegistered = false,
+                source = "master"
+            )
+        }
+
+        // 병합: 출근완료 → source=schedule → source=master
+        val allAccounts = (scheduleAccountInfos + masterAccountInfos).sortedWith(
+            compareByDescending<AccountInfo> { it.isRegistered }
+                .thenBy { it.source != "schedule" }
+        )
+
+        val registeredCount = allAccounts.count { it.isRegistered }
 
         return AccountListResponse(
             safetyCheckCompleted = safetyCheckCompleted,
-            accounts = accountInfos,
-            totalCount = accountInfos.size,
+            accounts = allAccounts,
+            totalCount = allAccounts.size,
             registeredCount = registeredCount,
             currentDate = today.format(DATE_FORMATTER)
         )
@@ -104,14 +134,27 @@ class AttendanceService(
     /**
      * 출근 등록
      *
-     * 1. 안전점검 완료 여부 검증
-     * 2. 스케줄 조회 + 중복 검증
-     * 3. GPS 거리 검증 (면제 코드 확인)
-     * 4. Orora WorkReport 전송 (Mock)
-     * 5. 응답 반환
+     * scheduleId 또는 displayWorkScheduleId 중 하나를 전달받아 처리:
+     * - scheduleId: 기존 방식 (TeamMemberSchedule 직접 조회)
+     * - displayWorkScheduleId: 진열마스터 기반으로 TeamMemberSchedule 동적 생성 후 출근 처리
      */
     @Transactional
-    fun register(userId: Long, scheduleId: Long, latitude: Double, longitude: Double, workType: String?): AttendanceRegisterResponse {
+    fun register(
+        userId: Long,
+        scheduleId: Long?,
+        displayWorkScheduleId: Long?,
+        latitude: Double,
+        longitude: Double,
+        workType: String?
+    ): AttendanceRegisterResponse {
+        // 상호 배타 검증
+        if (scheduleId == null && displayWorkScheduleId == null) {
+            throw AttendanceTargetRequiredException()
+        }
+        if (scheduleId != null && displayWorkScheduleId != null) {
+            throw AttendanceTargetConflictException()
+        }
+
         val employee = employeeRepository.findById(userId)
             .orElseThrow { EmployeeNotFoundException() }
 
@@ -121,9 +164,12 @@ class AttendanceService(
             throw SafetyCheckRequiredException()
         }
 
-        // 2. 스케줄 조회
-        val teamMemberSchedule = teamMemberScheduleRepository.findById(scheduleId)
-            .orElseThrow { TeamMemberScheduleNotFoundException() }
+        // 2. 스케줄 결정 (기존 방식 vs 진열마스터 기반 동적 생성)
+        val (teamMemberSchedule, newlyCreated) = if (scheduleId != null) {
+            resolveByScheduleId(scheduleId)
+        } else {
+            resolveByDisplayWorkSchedule(displayWorkScheduleId!!, employee, today)
+        }
 
         // 3. 중복 등록 검증
         if (teamMemberSchedule.commuteLogId != null) {
@@ -186,13 +232,22 @@ class AttendanceService(
             )
         }
 
-        // 7. 출근 현황 집계 (commuteLogId 업데이트 후)
+        // 7. 동적 생성 시 월별 통합일정 갱신
+        if (newlyCreated && account != null) {
+            adminMonthlyIntegrationService.refreshIntegration(
+                employeeId = employee.id,
+                accountId = account.id,
+                yearMonth = YearMonth.from(today)
+            )
+        }
+
+        // 8. 출근 현황 집계
         val todayTeamMemberSchedules = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(employee.id, today)
         val totalCount = todayTeamMemberSchedules.size
-        val registeredCount = todayTeamMemberSchedules.count { it.commuteLogId != null || it.id == scheduleId }
+        val registeredCount = todayTeamMemberSchedules.count { it.commuteLogId != null || it.id == teamMemberSchedule.id }
 
         return AttendanceRegisterResponse(
-            scheduleId = scheduleId,
+            scheduleId = teamMemberSchedule.id,
             accountName = account?.name ?: "",
             workType = workType ?: teamMemberSchedule.workingType,
             distanceKm = distanceKm,
@@ -229,6 +284,107 @@ class AttendanceService(
             statusList = statusList,
             currentDate = today.format(DATE_FORMATTER)
         )
+    }
+
+    /**
+     * 기존 방식: scheduleId로 TeamMemberSchedule 직접 조회
+     * @return (TeamMemberSchedule, newlyCreated=false)
+     */
+    private fun resolveByScheduleId(scheduleId: Long): Pair<TeamMemberSchedule, Boolean> {
+        val tms = teamMemberScheduleRepository.findById(scheduleId)
+            .orElseThrow { TeamMemberScheduleNotFoundException() }
+        return tms to false
+    }
+
+    /**
+     * 진열마스터 기반: DisplayWorkSchedule 검증 후 TeamMemberSchedule 동적 생성/조회
+     * @return (TeamMemberSchedule, newlyCreated)
+     */
+    private fun resolveByDisplayWorkSchedule(
+        displayWorkScheduleId: Long,
+        employee: com.otoki.internal.sap.entity.Employee,
+        today: LocalDate
+    ): Pair<TeamMemberSchedule, Boolean> {
+        val master = displayWorkScheduleRepository.findById(displayWorkScheduleId)
+            .orElseThrow { DisplayScheduleNotFoundException() }
+
+        if (master.isDeleted == true) {
+            throw DisplayScheduleNotFoundException()
+        }
+        if (master.confirmed != true) {
+            throw DisplayScheduleNotConfirmedException()
+        }
+        val startDate = master.startDate
+        val endDate = master.endDate
+        if (startDate != null && today.isBefore(startDate)) {
+            throw DisplayScheduleOutOfRangeException()
+        }
+        if (endDate != null && today.isAfter(endDate)) {
+            throw DisplayScheduleOutOfRangeException()
+        }
+        // startDate가 null이면 기간 조건 없는 것으로 간주
+
+        val account = master.account ?: throw DisplayScheduleNotFoundException()
+
+        // 중복 생성 방지: 동일 사원+거래처+오늘 여사원일정이 이미 존재하면 재사용
+        val existing = teamMemberScheduleRepository.findByEmployeeAndAccountAndWorkingDate(employee, account, today)
+        if (existing != null) {
+            return existing to false
+        }
+
+        // 조장 조회
+        val teamLeader = findTeamLeader(employee.costCenterCode)
+
+        // 새 TeamMemberSchedule 생성
+        val newSchedule = TeamMemberSchedule(
+            employee = employee,
+            account = account,
+            workingDate = today,
+            workingType = "근무",
+            workingCategory1 = "진열",
+            workingCategory2 = mapTypeOfWork5ToCategory2(master.typeOfWork5),
+            workingCategory3 = master.typeOfWork3,
+            teamLeader = teamLeader
+        )
+        val saved = teamMemberScheduleRepository.save(newSchedule)
+        return saved to true
+    }
+
+    /**
+     * typeOfWork5 → workingCategory2 매핑
+     * "상시" → "전담", "임시" → "임시"
+     */
+    private fun mapTypeOfWork5ToCategory2(typeOfWork5: String?): String? {
+        return when (typeOfWork5) {
+            "상시" -> "전담"
+            "임시" -> "임시"
+            else -> typeOfWork5
+        }
+    }
+
+    /**
+     * 사원의 조직코드 기반 조장 조회
+     * costCenterCode로 appAuthority="조장"이고 appLoginActive=true인 사원 조회
+     */
+    private fun findTeamLeader(costCenterCode: String?): com.otoki.internal.sap.entity.Employee? {
+        if (costCenterCode.isNullOrBlank()) return null
+        val leaders = employeeRepository.findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrue(
+            listOf(costCenterCode), "조장"
+        )
+        return leaders.firstOrNull()
+    }
+
+    /**
+     * 키워드 필터링 (거래처명, 주소, 거래처코드)
+     */
+    private fun matchesKeyword(keyword: String?, accountName: String, account: Account?): Boolean {
+        if (keyword.isNullOrBlank()) return true
+        val lowerKeyword = keyword.lowercase()
+        val address = account?.address1 ?: ""
+        val accountTypeCode = account?.abcTypeCode ?: ""
+        return accountName.lowercase().contains(lowerKeyword) ||
+            address.lowercase().contains(lowerKeyword) ||
+            accountTypeCode.lowercase().contains(lowerKeyword)
     }
 
     /**

@@ -6,13 +6,20 @@ import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.safetycheck.entity.SafetyCheckSubmission
 import com.otoki.internal.safetycheck.repository.SafetyCheckSubmissionRepository
+import com.otoki.internal.schedule.entity.DisplayWorkSchedule
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
 import com.otoki.internal.schedule.exception.AlreadyRegisteredException
+import com.otoki.internal.schedule.exception.AttendanceTargetConflictException
+import com.otoki.internal.schedule.exception.AttendanceTargetRequiredException
+import com.otoki.internal.schedule.exception.DisplayScheduleNotConfirmedException
+import com.otoki.internal.schedule.exception.DisplayScheduleNotFoundException
+import com.otoki.internal.schedule.exception.DisplayScheduleOutOfRangeException
 import com.otoki.internal.schedule.exception.DistanceExceededException
 import com.otoki.internal.schedule.exception.SafetyCheckRequiredException
 import com.otoki.internal.schedule.exception.TeamMemberScheduleNotFoundException
 import com.otoki.internal.schedule.integration.OroraApiService
 import com.otoki.internal.schedule.integration.OroraWorkReportResult
+import com.otoki.internal.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -32,6 +39,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.whenever
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.YearMonth
 import java.util.*
 
 @ExtendWith(MockitoExtension::class)
@@ -45,10 +53,16 @@ class AttendanceServiceTest {
     private lateinit var teamMemberScheduleRepository: TeamMemberScheduleRepository
 
     @Mock
+    private lateinit var displayWorkScheduleRepository: DisplayWorkScheduleRepository
+
+    @Mock
     private lateinit var safetyCheckSubmissionRepository: SafetyCheckSubmissionRepository
 
     @Mock
     private lateinit var ororaApiService: OroraApiService
+
+    @Mock
+    private lateinit var adminMonthlyIntegrationService: AdminMonthlyIntegrationService
 
     @InjectMocks
     private lateinit var attendanceService: AttendanceService
@@ -79,6 +93,7 @@ class AttendanceServiceTest {
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
+            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(emptyList())
 
             // When
             val result = attendanceService.getAccountList(userId, null)
@@ -115,6 +130,7 @@ class AttendanceServiceTest {
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(false)
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
+            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(emptyList())
 
             // When
             val result = attendanceService.getAccountList(userId, null)
@@ -142,6 +158,7 @@ class AttendanceServiceTest {
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
+            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(emptyList())
 
             // When
             val result = attendanceService.getAccountList(userId, null)
@@ -168,6 +185,7 @@ class AttendanceServiceTest {
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
+            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(emptyList())
 
             // When
             val result = attendanceService.getAccountList(userId, "이마트")
@@ -195,6 +213,7 @@ class AttendanceServiceTest {
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
+            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(emptyList())
 
             // When
             val result = attendanceService.getAccountList(userId, "강남")
@@ -221,6 +240,7 @@ class AttendanceServiceTest {
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
+            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(emptyList())
 
             // When
             val result = attendanceService.getAccountList(userId, "2001")
@@ -248,6 +268,7 @@ class AttendanceServiceTest {
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
+            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(emptyList())
 
             // When
             val result = attendanceService.getAccountList(userId, "서울")
@@ -273,6 +294,7 @@ class AttendanceServiceTest {
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
+            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(emptyList())
 
             // When
             val result = attendanceService.getAccountList(userId, "1234")
@@ -305,6 +327,7 @@ class AttendanceServiceTest {
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(false)
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(emptyList())
+            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(emptyList())
 
             // When
             val result = attendanceService.getAccountList(userId, null)
@@ -331,6 +354,7 @@ class AttendanceServiceTest {
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
+            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(emptyList())
 
             // When
             val result = attendanceService.getAccountList(userId, null)
@@ -340,6 +364,86 @@ class AttendanceServiceTest {
             assertThat(result.registeredCount).isEqualTo(1)
             assertThat(result.accounts[0].isRegistered).isTrue()
             assertThat(result.accounts[1].isRegistered).isFalse()
+        }
+    }
+
+    // ========== getAccountList - 진열마스터 병합 Tests ==========
+
+    @Nested
+    @DisplayName("getAccountList - 진열마스터 + 기존 일정 병합")
+    inner class GetAccountListMasterMergeTests {
+
+        @Test
+        @DisplayName("여사원일정 1건 + 진열마스터 2건(확정, 오늘 유효) -> 총 3건 (source=schedule 1건, source=master 2건)")
+        fun getAccountList_mergeScheduleAndMasters_returnsAll() {
+            // Given
+            val userId = 1L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            val teamMemberSchedules = listOf(
+                createTeamMemberSchedule(id = 1L, sfid = "SCH001", employeeId = userId, accountId = 8938,
+                    accountName = "이마트 강남점", workingCategory1 = "진열")
+            )
+
+            val masters = listOf(
+                createDisplayWorkSchedule(id = 100L, confirmed = true,
+                    startDate = today.minusDays(10), endDate = today.plusDays(10),
+                    employeeId = userId, accountId = 9001, accountName = "롯데마트 송파점"),
+                createDisplayWorkSchedule(id = 101L, confirmed = true,
+                    startDate = today.minusDays(5), endDate = today.plusDays(5),
+                    employeeId = userId, accountId = 9002, accountName = "홈플러스 서초점")
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
+            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(masters)
+
+            // When
+            val result = attendanceService.getAccountList(userId, null)
+
+            // Then
+            assertThat(result.accounts).hasSize(3)
+            val scheduleSources = result.accounts.filter { it.source == "schedule" }
+            val masterSources = result.accounts.filter { it.source == "master" }
+            assertThat(scheduleSources).hasSize(1)
+            assertThat(masterSources).hasSize(2)
+        }
+
+        @Test
+        @DisplayName("진열마스터 거래처가 이미 여사원일정에 존재 -> 중복 제거, 1건만 (source=schedule)")
+        fun getAccountList_duplicateAccountInMasterAndSchedule_deduplicates() {
+            // Given
+            val userId = 1L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            // 여사원일정에 accountId=8938 존재
+            val teamMemberSchedules = listOf(
+                createTeamMemberSchedule(id = 1L, sfid = "SCH001", employeeId = userId, accountId = 8938,
+                    accountName = "이마트 강남점", workingCategory1 = "진열")
+            )
+
+            // 진열마스터에도 동일 accountId=8938 존재
+            val masters = listOf(
+                createDisplayWorkSchedule(id = 100L, confirmed = true,
+                    startDate = today.minusDays(10), endDate = today.plusDays(10),
+                    employeeId = userId, accountId = 8938, accountName = "이마트 강남점")
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
+            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(masters)
+
+            // When
+            val result = attendanceService.getAccountList(userId, null)
+
+            // Then - 중복 제거로 1건만
+            assertThat(result.accounts).hasSize(1)
+            assertThat(result.accounts[0].source).isEqualTo("schedule")
+            assertThat(result.accounts[0].scheduleId).isEqualTo(1L)
         }
     }
 
@@ -387,7 +491,7 @@ class AttendanceServiceTest {
                 .thenReturn(listOf(teamMemberSchedule))
 
             // When
-            val result = attendanceService.register(userId, scheduleId, nearUserLat, nearUserLon, null)
+            val result = attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
 
             // Then
             assertThat(result.scheduleId).isEqualTo(scheduleId)
@@ -411,7 +515,7 @@ class AttendanceServiceTest {
 
             // When & Then
             assertThatThrownBy {
-                attendanceService.register(userId, scheduleId, nearUserLat, nearUserLon, null)
+                attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
             }.isInstanceOf(SafetyCheckRequiredException::class.java)
         }
 
@@ -437,7 +541,7 @@ class AttendanceServiceTest {
 
             // When & Then
             assertThatThrownBy {
-                attendanceService.register(userId, scheduleId, farUserLat, farUserLon, null)
+                attendanceService.register(userId, scheduleId, null, farUserLat, farUserLon, null)
             }.isInstanceOf(DistanceExceededException::class.java)
         }
 
@@ -471,7 +575,7 @@ class AttendanceServiceTest {
             val farLon = 127.0276
 
             // When
-            val result = attendanceService.register(userId, scheduleId, farLat, farLon, null)
+            val result = attendanceService.register(userId, scheduleId, null, farLat, farLon, null)
 
             // Then
             assertThat(result.scheduleId).isEqualTo(scheduleId)
@@ -509,7 +613,7 @@ class AttendanceServiceTest {
             val veryFarLon = 127.0276
 
             // When
-            val result = attendanceService.register(userId, scheduleId, veryFarLat, veryFarLon, null)
+            val result = attendanceService.register(userId, scheduleId, null, veryFarLat, veryFarLon, null)
 
             // Then
             assertThat(result.scheduleId).isEqualTo(scheduleId)
@@ -539,7 +643,7 @@ class AttendanceServiceTest {
 
             // When & Then
             assertThatThrownBy {
-                attendanceService.register(userId, scheduleId, farUserLat, farUserLon, null)
+                attendanceService.register(userId, scheduleId, null, farUserLat, farUserLon, null)
             }.isInstanceOf(DistanceExceededException::class.java)
         }
 
@@ -563,7 +667,7 @@ class AttendanceServiceTest {
 
             // When & Then
             assertThatThrownBy {
-                attendanceService.register(userId, scheduleId, nearUserLat, nearUserLon, null)
+                attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
             }.isInstanceOf(AlreadyRegisteredException::class.java)
         }
 
@@ -582,7 +686,7 @@ class AttendanceServiceTest {
 
             // When & Then
             assertThatThrownBy {
-                attendanceService.register(userId, scheduleId, nearUserLat, nearUserLon, null)
+                attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
             }.isInstanceOf(TeamMemberScheduleNotFoundException::class.java)
         }
 
@@ -595,7 +699,7 @@ class AttendanceServiceTest {
 
             // When & Then
             assertThatThrownBy {
-                attendanceService.register(userId, 10L, nearUserLat, nearUserLon, null)
+                attendanceService.register(userId, 10L, null, nearUserLat, nearUserLon, null)
             }.isInstanceOf(EmployeeNotFoundException::class.java)
         }
 
@@ -625,7 +729,7 @@ class AttendanceServiceTest {
                 .thenReturn(listOf(teamMemberSchedule))
 
             // When
-            val result = attendanceService.register(userId, scheduleId, nearUserLat, nearUserLon, "냉장")
+            val result = attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, "냉장")
 
             // Then
             assertThat(result.workType).isEqualTo("냉장")
@@ -664,12 +768,249 @@ class AttendanceServiceTest {
                 .thenReturn(allTeamMemberSchedules)
 
             // When
-            val result = attendanceService.register(userId, scheduleId, nearUserLat, nearUserLon, null)
+            val result = attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
 
             // Then
             assertThat(result.totalCount).isEqualTo(3)
             // id=20 has commuteLogId="OK", id=10 matches scheduleId => 2 registered
             assertThat(result.registeredCount).isEqualTo(2)
+        }
+    }
+
+    // ========== register - 진열마스터 기반 출근 등록 Tests ==========
+
+    @Nested
+    @DisplayName("register - 진열마스터 기반 출근 등록")
+    inner class RegisterByDisplayWorkScheduleTests {
+
+        private val accountLat = 37.4979
+        private val accountLon = 127.0276
+        private val nearUserLat = 37.4995
+        private val nearUserLon = 127.0300
+
+        @Test
+        @DisplayName("정상 - 신규 생성 + 출근: valid displayWorkScheduleId, 기존 TMS 없음 -> TMS 생성, 출근등록, refreshIntegration 호출")
+        fun register_byDisplayWorkSchedule_newCreation_success() {
+            // Given
+            val userId = 1L
+            val displayWorkScheduleId = 100L
+            val today = LocalDate.now()
+
+            val employee = createEmployee(id = userId, sfid = "USR001", costCenterCode = "CC001")
+            val account = Account(
+                id = 8938,
+                name = "테스트 거래처",
+                address1 = "서울시 강남구",
+                abcTypeCode = "2110",
+                latitude = accountLat.toString(),
+                longitude = accountLon.toString()
+            )
+
+            val master = createDisplayWorkSchedule(
+                id = displayWorkScheduleId,
+                confirmed = true,
+                startDate = today.minusDays(30),
+                endDate = today.plusDays(30),
+                typeOfWork3 = "고정",
+                typeOfWork5 = "상시",
+                employeeId = userId,
+                accountId = 8938,
+                accountName = "테스트 거래처",
+                accountLatitude = accountLat.toString(),
+                accountLongitude = accountLon.toString(),
+                accountAbcTypeCode = "2110"
+            )
+
+            val teamLeader = createEmployee(id = 99L, sfid = "LEADER001", name = "조장", appAuthority = "조장")
+
+            // 신규 생성될 TMS
+            val newTms = createTeamMemberSchedule(
+                id = 50L, sfid = null, employeeId = userId, accountId = 8938,
+                workingType = "근무", workingCategory1 = "진열", commuteLogId = null,
+                accountName = "테스트 거래처", accountAbcTypeCode = "2110",
+                accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(displayWorkScheduleRepository.findById(displayWorkScheduleId)).thenReturn(Optional.of(master))
+            whenever(teamMemberScheduleRepository.findByEmployeeAndAccountAndWorkingDate(eq(employee), any(), eq(today))).thenReturn(null)
+            whenever(employeeRepository.findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrue(listOf("CC001"), "조장")).thenReturn(listOf(teamLeader))
+            whenever(teamMemberScheduleRepository.save(any<TeamMemberSchedule>())).thenAnswer { it.getArgument<TeamMemberSchedule>(0).also { tms ->
+                // simulate saved entity with id
+            } }.thenReturn(newTms)
+            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.empty())
+            doReturn(OroraWorkReportResult("200", "SUCCESS"))
+                .whenever(ororaApiService).sendWorkReport(any())
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
+                .thenReturn(listOf(newTms))
+
+            // When
+            val result = attendanceService.register(userId, null, displayWorkScheduleId, nearUserLat, nearUserLon, null)
+
+            // Then
+            assertThat(result.accountName).isEqualTo("테스트 거래처")
+            verify(teamMemberScheduleRepository).save(any<TeamMemberSchedule>())
+            verify(adminMonthlyIntegrationService).refreshIntegration(
+                employeeId = userId,
+                accountId = 8938,
+                yearMonth = YearMonth.from(today)
+            )
+        }
+
+        @Test
+        @DisplayName("정상 - 기존 여사원일정 재사용: 동일 사원+거래처+오늘 TMS 존재 -> 기존 사용, refreshIntegration 미호출")
+        fun register_byDisplayWorkSchedule_existingTms_reused() {
+            // Given
+            val userId = 1L
+            val displayWorkScheduleId = 100L
+            val today = LocalDate.now()
+
+            val employee = createEmployee(id = userId, sfid = "USR001", costCenterCode = "CC001")
+            val account = Account(
+                id = 8938,
+                name = "테스트 거래처",
+                address1 = "서울시 강남구",
+                abcTypeCode = "2110",
+                latitude = accountLat.toString(),
+                longitude = accountLon.toString()
+            )
+
+            val master = createDisplayWorkSchedule(
+                id = displayWorkScheduleId,
+                confirmed = true,
+                startDate = today.minusDays(30),
+                endDate = today.plusDays(30),
+                employeeId = userId,
+                accountId = 8938,
+                accountName = "테스트 거래처",
+                accountLatitude = accountLat.toString(),
+                accountLongitude = accountLon.toString(),
+                accountAbcTypeCode = "2110"
+            )
+
+            // 기존 TMS가 이미 존재
+            val existingTms = createTeamMemberSchedule(
+                id = 50L, sfid = "SCH050", employeeId = userId, accountId = 8938,
+                workingType = "근무", workingCategory1 = "진열", commuteLogId = null,
+                accountName = "테스트 거래처", accountAbcTypeCode = "2110",
+                accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(displayWorkScheduleRepository.findById(displayWorkScheduleId)).thenReturn(Optional.of(master))
+            whenever(teamMemberScheduleRepository.findByEmployeeAndAccountAndWorkingDate(eq(employee), any(), eq(today))).thenReturn(existingTms)
+            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.empty())
+            doReturn(OroraWorkReportResult("200", "SUCCESS"))
+                .whenever(ororaApiService).sendWorkReport(any())
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
+                .thenReturn(listOf(existingTms))
+
+            // When
+            val result = attendanceService.register(userId, null, displayWorkScheduleId, nearUserLat, nearUserLon, null)
+
+            // Then
+            assertThat(result.scheduleId).isEqualTo(50L)
+            verify(teamMemberScheduleRepository, never()).save(any<TeamMemberSchedule>())
+            verify(adminMonthlyIntegrationService, never()).refreshIntegration(any(), any(), any())
+        }
+
+        @Test
+        @DisplayName("마스터 미존재 -> DisplayScheduleNotFoundException")
+        fun register_byDisplayWorkSchedule_notFound_throwsException() {
+            // Given
+            val userId = 1L
+            val displayWorkScheduleId = 999999L
+            val today = LocalDate.now()
+            val employee = createEmployee(id = userId, sfid = "USR001")
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(displayWorkScheduleRepository.findById(displayWorkScheduleId)).thenReturn(Optional.empty())
+
+            // When & Then
+            assertThatThrownBy {
+                attendanceService.register(userId, null, displayWorkScheduleId, nearUserLat, nearUserLon, null)
+            }.isInstanceOf(DisplayScheduleNotFoundException::class.java)
+        }
+
+        @Test
+        @DisplayName("마스터 미확정(confirmed=false) -> DisplayScheduleNotConfirmedException")
+        fun register_byDisplayWorkSchedule_notConfirmed_throwsException() {
+            // Given
+            val userId = 1L
+            val displayWorkScheduleId = 100L
+            val today = LocalDate.now()
+            val employee = createEmployee(id = userId, sfid = "USR001")
+
+            val master = createDisplayWorkSchedule(
+                id = displayWorkScheduleId,
+                confirmed = false,
+                startDate = today.minusDays(30),
+                endDate = today.plusDays(30)
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(displayWorkScheduleRepository.findById(displayWorkScheduleId)).thenReturn(Optional.of(master))
+
+            // When & Then
+            assertThatThrownBy {
+                attendanceService.register(userId, null, displayWorkScheduleId, nearUserLat, nearUserLon, null)
+            }.isInstanceOf(DisplayScheduleNotConfirmedException::class.java)
+        }
+
+        @Test
+        @DisplayName("기간 범위 밖 (오늘 < startDate) -> DisplayScheduleOutOfRangeException")
+        fun register_byDisplayWorkSchedule_outOfRange_throwsException() {
+            // Given
+            val userId = 1L
+            val displayWorkScheduleId = 100L
+            val today = LocalDate.now()
+            val employee = createEmployee(id = userId, sfid = "USR001")
+
+            val master = createDisplayWorkSchedule(
+                id = displayWorkScheduleId,
+                confirmed = true,
+                startDate = today.plusDays(10),  // 미래 시작일
+                endDate = today.plusDays(40)
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(displayWorkScheduleRepository.findById(displayWorkScheduleId)).thenReturn(Optional.of(master))
+
+            // When & Then
+            assertThatThrownBy {
+                attendanceService.register(userId, null, displayWorkScheduleId, nearUserLat, nearUserLon, null)
+            }.isInstanceOf(DisplayScheduleOutOfRangeException::class.java)
+        }
+
+        @Test
+        @DisplayName("scheduleId, displayWorkScheduleId 둘 다 null -> AttendanceTargetRequiredException")
+        fun register_bothNull_throwsException() {
+            // Given
+            val userId = 1L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+
+            // When & Then
+            assertThatThrownBy {
+                attendanceService.register(userId, null, null, nearUserLat, nearUserLon, null)
+            }.isInstanceOf(AttendanceTargetRequiredException::class.java)
+        }
+
+        @Test
+        @DisplayName("scheduleId, displayWorkScheduleId 둘 다 값 -> AttendanceTargetConflictException")
+        fun register_bothProvided_throwsException() {
+            // Given
+            val userId = 1L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+
+            // When & Then
+            assertThatThrownBy {
+                attendanceService.register(userId, 10L, 100L, nearUserLat, nearUserLon, null)
+            }.isInstanceOf(AttendanceTargetConflictException::class.java)
         }
     }
 
@@ -724,7 +1065,7 @@ class AttendanceServiceTest {
                 .thenReturn(listOf(teamMemberSchedule))
 
             // When
-            attendanceService.register(userId, scheduleId, nearUserLat, nearUserLon, null)
+            attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
 
             // Then - completeWorkYn 업데이트 검증
             assertThat(safetyCheck.completeWorkYn).isEqualTo("Y")
@@ -777,7 +1118,7 @@ class AttendanceServiceTest {
                 .thenReturn(listOf(teamMemberSchedule))
 
             // When
-            val result = attendanceService.register(userId, scheduleId, nearUserLat, nearUserLon, null)
+            val result = attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
 
             // Then - 출근등록 성공
             assertThat(result.scheduleId).isEqualTo(scheduleId)
@@ -825,7 +1166,7 @@ class AttendanceServiceTest {
                 .thenReturn(listOf(teamMemberSchedule))
 
             // When - 에러 없이 성공
-            val result = attendanceService.register(userId, scheduleId, nearUserLat, nearUserLon, null)
+            val result = attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
 
             // Then
             assertThat(result.scheduleId).isEqualTo(scheduleId)
@@ -886,7 +1227,7 @@ class AttendanceServiceTest {
                 .thenReturn(listOf(teamMemberSchedule))
 
             // When
-            attendanceService.register(userId, scheduleId, nearUserLat, nearUserLon, null)
+            attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
 
             // Then - null → null 변환 검증
             verify(teamMemberScheduleRepository).updateSafetyCheckData(
@@ -1052,7 +1393,8 @@ class AttendanceServiceTest {
         employeeCode: String = "USR001",
         name: String = "테스트 사용자",
         orgName: String? = "서울지점",
-        appAuthority: String? = null
+        appAuthority: String? = null,
+        costCenterCode: String? = null
     ): Employee {
         return Employee(
             id = id,
@@ -1062,7 +1404,8 @@ class AttendanceServiceTest {
             orgName = orgName,
             appAuthority = appAuthority,
             password = "encodedPassword",
-            passwordChangeRequired = false
+            passwordChangeRequired = false,
+            costCenterCode = costCenterCode
         )
     }
 
@@ -1147,6 +1490,43 @@ class AttendanceServiceTest {
                 )
             },
             commuteLogId = commuteLogId
+        )
+    }
+
+    private fun createDisplayWorkSchedule(
+        id: Long = 100L,
+        confirmed: Boolean? = true,
+        startDate: LocalDate? = LocalDate.now().minusDays(30),
+        endDate: LocalDate? = LocalDate.now().plusDays(30),
+        typeOfWork3: String? = "고정",
+        typeOfWork5: String? = "상시",
+        employeeId: Long? = 1L,
+        accountId: Int? = 8938,
+        accountName: String? = "테스트 거래처",
+        accountLatitude: String? = null,
+        accountLongitude: String? = null,
+        accountAbcTypeCode: String? = null,
+        isDeleted: Boolean? = false
+    ): DisplayWorkSchedule {
+        return DisplayWorkSchedule(
+            id = id,
+            confirmed = confirmed,
+            startDate = startDate,
+            endDate = endDate,
+            typeOfWork3 = typeOfWork3,
+            typeOfWork5 = typeOfWork5,
+            employee = employeeId?.let { Employee(id = it, employeeCode = "EMP$it", name = "테스트$it") },
+            account = accountId?.let {
+                Account(
+                    id = it,
+                    name = accountName,
+                    address1 = "서울시 강남구",
+                    abcTypeCode = accountAbcTypeCode,
+                    latitude = accountLatitude,
+                    longitude = accountLongitude
+                )
+            },
+            isDeleted = isDeleted
         )
     }
 }
