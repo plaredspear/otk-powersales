@@ -3,7 +3,6 @@ import { Spin } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useTeamScheduleAccounts } from '@/hooks/team-schedule/useTeamScheduleAccounts';
 import { useTeamSchedules } from '@/hooks/team-schedule/useTeamSchedules';
-import { useTeamScheduleSummary } from '@/hooks/team-schedule/useTeamScheduleSummary';
 import type { TeamSchedule } from '@/api/team-schedule';
 import { ScheduleFilterPanel } from './components/ScheduleFilterPanel';
 import { ScheduleCalendar } from './components/ScheduleCalendar';
@@ -58,8 +57,9 @@ export default function SchedulePage() {
     [year, month, filterTab, debouncedEmployeeIds, debouncedAccountIds],
   );
 
-  const { data: schedules = [], isLoading: schedulesLoading } = useTeamSchedules(queryParams);
-  const { data: summaries = [] } = useTeamScheduleSummary(queryParams);
+  const { data, isLoading: schedulesLoading } = useTeamSchedules(queryParams);
+  const schedules = data?.schedules ?? [];
+  const summaries = data?.dailySummary ?? [];
   const { data: accounts = [] } = useTeamScheduleAccounts(selectedBranchCode);
 
   const handleDateClick = useCallback((date: string) => {
