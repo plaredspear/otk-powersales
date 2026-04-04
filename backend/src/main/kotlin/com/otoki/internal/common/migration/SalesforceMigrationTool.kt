@@ -4,6 +4,7 @@ import com.otoki.internal.claim.entity.Claim
 import com.otoki.internal.common.entity.AgreementHistory
 import com.otoki.internal.common.entity.UploadFile
 import com.otoki.internal.leave.entity.AlternativeHoliday
+import com.otoki.internal.promotion.entity.ProfessionalPromotionTeamHistory
 import com.otoki.internal.promotion.entity.ProfessionalPromotionTeamMaster
 import com.otoki.internal.promotion.entity.Promotion
 import com.otoki.internal.promotion.entity.PromotionEmployee
@@ -34,6 +35,7 @@ import com.otoki.internal.schedule.entity.AttendanceLog
  * │  NO     │ DKRetail__PromotionEmployee__c              │ promotion_employee          │ PromotionEmployee       │ DKRetail__PromotionId__c → promotion.sfid,                    │ UPDATE: promotion_id          │
  * │         │                                             │                             │                         │   DKRetail__ScheduleId__c → team_member_schedule.sfid         │ V73: sfid 컬럼 추가, schedule_id → team_member_schedule_id 리네이밍 │
  * │  NO     │ ProfessionalPromotionTeamMaster__c          │ professional_promotion_team_master │ ProfessionalPromotionTeamMaster │ Account__c → account.sfid, EmployeeNumber__c → employee.employee_code │ UPDATE: account_id, employee_id │
+ * │  NO     │ ProfessionalPromotionTeamHistory__c         │ professional_promotion_team_history │ ProfessionalPromotionTeamHistory │ EmployeeId__c → employee.sfid                                       │ V89: sfid 컬럼 추가, employee_id FK │
  * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
  * │         │ ── Agreement / Upload ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
  * │  NO     │ AgreementHistory__c                         │ agreement_history           │ AgreementHistory        │ AgreementWordId__c → agreement_word.sfid                      │ UPDATE: agreement_word_id     │
@@ -106,6 +108,7 @@ object SalesforceMigrationTool {
         EntityRegistration("promotion", Promotion::class.java),
         EntityRegistration("promotionEmployee", PromotionEmployee::class.java),
         EntityRegistration("professionalPromotionTeamMaster", ProfessionalPromotionTeamMaster::class.java),
+        EntityRegistration("professionalPromotionTeamHistory", ProfessionalPromotionTeamHistory::class.java),
 
         // ── Claim 관련 (Employee, Account는 Heroku에서 먼저 적재) ──
         EntityRegistration("claim", Claim::class.java),
