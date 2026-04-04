@@ -5,13 +5,16 @@ import com.otoki.internal.common.exception.BusinessException
 import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.sap.entity.MonthlySalesHistory
+import com.otoki.internal.leave.repository.HolidayMasterRepository
 import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.sap.repository.MonthlySalesHistoryRepository
 import com.otoki.internal.sap.repository.OrganizationRepository
 import com.otoki.internal.schedule.entity.DisplayWorkSchedule
+import com.otoki.internal.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
 import com.otoki.internal.schedule.repository.DisplayWorkScheduleRepository
+import com.otoki.internal.schedule.repository.MonthlyFemaleEmployeeIntegrationScheduleRepository
 import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
 import org.apache.poi.ss.usermodel.FillPatternType
 import org.apache.poi.ss.usermodel.HorizontalAlignment
@@ -37,7 +40,9 @@ class AdminMonthlyIntegrationService(
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
     private val displayWorkScheduleRepository: DisplayWorkScheduleRepository,
     private val accountRepository: AccountRepository,
-    private val monthlySalesHistoryRepository: MonthlySalesHistoryRepository
+    private val monthlySalesHistoryRepository: MonthlySalesHistoryRepository,
+    private val monthlyIntegrationScheduleRepository: MonthlyFemaleEmployeeIntegrationScheduleRepository,
+    private val holidayMasterRepository: HolidayMasterRepository
 ) {
 
     fun getMonthlyIntegration(
@@ -218,6 +223,98 @@ class AdminMonthlyIntegrationService(
         val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
         val filename = "${year}년${month}월_근무형태별_인원현황_${timestamp}.xlsx"
         return ExcelResult(bytes, filename)
+    }
+
+    @Transactional
+    fun refreshIntegration(employeeId: Long, accountId: Int, yearMonth: YearMonth) {
+        val from = yearMonth.atDay(1)
+        val to = yearMonth.atEndOfMonth()
+
+        val schedules = teamMemberScheduleRepository.findWorkSchedulesByEmployeeAndAccountAndMonth(
+            employeeId, accountId, from, to
+        )
+
+        val yearStr = yearMonth.year.toString()
+        val monthStr = String.format("%02d", yearMonth.monthValue)
+        val existing = monthlyIntegrationScheduleRepository.findByEmployeeIdAndAccountIdAndYearAndMonth(
+            employeeId, accountId, yearStr, monthStr
+        )
+
+        if (schedules.isEmpty()) {
+            if (existing != null) {
+                monthlyIntegrationScheduleRepository.delete(existing)
+            }
+            return
+        }
+
+        val workingDaysMonth = schedules.map { it.workingDate!! }.distinct().size
+        val numberOfInputs = schedules.size.toLong()
+
+        var equivalentWorkingDays = BigDecimal.ZERO
+        for (schedule in schedules) {
+            val accountCountOnDate = teamMemberScheduleRepository.countWorkSchedulesByEmployeeAndDateAndWorkingType(
+                employeeId, schedule.workingDate!!
+            )
+            val coefficient = when (schedule.workingCategory3) {
+                "고정" -> BigDecimal.ONE
+                "격고" -> BigDecimal("0.5")
+                "순회" -> if (accountCountOnDate > 0) {
+                    BigDecimal.ONE.divide(BigDecimal(accountCountOnDate), 4, RoundingMode.HALF_UP)
+                } else BigDecimal.ZERO
+                else -> BigDecimal.ONE
+            }
+            equivalentWorkingDays = equivalentWorkingDays.add(coefficient)
+        }
+        equivalentWorkingDays = equivalentWorkingDays.setScale(4, RoundingMode.HALF_UP)
+
+        val businessDays = calculateBusinessDays(yearMonth)
+        val convertedHeadcount = if (businessDays > 0) {
+            equivalentWorkingDays.divide(BigDecimal(businessDays), 4, RoundingMode.HALF_UP)
+        } else {
+            BigDecimal.ZERO
+        }
+
+        if (existing != null) {
+            monthlyIntegrationScheduleRepository.delete(existing)
+        }
+
+        val employee = schedules.first().employee
+        val account = schedules.first().account
+
+        val record = MonthlyFemaleEmployeeIntegrationSchedule(
+            year = yearStr,
+            month = monthStr,
+            employee = employee,
+            account = account,
+            workingDaysMonth = BigDecimal(workingDaysMonth),
+            numberOfInputs = numberOfInputs,
+            equivalentNumberOfWorkingDays = equivalentWorkingDays,
+            convertedHeadcount = convertedHeadcount
+        )
+        monthlyIntegrationScheduleRepository.save(record)
+    }
+
+    internal fun calculateBusinessDays(yearMonth: YearMonth): Int {
+        val from = yearMonth.atDay(1)
+        val to = yearMonth.atEndOfMonth()
+
+        var weekdays = 0
+        var date = from
+        while (!date.isAfter(to)) {
+            val dow = date.dayOfWeek
+            if (dow != java.time.DayOfWeek.SATURDAY && dow != java.time.DayOfWeek.SUNDAY) {
+                weekdays++
+            }
+            date = date.plusDays(1)
+        }
+
+        val holidays = holidayMasterRepository.findByHolidayDateBetween(from, to)
+        val holidayWeekdays = holidays.count { h ->
+            val dow = h.holidayDate.dayOfWeek
+            dow != java.time.DayOfWeek.SATURDAY && dow != java.time.DayOfWeek.SUNDAY
+        }
+
+        return weekdays - holidayWeekdays
     }
 
     // --- Private helpers ---

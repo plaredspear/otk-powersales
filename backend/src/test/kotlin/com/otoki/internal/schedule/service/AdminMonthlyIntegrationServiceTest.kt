@@ -1,13 +1,17 @@
 package com.otoki.internal.schedule.service
 
+import com.otoki.internal.leave.entity.HolidayMaster
+import com.otoki.internal.leave.repository.HolidayMasterRepository
 import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.sap.repository.MonthlySalesHistoryRepository
 import com.otoki.internal.sap.repository.OrganizationRepository
+import com.otoki.internal.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
 import com.otoki.internal.schedule.repository.DisplayWorkScheduleRepository
+import com.otoki.internal.schedule.repository.MonthlyFemaleEmployeeIntegrationScheduleRepository
 import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -19,12 +23,11 @@ import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.whenever
+import org.mockito.kotlin.*
 import org.mockito.quality.Strictness
 import java.math.BigDecimal
 import java.time.LocalDate
+import java.time.YearMonth
 
 @ExtendWith(MockitoExtension::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -37,6 +40,8 @@ class AdminMonthlyIntegrationServiceTest {
     @Mock private lateinit var displayWorkScheduleRepository: DisplayWorkScheduleRepository
     @Mock private lateinit var accountRepository: AccountRepository
     @Mock private lateinit var monthlySalesHistoryRepository: MonthlySalesHistoryRepository
+    @Mock private lateinit var monthlyIntegrationScheduleRepository: MonthlyFemaleEmployeeIntegrationScheduleRepository
+    @Mock private lateinit var holidayMasterRepository: HolidayMasterRepository
 
     @InjectMocks private lateinit var service: AdminMonthlyIntegrationService
 
@@ -187,6 +192,278 @@ class AdminMonthlyIntegrationServiceTest {
             // Then
             assertThat(result.year).isEqualTo(2026)
             assertThat(result.month).isEqualTo(3)
+        }
+    }
+
+    @Nested
+    @DisplayName("refreshIntegration - 통합일정 자동 갱신")
+    inner class RefreshIntegrationTests {
+
+        private val employeeId = 1L
+        private val accountId = 100
+        private val yearMonth = YearMonth.of(2026, 4)
+
+        @Test
+        @DisplayName("생성 후 집계 생성 - 첫 고정 일정 생성 시 통합일정 레코드 생성")
+        fun createIntegration_firstSchedule() {
+            // Given
+            whenever(teamMemberScheduleRepository.findWorkSchedulesByEmployeeAndAccountAndMonth(
+                eq(employeeId), eq(accountId), any(), any()
+            )).thenReturn(listOf(
+                createScheduleRecord(id = 1L, employeeId = employeeId, accountId = accountId,
+                    workingDate = LocalDate.of(2026, 4, 1), workingCategory3 = "고정")
+            ))
+            whenever(monthlyIntegrationScheduleRepository.findByEmployeeIdAndAccountIdAndYearAndMonth(
+                eq(employeeId), eq(accountId), eq("2026"), eq("04")
+            )).thenReturn(null)
+            whenever(teamMemberScheduleRepository.countWorkSchedulesByEmployeeAndDateAndWorkingType(
+                eq(employeeId), eq(LocalDate.of(2026, 4, 1))
+            )).thenReturn(1)
+            whenever(holidayMasterRepository.findByHolidayDateBetween(any(), any())).thenReturn(emptyList())
+            whenever(monthlyIntegrationScheduleRepository.save(any<MonthlyFemaleEmployeeIntegrationSchedule>()))
+                .thenAnswer { it.getArgument<MonthlyFemaleEmployeeIntegrationSchedule>(0) }
+
+            // When
+            service.refreshIntegration(employeeId, accountId, yearMonth)
+
+            // Then
+            verify(monthlyIntegrationScheduleRepository).save(argThat<MonthlyFemaleEmployeeIntegrationSchedule> {
+                this.year == "2026" &&
+                    this.month == "04" &&
+                    this.workingDaysMonth?.compareTo(BigDecimal.ONE) == 0 &&
+                    this.numberOfInputs == 1L &&
+                    this.equivalentNumberOfWorkingDays?.compareTo(BigDecimal.ONE) == 0
+            })
+        }
+
+        @Test
+        @DisplayName("격고 환산 계산 - 격고 일정 1건 시 환산근무일수=0.5")
+        fun refreshIntegration_alternateType() {
+            // Given
+            whenever(teamMemberScheduleRepository.findWorkSchedulesByEmployeeAndAccountAndMonth(
+                eq(employeeId), eq(accountId), any(), any()
+            )).thenReturn(listOf(
+                createScheduleRecord(id = 1L, employeeId = employeeId, accountId = accountId,
+                    workingDate = LocalDate.of(2026, 4, 1), workingCategory3 = "격고")
+            ))
+            whenever(monthlyIntegrationScheduleRepository.findByEmployeeIdAndAccountIdAndYearAndMonth(
+                eq(employeeId), eq(accountId), eq("2026"), eq("04")
+            )).thenReturn(null)
+            whenever(teamMemberScheduleRepository.countWorkSchedulesByEmployeeAndDateAndWorkingType(
+                eq(employeeId), eq(LocalDate.of(2026, 4, 1))
+            )).thenReturn(1)
+            whenever(holidayMasterRepository.findByHolidayDateBetween(any(), any())).thenReturn(emptyList())
+            whenever(monthlyIntegrationScheduleRepository.save(any<MonthlyFemaleEmployeeIntegrationSchedule>()))
+                .thenAnswer { it.getArgument<MonthlyFemaleEmployeeIntegrationSchedule>(0) }
+
+            // When
+            service.refreshIntegration(employeeId, accountId, yearMonth)
+
+            // Then
+            verify(monthlyIntegrationScheduleRepository).save(argThat<MonthlyFemaleEmployeeIntegrationSchedule> {
+                this.equivalentNumberOfWorkingDays?.compareTo(BigDecimal("0.5")) == 0
+            })
+        }
+
+        @Test
+        @DisplayName("순회 환산 계산 - 3개 거래처 순회 시 환산근무일수=1/3")
+        fun refreshIntegration_patrolType() {
+            // Given
+            whenever(teamMemberScheduleRepository.findWorkSchedulesByEmployeeAndAccountAndMonth(
+                eq(employeeId), eq(accountId), any(), any()
+            )).thenReturn(listOf(
+                createScheduleRecord(id = 1L, employeeId = employeeId, accountId = accountId,
+                    workingDate = LocalDate.of(2026, 4, 10), workingCategory3 = "순회")
+            ))
+            whenever(monthlyIntegrationScheduleRepository.findByEmployeeIdAndAccountIdAndYearAndMonth(
+                eq(employeeId), eq(accountId), eq("2026"), eq("04")
+            )).thenReturn(null)
+            whenever(teamMemberScheduleRepository.countWorkSchedulesByEmployeeAndDateAndWorkingType(
+                eq(employeeId), eq(LocalDate.of(2026, 4, 10))
+            )).thenReturn(3)
+            whenever(holidayMasterRepository.findByHolidayDateBetween(any(), any())).thenReturn(emptyList())
+            whenever(monthlyIntegrationScheduleRepository.save(any<MonthlyFemaleEmployeeIntegrationSchedule>()))
+                .thenAnswer { it.getArgument<MonthlyFemaleEmployeeIntegrationSchedule>(0) }
+
+            // When
+            service.refreshIntegration(employeeId, accountId, yearMonth)
+
+            // Then
+            verify(monthlyIntegrationScheduleRepository).save(argThat<MonthlyFemaleEmployeeIntegrationSchedule> {
+                this.equivalentNumberOfWorkingDays?.compareTo(BigDecimal("0.3333")) == 0
+            })
+        }
+
+        @Test
+        @DisplayName("삭제 후 집계 삭제 - 마지막 일정 삭제 시 통합일정 레코드 삭제")
+        fun deleteIntegration_noSchedulesRemaining() {
+            // Given
+            val existing = MonthlyFemaleEmployeeIntegrationSchedule(
+                id = 10L,
+                year = "2026",
+                month = "04",
+                employee = Employee(id = employeeId, employeeCode = "E001", name = "테스트"),
+                account = Account(id = accountId)
+            )
+            whenever(teamMemberScheduleRepository.findWorkSchedulesByEmployeeAndAccountAndMonth(
+                eq(employeeId), eq(accountId), any(), any()
+            )).thenReturn(emptyList())
+            whenever(monthlyIntegrationScheduleRepository.findByEmployeeIdAndAccountIdAndYearAndMonth(
+                eq(employeeId), eq(accountId), eq("2026"), eq("04")
+            )).thenReturn(existing)
+
+            // When
+            service.refreshIntegration(employeeId, accountId, yearMonth)
+
+            // Then
+            verify(monthlyIntegrationScheduleRepository).delete(existing)
+            verify(monthlyIntegrationScheduleRepository, never()).save(any())
+        }
+
+        @Test
+        @DisplayName("일정 0건 + 기존 레코드 없음 - 아무 작업도 하지 않음")
+        fun noSchedules_noExisting() {
+            // Given
+            whenever(teamMemberScheduleRepository.findWorkSchedulesByEmployeeAndAccountAndMonth(
+                eq(employeeId), eq(accountId), any(), any()
+            )).thenReturn(emptyList())
+            whenever(monthlyIntegrationScheduleRepository.findByEmployeeIdAndAccountIdAndYearAndMonth(
+                eq(employeeId), eq(accountId), eq("2026"), eq("04")
+            )).thenReturn(null)
+
+            // When
+            service.refreshIntegration(employeeId, accountId, yearMonth)
+
+            // Then
+            verify(monthlyIntegrationScheduleRepository, never()).delete(any())
+            verify(monthlyIntegrationScheduleRepository, never()).save(any())
+        }
+
+        @Test
+        @DisplayName("환산인원 계산 - 환산근무일수/영업일수")
+        fun convertedHeadcount_calculation() {
+            // Given: 4월 영업일수 = 22일(평일) - 0일(공휴일) = 22일, 고정 10일 근무
+            val schedules = (1..10).map { day ->
+                createScheduleRecord(
+                    id = day.toLong(), employeeId = employeeId, accountId = accountId,
+                    workingDate = LocalDate.of(2026, 4, day), workingCategory3 = "고정"
+                )
+            }
+            whenever(teamMemberScheduleRepository.findWorkSchedulesByEmployeeAndAccountAndMonth(
+                eq(employeeId), eq(accountId), any(), any()
+            )).thenReturn(schedules)
+            whenever(monthlyIntegrationScheduleRepository.findByEmployeeIdAndAccountIdAndYearAndMonth(
+                eq(employeeId), eq(accountId), eq("2026"), eq("04")
+            )).thenReturn(null)
+            schedules.forEach { s ->
+                whenever(teamMemberScheduleRepository.countWorkSchedulesByEmployeeAndDateAndWorkingType(
+                    eq(employeeId), eq(s.workingDate!!)
+                )).thenReturn(1)
+            }
+            whenever(holidayMasterRepository.findByHolidayDateBetween(any(), any())).thenReturn(emptyList())
+            whenever(monthlyIntegrationScheduleRepository.save(any<MonthlyFemaleEmployeeIntegrationSchedule>()))
+                .thenAnswer { it.getArgument<MonthlyFemaleEmployeeIntegrationSchedule>(0) }
+
+            // When
+            service.refreshIntegration(employeeId, accountId, yearMonth)
+
+            // Then
+            verify(monthlyIntegrationScheduleRepository).save(argThat<MonthlyFemaleEmployeeIntegrationSchedule> {
+                this.workingDaysMonth?.compareTo(BigDecimal("10")) == 0 &&
+                    this.equivalentNumberOfWorkingDays?.compareTo(BigDecimal("10")) == 0 &&
+                    this.convertedHeadcount?.compareTo(BigDecimal("0.4545")) == 0
+            })
+        }
+
+        @Test
+        @DisplayName("기존 레코�� 업데이트 - 기존 통합일정 있으면 삭제 후 신규 생성")
+        fun updateExisting() {
+            // Given
+            val existing = MonthlyFemaleEmployeeIntegrationSchedule(
+                id = 10L, year = "2026", month = "04",
+                employee = Employee(id = employeeId, employeeCode = "E001", name = "테스트"),
+                account = Account(id = accountId)
+            )
+            whenever(teamMemberScheduleRepository.findWorkSchedulesByEmployeeAndAccountAndMonth(
+                eq(employeeId), eq(accountId), any(), any()
+            )).thenReturn(listOf(
+                createScheduleRecord(id = 1L, employeeId = employeeId, accountId = accountId,
+                    workingDate = LocalDate.of(2026, 4, 1), workingCategory3 = "고정")
+            ))
+            whenever(monthlyIntegrationScheduleRepository.findByEmployeeIdAndAccountIdAndYearAndMonth(
+                eq(employeeId), eq(accountId), eq("2026"), eq("04")
+            )).thenReturn(existing)
+            whenever(teamMemberScheduleRepository.countWorkSchedulesByEmployeeAndDateAndWorkingType(
+                eq(employeeId), eq(LocalDate.of(2026, 4, 1))
+            )).thenReturn(1)
+            whenever(holidayMasterRepository.findByHolidayDateBetween(any(), any())).thenReturn(emptyList())
+            whenever(monthlyIntegrationScheduleRepository.save(any<MonthlyFemaleEmployeeIntegrationSchedule>()))
+                .thenAnswer { it.getArgument<MonthlyFemaleEmployeeIntegrationSchedule>(0) }
+
+            // When
+            service.refreshIntegration(employeeId, accountId, yearMonth)
+
+            // Then
+            verify(monthlyIntegrationScheduleRepository).delete(existing)
+            verify(monthlyIntegrationScheduleRepository).save(any())
+        }
+    }
+
+    @Nested
+    @DisplayName("calculateBusinessDays - 영업일수 계산")
+    inner class CalculateBusinessDaysTests {
+
+        @Test
+        @DisplayName("공휴일 없는 월 - 평일 수만 반환")
+        fun noHolidays() {
+            // Given: 2026년 4월 = 평일 22일
+            whenever(holidayMasterRepository.findByHolidayDateBetween(any(), any())).thenReturn(emptyList())
+
+            // When
+            val result = service.calculateBusinessDays(YearMonth.of(2026, 4))
+
+            // Then
+            assertThat(result).isEqualTo(22)
+        }
+
+        @Test
+        @DisplayName("공휴일 있는 월 - 평일 공휴일 제외")
+        fun withHolidays() {
+            // Given: 2026년 4월, 4/1(수) 공휴일
+            whenever(holidayMasterRepository.findByHolidayDateBetween(any(), any())).thenReturn(listOf(
+                HolidayMaster(
+                    holidayDate = LocalDate.of(2026, 4, 1),
+                    name = "테스트공휴일",
+                    type = "법정공휴일",
+                    year = 2026
+                )
+            ))
+
+            // When
+            val result = service.calculateBusinessDays(YearMonth.of(2026, 4))
+
+            // Then
+            assertThat(result).isEqualTo(21)
+        }
+
+        @Test
+        @DisplayName("주말 공휴일 - 이미 주말이라 영업일 감소 없음")
+        fun weekendHoliday() {
+            // Given: 2026년 4월, 4/4(토) 공휴일
+            whenever(holidayMasterRepository.findByHolidayDateBetween(any(), any())).thenReturn(listOf(
+                HolidayMaster(
+                    holidayDate = LocalDate.of(2026, 4, 4),
+                    name = "토요일공휴일",
+                    type = "법정공휴일",
+                    year = 2026
+                )
+            ))
+
+            // When
+            val result = service.calculateBusinessDays(YearMonth.of(2026, 4))
+
+            // Then
+            assertThat(result).isEqualTo(22)
         }
     }
 
