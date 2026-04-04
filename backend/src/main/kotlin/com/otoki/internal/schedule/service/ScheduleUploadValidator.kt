@@ -299,6 +299,12 @@ class ScheduleUploadValidator {
             if (existingAlternateCount >= 2) {
                 return RowError(rowNumber, "E", "근무유형3", newType3, "행 $rowNumber: 격고 배치가 이미 2개 존재")
             }
+
+            // C2a: 순회가 존재하고 격고가 1건 이상이면 추가 격고 불가
+            val hasPatrol = existingTypes.any { it.first == "순회" }
+            if (hasPatrol && existingAlternateCount >= 1) {
+                return RowError(rowNumber, "E", "근무유형3", newType3, "행 $rowNumber: 순회 레코드가 존재하므로 격고는 1건만 등록 가능합니다")
+            }
         }
 
         // C3: 임시 최대 1개

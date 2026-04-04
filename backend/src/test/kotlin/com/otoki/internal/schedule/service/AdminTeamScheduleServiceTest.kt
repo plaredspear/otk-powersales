@@ -453,6 +453,99 @@ class AdminTeamScheduleServiceTest {
         }
 
         @Test
+        @DisplayName("순회+격고1 존재, 격고 추가 - SCHEDULE_CONFLICT")
+        fun createSchedule_patrolAndAlternateExist_alternateBlocked() {
+            // Given
+            val employee = createEmployee(employeeCode = "20030001", status = "재직")
+            val existingPatrol = createSchedule(id = 50L, workingCategory3 = "순회")
+            val existingAlternate = createSchedule(id = 51L, workingCategory3 = "격고")
+
+            val request = TeamScheduleCreateRequest(
+                employeeCode = "20030001",
+                workingDate = "2026-04-01",
+                workingType = "근무",
+                workingCategory1 = "진열",
+                workingCategory3 = "격고",
+                accountId = 1
+            )
+
+            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(employee))
+            whenever(teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(1L, LocalDate.of(2026, 4, 1)))
+                .thenReturn(listOf(existingPatrol, existingAlternate))
+
+            // When & Then
+            assertThatThrownBy { service.createSchedule(10L, request) }
+                .isInstanceOf(TeamScheduleConflictException::class.java)
+                .hasMessageContaining("순회 일정이 존재하므로 격고는 1건만 등록 가능합니다")
+        }
+
+        @Test
+        @DisplayName("순회만 존재, 격고 추가 - 성공")
+        fun createSchedule_patrolOnly_alternateAllowed() {
+            // Given
+            val employee = createEmployee(employeeCode = "20030001", status = "재직")
+            val leader = createEmployee(id = 10L, sfid = "LEADER_SFID")
+            val account = createAccount(sfid = "ACC_SFID_001")
+            val existingPatrol = createSchedule(id = 50L, workingCategory3 = "순회")
+            val savedSchedule = createSchedule(id = 100L)
+
+            val request = TeamScheduleCreateRequest(
+                employeeCode = "20030001",
+                workingDate = "2026-04-01",
+                workingType = "근무",
+                workingCategory1 = "진열",
+                workingCategory3 = "격고",
+                accountId = 1
+            )
+
+            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(employee))
+            whenever(teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(1L, LocalDate.of(2026, 4, 1)))
+                .thenReturn(listOf(existingPatrol))
+            whenever(accountRepository.findById(1)).thenReturn(Optional.of(account))
+            whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(leader)
+            whenever(teamMemberScheduleRepository.save(any<TeamMemberSchedule>())).thenReturn(savedSchedule)
+
+            // When
+            val result = service.createSchedule(10L, request)
+
+            // Then
+            assertThat(result.id).isEqualTo(100L)
+        }
+
+        @Test
+        @DisplayName("격고1만 존재(순회 없음), 격고 추가 - 성공")
+        fun createSchedule_alternateOnly_secondAlternateAllowed() {
+            // Given
+            val employee = createEmployee(employeeCode = "20030001", status = "재직")
+            val leader = createEmployee(id = 10L, sfid = "LEADER_SFID")
+            val account = createAccount(sfid = "ACC_SFID_001")
+            val existingAlternate = createSchedule(id = 50L, workingCategory3 = "격고")
+            val savedSchedule = createSchedule(id = 100L)
+
+            val request = TeamScheduleCreateRequest(
+                employeeCode = "20030001",
+                workingDate = "2026-04-01",
+                workingType = "근무",
+                workingCategory1 = "진열",
+                workingCategory3 = "격고",
+                accountId = 1
+            )
+
+            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(employee))
+            whenever(teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(1L, LocalDate.of(2026, 4, 1)))
+                .thenReturn(listOf(existingAlternate))
+            whenever(accountRepository.findById(1)).thenReturn(Optional.of(account))
+            whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(leader)
+            whenever(teamMemberScheduleRepository.save(any<TeamMemberSchedule>())).thenReturn(savedSchedule)
+
+            // When
+            val result = service.createSchedule(10L, request)
+
+            // Then
+            assertThat(result.id).isEqualTo(100L)
+        }
+
+        @Test
         @DisplayName("근무+거래처 없음 생성 - ACCOUNT_REQUIRED")
         fun createSchedule_workTypeWorkWithoutAccount() {
             // Given
