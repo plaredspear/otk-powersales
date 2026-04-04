@@ -15,7 +15,8 @@ data class AccountListResponse(
  * 거래처 정보 (GPS 좌표 포함)
  */
 data class AccountInfo(
-    val scheduleId: Long,
+    val scheduleId: Long? = null,
+    val displayWorkScheduleId: Long? = null,
     val accountId: Int?,
     val accountName: String,
     val accountTypeCode: String?,
@@ -24,5 +25,6 @@ data class AccountInfo(
     val address: String?,
     val latitude: Double?,
     val longitude: Double?,
-    val isRegistered: Boolean
+    val isRegistered: Boolean,
+    val source: String = "schedule"
 )

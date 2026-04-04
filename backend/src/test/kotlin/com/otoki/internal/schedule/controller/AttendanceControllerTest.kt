@@ -12,10 +12,7 @@ import com.otoki.internal.common.security.UserPrincipal
 import com.otoki.internal.schedule.dto.response.AttendanceRegisterResponse
 import com.otoki.internal.schedule.dto.response.AttendanceStatusItem
 import com.otoki.internal.schedule.dto.response.AttendanceStatusResponse
-import com.otoki.internal.schedule.exception.AlreadyRegisteredException
-import com.otoki.internal.schedule.exception.DistanceExceededException
-import com.otoki.internal.schedule.exception.SafetyCheckRequiredException
-import com.otoki.internal.schedule.exception.TeamMemberScheduleNotFoundException
+import com.otoki.internal.schedule.exception.*
 import com.otoki.internal.schedule.service.AttendanceService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -93,7 +90,7 @@ class AttendanceControllerTest {
 
             whenever(
                 attendanceService.register(
-                    eq(1L), eq(10L), eq(35.1234), eq(129.0567), eq("ROOM_TEMP")
+                    eq(1L), eq(10L), eq(null), eq(35.1234), eq(129.0567), eq("ROOM_TEMP")
                 )
             ).thenReturn(mockResponse)
 
@@ -129,7 +126,7 @@ class AttendanceControllerTest {
             // Given
             whenever(
                 attendanceService.register(
-                    eq(1L), eq(10L), eq(35.1234), eq(129.0567), anyOrNull()
+                    eq(1L), eq(10L), eq(null), eq(35.1234), eq(129.0567), anyOrNull()
                 )
             ).thenThrow(SafetyCheckRequiredException())
 
@@ -158,7 +155,7 @@ class AttendanceControllerTest {
             // Given
             whenever(
                 attendanceService.register(
-                    eq(1L), eq(10L), eq(35.1234), eq(129.0567), anyOrNull()
+                    eq(1L), eq(10L), eq(null), eq(35.1234), eq(129.0567), anyOrNull()
                 )
             ).thenThrow(DistanceExceededException(1.5))
 
@@ -182,9 +179,15 @@ class AttendanceControllerTest {
         }
 
         @Test
-        @DisplayName("필수 필드 누락 (schedule_id 없음) - 400 INVALID_PARAMETER")
-        fun register_missingScheduleId() {
-            // Given - schedule_id 누락
+        @DisplayName("schedule_id, display_work_schedule_id 둘 다 없음 - 400 ATTENDANCE_TARGET_REQUIRED")
+        fun register_bothNull_targetRequired() {
+            // Given - 둘 다 누락 → 서비스에서 AttendanceTargetRequiredException
+            whenever(
+                attendanceService.register(
+                    eq(1L), eq(null), eq(null), eq(35.1234), eq(129.0567), anyOrNull()
+                )
+            ).thenThrow(AttendanceTargetRequiredException())
+
             val requestJson = """
                 {
                     "latitude": 35.1234,
@@ -200,7 +203,7 @@ class AttendanceControllerTest {
             )
                 .andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"))
+                .andExpect(jsonPath("$.error.code").value("ATTENDANCE_TARGET_REQUIRED"))
         }
 
         @Test
@@ -209,7 +212,7 @@ class AttendanceControllerTest {
             // Given
             whenever(
                 attendanceService.register(
-                    eq(1L), eq(10L), eq(35.1234), eq(129.0567), anyOrNull()
+                    eq(1L), eq(10L), eq(null), eq(35.1234), eq(129.0567), anyOrNull()
                 )
             ).thenThrow(AlreadyRegisteredException())
 
@@ -238,7 +241,7 @@ class AttendanceControllerTest {
             // Given
             whenever(
                 attendanceService.register(
-                    eq(1L), eq(99999L), eq(35.1234), eq(129.0567), anyOrNull()
+                    eq(1L), eq(99999L), eq(null), eq(35.1234), eq(129.0567), anyOrNull()
                 )
             ).thenThrow(TeamMemberScheduleNotFoundException())
 

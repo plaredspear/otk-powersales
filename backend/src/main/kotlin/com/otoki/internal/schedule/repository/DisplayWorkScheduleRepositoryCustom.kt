@@ -44,4 +44,10 @@ interface DisplayWorkScheduleRepositoryCustom {
     fun findConfirmedByDateRangeAndAccountIds(monthEnd: LocalDate, monthStart: LocalDate, accountIds: List<Int>): List<DisplayWorkSchedule>
 
     fun existsConfirmedByEmployeeAndAccountAndDate(employeeId: Long, accountId: Int, workingDate: LocalDate): Boolean
+
+    /**
+     * 사원의 오늘 유효한 확정 진열마스터 조회
+     * 조건: confirmed=true, isDeleted!=true, startDate<=date, (endDate>=date OR endDate IS NULL), employee.id=employeeId
+     */
+    fun findConfirmedValidByEmployeeAndDate(employeeId: Long, date: LocalDate): List<DisplayWorkSchedule>
 }
