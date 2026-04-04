@@ -458,6 +458,77 @@ class ScheduleUploadValidatorTest {
     }
 
     @Nested
+    @DisplayName("C2a - 순회+격고 공존 시 격고 1건 제한")
+    inner class C2aTests {
+
+        @Test
+        @DisplayName("순회+격고1 존재, 격고 추가 - 에러")
+        fun c2a_patrolAndAlternateExist_alternateBlocked() {
+            val existingSchedules = listOf(
+                DisplayWorkSchedule(employee = Employee(id = 1L, employeeCode = "20030001", name = "테스트"), account = Account(id = 101), startDate = LocalDate.of(2026, 3, 1), endDate = LocalDate.of(2026, 5, 1), typeOfWork3 = "순회", typeOfWork5 = "상시"),
+                DisplayWorkSchedule(employee = Employee(id = 1L, employeeCode = "20030001", name = "테스트"), account = Account(id = 102), startDate = LocalDate.of(2026, 3, 1), endDate = LocalDate.of(2026, 5, 1), typeOfWork3 = "격고", typeOfWork5 = "상시")
+            )
+            val rows = listOf(
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "격고", "상시", "2026-04-01", "2026-04-30")
+            )
+
+            val result = validator.validate(rows, employeeMap, accountMap, existingSchedules)
+
+            assertThat(result.errors).hasSize(1)
+            assertThat(result.errors[0].message).contains("순회 레코드가 존재하므로 격고는 1건만 등록 가능합니다")
+        }
+
+        @Test
+        @DisplayName("순회만 존재, 격고 추가 - 성공")
+        fun c2a_patrolOnly_alternateAllowed() {
+            val existingSchedules = listOf(
+                DisplayWorkSchedule(employee = Employee(id = 1L, employeeCode = "20030001", name = "테스트"), account = Account(id = 101), startDate = LocalDate.of(2026, 3, 1), endDate = LocalDate.of(2026, 5, 1), typeOfWork3 = "순회", typeOfWork5 = "상시")
+            )
+            val rows = listOf(
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "격고", "상시", "2026-04-01", "2026-04-30")
+            )
+
+            val result = validator.validate(rows, employeeMap, accountMap, existingSchedules)
+
+            assertThat(result.errors).isEmpty()
+        }
+
+        @Test
+        @DisplayName("격고1만 존재(순회 없음), 격고 추가 - 성공 (격고 2건 이내)")
+        fun c2a_alternateOnly_secondAlternateAllowed() {
+            val existingSchedules = listOf(
+                DisplayWorkSchedule(employee = Employee(id = 1L, employeeCode = "20030001", name = "테스트"), account = Account(id = 101), startDate = LocalDate.of(2026, 3, 1), endDate = LocalDate.of(2026, 5, 1), typeOfWork3 = "격고", typeOfWork5 = "상시")
+            )
+            val rows = listOf(
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "격고", "상시", "2026-04-01", "2026-04-30")
+            )
+
+            val result = validator.validate(rows, employeeMap, accountMap, existingSchedules)
+
+            assertThat(result.errors).isEmpty()
+        }
+
+        @Test
+        @DisplayName("파일 내 순회+격고, 격고 추가 - 에러")
+        fun c2a_fileInternalPatrolAndAlternate_alternateBlocked() {
+            val threeAccountMap = accountMap + mapOf(
+                "ACC003" to createAccount("ACC003", "ACC_SFID_003", "롯데마트 서초점", id = 3)
+            )
+            val rows = listOf(
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "순회", "상시", "2026-04-01", "2026-04-30"),
+                createParsedRow(5, "20030001", "홍길동", "ACC002", null, "격고", "상시", "2026-04-01", "2026-04-30"),
+                createParsedRow(6, "20030001", "홍길동", "ACC003", null, "격고", "상시", "2026-04-01", "2026-04-30")
+            )
+
+            val result = validator.validate(rows, employeeMap, threeAccountMap, emptyList())
+
+            assertThat(result.errors).hasSize(1)
+            assertThat(result.errors[0].row).isEqualTo(6)
+            assertThat(result.errors[0].message).contains("순회 레코드가 존재하므로 격고는 1건만 등록 가능합니다")
+        }
+    }
+
+    @Nested
     @DisplayName("C3 - 임시 최대 1개")
     inner class C3Tests {
 

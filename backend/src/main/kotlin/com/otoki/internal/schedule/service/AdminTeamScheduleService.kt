@@ -296,8 +296,12 @@ class AdminTeamScheduleService(
                 if (existing.any { it.workingCategory3 == "고정" }) {
                     throw TeamScheduleConflictException("고정 일정이 있는 날짜에는 다른 유형을 추가할 수 없습니다")
                 }
-                if (existing.count { it.workingCategory3 == "격고" } >= 2) {
+                val alternateCount = existing.count { it.workingCategory3 == "격고" }
+                if (alternateCount >= 2) {
                     throw TeamScheduleConflictException("해당 날짜에 격고 일정이 이미 2건 존재합니다")
+                }
+                if (existing.any { it.workingCategory3 == "순회" } && alternateCount >= 1) {
+                    throw TeamScheduleConflictException("순회 일정이 존재하므로 격고는 1건만 등록 가능합니다")
                 }
             }
             "순회" -> {
