@@ -76,6 +76,11 @@ data class DailySummaryDto(
     val compensatoryLeave: Int
 )
 
+data class MonthlyScheduleWithSummaryDto(
+    val schedules: List<TeamScheduleDto>,
+    val dailySummary: List<DailySummaryDto>
+)
+
 data class TeamScheduleCreateResultDto(
     val id: Long
 )

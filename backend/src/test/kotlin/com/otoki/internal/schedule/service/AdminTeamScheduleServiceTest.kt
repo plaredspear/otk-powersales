@@ -221,77 +221,18 @@ class AdminTeamScheduleServiceTest {
         }
     }
 
-    // ========== getMonthlySchedules ==========
+    // ========== getMonthlySchedulesWithSummary ==========
 
     @Nested
-    @DisplayName("getMonthlySchedules - 월간 일정 조회")
-    inner class GetMonthlySchedulesTests {
+    @DisplayName("getMonthlySchedulesWithSummary - 월간 일정 + 일별 요약 통합 조회")
+    inner class GetMonthlySchedulesWithSummaryTests {
 
         @Test
-        @DisplayName("정상 조회 - employeeIds 지정 시 해당 사원의 일정 반환")
-        fun getMonthlySchedules_byEmployeeIds() {
-            // Given
-            val schedule = createSchedule(id = 1L, employeeId = 1L, employeeCode = "20030001", employeeName = "홍길동")
-
-            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(
-                eq(listOf(1L)),
-                eq(LocalDate.of(2026, 4, 1)),
-                eq(LocalDate.of(2026, 4, 30))
-            )).thenReturn(listOf(schedule))
-
-            // When
-            val result = service.getMonthlySchedules(1L, 2026, 4, listOf(1L), null)
-
-            // Then
-            assertThat(result).hasSize(1)
-            assertThat(result[0].employeeCode).isEqualTo("20030001")
-            assertThat(result[0].employeeName).isEqualTo("홍길동")
-        }
-
-        @Test
-        @DisplayName("accountIds 지정 - 거래처 필터로 일정 반환")
-        fun getMonthlySchedules_byAccountIds() {
-            // Given
-            val schedule = createSchedule(id = 1L, accountId = 10)
-
-            whenever(teamMemberScheduleRepository.findMonthlyByAccountIds(
-                eq(listOf(10)),
-                eq(LocalDate.of(2026, 4, 1)),
-                eq(LocalDate.of(2026, 4, 30))
-            )).thenReturn(listOf(schedule))
-
-            // When
-            val result = service.getMonthlySchedules(1L, 2026, 4, null, listOf(10))
-
-            // Then
-            assertThat(result).hasSize(1)
-            assertThat(result[0].accountId).isEqualTo(10)
-        }
-
-        @Test
-        @DisplayName("필터 없이 조회 - 빈 배열 반환")
-        fun getMonthlySchedules_noFilter_returnsEmpty() {
-            // When
-            val result = service.getMonthlySchedules(1L, 2026, 4, null, null)
-
-            // Then
-            assertThat(result).isEmpty()
-            verifyNoInteractions(teamMemberScheduleRepository)
-        }
-    }
-
-    // ========== getDailySummary ==========
-
-    @Nested
-    @DisplayName("getDailySummary - 일별 요약 조회")
-    inner class GetDailySummaryTests {
-
-        @Test
-        @DisplayName("정상 조회 - 일별 진열/행사 예정 실적 + 연차 대휴 건수 반환")
-        fun getDailySummary_success() {
+        @DisplayName("정상 조회 - employeeIds 지정 시 schedules와 dailySummary 모두 반환")
+        fun getMonthlySchedulesWithSummary_byEmployeeIds() {
             // Given
             val date = LocalDate.of(2026, 4, 1)
-            val displaySchedule = createSchedule(id = 1L, workingDate = date, workingType = "근무", workingCategory1 = "진열")
+            val displaySchedule = createSchedule(id = 1L, employeeId = 1L, employeeCode = "20030001", employeeName = "홍길동", workingDate = date, workingType = "근무", workingCategory1 = "진열")
             val displayWithCommute = createSchedule(id = 2L, workingDate = date, workingType = "근무", workingCategory1 = "진열", commuteLogId = "CL001")
             val promotionSchedule = createSchedule(id = 3L, workingDate = date, workingType = "근무", workingCategory1 = "행사")
             val promotionWithCommute = createSchedule(id = 4L, workingDate = date, workingType = "근무", workingCategory1 = "행사", commuteLogId = "CL002")
@@ -307,11 +248,16 @@ class AdminTeamScheduleServiceTest {
             )).thenReturn(allSchedules)
 
             // When
-            val result = service.getDailySummary(1L, 2026, 4, listOf(1L), null)
+            val result = service.getMonthlySchedulesWithSummary(1L, 2026, 4, listOf(1L), null)
 
-            // Then
-            assertThat(result).hasSize(1)
-            val summary = result[0]
+            // Then - schedules
+            assertThat(result.schedules).hasSize(6)
+            assertThat(result.schedules[0].employeeCode).isEqualTo("20030001")
+            assertThat(result.schedules[0].employeeName).isEqualTo("홍길동")
+
+            // Then - dailySummary
+            assertThat(result.dailySummary).hasSize(1)
+            val summary = result.dailySummary[0]
             assertThat(summary.date).isEqualTo("2026-04-01")
             assertThat(summary.displayExpected).isEqualTo(2)
             assertThat(summary.displayActual).isEqualTo(1)
@@ -319,6 +265,39 @@ class AdminTeamScheduleServiceTest {
             assertThat(summary.promotionActual).isEqualTo(1)
             assertThat(summary.annualLeave).isEqualTo(1)
             assertThat(summary.compensatoryLeave).isEqualTo(1)
+        }
+
+        @Test
+        @DisplayName("accountIds 지정 - 거래처 필터로 일정 반환")
+        fun getMonthlySchedulesWithSummary_byAccountIds() {
+            // Given
+            val schedule = createSchedule(id = 1L, accountId = 10)
+
+            whenever(teamMemberScheduleRepository.findMonthlyByAccountIds(
+                eq(listOf(10)),
+                eq(LocalDate.of(2026, 4, 1)),
+                eq(LocalDate.of(2026, 4, 30))
+            )).thenReturn(listOf(schedule))
+
+            // When
+            val result = service.getMonthlySchedulesWithSummary(1L, 2026, 4, null, listOf(10))
+
+            // Then
+            assertThat(result.schedules).hasSize(1)
+            assertThat(result.schedules[0].accountId).isEqualTo(10)
+            assertThat(result.dailySummary).hasSize(1)
+        }
+
+        @Test
+        @DisplayName("필터 없이 조회 - 빈 배열 반환")
+        fun getMonthlySchedulesWithSummary_noFilter_returnsEmpty() {
+            // When
+            val result = service.getMonthlySchedulesWithSummary(1L, 2026, 4, null, null)
+
+            // Then
+            assertThat(result.schedules).isEmpty()
+            assertThat(result.dailySummary).isEmpty()
+            verifyNoInteractions(teamMemberScheduleRepository)
         }
     }
 

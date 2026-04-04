@@ -159,33 +159,46 @@ class AdminTeamScheduleControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/v1/admin/team-schedule - 월간 일정 조회")
+    @DisplayName("GET /api/v1/admin/team-schedule - 월간 일정 + 일별 요약 통합 조회")
     inner class GetMonthlySchedules {
 
         @Test
-        @DisplayName("성공 - 월간 일정 조회")
+        @DisplayName("성공 - schedules와 daily_summary 모두 포함된 응답 반환")
         fun getMonthlySchedules_success() {
-            val schedules = listOf(
-                TeamScheduleDto(
-                    id = 1L,
-                    employeeCode = "20030001",
-                    employeeName = "홍길동",
-                    workingDate = "2026-03-15",
-                    workingType = "진열",
-                    workingCategory1 = "고정",
-                    workingCategory2 = "상시",
-                    workingCategory3 = null,
-                    accountId = 1001,
-                    accountName = "이마트 강남점",
-                    accountExternalKey = "EXT001",
-                    isClockIn = true
+            val response = MonthlyScheduleWithSummaryDto(
+                schedules = listOf(
+                    TeamScheduleDto(
+                        id = 1L,
+                        employeeCode = "20030001",
+                        employeeName = "홍길동",
+                        workingDate = "2026-03-15",
+                        workingType = "진열",
+                        workingCategory1 = "고정",
+                        workingCategory2 = "상시",
+                        workingCategory3 = null,
+                        accountId = 1001,
+                        accountName = "이마트 강남점",
+                        accountExternalKey = "EXT001",
+                        isClockIn = true
+                    )
+                ),
+                dailySummary = listOf(
+                    DailySummaryDto(
+                        date = "2026-03-15",
+                        displayExpected = 5,
+                        displayActual = 3,
+                        promotionExpected = 2,
+                        promotionActual = 1,
+                        annualLeave = 1,
+                        compensatoryLeave = 0
+                    )
                 )
             )
             whenever(
-                adminTeamScheduleService.getMonthlySchedules(
+                adminTeamScheduleService.getMonthlySchedulesWithSummary(
                     eq(1L), eq(2026), eq(3), eq(null), eq(null)
                 )
-            ).thenReturn(schedules)
+            ).thenReturn(response)
 
             mockMvc.perform(
                 get("/api/v1/admin/team-schedule")
@@ -194,26 +207,39 @@ class AdminTeamScheduleControllerTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data").isArray)
-                .andExpect(jsonPath("$.data.length()").value(1))
-                .andExpect(jsonPath("$.data[0].id").value(1))
-                .andExpect(jsonPath("$.data[0].employee_code").value("20030001"))
-                .andExpect(jsonPath("$.data[0].employee_name").value("홍길동"))
-                .andExpect(jsonPath("$.data[0].working_date").value("2026-03-15"))
-                .andExpect(jsonPath("$.data[0].working_type").value("진열"))
-                .andExpect(jsonPath("$.data[0].is_clock_in").value(true))
-                .andExpect(jsonPath("$.data[0].account_id").value(1001))
-                .andExpect(jsonPath("$.data[0].account_name").value("이마트 강남점"))
+                .andExpect(jsonPath("$.data.schedules").isArray)
+                .andExpect(jsonPath("$.data.schedules.length()").value(1))
+                .andExpect(jsonPath("$.data.schedules[0].id").value(1))
+                .andExpect(jsonPath("$.data.schedules[0].employee_code").value("20030001"))
+                .andExpect(jsonPath("$.data.schedules[0].employee_name").value("홍길동"))
+                .andExpect(jsonPath("$.data.schedules[0].working_date").value("2026-03-15"))
+                .andExpect(jsonPath("$.data.schedules[0].working_type").value("진열"))
+                .andExpect(jsonPath("$.data.schedules[0].is_clock_in").value(true))
+                .andExpect(jsonPath("$.data.schedules[0].account_id").value(1001))
+                .andExpect(jsonPath("$.data.schedules[0].account_name").value("이마트 강남점"))
+                .andExpect(jsonPath("$.data.daily_summary").isArray)
+                .andExpect(jsonPath("$.data.daily_summary.length()").value(1))
+                .andExpect(jsonPath("$.data.daily_summary[0].date").value("2026-03-15"))
+                .andExpect(jsonPath("$.data.daily_summary[0].display_expected").value(5))
+                .andExpect(jsonPath("$.data.daily_summary[0].display_actual").value(3))
+                .andExpect(jsonPath("$.data.daily_summary[0].promotion_expected").value(2))
+                .andExpect(jsonPath("$.data.daily_summary[0].promotion_actual").value(1))
+                .andExpect(jsonPath("$.data.daily_summary[0].annual_leave").value(1))
+                .andExpect(jsonPath("$.data.daily_summary[0].compensatory_leave").value(0))
         }
 
         @Test
         @DisplayName("성공 - 필터 없이 조회 시 빈 배열 반환")
         fun getMonthlySchedules_emptyResult() {
+            val response = MonthlyScheduleWithSummaryDto(
+                schedules = emptyList(),
+                dailySummary = emptyList()
+            )
             whenever(
-                adminTeamScheduleService.getMonthlySchedules(
+                adminTeamScheduleService.getMonthlySchedulesWithSummary(
                     eq(1L), eq(2026), eq(3), eq(null), eq(null)
                 )
-            ).thenReturn(emptyList())
+            ).thenReturn(response)
 
             mockMvc.perform(
                 get("/api/v1/admin/team-schedule")
@@ -222,51 +248,10 @@ class AdminTeamScheduleControllerTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data").isArray)
-                .andExpect(jsonPath("$.data.length()").value(0))
-        }
-    }
-
-    @Nested
-    @DisplayName("GET /api/v1/admin/team-schedule/summary - 일별 요약 조회")
-    inner class GetDailySummary {
-
-        @Test
-        @DisplayName("성공 - 일별 요약 조회")
-        fun getDailySummary_success() {
-            val summaries = listOf(
-                DailySummaryDto(
-                    date = "2026-03-15",
-                    displayExpected = 5,
-                    displayActual = 3,
-                    promotionExpected = 2,
-                    promotionActual = 1,
-                    annualLeave = 1,
-                    compensatoryLeave = 0
-                )
-            )
-            whenever(
-                adminTeamScheduleService.getDailySummary(
-                    eq(1L), eq(2026), eq(3), eq(null), eq(null)
-                )
-            ).thenReturn(summaries)
-
-            mockMvc.perform(
-                get("/api/v1/admin/team-schedule/summary")
-                    .param("year", "2026")
-                    .param("month", "3")
-            )
-                .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data").isArray)
-                .andExpect(jsonPath("$.data.length()").value(1))
-                .andExpect(jsonPath("$.data[0].date").value("2026-03-15"))
-                .andExpect(jsonPath("$.data[0].display_expected").value(5))
-                .andExpect(jsonPath("$.data[0].display_actual").value(3))
-                .andExpect(jsonPath("$.data[0].promotion_expected").value(2))
-                .andExpect(jsonPath("$.data[0].promotion_actual").value(1))
-                .andExpect(jsonPath("$.data[0].annual_leave").value(1))
-                .andExpect(jsonPath("$.data[0].compensatory_leave").value(0))
+                .andExpect(jsonPath("$.data.schedules").isArray)
+                .andExpect(jsonPath("$.data.schedules.length()").value(0))
+                .andExpect(jsonPath("$.data.daily_summary").isArray)
+                .andExpect(jsonPath("$.data.daily_summary.length()").value(0))
         }
     }
 
