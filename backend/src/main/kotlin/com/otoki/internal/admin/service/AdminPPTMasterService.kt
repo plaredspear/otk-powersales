@@ -116,13 +116,22 @@ class AdminPPTMasterService(
 
         // teamType 변경 시 중복 검증
         if (master.teamType != request.teamType || master.accountId != request.accountId) {
-            validateNoDuplicate(request.employeeId, request.accountId, request.teamType, request.startDate, id)
+            validateNoDuplicate(
+                request.employeeId,
+                request.accountId,
+                request.teamType,
+                request.startDate,
+                id
+            )
         }
 
-        master.teamType = request.teamType
-        master.startDate = request.startDate
-        master.endDate = request.endDate
-        master.isConfirmed = request.isConfirmed
+        master.update(
+            request.teamType,
+             request.startDate,
+             request.endDate,
+             request.isConfirmed,
+            request.accountId,
+        )
 
         pptMasterRepository.save(master)
 

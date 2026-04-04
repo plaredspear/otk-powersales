@@ -277,6 +277,48 @@ class AdminPPTMasterServiceTest {
 
             assertThat(result.teamType).isEqualTo("프레시세일조_냉장")
         }
+
+        @Test
+        @DisplayName("성공 - accountId 변경 -> 거래처 변경 반영")
+        fun updateMaster_changeAccountId() {
+            val master = createMaster(accountId = 1)
+            val newAccount = createAccount(id = 2, externalKey = "SAP002", name = "홈플러스 강남점")
+            val request = PPTMasterUpdateRequest(
+                employeeId = 1L, accountId = 2, teamType = "라면세일조",
+                startDate = LocalDate.of(2026, 4, 1), isConfirmed = false
+            )
+            whenever(pptMasterRepository.findById(1L)).thenReturn(Optional.of(master))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
+            whenever(accountRepository.findById(2)).thenReturn(Optional.of(newAccount))
+            whenever(pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), anyOrNull()))
+                .thenReturn(emptyList())
+            whenever(pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>()))
+                .thenAnswer { it.getArgument<ProfessionalPromotionTeamMaster>(0) }
+
+            val result = service.updateMaster(1L, request)
+
+            assertThat(master.accountId).isEqualTo(2)
+            assertThat(result.accountCode).isEqualTo("SAP002")
+        }
+
+        @Test
+        @DisplayName("실패 - accountId 변경 시 중복 -> PPTMasterDuplicateException")
+        fun updateMaster_changeAccountId_duplicate() {
+            val master = createMaster(accountId = 1)
+            val newAccount = createAccount(id = 2, externalKey = "SAP002", name = "홈플러스 강남점")
+            val request = PPTMasterUpdateRequest(
+                employeeId = 1L, accountId = 2, teamType = "라면세일조",
+                startDate = LocalDate.of(2026, 4, 1), isConfirmed = false
+            )
+            whenever(pptMasterRepository.findById(1L)).thenReturn(Optional.of(master))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
+            whenever(accountRepository.findById(2)).thenReturn(Optional.of(newAccount))
+            whenever(pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), anyOrNull()))
+                .thenReturn(listOf(createMaster(id = 2L, accountId = 2)))
+
+            assertThatThrownBy { service.updateMaster(1L, request) }
+                .isInstanceOf(PPTMasterDuplicateException::class.java)
+        }
     }
 
     @Nested

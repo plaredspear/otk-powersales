@@ -26,7 +26,7 @@ class ProfessionalPromotionTeamMaster(
     val employeeNumber: String? = null,
 
     @Column(name = "account_id", nullable = false)
-    val accountId: Int,
+    var accountId: Int,
 
     @SFField("Account__c")
     @Column(name = "account_sfid", length = 18)
@@ -79,5 +79,6 @@ class ProfessionalPromotionTeamMaster(
         this.startDate = startDate
         this.endDate = endDate
         this.isConfirmed = isConfirmed
+        if (accountId != null) this.accountId = accountId
     }
 }
