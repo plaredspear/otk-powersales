@@ -1,0 +1,116 @@
+package com.otoki.internal.productexpiration.repository
+
+import com.otoki.internal.admin.dto.response.AdminProductExpirationSummaryResponse
+import com.otoki.internal.productexpiration.entity.ProductExpiration
+import com.otoki.internal.productexpiration.entity.QProductExpiration.productExpiration
+import com.otoki.internal.sap.entity.QEmployee.employee
+import com.querydsl.core.BooleanBuilder
+import com.querydsl.core.types.Predicate
+import com.querydsl.core.types.dsl.CaseBuilder
+import com.querydsl.jpa.impl.JPAQueryFactory
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
+import org.springframework.data.support.PageableExecutionUtils
+import java.time.LocalDate
+
+class ProductExpirationRepositoryCustomImpl(
+    private val queryFactory: JPAQueryFactory
+) : ProductExpirationRepositoryCustom {
+
+    override fun findForAdmin(
+        fromDate: LocalDate,
+        toDate: LocalDate,
+        employeeKeyword: String?,
+        accountKeyword: String?,
+        status: String?,
+        today: LocalDate,
+        pageable: Pageable
+    ): Page<ProductExpiration> {
+        val where = BooleanBuilder()
+            .and(buildDateRangeCondition(fromDate, toDate))
+            .and(buildEmployeeKeywordCondition(employeeKeyword))
+            .and(buildAccountKeywordCondition(accountKeyword))
+            .and(buildStatusCondition(status, today))
+
+        val content = queryFactory
+            .selectFrom(productExpiration)
+            .leftJoin(productExpiration.employee, employee).fetchJoin()
+            .where(where)
+            .orderBy(productExpiration.expirationDate.asc())
+            .offset(pageable.offset)
+            .limit(pageable.pageSize.toLong())
+            .fetch()
+
+        val countQuery = queryFactory
+            .select(productExpiration.count())
+            .from(productExpiration)
+            .leftJoin(productExpiration.employee, employee)
+            .where(where)
+
+        return PageableExecutionUtils.getPage(content, pageable) {
+            countQuery.fetchOne() ?: 0L
+        }
+    }
+
+    override fun getSummary(today: LocalDate): AdminProductExpirationSummaryResponse {
+        val sevenDaysLater = today.plusDays(7)
+
+        val expiredCount = CaseBuilder()
+            .`when`(productExpiration.expirationDate.isNull.or(productExpiration.expirationDate.loe(today)))
+            .then(1L).otherwise(0L)
+
+        val imminentCount = CaseBuilder()
+            .`when`(productExpiration.expirationDate.gt(today).and(productExpiration.expirationDate.loe(sevenDaysLater)))
+            .then(1L).otherwise(0L)
+
+        val normalCount = CaseBuilder()
+            .`when`(productExpiration.expirationDate.gt(sevenDaysLater))
+            .then(1L).otherwise(0L)
+
+        val result = queryFactory
+            .select(
+                productExpiration.count(),
+                expiredCount.sum(),
+                imminentCount.sum(),
+                normalCount.sum()
+            )
+            .from(productExpiration)
+            .fetchOne()
+
+        return AdminProductExpirationSummaryResponse(
+            totalCount = result?.get(0, Long::class.java) ?: 0L,
+            expiredCount = result?.get(1, Long::class.java) ?: 0L,
+            imminentCount = result?.get(2, Long::class.java) ?: 0L,
+            normalCount = result?.get(3, Long::class.java) ?: 0L
+        )
+    }
+
+    private fun buildDateRangeCondition(fromDate: LocalDate, toDate: LocalDate): Predicate {
+        return productExpiration.expirationDate.between(fromDate, toDate)
+    }
+
+    private fun buildEmployeeKeywordCondition(keyword: String?): Predicate? {
+        if (keyword.isNullOrBlank()) return null
+        val pattern = "%${keyword.lowercase()}%"
+        return employee.name.lower().like(pattern)
+            .or(employee.employeeCode.lower().like(pattern))
+    }
+
+    private fun buildAccountKeywordCondition(keyword: String?): Predicate? {
+        if (keyword.isNullOrBlank()) return null
+        val pattern = "%${keyword.lowercase()}%"
+        return productExpiration.accountName.lower().like(pattern)
+            .or(productExpiration.accountCode.lower().like(pattern))
+    }
+
+    private fun buildStatusCondition(status: String?, today: LocalDate): Predicate? {
+        if (status.isNullOrBlank()) return null
+        val sevenDaysLater = today.plusDays(7)
+        return when (status.uppercase()) {
+            "EXPIRED" -> productExpiration.expirationDate.isNull.or(productExpiration.expirationDate.loe(today))
+            "IMMINENT" -> productExpiration.expirationDate.gt(today).and(productExpiration.expirationDate.loe(sevenDaysLater))
+            "NORMAL" -> productExpiration.expirationDate.gt(sevenDaysLater)
+            else -> null
+        }
+    }
+}

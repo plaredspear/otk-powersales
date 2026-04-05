@@ -6,7 +6,7 @@ import org.springframework.stereotype.Repository
 import java.time.LocalDate
 
 @Repository
-interface ProductExpirationRepository : JpaRepository<ProductExpiration, Int> {
+interface ProductExpirationRepository : JpaRepository<ProductExpiration, Int>, ProductExpirationRepositoryCustom {
 
     fun countByEmployeeIdAndAlarmDate(employeeId: Long, alarmDate: LocalDate): Long
 

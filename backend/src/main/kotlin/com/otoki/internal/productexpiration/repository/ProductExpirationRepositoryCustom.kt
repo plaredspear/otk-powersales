@@ -1,0 +1,22 @@
+package com.otoki.internal.productexpiration.repository
+
+import com.otoki.internal.admin.dto.response.AdminProductExpirationSummaryResponse
+import com.otoki.internal.productexpiration.entity.ProductExpiration
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
+import java.time.LocalDate
+
+interface ProductExpirationRepositoryCustom {
+
+    fun findForAdmin(
+        fromDate: LocalDate,
+        toDate: LocalDate,
+        employeeKeyword: String?,
+        accountKeyword: String?,
+        status: String?,
+        today: LocalDate,
+        pageable: Pageable
+    ): Page<ProductExpiration>
+
+    fun getSummary(today: LocalDate): AdminProductExpirationSummaryResponse
+}
