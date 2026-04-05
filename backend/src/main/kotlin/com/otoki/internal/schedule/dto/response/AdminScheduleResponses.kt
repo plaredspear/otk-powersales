@@ -24,6 +24,7 @@ data class RowPreview(
     val accountCode: String,
     val accountName: String,
     val typeOfWork3: String,
+    val typeOfWork4: String,
     val typeOfWork5: String,
     val startDate: String,
     val endDate: String?
@@ -40,6 +41,7 @@ data class ScheduleListItemDto(
     val accountCode: String?,
     val accountName: String?,
     val typeOfWork3: String?,
+    val typeOfWork4: String?,
     val typeOfWork5: String?,
     val startDate: java.time.LocalDate?,
     val endDate: java.time.LocalDate?,

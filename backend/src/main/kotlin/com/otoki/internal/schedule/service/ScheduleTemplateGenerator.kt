@@ -3,7 +3,6 @@ package com.otoki.internal.schedule.service
 import com.otoki.internal.sap.entity.Employee
 import org.apache.poi.ss.usermodel.*
 import org.apache.poi.ss.util.CellRangeAddress
-import org.apache.poi.ss.util.CellRangeAddressList
 import org.apache.poi.xssf.usermodel.XSSFColor
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.springframework.stereotype.Component
@@ -13,16 +12,22 @@ import java.io.ByteArrayOutputStream
 class ScheduleTemplateGenerator {
 
     companion object {
-        private val HEADERS = listOf("*사원번호", "사원명", "*거래처코드", "거래처명", "*근무유형3", "*근무유형5", "*시작일", "종료일")
-        private val COLUMN_WIDTHS = listOf(12, 10, 14, 20, 14, 14, 14, 14)
-        private val GUIDE_TEXTS = listOf("(자동입력)", "(자동입력)", "거래처코드 입력", "(선택)", "고정 / 격고 / 순회", "상시 / 임시", "yyyy-MM-dd", "yyyy-MM-dd (선택)")
-        private val REQUIRED_HEADER_INDICES = setOf(0, 2, 4, 5, 6) // *사원번호, *거래처코드, *근무유형3, *근무유형5, *시작일
-        private val REQUIRED_INPUT_INDICES = setOf(2, 4, 5, 6) // C, E, F, G (사용자 입력 필수 컬럼)
-        private const val NOTICE_TEXT = "신규입력 전용 양식입니다. 거래처코드~종료일 컬럼을 입력한 후 업로드하세요."
-        private val WORK_TYPE3_OPTIONS = listOf("고정", "격고", "순회")
-        private val WORK_TYPE5_OPTIONS = listOf("상시", "임시")
+        private val HEADERS = listOf(
+            "소속", "*사번(필수입력)", "이름", "직위",
+            "*거래처코드(필수입력)", "거래처명",
+            "*근무형태3(필수입력)", "*근무형태4(필수입력)", "*근무형태5(필수입력)",
+            "*시작일(필수입력)", "*종료일(선택입력)"
+        )
+        private val COLUMN_WIDTHS = listOf(10, 14, 10, 10, 20, 20, 20, 20, 20, 20, 20)
+        private val GUIDE_TEXTS = listOf(
+            "", "", "", "", "", "",
+            "고정 or 격고 or 순회", "상온 or 냉동/냉장", "상시 or 임시",
+            "yyyy-mm-dd", "yyyy-mm-dd"
+        )
+        private const val NOTICE_TEXT = "신규입력만 가능합니다. 수정이 필요한 경우 화면단에서 진행해주세요.(업로드시에는 파일 복호화를 해주시기 바랍니다.)"
+        private val YELLOW_CELL_INDICES = setOf(1, 4, 6, 7, 8, 9) // B, E, G, H, I, J
+        private val DATE_CELL_INDICES = setOf(9, 10) // J, K
         private const val DATA_START_ROW = 3 // 0-based (4행)
-        private const val DROPDOWN_END_ROW = 1003 // 0-based (1004행)
     }
 
     fun generate(employees: List<Employee>): ByteArray {
@@ -43,20 +48,22 @@ class ScheduleTemplateGenerator {
         // 3행: 헤더
         createHeaderRow(workbook, sheet)
 
-        // G, H열 셀 서식: 텍스트 (날짜 자동변환 방지)
-        val textStyle = workbook.createCellStyle().apply {
-            dataFormat = workbook.createDataFormat().getFormat("@")
-        }
-
-        // 필수 입력 셀용 스타일 (노란 배경 + 텍스트 서식)
+        // 노란 배경 스타일
         val yellowStyle = workbook.createCellStyle().apply {
             fillForegroundColor = IndexedColors.YELLOW.index
             fillPattern = FillPatternType.SOLID_FOREGROUND
         }
-        val yellowTextStyle = workbook.createCellStyle().apply {
+
+        // 날짜 서식 스타일
+        val dateStyle = workbook.createCellStyle().apply {
+            dataFormat = workbook.createDataFormat().getFormat("yyyy-mm-dd")
+        }
+
+        // 노란 배경 + 날짜 서식
+        val yellowDateStyle = workbook.createCellStyle().apply {
             fillForegroundColor = IndexedColors.YELLOW.index
             fillPattern = FillPatternType.SOLID_FOREGROUND
-            dataFormat = workbook.createDataFormat().getFormat("@")
+            dataFormat = workbook.createDataFormat().getFormat("yyyy-mm-dd")
         }
 
         // 4행~: 사원 데이터
@@ -64,38 +71,32 @@ class ScheduleTemplateGenerator {
             val rowIdx = DATA_START_ROW + index
             val row = sheet.createRow(rowIdx)
 
-            // A: 사원번호
-            row.createCell(0).setCellValue(employee.employeeCode)
-            // B: 사원명
-            row.createCell(1).setCellValue(employee.name)
+            // A: 소속
+            row.createCell(0).setCellValue(employee.orgName ?: "")
+            // B: 사번
+            val cellB = row.createCell(1)
+            cellB.setCellValue(employee.employeeCode)
+            cellB.cellStyle = yellowStyle
+            // C: 이름
+            row.createCell(2).setCellValue(employee.name)
+            // D: 직위
+            row.createCell(3).setCellValue(employee.jikwee ?: "")
 
-            // C, E, F열: 노란 배경 (필수 입력)
-            for (colIdx in listOf(2, 4, 5)) {
-                val cell = row.createCell(colIdx)
-                cell.cellStyle = yellowStyle
+            // E(4): 노란 배경
+            row.createCell(4).cellStyle = yellowStyle
+            // F(5): 거래처명 (빈 셀)
+            row.createCell(5)
+
+            // G(6), H(7), I(8): 노란 배경
+            for (colIdx in listOf(6, 7, 8)) {
+                row.createCell(colIdx).cellStyle = yellowStyle
             }
-            // G열: 노란 배경 + 텍스트 서식
-            row.createCell(6).cellStyle = yellowTextStyle
-            // H열: 텍스트 서식
-            row.createCell(7).cellStyle = textStyle
+
+            // J(9): 노란 + 날짜
+            row.createCell(9).cellStyle = yellowDateStyle
+            // K(10): 날짜
+            row.createCell(10).cellStyle = dateStyle
         }
-
-        // 사원이 없어도 G, H열의 텍스트 서식은 드롭다운 범위에 적용
-        for (rowIdx in DATA_START_ROW..DROPDOWN_END_ROW) {
-            val row = sheet.getRow(rowIdx) ?: sheet.createRow(rowIdx)
-            if (row.getCell(6) == null) {
-                row.createCell(6).cellStyle = textStyle
-            }
-            if (row.getCell(7) == null) {
-                row.createCell(7).cellStyle = textStyle
-            }
-        }
-
-        // E열 드롭다운: 고정, 격고, 순회
-        addDropdownValidation(sheet, DATA_START_ROW, DROPDOWN_END_ROW, 4, WORK_TYPE3_OPTIONS)
-
-        // F열 드롭다운: 상시, 임시
-        addDropdownValidation(sheet, DATA_START_ROW, DROPDOWN_END_ROW, 5, WORK_TYPE5_OPTIONS)
 
         val outputStream = ByteArrayOutputStream()
         workbook.use { it.write(outputStream) }
@@ -114,8 +115,8 @@ class ScheduleTemplateGenerator {
         style.setFont(font)
         cell.cellStyle = style
 
-        // A1~H1 병합
-        sheet.addMergedRegion(CellRangeAddress(0, 0, 0, 7))
+        // A1~K1 병합
+        sheet.addMergedRegion(CellRangeAddress(0, 0, 0, 10))
     }
 
     private fun createGuideRow(workbook: XSSFWorkbook, sheet: Sheet) {
@@ -128,7 +129,9 @@ class ScheduleTemplateGenerator {
         GUIDE_TEXTS.forEachIndexed { i, text ->
             val cell = row.createCell(i)
             cell.setCellValue(text)
-            cell.cellStyle = style
+            if (text.isNotEmpty()) {
+                cell.cellStyle = style
+            }
         }
     }
 
@@ -156,16 +159,7 @@ class ScheduleTemplateGenerator {
         HEADERS.forEachIndexed { i, header ->
             val cell = row.createCell(i)
             cell.setCellValue(header)
-            cell.cellStyle = if (i in REQUIRED_HEADER_INDICES) requiredStyle else optionalStyle
+            cell.cellStyle = if (header.startsWith("*")) requiredStyle else optionalStyle
         }
-    }
-
-    private fun addDropdownValidation(sheet: Sheet, startRow: Int, endRow: Int, colIndex: Int, options: List<String>) {
-        val helper = sheet.dataValidationHelper
-        val constraint = helper.createExplicitListConstraint(options.toTypedArray())
-        val addressList = CellRangeAddressList(startRow, endRow, colIndex, colIndex)
-        val validation = helper.createValidation(constraint, addressList)
-        validation.showErrorBox = true
-        sheet.addValidationData(validation)
     }
 }

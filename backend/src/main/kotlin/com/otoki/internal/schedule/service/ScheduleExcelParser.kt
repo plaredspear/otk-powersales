@@ -5,7 +5,6 @@ import org.apache.poi.ss.usermodel.DateUtil
 import org.apache.poi.ss.usermodel.Row
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.springframework.stereotype.Component
-import org.springframework.web.multipart.MultipartFile
 import java.io.InputStream
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -27,6 +26,7 @@ class ScheduleExcelParser {
         val accountCode: String?,
         val accountName: String?,
         val typeOfWork3: String?,
+        val typeOfWork4: String?,
         val typeOfWork5: String?,
         val startDateStr: String?,
         val endDateStr: String?,
@@ -55,14 +55,17 @@ class ScheduleExcelParser {
 
             val excelRowNumber = rowIdx + 1 // 1-based for user display
 
-            val employeeCode = getCellStringValue(row, 0)
-            val employeeName = getCellStringValue(row, 1)
-            val accountCode = getCellStringValue(row, 2)
-            val accountName = getCellStringValue(row, 3)
-            val typeOfWork3 = getCellStringValue(row, 4)
-            val typeOfWork5 = getCellStringValue(row, 5)
-            val startDateStr = getCellStringValue(row, 6)
-            val endDateStr = getCellStringValue(row, 7)
+            // 11컬럼: A(0)소속, B(1)사번, C(2)이름, D(3)직위, E(4)거래처코드, F(5)거래처명,
+            //         G(6)근무형태3, H(7)근무형태4, I(8)근무형태5, J(9)시작일, K(10)종료일
+            val employeeCode = getCellStringValue(row, 1)
+            val employeeName = getCellStringValue(row, 2)
+            val accountCode = getCellStringValue(row, 4)
+            val accountName = getCellStringValue(row, 5)
+            val typeOfWork3 = getCellStringValue(row, 6)
+            val typeOfWork4 = getCellStringValue(row, 7)
+            val typeOfWork5 = getCellStringValue(row, 8)
+            val startDateStr = getCellStringValue(row, 9)
+            val endDateStr = getCellStringValue(row, 10)
 
             val startDate = parseDate(startDateStr)
             val endDate = parseDate(endDateStr)
@@ -75,6 +78,7 @@ class ScheduleExcelParser {
                     accountCode = accountCode,
                     accountName = accountName,
                     typeOfWork3 = typeOfWork3,
+                    typeOfWork4 = typeOfWork4,
                     typeOfWork5 = typeOfWork5,
                     startDateStr = startDateStr,
                     endDateStr = endDateStr,
@@ -91,10 +95,10 @@ class ScheduleExcelParser {
     }
 
     private fun isEmptyRow(row: Row): Boolean {
-        // A열(사원번호)과 C열(거래처코드) 모두 비어있으면 빈 행으로 판단
-        val col0 = getCellStringValue(row, 0)
-        val col2 = getCellStringValue(row, 2)
-        return col0.isNullOrBlank() && col2.isNullOrBlank()
+        // B열(사번)과 E열(거래처코드) 모두 비어있으면 빈 행으로 판단
+        val col1 = getCellStringValue(row, 1)
+        val col4 = getCellStringValue(row, 4)
+        return col1.isNullOrBlank() && col4.isNullOrBlank()
     }
 
     private fun getCellStringValue(row: Row, colIndex: Int): String? {

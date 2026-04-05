@@ -108,7 +108,7 @@ class AdminScheduleServiceTest {
             val result = adminScheduleService.generateTemplate(userId)
 
             assertThat(result.bytes).hasSize(100)
-            assertThat(result.filename).startsWith("진열스케줄_양식_")
+            assertThat(result.filename).startsWith("진열마스터Template(신규작성용)_")
             assertThat(result.filename).doesNotContain("1234")
             assertThat(result.filename).endsWith(".xlsx")
         }
@@ -175,7 +175,7 @@ class AdminScheduleServiceTest {
             val result = adminScheduleService.generateTemplate(userId)
 
             assertThat(result.bytes).hasSize(50)
-            assertThat(result.filename).startsWith("진열스케줄_양식_")
+            assertThat(result.filename).startsWith("진열마스터Template(신규작성용)_")
         }
 
         @Test
@@ -287,7 +287,7 @@ class AdminScheduleServiceTest {
             // Given
             val file = MockMultipartFile("file", "test.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ByteArray(100))
             val parsedRows = listOf(
-                ScheduleExcelParser.ParsedRow(4, "20030001", "홍길동", "ACC001", "이마트 강남점", "고정", "상시", "2026-04-01", null, LocalDate.of(2026, 4, 1), null)
+                ScheduleExcelParser.ParsedRow(4, "20030001", "홍길동", "ACC001", "이마트 강남점", "고정", "상온", "상시", "2026-04-01", null, LocalDate.of(2026, 4, 1), null)
             )
             val parseResult = ScheduleExcelParser.ParseResult(parsedRows, 1)
             val employee = createEmployee(employeeCode = "20030001", name = "홍길동", sfid = "USR001")
@@ -301,10 +301,10 @@ class AdminScheduleServiceTest {
                 ScheduleUploadValidator.ValidationResult(
                     errors = emptyList(),
                     previews = listOf(
-                        RowPreview(4, "20030001", "홍길동", "ACC001", "이마트 강남점", "고정", "상시", "2026-04-01", null)
+                        RowPreview(4, "20030001", "홍길동", "ACC001", "이마트 강남점", "고정", "상온", "상시", "2026-04-01", null)
                     ),
                     validRows = listOf(
-                        ScheduleUploadValidator.ValidatedRow(1L, "20030001", 1, "고정", "상시", LocalDate.of(2026, 4, 1), null)
+                        ScheduleUploadValidator.ValidatedRow(1L, "20030001", 1, "고정", "상온", "상시", LocalDate.of(2026, 4, 1), null)
                     )
                 )
             )
@@ -336,7 +336,7 @@ class AdminScheduleServiceTest {
         @DisplayName("행 초과 - ROW_LIMIT_EXCEEDED 에러")
         fun uploadAndValidate_rowLimitExceeded() {
             val file = MockMultipartFile("file", "test.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ByteArray(100))
-            val rows = (1..501).map { ScheduleExcelParser.ParsedRow(it + 3, "emp$it", "name$it", "acc$it", null, "고정", "상시", "2026-04-01", null) }
+            val rows = (1..501).map { ScheduleExcelParser.ParsedRow(it + 3, "emp$it", "name$it", "acc$it", null, "고정", "상온", "상시", "2026-04-01", null) }
             whenever(excelParser.parse(any())).thenReturn(ScheduleExcelParser.ParseResult(rows, 501))
 
             assertThatThrownBy { adminScheduleService.uploadAndValidate(file) }
@@ -382,7 +382,7 @@ class AdminScheduleServiceTest {
             val uploadId = "test-upload-id"
             val cacheData = AdminScheduleService.UploadCacheData(
                 validRows = listOf(
-                    ScheduleUploadValidator.ValidatedRow(1L, "20030001", 1, "고정", "상시", LocalDate.of(2026, 4, 1), null)
+                    ScheduleUploadValidator.ValidatedRow(1L, "20030001", 1, "고정", "상온", "상시", LocalDate.of(2026, 4, 1), null)
                 ),
                 errorCount = 0
             )
@@ -443,7 +443,7 @@ class AdminScheduleServiceTest {
             val cacheData = AdminScheduleService.UploadCacheData(
                 validRows = listOf(
                     ScheduleUploadValidator.ValidatedRow(
-                        1L, "20030001", 1, "고정", "상시",
+                        1L, "20030001", 1, "고정", "상온", "상시",
                         LocalDate.of(2026, 4, 1), null,
                         costCenterCode = "A10010", accountExternalKey = "EXT001"
                     )
@@ -475,7 +475,7 @@ class AdminScheduleServiceTest {
             val cacheData = AdminScheduleService.UploadCacheData(
                 validRows = listOf(
                     ScheduleUploadValidator.ValidatedRow(
-                        1L, "20030001", 1, "고정", "상시",
+                        1L, "20030001", 1, "고정", "상온", "상시",
                         LocalDate.of(2026, 4, 1), null,
                         costCenterCode = "A10010", accountExternalKey = "EXT001"
                     )
@@ -508,7 +508,7 @@ class AdminScheduleServiceTest {
             val cacheData = AdminScheduleService.UploadCacheData(
                 validRows = listOf(
                     ScheduleUploadValidator.ValidatedRow(
-                        1L, "20030001", 1, "고정", "상시",
+                        1L, "20030001", 1, "고정", "상온", "상시",
                         LocalDate.of(2026, 4, 1), null,
                         costCenterCode = "A10010", accountExternalKey = "EXT001"
                     )
@@ -540,7 +540,7 @@ class AdminScheduleServiceTest {
             val cacheData = AdminScheduleService.UploadCacheData(
                 validRows = listOf(
                     ScheduleUploadValidator.ValidatedRow(
-                        1L, "20030001", 1, "고정", "상시",
+                        1L, "20030001", 1, "고정", "상온", "상시",
                         LocalDate.of(2026, 4, 1), null,
                         costCenterCode = "A10010", accountExternalKey = "EXT001"
                     )
@@ -581,7 +581,7 @@ class AdminScheduleServiceTest {
             val cacheData = AdminScheduleService.UploadCacheData(
                 validRows = listOf(
                     ScheduleUploadValidator.ValidatedRow(
-                        1L, "20030001", 1, "고정", "상시",
+                        1L, "20030001", 1, "고정", "상온", "상시",
                         LocalDate.of(2026, 4, 1), null,
                         costCenterCode = "A10010", accountExternalKey = "EXT001"
                     )
@@ -613,7 +613,7 @@ class AdminScheduleServiceTest {
             val cacheData = AdminScheduleService.UploadCacheData(
                 validRows = listOf(
                     ScheduleUploadValidator.ValidatedRow(
-                        1L, "20030001", 1, "고정", "상시",
+                        1L, "20030001", 1, "고정", "상온", "상시",
                         LocalDate.of(2026, 4, 1), null,
                         costCenterCode = null, accountExternalKey = "EXT001"
                     )

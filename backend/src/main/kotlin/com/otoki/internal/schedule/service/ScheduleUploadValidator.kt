@@ -13,6 +13,7 @@ class ScheduleUploadValidator {
 
     companion object {
         private val VALID_WORK_TYPE3 = setOf("고정", "격고", "순회")
+        private val VALID_WORK_TYPE4 = setOf("상온", "냉동/냉장")
         private val VALID_WORK_TYPE5 = setOf("상시", "임시")
     }
 
@@ -27,6 +28,7 @@ class ScheduleUploadValidator {
         val userEmployeeNumber: String,
         val accountId: Int,
         val typeOfWork3: String,
+        val typeOfWork4: String,
         val typeOfWork5: String,
         val startDate: LocalDate,
         val endDate: LocalDate?,
@@ -51,24 +53,27 @@ class ScheduleUploadValidator {
 
             // 필수값 검증
             if (row.employeeCode.isNullOrBlank()) {
-                rowErrors.add(RowError(row.rowNumber, "A", "사원번호", null, "행 ${row.rowNumber}: 사원번호는 필수입니다"))
+                rowErrors.add(RowError(row.rowNumber, "B", "사번", null, "행 ${row.rowNumber}: 사번은 필수입니다"))
             }
             if (row.accountCode.isNullOrBlank()) {
-                rowErrors.add(RowError(row.rowNumber, "C", "거래처코드", null, "행 ${row.rowNumber}: 거래처코드는 필수입니다"))
+                rowErrors.add(RowError(row.rowNumber, "E", "거래처코드", null, "행 ${row.rowNumber}: 거래처코드는 필수입니다"))
             }
             if (row.typeOfWork3.isNullOrBlank()) {
-                rowErrors.add(RowError(row.rowNumber, "E", "근무유형3", null, "행 ${row.rowNumber}: 근무유형3은 필수입니다"))
+                rowErrors.add(RowError(row.rowNumber, "G", "근무형태3", null, "행 ${row.rowNumber}: 근무형태3은 필수입니다"))
+            }
+            if (row.typeOfWork4.isNullOrBlank()) {
+                rowErrors.add(RowError(row.rowNumber, "H", "근무형태4", null, "행 ${row.rowNumber}: 근무형태4는 필수 입력입니다"))
             }
             if (row.typeOfWork5.isNullOrBlank()) {
-                rowErrors.add(RowError(row.rowNumber, "F", "근무유형5", null, "행 ${row.rowNumber}: 근무유형5는 필수입니다"))
+                rowErrors.add(RowError(row.rowNumber, "I", "근무형태5", null, "행 ${row.rowNumber}: 근무형태5는 필수입니다"))
             }
             if (row.startDateStr.isNullOrBlank()) {
-                rowErrors.add(RowError(row.rowNumber, "G", "시작일", null, "행 ${row.rowNumber}: 시작일은 필수입니다"))
+                rowErrors.add(RowError(row.rowNumber, "J", "시작일", null, "행 ${row.rowNumber}: 시작일은 필수입니다"))
             } else if (row.startDate == null) {
-                rowErrors.add(RowError(row.rowNumber, "G", "시작일", row.startDateStr, "행 ${row.rowNumber}: 유효하지 않은 날짜 형식 (yyyy-MM-dd)"))
+                rowErrors.add(RowError(row.rowNumber, "J", "시작일", row.startDateStr, "행 ${row.rowNumber}: 유효하지 않은 날짜 형식 (yyyy-MM-dd)"))
             }
             if (!row.endDateStr.isNullOrBlank() && row.endDate == null) {
-                rowErrors.add(RowError(row.rowNumber, "H", "종료일", row.endDateStr, "행 ${row.rowNumber}: 유효하지 않은 날짜 형식 (yyyy-MM-dd)"))
+                rowErrors.add(RowError(row.rowNumber, "K", "종료일", row.endDateStr, "행 ${row.rowNumber}: 유효하지 않은 날짜 형식 (yyyy-MM-dd)"))
             }
 
             // 필수값 미달 시 다음 행으로
@@ -80,6 +85,7 @@ class ScheduleUploadValidator {
             val employeeCode = row.employeeCode!!
             val accountCode = row.accountCode!!
             val typeOfWork3 = row.typeOfWork3!!
+            val typeOfWork4 = row.typeOfWork4!!
             val typeOfWork5 = row.typeOfWork5!!
             val startDate = row.startDate!!
             val endDate = row.endDate
@@ -87,23 +93,23 @@ class ScheduleUploadValidator {
             // V1: 사원번호 존재
             val employee = usersByEmployeeNumber[employeeCode]
             if (employee == null) {
-                rowErrors.add(RowError(row.rowNumber, "A", "사원번호", employeeCode, "사원번호 $employeeCode: 존재하지 않는 사원"))
+                rowErrors.add(RowError(row.rowNumber, "B", "사번", employeeCode, "사원번호 $employeeCode: 존재하지 않는 사원"))
             }
 
             // V2: 재직 상태
             if (employee != null && employee.status != "재직") {
-                rowErrors.add(RowError(row.rowNumber, "A", "사원번호", employeeCode, "사원번호 $employeeCode: 퇴직한 사원"))
+                rowErrors.add(RowError(row.rowNumber, "B", "사번", employeeCode, "사원번호 $employeeCode: 퇴직한 사원"))
             }
 
             // V2a: 사원 앱 로그인 활성화
             if (employee != null && employee.status == "재직" && employee.appLoginActive != true) {
-                rowErrors.add(RowError(row.rowNumber, "A", "사원번호", employeeCode, "사원번호 $employeeCode: 앱 로그인이 비활성화된 사원입니다"))
+                rowErrors.add(RowError(row.rowNumber, "B", "사번", employeeCode, "사원번호 $employeeCode: 앱 로그인이 비활성화된 사원입니다"))
             }
 
             // V3: 거래처코드 존재
             val account = accountsByExternalKey[accountCode]
             if (account == null) {
-                rowErrors.add(RowError(row.rowNumber, "C", "거래처코드", accountCode, "거래처코드 $accountCode: 존재하지 않는 거래처"))
+                rowErrors.add(RowError(row.rowNumber, "E", "거래처코드", accountCode, "거래처코드 $accountCode: 존재하지 않는 거래처"))
             }
 
             // V3a: 거래처 폐업 상태
@@ -111,28 +117,33 @@ class ScheduleUploadValidator {
                 val isExempt = (account.accountGroup == "1000" || account.accountGroup == "1010") &&
                     (!account.distribution.isNullOrBlank() || account.abcTypeCode == "3062")
                 if (!isExempt) {
-                    rowErrors.add(RowError(row.rowNumber, "C", "거래처코드", accountCode, "거래처코드 $accountCode: 폐업 상태의 거래처입니다"))
+                    rowErrors.add(RowError(row.rowNumber, "E", "거래처코드", accountCode, "거래처코드 $accountCode: 폐업 상태의 거래처입니다"))
                 }
             }
 
-            // V5: 근무유형3 유효성
+            // V5: 근무형태3 유효성
             if (typeOfWork3 !in VALID_WORK_TYPE3) {
-                rowErrors.add(RowError(row.rowNumber, "E", "근무유형3", typeOfWork3, "행 ${row.rowNumber}: 유효하지 않은 근무유형3 '$typeOfWork3'"))
+                rowErrors.add(RowError(row.rowNumber, "G", "근무형태3", typeOfWork3, "행 ${row.rowNumber}: 유효하지 않은 근무형태3 '$typeOfWork3'"))
             }
 
-            // V6: 근무유형5 유효성
+            // V5a: 근무형태4 유효성
+            if (typeOfWork4 !in VALID_WORK_TYPE4) {
+                rowErrors.add(RowError(row.rowNumber, "H", "근무형태4", typeOfWork4, "행 ${row.rowNumber}: 유효하지 않은 근무형태4 '$typeOfWork4'"))
+            }
+
+            // V6: 근무형태5 유효성
             if (typeOfWork5 !in VALID_WORK_TYPE5) {
-                rowErrors.add(RowError(row.rowNumber, "F", "근무유형5", typeOfWork5, "행 ${row.rowNumber}: 유효하지 않은 근무유형5 '$typeOfWork5'"))
+                rowErrors.add(RowError(row.rowNumber, "I", "근무형태5", typeOfWork5, "행 ${row.rowNumber}: 유효하지 않은 근무형태5 '$typeOfWork5'"))
             }
 
             // V7: 임시 + 순회만 허용
             if (typeOfWork5 == "임시" && typeOfWork3 != "순회") {
-                rowErrors.add(RowError(row.rowNumber, "E", "근무유형3", typeOfWork3, "행 ${row.rowNumber}: 임시 배치는 순회만 가능"))
+                rowErrors.add(RowError(row.rowNumber, "G", "근무형태3", typeOfWork3, "행 ${row.rowNumber}: 임시 배치는 순회만 가능"))
             }
 
             // V4: 시작일 <= 종료일
             if (endDate != null && startDate.isAfter(endDate)) {
-                rowErrors.add(RowError(row.rowNumber, "G", "시작일", row.startDateStr, "행 ${row.rowNumber}: 시작일이 종료일보다 이후"))
+                rowErrors.add(RowError(row.rowNumber, "J", "시작일", row.startDateStr, "행 ${row.rowNumber}: 시작일이 종료일보다 이후"))
             }
 
             // 기본 검증 실패 시 V8, V9, C1~C3 건너뜀
@@ -154,7 +165,7 @@ class ScheduleUploadValidator {
             if (overlappingDb.isNotEmpty()) {
                 rowErrors.add(
                     RowError(
-                        row.rowNumber, "G", "시작일", row.startDateStr,
+                        row.rowNumber, "J", "시작일", row.startDateStr,
                         "행 ${row.rowNumber}: 기존 스케줄과 기간 중복 (사원: $employeeCode, 거래처: $accountCode)"
                     )
                 )
@@ -169,7 +180,7 @@ class ScheduleUploadValidator {
             if (overlappingFile.isNotEmpty()) {
                 rowErrors.add(
                     RowError(
-                        row.rowNumber, "G", "시작일", row.startDateStr,
+                        row.rowNumber, "J", "시작일", row.startDateStr,
                         "행 ${overlappingFile.first().rowNumber}과 행 ${row.rowNumber}: 파일 내 중복"
                     )
                 )
@@ -199,6 +210,7 @@ class ScheduleUploadValidator {
                     userEmployeeNumber = userEmployeeNumber,
                     accountId = accountIdVal,
                     typeOfWork3 = typeOfWork3,
+                    typeOfWork4 = typeOfWork4,
                     typeOfWork5 = typeOfWork5,
                     startDate = startDate,
                     endDate = endDate,
@@ -226,6 +238,7 @@ class ScheduleUploadValidator {
                         accountCode = accountCode,
                         accountName = account.name ?: "",
                         typeOfWork3 = typeOfWork3,
+                        typeOfWork4 = typeOfWork4,
                         typeOfWork5 = typeOfWork5,
                         startDate = startDate.toString(),
                         endDate = endDate?.toString()
@@ -287,23 +300,23 @@ class ScheduleUploadValidator {
         // C1: 고정이 존재하면 다른 유형 추가 불가
         val hasFixed = existingTypes.any { it.first == "고정" }
         if (hasFixed) {
-            return RowError(rowNumber, "E", "근무유형3", newType3, "행 $rowNumber: 해당 기간에 고정 배치가 이미 존재")
+            return RowError(rowNumber, "G", "근무형태3", newType3, "행 $rowNumber: 해당 기간에 고정 배치가 이미 존재")
         }
         if (newType3 == "고정" && existingTypes.isNotEmpty()) {
-            return RowError(rowNumber, "E", "근무유형3", newType3, "행 $rowNumber: 해당 기간에 고정 배치가 이미 존재")
+            return RowError(rowNumber, "G", "근무형태3", newType3, "행 $rowNumber: 해당 기간에 고정 배치가 이미 존재")
         }
 
         // C2: 격고 최대 2개
         if (newType3 == "격고") {
             val existingAlternateCount = existingTypes.count { it.first == "격고" }
             if (existingAlternateCount >= 2) {
-                return RowError(rowNumber, "E", "근무유형3", newType3, "행 $rowNumber: 격고 배치가 이미 2개 존재")
+                return RowError(rowNumber, "G", "근무형태3", newType3, "행 $rowNumber: 격고 배치가 이미 2개 존재")
             }
 
             // C2a: 순회가 존재하고 격고가 1건 이상이면 추가 격고 불가
             val hasPatrol = existingTypes.any { it.first == "순회" }
             if (hasPatrol && existingAlternateCount >= 1) {
-                return RowError(rowNumber, "E", "근무유형3", newType3, "행 $rowNumber: 순회 레코드가 존재하므로 격고는 1건만 등록 가능합니다")
+                return RowError(rowNumber, "G", "근무형태3", newType3, "행 $rowNumber: 순회 레코드가 존재하므로 격고는 1건만 등록 가능합니다")
             }
         }
 
@@ -311,7 +324,7 @@ class ScheduleUploadValidator {
         if (newType5 == "임시") {
             val existingTempCount = existingTypes.count { it.second == "임시" }
             if (existingTempCount >= 1) {
-                return RowError(rowNumber, "F", "근무유형5", newType5, "행 $rowNumber: 임시 배치가 이미 존재")
+                return RowError(rowNumber, "I", "근무형태5", newType5, "행 $rowNumber: 임시 배치가 이미 존재")
             }
         }
 
