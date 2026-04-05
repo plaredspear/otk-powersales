@@ -15,7 +15,6 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 /**
@@ -33,7 +32,6 @@ class HomeService(
 ) {
 
     companion object {
-        private const val NOTICE_DAYS = 7L
         private val DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
         /** 정렬 우선순위: 출근완료(0) → 임시배정(1) → 행사(2) → 진열(3) */
@@ -96,10 +94,9 @@ class HomeService(
             expiryCount = expiryCount.toInt()
         )
 
-        // 최근 1주일 공지사항 조회
-        val since = LocalDateTime.of(today.minusDays(NOTICE_DAYS), LocalTime.MIN)
+        // 최근 공지사항 조회 (최신 5건)
         val notices = noticeRepository
-            .findRecentNotices(branch = employee.orgName ?: "", since = since)
+            .findRecentNotices(branch = employee.orgName ?: "")
             .map { notice ->
                 HomeResponse.NoticeInfo(
                     id = notice.id,

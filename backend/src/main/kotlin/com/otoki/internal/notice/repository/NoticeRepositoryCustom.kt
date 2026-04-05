@@ -4,8 +4,6 @@ import com.otoki.internal.notice.entity.Notice
 import com.otoki.internal.notice.entity.NoticeCategory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
-import java.time.LocalDateTime
-
 interface NoticeRepositoryCustom {
 
     fun findNotices(
@@ -22,7 +20,6 @@ interface NoticeRepositoryCustom {
     ): Page<Notice>
 
     fun findRecentNotices(
-        branch: String,
-        since: LocalDateTime
+        branch: String
     ): List<Notice>
 }

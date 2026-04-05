@@ -9,8 +9,6 @@ import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.support.PageableExecutionUtils
-import java.time.LocalDateTime
-
 class NoticeRepositoryCustomImpl(
     private val queryFactory: JPAQueryFactory
 ) : NoticeRepositoryCustom {
@@ -73,13 +71,12 @@ class NoticeRepositoryCustomImpl(
     }
 
     override fun findRecentNotices(
-        branch: String,
-        since: LocalDateTime
+        branch: String
     ): List<Notice> {
         return queryFactory
             .selectFrom(notice)
             .where(
-                notice.createdAt.goe(since),
+                buildDeletedCondition(),
                 notice.category.eq(NoticeCategory.COMPANY)
                     .or(notice.category.eq(NoticeCategory.BRANCH).and(notice.branch.eq(branch)))
                     .or(notice.category.eq(NoticeCategory.EDUCATION))
