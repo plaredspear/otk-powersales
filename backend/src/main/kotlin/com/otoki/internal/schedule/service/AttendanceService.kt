@@ -19,8 +19,11 @@ import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.internal.sap.repository.EmployeeRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Clock
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.YearMonth
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 @Service
@@ -31,12 +34,15 @@ class AttendanceService(
     private val displayWorkScheduleRepository: DisplayWorkScheduleRepository,
     private val safetyCheckSubmissionRepository: SafetyCheckSubmissionRepository,
     private val ororaApiService: OroraApiService,
-    private val adminMonthlyIntegrationService: AdminMonthlyIntegrationService
+    private val adminMonthlyIntegrationService: AdminMonthlyIntegrationService,
+    private val clock: Clock
 ) {
 
     companion object {
         private val DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd")
         private const val DEFAULT_ALLOWED_DISTANCE_KM = 0.5
+        private val SEOUL_ZONE = ZoneId.of("Asia/Seoul")
+        private val REGISTRATION_DEADLINE = LocalTime.of(17, 0)
 
         /** 대리점 유형코드 면제 목록 — GPS 거리 검증 생략 */
         private val EXEMPT_ACCOUNT_TYPE_CODES = setOf(
@@ -122,12 +128,16 @@ class AttendanceService(
 
         val registeredCount = allAccounts.count { it.isRegistered }
 
+        val now = LocalTime.now(clock.withZone(SEOUL_ZONE))
+
         return AccountListResponse(
             safetyCheckCompleted = safetyCheckCompleted,
             accounts = allAccounts,
             totalCount = allAccounts.size,
             registeredCount = registeredCount,
-            currentDate = today.format(DATE_FORMATTER)
+            currentDate = today.format(DATE_FORMATTER),
+            registrationDeadline = "17:00",
+            isRegistrationClosed = !now.isBefore(REGISTRATION_DEADLINE)
         )
     }
 
@@ -153,6 +163,12 @@ class AttendanceService(
         }
         if (scheduleId != null && displayWorkScheduleId != null) {
             throw AttendanceTargetConflictException()
+        }
+
+        // 시간 제한 검증: 17시 이후 등록 차단
+        val now = LocalTime.now(clock.withZone(SEOUL_ZONE))
+        if (!now.isBefore(REGISTRATION_DEADLINE)) {
+            throw AttendanceTimeExceededException()
         }
 
         val employee = employeeRepository.findById(userId)
