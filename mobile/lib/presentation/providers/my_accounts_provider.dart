@@ -70,10 +70,6 @@ class MyAccountsNotifier extends StateNotifier<MyAccountsState> {
     await loadAccounts();
   }
 
-  /// 에러 초기화
-  void clearError() {
-    state = state.copyWith(errorMessage: null);
-  }
 }
 
 /// MyAccounts StateNotifier Provider

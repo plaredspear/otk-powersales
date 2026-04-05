@@ -119,7 +119,6 @@ class _MyAccountsPageState extends ConsumerState<MyAccountsPage> {
             duration: const Duration(seconds: 2),
           ),
         );
-        ref.read(myAccountsProvider.notifier).clearError();
       }
     });
 
