@@ -9,8 +9,8 @@ import java.time.LocalDate
 interface ProductExpirationRepositoryCustom {
 
     fun findForAdmin(
-        fromDate: LocalDate,
-        toDate: LocalDate,
+        fromDate: LocalDate?,
+        toDate: LocalDate?,
         employeeKeyword: String?,
         accountKeyword: String?,
         status: String?,

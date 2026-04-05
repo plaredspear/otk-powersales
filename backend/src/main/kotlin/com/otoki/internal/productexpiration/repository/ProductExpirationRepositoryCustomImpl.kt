@@ -18,8 +18,8 @@ class ProductExpirationRepositoryCustomImpl(
 ) : ProductExpirationRepositoryCustom {
 
     override fun findForAdmin(
-        fromDate: LocalDate,
-        toDate: LocalDate,
+        fromDate: LocalDate?,
+        toDate: LocalDate?,
         employeeKeyword: String?,
         accountKeyword: String?,
         status: String?,
@@ -85,8 +85,11 @@ class ProductExpirationRepositoryCustomImpl(
         )
     }
 
-    private fun buildDateRangeCondition(fromDate: LocalDate, toDate: LocalDate): Predicate {
-        return productExpiration.expirationDate.between(fromDate, toDate)
+    private fun buildDateRangeCondition(fromDate: LocalDate?, toDate: LocalDate?): Predicate? {
+        if (fromDate == null && toDate == null) return null
+        if (fromDate != null && toDate != null) return productExpiration.expirationDate.between(fromDate, toDate)
+        if (fromDate != null) return productExpiration.expirationDate.goe(fromDate)
+        return productExpiration.expirationDate.loe(toDate!!)
     }
 
     private fun buildEmployeeKeywordCondition(keyword: String?): Predicate? {

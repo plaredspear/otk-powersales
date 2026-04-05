@@ -145,7 +145,7 @@ class AdminProductExpirationServiceTest {
     inner class GetListTests {
 
         @Test
-        @DisplayName("기본 조회 - null 파라미터 → 기본값 적용 후 목록 반환")
+        @DisplayName("기본 조회 - null 파라미터 → 날짜 필터 없이 전체 목록 반환")
         fun getList_withNullParams_returnsListWithDefaults() {
             // Given
             val pageable = PageRequest.of(0, 20)

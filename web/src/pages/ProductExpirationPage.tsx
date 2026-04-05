@@ -41,14 +41,11 @@ const STATUS_OPTIONS = [
   { label: '정상', value: 'NORMAL' },
 ];
 
-const DEFAULT_FROM = dayjs().subtract(7, 'day');
-const DEFAULT_TO = dayjs().add(90, 'day');
-
 export default function ProductExpirationPage() {
   // Filter state
   const [employeeKeyword, setEmployeeKeyword] = useState('');
   const [accountKeyword, setAccountKeyword] = useState('');
-  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>([DEFAULT_FROM, DEFAULT_TO]);
+  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs] | null>(null);
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
 
@@ -56,8 +53,8 @@ export default function ProductExpirationPage() {
   const [appliedFilter, setAppliedFilter] = useState({
     employee_keyword: '',
     account_keyword: '',
-    from_date: DEFAULT_FROM.format('YYYY-MM-DD'),
-    to_date: DEFAULT_TO.format('YYYY-MM-DD'),
+    from_date: '',
+    to_date: '',
     status: '',
   });
 
@@ -69,6 +66,8 @@ export default function ProductExpirationPage() {
   // Queries
   const { data, isLoading } = useProductExpirations({
     ...appliedFilter,
+    from_date: appliedFilter.from_date || undefined,
+    to_date: appliedFilter.to_date || undefined,
     status: appliedFilter.status || undefined,
     employee_keyword: appliedFilter.employee_keyword || undefined,
     account_keyword: appliedFilter.account_keyword || undefined,
@@ -88,8 +87,8 @@ export default function ProductExpirationPage() {
     setAppliedFilter({
       employee_keyword: employeeKeyword,
       account_keyword: accountKeyword,
-      from_date: dateRange[0].format('YYYY-MM-DD'),
-      to_date: dateRange[1].format('YYYY-MM-DD'),
+      from_date: dateRange ? dateRange[0].format('YYYY-MM-DD') : '',
+      to_date: dateRange ? dateRange[1].format('YYYY-MM-DD') : '',
       status,
     });
   };
@@ -97,14 +96,14 @@ export default function ProductExpirationPage() {
   const handleReset = () => {
     setEmployeeKeyword('');
     setAccountKeyword('');
-    setDateRange([DEFAULT_FROM, DEFAULT_TO]);
+    setDateRange(null);
     setStatus('');
     setPage(1);
     setAppliedFilter({
       employee_keyword: '',
       account_keyword: '',
-      from_date: DEFAULT_FROM.format('YYYY-MM-DD'),
-      to_date: DEFAULT_TO.format('YYYY-MM-DD'),
+      from_date: '',
+      to_date: '',
       status: '',
     });
   };
@@ -282,8 +281,13 @@ export default function ProductExpirationPage() {
             <RangePicker
               value={dateRange}
               onChange={(dates) => {
-                if (dates && dates[0] && dates[1]) setDateRange([dates[0], dates[1]]);
+                if (dates && dates[0] && dates[1]) {
+                  setDateRange([dates[0], dates[1]]);
+                } else {
+                  setDateRange(null);
+                }
               }}
+              placeholder={['시작일', '종료일']}
               style={{ width: '100%' }}
             />
           </Col>

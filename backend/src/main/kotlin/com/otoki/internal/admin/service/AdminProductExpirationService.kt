@@ -40,11 +40,9 @@ class AdminProductExpirationService(
         pageable: Pageable
     ): AdminProductExpirationListResponse {
         val today = LocalDate.now()
-        val effectiveFromDate = fromDate ?: today.minusDays(7)
-        val effectiveToDate = toDate ?: today.plusDays(90)
 
         val page = productExpirationRepository.findForAdmin(
-            effectiveFromDate, effectiveToDate, employeeKeyword, accountKeyword, status, today, pageable
+            fromDate, toDate, employeeKeyword, accountKeyword, status, today, pageable
         )
 
         val content = page.content.map { AdminProductExpirationResponse.from(it, today) }
