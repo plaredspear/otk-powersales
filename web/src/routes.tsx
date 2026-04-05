@@ -38,6 +38,7 @@ const MonthlyIntegrationSchedulePage = lazy(() => import('@/pages/schedules/Mont
 const CategorySchedulePage = lazy(() => import('@/pages/schedules/CategorySchedulePage'));
 const PPTMasterPage = lazy(() => import('@/pages/promotion/PPTMasterPage'));
 const PermissionMatrixPage = lazy(() => import('@/pages/settings/PermissionMatrixPage'));
+const ProductExpirationPage = lazy(() => import('@/pages/ProductExpirationPage'));
 
 // eslint-disable-next-line react-refresh/only-export-components
 function LazyWrapper({ children }: { children: React.ReactNode }) {
@@ -99,6 +100,12 @@ export const router = createBrowserRouter(
             { path: '/monthly-integration', element: <LazyWrapper><MonthlyIntegrationSchedulePage /></LazyWrapper> },
             { path: '/monthly-integration/category', element: <LazyWrapper><CategorySchedulePage /></LazyWrapper> },
             { path: '/promotion/ppt-masters', element: <LazyWrapper><PPTMasterPage /></LazyWrapper> },
+            {
+              element: <PermissionRoute requiredPermission="PRODUCT_EXPIRATION_READ" />,
+              children: [
+                { path: '/product-expiration', element: <LazyWrapper><ProductExpirationPage /></LazyWrapper> },
+              ],
+            },
             // Permission-guarded routes
             {
               element: <PermissionRoute requiredPermission="PROMOTION_READ" />,

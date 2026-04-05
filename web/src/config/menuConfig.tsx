@@ -87,6 +87,7 @@ export const menuRoute: MenuRoute = {
     { path: '/report', name: '보고서', icon: <FileTextOutlined /> },
     { path: '/notices', name: '공지사항', icon: <NotificationOutlined /> },
     { path: '/education', name: '교육', icon: <ReadOutlined /> },
+    { path: '/product-expiration', name: '유통기한 관리', icon: <CalendarOutlined />, requiredPermission: 'PRODUCT_EXPIRATION_READ' },
     {
       name: 'SAP 데이터',
       icon: <DatabaseOutlined />,
