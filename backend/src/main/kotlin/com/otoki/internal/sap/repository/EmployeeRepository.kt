@@ -37,10 +37,11 @@ interface EmployeeRepository : JpaRepository<Employee, Long>, EmployeeRepository
 
 /**
      * 진열스케줄 템플릿용 사원 조회
-     * 조건: costCenterCode 일치, appAuthority IS NULL, appLoginActive=true, status 일치
+     * 조건: costCenterCode 일치, appAuthority 일치, appLoginActive=true, status 일치
      */
-    fun findByCostCenterCodeAndAppAuthorityIsNullAndAppLoginActiveTrueAndStatus(
+    fun findByCostCenterCodeAndAppAuthorityAndAppLoginActiveTrueAndStatus(
         costCenterCode: String,
+        appAuthority: String,
         status: String
     ): List<Employee>
 

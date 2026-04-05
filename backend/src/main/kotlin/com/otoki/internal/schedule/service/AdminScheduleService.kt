@@ -64,8 +64,8 @@ class AdminScheduleService(
             ?: organizationRepository.findFirstByCostCenterLevel4(costCenterCode)
             ?: throw OrganizationNotFoundException()
 
-        val employees = employeeRepository.findByCostCenterCodeAndAppAuthorityIsNullAndAppLoginActiveTrueAndStatus(
-            costCenterCode, "재직"
+        val employees = employeeRepository.findByCostCenterCodeAndAppAuthorityAndAppLoginActiveTrueAndStatus(
+            costCenterCode, "여사원", "재직"
         ).sortedWith(compareBy({ it.orgName }, { it.employeeCode }))
 
         val excelBytes = templateGenerator.generate(employees)

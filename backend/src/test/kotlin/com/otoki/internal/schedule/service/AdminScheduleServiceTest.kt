@@ -99,8 +99,8 @@ class AdminScheduleServiceTest {
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(organizationRepository.findFirstByCostCenterLevel5(costCenterCode)).thenReturn(org)
             whenever(
-                employeeRepository.findByCostCenterCodeAndAppAuthorityIsNullAndAppLoginActiveTrueAndStatus(
-                    costCenterCode, "재직"
+                employeeRepository.findByCostCenterCodeAndAppAuthorityAndAppLoginActiveTrueAndStatus(
+                    costCenterCode, "여사원", "재직"
                 )
             ).thenReturn(employees)
             whenever(templateGenerator.generate(employees)).thenReturn(ByteArray(100))
@@ -166,8 +166,8 @@ class AdminScheduleServiceTest {
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(organizationRepository.findFirstByCostCenterLevel5(costCenterCode)).thenReturn(org)
             whenever(
-                employeeRepository.findByCostCenterCodeAndAppAuthorityIsNullAndAppLoginActiveTrueAndStatus(
-                    costCenterCode, "재직"
+                employeeRepository.findByCostCenterCodeAndAppAuthorityAndAppLoginActiveTrueAndStatus(
+                    costCenterCode, "여사원", "재직"
                 )
             ).thenReturn(emptyList())
             whenever(templateGenerator.generate(emptyList())).thenReturn(ByteArray(50))
