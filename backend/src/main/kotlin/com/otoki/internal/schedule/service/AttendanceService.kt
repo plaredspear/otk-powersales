@@ -82,6 +82,7 @@ class AttendanceService(
                 accountName = accountName,
                 accountTypeCode = account?.abcTypeCode,
                 workCategory = tms.workingCategory1 ?: "",
+                workCategory2 = tms.workingCategory2,
                 workCategory3 = tms.workingCategory3,
                 address = account?.address1,
                 latitude = account?.latitude?.toDoubleOrNull(),
@@ -111,6 +112,7 @@ class AttendanceService(
                 accountName = accountName,
                 accountTypeCode = account.abcTypeCode,
                 workCategory = "진열",
+                workCategory2 = master.typeOfWork5,
                 workCategory3 = master.typeOfWork3,
                 address = account.address1,
                 latitude = account.latitude?.toDoubleOrNull(),
@@ -120,9 +122,10 @@ class AttendanceService(
             )
         }
 
-        // 병합: 출근완료 → source=schedule → source=master
+        // 병합: 등록완료 → 임시(미등록) → 일반(미등록), 같은 그룹 내 source=schedule → master
         val allAccounts = (scheduleAccountInfos + masterAccountInfos).sortedWith(
             compareByDescending<AccountInfo> { it.isRegistered }
+                .thenByDescending { it.workCategory2?.contains("임시") == true }
                 .thenBy { it.source != "schedule" }
         )
 
