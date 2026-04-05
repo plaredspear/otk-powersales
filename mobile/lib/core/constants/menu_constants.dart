@@ -33,7 +33,7 @@ abstract final class MenuConstants {
       icon: Icons.inventory_2,
       label: '제품',
       items: [
-        MenuItem(id: 'expiry', label: '유통기한 관리'),
+        MenuItem(id: 'expiry', label: '유통기한 관리', route: '/product-expiration'),
       ],
     ),
     // 4. 매출 현황

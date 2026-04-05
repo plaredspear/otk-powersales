@@ -156,7 +156,7 @@ class _HomePageState extends ConsumerState<HomePage>
                     child: ExpiryAlertCard(
                       expiryAlert: homeData.expiryAlert,
                       onTap: () {
-                        // TODO: 유통기한 관리 화면으로 이동 (후속 작업)
+                        AppRouter.navigateTo(context, AppRouter.productExpiration);
                       },
                     ),
                   ),
