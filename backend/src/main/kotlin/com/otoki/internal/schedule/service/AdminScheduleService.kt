@@ -60,13 +60,24 @@ class AdminScheduleService(
             throw MissingCostCenterException()
         }
 
-        organizationRepository.findFirstByCostCenterLevel5(costCenterCode)
+        val org = organizationRepository.findFirstByCostCenterLevel5(costCenterCode)
             ?: organizationRepository.findFirstByCostCenterLevel4(costCenterCode)
             ?: throw OrganizationNotFoundException()
 
-        val employees = employeeRepository.findByCostCenterCodeAndAppAuthorityAndAppLoginActiveTrueAndStatus(
-            costCenterCode, "여사원", "재직"
-        ).sortedWith(compareBy({ it.orgName }, { it.employeeCode }))
+        val employees = if (employee.appAuthority == "영업지원실") {
+            val costCenterLevel3 = org.costCenterLevel3
+                ?: throw OrganizationNotFoundException()
+            val costCenterCodes = organizationRepository.findByCostCenterLevel3(costCenterLevel3)
+                .mapNotNull { it.costCenterLevel5 }
+                .distinct()
+            employeeRepository.findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrueAndStatus(
+                costCenterCodes, "여사원", "재직"
+            )
+        } else {
+            employeeRepository.findByCostCenterCodeAndAppAuthorityAndAppLoginActiveTrueAndStatus(
+                costCenterCode, "여사원", "재직"
+            )
+        }.sortedWith(compareBy({ it.orgName }, { it.employeeCode }))
 
         val excelBytes = templateGenerator.generate(employees)
         val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))

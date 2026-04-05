@@ -177,6 +177,104 @@ class AdminScheduleServiceTest {
             assertThat(result.bytes).hasSize(50)
             assertThat(result.filename).startsWith("진열스케줄_양식_")
         }
+
+        @Test
+        @DisplayName("영업지원실 사용자 - 다중 지점 여사원 조회")
+        fun generateTemplate_salesSupport_multiBranch() {
+            val userId = 1L
+            val costCenterCode = "1111"
+            val employee = createEmployee(id = userId, costCenterCode = costCenterCode, appAuthority = "영업지원실")
+            val org = Organization(id = 1, costCenterLevel5 = costCenterCode, costCenterLevel3 = "CC3")
+            val orgA = Organization(id = 2, costCenterLevel3 = "CC3", costCenterLevel5 = "2222")
+            val orgB = Organization(id = 3, costCenterLevel3 = "CC3", costCenterLevel5 = "3333")
+
+            val emp1 = createEmployee(employeeCode = "20030001", name = "김여사", orgName = "A지점", costCenterCode = "2222")
+            val emp2 = createEmployee(employeeCode = "20030002", name = "이여사", orgName = "A지점", costCenterCode = "2222")
+            val emp3 = createEmployee(employeeCode = "20030003", name = "박여사", orgName = "B지점", costCenterCode = "3333")
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(organizationRepository.findFirstByCostCenterLevel5(costCenterCode)).thenReturn(org)
+            whenever(organizationRepository.findByCostCenterLevel3("CC3")).thenReturn(listOf(org, orgA, orgB))
+            whenever(
+                employeeRepository.findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrueAndStatus(
+                    listOf("1111", "2222", "3333"), "여사원", "재직"
+                )
+            ).thenReturn(listOf(emp1, emp2, emp3))
+            whenever(templateGenerator.generate(any())).thenReturn(ByteArray(200))
+
+            val result = adminScheduleService.generateTemplate(userId)
+
+            assertThat(result.bytes).hasSize(200)
+            verify(employeeRepository).findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrueAndStatus(
+                listOf("1111", "2222", "3333"), "여사원", "재직"
+            )
+            verify(employeeRepository, never()).findByCostCenterCodeAndAppAuthorityAndAppLoginActiveTrueAndStatus(
+                any(), any(), any()
+            )
+        }
+
+        @Test
+        @DisplayName("조장 사용자 - 단일 지점 여사원 조회")
+        fun generateTemplate_leader_singleBranch() {
+            val userId = 1L
+            val costCenterCode = "1234"
+            val employee = createEmployee(id = userId, costCenterCode = costCenterCode, appAuthority = "조장")
+            val org = Organization(id = 1, costCenterLevel5 = costCenterCode)
+            val employees = listOf(
+                createEmployee(employeeCode = "20030001", name = "홍길동", orgName = "A팀"),
+                createEmployee(employeeCode = "20030002", name = "김철수", orgName = "B팀")
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(organizationRepository.findFirstByCostCenterLevel5(costCenterCode)).thenReturn(org)
+            whenever(
+                employeeRepository.findByCostCenterCodeAndAppAuthorityAndAppLoginActiveTrueAndStatus(
+                    costCenterCode, "여사원", "재직"
+                )
+            ).thenReturn(employees)
+            whenever(templateGenerator.generate(employees)).thenReturn(ByteArray(100))
+
+            val result = adminScheduleService.generateTemplate(userId)
+
+            assertThat(result.bytes).hasSize(100)
+            verify(employeeRepository, never()).findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrueAndStatus(
+                any(), any(), any()
+            )
+        }
+
+        @Test
+        @DisplayName("영업지원실이지만 코스트센터 없음 - MissingCostCenterException")
+        fun generateTemplate_salesSupport_missingCostCenter() {
+            val employee = createEmployee(costCenterCode = null, appAuthority = "영업지원실")
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
+
+            assertThatThrownBy { adminScheduleService.generateTemplate(1L) }
+                .isInstanceOf(MissingCostCenterException::class.java)
+        }
+
+        @Test
+        @DisplayName("영업지원실 - Level3 하위에 여사원 0명 - 빈 템플릿 반환")
+        fun generateTemplate_salesSupport_noEmployees() {
+            val userId = 1L
+            val costCenterCode = "1111"
+            val employee = createEmployee(id = userId, costCenterCode = costCenterCode, appAuthority = "영업지원실")
+            val org = Organization(id = 1, costCenterLevel5 = costCenterCode, costCenterLevel3 = "CC3")
+            val orgA = Organization(id = 2, costCenterLevel3 = "CC3", costCenterLevel5 = "2222")
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(organizationRepository.findFirstByCostCenterLevel5(costCenterCode)).thenReturn(org)
+            whenever(organizationRepository.findByCostCenterLevel3("CC3")).thenReturn(listOf(org, orgA))
+            whenever(
+                employeeRepository.findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrueAndStatus(
+                    listOf("1111", "2222"), "여사원", "재직"
+                )
+            ).thenReturn(emptyList())
+            whenever(templateGenerator.generate(emptyList())).thenReturn(ByteArray(50))
+
+            val result = adminScheduleService.generateTemplate(userId)
+
+            assertThat(result.bytes).hasSize(50)
+        }
     }
 
     @Nested
