@@ -72,4 +72,13 @@ interface EmployeeRepository : JpaRepository<Employee, Long>, EmployeeRepository
     fun findByAppAuthorityAndStatus(appAuthority: String, status: String): List<Employee>
 
     fun findByCrmWorkStartDateIsNotNullAndCrmWorkStartDateLessThanEqual(date: LocalDate): List<Employee>
+
+    /**
+     * 다중 코스트센터 + 권한 + 앱 로그인 활성 + 상태로 사원 조회 (영업지원실 다중 지점 템플릿용)
+     */
+    fun findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrueAndStatus(
+        costCenterCodes: List<String>,
+        appAuthority: String,
+        status: String
+    ): List<Employee>
 }
