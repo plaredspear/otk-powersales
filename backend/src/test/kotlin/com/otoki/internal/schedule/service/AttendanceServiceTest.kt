@@ -518,6 +518,180 @@ class AttendanceServiceTest {
         }
     }
 
+    // ========== getAccountList - 임시 근무 우선순위 정렬 Tests ==========
+
+    @Nested
+    @DisplayName("getAccountList - 임시 근무 우선순위 정렬")
+    inner class GetAccountListTempWorkerPriorityTests {
+
+        @Test
+        @DisplayName("임시+일반 혼합 정렬 - 임시(미등록) 1건 + 일반(미등록) 2건 -> 임시가 먼저")
+        fun getAccountList_tempAndNormal_tempFirst() {
+            // Given
+            val userId = 1L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            val teamMemberSchedules = listOf(
+                createTeamMemberSchedule(id = 1L, sfid = "SCH001", employeeId = userId, accountId = 9001,
+                    accountName = "일반거래처A", workingCategory1 = "진열", workingCategory2 = "전담"),
+                createTeamMemberSchedule(id = 2L, sfid = "SCH002", employeeId = userId, accountId = 9002,
+                    accountName = "임시거래처", workingCategory1 = "진열", workingCategory2 = "임시"),
+                createTeamMemberSchedule(id = 3L, sfid = "SCH003", employeeId = userId, accountId = 9003,
+                    accountName = "일반거래처B", workingCategory1 = "진열", workingCategory2 = "전담")
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
+            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(emptyList())
+
+            // When
+            val result = attendanceService.getAccountList(userId, null)
+
+            // Then
+            assertThat(result.accounts).hasSize(3)
+            assertThat(result.accounts[0].accountName).isEqualTo("임시거래처")
+            assertThat(result.accounts[0].workCategory2).isEqualTo("임시")
+        }
+
+        @Test
+        @DisplayName("등록완료+임시+일반 정렬 - 등록완료 → 임시 → 일반 순서")
+        fun getAccountList_registeredTempNormal_correctOrder() {
+            // Given
+            val userId = 1L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            val teamMemberSchedules = listOf(
+                createTeamMemberSchedule(id = 1L, sfid = "SCH001", employeeId = userId, accountId = 9001,
+                    accountName = "일반거래처", workingCategory1 = "진열", workingCategory2 = "전담"),
+                createTeamMemberSchedule(id = 2L, sfid = "SCH002", employeeId = userId, accountId = 9002,
+                    accountName = "등록완료거래처", workingCategory1 = "진열", workingCategory2 = "전담",
+                    commuteLogId = "LOG001"),
+                createTeamMemberSchedule(id = 3L, sfid = "SCH003", employeeId = userId, accountId = 9003,
+                    accountName = "임시거래처", workingCategory1 = "진열", workingCategory2 = "임시")
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
+            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(emptyList())
+
+            // When
+            val result = attendanceService.getAccountList(userId, null)
+
+            // Then - 등록완료 → 임시 → 일반
+            assertThat(result.accounts).hasSize(3)
+            assertThat(result.accounts[0].accountName).isEqualTo("등록완료거래처")
+            assertThat(result.accounts[0].isRegistered).isTrue()
+            assertThat(result.accounts[1].accountName).isEqualTo("임시거래처")
+            assertThat(result.accounts[1].workCategory2).isEqualTo("임시")
+            assertThat(result.accounts[2].accountName).isEqualTo("일반거래처")
+            assertThat(result.accounts[2].workCategory2).isEqualTo("전담")
+        }
+
+        @Test
+        @DisplayName("임시 없음 (기존 동작 유지) - 일반(미등록) 3건 -> source 기준 정렬 유지")
+        fun getAccountList_noTemp_existingSortMaintained() {
+            // Given
+            val userId = 1L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            val teamMemberSchedules = listOf(
+                createTeamMemberSchedule(id = 1L, sfid = "SCH001", employeeId = userId, accountId = 9001,
+                    accountName = "스케줄거래처", workingCategory1 = "진열", workingCategory2 = "전담")
+            )
+            val masters = listOf(
+                createDisplayWorkSchedule(id = 100L, confirmed = true,
+                    startDate = today.minusDays(10), endDate = today.plusDays(10),
+                    employeeId = userId, accountId = 9002, accountName = "마스터거래처A", typeOfWork5 = "상시"),
+                createDisplayWorkSchedule(id = 101L, confirmed = true,
+                    startDate = today.minusDays(5), endDate = today.plusDays(5),
+                    employeeId = userId, accountId = 9003, accountName = "마스터거래처B", typeOfWork5 = "상시")
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
+            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(masters)
+
+            // When
+            val result = attendanceService.getAccountList(userId, null)
+
+            // Then - source=schedule이 master보다 먼저
+            assertThat(result.accounts).hasSize(3)
+            assertThat(result.accounts[0].source).isEqualTo("schedule")
+            assertThat(result.accounts[1].source).isEqualTo("master")
+            assertThat(result.accounts[2].source).isEqualTo("master")
+        }
+
+        @Test
+        @DisplayName("workCategory2 응답 확인 - schedule 소스는 workingCategory2, master 소스는 typeOfWork5")
+        fun getAccountList_workCategory2_fromCorrectSource() {
+            // Given
+            val userId = 1L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            val teamMemberSchedules = listOf(
+                createTeamMemberSchedule(id = 1L, sfid = "SCH001", employeeId = userId, accountId = 9001,
+                    accountName = "스케줄거래처", workingCategory1 = "진열", workingCategory2 = "진열겸임")
+            )
+            val masters = listOf(
+                createDisplayWorkSchedule(id = 100L, confirmed = true,
+                    startDate = today.minusDays(10), endDate = today.plusDays(10),
+                    employeeId = userId, accountId = 9002, accountName = "마스터거래처", typeOfWork5 = "임시")
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
+            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(masters)
+
+            // When
+            val result = attendanceService.getAccountList(userId, null)
+
+            // Then
+            val scheduleAccount = result.accounts.first { it.source == "schedule" }
+            val masterAccount = result.accounts.first { it.source == "master" }
+            assertThat(scheduleAccount.workCategory2).isEqualTo("진열겸임")
+            assertThat(masterAccount.workCategory2).isEqualTo("임시")
+        }
+
+        @Test
+        @DisplayName("workCategory2 null - 임시가 아닌 일반 그룹으로 정렬")
+        fun getAccountList_nullWorkCategory2_treatedAsNormal() {
+            // Given
+            val userId = 1L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            val teamMemberSchedules = listOf(
+                createTeamMemberSchedule(id = 1L, sfid = "SCH001", employeeId = userId, accountId = 9001,
+                    accountName = "null카테고리거래처", workingCategory1 = "진열", workingCategory2 = null),
+                createTeamMemberSchedule(id = 2L, sfid = "SCH002", employeeId = userId, accountId = 9002,
+                    accountName = "임시거래처", workingCategory1 = "진열", workingCategory2 = "임시")
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
+            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(emptyList())
+
+            // When
+            val result = attendanceService.getAccountList(userId, null)
+
+            // Then - 임시가 먼저, null은 일반으로 취급
+            assertThat(result.accounts).hasSize(2)
+            assertThat(result.accounts[0].accountName).isEqualTo("임시거래처")
+            assertThat(result.accounts[0].workCategory2).isEqualTo("임시")
+            assertThat(result.accounts[1].accountName).isEqualTo("null카테고리거래처")
+            assertThat(result.accounts[1].workCategory2).isNull()
+        }
+    }
+
     // ========== register Tests ==========
 
     @Nested
@@ -1588,6 +1762,7 @@ class AttendanceServiceTest {
         workingDate: LocalDate = LocalDate.now(),
         workingType: String? = "상온",
         workingCategory1: String? = "진열",
+        workingCategory2: String? = null,
         workingCategory3: String? = null,
         accountId: Int? = 1,
         accountName: String? = "테스트 거래처",
@@ -1604,6 +1779,7 @@ class AttendanceServiceTest {
             workingDate = workingDate,
             workingType = workingType,
             workingCategory1 = workingCategory1,
+            workingCategory2 = workingCategory2,
             workingCategory3 = workingCategory3,
             account = accountId?.let {
                 Account(
