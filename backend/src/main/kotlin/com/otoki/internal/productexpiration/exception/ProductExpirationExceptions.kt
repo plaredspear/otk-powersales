@@ -21,6 +21,12 @@ class InvalidAlertDateException : BusinessException(
     httpStatus = HttpStatus.BAD_REQUEST
 )
 
+class ProductExpirationAccountNotFoundException : BusinessException(
+    errorCode = "ACCOUNT_NOT_FOUND",
+    message = "거래처를 찾을 수 없습니다",
+    httpStatus = HttpStatus.NOT_FOUND
+)
+
 class InvalidProductExpirationDateRangeException(detail: String? = null) : BusinessException(
     errorCode = "INVALID_DATE_RANGE",
     message = detail ?: "날짜 범위가 올바르지 않습니다",
