@@ -86,6 +86,7 @@ class AdminScheduleControllerTest {
                     accountCode = "SAP001",
                     accountName = "이마트 성수점",
                     typeOfWork3 = "고정",
+                    typeOfWork4 = "상온",
                     typeOfWork5 = "상시",
                     startDate = LocalDate.of(2026, 1, 1),
                     endDate = LocalDate.of(2026, 12, 31),
@@ -323,7 +324,7 @@ class AdminScheduleControllerTest {
                     RowError(5, "A", "사원번호", "999999", "사원번호 999999: 존재하지 않는 사원")
                 ),
                 previews = listOf(
-                    RowPreview(4, "20030001", "홍길동", "ACC001", "이마트 강남점", "고정", "상시", "2026-04-01", null)
+                    RowPreview(4, "20030001", "홍길동", "ACC001", "이마트 강남점", "고정", "상온", "상시", "2026-04-01", null)
                 )
             )
             whenever(adminScheduleService.uploadAndValidate(any())).thenReturn(uploadResult)

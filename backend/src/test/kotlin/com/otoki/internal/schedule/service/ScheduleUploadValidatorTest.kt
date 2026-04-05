@@ -33,7 +33,7 @@ class ScheduleUploadValidatorTest {
         @DisplayName("정상 데이터 - 검증 통과")
         fun validate_success() {
             val rows = listOf(
-                createParsedRow(4, "20030001", "홍길동", "ACC001", "이마트 강남점", "고정", "상시", "2026-04-01", null)
+                createParsedRow(4, "20030001", "홍길동", "ACC001", "이마트 강남점", "고정", "상온", "상시", "2026-04-01", null)
             )
 
             val result = validator.validate(rows, employeeMap, accountMap, emptyList())
@@ -43,13 +43,14 @@ class ScheduleUploadValidatorTest {
             assertThat(result.previews).hasSize(1)
             assertThat(result.validRows[0].userEmployeeNumber).isEqualTo("20030001")
             assertThat(result.validRows[0].accountId).isEqualTo(1)
+            assertThat(result.validRows[0].typeOfWork4).isEqualTo("상온")
         }
 
         @Test
         @DisplayName("종료일 미입력 - endDate null 허용")
         fun validate_nullEndDate() {
             val rows = listOf(
-                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "순회", "상시", "2026-04-01", null)
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "순회", "냉동/냉장", "상시", "2026-04-01", null)
             )
 
             val result = validator.validate(rows, employeeMap, accountMap, emptyList())
@@ -67,7 +68,7 @@ class ScheduleUploadValidatorTest {
         @DisplayName("존재하지 않는 사원번호 - 에러")
         fun v1_employeeNotFound() {
             val rows = listOf(
-                createParsedRow(4, "88888888", "없는사원", "ACC001", null, "고정", "상시", "2026-04-01", null)
+                createParsedRow(4, "88888888", "없는사원", "ACC001", null, "고정", "상온", "상시", "2026-04-01", null)
             )
 
             val result = validator.validate(rows, employeeMap, accountMap, emptyList())
@@ -85,7 +86,7 @@ class ScheduleUploadValidatorTest {
         @DisplayName("퇴직한 사원 - 에러")
         fun v2_resignedEmployee() {
             val rows = listOf(
-                createParsedRow(4, "99999999", "퇴직자", "ACC001", null, "고정", "상시", "2026-04-01", null)
+                createParsedRow(4, "99999999", "퇴직자", "ACC001", null, "고정", "상온", "상시", "2026-04-01", null)
             )
 
             val result = validator.validate(rows, employeeMap, accountMap, emptyList())
@@ -106,7 +107,7 @@ class ScheduleUploadValidatorTest {
                 "20030001" to createEmployee("20030001", "홍길동", "USR001", "재직", appLoginActive = false)
             )
             val rows = listOf(
-                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상시", "2026-04-01", null)
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상온", "상시", "2026-04-01", null)
             )
 
             val result = validator.validate(rows, inactiveEmployeeMap, accountMap, emptyList())
@@ -122,7 +123,7 @@ class ScheduleUploadValidatorTest {
                 "20030001" to createEmployee("20030001", "홍길동", "USR001", "재직", appLoginActive = null)
             )
             val rows = listOf(
-                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상시", "2026-04-01", null)
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상온", "상시", "2026-04-01", null)
             )
 
             val result = validator.validate(rows, nullActiveEmployeeMap, accountMap, emptyList())
@@ -135,7 +136,7 @@ class ScheduleUploadValidatorTest {
         @DisplayName("appLoginActive가 true인 사원 - 정상")
         fun v2a_activeEmployee() {
             val rows = listOf(
-                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상시", "2026-04-01", null)
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상온", "상시", "2026-04-01", null)
             )
 
             val result = validator.validate(rows, employeeMap, accountMap, emptyList())
@@ -147,7 +148,7 @@ class ScheduleUploadValidatorTest {
         @DisplayName("퇴직 사원은 V2에서 이미 실패 - V2a 미실행")
         fun v2a_resignedEmployeeSkipped() {
             val rows = listOf(
-                createParsedRow(4, "99999999", "퇴직자", "ACC001", null, "고정", "상시", "2026-04-01", null)
+                createParsedRow(4, "99999999", "퇴직자", "ACC001", null, "고정", "상온", "상시", "2026-04-01", null)
             )
 
             val result = validator.validate(rows, employeeMap, accountMap, emptyList())
@@ -166,7 +167,7 @@ class ScheduleUploadValidatorTest {
         @DisplayName("존재하지 않는 거래처 - 에러")
         fun v3_accountNotFound() {
             val rows = listOf(
-                createParsedRow(4, "20030001", "홍길동", "INVALID", null, "고정", "상시", "2026-04-01", null)
+                createParsedRow(4, "20030001", "홍길동", "INVALID", null, "고정", "상온", "상시", "2026-04-01", null)
             )
 
             val result = validator.validate(rows, employeeMap, accountMap, emptyList())
@@ -187,7 +188,7 @@ class ScheduleUploadValidatorTest {
                 "ACC001" to createAccount("ACC001", "ACC_SFID_001", "이마트 강남점", accountStatusName = "폐업", accountGroup = "2000")
             )
             val rows = listOf(
-                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상시", "2026-04-01", null)
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상온", "상시", "2026-04-01", null)
             )
 
             val result = validator.validate(rows, employeeMap, closedAccountMap, emptyList())
@@ -203,7 +204,7 @@ class ScheduleUploadValidatorTest {
                 "ACC001" to createAccount("ACC001", "ACC_SFID_001", "이마트 강남점", accountStatusName = "폐업", accountGroup = "1000", distribution = "X")
             )
             val rows = listOf(
-                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상시", "2026-04-01", null)
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상온", "상시", "2026-04-01", null)
             )
 
             val result = validator.validate(rows, employeeMap, exemptAccountMap, emptyList())
@@ -218,7 +219,7 @@ class ScheduleUploadValidatorTest {
                 "ACC001" to createAccount("ACC001", "ACC_SFID_001", "이마트 강남점", accountStatusName = "폐업", accountGroup = "1010", abcTypeCode = "3062")
             )
             val rows = listOf(
-                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상시", "2026-04-01", null)
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상온", "상시", "2026-04-01", null)
             )
 
             val result = validator.validate(rows, employeeMap, exemptAccountMap, emptyList())
@@ -233,7 +234,7 @@ class ScheduleUploadValidatorTest {
                 "ACC001" to createAccount("ACC001", "ACC_SFID_001", "이마트 강남점", accountStatusName = "폐업", accountGroup = "1000", distribution = null, abcTypeCode = "1000")
             )
             val rows = listOf(
-                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상시", "2026-04-01", null)
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상온", "상시", "2026-04-01", null)
             )
 
             val result = validator.validate(rows, employeeMap, accountMap, emptyList())
@@ -246,7 +247,7 @@ class ScheduleUploadValidatorTest {
         @DisplayName("미존재 거래처는 V3에서 이미 실패 - V3a 미실행")
         fun v3a_nonExistentAccountSkipped() {
             val rows = listOf(
-                createParsedRow(4, "20030001", "홍길동", "INVALID", null, "고정", "상시", "2026-04-01", null)
+                createParsedRow(4, "20030001", "홍길동", "INVALID", null, "고정", "상온", "상시", "2026-04-01", null)
             )
 
             val result = validator.validate(rows, employeeMap, accountMap, emptyList())
@@ -266,7 +267,7 @@ class ScheduleUploadValidatorTest {
                 "ACC001" to createAccount("ACC001", "ACC_SFID_001", "이마트 강남점", accountStatusName = "폐업", accountGroup = "2000")
             )
             val rows = listOf(
-                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상시", "2026-04-01", null)
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상온", "상시", "2026-04-01", null)
             )
 
             val result = validator.validate(rows, inactiveEmployeeMap, closedAccountMap, emptyList())
@@ -280,7 +281,7 @@ class ScheduleUploadValidatorTest {
         @DisplayName("활성 거래처 - 정상 (V3a 해당 없음)")
         fun v3a_activeAccount() {
             val rows = listOf(
-                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상시", "2026-04-01", null)
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상온", "상시", "2026-04-01", null)
             )
 
             val result = validator.validate(rows, employeeMap, accountMap, emptyList())
@@ -297,7 +298,7 @@ class ScheduleUploadValidatorTest {
         @DisplayName("시작일 > 종료일 - 에러")
         fun v4_startAfterEnd() {
             val rows = listOf(
-                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상시", "2026-04-01", "2026-03-01")
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상온", "상시", "2026-04-01", "2026-03-01")
             )
 
             val result = validator.validate(rows, employeeMap, accountMap, emptyList())
@@ -308,20 +309,75 @@ class ScheduleUploadValidatorTest {
     }
 
     @Nested
-    @DisplayName("V5 - 근무유형3 유효성")
+    @DisplayName("V5 - 근무형태3 유효성")
     inner class V5Tests {
 
         @Test
-        @DisplayName("유효하지 않은 근무유형3 - 에러")
+        @DisplayName("유효하지 않은 근무형태3 - 에러")
         fun v5_invalidWorkType3() {
             val rows = listOf(
-                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "파견", "상시", "2026-04-01", null)
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "파견", "상온", "상시", "2026-04-01", null)
             )
 
             val result = validator.validate(rows, employeeMap, accountMap, emptyList())
 
             assertThat(result.errors).hasSize(1)
-            assertThat(result.errors[0].message).contains("유효하지 않은 근무유형3 '파견'")
+            assertThat(result.errors[0].message).contains("유효하지 않은 근무형태3 '파견'")
+        }
+    }
+
+    @Nested
+    @DisplayName("V5a - 근무형태4 유효성")
+    inner class V5aTests {
+
+        @Test
+        @DisplayName("상온 - 정상")
+        fun v5a_validNormal() {
+            val rows = listOf(
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상온", "상시", "2026-04-01", null)
+            )
+
+            val result = validator.validate(rows, employeeMap, accountMap, emptyList())
+
+            assertThat(result.errors).isEmpty()
+        }
+
+        @Test
+        @DisplayName("냉동/냉장 - 정상")
+        fun v5a_validCold() {
+            val rows = listOf(
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "냉동/냉장", "상시", "2026-04-01", null)
+            )
+
+            val result = validator.validate(rows, employeeMap, accountMap, emptyList())
+
+            assertThat(result.errors).isEmpty()
+        }
+
+        @Test
+        @DisplayName("유효하지 않은 근무형태4 - 에러")
+        fun v5a_invalidWorkType4() {
+            val rows = listOf(
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "기타", "상시", "2026-04-01", null)
+            )
+
+            val result = validator.validate(rows, employeeMap, accountMap, emptyList())
+
+            assertThat(result.errors).hasSize(1)
+            assertThat(result.errors[0].message).contains("유효하지 않은 근무형태4 '기타'")
+        }
+
+        @Test
+        @DisplayName("근무형태4 미입력 - 에러")
+        fun v5a_missingWorkType4() {
+            val rows = listOf(
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", null, "상시", "2026-04-01", null)
+            )
+
+            val result = validator.validate(rows, employeeMap, accountMap, emptyList())
+
+            assertThat(result.errors).hasSize(1)
+            assertThat(result.errors[0].message).contains("근무형태4는 필수 입력입니다")
         }
     }
 
@@ -333,7 +389,7 @@ class ScheduleUploadValidatorTest {
         @DisplayName("임시 + 고정 조합 - 에러")
         fun v7_tempWithFixed() {
             val rows = listOf(
-                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "임시", "2026-04-01", null)
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상온", "임시", "2026-04-01", null)
             )
 
             val result = validator.validate(rows, employeeMap, accountMap, emptyList())
@@ -346,7 +402,7 @@ class ScheduleUploadValidatorTest {
         @DisplayName("임시 + 순회 - 정상")
         fun v7_tempWithRound() {
             val rows = listOf(
-                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "순회", "임시", "2026-04-01", "2026-04-30")
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "순회", "상온", "임시", "2026-04-01", "2026-04-30")
             )
 
             val result = validator.validate(rows, employeeMap, accountMap, emptyList())
@@ -373,7 +429,7 @@ class ScheduleUploadValidatorTest {
                 )
             )
             val rows = listOf(
-                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "순회", "상시", "2026-04-01", "2026-06-01")
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "순회", "상온", "상시", "2026-04-01", "2026-06-01")
             )
 
             val result = validator.validate(rows, employeeMap, accountMap, existingSchedules)
@@ -391,8 +447,8 @@ class ScheduleUploadValidatorTest {
         @DisplayName("파일 내 동일 사원/거래처/기간 중복 - 에러")
         fun v9_fileInternalDuplicate() {
             val rows = listOf(
-                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "순회", "상시", "2026-04-01", "2026-04-30"),
-                createParsedRow(5, "20030001", "홍길동", "ACC001", null, "순회", "상시", "2026-04-15", "2026-05-15")
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "순회", "상온", "상시", "2026-04-01", "2026-04-30"),
+                createParsedRow(5, "20030001", "홍길동", "ACC001", null, "순회", "상온", "상시", "2026-04-15", "2026-05-15")
             )
 
             val result = validator.validate(rows, employeeMap, accountMap, emptyList())
@@ -410,8 +466,6 @@ class ScheduleUploadValidatorTest {
         @Test
         @DisplayName("고정 존재 시 다른 유형 추가 불가 - 에러")
         fun c1_fixedExists() {
-            // 기존: USR001이 ACC_SFID_002에 고정 배치
-            // 신규: USR001이 ACC_SFID_001에 순회 → 같은 사원/기간에 고정 존재 → C1 위반
             val existingSchedules = listOf(
                 DisplayWorkSchedule(
                     employee = Employee(id = 1L, employeeCode = "20030001", name = "테스트"),
@@ -423,7 +477,7 @@ class ScheduleUploadValidatorTest {
                 )
             )
             val rows = listOf(
-                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "순회", "상시", "2026-04-01", "2026-04-30")
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "순회", "상온", "상시", "2026-04-01", "2026-04-30")
             )
 
             val result = validator.validate(rows, employeeMap, accountMap, existingSchedules)
@@ -440,14 +494,12 @@ class ScheduleUploadValidatorTest {
         @Test
         @DisplayName("격고 2개 존재 시 추가 불가 - 에러")
         fun c2_alternateLimit() {
-            // 기존: USR001이 다른 거래처 2곳에 격고 배치
-            // 신규: USR001이 ACC001에 격고 → C2 위반 (이미 2개)
             val existingSchedules = listOf(
                 DisplayWorkSchedule(employee = Employee(id = 1L, employeeCode = "20030001", name = "테스트"), account = Account(id = 101), startDate = LocalDate.of(2026, 3, 1), endDate = LocalDate.of(2026, 5, 1), typeOfWork3 = "격고", typeOfWork5 = "상시"),
                 DisplayWorkSchedule(employee = Employee(id = 1L, employeeCode = "20030001", name = "테스트"), account = Account(id = 102), startDate = LocalDate.of(2026, 3, 1), endDate = LocalDate.of(2026, 5, 1), typeOfWork3 = "격고", typeOfWork5 = "상시")
             )
             val rows = listOf(
-                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "격고", "상시", "2026-04-01", "2026-04-30")
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "격고", "상온", "상시", "2026-04-01", "2026-04-30")
             )
 
             val result = validator.validate(rows, employeeMap, accountMap, existingSchedules)
@@ -469,7 +521,7 @@ class ScheduleUploadValidatorTest {
                 DisplayWorkSchedule(employee = Employee(id = 1L, employeeCode = "20030001", name = "테스트"), account = Account(id = 102), startDate = LocalDate.of(2026, 3, 1), endDate = LocalDate.of(2026, 5, 1), typeOfWork3 = "격고", typeOfWork5 = "상시")
             )
             val rows = listOf(
-                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "격고", "상시", "2026-04-01", "2026-04-30")
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "격고", "상온", "상시", "2026-04-01", "2026-04-30")
             )
 
             val result = validator.validate(rows, employeeMap, accountMap, existingSchedules)
@@ -485,7 +537,7 @@ class ScheduleUploadValidatorTest {
                 DisplayWorkSchedule(employee = Employee(id = 1L, employeeCode = "20030001", name = "테스트"), account = Account(id = 101), startDate = LocalDate.of(2026, 3, 1), endDate = LocalDate.of(2026, 5, 1), typeOfWork3 = "순회", typeOfWork5 = "상시")
             )
             val rows = listOf(
-                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "격고", "상시", "2026-04-01", "2026-04-30")
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "격고", "상온", "상시", "2026-04-01", "2026-04-30")
             )
 
             val result = validator.validate(rows, employeeMap, accountMap, existingSchedules)
@@ -500,7 +552,7 @@ class ScheduleUploadValidatorTest {
                 DisplayWorkSchedule(employee = Employee(id = 1L, employeeCode = "20030001", name = "테스트"), account = Account(id = 101), startDate = LocalDate.of(2026, 3, 1), endDate = LocalDate.of(2026, 5, 1), typeOfWork3 = "격고", typeOfWork5 = "상시")
             )
             val rows = listOf(
-                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "격고", "상시", "2026-04-01", "2026-04-30")
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "격고", "상온", "상시", "2026-04-01", "2026-04-30")
             )
 
             val result = validator.validate(rows, employeeMap, accountMap, existingSchedules)
@@ -515,9 +567,9 @@ class ScheduleUploadValidatorTest {
                 "ACC003" to createAccount("ACC003", "ACC_SFID_003", "롯데마트 서초점", id = 3)
             )
             val rows = listOf(
-                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "순회", "상시", "2026-04-01", "2026-04-30"),
-                createParsedRow(5, "20030001", "홍길동", "ACC002", null, "격고", "상시", "2026-04-01", "2026-04-30"),
-                createParsedRow(6, "20030001", "홍길동", "ACC003", null, "격고", "상시", "2026-04-01", "2026-04-30")
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "순회", "상온", "상시", "2026-04-01", "2026-04-30"),
+                createParsedRow(5, "20030001", "홍길동", "ACC002", null, "격고", "상온", "상시", "2026-04-01", "2026-04-30"),
+                createParsedRow(6, "20030001", "홍길동", "ACC003", null, "격고", "상온", "상시", "2026-04-01", "2026-04-30")
             )
 
             val result = validator.validate(rows, employeeMap, threeAccountMap, emptyList())
@@ -535,13 +587,11 @@ class ScheduleUploadValidatorTest {
         @Test
         @DisplayName("임시 1개 존재 시 추가 불가 - 에러")
         fun c3_tempLimit() {
-            // 기존: USR001이 다른 거래처에 임시 배치
-            // 신규: USR001이 ACC001에 임시 → C3 위반
             val existingSchedules = listOf(
                 DisplayWorkSchedule(employee = Employee(id = 1L, employeeCode = "20030001", name = "테스트"), account = Account(id = 101), startDate = LocalDate.of(2026, 3, 1), endDate = LocalDate.of(2026, 5, 1), typeOfWork3 = "순회", typeOfWork5 = "임시")
             )
             val rows = listOf(
-                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "순회", "임시", "2026-04-01", "2026-04-30")
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "순회", "상온", "임시", "2026-04-01", "2026-04-30")
             )
 
             val result = validator.validate(rows, employeeMap, accountMap, existingSchedules)
@@ -558,6 +608,7 @@ class ScheduleUploadValidatorTest {
         accountCode: String?,
         accountName: String?,
         typeOfWork3: String?,
+        typeOfWork4: String?,
         typeOfWork5: String?,
         startDateStr: String?,
         endDateStr: String?
@@ -571,6 +622,7 @@ class ScheduleUploadValidatorTest {
             accountCode = accountCode,
             accountName = accountName,
             typeOfWork3 = typeOfWork3,
+            typeOfWork4 = typeOfWork4,
             typeOfWork5 = typeOfWork5,
             startDateStr = startDateStr,
             endDateStr = endDateStr,

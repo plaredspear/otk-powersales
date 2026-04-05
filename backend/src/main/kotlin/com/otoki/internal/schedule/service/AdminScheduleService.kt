@@ -80,8 +80,8 @@ class AdminScheduleService(
         }.sortedWith(compareBy({ it.orgName }, { it.employeeCode }))
 
         val excelBytes = templateGenerator.generate(employees)
-        val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
-        val filename = "진열스케줄_양식_${timestamp}.xlsx"
+        val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
+        val filename = "진열마스터Template(신규작성용)_${timestamp}.xlsx"
 
         return TemplateResult(excelBytes, filename)
     }
@@ -215,6 +215,7 @@ class AdminScheduleService(
                 account = accountMap[row.accountId],
                 typeOfWork1 = "진열",
                 typeOfWork3 = row.typeOfWork3,
+                typeOfWork4 = row.typeOfWork4,
                 typeOfWork5 = row.typeOfWork5,
                 startDate = row.startDate,
                 endDate = row.endDate,
@@ -262,6 +263,7 @@ class AdminScheduleService(
                 accountCode = schedule.account?.externalKey,
                 accountName = schedule.account?.name,
                 typeOfWork3 = schedule.typeOfWork3,
+                typeOfWork4 = schedule.typeOfWork4,
                 typeOfWork5 = schedule.typeOfWork5,
                 startDate = schedule.startDate,
                 endDate = schedule.endDate,
