@@ -236,6 +236,35 @@ class AttendanceControllerTest {
         }
 
         @Test
+        @DisplayName("17시 이후 등록 - 400 ATTENDANCE_TIME_EXCEEDED")
+        fun register_timeExceeded() {
+            // Given
+            whenever(
+                attendanceService.register(
+                    eq(1L), eq(10L), eq(null), eq(35.1234), eq(129.0567), anyOrNull()
+                )
+            ).thenThrow(AttendanceTimeExceededException())
+
+            val requestJson = """
+                {
+                    "schedule_id": 10,
+                    "latitude": 35.1234,
+                    "longitude": 129.0567
+                }
+            """.trimIndent()
+
+            // When & Then
+            mockMvc.perform(
+                post("/api/v1/attendance")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(requestJson)
+            )
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("ATTENDANCE_TIME_EXCEEDED"))
+        }
+
+        @Test
         @DisplayName("스케줄 없음 - 404 SCHEDULE_NOT_FOUND")
         fun register_scheduleNotFound() {
             // Given
@@ -330,6 +359,8 @@ class AttendanceControllerTest {
                 .andExpect(jsonPath("$.data.total_count").value(2))
                 .andExpect(jsonPath("$.data.registered_count").value(1))
                 .andExpect(jsonPath("$.data.current_date").value("2026-02-25"))
+                .andExpect(jsonPath("$.data.registration_deadline").value("17:00"))
+                .andExpect(jsonPath("$.data.is_registration_closed").value(false))
         }
 
         @Test

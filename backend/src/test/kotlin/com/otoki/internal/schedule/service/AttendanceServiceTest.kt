@@ -8,6 +8,7 @@ import com.otoki.internal.safetycheck.entity.SafetyCheckSubmission
 import com.otoki.internal.safetycheck.repository.SafetyCheckSubmissionRepository
 import com.otoki.internal.schedule.entity.DisplayWorkSchedule
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
+import com.otoki.internal.schedule.exception.AttendanceTimeExceededException
 import com.otoki.internal.schedule.exception.AlreadyRegisteredException
 import com.otoki.internal.schedule.exception.AttendanceTargetConflictException
 import com.otoki.internal.schedule.exception.AttendanceTargetRequiredException
@@ -23,6 +24,7 @@ import com.otoki.internal.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -30,6 +32,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
@@ -37,9 +40,11 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.never
 import org.mockito.kotlin.whenever
+import java.time.Clock
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.YearMonth
+import java.time.ZoneId
 import java.util.*
 
 @ExtendWith(MockitoExtension::class)
@@ -64,8 +69,21 @@ class AttendanceServiceTest {
     @Mock
     private lateinit var adminMonthlyIntegrationService: AdminMonthlyIntegrationService
 
+    @Mock
+    private lateinit var clock: Clock
+
     @InjectMocks
     private lateinit var attendanceService: AttendanceService
+
+    @BeforeEach
+    fun setUpClock() {
+        // 기본: 오전 10시 (마감 전) — lenient로 설정하여 clock 미사용 테스트에서도 에러 방지
+        val fixedClock = Clock.fixed(
+            LocalDate.now().atTime(10, 0).atZone(ZoneId.of("Asia/Seoul")).toInstant(),
+            ZoneId.of("Asia/Seoul")
+        )
+        Mockito.lenient().`when`(clock.withZone(any())).thenReturn(fixedClock)
+    }
 
     // ========== getAccountList Tests ==========
 
@@ -445,6 +463,59 @@ class AttendanceServiceTest {
             assertThat(result.accounts[0].source).isEqualTo("schedule")
             assertThat(result.accounts[0].scheduleId).isEqualTo(1L)
         }
+        @Test
+        @DisplayName("마감 전(16:59) - isRegistrationClosed=false, registrationDeadline='17:00'")
+        fun getAccountList_beforeDeadline_registrationOpen() {
+            // Given
+            val userId = 1L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            val beforeDeadlineClock = Clock.fixed(
+                today.atTime(16, 59).atZone(ZoneId.of("Asia/Seoul")).toInstant(),
+                ZoneId.of("Asia/Seoul")
+            )
+            whenever(clock.withZone(any())).thenReturn(beforeDeadlineClock)
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(emptyList())
+            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(emptyList())
+
+            // When
+            val result = attendanceService.getAccountList(userId, null)
+
+            // Then
+            assertThat(result.registrationDeadline).isEqualTo("17:00")
+            assertThat(result.isRegistrationClosed).isFalse()
+        }
+
+        @Test
+        @DisplayName("마감 후(17:00) - isRegistrationClosed=true, registrationDeadline='17:00'")
+        fun getAccountList_afterDeadline_registrationClosed() {
+            // Given
+            val userId = 1L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            val afterDeadlineClock = Clock.fixed(
+                today.atTime(17, 0).atZone(ZoneId.of("Asia/Seoul")).toInstant(),
+                ZoneId.of("Asia/Seoul")
+            )
+            whenever(clock.withZone(any())).thenReturn(afterDeadlineClock)
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(emptyList())
+            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(emptyList())
+
+            // When
+            val result = attendanceService.getAccountList(userId, null)
+
+            // Then
+            assertThat(result.registrationDeadline).isEqualTo("17:00")
+            assertThat(result.isRegistrationClosed).isTrue()
+        }
     }
 
     // ========== register Tests ==========
@@ -774,6 +845,61 @@ class AttendanceServiceTest {
             assertThat(result.totalCount).isEqualTo(3)
             // id=20 has commuteLogId="OK", id=10 matches scheduleId => 2 registered
             assertThat(result.registeredCount).isEqualTo(2)
+        }
+
+        @Test
+        @DisplayName("17시 이후(17:00) - 출근등록 시도 -> AttendanceTimeExceededException")
+        fun register_afterDeadline_throwsException() {
+            // Given
+            val afterDeadlineClock = Clock.fixed(
+                LocalDate.now().atTime(17, 0).atZone(ZoneId.of("Asia/Seoul")).toInstant(),
+                ZoneId.of("Asia/Seoul")
+            )
+            whenever(clock.withZone(any())).thenReturn(afterDeadlineClock)
+
+            // When & Then
+            assertThatThrownBy {
+                attendanceService.register(1L, 10L, null, nearUserLat, nearUserLon, null)
+            }.isInstanceOf(AttendanceTimeExceededException::class.java)
+        }
+
+        @Test
+        @DisplayName("23시 59분 - 출근등록 시도 -> AttendanceTimeExceededException")
+        fun register_lateNight_throwsException() {
+            // Given
+            val lateNightClock = Clock.fixed(
+                LocalDate.now().atTime(23, 59).atZone(ZoneId.of("Asia/Seoul")).toInstant(),
+                ZoneId.of("Asia/Seoul")
+            )
+            whenever(clock.withZone(any())).thenReturn(lateNightClock)
+
+            // When & Then
+            assertThatThrownBy {
+                attendanceService.register(1L, 10L, null, nearUserLat, nearUserLon, null)
+            }.isInstanceOf(AttendanceTimeExceededException::class.java)
+        }
+
+        @Test
+        @DisplayName("16시 59분 - 출근등록 시도 -> 시간 검증 통과 (후속 검증으로 진행)")
+        fun register_beforeDeadline_passesTimeCheck() {
+            // Given
+            val beforeDeadlineClock = Clock.fixed(
+                LocalDate.now().atTime(16, 59).atZone(ZoneId.of("Asia/Seoul")).toInstant(),
+                ZoneId.of("Asia/Seoul")
+            )
+            whenever(clock.withZone(any())).thenReturn(beforeDeadlineClock)
+
+            val userId = 1L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(false)
+
+            // When & Then — 시간은 통과하고 안전점검 예외 발생 (시간 이후 로직까지 도달 확인)
+            assertThatThrownBy {
+                attendanceService.register(userId, 10L, null, nearUserLat, nearUserLon, null)
+            }.isInstanceOf(SafetyCheckRequiredException::class.java)
         }
     }
 

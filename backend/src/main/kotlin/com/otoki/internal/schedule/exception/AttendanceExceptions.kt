@@ -83,3 +83,12 @@ class DisplayScheduleOutOfRangeException : BusinessException(
     message = "진열마스터의 유효 기간이 아닙니다",
     httpStatus = HttpStatus.BAD_REQUEST
 )
+
+/**
+ * 출근등록 마감 시간(17:00) 초과
+ */
+class AttendanceTimeExceededException : BusinessException(
+    errorCode = "ATTENDANCE_TIME_EXCEEDED",
+    message = "출근등록은 17시 이전에만 가능합니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
