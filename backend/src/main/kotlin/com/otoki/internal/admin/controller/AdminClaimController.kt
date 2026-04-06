@@ -1,0 +1,39 @@
+package com.otoki.internal.admin.controller
+
+import com.otoki.internal.admin.dto.response.AdminClaimDetailResponse
+import com.otoki.internal.admin.dto.response.AdminClaimListResponse
+import com.otoki.internal.admin.service.AdminClaimService
+import com.otoki.internal.common.dto.ApiResponse
+import org.springframework.format.annotation.DateTimeFormat
+import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.*
+import java.time.LocalDate
+
+@RestController
+@RequestMapping("/api/v1/admin/claims")
+class AdminClaimController(
+    private val adminClaimService: AdminClaimService
+) {
+
+    @GetMapping
+    fun getClaims(
+        @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") startDate: LocalDate?,
+        @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") endDate: LocalDate?,
+        @RequestParam(required = false) status: String?,
+        @RequestParam(required = false) employeeName: String?,
+        @RequestParam(required = false) storeName: String?,
+        @RequestParam(required = false, defaultValue = "0") page: Int,
+        @RequestParam(required = false, defaultValue = "20") size: Int
+    ): ResponseEntity<ApiResponse<AdminClaimListResponse>> {
+        val response = adminClaimService.getClaims(startDate, endDate, status, employeeName, storeName, page, size)
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    @GetMapping("/{claimId}")
+    fun getClaimDetail(
+        @PathVariable claimId: Long
+    ): ResponseEntity<ApiResponse<AdminClaimDetailResponse>> {
+        val response = adminClaimService.getClaimDetail(claimId)
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+}
