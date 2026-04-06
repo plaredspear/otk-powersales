@@ -59,8 +59,9 @@ class MyScheduleService(
             .groupBy { it.workingDate }
             .mapValues { (_, schedules) -> schedules.firstOrNull()?.workingType }
 
-        // 연차 건수 카운트
+        // 연차/대휴 건수 카운트
         val annualLeaveCount = memberSchedules.count { it.workingType == "연차" }
+        val substituteHolidayCount = memberSchedules.count { it.workingType == "대휴" }
 
         // 해당 월의 모든 날짜에 대해 근무 여부 판정
         val workDays = mutableListOf<WorkDayDto>()
@@ -80,7 +81,8 @@ class MyScheduleService(
             year = year,
             month = month,
             workDays = workDays,
-            annualLeaveCount = annualLeaveCount
+            annualLeaveCount = annualLeaveCount,
+            substituteHolidayCount = substituteHolidayCount
         )
     }
 
@@ -92,12 +94,33 @@ class MyScheduleService(
         val employee = employeeRepository.findById(userId)
             .orElseThrow { EmployeeNotFoundException() }
 
+        // 요일 계산
+        val dayOfWeek = DAY_OF_WEEK_KR[date.dayOfWeek] ?: ""
+
+        // 해당 날짜의 TeamMemberSchedule에서 workingType 조회
+        val memberSchedules = teamMemberScheduleRepository
+            .findByEmployeeIdAndWorkingDate(employee.id, date)
+        val workingType = memberSchedules.firstOrNull()?.workingType
+
+        // 대휴/연차인 경우 거래처 목록 없이 반환
+        if (workingType == "대휴" || workingType == "연차") {
+            return DailyScheduleResponse(
+                date = date.toString(),
+                dayOfWeek = dayOfWeek,
+                memberName = employee.name,
+                employeeCode = employee.employeeCode,
+                workingType = workingType,
+                reportProgress = ReportProgressDto(
+                    completed = 0,
+                    total = 0,
+                    workType = ""
+                ),
+                accounts = emptyList()
+            )
+        }
+
         // 해당 날짜의 거래처 일정 목록 조회
         val schedules = displayWorkScheduleRepository.findByEmployeeAndStartDate(employee.id, date)
-
-        // Phase2: Attendance PG 대응 테이블 없음 - 주석 처리
-        // val attendances = attendanceRepository.findByUserIdAndAttendanceDate(userId, date)
-        // val attendanceStoreIds = attendances.map { it.storeId }.toSet()
 
         // 거래처 목록 매핑 (등록 여부 - Attendance 비활성화로 항상 false)
         // Note: V1 리매핑으로 storeId(Long)→account(String sfid) 변경, DTO는 Long 유지 → 0L 대체
@@ -117,14 +140,12 @@ class MyScheduleService(
         val total = accountItems.size
         val workType = schedules.firstOrNull()?.typeOfWork1 ?: ""
 
-        // 요일 계산
-        val dayOfWeek = DAY_OF_WEEK_KR[date.dayOfWeek] ?: ""
-
         return DailyScheduleResponse(
             date = date.toString(),
             dayOfWeek = dayOfWeek,
             memberName = employee.name,
             employeeCode = employee.employeeCode,
+            workingType = null,
             reportProgress = ReportProgressDto(
                 completed = completed,
                 total = total,

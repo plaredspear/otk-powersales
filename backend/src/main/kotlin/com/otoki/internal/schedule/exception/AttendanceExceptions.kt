@@ -92,3 +92,12 @@ class AttendanceTimeExceededException : BusinessException(
     message = "출근등록은 17시 이전에만 가능합니다",
     httpStatus = HttpStatus.BAD_REQUEST
 )
+
+/**
+ * 대휴 날짜에 출근 등록 시도
+ */
+class AttendanceDayOffConflictException : BusinessException(
+    errorCode = "ATTENDANCE_DAY_OFF_CONFLICT",
+    message = "대휴가 예정된 날짜에는 출근 등록이 불가합니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)

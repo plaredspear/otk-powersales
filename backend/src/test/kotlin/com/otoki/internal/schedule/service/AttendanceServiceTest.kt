@@ -8,6 +8,7 @@ import com.otoki.internal.safetycheck.entity.SafetyCheckSubmission
 import com.otoki.internal.safetycheck.repository.SafetyCheckSubmissionRepository
 import com.otoki.internal.schedule.entity.DisplayWorkSchedule
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
+import com.otoki.internal.schedule.exception.AttendanceDayOffConflictException
 import com.otoki.internal.schedule.exception.AttendanceTimeExceededException
 import com.otoki.internal.schedule.exception.AlreadyRegisteredException
 import com.otoki.internal.schedule.exception.AttendanceTargetConflictException
@@ -946,6 +947,61 @@ class AttendanceServiceTest {
             assertThatThrownBy {
                 attendanceService.register(userId, 10L, null, nearUserLat, nearUserLon, null)
             }.isInstanceOf(EmployeeNotFoundException::class.java)
+        }
+
+        @Test
+        @DisplayName("대휴 날짜 출근 등록 시도 -> AttendanceDayOffConflictException")
+        fun register_substituteHolidayConflict_throwsException() {
+            // Given
+            val userId = 1L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(employee, today, "대휴"))
+                .thenReturn(true)
+
+            // When & Then
+            assertThatThrownBy {
+                attendanceService.register(userId, 10L, null, nearUserLat, nearUserLon, null)
+            }.isInstanceOf(AttendanceDayOffConflictException::class.java)
+
+            // 안전점검 검증까지 도달하지 않아야 한다
+            verify(safetyCheckSubmissionRepository, never()).existsByEmployeeIdAndWorkingDate(any(), any())
+        }
+
+        @Test
+        @DisplayName("일반 근무일 출근 등록 - 대휴 검증 통과 후 기존 플로우 진행")
+        fun register_normalDay_passesDayOffCheck() {
+            // Given
+            val userId = 1L
+            val scheduleId = 10L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            val teamMemberSchedule = createTeamMemberSchedule(
+                id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
+                workingType = "상온", commuteLogId = null,
+                accountName = "이마트 강남점", accountAbcTypeCode = "2110",
+                accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(employee, today, "대휴"))
+                .thenReturn(false)
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.empty())
+            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
+            doReturn(OroraWorkReportResult("200", "SUCCESS"))
+                .whenever(ororaApiService).sendWorkReport(any())
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
+                .thenReturn(listOf(teamMemberSchedule))
+
+            // When
+            val result = attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
+
+            // Then
+            assertThat(result.scheduleId).isEqualTo(scheduleId)
         }
 
         @Test

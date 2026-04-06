@@ -139,6 +139,61 @@ class MyScheduleServiceTest {
         }
 
         @Test
+        @DisplayName("성공 - 대휴 2건, 연차 1건 → substituteHolidayCount=2, annualLeaveCount=1")
+        fun getMonthlySchedule_withSubstituteHoliday() {
+            // Given
+            val userId = 1L
+            val year = 2026
+            val month = 4
+            val mockUser = createMockEmployee(userId, "김여사", "20030117", sfid = "a0B000000012345")
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(mockUser))
+            whenever(displayWorkScheduleRepository.findDistinctStartDatesByEmployeeIdAndDateBetween(
+                eq(userId), any(), any()
+            )).thenReturn(listOf(LocalDate.of(2026, 4, 1)))
+            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(
+                eq(listOf(userId)),
+                eq(LocalDate.of(2026, 4, 1)),
+                eq(LocalDate.of(2026, 4, 30))
+            )).thenReturn(listOf(
+                createMockMemberSchedule(workingDate = LocalDate.of(2026, 4, 5), workingType = "대휴"),
+                createMockMemberSchedule(workingDate = LocalDate.of(2026, 4, 12), workingType = "대휴"),
+                createMockMemberSchedule(workingDate = LocalDate.of(2026, 4, 20), workingType = "연차")
+            ))
+
+            // When
+            val result = myScheduleService.getMonthlySchedule(userId, year, month)
+
+            // Then
+            assertThat(result.substituteHolidayCount).isEqualTo(2)
+            assertThat(result.annualLeaveCount).isEqualTo(1)
+        }
+
+        @Test
+        @DisplayName("성공 - 대휴 0건 → substituteHolidayCount=0")
+        fun getMonthlySchedule_noSubstituteHoliday() {
+            // Given
+            val userId = 1L
+            val year = 2026
+            val month = 4
+            val mockUser = createMockEmployee(userId, "김여사", "20030117", sfid = "a0B000000012345")
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(mockUser))
+            whenever(displayWorkScheduleRepository.findDistinctStartDatesByEmployeeIdAndDateBetween(
+                eq(userId), any(), any()
+            )).thenReturn(emptyList())
+            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(
+                eq(listOf(userId)), any(), any()
+            )).thenReturn(emptyList())
+
+            // When
+            val result = myScheduleService.getMonthlySchedule(userId, year, month)
+
+            // Then
+            assertThat(result.substituteHolidayCount).isEqualTo(0)
+        }
+
+        @Test
         @DisplayName("성공 - 연차 2건 있는 월 → annualLeaveCount=2, workingType 매핑")
         fun getMonthlySchedule_withAnnualLeave() {
             // Given
@@ -199,7 +254,7 @@ class MyScheduleServiceTest {
     inner class GetDailySchedule {
 
         @Test
-        @DisplayName("성공 - 일정 있음")
+        @DisplayName("성공 - 일정 있음 (일반 근무)")
         fun getDailySchedule_withSchedules_success() {
             // Given
             val userId = 1L
@@ -212,6 +267,8 @@ class MyScheduleServiceTest {
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(mockUser))
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, date))
+                .thenReturn(listOf(createMockMemberSchedule(workingDate = date, workingType = "근무")))
             whenever(displayWorkScheduleRepository.findByEmployeeAndStartDate(userId, date))
                 .thenReturn(mockSchedules)
 
@@ -223,6 +280,7 @@ class MyScheduleServiceTest {
             assertThat(result.dayOfWeek).isEqualTo("화")
             assertThat(result.memberName).isEqualTo("최금주")
             assertThat(result.employeeCode).isEqualTo("20030117")
+            assertThat(result.workingType).isNull()
             assertThat(result.reportProgress.completed).isEqualTo(0)
             assertThat(result.reportProgress.total).isEqualTo(3)
             assertThat(result.reportProgress.workType).isEqualTo("진열")
@@ -239,6 +297,8 @@ class MyScheduleServiceTest {
             val mockUser = createMockEmployee(userId, "최금주", "20030117", sfid = "a0B000000012345")
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(mockUser))
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, date))
+                .thenReturn(emptyList())
             whenever(displayWorkScheduleRepository.findByEmployeeAndStartDate(userId, date))
                 .thenReturn(emptyList())
 
@@ -246,10 +306,57 @@ class MyScheduleServiceTest {
             val result = myScheduleService.getDailySchedule(userId, date)
 
             // Then
+            assertThat(result.workingType).isNull()
             assertThat(result.reportProgress.completed).isEqualTo(0)
             assertThat(result.reportProgress.total).isEqualTo(0)
             assertThat(result.reportProgress.workType).isEmpty()
             assertThat(result.accounts).isEmpty()
+        }
+
+        @Test
+        @DisplayName("성공 - 대휴 날짜 → workingType='대휴', accounts 빈 리스트")
+        fun getDailySchedule_substituteHoliday() {
+            // Given
+            val userId = 1L
+            val date = LocalDate.of(2026, 4, 5)
+            val mockUser = createMockEmployee(userId, "김여사", "20030117", sfid = "a0B000000012345")
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(mockUser))
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, date))
+                .thenReturn(listOf(createMockMemberSchedule(workingDate = date, workingType = "대휴")))
+
+            // When
+            val result = myScheduleService.getDailySchedule(userId, date)
+
+            // Then
+            assertThat(result.workingType).isEqualTo("대휴")
+            assertThat(result.accounts).isEmpty()
+            assertThat(result.reportProgress.completed).isEqualTo(0)
+            assertThat(result.reportProgress.total).isEqualTo(0)
+            assertThat(result.reportProgress.workType).isEmpty()
+            verify(displayWorkScheduleRepository, never()).findByEmployeeAndStartDate(any(), any())
+        }
+
+        @Test
+        @DisplayName("성공 - 연차 날짜 → workingType='연차', accounts 빈 리스트")
+        fun getDailySchedule_annualLeave() {
+            // Given
+            val userId = 1L
+            val date = LocalDate.of(2026, 4, 10)
+            val mockUser = createMockEmployee(userId, "김여사", "20030117", sfid = "a0B000000012345")
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(mockUser))
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, date))
+                .thenReturn(listOf(createMockMemberSchedule(workingDate = date, workingType = "연차")))
+
+            // When
+            val result = myScheduleService.getDailySchedule(userId, date)
+
+            // Then
+            assertThat(result.workingType).isEqualTo("연차")
+            assertThat(result.accounts).isEmpty()
+            assertThat(result.reportProgress.total).isEqualTo(0)
+            verify(displayWorkScheduleRepository, never()).findByEmployeeAndStartDate(any(), any())
         }
 
         @Test

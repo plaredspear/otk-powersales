@@ -10,7 +10,8 @@ data class MonthlyScheduleResponse(
     val month: Int,
     @JsonProperty("work_days")
     val workDays: List<WorkDayDto>,
-    val annualLeaveCount: Int
+    val annualLeaveCount: Int,
+    val substituteHolidayCount: Int
 )
 
 /**

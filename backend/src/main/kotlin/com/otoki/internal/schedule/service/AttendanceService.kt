@@ -177,8 +177,14 @@ class AttendanceService(
         val employee = employeeRepository.findById(userId)
             .orElseThrow { EmployeeNotFoundException() }
 
-        // 1. 안전점검 완료 여부 검증
         val today = LocalDate.now()
+
+        // 0. 대휴 날짜 충돌 검증
+        if (teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(employee, today, "대휴")) {
+            throw AttendanceDayOffConflictException()
+        }
+
+        // 1. 안전점검 완료 여부 검증
         if (!safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(employee.id, today)) {
             throw SafetyCheckRequiredException()
         }

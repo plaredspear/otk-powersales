@@ -13,6 +13,7 @@ data class DailyScheduleResponse(
     val memberName: String,
     @JsonProperty("employee_code")
     val employeeCode: String,
+    val workingType: String? = null,
     @JsonProperty("report_progress")
     val reportProgress: ReportProgressDto,
     val accounts: List<DisplayWorkScheduleItemDto>
