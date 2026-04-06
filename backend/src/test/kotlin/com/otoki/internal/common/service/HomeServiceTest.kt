@@ -9,7 +9,9 @@ import com.otoki.internal.notice.repository.NoticeRepository
 import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.safetycheck.dto.response.SafetyCheckTodayResponse
 import com.otoki.internal.safetycheck.service.SafetyCheckService
+import com.otoki.internal.schedule.entity.DisplayWorkSchedule
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
+import com.otoki.internal.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.internal.productexpiration.repository.ProductExpirationRepository
 import org.assertj.core.api.Assertions.assertThat
@@ -37,6 +39,9 @@ class HomeServiceTest {
 
     @Mock
     private lateinit var teamMemberScheduleRepository: TeamMemberScheduleRepository
+
+    @Mock
+    private lateinit var displayWorkScheduleRepository: DisplayWorkScheduleRepository
 
     @Mock
     private lateinit var noticeRepository: NoticeRepository
@@ -76,6 +81,8 @@ class HomeServiceTest {
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(eq(userId), any()))
                 .thenReturn(teamMemberSchedules)
+            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()))
+                .thenReturn(emptyList())
             whenever(accountRepository.findByIdIn(any())).thenReturn(listOf(account))
             whenever(safetyCheckService.getTodayStatus(any()))
                 .thenReturn(SafetyCheckTodayResponse(completed = false))
@@ -123,6 +130,8 @@ class HomeServiceTest {
             whenever(employeeRepository.findByOrgName(orgName)).thenReturn(teamEmployees)
             whenever(teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(any(), any()))
                 .thenReturn(teamMemberSchedules)
+            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()))
+                .thenReturn(emptyList())
             whenever(accountRepository.findByIdIn(any())).thenReturn(accounts)
             whenever(noticeRepository.findRecentNotices(any()))
                 .thenReturn(emptyList())
@@ -148,6 +157,8 @@ class HomeServiceTest {
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(any(), any()))
                 .thenReturn(emptyList())
+            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()))
+                .thenReturn(emptyList())
             whenever(safetyCheckService.getTodayStatus(userId))
                 .thenReturn(SafetyCheckTodayResponse(completed = false))
             whenever(noticeRepository.findRecentNotices(any()))
@@ -169,6 +180,8 @@ class HomeServiceTest {
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(any(), any()))
+                .thenReturn(emptyList())
+            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()))
                 .thenReturn(emptyList())
             whenever(safetyCheckService.getTodayStatus(userId))
                 .thenReturn(SafetyCheckTodayResponse(completed = true, submittedAt = LocalDateTime.now()))
@@ -193,6 +206,8 @@ class HomeServiceTest {
             whenever(employeeRepository.findByOrgName("부산1지점")).thenReturn(listOf(leader))
             whenever(teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(any(), any()))
                 .thenReturn(emptyList())
+            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()))
+                .thenReturn(emptyList())
             whenever(noticeRepository.findRecentNotices(any()))
                 .thenReturn(emptyList())
 
@@ -214,6 +229,8 @@ class HomeServiceTest {
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(eq(userId), any()))
+                .thenReturn(emptyList())
+            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()))
                 .thenReturn(emptyList())
             whenever(safetyCheckService.getTodayStatus(any()))
                 .thenReturn(SafetyCheckTodayResponse(completed = true))
@@ -243,6 +260,8 @@ class HomeServiceTest {
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(eq(userId), any()))
                 .thenReturn(emptyList())
+            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()))
+                .thenReturn(emptyList())
             whenever(safetyCheckService.getTodayStatus(any()))
                 .thenReturn(SafetyCheckTodayResponse(completed = true))
             whenever(noticeRepository.findRecentNotices(any()))
@@ -268,6 +287,8 @@ class HomeServiceTest {
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(eq(userId), any()))
                 .thenReturn(emptyList())
+            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()))
+                .thenReturn(emptyList())
             whenever(safetyCheckService.getTodayStatus(any()))
                 .thenReturn(SafetyCheckTodayResponse(completed = true))
             whenever(noticeRepository.findRecentNotices(any()))
@@ -292,6 +313,8 @@ class HomeServiceTest {
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(eq(userId), any()))
+                .thenReturn(emptyList())
+            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()))
                 .thenReturn(emptyList())
             whenever(safetyCheckService.getTodayStatus(any()))
                 .thenReturn(SafetyCheckTodayResponse(completed = true))
@@ -360,6 +383,8 @@ class HomeServiceTest {
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(eq(userId), any()))
                 .thenReturn(teamMemberSchedules)
+            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()))
+                .thenReturn(emptyList())
             whenever(accountRepository.findByIdIn(any())).thenReturn(emptyList())
             whenever(safetyCheckService.getTodayStatus(any()))
                 .thenReturn(SafetyCheckTodayResponse(completed = true))
@@ -414,6 +439,8 @@ class HomeServiceTest {
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(eq(userId), any()))
                 .thenReturn(teamMemberSchedules)
+            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()))
+                .thenReturn(emptyList())
             whenever(accountRepository.findByIdIn(any())).thenReturn(emptyList())
             whenever(safetyCheckService.getTodayStatus(any()))
                 .thenReturn(SafetyCheckTodayResponse(completed = true))
@@ -447,6 +474,8 @@ class HomeServiceTest {
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(eq(userId), any()))
                 .thenReturn(teamMemberSchedules)
+            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()))
+                .thenReturn(emptyList())
             whenever(accountRepository.findByIdIn(any())).thenReturn(emptyList())
             whenever(safetyCheckService.getTodayStatus(any()))
                 .thenReturn(SafetyCheckTodayResponse(completed = true))
@@ -459,6 +488,86 @@ class HomeServiceTest {
             // Then
             assertThat(result.attendanceSummary.totalCount).isEqualTo(3)
             assertThat(result.attendanceSummary.registeredCount).isEqualTo(2)
+        }
+
+        // ========== 에러 케이스 ==========
+
+        // ========== 진열마스터 홈화면 포함 ==========
+
+        @Test
+        @DisplayName("진열마스터만 존재 - TMS 0건 + DWS 확정 1건 -> todaySchedules에 포함, 등록 버튼 활성화")
+        fun displayWorkScheduleOnly_includedInSchedules() {
+            // Given
+            val userId = 1L
+            val employee = createEmployee(id = userId, appAuthority = null)
+            val account = createAccount(id = 742, name = "테스트 거래처")
+
+            val displayWorkSchedule = createDisplayWorkSchedule(
+                id = 100L,
+                employeeId = userId,
+                accountId = 742,
+                typeOfWork1 = "진열",
+                typeOfWork3 = "순회"
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(eq(userId), any()))
+                .thenReturn(emptyList())
+            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()))
+                .thenReturn(listOf(displayWorkSchedule))
+            whenever(accountRepository.findByIdIn(any())).thenReturn(listOf(account))
+            whenever(safetyCheckService.getTodayStatus(any()))
+                .thenReturn(SafetyCheckTodayResponse(completed = true))
+            whenever(noticeRepository.findRecentNotices(any()))
+                .thenReturn(emptyList())
+
+            // When
+            val result = homeService.getHomeData(userId)
+
+            // Then
+            assertThat(result.todaySchedules).hasSize(1)
+            assertThat(result.todaySchedules[0].displayWorkScheduleId).isEqualTo(100L)
+            assertThat(result.todaySchedules[0].scheduleId).isEqualTo(0L)
+            assertThat(result.todaySchedules[0].accountName).isEqualTo("테스트 거래처")
+            assertThat(result.todaySchedules[0].workCategory).isEqualTo("진열")
+            assertThat(result.todaySchedules[0].isCommuteRegistered).isFalse()
+            assertThat(result.attendanceSummary.totalCount).isEqualTo(1)
+            assertThat(result.attendanceSummary.registeredCount).isEqualTo(0)
+        }
+
+        @Test
+        @DisplayName("TMS + DWS 중복 거래처 - 같은 사원+거래처에 TMS와 DWS 모두 존재 -> DWS 제외, TMS만 반환")
+        fun displayWorkSchedule_excludedWhenTmsExists() {
+            // Given
+            val userId = 1L
+            val employee = createEmployee(id = userId, appAuthority = null)
+            val account = createAccount(id = 742, name = "테스트 거래처")
+
+            val teamMemberSchedule = createTeamMemberSchedule(
+                id = 1L, employeeId = userId, accountId = 742, workingCategory1 = "진열"
+            )
+            val displayWorkSchedule = createDisplayWorkSchedule(
+                id = 100L, employeeId = userId, accountId = 742
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(eq(userId), any()))
+                .thenReturn(listOf(teamMemberSchedule))
+            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()))
+                .thenReturn(listOf(displayWorkSchedule))
+            whenever(accountRepository.findByIdIn(any())).thenReturn(listOf(account))
+            whenever(safetyCheckService.getTodayStatus(any()))
+                .thenReturn(SafetyCheckTodayResponse(completed = true))
+            whenever(noticeRepository.findRecentNotices(any()))
+                .thenReturn(emptyList())
+
+            // When
+            val result = homeService.getHomeData(userId)
+
+            // Then
+            assertThat(result.todaySchedules).hasSize(1)
+            assertThat(result.todaySchedules[0].scheduleId).isEqualTo(1L)
+            assertThat(result.todaySchedules[0].displayWorkScheduleId).isNull()
         }
 
         // ========== 에러 케이스 ==========
@@ -519,6 +628,28 @@ class HomeServiceTest {
             workingCategory2 = workingCategory2,
             commuteLogId = commuteLogId,
             commuteReportDatetime = commuteReportDatetime
+        )
+    }
+
+    private fun createDisplayWorkSchedule(
+        id: Long = 0L,
+        employeeId: Long? = null,
+        accountId: Int? = null,
+        typeOfWork1: String = "진열",
+        typeOfWork3: String? = "순회",
+        startDate: LocalDate = LocalDate.now(),
+        endDate: LocalDate? = null
+    ): DisplayWorkSchedule {
+        return DisplayWorkSchedule(
+            id = id,
+            employee = employeeId?.let { Employee(id = it, employeeCode = "EMP$it", name = "테스트$it") },
+            account = accountId?.let { Account(id = it) },
+            typeOfWork1 = typeOfWork1,
+            typeOfWork3 = typeOfWork3,
+            startDate = startDate,
+            endDate = endDate,
+            confirmed = true,
+            isDeleted = false
         )
     }
 

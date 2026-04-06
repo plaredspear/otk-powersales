@@ -231,6 +231,26 @@ class DisplayWorkScheduleRepositoryCustomImpl(
             .fetch()
     }
 
+    override fun findConfirmedValidByEmployeeIdsAndDate(
+        employeeIds: List<Long>,
+        date: LocalDate
+    ): List<DisplayWorkSchedule> {
+        if (employeeIds.isEmpty()) return emptyList()
+        return queryFactory
+            .selectFrom(displayWorkSchedule)
+            .leftJoin(displayWorkSchedule.account).fetchJoin()
+            .leftJoin(displayWorkSchedule.employee).fetchJoin()
+            .where(
+                displayWorkSchedule.employee.id.`in`(employeeIds),
+                displayWorkSchedule.confirmed.eq(true),
+                isNotDeleted(),
+                displayWorkSchedule.startDate.loe(date),
+                displayWorkSchedule.endDate.goe(date)
+                    .or(displayWorkSchedule.endDate.isNull)
+            )
+            .fetch()
+    }
+
     private fun buildEmployeeCodeCondition(employeeCode: String?): BooleanExpression? {
         if (employeeCode.isNullOrBlank()) return null
         val matchingIds = JPAExpressions

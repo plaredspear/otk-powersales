@@ -50,4 +50,9 @@ interface DisplayWorkScheduleRepositoryCustom {
      * 조건: confirmed=true, isDeleted!=true, startDate<=date, (endDate>=date OR endDate IS NULL), employee.id=employeeId
      */
     fun findConfirmedValidByEmployeeAndDate(employeeId: Long, date: LocalDate): List<DisplayWorkSchedule>
+
+    /**
+     * 복수 사원의 오늘 유효한 확정 진열마스터 조회
+     */
+    fun findConfirmedValidByEmployeeIdsAndDate(employeeIds: List<Long>, date: LocalDate): List<DisplayWorkSchedule>
 }

@@ -7,7 +7,9 @@ import com.otoki.internal.auth.exception.EmployeeNotFoundException
 import com.otoki.internal.notice.repository.NoticeRepository
 import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.safetycheck.service.SafetyCheckService
+import com.otoki.internal.schedule.entity.DisplayWorkSchedule
 import com.otoki.internal.schedule.entity.TeamMemberSchedule
+import com.otoki.internal.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.productexpiration.repository.ProductExpirationRepository
@@ -25,6 +27,7 @@ import java.time.format.DateTimeFormatter
 class HomeService(
     private val employeeRepository: EmployeeRepository,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
+    private val displayWorkScheduleRepository: DisplayWorkScheduleRepository,
     private val noticeRepository: NoticeRepository,
     private val accountRepository: AccountRepository,
     private val safetyCheckService: SafetyCheckService,
@@ -61,14 +64,34 @@ class HomeService(
         // 역할별 스케줄 조회
         val (teamMemberSchedules, employeeMap) = fetchSchedulesByRole(employee, today)
 
-        // 스케줄 → 거래처명 매핑 (batch fetch)
-        val accountMap = fetchAccountMap(teamMemberSchedules)
+        // 확정 진열마스터 조회 (TMS에 없는 거래처만 추가)
+        val displayWorkSchedules = fetchDisplaySchedulesByRole(employee, employeeMap, today)
+        val tmsAccountKeys = teamMemberSchedules.mapNotNull { tms ->
+            val empId = tms.employee?.id
+            val accId = tms.account?.id
+            if (empId != null && accId != null) Pair(empId, accId) else null
+        }.toSet()
+        val additionalDisplaySchedules = displayWorkSchedules.filter { dws ->
+            val empId = dws.employee?.id
+            val accId = dws.account?.id
+            empId != null && accId != null && Pair(empId, accId) !in tmsAccountKeys
+        }
 
-        // 정렬 + 중복 제거 + DTO 변환
-        val todaySchedules = teamMemberSchedules
+        // 스케줄 → 거래처명 매핑 (batch fetch)
+        val accountMap = fetchAccountMap(teamMemberSchedules, additionalDisplaySchedules)
+
+        // TMS 정렬 + 중복 제거 + DTO 변환
+        val tmsInfos = teamMemberSchedules
             .sortedBy { sortPriority(it) }
             .distinctBy { it.id }
-            .map { teamMemberSchedule -> toTeamMemberScheduleInfo(teamMemberSchedule, employeeMap, accountMap) }
+            .map { tms -> toTeamMemberScheduleInfo(tms, employeeMap, accountMap) }
+
+        // DWS → DTO 변환 (진열, 미출근 → 항상 마지막 정렬)
+        val dwsInfos = additionalDisplaySchedules.map { dws ->
+            toDisplayWorkScheduleInfo(dws, employeeMap, accountMap)
+        }
+
+        val todaySchedules = tmsInfos + dwsInfos
 
         // 출근 현황 집계
         val attendanceSummary = HomeResponse.AttendanceSummaryInfo(
@@ -143,10 +166,29 @@ class HomeService(
     }
 
     /**
+     * 역할별 확정 진열마스터 조회
+     */
+    private fun fetchDisplaySchedulesByRole(
+        employee: Employee,
+        employeeMap: Map<Long, Employee>,
+        today: LocalDate
+    ): List<DisplayWorkSchedule> {
+        val employeeIds = employeeMap.keys.toList()
+        if (employeeIds.isEmpty()) return emptyList()
+        return displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(employeeIds, today)
+    }
+
+    /**
      * 스케줄의 accountId → Account 이름 매핑 (batch fetch)
      */
-    private fun fetchAccountMap(teamMemberSchedules: List<TeamMemberSchedule>): Map<Int, String> {
-        val accountIds = teamMemberSchedules.mapNotNull { it.account?.id }.distinct()
+    private fun fetchAccountMap(
+        teamMemberSchedules: List<TeamMemberSchedule>,
+        displayWorkSchedules: List<DisplayWorkSchedule> = emptyList()
+    ): Map<Int, String> {
+        val accountIds = (
+            teamMemberSchedules.mapNotNull { it.account?.id } +
+            displayWorkSchedules.mapNotNull { it.account?.id }
+        ).distinct()
         if (accountIds.isEmpty()) return emptyMap()
         return accountRepository.findByIdIn(accountIds)
             .associate { it.id to (it.name ?: "") }
@@ -171,6 +213,30 @@ class HomeService(
             workType = teamMemberSchedule.workingType,
             isCommuteRegistered = teamMemberSchedule.commuteLogId != null,
             commuteRegisteredAt = teamMemberSchedule.commuteReportDatetime
+        )
+    }
+
+    /**
+     * DisplayWorkSchedule entity → TeamMemberScheduleInfo DTO 변환
+     * 레거시 동작: 확정 진열마스터가 홈화면 스케줄에 포함되어 출근 등록 가능
+     */
+    private fun toDisplayWorkScheduleInfo(
+        displayWorkSchedule: DisplayWorkSchedule,
+        employeeMap: Map<Long, Employee>,
+        accountMap: Map<Int, String>
+    ): HomeResponse.TeamMemberScheduleInfo {
+        val matchedEmployee = displayWorkSchedule.employee?.id?.let { employeeMap[it] }
+        return HomeResponse.TeamMemberScheduleInfo(
+            scheduleId = 0,
+            displayWorkScheduleId = displayWorkSchedule.id,
+            employeeName = matchedEmployee?.name ?: "",
+            employeeCode = matchedEmployee?.employeeCode ?: "",
+            accountName = displayWorkSchedule.account?.id?.let { accountMap[it] },
+            accountId = displayWorkSchedule.account?.id,
+            workCategory = displayWorkSchedule.typeOfWork1 ?: "진열",
+            workType = displayWorkSchedule.typeOfWork3,
+            isCommuteRegistered = false,
+            commuteRegisteredAt = null
         )
     }
 }

@@ -19,6 +19,7 @@ data class HomeResponse(
      */
     data class TeamMemberScheduleInfo(
         val scheduleId: Long,
+        val displayWorkScheduleId: Long? = null,
         val employeeName: String,
         val employeeCode: String,
         val accountName: String?,

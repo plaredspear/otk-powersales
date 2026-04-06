@@ -5,6 +5,7 @@ import '../../domain/entities/schedule.dart';
 /// API 응답의 snake_case JSON을 Domain Entity로 변환한다.
 class ScheduleModel {
   final int scheduleId;
+  final int? displayWorkScheduleId;
   final String employeeName;
   final String employeeCode;
   final String? accountName;
@@ -16,6 +17,7 @@ class ScheduleModel {
 
   const ScheduleModel({
     required this.scheduleId,
+    this.displayWorkScheduleId,
     required this.employeeName,
     required this.employeeCode,
     this.accountName,
@@ -29,6 +31,7 @@ class ScheduleModel {
   factory ScheduleModel.fromJson(Map<String, dynamic> json) {
     return ScheduleModel(
       scheduleId: json['schedule_id'] as int,
+      displayWorkScheduleId: json['display_work_schedule_id'] as int?,
       employeeName: json['employee_name'] as String,
       employeeCode: json['employee_code'] as String,
       accountName: json['account_name'] as String?,
@@ -45,6 +48,7 @@ class ScheduleModel {
   Map<String, dynamic> toJson() {
     return {
       'schedule_id': scheduleId,
+      'display_work_schedule_id': displayWorkScheduleId,
       'employee_name': employeeName,
       'employee_code': employeeCode,
       'account_name': accountName,
@@ -59,6 +63,7 @@ class ScheduleModel {
   Schedule toEntity() {
     return Schedule(
       scheduleId: scheduleId,
+      displayWorkScheduleId: displayWorkScheduleId,
       employeeName: employeeName,
       employeeCode: employeeCode,
       accountName: accountName,
@@ -73,6 +78,7 @@ class ScheduleModel {
   factory ScheduleModel.fromEntity(Schedule entity) {
     return ScheduleModel(
       scheduleId: entity.scheduleId,
+      displayWorkScheduleId: entity.displayWorkScheduleId,
       employeeName: entity.employeeName,
       employeeCode: entity.employeeCode,
       accountName: entity.accountName,
@@ -89,6 +95,7 @@ class ScheduleModel {
     if (identical(this, other)) return true;
     return other is ScheduleModel &&
         other.scheduleId == scheduleId &&
+        other.displayWorkScheduleId == displayWorkScheduleId &&
         other.employeeName == employeeName &&
         other.employeeCode == employeeCode &&
         other.accountName == accountName &&
@@ -103,6 +110,7 @@ class ScheduleModel {
   int get hashCode {
     return Object.hash(
       scheduleId,
+      displayWorkScheduleId,
       employeeName,
       employeeCode,
       accountName,
@@ -116,6 +124,6 @@ class ScheduleModel {
 
   @override
   String toString() {
-    return 'ScheduleModel(scheduleId: $scheduleId, employeeName: $employeeName, accountName: $accountName, workCategory: $workCategory, isCommuteRegistered: $isCommuteRegistered)';
+    return 'ScheduleModel(scheduleId: $scheduleId, displayWorkScheduleId: $displayWorkScheduleId, employeeName: $employeeName, accountName: $accountName, workCategory: $workCategory, isCommuteRegistered: $isCommuteRegistered)';
   }
 }

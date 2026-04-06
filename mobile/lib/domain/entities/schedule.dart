@@ -4,6 +4,7 @@
 /// Backend ScheduleInfo DTO에 맞춘 필드 구조.
 class Schedule {
   final int scheduleId;
+  final int? displayWorkScheduleId;
   final String employeeName;
   final String employeeCode;
   final String? accountName;
@@ -15,6 +16,7 @@ class Schedule {
 
   const Schedule({
     required this.scheduleId,
+    this.displayWorkScheduleId,
     required this.employeeName,
     required this.employeeCode,
     this.accountName,
@@ -27,6 +29,7 @@ class Schedule {
 
   Schedule copyWith({
     int? scheduleId,
+    int? displayWorkScheduleId,
     String? employeeName,
     String? employeeCode,
     String? accountName,
@@ -39,9 +42,11 @@ class Schedule {
     bool clearAccountId = false,
     bool clearWorkType = false,
     bool clearCommuteRegisteredAt = false,
+    bool clearDisplayWorkScheduleId = false,
   }) {
     return Schedule(
       scheduleId: scheduleId ?? this.scheduleId,
+      displayWorkScheduleId: clearDisplayWorkScheduleId ? null : (displayWorkScheduleId ?? this.displayWorkScheduleId),
       employeeName: employeeName ?? this.employeeName,
       employeeCode: employeeCode ?? this.employeeCode,
       accountName: clearAccountName ? null : (accountName ?? this.accountName),
@@ -60,6 +65,7 @@ class Schedule {
     if (identical(this, other)) return true;
     return other is Schedule &&
         other.scheduleId == scheduleId &&
+        other.displayWorkScheduleId == displayWorkScheduleId &&
         other.employeeName == employeeName &&
         other.employeeCode == employeeCode &&
         other.accountName == accountName &&
@@ -74,6 +80,7 @@ class Schedule {
   int get hashCode {
     return Object.hash(
       scheduleId,
+      displayWorkScheduleId,
       employeeName,
       employeeCode,
       accountName,
@@ -87,6 +94,6 @@ class Schedule {
 
   @override
   String toString() {
-    return 'Schedule(scheduleId: $scheduleId, employeeName: $employeeName, accountName: $accountName, workCategory: $workCategory, isCommuteRegistered: $isCommuteRegistered)';
+    return 'Schedule(scheduleId: $scheduleId, displayWorkScheduleId: $displayWorkScheduleId, employeeName: $employeeName, accountName: $accountName, workCategory: $workCategory, isCommuteRegistered: $isCommuteRegistered)';
   }
 }
