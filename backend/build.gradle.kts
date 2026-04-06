@@ -115,7 +115,7 @@ sourceSets {
 				"**/EventServiceTest.kt",
 				// "**/HomeServiceTest.kt", // re-enabled: test rewritten for V1 schema
 				"**/InspectionServiceTest.kt",
-				"**/MyScheduleServiceTest.kt",
+				// "**/MyScheduleServiceTest.kt", // re-enabled: test rewritten for substitute holiday
 				// "**/NoticeServiceTest.kt", // re-enabled: test rewritten for legacy table
 				"**/OrderQueryServiceTest.kt",
 				"**/OrderServiceTest.kt",
