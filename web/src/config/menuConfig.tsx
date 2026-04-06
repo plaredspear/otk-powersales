@@ -43,7 +43,7 @@ export const menuRoute: MenuRoute = {
       ],
     },
     { path: '/promotion/ppt-masters', name: '전문행사조', icon: <CalendarOutlined /> },
-    { path: '/claim', name: '클레임 현황', icon: <ExclamationCircleOutlined /> },
+    { path: '/claims', name: '클레임 현황', icon: <ExclamationCircleOutlined /> },
     { path: '/suggestion', name: '제안사항', icon: <BulbOutlined /> },
     {
       name: '휴무관리',
