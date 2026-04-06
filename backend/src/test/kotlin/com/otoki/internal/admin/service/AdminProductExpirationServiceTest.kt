@@ -155,7 +155,7 @@ class AdminProductExpirationServiceTest {
 
             whenever(
                 productExpirationRepository.findForAdmin(
-                    any(), any(), anyOrNull(), anyOrNull(), anyOrNull(), any(), any()
+                    anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any(), any()
                 )
             ).thenReturn(page)
 

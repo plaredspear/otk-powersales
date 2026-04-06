@@ -338,9 +338,9 @@ class LocalDataInitializerTest {
             // Then
             val employees = captureAllSavedEmployees()
             val testBranchEmployees = employees.filter { it.orgName == "테스트지점" }
-            assertThat(testBranchEmployees).hasSize(3)
+            assertThat(testBranchEmployees).hasSize(4)
             assertThat(testBranchEmployees.map { it.employeeCode })
-                .containsExactlyInAnyOrder("99990001", "99990002", "99990003")
+                .containsExactlyInAnyOrder("99990001", "99990002", "99990003", "99990004")
         }
 
         @Test
