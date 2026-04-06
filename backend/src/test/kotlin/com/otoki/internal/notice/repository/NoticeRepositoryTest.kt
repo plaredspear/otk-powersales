@@ -15,9 +15,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager
 import org.springframework.context.annotation.Import
 import org.springframework.data.domain.PageRequest
 import org.springframework.test.context.ActiveProfiles
-import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.LocalTime
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
@@ -72,10 +70,8 @@ class NoticeRepositoryTest {
             persistNotice(name = "전체 공지", category = NoticeCategory.COMPANY, createdDate = now.minusHours(2))
             persistNotice(name = "서울1지점 공지", category = NoticeCategory.BRANCH, branch = "서울1지점", createdDate = now.minusHours(3))
 
-            val since = LocalDateTime.of(LocalDate.now().minusDays(7), LocalTime.MIN)
-
             // When
-            val result = noticeRepository.findRecentNotices("부산1지점", since)
+            val result = noticeRepository.findRecentNotices("부산1지점")
 
             // Then
             assertThat(result).hasSize(2)
@@ -90,10 +86,8 @@ class NoticeRepositoryTest {
             persistNotice(name = "교육 공지", category = NoticeCategory.EDUCATION, createdDate = now.minusHours(1))
             persistNotice(name = "전체 공지", category = NoticeCategory.COMPANY, createdDate = now.minusHours(2))
 
-            val since = LocalDateTime.of(LocalDate.now().minusDays(7), LocalTime.MIN)
-
             // When
-            val result = noticeRepository.findRecentNotices("부산1지점", since)
+            val result = noticeRepository.findRecentNotices("부산1지점")
 
             // Then
             assertThat(result).hasSize(2)
@@ -109,10 +103,8 @@ class NoticeRepositoryTest {
             persistNotice(name = "중간 공지", category = NoticeCategory.COMPANY, createdDate = now.minusDays(1))
             persistNotice(name = "최신 공지", category = NoticeCategory.COMPANY, createdDate = now.minusHours(1))
 
-            val since = LocalDateTime.of(LocalDate.now().minusDays(7), LocalTime.MIN)
-
             // When
-            val result = noticeRepository.findRecentNotices("부산1지점", since)
+            val result = noticeRepository.findRecentNotices("부산1지점")
 
             // Then
             assertThat(result).hasSize(3)
@@ -130,41 +122,35 @@ class NoticeRepositoryTest {
                 persistNotice(name = "공지 $i", category = NoticeCategory.COMPANY, createdDate = now.minusHours(i.toLong()))
             }
 
-            val since = LocalDateTime.of(LocalDate.now().minusDays(7), LocalTime.MIN)
-
             // When
-            val result = noticeRepository.findRecentNotices("부산1지점", since)
+            val result = noticeRepository.findRecentNotices("부산1지점")
 
             // Then
             assertThat(result).hasSize(5)
         }
 
         @Test
-        @DisplayName("1주일 이전 공지는 조회되지 않는다")
-        fun oldNoticesExcluded() {
+        @DisplayName("날짜와 무관하게 최신 5건을 반환한다")
+        fun returnsLatestRegardlessOfDate() {
             // Given
             val now = LocalDateTime.now()
-            persistNotice(name = "오래된 공지", category = NoticeCategory.COMPANY, createdDate = now.minusDays(10))
+            persistNotice(name = "오래된 공지", category = NoticeCategory.COMPANY, createdDate = now.minusDays(30))
             persistNotice(name = "최근 공지", category = NoticeCategory.COMPANY, createdDate = now.minusDays(1))
 
-            val since = LocalDateTime.of(LocalDate.now().minusDays(7), LocalTime.MIN)
-
             // When
-            val result = noticeRepository.findRecentNotices("부산1지점", since)
+            val result = noticeRepository.findRecentNotices("부산1지점")
 
             // Then
-            assertThat(result).hasSize(1)
+            assertThat(result).hasSize(2)
             assertThat(result[0].name).isEqualTo("최근 공지")
+            assertThat(result[1].name).isEqualTo("오래된 공지")
         }
 
         @Test
         @DisplayName("공지가 없으면 빈 목록을 반환한다")
         fun noNotices() {
-            // Given
-            val since = LocalDateTime.of(LocalDate.now().minusDays(7), LocalTime.MIN)
-
             // When
-            val result = noticeRepository.findRecentNotices("부산1지점", since)
+            val result = noticeRepository.findRecentNotices("부산1지점")
 
             // Then
             assertThat(result).isEmpty()
@@ -177,10 +163,8 @@ class NoticeRepositoryTest {
             val now = LocalDateTime.now()
             persistNotice(name = "서울1지점 전용 공지", category = NoticeCategory.BRANCH, branch = "서울1지점", createdDate = now.minusHours(1))
 
-            val since = LocalDateTime.of(LocalDate.now().minusDays(7), LocalTime.MIN)
-
             // When
-            val result = noticeRepository.findRecentNotices("부산1지점", since)
+            val result = noticeRepository.findRecentNotices("부산1지점")
 
             // Then
             assertThat(result).isEmpty()

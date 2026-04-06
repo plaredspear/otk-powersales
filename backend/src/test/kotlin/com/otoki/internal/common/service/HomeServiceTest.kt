@@ -79,7 +79,7 @@ class HomeServiceTest {
             whenever(accountRepository.findByIdIn(any())).thenReturn(listOf(account))
             whenever(safetyCheckService.getTodayStatus(any()))
                 .thenReturn(SafetyCheckTodayResponse(completed = false))
-            whenever(noticeRepository.findRecentNotices(any(), any()))
+            whenever(noticeRepository.findRecentNotices(any()))
                 .thenReturn(emptyList())
 
             // When
@@ -124,7 +124,7 @@ class HomeServiceTest {
             whenever(teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(any(), any()))
                 .thenReturn(teamMemberSchedules)
             whenever(accountRepository.findByIdIn(any())).thenReturn(accounts)
-            whenever(noticeRepository.findRecentNotices(any(), any()))
+            whenever(noticeRepository.findRecentNotices(any()))
                 .thenReturn(emptyList())
 
             // When
@@ -150,7 +150,7 @@ class HomeServiceTest {
                 .thenReturn(emptyList())
             whenever(safetyCheckService.getTodayStatus(userId))
                 .thenReturn(SafetyCheckTodayResponse(completed = false))
-            whenever(noticeRepository.findRecentNotices(any(), any()))
+            whenever(noticeRepository.findRecentNotices(any()))
                 .thenReturn(emptyList())
 
             // When
@@ -172,7 +172,7 @@ class HomeServiceTest {
                 .thenReturn(emptyList())
             whenever(safetyCheckService.getTodayStatus(userId))
                 .thenReturn(SafetyCheckTodayResponse(completed = true, submittedAt = LocalDateTime.now()))
-            whenever(noticeRepository.findRecentNotices(any(), any()))
+            whenever(noticeRepository.findRecentNotices(any()))
                 .thenReturn(emptyList())
 
             // When
@@ -193,7 +193,7 @@ class HomeServiceTest {
             whenever(employeeRepository.findByOrgName("부산1지점")).thenReturn(listOf(leader))
             whenever(teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(any(), any()))
                 .thenReturn(emptyList())
-            whenever(noticeRepository.findRecentNotices(any(), any()))
+            whenever(noticeRepository.findRecentNotices(any()))
                 .thenReturn(emptyList())
 
             // When
@@ -217,7 +217,7 @@ class HomeServiceTest {
                 .thenReturn(emptyList())
             whenever(safetyCheckService.getTodayStatus(any()))
                 .thenReturn(SafetyCheckTodayResponse(completed = true))
-            whenever(noticeRepository.findRecentNotices(any(), any()))
+            whenever(noticeRepository.findRecentNotices(any()))
                 .thenReturn(emptyList())
             whenever(productExpirationRepository.countByEmployeeIdAndAlarmDate(eq(userId), any()))
                 .thenReturn(3L)
@@ -245,7 +245,7 @@ class HomeServiceTest {
                 .thenReturn(emptyList())
             whenever(safetyCheckService.getTodayStatus(any()))
                 .thenReturn(SafetyCheckTodayResponse(completed = true))
-            whenever(noticeRepository.findRecentNotices(any(), any()))
+            whenever(noticeRepository.findRecentNotices(any()))
                 .thenReturn(emptyList())
             whenever(productExpirationRepository.countByEmployeeIdAndAlarmDate(eq(userId), any()))
                 .thenReturn(0L)
@@ -270,7 +270,7 @@ class HomeServiceTest {
                 .thenReturn(emptyList())
             whenever(safetyCheckService.getTodayStatus(any()))
                 .thenReturn(SafetyCheckTodayResponse(completed = true))
-            whenever(noticeRepository.findRecentNotices(any(), any()))
+            whenever(noticeRepository.findRecentNotices(any()))
                 .thenReturn(emptyList())
             whenever(productExpirationRepository.countByEmployeeIdAndAlarmDate(eq(userId), any()))
                 .thenReturn(5L)
@@ -295,7 +295,7 @@ class HomeServiceTest {
                 .thenReturn(emptyList())
             whenever(safetyCheckService.getTodayStatus(any()))
                 .thenReturn(SafetyCheckTodayResponse(completed = true))
-            whenever(noticeRepository.findRecentNotices(any(), any()))
+            whenever(noticeRepository.findRecentNotices(any()))
                 .thenReturn(emptyList())
             whenever(productExpirationRepository.countByEmployeeIdAndAlarmDate(eq(userId), any()))
                 .thenReturn(1L)
@@ -363,7 +363,7 @@ class HomeServiceTest {
             whenever(accountRepository.findByIdIn(any())).thenReturn(emptyList())
             whenever(safetyCheckService.getTodayStatus(any()))
                 .thenReturn(SafetyCheckTodayResponse(completed = true))
-            whenever(noticeRepository.findRecentNotices(any(), any()))
+            whenever(noticeRepository.findRecentNotices(any()))
                 .thenReturn(emptyList())
 
             // When
@@ -417,7 +417,7 @@ class HomeServiceTest {
             whenever(accountRepository.findByIdIn(any())).thenReturn(emptyList())
             whenever(safetyCheckService.getTodayStatus(any()))
                 .thenReturn(SafetyCheckTodayResponse(completed = true))
-            whenever(noticeRepository.findRecentNotices(any(), any()))
+            whenever(noticeRepository.findRecentNotices(any()))
                 .thenReturn(emptyList())
 
             // When
@@ -450,7 +450,7 @@ class HomeServiceTest {
             whenever(accountRepository.findByIdIn(any())).thenReturn(emptyList())
             whenever(safetyCheckService.getTodayStatus(any()))
                 .thenReturn(SafetyCheckTodayResponse(completed = true))
-            whenever(noticeRepository.findRecentNotices(any(), any()))
+            whenever(noticeRepository.findRecentNotices(any()))
                 .thenReturn(emptyList())
 
             // When
