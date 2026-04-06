@@ -61,6 +61,9 @@ class _MyScheduleDetailPageState extends ConsumerState<MyScheduleDetailPage>
       }
     });
 
+    final workingType = state.scheduleInfo?.workingType;
+    final isDayOff = workingType == '대휴' || workingType == '연차';
+
     return Scaffold(
       appBar: AppBar(
         title: Text(state.scheduleInfo?.memberName ?? '일정 상세'),
@@ -68,17 +71,19 @@ class _MyScheduleDetailPageState extends ConsumerState<MyScheduleDetailPage>
           icon: const Icon(Icons.arrow_back),
           onPressed: () => AppRouter.goBack(context),
         ),
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: '일정'),
-            Tab(text: '등록'),
-          ],
-          labelColor: AppColors.otokiBlue,
-          unselectedLabelColor: AppColors.textTertiary,
-          indicatorColor: AppColors.otokiBlue,
-          indicatorWeight: AppSpacing.tabIndicatorWeight,
-        ),
+        bottom: isDayOff
+            ? null
+            : TabBar(
+                controller: _tabController,
+                tabs: const [
+                  Tab(text: '일정'),
+                  Tab(text: '등록'),
+                ],
+                labelColor: AppColors.otokiBlue,
+                unselectedLabelColor: AppColors.textTertiary,
+                indicatorColor: AppColors.otokiBlue,
+                indicatorWeight: AppSpacing.tabIndicatorWeight,
+              ),
       ),
       body: state.isLoading
           ? const Center(child: LoadingIndicator())
@@ -106,13 +111,70 @@ class _MyScheduleDetailPageState extends ConsumerState<MyScheduleDetailPage>
                     ],
                   ),
                 )
-              : TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildScheduleTab(state),
-                    _buildRegistrationTab(state),
-                  ],
-                ),
+              : isDayOff
+                  ? _buildDayOffScreen(state)
+                  : TabBarView(
+                      controller: _tabController,
+                      children: [
+                        _buildScheduleTab(state),
+                        _buildRegistrationTab(state),
+                      ],
+                    ),
+    );
+  }
+
+  /// 대휴/연차 안내 화면
+  Widget _buildDayOffScreen(state) {
+    final info = state.scheduleInfo;
+    if (info == null) {
+      return const Center(child: Text('일정 정보가 없습니다'));
+    }
+
+    final isSubstituteHoliday = info.workingType == '대휴';
+    final icon = isSubstituteHoliday ? Icons.beach_access : Icons.event_busy;
+    final color =
+        isSubstituteHoliday ? AppColors.otokiBlue : AppColors.secondary;
+    final message =
+        isSubstituteHoliday ? '대휴가 예정된 날입니다' : '연차가 예정된 날입니다';
+
+    return Center(
+      child: Column(
+        children: [
+          // 날짜 헤더
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              border: Border(
+                bottom: BorderSide(color: AppColors.divider),
+              ),
+            ),
+            child: Text(
+              info.date,
+              style: AppTypography.headlineSmall,
+            ),
+          ),
+          // 아이콘 + 메시지
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, size: 64, color: color),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    message,
+                    style: AppTypography.bodyLarge.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

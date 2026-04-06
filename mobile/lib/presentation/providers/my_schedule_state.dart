@@ -84,6 +84,9 @@ class MyScheduleCalendarState {
   /// 해당 월의 연차 건수
   int get annualLeaveCount => workDays.where((d) => d.isAnnualLeave).length;
 
+  /// 해당 월의 대휴 건수
+  int get substituteHolidayCount => workDays.where((d) => d.isSubstituteHoliday).length;
+
   /// 데이터 로딩 완료 여부
   bool get isLoaded => workDays.isNotEmpty && !isLoading && errorMessage == null;
 

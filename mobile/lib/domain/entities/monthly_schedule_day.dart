@@ -18,6 +18,9 @@ class MonthlyScheduleDay {
   /// 연차 여부
   bool get isAnnualLeave => workingType == '연차';
 
+  /// 대휴 여부
+  bool get isSubstituteHoliday => workingType == '대휴';
+
   MonthlyScheduleDay copyWith({
     DateTime? date,
     bool? hasWork,

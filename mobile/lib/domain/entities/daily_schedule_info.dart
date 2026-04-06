@@ -74,6 +74,9 @@ class DailyScheduleInfo {
   /// 사원번호
   final String employeeCode;
 
+  /// 근무유형 ("대휴", "연차"). null이면 일반 근무
+  final String? workingType;
+
   /// 보고 진행 상황
   final ReportProgress reportProgress;
 
@@ -84,6 +87,7 @@ class DailyScheduleInfo {
     required this.date,
     required this.memberName,
     required this.employeeCode,
+    this.workingType,
     required this.reportProgress,
     required this.accounts,
   });
@@ -92,6 +96,7 @@ class DailyScheduleInfo {
     String? date,
     String? memberName,
     String? employeeCode,
+    String? workingType,
     ReportProgress? reportProgress,
     List<ScheduleAccountDetail>? accounts,
   }) {
@@ -99,6 +104,7 @@ class DailyScheduleInfo {
       date: date ?? this.date,
       memberName: memberName ?? this.memberName,
       employeeCode: employeeCode ?? this.employeeCode,
+      workingType: workingType ?? this.workingType,
       reportProgress: reportProgress ?? this.reportProgress,
       accounts: accounts ?? this.accounts,
     );
@@ -109,6 +115,7 @@ class DailyScheduleInfo {
       'date': date,
       'memberName': memberName,
       'employeeCode': employeeCode,
+      'workingType': workingType,
       'reportProgress': reportProgress.toJson(),
       'accounts': accounts.map((account) => account.toJson()).toList(),
     };
@@ -119,6 +126,7 @@ class DailyScheduleInfo {
       date: json['date'] as String,
       memberName: json['memberName'] as String,
       employeeCode: json['employeeCode'] as String,
+      workingType: json['workingType'] as String?,
       reportProgress: ReportProgress.fromJson(
         json['reportProgress'] as Map<String, dynamic>,
       ),
@@ -137,6 +145,7 @@ class DailyScheduleInfo {
         other.date == date &&
         other.memberName == memberName &&
         other.employeeCode == employeeCode &&
+        other.workingType == workingType &&
         other.reportProgress == reportProgress &&
         _listEquals(other.accounts, accounts);
   }
@@ -155,6 +164,7 @@ class DailyScheduleInfo {
       date,
       memberName,
       employeeCode,
+      workingType,
       reportProgress,
       Object.hashAll(accounts),
     );
@@ -163,7 +173,7 @@ class DailyScheduleInfo {
   @override
   String toString() {
     return 'DailyScheduleInfo(date: $date, memberName: $memberName, '
-        'employeeCode: $employeeCode, reportProgress: $reportProgress, '
-        'accounts: $accounts)';
+        'employeeCode: $employeeCode, workingType: $workingType, '
+        'reportProgress: $reportProgress, accounts: $accounts)';
   }
 }

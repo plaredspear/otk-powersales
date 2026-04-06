@@ -137,6 +137,7 @@ class MyScheduleCalendarPage extends ConsumerWidget {
                         workDays: state.workDays,
                         onDateTap: (date) => _onDateTap(context, date),
                         annualLeaveCount: state.annualLeaveCount,
+                        substituteHolidayCount: state.substituteHolidayCount,
                       ),
           ),
         ],

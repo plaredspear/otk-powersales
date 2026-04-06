@@ -23,6 +23,9 @@ class CalendarWidget extends StatelessWidget {
   /// 해당 월의 연차 건수
   final int annualLeaveCount;
 
+  /// 해당 월의 대휴 건수
+  final int substituteHolidayCount;
+
   const CalendarWidget({
     super.key,
     required this.year,
@@ -30,6 +33,7 @@ class CalendarWidget extends StatelessWidget {
     required this.workDays,
     required this.onDateTap,
     this.annualLeaveCount = 0,
+    this.substituteHolidayCount = 0,
   });
 
   /// 해당 날짜가 근무일인지 확인
@@ -142,12 +146,14 @@ class CalendarWidget extends StatelessWidget {
                 final isToday = _isToday(date);
                 final workingType = _getWorkingType(date);
                 final isAnnualLeave = workingType == '연차';
+                final isSubstituteHoliday = workingType == '대휴';
                 final weekday = index % 7;
                 final isSunday = weekday == 0;
                 final isSaturday = weekday == 6;
+                final isTappable = isWorkDay || isSubstituteHoliday;
 
                 return GestureDetector(
-                  onTap: isWorkDay ? () => onDateTap(date) : null,
+                  onTap: isTappable ? () => onDateTap(date) : null,
                   child: Container(
                     margin: const EdgeInsets.all(2.0),
                     decoration: BoxDecoration(
@@ -173,8 +179,21 @@ class CalendarWidget extends StatelessWidget {
                           ),
                         ),
 
+                        // 대휴 표시
+                        if (isSubstituteHoliday)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2.0),
+                            child: Text(
+                              '대휴',
+                              style: AppTypography.labelSmall.copyWith(
+                                color: AppColors.otokiBlue,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          )
                         // 연차 표시
-                        if (isAnnualLeave)
+                        else if (isAnnualLeave)
                           Padding(
                             padding: const EdgeInsets.only(top: 2.0),
                             child: Text(
@@ -208,7 +227,7 @@ class CalendarWidget extends StatelessWidget {
           ),
         ),
 
-        // 연차 건수 요약
+        // 연차/대휴 건수 요약
         Container(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.lg,
@@ -223,6 +242,22 @@ class CalendarWidget extends StatelessWidget {
             children: [
               Text(
                 '연차: ${annualLeaveCount}일',
+                style: AppTypography.bodyMedium.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                child: Text(
+                  '|',
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: AppColors.textTertiary,
+                  ),
+                ),
+              ),
+              Text(
+                '대휴: ${substituteHolidayCount}일',
                 style: AppTypography.bodyMedium.copyWith(
                   fontWeight: FontWeight.w600,
                   color: AppColors.textPrimary,

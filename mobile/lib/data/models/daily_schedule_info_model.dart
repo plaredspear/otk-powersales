@@ -153,6 +153,7 @@ class DailyScheduleInfoModel {
   final String dayOfWeek;
   final String memberName;
   final String employeeCode;
+  final String? workingType;
   final ReportProgressModel reportProgress;
   final List<ScheduleAccountDetailModel> accounts;
 
@@ -161,6 +162,7 @@ class DailyScheduleInfoModel {
     required this.dayOfWeek,
     required this.memberName,
     required this.employeeCode,
+    this.workingType,
     required this.reportProgress,
     required this.accounts,
   });
@@ -172,6 +174,7 @@ class DailyScheduleInfoModel {
       dayOfWeek: json['day_of_week'] as String,
       memberName: json['member_name'] as String,
       employeeCode: json['employee_code'] as String,
+      workingType: json['working_type'] as String?,
       reportProgress: ReportProgressModel.fromJson(
         json['report_progress'] as Map<String, dynamic>,
       ),
@@ -190,6 +193,7 @@ class DailyScheduleInfoModel {
       'day_of_week': dayOfWeek,
       'member_name': memberName,
       'employee_code': employeeCode,
+      'working_type': workingType,
       'report_progress': reportProgress.toJson(),
       'accounts': accounts.map((account) => account.toJson()).toList(),
     };
@@ -209,6 +213,7 @@ class DailyScheduleInfoModel {
       date: formattedDate,
       memberName: memberName,
       employeeCode: employeeCode,
+      workingType: workingType,
       reportProgress: reportProgress.toEntity(),
       accounts: accounts.map((account) => account.toEntity()).toList(),
     );
@@ -233,6 +238,7 @@ class DailyScheduleInfoModel {
       dayOfWeek: dayOfWeek,
       memberName: entity.memberName,
       employeeCode: entity.employeeCode,
+      workingType: entity.workingType,
       reportProgress: ReportProgressModel.fromEntity(entity.reportProgress),
       accounts: entity.accounts
           .map((account) => ScheduleAccountDetailModel.fromEntity(account))
@@ -248,6 +254,7 @@ class DailyScheduleInfoModel {
         other.dayOfWeek == dayOfWeek &&
         other.memberName == memberName &&
         other.employeeCode == employeeCode &&
+        other.workingType == workingType &&
         other.reportProgress == reportProgress &&
         _listEquals(other.accounts, accounts);
   }
@@ -267,6 +274,7 @@ class DailyScheduleInfoModel {
       dayOfWeek,
       memberName,
       employeeCode,
+      workingType,
       reportProgress,
       Object.hashAll(accounts),
     );
