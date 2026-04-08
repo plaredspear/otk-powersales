@@ -1,6 +1,6 @@
 package com.otoki.internal.safetycheck.controller
 
-import com.otoki.internal.admin.controller.InvalidDateFormatException
+import com.otoki.internal.admin.exception.InvalidDateFormatException
 import com.otoki.internal.safetycheck.dto.response.SafetyCheckStatusResponse
 import com.otoki.internal.safetycheck.service.AdminSafetyCheckService
 import com.otoki.internal.common.dto.ApiResponse

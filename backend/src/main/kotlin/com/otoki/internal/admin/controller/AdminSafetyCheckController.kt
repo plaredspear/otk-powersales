@@ -5,9 +5,8 @@ import com.otoki.internal.admin.security.AdminPermission
 import com.otoki.internal.admin.security.RequiresPermission
 import com.otoki.internal.safetycheck.service.AdminSafetyCheckService
 import com.otoki.internal.common.dto.ApiResponse
-import com.otoki.internal.common.exception.BusinessException
+import com.otoki.internal.admin.exception.InvalidDateFormatException
 import com.otoki.internal.common.security.UserPrincipal
-import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
@@ -44,9 +43,3 @@ class AdminSafetyCheckController(
         return ResponseEntity.ok(ApiResponse.success(result))
     }
 }
-
-class InvalidDateFormatException : BusinessException(
-    errorCode = "INVALID_DATE_FORMAT",
-    message = "날짜 형식이 올바르지 않습니다 (YYYY-MM-DD)",
-    httpStatus = HttpStatus.BAD_REQUEST
-)

@@ -5,10 +5,9 @@ import com.otoki.internal.admin.security.AdminPermission
 import com.otoki.internal.admin.security.RequiresPermission
 import com.otoki.internal.admin.service.AdminDashboardService
 import com.otoki.internal.common.dto.ApiResponse
-import com.otoki.internal.common.exception.BusinessException
+import com.otoki.internal.admin.exception.InvalidYearMonthException
 
 import com.otoki.internal.common.security.UserPrincipal
-import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
@@ -41,9 +40,3 @@ class AdminDashboardController(
         private val YEAR_MONTH_PATTERN = Regex("^\\d{4}-(0[1-9]|1[0-2])$")
     }
 }
-
-class InvalidYearMonthException : BusinessException(
-    errorCode = "VALIDATION_ERROR",
-    message = "유효하지 않은 yearMonth 형식입니다",
-    httpStatus = HttpStatus.BAD_REQUEST
-)
