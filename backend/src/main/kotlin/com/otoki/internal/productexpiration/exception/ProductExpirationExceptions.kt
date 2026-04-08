@@ -4,14 +4,14 @@ import com.otoki.internal.common.exception.BusinessException
 import org.springframework.http.HttpStatus
 
 class ProductExpirationNotFoundException : BusinessException(
-    errorCode = "NOT_FOUND",
-    message = "유통기한 데이터를 찾을 수 없습니다",
+    errorCode = "PRODUCT_EXPIRATION_NOT_FOUND",
+    message = "유통기한을 찾을 수 없습니다",
     httpStatus = HttpStatus.NOT_FOUND
 )
 
 class ProductExpirationForbiddenException : BusinessException(
-    errorCode = "FORBIDDEN",
-    message = "권한이 없습니다",
+    errorCode = "PRODUCT_EXPIRATION_FORBIDDEN",
+    message = "해당 유통기한에 대한 권한이 없습니다",
     httpStatus = HttpStatus.FORBIDDEN
 )
 

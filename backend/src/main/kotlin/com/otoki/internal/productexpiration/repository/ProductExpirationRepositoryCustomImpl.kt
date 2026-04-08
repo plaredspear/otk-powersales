@@ -24,13 +24,15 @@ class ProductExpirationRepositoryCustomImpl(
         accountKeyword: String?,
         status: String?,
         today: LocalDate,
-        pageable: Pageable
+        pageable: Pageable,
+        employeeIds: List<Long>?
     ): Page<ProductExpiration> {
         val where = BooleanBuilder()
             .and(buildDateRangeCondition(fromDate, toDate))
             .and(buildEmployeeKeywordCondition(employeeKeyword))
             .and(buildAccountKeywordCondition(accountKeyword))
             .and(buildStatusCondition(status, today))
+            .and(buildEmployeeIdsCondition(employeeIds))
 
         val content = queryFactory
             .selectFrom(productExpiration)
@@ -52,7 +54,7 @@ class ProductExpirationRepositoryCustomImpl(
         }
     }
 
-    override fun getSummary(today: LocalDate): AdminProductExpirationSummaryResponse {
+    override fun getSummary(today: LocalDate, employeeIds: List<Long>?): AdminProductExpirationSummaryResponse {
         val sevenDaysLater = today.plusDays(7)
 
         val expiredCount = CaseBuilder()
@@ -67,6 +69,9 @@ class ProductExpirationRepositoryCustomImpl(
             .`when`(productExpiration.expirationDate.gt(sevenDaysLater))
             .then(1L).otherwise(0L)
 
+        val where = BooleanBuilder()
+            .and(buildEmployeeIdsCondition(employeeIds))
+
         val result = queryFactory
             .select(
                 productExpiration.count(),
@@ -75,6 +80,7 @@ class ProductExpirationRepositoryCustomImpl(
                 normalCount.sum()
             )
             .from(productExpiration)
+            .where(where)
             .fetchOne()
 
         return AdminProductExpirationSummaryResponse(
@@ -104,6 +110,12 @@ class ProductExpirationRepositoryCustomImpl(
         val pattern = "%${keyword.lowercase()}%"
         return productExpiration.accountName.lower().like(pattern)
             .or(productExpiration.accountCode.lower().like(pattern))
+    }
+
+    private fun buildEmployeeIdsCondition(employeeIds: List<Long>?): Predicate? {
+        if (employeeIds == null) return null
+        if (employeeIds.isEmpty()) return productExpiration.employeeId.isNull.and(productExpiration.employeeId.isNotNull)
+        return productExpiration.employeeId.`in`(employeeIds)
     }
 
     private fun buildStatusCondition(status: String?, today: LocalDate): Predicate? {

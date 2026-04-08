@@ -270,7 +270,7 @@ class ProductExpirationControllerTest {
                     .content(requestJson)
             )
                 .andExpect(status().isForbidden)
-                .andExpect(jsonPath("$.error.code").value("FORBIDDEN"))
+                .andExpect(jsonPath("$.error.code").value("PRODUCT_EXPIRATION_FORBIDDEN"))
         }
     }
 
@@ -295,7 +295,7 @@ class ProductExpirationControllerTest {
 
             mockMvc.perform(delete("/api/v1/product-expiration/999"))
                 .andExpect(status().isNotFound)
-                .andExpect(jsonPath("$.error.code").value("NOT_FOUND"))
+                .andExpect(jsonPath("$.error.code").value("PRODUCT_EXPIRATION_NOT_FOUND"))
         }
     }
 
@@ -336,7 +336,7 @@ class ProductExpirationControllerTest {
                     .content(requestJson)
             )
                 .andExpect(status().isForbidden)
-                .andExpect(jsonPath("$.error.code").value("FORBIDDEN"))
+                .andExpect(jsonPath("$.error.code").value("PRODUCT_EXPIRATION_FORBIDDEN"))
         }
 
         @Test
