@@ -255,7 +255,8 @@ terraform output
 | `ecs_cluster_name` | ECS 클러스터 이름 | CI/CD 설정 |
 | `ecs_service_name` | ECS 서비스 이름 | CI/CD 설정 |
 | `github_actions_role_arn` | GitHub Actions IAM Role ARN | **GitHub Secrets로 등록** |
-| `codebuild_project_name` | CodeBuild 프로젝트 이름 | **GitHub Secrets로 등록** |
+| `codebuild_backend_project_name` | CodeBuild Backend 프로젝트 이름 | **GitHub Secrets로 등록** |
+| `codebuild_web_project_name` | CodeBuild Web 프로젝트 이름 | **GitHub Secrets로 등록** |
 
 ---
 
@@ -266,12 +267,14 @@ GitHub 저장소의 **Settings > Secrets and variables > Actions** 에서 다음
 | 시크릿 이름 | 값 | 비고 |
 |------------|---|------|
 | `DEV_AWS_ROLE_ARN` | `terraform output -raw github_actions_role_arn` 의 출력값 | Repository secret |
-| `DEV_CODEBUILD_PROJECT` | `terraform output -raw codebuild_project_name` 의 출력값 | Repository secret |
+| `DEV_CODEBUILD_BACKEND_PROJECT` | `terraform output -raw codebuild_backend_project_name` 의 출력값 | Repository secret |
+| `DEV_CODEBUILD_WEB_PROJECT` | `terraform output -raw codebuild_web_project_name` 의 출력값 | Repository secret |
 
 ```bash
 # 각 값 확인
 terraform output -raw github_actions_role_arn
-terraform output -raw codebuild_project_name
+terraform output -raw codebuild_backend_project_name
+terraform output -raw codebuild_web_project_name
 ```
 
 ---

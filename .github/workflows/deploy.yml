@@ -14,7 +14,26 @@ env:
   AWS_DEFAULT_REGION: ap-northeast-2
 
 jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      web: ${{ steps.filter.outputs.web }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+            web:
+              - 'web/**'
+
   test:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -33,7 +52,7 @@ jobs:
           name: test-results
           path: backend/build/test-results/test/*.xml
 
-  deploy:
+  deploy-backend:
     needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -44,19 +63,19 @@ jobs:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE_ARN }}
           aws-region: ap-northeast-2
 
-      - name: Trigger CodeBuild
+      - name: Trigger CodeBuild (Backend)
         id: codebuild
         run: |
           BUILD_ID=$(aws codebuild start-build \
-            --project-name "${{ secrets.DEV_CODEBUILD_PROJECT }}" \
+            --project-name "${{ secrets.DEV_CODEBUILD_BACKEND_PROJECT }}" \
             --source-version "${GITHUB_SHA}" \
             --environment-variables-override \
             "name=SHORT_COMMIT_SHA,value=${GITHUB_SHA::7},type=PLAINTEXT" \
             --query 'build.id' --output text)
           echo "build_id=$BUILD_ID" >> "$GITHUB_OUTPUT"
-          echo "CodeBuild started - $BUILD_ID"
+          echo "CodeBuild Backend started - $BUILD_ID"
 
-      - name: Wait for CodeBuild
+      - name: Wait for CodeBuild (Backend)
         run: |
           while true; do
             STATUS=$(aws codebuild batch-get-builds \
@@ -64,10 +83,48 @@ jobs:
               --query 'builds[0].buildStatus' --output text)
             echo "Build status: $STATUS"
             if [ "$STATUS" = "SUCCEEDED" ]; then
-              echo "Deploy succeeded"
+              echo "Backend deploy succeeded"
               break
             elif [ "$STATUS" = "FAILED" ] || [ "$STATUS" = "FAULT" ] || [ "$STATUS" = "STOPPED" ] || [ "$STATUS" = "TIMED_OUT" ]; then
-              echo "Deploy failed with status: $STATUS"
+              echo "Backend deploy failed with status: $STATUS"
+              exit 1
+            fi
+            sleep 15
+          done
+
+  deploy-web:
+    needs: detect-changes
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.detect-changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE_ARN }}
+          aws-region: ap-northeast-2
+
+      - name: Trigger CodeBuild (Web)
+        id: codebuild
+        run: |
+          BUILD_ID=$(aws codebuild start-build \
+            --project-name "${{ secrets.DEV_CODEBUILD_WEB_PROJECT }}" \
+            --source-version "${GITHUB_SHA}" \
+            --query 'build.id' --output text)
+          echo "build_id=$BUILD_ID" >> "$GITHUB_OUTPUT"
+          echo "CodeBuild Web started - $BUILD_ID"
+
+      - name: Wait for CodeBuild (Web)
+        run: |
+          while true; do
+            STATUS=$(aws codebuild batch-get-builds \
+              --ids "${{ steps.codebuild.outputs.build_id }}" \
+              --query 'builds[0].buildStatus' --output text)
+            echo "Build status: $STATUS"
+            if [ "$STATUS" = "SUCCEEDED" ]; then
+              echo "Web deploy succeeded"
+              break
+            elif [ "$STATUS" = "FAILED" ] || [ "$STATUS" = "FAULT" ] || [ "$STATUS" = "STOPPED" ] || [ "$STATUS" = "TIMED_OUT" ]; then
+              echo "Web deploy failed with status: $STATUS"
               exit 1
             fi
             sleep 15

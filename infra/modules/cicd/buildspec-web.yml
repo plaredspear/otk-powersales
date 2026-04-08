@@ -1,0 +1,25 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 24
+
+  build:
+    commands:
+      - echo "=== Web Build ==="
+      - cd web && npm ci && npm run build && cd ..
+
+  post_build:
+    commands:
+      - echo "=== Upload to S3 ==="
+      - aws s3 sync web/dist/ s3://$ADMIN_S3_BUCKET_NAME/ --delete
+
+      - echo "=== CloudFront Invalidation ==="
+      - aws cloudfront create-invalidation --distribution-id $ADMIN_CLOUDFRONT_DISTRIBUTION_ID --paths "/*"
+
+      - echo "=== Web deploy complete ==="
+
+cache:
+  paths:
+    - "web/node_modules/**/*"

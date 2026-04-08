@@ -48,7 +48,12 @@ output "github_actions_role_arn" {
   value       = module.cicd.github_actions_role_arn
 }
 
-output "codebuild_project_name" {
-  description = "CodeBuild project name (set as DEV_CODEBUILD_PROJECT / PROD_CODEBUILD_PROJECT in GitHub Secrets)"
-  value       = module.cicd.codebuild_project_name
+output "codebuild_backend_project_name" {
+  description = "CodeBuild backend project name (set as DEV_CODEBUILD_BACKEND_PROJECT in GitHub Secrets)"
+  value       = module.cicd.codebuild_backend_project_name
+}
+
+output "codebuild_web_project_name" {
+  description = "CodeBuild web project name (set as DEV_CODEBUILD_WEB_PROJECT in GitHub Secrets)"
+  value       = module.cicd.codebuild_web_project_name
 }

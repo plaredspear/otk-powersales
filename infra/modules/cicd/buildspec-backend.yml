@@ -5,17 +5,8 @@ env:
     GRADLE_USER_HOME: "/root/.gradle"
 
 phases:
-  install:
-    runtime-versions:
-      nodejs: 24
   pre_build:
     commands:
-      - echo "=== Fetch Infra Outputs ==="
-      - >
-        aws ssm get-parameters-by-path
-        --path "/${PROJECT}/${ENVIRONMENT}/infra"
-        --query "Parameters[].{Name:Name,Value:Value}"
-        --output json > infra-outputs.json
       - echo "=== ECR Login ==="
       - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_REPOSITORY_URL
       - IMAGE_TAG="${SHORT_COMMIT_SHA:-${CODEBUILD_RESOLVED_SOURCE_VERSION:=latest}}"
@@ -24,10 +15,6 @@ phases:
 
   build:
     commands:
-      - echo "=== Web Build ==="
-      - cd web && npm ci && npm run build && cd ..
-      - echo "=== Upload to S3 ==="
-      - aws s3 sync web/dist/ s3://$ADMIN_S3_BUCKET_NAME/ --delete
       - echo "=== Docker Build ==="
       - >
         docker build
@@ -45,7 +32,6 @@ phases:
       - docker push $LATEST_IMAGE
 
       - echo "=== Register New Task Definition ==="
-      # 현재 task definition에서 컨테이너 정의를 가져와 이미지만 교체한 새 revision 등록
       - TASK_FAMILY="${PROJECT}-${ENVIRONMENT}-backend"
       - >
         CURRENT_TASK_DEF=$(aws ecs describe-task-definition
@@ -76,13 +62,9 @@ phases:
         --force-new-deployment
         --region $AWS_DEFAULT_REGION
 
-      - echo "=== CloudFront Invalidation ==="
-      - aws cloudfront create-invalidation --distribution-id $ADMIN_CLOUDFRONT_DISTRIBUTION_ID --paths "/*"
-
-      - echo "=== Deploy complete ==="
+      - echo "=== Backend deploy complete ==="
 
 cache:
   paths:
     - "/root/.gradle/caches/**/*"
     - "/root/.gradle/wrapper/**/*"
-    - "web/node_modules/**/*"

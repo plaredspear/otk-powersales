@@ -78,25 +78,31 @@ resource "aws_iam_role_policy" "github_actions" {
           "codebuild:StartBuild",
           "codebuild:BatchGetBuilds"
         ]
-        Resource = aws_codebuild_project.deploy.arn
+        Resource = [
+          aws_codebuild_project.backend.arn,
+          aws_codebuild_project.web.arn,
+        ]
       },
       {
         Effect = "Allow"
         Action = [
           "logs:GetLogEvents"
         ]
-        Resource = "${aws_cloudwatch_log_group.codebuild.arn}:*"
+        Resource = [
+          "${aws_cloudwatch_log_group.codebuild_backend.arn}:*",
+          "${aws_cloudwatch_log_group.codebuild_web.arn}:*",
+        ]
       }
     ]
   })
 }
 
 ################################################################################
-# CodeBuild IAM Role
+# CodeBuild IAM Role — Backend
 ################################################################################
 
-resource "aws_iam_role" "codebuild" {
-  name = "${var.project}-${var.environment}-codebuild"
+resource "aws_iam_role" "codebuild_backend" {
+  name = "${var.project}-${var.environment}-codebuild-backend"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -116,9 +122,9 @@ resource "aws_iam_role" "codebuild" {
   }
 }
 
-resource "aws_iam_role_policy" "codebuild" {
-  name = "${var.project}-${var.environment}-codebuild-policy"
-  role = aws_iam_role.codebuild.id
+resource "aws_iam_role_policy" "codebuild_backend" {
+  name = "${var.project}-${var.environment}-codebuild-backend-policy"
+  role = aws_iam_role.codebuild_backend.id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -132,8 +138,8 @@ resource "aws_iam_role_policy" "codebuild" {
           "logs:PutLogEvents"
         ]
         Resource = [
-          aws_cloudwatch_log_group.codebuild.arn,
-          "${aws_cloudwatch_log_group.codebuild.arn}:*"
+          aws_cloudwatch_log_group.codebuild_backend.arn,
+          "${aws_cloudwatch_log_group.codebuild_backend.arn}:*"
         ]
       },
       # ECR — login + push
@@ -191,17 +197,64 @@ resource "aws_iam_role_policy" "codebuild" {
         ]
         Resource = aws_codeconnections_connection.github.arn
       },
-      # SSM Parameter Store — read infra outputs
+    ]
+  })
+}
+
+################################################################################
+# CodeBuild IAM Role — Web
+################################################################################
+
+resource "aws_iam_role" "codebuild_web" {
+  name = "${var.project}-${var.environment}-codebuild-web"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "codebuild.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+
+  tags = {
+    Environment = var.environment
+  }
+}
+
+resource "aws_iam_role_policy" "codebuild_web" {
+  name = "${var.project}-${var.environment}-codebuild-web-policy"
+  role = aws_iam_role.codebuild_web.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      # CloudWatch Logs
       {
         Effect = "Allow"
         Action = [
-          "ssm:GetParameter",
-          "ssm:GetParametersByPath"
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
         ]
         Resource = [
-          "arn:aws:ssm:${var.region}:${var.aws_account_id}:parameter/${var.project}/${var.environment}/infra",
-          "arn:aws:ssm:${var.region}:${var.aws_account_id}:parameter/${var.project}/${var.environment}/infra/*"
+          aws_cloudwatch_log_group.codebuild_web.arn,
+          "${aws_cloudwatch_log_group.codebuild_web.arn}:*"
         ]
+      },
+      # CodeConnections — GitHub 소스 clone
+      {
+        Effect = "Allow"
+        Action = [
+          "codeconnections:GetConnectionToken",
+          "codeconnections:GetConnection",
+          "codeconnections:UseConnection"
+        ]
+        Resource = aws_codeconnections_connection.github.arn
       },
       # S3 — Web Admin static files upload
       {
@@ -230,11 +283,20 @@ resource "aws_iam_role_policy" "codebuild" {
 }
 
 ################################################################################
-# CloudWatch Log Group for CodeBuild
+# CloudWatch Log Groups for CodeBuild
 ################################################################################
 
-resource "aws_cloudwatch_log_group" "codebuild" {
-  name              = "/codebuild/${var.project}-${var.environment}"
+resource "aws_cloudwatch_log_group" "codebuild_backend" {
+  name              = "/codebuild/${var.project}-${var.environment}-backend"
+  retention_in_days = 14
+
+  tags = {
+    Environment = var.environment
+  }
+}
+
+resource "aws_cloudwatch_log_group" "codebuild_web" {
+  name              = "/codebuild/${var.project}-${var.environment}-web"
   retention_in_days = 14
 
   tags = {
@@ -243,14 +305,14 @@ resource "aws_cloudwatch_log_group" "codebuild" {
 }
 
 ################################################################################
-# CodeBuild Project
+# CodeBuild Project — Backend
 ################################################################################
 
-resource "aws_codebuild_project" "deploy" {
-  name          = "${var.project}-${var.environment}-deploy"
+resource "aws_codebuild_project" "backend" {
+  name          = "${var.project}-${var.environment}-deploy-backend"
   description   = "Build and deploy ${var.project} backend to ECS (${var.environment})"
   build_timeout = 15
-  service_role  = aws_iam_role.codebuild.arn
+  service_role  = aws_iam_role.codebuild_backend.arn
 
   artifacts {
     type = "NO_ARTIFACTS"
@@ -297,6 +359,56 @@ resource "aws_codebuild_project" "deploy" {
       name  = "ENVIRONMENT"
       value = var.environment
     }
+  }
+
+  source {
+    type            = "GITHUB"
+    location        = var.github_repository_url
+    git_clone_depth = 1
+    buildspec       = file("${path.module}/buildspec-backend.yml")
+  }
+
+  cache {
+    type  = "LOCAL"
+    modes = ["LOCAL_DOCKER_LAYER_CACHE", "LOCAL_CUSTOM_CACHE"]
+  }
+
+  logs_config {
+    cloudwatch_logs {
+      group_name = aws_cloudwatch_log_group.codebuild_backend.name
+    }
+  }
+
+  tags = {
+    Environment = var.environment
+  }
+}
+
+################################################################################
+# CodeBuild Project — Web
+################################################################################
+
+resource "aws_codebuild_project" "web" {
+  name          = "${var.project}-${var.environment}-deploy-web"
+  description   = "Build and deploy ${var.project} web admin to S3/CloudFront (${var.environment})"
+  build_timeout = 10
+  service_role  = aws_iam_role.codebuild_web.arn
+
+  artifacts {
+    type = "NO_ARTIFACTS"
+  }
+
+  environment {
+    compute_type                = "BUILD_GENERAL1_SMALL"
+    image                       = "aws/codebuild/amazonlinux2-x86_64-standard:5.0"
+    type                        = "LINUX_CONTAINER"
+    privileged_mode             = false
+    image_pull_credentials_type = "CODEBUILD"
+
+    environment_variable {
+      name  = "AWS_DEFAULT_REGION"
+      value = var.region
+    }
 
     environment_variable {
       name  = "ADMIN_S3_BUCKET_NAME"
@@ -313,17 +425,17 @@ resource "aws_codebuild_project" "deploy" {
     type            = "GITHUB"
     location        = var.github_repository_url
     git_clone_depth = 1
-    buildspec       = file("${path.module}/buildspec.yml")
+    buildspec       = file("${path.module}/buildspec-web.yml")
   }
 
   cache {
     type  = "LOCAL"
-    modes = ["LOCAL_DOCKER_LAYER_CACHE", "LOCAL_CUSTOM_CACHE"]
+    modes = ["LOCAL_CUSTOM_CACHE"]
   }
 
   logs_config {
     cloudwatch_logs {
-      group_name = aws_cloudwatch_log_group.codebuild.name
+      group_name = aws_cloudwatch_log_group.codebuild_web.name
     }
   }
 
