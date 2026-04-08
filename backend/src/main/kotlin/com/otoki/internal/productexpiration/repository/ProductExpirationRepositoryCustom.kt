@@ -15,8 +15,9 @@ interface ProductExpirationRepositoryCustom {
         accountKeyword: String?,
         status: String?,
         today: LocalDate,
-        pageable: Pageable
+        pageable: Pageable,
+        employeeIds: List<Long>? = null
     ): Page<ProductExpiration>
 
-    fun getSummary(today: LocalDate): AdminProductExpirationSummaryResponse
+    fun getSummary(today: LocalDate, employeeIds: List<Long>? = null): AdminProductExpirationSummaryResponse
 }

@@ -12,8 +12,10 @@ import com.otoki.internal.common.exception.ProductNotFoundException
 import com.otoki.internal.productexpiration.entity.ProductExpiration
 import com.otoki.internal.productexpiration.exception.InvalidAlertDateException
 import com.otoki.internal.productexpiration.exception.ProductExpirationAccountNotFoundException
+import com.otoki.internal.productexpiration.exception.ProductExpirationForbiddenException
 import com.otoki.internal.productexpiration.exception.ProductExpirationNotFoundException
 import com.otoki.internal.productexpiration.repository.ProductExpirationRepository
+import com.otoki.internal.sap.entity.UserRole
 import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.sap.repository.ProductRepository
@@ -32,6 +34,7 @@ class AdminProductExpirationService(
 ) {
 
     fun getList(
+        userId: Long,
         fromDate: LocalDate?,
         toDate: LocalDate?,
         employeeKeyword: String?,
@@ -40,9 +43,10 @@ class AdminProductExpirationService(
         pageable: Pageable
     ): AdminProductExpirationListResponse {
         val today = LocalDate.now()
+        val employeeIds = resolveEmployeeScope(userId)
 
         val page = productExpirationRepository.findForAdmin(
-            fromDate, toDate, employeeKeyword, accountKeyword, status, today, pageable
+            fromDate, toDate, employeeKeyword, accountKeyword, status, today, pageable, employeeIds
         )
 
         val content = page.content.map { AdminProductExpirationResponse.from(it, today) }
@@ -55,15 +59,21 @@ class AdminProductExpirationService(
         )
     }
 
-    fun getDetail(id: Int): AdminProductExpirationResponse {
+    fun getDetail(userId: Long, id: Int): AdminProductExpirationResponse {
         val entity = findById(id)
+        validateScope(entity, resolveEmployeeScope(userId))
         return AdminProductExpirationResponse.from(entity)
     }
 
     @Transactional
-    fun create(request: AdminProductExpirationCreateRequest): AdminProductExpirationResponse {
+    fun create(userId: Long, request: AdminProductExpirationCreateRequest): AdminProductExpirationResponse {
         val employee = employeeRepository.findByEmployeeCode(request.employeeCode)
             .orElseThrow { EmployeeNotFoundException() }
+
+        val employeeIds = resolveEmployeeScope(userId)
+        if (employeeIds != null && employee.id !in employeeIds) {
+            throw ProductExpirationForbiddenException()
+        }
 
         val account = accountRepository.findByExternalKey(request.accountCode)
             ?: throw ProductExpirationAccountNotFoundException()
@@ -94,12 +104,13 @@ class AdminProductExpirationService(
 
         val saved = productExpirationRepository.save(entity)
         // Reload to populate employee relation for response
-        return getDetail(saved.productExpirationId)
+        return getDetail(userId, saved.productExpirationId)
     }
 
     @Transactional
-    fun update(id: Int, request: AdminProductExpirationUpdateRequest): AdminProductExpirationResponse {
+    fun update(userId: Long, id: Int, request: AdminProductExpirationUpdateRequest): AdminProductExpirationResponse {
         val entity = findById(id)
+        validateScopeForWrite(entity, resolveEmployeeScope(userId))
 
         val expirationDate = LocalDate.parse(request.expirationDate)
         val alarmDate = LocalDate.parse(request.alarmDate)
@@ -113,23 +124,65 @@ class AdminProductExpirationService(
     }
 
     @Transactional
-    fun delete(id: Int) {
+    fun delete(userId: Long, id: Int) {
         val entity = findById(id)
+        validateScopeForWrite(entity, resolveEmployeeScope(userId))
         productExpirationRepository.delete(entity)
     }
 
     @Transactional
-    fun batchDelete(request: AdminProductExpirationBatchDeleteRequest): AdminProductExpirationBatchDeleteResponse {
+    fun batchDelete(userId: Long, request: AdminProductExpirationBatchDeleteRequest): AdminProductExpirationBatchDeleteResponse {
+        val employeeIds = resolveEmployeeScope(userId)
         val entities = productExpirationRepository.findAllById(request.ids)
         if (entities.size != request.ids.size) {
             throw ProductExpirationNotFoundException()
         }
+        entities.forEach { validateScopeForWrite(it, employeeIds) }
         productExpirationRepository.deleteAll(entities)
         return AdminProductExpirationBatchDeleteResponse(deletedCount = entities.size)
     }
 
-    fun getSummary(): AdminProductExpirationSummaryResponse {
-        return productExpirationRepository.getSummary(LocalDate.now())
+    fun getSummary(userId: Long): AdminProductExpirationSummaryResponse {
+        val employeeIds = resolveEmployeeScope(userId)
+        return productExpirationRepository.getSummary(LocalDate.now(), employeeIds)
+    }
+
+    /**
+     * 로그인 사원의 역할에 따라 조회 가능한 사원 ID 목록을 반환한다.
+     * - ADMIN: null (전체)
+     * - LEADER: 동일 orgName 팀원 ID 목록 (orgName이 null이면 본인만)
+     * - USER: 본인 ID만
+     */
+    private fun resolveEmployeeScope(userId: Long): List<Long>? {
+        val employee = employeeRepository.findById(userId)
+            .orElseThrow { EmployeeNotFoundException() }
+
+        return when (employee.role) {
+            UserRole.ADMIN -> null
+            UserRole.LEADER -> {
+                val orgName = employee.orgName
+                if (orgName != null) {
+                    employeeRepository.findByOrgName(orgName).map { it.id }
+                } else {
+                    listOf(employee.id)
+                }
+            }
+            UserRole.USER -> listOf(employee.id)
+        }
+    }
+
+    private fun validateScope(entity: ProductExpiration, employeeIds: List<Long>?) {
+        if (employeeIds == null) return
+        if (entity.employeeId == null || entity.employeeId !in employeeIds) {
+            throw ProductExpirationNotFoundException()
+        }
+    }
+
+    private fun validateScopeForWrite(entity: ProductExpiration, employeeIds: List<Long>?) {
+        if (employeeIds == null) return
+        if (entity.employeeId == null || entity.employeeId !in employeeIds) {
+            throw ProductExpirationForbiddenException()
+        }
     }
 
     private fun findById(id: Int): ProductExpiration {

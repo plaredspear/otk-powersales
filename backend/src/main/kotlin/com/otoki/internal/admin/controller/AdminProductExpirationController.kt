@@ -39,7 +39,7 @@ class AdminProductExpirationController(
     ): ResponseEntity<ApiResponse<AdminProductExpirationListResponse>> {
         val effectiveSize = size.coerceAtMost(100)
         val response = adminProductExpirationService.getList(
-            fromDate, toDate, employeeKeyword, accountKeyword, status,
+            principal.userId, fromDate, toDate, employeeKeyword, accountKeyword, status,
             PageRequest.of(page, effectiveSize)
         )
         return ResponseEntity.ok(ApiResponse.success(response))
@@ -51,7 +51,7 @@ class AdminProductExpirationController(
         @AuthenticationPrincipal principal: UserPrincipal,
         @PathVariable id: Int
     ): ResponseEntity<ApiResponse<AdminProductExpirationResponse>> {
-        val response = adminProductExpirationService.getDetail(id)
+        val response = adminProductExpirationService.getDetail(principal.userId, id)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
@@ -61,7 +61,7 @@ class AdminProductExpirationController(
         @AuthenticationPrincipal principal: UserPrincipal,
         @Valid @RequestBody request: AdminProductExpirationCreateRequest
     ): ResponseEntity<ApiResponse<AdminProductExpirationResponse>> {
-        val response = adminProductExpirationService.create(request)
+        val response = adminProductExpirationService.create(principal.userId, request)
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response))
     }
 
@@ -72,7 +72,7 @@ class AdminProductExpirationController(
         @PathVariable id: Int,
         @Valid @RequestBody request: AdminProductExpirationUpdateRequest
     ): ResponseEntity<ApiResponse<AdminProductExpirationResponse>> {
-        val response = adminProductExpirationService.update(id, request)
+        val response = adminProductExpirationService.update(principal.userId, id, request)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
@@ -82,7 +82,7 @@ class AdminProductExpirationController(
         @AuthenticationPrincipal principal: UserPrincipal,
         @PathVariable id: Int
     ): ResponseEntity<ApiResponse<Any?>> {
-        adminProductExpirationService.delete(id)
+        adminProductExpirationService.delete(principal.userId, id)
         return ResponseEntity.ok(ApiResponse.success(null as Any?))
     }
 
@@ -92,7 +92,7 @@ class AdminProductExpirationController(
         @AuthenticationPrincipal principal: UserPrincipal,
         @Valid @RequestBody request: AdminProductExpirationBatchDeleteRequest
     ): ResponseEntity<ApiResponse<AdminProductExpirationBatchDeleteResponse>> {
-        val response = adminProductExpirationService.batchDelete(request)
+        val response = adminProductExpirationService.batchDelete(principal.userId, request)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
@@ -101,7 +101,7 @@ class AdminProductExpirationController(
     fun getSummary(
         @AuthenticationPrincipal principal: UserPrincipal
     ): ResponseEntity<ApiResponse<AdminProductExpirationSummaryResponse>> {
-        val response = adminProductExpirationService.getSummary()
+        val response = adminProductExpirationService.getSummary(principal.userId)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 }

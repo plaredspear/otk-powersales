@@ -9,6 +9,7 @@ import com.otoki.internal.common.exception.ProductNotFoundException
 import com.otoki.internal.productexpiration.entity.ProductExpiration
 import com.otoki.internal.productexpiration.exception.InvalidAlertDateException
 import com.otoki.internal.productexpiration.exception.ProductExpirationAccountNotFoundException
+import com.otoki.internal.productexpiration.exception.ProductExpirationForbiddenException
 import com.otoki.internal.productexpiration.exception.ProductExpirationNotFoundException
 import com.otoki.internal.productexpiration.repository.ProductExpirationRepository
 import com.otoki.internal.sap.entity.Account
@@ -28,6 +29,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.data.domain.PageImpl
@@ -60,8 +62,10 @@ class AdminProductExpirationServiceTest {
         id: Long = 1L,
         sfid: String? = "EMP_SFID_001",
         employeeCode: String = "E001",
-        name: String = "홍길동"
-    ) = Employee(id = id, sfid = sfid, employeeCode = employeeCode, name = name)
+        name: String = "홍길동",
+        appAuthority: String? = "지점장",
+        orgName: String? = "서울1조"
+    ) = Employee(id = id, sfid = sfid, employeeCode = employeeCode, name = name, appAuthority = appAuthority, orgName = orgName)
 
     private fun createAccount(
         id: Int = 1,
@@ -138,6 +142,25 @@ class AdminProductExpirationServiceTest {
         description = description
     )
 
+    private fun mockAdminEmployee(userId: Long = 1L) {
+        val admin = createEmployee(id = userId, appAuthority = "지점장")
+        whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(admin))
+    }
+
+    private fun mockLeaderEmployee(userId: Long = 2L, orgName: String = "서울1조"): List<Employee> {
+        val leader = createEmployee(id = userId, employeeCode = "E002", name = "김조장", appAuthority = "조장", orgName = orgName)
+        whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(leader))
+        val teamMember = createEmployee(id = 3L, employeeCode = "E003", name = "박여사", appAuthority = "여사원", orgName = orgName)
+        val teamMembers = listOf(leader, teamMember)
+        whenever(employeeRepository.findByOrgName(orgName)).thenReturn(teamMembers)
+        return teamMembers
+    }
+
+    private fun mockUserEmployee(userId: Long = 4L) {
+        val user = createEmployee(id = userId, employeeCode = "E004", name = "이사원", appAuthority = "여사원")
+        whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(user))
+    }
+
     // ── getList ─────────────────────────────────────────────────────
 
     @Nested
@@ -145,9 +168,11 @@ class AdminProductExpirationServiceTest {
     inner class GetListTests {
 
         @Test
-        @DisplayName("기본 조회 - null 파라미터 → 날짜 필터 없이 전체 목록 반환")
-        fun getList_withNullParams_returnsListWithDefaults() {
+        @DisplayName("ADMIN - null 파라미터 → 전체 목록 반환")
+        fun getList_admin_returnsAllData() {
             // Given
+            val userId = 1L
+            mockAdminEmployee(userId)
             val pageable = PageRequest.of(0, 20)
             val testEmployee = createEmployee()
             val entity = createProductExpiration(employee = testEmployee)
@@ -155,12 +180,13 @@ class AdminProductExpirationServiceTest {
 
             whenever(
                 productExpirationRepository.findForAdmin(
-                    anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any(), any()
+                    anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any(), any(), anyOrNull()
                 )
             ).thenReturn(page)
 
             // When
             val result = adminProductExpirationService.getList(
+                userId = userId,
                 fromDate = null,
                 toDate = null,
                 employeeKeyword = null,
@@ -177,6 +203,56 @@ class AdminProductExpirationServiceTest {
             assertThat(result.totalPages).isEqualTo(1)
             assertThat(result.content[0].productName).isEqualTo("오뚜기카레")
         }
+
+        @Test
+        @DisplayName("LEADER - 팀원 범위 데이터만 반환")
+        fun getList_leader_returnsTeamData() {
+            // Given
+            val userId = 2L
+            mockLeaderEmployee(userId)
+            val pageable = PageRequest.of(0, 20)
+            val page = PageImpl(emptyList<ProductExpiration>(), pageable, 0L)
+
+            whenever(
+                productExpirationRepository.findForAdmin(
+                    anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any(), any(), eq(listOf(2L, 3L))
+                )
+            ).thenReturn(page)
+
+            // When
+            val result = adminProductExpirationService.getList(
+                userId = userId, fromDate = null, toDate = null,
+                employeeKeyword = null, accountKeyword = null, status = null, pageable = pageable
+            )
+
+            // Then
+            assertThat(result.totalElements).isEqualTo(0L)
+        }
+
+        @Test
+        @DisplayName("USER - 본인 데이터만 반환")
+        fun getList_user_returnsSelfData() {
+            // Given
+            val userId = 4L
+            mockUserEmployee(userId)
+            val pageable = PageRequest.of(0, 20)
+            val page = PageImpl(emptyList<ProductExpiration>(), pageable, 0L)
+
+            whenever(
+                productExpirationRepository.findForAdmin(
+                    anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any(), any(), eq(listOf(4L))
+                )
+            ).thenReturn(page)
+
+            // When
+            val result = adminProductExpirationService.getList(
+                userId = userId, fromDate = null, toDate = null,
+                employeeKeyword = null, accountKeyword = null, status = null, pageable = pageable
+            )
+
+            // Then
+            assertThat(result.totalElements).isEqualTo(0L)
+        }
     }
 
     // ── getDetail ───────────────────────────────────────────────────
@@ -186,15 +262,17 @@ class AdminProductExpirationServiceTest {
     inner class GetDetailTests {
 
         @Test
-        @DisplayName("정상 조회 - 존재하는 ID -> 상세 정보 반환")
-        fun getDetail_existingId_returnsResponse() {
+        @DisplayName("ADMIN - 존재하는 ID -> 상세 정보 반환")
+        fun getDetail_admin_returnsResponse() {
             // Given
+            val userId = 1L
+            mockAdminEmployee(userId)
             val testEmployee = createEmployee()
             val entity = createProductExpiration(employee = testEmployee)
             whenever(productExpirationRepository.findById(1)).thenReturn(Optional.of(entity))
 
             // When
-            val result = adminProductExpirationService.getDetail(1)
+            val result = adminProductExpirationService.getDetail(userId, 1)
 
             // Then
             assertThat(result.id).isEqualTo(1)
@@ -205,13 +283,58 @@ class AdminProductExpirationServiceTest {
         }
 
         @Test
+        @DisplayName("LEADER - 팀원 데이터 조회 → 성공")
+        fun getDetail_leader_teamMember_returnsResponse() {
+            // Given
+            val userId = 2L
+            mockLeaderEmployee(userId) // teamMembers = [2L, 3L]
+            val teamMemberEmployee = createEmployee(id = 3L, employeeCode = "E003", name = "박여사")
+            val entity = createProductExpiration(employeeId = 3L, employee = teamMemberEmployee)
+            whenever(productExpirationRepository.findById(1)).thenReturn(Optional.of(entity))
+
+            // When
+            val result = adminProductExpirationService.getDetail(userId, 1)
+
+            // Then
+            assertThat(result.employeeName).isEqualTo("박여사")
+        }
+
+        @Test
+        @DisplayName("LEADER - 타팀 데이터 조회 → ProductExpirationNotFoundException")
+        fun getDetail_leader_otherTeam_throwsNotFound() {
+            // Given
+            val userId = 2L
+            mockLeaderEmployee(userId) // teamMembers = [2L, 3L]
+            val entity = createProductExpiration(employeeId = 99L)
+            whenever(productExpirationRepository.findById(1)).thenReturn(Optional.of(entity))
+
+            // When & Then
+            assertThatThrownBy { adminProductExpirationService.getDetail(userId, 1) }
+                .isInstanceOf(ProductExpirationNotFoundException::class.java)
+        }
+
+        @Test
+        @DisplayName("USER - 타인 데이터 조회 → ProductExpirationNotFoundException")
+        fun getDetail_user_otherPerson_throwsNotFound() {
+            // Given
+            val userId = 4L
+            mockUserEmployee(userId)
+            val entity = createProductExpiration(employeeId = 1L)
+            whenever(productExpirationRepository.findById(1)).thenReturn(Optional.of(entity))
+
+            // When & Then
+            assertThatThrownBy { adminProductExpirationService.getDetail(userId, 1) }
+                .isInstanceOf(ProductExpirationNotFoundException::class.java)
+        }
+
+        @Test
         @DisplayName("미존재 - 없는 ID -> ProductExpirationNotFoundException")
         fun getDetail_nonExistingId_throwsException() {
-            // Given
+            // Given (findById throws before resolveEmployeeScope is called)
             whenever(productExpirationRepository.findById(999)).thenReturn(Optional.empty())
 
             // When & Then
-            assertThatThrownBy { adminProductExpirationService.getDetail(999) }
+            assertThatThrownBy { adminProductExpirationService.getDetail(1L, 999) }
                 .isInstanceOf(ProductExpirationNotFoundException::class.java)
         }
     }
@@ -223,9 +346,11 @@ class AdminProductExpirationServiceTest {
     inner class CreateTests {
 
         @Test
-        @DisplayName("정상 등록 - 유효한 요청 -> 유통기한 생성 반환")
-        fun create_validRequest_returnsResponse() {
+        @DisplayName("ADMIN - 유효한 요청 -> 유통기한 생성 반환")
+        fun create_admin_validRequest_returnsResponse() {
             // Given
+            val userId = 1L
+            mockAdminEmployee(userId)
             val testEmployee = createEmployee()
             val testAccount = createAccount()
             val testProduct = createProduct()
@@ -251,15 +376,11 @@ class AdminProductExpirationServiceTest {
                     description = arg.description
                 )
             }
-            // getDetail(saved.productExpirationId) calls findById
-            val entityWithRelation = createProductExpiration(
-                productExpirationId = 10,
-                employee = testEmployee
-            )
+            val entityWithRelation = createProductExpiration(productExpirationId = 10, employee = testEmployee)
             whenever(productExpirationRepository.findById(10)).thenReturn(Optional.of(entityWithRelation))
 
             // When
-            val result = adminProductExpirationService.create(request)
+            val result = adminProductExpirationService.create(userId, request)
 
             // Then
             assertThat(result.id).isEqualTo(10)
@@ -271,14 +392,73 @@ class AdminProductExpirationServiceTest {
         }
 
         @Test
+        @DisplayName("LEADER - 팀원 대상 등록 → 성공")
+        fun create_leader_teamMember_success() {
+            // Given
+            val userId = 2L
+            mockLeaderEmployee(userId) // teamMembers = [2L, 3L]
+            val targetEmployee = createEmployee(id = 3L, employeeCode = "E003", name = "박여사")
+            val testAccount = createAccount()
+            val testProduct = createProduct()
+            val request = createCreateRequest(employeeCode = "E003")
+
+            whenever(employeeRepository.findByEmployeeCode("E003")).thenReturn(Optional.of(targetEmployee))
+            whenever(accountRepository.findByExternalKey("ACC001")).thenReturn(testAccount)
+            whenever(productRepository.findByProductCode("P001")).thenReturn(testProduct)
+            whenever(productExpirationRepository.save(any<ProductExpiration>())).thenAnswer {
+                createProductExpiration(productExpirationId = 20, employeeId = 3L)
+            }
+            val entityWithRelation = createProductExpiration(productExpirationId = 20, employeeId = 3L, employee = targetEmployee)
+            whenever(productExpirationRepository.findById(20)).thenReturn(Optional.of(entityWithRelation))
+
+            // When
+            val result = adminProductExpirationService.create(userId, request)
+
+            // Then
+            assertThat(result.id).isEqualTo(20)
+        }
+
+        @Test
+        @DisplayName("LEADER - 타팀 대상 등록 → ProductExpirationForbiddenException")
+        fun create_leader_otherTeam_throwsForbidden() {
+            // Given
+            val userId = 2L
+            mockLeaderEmployee(userId) // teamMembers = [2L, 3L]
+            val otherEmployee = createEmployee(id = 99L, employeeCode = "E099", name = "다른팀")
+            val request = createCreateRequest(employeeCode = "E099")
+
+            whenever(employeeRepository.findByEmployeeCode("E099")).thenReturn(Optional.of(otherEmployee))
+
+            // When & Then
+            assertThatThrownBy { adminProductExpirationService.create(userId, request) }
+                .isInstanceOf(ProductExpirationForbiddenException::class.java)
+        }
+
+        @Test
+        @DisplayName("USER - 타인 대상 등록 → ProductExpirationForbiddenException")
+        fun create_user_otherPerson_throwsForbidden() {
+            // Given
+            val userId = 4L
+            mockUserEmployee(userId)
+            val otherEmployee = createEmployee(id = 1L)
+            val request = createCreateRequest()
+
+            whenever(employeeRepository.findByEmployeeCode("E001")).thenReturn(Optional.of(otherEmployee))
+
+            // When & Then
+            assertThatThrownBy { adminProductExpirationService.create(userId, request) }
+                .isInstanceOf(ProductExpirationForbiddenException::class.java)
+        }
+
+        @Test
         @DisplayName("사원 없음 - 존재하지 않는 사번 -> EmployeeNotFoundException")
         fun create_employeeNotFound_throwsException() {
-            // Given
+            // Given (findByEmployeeCode fails before resolveEmployeeScope is called)
             val request = createCreateRequest(employeeCode = "INVALID")
             whenever(employeeRepository.findByEmployeeCode("INVALID")).thenReturn(Optional.empty())
 
             // When & Then
-            assertThatThrownBy { adminProductExpirationService.create(request) }
+            assertThatThrownBy { adminProductExpirationService.create(1L, request) }
                 .isInstanceOf(EmployeeNotFoundException::class.java)
         }
 
@@ -286,12 +466,14 @@ class AdminProductExpirationServiceTest {
         @DisplayName("거래처 없음 - 존재하지 않는 거래처 코드 -> ProductExpirationAccountNotFoundException")
         fun create_accountNotFound_throwsException() {
             // Given
+            val userId = 1L
+            mockAdminEmployee(userId)
             val request = createCreateRequest(accountCode = "INVALID")
             whenever(employeeRepository.findByEmployeeCode("E001")).thenReturn(Optional.of(createEmployee()))
             whenever(accountRepository.findByExternalKey("INVALID")).thenReturn(null)
 
             // When & Then
-            assertThatThrownBy { adminProductExpirationService.create(request) }
+            assertThatThrownBy { adminProductExpirationService.create(userId, request) }
                 .isInstanceOf(ProductExpirationAccountNotFoundException::class.java)
         }
 
@@ -299,13 +481,15 @@ class AdminProductExpirationServiceTest {
         @DisplayName("제품 없음 - 존재하지 않는 제품 코드 -> ProductNotFoundException")
         fun create_productNotFound_throwsException() {
             // Given
+            val userId = 1L
+            mockAdminEmployee(userId)
             val request = createCreateRequest(productCode = "INVALID")
             whenever(employeeRepository.findByEmployeeCode("E001")).thenReturn(Optional.of(createEmployee()))
             whenever(accountRepository.findByExternalKey("ACC001")).thenReturn(createAccount())
             whenever(productRepository.findByProductCode("INVALID")).thenReturn(null)
 
             // When & Then
-            assertThatThrownBy { adminProductExpirationService.create(request) }
+            assertThatThrownBy { adminProductExpirationService.create(userId, request) }
                 .isInstanceOf(ProductNotFoundException::class.java)
         }
 
@@ -313,16 +497,18 @@ class AdminProductExpirationServiceTest {
         @DisplayName("알림일 오류 - 알림일이 유통기한 이후 -> InvalidAlertDateException")
         fun create_alarmDateNotBeforeExpiration_throwsException() {
             // Given
+            val userId = 1L
+            mockAdminEmployee(userId)
             val request = createCreateRequest(
                 expirationDate = "2026-06-30",
-                alarmDate = "2026-06-30" // 같은 날짜 (not before)
+                alarmDate = "2026-06-30"
             )
             whenever(employeeRepository.findByEmployeeCode("E001")).thenReturn(Optional.of(createEmployee()))
             whenever(accountRepository.findByExternalKey("ACC001")).thenReturn(createAccount())
             whenever(productRepository.findByProductCode("P001")).thenReturn(createProduct())
 
             // When & Then
-            assertThatThrownBy { adminProductExpirationService.create(request) }
+            assertThatThrownBy { adminProductExpirationService.create(userId, request) }
                 .isInstanceOf(InvalidAlertDateException::class.java)
         }
     }
@@ -334,16 +520,18 @@ class AdminProductExpirationServiceTest {
     inner class UpdateTests {
 
         @Test
-        @DisplayName("정상 수정 - 유효한 요청 -> 수정된 정보 반환")
-        fun update_validRequest_returnsUpdatedResponse() {
+        @DisplayName("ADMIN - 유효한 요청 -> 수정된 정보 반환")
+        fun update_admin_validRequest_returnsUpdatedResponse() {
             // Given
+            val userId = 1L
+            mockAdminEmployee(userId)
             val testEmployee = createEmployee()
             val entity = createProductExpiration(employee = testEmployee)
             val request = createUpdateRequest()
             whenever(productExpirationRepository.findById(1)).thenReturn(Optional.of(entity))
 
             // When
-            val result = adminProductExpirationService.update(1, request)
+            val result = adminProductExpirationService.update(userId, 1, request)
 
             // Then
             assertThat(result.id).isEqualTo(1)
@@ -353,14 +541,29 @@ class AdminProductExpirationServiceTest {
         }
 
         @Test
+        @DisplayName("LEADER - 타팀 데이터 수정 → ProductExpirationForbiddenException")
+        fun update_leader_otherTeam_throwsForbidden() {
+            // Given
+            val userId = 2L
+            mockLeaderEmployee(userId)
+            val entity = createProductExpiration(employeeId = 99L)
+            val request = createUpdateRequest()
+            whenever(productExpirationRepository.findById(1)).thenReturn(Optional.of(entity))
+
+            // When & Then
+            assertThatThrownBy { adminProductExpirationService.update(userId, 1, request) }
+                .isInstanceOf(ProductExpirationForbiddenException::class.java)
+        }
+
+        @Test
         @DisplayName("미존재 - 없는 ID -> ProductExpirationNotFoundException")
         fun update_nonExistingId_throwsException() {
-            // Given
+            // Given (findById throws before resolveEmployeeScope)
             val request = createUpdateRequest()
             whenever(productExpirationRepository.findById(999)).thenReturn(Optional.empty())
 
             // When & Then
-            assertThatThrownBy { adminProductExpirationService.update(999, request) }
+            assertThatThrownBy { adminProductExpirationService.update(1L, 999, request) }
                 .isInstanceOf(ProductExpirationNotFoundException::class.java)
         }
 
@@ -368,15 +571,17 @@ class AdminProductExpirationServiceTest {
         @DisplayName("알림일 오류 - 알림일이 유통기한 이후 -> InvalidAlertDateException")
         fun update_alarmDateNotBeforeExpiration_throwsException() {
             // Given
-            val entity = createProductExpiration()
+            val userId = 1L
+            mockAdminEmployee(userId)
+            val entity = createProductExpiration(employeeId = userId)
             val request = createUpdateRequest(
                 expirationDate = "2026-07-31",
-                alarmDate = "2026-08-01" // 유통기한 이후
+                alarmDate = "2026-08-01"
             )
             whenever(productExpirationRepository.findById(1)).thenReturn(Optional.of(entity))
 
             // When & Then
-            assertThatThrownBy { adminProductExpirationService.update(1, request) }
+            assertThatThrownBy { adminProductExpirationService.update(userId, 1, request) }
                 .isInstanceOf(InvalidAlertDateException::class.java)
         }
     }
@@ -388,27 +593,43 @@ class AdminProductExpirationServiceTest {
     inner class DeleteTests {
 
         @Test
-        @DisplayName("정상 삭제 - 존재하는 ID -> 삭제 수행")
-        fun delete_existingId_deletesEntity() {
+        @DisplayName("ADMIN - 존재하는 ID -> 삭제 수행")
+        fun delete_admin_existingId_deletesEntity() {
             // Given
+            val userId = 1L
+            mockAdminEmployee(userId)
             val entity = createProductExpiration()
             whenever(productExpirationRepository.findById(1)).thenReturn(Optional.of(entity))
 
             // When
-            adminProductExpirationService.delete(1)
+            adminProductExpirationService.delete(userId, 1)
 
             // Then
             verify(productExpirationRepository).delete(entity)
         }
 
         @Test
+        @DisplayName("LEADER - 타팀 데이터 삭제 → ProductExpirationForbiddenException")
+        fun delete_leader_otherTeam_throwsForbidden() {
+            // Given
+            val userId = 2L
+            mockLeaderEmployee(userId)
+            val entity = createProductExpiration(employeeId = 99L)
+            whenever(productExpirationRepository.findById(1)).thenReturn(Optional.of(entity))
+
+            // When & Then
+            assertThatThrownBy { adminProductExpirationService.delete(userId, 1) }
+                .isInstanceOf(ProductExpirationForbiddenException::class.java)
+        }
+
+        @Test
         @DisplayName("미존재 - 없는 ID -> ProductExpirationNotFoundException")
         fun delete_nonExistingId_throwsException() {
-            // Given
+            // Given (findById throws before resolveEmployeeScope)
             whenever(productExpirationRepository.findById(999)).thenReturn(Optional.empty())
 
             // When & Then
-            assertThatThrownBy { adminProductExpirationService.delete(999) }
+            assertThatThrownBy { adminProductExpirationService.delete(1L, 999) }
                 .isInstanceOf(ProductExpirationNotFoundException::class.java)
         }
     }
@@ -420,16 +641,18 @@ class AdminProductExpirationServiceTest {
     inner class BatchDeleteTests {
 
         @Test
-        @DisplayName("정상 일괄 삭제 - 모든 ID 존재 -> 삭제 건수 반환")
-        fun batchDelete_allExist_returnsDeletedCount() {
+        @DisplayName("ADMIN - 모든 ID 존재 -> 삭제 건수 반환")
+        fun batchDelete_admin_allExist_returnsDeletedCount() {
             // Given
+            val userId = 1L
+            mockAdminEmployee(userId)
             val ids = listOf(1, 2, 3)
             val request = AdminProductExpirationBatchDeleteRequest(ids = ids)
             val entities = ids.map { createProductExpiration(productExpirationId = it) }
             whenever(productExpirationRepository.findAllById(ids)).thenReturn(entities)
 
             // When
-            val result = adminProductExpirationService.batchDelete(request)
+            val result = adminProductExpirationService.batchDelete(userId, request)
 
             // Then
             assertThat(result.deletedCount).isEqualTo(3)
@@ -437,12 +660,32 @@ class AdminProductExpirationServiceTest {
         }
 
         @Test
+        @DisplayName("LEADER - 타팀 데이터 포함 일괄 삭제 → ProductExpirationForbiddenException")
+        fun batchDelete_leader_otherTeam_throwsForbidden() {
+            // Given
+            val userId = 2L
+            mockLeaderEmployee(userId) // teamMembers = [2L, 3L]
+            val ids = listOf(1, 2)
+            val request = AdminProductExpirationBatchDeleteRequest(ids = ids)
+            val entities = listOf(
+                createProductExpiration(productExpirationId = 1, employeeId = 3L),
+                createProductExpiration(productExpirationId = 2, employeeId = 99L) // 타팀
+            )
+            whenever(productExpirationRepository.findAllById(ids)).thenReturn(entities)
+
+            // When & Then
+            assertThatThrownBy { adminProductExpirationService.batchDelete(userId, request) }
+                .isInstanceOf(ProductExpirationForbiddenException::class.java)
+        }
+
+        @Test
         @DisplayName("일부 미존재 - 요청 ID 중 일부 미존재 -> ProductExpirationNotFoundException")
         fun batchDelete_someNotFound_throwsException() {
             // Given
+            val userId = 1L
+            mockAdminEmployee(userId)
             val ids = listOf(1, 2, 999)
             val request = AdminProductExpirationBatchDeleteRequest(ids = ids)
-            // 2건만 조회됨 (999는 미존재)
             val entities = listOf(
                 createProductExpiration(productExpirationId = 1),
                 createProductExpiration(productExpirationId = 2)
@@ -450,7 +693,7 @@ class AdminProductExpirationServiceTest {
             whenever(productExpirationRepository.findAllById(ids)).thenReturn(entities)
 
             // When & Then
-            assertThatThrownBy { adminProductExpirationService.batchDelete(request) }
+            assertThatThrownBy { adminProductExpirationService.batchDelete(userId, request) }
                 .isInstanceOf(ProductExpirationNotFoundException::class.java)
         }
     }
@@ -462,25 +705,78 @@ class AdminProductExpirationServiceTest {
     inner class GetSummaryTests {
 
         @Test
-        @DisplayName("정상 조회 - 요약 통계 반환")
-        fun getSummary_returnsSummaryResponse() {
+        @DisplayName("ADMIN - 전체 데이터 요약 반환")
+        fun getSummary_admin_returnsSummaryResponse() {
             // Given
+            val userId = 1L
+            mockAdminEmployee(userId)
             val summary = AdminProductExpirationSummaryResponse(
                 totalCount = 100L,
                 expiredCount = 10L,
                 imminentCount = 20L,
                 normalCount = 70L
             )
-            whenever(productExpirationRepository.getSummary(any())).thenReturn(summary)
+            whenever(productExpirationRepository.getSummary(any(), anyOrNull())).thenReturn(summary)
 
             // When
-            val result = adminProductExpirationService.getSummary()
+            val result = adminProductExpirationService.getSummary(userId)
 
             // Then
             assertThat(result.totalCount).isEqualTo(100L)
             assertThat(result.expiredCount).isEqualTo(10L)
             assertThat(result.imminentCount).isEqualTo(20L)
             assertThat(result.normalCount).isEqualTo(70L)
+        }
+
+        @Test
+        @DisplayName("LEADER - 팀원 범위 요약 반환")
+        fun getSummary_leader_returnsTeamSummary() {
+            // Given
+            val userId = 2L
+            mockLeaderEmployee(userId)
+            val summary = AdminProductExpirationSummaryResponse(
+                totalCount = 10L, expiredCount = 2L, imminentCount = 3L, normalCount = 5L
+            )
+            whenever(productExpirationRepository.getSummary(any(), eq(listOf(2L, 3L)))).thenReturn(summary)
+
+            // When
+            val result = adminProductExpirationService.getSummary(userId)
+
+            // Then
+            assertThat(result.totalCount).isEqualTo(10L)
+        }
+    }
+
+    // ── resolveEmployeeScope edge cases ─────────────────────────────
+
+    @Nested
+    @DisplayName("resolveEmployeeScope - 엣지 케이스")
+    inner class ResolveEmployeeScopeTests {
+
+        @Test
+        @DisplayName("LEADER orgName null - 본인 데이터만 반환")
+        fun leader_nullOrgName_returnsSelfOnly() {
+            // Given
+            val userId = 5L
+            val leader = createEmployee(id = userId, employeeCode = "E005", name = "NULL조장", appAuthority = "조장", orgName = null)
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(leader))
+            val pageable = PageRequest.of(0, 20)
+            val page = PageImpl(emptyList<ProductExpiration>(), pageable, 0L)
+
+            whenever(
+                productExpirationRepository.findForAdmin(
+                    anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any(), any(), eq(listOf(5L))
+                )
+            ).thenReturn(page)
+
+            // When
+            val result = adminProductExpirationService.getList(
+                userId = userId, fromDate = null, toDate = null,
+                employeeKeyword = null, accountKeyword = null, status = null, pageable = pageable
+            )
+
+            // Then
+            assertThat(result.totalElements).isEqualTo(0L)
         }
     }
 }
