@@ -40,19 +40,13 @@ export const menuRoute: MenuRoute = {
       children: [
         { path: '/promotions', name: '행사마스터', requiredPermission: 'PROMOTION_READ' },
         { path: '/display-schedules', name: '진열스케줄마스터', requiredPermission: 'PROMOTION_WRITE' },
+        { path: '/alternative-holidays', name: '대체휴무' },
       ],
     },
     { path: '/promotion/ppt-masters', name: '전문행사조', icon: <CalendarOutlined /> },
     { path: '/claims', name: '클레임 현황', icon: <ExclamationCircleOutlined /> },
     { path: '/suggestion', name: '제안사항', icon: <BulbOutlined /> },
-    {
-      name: '휴무관리',
-      icon: <RestOutlined />,
-      children: [
-        { path: '/leave', name: '휴무관리' },
-        { path: '/alternative-holidays', name: '대체휴무' },
-      ],
-    },
+    { path: '/leave', name: '휴무관리', icon: <RestOutlined /> },
     {
       name: '매출조회',
       icon: <BarChartOutlined />,
