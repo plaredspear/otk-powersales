@@ -31,6 +31,7 @@ import { fetchEmployees } from '@/api/employee';
 import { fetchAccounts } from '@/api/account';
 import { fetchProducts } from '@/api/product';
 import type { ProductExpiration, CreateProductExpirationRequest, UpdateProductExpirationRequest } from '@/api/productExpiration';
+import { useAuthStore } from '@/stores/authStore';
 
 const { RangePicker } = DatePicker;
 
@@ -42,6 +43,8 @@ const STATUS_OPTIONS = [
 ];
 
 export default function ProductExpirationPage() {
+  const user = useAuthStore((s) => s.user);
+
   // Filter state
   const [employeeKeyword, setEmployeeKeyword] = useState('');
   const [accountKeyword, setAccountKeyword] = useState('');
@@ -239,6 +242,18 @@ export default function ProductExpirationPage() {
 
   return (
     <div>
+      {/* Scope Badge */}
+      {user?.role === 'LEADER' && (
+        <Tag color="blue" style={{ marginBottom: 16, fontSize: 14, padding: '4px 12px' }}>
+          내 팀 ({user.orgName ?? ''})
+        </Tag>
+      )}
+      {user?.role === 'USER' && (
+        <Tag style={{ marginBottom: 16, fontSize: 14, padding: '4px 12px' }}>
+          내 데이터
+        </Tag>
+      )}
+
       {/* Summary Cards */}
       <Row gutter={16} style={{ marginBottom: 16 }}>
         <Col span={8}>
