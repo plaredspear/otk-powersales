@@ -144,6 +144,19 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             .execute()
     }
 
+    @Transactional
+    override fun deleteFutureWorkSchedulesByEmployeeId(employeeId: Long, fromDate: LocalDate): Long {
+        return queryFactory
+            .delete(teamMemberSchedule)
+            .where(
+                teamMemberSchedule.employee.id.eq(employeeId),
+                teamMemberSchedule.workingDate.gt(fromDate),
+                teamMemberSchedule.workingType.eq(WORKING_TYPE_WORK),
+                isNotDeleted()
+            )
+            .execute()
+    }
+
     override fun findAnnualLeaveByDateRange(from: LocalDate, to: LocalDate): List<TeamMemberSchedule> {
         return queryFactory
             .selectFrom(teamMemberSchedule)

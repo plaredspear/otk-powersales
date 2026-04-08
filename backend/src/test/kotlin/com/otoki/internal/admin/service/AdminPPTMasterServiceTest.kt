@@ -12,6 +12,7 @@ import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.sap.repository.EmployeeRepository
+import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
@@ -23,6 +24,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -39,6 +41,7 @@ class AdminPPTMasterServiceTest {
     @Mock private lateinit var pptHistoryRepository: PPTHistoryRepository
     @Mock private lateinit var employeeRepository: EmployeeRepository
     @Mock private lateinit var accountRepository: AccountRepository
+    @Mock private lateinit var teamMemberScheduleRepository: TeamMemberScheduleRepository
     @InjectMocks private lateinit var service: AdminPPTMasterService
 
     private fun createEmployee(
@@ -435,6 +438,117 @@ class AdminPPTMasterServiceTest {
             service.expireMasters()
 
             assertThat(employee.professionalPromotionTeam).isEqualTo("일반")
+        }
+    }
+
+    @Nested
+    @DisplayName("updateEmployeeTeam - 미래 근무일정 삭제")
+    inner class UpdateEmployeeTeamFutureScheduleTests {
+
+        @Test
+        @DisplayName("성공 - PPT 변경 시 미래 근무일정 삭제 호출됨")
+        fun updateEmployeeTeam_deletesFutureSchedules() {
+            val today = LocalDate.now()
+            val request = PPTMasterCreateRequest(
+                employeeId = 1L, accountId = 1, teamType = "라면세일조",
+                startDate = today, isConfirmed = true
+            )
+            val employee = createEmployee(professionalPromotionTeam = "일반")
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
+            whenever(accountRepository.findById(1)).thenReturn(Optional.of(createAccount()))
+            whenever(pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), anyOrNull()))
+                .thenReturn(emptyList())
+            whenever(pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L)).thenReturn(emptyList())
+            whenever(pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>()))
+                .thenAnswer { it.getArgument<ProfessionalPromotionTeamMaster>(0) }
+            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
+            whenever(pptHistoryRepository.save(any<ProfessionalPromotionTeamHistory>()))
+                .thenAnswer { it.getArgument<ProfessionalPromotionTeamHistory>(0) }
+
+            service.createMaster(request)
+
+            verify(teamMemberScheduleRepository).deleteFutureWorkSchedulesByEmployeeId(eq(1L), eq(today))
+        }
+
+        @Test
+        @DisplayName("동일 값 변경 없음 - 삭제 호출 안 됨")
+        fun updateEmployeeTeam_sameValue_noDelete() {
+            val today = LocalDate.now()
+            val request = PPTMasterCreateRequest(
+                employeeId = 1L, accountId = 1, teamType = "라면세일조",
+                startDate = today, isConfirmed = true
+            )
+            val employee = createEmployee(professionalPromotionTeam = "라면세일조")
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
+            whenever(accountRepository.findById(1)).thenReturn(Optional.of(createAccount()))
+            whenever(pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), anyOrNull()))
+                .thenReturn(emptyList())
+            whenever(pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L)).thenReturn(emptyList())
+            whenever(pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>()))
+                .thenAnswer { it.getArgument<ProfessionalPromotionTeamMaster>(0) }
+            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
+            whenever(pptHistoryRepository.save(any<ProfessionalPromotionTeamHistory>()))
+                .thenAnswer { it.getArgument<ProfessionalPromotionTeamHistory>(0) }
+
+            service.createMaster(request)
+
+            verify(teamMemberScheduleRepository, never()).deleteFutureWorkSchedulesByEmployeeId(any(), any())
+        }
+
+        @Test
+        @DisplayName("성공 - 마스터 삭제 시 일반 복귀 → 미래 근무일정 삭제 호출됨")
+        fun deleteMaster_revertToDefault_deletesFutureSchedules() {
+            val today = LocalDate.now()
+            val master = createMaster()
+            val employee = createEmployee(professionalPromotionTeam = "라면세일조")
+
+            whenever(pptMasterRepository.findById(1L)).thenReturn(Optional.of(master))
+            whenever(pptMasterRepository.findValidMastersByEmployeeId(1L, today)).thenReturn(emptyList())
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
+            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
+            whenever(pptHistoryRepository.save(any<ProfessionalPromotionTeamHistory>()))
+                .thenAnswer { it.getArgument<ProfessionalPromotionTeamHistory>(0) }
+
+            service.deleteMaster(1L)
+
+            verify(teamMemberScheduleRepository).deleteFutureWorkSchedulesByEmployeeId(eq(1L), eq(today))
+        }
+
+        @Test
+        @DisplayName("성공 - 배치 동기화 시 PPT 변경 → 미래 근무일정 삭제 호출됨")
+        fun syncValidMasters_deletesFutureSchedules() {
+            val today = LocalDate.now()
+            val master = createMaster(employeeId = 1L, teamType = "라면세일조")
+            val employee = createEmployee(professionalPromotionTeam = "일반")
+
+            whenever(pptMasterRepository.findValidMasters(today)).thenReturn(listOf(master))
+            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(employee))
+            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
+            whenever(pptHistoryRepository.save(any<ProfessionalPromotionTeamHistory>()))
+                .thenAnswer { it.getArgument<ProfessionalPromotionTeamHistory>(0) }
+
+            service.syncValidMasters()
+
+            verify(teamMemberScheduleRepository).deleteFutureWorkSchedulesByEmployeeId(eq(1L), eq(today))
+        }
+
+        @Test
+        @DisplayName("성공 - 배치 만료 시 일반 복귀 → 미래 근무일정 삭제 호출됨")
+        fun expireMasters_deletesFutureSchedules() {
+            val today = LocalDate.now()
+            val master = createMaster(employeeId = 1L, endDate = today)
+            val employee = createEmployee(professionalPromotionTeam = "라면세일조")
+
+            whenever(pptMasterRepository.findExpiringMasters(today)).thenReturn(listOf(master))
+            whenever(pptMasterRepository.findValidMastersByEmployeeId(1L, today)).thenReturn(listOf(master))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
+            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
+            whenever(pptHistoryRepository.save(any<ProfessionalPromotionTeamHistory>()))
+                .thenAnswer { it.getArgument<ProfessionalPromotionTeamHistory>(0) }
+
+            service.expireMasters()
+
+            verify(teamMemberScheduleRepository).deleteFutureWorkSchedulesByEmployeeId(eq(1L), eq(today))
         }
     }
 }
