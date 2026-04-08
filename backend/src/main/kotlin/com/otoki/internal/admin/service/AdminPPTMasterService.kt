@@ -14,6 +14,7 @@ import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.sap.repository.EmployeeRepository
+import com.otoki.internal.schedule.repository.TeamMemberScheduleRepository
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
@@ -28,7 +29,8 @@ class AdminPPTMasterService(
     private val pptMasterRepository: PPTMasterRepository,
     private val pptHistoryRepository: PPTHistoryRepository,
     private val employeeRepository: EmployeeRepository,
-    private val accountRepository: AccountRepository
+    private val accountRepository: AccountRepository,
+    private val teamMemberScheduleRepository: TeamMemberScheduleRepository
 ) {
 
     companion object {
@@ -353,6 +355,12 @@ class AdminPPTMasterService(
         val oldValue = employee.professionalPromotionTeam
         employee.professionalPromotionTeam = newTeamType
         employeeRepository.save(employee)
+
+        if (oldValue != newTeamType) {
+            teamMemberScheduleRepository.deleteFutureWorkSchedulesByEmployeeId(
+                employee.id, LocalDate.now()
+            )
+        }
 
         pptHistoryRepository.save(
             ProfessionalPromotionTeamHistory(
