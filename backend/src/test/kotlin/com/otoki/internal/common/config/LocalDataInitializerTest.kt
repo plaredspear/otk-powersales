@@ -1,9 +1,11 @@
 package com.otoki.internal.common.config
 
 import com.otoki.internal.common.entity.AgreementWord
+import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.sap.entity.UserRole
 import com.otoki.internal.common.repository.AgreementWordRepository
+import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.sap.entity.Organization
 import com.otoki.internal.sap.repository.OrganizationRepository
@@ -42,6 +44,9 @@ class LocalDataInitializerTest {
 
     @Mock
     private lateinit var agreementWordRepository: AgreementWordRepository
+
+    @Mock
+    private lateinit var accountRepository: AccountRepository
 
     @Mock
     private lateinit var organizationRepository: OrganizationRepository
@@ -93,10 +98,26 @@ class LocalDataInitializerTest {
         whenever(employeeRepository.existsByEmployeeCode("99990005")).thenReturn(true)
     }
 
+    private fun stubAllAccountsExist() {
+        for (i in 1..8) {
+            whenever(accountRepository.findByExternalKey("TEST-ACC-%03d".format(i)))
+                .thenReturn(Account(externalKey = "TEST-ACC-%03d".format(i)))
+        }
+    }
+
+    private fun stubAllAccountsNotExist() {
+        for (i in 1..8) {
+            whenever(accountRepository.findByExternalKey("TEST-ACC-%03d".format(i)))
+                .thenReturn(null)
+        }
+        whenever(accountRepository.save(any<Account>())).thenAnswer { it.getArgument<Account>(0) }
+    }
+
     private fun stubOtherSeedsExist() {
         whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
             .thenReturn(Optional.of(AgreementWord()))
         whenever(organizationRepository.count()).thenReturn(1L)
+        stubAllAccountsExist()
         whenever(promotionTypeRepository.count()).thenReturn(1L)
     }
 
@@ -418,6 +439,61 @@ class LocalDataInitializerTest {
                 assertThat(aw.activeDate).isNotNull()
                 assertThat(aw.createdAt).isNotNull()
             })
+        }
+    }
+
+    @Nested
+    @DisplayName("seedAccount - 거래처 시드 생성")
+    inner class AccountSeedTests {
+
+        @Test
+        @DisplayName("정상 생성 - 거래처 없음 -> 8건 생성")
+        fun createsAccounts_whenNotExists() {
+            // Given
+            stubAllUsersExist()
+            stubOtherSeedsExist()
+            stubAllAccountsNotExist()
+
+            // When
+            localDataInitializer.run(null)
+
+            // Then
+            verify(accountRepository, times(8)).save(any<Account>())
+        }
+
+        @Test
+        @DisplayName("멱등성 - 거래처 이미 존재 -> save 미호출")
+        fun skipsAccounts_whenAlreadyExists() {
+            // Given
+            stubAllUsersExist()
+            stubOtherSeedsExist()
+
+            // When
+            localDataInitializer.run(null)
+
+            // Then
+            verify(accountRepository, never()).save(any<Account>())
+        }
+
+        @Test
+        @DisplayName("테스트지점 거래처 5건 + 강남지점 거래처 3건 검증")
+        fun createsAccountsWithCorrectBranches() {
+            // Given
+            stubAllUsersExist()
+            stubOtherSeedsExist()
+            stubAllAccountsNotExist()
+
+            // When
+            localDataInitializer.run(null)
+
+            // Then
+            val captor = argumentCaptor<Account>()
+            verify(accountRepository, times(8)).save(captor.capture())
+
+            val testBranch = captor.allValues.filter { it.branchCode == "1111" }
+            val gangnamBranch = captor.allValues.filter { it.branchCode == "1112" }
+            assertThat(testBranch).hasSize(5)
+            assertThat(gangnamBranch).hasSize(3)
         }
     }
 

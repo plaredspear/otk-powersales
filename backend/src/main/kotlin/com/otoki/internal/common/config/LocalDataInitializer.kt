@@ -1,8 +1,10 @@
 package com.otoki.internal.common.config
 
 import com.otoki.internal.common.entity.AgreementWord
+import com.otoki.internal.sap.entity.Account
 import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.common.repository.AgreementWordRepository
+import com.otoki.internal.sap.repository.AccountRepository
 import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.sap.entity.Organization
 import com.otoki.internal.sap.repository.OrganizationRepository
@@ -24,6 +26,7 @@ class LocalDataInitializer(
     private val employeeRepository: EmployeeRepository,
     private val passwordEncoder: PasswordEncoder,
     private val agreementWordRepository: AgreementWordRepository,
+    private val accountRepository: AccountRepository,
     private val organizationRepository: OrganizationRepository,
     private val promotionTypeRepository: PromotionTypeRepository,
     private val transactionTemplate: TransactionTemplate,
@@ -36,6 +39,7 @@ class LocalDataInitializer(
         runSafely("seedUser") { seedUser() }
         runSafely("seedAgreementWord") { seedAgreementWord() }
         runSafely("seedOrg") { seedOrg() }
+        runSafely("seedAccount") { seedAccount() }
         runSafely("seedPromotionType") { seedPromotionType() }
     }
 
@@ -147,6 +151,45 @@ class LocalDataInitializer(
 
         organizationRepository.saveAll(orgs)
         log.info("조직마스터 시드 데이터 생성 완료: {}건", orgs.size)
+    }
+
+    private fun seedAccount() {
+        data class SeedAccount(
+            val externalKey: String, val name: String, val branchCode: String,
+            val branchName: String, val abcType: String, val address1: String,
+            val phone: String, val accountGroup: String,
+            val accountStatusName: String, val employeeCode: String
+        )
+
+        val seeds = listOf(
+            SeedAccount("TEST-ACC-001", "테스트_이마트 테스트점", "1111", "테스트지점", "A", "서울 강남구 테헤란로 1", "02-1111-0001", "10", "정상", "99990004"),
+            SeedAccount("TEST-ACC-002", "테스트_홈플러스 테스트점", "1111", "테스트지점", "A", "서울 강남구 테헤란로 2", "02-1111-0002", "10", "정상", "99990004"),
+            SeedAccount("TEST-ACC-003", "테스트_롯데마트 테스트점", "1111", "테스트지점", "B", "서울 강남구 테헤란로 3", "02-1111-0003", "10", "정상", "99990004"),
+            SeedAccount("TEST-ACC-004", "테스트_GS25 테스트점", "1111", "테스트지점", "B", "서울 강남구 테헤란로 4", "02-1111-0004", "20", "정상", "99990004"),
+            SeedAccount("TEST-ACC-005", "테스트_CU 테스트점", "1111", "테스트지점", "C", "서울 강남구 테헤란로 5", "02-1111-0005", "20", "정상", "99990004"),
+            SeedAccount("TEST-ACC-006", "테스트_이마트 강남점", "1112", "강남지점", "A", "서울 강남구 역삼로 1", "02-1112-0001", "10", "정상", "99990005"),
+            SeedAccount("TEST-ACC-007", "테스트_홈플러스 강남점", "1112", "강남지점", "A", "서울 강남구 역삼로 2", "02-1112-0002", "10", "정상", "99990005"),
+            SeedAccount("TEST-ACC-008", "테스트_롯데마트 강남점", "1112", "강남지점", "B", "서울 강남구 역삼로 3", "02-1112-0003", "10", "정상", "99990005")
+        )
+
+        for (seed in seeds) {
+            if (accountRepository.findByExternalKey(seed.externalKey) != null) continue
+
+            val account = Account(
+                externalKey = seed.externalKey,
+                name = seed.name,
+                branchCode = seed.branchCode,
+                branchName = seed.branchName,
+                abcType = seed.abcType,
+                address1 = seed.address1,
+                phone = seed.phone,
+                accountGroup = seed.accountGroup,
+                accountStatusName = seed.accountStatusName,
+                employeeCode = seed.employeeCode
+            )
+            accountRepository.save(account)
+            log.info("시드 거래처 생성 완료: externalKey={}, name={}", seed.externalKey, seed.name)
+        }
     }
 
     private fun seedPromotionType() {
