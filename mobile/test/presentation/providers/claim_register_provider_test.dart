@@ -4,8 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/domain/entities/claim_category.dart';
 import 'package:mobile/domain/entities/claim_code.dart';
+import 'package:mobile/domain/entities/claim_detail.dart';
 import 'package:mobile/domain/entities/claim_form.dart';
 import 'package:mobile/domain/entities/claim_form_data.dart';
+import 'package:mobile/domain/entities/claim_list_item.dart';
 import 'package:mobile/domain/entities/claim_result.dart';
 import 'package:mobile/domain/repositories/claim_repository.dart';
 import 'package:mobile/domain/usecases/get_claim_form_data_usecase.dart';
@@ -363,6 +365,19 @@ class FakeClaimRepository implements ClaimRepository {
     }
 
     return formDataToReturn!;
+  }
+
+  @override
+  Future<List<ClaimListItem>> getClaims({
+    String? startDate,
+    String? endDate,
+  }) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<ClaimDetail> getClaimDetail(int claimId) async {
+    throw UnimplementedError();
   }
 }
 
