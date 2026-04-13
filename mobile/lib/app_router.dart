@@ -3,6 +3,8 @@ import 'domain/entities/education_category.dart';
 import 'domain/entities/product_expiration_item.dart';
 import 'presentation/pages/attendance_page.dart';
 import 'presentation/pages/attendance_complete_page.dart';
+import 'presentation/pages/claim_detail_page.dart';
+import 'presentation/pages/claim_list_page.dart';
 import 'presentation/pages/claim_register_page.dart';
 import 'presentation/pages/client_order_detail_page.dart';
 import 'presentation/pages/education_list_page.dart';
@@ -70,6 +72,8 @@ class AppRouter {
   static const String inspectionList = '/inspection-list';
   static const String inspectionDetail = '/inspection-detail';
   static const String inspectionRegister = '/inspection-register';
+  static const String claimList = '/claim/list';
+  static const String claimDetail = '/claim/detail';
   static const String claimRegister = '/claim/register';
   static const String suggestionRegister = '/suggestion/register';
   static const String education = '/education';
@@ -143,6 +147,11 @@ class AppRouter {
           return InspectionDetailPage(inspectionId: inspectionId);
         },
         inspectionRegister: (context) => const InspectionRegisterPage(),
+        claimList: (context) => const ClaimListPage(),
+        claimDetail: (context) {
+          final claimId = ModalRoute.of(context)!.settings.arguments as int;
+          return ClaimDetailPage(claimId: claimId);
+        },
         claimRegister: (context) => const ClaimRegisterPage(),
         suggestionRegister: (context) => const SuggestionRegisterPage(),
         education: (context) => const EducationMainPage(),

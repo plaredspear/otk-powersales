@@ -53,6 +53,7 @@ abstract final class MenuConstants {
       label: '현장톡',
       items: [
         MenuItem(id: 'field-check', label: '현장 점검'),
+        MenuItem(id: 'claim-list', label: '클레임 현황', route: '/claim/list'),
         MenuItem(id: 'claims', label: '클레임 등록'),
         MenuItem(id: 'suggestions', label: '제안하기'),
       ],

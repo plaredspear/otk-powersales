@@ -4,7 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/data/datasources/claim_remote_datasource.dart';
 import 'package:mobile/data/models/claim_category_model.dart';
 import 'package:mobile/data/models/claim_code_model.dart';
+import 'package:mobile/data/models/claim_detail_model.dart';
 import 'package:mobile/data/models/claim_form_data_model.dart';
+import 'package:mobile/data/models/claim_list_item_model.dart';
 import 'package:mobile/data/models/claim_register_request.dart';
 import 'package:mobile/data/models/claim_register_result_model.dart';
 import 'package:mobile/data/repositories/claim_repository_impl.dart';
@@ -214,5 +216,18 @@ class FakeClaimRemoteDataSource implements ClaimRemoteDataSource {
   Future<ClaimFormDataModel> getFormData() async {
     getFormDataCalls++;
     return formDataToReturn!;
+  }
+
+  @override
+  Future<List<ClaimListItemModel>> getClaims({
+    String? startDate,
+    String? endDate,
+  }) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<ClaimDetailModel> getClaimDetail(int claimId) async {
+    throw UnimplementedError();
   }
 }
