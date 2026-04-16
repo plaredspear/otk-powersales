@@ -1,6 +1,7 @@
 package com.otoki.internal.auth.service
 
 import com.otoki.internal.common.config.DeviceBindingProperties
+import com.otoki.internal.admin.security.AdminPermission
 import com.otoki.internal.auth.dto.request.ChangePasswordRequest
 import com.otoki.internal.common.dto.request.GpsConsentRequest
 import com.otoki.internal.auth.dto.request.LoginRequest
@@ -61,6 +62,9 @@ class AuthServiceTest {
     @Mock
     private lateinit var deviceBindingProperties: DeviceBindingProperties
 
+    @Mock
+    private lateinit var adminPermissionResolver: com.otoki.internal.admin.service.AdminPermissionResolver
+
     @InjectMocks
     private lateinit var authService: AuthService
 
@@ -91,6 +95,7 @@ class AuthServiceTest {
 
         whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode(employeeCode)).thenReturn(employee)
         whenever(passwordEncoder.matches(rawPassword, encodedPassword)).thenReturn(true)
+        whenever(adminPermissionResolver.resolve(employee)).thenReturn(AdminPermission.entries.toSet())
         whenever(jwtTokenProvider.createAccessToken(employee.id, employee.role, false)).thenReturn(accessToken)
         whenever(jwtTokenProvider.createRefreshToken(eq(employee.id), any(), any())).thenReturn(refreshToken)
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(expiresIn)
@@ -124,6 +129,7 @@ class AuthServiceTest {
 
         whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode(employeeCode)).thenReturn(employee)
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
+        whenever(adminPermissionResolver.resolve(employee)).thenReturn(AdminPermission.entries.toSet())
         whenever(jwtTokenProvider.createAccessToken(employee.id, employee.role)).thenReturn("token")
         whenever(jwtTokenProvider.createRefreshToken(eq(employee.id), any(), any())).thenReturn("refresh")
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
@@ -148,6 +154,7 @@ class AuthServiceTest {
 
         whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode(employeeCode)).thenReturn(employee)
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
+        whenever(adminPermissionResolver.resolve(employee)).thenReturn(AdminPermission.entries.toSet())
         whenever(loginHistoryRepository.save(any<LoginHistory>())).thenThrow(RuntimeException("DB error"))
         whenever(jwtTokenProvider.createAccessToken(employee.id, employee.role)).thenReturn("token")
         whenever(jwtTokenProvider.createRefreshToken(eq(employee.id), any(), any())).thenReturn("refresh")
@@ -716,6 +723,7 @@ class AuthServiceTest {
 
         whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678")).thenReturn(employee)
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
+        whenever(adminPermissionResolver.resolve(employee)).thenReturn(AdminPermission.entries.toSet())
         whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER, false)).thenReturn("token")
         whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
@@ -785,6 +793,7 @@ class AuthServiceTest {
 
             whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678")).thenReturn(employee)
             whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
+            whenever(adminPermissionResolver.resolve(employee)).thenReturn(AdminPermission.entries.toSet())
             whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER, false)).thenReturn("token")
             whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
             whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
@@ -828,6 +837,7 @@ class AuthServiceTest {
 
             whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678")).thenReturn(employee)
             whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
+            whenever(adminPermissionResolver.resolve(employee)).thenReturn(emptySet())
 
             // When & Then
             assertThatThrownBy { authService.login(request) }
@@ -843,6 +853,7 @@ class AuthServiceTest {
 
             whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678")).thenReturn(employee)
             whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
+            whenever(adminPermissionResolver.resolve(employee)).thenReturn(emptySet())
 
             // When & Then
             assertThatThrownBy { authService.login(request) }
@@ -895,6 +906,7 @@ class AuthServiceTest {
 
             whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678")).thenReturn(employee)
             whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
+            whenever(adminPermissionResolver.resolve(employee)).thenReturn(AdminPermission.entries.toSet())
             whenever(jwtTokenProvider.createAccessToken(1L, UserRole.LEADER, false)).thenReturn("admin-token")
             whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("admin-refresh")
             whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
@@ -951,6 +963,7 @@ class AuthServiceTest {
 
             whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678")).thenReturn(employee)
             whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
+            whenever(adminPermissionResolver.resolve(employee)).thenReturn(emptySet())
 
             // When & Then
             assertThatThrownBy { authService.adminLogin(request) }
@@ -966,6 +979,7 @@ class AuthServiceTest {
 
             whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678")).thenReturn(employee)
             whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
+            whenever(adminPermissionResolver.resolve(employee)).thenReturn(emptySet())
 
             // When & Then
             assertThatThrownBy { authService.adminLogin(request) }

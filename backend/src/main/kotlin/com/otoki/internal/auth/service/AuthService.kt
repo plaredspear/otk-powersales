@@ -6,10 +6,10 @@ import com.otoki.internal.common.dto.request.GpsConsentRequest
 import com.otoki.internal.auth.dto.request.LoginRequest
 import com.otoki.internal.auth.dto.request.RefreshTokenRequest
 import com.otoki.internal.auth.dto.request.VerifyPasswordRequest
-import com.otoki.internal.admin.security.AdminRolePermissions
 import com.otoki.internal.admin.dto.response.AdminLoginResponse
 import com.otoki.internal.admin.dto.response.AdminTokenInfo
 import com.otoki.internal.admin.dto.response.AdminUserInfo
+import com.otoki.internal.admin.service.AdminPermissionResolver
 import com.otoki.internal.auth.dto.response.*
 import com.otoki.internal.common.dto.response.*
 import com.otoki.internal.common.entity.AgreementHistory
@@ -40,7 +40,8 @@ class AuthService(
     private val agreementHistoryRepository: AgreementHistoryRepository,
     private val passwordEncoder: PasswordEncoder,
     private val jwtTokenProvider: JwtTokenProvider,
-    private val deviceBindingProperties: DeviceBindingProperties
+    private val deviceBindingProperties: DeviceBindingProperties,
+    private val adminPermissionResolver: AdminPermissionResolver
 ) {
 
     private val log = LoggerFactory.getLogger(AuthService::class.java)
@@ -116,7 +117,7 @@ class AuthService(
             throw InvalidCredentialsException()
         }
 
-        if (employee.appAuthority == null || AdminRolePermissions.getPermissions(employee.appAuthority).isEmpty()) {
+        if (adminPermissionResolver.resolve(employee).isEmpty()) {
             throw WebLoginNotAllowedException()
         }
 
@@ -135,7 +136,7 @@ class AuthService(
         jwtTokenProvider.storeRefreshToken(tokenId, employee.id, familyId)
 
         return AdminLoginResponse(
-            user = AdminUserInfo.from(employee),
+            user = AdminUserInfo.from(employee, adminPermissionResolver),
             token = AdminTokenInfo(
                 accessToken = accessToken,
                 refreshToken = refreshToken,
@@ -177,7 +178,7 @@ class AuthService(
     private fun validateLoginAuthority(employee: Employee, deviceId: String?) {
         if (deviceId.isNullOrBlank()) {
             // WEB 로그인
-            if (employee.appAuthority == null || AdminRolePermissions.getPermissions(employee.appAuthority).isEmpty()) {
+            if (adminPermissionResolver.resolve(employee).isEmpty()) {
                 throw WebLoginNotAllowedException()
             }
         } else {

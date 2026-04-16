@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.otoki.internal.admin.scope.AdminEmployeeHolder
 import com.otoki.internal.admin.scope.DataScopeHolder
 import com.otoki.internal.admin.service.AdminDataScopeService
+import com.otoki.internal.admin.service.AdminPermissionResolver
 import com.otoki.internal.common.dto.ApiResponse
 import com.otoki.internal.sap.repository.EmployeeRepository
 import com.otoki.internal.common.security.UserPrincipal
@@ -24,7 +25,8 @@ class AdminAuthorityFilter(
     private val adminDataScopeService: AdminDataScopeService,
     private val adminEmployeeHolder: AdminEmployeeHolder,
     private val dataScopeHolder: DataScopeHolder,
-    private val requestMappingHandlerMapping: RequestMappingHandlerMapping
+    private val requestMappingHandlerMapping: RequestMappingHandlerMapping,
+    private val adminPermissionResolver: AdminPermissionResolver
 ) : OncePerRequestFilter() {
 
     override fun doFilterInternal(
@@ -49,9 +51,7 @@ class AdminAuthorityFilter(
             writeErrorResponse(response, "FORBIDDEN", "관리자 권한이 없습니다")
             return
         }
-        val appAuthority = employee.appAuthority
-
-        val permissions = AdminRolePermissions.getPermissions(appAuthority)
+        val permissions = adminPermissionResolver.resolve(employee)
 
         if (permissions.isEmpty()) {
             writeErrorResponse(response, "FORBIDDEN", "관리자 권한이 없습니다")

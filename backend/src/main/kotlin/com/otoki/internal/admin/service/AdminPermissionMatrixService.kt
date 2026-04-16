@@ -1,8 +1,8 @@
 package com.otoki.internal.admin.service
 
 import com.otoki.internal.admin.dto.response.*
+import com.otoki.internal.admin.repository.RolePermissionRepository
 import com.otoki.internal.admin.security.AdminPermission
-import com.otoki.internal.admin.security.AdminRolePermissions
 import com.otoki.internal.auth.exception.EmployeeNotFoundException
 import com.otoki.internal.sap.repository.EmployeeRepository
 import org.springframework.stereotype.Service
@@ -11,7 +11,9 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 @Transactional(readOnly = true)
 class AdminPermissionMatrixService(
-    private val employeeRepository: EmployeeRepository
+    private val employeeRepository: EmployeeRepository,
+    private val rolePermissionRepository: RolePermissionRepository,
+    private val adminPermissionResolver: AdminPermissionResolver
 ) {
 
     private val permissionInfoMap: Map<AdminPermission, Pair<String, List<String>>> = mapOf(
@@ -35,26 +37,29 @@ class AdminPermissionMatrixService(
             )
         }
 
-        val allRolePermissions = AdminRolePermissions.getAllRolePermissions()
-        val roles = allRolePermissions.map { (role, perms) ->
-            RolePermissions(
-                role = role,
-                permissions = perms.map { it.name }
-            )
-        }
+        val allRolePermissions = rolePermissionRepository.findAll()
+            .groupBy { it.role }
+            .map { (role, perms) ->
+                RolePermissions(
+                    role = role,
+                    permissions = perms.map { it.permission }
+                )
+            }
 
         val employee = employeeRepository.findById(userId)
             .orElseThrow { EmployeeNotFoundException() }
         val userRole = employee.appAuthority ?: ""
-        val userPermissions = AdminRolePermissions.getPermissions(employee.appAuthority)
+        val userPermissions = adminPermissionResolver.resolve(employee)
             .map { it.name }
+        val isSystemAdmin = employee.appAuthority == "시스템관리자"
 
         return PermissionMatrixResponse(
             permissions = permissions,
-            roles = roles,
+            roles = allRolePermissions,
             currentUser = CurrentUserPermission(
                 role = userRole,
-                permissions = userPermissions
+                permissions = userPermissions,
+                canManagePermissions = isSystemAdmin
             )
         )
     }

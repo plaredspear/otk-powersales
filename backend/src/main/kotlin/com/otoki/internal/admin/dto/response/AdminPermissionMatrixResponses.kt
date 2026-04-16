@@ -19,5 +19,6 @@ data class RolePermissions(
 
 data class CurrentUserPermission(
     val role: String,
-    val permissions: List<String>
+    val permissions: List<String>,
+    val canManagePermissions: Boolean = false
 )

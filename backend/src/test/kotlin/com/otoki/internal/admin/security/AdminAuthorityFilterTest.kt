@@ -8,6 +8,7 @@ import com.otoki.internal.admin.dto.DataScope
 import com.otoki.internal.admin.scope.AdminEmployeeHolder
 import com.otoki.internal.admin.scope.DataScopeHolder
 import com.otoki.internal.admin.service.AdminDataScopeService
+import com.otoki.internal.admin.service.AdminPermissionResolver
 import com.otoki.internal.sap.entity.Employee
 import com.otoki.internal.sap.entity.UserRole
 import com.otoki.internal.sap.repository.EmployeeRepository
@@ -42,6 +43,9 @@ class AdminAuthorityFilterTest {
     @Mock
     private lateinit var requestMappingHandlerMapping: RequestMappingHandlerMapping
 
+    @Mock
+    private lateinit var adminPermissionResolver: AdminPermissionResolver
+
     private lateinit var adminEmployeeHolder: AdminEmployeeHolder
     private lateinit var dataScopeHolder: DataScopeHolder
     private lateinit var filter: AdminAuthorityFilter
@@ -56,7 +60,7 @@ class AdminAuthorityFilterTest {
         }
         adminEmployeeHolder = AdminEmployeeHolder()
         dataScopeHolder = DataScopeHolder()
-        filter = AdminAuthorityFilter(employeeRepository, objectMapper, adminDataScopeService, adminEmployeeHolder, dataScopeHolder, requestMappingHandlerMapping)
+        filter = AdminAuthorityFilter(employeeRepository, objectMapper, adminDataScopeService, adminEmployeeHolder, dataScopeHolder, requestMappingHandlerMapping, adminPermissionResolver)
         SecurityContextHolder.clearContext()
     }
 
@@ -70,6 +74,7 @@ class AdminAuthorityFilterTest {
             setAuthentication(1L)
             val employee = createEmployee(1L, "조장")
             whenever(employeeRepository.findWithEmployeeInfoById(1L)).thenReturn(employee)
+            whenever(adminPermissionResolver.resolve(employee)).thenReturn(AdminPermission.entries.toSet())
             val scope = DataScope(branchCodes = listOf("A001"), isAllBranches = false)
             whenever(adminDataScopeService.resolve(employee)).thenReturn(scope)
 
@@ -90,6 +95,7 @@ class AdminAuthorityFilterTest {
             setAuthentication(2L)
             val employee = createEmployee(2L, "영업지원실")
             whenever(employeeRepository.findWithEmployeeInfoById(2L)).thenReturn(employee)
+            whenever(adminPermissionResolver.resolve(employee)).thenReturn(AdminPermission.entries.toSet())
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
             whenever(adminDataScopeService.resolve(employee)).thenReturn(scope)
 
@@ -113,7 +119,9 @@ class AdminAuthorityFilterTest {
         @DisplayName("appAuthority가 null - 403 Forbidden")
         fun nullAuthority() {
             setAuthentication(1L)
-            whenever(employeeRepository.findWithEmployeeInfoById(1L)).thenReturn(createEmployee(1L, null))
+            val employee = createEmployee(1L, null)
+            whenever(employeeRepository.findWithEmployeeInfoById(1L)).thenReturn(employee)
+            whenever(adminPermissionResolver.resolve(employee)).thenReturn(emptySet())
 
             val request = MockHttpServletRequest()
             val response = MockHttpServletResponse()
@@ -131,7 +139,9 @@ class AdminAuthorityFilterTest {
         @DisplayName("허용 목록에 없는 권한 - 403 Forbidden")
         fun unknownAuthority() {
             setAuthentication(1L)
-            whenever(employeeRepository.findWithEmployeeInfoById(1L)).thenReturn(createEmployee(1L, "일반사원"))
+            val employee = createEmployee(1L, "일반사원")
+            whenever(employeeRepository.findWithEmployeeInfoById(1L)).thenReturn(employee)
+            whenever(adminPermissionResolver.resolve(employee)).thenReturn(emptySet())
 
             val request = MockHttpServletRequest()
             val response = MockHttpServletResponse()
@@ -189,6 +199,7 @@ class AdminAuthorityFilterTest {
             setAuthentication(1L)
             val employee = createEmployee(1L, "조장")
             whenever(employeeRepository.findWithEmployeeInfoById(1L)).thenReturn(employee)
+            whenever(adminPermissionResolver.resolve(employee)).thenReturn(AdminPermission.entries.toSet())
             val scope = DataScope(branchCodes = listOf("B001"), isAllBranches = false)
             whenever(adminDataScopeService.resolve(employee)).thenReturn(scope)
 
@@ -205,7 +216,9 @@ class AdminAuthorityFilterTest {
         @DisplayName("권한 체크 실패 시 DataScope 미설정")
         fun dataScopeNotSetOnForbidden() {
             setAuthentication(1L)
-            whenever(employeeRepository.findWithEmployeeInfoById(1L)).thenReturn(createEmployee(1L, "일반사원"))
+            val employee = createEmployee(1L, "일반사원")
+            whenever(employeeRepository.findWithEmployeeInfoById(1L)).thenReturn(employee)
+            whenever(adminPermissionResolver.resolve(employee)).thenReturn(emptySet())
 
             val request = MockHttpServletRequest()
             val response = MockHttpServletResponse()
