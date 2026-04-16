@@ -35,6 +35,9 @@ class AdminPermissionMatrixControllerTest {
     private lateinit var adminPermissionMatrixService: AdminPermissionMatrixService
 
     @MockitoBean
+    private lateinit var adminEmployeePermissionService: com.otoki.internal.admin.service.AdminEmployeePermissionService
+
+    @MockitoBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
     @MockitoBean

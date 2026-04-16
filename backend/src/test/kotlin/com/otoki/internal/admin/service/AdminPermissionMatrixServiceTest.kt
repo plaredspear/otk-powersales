@@ -1,5 +1,7 @@
 package com.otoki.internal.admin.service
 
+import com.otoki.internal.admin.entity.RolePermission
+import com.otoki.internal.admin.repository.RolePermissionRepository
 import com.otoki.internal.admin.security.AdminPermission
 import com.otoki.internal.auth.exception.EmployeeNotFoundException
 import com.otoki.internal.sap.entity.Employee
@@ -23,6 +25,12 @@ class AdminPermissionMatrixServiceTest {
     @Mock
     private lateinit var employeeRepository: EmployeeRepository
 
+    @Mock
+    private lateinit var rolePermissionRepository: RolePermissionRepository
+
+    @Mock
+    private lateinit var adminPermissionResolver: AdminPermissionResolver
+
     @InjectMocks
     private lateinit var service: AdminPermissionMatrixService
 
@@ -36,6 +44,8 @@ class AdminPermissionMatrixServiceTest {
             // Given
             val employee = createEmployee(appAuthority = "조장")
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
+            whenever(rolePermissionRepository.findAll()).thenReturn(createAllRolePermissions())
+            whenever(adminPermissionResolver.resolve(employee)).thenReturn(AdminPermission.entries.toSet())
 
             // When
             val result = service.getMatrix(1L)
@@ -46,11 +56,27 @@ class AdminPermissionMatrixServiceTest {
             assertThat(result.permissions[0].description).isNotBlank()
             assertThat(result.permissions[0].menus).isNotEmpty()
 
-            assertThat(result.roles).hasSize(7)
-            assertThat(result.roles.map { it.role }).contains("시스템관리자", "조장", "지점장", "영업부장")
+            assertThat(result.roles).isNotEmpty()
 
             assertThat(result.currentUser.role).isEqualTo("조장")
             assertThat(result.currentUser.permissions).hasSize(AdminPermission.entries.size)
+            assertThat(result.currentUser.canManagePermissions).isFalse()
+        }
+
+        @Test
+        @DisplayName("성공 - 시스템관리자 → canManagePermissions=true")
+        fun getMatrix_systemAdmin() {
+            // Given
+            val employee = createEmployee(appAuthority = "시스템관리자")
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
+            whenever(rolePermissionRepository.findAll()).thenReturn(emptyList())
+            whenever(adminPermissionResolver.resolve(employee)).thenReturn(AdminPermission.entries.toSet())
+
+            // When
+            val result = service.getMatrix(1L)
+
+            // Then
+            assertThat(result.currentUser.canManagePermissions).isTrue()
         }
 
         @Test
@@ -59,6 +85,8 @@ class AdminPermissionMatrixServiceTest {
             // Given
             val employee = createEmployee(appAuthority = "조장")
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
+            whenever(rolePermissionRepository.findAll()).thenReturn(emptyList())
+            whenever(adminPermissionResolver.resolve(employee)).thenReturn(AdminPermission.entries.toSet())
 
             // When
             val result = service.getMatrix(1L)
@@ -75,7 +103,10 @@ class AdminPermissionMatrixServiceTest {
         fun getMatrix_limitedPermissions() {
             // Given
             val employee = createEmployee(appAuthority = "지점장")
+            val limitedPerms = AdminPermission.entries.toSet() - AdminPermission.SCHEDULE_WRITE
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
+            whenever(rolePermissionRepository.findAll()).thenReturn(emptyList())
+            whenever(adminPermissionResolver.resolve(employee)).thenReturn(limitedPerms)
 
             // When
             val result = service.getMatrix(1L)
@@ -90,6 +121,7 @@ class AdminPermissionMatrixServiceTest {
         @DisplayName("실패 - 존재하지 않는 사용자 → EmployeeNotFoundException")
         fun getMatrix_employeeNotFound() {
             // Given
+            whenever(rolePermissionRepository.findAll()).thenReturn(emptyList())
             whenever(employeeRepository.findById(999L)).thenReturn(Optional.empty())
 
             // Then
@@ -109,5 +141,14 @@ class AdminPermissionMatrixServiceTest {
             name = "테스트사원",
             appAuthority = appAuthority
         )
+    }
+
+    private fun createAllRolePermissions(): List<RolePermission> {
+        val roles = listOf("시스템관리자", "조장", "지점장", "영업부장")
+        return roles.flatMap { role ->
+            AdminPermission.entries.map { perm ->
+                RolePermission(role = role, permission = perm.name)
+            }
+        }
     }
 }

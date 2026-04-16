@@ -1,6 +1,6 @@
 package com.otoki.internal.admin.dto.response
 
-import com.otoki.internal.admin.security.AdminRolePermissions
+import com.otoki.internal.admin.service.AdminPermissionResolver
 import com.otoki.internal.sap.entity.Employee
 
 data class AdminLoginResponse(
@@ -19,8 +19,8 @@ data class AdminUserInfo(
     val permissions: List<String>
 ) {
     companion object {
-        fun from(employee: Employee): AdminUserInfo {
-            val permissionNames = AdminRolePermissions.getPermissions(employee.appAuthority)
+        fun from(employee: Employee, permissionResolver: AdminPermissionResolver): AdminUserInfo {
+            val permissionNames = permissionResolver.resolve(employee)
                 .map { it.name }
             return AdminUserInfo(
                 id = employee.id,
