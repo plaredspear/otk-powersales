@@ -20,12 +20,30 @@ export interface RolePermissions {
 export interface CurrentUserPermission {
   role: string;
   permissions: string[];
+  can_manage_permissions: boolean;
 }
 
 export interface PermissionMatrixData {
   permissions: PermissionDetail[];
   roles: RolePermissions[];
   current_user: CurrentUserPermission;
+}
+
+export interface UpdateRolePermissionsRequest {
+  permissions: string[];
+}
+
+export async function updateRolePermissions(
+  role: string,
+  request: UpdateRolePermissionsRequest,
+): Promise<{ role: string; permissions: string[] }> {
+  const res = await client.put<
+    ApiResponse<{ role: string; permissions: string[] }>
+  >(`/api/v1/admin/permissions/roles/${encodeURIComponent(role)}`, request);
+  if (!res.data.success || !res.data.data) {
+    throw new Error('역할 권한 수정에 실패했습니다');
+  }
+  return res.data.data;
 }
 
 export async function fetchPermissionMatrix(): Promise<PermissionMatrixData> {
