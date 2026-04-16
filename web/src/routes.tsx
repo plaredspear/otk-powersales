@@ -40,6 +40,7 @@ const CategorySchedulePage = lazy(() => import('@/pages/schedules/CategorySchedu
 const PPTMasterPage = lazy(() => import('@/pages/promotion/PPTMasterPage'));
 const PermissionMatrixPage = lazy(() => import('@/pages/settings/PermissionMatrixPage'));
 const ProductExpirationPage = lazy(() => import('@/pages/ProductExpirationPage'));
+const EmployeePermissionPage = lazy(() => import('@/pages/settings/EmployeePermissionPage'));
 
 // eslint-disable-next-line react-refresh/only-export-components
 function LazyWrapper({ children }: { children: React.ReactNode }) {
@@ -99,6 +100,7 @@ export const router = createBrowserRouter(
             { path: '/settings/organizations', element: <LazyWrapper><OrganizationPage /></LazyWrapper> },
             { path: '/settings/holiday-masters', element: <LazyWrapper><HolidayMasterListPage /></LazyWrapper> },
             { path: '/settings/permissions', element: <LazyWrapper><PermissionMatrixPage /></LazyWrapper> },
+            { path: '/settings/permissions/employees', element: <LazyWrapper><EmployeePermissionPage /></LazyWrapper> },
             { path: '/monthly-integration', element: <LazyWrapper><MonthlyIntegrationSchedulePage /></LazyWrapper> },
             { path: '/monthly-integration/category', element: <LazyWrapper><CategorySchedulePage /></LazyWrapper> },
             { path: '/promotion/ppt-masters', element: <LazyWrapper><PPTMasterPage /></LazyWrapper> },
