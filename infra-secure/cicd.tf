@@ -10,9 +10,9 @@
 # CodeBuild — backend
 # ---------------------------------------------------------------------------
 resource "aws_codebuild_project" "backend" {
-  name           = "${local.name_prefix}-backend-build"
-  service_role   = aws_iam_role.backend_build.arn
-  build_timeout  = 60
+  name          = "${local.name_prefix}-backend-build"
+  service_role  = aws_iam_role.backend_build.arn
+  build_timeout = 60
 
   artifacts {
     type = "NO_ARTIFACTS"
@@ -70,7 +70,7 @@ resource "aws_codebuild_project" "backend" {
       status = "ENABLED"
     }
     s3_logs {
-      status             = "DISABLED"
+      status              = "DISABLED"
       encryption_disabled = false
     }
   }
@@ -104,12 +104,6 @@ resource "aws_codebuild_project" "web" {
       name  = "DISTRIBUTION_ID"
       value = aws_cloudfront_distribution.web.id
     }
-
-    # Vite build-time env. 빌드 산출물에 번들되어 브라우저가 backend API 를 호출.
-    environment_variable {
-      name  = "VITE_API_BASE_URL"
-      value = "https://${local.api_fqdn}"
-    }
   }
 
   source {
@@ -130,7 +124,7 @@ resource "aws_codebuild_project" "web" {
       status = "ENABLED"
     }
     s3_logs {
-      status             = "DISABLED"
+      status              = "DISABLED"
       encryption_disabled = false
     }
   }

@@ -9,10 +9,15 @@
 
 locals {
   web_origin_id  = "dev-otk-pwrs-web.s3.ap-northeast-2.amazonaws.com-mo149b51345"
+  api_origin_id  = "${local.api_fqdn}-alb"
   cloudfront_waf = "arn:aws:wafv2:us-east-1:${data.aws_caller_identity.current.account_id}:global/webacl/CreatedByCloudFront-244cfa60/efeb4336-7221-4cc1-a2e2-84dea587681a"
 
-  # AWS-managed cache policy: CachingOptimized
+  # AWS-managed cache policy: CachingOptimized (정적 에셋)
   cache_policy_caching_optimized = "658327ea-f89d-4fab-a63d-7e88639e58f6"
+  # AWS-managed cache policy: CachingDisabled (/api/*)
+  cache_policy_caching_disabled = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
+  # AWS-managed origin request policy: AllViewer (Authorization/Cookie/Query 전체 전달)
+  origin_request_policy_all_viewer = "216adef6-5c7f-47e4-b989-5492eafa07d3"
 }
 
 resource "aws_cloudfront_origin_access_control" "web" {
@@ -45,6 +50,24 @@ resource "aws_cloudfront_distribution" "web" {
     }
   }
 
+  # ALB custom origin — /api/* 라우팅. api_fqdn 은 Route53 alias 를 통해 EB ALB 로
+  # 해석되며, ALB 에 부착된 ACM 인증서(api_dev)의 CN 과 SNI 가 일치한다.
+  origin {
+    origin_id           = local.api_origin_id
+    domain_name         = local.api_fqdn
+    connection_attempts = 3
+    connection_timeout  = 10
+
+    custom_origin_config {
+      http_port                = 80
+      https_port               = 443
+      origin_protocol_policy   = "https-only"
+      origin_ssl_protocols     = ["TLSv1.2"]
+      origin_read_timeout      = 30
+      origin_keepalive_timeout = 5
+    }
+  }
+
   default_cache_behavior {
     target_origin_id       = local.web_origin_id
     viewer_protocol_policy = "redirect-to-https"
@@ -52,6 +75,19 @@ resource "aws_cloudfront_distribution" "web" {
     cached_methods         = ["HEAD", "GET"]
     compress               = true
     cache_policy_id        = local.cache_policy_caching_optimized
+  }
+
+  # /api/* — ALB 로 프록시. Same-origin 유지해 브라우저 CORS 회피. 응답은 캐시하지
+  # 않고 Authorization/Cookie/Query 는 그대로 원본에 전달한다.
+  ordered_cache_behavior {
+    path_pattern             = "/api/*"
+    target_origin_id         = local.api_origin_id
+    viewer_protocol_policy   = "redirect-to-https"
+    allowed_methods          = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+    cached_methods           = ["GET", "HEAD"]
+    compress                 = true
+    cache_policy_id          = local.cache_policy_caching_disabled
+    origin_request_policy_id = local.origin_request_policy_all_viewer
   }
 
   custom_error_response {
@@ -80,13 +116,10 @@ resource "aws_cloudfront_distribution" "web" {
     }
   }
 
-  # Known provider drift: aws_cloudfront_distribution with S3+OAC oscillates on
-  # origin.s3_origin_config.origin_access_identity ("" vs null). Ignore the
-  # origin block to stabilize plan diff 0; update origin via a targeted change
-  # if/when needed.
-  lifecycle {
-    ignore_changes = [origin]
-  }
+  # NOTE: 이전에는 S3+OAC origin_access_identity "" vs null 드리프트 때문에
+  # `ignore_changes = [origin]` 을 걸어두었으나, /api/* 라우팅을 위해 ALB origin
+  # 을 명시 선언해야 하므로 제거. 드리프트가 재현되면 `origin_access_identity =
+  # null` 로 맞추거나 origin 블록을 선별 ignore 하는 방식으로 재대응.
 }
 
 ###############################################################################
