@@ -37,7 +37,8 @@ otoki/                          # 프로젝트 루트
 ├── main/                       # [main] 메인 브랜치 worktree (머지 전용)
 │   ├── mobile/                 #   Flutter app
 │   ├── backend/                #   Spring Boot API
-│   ├── infra/                  #   Terraform IaC (AWS)
+│   ├── infra/                  #   [기존] Terraform IaC (AWS) — 비보안, DB 데이터 보유. Phase 2에 destroy 예정
+│   ├── infra-secure/           #   [신규] 보안 설계 반영 Terraform (과도기). 데이터 이전 완료 후 infra/ 로 승격
 │   ├── .claude/                #   Claude Code 설정 (가이드, 커맨드)
 │   ├── docs/                   #   문서 디렉토리 (git 추적 대상 아님)
 │   └── CLAUDE.md               #   이 파일

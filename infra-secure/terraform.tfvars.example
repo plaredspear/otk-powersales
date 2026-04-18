@@ -1,0 +1,31 @@
+# Copy to terraform.tfvars and fill in. Never commit terraform.tfvars.
+
+aws_profile = "dev-codapt"
+region      = "ap-northeast-2"
+project     = "otk-pwrs"
+stage       = "dev"
+
+domain        = "codapt.kr"
+api_subdomain = "dev-powersalesapi"
+web_subdomain = "dev-powersales"
+
+github_repository      = "codapt/otoki-code-build"
+github_connection_name = "dev-otk-pwrs"
+
+vpc_cidr = "10.0.0.0/16"
+
+rds_master_username = "otkadmin"
+# Master password is auto-generated and stored in AWS Secrets Manager
+# (see aws_db_instance.main.manage_master_user_password in data_stores.tf).
+# The secret ARN is exposed via aws_db_instance.main.master_user_secret[0].secret_arn.
+
+# ---------------------------------------------------------------------------
+# 재구축 시 기존 CloudFront/OAC/ACM(web_dev) 흡수
+# - 신규 구축: 아래 블록을 주석 유지 또는 삭제 (모든 값 null → import 블록 no-op)
+# - 재구축  : AWS 에 살아있는 리소스의 실제 ID/ARN 로 값 교체 후 apply
+# ---------------------------------------------------------------------------
+# reuse_web_stack = {
+#   distribution_id = "E39VFE7PXUO1S"
+#   oac_id          = "E3LIY8PCOBIHC5"
+#   acm_cert_arn    = "arn:aws:acm:us-east-1:983241034734:certificate/b5eec3cc-38e3-4617-8efb-22cecd1c09e8"
+# }

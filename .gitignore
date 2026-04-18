@@ -17,3 +17,10 @@ CLAUDE.local.md
 
 # Documentation
 docs
+
+# infra-secure (local tfstate)
+infra-secure/.terraform/
+infra-secure/terraform.tfstate
+infra-secure/terraform.tfstate.*
+infra-secure/terraform.tfvars
+infra-secure/backups/
