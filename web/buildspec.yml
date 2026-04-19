@@ -16,3 +16,4 @@ phases:
       - aws s3 sync dist/ s3://${S3_BUCKET} --delete
       - aws cloudfront create-invalidation --distribution-id ${DISTRIBUTION_ID} --paths "/*"
       - echo "Deployed to S3 and CloudFront invalidation created"
+

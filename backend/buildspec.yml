@@ -95,3 +95,4 @@ artifacts:
   files:
     - Dockerrun.aws.json
     - .ebextensions/**/*
+
