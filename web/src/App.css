@@ -1,0 +1,119 @@
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.header {
+  margin-bottom: 2rem;
+}
+
+.header h1 {
+  font-size: 3rem;
+  margin: 0;
+  color: var(--text-h);
+}
+
+.subtitle {
+  font-size: 1.2rem;
+  color: var(--text);
+  margin-top: 0.5rem;
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.card {
+  padding: 2rem;
+}
+
+.card button {
+  font-family: var(--mono);
+  font-size: 1rem;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--accent-bg);
+  color: var(--accent);
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+
+.card button:hover {
+  border-color: var(--accent);
+}
+
+.card p {
+  margin-top: 1rem;
+  color: var(--text);
+}
+
+.status-card {
+  min-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--code-bg);
+}
+
+.status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  font-family: var(--mono);
+  font-size: 0.95rem;
+}
+
+.status-label {
+  color: var(--text);
+}
+
+.status-value {
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.status-ok {
+  background: rgba(34, 197, 94, 0.12);
+}
+.status-ok .status-value {
+  color: #16a34a;
+}
+
+.status-down {
+  background: rgba(239, 68, 68, 0.12);
+}
+.status-down .status-value {
+  color: #dc2626;
+}
+
+.status-muted {
+  background: var(--social-bg);
+}
+
+.status-error {
+  color: #dc2626;
+  font-family: var(--mono);
+  font-size: 0.9rem;
+}
+
+.status-source {
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+}
+
+.footer {
+  padding: 1rem;
+  color: var(--text);
+  font-size: 0.875rem;
+}
