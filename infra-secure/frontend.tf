@@ -32,7 +32,9 @@ resource "aws_cloudfront_distribution" "web" {
   enabled             = true
   is_ipv6_enabled     = true
   http_version        = "http2"
-  price_class         = "PriceClass_All"
+  # NOTE: price_class 미설정 — 본 distribution 은 CloudFront Free pricing plan
+  # (월 1TB / 1천만 요청 무료) 에 등록되어 있어 price_class 지정이 금지된다.
+  # API: "Distributions with the Free pricing plan can't have ... Price class"
   aliases             = [local.web_fqdn]
   web_acl_id          = local.cloudfront_waf
   retain_on_delete    = false

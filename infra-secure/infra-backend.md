@@ -54,7 +54,7 @@
 │  Data Private Subnets (2a, 2c)    ← 데이터 계층         │
 │  ┌────────▼────────┐  ┌─────────────────┐               │
 │  │  RDS (PG 17)    │  │  ElastiCache    │               │
-│  │                 │  │  (Valkey 7)     │               │
+│  │                 │  │  (Valkey 8.2)   │               │
 │  └─────────────────┘  └─────────────────┘               │
 │                                                          │
 └──────────────────────────────────────────────────────────┘
@@ -250,16 +250,17 @@
 | **IAM** - EB Instance Profile      | `dev-otk-pwrs-eb-ec2-role`          | `prod-otk-pwrs-eb-ec2-role`                        |
 | **IAM** - CodeBuild Role (Backend) | `dev-otk-pwrs-backend-build-role`   | `prod-otk-pwrs-backend-build-role`                 |
 | **IAM** - CodePipeline Role        | `dev-otk-pwrs-pipeline-role`        | `prod-otk-pwrs-pipeline-role`                      |
-| **SNS** 알림 토픽                  | `dev-otk-pwrs-alerts`               | `prod-otk-pwrs-alerts`                             |
+| **SNS** 알림 토픽                  | (미설정)                            | `prod-otk-pwrs-alerts`                             |
 
 ### 태그 정책
 
 모든 리소스에 아래 태그를 부여한다:
 
-| 태그 키   | 값                |
-| --------- | ----------------- |
-| `Stage`   | `dev` 또는 `prod` |
-| `Project` | `otk-pwrs`        |
+| 태그 키     | 값                |
+| ----------- | ----------------- |
+| `Stage`     | `dev` 또는 `prod` |
+| `Project`   | `otk-pwrs`        |
+| `ManagedBy` | `terraform`       |
 
 ---
 
@@ -760,7 +761,7 @@ VPC가 분리되어 있으므로 cross-stage 접근이 원천적으로 불가능
 
 ---
 
-## 4. RDS (PostgreSQL 17)
+## 4. RDS (PostgreSQL 17.6)
 
 ### 4.1 DB 서브넷 그룹 생성
 
@@ -779,7 +780,7 @@ VPC가 분리되어 있으므로 cross-stage 접근이 원천적으로 불가능
 | 설정                  | Dev                            | Prod                            |
 | --------------------- | ------------------------------ | ------------------------------- |
 | 생성 방식             | Standard create                | Standard create                 |
-| Engine                | PostgreSQL 17                  | PostgreSQL 17                   |
+| Engine                | PostgreSQL 17.6                | PostgreSQL 17.6                 |
 | Template              | Free tier                      | Production                      |
 | DB instance ID        | `dev-otk-pwrs-db`              | `prod-otk-pwrs-db`              |
 | Master username       | `otkadmin`                     | `otkadmin`                      |
@@ -791,8 +792,8 @@ VPC가 분리되어 있으므로 cross-stage 접근이 원천적으로 불가능
 | Subnet group          | `dev-otk-pwrs-db-subnet-group` | `prod-otk-pwrs-db-subnet-group` |
 | Public access         | **No**                         | **No**                          |
 | Security group        | `dev-otk-pwrs-rds-sg`          | `prod-otk-pwrs-rds-sg`          |
-| Initial database name | `otk_dev`                      | `otk_prod`                      |
-| Backup retention      | 7일                            | 14일                            |
+| Initial database name | `otoki`                        | `otoki`                         |
+| Backup retention      | 3일                            | 14일                            |
 | Deletion protection   | Off                            | **On**                          |
 | Performance Insights  | On (Free tier)                 | On                              |
 
@@ -815,12 +816,12 @@ Secret ARN: arn:aws:secretsmanager:ap-northeast-2:<ACCOUNT_ID>:secret:rds!db-xxx
 | ---------------- | --------------------------------- | ---------------------------------- |
 | Bucket name      | `dev-otk-pwrs-pipeline-artifacts` | `prod-otk-pwrs-pipeline-artifacts` |
 | Region           | `ap-northeast-2`                  | `ap-northeast-2`                   |
-| Object Ownership | **ACLs enabled – Bucket owner preferred** | **ACLs enabled – Bucket owner preferred** |
+| Object Ownership | ACLs disabled (BucketOwnerEnforced) | ACLs disabled (BucketOwnerEnforced) |
 | Versioning       | Enabled                           | Enabled                            |
 | Encryption       | SSE-S3                            | SSE-S3                             |
 
 > 파이프라인 스테이지 간 아티팩트(소스 코드, 빌드 결과물)를 전달하는 버킷이다.
-> **Object Ownership**: EB 서비스 역할이 `s3:GetObjectAcl`을 호출하므로 ACL을 활성화해야 한다. 기본값(BucketOwnerEnforced)은 ACL을 비활성화하여 배포 실패를 유발한다.
+> **Object Ownership**: AWS 권장 기본값(`BucketOwnerEnforced`)을 사용한다. CodePipeline → EB 배포는 IAM 역할로 접근하므로 ACL이 필요하지 않다.
 
 ### 4.5 Storage S3 버킷 생성
 
@@ -1347,7 +1348,7 @@ GitHub push → CodePipeline → [Source] → [Build: CodeBuild] → [Deploy: EB
 | Environment image | Managed image                                                 |
 | Operating system  | Amazon Linux                                                  |
 | Runtime           | Standard                                                      |
-| Image             | `aws/codebuild/amazonlinux-x86_64-standard:5.0`               |
+| Image             | `aws/codebuild/amazonlinux-x86_64-standard:6.0`               |
 | Compute           | `BUILD_GENERAL1_MEDIUM` (7GB RAM, 4 vCPU)                     |
 | **Privileged**    | **체크 (Docker 빌드 필수)**                                   |
 | Service role      | **Existing service role** → `dev-otk-pwrs-backend-build-role` |
@@ -1582,11 +1583,18 @@ EB와 CodeBuild는 자동으로 로그를 전송한다.
 
 ### 12.2 알람 설정
 
+| Stage | 적용 여부 | 비고                                      |
+| ----- | --------- | ----------------------------------------- |
+| Dev   | **미설정** | 비용 절감 및 알람 노이즈 방지를 위해 생략 |
+| Prod  | **설정**   | 운영 장애 감지를 위해 필수                |
+
+**Prod 알람 구성**
+
 **콘솔:** CloudWatch > Alarms > Create alarm
 
 **SNS 토픽 먼저 생성:**
 
-- Name: `dev-otk-pwrs-alerts`
+- Name: `prod-otk-pwrs-alerts`
 - 이메일 구독 추가
 
 **권장 알람:**
@@ -1625,7 +1633,7 @@ aws ssm start-session \
 |------|-----|
 | Host | `localhost` |
 | Port | `5432` |
-| Database | `otk_dev` |
+| Database | `otoki` |
 | Username | `otkadmin` |
 | Password | (Secrets Manager 에서 조회 — 아래 참고) |
 
@@ -1650,13 +1658,14 @@ aws secretsmanager get-secret-value --secret-id "$SECRET_ARN" \
 | VPC CIDR        | `10.0.0.0/16`                      | `10.1.0.0/16`                        |
 | RDS 인스턴스    | `db.t4g.micro`, Single-AZ          | `db.t4g.small`, Single-AZ            |
 | RDS 삭제 방지   | Off                                | **On**                               |
-| RDS 백업 보존   | 7일                                | 14일                                 |
+| RDS 백업 보존   | 3일                                | 14일                                 |
 | ElastiCache     | `cache.t4g.micro` (데모)           | `cache.t4g.micro` (데모, 필요 시 업그레이드) |
 | ECR Tag 변경    | Mutable                            | Immutable                            |
 | EB 인스턴스     | `t3.small`, Load balanced (1-1)    | `t3.small`, Auto Scaling (2-4)       |
 | EB 배포 방식    | All at once                        | Rolling with additional batch        |
 | CI/CD 브랜치    | `dev` (push 자동)                  | `main` (push + 수동 승인)            |
-| CloudWatch 알람 | 최소                               | 전체 구성                            |
+| SNS 알림 토픽   | **미설정**                         | `prod-otk-pwrs-alerts` (이메일 구독) |
+| CloudWatch 알람 | **미설정**                         | 전체 구성 (12.2)                     |
 | 커스텀 도메인   | 선택                               | 필수                                 |
 | 예상 월 비용    | ~$50-80                            | ~$200-400                            |
 

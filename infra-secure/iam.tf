@@ -9,15 +9,12 @@
 #   resource refs after all categories are imported is a trivial follow-up.
 # - EB default service bucket (`elasticbeanstalk-ap-northeast-2-<account>`) →
 #   auto-managed by Elastic Beanstalk, referenced by ARN (not Terraform-managed).
-# - SNS topic `dev-otk-pwrs-alerts` → not currently deployed; policy ARN is
-#   retained for forward compatibility (publishing is harmless if topic absent).
 ###############################################################################
 
 locals {
   eb_platform_bucket_arn = "arn:aws:s3:::elasticbeanstalk-${data.aws_region.current.name}-${data.aws_caller_identity.current.account_id}"
   codebuild_backend_arn  = "arn:aws:codebuild:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:project/${local.name_prefix}-backend-build"
   codebuild_web_arn      = "arn:aws:codebuild:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:project/${local.name_prefix}-web-build"
-  alerts_sns_arn         = "arn:aws:sns:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:${local.name_prefix}-alerts"
   codebuild_logs_arn     = "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/aws/codebuild/*"
   # CloudFront distribution ARN (hardcoded; see frontend.tf for the actual resource).
   cloudfront_web_arn = "arn:aws:cloudfront::${data.aws_caller_identity.current.account_id}:distribution/E39VFE7PXUO1S"
@@ -378,12 +375,6 @@ resource "aws_iam_role_policy" "pipeline" {
         ]
         Resource = local.codebuild_backend_arn
       },
-      {
-        Sid      = "SNSApproval"
-        Effect   = "Allow"
-        Action   = "sns:Publish"
-        Resource = local.alerts_sns_arn
-      },
     ]
   })
 }
@@ -441,12 +432,6 @@ resource "aws_iam_role_policy" "web_pipeline" {
           "codebuild:StartBuild",
         ]
         Resource = local.codebuild_web_arn
-      },
-      {
-        Sid      = "SNSApproval"
-        Effect   = "Allow"
-        Action   = "sns:Publish"
-        Resource = local.alerts_sns_arn
       },
     ]
   })

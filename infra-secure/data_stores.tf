@@ -26,10 +26,11 @@ resource "aws_db_instance" "main" {
 
   allocated_storage     = 20
   max_allocated_storage = 1000
-  storage_type          = "gp2"
+  storage_type          = "gp3"
   storage_encrypted     = true
   kms_key_id            = "arn:aws:kms:ap-northeast-2:${data.aws_caller_identity.current.account_id}:key/943da723-0f48-4c5f-9f2a-f0849b657969"
 
+  db_name                     = "otoki"
   username                    = var.rds_master_username
   manage_master_user_password = true
   port                        = 5432
@@ -45,7 +46,7 @@ resource "aws_db_instance" "main" {
   performance_insights_enabled = true
   performance_insights_kms_key_id = "arn:aws:kms:ap-northeast-2:${data.aws_caller_identity.current.account_id}:key/943da723-0f48-4c5f-9f2a-f0849b657969"
 
-  backup_retention_period = 1
+  backup_retention_period = 3
   backup_window           = "15:42-16:12"
   maintenance_window      = "thu:16:28-thu:16:58"
   copy_tags_to_snapshot   = true

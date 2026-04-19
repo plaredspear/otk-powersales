@@ -141,16 +141,17 @@
 | **IAM** - CodeBuild Role (Web)         | `dev-otk-pwrs-web-build-role`       | `prod-otk-pwrs-web-build-role`                     |
 | **IAM** - CodePipeline Role (Backend)  | `dev-otk-pwrs-pipeline-role`        | `prod-otk-pwrs-pipeline-role`                      |
 | **IAM** - CodePipeline Role (Web)      | `dev-otk-pwrs-web-pipeline-role`    | `prod-otk-pwrs-web-pipeline-role`                  |
-| **SNS** 알림 토픽                  | `dev-otk-pwrs-alerts`               | `prod-otk-pwrs-alerts`                             |
+| **SNS** 알림 토픽                  | (미설정)                            | `prod-otk-pwrs-alerts`                             |
 
 ### 태그 정책
 
 모든 리소스에 아래 태그를 부여한다:
 
-| 태그 키   | 값                |
-| --------- | ----------------- |
-| `Stage`   | `dev` 또는 `prod` |
-| `Project` | `otk-pwrs`        |
+| 태그 키     | 값                |
+| ----------- | ----------------- |
+| `Stage`     | `dev` 또는 `prod` |
+| `Project`   | `otk-pwrs`        |
+| `ManagedBy` | `terraform`       |
 
 ---
 
@@ -186,14 +187,16 @@
 | NAT Gateway       | 1개 (단일 AZ)                      | 1개 (단일 AZ, 장애 시 수동 대응)     |
 | RDS 인스턴스      | `db.t4g.micro`, Single-AZ          | `db.t4g.small`, Single-AZ            |
 | RDS 삭제 방지     | Off                                | **On**                               |
-| RDS 백업 보존     | 7일                                | 14일                                 |
+| RDS 백업 보존     | 3일                                | 14일                                 |
 | EB 인스턴스       | `t3.small`, Load balanced (1-1)    | `t3.small`, Auto Scaling (2-4)       |
 | EB 배포 방식      | All at once                        | Rolling with additional batch        |
 | EB 로드밸런서     | ALB + HTTPS                        | ALB + HTTPS                          |
+| CloudFront 플랜   | **Free** (월 1TB / 1천만 요청)     | Standard (PriceClass_200)            |
 | CloudFront TTL    | 짧게 (또는 항상 invalidation)      | 86400초 (1일)                        |
 | CI/CD (Backend)   | CodePipeline (dev push 자동)       | CodePipeline (main push + 수동 승인) |
 | CI/CD (Web)       | CodePipeline (dev push 자동)       | CodePipeline (main push + 수동 승인) |
-| CloudWatch 알람   | 최소                               | 전체 구성                            |
+| SNS 알림 토픽     | **미설정**                         | `prod-otk-pwrs-alerts`               |
+| CloudWatch 알람   | **미설정**                         | 전체 구성                            |
 | 커스텀 도메인     | 선택                               | 필수                                 |
 | 예상 월 비용      | ~$50-80                            | ~$200-400                            |
 

@@ -140,7 +140,7 @@
 | --------- | -------- | -------- |
 | Stage     | dev      | prod     |
 | Project   | otk-pwrs | otk-pwrs |
-| ManagedBy | manual   | manual   |
+| ManagedBy | terraform | terraform |
 
 ---
 
@@ -217,13 +217,18 @@
 
 #### Settings
 
-| 설정                   | Dev                   | Prod                   |
-| ---------------------- | --------------------- | ---------------------- |
-| Distribution name      | `dev-otk-pwrs-web-cf` | `prod-otk-pwrs-web-cf` |
-| Price class            | PriceClass_100        | PriceClass_200         |
-| Default root object    | `index.html`          | `index.html`           |
-| Alternate domain names | (선택)                | `powersales.otoki.com` |
-| Custom SSL certificate | (선택)                | ACM 인증서 선택        |
+| 설정                   | Dev                              | Prod                   |
+| ---------------------- | -------------------------------- | ---------------------- |
+| Distribution name      | `dev-otk-pwrs-web-cf`            | `prod-otk-pwrs-web-cf` |
+| Pricing plan           | **Free** (월 1TB / 1천만 요청)   | **Standard**           |
+| Price class            | (Free 플랜에서 지정 불가)        | PriceClass_200         |
+| Default root object    | `index.html`                     | `index.html`           |
+| Alternate domain names | (선택)                           | `powersales.otoki.com` |
+| Custom SSL certificate | (선택)                           | ACM 인증서 선택        |
+
+> **Pricing plan 설명**:
+> - **Free plan** (Dev): 월 1TB 데이터 송신 + 1천만 요청 + 100만 함수 호출까지 완전 무료. 한도 초과 시 throttling. **PriceClass 지정 자체가 금지**되며 AWS가 엣지 라우팅을 자동 결정한다. dev 트래픽 수준에선 한도를 초과할 일이 없다.
+> - **Standard plan** (Prod): 일반 종량제. 한도 초과 시 차단되지 않으며 PriceClass로 엣지 범위 선택 가능. Prod는 한국 사용자 대상이므로 아시아 엣지를 포함하는 `PriceClass_200` 권장.
 
 ### 3.2 SPA 라우팅 설정 (필수)
 
@@ -536,10 +541,13 @@ GitHub push → CodePipeline → [Source] → [Build+Deploy: CodeBuild] → (Pro
 | Environment image | Managed image                                             |
 | Operating system  | Amazon Linux                                              |
 | Runtime           | Standard                                                  |
-| Image             | `aws/codebuild/amazonlinux-x86_64-standard:5.0`           |
-| Compute           | `BUILD_GENERAL1_SMALL` (3GB RAM, 2 vCPU)                  |
-| **Privileged**    | 체크 불필요 (Docker 미사용)                               |
-| Service role      | **Existing service role** → `dev-otk-pwrs-web-build-role` |
+| Image             | `aws/codebuild/amazonlinux-x86_64-standard:6.0`            |
+| Compute           | `BUILD_GENERAL1_SMALL` (3 GB RAM, 2 vCPU)                  |
+| **Privileged**    | 체크 불필요 (Docker 미사용)                                |
+| Service role      | **Existing service role** → `dev-otk-pwrs-web-build-role`  |
+
+> **Compute type 선택**: Web은 Vite 빌드 + S3 sync + CloudFront invalidation만 수행하므로 Docker가 필요 없다. EC2 기반 최저 사양인 `BUILD_GENERAL1_SMALL`(3 GB / 2 vCPU)로 충분하다.
+> **참고**: CodeBuild Lambda compute(`BUILD_LAMBDA_2GB`)가 콜드 스타트 ~1초로 더 빠르지만 **`ap-northeast-2`(서울) 리전에서는 미지원**(2026-04 기준)이다. 향후 서울 리전에 출시되면 전환 검토 가치가 있다.
 
 #### 환경변수
 
@@ -560,7 +568,7 @@ version: 0.2
 phases:
   install:
     runtime-versions:
-      nodejs: 20
+      nodejs: 22
   pre_build:
     commands:
       - cd web
@@ -682,7 +690,14 @@ CodeBuild는 자동으로 CloudWatch Logs에 로그를 전송한다.
 | `/aws/codebuild/dev-otk-pwrs-web-build`  | Dev Web CodeBuild  |
 | `/aws/codebuild/prod-otk-pwrs-web-build` | Prod Web CodeBuild |
 
-### 9.2 알람 설정 (선택)
+### 9.2 알람 설정
+
+| Stage | 적용 여부 | 비고                                      |
+| ----- | --------- | ----------------------------------------- |
+| Dev   | **미설정** | 비용 절감 및 알람 노이즈 방지를 위해 생략 |
+| Prod  | **설정**   | 운영 장애 감지를 위해 필수                |
+
+**Prod 알람 구성**
 
 **콘솔:** CloudWatch > Alarms > Create alarm
 
@@ -692,7 +707,7 @@ CodeBuild는 자동으로 CloudWatch Logs에 로그를 전송한다.
 | CloudFront 4XX 에러 | `4xxErrorRate` (CloudFront) | > 30% (5분) |
 | CodeBuild 실패      | `FailedBuilds` (CodeBuild)  | > 0 (1회)   |
 
-> 알람 대상 SNS 토픽은 Backend에서 생성한 `dev-otk-pwrs-alerts`를 공유한다.
+> 알람 대상 SNS 토픽은 Backend(`infra-backend.md` 12.2)에서 생성한 `prod-otk-pwrs-alerts`를 공유한다. Dev에는 SNS 토픽이 없다.
 
 ---
 
@@ -703,10 +718,12 @@ CodeBuild는 자동으로 CloudWatch Logs에 로그를 전송한다.
 | S3 버킷         | `dev-otk-pwrs-web`             | `prod-otk-pwrs-web`                         |
 | CloudFront      | 기본 도메인 사용 가능          | 커스텀 도메인 (`powersales.otoki.com`) 필수 |
 | CloudFront TTL  | `CachingOptimized` (배포 시 invalidation) | `CachingOptimized` (배포 시 invalidation)   |
-| Price class     | PriceClass_100                 | PriceClass_200                              |
+| Pricing plan    | **Free** (월 1TB / 1천만 요청) | Standard                                    |
+| Price class     | 지정 불가 (Free 플랜)          | PriceClass_200                              |
 | ACM 인증서      | 선택                           | 필수 (us-east-1)                            |
 | CI/CD           | CodePipeline (`dev` push 자동) | CodePipeline (`main` push + 수동 승인)      |
-| CloudWatch 알람 | 최소                           | 전체 구성                                   |
+| SNS 알림 토픽   | **미설정**                     | `prod-otk-pwrs-alerts` (Backend와 공유)     |
+| CloudWatch 알람 | **미설정**                     | 전체 구성 (9.2)                             |
 | 예상 월 비용    | ~$1-5                          | ~$10-30                                     |
 
 > Frontend 비용은 Backend 대비 매우 낮다. S3 스토리지 + CloudFront 전송량 기준.
