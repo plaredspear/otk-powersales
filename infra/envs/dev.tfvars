@@ -44,4 +44,4 @@ rds_publicly_accessible = true
 # CI/CD
 github_repo           = "plaredspear/otk-powersales"
 github_repository_url = "https://github.com/plaredspear/otk-powersales.git"
-github_deploy_branch  = "main"
+github_deploy_branch  = "old-dev"
