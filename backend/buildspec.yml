@@ -32,36 +32,36 @@ phases:
       - cp -r backend/.ebextensions .ebextensions
       - |
         # ---------------------------------------------------------------------
-        # Fetch dynamic app config from SSM Parameter Store and render
-        # .ebextensions/env.config so EB injects them as application env vars
-        # at deployment time. Terraform owns the param values; buildspec only
-        # reads. PARAM_PREFIX / STAGE / PROJECT are injected by CodeBuild env.
+        # Render .ebextensions/env.config so EB injects application env vars
+        # at deployment time. STAGE / PROJECT 는 CodeBuild env 로 주입된다.
+        #
+        # DB/Redis 연결은 현재 단계에서 제외되어 있어 SSM Parameter Store 에서
+        # RDS/Redis 관련 값을 fetch 하지 않는다. 향후 복구 시 아래 주석 처리된
+        # SSM fetch 블록을 되살리고 env.config 에 RDS_*/REDIS_* 키를 다시
+        # 추가한다 (application-aws.properties, build.gradle.kts 도 함께 복구).
         # ---------------------------------------------------------------------
         set -eu
-        echo "Fetching app config from SSM (${PARAM_PREFIX})..."
-        # SSM 파라미터 누락 시 빈 값을 .ebextensions/env.config 로 흘려보내면
-        # EB 기동 중 Spring Boot 가 뒤늦게 실패한다. 여기서 fail-fast 시켜
-        # 파이프라인을 Build 단계에서 중단한다 (ex: terraform apply 직후 SSM 이
-        # 아직 생성되기 전에 파이프라인이 달릴 때 발생하는 타이밍 이슈 방어).
-        get_param() {
-          local name="$1"
-          local val
-          val=$(aws ssm get-parameter --name "$name" --query 'Parameter.Value' --output text) || {
-            echo "ERROR: SSM 파라미터 조회 실패: $name" >&2
-            exit 1
-          }
-          if [ -z "$val" ] || [ "$val" = "None" ]; then
-            echo "ERROR: SSM 파라미터 값이 비어 있음: $name" >&2
-            exit 1
-          fi
-          printf '%s' "$val"
-        }
-        RDS_HOST=$(get_param "${PARAM_PREFIX}/rds/host")
-        RDS_PORT=$(get_param "${PARAM_PREFIX}/rds/port")
-        RDS_USERNAME=$(get_param "${PARAM_PREFIX}/rds/username")
-        RDS_SECRET_ARN=$(get_param "${PARAM_PREFIX}/rds/secret-arn")
-        REDIS_ENDPOINT=$(get_param "${PARAM_PREFIX}/redis/endpoint")
-        REDIS_PORT=$(get_param "${PARAM_PREFIX}/redis/port")
+        # TODO: DB/Redis 복구 시 주석 해제.
+        # echo "Fetching app config from SSM (${PARAM_PREFIX})..."
+        # get_param() {
+        #   local name="$1"
+        #   local val
+        #   val=$(aws ssm get-parameter --name "$name" --query 'Parameter.Value' --output text) || {
+        #     echo "ERROR: SSM 파라미터 조회 실패: $name" >&2
+        #     exit 1
+        #   }
+        #   if [ -z "$val" ] || [ "$val" = "None" ]; then
+        #     echo "ERROR: SSM 파라미터 값이 비어 있음: $name" >&2
+        #     exit 1
+        #   fi
+        #   printf '%s' "$val"
+        # }
+        # RDS_HOST=$(get_param "${PARAM_PREFIX}/rds/host")
+        # RDS_PORT=$(get_param "${PARAM_PREFIX}/rds/port")
+        # RDS_USERNAME=$(get_param "${PARAM_PREFIX}/rds/username")
+        # RDS_SECRET_ARN=$(get_param "${PARAM_PREFIX}/rds/secret-arn")
+        # REDIS_ENDPOINT=$(get_param "${PARAM_PREFIX}/redis/endpoint")
+        # REDIS_PORT=$(get_param "${PARAM_PREFIX}/redis/port")
         cat > .ebextensions/env.config <<EOFENV
         option_settings:
           aws:elasticbeanstalk:application:environment:
@@ -69,12 +69,6 @@ phases:
             STAGE: "${STAGE}"
             PROJECT: "${PROJECT}"
             AWS_REGION: "${AWS_DEFAULT_REGION}"
-            RDS_HOST: "${RDS_HOST}"
-            RDS_PORT: "${RDS_PORT}"
-            RDS_USERNAME: "${RDS_USERNAME}"
-            RDS_SECRET_ARN: "${RDS_SECRET_ARN}"
-            REDIS_ENDPOINT: "${REDIS_ENDPOINT}"
-            REDIS_PORT: "${REDIS_PORT}"
         EOFENV
       - echo "Generating Dockerrun.aws.json for EB deployment..."
       - |
