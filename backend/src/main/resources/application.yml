@@ -5,8 +5,8 @@ spring:
   # -------------------------------------------------------------------------
   # Redis (ElastiCache Valkey, 클러스터 모드 + 전송 중 암호화) — EB (dev/prod)
   # 공통. REDIS_ENDPOINT 는 구성 엔드포인트(clustercfg.*) 호스트, REDIS_PORT 는
-  # 6379. .ebextensions/env.config 가 배포 시점에 SSM Parameter Store 로부터
-  # 채워 주입한다. Lettuce 가 구성 엔드포인트를 seed 로 클러스터 토폴로지를
+  # 6379. 두 값 모두 EB 콘솔의 환경 속성(Configuration → Software)에서 직접
+  # 입력해 주입한다. Lettuce 가 구성 엔드포인트를 seed 로 클러스터 토폴로지를
   # 자동 감지해 개별 샤드 노드로 직접 접속한다.
   #
   # local 프로파일에서는 application-local.yml 이 RedisAutoConfiguration 을

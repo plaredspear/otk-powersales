@@ -1,8 +1,9 @@
 version: 0.2
 
-# AWS_DEFAULT_REGION, IMAGE_REPO_NAME, STAGE, PROJECT, PARAM_PREFIX 는
-# CodeBuild 프로젝트 환경변수로 Terraform 이 주입한다 (terraform/cicd.tf).
-# 스테이지/계정에 종속되는 값을 buildspec 에 하드코딩하지 않는다.
+# AWS_DEFAULT_REGION, IMAGE_REPO_NAME, STAGE, PROJECT 는 CodeBuild 프로젝트
+# 환경변수로 콘솔에서 직접 주입한다. 스테이지/계정에 종속되는 값을
+# buildspec 에 하드코딩하지 않는다. RDS_* / REDIS_* 는 EB 콘솔의 환경 속성
+# (Configuration → Software)에서 직접 입력하므로 buildspec 에서 다루지 않는다.
 
 phases:
   pre_build:
@@ -40,36 +41,12 @@ phases:
       - cp -r backend/.ebextensions .ebextensions
       - |
         # ---------------------------------------------------------------------
-        # Fetch dynamic app config from SSM Parameter Store and render
-        # .ebextensions/env.config so EB injects them as application env vars
-        # at deployment time. Terraform owns the param values; buildspec only
-        # reads. PARAM_PREFIX / STAGE / PROJECT are injected by CodeBuild env.
+        # Spring 프로파일 및 메타 env 만 .ebextensions/env.config 로 주입한다.
+        # RDS_* / REDIS_* 는 EB 콘솔의 환경 속성(Configuration → Software)에서
+        # 직접 입력한다 — env.config 에 나열하지 않은 키는 EB 가 기존 값을
+        # 그대로 유지하므로 배포마다 덮어쓰이지 않는다.
         # ---------------------------------------------------------------------
         set -eu
-        echo "Fetching app config from SSM (${PARAM_PREFIX})..."
-        # SSM 파라미터 누락 시 빈 값을 .ebextensions/env.config 로 흘려보내면
-        # EB 기동 중 Spring Boot 가 뒤늦게 실패한다. 여기서 fail-fast 시켜
-        # 파이프라인을 Build 단계에서 중단한다 (ex: terraform apply 직후 SSM 이
-        # 아직 생성되기 전에 파이프라인이 달릴 때 발생하는 타이밍 이슈 방어).
-        get_param() {
-          local name="$1"
-          local val
-          val=$(aws ssm get-parameter --name "$name" --query 'Parameter.Value' --output text) || {
-            echo "ERROR: SSM 파라미터 조회 실패: $name" >&2
-            exit 1
-          }
-          if [ -z "$val" ] || [ "$val" = "None" ]; then
-            echo "ERROR: SSM 파라미터 값이 비어 있음: $name" >&2
-            exit 1
-          fi
-          printf '%s' "$val"
-        }
-        RDS_HOST=$(get_param "${PARAM_PREFIX}/rds/host")
-        RDS_PORT=$(get_param "${PARAM_PREFIX}/rds/port")
-        RDS_USERNAME=$(get_param "${PARAM_PREFIX}/rds/username")
-        RDS_SECRET_ARN=$(get_param "${PARAM_PREFIX}/rds/secret-arn")
-        REDIS_ENDPOINT=$(get_param "${PARAM_PREFIX}/redis/endpoint")
-        REDIS_PORT=$(get_param "${PARAM_PREFIX}/redis/port")
         cat > .ebextensions/env.config <<EOFENV
         option_settings:
           aws:elasticbeanstalk:application:environment:
@@ -77,12 +54,6 @@ phases:
             STAGE: "${STAGE}"
             PROJECT: "${PROJECT}"
             AWS_REGION: "${AWS_DEFAULT_REGION}"
-            RDS_HOST: "${RDS_HOST}"
-            RDS_PORT: "${RDS_PORT}"
-            RDS_USERNAME: "${RDS_USERNAME}"
-            RDS_SECRET_ARN: "${RDS_SECRET_ARN}"
-            REDIS_ENDPOINT: "${REDIS_ENDPOINT}"
-            REDIS_PORT: "${REDIS_PORT}"
         EOFENV
       - echo "Generating Dockerrun.aws.json for EB deployment..."
       - |
