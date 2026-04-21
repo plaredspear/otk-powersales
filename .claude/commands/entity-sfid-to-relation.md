@@ -76,7 +76,7 @@ psql "<접속문자열>" -c "\d salesforce.<HCTable값>"
 - 후보 필드의 HC 컬럼이 `varchar(18)` 타입이면 → **sfid 참조 확정**
 - `varchar(18)`이 아니면 → sfid 후보에서 제외, Relation-only 후보로 이동
 
-**Heroku DB 테이블이 없는 경우**: Salesforce 소스(`docs/plan/old_source/`)에서 `salesforce-analyzer` 에이전트를 활용하여 필드의 데이터 유형(Lookup/MasterDetail 관계)을 확인합니다.
+**Heroku DB 테이블이 없는 경우**: Salesforce 소스(`docs/plan/old_source_260408/`)에서 `salesforce-analyzer` 에이전트를 활용하여 필드의 데이터 유형(Lookup/MasterDetail 관계)을 확인합니다.
 
 ### 4. 참조 대상 엔티티 확인
 

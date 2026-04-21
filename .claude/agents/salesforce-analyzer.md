@@ -23,9 +23,9 @@ model: opus
 기능명: <한글 기능명>
 모듈명: <영문 모듈명>
 템플릿 경로: .claude/guides/legacy-seq-template.md
-원본 소스 루트: docs/plan/old_source/aladdinSandbox/
-요약 파일 루트: docs/plan/old_source/sf-summaries/
-_index.md 경로: docs/plan/old_source/sf-summaries/_index.md
+원본 소스 루트: docs/plan/old_source_260408/aladdindev/
+요약 파일 루트: docs/plan/old_source_260408/sf-summaries/
+_index.md 경로: docs/plan/old_source_260408/sf-summaries/_index.md
 관련 요약 파일 목록: [...]
 호출 체인: [...]
 ```
@@ -141,7 +141,7 @@ $ROOT/force-app/main/default/pages/<PageName>.page
 기능명: <한글 기능명>
 모듈명: <영문 모듈명>
 템플릿 경로: .claude/guides/legacy-seq-template.md (BDD 시나리오 작성 규칙 섹션)
-분석 문서 경로: docs/plan/old_source/sf-summaries/docs/<모듈명>.md
+분석 문서 경로: docs/plan/old_source_260408/sf-summaries/docs/<모듈명>.md
 ```
 
 ### BDD 작성 절차

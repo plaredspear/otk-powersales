@@ -31,7 +31,7 @@ JPA 엔티티에 Salesforce Object 및 Heroku Connect 테이블 메타데이터 
 
 ### 2. Salesforce Object 파일 탐색 (선택적)
 
-`docs/plan/old_source/salesforce_object/` 폴더에서 인자와 매칭되는 `.md` 파일을 찾습니다.
+`docs/plan/old_source_260408/salesforce_object/` 폴더에서 인자와 매칭되는 `.md` 파일을 찾습니다.
 
 - 한글명으로 검색 (파일명이 한글): 예) `거래처.md`
 - 영문 Object명으로도 파일 내용을 grep 하여 탐색

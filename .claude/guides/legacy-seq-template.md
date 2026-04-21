@@ -174,7 +174,7 @@ Mermaid에서 예약어로 사용되는 단어가 participant alias나 텍스트
 ### 출력 파일
 
 ```
-docs/plan/old_source/summaries/docs/<모듈명>-bdd.md
+docs/plan/old_source_260408/summaries/docs/<모듈명>-bdd.md
 ```
 
 ### 문서 구조
@@ -278,7 +278,7 @@ npx @mermaid-js/mermaid-cli -i /tmp/<모듈명>-seq.mmd -o <문서디렉토리>/
 ### 파일 배치
 
 ```
-docs/plan/old_source/summaries/docs/
+docs/plan/old_source_260408/summaries/docs/
 ├── <모듈명>.md                           # 분석 문서
 └── attachments/
     └── <모듈명>-sequence.svg             # Sequence Diagram 이미지
