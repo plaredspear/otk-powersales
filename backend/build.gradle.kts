@@ -29,10 +29,10 @@ dependencyManagement {
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-webmvc")
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
-	// TODO: DB/Redis 도입 시 아래 의존성 및 관련 설정(application-aws.properties,
-	//       HealthController, buildspec.yml SSM fetch) 을 함께 복구한다.
+	implementation("org.springframework.boot:spring-boot-starter-data-redis")
+	// TODO: DB 도입 시 아래 의존성 및 관련 설정(application.yml,
+	//       HealthController) 을 함께 복구한다.
 	// implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-	// implementation("org.springframework.boot:spring-boot-starter-data-redis")
 	// implementation("io.awspring.cloud:spring-cloud-aws-starter-secrets-manager")
 	// runtimeOnly("org.postgresql:postgresql")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")

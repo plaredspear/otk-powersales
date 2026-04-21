@@ -1,0 +1,46 @@
+spring:
+  application:
+    name: otk-pwrs-backend
+
+  # -------------------------------------------------------------------------
+  # Redis (ElastiCache Valkey, 클러스터 모드 + 전송 중 암호화) — EB (dev/prod)
+  # 공통. REDIS_ENDPOINT 는 구성 엔드포인트(clustercfg.*) 호스트, REDIS_PORT 는
+  # 6379. .ebextensions/env.config 가 배포 시점에 SSM Parameter Store 로부터
+  # 채워 주입한다. Lettuce 가 구성 엔드포인트를 seed 로 클러스터 토폴로지를
+  # 자동 감지해 개별 샤드 노드로 직접 접속한다.
+  #
+  # local 프로파일에서는 application-local.yml 이 RedisAutoConfiguration 을
+  # exclude 하므로 아래 미해결 placeholder 는 바인딩되지 않아 안전하다.
+  # -------------------------------------------------------------------------
+  data:
+    redis:
+      cluster:
+        nodes: ${REDIS_ENDPOINT}:${REDIS_PORT}
+      ssl:
+        enabled: true
+      timeout: 2s
+
+# ---------------------------------------------------------------------------
+# Actuator — /actuator/health 만 노출. show-details=always 는 web UI 에서
+# Redis 상태 카드를 렌더링하기 위함. EB Load Balancer 헬스체크 경로도 동일.
+# DB 컴포넌트가 아직 없어 details 는 status + redis 만 렌더링된다.
+# ---------------------------------------------------------------------------
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+
+# ---------------------------------------------------------------------------
+# 앱 구성 값 (모든 스테이지 공통 placeholder). 실제 값은 프로파일 별 파일에서
+# 채워지거나 env var 로 주입된다.
+# ---------------------------------------------------------------------------
+app:
+  stage: ${STAGE:local}
+  aws:
+    region: ${AWS_REGION:ap-northeast-2}
