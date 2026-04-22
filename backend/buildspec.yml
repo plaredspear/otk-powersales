@@ -1,9 +1,10 @@
 version: 0.2
 
-# AWS_DEFAULT_REGION, IMAGE_REPO_NAME, STAGE, PROJECT 는 CodeBuild 프로젝트
-# 환경변수로 콘솔에서 직접 주입한다. 스테이지/계정에 종속되는 값을
-# buildspec 에 하드코딩하지 않는다. RDS_* / REDIS_* 는 EB 콘솔의 환경 속성
-# (Configuration → Software)에서 직접 입력하므로 buildspec 에서 다루지 않는다.
+# AWS_DEFAULT_REGION, IMAGE_REPO_NAME, STAGE, PROJECT, ACM_CERT_ARN 은
+# CodeBuild 프로젝트 환경변수로 콘솔에서 직접 주입한다. 스테이지/계정에
+# 종속되는 값을 buildspec 에 하드코딩하지 않는다. RDS_* / REDIS_* 는 EB 콘솔의
+# 환경 속성(Configuration → Software)에서 직접 입력하므로 buildspec 에서
+# 다루지 않는다.
 
 phases:
   pre_build:
@@ -55,6 +56,40 @@ phases:
             PROJECT: "${PROJECT}"
             AWS_REGION: "${AWS_DEFAULT_REGION}"
         EOFENV
+      - |
+        # ---------------------------------------------------------------------
+        # HTTP(80) → HTTPS(443) 리다이렉트 + HTTPS 리스너 구성.
+        # ACM_CERT_ARN 은 CodeBuild 환경변수로 주입한다 (스테이지별 상이 가능).
+        # Rebuild 시에도 .ebextensions 가 재적용되어 리다이렉트가 유지된다.
+        # ---------------------------------------------------------------------
+        set -eu
+        : "${ACM_CERT_ARN:?ACM_CERT_ARN must be set in CodeBuild env}"
+        cat > .ebextensions/https-redirect.config <<EOFHTTPS
+        option_settings:
+          aws:elbv2:listener:443:
+            ListenerEnabled: 'true'
+            Protocol: HTTPS
+            SSLCertificateArns: ${ACM_CERT_ARN}
+            DefaultProcess: default
+
+        Resources:
+          AWSEBV2LoadBalancerListener:
+            Type: AWS::ElasticLoadBalancingV2::Listener
+            Properties:
+              LoadBalancerArn:
+                Ref: AWSEBV2LoadBalancer
+              Port: 80
+              Protocol: HTTP
+              DefaultActions:
+                - Type: redirect
+                  RedirectConfig:
+                    Protocol: HTTPS
+                    Port: '443'
+                    Host: '#{host}'
+                    Path: '/#{path}'
+                    Query: '#{query}'
+                    StatusCode: HTTP_301
+        EOFHTTPS
       - echo "Generating Dockerrun.aws.json for EB deployment..."
       - |
         cat > Dockerrun.aws.json <<EOFDR
