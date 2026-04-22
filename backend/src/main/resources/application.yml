@@ -21,29 +21,22 @@ spring:
       timeout: 2s
 
   # -------------------------------------------------------------------------
-  # DataSource — PostgreSQL (Aurora). RDS 관리형 master password 가 생성한
-  # Secrets Manager secret 에서 host/port/username/password 를 모두 읽어 쓴다.
-  # 관리형 secret JSON 포맷:
-  #   {
-  #     "username": "...",
-  #     "password": "...",
-  #     "engine": "postgres",
-  #     "host": "<cluster writer endpoint>",
-  #     "port": 5432,
-  #     "dbClusterIdentifier": "..."
-  #   }
-  # spring-cloud-aws 가 JSON 필드를 Spring property 로 펼쳐 주므로 아래
-  # placeholder 는 모두 dev/prod document 의 spring.config.import 호출로
-  # 바인딩된다. EB 환경 속성에는 RDS_SECRET_ARN 만 등록하면 되고, 연결 정보가
-  # cluster endpoint 변경 등으로 달라져도 secret 을 소스로 일원화된다.
+  # DataSource — PostgreSQL (Aurora). host/port/username/dbname 은 EB 환경
+  # 속성으로 주입하고, **password 만** RDS 관리형 master password secret 에서
+  # 읽는다. 관리형 master password secret 의 JSON 은 엔진/생성 경로에 따라
+  # `{"username": "...", "password": "..."}` 만 담겨 올 때가 있어 host/port
+  # 까지 secret 에 의존하면 placeholder 가 미해결되며 JDBC URL 이 깨진다.
+  # password 만 secret 에서 받고 나머지는 env 로 두면 secret JSON 포맷과
+  # 무관하게 항상 동작한다.
   #
-  # dbname 은 관리형 secret JSON 에 없으므로 env var 로 주입(기본값 postgres).
-  # local 프로파일에서는 application-local.yml 이 DataSource/JPA auto-config 를
-  # exclude 하므로 미해결 placeholder 는 바인딩되지 않아 안전하다.
+  # dev/prod document 의 spring.config.import 가 부팅 시 secret 을 1회 읽어
+  # `${password}` placeholder 를 바인딩한다. local 프로파일에서는
+  # application-local.yml 이 DataSource/JPA auto-config 를 exclude 하므로
+  # 미해결 placeholder 는 바인딩되지 않아 안전하다.
   # -------------------------------------------------------------------------
   datasource:
-    url: jdbc:postgresql://${host}:${port}/${RDS_DATABASE:postgres}
-    username: ${username}
+    url: jdbc:postgresql://${RDS_HOST}:${RDS_PORT}/${RDS_DATABASE:postgres}
+    username: ${RDS_USERNAME}
     password: ${password}
   jpa:
     hibernate:
