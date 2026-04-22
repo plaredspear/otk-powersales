@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import './App.css'
+import RedisTester from './RedisTester'
 
 type Indicator = { status: string }
 
@@ -79,6 +80,8 @@ function App() {
             <code>{HEALTH_URL}</code>
           </p>
         </div>
+
+        <RedisTester />
       </main>
 
       <footer className="footer">
