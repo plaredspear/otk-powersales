@@ -32,6 +32,7 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-data-redis")
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("io.awspring.cloud:spring-cloud-aws-starter-secrets-manager")
+	implementation("io.awspring.cloud:spring-cloud-aws-starter-s3")
 	runtimeOnly("org.postgresql:postgresql")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 	implementation("tools.jackson.module:jackson-module-kotlin")
