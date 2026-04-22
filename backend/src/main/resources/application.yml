@@ -20,10 +20,39 @@ spring:
         enabled: true
       timeout: 2s
 
+  # -------------------------------------------------------------------------
+  # DataSource — PostgreSQL (Aurora). RDS 관리형 master password 가 생성한
+  # Secrets Manager secret 에서 host/port/username/password 를 모두 읽어 쓴다.
+  # 관리형 secret JSON 포맷:
+  #   {
+  #     "username": "...",
+  #     "password": "...",
+  #     "engine": "postgres",
+  #     "host": "<cluster writer endpoint>",
+  #     "port": 5432,
+  #     "dbClusterIdentifier": "..."
+  #   }
+  # spring-cloud-aws 가 JSON 필드를 Spring property 로 펼쳐 주므로 아래
+  # placeholder 는 모두 dev/prod document 의 spring.config.import 호출로
+  # 바인딩된다. EB 환경 속성에는 RDS_SECRET_ARN 만 등록하면 되고, 연결 정보가
+  # cluster endpoint 변경 등으로 달라져도 secret 을 소스로 일원화된다.
+  #
+  # dbname 은 관리형 secret JSON 에 없으므로 env var 로 주입(기본값 postgres).
+  # local 프로파일에서는 application-local.yml 이 DataSource/JPA auto-config 를
+  # exclude 하므로 미해결 placeholder 는 바인딩되지 않아 안전하다.
+  # -------------------------------------------------------------------------
+  datasource:
+    url: jdbc:postgresql://${host}:${port}/${RDS_DATABASE:postgres}
+    username: ${username}
+    password: ${password}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
 # ---------------------------------------------------------------------------
 # Actuator — /actuator/health 만 노출. show-details=always 는 web UI 에서
-# Redis 상태 카드를 렌더링하기 위함. EB Load Balancer 헬스체크 경로도 동일.
-# DB 컴포넌트가 아직 없어 details 는 status + redis 만 렌더링된다.
+# DB/Redis 상태 카드를 렌더링하기 위함. EB Load Balancer 헬스체크 경로도 동일.
 # ---------------------------------------------------------------------------
 management:
   endpoints:
@@ -44,3 +73,23 @@ app:
   stage: ${STAGE:local}
   aws:
     region: ${AWS_REGION:ap-northeast-2}
+
+---
+# ---------------------------------------------------------------------------
+# dev/prod 전용 — RDS 관리형 master password secret 을 Secrets Manager 에서
+# 로드한다. 부팅 시 1회 호출되고 메모리에 캐시되므로 rotation 을 켜려면 별도
+# 재시작/rolling restart 전략이 동반되어야 한다 (현 정책: rotation off).
+#
+# RDS_SECRET_ARN / AWS_REGION 은 EB 콘솔 환경 속성으로 주입한다.
+# local 에서는 이 document 가 활성화되지 않아 Secrets Manager 호출이 일어나지
+# 않고, 미해결 placeholder 도 바인딩되지 않는다.
+# ---------------------------------------------------------------------------
+spring:
+  config:
+    activate:
+      on-profile: "dev | prod"
+    import: "aws-secretsmanager:${RDS_SECRET_ARN}"
+  cloud:
+    aws:
+      region:
+        static: ${AWS_REGION}

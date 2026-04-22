@@ -1,21 +1,21 @@
 # local 프로파일 — docker-compose.yml 이 SPRING_PROFILES_ACTIVE=local 로 활성.
-# Redis / DB 가 없는 환경에서 auto-config 가 빈 생성을 시도해 health 가 DOWN
-# 되는 것을 막는다. EB (dev/prod) 는 이 파일이 로드되지 않으므로 영향 없음.
+# Redis / DB 가 없는 환경에서 auto-config 가 빈 생성을 시도해 기동이 실패하거나
+# health 가 DOWN 되는 것을 막는다. EB (dev/prod) 는 이 파일이 로드되지 않으므로
+# 영향 없음.
 #
-# DB 는 아직 의존성에서 제외된 상태라 DataSource/JPA exclude 는 불필요하다.
-# 향후 DB 복구 시 build.gradle.kts 주석 해제와 더불어 아래 주석 라인을 함께
-# 부활시켜 DataSource/JPA auto-config 도 제외하도록 복원한다.
-#
-# spring:
-#   autoconfigure:
-#     exclude:
-#       - org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration
-#       - org.springframework.boot.data.jpa.autoconfigure.HibernateJpaAutoConfiguration
-#       - org.springframework.boot.data.redis.autoconfigure.RedisAutoConfiguration
-#       - org.springframework.boot.data.redis.autoconfigure.RedisRepositoriesAutoConfiguration
+# Spring Boot 4 에서 Data 관련 auto-config 클래스명이 Data* 로 리네임된다
+# (RedisAutoConfiguration → DataRedisAutoConfiguration 등). Health Contributor
+# auto-config 는 별도 빈을 만들기 위해 Lettuce/Connection 구성을 트리거하므로
+# 함께 제외해야 placeholder 가 남아있어도 기동이 깨지지 않는다.
 
 spring:
   autoconfigure:
     exclude:
-      - org.springframework.boot.data.redis.autoconfigure.RedisAutoConfiguration
-      - org.springframework.boot.data.redis.autoconfigure.RedisRepositoriesAutoConfiguration
+      - org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration
+      - org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration
+      - org.springframework.boot.data.jpa.autoconfigure.DataJpaRepositoriesAutoConfiguration
+      - org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration
+      - org.springframework.boot.data.redis.autoconfigure.DataRedisReactiveAutoConfiguration
+      - org.springframework.boot.data.redis.autoconfigure.DataRedisRepositoriesAutoConfiguration
+      - org.springframework.boot.data.redis.autoconfigure.health.DataRedisHealthContributorAutoConfiguration
+      - org.springframework.boot.data.redis.autoconfigure.health.DataRedisReactiveHealthContributorAutoConfiguration

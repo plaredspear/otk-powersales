@@ -8,15 +8,12 @@ import org.springframework.web.bind.annotation.RestController
 
 // /actuator/health 는 EB ALB 헬스체크 전용(VPC 내부 경로). 외부(웹/SAP)용 상태
 // 엔드포인트는 /api/health 로 분리해 CloudFront path routing 규약에 맞춘다.
-//
-// DB 는 현재 단계에서 의존성에서 제외되어 있으므로 db 컴포넌트는 비워둔다.
-// 복구 시 CompositeHealthDescriptor 에서 "db" 컴포넌트를 추가로 꺼내 노출한다.
 @RestController
 @RequestMapping("/api")
 class HealthController(private val healthEndpoint: HealthEndpoint) {
 
     data class Indicator(val status: String)
-    data class Components(val redis: Indicator?)
+    data class Components(val db: Indicator?, val redis: Indicator?)
     data class HealthResponse(val status: String, val components: Components)
 
     @GetMapping("/health")
@@ -26,6 +23,7 @@ class HealthController(private val healthEndpoint: HealthEndpoint) {
         return HealthResponse(
             status = root.status.code,
             components = Components(
+                db = composite?.components?.get("db")?.let { Indicator(it.status.code) },
                 redis = composite?.components?.get("redis")?.let { Indicator(it.status.code) },
             ),
         )
