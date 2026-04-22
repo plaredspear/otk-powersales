@@ -133,6 +133,7 @@ function S3Tester() {
   const [key, setKey] = useState('test-key.txt')
   const [value, setValue] = useState('hello s3')
   const [listPrefix, setListPrefix] = useState('')
+  const [uploadKey, setUploadKey] = useState('')
   const [ping, setPing] = useState<OpResult>({ kind: 'idle' })
   const [op, setOp] = useState<OpResult>({ kind: 'idle' })
   const [uploadOp, setUploadOp] = useState<OpResult>({ kind: 'idle' })
@@ -202,7 +203,10 @@ function S3Tester() {
     }
     const form = new FormData()
     form.append('file', file)
-    const qs = key.trim() ? `?key=${encodeURIComponent(key.trim())}` : ''
+    // key 입력을 비워두면 백엔드가 업로드 파일의 originalFilename 을 키로 쓴다.
+    // 텍스트 섹션의 `key` 와 독립된 상태로 관리해야 파일 업로드 시 텍스트용
+    // 키가 실수로 우선 채택되는 것을 막을 수 있다.
+    const qs = uploadKey.trim() ? `?key=${encodeURIComponent(uploadKey.trim())}` : ''
     callJson(
       `POST upload ${file.name}`,
       `${BASE}/objects${qs}`,
@@ -278,6 +282,15 @@ function S3Tester() {
             <span>file</span>
             <input ref={fileInputRef} type="file" onChange={onFileChange} />
           </label>
+          <label className="redis-field">
+            <span>key (선택)</span>
+            <input
+              value={uploadKey}
+              onChange={(e) => setUploadKey(e.target.value)}
+              placeholder="비우면 원본 파일명 사용"
+              spellCheck={false}
+            />
+          </label>
         </div>
         <div className="redis-actions">
           <button type="button" onClick={doUploadFile}>
@@ -285,8 +298,8 @@ function S3Tester() {
           </button>
         </div>
         <p className="redis-hint">
-          key 값이 지정되면 <code>diag/{key.trim() || '...'}</code> 로, 비어있으면
-          원본 파일명이 키가 됩니다. 선택된 파일: <code>{selectedFileName || '없음'}</code>
+          저장 키: <code>{withDiagPrefix(uploadKey.trim() || selectedFileName || '(파일 선택 필요)')}</code>
+          {' · '}선택된 파일: <code>{selectedFileName || '없음'}</code>
         </p>
         <ResultBlock result={uploadOp} />
       </section>
