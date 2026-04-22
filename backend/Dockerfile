@@ -7,13 +7,16 @@ WORKDIR /app
 COPY gradlew .
 COPY gradle/ gradle/
 COPY build.gradle.kts settings.gradle.kts ./
+RUN chmod +x gradlew
 
-# Download dependencies (cached layer)
-RUN chmod +x gradlew && ./gradlew dependencies --no-daemon
-
-# Copy source code & build
+# Copy source and build.
+# BuildKit 캐시 마운트로 /root/.gradle 를 빌드 간 보존한다.
+# (의존성 jar + Kotlin incremental compile 출력 재사용)
+# CodeBuild 에서는 Local Cache > DOCKER_LAYER_CACHE 가 켜져 있어야
+# 호스트 재사용 시 이 마운트가 유효하다.
 COPY src/ src/
-RUN ./gradlew bootJar --no-daemon
+RUN --mount=type=cache,target=/root/.gradle \
+    ./gradlew bootJar --no-daemon -x test
 
 # Stage 2: Runtime
 FROM public.ecr.aws/docker/library/eclipse-temurin:24-jre AS runtime

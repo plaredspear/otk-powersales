@@ -6,6 +6,15 @@ version: 0.2
 # 환경 속성(Configuration → Software)에서 직접 입력하므로 buildspec 에서
 # 다루지 않는다.
 
+env:
+  variables:
+    # Dockerfile 의 `--mount=type=cache` 해석을 위해 BuildKit 이 필요.
+    # Docker 24+ 의 내장 frontend 가 cache mount 를 stable 지원하므로
+    # `# syntax=...` 디렉티브는 사용하지 않는다 (Docker Hub rate limit 회피).
+    # CodeBuild 프로젝트에서 Local Cache > DOCKER_LAYER_CACHE 를 활성화해야
+    # /var/lib/docker (BuildKit state 포함) 가 빌드 간 보존된다.
+    DOCKER_BUILDKIT: "1"
+
 phases:
   pre_build:
     commands:
