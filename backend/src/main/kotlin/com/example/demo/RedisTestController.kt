@@ -1,6 +1,6 @@
 package com.example.demo
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
+import org.springframework.context.annotation.Profile
 import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -15,11 +15,16 @@ import java.time.Instant
 import java.util.UUID
 
 // Redis read/write 동작을 운영 환경에서 빠르게 점검하기 위한 진단용 엔드포인트.
-// local 프로파일은 RedisAutoConfiguration 을 exclude 하므로 StringRedisTemplate
-// 빈이 없고, 이 컨트롤러도 자동으로 비활성화된다(EB dev/prod 에서만 등록).
+// local 프로파일은 RedisAutoConfiguration 을 exclude 해 StringRedisTemplate 빈이
+// 없으므로 @Profile("!local") 로 컨트롤러 자체를 제외한다. EB dev/prod 는
+// SPRING_PROFILES_ACTIVE=${STAGE} 로 활성화되므로 자동으로 등록된다.
+//
+// 주의: @ConditionalOnBean 은 auto-config 클래스에서만 신뢰성 있게 동작한다
+// (Spring Boot docs). @RestController 에 직접 붙이면 컴포넌트 스캔 시점에 빈이
+// 아직 등록되지 않아 조건이 false 로 떨어져 컨트롤러가 누락되는 문제가 발생한다.
 @RestController
 @RequestMapping("/api/redis")
-@ConditionalOnBean(StringRedisTemplate::class)
+@Profile("!local")
 class RedisTestController(private val redis: StringRedisTemplate) {
 
     data class PingResponse(

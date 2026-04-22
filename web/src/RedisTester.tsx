@@ -22,18 +22,26 @@ async function callJson(
   try {
     const res = await fetch(input, init)
     const text = await res.text()
+    const contentType = res.headers.get('content-type') ?? ''
+    const isJson = contentType.includes('application/json')
     let body: unknown = text
+    let parseFailed = false
     try {
       body = text ? JSON.parse(text) : null
     } catch {
-      // 파싱 실패 시 원문 그대로 노출 (서버가 비정상 응답을 준 경우)
+      parseFailed = true
     }
-    if (!res.ok) {
+    // CloudFront SPA fallback 등으로 백엔드 404 가 index.html(200) 로 둔갑하는
+    // 경우가 있다. 2xx 라도 JSON 이 아니면 에러로 취급해 사용자가 성공으로
+    // 오인하지 않도록 한다.
+    if (!res.ok || !isJson || parseFailed) {
       setResult({
         kind: 'error',
         label,
         status: res.status,
-        message: `HTTP ${res.status}`,
+        message: !res.ok
+          ? `HTTP ${res.status}`
+          : `non-JSON response (content-type: ${contentType || 'unknown'})`,
         body,
       })
       return
