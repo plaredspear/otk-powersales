@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react'
 import './App.css'
-import RedisTester from './RedisTester'
-import S3Tester from './S3Tester'
 
 type Indicator = { status: string }
 
@@ -81,10 +79,6 @@ function App() {
             <code>{HEALTH_URL}</code>
           </p>
         </div>
-
-        <RedisTester />
-
-        <S3Tester />
       </main>
 
       <footer className="footer">

@@ -21,7 +21,6 @@ spring:
       - org.springframework.boot.data.redis.autoconfigure.health.DataRedisReactiveHealthContributorAutoConfiguration
       # Spring Cloud AWS S3 — local 에서는 region/credentials 미설정 시 S3Client
       # 빈 생성이 실패하므로 S3 와 그 의존 core auto-config 를 모두 비활성화한다.
-      # S3TestController 는 @Profile("!local") 로 이미 컴포넌트 스캔에서 제외된다.
       - io.awspring.cloud.autoconfigure.s3.S3AutoConfiguration
       - io.awspring.cloud.autoconfigure.s3.S3TransferManagerAutoConfiguration
       - io.awspring.cloud.autoconfigure.s3.S3CrtAsyncClientAutoConfiguration
