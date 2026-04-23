@@ -4,9 +4,8 @@
 set -euo pipefail
 
 PROJECT="otk-pwrs"
-STAGE="dev"
 LOCAL_PORT="15432"
-AWS_PROFILE="${AWS_PROFILE:-dev-codapt}"
+AWS_PROFILE="${AWS_PROFILE:-}"
 PRINT_PASSWORD=0
 
 usage() {
@@ -14,50 +13,47 @@ usage() {
 Usage: $(basename "$0") [options]
 
 Options:
-  -s <stage>      dev | prod                (default: dev)
+  -p <profile>    AWS CLI profile (dev-otk-pwrs-db-access | prod-otk-pwrs-db-access)
   -l <port>       local port                (default: 15432)
-  -p <profile>    AWS CLI profile           (default: \$AWS_PROFILE or dev-codapt)
   --password      RDS master password 만 출력하고 종료
   -h              도움말
 
 Examples:
-  $(basename "$0")                          # dev 환경, localhost:15432
-  $(basename "$0") -s prod -l 25432         # prod 환경, localhost:25432
-  $(basename "$0") --password               # 비밀번호만 조회
+  $(basename "$0") -p dev-otk-pwrs-db-access
+  $(basename "$0") -p prod-otk-pwrs-db-access -l 25432
+  $(basename "$0") -p dev-otk-pwrs-db-access --password
 EOF
 }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    -s) STAGE="$2"; shift 2;;
-    -l) LOCAL_PORT="$2"; shift 2;;
     -p) AWS_PROFILE="$2"; shift 2;;
+    -l) LOCAL_PORT="$2"; shift 2;;
     --password) PRINT_PASSWORD=1; shift;;
     -h|--help) usage; exit 0;;
     *) echo "Unknown option: $1" >&2; usage; exit 1;;
   esac
 done
 
-if [[ "$STAGE" != "dev" && "$STAGE" != "prod" ]]; then
-  echo "Error: stage 는 dev 또는 prod 여야 합니다 (given: $STAGE)" >&2
+ALLOWED_PROFILES=("dev-otk-pwrs-db-access" "prod-otk-pwrs-db-access")
+if [[ -z "$AWS_PROFILE" ]] || [[ ! " ${ALLOWED_PROFILES[*]} " =~ " ${AWS_PROFILE} " ]]; then
+  echo "Error: -p 옵션으로 profile 을 지정해야 합니다." >&2
+  echo "Allowed: ${ALLOWED_PROFILES[*]}" >&2
   exit 1
 fi
 
+# profile 이름에서 stage 자동 추출 (dev-otk-pwrs-db-access → dev)
+STAGE="${AWS_PROFILE%%-otk-pwrs-db-access}"
+
 aws_() { aws --profile "$AWS_PROFILE" --region ap-northeast-2 "$@"; }
 
-echo "==> SSM Parameter Store 에서 설정 조회 (stage=$STAGE)..."
-RDS_HOST=$(aws_ ssm get-parameter \
-  --name "/$PROJECT/$STAGE/rds/host" \
-  --query 'Parameter.Value' --output text)
-RDS_PORT=$(aws_ ssm get-parameter \
-  --name "/$PROJECT/$STAGE/rds/port" \
-  --query 'Parameter.Value' --output text)
-RDS_USER=$(aws_ ssm get-parameter \
-  --name "/$PROJECT/$STAGE/rds/username" \
-  --query 'Parameter.Value' --output text)
-RDS_SECRET_ARN=$(aws_ ssm get-parameter \
-  --name "/$PROJECT/$STAGE/rds/secret-arn" \
-  --query 'Parameter.Value' --output text)
+ENV_FILE="$(dirname "$0")/db-tunnel.${STAGE}.env"
+if [[ ! -f "$ENV_FILE" ]]; then
+  echo "Error: .env 파일을 찾을 수 없습니다: $ENV_FILE" >&2
+  exit 1
+fi
+# shellcheck source=/dev/null
+source "$ENV_FILE"
 
 if [[ "$PRINT_PASSWORD" -eq 1 ]]; then
   aws_ secretsmanager get-secret-value \

@@ -1,3 +1,6 @@
 # Claude Code local state
 .claude/
 CLAUDE.local.md
+
+# db-tunnel 환경 설정
+scripts/db-tunnel.*.env
