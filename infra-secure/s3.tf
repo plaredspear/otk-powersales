@@ -12,7 +12,7 @@
 # Web bucket (CloudFront origin)
 # ---------------------------------------------------------------------------
 resource "aws_s3_bucket" "web" {
-  bucket        = "${local.name_prefix}-web"
+  bucket        = "${local.name_prefix}-web-${data.aws_caller_identity.current.account_id}"
   force_destroy = true
 }
 
@@ -39,7 +39,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "web" {
 # Pipeline Artifacts bucket (versioned — CodePipeline requires versioning)
 # ---------------------------------------------------------------------------
 resource "aws_s3_bucket" "pipeline_artifacts" {
-  bucket        = "${local.name_prefix}-pipeline-artifacts"
+  bucket        = "${local.name_prefix}-pipeline-artifacts-${data.aws_caller_identity.current.account_id}"
   force_destroy = true
 }
 
@@ -74,7 +74,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "pipeline_artifact
 # Application storage bucket
 # ---------------------------------------------------------------------------
 resource "aws_s3_bucket" "storage" {
-  bucket        = "${local.name_prefix}-storage"
+  bucket        = "${local.name_prefix}-storage-${data.aws_caller_identity.current.account_id}"
   force_destroy = true
 }
 
