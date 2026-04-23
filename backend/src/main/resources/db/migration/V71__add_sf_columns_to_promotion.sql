@@ -1,9 +1,0 @@
-ALTER TABLE promotion ADD COLUMN IF NOT EXISTS account_sfid VARCHAR(18);
-ALTER TABLE promotion ADD COLUMN IF NOT EXISTS primary_product_sfid VARCHAR(18);
-ALTER TABLE promotion ADD COLUMN IF NOT EXISTS deprecated_acc_sfid VARCHAR(18);
-ALTER TABLE promotion ADD COLUMN IF NOT EXISTS account_code VARCHAR(100);
-ALTER TABLE promotion ADD COLUMN IF NOT EXISTS actual_amount_won BIGINT;
-ALTER TABLE promotion ADD COLUMN IF NOT EXISTS product_code VARCHAR(100);
-ALTER TABLE promotion ADD COLUMN IF NOT EXISTS owner_sfid VARCHAR(18);
-ALTER TABLE promotion ADD COLUMN IF NOT EXISTS created_by_sfid VARCHAR(18);
-ALTER TABLE promotion ADD COLUMN IF NOT EXISTS last_modified_by_sfid VARCHAR(18);
