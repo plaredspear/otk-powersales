@@ -41,3 +41,7 @@ out/
 
 ### Environment ###
 .env
+
+### Migration squash verification (local artifacts) ###
+scripts/migration-squash/snapshots/
+scripts/migration-squash/compare-out/
