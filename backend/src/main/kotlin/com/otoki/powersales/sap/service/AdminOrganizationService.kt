@@ -1,0 +1,32 @@
+package com.otoki.powersales.sap.service
+
+import com.otoki.powersales.admin.dto.EffectiveBranchResult
+import com.otoki.powersales.sap.dto.response.OrganizationResponse
+import com.otoki.powersales.admin.scope.DataScopeHolder
+import com.otoki.powersales.sap.repository.OrganizationRepository
+import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
+
+@Service
+@Transactional(readOnly = true)
+class AdminOrganizationService(
+    private val dataScopeHolder: DataScopeHolder,
+    private val organizationRepository: OrganizationRepository
+) {
+
+    fun getOrganizations(keyword: String?, level: String?): List<OrganizationResponse> {
+        val scope = dataScopeHolder.require()
+
+        val branchCodes: List<String>? = when (val result = scope.effectiveBranchCodes(null)) {
+            is EffectiveBranchResult.All -> null
+            is EffectiveBranchResult.Filtered -> result.codes
+            is EffectiveBranchResult.NoAccess -> return emptyList()
+        }
+
+        return organizationRepository.searchForAdmin(
+            keyword = keyword,
+            level = level,
+            branchCodes = branchCodes
+        ).map { OrganizationResponse.from(it) }
+    }
+}

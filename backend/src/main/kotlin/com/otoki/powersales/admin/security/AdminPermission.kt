@@ -1,0 +1,14 @@
+package com.otoki.powersales.admin.security
+
+enum class AdminPermission {
+    DASHBOARD_READ,
+    EMPLOYEE_READ,
+    ACCOUNT_READ,
+    PROMOTION_READ,
+    PROMOTION_WRITE,
+    SAFETY_CHECK_READ,
+    SCHEDULE_READ,
+    SCHEDULE_WRITE,
+    PRODUCT_EXPIRATION_READ,
+    PRODUCT_EXPIRATION_WRITE
+}

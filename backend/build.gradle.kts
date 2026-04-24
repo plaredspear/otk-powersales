@@ -12,7 +12,7 @@ version = "0.0.1-SNAPSHOT"
 description = "Demo project for Spring Boot"
 
 springBoot {
-	mainClass.set("com.otoki.internal.OtokiInternalApplicationKt")
+	mainClass.set("com.otoki.powersales.OtokiPowerSalesApplicationKt")
 }
 
 java {
@@ -132,7 +132,7 @@ tasks.withType<Test> {
 
 tasks.test {
 	// Redis 미연결로 인한 @SpringBootTest 컨텍스트 로드 실패 (기존 이슈)
-	exclude("**/OtokiInternalApplicationTests*")
+	exclude("**/OtokiPowerSalesApplicationTests*")
 	exclude("**/HealthControllerTest*")
 
 	// OpenAPI spec 생성 테스트는 전용 task로만 실행
@@ -143,13 +143,13 @@ tasks.register<Test>("generateOpenApiDocs") {
 	group = "documentation"
 	description = "OpenAPI spec JSON 파일 생성 (backend/openapi.json)"
 	filter {
-		includeTestsMatching("com.otoki.internal.OpenApiSpecGeneratorTest")
+		includeTestsMatching("com.otoki.powersales.OpenApiSpecGeneratorTest")
 	}
 }
 
 tasks.register<JavaExec>("migrateHeroku") {
 	group = "migration"
 	description = "Heroku DB → Dev DB 데이터 마이그레이션 (예: ./gradlew migrateHeroku --args='account')"
-	mainClass.set("com.otoki.internal.migration.HerokuMigrationTool")
+	mainClass.set("com.otoki.powersales.common.migration.HerokuMigrationTool")
 	classpath = sourceSets.main.get().runtimeClasspath
 }
