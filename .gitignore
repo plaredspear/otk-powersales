@@ -19,3 +19,6 @@ infra-secure/terraform.tfstate
 infra-secure/terraform.tfstate.*
 infra-secure/terraform.tfvars
 infra-secure/backups/
+
+# db-tunnel 환경 설정 (RDS endpoint + Secret ARN)
+scripts/db-tunnel.*.env
