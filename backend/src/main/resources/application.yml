@@ -43,6 +43,14 @@ spring:
       write-dates-as-timestamps: false
     time-zone: Asia/Seoul
 
+  cloud:
+    aws:
+      region:
+        static: ${AWS_REGION:ap-northeast-2}
+      credentials:
+        access-key: ${AWS_ACCESS_KEY_ID:}
+        secret-key: ${AWS_SECRET_ACCESS_KEY:}
+
 jwt:
   secret: ${JWT_SECRET:otoki-internal-dev-secret-key-change-in-production-minimum-256-bits}
   expiration: ${JWT_EXPIRATION:86400000}
@@ -71,6 +79,9 @@ app:
     api: ${API_DOMAIN:}
     admin: ${ADMIN_DOMAIN:}
     sap: ${SAP_DOMAIN:}
+  aws:
+    s3:
+      bucket: ${S3_BUCKET:}
 
 sap:
   auth:
