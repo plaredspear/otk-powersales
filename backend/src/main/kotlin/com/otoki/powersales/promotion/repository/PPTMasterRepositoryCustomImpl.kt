@@ -137,4 +137,22 @@ class PPTMasterRepositoryCustomImpl(
             )
             .fetch()
     }
+
+    override fun findSapOutboundTargets(
+        monthFirstDay: LocalDate,
+        monthLastDay: LocalDate
+    ): List<ProfessionalPromotionTeamMaster> {
+        return queryFactory
+            .selectFrom(professionalPromotionTeamMaster)
+            .leftJoin(professionalPromotionTeamMaster.employee, employee).fetchJoin()
+            .leftJoin(professionalPromotionTeamMaster.account, account).fetchJoin()
+            .where(
+                professionalPromotionTeamMaster.startDate.loe(monthLastDay),
+                professionalPromotionTeamMaster.endDate.isNull
+                    .or(professionalPromotionTeamMaster.endDate.goe(monthFirstDay)),
+                employee.status.isNull.or(employee.status.ne("미확정"))
+            )
+            .orderBy(professionalPromotionTeamMaster.id.asc())
+            .fetch()
+    }
 }

@@ -1,8 +1,11 @@
 package com.otoki.powersales.sap.outbound.dto
 
+import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.annotation.JsonProperty
+
 data class SapOutboundRequest<T>(
-    val interfaceId: String,
-    val reqItemList: List<T>
+    @JsonIgnore val interfaceId: String,
+    @JsonProperty("REQUEST") val reqItemList: List<T>
 )
 
 data class SapOutboundResponse(
