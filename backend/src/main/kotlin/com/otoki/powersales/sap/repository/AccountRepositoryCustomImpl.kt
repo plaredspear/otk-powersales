@@ -1,7 +1,7 @@
 package com.otoki.powersales.sap.repository
 
 import com.otoki.powersales.sap.entity.Account
-import com.otoki.powersales.sap.entity.QAccount.account
+import com.otoki.powersales.sap.entity.QAccount.Companion.account
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.data.domain.Page

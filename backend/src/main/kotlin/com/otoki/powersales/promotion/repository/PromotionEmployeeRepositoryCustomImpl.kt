@@ -1,8 +1,8 @@
 package com.otoki.powersales.promotion.repository
 
 import com.otoki.powersales.promotion.entity.PromotionEmployee
-import com.otoki.powersales.promotion.entity.QPromotionEmployee.promotionEmployee
-import com.otoki.powersales.sap.entity.QEmployee.employee
+import com.otoki.powersales.promotion.entity.QPromotionEmployee.Companion.promotionEmployee
+import com.otoki.powersales.sap.entity.QEmployee.Companion.employee
 import com.querydsl.jpa.impl.JPAQueryFactory
 import java.time.LocalDate
 
@@ -37,7 +37,7 @@ class PromotionEmployeeRepositoryCustomImpl(
 
     override fun sumTargetAmountByPromotionId(promotionId: Long): Long {
         return queryFactory
-            .select(promotionEmployee.targetAmount.sum().coalesce(0L))
+            .select(promotionEmployee.targetAmount.sumAggregate().coalesce(0L))
             .from(promotionEmployee)
             .where(promotionEmployee.promotionId.eq(promotionId))
             .fetchOne() ?: 0L
@@ -45,7 +45,7 @@ class PromotionEmployeeRepositoryCustomImpl(
 
     override fun sumActualAmountByPromotionId(promotionId: Long): Long {
         return queryFactory
-            .select(promotionEmployee.actualAmount.sum().coalesce(0L))
+            .select(promotionEmployee.actualAmount.sumAggregate().coalesce(0L))
             .from(promotionEmployee)
             .where(promotionEmployee.promotionId.eq(promotionId))
             .fetchOne() ?: 0L

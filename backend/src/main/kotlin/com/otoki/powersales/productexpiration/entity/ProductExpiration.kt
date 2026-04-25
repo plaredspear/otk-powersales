@@ -1,6 +1,5 @@
 package com.otoki.powersales.productexpiration.entity
 
-import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.sap.entity.Account
@@ -11,7 +10,7 @@ import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
 import java.time.LocalDate
 import java.time.LocalDateTime
-
+import com.otoki.powersales.common.entity.AuditedEntity
 /**
  * 유통기한 관리 Entity
  *
@@ -75,13 +74,13 @@ class ProductExpiration(
     @HCColumn("inst_dt")
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
-    override var createdAt: LocalDateTime = LocalDateTime.now(),
+    var createdAt: LocalDateTime = LocalDateTime.now(),
 
     @HCColumn("updt_dt")
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
-    override var updatedAt: LocalDateTime = LocalDateTime.now()
-) : BaseEntity() {
+    var updatedAt: LocalDateTime = LocalDateTime.now()
+) : AuditedEntity() {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "account_id", insertable = false, updatable = false, foreignKey = ForeignKey(ConstraintMode.NO_CONSTRAINT))

@@ -1,13 +1,12 @@
 package com.otoki.powersales.draft.entity
 
-import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.HCTable
 import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
 import java.time.LocalDateTime
-
+import com.otoki.powersales.common.entity.AuditedEntity
 @Entity
 @Table(name = "tmp_order_product")
 @HCTable("tmp_order_product")
@@ -47,10 +46,10 @@ class TmpOrderProduct(
     @HCColumn("inst_date")
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
-    override var createdAt: LocalDateTime = LocalDateTime.now(),
+    var createdAt: LocalDateTime = LocalDateTime.now(),
 
     @HCColumn("upd_date")
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
-    override var updatedAt: LocalDateTime = LocalDateTime.now()
-) : BaseEntity()
+    var updatedAt: LocalDateTime = LocalDateTime.now()
+) : AuditedEntity()

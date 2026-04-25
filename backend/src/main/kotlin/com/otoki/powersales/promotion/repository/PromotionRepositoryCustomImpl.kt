@@ -1,11 +1,11 @@
 package com.otoki.powersales.promotion.repository
 
 import com.otoki.powersales.promotion.entity.Promotion
-import com.otoki.powersales.promotion.entity.QPromotion.promotion
-import com.otoki.powersales.promotion.entity.QPromotionEmployee.promotionEmployee
-import com.otoki.powersales.promotion.entity.QPromotionType.promotionType
-import com.otoki.powersales.sap.entity.QAccount.account
-import com.otoki.powersales.sap.entity.QProduct.product
+import com.otoki.powersales.promotion.entity.QPromotion.Companion.promotion
+import com.otoki.powersales.promotion.entity.QPromotionEmployee.Companion.promotionEmployee
+import com.otoki.powersales.promotion.entity.QPromotionType.Companion.promotionType
+import com.otoki.powersales.sap.entity.QAccount.Companion.account
+import com.otoki.powersales.sap.entity.QProduct.Companion.product
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.jpa.JPAExpressions
 import com.querydsl.jpa.impl.JPAQueryFactory

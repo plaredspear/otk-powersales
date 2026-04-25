@@ -1,7 +1,7 @@
 package com.otoki.powersales.education.repository
 
 import com.otoki.powersales.education.entity.EducationPost
-import com.otoki.powersales.education.entity.QEducationPost.educationPost
+import com.otoki.powersales.education.entity.QEducationPost.Companion.educationPost
 import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable

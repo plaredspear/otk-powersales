@@ -1,6 +1,5 @@
 package com.otoki.powersales.education.entity
 
-import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.sap.entity.Employee
@@ -8,7 +7,7 @@ import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
 import java.time.LocalDateTime
-
+import com.otoki.powersales.common.entity.AuditedEntity
 /**
  * 교육 게시물 Entity
  *
@@ -52,10 +51,10 @@ class EducationPost(
     @HCColumn("inst_date")
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
-    override var createdAt: LocalDateTime = LocalDateTime.now(),
+    var createdAt: LocalDateTime = LocalDateTime.now(),
 
     @HCColumn("upd_date")
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
-    override var updatedAt: LocalDateTime = LocalDateTime.now()
-) : BaseEntity()
+    var updatedAt: LocalDateTime = LocalDateTime.now()
+) : AuditedEntity()

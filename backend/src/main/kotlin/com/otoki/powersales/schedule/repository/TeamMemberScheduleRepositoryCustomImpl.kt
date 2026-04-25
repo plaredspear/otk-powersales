@@ -1,9 +1,9 @@
 package com.otoki.powersales.schedule.repository
 
-import com.otoki.powersales.sap.entity.QAccount.account
-import com.otoki.powersales.sap.entity.QEmployee.employee
-import com.otoki.powersales.sap.entity.QEmployeeInfo.employeeInfo
-import com.otoki.powersales.schedule.entity.QTeamMemberSchedule.teamMemberSchedule
+import com.otoki.powersales.sap.entity.QAccount.Companion.account
+import com.otoki.powersales.sap.entity.QEmployee.Companion.employee
+import com.otoki.powersales.sap.entity.QEmployeeInfo.Companion.employeeInfo
+import com.otoki.powersales.schedule.entity.QTeamMemberSchedule.Companion.teamMemberSchedule
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.querydsl.core.types.dsl.BooleanExpression
 import com.querydsl.jpa.impl.JPAQueryFactory

@@ -1,7 +1,7 @@
 package com.otoki.powersales.inspection.repository
 
 import com.otoki.powersales.inspection.entity.InspectionTheme
-import com.otoki.powersales.inspection.entity.QInspectionTheme.inspectionTheme
+import com.otoki.powersales.inspection.entity.QInspectionTheme.Companion.inspectionTheme
 import com.querydsl.jpa.impl.JPAQueryFactory
 import java.time.LocalDate
 

@@ -2,8 +2,8 @@ package com.otoki.powersales.claim.repository
 
 import com.otoki.powersales.claim.entity.Claim
 import com.otoki.powersales.claim.entity.ClaimStatus
-import com.otoki.powersales.claim.entity.QClaim.claim
-import com.otoki.powersales.sap.entity.QEmployee.employee
+import com.otoki.powersales.claim.entity.QClaim.Companion.claim
+import com.otoki.powersales.sap.entity.QEmployee.Companion.employee
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.Predicate
 import com.querydsl.jpa.impl.JPAQueryFactory
