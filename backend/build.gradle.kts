@@ -1,10 +1,10 @@
 plugins {
-	kotlin("jvm") version "1.9.25"
-	kotlin("plugin.spring") version "1.9.25"
-	kotlin("kapt") version "1.9.25"
+	kotlin("jvm") version "2.2.21"
+	kotlin("plugin.spring") version "2.2.21"
+	kotlin("kapt") version "2.2.21"
 	id("org.springframework.boot") version "3.5.0"
 	id("io.spring.dependency-management") version "1.1.7"
-	kotlin("plugin.jpa") version "1.9.25"
+	kotlin("plugin.jpa") version "2.2.21"
 }
 
 group = "com.otoki"
@@ -19,10 +19,8 @@ java {
 	toolchain {
 		languageVersion = JavaLanguageVersion.of(24)
 	}
-	// Kotlin 1.9.25 의 JVM target 상한이 21 이므로 Java 컴파일 타겟도 21 로 맞춘다.
-	// #536 (Kotlin 2.2) 적용 시 함께 24 로 상향 예정.
-	sourceCompatibility = JavaVersion.VERSION_21
-	targetCompatibility = JavaVersion.VERSION_21
+	sourceCompatibility = JavaVersion.VERSION_24
+	targetCompatibility = JavaVersion.VERSION_24
 }
 
 repositories {
@@ -67,7 +65,7 @@ dependencies {
 
 kotlin {
 	compilerOptions {
-		freeCompilerArgs.addAll("-Xjsr305=strict")
+		freeCompilerArgs.addAll("-Xjsr305=strict", "-Xannotation-default-target=param-property")
 	}
 }
 
