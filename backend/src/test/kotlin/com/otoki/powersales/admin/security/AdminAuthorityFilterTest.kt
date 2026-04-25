@@ -1,9 +1,8 @@
 package com.otoki.powersales.admin.security
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.PropertyNamingStrategies
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import tools.jackson.databind.ObjectMapper
+import tools.jackson.databind.PropertyNamingStrategies
+import tools.jackson.databind.json.JsonMapper
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.scope.AdminEmployeeHolder
 import com.otoki.powersales.admin.scope.DataScopeHolder
@@ -53,11 +52,9 @@ class AdminAuthorityFilterTest {
 
     @BeforeEach
     fun setUp() {
-        objectMapper = ObjectMapper().apply {
-            propertyNamingStrategy = PropertyNamingStrategies.SNAKE_CASE
-            registerModule(JavaTimeModule())
-            disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-        }
+        objectMapper = JsonMapper.builder()
+            .propertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
+            .build()
         adminEmployeeHolder = AdminEmployeeHolder()
         dataScopeHolder = DataScopeHolder()
         filter = AdminAuthorityFilter(employeeRepository, objectMapper, adminDataScopeService, adminEmployeeHolder, dataScopeHolder, requestMappingHandlerMapping, adminPermissionResolver)

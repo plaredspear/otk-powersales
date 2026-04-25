@@ -1,7 +1,7 @@
 package com.otoki.powersales.sap.outbound.dto
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import tools.jackson.databind.ObjectMapper
+import tools.jackson.module.kotlin.jacksonObjectMapper
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamMaster
 import com.otoki.powersales.sap.entity.Account
 import com.otoki.powersales.sap.entity.Employee

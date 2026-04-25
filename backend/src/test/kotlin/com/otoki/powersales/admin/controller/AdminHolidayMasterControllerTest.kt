@@ -1,6 +1,6 @@
 package com.otoki.powersales.admin.controller
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.admin.dto.request.HolidayMasterCreateRequest
 import com.otoki.powersales.admin.dto.request.HolidayMasterUpdateRequest
 import com.otoki.powersales.admin.dto.response.HolidayMasterResponse

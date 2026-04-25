@@ -1,6 +1,6 @@
 package com.otoki.powersales.sap.service
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.sap.dto.SapSyncResult
 import com.otoki.powersales.sap.entity.SapSyncLog
 import com.otoki.powersales.sap.repository.SapSyncLogRepository

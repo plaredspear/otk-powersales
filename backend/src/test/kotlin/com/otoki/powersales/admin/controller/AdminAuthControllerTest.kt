@@ -1,6 +1,6 @@
 package com.otoki.powersales.admin.controller
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.admin.dto.response.AdminLoginResponse
 import com.otoki.powersales.admin.dto.response.AdminTokenInfo
 import com.otoki.powersales.admin.dto.response.AdminUserInfo

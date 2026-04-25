@@ -1,6 +1,6 @@
 package com.otoki.powersales.auth.controller
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.auth.dto.request.ChangePasswordRequest
 import com.otoki.powersales.auth.dto.request.LoginRequest
 import com.otoki.powersales.auth.dto.request.RefreshTokenRequest

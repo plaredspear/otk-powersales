@@ -36,6 +36,7 @@ dependencyManagement {
 }
 
 dependencies {
+	implementation("org.springframework.boot:spring-boot-starter-actuator")
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.flywaydb:flyway-core")
 	implementation("org.flywaydb:flyway-database-postgresql")
@@ -43,8 +44,7 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-security")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
 	implementation("org.springframework.boot:spring-boot-starter-webmvc")
-	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
-	implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
+	implementation("tools.jackson.module:jackson-module-kotlin")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 
 	// Spring Cloud AWS (Secrets Manager + S3)
@@ -147,7 +147,6 @@ tasks.withType<Test> {
 tasks.test {
 	// Redis 미연결로 인한 @SpringBootTest 컨텍스트 로드 실패 (기존 이슈)
 	exclude("**/OtokiPowerSalesApplicationTests*")
-	exclude("**/HealthControllerTest*")
 
 	// OpenAPI spec 생성 테스트는 전용 task로만 실행
 	exclude("**/OpenApiSpecGeneratorTest*")

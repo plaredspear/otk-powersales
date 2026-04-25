@@ -1,7 +1,7 @@
 package com.otoki.powersales.common.security
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.PropertyNamingStrategies
+import tools.jackson.databind.PropertyNamingStrategies
+import tools.jackson.databind.json.JsonMapper
 import com.otoki.powersales.sap.entity.UserRole
 import jakarta.servlet.FilterChain
 import org.assertj.core.api.Assertions.assertThat
@@ -31,11 +31,9 @@ class GpsConsentFilterTest {
 
     @BeforeEach
     fun setUp() {
-        val objectMapper = ObjectMapper().apply {
-            propertyNamingStrategy = PropertyNamingStrategies.SNAKE_CASE
-            registerModule(com.fasterxml.jackson.datatype.jsr310.JavaTimeModule())
-            disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-        }
+        val objectMapper = JsonMapper.builder()
+            .propertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
+            .build()
         filter = GpsConsentFilter(objectMapper)
         request = MockHttpServletRequest()
         response = MockHttpServletResponse()

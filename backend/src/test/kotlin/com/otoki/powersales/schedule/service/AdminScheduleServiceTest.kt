@@ -1,6 +1,7 @@
 package com.otoki.powersales.schedule.service
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
+import tools.jackson.databind.json.JsonMapper
 import com.otoki.powersales.schedule.dto.response.RowError
 import com.otoki.powersales.schedule.dto.response.RowPreview
 import com.otoki.powersales.schedule.exception.*
@@ -73,9 +74,9 @@ class AdminScheduleServiceTest {
     private lateinit var valueOperations: ValueOperations<String, String>
 
     @Spy
-    private var objectMapper: ObjectMapper = ObjectMapper().apply {
-        findAndRegisterModules()
-    }
+    private var objectMapper: ObjectMapper = JsonMapper.builder()
+        .findAndAddModules()
+        .build()
 
     @InjectMocks
     private lateinit var adminScheduleService: AdminScheduleService

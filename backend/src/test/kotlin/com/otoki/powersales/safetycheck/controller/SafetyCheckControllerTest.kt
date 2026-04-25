@@ -1,6 +1,6 @@
 package com.otoki.powersales.safetycheck.controller
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.safetycheck.dto.response.EquipmentStatus
 import com.otoki.powersales.safetycheck.dto.response.MemberStatus
 import com.otoki.powersales.safetycheck.dto.response.SafetyCheckStatusResponse

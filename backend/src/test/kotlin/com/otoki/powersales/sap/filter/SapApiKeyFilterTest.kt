@@ -1,7 +1,7 @@
 package com.otoki.powersales.sap.filter
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.PropertyNamingStrategies
+import tools.jackson.databind.PropertyNamingStrategies
+import tools.jackson.databind.json.JsonMapper
 import com.otoki.powersales.sap.config.SapAuthProperties
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
@@ -14,9 +14,9 @@ import org.springframework.mock.web.MockHttpServletResponse
 @DisplayName("SapApiKeyFilter 테스트")
 class SapApiKeyFilterTest {
 
-    private val objectMapper = ObjectMapper().apply {
-        propertyNamingStrategy = PropertyNamingStrategies.SNAKE_CASE
-    }
+    private val objectMapper = JsonMapper.builder()
+        .propertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
+        .build()
     private val validApiKey = "test-sap-api-key-12345"
 
     @Nested

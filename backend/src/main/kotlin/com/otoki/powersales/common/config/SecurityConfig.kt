@@ -44,7 +44,7 @@ class SecurityConfig(
             .authorizeHttpRequests { auth ->
                 auth
                     .requestMatchers(
-                        "/api/v1/health",
+                        "/api/health",
                         "/api/v1/auth/login",
                         "/api/v1/auth/refresh",
                         "/h2-console/**",

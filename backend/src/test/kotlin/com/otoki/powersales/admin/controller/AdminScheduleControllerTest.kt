@@ -1,6 +1,6 @@
 package com.otoki.powersales.admin.controller
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.schedule.dto.request.ScheduleBatchConfirmRequest
 import com.otoki.powersales.schedule.dto.request.ScheduleConfirmRequest
 import com.otoki.powersales.schedule.dto.response.*

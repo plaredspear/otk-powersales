@@ -1,6 +1,6 @@
 package com.otoki.powersales.event.controller
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.sales.dto.response.DailySalesListResponse
 import com.otoki.powersales.event.dto.response.EventDetailResponse
 import com.otoki.powersales.event.dto.response.EventListResponse
