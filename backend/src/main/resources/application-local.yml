@@ -1,0 +1,28 @@
+# 로컬 프로파일 — 외부 의존 없는 컨텍스트 로드용 (#538-P2)
+# DB / Redis / AWS 자격증명 미설정 상태에서도 Spring Boot 가 기동되도록 Data* 및 S3 auto-config 를 제외한다.
+# 공통 설정(Jackson SNAKE_CASE 등) 은 application.yml 에서 상속한다.
+#
+# 한계: 본 프로파일만으로는 bootRun 이 완전히 기동되지 않는다.
+# AdminAuthorityFilter / JwtTokenProvider 등 일부 @Component 가 EmployeeRepository / RedisTemplate 를
+# 생성자 주입으로 요구하므로, 실제 무의존 기동을 달성하려면 별도 후속 작업에서 stub 빈 추가 또는
+# @Profile 기반 비활성화가 필요하다 (LocalRedisStubConfig 가 RedisConnectionFactory stub 만 제공).
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration
+      - org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration
+      - org.springframework.boot.data.jpa.autoconfigure.DataJpaRepositoriesAutoConfiguration
+      - org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration
+      - org.springframework.boot.data.redis.autoconfigure.DataRedisReactiveAutoConfiguration
+      - org.springframework.boot.data.redis.autoconfigure.DataRedisRepositoriesAutoConfiguration
+      - org.springframework.boot.data.redis.autoconfigure.health.DataRedisHealthContributorAutoConfiguration
+      - org.springframework.boot.data.redis.autoconfigure.health.DataRedisReactiveHealthContributorAutoConfiguration
+      - io.awspring.cloud.autoconfigure.s3.S3AutoConfiguration
+      - io.awspring.cloud.autoconfigure.s3.S3TransferManagerAutoConfiguration
+      - io.awspring.cloud.autoconfigure.s3.S3CrtAsyncClientAutoConfiguration
+
+  flyway:
+    enabled: false
+
+  main:
+    lazy-initialization: true
