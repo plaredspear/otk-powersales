@@ -1,6 +1,6 @@
 package com.otoki.powersales.leave.controller
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.admin.security.AdminAuthorityFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider

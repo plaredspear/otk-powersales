@@ -1,8 +1,7 @@
 package com.otoki.powersales.sap.outbound.client
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.PropertyNamingStrategies
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import tools.jackson.databind.PropertyNamingStrategies
+import tools.jackson.databind.json.JsonMapper
 import com.otoki.powersales.sap.outbound.config.SapOutboundProperties
 import com.otoki.powersales.sap.outbound.dto.SapOutboundRequest
 import com.otoki.powersales.sap.outbound.dto.SapOutboundResponse
@@ -25,7 +24,7 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter
+import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter
 import org.springframework.test.web.client.ExpectedCount
 import org.springframework.test.web.client.MockRestServiceServer
 import org.springframework.test.web.client.match.MockRestRequestMatchers.method
@@ -47,8 +46,9 @@ class SapOutboundClientImplTest {
     private lateinit var mockServer: MockRestServiceServer
     private lateinit var client: SapOutboundClientImpl
     private lateinit var properties: SapOutboundProperties
-    private val objectMapper: ObjectMapper = jacksonObjectMapper()
-        .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
+    private val objectMapper: JsonMapper = JsonMapper.builder()
+        .propertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
+        .build()
 
     private val baseUrl = "http://sap-mock.local"
     private val path = "/api/sap/SD03300"
@@ -64,11 +64,11 @@ class SapOutboundClientImplTest {
             readTimeoutMs = 1000,
             retry = SapOutboundProperties.Retry(maxAttempts = 3, delayMs = 0)
         )
-        val jacksonConverter = MappingJackson2HttpMessageConverter(objectMapper)
+        val jacksonConverter = JacksonJsonHttpMessageConverter(objectMapper)
         restClientBuilder = RestClient.builder()
             .baseUrl(baseUrl)
             .messageConverters { converters ->
-                converters.removeIf { it is MappingJackson2HttpMessageConverter }
+                converters.removeIf { it is JacksonJsonHttpMessageConverter }
                 converters.add(0, jacksonConverter)
             }
         mockServer = MockRestServiceServer.bindTo(restClientBuilder).build()

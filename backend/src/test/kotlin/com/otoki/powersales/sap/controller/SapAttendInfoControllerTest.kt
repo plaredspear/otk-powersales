@@ -1,6 +1,6 @@
 package com.otoki.powersales.sap.controller
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.sap.config.SapAuthProperties
 import com.otoki.powersales.sap.dto.SapAttendInfoRequest
 import com.otoki.powersales.sap.dto.SapSyncResult

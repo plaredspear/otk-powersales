@@ -1,6 +1,6 @@
 package com.otoki.powersales.sap.filter
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.sap.config.SapAuthProperties
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest

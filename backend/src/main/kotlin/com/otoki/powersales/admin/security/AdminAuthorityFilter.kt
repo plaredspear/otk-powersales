@@ -1,6 +1,6 @@
 package com.otoki.powersales.admin.security
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.admin.scope.AdminEmployeeHolder
 import com.otoki.powersales.admin.scope.DataScopeHolder
 import com.otoki.powersales.admin.service.AdminDataScopeService

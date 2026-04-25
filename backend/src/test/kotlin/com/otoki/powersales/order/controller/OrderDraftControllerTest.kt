@@ -1,7 +1,7 @@
 /*
 package com.otoki.powersales.order.controller
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.dto.request.DraftItemRequest
 import com.otoki.powersales.order.dto.request.OrderDraftRequest
 import com.otoki.powersales.dto.response.DraftItemResponse

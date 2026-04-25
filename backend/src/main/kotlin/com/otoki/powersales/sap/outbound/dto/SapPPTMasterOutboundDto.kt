@@ -1,8 +1,8 @@
 package com.otoki.powersales.sap.outbound.dto
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.PropertyNamingStrategies
-import com.fasterxml.jackson.databind.annotation.JsonNaming
+import tools.jackson.databind.PropertyNamingStrategies
+import tools.jackson.databind.annotation.JsonNaming
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamMaster
 import java.time.LocalDate
 import java.time.YearMonth

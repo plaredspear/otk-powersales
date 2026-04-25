@@ -1,6 +1,6 @@
 package com.otoki.powersales.admin.controller
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.promotion.dto.request.PromotionCreateRequest
 import com.otoki.powersales.promotion.dto.response.*
 import com.otoki.powersales.admin.scope.DataScopeHolder
