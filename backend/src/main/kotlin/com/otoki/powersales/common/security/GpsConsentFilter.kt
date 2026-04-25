@@ -22,7 +22,7 @@ class GpsConsentFilter(
             "/api/v1/auth/gps-consent",
             "/api/v1/auth/change-password",
             "/api/v1/auth/logout",
-            "/api/v1/health",
+            "/api/health",
             "/api/v1/admin/"
         )
     }
