@@ -5,7 +5,7 @@ plugins {
 	id("io.spring.dependency-management") version "1.1.7"
 }
 
-group = "com.example"
+group = "com.otoki.powersales"
 version = "0.0.1-SNAPSHOT"
 
 java {
@@ -49,6 +49,7 @@ kotlin {
 
 tasks.withType<Test> {
 	useJUnitPlatform()
+	systemProperty("spring.profiles.active", "test")
 }
 
 tasks.named<Jar>("jar") {

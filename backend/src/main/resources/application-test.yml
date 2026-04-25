@@ -1,0 +1,26 @@
+# test 프로파일 — Gradle test 태스크가 SPRING_PROFILES_ACTIVE=test 로 활성.
+# Redis / DB / S3 가 없는 환경에서 auto-config 가 빈 생성을 시도해 컨텍스트
+# 로드가 실패하지 않도록 인프라 의존 auto-config 를 모두 제외한다. EB (dev/prod)
+# 는 이 파일이 로드되지 않으므로 영향 없음.
+#
+# Spring Boot 4 에서 Data 관련 auto-config 클래스명이 Data* 로 리네임된다
+# (RedisAutoConfiguration → DataRedisAutoConfiguration 등). Health Contributor
+# auto-config 는 별도 빈을 만들기 위해 Lettuce/Connection 구성을 트리거하므로
+# 함께 제외해야 placeholder 가 남아있어도 컨텍스트 로드가 깨지지 않는다.
+
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration
+      - org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration
+      - org.springframework.boot.data.jpa.autoconfigure.DataJpaRepositoriesAutoConfiguration
+      - org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration
+      - org.springframework.boot.data.redis.autoconfigure.DataRedisReactiveAutoConfiguration
+      - org.springframework.boot.data.redis.autoconfigure.DataRedisRepositoriesAutoConfiguration
+      - org.springframework.boot.data.redis.autoconfigure.health.DataRedisHealthContributorAutoConfiguration
+      - org.springframework.boot.data.redis.autoconfigure.health.DataRedisReactiveHealthContributorAutoConfiguration
+      # Spring Cloud AWS S3 — test 에서는 region/credentials 미설정 시 S3Client
+      # 빈 생성이 실패하므로 S3 와 그 의존 core auto-config 를 모두 비활성화한다.
+      - io.awspring.cloud.autoconfigure.s3.S3AutoConfiguration
+      - io.awspring.cloud.autoconfigure.s3.S3TransferManagerAutoConfiguration
+      - io.awspring.cloud.autoconfigure.s3.S3CrtAsyncClientAutoConfiguration

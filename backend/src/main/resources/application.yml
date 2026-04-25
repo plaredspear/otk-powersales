@@ -1,6 +1,6 @@
 spring:
   application:
-    name: otk-pwrs-backend
+    name: otoki-powersales-backend
 
   # -------------------------------------------------------------------------
   # Redis (ElastiCache Valkey, 클러스터 모드 + 전송 중 암호화) — EB (dev/prod)
