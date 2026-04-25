@@ -1,38 +1,5 @@
 package com.otoki.powersales.common.config
 
-import io.swagger.v3.oas.models.Components
-import io.swagger.v3.oas.models.OpenAPI
-import io.swagger.v3.oas.models.info.Info
-import io.swagger.v3.oas.models.security.SecurityRequirement
-import io.swagger.v3.oas.models.security.SecurityScheme
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-
-@Configuration
-class OpenApiConfig {
-
-    @Bean
-    fun openAPI(): OpenAPI {
-        val securitySchemeName = "Bearer Authentication"
-
-        return OpenAPI()
-            .info(
-                Info()
-                    .title("오뚜기 파워세일즈 API")
-                    .description("B2B 영업사원 실적 조회 및 목표 관리 시스템 API")
-                    .version("v1.0.0")
-            )
-            .addSecurityItem(SecurityRequirement().addList(securitySchemeName))
-            .components(
-                Components()
-                    .addSecuritySchemes(
-                        securitySchemeName,
-                        SecurityScheme()
-                            .name(securitySchemeName)
-                            .type(SecurityScheme.Type.HTTP)
-                            .scheme("bearer")
-                            .bearerFormat("JWT")
-                    )
-            )
-    }
-}
+// Spring Boot 4 전환(#538-P1) 으로 springdoc-openapi 2.8.4 의존성 일시 제거.
+// 본 클래스는 io.swagger.v3.oas.models.* 에 의존하므로 컴파일 위해 전체 비활성화한다.
+// #540-P1 에서 Boot 4 호환 대안(springdoc-openapi 3.x 또는 별도 도입) 적용 후 복구한다.

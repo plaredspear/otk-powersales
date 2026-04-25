@@ -98,7 +98,7 @@ class SapApiKeyFilterTest {
 
             filter.doFilter(request, response, filterChain)
 
-            val auth = org.springframework.security.core.context.SecurityContextHolder.getContext().authentication
+            val auth = org.springframework.security.core.context.SecurityContextHolder.getContext().authentication!!
             assertThat(auth).isNotNull
             assertThat(auth.principal).isEqualTo("SAP_SYSTEM")
             assertThat(auth.authorities.map { it.authority }).contains("ROLE_SAP")
