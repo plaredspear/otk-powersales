@@ -1,13 +1,13 @@
 package com.otoki.powersales
 
-import tools.jackson.databind.ObjectMapper
 import tools.jackson.databind.SerializationFeature
+import tools.jackson.databind.json.JsonMapper
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.resttestclient.TestRestTemplate
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.web.client.TestRestTemplate
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.http.HttpStatus
 import org.springframework.test.context.ActiveProfiles
@@ -38,7 +38,9 @@ class OpenApiSpecGeneratorTest {
         assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
 
         val body = response.body!!
-        val objectMapper = ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT)
+        val objectMapper = JsonMapper.builder()
+            .enable(SerializationFeature.INDENT_OUTPUT)
+            .build()
         val jsonNode = objectMapper.readTree(body)
 
         // Then — JSON에 openapi 키 존재

@@ -51,8 +51,8 @@ dependencies {
 	implementation("io.awspring.cloud:spring-cloud-aws-starter-secrets-manager")
 	implementation("io.awspring.cloud:spring-cloud-aws-starter-s3")
 
-	// OpenAPI (Swagger UI) — Boot 4 미호환 (springdoc 2.8.4). #540-P1 에서 대안 도입 예정
-	// implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.4")
+	// OpenAPI (Swagger UI) — Boot 4 GA 릴리즈 (3.0.3, parent: spring-boot-starter-parent:4.0.5)
+	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
 
 	// QueryDSL (OpenFeign fork + KSP)
 	implementation("io.github.openfeign.querydsl:querydsl-jpa:7.1")
@@ -72,6 +72,7 @@ dependencies {
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
 	testImplementation("org.springframework.boot:spring-boot-starter-data-jpa-test")
+	testImplementation("org.springframework.boot:spring-boot-resttestclient")
 	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 	testImplementation("org.springframework.security:spring-security-test")
 	testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
@@ -95,8 +96,6 @@ sourceSets {
 	test {
 		kotlin {
 			exclude(
-				// Spring Boot 4 전환(#538-P1) 으로 springdoc 일시 비활성. #540-P1 에서 대안 도입 후 복구
-				"**/OpenApiSpecGeneratorTest.kt",
 				// Spring Boot 4 + H2 240 + Hibernate 7 조합에서 @DataJpaTest 컨텍스트가 조기 종료되는 이슈로 일시 제외 (#538-P1).
 				// "The database has been closed" 발생. 후속 스펙에서 재활성화 예정.
 				"**/NoticeRepositoryTest.kt",
@@ -154,7 +153,7 @@ tasks.test {
 
 tasks.register<Test>("generateOpenApiDocs") {
 	group = "documentation"
-	description = "OpenAPI spec JSON 파일 생성 (backend/openapi.json)"
+	description = "OpenAPI spec JSON 파일 생성 (backend/openapi.json). 실 DB(local Postgres 또는 dev RDS) 가 활성 상태여야 컨텍스트가 기동된다."
 	filter {
 		includeTestsMatching("com.otoki.powersales.OpenApiSpecGeneratorTest")
 	}
