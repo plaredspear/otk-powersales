@@ -1,7 +1,7 @@
 plugins {
 	kotlin("jvm") version "2.2.21"
 	kotlin("plugin.spring") version "2.2.21"
-	kotlin("kapt") version "2.2.21"
+	id("com.google.devtools.ksp") version "2.2.21-2.0.5"
 	id("org.springframework.boot") version "3.5.0"
 	id("io.spring.dependency-management") version "1.1.7"
 	kotlin("plugin.jpa") version "2.2.21"
@@ -41,9 +41,9 @@ dependencies {
 	// OpenAPI (Swagger UI)
 	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.4")
 
-	// QueryDSL
-	implementation("com.querydsl:querydsl-jpa:5.1.0:jakarta")
-	kapt("com.querydsl:querydsl-apt:5.1.0:jakarta")
+	// QueryDSL (OpenFeign fork + KSP)
+	implementation("io.github.openfeign.querydsl:querydsl-jpa:7.1")
+	ksp("io.github.openfeign.querydsl:querydsl-ksp-codegen:7.1")
 
 	// Apache POI (Excel)
 	implementation("org.apache.poi:poi-ooxml:5.3.0")
@@ -69,18 +69,10 @@ kotlin {
 	}
 }
 
-kapt {
-	correctErrorTypes = true
-}
-
 allOpen {
 	annotation("jakarta.persistence.Entity")
 	annotation("jakarta.persistence.MappedSuperclass")
 	annotation("jakarta.persistence.Embeddable")
-}
-
-tasks.matching { it.name == "kaptTestKotlin" }.configureEach {
-	enabled = false
 }
 
 // 주석 처리된 Entity를 참조하는 테스트 파일 컴파일 제외 (Phase 2 Entity 활성화 후 복구)

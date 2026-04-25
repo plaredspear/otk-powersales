@@ -1,6 +1,5 @@
 package com.otoki.powersales.common.entity
 
-import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
@@ -9,7 +8,6 @@ import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
 import java.time.LocalDateTime
-
 /**
  * 푸시 메시지 Entity
  * V1 스키마: pushmessage__c (Heroku Connect 동기화)
@@ -51,10 +49,10 @@ class PushMessage(
     @HCColumn("createddate")
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
-    override var createdAt: LocalDateTime = LocalDateTime.now(),
+    var createdAt: LocalDateTime = LocalDateTime.now(),
 
     @HCColumn("systemmodstamp")
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
-    override var updatedAt: LocalDateTime = LocalDateTime.now()
-) : BaseEntity()
+    var updatedAt: LocalDateTime = LocalDateTime.now()
+) : AuditedEntity()

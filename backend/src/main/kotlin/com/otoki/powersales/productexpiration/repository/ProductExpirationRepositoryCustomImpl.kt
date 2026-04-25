@@ -2,8 +2,8 @@ package com.otoki.powersales.productexpiration.repository
 
 import com.otoki.powersales.admin.dto.response.AdminProductExpirationSummaryResponse
 import com.otoki.powersales.productexpiration.entity.ProductExpiration
-import com.otoki.powersales.productexpiration.entity.QProductExpiration.productExpiration
-import com.otoki.powersales.sap.entity.QEmployee.employee
+import com.otoki.powersales.productexpiration.entity.QProductExpiration.Companion.productExpiration
+import com.otoki.powersales.sap.entity.QEmployee.Companion.employee
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.Predicate
 import com.querydsl.core.types.dsl.CaseBuilder
@@ -75,9 +75,9 @@ class ProductExpirationRepositoryCustomImpl(
         val result = queryFactory
             .select(
                 productExpiration.count(),
-                expiredCount.sum(),
-                imminentCount.sum(),
-                normalCount.sum()
+                expiredCount.sumAggregate(),
+                imminentCount.sumAggregate(),
+                normalCount.sumAggregate()
             )
             .from(productExpiration)
             .where(where)

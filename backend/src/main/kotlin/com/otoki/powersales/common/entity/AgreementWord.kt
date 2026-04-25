@@ -9,7 +9,6 @@ import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
 import java.time.LocalDate
 import java.time.LocalDateTime
-
 @Entity
 @Table(name = "agreement_word")
 @HCTable("agreementword__c")
@@ -57,10 +56,10 @@ class AgreementWord(
     @HCColumn("createddate")
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
-    override var createdAt: LocalDateTime = LocalDateTime.now(),
+    var createdAt: LocalDateTime = LocalDateTime.now(),
 
     @HCColumn("systemmodstamp")
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
-    override var updatedAt: LocalDateTime = LocalDateTime.now()
-) : BaseEntity()
+    var updatedAt: LocalDateTime = LocalDateTime.now()
+) : AuditedEntity()

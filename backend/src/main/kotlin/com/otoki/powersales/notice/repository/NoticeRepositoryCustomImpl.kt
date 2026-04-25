@@ -2,7 +2,7 @@ package com.otoki.powersales.notice.repository
 
 import com.otoki.powersales.notice.entity.Notice
 import com.otoki.powersales.notice.entity.NoticeCategory
-import com.otoki.powersales.notice.entity.QNotice.notice
+import com.otoki.powersales.notice.entity.QNotice.Companion.notice
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.Predicate
 import com.querydsl.jpa.impl.JPAQueryFactory

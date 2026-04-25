@@ -1,7 +1,7 @@
 package com.otoki.powersales.sap.repository
 
 import com.otoki.powersales.sap.entity.Organization
-import com.otoki.powersales.sap.entity.QOrganization.organization
+import com.otoki.powersales.sap.entity.QOrganization.Companion.organization
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.jpa.impl.JPAQueryFactory
 

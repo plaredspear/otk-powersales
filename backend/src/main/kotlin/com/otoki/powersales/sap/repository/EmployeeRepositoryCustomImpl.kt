@@ -1,8 +1,8 @@
 package com.otoki.powersales.sap.repository
 
 import com.otoki.powersales.common.dto.response.BranchResponse
-import com.otoki.powersales.sap.entity.QEmployee.employee
-import com.otoki.powersales.sap.entity.QEmployeeInfo.employeeInfo
+import com.otoki.powersales.sap.entity.QEmployee.Companion.employee
+import com.otoki.powersales.sap.entity.QEmployeeInfo.Companion.employeeInfo
 import com.otoki.powersales.sap.entity.Employee
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.Projections

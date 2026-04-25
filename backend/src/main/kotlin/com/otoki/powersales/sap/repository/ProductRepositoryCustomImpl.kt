@@ -1,7 +1,7 @@
 package com.otoki.powersales.sap.repository
 
 import com.otoki.powersales.sap.entity.Product
-import com.otoki.powersales.sap.entity.QProduct.product
+import com.otoki.powersales.sap.entity.QProduct.Companion.product
 import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable

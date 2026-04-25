@@ -1,6 +1,5 @@
 package com.otoki.powersales.common.entity
 
-import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.HCTable
 import jakarta.persistence.*
@@ -8,7 +7,6 @@ import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
 import java.time.LocalDate
 import java.time.LocalDateTime
-
 /**
  * PLM 연동용 제품 동기화 버퍼 Entity.
  * product 테이블의 트리거(if__product)가 INSERT 시 id를 복사하므로 외부 할당 PK.
@@ -166,10 +164,10 @@ class ProductSyncBuffer(
     @HCColumn("createddate")
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
-    override var createdAt: LocalDateTime = LocalDateTime.now(),
+    var createdAt: LocalDateTime = LocalDateTime.now(),
 
     @HCColumn("systemmodstamp")
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
-    override var updatedAt: LocalDateTime = LocalDateTime.now()
-) : BaseEntity()
+    var updatedAt: LocalDateTime = LocalDateTime.now()
+) : AuditedEntity()
