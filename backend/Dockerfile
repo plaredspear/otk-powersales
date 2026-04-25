@@ -1,44 +1,40 @@
 # Stage 1: Build
-FROM eclipse-temurin:17-jdk-jammy AS build
+FROM public.ecr.aws/docker/library/eclipse-temurin:24-jdk AS builder
+
 WORKDIR /app
 
-# Copy Gradle wrapper and build files
-COPY gradlew build.gradle.kts settings.gradle.kts ./
-COPY gradle ./gradle
+# Gradle wrapper & build files first (layer caching)
+COPY gradlew .
+COPY gradle/ gradle/
+COPY build.gradle.kts settings.gradle.kts ./
+RUN chmod +x gradlew
 
-# Download dependencies (cached layer)
-RUN ./gradlew --version
-
-# Copy source code
-COPY src ./src
-
-# Build application
-RUN ./gradlew bootJar --no-daemon
+# Copy source and build.
+# BuildKit 캐시 마운트로 /root/.gradle 를 빌드 간 보존한다.
+# (의존성 jar + Kotlin incremental compile 출력 재사용)
+# CodeBuild 에서는 Local Cache > DOCKER_LAYER_CACHE 가 켜져 있어야
+# 호스트 재사용 시 이 마운트가 유효하다.
+COPY src/ src/
+RUN --mount=type=cache,target=/root/.gradle \
+    ./gradlew bootJar --no-daemon -x test
 
 # Stage 2: Runtime
-FROM eclipse-temurin:17-jre-jammy
+FROM public.ecr.aws/docker/library/eclipse-temurin:24-jre AS runtime
 
-# Install curl for health check
-RUN apt-get update && apt-get install -y --no-install-recommends curl \
-    && rm -rf /var/lib/apt/lists/*
-
-# Create non-root user
-RUN groupadd -r spring && useradd -r -g spring spring
-
-# Switch to non-root user
-USER spring:spring
+RUN groupadd -r appuser && useradd -r -g appuser -d /app appuser
 
 WORKDIR /app
 
-# Copy JAR from build stage
-COPY --from=build /app/build/libs/*.jar app.jar
+COPY --from=builder /app/build/libs/*.jar app.jar
 
-# Expose application port
+RUN chown -R appuser:appuser /app
+USER appuser
+
 EXPOSE 8080
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
-  CMD curl -f http://localhost:8080/api/v1/health || exit 1
+ENV JAVA_OPTS="-XX:+UseContainerSupport \
+  -XX:MaxRAMPercentage=75.0 \
+  -XX:InitialRAMPercentage=50.0 \
+  -Djava.security.egd=file:/dev/./urandom"
 
-# Run application
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
