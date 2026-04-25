@@ -17,8 +17,12 @@ springBoot {
 
 java {
 	toolchain {
-		languageVersion = JavaLanguageVersion.of(17)
+		languageVersion = JavaLanguageVersion.of(24)
 	}
+	// Kotlin 1.9.25 의 JVM target 상한이 21 이므로 Java 컴파일 타겟도 21 로 맞춘다.
+	// #536 (Kotlin 2.2) 적용 시 함께 24 로 상향 예정.
+	sourceCompatibility = JavaVersion.VERSION_21
+	targetCompatibility = JavaVersion.VERSION_21
 }
 
 repositories {

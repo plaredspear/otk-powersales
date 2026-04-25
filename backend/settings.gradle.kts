@@ -1,1 +1,1 @@
-rootProject.name = "otoki-powersales-backend"
+rootProject.name = "otk-pwrs-backend"
