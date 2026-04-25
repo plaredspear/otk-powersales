@@ -5,9 +5,9 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest
+import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.ActiveProfiles
 import com.otoki.powersales.common.config.QueryDslConfig
@@ -52,7 +52,7 @@ class MonthlySalesHistoryTest {
         // When
         val persisted = testEntityManager.persistAndFlush(history)
         testEntityManager.clear()
-        val found = testEntityManager.find(MonthlySalesHistory::class.java, persisted.id)
+        val found = testEntityManager.find(MonthlySalesHistory::class.java, persisted.id)!!
 
         // Then
         assertThat(found).isNotNull
@@ -87,7 +87,7 @@ class MonthlySalesHistoryTest {
         // When
         val persisted = testEntityManager.persistAndFlush(historyWithValues)
         testEntityManager.clear()
-        val found = testEntityManager.find(MonthlySalesHistory::class.java, persisted.id)
+        val found = testEntityManager.find(MonthlySalesHistory::class.java, persisted.id)!!
 
         // Then
         assertThat(found).isNotNull
@@ -101,7 +101,7 @@ class MonthlySalesHistoryTest {
         // When
         val persistedNull = testEntityManager.persistAndFlush(historyWithNull)
         testEntityManager.clear()
-        val foundNull = testEntityManager.find(MonthlySalesHistory::class.java, persistedNull.id)
+        val foundNull = testEntityManager.find(MonthlySalesHistory::class.java, persistedNull.id)!!
 
         // Then
         assertThat(foundNull).isNotNull
@@ -130,7 +130,7 @@ class MonthlySalesHistoryTest {
         // When
         val persisted = testEntityManager.persistAndFlush(history)
         testEntityManager.clear()
-        val found = testEntityManager.find(MonthlySalesHistory::class.java, persisted.id)
+        val found = testEntityManager.find(MonthlySalesHistory::class.java, persisted.id)!!
 
         // Then
         assertThat(found).isNotNull
@@ -175,7 +175,7 @@ class MonthlySalesHistoryTest {
         // When
         val persisted = testEntityManager.persistAndFlush(history)
         testEntityManager.clear()
-        val found = testEntityManager.find(MonthlySalesHistory::class.java, persisted.id)
+        val found = testEntityManager.find(MonthlySalesHistory::class.java, persisted.id)!!
 
         // Then
         assertThat(found.sfid).isEqualTo("a0B5g000001XYZ")

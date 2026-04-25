@@ -35,7 +35,7 @@ class LocalDataInitializer(
 
     private val log = LoggerFactory.getLogger(javaClass)
 
-    override fun run(args: ApplicationArguments?) {
+    override fun run(args: ApplicationArguments) {
         runSafely("seedUser") { seedUser() }
         runSafely("seedAgreementWord") { seedAgreementWord() }
         runSafely("seedOrg") { seedOrg() }
@@ -59,7 +59,7 @@ class LocalDataInitializer(
     }
 
     private fun seedUser() {
-        val encodedPassword = passwordEncoder.encode("1234")
+        val encodedPassword = passwordEncoder.encode("1234")!!
 
         data class SeedEmployee(
             val code: String, val name: String, val authority: String,

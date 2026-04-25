@@ -71,8 +71,9 @@ class SecurityConfig(
 
     @Bean
     fun domainGuardFilter(): FilterRegistrationBean<DomainGuardFilter> {
-        val registration = FilterRegistrationBean<DomainGuardFilter>()
-        registration.filter = DomainGuardFilter(domainProperties.api, domainProperties.admin, domainProperties.sap)
+        val registration = FilterRegistrationBean(
+            DomainGuardFilter(domainProperties.api, domainProperties.admin, domainProperties.sap)
+        )
         registration.order = Ordered.HIGHEST_PRECEDENCE + 1
         return registration
     }

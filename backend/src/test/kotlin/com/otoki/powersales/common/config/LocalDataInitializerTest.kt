@@ -19,6 +19,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.quality.Strictness
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.check
@@ -28,11 +30,13 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import jakarta.persistence.EntityManager
 import jakarta.persistence.Query
+import org.springframework.boot.DefaultApplicationArguments
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.transaction.support.TransactionTemplate
 import java.util.Optional
 
 @ExtendWith(MockitoExtension::class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("LocalDataInitializer 테스트")
 class LocalDataInitializerTest {
 
@@ -139,7 +143,7 @@ class LocalDataInitializerTest {
             stubOtherSeedsExist()
 
             // When
-            localDataInitializer.run(null)
+            localDataInitializer.run(DefaultApplicationArguments())
 
             // Then
             val employees = captureAllSavedEmployees()
@@ -161,7 +165,7 @@ class LocalDataInitializerTest {
             stubOtherSeedsExist()
 
             // When
-            localDataInitializer.run(null)
+            localDataInitializer.run(DefaultApplicationArguments())
 
             // Then
             val employees = captureAllSavedEmployees()
@@ -177,7 +181,7 @@ class LocalDataInitializerTest {
             stubOtherSeedsExist()
 
             // When
-            localDataInitializer.run(null)
+            localDataInitializer.run(DefaultApplicationArguments())
 
             // Then
             verify(employeeRepository, never()).save(any<Employee>())
@@ -196,7 +200,7 @@ class LocalDataInitializerTest {
             stubOtherSeedsExist()
 
             // When
-            localDataInitializer.run(null)
+            localDataInitializer.run(DefaultApplicationArguments())
 
             // Then
             val employees = captureAllSavedEmployees()
@@ -218,7 +222,7 @@ class LocalDataInitializerTest {
             stubOtherSeedsExist()
 
             // When
-            localDataInitializer.run(null)
+            localDataInitializer.run(DefaultApplicationArguments())
 
             // Then
             val employees = captureAllSavedEmployees()
@@ -241,7 +245,7 @@ class LocalDataInitializerTest {
             stubOtherSeedsExist()
 
             // When
-            localDataInitializer.run(null)
+            localDataInitializer.run(DefaultApplicationArguments())
 
             // Then
             val captor = argumentCaptor<Employee>()
@@ -263,7 +267,7 @@ class LocalDataInitializerTest {
             stubOtherSeedsExist()
 
             // When
-            localDataInitializer.run(null)
+            localDataInitializer.run(DefaultApplicationArguments())
 
             // Then
             val employees = captureAllSavedEmployees()
@@ -285,7 +289,7 @@ class LocalDataInitializerTest {
             stubOtherSeedsExist()
 
             // When
-            localDataInitializer.run(null)
+            localDataInitializer.run(DefaultApplicationArguments())
 
             // Then
             val employees = captureAllSavedEmployees()
@@ -308,7 +312,7 @@ class LocalDataInitializerTest {
             stubOtherSeedsExist()
 
             // When
-            localDataInitializer.run(null)
+            localDataInitializer.run(DefaultApplicationArguments())
 
             // Then
             val captor = argumentCaptor<Employee>()
@@ -337,7 +341,7 @@ class LocalDataInitializerTest {
             stubOtherSeedsExist()
 
             // When
-            localDataInitializer.run(null)
+            localDataInitializer.run(DefaultApplicationArguments())
 
             // Then
             val captor = argumentCaptor<Employee>()
@@ -354,7 +358,7 @@ class LocalDataInitializerTest {
             stubOtherSeedsExist()
 
             // When
-            localDataInitializer.run(null)
+            localDataInitializer.run(DefaultApplicationArguments())
 
             // Then
             val employees = captureAllSavedEmployees()
@@ -372,7 +376,7 @@ class LocalDataInitializerTest {
             stubOtherSeedsExist()
 
             // When
-            localDataInitializer.run(null)
+            localDataInitializer.run(DefaultApplicationArguments())
 
             // Then
             verify(employeeRepository, never()).save(any<Employee>())
@@ -395,7 +399,7 @@ class LocalDataInitializerTest {
             whenever(organizationRepository.count()).thenReturn(1L)
 
             // When
-            localDataInitializer.run(null)
+            localDataInitializer.run(DefaultApplicationArguments())
 
             // Then
             verify(agreementWordRepository).save(any<AgreementWord>())
@@ -409,7 +413,7 @@ class LocalDataInitializerTest {
             stubOtherSeedsExist()
 
             // When
-            localDataInitializer.run(null)
+            localDataInitializer.run(DefaultApplicationArguments())
 
             // Then
             verify(agreementWordRepository, never()).save(any<AgreementWord>())
@@ -427,7 +431,7 @@ class LocalDataInitializerTest {
             whenever(organizationRepository.count()).thenReturn(1L)
 
             // When
-            localDataInitializer.run(null)
+            localDataInitializer.run(DefaultApplicationArguments())
 
             // Then
             verify(agreementWordRepository).save(check<AgreementWord> { aw ->
@@ -455,7 +459,7 @@ class LocalDataInitializerTest {
             stubAllAccountsNotExist()
 
             // When
-            localDataInitializer.run(null)
+            localDataInitializer.run(DefaultApplicationArguments())
 
             // Then
             verify(accountRepository, times(8)).save(any<Account>())
@@ -469,7 +473,7 @@ class LocalDataInitializerTest {
             stubOtherSeedsExist()
 
             // When
-            localDataInitializer.run(null)
+            localDataInitializer.run(DefaultApplicationArguments())
 
             // Then
             verify(accountRepository, never()).save(any<Account>())
@@ -484,7 +488,7 @@ class LocalDataInitializerTest {
             stubAllAccountsNotExist()
 
             // When
-            localDataInitializer.run(null)
+            localDataInitializer.run(DefaultApplicationArguments())
 
             // Then
             val captor = argumentCaptor<Account>()
@@ -510,7 +514,7 @@ class LocalDataInitializerTest {
             whenever(organizationRepository.count()).thenReturn(0L)
 
             // When
-            localDataInitializer.run(null)
+            localDataInitializer.run(DefaultApplicationArguments())
 
             // Then
             verify(organizationRepository).saveAll(check<List<Organization>> { orgs ->
@@ -527,7 +531,7 @@ class LocalDataInitializerTest {
             whenever(organizationRepository.count()).thenReturn(3L)
 
             // When
-            localDataInitializer.run(null)
+            localDataInitializer.run(DefaultApplicationArguments())
 
             // Then
             verify(organizationRepository, never()).saveAll(any<List<Organization>>())
@@ -542,7 +546,7 @@ class LocalDataInitializerTest {
             whenever(organizationRepository.count()).thenReturn(0L)
 
             // When
-            localDataInitializer.run(null)
+            localDataInitializer.run(DefaultApplicationArguments())
 
             // Then
             verify(organizationRepository).saveAll(check<List<Organization>> { orgs ->
@@ -561,7 +565,7 @@ class LocalDataInitializerTest {
             whenever(organizationRepository.count()).thenReturn(0L)
 
             // When
-            localDataInitializer.run(null)
+            localDataInitializer.run(DefaultApplicationArguments())
 
             // Then
             verify(organizationRepository).saveAll(check<List<Organization>> { orgs ->

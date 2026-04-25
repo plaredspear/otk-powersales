@@ -207,7 +207,7 @@ class AuthService(
 
         validateNewPassword(request.newPassword)
 
-        val encodedPassword = passwordEncoder.encode(request.newPassword)
+        val encodedPassword = passwordEncoder.encode(request.newPassword)!!
         employee.changePassword(encodedPassword)
         employeeRepository.save(employee)
     }

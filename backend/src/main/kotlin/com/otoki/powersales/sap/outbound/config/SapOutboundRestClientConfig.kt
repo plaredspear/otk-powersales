@@ -1,11 +1,10 @@
 package com.otoki.powersales.sap.outbound.config
 
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder
-import org.springframework.boot.http.client.ClientHttpRequestFactorySettings
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.MediaType
+import org.springframework.http.client.SimpleClientHttpRequestFactory
 import org.springframework.web.client.RestClient
 import java.time.Duration
 import java.util.Base64
@@ -18,12 +17,13 @@ class SapOutboundRestClientConfig(
 
     @Bean(name = ["sapOutboundRestClient"])
     fun sapOutboundRestClient(): RestClient {
-        val factorySettings = ClientHttpRequestFactorySettings.defaults()
-            .withConnectTimeout(Duration.ofMillis(properties.connectTimeoutMs.toLong()))
-            .withReadTimeout(Duration.ofMillis(properties.readTimeoutMs.toLong()))
+        val requestFactory = SimpleClientHttpRequestFactory().apply {
+            setConnectTimeout(Duration.ofMillis(properties.connectTimeoutMs.toLong()))
+            setReadTimeout(Duration.ofMillis(properties.readTimeoutMs.toLong()))
+        }
 
         val builder = RestClient.builder()
-            .requestFactory(ClientHttpRequestFactoryBuilder.detect().build(factorySettings))
+            .requestFactory(requestFactory)
             .defaultHeader("Content-Type", "${MediaType.APPLICATION_JSON_VALUE}; charset=UTF-8")
 
         if (properties.baseUrl.isNotBlank()) {
