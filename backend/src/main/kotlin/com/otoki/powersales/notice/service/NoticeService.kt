@@ -35,7 +35,7 @@ class NoticeService(
     private val uploadFileRepository: UploadFileRepository,
     private val employeeRepository: EmployeeRepository,
     private val organizationRepository: OrganizationRepository,
-    @Value("\${aws.s3.bucket.name:otoki-bucket}")
+    @Value("\${app.aws.s3.bucket:otoki-bucket}")
     private val s3BucketName: String
 ) {
 

@@ -2,11 +2,43 @@ spring:
   application:
     name: otoki-powersales-backend
 
+  # -------------------------------------------------------------------------
+  # Redis (ElastiCache Valkey, 클러스터 모드 + 전송 중 암호화) — EB (dev/prod)
+  # 공통. REDIS_ENDPOINT 는 구성 엔드포인트(clustercfg.*) 호스트, REDIS_PORT 는
+  # 6379. 두 값 모두 EB 콘솔의 환경 속성(Configuration → Software)에서 직접
+  # 입력해 주입한다. Lettuce 가 구성 엔드포인트를 seed 로 클러스터 토폴로지를
+  # 자동 감지해 개별 샤드 노드로 직접 접속한다.
+  #
+  # local 프로파일에서는 application-local.yml 이 RedisAutoConfiguration 을
+  # exclude 하므로 아래 미해결 placeholder 는 바인딩되지 않아 안전하다.
+  # -------------------------------------------------------------------------
+  data:
+    redis:
+      cluster:
+        nodes: ${REDIS_ENDPOINT}:${REDIS_PORT}
+      ssl:
+        enabled: true
+      timeout: 2s
+
+  # -------------------------------------------------------------------------
+  # DataSource — PostgreSQL (Aurora). host/port/username/dbname 은 EB 환경
+  # 속성으로 주입하고, **password 만** RDS 관리형 master password secret 에서
+  # 읽는다. 관리형 master password secret 의 JSON 은 엔진/생성 경로에 따라
+  # `{"username": "...", "password": "..."}` 만 담겨 올 때가 있어 host/port
+  # 까지 secret 에 의존하면 placeholder 가 미해결되며 JDBC URL 이 깨진다.
+  # password 만 secret 에서 받고 나머지는 env 로 두면 secret JSON 포맷과
+  # 무관하게 항상 동작한다.
+  #
+  # dev/prod document 의 spring.config.import 가 부팅 시 secret 을 1회 읽어
+  # `${password}` placeholder 를 바인딩한다. local 프로파일에서는
+  # application-local.yml 이 DataSource/JPA auto-config 를 exclude 하므로
+  # 미해결 placeholder 는 바인딩되지 않아 안전하다.
+  # -------------------------------------------------------------------------
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/otoki}
-    username: ${DATABASE_USERNAME:postgres}
-    password: ${DATABASE_PASSWORD:postgres}
+    url: jdbc:postgresql://${RDS_HOST}:${RDS_PORT}/${RDS_DATABASE:postgres}
+    username: ${RDS_USERNAME}
+    password: ${password}
     hikari:
       maximum-pool-size: ${HIKARI_MAX_POOL:5}
       minimum-idle: ${HIKARI_MIN_IDLE:2}
@@ -16,7 +48,7 @@ spring:
     open-in-view: false
     show-sql: ${JPA_SHOW_SQL:true}
     hibernate:
-      ddl-auto: ${JPA_DDL_AUTO:validate}
+      ddl-auto: validate
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     properties:
@@ -24,12 +56,6 @@ spring:
         format_sql: true
         default_batch_fetch_size: 100
         default_schema: salesforce2
-
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      timeout: 5000ms
 
   flyway:
     schemas: salesforce2
@@ -41,23 +67,26 @@ spring:
     property-naming-strategy: SNAKE_CASE
     time-zone: Asia/Seoul
 
-  cloud:
-    aws:
-      region:
-        static: ${AWS_REGION:ap-northeast-2}
-      credentials:
-        access-key: ${AWS_ACCESS_KEY_ID:}
-        secret-key: ${AWS_SECRET_ACCESS_KEY:}
+# ---------------------------------------------------------------------------
+# Actuator — /actuator/health 만 노출. show-details=always 는 web UI 에서
+# DB/Redis 상태 카드를 렌더링하기 위함. EB Load Balancer 헬스체크 경로도 동일.
+# /api/health 외부 엔드포인트는 #539-P2 의 HealthController 가 별도 제공.
+# ---------------------------------------------------------------------------
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
 
 jwt:
   secret: ${JWT_SECRET:otoki-internal-dev-secret-key-change-in-production-minimum-256-bits}
   expiration: ${JWT_EXPIRATION:86400000}
   refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
-
-aws:
-  s3:
-    bucket:
-      name: ${AWS_S3_BUCKET_NAME:otoki-bucket}
 
 orora:
   mock:
@@ -72,14 +101,24 @@ springdoc:
     path: /v3/api-docs
   default-produces-media-type: application/json
 
+# ---------------------------------------------------------------------------
+# 앱 구성 값 (모든 스테이지 공통 placeholder). 실제 값은 프로파일 별 파일에서
+# 채워지거나 env var 로 주입된다.
+#
+# aws.s3.bucket 은 향후 S3 기능에서 사용할 대상 버킷 이름으로, EB 콘솔 환경
+# 속성(S3_BUCKET) 으로 주입한다. local 프로파일은 S3 auto-config 가 exclude
+# 되므로 값이 비어 있어도 기동에 영향이 없다.
+# ---------------------------------------------------------------------------
 app:
+  stage: ${STAGE:local}
+  aws:
+    region: ${AWS_REGION:ap-northeast-2}
+    s3:
+      bucket: ${S3_BUCKET:}
   domain:
     api: ${API_DOMAIN:}
     admin: ${ADMIN_DOMAIN:}
     sap: ${SAP_DOMAIN:}
-  aws:
-    s3:
-      bucket: ${S3_BUCKET:}
 
 sap:
   auth:
@@ -113,3 +152,23 @@ logging:
     org.springframework.security: ${LOG_LEVEL_SECURITY:DEBUG}
     org.hibernate.SQL: ${LOG_LEVEL_HIBERNATE_SQL:DEBUG}
     org.hibernate.type.descriptor.sql.BasicBinder: ${LOG_LEVEL_HIBERNATE_BIND:TRACE}
+
+---
+# ---------------------------------------------------------------------------
+# dev/prod 전용 — RDS 관리형 master password secret 을 Secrets Manager 에서
+# 로드한다. 부팅 시 1회 호출되고 메모리에 캐시되므로 rotation 을 켜려면 별도
+# 재시작/rolling restart 전략이 동반되어야 한다 (현 정책: rotation off).
+#
+# RDS_SECRET_ARN / AWS_REGION 은 EB 콘솔 환경 속성으로 주입한다.
+# local 에서는 이 document 가 활성화되지 않아 Secrets Manager 호출이 일어나지
+# 않고, 미해결 placeholder 도 바인딩되지 않는다.
+# ---------------------------------------------------------------------------
+spring:
+  config:
+    activate:
+      on-profile: "dev | prod"
+    import: "aws-secretsmanager:${RDS_SECRET_ARN}"
+  cloud:
+    aws:
+      region:
+        static: ${AWS_REGION}
