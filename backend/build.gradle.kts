@@ -11,6 +11,8 @@ group = "com.otoki"
 version = "0.0.1-SNAPSHOT"
 description = "Demo project for Spring Boot"
 
+extra["springCloudAwsVersion"] = "4.0.0"
+
 springBoot {
 	mainClass.set("com.otoki.powersales.OtokiPowerSalesApplicationKt")
 }
@@ -27,6 +29,12 @@ repositories {
 	mavenCentral()
 }
 
+dependencyManagement {
+	imports {
+		mavenBom("io.awspring.cloud:spring-cloud-aws-dependencies:${property("springCloudAwsVersion")}")
+	}
+}
+
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.flywaydb:flyway-core")
@@ -37,6 +45,10 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
+
+	// Spring Cloud AWS (Secrets Manager + S3)
+	implementation("io.awspring.cloud:spring-cloud-aws-starter-secrets-manager")
+	implementation("io.awspring.cloud:spring-cloud-aws-starter-s3")
 
 	// OpenAPI (Swagger UI)
 	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.4")
