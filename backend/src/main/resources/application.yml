@@ -76,6 +76,15 @@ sap:
   auth:
     api-key: ${SAP_API_KEY:dev-sap-api-key-for-local-testing}
     allowed-ips: ${SAP_ALLOWED_IPS:}
+  outbound:
+    base-url: ${SAP_OUTBOUND_BASE_URL:}
+    username: ${SAP_OUTBOUND_USERNAME:}
+    password: ${SAP_OUTBOUND_PASSWORD:}
+    connect-timeout-ms: ${SAP_OUTBOUND_CONNECT_TIMEOUT_MS:5000}
+    read-timeout-ms: ${SAP_OUTBOUND_READ_TIMEOUT_MS:120000}
+    retry:
+      max-attempts: ${SAP_OUTBOUND_RETRY_MAX_ATTEMPTS:3}
+      delay-ms: ${SAP_OUTBOUND_RETRY_DELAY_MS:1000}
 
 device:
   binding:
