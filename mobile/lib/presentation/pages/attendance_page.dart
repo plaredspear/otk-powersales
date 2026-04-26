@@ -1,0 +1,277 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/services/location_permission_helper.dart';
+import '../../core/services/location_service.dart';
+import '../../core/theme/app_colors.dart';
+import '../../domain/entities/account_schedule_item.dart';
+import '../providers/attendance_provider.dart';
+import '../providers/attendance_state.dart';
+import '../widgets/attendance/attendance_status_counter.dart';
+import '../widgets/attendance/attendance_status_popup.dart';
+import '../widgets/attendance/account_list_item.dart';
+import '../widgets/attendance/account_search_bar.dart';
+import '../widgets/attendance/safety_check_required_banner.dart';
+import '../widgets/common/primary_button.dart';
+import '../../core/utils/throttled_tap_mixin.dart';
+import '../../app_router.dart';
+
+/// 출근등록 화면 (메인)
+class AttendancePage extends ConsumerStatefulWidget {
+  const AttendancePage({super.key});
+
+  @override
+  ConsumerState<AttendancePage> createState() => _AttendancePageState();
+}
+
+class _AttendancePageState extends ConsumerState<AttendancePage>
+    with ThrottledTapMixin {
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // 화면 진입 시 거래처 목록 로딩
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(attendanceProvider.notifier).loadAccounts();
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  bool _isAccountSelected(AccountScheduleItem account, AttendanceState state) {
+    if (state.selectedScheduleId == null) return false;
+    if (account.source == 'master') {
+      return state.selectedSource == 'master' &&
+          account.displayWorkScheduleId == state.selectedScheduleId;
+    }
+    return state.selectedSource != 'master' &&
+        account.scheduleId == state.selectedScheduleId;
+  }
+
+  Future<void> _handleRegister(
+    AttendanceNotifier notifier,
+    dynamic state,
+  ) async {
+    // GPS 좌표 획득
+    final locationService = ref.read(locationServiceProvider);
+    final helper = LocationPermissionHelper(locationService);
+    final position = await helper.ensurePermissionAndGetPosition(context);
+
+    if (!mounted) return;
+
+    notifier.register(
+      latitude: position?.latitude,
+      longitude: position?.longitude,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(attendanceProvider);
+    final notifier = ref.read(attendanceProvider.notifier);
+
+    // 에러 SnackBar 표시
+    ref.listen(attendanceProvider, (previous, next) {
+      if (next.errorMessage != null && previous?.errorMessage == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.errorMessage!),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            action: SnackBarAction(
+              label: '확인',
+              textColor: AppColors.white,
+              onPressed: () => notifier.clearError(),
+            ),
+          ),
+        );
+      }
+
+      // 등록 완료 시 완료 화면으로 이동
+      if (next.registrationResult != null &&
+          previous?.registrationResult == null) {
+        AppRouter.navigateTo(context, AppRouter.attendanceComplete);
+      }
+    });
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('출근등록'),
+        backgroundColor: AppColors.white,
+        foregroundColor: AppColors.textPrimary,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, size: 20),
+          onPressed: () => AppRouter.goBack(context),
+        ),
+        actions: [
+          if (state.totalCount > 0 && !state.isFixedWorker)
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: AttendanceStatusCounter(
+                registeredCount: state.registeredCount,
+                totalCount: state.totalCount,
+                onTap: () => throttledTapAsync(() async {
+                  await notifier.loadAttendanceStatus();
+                  if (context.mounted) {
+                    AttendanceStatusPopup.show(
+                      context,
+                      statusList: state.statusList,
+                      totalCount: state.totalCount,
+                      registeredCount: state.registeredCount,
+                    );
+                  }
+                }),
+              ),
+            ),
+        ],
+      ),
+      body: state.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _buildBody(state, notifier),
+      bottomNavigationBar: _buildBottomBar(state, notifier),
+    );
+  }
+
+  Widget _buildBody(dynamic state, AttendanceNotifier notifier) {
+    if (state.allAccounts.isEmpty && !state.isLoading) {
+      return _buildEmptyState();
+    }
+
+    return Column(
+      children: [
+        // 안전점검 미완료 배너
+        if (!state.safetyCheckCompleted)
+          SafetyCheckRequiredBanner(
+            onNavigateToSafetyCheck: () => throttledTap(
+              () => AppRouter.navigateTo(context, AppRouter.safetyCheck),
+            ),
+          ),
+
+        if (!state.isFixedWorker)
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                // 검색 바
+                AccountSearchBar(
+                  controller: _searchController,
+                  onChanged: notifier.searchAccounts,
+                ),
+              ],
+            ),
+          ),
+
+        // 거래처 리스트
+        Expanded(
+          child: state.filteredAccounts.isEmpty
+              ? _buildNoSearchResult()
+              : ListView.separated(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: state.filteredAccounts.length,
+                  separatorBuilder: (_, _) =>
+                      const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final account = state.filteredAccounts[index];
+                    return AccountListItem(
+                      account: account,
+                      isSelected: _isAccountSelected(account, state),
+                      onTap: () {
+                        if (!account.isRegistered) {
+                          notifier.selectAccount(account);
+                        }
+                      },
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.event_busy,
+            size: 64,
+            color: AppColors.textTertiary.withValues(alpha: 0.5),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            '오늘 출근할 거래처가 없습니다',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            '스케줄을 확인해 주세요',
+            style: TextStyle(
+              fontSize: 14,
+              color: AppColors.textTertiary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoSearchResult() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.search_off,
+            size: 48,
+            color: AppColors.textTertiary.withValues(alpha: 0.5),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            '검색 결과가 없습니다',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget? _buildBottomBar(dynamic state, AttendanceNotifier notifier) {
+    final canRegister =
+        state.selectedScheduleId != null && state.safetyCheckCompleted;
+
+    if (state.allAccounts.isEmpty) return null;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+      decoration: const BoxDecoration(
+        color: AppColors.white,
+        border: Border(
+          top: BorderSide(color: AppColors.border),
+        ),
+      ),
+      child: PrimaryButton(
+        text: '등록하기',
+        isLoading: state.isRegistering,
+        onPressed: canRegister && !state.isRegistering
+            ? () => throttledTapAsync(() => _handleRegister(notifier, state))
+            : null,
+      ),
+    );
+  }
+}

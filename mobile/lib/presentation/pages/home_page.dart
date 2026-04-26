@@ -1,0 +1,311 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_typography.dart';
+import '../providers/auth_provider.dart';
+import '../providers/home_provider.dart';
+import '../providers/home_state.dart';
+import '../widgets/common/error_view.dart';
+import '../widgets/common/loading_indicator.dart';
+import '../widgets/home/schedule_card.dart';
+import '../widgets/home/expiry_alert_card.dart';
+import '../widgets/home/notice_carousel.dart';
+import '../widgets/home/product_search_bar.dart';
+import '../widgets/home/quick_menu_grid.dart';
+import '../widgets/home/activity_registration_popup.dart';
+import '../../core/utils/throttled_tap_mixin.dart';
+import '../../app_router.dart';
+import '../providers/safety_check_provider.dart';
+
+/// 홈 화면
+///
+/// 오늘 일정, 유통기한 알림, 공지사항, 제품 검색, 빠른 메뉴를 표시한다.
+/// Pull-to-refresh로 전체 데이터를 새로고침할 수 있다.
+class HomePage extends ConsumerStatefulWidget {
+  const HomePage({super.key});
+
+  @override
+  ConsumerState<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends ConsumerState<HomePage>
+    with ThrottledTapMixin {
+  @override
+  void initState() {
+    super.initState();
+    // 화면 로드 시 홈 데이터 조회
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(homeProvider.notifier).fetchHomeData();
+    });
+  }
+
+  /// Pull-to-refresh 핸들러
+  Future<void> _onRefresh() async {
+    await ref.read(homeProvider.notifier).refresh();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(homeProvider);
+    final authState = ref.watch(authProvider);
+    final userRole = authState.user?.role ?? 'USER';
+
+    return Container(
+      color: AppColors.otokiYellow,
+      child: _buildBody(state, userRole),
+    );
+  }
+
+  /// 본문 영역
+  Widget _buildBody(HomeState state, String userRole) {
+    // 초기 상태 또는 로딩 중 (데이터 없음)
+    if (state.homeData == null && !state.isError) {
+      return const LoadingIndicator(
+        message: '홈 데이터를 불러오는 중...',
+      );
+    }
+
+    // 에러 상태 (데이터 없음)
+    if (state.isError && state.homeData == null) {
+      return ErrorView(
+        message: '데이터를 불러올 수 없습니다',
+        description: state.errorMessage,
+        onRetry: () {
+          ref.read(homeProvider.notifier).fetchHomeData();
+        },
+      );
+    }
+
+    // 데이터 있음 → 배경+콘텐츠가 함께 스크롤
+    return RefreshIndicator(
+      onRefresh: _onRefresh,
+      color: AppColors.primary,
+      backgroundColor: Colors.white,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: _buildContent(state, userRole),
+      ),
+    );
+  }
+
+  /// 홈 화면 콘텐츠 (Stack: 배경 + 콘텐츠가 함께 스크롤)
+  Widget _buildContent(HomeState state, String userRole) {
+    final homeData = state.homeData!;
+    final topPadding = MediaQuery.of(context).padding.top;
+    final yellowHeight = topPadding +
+        AppSpacing.appBarHeight +
+        AppSpacing.lg +
+        AppSpacing.homeYellowOverlap;
+
+    return Stack(
+      children: [
+        // 배경 레이어: 상단 노란색 (콘텐츠와 함께 스크롤)
+        Container(
+          height: yellowHeight,
+          width: double.infinity,
+          color: AppColors.otokiYellow,
+        ),
+        // 콘텐츠 레이어
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // SafeArea 상단 여백
+            SizedBox(height: topPadding),
+
+            // AppBar 영역 (로고 + 햄버거 메뉴)
+            _buildAppBar(),
+
+            // #1 스케줄 카드 (노란/흰 배경 경계를 걸침)
+            Padding(
+              padding: AppSpacing.screenHorizontal,
+              child: ScheduleCard(
+                schedules: homeData.todaySchedules,
+                currentDate: homeData.currentDate,
+                attendanceSummary: homeData.attendanceSummary,
+                userRole: userRole,
+                onRegisterTap: () => throttledTapAsync(() async {
+                  await _handleRegisterTap(userRole);
+                  if (mounted) {
+                    ref.read(homeProvider.notifier).refresh();
+                  }
+                }),
+                onScheduleTap: (schedule) {
+                  final date = DateTime.tryParse(homeData.currentDate) ?? DateTime.now();
+                  AppRouter.navigateTo(
+                    context,
+                    AppRouter.myScheduleDetail,
+                    arguments: date,
+                  );
+                },
+              ),
+            ),
+
+            // 흰색 배경 영역 (스케줄 카드 이후 콘텐츠)
+            Container(
+              width: double.infinity,
+              color: AppColors.background,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: AppSpacing.lg),
+
+                  // #2 유통기한 알림
+                  Padding(
+                    padding: AppSpacing.screenHorizontal,
+                    child: ExpiryAlertCard(
+                      expiryAlert: homeData.expiryAlert,
+                      onTap: () {
+                        AppRouter.navigateTo(context, AppRouter.productExpiration);
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+
+                  // #3 공지 영역 (가로 스크롤)
+                  NoticeCarousel(
+                    notices: homeData.notices,
+                    onNoticeTap: (notice) {
+                      AppRouter.navigateTo(
+                        context,
+                        AppRouter.noticeDetail,
+                        arguments: notice.id,
+                      );
+                    },
+                    onViewAllTap: () {
+                      AppRouter.navigateTo(context, AppRouter.notices);
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+
+                  // #4 제품 검색 바
+                  Padding(
+                    padding: AppSpacing.screenHorizontal,
+                    child: ProductSearchBar(
+                      onTap: () {
+                        // TODO: 제품 검색 화면으로 이동 (후속 작업)
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+
+                  // #5 빠른 메뉴
+                  Padding(
+                    padding: AppSpacing.screenHorizontal,
+                    child: QuickMenuGrid(
+                      userRole: userRole,
+                      onMenuTap: (item) {
+                        throttledTap(() => _handleQuickMenuTap(item, userRole));
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xxxl),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// AppBar 영역 (로고 + 햄버거 메뉴)
+  Widget _buildAppBar() {
+    return SizedBox(
+      height: AppSpacing.appBarHeight,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          children: [
+            Image.asset(
+              'assets/images/h1_logo.png',
+              height: 28,
+              fit: BoxFit.contain,
+            ),
+            const Spacer(),
+            IconButton(
+              icon: const Icon(Icons.menu, color: AppColors.textPrimary),
+              onPressed: () {
+                Scaffold.of(context).openEndDrawer();
+              },
+              tooltip: '전체 메뉴',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 등록 버튼 탭 핸들러: 조장이면 바로 출근등록, 그 외 안전점검 상태 확인 후 분기
+  Future<void> _handleRegisterTap(String userRole) async {
+    // 조장(LEADER)/지점장(ADMIN)은 안전점검 없이 바로 출근등록
+    if (userRole == 'LEADER' || userRole == 'ADMIN') {
+      await AppRouter.navigateTo(context, AppRouter.attendance);
+      return;
+    }
+
+    // 안전점검 상태 확인
+    try {
+      final todayStatus = await ref
+          .read(getSafetyCheckTodayStatusUseCaseProvider)
+          .call();
+
+      if (!mounted) return;
+
+      if (todayStatus.completed) {
+        await AppRouter.navigateTo(context, AppRouter.attendance);
+      } else {
+        await AppRouter.navigateTo(context, AppRouter.safetyCheck);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('안전점검 상태를 확인할 수 없습니다: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  /// 빠른 메뉴 탭 핸들러
+  void _handleQuickMenuTap(QuickMenuItem item, String userRole) {
+    final isLeaderOrAdmin = userRole == 'LEADER' || userRole == 'ADMIN';
+
+    if (item.label == '활동 등록') {
+      ActivityRegistrationPopup.show(
+        context,
+        onMenuTap: _handleActivityMenuTap,
+      );
+    } else if (item.label == '행사매출\n등록') {
+      if (isLeaderOrAdmin) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('행사 담당자만 행사매출을 등록할 수 있습니다.'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      } else {
+        AppRouter.navigateTo(context, AppRouter.salesOverview, arguments: 0);
+      }
+    } else if (item.route != null) {
+      AppRouter.navigateTo(context, item.route!);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('준비 중입니다')),
+      );
+    }
+  }
+
+  /// 활동등록 팝업 메뉴 탭 핸들러
+  void _handleActivityMenuTap(ActivityMenuItem item) {
+    if (item.route != null) {
+      AppRouter.navigateTo(context, item.route!);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${item.label} 기능은 준비 중입니다')),
+      );
+    }
+  }
+
+}

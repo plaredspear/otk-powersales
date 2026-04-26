@@ -1,0 +1,119 @@
+import 'package:flutter/material.dart';
+import '../../../app_router.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/app_colors.dart';
+
+/// 빠른 메뉴 아이템 데이터
+class QuickMenuItem {
+  /// PNG 에셋 경로
+  final String assetPath;
+
+  /// 메뉴 이름
+  final String label;
+
+  /// 이동 라우트
+  final String? route;
+
+  /// Material 아이콘 (에셋이 없는 경우 대체)
+  final IconData? iconData;
+
+  const QuickMenuItem({
+    this.assetPath = '',
+    required this.label,
+    this.route,
+    this.iconData,
+  });
+}
+
+/// 빠른 메뉴 그리드 위젯
+///
+/// 홈 화면의 #5 영역: 3x2 그리드 (아이콘 + 텍스트) 빠른 메뉴.
+/// 내 일정, 매출 현황, 주문 관리, 활동 등록, 교육, 행사매출 등록
+///
+/// 조장(LEADER)/지점장(ADMIN): "행사매출 등록" 탭 시 스낵바 안내 + 이동 차단
+class QuickMenuGrid extends StatelessWidget {
+  /// 메뉴 아이템 탭 콜백
+  final void Function(QuickMenuItem item)? onMenuTap;
+
+  /// 사용자 역할 ("USER", "LEADER", "ADMIN")
+  final String userRole;
+
+  const QuickMenuGrid({
+    super.key,
+    this.onMenuTap,
+    this.userRole = 'USER',
+  });
+
+  /// 기본 메뉴 목록
+  static const List<QuickMenuItem> defaultMenuItems = [
+    QuickMenuItem(assetPath: 'assets/images/ico_quick1.png', label: '내 일정', route: AppRouter.myScheduleCalendar),
+    QuickMenuItem(assetPath: 'assets/images/ico_quick2.png', label: '매출 현황', route: AppRouter.salesOverview),
+    QuickMenuItem(assetPath: 'assets/images/ico_quick3.png', label: '주문 관리', route: AppRouter.orderList),
+    QuickMenuItem(assetPath: 'assets/images/ico_quick4.png', label: '활동 등록'),
+    QuickMenuItem(assetPath: 'assets/images/ico_quick5.png', label: '교육', route: AppRouter.education),
+    QuickMenuItem(assetPath: 'assets/images/ico_quick6.png', label: '행사 현황', route: AppRouter.promotionList),
+  ];
+
+  /// 관리자 전용 메뉴 목록
+  static const List<QuickMenuItem> adminMenuItems = [
+    QuickMenuItem(iconData: Icons.fact_check_outlined, label: '안전점검\n현황', route: AppRouter.safetyCheckStatus),
+  ];
+
+  List<QuickMenuItem> get _menuItems {
+    final isLeaderOrAdmin = userRole == 'LEADER' || userRole == 'ADMIN';
+    if (isLeaderOrAdmin) {
+      return [...defaultMenuItems, ...adminMenuItems];
+    }
+    return defaultMenuItems;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final items = _menuItems;
+    return GridView.count(
+      crossAxisCount: 3,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: AppSpacing.lg,
+      crossAxisSpacing: AppSpacing.md,
+      childAspectRatio: 1.1,
+      children: items.map((item) {
+        return _buildMenuItem(item);
+      }).toList(),
+    );
+  }
+
+  /// 메뉴 아이템 UI
+  Widget _buildMenuItem(QuickMenuItem item) {
+    return InkWell(
+      onTap: onMenuTap != null ? () => onMenuTap!(item) : null,
+      borderRadius: AppSpacing.cardBorderRadius,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (item.iconData != null)
+            Icon(
+              item.iconData,
+              size: AppSpacing.iconSizeMenu,
+              color: AppColors.secondary,
+            )
+          else
+            Image.asset(
+              item.assetPath,
+              width: AppSpacing.iconSizeMenu,
+              height: AppSpacing.iconSizeMenu,
+            ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            item.label,
+            style: AppTypography.labelMedium.copyWith(
+              color: AppColors.textPrimary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+}
