@@ -1,17 +1,34 @@
-import { defineConfig } from 'vite'
-import react, { reactCompilerPreset } from '@vitejs/plugin-react'
-import babel from '@rolldown/plugin-babel'
+import { defineConfig } from 'vitest/config'
+import react from '@vitejs/plugin-react'
+import path from 'path'
 
-// https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
-  environments: {
-    client: {
-      build: {
-        rollupOptions: {
-          plugins: [babel({ presets: [reactCompilerPreset()] })],
-        },
+  plugins: [
+    react({
+      babel: {
+        plugins: ['babel-plugin-react-compiler'],
+      },
+    }),
+  ],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
       },
     },
+  },
+  build: {
+    outDir: 'dist',
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
   },
 })
