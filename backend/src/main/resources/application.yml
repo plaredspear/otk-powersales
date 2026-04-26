@@ -30,22 +30,50 @@ spring:
   # 무관하게 항상 동작한다.
   #
   # dev/prod document 의 spring.config.import 가 부팅 시 secret 을 1회 읽어
-  # `${password}` placeholder 를 바인딩한다. local 프로파일에서는
-  # application-local.yml 이 DataSource/JPA auto-config 를 exclude 하므로
-  # 미해결 placeholder 는 바인딩되지 않아 안전하다.
+  # `${password}` placeholder 를 바인딩한다. local 프로파일에서는 Secrets
+  # Manager 를 사용하지 않고 RDS_PASSWORD 환경변수로 비밀번호를 직접 주입한다
+  # (자격증명 의존 제거). 따라서 placeholder 는
+  #   ${RDS_PASSWORD:${password}}
+  # 로 두 단계 fallback 한다 — local 은 RDS_PASSWORD, dev/prod 는 Secrets
+  # Manager 가 채운 `${password}` 가 사용된다.
   # -------------------------------------------------------------------------
   datasource:
+    driver-class-name: org.postgresql.Driver
     url: jdbc:postgresql://${RDS_HOST}:${RDS_PORT}/${RDS_DATABASE:postgres}
     username: ${RDS_USERNAME}
-    password: ${password}
+    password: ${RDS_PASSWORD:${password}}
+    hikari:
+      maximum-pool-size: ${HIKARI_MAX_POOL:5}
+      minimum-idle: ${HIKARI_MIN_IDLE:2}
+      connection-timeout: 30000
+
   jpa:
+    open-in-view: false
+    show-sql: ${JPA_SHOW_SQL:true}
     hibernate:
       ddl-auto: validate
-    open-in-view: false
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    properties:
+      hibernate:
+        format_sql: true
+        default_batch_fetch_size: 100
+        default_schema: powersales
+
+  flyway:
+    schemas: powersales
+    baseline-on-migrate: true
+    baseline-version: 0
+    enabled: true
+
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+    time-zone: Asia/Seoul
 
 # ---------------------------------------------------------------------------
 # Actuator — /actuator/health 만 노출. show-details=always 는 web UI 에서
 # DB/Redis 상태 카드를 렌더링하기 위함. EB Load Balancer 헬스체크 경로도 동일.
+# /api/health 외부 엔드포인트는 #539-P2 의 HealthController 가 별도 제공.
 # ---------------------------------------------------------------------------
 management:
   endpoints:
@@ -57,6 +85,15 @@ management:
       show-details: always
       probes:
         enabled: true
+
+jwt:
+  secret: ${JWT_SECRET:otoki-internal-dev-secret-key-change-in-production-minimum-256-bits}
+  expiration: ${JWT_EXPIRATION:86400000}
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
+
+orora:
+  mock:
+    enabled: ${ORORA_MOCK_ENABLED:true}
 
 springdoc:
   swagger-ui:
@@ -72,8 +109,8 @@ springdoc:
 # 채워지거나 env var 로 주입된다.
 #
 # aws.s3.bucket 은 향후 S3 기능에서 사용할 대상 버킷 이름으로, EB 콘솔 환경
-# 속성(S3_BUCKET) 으로 주입한다. 현재 consumer 는 없으며 local 프로파일은
-# S3 auto-config 가 exclude 되므로 값이 비어 있어도 기동에 영향이 없다.
+# 속성(S3_BUCKET) 으로 주입한다. local 프로파일은 S3 auto-config 가 exclude
+# 되므로 값이 비어 있어도 기동에 영향이 없다.
 # ---------------------------------------------------------------------------
 app:
   stage: ${STAGE:local}
@@ -81,6 +118,28 @@ app:
     region: ${AWS_REGION:ap-northeast-2}
     s3:
       bucket: ${S3_BUCKET:}
+  domain:
+    api: ${API_DOMAIN:}
+    admin: ${ADMIN_DOMAIN:}
+
+device:
+  binding:
+    enabled: true
+    excluded-ids: ""
+
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-message: always
+    include-binding-errors: always
+
+logging:
+  level:
+    root: ${LOG_LEVEL_ROOT:INFO}
+    com.otoki.powersales: ${LOG_LEVEL_APP:DEBUG}
+    org.springframework.security: ${LOG_LEVEL_SECURITY:DEBUG}
+    org.hibernate.SQL: ${LOG_LEVEL_HIBERNATE_SQL:DEBUG}
+    org.hibernate.type.descriptor.sql.BasicBinder: ${LOG_LEVEL_HIBERNATE_BIND:TRACE}
 
 ---
 # ---------------------------------------------------------------------------

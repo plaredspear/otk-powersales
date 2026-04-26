@@ -11,6 +11,8 @@ group = "com.otoki.powersales"
 version = "0.0.1-SNAPSHOT"
 description = "Demo project for Spring Boot"
 
+extra["springCloudAwsVersion"] = "4.0.0"
+
 springBoot {
 	mainClass.set("com.otoki.powersales.OtokiPowerSalesApplicationKt")
 }
@@ -27,8 +29,6 @@ repositories {
 	mavenCentral()
 }
 
-extra["springCloudAwsVersion"] = "4.0.0"
-
 dependencyManagement {
 	imports {
 		mavenBom("io.awspring.cloud:spring-cloud-aws-dependencies:${property("springCloudAwsVersion")}")
@@ -36,21 +36,50 @@ dependencyManagement {
 }
 
 dependencies {
-	implementation("org.springframework.boot:spring-boot-starter-webmvc")
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
-	implementation("org.springframework.boot:spring-boot-starter-data-redis")
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+	// Spring Boot 4 에서 Flyway autoconfig 가 spring-boot-autoconfigure 에서
+	// 분리되어 별도 모듈(spring-boot-flyway)로 제공된다. 누락 시 자동 마이그레이션이
+	// 동작하지 않고 Hibernate 가 곧바로 schema validation 으로 진행해 실패한다.
+	implementation("org.springframework.boot:spring-boot-flyway")
+	implementation("org.flywaydb:flyway-core")
+	implementation("org.flywaydb:flyway-database-postgresql")
+	implementation("org.springframework.boot:spring-boot-starter-data-redis")
+	implementation("org.springframework.boot:spring-boot-starter-security")
+	implementation("org.springframework.boot:spring-boot-starter-validation")
+	implementation("org.springframework.boot:spring-boot-starter-webmvc")
+	implementation("tools.jackson.module:jackson-module-kotlin")
+	implementation("org.jetbrains.kotlin:kotlin-reflect")
+
+	// Spring Cloud AWS (Secrets Manager + S3)
 	implementation("io.awspring.cloud:spring-cloud-aws-starter-secrets-manager")
 	implementation("io.awspring.cloud:spring-cloud-aws-starter-s3")
 
 	// OpenAPI (Swagger UI) — Boot 4 GA 릴리즈 (3.0.3, parent: spring-boot-starter-parent:4.0.5)
 	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
 
+	// QueryDSL (OpenFeign fork + KSP)
+	implementation("io.github.openfeign.querydsl:querydsl-jpa:7.1")
+	ksp("io.github.openfeign.querydsl:querydsl-ksp-codegen:7.1")
+
+	// Apache POI (Excel)
+	implementation("org.apache.poi:poi-ooxml:5.3.0")
+
+	// JWT
+	implementation("io.jsonwebtoken:jjwt-api:0.12.6")
+	runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")
+	runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
+
+	developmentOnly("org.springframework.boot:spring-boot-devtools")
+	runtimeOnly("com.h2database:h2")
 	runtimeOnly("org.postgresql:postgresql")
-	implementation("org.jetbrains.kotlin:kotlin-reflect")
-	implementation("tools.jackson.module:jackson-module-kotlin")
+	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
+	testImplementation("org.springframework.boot:spring-boot-starter-data-jpa-test")
+	testImplementation("org.springframework.boot:spring-boot-resttestclient")
 	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
+	testImplementation("org.springframework.security:spring-security-test")
+	testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
@@ -137,4 +166,11 @@ tasks.register<Test>("generateOpenApiDocs") {
 	filter {
 		includeTestsMatching("com.otoki.powersales.OpenApiSpecGeneratorTest")
 	}
+}
+
+tasks.register<JavaExec>("migrateHeroku") {
+	group = "migration"
+	description = "Heroku DB → Dev DB 데이터 마이그레이션 (예: ./gradlew migrateHeroku --args='account')"
+	mainClass.set("com.otoki.powersales.common.migration.HerokuMigrationTool")
+	classpath = sourceSets.main.get().runtimeClasspath
 }

@@ -1,0 +1,85 @@
+/* Order 모듈 전체 비활성화 — DB 테이블 미존재
+package com.otoki.powersales.order.entity
+
+import com.otoki.powersales.sap.entity.Employee
+import jakarta.persistence.*
+import java.time.LocalDate
+import java.time.LocalDateTime
+
+/**
+ * 주문 Entity
+ * 영업사원이 거래처에 등록한 주문 정보를 관리한다.
+ */
+@Entity
+@Table(
+    name = "orders",
+    indexes = [
+        Index(name = "idx_orders_employee_id", columnList = "employee_id"),
+        Index(name = "idx_orders_account_id", columnList = "account_id"),
+        Index(name = "idx_orders_order_date", columnList = "order_date"),
+        Index(name = "idx_orders_delivery_date", columnList = "delivery_date"),
+        Index(name = "idx_orders_approval_status", columnList = "approval_status")
+    ]
+)
+class Order(
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    val id: Long = 0,
+
+    @Column(name = "order_request_number", nullable = false, unique = true, length = 20)
+    val orderRequestNumber: String,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employee_id", nullable = false)
+    val employee: Employee,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id", nullable = false)
+    val account: Account,
+
+    @Column(name = "order_date", nullable = false)
+    val orderDate: LocalDate,
+
+    @Column(name = "delivery_date", nullable = false)
+    val deliveryDate: LocalDate,
+
+    @Column(name = "total_amount", nullable = false)
+    val totalAmount: Long = 0,
+
+    @Column(name = "total_approved_amount", nullable = false)
+    val totalApprovedAmount: Long = 0,
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "approval_status", nullable = false, length = 20)
+    var approvalStatus: ApprovalStatus = ApprovalStatus.PENDING,
+
+    @Column(name = "is_closed", nullable = false)
+    var isClosed: Boolean = false,
+
+    @Column(name = "client_deadline_time", length = 5)
+    val clientDeadlineTime: String? = null,
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    val createdAt: LocalDateTime = LocalDateTime.now(),
+
+    @Column(name = "updated_at", nullable = false)
+    var updatedAt: LocalDateTime = LocalDateTime.now()
+) {
+
+    // TODO: OrderItem 엔티티 활성화 시 복원
+    // @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
+    // val items: MutableList<OrderItem> = mutableListOf()
+
+    @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
+    val processingRecords: MutableList<OrderProcessingRecord> = mutableListOf()
+
+    @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
+    val rejections: MutableList<OrderRejection> = mutableListOf()
+
+    @PreUpdate
+    fun onPreUpdate() {
+        this.updatedAt = LocalDateTime.now()
+    }
+}
+*/

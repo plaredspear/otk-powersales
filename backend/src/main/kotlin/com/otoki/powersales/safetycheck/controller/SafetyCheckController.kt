@@ -1,0 +1,95 @@
+package com.otoki.powersales.safetycheck.controller
+
+import com.otoki.powersales.admin.exception.InvalidDateFormatException
+import com.otoki.powersales.safetycheck.dto.response.SafetyCheckStatusResponse
+import com.otoki.powersales.safetycheck.service.AdminSafetyCheckService
+import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.safetycheck.dto.request.SafetyCheckSubmitRequest
+import com.otoki.powersales.safetycheck.dto.response.SafetyCheckItemsResponse
+import com.otoki.powersales.safetycheck.dto.response.SafetyCheckSubmitResponse
+import com.otoki.powersales.safetycheck.dto.response.SafetyCheckTodayResponse
+import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.safetycheck.service.SafetyCheckService
+import jakarta.validation.Valid
+import org.springframework.http.ResponseEntity
+import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RestController
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
+
+/**
+ * 안전점검 API Controller
+ */
+@RestController
+@RequestMapping("/api/v1/safety-check")
+class SafetyCheckController(
+    private val safetyCheckService: SafetyCheckService,
+    private val adminSafetyCheckService: AdminSafetyCheckService
+) {
+
+    /**
+     * 안전점검 항목 조회
+     * GET /api/v1/safety-check/items
+     */
+    @GetMapping("/items")
+    fun getChecklistItems(
+        @AuthenticationPrincipal principal: UserPrincipal
+    ): ResponseEntity<ApiResponse<SafetyCheckItemsResponse>> {
+        val response = safetyCheckService.getChecklistItems()
+        return ResponseEntity.ok(ApiResponse.success(response, "조회 성공"))
+    }
+
+    /**
+     * 안전점검 제출
+     * POST /api/v1/safety-check/submit
+     */
+    @PostMapping("/submit")
+    fun submitSafetyCheck(
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @Valid @RequestBody request: SafetyCheckSubmitRequest
+    ): ResponseEntity<ApiResponse<SafetyCheckSubmitResponse>> {
+        val response = safetyCheckService.submitSafetyCheck(principal.userId, request)
+        return ResponseEntity.ok(ApiResponse.success(response, "안전점검이 완료되었습니다."))
+    }
+
+    /**
+     * 소속 여사원 안전점검 현황 조회 (모바일)
+     * GET /api/v1/safety-check/status
+     */
+    @GetMapping("/status")
+    fun getStatus(
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @RequestParam(required = false) date: String?
+    ): ResponseEntity<ApiResponse<SafetyCheckStatusResponse>> {
+        val targetDate = if (date != null) {
+            try {
+                LocalDate.parse(date, DateTimeFormatter.ISO_LOCAL_DATE)
+            } catch (e: DateTimeParseException) {
+                throw InvalidDateFormatException()
+            }
+        } else {
+            LocalDate.now()
+        }
+
+        val result = adminSafetyCheckService.getStatus(principal.userId, targetDate)
+        return ResponseEntity.ok(ApiResponse.success(result, "조회 성공"))
+    }
+
+    /**
+     * 오늘 안전점검 여부 조회
+     * GET /api/v1/safety-check/today
+     */
+    @GetMapping("/today")
+    fun getTodayStatus(
+        @AuthenticationPrincipal principal: UserPrincipal
+    ): ResponseEntity<ApiResponse<SafetyCheckTodayResponse>> {
+        val response = safetyCheckService.getTodayStatus(principal.userId)
+        return ResponseEntity.ok(ApiResponse.success(response, "조회 성공"))
+    }
+}

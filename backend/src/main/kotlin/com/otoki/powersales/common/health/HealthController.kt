@@ -1,4 +1,4 @@
-package com.otoki.powersales
+package com.otoki.powersales.common.health
 
 import org.springframework.boot.health.actuate.endpoint.CompositeHealthDescriptor
 import org.springframework.boot.health.actuate.endpoint.HealthEndpoint

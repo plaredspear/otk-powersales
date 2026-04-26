@@ -1,0 +1,16 @@
+/* Order 모듈 전체 비활성화 — DB 테이블 미존재
+package com.otoki.powersales.order.repository
+
+import com.otoki.powersales.order.entity.OrderRejection
+import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.stereotype.Repository
+
+/**
+ * 주문 반려 제품 Repository
+ */
+@Repository
+interface OrderRejectionRepository : JpaRepository<OrderRejection, Long> {
+
+    fun findByOrderId(orderId: Long): List<OrderRejection>
+}
+*/

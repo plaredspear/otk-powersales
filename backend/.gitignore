@@ -50,3 +50,7 @@ Dockerfile.local
 .env.*
 
 ./CICD_PIPELINE_GUIDE.md
+
+### Migration squash verification (local artifacts) ###
+scripts/migration-squash/snapshots/
+scripts/migration-squash/compare-out/

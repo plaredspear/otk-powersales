@@ -1,0 +1,367 @@
+package com.otoki.powersales.productexpiration.service
+
+import com.otoki.powersales.auth.exception.EmployeeNotFoundException
+import com.otoki.powersales.sap.entity.Employee
+import com.otoki.powersales.sap.repository.EmployeeRepository
+import com.otoki.powersales.productexpiration.dto.request.ProductExpirationBatchDeleteRequest
+import com.otoki.powersales.productexpiration.dto.request.ProductExpirationCreateRequest
+import com.otoki.powersales.productexpiration.dto.request.ProductExpirationUpdateRequest
+import com.otoki.powersales.productexpiration.entity.ProductExpiration
+import com.otoki.powersales.productexpiration.exception.InvalidAlertDateException
+import com.otoki.powersales.productexpiration.exception.InvalidProductExpirationDateRangeException
+import com.otoki.powersales.productexpiration.exception.ProductExpirationForbiddenException
+import com.otoki.powersales.productexpiration.exception.ProductExpirationNotFoundException
+import com.otoki.powersales.productexpiration.repository.ProductExpirationRepository
+import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.InjectMocks
+import org.mockito.Mock
+import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.whenever
+import java.time.LocalDate
+import java.util.*
+
+@ExtendWith(MockitoExtension::class)
+@DisplayName("ProductExpirationService 테스트")
+class ProductExpirationServiceTest {
+
+    @Mock
+    private lateinit var productExpirationRepository: ProductExpirationRepository
+
+    @Mock
+    private lateinit var employeeRepository: EmployeeRepository
+
+    @InjectMocks
+    private lateinit var productExpirationService: ProductExpirationService
+
+    private val userId = 1L
+    private val employeeCodeVal = "20030117"
+
+    private fun createEmployee(id: Long = userId, sfid: String? = "EMP_SFID_001"): Employee {
+        return Employee(id = id, sfid = sfid, employeeCode = employeeCodeVal, name = "테스트사원")
+    }
+
+    private fun createProductExpiration(
+        seq: Int = 1,
+        employeeId: Long = userId,
+        accountCode: String = "1025172",
+        accountName: String = "(유)경산식품",
+        productCode: String = "30310009",
+        productName: String = "고등어김치&무조림(캔)280G",
+        expirationDate: LocalDate = LocalDate.of(2026, 3, 10),
+        alarmDate: LocalDate = LocalDate.of(2026, 3, 9),
+        description: String? = null
+    ): ProductExpiration {
+        return ProductExpiration(
+            seq = seq,
+            employeeId = employeeId,
+            accountCode = accountCode,
+            accountName = accountName,
+            productCode = productCode,
+            productName = productName,
+            expirationDate = expirationDate,
+            alarmDate = alarmDate,
+            description = description
+        )
+    }
+
+    private fun stubUser(id: Long = userId) {
+        whenever(employeeRepository.findById(id)).thenReturn(Optional.of(createEmployee(id = id)))
+    }
+
+    @Nested
+    @DisplayName("getProductExpirationList - 유통기한 목록 조회")
+    inner class GetProductExpirationListTests {
+
+        @Test
+        @DisplayName("전체 거래처 조회 - accountCode 미지정 -> 전체 목록 반환")
+        fun getList_allAccounts_success() {
+            stubUser()
+            val items = listOf(createProductExpiration(seq = 1), createProductExpiration(seq = 2))
+            whenever(
+                productExpirationRepository.findByEmployeeIdAndExpirationDateBetweenOrderByExpirationDateAsc(
+                    eq(userId), any(), any()
+                )
+            ).thenReturn(items)
+
+            val result = productExpirationService.getProductExpirationList(userId, null, "2026-03-01", "2026-03-31")
+
+            assertThat(result).hasSize(2)
+        }
+
+        @Test
+        @DisplayName("특정 거래처 조회 - accountCode 지정 -> 필터링된 목록 반환")
+        fun getList_specificAccount_success() {
+            stubUser()
+            val items = listOf(createProductExpiration(seq = 1))
+            whenever(
+                productExpirationRepository.findByEmployeeIdAndAccountCodeAndExpirationDateBetweenOrderByExpirationDateAsc(
+                    eq(userId), eq("1025172"), any(), any()
+                )
+            ).thenReturn(items)
+
+            val result = productExpirationService.getProductExpirationList(userId, "1025172", "2026-03-01", "2026-03-31")
+
+            assertThat(result).hasSize(1)
+            assertThat(result[0].accountCode).isEqualTo("1025172")
+        }
+
+        @Test
+        @DisplayName("빈 결과 - 데이터 없음 -> 빈 리스트 반환")
+        fun getList_empty() {
+            stubUser()
+            whenever(
+                productExpirationRepository.findByEmployeeIdAndExpirationDateBetweenOrderByExpirationDateAsc(
+                    eq(userId), any(), any()
+                )
+            ).thenReturn(emptyList())
+
+            val result = productExpirationService.getProductExpirationList(userId, null, "2026-03-01", "2026-03-31")
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        @DisplayName("데이터 없음 - employeeCode로 조회 결과 없음 -> 빈 리스트 반환")
+        fun getList_noData_returnsEmpty() {
+            stubUser()
+            whenever(
+                productExpirationRepository.findByEmployeeIdAndExpirationDateBetweenOrderByExpirationDateAsc(
+                    eq(userId), any(), any()
+                )
+            ).thenReturn(emptyList())
+
+            val result = productExpirationService.getProductExpirationList(userId, null, "2026-03-01", "2026-03-31")
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        @DisplayName("날짜 범위 초과 - 180일 초과 -> InvalidProductExpirationDateRangeException")
+        fun getList_dateRangeExceeded() {
+            assertThatThrownBy {
+                productExpirationService.getProductExpirationList(userId, null, "2026-01-01", "2026-12-31")
+            }.isInstanceOf(InvalidProductExpirationDateRangeException::class.java)
+        }
+
+        @Test
+        @DisplayName("종료일 < 시작일 - 역전된 날짜 -> InvalidProductExpirationDateRangeException")
+        fun getList_invalidDateOrder() {
+            assertThatThrownBy {
+                productExpirationService.getProductExpirationList(userId, null, "2026-03-31", "2026-03-01")
+            }.isInstanceOf(InvalidProductExpirationDateRangeException::class.java)
+        }
+
+        @Test
+        @DisplayName("잘못된 날짜 형식 -> InvalidProductExpirationDateRangeException")
+        fun getList_invalidDateFormat() {
+            assertThatThrownBy {
+                productExpirationService.getProductExpirationList(userId, null, "invalid", "2026-03-31")
+            }.isInstanceOf(InvalidProductExpirationDateRangeException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("createProductExpiration - 유통기한 등록")
+    inner class CreateProductExpirationTests {
+
+        @Test
+        @DisplayName("정상 등록 - 유효한 요청 -> ProductExpiration 생성 반환")
+        fun create_success() {
+            stubUser()
+            val request = ProductExpirationCreateRequest(
+                accountCode = "1025172",
+                accountName = "(유)경산식품",
+                productCode = "30310009",
+                productName = "고등어김치&무조림(캔)280G",
+                expirationDate = "2026-03-10",
+                alarmDate = "2026-03-09",
+                description = "테스트"
+            )
+            whenever(productExpirationRepository.save(any<ProductExpiration>())).thenAnswer { it.getArgument<ProductExpiration>(0) }
+
+            val result = productExpirationService.createProductExpiration(userId, request)
+
+            assertThat(result.productCode).isEqualTo("30310009")
+            assertThat(result.accountCode).isEqualTo("1025172")
+        }
+
+        @Test
+        @DisplayName("알림일 오류 - alarm_date >= expiration_date -> InvalidAlertDateException")
+        fun create_invalidAlertDate() {
+            stubUser()
+            val request = ProductExpirationCreateRequest(
+                accountCode = "1025172",
+                accountName = "(유)경산식품",
+                productCode = "30310009",
+                productName = "제품명",
+                expirationDate = "2026-03-10",
+                alarmDate = "2026-03-10"
+            )
+
+            assertThatThrownBy {
+                productExpirationService.createProductExpiration(userId, request)
+            }.isInstanceOf(InvalidAlertDateException::class.java)
+        }
+
+        @Test
+        @DisplayName("사용자 없음 - 존재하지 않는 userId -> EmployeeNotFoundException")
+        fun create_userNotFound() {
+            whenever(employeeRepository.findById(999L)).thenReturn(Optional.empty())
+
+            val request = ProductExpirationCreateRequest(
+                accountCode = "1025172",
+                accountName = "테스트",
+                productCode = "30310009",
+                productName = "제품명",
+                expirationDate = "2026-03-10",
+                alarmDate = "2026-03-09"
+            )
+
+            assertThatThrownBy {
+                productExpirationService.createProductExpiration(999L, request)
+            }.isInstanceOf(EmployeeNotFoundException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("updateProductExpiration - 유통기한 수정")
+    inner class UpdateProductExpirationTests {
+
+        @Test
+        @DisplayName("정상 수정 - 유효한 요청 -> 수정된 항목 반환")
+        fun update_success() {
+            stubUser()
+            val entity = createProductExpiration(seq = 1)
+            whenever(productExpirationRepository.findById(1)).thenReturn(Optional.of(entity))
+
+            val request = ProductExpirationUpdateRequest(
+                expirationDate = "2026-04-10",
+                alarmDate = "2026-04-09",
+                description = "수정된 설명"
+            )
+
+            val result = productExpirationService.updateProductExpiration(userId, 1, request)
+
+            assertThat(result.expirationDate).isEqualTo("2026-04-10")
+            assertThat(result.description).isEqualTo("수정된 설명")
+        }
+
+        @Test
+        @DisplayName("타인 데이터 수정 - employeeCode 불일치 -> ProductExpirationForbiddenException")
+        fun update_forbidden() {
+            stubUser()
+            val entity = createProductExpiration(seq = 1, employeeId = 999L)
+            whenever(productExpirationRepository.findById(1)).thenReturn(Optional.of(entity))
+
+            val request = ProductExpirationUpdateRequest(
+                expirationDate = "2026-04-10",
+                alarmDate = "2026-04-09"
+            )
+
+            assertThatThrownBy {
+                productExpirationService.updateProductExpiration(userId, 1, request)
+            }.isInstanceOf(ProductExpirationForbiddenException::class.java)
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 seq - 없는 seq -> ProductExpirationNotFoundException")
+        fun update_notFound() {
+            stubUser()
+            whenever(productExpirationRepository.findById(999)).thenReturn(Optional.empty())
+
+            val request = ProductExpirationUpdateRequest(
+                expirationDate = "2026-04-10",
+                alarmDate = "2026-04-09"
+            )
+
+            assertThatThrownBy {
+                productExpirationService.updateProductExpiration(userId, 999, request)
+            }.isInstanceOf(ProductExpirationNotFoundException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("deleteProductExpiration - 유통기한 단건 삭제")
+    inner class DeleteProductExpirationTests {
+
+        @Test
+        @DisplayName("정상 삭제 - 본인 데이터 -> 성공")
+        fun delete_success() {
+            stubUser()
+            val entity = createProductExpiration(seq = 1)
+            whenever(productExpirationRepository.findById(1)).thenReturn(Optional.of(entity))
+
+            productExpirationService.deleteProductExpiration(userId, 1)
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 seq -> ProductExpirationNotFoundException")
+        fun delete_notFound() {
+            stubUser()
+            whenever(productExpirationRepository.findById(999)).thenReturn(Optional.empty())
+
+            assertThatThrownBy {
+                productExpirationService.deleteProductExpiration(userId, 999)
+            }.isInstanceOf(ProductExpirationNotFoundException::class.java)
+        }
+
+        @Test
+        @DisplayName("타인 데이터 삭제 - employeeCode 불일치 -> ProductExpirationForbiddenException")
+        fun delete_forbidden() {
+            stubUser()
+            val entity = createProductExpiration(seq = 1, employeeId = 999L)
+            whenever(productExpirationRepository.findById(1)).thenReturn(Optional.of(entity))
+
+            assertThatThrownBy {
+                productExpirationService.deleteProductExpiration(userId, 1)
+            }.isInstanceOf(ProductExpirationForbiddenException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("deleteProductExpirationBatch - 유통기한 일괄 삭제")
+    inner class DeleteProductExpirationBatchTests {
+
+        @Test
+        @DisplayName("정상 일괄 삭제 - 본인 데이터 3건 -> deletedCount: 3")
+        fun batchDelete_success() {
+            stubUser()
+            val items = listOf(
+                createProductExpiration(seq = 1),
+                createProductExpiration(seq = 2),
+                createProductExpiration(seq = 3)
+            )
+            whenever(productExpirationRepository.findBySeqInAndEmployeeId(eq(listOf(1, 2, 3)), eq(userId)))
+                .thenReturn(items)
+
+            val request = ProductExpirationBatchDeleteRequest(ids = listOf(1, 2, 3))
+            val result = productExpirationService.deleteProductExpirationBatch(userId, request)
+
+            assertThat(result.deletedCount).isEqualTo(3)
+        }
+
+        @Test
+        @DisplayName("타인 데이터 포함 - 1건이 타인 소유 -> ProductExpirationForbiddenException")
+        fun batchDelete_forbidden() {
+            stubUser()
+            val myItem = createProductExpiration(seq = 1)
+            whenever(productExpirationRepository.findBySeqInAndEmployeeId(eq(listOf(1, 2)), eq(userId)))
+                .thenReturn(listOf(myItem))
+            whenever(productExpirationRepository.findAllById(listOf(2)))
+                .thenReturn(listOf(createProductExpiration(seq = 2, employeeId = 999L)))
+
+            val request = ProductExpirationBatchDeleteRequest(ids = listOf(1, 2))
+
+            assertThatThrownBy {
+                productExpirationService.deleteProductExpirationBatch(userId, request)
+            }.isInstanceOf(ProductExpirationForbiddenException::class.java)
+        }
+    }
+}

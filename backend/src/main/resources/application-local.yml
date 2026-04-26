@@ -1,19 +1,24 @@
-# local 프로파일 — docker-compose.yml 이 SPRING_PROFILES_ACTIVE=local 로 활성.
-# Redis / DB 가 없는 환경에서 auto-config 가 빈 생성을 시도해 기동이 실패하거나
-# health 가 DOWN 되는 것을 막는다. EB (dev/prod) 는 이 파일이 로드되지 않으므로
-# 영향 없음.
+# local 프로파일 — IntelliJ 등 로컬 IDE 에서 dev DB 를 바라보고 부트런 하는
+# 개발자 머신용 프로파일. dev RDS 는 더 이상 퍼블릭이 아니며, AWS SSM 세션
+# 매니저로 bastion 을 거쳐 **localhost:15432** 로 포트포워딩하여 접속한다.
+# 부팅 전에 SSM 터널이 열려 있어야 한다 (`scripts/db-tunnel` 참조).
 #
-# Spring Boot 4 에서 Data 관련 auto-config 클래스명이 Data* 로 리네임된다
-# (RedisAutoConfiguration → DataRedisAutoConfiguration 등). Health Contributor
-# auto-config 는 별도 빈을 만들기 위해 Lettuce/Connection 구성을 트리거하므로
-# 함께 제외해야 placeholder 가 남아있어도 기동이 깨지지 않는다.
-
+# 비밀번호는 Secrets Manager 가 아니라 **RDS_PASSWORD 환경변수**로 주입한다.
+# IntelliJ Run/Debug → Environment variables 에 RDS_PASSWORD=<dev-db 비밀번호>
+# 를 추가하면 application.yml 의 `${RDS_PASSWORD:${password}}` placeholder 가
+# 바인딩된다. host/port/db/user 는 아래 기본값(SSM 터널 종단) 으로 충분하지만
+# 다른 DB 를 보고 싶다면 RDS_HOST 등을 환경변수로 덮어쓰면 된다.
+#
+# Redis / S3 는 local 에서 외부 의존 없이 띄우기 위해 auto-config 를 exclude
+# 한다 (LocalRedisStubConfig 가 RedisConnectionFactory stub 만 제공). dev/prod
+# 에서는 이 파일이 로드되지 않으므로 영향 없음.
+#
+# Spring Boot 4 에서 Data 관련 auto-config 클래스명이 Data* 로 리네임됐다
+# (RedisAutoConfiguration → DataRedisAutoConfiguration 등).
 spring:
   autoconfigure:
     exclude:
-      - org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration
-      - org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration
-      - org.springframework.boot.data.jpa.autoconfigure.DataJpaRepositoriesAutoConfiguration
+      # Redis — local stub 사용
       - org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration
       - org.springframework.boot.data.redis.autoconfigure.DataRedisReactiveAutoConfiguration
       - org.springframework.boot.data.redis.autoconfigure.DataRedisRepositoriesAutoConfiguration
@@ -25,8 +30,17 @@ spring:
       - io.awspring.cloud.autoconfigure.s3.S3TransferManagerAutoConfiguration
       - io.awspring.cloud.autoconfigure.s3.S3CrtAsyncClientAutoConfiguration
 
-  flyway:
-    enabled: false
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    # currentSchema 파라미터로 connection 단계에서 search_path 를 powersales 로
+    # 고정한다. application.yml 의 spring.jpa.properties.hibernate.default_schema
+    # 설정이 Spring Boot 4 + Hibernate 7 조합에서 적용되지 않는 현상이 관찰되어,
+    # JDBC 레벨에서 강제하는 방식이 더 견고하다 (Flyway/Hibernate/raw SQL 모두 일관).
+    url: jdbc:postgresql://${RDS_HOST:localhost}:${RDS_PORT:15432}/${RDS_DATABASE:otoki}?currentSchema=powersales
+    username: ${RDS_USERNAME:otoki_admin}
+    # password 는 application.yml 의 `${RDS_PASSWORD:${password}}` 가 처리한다.
 
-  main:
-    lazy-initialization: true
+  # local 에서도 Flyway 자동 마이그레이션을 활성화한다. base 의 enabled: true 를
+  # 그대로 사용하므로 별도 설정이 필요 없다 (이 키는 명시적 의도 표시용).
+  flyway:
+    enabled: true
