@@ -39,8 +39,15 @@ out/
 ### Kotlin ###
 .kotlin
 
+### Docker ###
+Dockerfile.local
+
+### AWS ###
+.aws/
+
 ### Environment ###
 .env
+.env.*
 
 ### Migration squash verification (local artifacts) ###
 scripts/migration-squash/snapshots/
