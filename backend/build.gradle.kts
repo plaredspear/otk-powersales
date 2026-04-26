@@ -33,6 +33,10 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("io.awspring.cloud:spring-cloud-aws-starter-secrets-manager")
 	implementation("io.awspring.cloud:spring-cloud-aws-starter-s3")
+
+	// OpenAPI (Swagger UI) — Boot 4 GA 릴리즈 (3.0.3, parent: spring-boot-starter-parent:4.0.5)
+	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
+
 	runtimeOnly("org.postgresql:postgresql")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 	implementation("tools.jackson.module:jackson-module-kotlin")
@@ -54,4 +58,17 @@ tasks.withType<Test> {
 
 tasks.named<Jar>("jar") {
 	enabled = false
+}
+
+tasks.test {
+	// OpenAPI spec 생성 테스트는 전용 task로만 실행
+	exclude("**/OpenApiSpecGeneratorTest*")
+}
+
+tasks.register<Test>("generateOpenApiDocs") {
+	group = "documentation"
+	description = "OpenAPI spec JSON 파일 생성 (backend/openapi.json). 실 DB(local Postgres 또는 dev RDS) 가 활성 상태여야 컨텍스트가 기동된다."
+	filter {
+		includeTestsMatching("com.otoki.powersales.OpenApiSpecGeneratorTest")
+	}
 }
