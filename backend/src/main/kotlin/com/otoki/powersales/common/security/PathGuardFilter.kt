@@ -20,6 +20,7 @@ class PathGuardFilter : OncePerRequestFilter() {
         private val ALLOWED_PREFIXES = listOf(
             "/api/",
             "/admin/",
+            "/actuator/",
             "/h2-console/",
             "/swagger-ui",
             "/v3/api-docs",
