@@ -103,8 +103,18 @@ import kotlin.collections.iterator
  * │   예외  │ device_version_mng                 │ device_version              │ DeviceVersion           │ —                                                             │ migration 대상 아님 │
  * └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
  *
- * 실행:
- *   HEROKU_DB_PASSWORD=$(jq -r '.["dev-heroku-db"].PASSWORD' docs/plan/old-accounts.json) ./gradlew migrateHeroku
+ * 실행 (db-tunnel.sh / hc-import.sh 와 동일한 stage 컨벤션):
+ *   사전 조건:
+ *     - 별도 터미널에서 `scripts/db-tunnel.sh -s <stage>` 가 떠 있어야 함
+ *         dev  → localhost:15432, prod → localhost:25432
+ *     - 타겟 DB 비밀번호 환경변수: dev → DEV_OTK_PWRS_DB_PASSWORD, prod → PROD_OTK_PWRS_DB_PASSWORD
+ *     - HEROKU_DB_PASSWORD 환경변수 또는 docs/plan/old-accounts.json 자동 로드
+ *
+ *   dev (기본):
+ *     ./gradlew migrateHeroku
+ *
+ *   prod (추가 confirm 프롬프트):
+ *     STAGE=prod ./gradlew migrateHeroku
  */
 object HerokuMigrationTool {
 
@@ -179,29 +189,68 @@ object HerokuMigrationTool {
     private const val HEROKU_USER = "u4bee3ek26k44g"
     private const val HEROKU_URL = "jdbc:postgresql://$HEROKU_HOST:$HEROKU_PORT/$HEROKU_DB?sslmode=require"
 
-    // Dev DB (기본값, 환경변수 → ~/.pgpass 순으로 비밀번호 탐색)
-    private const val TARGET_HOST = "dev-db.codapt.kr"
-    private const val TARGET_PORT = "5432"
-    private const val TARGET_DB = "otoki"
-    private const val TARGET_USER_DEFAULT = "otoki_admin"
+    // 타겟 DB (stage 별 분기 — db-tunnel.sh / hc-import.sh 컨벤션 일치)
+    // 모든 stage 는 SSM 터널 경유로 localhost 접속.
+    private val STAGE = (System.getenv("STAGE") ?: "dev").lowercase()
 
-    private val TARGET_URL = System.getenv("DATABASE_URL")
-        ?: "jdbc:postgresql://$TARGET_HOST:$TARGET_PORT/$TARGET_DB"
-    private val TARGET_USER = System.getenv("DATABASE_USERNAME") ?: TARGET_USER_DEFAULT
-    private val TARGET_PASSWORD = System.getenv("DATABASE_PASSWORD")
-        ?: readPgpass(TARGET_HOST, TARGET_PORT, TARGET_DB, TARGET_USER_DEFAULT)
-        ?: ""
+    private data class TargetConfig(
+        val host: String,
+        val port: String,
+        val user: String,
+        val passwordEnvVar: String,
+    )
+
+    private val TARGET = when (STAGE) {
+        "dev" -> TargetConfig("localhost", "15432", "otkadmin", "DEV_OTK_PWRS_DB_PASSWORD")
+        "prod" -> TargetConfig("localhost", "25432", "postgres", "PROD_OTK_PWRS_DB_PASSWORD")
+        else -> error("지원하지 않는 STAGE: $STAGE (지원: dev | prod)")
+    }
+
+    private const val TARGET_DB = "otoki"
+    private val TARGET_URL = "jdbc:postgresql://${TARGET.host}:${TARGET.port}/$TARGET_DB"
+    private val TARGET_USER = TARGET.user
+    private val TARGET_PASSWORD = System.getenv(TARGET.passwordEnvVar) ?: ""
 
     @JvmStatic
     fun main(args: Array<String>) {
-        val herokuPassword = System.getenv("HEROKU_DB_PASSWORD")
-        if (herokuPassword.isNullOrBlank()) {
-            println("ERROR: HEROKU_DB_PASSWORD 환경변수가 필요합니다")
-            println("  HEROKU_DB_PASSWORD=\$(jq -r '.[\"dev-heroku-db\"].PASSWORD' docs/plan/old-accounts.json) ./gradlew migrateHeroku")
+        println("=== Heroku → 타겟 DB 마이그레이션 (stage=$STAGE) ===")
+
+        // 1. 타겟 DB 비밀번호 검증
+        if (TARGET_PASSWORD.isBlank()) {
+            println("ERROR: 환경변수 \$${TARGET.passwordEnvVar} 가 설정되지 않았습니다.")
+            println("  scripts/db-tunnel.sh -s $STAGE --password 로 조회 후 export 하세요.")
             return
         }
 
-        println("=== Heroku → Dev DB 마이그레이션 시작 (${entities.size}개 엔티티) ===")
+        // 2. HEROKU_DB_PASSWORD 로드 (env var → docs/plan/old-accounts.json 자동 탐색)
+        val herokuPassword = System.getenv("HEROKU_DB_PASSWORD")
+            ?: loadHerokuPasswordFromAccountsJson()
+            ?: run {
+                println("ERROR: HEROKU_DB_PASSWORD 환경변수도 없고, docs/plan/old-accounts.json 도 찾지 못했습니다.")
+                println("  방법 1: export HEROKU_DB_PASSWORD=\$(jq -r '.[\"dev-heroku-db\"].PASSWORD' docs/plan/old-accounts.json)")
+                println("  방법 2: docs/plan/old-accounts.json 을 worktree 상위 (otoki/) 또는 main/ 에 두기")
+                return
+            }
+
+        // 3. SSM 터널 alive 체크
+        if (!isPortOpen(TARGET.host, TARGET.port.toInt())) {
+            println("ERROR: 타겟 포트가 열려있지 않습니다: ${TARGET.host}:${TARGET.port}")
+            println("  별도 터미널에서 다음을 먼저 실행하세요: scripts/db-tunnel.sh -s $STAGE")
+            return
+        }
+
+        // 4. prod 안전 확인
+        if (STAGE == "prod") {
+            print("⚠️  운영(prod) DB 의 powersales 스키마를 모두 TRUNCATE → INSERT 합니다. 계속? [y/N] ")
+            val answer = readLine()?.trim()?.lowercase()
+            if (answer != "y") {
+                println("사용자에 의해 취소되었습니다.")
+                return
+            }
+        }
+
+        println("타겟: ${TARGET.host}:${TARGET.port}/$TARGET_DB (user=$TARGET_USER)")
+        println("=== 시작 (${entities.size}개 엔티티) ===")
 
         createConnection(HEROKU_URL, HEROKU_USER, herokuPassword).use { herokuConn ->
             createConnection(TARGET_URL, TARGET_USER, TARGET_PASSWORD).use { targetConn ->
@@ -841,25 +890,35 @@ object HerokuMigrationTool {
     }
 
     /**
-     * ~/.pgpass 에서 비밀번호를 읽는다.
-     * 형식: hostname:port:database:username:password
+     * docs/plan/old-accounts.json 에서 dev-heroku-db.PASSWORD 를 읽는다.
+     * docs/ 는 worktree 별로 두지 않고 otoki/ 프로젝트 루트에 위치하므로 후보 경로를 순서대로 탐색.
+     * working dir 은 backend/ 이므로 ../../docs (otoki 루트) 가 표준이고, ../docs (worktree 내부) 는 fallback.
      */
-    private fun readPgpass(host: String, port: String, db: String, user: String): String? {
-        val pgpassFile = File(System.getProperty("user.home"), ".pgpass")
-        if (!pgpassFile.exists()) return null
+    private fun loadHerokuPasswordFromAccountsJson(): String? {
+        val candidates = listOf(
+            File("../../docs/plan/old-accounts.json"),  // 표준: otoki/docs (worktree 상위)
+            File("../docs/plan/old-accounts.json"),     // fallback: worktree 내부
+        )
+        val file = candidates.firstOrNull { it.exists() } ?: return null
+        return try {
+            val mapper = com.fasterxml.jackson.databind.ObjectMapper()
+            val node = mapper.readTree(file)
+            node.path("dev-heroku-db").path("PASSWORD").asText().takeIf { it.isNotBlank() }
+        } catch (e: Exception) {
+            println("WARN: ${file.path} 파싱 실패: ${e.message}")
+            null
+        }
+    }
 
-        return pgpassFile.readLines()
-            .filter { !it.startsWith("#") && it.isNotBlank() }
-            .firstNotNullOfOrNull { line ->
-                val parts = line.split(":")
-                if (parts.size >= 5) {
-                    val (h, p, d, u) = parts
-                    if ((h == "*" || h == host) && (p == "*" || p == port) &&
-                        (d == "*" || d == db) && (u == "*" || u == user)
-                    ) {
-                        parts.drop(4).joinToString(":")
-                    } else null
-                } else null
+    /** TCP 포트가 열려있는지 1초 timeout 으로 체크 (SSM 터널 alive 확인용) */
+    private fun isPortOpen(host: String, port: Int): Boolean {
+        return try {
+            java.net.Socket().use { socket ->
+                socket.connect(java.net.InetSocketAddress(host, port), 1000)
+                true
             }
+        } catch (e: Exception) {
+            false
+        }
     }
 }
