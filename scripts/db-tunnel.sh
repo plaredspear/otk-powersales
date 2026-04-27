@@ -4,7 +4,7 @@
 set -euo pipefail
 
 PROJECT="otk-pwrs"
-LOCAL_PORT="15432"
+LOCAL_PORT=""
 STAGE=""
 PRINT_PASSWORD=0
 
@@ -14,7 +14,7 @@ Usage: $(basename "$0") [options]
 
 Options:
   -s <stage>      stage (dev | prod)
-  -l <port>       local port                (default: 15432)
+  -l <port>       local port                (default: dev=15432, prod=25432)
   --password      RDS master password 만 출력하고 종료 (환경변수 <STAGE>_OTK_PWRS_DB_PASSWORD 필요)
   -h              도움말
 
@@ -40,6 +40,14 @@ if [[ -z "$STAGE" ]] || [[ ! " ${ALLOWED_STAGES[*]} " =~ " ${STAGE} " ]]; then
   echo "Error: -s 옵션으로 stage 를 지정해야 합니다." >&2
   echo "Allowed: ${ALLOWED_STAGES[*]}" >&2
   exit 1
+fi
+
+# stage 별 기본 로컬 포트 (dev/prod 동시 실행 시 충돌 방지). -l 로 override 가능.
+if [[ -z "$LOCAL_PORT" ]]; then
+  case "$STAGE" in
+    dev)  LOCAL_PORT=15432 ;;
+    prod) LOCAL_PORT=25432 ;;
+  esac
 fi
 
 # stage 별 AWS profile 자동 결정 (dev → dev-otk-pwrs-db-access)
