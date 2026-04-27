@@ -95,6 +95,28 @@ orora:
   mock:
     enabled: ${ORORA_MOCK_ENABLED:true}
 
+# ---------------------------------------------------------------------------
+# SAP 인바운드 인증 (Spec #555 P1-B)
+#  - client_secret 평문 저장 금지. BCrypt 해시만 보관
+#  - jwt_signing_key 는 mobile/admin JWT 와 별도 (256-bit 이상)
+#  - allowed_ips 는 비어 있으면 backend 단 IP 검증 비활성 (ALB 단에 위임)
+# ---------------------------------------------------------------------------
+sap:
+  auth:
+    client-id: ${SAP_CLIENT_ID:}
+    client-secret-hash: ${SAP_CLIENT_SECRET_HASH:}
+    jwt-signing-key: ${SAP_JWT_SIGNING_KEY:otoki-sap-inbound-dev-signing-key-change-in-production-256-bits}
+    token-ttl-seconds: 900
+    allowed-scopes:
+      - sap.org.write
+      - sap.employee.write
+      - sap.account.write
+      - sap.product.write
+      - sap.sales.write
+      - sap.order.write
+      - sap.attendance.write
+    allowed-ips: ${SAP_ALLOWED_IPS:}
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
