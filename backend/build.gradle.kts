@@ -70,6 +70,10 @@ dependencies {
 	runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")
 	runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
 
+	// ShedLock — 다중 인스턴스 환경에서 스케줄 잡 중복 실행 방지 (Spec #545)
+	implementation("net.javacrumbs.shedlock:shedlock-spring:5.16.0")
+	implementation("net.javacrumbs.shedlock:shedlock-provider-jdbc-template:5.16.0")
+
 	developmentOnly("org.springframework.boot:spring-boot-devtools")
 	runtimeOnly("com.h2database:h2")
 	runtimeOnly("org.postgresql:postgresql")
