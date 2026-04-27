@@ -412,6 +412,18 @@ object HerokuMigrationTool {
                     println("[safetyCheckSubmission] team_member_schedule_id UPDATE 완료: ${updated}건")
                 }
 
+                // StaffReview: employee_sfid → employee_id 역참조 UPDATE
+                println("[staffReview] employee_sfid → employee_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.staff_review s " +
+                            "SET employee_id = e.employee_id " +
+                            "FROM $TARGET_SCHEMA.employee e " +
+                            "WHERE s.employee_sfid = e.sfid"
+                    )
+                    println("[staffReview] employee_id UPDATE 완료: ${updated}건")
+                }
+
                 // EducationPost: emp_code → employee.employee_code 매칭으로 employee_id UPDATE
                 println("[educationPost] emp_code → employee_id UPDATE 중...")
                 targetConn.createStatement().use { stmt ->
