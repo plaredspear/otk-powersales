@@ -62,9 +62,9 @@ import kotlin.collections.iterator
  * │  YES    │ displayworkschedulemaster__c       │ display_work_schedule       │ DisplayWorkSchedule     │ account__c → account.sfid, fullname__c → employee.sfid,       │ UPDATE: account_id, employee_id │
  * │         │                                    │                             │                         │   ownerid → (owner_sfid 저장만)                               │                    │
  * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
- * │  YES    │ dkretail__teammemberschedule__c    │ team_member_schedule        │ TeamMemberSchedule      │ accountid__c → account.sfid, dkretail__employeeid__c →         │ UPDATE: account_id, employee_id, team_leader_id, promotion_employee_id │
- * │         │                                    │                             │                         │   employee.sfid, teamleadersfid__c → employee.sfid,           │                    │
- * │         │                                    │                             │                         │   dkretail__promotionempid__c → employee.sfid                 │                    │
+ * │  YES    │ dkretail__teammemberschedule__c    │ team_member_schedule        │ TeamMemberSchedule      │ accountid__c → account.sfid, dkretail__employeeid__c →         │ UPDATE: account_id, employee_id, team_leader_id │
+ * │         │                                    │                             │                         │   employee.sfid, teamleadersfid__c → employee.sfid,           │ (promotion_employee_id 는 SF 전용 → SalesforceMigrationTool 단계) │
+ * │         │                                    │                             │                         │   dkretail__promotionempid__c → promotion_employee.sfid (SF)  │                    │
  * │  YES    │ safetycheck__workschedule__member  │ safety_check_submission     │ SafetyCheckSubmission   │ employeeid__c → employee.sfid, masterId →                     │ FK: employee_id(inline), display_work_schedule_id/team_member_schedule_id(post-UPDATE) │
  * │         │                                    │                             │                         │   displayworkschedulemaster__c.sfid, eventmasterid → sfid     │                    │
  * │  YES    │ education_mng                      │ education_post              │ EducationPost           │ empcode__c → employee.employee_code                           │ UPDATE: employee_id │
@@ -343,17 +343,17 @@ object HerokuMigrationTool {
                     println("[teamMemberSchedule] team_leader_id UPDATE 완료: ${updated}건")
                 }
 
-                // TeamMemberSchedule: promotion_employee_sfid → promotion_employee_id 역참조 UPDATE
-                println("[teamMemberSchedule] promotion_employee_sfid → promotion_employee_id UPDATE 중...")
-                targetConn.createStatement().use { stmt ->
-                    val updated = stmt.executeUpdate(
-                        "UPDATE $TARGET_SCHEMA.team_member_schedule t " +
-                            "SET promotion_employee_id = e.employee_id " +
-                            "FROM $TARGET_SCHEMA.employee e " +
-                            "WHERE t.promotion_employee_sfid = e.sfid"
-                    )
-                    println("[teamMemberSchedule] promotion_employee_id UPDATE 완료: ${updated}건")
-                }
+                // TeamMemberSchedule.promotion_employee_id (FK to promotion_employee.promotion_employee_id) 는
+                // 본 단계에서 채우지 않는다. promotion_employee_sfid 는 PromotionEmployee(SF 전용 @SFObject) 의
+                // sfid 형식이므로 employee.sfid 와 매칭되지 않으며, promotion_employee 마스터 자체가 HC 동기 대상
+                // 아니므로 마이그레이션 시점에 비어있다. 향후 SalesforceMigrationTool 구현 시 처리.
+                //
+                // 동일 사유로 다음 SF 전용 엔티티의 *_sfid → *_id UPDATE 도 본 도구 범위 외:
+                //   - Promotion (account_sfid, primary_product_sfid)
+                //   - PromotionEmployee (promotion_sfid, team_member_schedule_sfid)
+                //   - MonthlyFemaleEmployeeIntegrationSchedule (account_sfid, employee_sfid)
+                //   - ProfessionalPromotionTeamMaster (account_sfid)
+                //   - ProfessionalPromotionTeamHistory (employee_sfid)
 
                 // SafetyCheckSubmission: employee_sfid → employee_id 역참조 UPDATE
                 println("[safetyCheckSubmission] employee_sfid → employee_id UPDATE 중...")
