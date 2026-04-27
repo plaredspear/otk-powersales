@@ -1,5 +1,6 @@
 package com.otoki.powersales.sap.service
 
+import com.otoki.powersales.common.jobrun.ScheduledJobRunner
 import com.otoki.powersales.sap.entity.Appointment
 import com.otoki.powersales.sap.entity.Employee
 import com.otoki.powersales.sap.entity.SystemCodeMaster
@@ -29,6 +30,9 @@ class PostponedAppointmentSchedulerTest {
     @Mock
     private lateinit var appointmentUserProfileUpdater: AppointmentUserProfileUpdater
 
+    @Mock
+    private lateinit var scheduledJobRunner: ScheduledJobRunner
+
     private lateinit var scheduler: PostponedAppointmentScheduler
 
     private val today = LocalDate.of(2026, 3, 22)
@@ -36,7 +40,7 @@ class PostponedAppointmentSchedulerTest {
     @BeforeEach
     fun setUp() {
         scheduler = PostponedAppointmentScheduler(
-            employeeRepository, appointmentRepository, appointmentUserProfileUpdater
+            employeeRepository, appointmentRepository, appointmentUserProfileUpdater, scheduledJobRunner
         )
     }
 

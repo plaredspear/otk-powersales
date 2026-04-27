@@ -1,6 +1,7 @@
 package com.otoki.powersales.promotion.batch
 
 import com.otoki.powersales.admin.service.AdminPPTMasterService
+import com.otoki.powersales.common.jobrun.ScheduledJobRunner
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.EnableScheduling
@@ -12,7 +13,8 @@ import org.springframework.stereotype.Component
 @EnableScheduling
 @Profile("!local")
 class PPTMasterBatchConfig(
-    private val adminPPTMasterService: AdminPPTMasterService
+    private val adminPPTMasterService: AdminPPTMasterService,
+    private val scheduledJobRunner: ScheduledJobRunner,
 ) {
 
     private val log = LoggerFactory.getLogger(PPTMasterBatchConfig::class.java)
@@ -30,7 +32,9 @@ class PPTMasterBatchConfig(
     fun syncValidMasters() {
         log.info("PPTMasterSyncBatch 시작")
         try {
-            adminPPTMasterService.syncValidMasters()
+            scheduledJobRunner.run("pptMaster.syncValid") {
+                adminPPTMasterService.syncValidMasters()
+            }
             log.info("PPTMasterSyncBatch 완료")
         } catch (e: Exception) {
             log.error("PPTMasterSyncBatch 실패", e)
@@ -50,7 +54,9 @@ class PPTMasterBatchConfig(
     fun expireMasters() {
         log.info("PPTMasterExpireBatch 시작")
         try {
-            adminPPTMasterService.expireMasters()
+            scheduledJobRunner.run("pptMaster.expire") {
+                adminPPTMasterService.expireMasters()
+            }
             log.info("PPTMasterExpireBatch 완료")
         } catch (e: Exception) {
             log.error("PPTMasterExpireBatch 실패", e)

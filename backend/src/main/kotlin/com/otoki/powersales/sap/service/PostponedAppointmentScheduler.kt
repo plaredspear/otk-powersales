@@ -1,5 +1,7 @@
 package com.otoki.powersales.sap.service
 
+import com.otoki.powersales.common.jobrun.ScheduledJobRunContext
+import com.otoki.powersales.common.jobrun.ScheduledJobRunner
 import com.otoki.powersales.sap.repository.AppointmentRepository
 import com.otoki.powersales.sap.repository.EmployeeRepository
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
@@ -13,7 +15,8 @@ import java.time.LocalDate
 class PostponedAppointmentScheduler(
     private val employeeRepository: EmployeeRepository,
     private val appointmentRepository: AppointmentRepository,
-    private val appointmentUserProfileUpdater: AppointmentUserProfileUpdater
+    private val appointmentUserProfileUpdater: AppointmentUserProfileUpdater,
+    private val scheduledJobRunner: ScheduledJobRunner,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -26,13 +29,16 @@ class PostponedAppointmentScheduler(
     )
     @Transactional
     fun processPostponedAppointments() {
-        processPostponedAppointments(LocalDate.now())
+        scheduledJobRunner.run("sap.processPostponedAppointments") { context ->
+            processPostponedAppointments(LocalDate.now(), context)
+        }
     }
 
-    internal fun processPostponedAppointments(today: LocalDate) {
+    internal fun processPostponedAppointments(today: LocalDate, context: ScheduledJobRunContext? = null) {
         val employees = employeeRepository.findByCrmWorkStartDateIsNotNullAndCrmWorkStartDateLessThanEqual(today)
         if (employees.isEmpty()) {
             log.info("예약 발령 대상 없음")
+            context?.metadata(mapOf("processed" to 0, "skipped" to 0))
             return
         }
 
@@ -63,5 +69,6 @@ class PostponedAppointmentScheduler(
         }
 
         log.info("예약 발령 처리 완료: processed={}, skipped={}", processedCount, skippedCount)
+        context?.metadata(mapOf("processed" to processedCount, "skipped" to skippedCount))
     }
 }
