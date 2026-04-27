@@ -5,7 +5,7 @@ set -euo pipefail
 
 PROJECT="otk-pwrs"
 LOCAL_PORT="15432"
-AWS_PROFILE="${AWS_PROFILE:-}"
+STAGE=""
 PRINT_PASSWORD=0
 
 usage() {
@@ -13,21 +13,21 @@ usage() {
 Usage: $(basename "$0") [options]
 
 Options:
-  -p <profile>    AWS CLI profile (dev-otk-pwrs-db-access | prod-otk-pwrs-db-access)
+  -s <stage>      stage (dev | prod)
   -l <port>       local port                (default: 15432)
-  --password      RDS master password 만 출력하고 종료
+  --password      RDS master password 만 출력하고 종료 (환경변수 <STAGE>_OTK_PWRS_DB_PASSWORD 필요)
   -h              도움말
 
 Examples:
-  $(basename "$0") -p dev-otk-pwrs-db-access
-  $(basename "$0") -p prod-otk-pwrs-db-access -l 25432
-  $(basename "$0") -p dev-otk-pwrs-db-access --password
+  $(basename "$0") -s dev
+  $(basename "$0") -s prod -l 25432
+  $(basename "$0") -s dev --password
 EOF
 }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    -p) AWS_PROFILE="$2"; shift 2;;
+    -s) STAGE="$2"; shift 2;;
     -l) LOCAL_PORT="$2"; shift 2;;
     --password) PRINT_PASSWORD=1; shift;;
     -h|--help) usage; exit 0;;
@@ -35,15 +35,15 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-ALLOWED_PROFILES=("dev-otk-pwrs-db-access" "prod-otk-pwrs-db-access")
-if [[ -z "$AWS_PROFILE" ]] || [[ ! " ${ALLOWED_PROFILES[*]} " =~ " ${AWS_PROFILE} " ]]; then
-  echo "Error: -p 옵션으로 profile 을 지정해야 합니다." >&2
-  echo "Allowed: ${ALLOWED_PROFILES[*]}" >&2
+ALLOWED_STAGES=("dev" "prod")
+if [[ -z "$STAGE" ]] || [[ ! " ${ALLOWED_STAGES[*]} " =~ " ${STAGE} " ]]; then
+  echo "Error: -s 옵션으로 stage 를 지정해야 합니다." >&2
+  echo "Allowed: ${ALLOWED_STAGES[*]}" >&2
   exit 1
 fi
 
-# profile 이름에서 stage 자동 추출 (dev-otk-pwrs-db-access → dev)
-STAGE="${AWS_PROFILE%%-otk-pwrs-db-access}"
+# stage 별 AWS profile 자동 결정 (dev → dev-otk-pwrs-db-access)
+AWS_PROFILE="${STAGE}-otk-pwrs-db-access"
 
 aws_() { aws --profile "$AWS_PROFILE" --region ap-northeast-2 "$@"; }
 
@@ -56,9 +56,16 @@ fi
 source "$ENV_FILE"
 
 if [[ "$PRINT_PASSWORD" -eq 1 ]]; then
-  aws_ secretsmanager get-secret-value \
-    --secret-id "$RDS_SECRET_ARN" \
-    --query 'SecretString' --output text | jq -r .password
+  case "$STAGE" in
+    dev)  PASSWORD_VAR="DEV_OTK_PWRS_DB_PASSWORD";  PASSWORD_VALUE="${DEV_OTK_PWRS_DB_PASSWORD:-}"  ;;
+    prod) PASSWORD_VAR="PROD_OTK_PWRS_DB_PASSWORD"; PASSWORD_VALUE="${PROD_OTK_PWRS_DB_PASSWORD:-}" ;;
+    *)    echo "Error: 알 수 없는 stage: $STAGE" >&2; exit 1 ;;
+  esac
+  if [[ -z "$PASSWORD_VALUE" ]]; then
+    echo "Error: 환경변수 \$$PASSWORD_VAR 가 설정되지 않았습니다." >&2
+    exit 1
+  fi
+  echo "$PASSWORD_VALUE"
   exit 0
 fi
 
@@ -89,7 +96,7 @@ cat <<EOF
     Host        : localhost
     Port        : $LOCAL_PORT
     Username    : $RDS_USER
-    Password    : $(basename "$0") --password -s $STAGE   ← 로 조회
+    Password    : $(basename "$0") -s $STAGE --password   ← 로 조회 (환경변수 필요)
 
   세션 종료: Ctrl+C
 --------------------------------------------------------------------
