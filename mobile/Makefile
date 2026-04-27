@@ -1,32 +1,38 @@
-.PHONY: run run-local run-ios run-android test setup clean
+.PHONY: run run-ios run-android build-apk build-ios test setup clean
 
-CONFIG ?= config/dev.json
+## STAGE: local | dev | prod (기본 local)
+STAGE ?= local
+CONFIG := config/$(STAGE).json
 
-## 초기 설정: config/dev.json 생성 (최초 1회)
+## 초기 설정: config/<stage>.json 생성 (최초 1회)
 setup:
-	@if [ ! -f config/dev.json ]; then \
-		cp config/dev.json.example config/dev.json; \
-		echo "config/dev.json created from template"; \
-	else \
-		echo "config/dev.json already exists"; \
-	fi
+	@for stage in local dev prod; do \
+		if [ ! -f config/$$stage.json ]; then \
+			cp config/$$stage.json.example config/$$stage.json; \
+			echo "config/$$stage.json created from template"; \
+		fi; \
+	done
 	flutter pub get
 
-## 앱 실행 (자동 디바이스 선택)
+## 앱 실행 (자동 디바이스 선택). 예: make run STAGE=dev
 run: setup
 	flutter run --dart-define-from-file=$(CONFIG)
 
-## 로컬 백엔드(localhost:8080) + iOS 시뮬레이터 실행
-run-local: setup
-	flutter run -d iPhone --dart-define-from-file=config/local.json
-
-## iOS 시뮬레이터에서 실행
+## iOS 시뮬레이터에서 실행. 예: make run-ios STAGE=local
 run-ios: setup
 	flutter run -d iPhone --dart-define-from-file=$(CONFIG)
 
-## Android 에뮬레이터에서 실행
+## Android 에뮬레이터에서 실행. 예: make run-android STAGE=dev
 run-android: setup
 	flutter run -d android --dart-define-from-file=$(CONFIG)
+
+## APK 빌드 (release). 예: make build-apk STAGE=prod
+build-apk: setup
+	flutter build apk --release --dart-define-from-file=$(CONFIG)
+
+## iOS 빌드 (release). 예: make build-ios STAGE=prod
+build-ios: setup
+	flutter build ios --release --dart-define-from-file=$(CONFIG)
 
 ## 테스트 실행
 test:

@@ -8,11 +8,13 @@ void main() {
       expect(AppConfig.baseUrl, 'http://localhost:8080');
     });
 
-    test('env 기본값은 dev여야 한다', () {
-      expect(AppConfig.env, 'dev');
+    test('env 기본값은 local이어야 한다', () {
+      expect(AppConfig.env, 'local');
     });
 
-    test('기본 환경에서 isProduction은 false여야 한다', () {
+    test('기본 환경에서 isLocal은 true, isDev/isProduction은 false여야 한다', () {
+      expect(AppConfig.isLocal, true);
+      expect(AppConfig.isDev, false);
       expect(AppConfig.isProduction, false);
     });
   });
