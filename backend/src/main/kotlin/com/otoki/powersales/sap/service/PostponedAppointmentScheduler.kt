@@ -2,6 +2,7 @@ package com.otoki.powersales.sap.service
 
 import com.otoki.powersales.sap.repository.AppointmentRepository
 import com.otoki.powersales.sap.repository.EmployeeRepository
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
@@ -18,6 +19,11 @@ class PostponedAppointmentScheduler(
     private val log = LoggerFactory.getLogger(javaClass)
 
     @Scheduled(cron = "0 0 0 * * *")
+    @SchedulerLock(
+        name = "sap.processPostponedAppointments",
+        lockAtMostFor = "PT30M",
+        lockAtLeastFor = "PT1M"
+    )
     @Transactional
     fun processPostponedAppointments() {
         processPostponedAppointments(LocalDate.now())
