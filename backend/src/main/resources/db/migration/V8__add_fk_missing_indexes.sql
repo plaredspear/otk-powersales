@@ -29,4 +29,4 @@ CREATE INDEX idx_safety_check_submission_employee_id ON powersales.safety_check_
 CREATE INDEX idx_safety_check_submission_team_member_schedule_id ON powersales.safety_check_submission (team_member_schedule_id);
 CREATE INDEX idx_mfei_schedule_account_id ON powersales.monthly_female_employee_integration_schedule (account_id);
 CREATE INDEX idx_mfei_schedule_employee_id ON powersales.monthly_female_employee_integration_schedule (employee_id);
-CREATE INDEX idx_user_permission_granted_by ON public.user_permission (granted_by);
+CREATE INDEX idx_user_permission_granted_by ON powersales.user_permission (granted_by);
