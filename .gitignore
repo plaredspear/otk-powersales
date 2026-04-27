@@ -1,6 +1,13 @@
-# Claude Code local state
-.claude
-CLAUDE.local.md
+.idea
 
-# db-tunnel 환경 설정
+# Claude Code
+.claude
+CLAUDE.md
+CLAUDE.local.md
+.claudeignore
+
+# Documentation
+docs
+
+# db-tunnel 환경 설정 (RDS endpoint + Secret ARN)
 scripts/db-tunnel.*.env
