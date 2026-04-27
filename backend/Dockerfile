@@ -16,7 +16,7 @@ RUN chmod +x gradlew
 # 호스트 재사용 시 이 마운트가 유효하다.
 COPY src/ src/
 RUN --mount=type=cache,target=/root/.gradle \
-    ./gradlew bootJar --no-daemon -x test
+    ./gradlew test bootJar --no-daemon
 
 # Stage 2: Runtime
 FROM public.ecr.aws/docker/library/eclipse-temurin:24-jre AS runtime
