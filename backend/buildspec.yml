@@ -17,6 +17,7 @@ env:
 
 phases:
   pre_build:
+    on-failure: ABORT
     commands:
       - echo "Logging in to Amazon ECR..."
       - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
@@ -27,6 +28,10 @@ phases:
       - echo "Image will be tagged as ${IMAGE_URI}"
 
   build:
+    # CodeBuild 기본 동작은 build phase 실패 시 post_build 로 fall through 한다.
+    # Dockerfile RUN 단계에서 테스트가 실패하면 그대로 docker push / artifact 생성이
+    # 이어져 ECR 에 부분 이미지나 잘못된 artifact 가 흘러갈 수 있어, 명시적으로 ABORT 한다.
+    on-failure: ABORT
     commands:
       - echo "Building Docker image..."
       - docker build -t $IMAGE_REPO_NAME:$IMAGE_TAG ./backend
