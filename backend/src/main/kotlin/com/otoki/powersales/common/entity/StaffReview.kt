@@ -4,6 +4,7 @@ import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
+import com.otoki.powersales.sap.entity.Employee
 import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
@@ -31,6 +32,9 @@ class StaffReview(
     @HCColumn("name")
     @Column(name = "name", length = 80)
     val name: String? = null,
+
+    @Column(name = "employee_id")
+    val employeeId: Long? = null,
 
     @SFField("DKRetail_EmployeeId__c")
     @HCColumn("dkretail_employeeid__c")
@@ -119,5 +123,10 @@ class StaffReview(
     @HCColumn("systemmodstamp")
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
-    var updatedAt: LocalDateTime = LocalDateTime.now()
+    var updatedAt: LocalDateTime = LocalDateTime.now(),
+
+    // -- Relations --
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employee_id", insertable = false, updatable = false)
+    val employee: Employee? = null
 ) : AuditedEntity()
