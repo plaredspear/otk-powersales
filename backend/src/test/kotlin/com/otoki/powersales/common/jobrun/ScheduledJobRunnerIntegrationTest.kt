@@ -13,11 +13,10 @@ import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabas
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.ActiveProfiles
-import java.time.Instant
-import java.time.temporal.ChronoUnit
+import java.time.LocalDateTime
 
 /**
- * `ScheduledJobRunner` 통합 테스트 (스펙 #548 §9).
+ * `ScheduledJobRunner` 통합 테스트 (스펙 #548 §9, 시각 타입 정렬 #564).
  *
  * - `@DataJpaTest` + H2 (PostgreSQL 호환 모드 미사용) 위에서 실제 INSERT/UPDATE 트랜잭션 검증.
  * - `@Import` 로 Runner / CleanupJob / QueryDslConfig 를 한정적으로 가져온다.
@@ -59,7 +58,7 @@ class ScheduledJobRunnerIntegrationTest {
         @Test
         @DisplayName("정상 종료 - row 1건이 SUCCESS 로 기록")
         fun successRecorded() {
-            val before = Instant.now()
+            val before = LocalDateTime.now()
             val returnValue = runner.run("test.success") { 42 }
 
             assertThat(returnValue).isEqualTo(42)
@@ -154,7 +153,7 @@ class ScheduledJobRunnerIntegrationTest {
         @DisplayName("90일 초과 row 삭제 - cleanup 자기 row 1건만 SUCCESS 로 남고 metadata.deleted 기록")
         fun cleanupRemovesExpiredRows() {
             // 90일을 초과한 오래된 row 5건을 직접 INSERT (Runner 우회)
-            val oldThreshold = Instant.now().minus(ScheduledJobRunner.RETENTION_DAYS + 1, ChronoUnit.DAYS)
+            val oldThreshold = LocalDateTime.now().minusDays(ScheduledJobRunner.RETENTION_DAYS + 1)
             repeat(5) {
                 repository.save(
                     ScheduledJobRun(
@@ -167,7 +166,7 @@ class ScheduledJobRunnerIntegrationTest {
                 )
             }
             // 보존 기간 이내(최근) row 1건도 추가 — 삭제 대상이 아님을 검증
-            val recent = Instant.now().minus(1, ChronoUnit.DAYS)
+            val recent = LocalDateTime.now().minusDays(1)
             repository.save(
                 ScheduledJobRun(
                     jobName = "recent.job",

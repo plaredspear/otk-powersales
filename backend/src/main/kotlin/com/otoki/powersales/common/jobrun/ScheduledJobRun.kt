@@ -8,8 +8,11 @@ import jakarta.persistence.Id
 import jakarta.persistence.Table
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
-import java.time.Instant
+import java.time.LocalDateTime
 
+/**
+ * 시각 필드는 UTC wall clock 으로 저장된다 (전사 컨벤션 — 스펙 #564).
+ */
 @Entity
 @Table(name = "scheduled_job_run")
 class ScheduledJobRun(
@@ -22,10 +25,10 @@ class ScheduledJobRun(
     val jobName: String,
 
     @Column(name = "started_at", nullable = false)
-    val startedAt: Instant,
+    val startedAt: LocalDateTime,
 
     @Column(name = "ended_at")
-    var endedAt: Instant? = null,
+    var endedAt: LocalDateTime? = null,
 
     @Column(name = "status", nullable = false, length = 16)
     var status: String = STATUS_RUNNING,
@@ -40,7 +43,7 @@ class ScheduledJobRun(
     var metadata: String? = null,
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    val createdAt: Instant = startedAt,
+    val createdAt: LocalDateTime = startedAt,
 ) {
     companion object {
         const val STATUS_RUNNING = "RUNNING"

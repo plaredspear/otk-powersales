@@ -21,6 +21,7 @@ services:
       redis:
         condition: service_healthy
     environment:
+      TZ: UTC
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-local}
       DATABASE_URL: ${DATABASE_URL:-}
       DATABASE_USERNAME: ${DATABASE_USERNAME:-}

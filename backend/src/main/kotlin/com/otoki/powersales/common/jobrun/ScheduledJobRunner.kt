@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.PlatformTransactionManager
 import org.springframework.transaction.TransactionDefinition
 import org.springframework.transaction.support.TransactionTemplate
-import java.time.Instant
+import java.time.LocalDateTime
 
 /**
  * `@Scheduled` 잡 본문을 감싸 실행 이력을 `scheduled_job_run` 테이블에 영속화한다 (스펙 #548).
@@ -16,6 +16,8 @@ import java.time.Instant
  * - Runner 자체의 INSERT/UPDATE 가 실패하더라도 본문 람다 실행과 결과를 가로막지 않으며
  *   WARN 로그만 남긴다 (4.5 — DB 장애 시 운영 잡이 잡히지 않는 fail-open 정책).
  * - ShedLock 인터셉터의 안쪽에서 호출된다고 가정한다 — 본 클래스는 분산 락을 직접 다루지 않는다.
+ *
+ * 시각 필드는 UTC wall clock LocalDateTime 으로 저장한다 (전사 컨벤션 — 스펙 #564).
  */
 @Service
 class ScheduledJobRunner(
@@ -30,7 +32,7 @@ class ScheduledJobRunner(
     }
 
     fun <T> run(jobName: String, block: (ScheduledJobRunContext) -> T): T {
-        val startedAt = Instant.now()
+        val startedAt = LocalDateTime.now()
         val context = ScheduledJobRunContext(jobName)
         val runId = insertRunningRow(jobName, startedAt)
 
@@ -44,7 +46,7 @@ class ScheduledJobRunner(
         return result
     }
 
-    private fun insertRunningRow(jobName: String, startedAt: Instant): Long? = try {
+    private fun insertRunningRow(jobName: String, startedAt: LocalDateTime): Long? = try {
         newTxTemplate.execute {
             val saved = repository.save(
                 ScheduledJobRun(
@@ -67,7 +69,7 @@ class ScheduledJobRunner(
             newTxTemplate.executeWithoutResult {
                 val row = repository.findById(runId).orElse(null) ?: return@executeWithoutResult
                 row.status = ScheduledJobRun.STATUS_SUCCESS
-                row.endedAt = Instant.now()
+                row.endedAt = LocalDateTime.now()
                 row.metadata = serializeMetadata(metadata)
                 repository.save(row)
             }
@@ -82,7 +84,7 @@ class ScheduledJobRunner(
             newTxTemplate.executeWithoutResult {
                 val row = repository.findById(runId).orElse(null) ?: return@executeWithoutResult
                 row.status = ScheduledJobRun.STATUS_FAILURE
-                row.endedAt = Instant.now()
+                row.endedAt = LocalDateTime.now()
                 row.errorMessage = formatError(cause)
                 repository.save(row)
             }
