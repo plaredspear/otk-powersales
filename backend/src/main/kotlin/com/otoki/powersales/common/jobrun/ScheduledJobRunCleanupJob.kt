@@ -5,8 +5,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Profile
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
-import java.time.Instant
-import java.time.temporal.ChronoUnit
+import java.time.LocalDateTime
 
 /**
  * `scheduled_job_run` 테이블의 보존 정책 잡 (스펙 #548 §4.6).
@@ -33,7 +32,7 @@ class ScheduledJobRunCleanupJob(
         log.info("ScheduledJobRunCleanup 시작")
         try {
             runner.run("scheduledJobRun.cleanup") { context ->
-                val threshold = Instant.now().minus(ScheduledJobRunner.RETENTION_DAYS, ChronoUnit.DAYS)
+                val threshold = LocalDateTime.now().minusDays(ScheduledJobRunner.RETENTION_DAYS)
                 val deleted = repository.deleteByStartedAtBefore(threshold)
                 context.metadata(mapOf("deleted" to deleted))
                 log.info("ScheduledJobRunCleanup 완료: deleted={}", deleted)
