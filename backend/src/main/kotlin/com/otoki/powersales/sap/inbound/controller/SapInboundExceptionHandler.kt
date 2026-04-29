@@ -18,7 +18,12 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
  * [SapResultWrapper] (`RESULT_CODE` / `RESULT_MSG`) 로 통일한다.
  * 기존 모바일/관리자 API 의 [com.otoki.powersales.common.dto.ApiResponse] 응답에는 영향이 없다.
  */
-@RestControllerAdvice(assignableTypes = [SapAccountMasterController::class])
+@RestControllerAdvice(
+    assignableTypes = [
+        SapAccountMasterController::class,
+        SapEmployeeMasterController::class
+    ]
+)
 @Order(Ordered.HIGHEST_PRECEDENCE)
 class SapInboundExceptionHandler {
 
