@@ -91,6 +91,12 @@ class Employee(
     @Column(name = "home_phone", length = 255)
     var homePhone: String? = null,
 
+    @Column(name = "work_email", length = 100)
+    var workEmail: String? = null,
+
+    @Column(name = "email", length = 100)
+    var email: String? = null,
+
     @SFField("DKRetail__Sex__c")
     @Column(name = "sex", length = 10)
     var sex: String? = null,
