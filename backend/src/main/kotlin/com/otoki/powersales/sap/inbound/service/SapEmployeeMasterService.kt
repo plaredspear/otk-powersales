@@ -5,6 +5,7 @@ import com.otoki.powersales.sap.auth.audit.SapInboundAuditEventType
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.sap.auth.util.ClientIpResolver
 import com.otoki.powersales.sap.entity.Employee
+import com.otoki.powersales.sap.entity.Gender
 import com.otoki.powersales.sap.inbound.dto.employee.EmployeeMasterDetail
 import com.otoki.powersales.sap.inbound.dto.employee.EmployeeMasterRequestItem
 import com.otoki.powersales.sap.inbound.dto.employee.FailureItem
@@ -67,7 +68,7 @@ class SapEmployeeMasterService(
                 val employeeName = item.employeeName?.takeIf { it.isNotBlank() }
                     ?: throw IllegalArgumentException("EmployeeName 필수")
 
-                val convertedSex = convertSex(item.sex)
+                val convertedGender = Gender.fromSapCode(item.gender)
                 val startDate = parseDate(item.startDate, "StartDate")
                 val endDate = parseDate(item.endDate, "EndDate")
                 val birthDate = normalizeBirthdate(item.birthdate)
@@ -75,9 +76,9 @@ class SapEmployeeMasterService(
                 val appLoginActive = item.lockingFlag != "Y"
 
                 val entity = cache[employeeCode]?.also {
-                    applyMutableFields(it, item, employeeName, convertedSex, startDate, endDate, birthDate, resolvedStatus, appLoginActive)
+                    applyMutableFields(it, item, employeeName, convertedGender, startDate, endDate, birthDate, resolvedStatus, appLoginActive)
                 } ?: Employee(employeeCode = employeeCode, name = employeeName).also {
-                    applyMutableFields(it, item, employeeName, convertedSex, startDate, endDate, birthDate, resolvedStatus, appLoginActive)
+                    applyMutableFields(it, item, employeeName, convertedGender, startDate, endDate, birthDate, resolvedStatus, appLoginActive)
                     cache[employeeCode] = it
                 }
                 toSave += entity
@@ -103,7 +104,7 @@ class SapEmployeeMasterService(
         entity: Employee,
         item: EmployeeMasterRequestItem,
         name: String,
-        sex: String?,
+        gender: Gender?,
         startDate: LocalDate?,
         endDate: LocalDate?,
         birthDate: String?,
@@ -111,7 +112,7 @@ class SapEmployeeMasterService(
         appLoginActive: Boolean
     ) {
         entity.name = name
-        entity.sex = sex
+        entity.gender = gender
         entity.homePhone = item.homePhone
         entity.workPhone = item.workPhone
         entity.workEmail = item.workEmail
@@ -122,12 +123,6 @@ class SapEmployeeMasterService(
         entity.birthDate = birthDate
         entity.costCenterCode = item.orgCode
         entity.appLoginActive = appLoginActive
-    }
-
-    private fun convertSex(value: String?): String? = when (value) {
-        "1" -> "남"
-        "2" -> "여"
-        else -> null
     }
 
     private fun parseDate(value: String?, fieldName: String): LocalDate? {

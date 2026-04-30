@@ -3,6 +3,7 @@ package com.otoki.powersales.sap.inbound.service
 import com.otoki.powersales.sap.auth.audit.SapInboundAudit
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.sap.entity.Employee
+import com.otoki.powersales.sap.entity.Gender
 import com.otoki.powersales.sap.entity.SystemCodeMaster
 import com.otoki.powersales.sap.inbound.dto.employee.EmployeeMasterRequestItem
 import com.otoki.powersales.sap.repository.EmployeeRepository
@@ -41,7 +42,7 @@ class SapEmployeeMasterServiceTest {
     private fun item(
         employeeCode: String? = "100123",
         employeeName: String? = "홍길동",
-        sex: String? = null,
+        gender: String? = null,
         homePhone: String? = null,
         workPhone: String? = null,
         workEmail: String? = null,
@@ -55,7 +56,7 @@ class SapEmployeeMasterServiceTest {
     ): EmployeeMasterRequestItem = EmployeeMasterRequestItem(
         employeeCode = employeeCode,
         employeeName = employeeName,
-        sex = sex,
+        gender = gender,
         homePhone = homePhone,
         workPhone = workPhone,
         workEmail = workEmail,
@@ -167,25 +168,25 @@ class SapEmployeeMasterServiceTest {
         }
 
         @Test
-        @DisplayName("Sex 변환 - 1 → 남, 2 → 여, 그 외 → null")
+        @DisplayName("Gender 변환 - '1' → MALE, '2' → FEMALE, 그 외 → null")
         fun upsert_sexConversion() {
             whenever(employeeRepository.findByEmployeeCodeIn(any<List<String>>())).thenReturn(emptyList())
             whenever(systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010"))).thenReturn(emptyList())
 
             service.upsert(
                 listOf(
-                    item(employeeCode = "M01", sex = "1"),
-                    item(employeeCode = "F01", sex = "2"),
-                    item(employeeCode = "X01", sex = "9")
+                    item(employeeCode = "M01", gender = "1"),
+                    item(employeeCode = "F01", gender = "2"),
+                    item(employeeCode = "X01", gender = "9")
                 )
             )
 
             val captor = argumentCaptor<List<Employee>>()
             verify(employeeRepository).saveAll(captor.capture())
             val byCode = captor.firstValue.associateBy { it.employeeCode }
-            assertThat(byCode["M01"]?.sex).isEqualTo("남")
-            assertThat(byCode["F01"]?.sex).isEqualTo("여")
-            assertThat(byCode["X01"]?.sex).isNull()
+            assertThat(byCode["M01"]?.gender).isEqualTo(Gender.MALE)
+            assertThat(byCode["F01"]?.gender).isEqualTo(Gender.FEMALE)
+            assertThat(byCode["X01"]?.gender).isNull()
         }
 
         @Test
