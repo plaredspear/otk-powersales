@@ -21,7 +21,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 @RestControllerAdvice(
     assignableTypes = [
         SapAccountMasterController::class,
-        SapEmployeeMasterController::class
+        SapEmployeeMasterController::class,
+        SapProductMasterController::class
     ]
 )
 @Order(Ordered.HIGHEST_PRECEDENCE)
