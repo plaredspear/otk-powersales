@@ -25,6 +25,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
         SapProductMasterController::class,
         SapSalesHistoryController::class,
         SapErpOrderController::class,
+        SapAppointmentController::class,
+        SapAttendInfoController::class,
         com.otoki.powersales.claim.controller.SapClaimStatusController::class
     ]
 )
