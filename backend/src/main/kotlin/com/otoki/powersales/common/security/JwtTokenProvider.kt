@@ -1,7 +1,7 @@
 package com.otoki.powersales.common.security
 
 import tools.jackson.databind.ObjectMapper
-import com.otoki.powersales.sap.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRole
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.ExpiredJwtException
 import io.jsonwebtoken.Jwts

@@ -2,9 +2,7 @@
 package com.otoki.powersales.claim.repository
 
 import com.otoki.powersales.entity.*
-import com.otoki.powersales.sap.entity.*
 import com.otoki.powersales.common.entity.*
-import com.otoki.powersales.sap.entity.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName

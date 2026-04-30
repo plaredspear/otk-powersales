@@ -1,7 +1,7 @@
 package com.otoki.powersales.admin.dto.response
 
 import com.otoki.powersales.admin.service.AdminPermissionResolver
-import com.otoki.powersales.sap.entity.Employee
+import com.otoki.powersales.employee.entity.Employee
 
 data class AdminLoginResponse(
     val user: AdminUserInfo,

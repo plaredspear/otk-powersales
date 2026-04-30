@@ -1,8 +1,8 @@
 package com.otoki.powersales.sap.service
 
-import com.otoki.powersales.sap.entity.Product
-import com.otoki.powersales.sap.repository.CategoryRow
-import com.otoki.powersales.sap.repository.ProductRepository
+import com.otoki.powersales.product.entity.Product
+import com.otoki.powersales.product.repository.CategoryRow
+import com.otoki.powersales.product.repository.ProductRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested

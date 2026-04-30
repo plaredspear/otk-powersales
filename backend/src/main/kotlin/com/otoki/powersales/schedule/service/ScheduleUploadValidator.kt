@@ -2,8 +2,8 @@ package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.schedule.dto.response.RowError
 import com.otoki.powersales.schedule.dto.response.RowPreview
-import com.otoki.powersales.sap.entity.Account
-import com.otoki.powersales.sap.entity.Employee
+import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import org.springframework.stereotype.Component
 import java.time.LocalDate

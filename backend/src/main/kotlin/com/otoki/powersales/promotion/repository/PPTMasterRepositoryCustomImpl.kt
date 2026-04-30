@@ -2,8 +2,8 @@ package com.otoki.powersales.promotion.repository
 
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamMaster
 import com.otoki.powersales.promotion.entity.QProfessionalPromotionTeamMaster.Companion.professionalPromotionTeamMaster
-import com.otoki.powersales.sap.entity.QAccount.Companion.account
-import com.otoki.powersales.sap.entity.QEmployee.Companion.employee
+import com.otoki.powersales.account.entity.QAccount.Companion.account
+import com.otoki.powersales.employee.entity.QEmployee.Companion.employee
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.Projections
 import com.querydsl.jpa.impl.JPAQueryFactory

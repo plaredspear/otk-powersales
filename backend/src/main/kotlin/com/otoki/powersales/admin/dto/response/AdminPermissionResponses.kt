@@ -2,7 +2,7 @@ package com.otoki.powersales.admin.dto.response
 
 import com.otoki.powersales.admin.service.PermissionResolveResult
 import com.otoki.powersales.admin.service.UserPermissionDetail
-import com.otoki.powersales.sap.entity.Employee
+import com.otoki.powersales.employee.entity.Employee
 
 data class EmployeePermissionDetailResponse(
     val employeeId: Long,

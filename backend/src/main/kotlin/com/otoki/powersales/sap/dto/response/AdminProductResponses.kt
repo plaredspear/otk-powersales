@@ -1,6 +1,6 @@
 package com.otoki.powersales.sap.dto.response
 
-import com.otoki.powersales.sap.entity.Product
+import com.otoki.powersales.product.entity.Product
 
 data class ProductListResponse(
     val content: List<ProductListItem>,

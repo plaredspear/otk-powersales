@@ -3,7 +3,7 @@ package com.otoki.powersales.sap.service
 import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.sap.dto.response.OrganizationResponse
 import com.otoki.powersales.admin.scope.DataScopeHolder
-import com.otoki.powersales.sap.repository.OrganizationRepository
+import com.otoki.powersales.organization.repository.OrganizationRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 

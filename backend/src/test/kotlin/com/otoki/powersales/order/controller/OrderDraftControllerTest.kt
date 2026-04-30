@@ -7,7 +7,7 @@ import com.otoki.powersales.order.dto.request.OrderDraftRequest
 import com.otoki.powersales.dto.response.DraftItemResponse
 import com.otoki.powersales.dto.response.DraftSavedResponse
 import com.otoki.powersales.order.dto.response.OrderDraftResponse
-import com.otoki.powersales.sap.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.exception.ClientNotFoundException
 import com.otoki.powersales.exception.DraftNotFoundException
 import com.otoki.powersales.exception.InvalidDeliveryDateException

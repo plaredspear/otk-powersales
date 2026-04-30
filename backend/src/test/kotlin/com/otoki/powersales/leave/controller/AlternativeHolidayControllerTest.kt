@@ -11,7 +11,7 @@ import com.otoki.powersales.leave.dto.AlternativeHolidayRequest
 import com.otoki.powersales.leave.exception.AltHolidayConfirmDateIsWeekendException
 import com.otoki.powersales.leave.exception.AltHolidayDuplicateException
 import com.otoki.powersales.leave.service.AlternativeHolidayService
-import com.otoki.powersales.sap.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRole
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested

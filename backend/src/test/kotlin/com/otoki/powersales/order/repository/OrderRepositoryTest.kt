@@ -4,7 +4,7 @@ package com.otoki.powersales.order.repository
 import com.otoki.powersales.order.entity.ApprovalStatus
 import com.otoki.powersales.order.entity.Order
 import com.otoki.powersales.entity.Store
-import com.otoki.powersales.sap.entity.Employee
+import com.otoki.powersales.employee.entity.Employee
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName

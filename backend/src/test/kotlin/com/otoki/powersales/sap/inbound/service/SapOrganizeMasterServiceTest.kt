@@ -1,9 +1,9 @@
 package com.otoki.powersales.sap.inbound.service
 
-import com.otoki.powersales.sap.entity.Organization
+import com.otoki.powersales.organization.entity.Organization
 import com.otoki.powersales.sap.inbound.dto.organize.OrganizeMasterRequestItem
 import com.otoki.powersales.sap.inbound.exception.SapInvalidPayloadException
-import com.otoki.powersales.sap.repository.OrganizationRepository
+import com.otoki.powersales.organization.repository.OrganizationRepository
 import jakarta.persistence.EntityManager
 import jakarta.persistence.Query
 import org.assertj.core.api.Assertions.assertThat

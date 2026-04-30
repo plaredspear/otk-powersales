@@ -10,13 +10,13 @@ import com.otoki.powersales.auth.dto.request.VerifyPasswordRequest
 import com.otoki.powersales.common.entity.AgreementHistory
 import com.otoki.powersales.common.entity.AgreementWord
 import com.otoki.powersales.common.entity.LoginHistory
-import com.otoki.powersales.sap.entity.Employee
-import com.otoki.powersales.sap.entity.UserRole
+import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.auth.exception.*
 import com.otoki.powersales.common.repository.AgreementHistoryRepository
 import com.otoki.powersales.common.repository.AgreementWordRepository
 import com.otoki.powersales.common.repository.LoginHistoryRepository
-import com.otoki.powersales.sap.repository.EmployeeRepository
+import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.common.security.JwtTokenProvider
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy

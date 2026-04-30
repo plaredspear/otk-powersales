@@ -4,12 +4,12 @@ import com.otoki.powersales.sap.auth.audit.SapInboundAudit
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditEventType
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.sap.auth.util.ClientIpResolver
-import com.otoki.powersales.sap.entity.Appointment
+import com.otoki.powersales.schedule.entity.Appointment
 import com.otoki.powersales.sap.inbound.dto.appointment.AppointmentDetail
 import com.otoki.powersales.sap.inbound.dto.appointment.AppointmentRequestItem
 import com.otoki.powersales.sap.inbound.dto.sales.FailureItem
-import com.otoki.powersales.sap.repository.AppointmentRepository
-import com.otoki.powersales.sap.repository.EmployeeRepository
+import com.otoki.powersales.schedule.repository.AppointmentRepository
+import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.sap.service.AppointmentUserProfileUpdater
 import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory

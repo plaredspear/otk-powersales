@@ -3,7 +3,7 @@ package com.otoki.powersales.leave.entity
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.common.entity.BaseEntity
-import com.otoki.powersales.sap.entity.Employee
+import com.otoki.powersales.employee.entity.Employee
 import jakarta.persistence.*
 import java.time.LocalDate
 

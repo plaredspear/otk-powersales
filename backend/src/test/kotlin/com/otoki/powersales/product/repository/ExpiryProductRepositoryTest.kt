@@ -1,7 +1,7 @@
 package com.otoki.powersales.product.repository
 
 import com.otoki.powersales.product.entity.ExpiryProduct
-import com.otoki.powersales.sap.entity.Employee
+import com.otoki.powersales.employee.entity.Employee
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName

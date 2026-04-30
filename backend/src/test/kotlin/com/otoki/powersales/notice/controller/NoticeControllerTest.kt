@@ -1,6 +1,6 @@
 package com.otoki.powersales.notice.controller
 
-import com.otoki.powersales.sap.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.notice.dto.response.NoticeImageResponse
 import com.otoki.powersales.notice.dto.response.NoticePostDetailResponse
 import com.otoki.powersales.notice.dto.response.NoticePostListResponse

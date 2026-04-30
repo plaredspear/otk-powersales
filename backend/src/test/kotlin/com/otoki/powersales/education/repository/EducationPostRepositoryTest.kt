@@ -2,7 +2,6 @@ package com.otoki.powersales.education.repository
 
 import com.otoki.powersales.education.entity.*
 import com.otoki.powersales.common.entity.*
-import com.otoki.powersales.sap.entity.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName

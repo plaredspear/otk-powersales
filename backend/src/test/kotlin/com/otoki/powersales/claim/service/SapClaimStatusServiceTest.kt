@@ -8,8 +8,8 @@ import com.otoki.powersales.claim.entity.ClaimSubcategory
 import com.otoki.powersales.claim.repository.ClaimRepository
 import com.otoki.powersales.sap.auth.audit.SapInboundAudit
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
-import com.otoki.powersales.sap.entity.Account
-import com.otoki.powersales.sap.entity.Employee
+import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.employee.entity.Employee
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested

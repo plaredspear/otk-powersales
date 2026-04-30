@@ -5,7 +5,7 @@ import com.otoki.powersales.leave.dto.AlternativeHolidayListItemResponse
 import com.otoki.powersales.leave.entity.AlternativeHoliday
 import com.otoki.powersales.leave.exception.EmployeeNotFoundException
 import com.otoki.powersales.leave.repository.AlternativeHolidayRepository
-import com.otoki.powersales.sap.repository.EmployeeRepository
+import com.otoki.powersales.employee.repository.EmployeeRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate

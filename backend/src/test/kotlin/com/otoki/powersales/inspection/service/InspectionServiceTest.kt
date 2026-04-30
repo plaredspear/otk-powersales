@@ -4,12 +4,12 @@ package com.otoki.powersales.inspection.service
 import com.otoki.powersales.inspection.dto.request.InspectionCreateRequest
 import com.otoki.powersales.inspection.entity.*
 import com.otoki.powersales.common.entity.*
-import com.otoki.powersales.sap.entity.*
+import com.otoki.powersales.product.entity.Product
 import com.otoki.powersales.inspection.exception.*
 import com.otoki.powersales.common.exception.*
 import com.otoki.powersales.inspection.repository.*
 import com.otoki.powersales.common.repository.*
-import com.otoki.powersales.sap.repository.*
+import com.otoki.powersales.product.repository.ProductRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.springframework.data.repository.findByIdOrNull

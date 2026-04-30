@@ -2,11 +2,11 @@ package com.otoki.powersales.sap.inbound.service
 
 import com.otoki.powersales.sap.auth.audit.SapInboundAudit
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
-import com.otoki.powersales.sap.entity.Appointment
-import com.otoki.powersales.sap.entity.Employee
+import com.otoki.powersales.schedule.entity.Appointment
+import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.sap.inbound.dto.appointment.AppointmentRequestItem
-import com.otoki.powersales.sap.repository.AppointmentRepository
-import com.otoki.powersales.sap.repository.EmployeeRepository
+import com.otoki.powersales.schedule.repository.AppointmentRepository
+import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.sap.service.AppointmentUserProfileUpdater
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName

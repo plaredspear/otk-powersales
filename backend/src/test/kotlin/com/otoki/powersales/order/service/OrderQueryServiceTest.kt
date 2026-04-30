@@ -1,14 +1,14 @@
 /* OrderItem 엔티티 비활성화로 인해 전체 주석 처리
 package com.otoki.powersales.order.service
 
-import com.otoki.powersales.sap.entity.Product
+import com.otoki.powersales.product.entity.Product
 import com.otoki.powersales.entity.Store
 import com.otoki.powersales.exception.ClientNotFoundException
 import com.otoki.powersales.order.exception.InvalidOrderDateRangeException
 import com.otoki.powersales.order.exception.InvalidOrderParameterException
 import com.otoki.powersales.exception.ProductNotFoundException
 import com.otoki.powersales.order.repository.OrderItemRepository
-import com.otoki.powersales.sap.repository.ProductRepository
+import com.otoki.powersales.product.repository.ProductRepository
 import com.otoki.powersales.repository.StoreRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy

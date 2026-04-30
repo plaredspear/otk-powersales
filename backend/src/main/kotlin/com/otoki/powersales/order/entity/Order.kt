@@ -1,7 +1,7 @@
 /* Order 모듈 전체 비활성화 — DB 테이블 미존재
 package com.otoki.powersales.order.entity
 
-import com.otoki.powersales.sap.entity.Employee
+import com.otoki.powersales.employee.entity.Employee
 import jakarta.persistence.*
 import java.time.LocalDate
 import java.time.LocalDateTime

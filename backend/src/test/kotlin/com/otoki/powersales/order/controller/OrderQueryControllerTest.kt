@@ -4,7 +4,7 @@ package com.otoki.powersales.order.controller
 import com.otoki.powersales.dto.response.CreditBalanceResponse
 import com.otoki.powersales.order.dto.response.OrderHistoryProductResponse
 import com.otoki.powersales.order.dto.response.ProductOrderInfoResponse
-import com.otoki.powersales.sap.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.exception.ClientNotFoundException
 import com.otoki.powersales.exception.ProductNotFoundException
 import com.otoki.powersales.common.security.GpsConsentFilter

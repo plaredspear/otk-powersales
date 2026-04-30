@@ -1,6 +1,6 @@
 package com.otoki.powersales.auth.dto.response
 
-import com.otoki.powersales.sap.entity.Employee
+import com.otoki.powersales.employee.entity.Employee
 
 /**
  * 로그인 응답 DTO

@@ -1,7 +1,7 @@
 package com.otoki.powersales.productexpiration.controller
 
 import tools.jackson.databind.ObjectMapper
-import com.otoki.powersales.sap.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.admin.security.AdminAuthorityFilter
 import com.otoki.powersales.common.security.JwtTokenProvider

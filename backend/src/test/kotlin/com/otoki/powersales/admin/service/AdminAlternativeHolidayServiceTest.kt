@@ -7,8 +7,8 @@ import com.otoki.powersales.leave.entity.AlternativeHoliday
 import com.otoki.powersales.leave.exception.*
 import com.otoki.powersales.leave.repository.AlternativeHolidayRepository
 import com.otoki.powersales.leave.service.AlternativeHolidayValidator
-import com.otoki.powersales.sap.entity.Employee
-import com.otoki.powersales.sap.repository.EmployeeRepository
+import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import org.assertj.core.api.Assertions.assertThat

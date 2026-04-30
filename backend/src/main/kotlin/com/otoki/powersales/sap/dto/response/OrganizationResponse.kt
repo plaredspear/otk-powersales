@@ -1,6 +1,6 @@
 package com.otoki.powersales.sap.dto.response
 
-import com.otoki.powersales.sap.entity.Organization
+import com.otoki.powersales.organization.entity.Organization
 import java.time.LocalDateTime
 
 data class OrganizationResponse(

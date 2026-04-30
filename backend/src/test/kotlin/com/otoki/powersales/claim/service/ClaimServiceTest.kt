@@ -3,12 +3,12 @@ package com.otoki.powersales.claim.service
 
 import com.otoki.powersales.claim.dto.request.ClaimCreateRequest
 import com.otoki.powersales.entity.*
-import com.otoki.powersales.sap.entity.*
+import com.otoki.powersales.product.entity.Product
 import com.otoki.powersales.common.entity.*
-import com.otoki.powersales.sap.entity.*
+import com.otoki.powersales.product.entity.Product
 import com.otoki.powersales.repository.*
 import com.otoki.powersales.common.repository.*
-import com.otoki.powersales.sap.repository.*
+import com.otoki.powersales.product.repository.ProductRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested

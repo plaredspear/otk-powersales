@@ -6,7 +6,7 @@ import com.otoki.powersales.promotion.entity.PromotionEmployee
 import com.otoki.powersales.promotion.exception.*
 import com.otoki.powersales.promotion.repository.PromotionEmployeeRepository
 import com.otoki.powersales.promotion.repository.PromotionRepository
-import com.otoki.powersales.sap.repository.EmployeeRepository
+import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import org.springframework.stereotype.Service
@@ -56,7 +56,7 @@ class AdminPromotionConfirmService(
         val peIds = employees.map { it.id }
 
         // 사원 정보 조회 (이름 + 상태 검증용)
-        val userByIdMap: Map<Long, com.otoki.powersales.sap.entity.Employee> = if (employeeIds.isNotEmpty()) {
+        val userByIdMap: Map<Long, com.otoki.powersales.employee.entity.Employee> = if (employeeIds.isNotEmpty()) {
             employeeRepository.findAllById(employeeIds).associateBy { it.id }
         } else emptyMap()
 
@@ -134,14 +134,14 @@ class AdminPromotionConfirmService(
         )
     }
 
-    private fun resolveEmployeeName(employeeId: Long, userByIdMap: Map<Long, com.otoki.powersales.sap.entity.Employee>): String {
+    private fun resolveEmployeeName(employeeId: Long, userByIdMap: Map<Long, com.otoki.powersales.employee.entity.Employee>): String {
         return userByIdMap[employeeId]?.name ?: employeeId.toString()
     }
 
     // 검증 1: 필수값
     private fun validateRequiredValues(
         employees: List<PromotionEmployee>,
-        userByIdMap: Map<Long, com.otoki.powersales.sap.entity.Employee>
+        userByIdMap: Map<Long, com.otoki.powersales.employee.entity.Employee>
     ) {
         for (pe in employees) {
             val missingFields = mutableListOf<String>()
@@ -164,7 +164,7 @@ class AdminPromotionConfirmService(
     private fun validateDateRange(
         employees: List<PromotionEmployee>,
         promotion: Promotion,
-        userByIdMap: Map<Long, com.otoki.powersales.sap.entity.Employee>
+        userByIdMap: Map<Long, com.otoki.powersales.employee.entity.Employee>
     ) {
         for (pe in employees) {
             val scheduleDate = pe.scheduleDate!!
@@ -182,7 +182,7 @@ class AdminPromotionConfirmService(
         employees: List<PromotionEmployee>,
         existingTeamMemberSchedules: List<TeamMemberSchedule>,
         currentPeIds: List<Long>,
-        userByIdMap: Map<Long, com.otoki.powersales.sap.entity.Employee>
+        userByIdMap: Map<Long, com.otoki.powersales.employee.entity.Employee>
     ) {
         // 기존 스케줄에서 현재 PE에 의해 생성된 스케줄 제외
         val externalTeamMemberSchedules = existingTeamMemberSchedules.filter { it.promotionEmployee?.id == null || it.promotionEmployee?.id !in currentPeIds }
@@ -245,7 +245,7 @@ class AdminPromotionConfirmService(
         employees: List<PromotionEmployee>,
         existingTeamMemberSchedules: List<TeamMemberSchedule>,
         currentPeIds: List<Long>,
-        userByIdMap: Map<Long, com.otoki.powersales.sap.entity.Employee>
+        userByIdMap: Map<Long, com.otoki.powersales.employee.entity.Employee>
     ) {
         val externalTeamMemberSchedules = existingTeamMemberSchedules.filter { it.promotionEmployee?.id == null || it.promotionEmployee?.id !in currentPeIds }
 
@@ -282,7 +282,7 @@ class AdminPromotionConfirmService(
         existingTeamMemberSchedules: List<TeamMemberSchedule>,
         promotion: Promotion,
         currentPeIds: List<Long>,
-        userByIdMap: Map<Long, com.otoki.powersales.sap.entity.Employee>
+        userByIdMap: Map<Long, com.otoki.powersales.employee.entity.Employee>
     ) {
         val externalTeamMemberSchedules = existingTeamMemberSchedules.filter { it.promotionEmployee?.id == null || it.promotionEmployee?.id !in currentPeIds }
 
@@ -302,7 +302,7 @@ class AdminPromotionConfirmService(
     // 검증 6: 여사원 상태
     private fun validateEmployeeStatus(
         employees: List<PromotionEmployee>,
-        userByIdMap: Map<Long, com.otoki.powersales.sap.entity.Employee>
+        userByIdMap: Map<Long, com.otoki.powersales.employee.entity.Employee>
     ) {
         for (pe in employees) {
             val employee = pe.employeeId?.let { userByIdMap[it] } ?: continue

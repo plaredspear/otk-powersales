@@ -4,10 +4,10 @@ import com.otoki.powersales.common.dto.response.MyAccountInfo
 import com.otoki.powersales.common.dto.response.MyAccountListResponse
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.common.exception.AccountInvalidParameterException
-import com.otoki.powersales.sap.repository.AccountRepository
+import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepositoryCustom
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepositoryCustom
-import com.otoki.powersales.sap.repository.EmployeeRepository
+import com.otoki.powersales.employee.repository.EmployeeRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate

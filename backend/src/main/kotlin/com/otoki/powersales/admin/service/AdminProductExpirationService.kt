@@ -15,10 +15,10 @@ import com.otoki.powersales.productexpiration.exception.ProductExpirationAccount
 import com.otoki.powersales.productexpiration.exception.ProductExpirationForbiddenException
 import com.otoki.powersales.productexpiration.exception.ProductExpirationNotFoundException
 import com.otoki.powersales.productexpiration.repository.ProductExpirationRepository
-import com.otoki.powersales.sap.entity.UserRole
-import com.otoki.powersales.sap.repository.AccountRepository
-import com.otoki.powersales.sap.repository.EmployeeRepository
-import com.otoki.powersales.sap.repository.ProductRepository
+import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.product.repository.ProductRepository
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

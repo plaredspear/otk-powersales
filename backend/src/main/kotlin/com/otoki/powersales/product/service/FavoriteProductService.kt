@@ -12,8 +12,8 @@ import com.otoki.powersales.exception.FavoriteNotFoundException
 import com.otoki.powersales.order.exception.InvalidOrderParameterException
 import com.otoki.powersales.exception.ProductNotFoundException
 import com.otoki.powersales.product.repository.FavoriteProductRepository
-import com.otoki.powersales.sap.repository.ProductRepository
-import com.otoki.powersales.sap.repository.EmployeeRepository
+import com.otoki.powersales.product.repository.ProductRepository
+import com.otoki.powersales.employee.repository.EmployeeRepository
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service

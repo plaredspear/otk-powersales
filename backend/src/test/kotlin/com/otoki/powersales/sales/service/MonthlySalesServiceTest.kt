@@ -1,7 +1,7 @@
 package com.otoki.powersales.sales.service
 
 import com.otoki.powersales.sales.dto.request.MonthlySalesRequest
-import com.otoki.powersales.sap.repository.MonthlySalesHistoryRepository
+import com.otoki.powersales.sales.repository.MonthlySalesHistoryRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested

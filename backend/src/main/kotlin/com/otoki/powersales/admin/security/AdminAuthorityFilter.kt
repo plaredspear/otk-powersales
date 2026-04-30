@@ -6,7 +6,7 @@ import com.otoki.powersales.admin.scope.DataScopeHolder
 import com.otoki.powersales.admin.service.AdminDataScopeService
 import com.otoki.powersales.admin.service.AdminPermissionResolver
 import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.sap.repository.EmployeeRepository
+import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.common.security.UserPrincipal
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest

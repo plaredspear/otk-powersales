@@ -1,6 +1,6 @@
 package com.otoki.powersales.sap.dto.response
 
-import com.otoki.powersales.sap.entity.Employee
+import com.otoki.powersales.employee.entity.Employee
 
 data class EmployeeListResponse(
     val content: List<EmployeeListItem>,

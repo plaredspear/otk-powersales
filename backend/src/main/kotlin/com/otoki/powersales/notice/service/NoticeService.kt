@@ -1,7 +1,7 @@
 package com.otoki.powersales.notice.service
 
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
-import com.otoki.powersales.sap.repository.EmployeeRepository
+import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.notice.dto.request.NoticeCreateRequest
 import com.otoki.powersales.notice.dto.request.NoticeUpdateRequest
 import com.otoki.powersales.notice.dto.response.NoticeImageResponse
@@ -20,7 +20,7 @@ import com.otoki.powersales.notice.exception.InvalidNoticeIdException
 import com.otoki.powersales.notice.exception.NoticePostNotFoundException
 import com.otoki.powersales.notice.repository.NoticeRepository
 import com.otoki.powersales.common.repository.UploadFileRepository
-import com.otoki.powersales.sap.repository.OrganizationRepository
+import com.otoki.powersales.organization.repository.OrganizationRepository
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service

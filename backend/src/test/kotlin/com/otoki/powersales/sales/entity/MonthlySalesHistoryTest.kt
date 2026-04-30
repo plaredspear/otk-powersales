@@ -1,6 +1,6 @@
 package com.otoki.powersales.sales.entity
 
-import com.otoki.powersales.sap.entity.MonthlySalesHistory
+import com.otoki.powersales.sales.entity.MonthlySalesHistory
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test

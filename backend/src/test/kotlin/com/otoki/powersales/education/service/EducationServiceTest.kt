@@ -3,12 +3,12 @@ package com.otoki.powersales.education.service
 import com.otoki.powersales.common.service.FileStorageService
 import com.otoki.powersales.education.entity.*
 import com.otoki.powersales.common.entity.*
-import com.otoki.powersales.sap.entity.*
+import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.education.exception.*
 import com.otoki.powersales.education.repository.EducationCodeRepository
 import com.otoki.powersales.education.repository.EducationPostAttachmentRepository
 import com.otoki.powersales.education.repository.EducationPostRepository
-import com.otoki.powersales.sap.repository.EmployeeRepository
+import com.otoki.powersales.employee.repository.EmployeeRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach

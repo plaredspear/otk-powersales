@@ -4,7 +4,7 @@ import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.sales.dto.response.DailySalesListResponse
 import com.otoki.powersales.event.dto.response.EventDetailResponse
 import com.otoki.powersales.event.dto.response.EventListResponse
-import com.otoki.powersales.sap.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.event.exception.EventNotFoundException
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter

@@ -2,7 +2,7 @@ package com.otoki.powersales.leave.repository
 
 import com.otoki.powersales.admin.dto.response.AlternativeHolidayListItem
 import com.otoki.powersales.leave.entity.QAlternativeHoliday.Companion.alternativeHoliday
-import com.otoki.powersales.sap.entity.QEmployee.Companion.employee
+import com.otoki.powersales.employee.entity.QEmployee.Companion.employee
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.Projections
 import com.querydsl.jpa.impl.JPAQueryFactory
