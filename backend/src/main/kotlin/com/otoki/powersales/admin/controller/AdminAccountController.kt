@@ -2,8 +2,8 @@ package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.admin.security.RequiresPermission
-import com.otoki.powersales.sap.dto.response.AccountListResponse
-import com.otoki.powersales.sap.service.AdminAccountService
+import com.otoki.powersales.account.dto.response.AccountListResponse
+import com.otoki.powersales.account.service.AdminAccountService
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.common.security.UserPrincipal
 import jakarta.validation.constraints.Max

@@ -2,8 +2,8 @@ package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.admin.security.RequiresPermission
-import com.otoki.powersales.sap.dto.response.EmployeeListResponse
-import com.otoki.powersales.sap.service.AdminEmployeeService
+import com.otoki.powersales.employee.dto.response.EmployeeListResponse
+import com.otoki.powersales.employee.service.AdminEmployeeService
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.common.security.UserPrincipal
 import org.springframework.http.ResponseEntity

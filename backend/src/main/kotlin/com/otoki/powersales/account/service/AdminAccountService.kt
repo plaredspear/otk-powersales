@@ -1,9 +1,9 @@
-package com.otoki.powersales.sap.service
+package com.otoki.powersales.account.service
 
 import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.admin.scope.DataScopeHolder
-import com.otoki.powersales.sap.dto.response.AccountListItem
-import com.otoki.powersales.sap.dto.response.AccountListResponse
+import com.otoki.powersales.account.dto.response.AccountListItem
+import com.otoki.powersales.account.dto.response.AccountListResponse
 import com.otoki.powersales.account.repository.AccountRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort

@@ -1,4 +1,4 @@
-package com.otoki.powersales.sap.service
+package com.otoki.powersales.product.service
 
 import com.otoki.powersales.product.entity.Product
 import com.otoki.powersales.product.repository.CategoryRow

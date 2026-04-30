@@ -1,7 +1,7 @@
-package com.otoki.powersales.sap.service
+package com.otoki.powersales.organization.service
 
 import com.otoki.powersales.admin.dto.EffectiveBranchResult
-import com.otoki.powersales.sap.dto.response.OrganizationResponse
+import com.otoki.powersales.organization.dto.response.OrganizationResponse
 import com.otoki.powersales.admin.scope.DataScopeHolder
 import com.otoki.powersales.organization.repository.OrganizationRepository
 import org.springframework.stereotype.Service

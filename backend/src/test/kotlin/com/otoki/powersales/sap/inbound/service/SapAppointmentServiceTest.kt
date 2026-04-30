@@ -7,7 +7,7 @@ import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.sap.inbound.dto.appointment.AppointmentRequestItem
 import com.otoki.powersales.schedule.repository.AppointmentRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
-import com.otoki.powersales.sap.service.AppointmentUserProfileUpdater
+import com.otoki.powersales.sap.inbound.service.AppointmentUserProfileUpdater
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested

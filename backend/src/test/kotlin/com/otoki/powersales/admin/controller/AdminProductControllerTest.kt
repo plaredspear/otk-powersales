@@ -1,8 +1,11 @@
 package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.admin.security.AdminAuthorityFilter
-import com.otoki.powersales.sap.dto.response.*
-import com.otoki.powersales.sap.service.AdminProductService
+import com.otoki.powersales.product.dto.response.ProductListResponse
+import com.otoki.powersales.product.dto.response.ProductListItem
+import com.otoki.powersales.product.dto.response.CategoryTree
+import com.otoki.powersales.product.dto.response.Category2Node
+import com.otoki.powersales.product.service.AdminProductService
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider

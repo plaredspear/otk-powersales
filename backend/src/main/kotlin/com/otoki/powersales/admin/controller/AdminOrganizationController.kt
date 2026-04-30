@@ -1,7 +1,7 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.sap.dto.response.OrganizationResponse
-import com.otoki.powersales.sap.service.AdminOrganizationService
+import com.otoki.powersales.organization.dto.response.OrganizationResponse
+import com.otoki.powersales.organization.service.AdminOrganizationService
 import com.otoki.powersales.common.dto.ApiResponse
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping

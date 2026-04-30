@@ -10,7 +10,6 @@ import com.otoki.powersales.sap.inbound.dto.appointment.AppointmentRequestItem
 import com.otoki.powersales.sap.inbound.dto.sales.FailureItem
 import com.otoki.powersales.schedule.repository.AppointmentRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
-import com.otoki.powersales.sap.service.AppointmentUserProfileUpdater
 import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
 import org.springframework.security.core.context.SecurityContextHolder

@@ -1,4 +1,4 @@
-package com.otoki.powersales.sap.service
+package com.otoki.powersales.account.service
 
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.scope.DataScopeHolder
