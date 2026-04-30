@@ -2,9 +2,9 @@ package com.otoki.powersales.sap.inbound.service
 
 import com.otoki.powersales.sap.auth.audit.SapInboundAudit
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
-import com.otoki.powersales.sap.entity.Product
+import com.otoki.powersales.product.entity.Product
 import com.otoki.powersales.sap.inbound.dto.product.ProductMasterRequestItem
-import com.otoki.powersales.sap.repository.ProductRepository
+import com.otoki.powersales.product.repository.ProductRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested

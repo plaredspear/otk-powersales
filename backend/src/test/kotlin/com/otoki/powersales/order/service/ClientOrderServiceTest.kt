@@ -4,9 +4,7 @@ package com.otoki.powersales.order.service
 import com.otoki.powersales.order.dto.response.ClientOrderDetailResponse
 import com.otoki.powersales.order.dto.response.ClientOrderSummaryResponse
 import com.otoki.powersales.entity.*
-import com.otoki.powersales.sap.entity.*
 import com.otoki.powersales.common.entity.*
-import com.otoki.powersales.sap.entity.*
 import com.otoki.powersales.exception.ClientNotFoundException
 import com.otoki.powersales.exception.ForbiddenClientAccessException
 import com.otoki.powersales.order.exception.InvalidOrderParameterException

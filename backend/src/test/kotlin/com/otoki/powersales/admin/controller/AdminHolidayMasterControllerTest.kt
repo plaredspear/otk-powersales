@@ -9,7 +9,7 @@ import com.otoki.powersales.admin.security.AdminAuthorityFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
 import com.otoki.powersales.common.security.UserPrincipal
-import com.otoki.powersales.sap.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.leave.exception.HolidayDateDuplicateException
 import com.otoki.powersales.leave.exception.HolidayNotFoundException
 import com.otoki.powersales.leave.exception.InvalidHolidayTypeException

@@ -5,8 +5,8 @@ import com.otoki.powersales.admin.entity.UserPermission
 import com.otoki.powersales.admin.repository.RolePermissionRepository
 import com.otoki.powersales.admin.repository.UserPermissionRepository
 import com.otoki.powersales.admin.security.AdminPermission
-import com.otoki.powersales.sap.entity.Employee
-import com.otoki.powersales.sap.repository.EmployeeRepository
+import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.employee.repository.EmployeeRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested

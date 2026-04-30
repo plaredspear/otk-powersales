@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
  * SAP 거래처 마스터 행 DTO. (Spec #558)
  *
  * 페이로드 키는 SAP 호환을 위해 PascalCase 로 유지한다 (`@JsonProperty` 명시 바인딩).
- * 신규 시스템 [com.otoki.powersales.sap.entity.Account] 에 매핑되지 않는 필드(예:
+ * 신규 시스템 [com.otoki.powersales.account.entity.Account] 에 매핑되지 않는 필드(예:
  * AccountStatusCode / SalesDeptCode / DivisionCode 등)는 수신은 하되 저장 컬럼이 없어
  * 무시된다 — 레거시 매핑 전체 13~30 필드 중 실제 컬럼이 있는 항목만 기록된다.
  */

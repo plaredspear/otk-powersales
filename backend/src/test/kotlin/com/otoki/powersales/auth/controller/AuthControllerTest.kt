@@ -7,7 +7,7 @@ import com.otoki.powersales.auth.dto.request.RefreshTokenRequest
 import com.otoki.powersales.auth.dto.request.VerifyPasswordRequest
 import com.otoki.powersales.auth.dto.response.*
 import com.otoki.powersales.common.dto.response.*
-import com.otoki.powersales.sap.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.auth.exception.InvalidCredentialsException
 import com.otoki.powersales.auth.exception.InvalidCurrentPasswordException
 import com.otoki.powersales.auth.exception.InvalidTokenException

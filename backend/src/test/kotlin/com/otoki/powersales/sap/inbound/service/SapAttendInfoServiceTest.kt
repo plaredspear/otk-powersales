@@ -2,11 +2,11 @@ package com.otoki.powersales.sap.inbound.service
 
 import com.otoki.powersales.sap.auth.audit.SapInboundAudit
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
-import com.otoki.powersales.sap.entity.AttendInfo
+import com.otoki.powersales.schedule.entity.AttendInfo
 import com.otoki.powersales.sap.inbound.dto.attendance.AttendInfoRequestItem
 import com.otoki.powersales.sap.inbound.dto.sales.ChunkResult
 import com.otoki.powersales.sap.inbound.exception.SapPayloadTooLargeException
-import com.otoki.powersales.sap.repository.AttendInfoRepository
+import com.otoki.powersales.schedule.repository.AttendInfoRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach

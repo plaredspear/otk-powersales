@@ -3,7 +3,7 @@ package com.otoki.powersales.schedule.service
 import com.otoki.powersales.common.dto.response.AccountInfo
 import com.otoki.powersales.common.dto.response.AccountListResponse
 import com.otoki.powersales.common.util.GeoUtils
-import com.otoki.powersales.sap.entity.Account
+import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.safetycheck.repository.SafetyCheckSubmissionRepository
 import com.otoki.powersales.schedule.dto.response.AttendanceRegisterResponse
@@ -16,7 +16,7 @@ import com.otoki.powersales.schedule.integration.OroraApiService
 import com.otoki.powersales.schedule.integration.OroraWorkReportRequest
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
-import com.otoki.powersales.sap.repository.EmployeeRepository
+import com.otoki.powersales.employee.repository.EmployeeRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
@@ -327,7 +327,7 @@ class AttendanceService(
      */
     private fun resolveByDisplayWorkSchedule(
         displayWorkScheduleId: Long,
-        employee: com.otoki.powersales.sap.entity.Employee,
+        employee: com.otoki.powersales.employee.entity.Employee,
         today: LocalDate
     ): Pair<TeamMemberSchedule, Boolean> {
         val master = displayWorkScheduleRepository.findById(displayWorkScheduleId)
@@ -391,7 +391,7 @@ class AttendanceService(
      * 사원의 조직코드 기반 조장 조회
      * costCenterCode로 appAuthority="조장"이고 appLoginActive=true인 사원 조회
      */
-    private fun findTeamLeader(costCenterCode: String?): com.otoki.powersales.sap.entity.Employee? {
+    private fun findTeamLeader(costCenterCode: String?): com.otoki.powersales.employee.entity.Employee? {
         if (costCenterCode.isNullOrBlank()) return null
         val leaders = employeeRepository.findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrue(
             listOf(costCenterCode), "조장"

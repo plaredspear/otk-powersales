@@ -1,11 +1,11 @@
 package com.otoki.powersales.sap.service
 
-import com.otoki.powersales.sap.entity.Appointment
-import com.otoki.powersales.sap.entity.Employee
-import com.otoki.powersales.sap.entity.SystemCodeMaster
-import com.otoki.powersales.sap.repository.EmployeeRepository
-import com.otoki.powersales.sap.repository.OrganizationRepository
-import com.otoki.powersales.sap.repository.SystemCodeMasterRepository
+import com.otoki.powersales.schedule.entity.Appointment
+import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.common.entity.SystemCodeMaster
+import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.organization.repository.OrganizationRepository
+import com.otoki.powersales.common.repository.SystemCodeMasterRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

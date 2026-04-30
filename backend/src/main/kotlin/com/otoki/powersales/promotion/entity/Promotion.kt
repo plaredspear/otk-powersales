@@ -3,8 +3,8 @@ package com.otoki.powersales.promotion.entity
 import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
-import com.otoki.powersales.sap.entity.Account
-import com.otoki.powersales.sap.entity.Product
+import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.product.entity.Product
 import jakarta.persistence.*
 import java.time.LocalDate
 

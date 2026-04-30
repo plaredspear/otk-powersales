@@ -2,8 +2,8 @@ package com.otoki.powersales.claim.entity
 
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
-import com.otoki.powersales.sap.entity.Account
-import com.otoki.powersales.sap.entity.Employee
+import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.employee.entity.Employee
 import jakarta.persistence.*
 import java.time.LocalDate
 import java.time.LocalDateTime

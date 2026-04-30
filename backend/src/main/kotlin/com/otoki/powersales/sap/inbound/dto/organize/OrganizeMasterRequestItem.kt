@@ -1,7 +1,7 @@
 package com.otoki.powersales.sap.inbound.dto.organize
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.otoki.powersales.sap.entity.Organization
+import com.otoki.powersales.organization.entity.Organization
 
 /**
  * SAP 조직 마스터 행 DTO. 페이로드 키는 SAP 호환을 위해 PascalCase / UPPER_CASE 로 유지한다.

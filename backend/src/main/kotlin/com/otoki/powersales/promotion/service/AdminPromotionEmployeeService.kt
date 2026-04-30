@@ -12,8 +12,8 @@ import com.otoki.powersales.promotion.entity.PromotionEmployee
 import com.otoki.powersales.promotion.exception.*
 import com.otoki.powersales.promotion.repository.PromotionEmployeeRepository
 import com.otoki.powersales.promotion.repository.PromotionRepository
-import com.otoki.powersales.sap.entity.UserRole
-import com.otoki.powersales.sap.repository.EmployeeRepository
+import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

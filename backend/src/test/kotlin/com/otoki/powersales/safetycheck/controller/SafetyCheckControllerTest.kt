@@ -8,7 +8,7 @@ import com.otoki.powersales.safetycheck.service.AdminSafetyCheckService
 import com.otoki.powersales.safetycheck.dto.response.SafetyCheckItemsResponse
 import com.otoki.powersales.safetycheck.dto.response.SafetyCheckSubmitResponse
 import com.otoki.powersales.safetycheck.dto.response.SafetyCheckTodayResponse
-import com.otoki.powersales.sap.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.safetycheck.exception.AlreadySubmittedException
 import com.otoki.powersales.safetycheck.exception.RequiredItemsMissingException
 import com.otoki.powersales.common.security.GpsConsentFilter

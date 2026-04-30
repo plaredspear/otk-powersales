@@ -8,7 +8,7 @@ import com.otoki.powersales.common.exception.*
 import com.otoki.powersales.sales.repository.DailySalesRepository
 import com.otoki.powersales.event.repository.EventProductRepository
 import com.otoki.powersales.event.repository.EventRepository
-import com.otoki.powersales.sap.repository.EmployeeRepository
+import com.otoki.powersales.employee.repository.EmployeeRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName

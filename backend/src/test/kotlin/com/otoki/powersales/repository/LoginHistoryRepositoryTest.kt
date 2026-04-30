@@ -1,7 +1,7 @@
 package com.otoki.powersales.repository
 
 import com.otoki.powersales.common.entity.LoginHistory
-import com.otoki.powersales.sap.entity.EmployeeInfo
+import com.otoki.powersales.employee.entity.EmployeeInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName

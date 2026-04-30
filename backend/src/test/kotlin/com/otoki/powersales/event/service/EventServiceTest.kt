@@ -2,13 +2,13 @@ package com.otoki.powersales.event.service
 
 import com.otoki.powersales.event.dto.request.EventListRequest
 import com.otoki.powersales.entity.*
-import com.otoki.powersales.sap.entity.*
+import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.common.entity.*
-import com.otoki.powersales.sap.entity.*
+import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.event.exception.EventNotFoundException
 import com.otoki.powersales.event.repository.EventProductRepository
 import com.otoki.powersales.event.repository.EventRepository
-import com.otoki.powersales.sap.repository.EmployeeRepository
+import com.otoki.powersales.employee.repository.EmployeeRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName

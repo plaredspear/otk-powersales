@@ -1,8 +1,8 @@
 package com.otoki.powersales.schedule.repository
 
 import com.otoki.powersales.promotion.entity.PromotionEmployee
-import com.otoki.powersales.sap.entity.Account
-import com.otoki.powersales.sap.entity.Employee
+import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import org.springframework.data.jpa.repository.JpaRepository
 import java.time.LocalDate

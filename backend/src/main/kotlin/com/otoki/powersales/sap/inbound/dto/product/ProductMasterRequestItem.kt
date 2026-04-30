@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
  * SAP 제품 마스터 행 DTO. (Spec #559)
  *
  * 페이로드 키는 SAP 호환을 위해 PascalCase 로 유지한다 (`@JsonProperty` 명시 바인딩).
- * 신규 [com.otoki.powersales.sap.entity.Product] 에 컬럼이 없는 필드는 수신은 하되 무시된다 (D1).
+ * 신규 [com.otoki.powersales.product.entity.Product] 에 컬럼이 없는 필드는 수신은 하되 무시된다 (D1).
  */
 data class ProductMasterRequestItem(
     @JsonProperty("ProductCode") val productCode: String? = null,

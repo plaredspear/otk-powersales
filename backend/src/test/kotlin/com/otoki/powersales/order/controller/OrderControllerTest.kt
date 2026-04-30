@@ -3,7 +3,7 @@ package com.otoki.powersales.order.controller
 
 import com.otoki.powersales.dto.response.*
 import com.otoki.powersales.common.dto.response.*
-import com.otoki.powersales.sap.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.exception.*
 import com.otoki.powersales.common.exception.*
 import com.otoki.powersales.common.security.GpsConsentFilter

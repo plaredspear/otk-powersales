@@ -2,8 +2,8 @@ package com.otoki.powersales.sap.service
 
 import com.otoki.powersales.common.jobrun.ScheduledJobRunContext
 import com.otoki.powersales.common.jobrun.ScheduledJobRunner
-import com.otoki.powersales.sap.repository.AppointmentRepository
-import com.otoki.powersales.sap.repository.EmployeeRepository
+import com.otoki.powersales.schedule.repository.AppointmentRepository
+import com.otoki.powersales.employee.repository.EmployeeRepository
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled

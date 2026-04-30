@@ -4,7 +4,7 @@ import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.sap.dto.response.EmployeeListItem
 import com.otoki.powersales.sap.dto.response.EmployeeListResponse
 import com.otoki.powersales.admin.scope.DataScopeHolder
-import com.otoki.powersales.sap.repository.EmployeeRepository
+import com.otoki.powersales.employee.repository.EmployeeRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service

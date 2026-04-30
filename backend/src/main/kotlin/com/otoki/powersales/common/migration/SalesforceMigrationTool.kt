@@ -8,8 +8,8 @@ import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamHistory
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamMaster
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.entity.PromotionEmployee
-import com.otoki.powersales.sap.entity.AttendInfo
-import com.otoki.powersales.sap.entity.Organization
+import com.otoki.powersales.schedule.entity.AttendInfo
+import com.otoki.powersales.organization.entity.Organization
 import com.otoki.powersales.schedule.entity.AttendanceLog
 
 /**

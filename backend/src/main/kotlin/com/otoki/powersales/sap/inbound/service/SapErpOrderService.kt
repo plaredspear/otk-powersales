@@ -4,15 +4,15 @@ import com.otoki.powersales.sap.auth.audit.SapInboundAudit
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditEventType
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.sap.auth.util.ClientIpResolver
-import com.otoki.powersales.sap.entity.ErpOrder
-import com.otoki.powersales.sap.entity.ErpOrderProduct
+import com.otoki.powersales.order.entity.ErpOrder
+import com.otoki.powersales.order.entity.ErpOrderProduct
 import com.otoki.powersales.sap.inbound.dto.order.ErpOrderDetail
 import com.otoki.powersales.sap.inbound.dto.order.ErpOrderFailure
 import com.otoki.powersales.sap.inbound.dto.order.ErpOrderItemDetail
 import com.otoki.powersales.sap.inbound.dto.order.ErpOrderRequestItem
-import com.otoki.powersales.sap.repository.AccountRepository
-import com.otoki.powersales.sap.repository.ErpOrderProductRepository
-import com.otoki.powersales.sap.repository.ErpOrderRepository
+import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.order.repository.ErpOrderProductRepository
+import com.otoki.powersales.order.repository.ErpOrderRepository
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
@@ -27,7 +27,7 @@ import org.springframework.web.context.request.ServletRequestAttributes
  * - 라인 UPSERT 키: [ErpOrderProduct.externalKey] = `SAPOrderNumber(선두 0 1자 제거) + LineNumber`
  * - 단일 트랜잭션: 헤더 saveAllAndFlush 후 라인 saveAll. 라인 ConstraintViolation 발생 시
  *   전체 트랜잭션 롤백 → 호출자에게 [Exception] 전파 → 500 INTERNAL_ERROR (D3 결정)
- * - Account 룩업: 페이로드 SAPAccountCode 로 [com.otoki.powersales.sap.entity.Account.externalKey]
+ * - Account 룩업: 페이로드 SAPAccountCode 로 [com.otoki.powersales.account.entity.Account.externalKey]
  *   일괄 조회. 미존재 시 해당 헤더 행 failure (라인도 함께 누락). FK 컬럼은 ErpOrder 에 없으므로
  *   검증 용도로만 사용한다.
  * - 부분 실패: Account 매칭 실패 / 필수 필드 누락만 행 단위 failure 처리. saveAll 도중 예외는

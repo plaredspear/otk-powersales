@@ -2,9 +2,9 @@ package com.otoki.powersales.sap.inbound.service
 
 import com.otoki.powersales.sap.auth.audit.SapInboundAudit
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
-import com.otoki.powersales.sap.entity.AccountCategoryMaster
+import com.otoki.powersales.account.entity.AccountCategoryMaster
 import com.otoki.powersales.sap.inbound.dto.account.AccountCategoryRequestItem
-import com.otoki.powersales.sap.repository.AccountCategoryMasterRepository
+import com.otoki.powersales.account.repository.AccountCategoryMasterRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested

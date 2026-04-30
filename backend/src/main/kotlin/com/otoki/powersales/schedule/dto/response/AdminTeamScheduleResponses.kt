@@ -1,7 +1,7 @@
 package com.otoki.powersales.schedule.dto.response
 
-import com.otoki.powersales.sap.entity.Employee
-import com.otoki.powersales.sap.entity.Account
+import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 
 data class TeamMemberDto(

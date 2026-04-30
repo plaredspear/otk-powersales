@@ -6,9 +6,9 @@ package com.otoki.powersales.order.service
 import com.otoki.powersales.dto.request.DraftItemRequest
 import com.otoki.powersales.order.dto.request.OrderDraftRequest
 import com.otoki.powersales.entity.*
-import com.otoki.powersales.sap.entity.*
+import com.otoki.powersales.product.entity.Product
 import com.otoki.powersales.common.entity.*
-import com.otoki.powersales.sap.entity.*
+import com.otoki.powersales.product.entity.Product
 import com.otoki.powersales.exception.ClientNotFoundException
 import com.otoki.powersales.exception.InvalidDeliveryDateException
 import com.otoki.powersales.order.exception.OrderValidationFailedException
@@ -17,7 +17,7 @@ import com.otoki.powersales.order.integration.SapOrderClient
 import com.otoki.powersales.order.integration.SapOrderResult
 import com.otoki.powersales.repository.*
 import com.otoki.powersales.common.repository.*
-import com.otoki.powersales.sap.repository.*
+import com.otoki.powersales.product.repository.ProductRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName

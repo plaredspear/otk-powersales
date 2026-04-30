@@ -20,10 +20,10 @@ import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFSchemaUtils
 import com.otoki.powersales.safetycheck.entity.SafetyCheckItem
 import com.otoki.powersales.safetycheck.entity.SafetyCheckSubmission
-import com.otoki.powersales.sap.entity.Account
-import com.otoki.powersales.sap.entity.Employee
-import com.otoki.powersales.sap.entity.EmployeeInfo
-import com.otoki.powersales.sap.entity.Product
+import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.employee.entity.EmployeeInfo
+import com.otoki.powersales.product.entity.Product
 import com.otoki.powersales.notice.entity.Notice
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
@@ -31,10 +31,10 @@ import com.otoki.powersales.education.entity.EducationCode
 import com.otoki.powersales.education.entity.EducationPost
 import com.otoki.powersales.education.entity.EducationPostAttachment
 import com.otoki.powersales.education.entity.EducationViewHistory
-import com.otoki.powersales.sap.entity.MonthlySalesHistory
+import com.otoki.powersales.sales.entity.MonthlySalesHistory
 import com.otoki.powersales.product.entity.FavoriteProduct
 import com.otoki.powersales.productexpiration.entity.ProductExpiration
-import com.otoki.powersales.sap.entity.ProductBarcode
+import com.otoki.powersales.product.entity.ProductBarcode
 import jakarta.persistence.Column
 import jakarta.persistence.Id
 import jakarta.persistence.Table

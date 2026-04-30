@@ -9,7 +9,7 @@ import com.otoki.powersales.order.exception.InvalidOrderDateRangeException
 import com.otoki.powersales.order.exception.InvalidOrderParameterException
 import com.otoki.powersales.exception.ProductNotFoundException
 import com.otoki.powersales.order.repository.OrderItemRepository
-import com.otoki.powersales.sap.repository.ProductRepository
+import com.otoki.powersales.product.repository.ProductRepository
 import com.otoki.powersales.repository.AccountRepository
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl

@@ -4,13 +4,13 @@ import com.otoki.powersales.sap.auth.audit.SapInboundAudit
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditEventType
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.sap.auth.util.ClientIpResolver
-import com.otoki.powersales.sap.entity.MonthlySalesHistory
+import com.otoki.powersales.sales.entity.MonthlySalesHistory
 import com.otoki.powersales.sap.inbound.dto.sales.ChunkResult
 import com.otoki.powersales.sap.inbound.dto.sales.FailureItem
 import com.otoki.powersales.sap.inbound.dto.sales.MonthlySalesHistoryRequestItem
 import com.otoki.powersales.sap.inbound.dto.sales.SalesHistoryDetail
 import com.otoki.powersales.sap.inbound.exception.SapPayloadTooLargeException
-import com.otoki.powersales.sap.repository.MonthlySalesHistoryRepository
+import com.otoki.powersales.sales.repository.MonthlySalesHistoryRepository
 import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value

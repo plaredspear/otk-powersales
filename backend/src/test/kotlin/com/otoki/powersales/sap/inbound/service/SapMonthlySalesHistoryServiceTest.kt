@@ -2,11 +2,11 @@ package com.otoki.powersales.sap.inbound.service
 
 import com.otoki.powersales.sap.auth.audit.SapInboundAudit
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
-import com.otoki.powersales.sap.entity.MonthlySalesHistory
+import com.otoki.powersales.sales.entity.MonthlySalesHistory
 import com.otoki.powersales.sap.inbound.dto.sales.ChunkResult
 import com.otoki.powersales.sap.inbound.dto.sales.MonthlySalesHistoryRequestItem
 import com.otoki.powersales.sap.inbound.exception.SapPayloadTooLargeException
-import com.otoki.powersales.sap.repository.MonthlySalesHistoryRepository
+import com.otoki.powersales.sales.repository.MonthlySalesHistoryRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach

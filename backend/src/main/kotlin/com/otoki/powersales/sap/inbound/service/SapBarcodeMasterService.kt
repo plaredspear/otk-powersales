@@ -4,13 +4,13 @@ import com.otoki.powersales.sap.auth.audit.SapInboundAudit
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditEventType
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.sap.auth.util.ClientIpResolver
-import com.otoki.powersales.sap.entity.Product
-import com.otoki.powersales.sap.entity.ProductBarcode
+import com.otoki.powersales.product.entity.Product
+import com.otoki.powersales.product.entity.ProductBarcode
 import com.otoki.powersales.sap.inbound.dto.product.BarcodeMasterRequestItem
 import com.otoki.powersales.sap.inbound.dto.product.FailureItem
 import com.otoki.powersales.sap.inbound.dto.product.ProductMasterDetail
-import com.otoki.powersales.sap.repository.ProductBarcodeRepository
-import com.otoki.powersales.sap.repository.ProductRepository
+import com.otoki.powersales.product.repository.ProductBarcodeRepository
+import com.otoki.powersales.product.repository.ProductRepository
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service

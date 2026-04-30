@@ -1,9 +1,9 @@
 package com.otoki.powersales.product.service
 
-import com.otoki.powersales.sap.entity.Product
+import com.otoki.powersales.product.entity.Product
 import com.otoki.powersales.product.exception.InvalidSearchParameterException
 import com.otoki.powersales.product.exception.InvalidSearchTypeException
-import com.otoki.powersales.sap.repository.ProductRepository
+import com.otoki.powersales.product.repository.ProductRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName

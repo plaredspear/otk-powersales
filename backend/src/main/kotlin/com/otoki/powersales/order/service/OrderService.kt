@@ -7,7 +7,7 @@ import com.otoki.powersales.order.exception.*
 import com.otoki.powersales.order.repository.OrderProcessingRecordRepository
 import com.otoki.powersales.order.repository.OrderRejectionRepository
 import com.otoki.powersales.order.repository.OrderRepository
-import com.otoki.powersales.sap.repository.EmployeeRepository
+import com.otoki.powersales.employee.repository.EmployeeRepository
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort

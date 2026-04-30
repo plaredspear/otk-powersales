@@ -2,7 +2,7 @@ package com.otoki.powersales.education.entity
 
 import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.HCTable
-import com.otoki.powersales.sap.entity.Employee
+import com.otoki.powersales.employee.entity.Employee
 import jakarta.persistence.*
 import java.time.LocalDateTime
 

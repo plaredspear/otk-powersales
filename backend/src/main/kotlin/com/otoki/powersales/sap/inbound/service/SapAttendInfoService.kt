@@ -4,14 +4,14 @@ import com.otoki.powersales.sap.auth.audit.SapInboundAudit
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditEventType
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.sap.auth.util.ClientIpResolver
-import com.otoki.powersales.sap.entity.AttendInfo
-import com.otoki.powersales.sap.entity.AttendType
+import com.otoki.powersales.schedule.entity.AttendInfo
+import com.otoki.powersales.schedule.entity.AttendType
 import com.otoki.powersales.sap.inbound.dto.attendance.AttendInfoDetail
 import com.otoki.powersales.sap.inbound.dto.attendance.AttendInfoRequestItem
 import com.otoki.powersales.sap.inbound.dto.sales.ChunkResult
 import com.otoki.powersales.sap.inbound.dto.sales.FailureItem
 import com.otoki.powersales.sap.inbound.exception.SapPayloadTooLargeException
-import com.otoki.powersales.sap.repository.AttendInfoRepository
+import com.otoki.powersales.schedule.repository.AttendInfoRepository
 import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value

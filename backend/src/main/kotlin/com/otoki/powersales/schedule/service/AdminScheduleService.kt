@@ -8,9 +8,9 @@ import com.otoki.powersales.schedule.dto.response.ScheduleUploadResultDto
 import com.otoki.powersales.schedule.exception.*
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.common.exception.BusinessException
-import com.otoki.powersales.sap.repository.AccountRepository
-import com.otoki.powersales.sap.repository.OrganizationRepository
-import com.otoki.powersales.sap.repository.EmployeeRepository
+import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.organization.repository.OrganizationRepository
+import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
@@ -18,7 +18,7 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.http.HttpStatus
-import com.otoki.powersales.sap.repository.MonthlySalesHistoryRepository
+import com.otoki.powersales.sales.repository.MonthlySalesHistoryRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile

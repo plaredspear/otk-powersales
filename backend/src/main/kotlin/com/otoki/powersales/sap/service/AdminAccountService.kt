@@ -4,7 +4,7 @@ import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.admin.scope.DataScopeHolder
 import com.otoki.powersales.sap.dto.response.AccountListItem
 import com.otoki.powersales.sap.dto.response.AccountListResponse
-import com.otoki.powersales.sap.repository.AccountRepository
+import com.otoki.powersales.account.repository.AccountRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service

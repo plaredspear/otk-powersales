@@ -10,10 +10,10 @@ import com.otoki.powersales.safetycheck.repository.SafetyCheckItemRepository
 import com.otoki.powersales.safetycheck.repository.SafetyCheckSubmissionRepository
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
-import com.otoki.powersales.sap.entity.Account
-import com.otoki.powersales.sap.entity.Employee
-import com.otoki.powersales.sap.repository.AccountRepository
-import com.otoki.powersales.sap.repository.EmployeeRepository
+import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.employee.repository.EmployeeRepository
 import jakarta.annotation.PostConstruct
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

@@ -1,7 +1,7 @@
 package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.admin.security.AdminAuthorityFilter
-import com.otoki.powersales.sap.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider

@@ -1,8 +1,8 @@
 package com.otoki.powersales.admin.service
 
 import com.otoki.powersales.admin.dto.DataScope
-import com.otoki.powersales.sap.entity.Employee
-import com.otoki.powersales.sap.repository.EmployeeRepository
+import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.employee.repository.EmployeeRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 

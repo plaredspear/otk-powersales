@@ -4,11 +4,11 @@ import com.otoki.powersales.sap.auth.audit.SapInboundAudit
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditEventType
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.sap.auth.util.ClientIpResolver
-import com.otoki.powersales.sap.entity.SystemCodeMaster
+import com.otoki.powersales.common.entity.SystemCodeMaster
 import com.otoki.powersales.sap.inbound.dto.product.FailureItem
 import com.otoki.powersales.sap.inbound.dto.product.ProductMasterDetail
 import com.otoki.powersales.sap.inbound.dto.product.SystemCodeMasterRequestItem
-import com.otoki.powersales.sap.repository.SystemCodeMasterRepository
+import com.otoki.powersales.common.repository.SystemCodeMasterRepository
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service

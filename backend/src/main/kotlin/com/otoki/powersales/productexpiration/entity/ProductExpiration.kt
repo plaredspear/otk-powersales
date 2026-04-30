@@ -2,9 +2,9 @@ package com.otoki.powersales.productexpiration.entity
 
 import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.HCTable
-import com.otoki.powersales.sap.entity.Account
-import com.otoki.powersales.sap.entity.Employee
-import com.otoki.powersales.sap.entity.Product
+import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.product.entity.Product
 import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate

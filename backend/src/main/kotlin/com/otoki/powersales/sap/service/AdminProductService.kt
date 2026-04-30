@@ -4,7 +4,7 @@ import com.otoki.powersales.sap.dto.response.Category2Node
 import com.otoki.powersales.sap.dto.response.CategoryTree
 import com.otoki.powersales.sap.dto.response.ProductListItem
 import com.otoki.powersales.sap.dto.response.ProductListResponse
-import com.otoki.powersales.sap.repository.ProductRepository
+import com.otoki.powersales.product.repository.ProductRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service

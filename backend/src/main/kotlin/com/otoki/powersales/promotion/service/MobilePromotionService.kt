@@ -7,9 +7,9 @@ import com.otoki.powersales.promotion.exception.PromotionNotFoundException
 import com.otoki.powersales.promotion.repository.PromotionEmployeeRepository
 import com.otoki.powersales.promotion.repository.PromotionRepository
 import com.otoki.powersales.promotion.repository.PromotionTypeRepository
-import com.otoki.powersales.sap.repository.AccountRepository
-import com.otoki.powersales.sap.repository.ProductRepository
-import com.otoki.powersales.sap.repository.EmployeeRepository
+import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.product.repository.ProductRepository
+import com.otoki.powersales.employee.repository.EmployeeRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

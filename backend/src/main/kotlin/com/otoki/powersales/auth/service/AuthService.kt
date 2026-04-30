@@ -14,12 +14,12 @@ import com.otoki.powersales.auth.dto.response.*
 import com.otoki.powersales.common.dto.response.*
 import com.otoki.powersales.common.entity.AgreementHistory
 import com.otoki.powersales.common.entity.LoginHistory
-import com.otoki.powersales.sap.entity.Employee
+import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.auth.exception.*
 import com.otoki.powersales.common.repository.AgreementHistoryRepository
 import com.otoki.powersales.common.repository.AgreementWordRepository
 import com.otoki.powersales.common.repository.LoginHistoryRepository
-import com.otoki.powersales.sap.repository.EmployeeRepository
+import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.common.security.JwtTokenProvider
 import org.slf4j.LoggerFactory
 import org.springframework.security.crypto.password.PasswordEncoder

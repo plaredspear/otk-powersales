@@ -14,7 +14,7 @@ import com.otoki.powersales.admin.repository.UserPermissionRepository
 import com.otoki.powersales.admin.scope.AdminEmployeeHolder
 import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
-import com.otoki.powersales.sap.repository.EmployeeRepository
+import com.otoki.powersales.employee.repository.EmployeeRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -123,7 +123,7 @@ class AdminEmployeePermissionService(
         )
     }
 
-    private fun requireSystemAdmin(): com.otoki.powersales.sap.entity.Employee {
+    private fun requireSystemAdmin(): com.otoki.powersales.employee.entity.Employee {
         val employee = adminEmployeeHolder.employee
             ?: throw AdminForbiddenException()
         if (employee.appAuthority != "시스템관리자") {

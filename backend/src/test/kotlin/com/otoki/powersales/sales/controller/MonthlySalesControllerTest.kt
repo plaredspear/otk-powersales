@@ -2,7 +2,7 @@ package com.otoki.powersales.sales.controller
 
 import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.sales.dto.response.MonthlySalesResponse
-import com.otoki.powersales.sap.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.admin.security.AdminAuthorityFilter

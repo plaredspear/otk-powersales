@@ -10,10 +10,10 @@ import com.otoki.powersales.promotion.exception.*
 import com.otoki.powersales.promotion.repository.PromotionEmployeeRepository
 import com.otoki.powersales.promotion.repository.PromotionRepository
 import com.otoki.powersales.promotion.repository.PromotionTypeRepository
-import com.otoki.powersales.sap.entity.UserRole
-import com.otoki.powersales.sap.repository.AccountRepository
-import com.otoki.powersales.sap.repository.ProductRepository
-import com.otoki.powersales.sap.repository.EmployeeRepository
+import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.product.repository.ProductRepository
+import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort

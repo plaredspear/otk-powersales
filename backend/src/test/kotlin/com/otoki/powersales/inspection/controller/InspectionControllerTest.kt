@@ -3,7 +3,7 @@ package com.otoki.powersales.inspection.controller
 
 import com.otoki.powersales.inspection.dto.response.*
 import com.otoki.powersales.common.dto.response.*
-import com.otoki.powersales.sap.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.admin.security.AdminAuthorityFilter

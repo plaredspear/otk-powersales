@@ -2,7 +2,7 @@ package com.otoki.powersales.promotion.repository
 
 import com.otoki.powersales.promotion.entity.PromotionEmployee
 import com.otoki.powersales.promotion.entity.QPromotionEmployee.Companion.promotionEmployee
-import com.otoki.powersales.sap.entity.QEmployee.Companion.employee
+import com.otoki.powersales.employee.entity.QEmployee.Companion.employee
 import com.querydsl.jpa.impl.JPAQueryFactory
 import java.time.LocalDate
 

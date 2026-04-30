@@ -1,6 +1,6 @@
 package com.otoki.powersales.sap.dto.response
 
-import com.otoki.powersales.sap.entity.Account
+import com.otoki.powersales.account.entity.Account
 
 data class AccountListResponse(
     val content: List<AccountListItem>,

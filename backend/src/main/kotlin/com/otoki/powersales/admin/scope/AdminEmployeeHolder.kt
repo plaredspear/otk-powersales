@@ -1,6 +1,6 @@
 package com.otoki.powersales.admin.scope
 
-import com.otoki.powersales.sap.entity.Employee
+import com.otoki.powersales.employee.entity.Employee
 import org.springframework.stereotype.Component
 import org.springframework.web.context.annotation.RequestScope
 

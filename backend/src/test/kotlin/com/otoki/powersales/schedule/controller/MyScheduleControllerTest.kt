@@ -2,7 +2,7 @@ package com.otoki.powersales.schedule.controller
 
 import com.otoki.powersales.schedule.dto.response.*
 import com.otoki.powersales.common.dto.response.*
-import com.otoki.powersales.sap.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.admin.security.AdminAuthorityFilter

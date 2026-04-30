@@ -8,7 +8,7 @@ import com.otoki.powersales.dto.response.ValidationResultResponse
 import com.otoki.powersales.order.entity.ApprovalStatus
 import com.otoki.powersales.order.entity.Order
 import com.otoki.powersales.order.entity.OrderItem
-import com.otoki.powersales.sap.entity.Product
+import com.otoki.powersales.product.entity.Product
 import com.otoki.powersales.exception.ClientNotFoundException
 import com.otoki.powersales.exception.InvalidDeliveryDateException
 import com.otoki.powersales.order.exception.OrderValidationFailedException
@@ -16,9 +16,9 @@ import com.otoki.powersales.exception.ProductNotFoundException
 import com.otoki.powersales.order.repository.OrderDraftRepository
 import com.otoki.powersales.order.repository.OrderItemRepository
 import com.otoki.powersales.order.repository.OrderRepository
-import com.otoki.powersales.sap.repository.ProductRepository
+import com.otoki.powersales.product.repository.ProductRepository
 import com.otoki.powersales.repository.AccountRepository
-import com.otoki.powersales.sap.repository.EmployeeRepository
+import com.otoki.powersales.employee.repository.EmployeeRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate

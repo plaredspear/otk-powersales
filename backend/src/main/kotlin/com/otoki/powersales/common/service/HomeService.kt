@@ -1,17 +1,17 @@
 package com.otoki.powersales.common.service
 
 import com.otoki.powersales.common.dto.response.HomeResponse
-import com.otoki.powersales.sap.entity.Employee
-import com.otoki.powersales.sap.entity.UserRole
+import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.notice.repository.NoticeRepository
-import com.otoki.powersales.sap.repository.AccountRepository
+import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.safetycheck.service.SafetyCheckService
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
-import com.otoki.powersales.sap.repository.EmployeeRepository
+import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.productexpiration.repository.ProductExpirationRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

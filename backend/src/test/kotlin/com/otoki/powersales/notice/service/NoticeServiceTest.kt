@@ -1,7 +1,7 @@
 package com.otoki.powersales.notice.service
 
-import com.otoki.powersales.sap.entity.Employee
-import com.otoki.powersales.sap.repository.EmployeeRepository
+import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.notice.dto.request.NoticeCreateRequest
 import com.otoki.powersales.notice.dto.request.NoticeUpdateRequest
 import com.otoki.powersales.notice.entity.Notice
@@ -13,8 +13,8 @@ import com.otoki.powersales.notice.exception.InvalidNoticeIdException
 import com.otoki.powersales.notice.exception.NoticePostNotFoundException
 import com.otoki.powersales.notice.repository.NoticeRepository
 import com.otoki.powersales.common.repository.UploadFileRepository
-import com.otoki.powersales.sap.entity.Organization
-import com.otoki.powersales.sap.repository.OrganizationRepository
+import com.otoki.powersales.organization.entity.Organization
+import com.otoki.powersales.organization.repository.OrganizationRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach

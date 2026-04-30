@@ -2,13 +2,13 @@ package com.otoki.powersales.sap.inbound.service
 
 import com.otoki.powersales.sap.auth.audit.SapInboundAudit
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
-import com.otoki.powersales.sap.entity.Account
-import com.otoki.powersales.sap.entity.Employee
-import com.otoki.powersales.sap.entity.Organization
+import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.organization.entity.Organization
 import com.otoki.powersales.sap.inbound.dto.account.ClientMasterRequestItem
-import com.otoki.powersales.sap.repository.AccountRepository
-import com.otoki.powersales.sap.repository.EmployeeRepository
-import com.otoki.powersales.sap.repository.OrganizationRepository
+import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.organization.repository.OrganizationRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested

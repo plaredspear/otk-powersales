@@ -2,7 +2,7 @@ package com.otoki.powersales.education.controller
 
 import com.otoki.powersales.education.dto.response.*
 import com.otoki.powersales.common.dto.response.*
-import com.otoki.powersales.sap.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.education.exception.EducationPostNotFoundException
 import com.otoki.powersales.education.exception.InvalidEducationCategoryException
 import com.otoki.powersales.common.security.GpsConsentFilter
