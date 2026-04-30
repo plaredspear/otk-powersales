@@ -97,9 +97,11 @@ class Employee(
     @Column(name = "email", length = 100)
     var email: String? = null,
 
+    // 외부 키는 `Sex` 이며 Salesforce/SAP 호환을 위해 유지한다 (Spec #565)
     @SFField("DKRetail__Sex__c")
-    @Column(name = "sex", length = 10)
-    var sex: String? = null,
+    @Enumerated(EnumType.STRING)
+    @Column(name = "gender", length = 10)
+    var gender: Gender? = null,
 
     @SFField("DKRetail__StartDate__c")
     @HCColumn("dkretail__startdate__c")

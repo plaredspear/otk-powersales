@@ -11,7 +11,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 data class EmployeeMasterRequestItem(
     @JsonProperty("EmployeeCode") val employeeCode: String? = null,
     @JsonProperty("EmployeeName") val employeeName: String? = null,
-    @JsonProperty("Sex") val sex: String? = null,
+    @JsonProperty("Sex") val gender: String? = null,
     @JsonProperty("HomePhone") val homePhone: String? = null,
     @JsonProperty("WorkPhone") val workPhone: String? = null,
     @JsonProperty("WorkEmail") val workEmail: String? = null,

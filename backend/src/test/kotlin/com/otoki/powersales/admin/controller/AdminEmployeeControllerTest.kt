@@ -75,7 +75,7 @@ class AdminEmployeeControllerTest {
                         employeeCode = "10000001",
                         name = "홍길동",
                         status = "재직",
-                        sex = "남",
+                        gender = "남",
                         orgName = "서울1지점",
                         costCenterCode = "A001",
                         appAuthority = "조장",
@@ -105,6 +105,7 @@ class AdminEmployeeControllerTest {
                 .andExpect(jsonPath("$.data.content[0].employee_code").value("10000001"))
                 .andExpect(jsonPath("$.data.content[0].name").value("홍길동"))
                 .andExpect(jsonPath("$.data.content[0].status").value("재직"))
+                .andExpect(jsonPath("$.data.content[0].gender").value("남"))
                 .andExpect(jsonPath("$.data.content[0].org_name").value("서울1지점"))
                 .andExpect(jsonPath("$.data.content[0].cost_center_code").value("A001"))
                 .andExpect(jsonPath("$.data.content[0].app_authority").value("조장"))
