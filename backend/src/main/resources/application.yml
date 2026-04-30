@@ -116,6 +116,10 @@ sap:
       - sap.order.write
       - sap.attendance.write
     allowed-ips: ${SAP_ALLOWED_IPS:}
+  inbound:
+    sales:
+      chunk-size: 1000
+      max-rows: 50000
 
 springdoc:
   swagger-ui:
