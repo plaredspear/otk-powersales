@@ -106,5 +106,29 @@ class Claim(
     val status: ClaimStatus = ClaimStatus.SUBMITTED,
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    val createdAt: LocalDateTime = LocalDateTime.now()
+    val createdAt: LocalDateTime = LocalDateTime.now(),
+
+    // -- SAP 인바운드 갱신 컬럼 (Spec #561) --
+
+    @SFField("Name")
+    @Column(name = "name", length = 50)
+    var name: String? = null,
+
+    @Column(name = "counsel_number", length = 30)
+    var counselNumber: String? = null,
+
+    @Column(name = "action_code", length = 20)
+    var actionCode: String? = null,
+
+    @Column(name = "action_status", length = 50)
+    var actionStatus: String? = null,
+
+    @Column(name = "act_content", columnDefinition = "text")
+    var actContent: String? = null,
+
+    @Column(name = "reason_type", length = 20)
+    var reasonType: String? = null,
+
+    @Column(name = "cosmos_key", length = 50)
+    var cosmosKey: String? = null
 )

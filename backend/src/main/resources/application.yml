@@ -114,6 +114,7 @@ sap:
       - sap.product.write
       - sap.sales.write
       - sap.order.write
+      - sap.claim.write
       - sap.attendance.write
     allowed-ips: ${SAP_ALLOWED_IPS:}
   inbound:

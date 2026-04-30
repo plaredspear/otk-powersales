@@ -23,7 +23,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
         SapAccountMasterController::class,
         SapEmployeeMasterController::class,
         SapProductMasterController::class,
-        SapSalesHistoryController::class
+        SapSalesHistoryController::class,
+        SapErpOrderController::class,
+        com.otoki.powersales.claim.controller.SapClaimStatusController::class
     ]
 )
 @Order(Ordered.HIGHEST_PRECEDENCE)
