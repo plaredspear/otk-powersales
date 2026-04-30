@@ -1,4 +1,4 @@
-package com.otoki.powersales.sap.service
+package com.otoki.powersales.sap.inbound.service
 
 import com.otoki.powersales.schedule.entity.Appointment
 import com.otoki.powersales.employee.entity.Employee

@@ -1,4 +1,4 @@
-package com.otoki.powersales.sap.dto.response
+package com.otoki.powersales.account.dto.response
 
 import com.otoki.powersales.account.entity.Account
 

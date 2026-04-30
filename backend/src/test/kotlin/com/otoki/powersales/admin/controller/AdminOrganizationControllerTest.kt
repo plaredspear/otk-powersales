@@ -2,8 +2,8 @@ package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.admin.scope.DataScopeHolder
 import com.otoki.powersales.admin.security.AdminAuthorityFilter
-import com.otoki.powersales.sap.dto.response.OrganizationResponse
-import com.otoki.powersales.sap.service.AdminOrganizationService
+import com.otoki.powersales.organization.dto.response.OrganizationResponse
+import com.otoki.powersales.organization.service.AdminOrganizationService
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider

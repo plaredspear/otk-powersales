@@ -1,4 +1,4 @@
-package com.otoki.powersales.sap.dto.response
+package com.otoki.powersales.organization.dto.response
 
 import com.otoki.powersales.organization.entity.Organization
 import java.time.LocalDateTime

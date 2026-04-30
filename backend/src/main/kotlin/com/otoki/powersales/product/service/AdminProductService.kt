@@ -1,9 +1,9 @@
-package com.otoki.powersales.sap.service
+package com.otoki.powersales.product.service
 
-import com.otoki.powersales.sap.dto.response.Category2Node
-import com.otoki.powersales.sap.dto.response.CategoryTree
-import com.otoki.powersales.sap.dto.response.ProductListItem
-import com.otoki.powersales.sap.dto.response.ProductListResponse
+import com.otoki.powersales.product.dto.response.Category2Node
+import com.otoki.powersales.product.dto.response.CategoryTree
+import com.otoki.powersales.product.dto.response.ProductListItem
+import com.otoki.powersales.product.dto.response.ProductListResponse
 import com.otoki.powersales.product.repository.ProductRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
