@@ -56,7 +56,7 @@ export default function PPTMasterFormModal({ open, editingItem, onClose }: Props
           employeeCode: editingItem.employeeCode,
           name: editingItem.employeeName,
           status: null,
-          sex: null,
+          gender: null,
           orgName: editingItem.branchName,
           costCenterCode: editingItem.branchCode,
           appAuthority: null,

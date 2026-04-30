@@ -48,7 +48,7 @@ export default function EmployeePage() {
   const columns: ColumnsType<Employee> = [
     { title: '사번', dataIndex: 'employeeCode', width: 100 },
     { title: '이름', dataIndex: 'name', width: 120 },
-    { title: '성별', dataIndex: 'sex', width: 60, align: 'center', render: (val: string | null) => val ?? '-' },
+    { title: '성별', dataIndex: 'gender', width: 60, align: 'center', render: (val: string | null) => val ?? '-' },
     {
       title: '상태',
       dataIndex: 'status',
