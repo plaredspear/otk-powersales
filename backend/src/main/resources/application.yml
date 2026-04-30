@@ -121,6 +121,9 @@ sap:
     sales:
       chunk-size: 1000
       max-rows: 50000
+    attendance:
+      chunk-size: 1000
+      max-rows: 50000
 
 springdoc:
   swagger-ui:
