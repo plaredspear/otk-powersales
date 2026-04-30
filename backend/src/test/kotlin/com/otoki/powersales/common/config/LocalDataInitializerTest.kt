@@ -38,10 +38,6 @@ import java.util.Optional
 @ExtendWith(MockitoExtension::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("LocalDataInitializer 테스트")
-@org.junit.jupiter.api.Disabled(
-    "LocalDataInitializer 임시 비활성화 — entityManager(@PersistenceContext) 주입 이슈로 인한 사전 실패. " +
-    "나중에 검토하여 적용 여부를 결정한다 (LocalDataInitializer.kt 의 @Component 도 함께 비활성)."
-)
 class LocalDataInitializerTest {
 
     @Mock

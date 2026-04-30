@@ -11,7 +11,6 @@ import com.otoki.powersales.sap.repository.OrganizationRepository
 import com.otoki.powersales.promotion.entity.PromotionType
 import com.otoki.powersales.promotion.repository.PromotionTypeRepository
 import jakarta.persistence.EntityManager
-import jakarta.persistence.PersistenceContext
 import org.slf4j.LoggerFactory
 import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner
@@ -21,10 +20,7 @@ import org.springframework.stereotype.Component
 import org.springframework.transaction.support.TransactionTemplate
 import java.time.LocalDate
 
-// TODO: 임시 비활성화 — entityManager(@PersistenceContext) 주입 이슈로 단위 테스트가 실패한다.
-//       나중에 검토하여 적용 여부를 결정한다 (생성자 주입 전환 또는 ReflectionTestUtils 보강).
-//       재활성화 시 LocalDataInitializerTest 의 @Disabled 도 함께 제거할 것.
-// @Component
+@Component
 @Profile("local")
 class LocalDataInitializer(
     private val employeeRepository: EmployeeRepository,
@@ -34,10 +30,8 @@ class LocalDataInitializer(
     private val organizationRepository: OrganizationRepository,
     private val promotionTypeRepository: PromotionTypeRepository,
     private val transactionTemplate: TransactionTemplate,
+    private val entityManager: EntityManager,
 ) : ApplicationRunner {
-
-    @PersistenceContext
-    private lateinit var entityManager: EntityManager
 
     private val log = LoggerFactory.getLogger(javaClass)
 
