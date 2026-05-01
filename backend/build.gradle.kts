@@ -101,54 +101,6 @@ allOpen {
 	annotation("jakarta.persistence.Embeddable")
 }
 
-// 주석 처리된 Entity를 참조하는 테스트 파일 컴파일 제외 (Phase 2 Entity 활성화 후 복구)
-sourceSets {
-	test {
-		kotlin {
-			exclude(
-				// Spring Boot 4 + H2 240 + Hibernate 7 조합에서 @DataJpaTest 컨텍스트가 조기 종료되는 이슈로 일시 제외 (#538-P1).
-				// "The database has been closed" 발생. 후속 스펙에서 재활성화 예정.
-				"**/NoticeRepositoryTest.kt",
-				// "**/AttendanceControllerTest.kt", // re-enabled: test rewritten for V1 schema
-				"**/ClaimControllerTest.kt",
-				"**/ClientOrderControllerTest.kt",
-				"**/EventControllerTest.kt",
-				"**/InspectionControllerTest.kt",
-				// "**/NoticeControllerTest.kt", // re-enabled: test rewritten for legacy table
-				"**/OrderControllerTest.kt",
-				"**/OrderQueryControllerTest.kt",
-				"**/DailySalesCreateRequestTest.kt",
-				"**/DailySalesCreateResponseTest.kt",
-				"**/DailySalesTest.kt",
-				"**/DailySalesExceptionsTest.kt",
-				"**/AttendanceRepositoryTest.kt",
-				"**/ClaimRepositoryTest.kt",
-				"**/DailySalesRepositoryTest.kt",
-				"**/EducationPostRepositoryTest.kt",
-				"**/ExpiryProductRepositoryTest.kt",
-				"**/InspectionRepositoryTest.kt",
-				"**/NoticePostRepositoryTest.kt",
-				"**/OrderRepositoryTest.kt",
-				"**/SuggestionPhotoRepositoryTest.kt",
-				// "**/AttendanceServiceTest.kt", // re-enabled: test rewritten for V1 schema
-				"**/ClaimServiceTest.kt",
-				"**/ClientOrderServiceTest.kt",
-				"**/DailySalesServiceTest.kt",
-				// "**/EducationServiceTest.kt", // re-enabled: test rewritten for admin CRUD
-				"**/EventServiceTest.kt",
-				// "**/HomeServiceTest.kt", // re-enabled: test rewritten for V1 schema
-				"**/InspectionServiceTest.kt",
-				// "**/MyScheduleServiceTest.kt", // re-enabled: test rewritten for substitute holiday
-				// "**/NoticeServiceTest.kt", // re-enabled: test rewritten for legacy table
-				"**/OrderQueryServiceTest.kt",
-				"**/OrderServiceTest.kt",
-				"**/OrderSubmitServiceTest.kt",
-				"**/SuggestionServiceTest.kt"
-			)
-		}
-	}
-}
-
 tasks.withType<Test> {
 	useJUnitPlatform()
 	systemProperty("spring.profiles.active", "test")
@@ -164,6 +116,13 @@ tasks.test {
 
 	// OpenAPI spec 생성 테스트는 전용 task로만 실행
 	exclude("**/OpenApiSpecGeneratorTest*")
+
+	// Spring Boot 4 + H2 240 + Hibernate 7 조합에서 notice 테이블의 check constraint 가
+	// 빈 SQL 로 부트되어 모든 insert 가 ConstraintViolationException 으로 실패하는 H2 호환성 이슈 (#538-P1).
+	// 후속 스펙 처리 방향: (1) check constraint 의 *표현* 을 PG/H2 모두 동일하게 동작하는 표준 SQL 로 정렬해 재활성화,
+	// (2) PG 전용 기능이라 (1) 이 불가능하면 통합 환경 검증으로 보완하고 본 exclude 유지.
+	// production 행위(check constraint 의미) 자체를 H2 에 맞춰 깎지 않으며, Repository 를 mock 으로 대체하지도 않는다 (BCR-TS-009).
+	exclude("**/NoticeRepositoryTest*")
 }
 
 tasks.register<Test>("generateOpenApiDocs") {
