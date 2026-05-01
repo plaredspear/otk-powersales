@@ -11,6 +11,7 @@ import com.otoki.powersales.auth.exception.WebLoginNotAllowedException
 import com.otoki.powersales.auth.service.AuthService
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
+import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import org.hamcrest.Matchers.containsString
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -43,6 +44,9 @@ class AdminAuthControllerTest {
 
     @MockitoBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
+
+    @MockitoBean
+    private lateinit var sapInboundAuditService: SapInboundAuditService
 
     @MockitoBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter

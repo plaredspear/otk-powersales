@@ -7,6 +7,7 @@ import com.otoki.powersales.admin.security.AdminAuthorityFilter
 import com.otoki.powersales.admin.service.AdminPPTMasterService
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
+import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.common.security.UserPrincipal
 import com.otoki.powersales.promotion.exception.PPTMasterDuplicateException
 import com.otoki.powersales.promotion.exception.PPTMasterNotFoundException
@@ -41,6 +42,7 @@ class AdminPPTMasterControllerTest {
     @Autowired private lateinit var objectMapper: ObjectMapper
     @MockitoBean private lateinit var adminPPTMasterService: AdminPPTMasterService
     @MockitoBean private lateinit var jwtTokenProvider: JwtTokenProvider
+    @MockitoBean private lateinit var sapInboundAuditService: SapInboundAuditService
     @MockitoBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
     @MockitoBean private lateinit var adminAuthorityFilter: AdminAuthorityFilter
 

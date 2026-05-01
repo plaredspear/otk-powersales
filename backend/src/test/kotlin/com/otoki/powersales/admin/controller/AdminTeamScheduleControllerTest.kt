@@ -11,6 +11,7 @@ import com.otoki.powersales.common.dto.response.BranchResponse
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
+import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.common.security.UserPrincipal
 import com.otoki.powersales.auth.entity.UserRole
 import org.junit.jupiter.api.BeforeEach
@@ -47,6 +48,9 @@ class AdminTeamScheduleControllerTest {
 
     @MockitoBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
+
+    @MockitoBean
+    private lateinit var sapInboundAuditService: SapInboundAuditService
 
     @MockitoBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter

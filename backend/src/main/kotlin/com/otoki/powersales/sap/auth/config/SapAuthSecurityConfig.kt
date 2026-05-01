@@ -22,9 +22,10 @@ import org.springframework.security.web.access.AccessDeniedHandler
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
 import tools.jackson.databind.ObjectMapper
 
-// /api/v1/sap/** 전용 SecurityFilterChain. mobile / admin 보다 먼저 매칭되도록 @Order(0).
+// /api/v1/sap/** 전용 SecurityFilterChain.
+// SecurityFilterChain 빈 정렬은 Spring 이 @Bean 메서드(또는 빈 객체 클래스) 의 @Order 만 인식한다.
+// @Configuration 클래스 레벨 @Order 는 무시되어 글로벌 apiSecurityFilterChain 이 먼저 매칭되는 회귀가 발생했었다 (참고: SapResultWrapper 우선순위 fix).
 @Configuration
-@Order(0)
 @EnableConfigurationProperties(SapAuthProperties::class)
 class SapAuthSecurityConfig(
     private val properties: SapAuthProperties,
@@ -34,6 +35,7 @@ class SapAuthSecurityConfig(
 ) {
 
     @Bean
+    @Order(0)
     fun sapApiSecurityFilterChain(http: HttpSecurity): SecurityFilterChain {
         val ipMatcher = IpAllowlistMatcher(properties.allowedIps)
         val ipFilter = SapIpAllowlistFilter(ipMatcher, auditService, objectMapper)

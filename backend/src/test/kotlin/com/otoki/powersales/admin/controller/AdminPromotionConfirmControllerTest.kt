@@ -8,6 +8,7 @@ import com.otoki.powersales.promotion.service.AdminPromotionEmployeeService
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
+import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.common.security.UserPrincipal
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.promotion.exception.*
@@ -36,6 +37,7 @@ class AdminPromotionConfirmControllerTest {
     @MockitoBean private lateinit var adminPromotionEmployeeService: AdminPromotionEmployeeService
     @MockitoBean private lateinit var adminPromotionConfirmService: AdminPromotionConfirmService
     @MockitoBean private lateinit var jwtTokenProvider: JwtTokenProvider
+    @MockitoBean private lateinit var sapInboundAuditService: SapInboundAuditService
     @MockitoBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
     @MockitoBean private lateinit var adminAuthorityFilter: AdminAuthorityFilter
     @MockitoBean private lateinit var gpsConsentFilter: GpsConsentFilter

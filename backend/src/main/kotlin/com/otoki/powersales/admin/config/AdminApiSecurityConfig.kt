@@ -13,7 +13,6 @@ import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
 
 @Configuration
-@Order(1)
 class AdminApiSecurityConfig(
     private val jwtAuthenticationFilter: JwtAuthenticationFilter,
     private val jwtAuthenticationEntryPoint: JwtAuthenticationEntryPoint,
@@ -21,6 +20,7 @@ class AdminApiSecurityConfig(
 ) {
 
     @Bean
+    @Order(1)
     fun adminApiSecurityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
             .securityMatcher("/api/v1/admin/**")

@@ -11,6 +11,7 @@ import com.otoki.powersales.admin.security.AdminAuthorityFilter
 import com.otoki.powersales.admin.service.AdminAlternativeHolidayService
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
+import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.common.security.UserPrincipal
 import com.otoki.powersales.leave.exception.*
 import com.otoki.powersales.auth.entity.UserRole
@@ -44,6 +45,7 @@ class AdminAlternativeHolidayControllerTest {
     @Autowired private lateinit var objectMapper: ObjectMapper
     @MockitoBean private lateinit var adminAlternativeHolidayService: AdminAlternativeHolidayService
     @MockitoBean private lateinit var jwtTokenProvider: JwtTokenProvider
+    @MockitoBean private lateinit var sapInboundAuditService: SapInboundAuditService
     @MockitoBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
     @MockitoBean private lateinit var adminAuthorityFilter: AdminAuthorityFilter
 

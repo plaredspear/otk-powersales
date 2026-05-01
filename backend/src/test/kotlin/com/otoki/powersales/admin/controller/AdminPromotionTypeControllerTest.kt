@@ -8,6 +8,7 @@ import com.otoki.powersales.promotion.service.AdminPromotionTypeService
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
+import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.common.security.UserPrincipal
 import com.otoki.powersales.promotion.exception.PromotionTypeDuplicateException
 import com.otoki.powersales.promotion.exception.PromotionTypeNotFoundException
@@ -39,6 +40,7 @@ class AdminPromotionTypeControllerTest {
 
     @MockitoBean private lateinit var adminPromotionTypeService: AdminPromotionTypeService
     @MockitoBean private lateinit var jwtTokenProvider: JwtTokenProvider
+    @MockitoBean private lateinit var sapInboundAuditService: SapInboundAuditService
     @MockitoBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
     @MockitoBean private lateinit var adminAuthorityFilter: AdminAuthorityFilter
     @MockitoBean private lateinit var gpsConsentFilter: GpsConsentFilter
