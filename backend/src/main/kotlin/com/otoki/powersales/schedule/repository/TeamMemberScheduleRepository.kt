@@ -22,6 +22,16 @@ interface TeamMemberScheduleRepository : JpaRepository<TeamMemberSchedule, Long>
 
     fun existsByEmployeeAndWorkingDateAndWorkingType(employee: Employee, workingDate: LocalDate, workingType: String): Boolean
 
+    /**
+     * Spec #553 - SAP attend_info Status='Y' 분기에서 동일 직원·기간·workingType 일정 일괄 삭제 대상 조회.
+     */
+    fun findAllByEmployeeAndWorkingDateBetweenAndWorkingType(
+        employee: Employee,
+        startDate: LocalDate,
+        endDate: LocalDate,
+        workingType: String
+    ): List<TeamMemberSchedule>
+
     fun existsByEmployeeAndAccountAndWorkingDateBetween(employee: Employee, account: Account, startDate: LocalDate, endDate: LocalDate): Boolean
 
     fun findByEmployeeAndAccountAndWorkingDate(employee: Employee, account: Account, workingDate: LocalDate): TeamMemberSchedule?

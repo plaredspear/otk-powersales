@@ -8,6 +8,7 @@ import com.otoki.powersales.schedule.entity.AttendInfo
 import com.otoki.powersales.schedule.entity.AttendType
 import com.otoki.powersales.sap.inbound.dto.attendance.AttendInfoDetail
 import com.otoki.powersales.sap.inbound.dto.attendance.AttendInfoRequestItem
+import com.otoki.powersales.sap.inbound.dto.attendance.ScheduleConversionSummary
 import com.otoki.powersales.sap.inbound.dto.sales.ChunkResult
 import com.otoki.powersales.sap.inbound.dto.sales.FailureItem
 import com.otoki.powersales.sap.inbound.exception.SapPayloadTooLargeException
@@ -31,12 +32,16 @@ import java.time.format.DateTimeParseException
  * - 한 호출에 대량 데이터 가능성 → [chunkSize] 단위 청크 분할
  * - 청크 단위 [ChunkedUpsertHelper] 의 REQUIRES_NEW 트랜잭션 처리
  * - AttendType 룩업 ([AttendType.fromCode]) 실패 시 원본 코드 그대로 저장 (D3 결정)
+ *
+ * Spec #553: 청크 INSERT 커밋 후, 연차류 코드를 [AttendInfoToScheduleConverter] 로
+ * `team_member_schedule` 일정으로 변환한다. 변환 실패는 INSERT 롤백을 유발하지 않는다.
  */
 @Service
 class SapAttendInfoService(
     private val attendInfoRepository: AttendInfoRepository,
     private val chunkedUpsertHelper: ChunkedUpsertHelper,
     private val auditService: SapInboundAuditService,
+    private val scheduleConverter: AttendInfoToScheduleConverter,
     @Value("\${sap.inbound.attendance.chunk-size:1000}") private val chunkSize: Int,
     @Value("\${sap.inbound.attendance.max-rows:50000}") private val maxRows: Int
 ) {
@@ -52,10 +57,14 @@ class SapAttendInfoService(
         val chunkResults = mutableListOf<ChunkResult>()
         val allFailures = mutableListOf<FailureItem>()
         var totalSuccess = 0
+        var aggregatedSummary = ScheduleConversionSummary.ZERO
+        var converterCalled = false
+        var converterSucceeded = false
 
         chunks.forEachIndexed { idx, chunk ->
+            val savedThisChunk = mutableListOf<AttendInfo>()
             try {
-                val result = chunkedUpsertHelper.processChunk(chunk) { rows -> processChunkRows(rows) }
+                val result = chunkedUpsertHelper.processChunk(chunk) { rows -> processChunkRows(rows, savedThisChunk) }
                 allFailures += result.failures
                 totalSuccess += result.successCount
                 val status = when {
@@ -73,18 +82,36 @@ class SapAttendInfoService(
                     allFailures += FailureItem(identifier(item), reason)
                 }
             }
+
+            if (savedThisChunk.isNotEmpty()) {
+                converterCalled = true
+                try {
+                    aggregatedSummary += scheduleConverter.convert(savedThisChunk)
+                    converterSucceeded = true
+                } catch (ex: Exception) {
+                    log.error("AttendInfo schedule conversion chunk {} failed: {}", idx, ex.message, ex)
+                    recordScheduleConversionFailed(idx, ex)
+                }
+            }
         }
 
         recordAccepted(items.size, totalSuccess, allFailures.size, chunks.size)
+        if (converterSucceeded) {
+            recordScheduleConversion(aggregatedSummary)
+        }
         return AttendInfoDetail(
             successCount = totalSuccess,
             failureCount = allFailures.size,
             failures = allFailures,
-            chunks = chunkResults
+            chunks = chunkResults,
+            scheduleConversion = if (converterCalled) aggregatedSummary else null
         )
     }
 
-    private fun processChunkRows(rows: List<AttendInfoRequestItem>): ChunkProcessResult {
+    private fun processChunkRows(
+        rows: List<AttendInfoRequestItem>,
+        savedSink: MutableList<AttendInfo>
+    ): ChunkProcessResult {
         val failures = mutableListOf<FailureItem>()
         val toSave = mutableListOf<AttendInfo>()
 
@@ -132,7 +159,7 @@ class SapAttendInfoService(
         }
 
         if (toSave.isNotEmpty()) {
-            attendInfoRepository.saveAll(toSave)
+            savedSink += attendInfoRepository.saveAll(toSave)
         }
 
         return ChunkProcessResult(toSave.size, failures)
@@ -166,6 +193,43 @@ class SapAttendInfoService(
                 clientIp = clientIp,
                 receivedCount = received,
                 reason = "success=$success failure=$failure chunks=$chunks"
+            )
+        )
+    }
+
+    private fun recordScheduleConversion(summary: ScheduleConversionSummary) {
+        val request = currentRequest()
+        val endpoint = request?.requestURI ?: ""
+        val httpMethod = request?.method
+        val clientIp = request?.let { ClientIpResolver.resolve(it) } ?: ""
+        val clientId = SecurityContextHolder.getContext().authentication?.name
+        auditService.record(
+            SapInboundAudit(
+                eventType = SapInboundAuditEventType.SCHEDULE_CONVERSION,
+                clientId = clientId,
+                endpoint = endpoint,
+                httpMethod = httpMethod,
+                clientIp = clientIp,
+                reason = summary.toReason()
+            )
+        )
+    }
+
+    private fun recordScheduleConversionFailed(chunkIndex: Int, ex: Exception) {
+        val request = currentRequest()
+        val endpoint = request?.requestURI ?: ""
+        val httpMethod = request?.method
+        val clientIp = request?.let { ClientIpResolver.resolve(it) } ?: ""
+        val clientId = SecurityContextHolder.getContext().authentication?.name
+        val reason = "chunk=$chunkIndex error=${ex.message?.take(150)}"
+        auditService.record(
+            SapInboundAudit(
+                eventType = SapInboundAuditEventType.SCHEDULE_CONVERSION_FAILED,
+                clientId = clientId,
+                endpoint = endpoint,
+                httpMethod = httpMethod,
+                clientIp = clientIp,
+                reason = reason
             )
         )
     }
