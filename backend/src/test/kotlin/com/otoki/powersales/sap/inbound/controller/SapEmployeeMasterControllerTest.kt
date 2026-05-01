@@ -12,6 +12,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.kotlin.any
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -130,31 +133,31 @@ class SapEmployeeMasterControllerTest {
                 .andExpect(jsonPath("$.RESULT_DETAIL.failures[0].reason").value("EmployeeName 필수"))
         }
 
-        @Test
-        @DisplayName("실패 - reqItemList 누락 -> INVALID_PAYLOAD")
-        fun upsert_missingReqItemList() {
+        @ParameterizedTest(name = "{0} → status={1}, RESULT_CODE=INVALID_PAYLOAD")
+        @MethodSource("com.otoki.powersales.sap.inbound.controller.SapEmployeeMasterControllerTest#invalidPayloadCases")
+        @DisplayName("실패 - INVALID_PAYLOAD 변형들")
+        fun upsert_invalidPayload(case: String, expectedStatus: Int, payload: String) {
             mockMvc.perform(
                 post("/api/v1/sap/employee")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content("""{"other": []}""")
+                    .content(payload)
             )
-                .andExpect(status().isBadRequest)
+                .andExpect(status().`is`(expectedStatus))
                 .andExpect(jsonPath("$.RESULT_CODE").value("INVALID_PAYLOAD"))
 
             verify(sapEmployeeMasterService, never()).upsert(any())
         }
+    }
 
-        @Test
-        @DisplayName("실패 - reqItemList 빈 배열 -> INVALID_PAYLOAD")
-        fun upsert_emptyReqItemList() {
-            mockMvc.perform(
-                post("/api/v1/sap/employee")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content("""{"reqItemList": []}""")
-            )
-                .andExpect(jsonPath("$.RESULT_CODE").value("INVALID_PAYLOAD"))
-
-            verify(sapEmployeeMasterService, never()).upsert(any())
-        }
+    companion object {
+        @JvmStatic
+        fun invalidPayloadCases(): List<Arguments> = listOf(
+            Arguments.of("빈 객체", 400, """{}"""),
+            Arguments.of("외부 래퍼 키 오타 (snake_case 잘못 사용)", 400, """{"req_item_list": [{"EmployeeCode":"E0001234"}]}"""),
+            Arguments.of("reqItemList 명시적 null", 400, """{"reqItemList": null}"""),
+            Arguments.of("reqItemList 빈 배열", 422, """{"reqItemList": []}"""),
+            Arguments.of("malformed JSON", 400, """{"reqItemList": ["""),
+            Arguments.of("reqItemList 가 array 아닌 type", 400, """{"reqItemList": "not-array"}""")
+        )
     }
 }

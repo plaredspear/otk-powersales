@@ -13,6 +13,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.kotlin.any
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -133,29 +136,16 @@ class SapAccountMasterControllerTest {
                 .andExpect(jsonPath("$.RESULT_DETAIL.failures[0].reason").value("Name 필수"))
         }
 
-        @Test
-        @DisplayName("실패 - req_item_list 누락 -> INVALID_PAYLOAD")
-        fun upsert_missingReqItemList() {
+        @ParameterizedTest(name = "{0} → status={1}, RESULT_CODE=INVALID_PAYLOAD")
+        @MethodSource("com.otoki.powersales.sap.inbound.controller.SapAccountMasterControllerTest#invalidAccountPayloadCases")
+        @DisplayName("실패 - INVALID_PAYLOAD 변형들")
+        fun upsert_invalidPayload(case: String, expectedStatus: Int, payload: String) {
             mockMvc.perform(
                 post("/api/v1/sap/account")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content("""{"other": []}""")
+                    .content(payload)
             )
-                .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.RESULT_CODE").value("INVALID_PAYLOAD"))
-
-            verify(sapClientMasterService, never()).upsert(any())
-        }
-
-        @Test
-        @DisplayName("실패 - req_item_list 빈 배열 -> INVALID_PAYLOAD")
-        fun upsert_emptyReqItemList() {
-            mockMvc.perform(
-                post("/api/v1/sap/account")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content("""{"req_item_list": []}""")
-            )
-                .andExpect(status().`is`(422))
+                .andExpect(status().`is`(expectedStatus))
                 .andExpect(jsonPath("$.RESULT_CODE").value("INVALID_PAYLOAD"))
 
             verify(sapClientMasterService, never()).upsert(any())
@@ -192,18 +182,41 @@ class SapAccountMasterControllerTest {
                 .andExpect(jsonPath("$.RESULT_DETAIL.success_count").value(2))
         }
 
-        @Test
-        @DisplayName("실패 - req_item_list null -> INVALID_PAYLOAD")
-        fun upsert_missingReqItemList() {
+        @ParameterizedTest(name = "{0} → status={1}, RESULT_CODE=INVALID_PAYLOAD")
+        @MethodSource("com.otoki.powersales.sap.inbound.controller.SapAccountMasterControllerTest#invalidAccountCategoryPayloadCases")
+        @DisplayName("실패 - INVALID_PAYLOAD 변형들")
+        fun upsert_invalidPayload(case: String, expectedStatus: Int, payload: String) {
             mockMvc.perform(
                 post("/api/v1/sap/account-category")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content("""{}""")
+                    .content(payload)
             )
-                .andExpect(status().isBadRequest)
+                .andExpect(status().`is`(expectedStatus))
                 .andExpect(jsonPath("$.RESULT_CODE").value("INVALID_PAYLOAD"))
 
             verify(sapAccountCategoryService, never()).upsert(any())
         }
+    }
+
+    companion object {
+        @JvmStatic
+        fun invalidAccountPayloadCases(): List<Arguments> = listOf(
+            Arguments.of("빈 객체", 400, """{}"""),
+            Arguments.of("외부 래퍼 키 오타 (camelCase 잘못 사용)", 400, """{"reqItemList": [{"SAPAccountCode":"1032619"}]}"""),
+            Arguments.of("req_item_list 명시적 null", 400, """{"req_item_list": null}"""),
+            Arguments.of("req_item_list 빈 배열", 422, """{"req_item_list": []}"""),
+            Arguments.of("malformed JSON", 400, """{"req_item_list": ["""),
+            Arguments.of("req_item_list 가 array 아닌 type", 400, """{"req_item_list": "not-array"}""")
+        )
+
+        @JvmStatic
+        fun invalidAccountCategoryPayloadCases(): List<Arguments> = listOf(
+            Arguments.of("빈 객체", 400, """{}"""),
+            Arguments.of("외부 래퍼 키 오타 (camelCase 잘못 사용)", 400, """{"reqItemList": [{"AccountCode":"Z001"}]}"""),
+            Arguments.of("req_item_list 명시적 null", 400, """{"req_item_list": null}"""),
+            Arguments.of("req_item_list 빈 배열", 422, """{"req_item_list": []}"""),
+            Arguments.of("malformed JSON", 400, """{"req_item_list": ["""),
+            Arguments.of("req_item_list 가 array 아닌 type", 400, """{"req_item_list": "not-array"}""")
+        )
     }
 }

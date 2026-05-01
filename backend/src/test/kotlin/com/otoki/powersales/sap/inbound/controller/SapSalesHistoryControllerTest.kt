@@ -14,6 +14,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.kotlin.any
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -107,15 +110,16 @@ class SapSalesHistoryControllerTest {
                 .andExpect(jsonPath("$.RESULT_DETAIL.chunks[0].status").value("success"))
         }
 
-        @Test
-        @DisplayName("실패 - reqItemList 빈 배열 -> 422 INVALID_PAYLOAD")
-        fun upsert_emptyList() {
+        @ParameterizedTest(name = "{0} → status={1}, RESULT_CODE=INVALID_PAYLOAD")
+        @MethodSource("com.otoki.powersales.sap.inbound.controller.SapSalesHistoryControllerTest#invalidDailyPayloadCases")
+        @DisplayName("실패 - INVALID_PAYLOAD 변형들")
+        fun upsert_invalidPayload(case: String, expectedStatus: Int, payload: String) {
             mockMvc.perform(
                 post("/api/v1/sap/daily-sales-history")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content("""{"reqItemList": []}""")
+                    .content(payload)
             )
-                .andExpect(status().`is`(422))
+                .andExpect(status().`is`(expectedStatus))
                 .andExpect(jsonPath("$.RESULT_CODE").value("INVALID_PAYLOAD"))
 
             verify(sapDailySalesHistoryService, never()).upsert(any())
@@ -185,18 +189,41 @@ class SapSalesHistoryControllerTest {
                 .andExpect(jsonPath("$.RESULT_DETAIL.success_count").value(1))
         }
 
-        @Test
-        @DisplayName("실패 - reqItemList 누락")
-        fun upsert_missingReqItemList() {
+        @ParameterizedTest(name = "{0} → status={1}, RESULT_CODE=INVALID_PAYLOAD")
+        @MethodSource("com.otoki.powersales.sap.inbound.controller.SapSalesHistoryControllerTest#invalidMonthlyPayloadCases")
+        @DisplayName("실패 - INVALID_PAYLOAD 변형들")
+        fun upsert_invalidPayload(case: String, expectedStatus: Int, payload: String) {
             mockMvc.perform(
                 post("/api/v1/sap/monthly-sales-history")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content("""{}""")
+                    .content(payload)
             )
-                .andExpect(status().isBadRequest)
+                .andExpect(status().`is`(expectedStatus))
                 .andExpect(jsonPath("$.RESULT_CODE").value("INVALID_PAYLOAD"))
 
             verify(sapMonthlySalesHistoryService, never()).upsert(any())
         }
+    }
+
+    companion object {
+        @JvmStatic
+        fun invalidDailyPayloadCases(): List<Arguments> = listOf(
+            Arguments.of("빈 객체", 400, """{}"""),
+            Arguments.of("외부 래퍼 키 오타 (snake_case 잘못 사용)", 400, """{"req_item_list": [{"SAPAccountCode":"1032619","SalesDate":"20260427"}]}"""),
+            Arguments.of("reqItemList 명시적 null", 400, """{"reqItemList": null}"""),
+            Arguments.of("reqItemList 빈 배열", 422, """{"reqItemList": []}"""),
+            Arguments.of("malformed JSON", 400, """{"reqItemList": ["""),
+            Arguments.of("reqItemList 가 array 아닌 type", 400, """{"reqItemList": "not-array"}""")
+        )
+
+        @JvmStatic
+        fun invalidMonthlyPayloadCases(): List<Arguments> = listOf(
+            Arguments.of("빈 객체", 400, """{}"""),
+            Arguments.of("외부 래퍼 키 오타 (snake_case 잘못 사용)", 400, """{"req_item_list": [{"SAPAccountCode":"1032619","SalesYearMonth":"202604"}]}"""),
+            Arguments.of("reqItemList 명시적 null", 400, """{"reqItemList": null}"""),
+            Arguments.of("reqItemList 빈 배열", 422, """{"reqItemList": []}"""),
+            Arguments.of("malformed JSON", 400, """{"reqItemList": ["""),
+            Arguments.of("reqItemList 가 array 아닌 type", 400, """{"reqItemList": "not-array"}""")
+        )
     }
 }

@@ -14,6 +14,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.kotlin.any
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -134,15 +137,16 @@ class SapProductMasterControllerTest {
                 .andExpect(jsonPath("$.RESULT_DETAIL.failures[0].identifier").value("100200"))
         }
 
-        @Test
-        @DisplayName("실패 - reqItemList 누락 -> INVALID_PAYLOAD")
-        fun upsert_missingReqItemList() {
+        @ParameterizedTest(name = "{0} → status={1}, RESULT_CODE=INVALID_PAYLOAD")
+        @MethodSource("com.otoki.powersales.sap.inbound.controller.SapProductMasterControllerTest#invalidProductPayloadCases")
+        @DisplayName("실패 - INVALID_PAYLOAD 변형들")
+        fun upsert_invalidPayload(case: String, expectedStatus: Int, payload: String) {
             mockMvc.perform(
                 post("/api/v1/sap/product")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content("""{"other": []}""")
+                    .content(payload)
             )
-                .andExpect(status().isBadRequest)
+                .andExpect(status().`is`(expectedStatus))
                 .andExpect(jsonPath("$.RESULT_CODE").value("INVALID_PAYLOAD"))
 
             verify(sapProductMasterService, never()).upsert(any())
@@ -178,15 +182,16 @@ class SapProductMasterControllerTest {
                 .andExpect(jsonPath("$.RESULT_DETAIL.success_count").value(1))
         }
 
-        @Test
-        @DisplayName("실패 - reqItemList 빈 배열 -> INVALID_PAYLOAD")
-        fun upsert_emptyReqItemList() {
+        @ParameterizedTest(name = "{0} → status={1}, RESULT_CODE=INVALID_PAYLOAD")
+        @MethodSource("com.otoki.powersales.sap.inbound.controller.SapProductMasterControllerTest#invalidBarcodePayloadCases")
+        @DisplayName("실패 - INVALID_PAYLOAD 변형들")
+        fun upsert_invalidPayload(case: String, expectedStatus: Int, payload: String) {
             mockMvc.perform(
                 post("/api/v1/sap/product-barcode")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content("""{"reqItemList": []}""")
+                    .content(payload)
             )
-                .andExpect(status().`is`(422))
+                .andExpect(status().`is`(expectedStatus))
                 .andExpect(jsonPath("$.RESULT_CODE").value("INVALID_PAYLOAD"))
 
             verify(sapBarcodeMasterService, never()).upsert(any())
@@ -222,18 +227,51 @@ class SapProductMasterControllerTest {
                 .andExpect(jsonPath("$.RESULT_DETAIL.success_count").value(1))
         }
 
-        @Test
-        @DisplayName("실패 - reqItemList null -> INVALID_PAYLOAD")
-        fun upsert_missingReqItemList() {
+        @ParameterizedTest(name = "{0} → status={1}, RESULT_CODE=INVALID_PAYLOAD")
+        @MethodSource("com.otoki.powersales.sap.inbound.controller.SapProductMasterControllerTest#invalidSystemCodePayloadCases")
+        @DisplayName("실패 - INVALID_PAYLOAD 변형들")
+        fun upsert_invalidPayload(case: String, expectedStatus: Int, payload: String) {
             mockMvc.perform(
                 post("/api/v1/sap/system-code")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content("""{}""")
+                    .content(payload)
             )
-                .andExpect(status().isBadRequest)
+                .andExpect(status().`is`(expectedStatus))
                 .andExpect(jsonPath("$.RESULT_CODE").value("INVALID_PAYLOAD"))
 
             verify(sapSystemCodeMasterService, never()).upsert(any())
         }
+    }
+
+    companion object {
+        @JvmStatic
+        fun invalidProductPayloadCases(): List<Arguments> = listOf(
+            Arguments.of("빈 객체", 400, """{}"""),
+            Arguments.of("외부 래퍼 키 오타 (snake_case 잘못 사용)", 400, """{"req_item_list": [{"ProductCode":"100100"}]}"""),
+            Arguments.of("reqItemList 명시적 null", 400, """{"reqItemList": null}"""),
+            Arguments.of("reqItemList 빈 배열", 422, """{"reqItemList": []}"""),
+            Arguments.of("malformed JSON", 400, """{"reqItemList": ["""),
+            Arguments.of("reqItemList 가 array 아닌 type", 400, """{"reqItemList": "not-array"}""")
+        )
+
+        @JvmStatic
+        fun invalidBarcodePayloadCases(): List<Arguments> = listOf(
+            Arguments.of("빈 객체", 400, """{}"""),
+            Arguments.of("외부 래퍼 키 오타 (snake_case 잘못 사용)", 400, """{"req_item_list": [{"ProductCode":"100100","ProductUnit":"EA","ProductSequence":"001","ProductBarcode":"8801045123456"}]}"""),
+            Arguments.of("reqItemList 명시적 null", 400, """{"reqItemList": null}"""),
+            Arguments.of("reqItemList 빈 배열", 422, """{"reqItemList": []}"""),
+            Arguments.of("malformed JSON", 400, """{"reqItemList": ["""),
+            Arguments.of("reqItemList 가 array 아닌 type", 400, """{"reqItemList": "not-array"}""")
+        )
+
+        @JvmStatic
+        fun invalidSystemCodePayloadCases(): List<Arguments> = listOf(
+            Arguments.of("빈 객체", 400, """{}"""),
+            Arguments.of("외부 래퍼 키 오타 (snake_case 잘못 사용)", 400, """{"req_item_list": [{"CompanyCode":"1000","GroupCode":"H10010","DetailCode":"10"}]}"""),
+            Arguments.of("reqItemList 명시적 null", 400, """{"reqItemList": null}"""),
+            Arguments.of("reqItemList 빈 배열", 422, """{"reqItemList": []}"""),
+            Arguments.of("malformed JSON", 400, """{"reqItemList": ["""),
+            Arguments.of("reqItemList 가 array 아닌 type", 400, """{"reqItemList": "not-array"}""")
+        )
     }
 }
