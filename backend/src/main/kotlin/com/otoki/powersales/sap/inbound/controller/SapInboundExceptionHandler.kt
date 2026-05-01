@@ -32,6 +32,7 @@ import org.springframework.web.context.request.ServletRequestAttributes
  */
 @RestControllerAdvice(
     assignableTypes = [
+        SapOrganizeMasterController::class,
         SapAccountMasterController::class,
         SapEmployeeMasterController::class,
         SapProductMasterController::class,

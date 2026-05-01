@@ -1,6 +1,7 @@
 package com.otoki.powersales.sap.inbound.service
 
 import com.otoki.powersales.sap.auth.sanity.SapDestructiveEndpoint
+import com.otoki.powersales.sap.inbound.dto.organize.OrganizeMasterDetail
 import com.otoki.powersales.sap.inbound.dto.organize.OrganizeMasterRequestItem
 import com.otoki.powersales.sap.inbound.exception.SapInvalidPayloadException
 import com.otoki.powersales.organization.repository.OrganizationRepository
@@ -26,12 +27,17 @@ class SapOrganizeMasterService(
      */
     @Transactional
     @SapDestructiveEndpoint(threshold = 20, countArgName = "items")
-    fun replaceAll(items: List<OrganizeMasterRequestItem>) {
+    fun replaceAll(items: List<OrganizeMasterRequestItem>): OrganizeMasterDetail {
         acquireOrganizationLock()
         validateItems(items)
         organizationRepository.deleteAllInBatch()
         organizationRepository.flush()
-        organizationRepository.saveAll(items.map { it.toEntity() })
+        val saved = organizationRepository.saveAll(items.map { it.toEntity() })
+        return OrganizeMasterDetail(
+            successCount = saved.count(),
+            failureCount = 0,
+            failures = emptyList()
+        )
     }
 
     private fun validateItems(items: List<OrganizeMasterRequestItem>) {

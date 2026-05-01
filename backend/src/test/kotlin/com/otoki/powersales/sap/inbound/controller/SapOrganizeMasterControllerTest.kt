@@ -5,6 +5,7 @@ import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
+import com.otoki.powersales.sap.inbound.dto.organize.OrganizeMasterDetail
 import com.otoki.powersales.sap.inbound.exception.SapInvalidPayloadException
 import com.otoki.powersales.sap.inbound.service.SapOrganizeMasterService
 import org.junit.jupiter.api.BeforeEach
@@ -13,7 +14,6 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -96,9 +96,10 @@ class SapOrganizeMasterControllerTest {
     inner class ReplaceOrganizations {
 
         @Test
-        @DisplayName("성공 - 200 + SUCCESS")
+        @DisplayName("성공 - 200 + RESULT_CODE=200 + RESULT_DETAIL.success_count")
         fun replace_success() {
-            doNothing().whenever(sapOrganizeMasterService).replaceAll(any())
+            whenever(sapOrganizeMasterService.replaceAll(any()))
+                .thenReturn(OrganizeMasterDetail(successCount = 1, failureCount = 0, failures = emptyList()))
 
             mockMvc.perform(
                 post("/api/v1/sap/organization")
@@ -106,8 +107,12 @@ class SapOrganizeMasterControllerTest {
                     .content(samplePayload())
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("SUCCESS"))
+                .andExpect(jsonPath("$.RESULT_CODE").value("200"))
+                .andExpect(jsonPath("$.RESULT_MSG").value("OK"))
+                .andExpect(jsonPath("$.RESULT_DETAIL.success_count").value(1))
+                .andExpect(jsonPath("$.RESULT_DETAIL.failure_count").value(0))
+                .andExpect(jsonPath("$.RESULT_DETAIL.failures").isArray)
+                .andExpect(jsonPath("$.RESULT_DETAIL.failures").isEmpty)
 
             val captor = argumentCaptor<List<com.otoki.powersales.sap.inbound.dto.organize.OrganizeMasterRequestItem>>()
             verify(sapOrganizeMasterService).replaceAll(captor.capture())
@@ -117,7 +122,8 @@ class SapOrganizeMasterControllerTest {
         @Test
         @DisplayName("성공 - PascalCase 키가 정확히 매핑됨")
         fun replace_pascalCaseKeysMapped() {
-            doNothing().whenever(sapOrganizeMasterService).replaceAll(any())
+            whenever(sapOrganizeMasterService.replaceAll(any()))
+                .thenReturn(OrganizeMasterDetail(successCount = 1, failureCount = 0, failures = emptyList()))
 
             mockMvc.perform(
                 post("/api/v1/sap/organization")
@@ -135,7 +141,7 @@ class SapOrganizeMasterControllerTest {
         }
 
         @Test
-        @DisplayName("실패 - 서비스가 INVALID_PAYLOAD 예외를 던지면 422")
+        @DisplayName("실패 - 서비스가 INVALID_PAYLOAD 예외를 던지면 422 + RESULT_CODE=INVALID_PAYLOAD")
         fun replace_invalidPayload() {
             whenever(sapOrganizeMasterService.replaceAll(any()))
                 .thenThrow(SapInvalidPayloadException("필수 필드 누락 (line 2)"))
@@ -146,12 +152,12 @@ class SapOrganizeMasterControllerTest {
                     .content(samplePayload())
             )
                 .andExpect(status().`is`(422))
-                .andExpect(jsonPath("$.error.code").value("INVALID_PAYLOAD"))
-                .andExpect(jsonPath("$.error.message").value("필수 필드 누락 (line 2)"))
+                .andExpect(jsonPath("$.RESULT_CODE").value("INVALID_PAYLOAD"))
+                .andExpect(jsonPath("$.RESULT_MSG").value("필수 필드 누락 (line 2)"))
         }
 
         @Test
-        @DisplayName("실패 - req_item_list 누락 -> 422 INVALID_PAYLOAD")
+        @DisplayName("실패 - req_item_list 누락 -> 400 + RESULT_CODE=INVALID_PAYLOAD")
         fun replace_missingReqItemList() {
             val payload = """{"other_field": []}"""
 
@@ -161,6 +167,7 @@ class SapOrganizeMasterControllerTest {
                     .content(payload)
             )
                 .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.RESULT_CODE").value("INVALID_PAYLOAD"))
 
             verify(sapOrganizeMasterService, never()).replaceAll(any())
         }

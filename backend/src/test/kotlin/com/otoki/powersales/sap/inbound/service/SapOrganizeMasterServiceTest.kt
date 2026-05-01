@@ -4,6 +4,7 @@ import com.otoki.powersales.organization.entity.Organization
 import com.otoki.powersales.sap.inbound.dto.organize.OrganizeMasterRequestItem
 import com.otoki.powersales.sap.inbound.exception.SapInvalidPayloadException
 import com.otoki.powersales.organization.repository.OrganizationRepository
+import org.mockito.kotlin.doAnswer
 import jakarta.persistence.EntityManager
 import jakarta.persistence.Query
 import org.assertj.core.api.Assertions.assertThat
@@ -56,12 +57,13 @@ class SapOrganizeMasterServiceTest {
     inner class ReplaceAllSuccess {
 
         @Test
-        @DisplayName("단일 행 - DELETE all + saveAll 호출")
+        @DisplayName("단일 행 - DELETE all + saveAll 호출, detail 반환")
         fun replaceAll_singleItem() {
             stubAdvisoryLock()
+            stubSaveAllEcho()
             val items = listOf(item("0"))
 
-            service.replaceAll(items)
+            val detail = service.replaceAll(items)
 
             verify(entityManager).createNativeQuery("SELECT pg_advisory_xact_lock(:key)")
             verify(nativeQuery).setParameter(eq("key"), eq(5560001L))
@@ -74,40 +76,59 @@ class SapOrganizeMasterServiceTest {
             assertThat(captor.firstValue[0].costCenterLevel2).isEqualTo("100")
             assertThat(captor.firstValue[0].orgCodeLevel5).isEqualTo("1300")
             assertThat(captor.firstValue[0].orgNameLevel5).isEqualTo("지점0")
+
+            assertThat(detail.successCount).isEqualTo(1)
+            assertThat(detail.failureCount).isEqualTo(0)
+            assertThat(detail.failures).isEmpty()
         }
 
         @Test
-        @DisplayName("다중 행 - 모두 신규 Organization 으로 변환되어 저장")
+        @DisplayName("다중 행 - 모두 신규 Organization 으로 변환되어 저장, successCount 일치")
         fun replaceAll_multipleItems() {
             stubAdvisoryLock()
+            stubSaveAllEcho()
             val items = listOf(item("1"), item("2"), item("3"))
 
-            service.replaceAll(items)
+            val detail = service.replaceAll(items)
 
             val captor = argumentCaptor<List<Organization>>()
             verify(organizationRepository).saveAll(captor.capture())
             assertThat(captor.firstValue).hasSize(3)
             assertThat(captor.firstValue.map { it.orgNameLevel5 })
                 .containsExactly("지점1", "지점2", "지점3")
+
+            assertThat(detail.successCount).isEqualTo(3)
+            assertThat(detail.failureCount).isEqualTo(0)
+            assertThat(detail.failures).isEmpty()
         }
 
         @Test
         @DisplayName("일부 필드만 채워진 행 - 행 전체 null 만 아니면 통과")
         fun replaceAll_partialFields() {
             stubAdvisoryLock()
+            stubSaveAllEcho()
             val items = listOf(
                 OrganizeMasterRequestItem(
                     ccCd5 = "1111", orgCd5 = "11110", orgNm5 = "서울지점"
                 )
             )
 
-            service.replaceAll(items)
+            val detail = service.replaceAll(items)
 
             val captor = argumentCaptor<List<Organization>>()
             verify(organizationRepository).saveAll(captor.capture())
             assertThat(captor.firstValue).hasSize(1)
             assertThat(captor.firstValue[0].costCenterLevel5).isEqualTo("1111")
             assertThat(captor.firstValue[0].costCenterLevel2).isNull()
+
+            assertThat(detail.successCount).isEqualTo(1)
+        }
+
+        private fun stubSaveAllEcho() {
+            doAnswer { invocation ->
+                @Suppress("UNCHECKED_CAST")
+                invocation.arguments[0] as List<Organization>
+            }.whenever(organizationRepository).saveAll(any<List<Organization>>())
         }
     }
 
