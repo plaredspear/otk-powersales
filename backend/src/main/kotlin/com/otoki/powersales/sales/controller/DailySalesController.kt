@@ -16,14 +16,14 @@ import org.springframework.web.bind.annotation.*
  * 일매출 관련 API Controller
  * /
 @RestController
-@RequestMapping("/api/v1/events/{eventId}/daily-sales")
+@RequestMapping("/api/v1/mobile/events/{eventId}/daily-sales")
 class DailySalesController(
     private val dailySalesService: DailySalesService
 ) {
 
     / **
      * 일매출 등록
-     * POST /api/v1/events/{eventId}/daily-sales
+     * POST /api/v1/mobile/events/{eventId}/daily-sales
      *
      * - multipart/form-data로 전송
      * - 대표제품 또는 기타제품 중 최소 하나 입력 필수
@@ -45,7 +45,7 @@ class DailySalesController(
 
     / **
      * 일매출 임시저장
-     * POST /api/v1/events/{eventId}/daily-sales/draft
+     * POST /api/v1/mobile/events/{eventId}/daily-sales/draft
      *
      * - multipart/form-data로 전송
      * - 모든 필드 선택적 (부분 저장 허용)

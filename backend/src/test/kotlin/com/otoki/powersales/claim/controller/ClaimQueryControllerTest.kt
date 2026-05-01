@@ -64,7 +64,7 @@ class ClaimQueryControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/v1/claims - 클레임 목록 조회")
+    @DisplayName("GET /api/v1/mobile/claims - 클레임 목록 조회")
     inner class GetClaimsTests {
 
         @Test
@@ -86,7 +86,7 @@ class ClaimQueryControllerTest {
             )
             whenever(claimQueryService.getClaims(eq(1L), isNull(), isNull())).thenReturn(items)
 
-            mockMvc.perform(get("/api/v1/claims"))
+            mockMvc.perform(get("/api/v1/mobile/claims"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
@@ -103,7 +103,7 @@ class ClaimQueryControllerTest {
                 .thenReturn(emptyList())
 
             mockMvc.perform(
-                get("/api/v1/claims")
+                get("/api/v1/mobile/claims")
                     .param("startDate", "2026-04-01")
                     .param("endDate", "2026-04-08")
             )
@@ -120,7 +120,7 @@ class ClaimQueryControllerTest {
                 .thenThrow(InvalidDateFormatException())
 
             mockMvc.perform(
-                get("/api/v1/claims")
+                get("/api/v1/mobile/claims")
                     .param("startDate", "20260401")
             )
                 .andExpect(status().isBadRequest)
@@ -134,7 +134,7 @@ class ClaimQueryControllerTest {
                 .thenThrow(InvalidDateRangeException())
 
             mockMvc.perform(
-                get("/api/v1/claims")
+                get("/api/v1/mobile/claims")
                     .param("startDate", "2026-04-10")
                     .param("endDate", "2026-04-01")
             )
@@ -144,7 +144,7 @@ class ClaimQueryControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/v1/claims/{claimId} - 클레임 상세 조회")
+    @DisplayName("GET /api/v1/mobile/claims/{claimId} - 클레임 상세 조회")
     inner class GetClaimDetailTests {
 
         @Test
@@ -180,7 +180,7 @@ class ClaimQueryControllerTest {
             )
             whenever(claimQueryService.getClaimDetail(eq(1L), eq(1L))).thenReturn(detail)
 
-            mockMvc.perform(get("/api/v1/claims/1"))
+            mockMvc.perform(get("/api/v1/mobile/claims/1"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.claim_id").value(1))
@@ -196,7 +196,7 @@ class ClaimQueryControllerTest {
             whenever(claimQueryService.getClaimDetail(eq(1L), eq(999L)))
                 .thenThrow(ClaimNotFoundException(999L))
 
-            mockMvc.perform(get("/api/v1/claims/999"))
+            mockMvc.perform(get("/api/v1/mobile/claims/999"))
                 .andExpect(status().isNotFound)
                 .andExpect(jsonPath("$.error.code").value("CLAIM_NOT_FOUND"))
         }
@@ -207,7 +207,7 @@ class ClaimQueryControllerTest {
             whenever(claimQueryService.getClaimDetail(eq(1L), eq(2L)))
                 .thenThrow(ClaimNotFoundException(2L))
 
-            mockMvc.perform(get("/api/v1/claims/2"))
+            mockMvc.perform(get("/api/v1/mobile/claims/2"))
                 .andExpect(status().isNotFound)
                 .andExpect(jsonPath("$.error.code").value("CLAIM_NOT_FOUND"))
         }

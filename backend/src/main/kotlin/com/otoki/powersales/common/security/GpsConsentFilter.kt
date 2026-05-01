@@ -17,11 +17,11 @@ class GpsConsentFilter(
 
     companion object {
         private val EXEMPT_PATHS = listOf(
-            "/api/v1/auth/login",
-            "/api/v1/auth/refresh",
-            "/api/v1/auth/gps-consent",
-            "/api/v1/auth/change-password",
-            "/api/v1/auth/logout",
+            "/api/v1/mobile/auth/login",
+            "/api/v1/mobile/auth/refresh",
+            "/api/v1/mobile/auth/gps-consent",
+            "/api/v1/mobile/auth/change-password",
+            "/api/v1/mobile/auth/logout",
             "/api/health",
             "/api/v1/admin/"
         )

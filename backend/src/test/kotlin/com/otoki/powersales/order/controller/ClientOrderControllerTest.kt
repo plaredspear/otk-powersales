@@ -71,7 +71,7 @@ class ClientOrderControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/v1/client-orders - 목록 조회")
+    @DisplayName("GET /api/v1/mobile/client-orders - 목록 조회")
     inner class GetClientOrders {
 
         @Test
@@ -107,7 +107,7 @@ class ClientOrderControllerTest {
 
             // when & then
             mockMvc.perform(
-                get("/api/v1/client-orders")
+                get("/api/v1/mobile/client-orders")
                     .param("clientId", clientId.toString())
             )
                 .andExpect(status().isOk)
@@ -154,7 +154,7 @@ class ClientOrderControllerTest {
 
             // when & then
             mockMvc.perform(
-                get("/api/v1/client-orders")
+                get("/api/v1/mobile/client-orders")
                     .param("clientId", clientId.toString())
                     .param("deliveryDate", "2024-03-15")
             )
@@ -193,7 +193,7 @@ class ClientOrderControllerTest {
 
             // when & then
             mockMvc.perform(
-                get("/api/v1/client-orders")
+                get("/api/v1/mobile/client-orders")
                     .param("clientId", clientId.toString())
                     .param("page", page.toString())
                     .param("size", size.toString())
@@ -225,7 +225,7 @@ class ClientOrderControllerTest {
 
             // when & then
             mockMvc.perform(
-                get("/api/v1/client-orders")
+                get("/api/v1/mobile/client-orders")
                     .param("clientId", clientId.toString())
             )
                 .andExpect(status().isOk)
@@ -240,7 +240,7 @@ class ClientOrderControllerTest {
         fun getClientOrders_missingClientId_badRequest() {
             // when & then
             mockMvc.perform(
-                get("/api/v1/client-orders")
+                get("/api/v1/mobile/client-orders")
             )
                 .andExpect(status().isBadRequest)
         }
@@ -263,7 +263,7 @@ class ClientOrderControllerTest {
 
             // when & then
             mockMvc.perform(
-                get("/api/v1/client-orders")
+                get("/api/v1/mobile/client-orders")
                     .param("clientId", clientId.toString())
             )
                 .andExpect(status().isNotFound)
@@ -290,7 +290,7 @@ class ClientOrderControllerTest {
 
             // when & then
             mockMvc.perform(
-                get("/api/v1/client-orders")
+                get("/api/v1/mobile/client-orders")
                     .param("clientId", clientId.toString())
             )
                 .andExpect(status().isForbidden)
@@ -301,7 +301,7 @@ class ClientOrderControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/v1/client-orders/{sapOrderNumber} - 상세 조회")
+    @DisplayName("GET /api/v1/mobile/client-orders/{sapOrderNumber} - 상세 조회")
     inner class GetClientOrderDetail {
 
         @Test
@@ -349,7 +349,7 @@ class ClientOrderControllerTest {
 
             // when & then
             mockMvc.perform(
-                get("/api/v1/client-orders/{sapOrderNumber}", sapOrderNumber)
+                get("/api/v1/mobile/client-orders/{sapOrderNumber}", sapOrderNumber)
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
@@ -407,7 +407,7 @@ class ClientOrderControllerTest {
 
             // when & then
             mockMvc.perform(
-                get("/api/v1/client-orders/{sapOrderNumber}", sapOrderNumber)
+                get("/api/v1/mobile/client-orders/{sapOrderNumber}", sapOrderNumber)
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
@@ -430,7 +430,7 @@ class ClientOrderControllerTest {
 
             // when & then
             mockMvc.perform(
-                get("/api/v1/client-orders/{sapOrderNumber}", sapOrderNumber)
+                get("/api/v1/mobile/client-orders/{sapOrderNumber}", sapOrderNumber)
             )
                 .andExpect(status().isNotFound)
                 .andExpect(jsonPath("$.success").value(false))
@@ -453,7 +453,7 @@ class ClientOrderControllerTest {
 
             // when & then
             mockMvc.perform(
-                get("/api/v1/client-orders/{sapOrderNumber}", sapOrderNumber)
+                get("/api/v1/mobile/client-orders/{sapOrderNumber}", sapOrderNumber)
             )
                 .andExpect(status().isForbidden)
                 .andExpect(jsonPath("$.success").value(false))

@@ -67,7 +67,7 @@ class HomeControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/v1/home - 홈 데이터 조회")
+    @DisplayName("GET /api/v1/mobile/home - 홈 데이터 조회")
     inner class GetHomeData {
 
         @Test
@@ -123,7 +123,7 @@ class HomeControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/home")
+                get("/api/v1/mobile/home")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
@@ -236,7 +236,7 @@ class HomeControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/home")
+                get("/api/v1/mobile/home")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
@@ -308,7 +308,7 @@ class HomeControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/home")
+                get("/api/v1/mobile/home")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
@@ -339,7 +339,7 @@ class HomeControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/home")
+                get("/api/v1/mobile/home")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isNotFound)

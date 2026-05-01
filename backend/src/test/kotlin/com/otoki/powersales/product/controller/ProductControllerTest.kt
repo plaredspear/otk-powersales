@@ -86,7 +86,7 @@ class ProductControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/products/search")
+                get("/api/v1/mobile/products/search")
                     .param("query", "열라면")
                     .contentType(MediaType.APPLICATION_JSON)
             )
@@ -118,7 +118,7 @@ class ProductControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/products/search")
+                get("/api/v1/mobile/products/search")
                     .param("query", "8801045570716")
                     .param("type", "barcode")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -139,7 +139,7 @@ class ProductControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/products/search")
+                get("/api/v1/mobile/products/search")
                     .param("query", "존재하지않는제품")
                     .contentType(MediaType.APPLICATION_JSON)
             )
@@ -162,7 +162,7 @@ class ProductControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/products/search")
+                get("/api/v1/mobile/products/search")
                     .param("query", "라면")
                     .param("page", "1")
                     .param("size", "5")
@@ -191,7 +191,7 @@ class ProductControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/products/search")
+                get("/api/v1/mobile/products/search")
                     .param("query", "열")
                     .contentType(MediaType.APPLICATION_JSON)
             )
@@ -210,7 +210,7 @@ class ProductControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/products/search")
+                get("/api/v1/mobile/products/search")
                     .param("query", "열라면")
                     .param("type", "invalid")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -229,7 +229,7 @@ class ProductControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/products/search")
+                get("/api/v1/mobile/products/search")
                     .param("query", "abc")
                     .param("type", "barcode")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -244,7 +244,7 @@ class ProductControllerTest {
         fun searchProducts_missingQuery_returnsBadRequest() {
             // When & Then
             mockMvc.perform(
-                get("/api/v1/products/search")
+                get("/api/v1/mobile/products/search")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isBadRequest)

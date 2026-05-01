@@ -109,7 +109,7 @@ class MonthlySalesControllerTest {
 
         // When & Then
         mockMvc.perform(
-            get("/api/v1/sales/monthly")
+            get("/api/v1/mobile/sales/monthly")
                 .param("yearMonth", "202602")
                 .param("customerId", "C001")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -131,7 +131,7 @@ class MonthlySalesControllerTest {
     fun getMonthlySales_missingYearMonth() {
         // When & Then
         mockMvc.perform(
-            get("/api/v1/sales/monthly")
+            get("/api/v1/mobile/sales/monthly")
                 .contentType(MediaType.APPLICATION_JSON)
         )
             .andExpect(status().isBadRequest)
@@ -142,7 +142,7 @@ class MonthlySalesControllerTest {
     fun getMonthlySales_invalidYearMonthFormat() {
         // When & Then
         mockMvc.perform(
-            get("/api/v1/sales/monthly")
+            get("/api/v1/mobile/sales/monthly")
                 .param("yearMonth", "2026-02")
                 .contentType(MediaType.APPLICATION_JSON)
         )
@@ -169,7 +169,7 @@ class MonthlySalesControllerTest {
 
         // When & Then
         mockMvc.perform(
-            get("/api/v1/sales/monthly")
+            get("/api/v1/mobile/sales/monthly")
                 .param("yearMonth", "202602")
                 .contentType(MediaType.APPLICATION_JSON)
         )

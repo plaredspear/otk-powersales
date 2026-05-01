@@ -73,10 +73,10 @@ class AttendanceControllerTest {
         SecurityContextHolder.getContext().authentication = authentication
     }
 
-    // ========== POST /api/v1/attendance ==========
+    // ========== POST /api/v1/mobile/attendance ==========
 
     @Nested
-    @DisplayName("POST /api/v1/attendance - 출근등록")
+    @DisplayName("POST /api/v1/mobile/attendance - 출근등록")
     inner class RegisterTests {
 
         @Test
@@ -109,7 +109,7 @@ class AttendanceControllerTest {
 
             // When & Then
             mockMvc.perform(
-                post("/api/v1/attendance")
+                post("/api/v1/mobile/attendance")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson)
             )
@@ -144,7 +144,7 @@ class AttendanceControllerTest {
 
             // When & Then
             mockMvc.perform(
-                post("/api/v1/attendance")
+                post("/api/v1/mobile/attendance")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson)
             )
@@ -173,7 +173,7 @@ class AttendanceControllerTest {
 
             // When & Then
             mockMvc.perform(
-                post("/api/v1/attendance")
+                post("/api/v1/mobile/attendance")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson)
             )
@@ -201,7 +201,7 @@ class AttendanceControllerTest {
 
             // When & Then
             mockMvc.perform(
-                post("/api/v1/attendance")
+                post("/api/v1/mobile/attendance")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson)
             )
@@ -230,7 +230,7 @@ class AttendanceControllerTest {
 
             // When & Then
             mockMvc.perform(
-                post("/api/v1/attendance")
+                post("/api/v1/mobile/attendance")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson)
             )
@@ -259,7 +259,7 @@ class AttendanceControllerTest {
 
             // When & Then
             mockMvc.perform(
-                post("/api/v1/attendance")
+                post("/api/v1/mobile/attendance")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson)
             )
@@ -288,7 +288,7 @@ class AttendanceControllerTest {
 
             // When & Then
             mockMvc.perform(
-                post("/api/v1/attendance")
+                post("/api/v1/mobile/attendance")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson)
             )
@@ -298,10 +298,10 @@ class AttendanceControllerTest {
         }
     }
 
-    // ========== GET /api/v1/attendance/accounts ==========
+    // ========== GET /api/v1/mobile/attendance/accounts ==========
 
     @Nested
-    @DisplayName("GET /api/v1/attendance/accounts - 거래처 목록 조회")
+    @DisplayName("GET /api/v1/mobile/attendance/accounts - 거래처 목록 조회")
     inner class GetAccountListTests {
 
         @Test
@@ -343,7 +343,7 @@ class AttendanceControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/attendance/accounts")
+                get("/api/v1/mobile/attendance/accounts")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
@@ -395,7 +395,7 @@ class AttendanceControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/attendance/accounts")
+                get("/api/v1/mobile/attendance/accounts")
                     .param("keyword", "이마트")
                     .contentType(MediaType.APPLICATION_JSON)
             )
@@ -409,10 +409,10 @@ class AttendanceControllerTest {
         }
     }
 
-    // ========== GET /api/v1/attendance/status ==========
+    // ========== GET /api/v1/mobile/attendance/status ==========
 
     @Nested
-    @DisplayName("GET /api/v1/attendance/status - 출근 현황 조회")
+    @DisplayName("GET /api/v1/mobile/attendance/status - 출근 현황 조회")
     inner class GetStatusTests {
 
         @Test
@@ -449,7 +449,7 @@ class AttendanceControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/attendance/status")
+                get("/api/v1/mobile/attendance/status")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)

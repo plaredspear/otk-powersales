@@ -95,7 +95,7 @@ class ClaimControllerTest {
 
         // When & Then
         mockMvc.perform(
-            multipart("/api/v1/claims")
+            multipart("/api/v1/mobile/claims")
                 .file(defectPhoto)
                 .file(labelPhoto)
                 .param("storeId", "1")
@@ -148,7 +148,7 @@ class ClaimControllerTest {
 
         // When & Then
         mockMvc.perform(
-            multipart("/api/v1/claims")
+            multipart("/api/v1/mobile/claims")
                 .file(defectPhoto)
                 .file(labelPhoto)
                 .file(receiptPhoto)
@@ -210,7 +210,7 @@ class ClaimControllerTest {
 
         // When & Then
         mockMvc.perform(
-            get("/api/v1/claims/form-data")
+            get("/api/v1/mobile/claims/form-data")
                 .contentType(MediaType.APPLICATION_JSON)
         )
             .andExpect(status().isOk)

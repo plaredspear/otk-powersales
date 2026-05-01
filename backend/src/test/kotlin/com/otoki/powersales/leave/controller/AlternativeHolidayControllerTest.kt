@@ -56,7 +56,7 @@ class AlternativeHolidayControllerTest {
     }
 
     @Nested
-    @DisplayName("POST /api/v1/alternative-holidays - 대체휴무 신청")
+    @DisplayName("POST /api/v1/mobile/alternative-holidays - 대체휴무 신청")
     inner class CreateTests {
 
         @Test
@@ -78,7 +78,7 @@ class AlternativeHolidayControllerTest {
             )
 
             mockMvc.perform(
-                post("/api/v1/alternative-holidays")
+                post("/api/v1/mobile/alternative-holidays")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -102,7 +102,7 @@ class AlternativeHolidayControllerTest {
             )
 
             mockMvc.perform(
-                post("/api/v1/alternative-holidays")
+                post("/api/v1/mobile/alternative-holidays")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -122,7 +122,7 @@ class AlternativeHolidayControllerTest {
             )
 
             mockMvc.perform(
-                post("/api/v1/alternative-holidays")
+                post("/api/v1/mobile/alternative-holidays")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -136,7 +136,7 @@ class AlternativeHolidayControllerTest {
             val invalidJson = """{"actual_work_date": null}"""
 
             mockMvc.perform(
-                post("/api/v1/alternative-holidays")
+                post("/api/v1/mobile/alternative-holidays")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(invalidJson)
             )
@@ -145,7 +145,7 @@ class AlternativeHolidayControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/v1/alternative-holidays - 대체휴무 이력 조회")
+    @DisplayName("GET /api/v1/mobile/alternative-holidays - 대체휴무 이력 조회")
     inner class GetTests {
 
         @Test
@@ -166,7 +166,7 @@ class AlternativeHolidayControllerTest {
                 .thenReturn(items)
 
             mockMvc.perform(
-                get("/api/v1/alternative-holidays")
+                get("/api/v1/mobile/alternative-holidays")
                     .param("startDate", "2026-01-01")
                     .param("endDate", "2026-03-31")
             )
@@ -183,7 +183,7 @@ class AlternativeHolidayControllerTest {
             whenever(alternativeHolidayService.getAlternativeHolidays(eq(1L), any(), any()))
                 .thenReturn(emptyList())
 
-            mockMvc.perform(get("/api/v1/alternative-holidays"))
+            mockMvc.perform(get("/api/v1/mobile/alternative-holidays"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)

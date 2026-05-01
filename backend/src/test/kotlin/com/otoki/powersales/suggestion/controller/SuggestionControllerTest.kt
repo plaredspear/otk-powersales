@@ -80,7 +80,7 @@ class SuggestionControllerTest {
 
         // When & Then
         mockMvc.perform(
-            multipart("/api/v1/suggestions")
+            multipart("/api/v1/mobile/suggestions")
                 .param("category", "NEW_PRODUCT")
                 .param("title", "저당 라면 시리즈 출시 제안")
                 .param("content", "건강을 생각하는 소비자들을 위한 저당 라면을 제안합니다.")
@@ -121,7 +121,7 @@ class SuggestionControllerTest {
 
         // When & Then
         mockMvc.perform(
-            multipart("/api/v1/suggestions")
+            multipart("/api/v1/mobile/suggestions")
                 .file(photo1)
                 .file(photo2)
                 .param("category", "NEW_PRODUCT")
@@ -151,7 +151,7 @@ class SuggestionControllerTest {
 
         // When & Then
         mockMvc.perform(
-            multipart("/api/v1/suggestions")
+            multipart("/api/v1/mobile/suggestions")
                 .param("category", "EXISTING_PRODUCT")
                 .param("productCode", "PROD001")
                 .param("title", "진라면 용기 개선 제안")
@@ -166,7 +166,7 @@ class SuggestionControllerTest {
     fun createSuggestion_missingTitle_fail() {
         // When & Then
         mockMvc.perform(
-            multipart("/api/v1/suggestions")
+            multipart("/api/v1/mobile/suggestions")
                 .param("category", "NEW_PRODUCT")
                 .param("content", "내용")
                 .contentType(MediaType.MULTIPART_FORM_DATA)
@@ -179,7 +179,7 @@ class SuggestionControllerTest {
     fun createSuggestion_missingContent_fail() {
         // When & Then
         mockMvc.perform(
-            multipart("/api/v1/suggestions")
+            multipart("/api/v1/mobile/suggestions")
                 .param("category", "NEW_PRODUCT")
                 .param("title", "제목")
                 .contentType(MediaType.MULTIPART_FORM_DATA)
@@ -192,7 +192,7 @@ class SuggestionControllerTest {
     fun createSuggestion_missingCategory_fail() {
         // When & Then
         mockMvc.perform(
-            multipart("/api/v1/suggestions")
+            multipart("/api/v1/mobile/suggestions")
                 .param("title", "제목")
                 .param("content", "내용")
                 .contentType(MediaType.MULTIPART_FORM_DATA)

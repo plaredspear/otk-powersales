@@ -69,7 +69,7 @@ class NoticeControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/v1/notices - 목록 조회")
+    @DisplayName("GET /api/v1/mobile/notices - 목록 조회")
     inner class GetPostsTests {
 
         @Test
@@ -90,7 +90,7 @@ class NoticeControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/notices")
+                get("/api/v1/mobile/notices")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
@@ -125,7 +125,7 @@ class NoticeControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/notices")
+                get("/api/v1/mobile/notices")
                     .param("category", "COMPANY")
                     .param("search", "영업")
                     .param("page", "1")
@@ -153,7 +153,7 @@ class NoticeControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/notices")
+                get("/api/v1/mobile/notices")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
@@ -170,7 +170,7 @@ class NoticeControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/notices")
+                get("/api/v1/mobile/notices")
                     .param("category", "INVALID")
                     .contentType(MediaType.APPLICATION_JSON)
             )
@@ -181,7 +181,7 @@ class NoticeControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/v1/notices/{noticeId} - 상세 조회")
+    @DisplayName("GET /api/v1/mobile/notices/{noticeId} - 상세 조회")
     inner class GetNoticeDetailTests {
 
         @Test
@@ -205,7 +205,7 @@ class NoticeControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/notices/42")
+                get("/api/v1/mobile/notices/42")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
@@ -241,7 +241,7 @@ class NoticeControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/notices/10")
+                get("/api/v1/mobile/notices/10")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
@@ -257,7 +257,7 @@ class NoticeControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/notices/999")
+                get("/api/v1/mobile/notices/999")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isNotFound)
@@ -270,7 +270,7 @@ class NoticeControllerTest {
         fun getNoticeDetail_invalidId() {
             // When & Then
             mockMvc.perform(
-                get("/api/v1/notices/0")
+                get("/api/v1/mobile/notices/0")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isBadRequest)
@@ -283,7 +283,7 @@ class NoticeControllerTest {
         fun getNoticeDetail_negativeId() {
             // When & Then
             mockMvc.perform(
-                get("/api/v1/notices/-1")
+                get("/api/v1/mobile/notices/-1")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isBadRequest)

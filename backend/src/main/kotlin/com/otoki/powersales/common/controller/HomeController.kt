@@ -14,14 +14,14 @@ import org.springframework.web.bind.annotation.RestController
  * 홈 화면 API Controller
  */
 @RestController
-@RequestMapping("/api/v1/home")
+@RequestMapping("/api/v1/mobile/home")
 class HomeController(
     private val homeService: HomeService
 ) {
 
     /**
      * 홈 데이터 조회
-     * GET /api/v1/home
+     * GET /api/v1/mobile/home
      */
     @GetMapping
     fun getHomeData(

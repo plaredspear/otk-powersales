@@ -69,7 +69,7 @@ class LeaderScheduleControllerTest {
     }
 
     @Nested
-    @DisplayName("POST /api/v1/leader/team-member-schedule")
+    @DisplayName("POST /api/v1/mobile/leader/team-member-schedule")
     inner class CreateTeamMemberSchedule {
 
         @Test
@@ -88,7 +88,7 @@ class LeaderScheduleControllerTest {
                 .thenReturn(response)
 
             mockMvc.perform(
-                post("/api/v1/leader/team-member-schedule")
+                post("/api/v1/mobile/leader/team-member-schedule")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -196,7 +196,7 @@ class LeaderScheduleControllerTest {
                 }
             """.trimIndent()
             mockMvc.perform(
-                post("/api/v1/leader/team-member-schedule")
+                post("/api/v1/mobile/leader/team-member-schedule")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(invalidJson)
             )
@@ -209,13 +209,13 @@ class LeaderScheduleControllerTest {
                 .thenThrow(ex)
         }
 
-        private fun postValid() = post("/api/v1/leader/team-member-schedule")
+        private fun postValid() = post("/api/v1/mobile/leader/team-member-schedule")
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(createValidRequest()))
     }
 
     @Nested
-    @DisplayName("GET /api/v1/leader/team-members")
+    @DisplayName("GET /api/v1/mobile/leader/team-members")
     inner class GetTeamMembers {
         @Test
         @DisplayName("성공 - 팀원 목록 반환")
@@ -233,7 +233,7 @@ class LeaderScheduleControllerTest {
                 )
             )
 
-            mockMvc.perform(get("/api/v1/leader/team-members"))
+            mockMvc.perform(get("/api/v1/mobile/leader/team-members"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
@@ -248,14 +248,14 @@ class LeaderScheduleControllerTest {
             whenever(leaderScheduleService.getTeamMembers(eq(leaderId)))
                 .thenThrow(LeaderScheduleNotLeaderException())
 
-            mockMvc.perform(get("/api/v1/leader/team-members"))
+            mockMvc.perform(get("/api/v1/mobile/leader/team-members"))
                 .andExpect(status().isForbidden)
                 .andExpect(jsonPath("$.error.code").value("NOT_LEADER"))
         }
     }
 
     @Nested
-    @DisplayName("GET /api/v1/leader/accounts")
+    @DisplayName("GET /api/v1/mobile/leader/accounts")
     inner class GetAccounts {
         @Test
         @DisplayName("성공 - 거래처 목록 반환")
@@ -269,7 +269,7 @@ class LeaderScheduleControllerTest {
                 )
             )
 
-            mockMvc.perform(get("/api/v1/leader/accounts"))
+            mockMvc.perform(get("/api/v1/mobile/leader/accounts"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data[0].id").value(90234))
@@ -283,7 +283,7 @@ class LeaderScheduleControllerTest {
         fun withKeyword() {
             whenever(leaderScheduleService.getAccounts(eq(leaderId), eq("alpha"))).thenReturn(emptyList())
 
-            mockMvc.perform(get("/api/v1/leader/accounts").param("keyword", "alpha"))
+            mockMvc.perform(get("/api/v1/mobile/leader/accounts").param("keyword", "alpha"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data").isArray)
         }
@@ -294,7 +294,7 @@ class LeaderScheduleControllerTest {
             whenever(leaderScheduleService.getAccounts(eq(leaderId), anyOrNull()))
                 .thenThrow(LeaderScheduleNotLeaderException())
 
-            mockMvc.perform(get("/api/v1/leader/accounts"))
+            mockMvc.perform(get("/api/v1/mobile/leader/accounts"))
                 .andExpect(status().isForbidden)
                 .andExpect(jsonPath("$.error.code").value("NOT_LEADER"))
         }

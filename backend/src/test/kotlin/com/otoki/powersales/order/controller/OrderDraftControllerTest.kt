@@ -77,7 +77,7 @@ class OrderDraftControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/v1/me/orders/draft - 임시저장 조회 성공 (데이터 존재)")
+    @DisplayName("GET /api/v1/mobile/me/orders/draft - 임시저장 조회 성공 (데이터 존재)")
     fun getDraft_WhenDraftExists_ReturnsSuccess() {
         // given
         val savedAt = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
@@ -107,7 +107,7 @@ class OrderDraftControllerTest {
 
         // when & then (Jackson SNAKE_CASE 설정 적용)
         mockMvc.perform(
-            get("/api/v1/me/orders/draft")
+            get("/api/v1/mobile/me/orders/draft")
                 .contentType(MediaType.APPLICATION_JSON)
         )
             .andExpect(status().isOk)
@@ -128,14 +128,14 @@ class OrderDraftControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/v1/me/orders/draft - 임시저장 조회 성공 (데이터 없음)")
+    @DisplayName("GET /api/v1/mobile/me/orders/draft - 임시저장 조회 성공 (데이터 없음)")
     fun getDraft_WhenNoDraft_ReturnsNullData() {
         // given
         whenever(orderDraftService.getMyDraft(eq(1L))).thenReturn(null)
 
         // when & then
         mockMvc.perform(
-            get("/api/v1/me/orders/draft")
+            get("/api/v1/mobile/me/orders/draft")
                 .contentType(MediaType.APPLICATION_JSON)
         )
             .andExpect(status().isOk)
@@ -144,7 +144,7 @@ class OrderDraftControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/v1/me/orders/draft - 임시저장 생성 성공")
+    @DisplayName("POST /api/v1/mobile/me/orders/draft - 임시저장 생성 성공")
     fun saveDraft_WithValidRequest_ReturnsSuccess() {
         // given
         val savedAt = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
@@ -166,7 +166,7 @@ class OrderDraftControllerTest {
 
         // when & then
         mockMvc.perform(
-            post("/api/v1/me/orders/draft")
+            post("/api/v1/mobile/me/orders/draft")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request))
         )
@@ -176,7 +176,7 @@ class OrderDraftControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/v1/me/orders/draft - clientId 누락 시 검증 실패")
+    @DisplayName("POST /api/v1/mobile/me/orders/draft - clientId 누락 시 검증 실패")
     fun saveDraft_WithMissingClientId_ReturnsValidationError() {
         // given - snake_case JSON으로 직접 구성
         val invalidJson = """
@@ -189,7 +189,7 @@ class OrderDraftControllerTest {
 
         // when & then
         mockMvc.perform(
-            post("/api/v1/me/orders/draft")
+            post("/api/v1/mobile/me/orders/draft")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(invalidJson)
         )
@@ -199,7 +199,7 @@ class OrderDraftControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/v1/me/orders/draft - items 비어있을 때 검증 실패")
+    @DisplayName("POST /api/v1/mobile/me/orders/draft - items 비어있을 때 검증 실패")
     fun saveDraft_WithEmptyItems_ReturnsValidationError() {
         // given
         val invalidJson = """
@@ -212,7 +212,7 @@ class OrderDraftControllerTest {
 
         // when & then
         mockMvc.perform(
-            post("/api/v1/me/orders/draft")
+            post("/api/v1/mobile/me/orders/draft")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(invalidJson)
         )
@@ -222,7 +222,7 @@ class OrderDraftControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/v1/me/orders/draft - 거래처 미존재 시 404 반환")
+    @DisplayName("POST /api/v1/mobile/me/orders/draft - 거래처 미존재 시 404 반환")
     fun saveDraft_WithNonExistentClient_ReturnsNotFound() {
         // given
         val request = OrderDraftRequest(
@@ -238,7 +238,7 @@ class OrderDraftControllerTest {
 
         // when & then
         mockMvc.perform(
-            post("/api/v1/me/orders/draft")
+            post("/api/v1/mobile/me/orders/draft")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request))
         )
@@ -249,7 +249,7 @@ class OrderDraftControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/v1/me/orders/draft - 상품 미존재 시 404 반환")
+    @DisplayName("POST /api/v1/mobile/me/orders/draft - 상품 미존재 시 404 반환")
     fun saveDraft_WithNonExistentProduct_ReturnsNotFound() {
         // given
         val request = OrderDraftRequest(
@@ -265,7 +265,7 @@ class OrderDraftControllerTest {
 
         // when & then
         mockMvc.perform(
-            post("/api/v1/me/orders/draft")
+            post("/api/v1/mobile/me/orders/draft")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request))
         )
@@ -276,7 +276,7 @@ class OrderDraftControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/v1/me/orders/draft - 잘못된 배송일자 시 400 반환")
+    @DisplayName("POST /api/v1/mobile/me/orders/draft - 잘못된 배송일자 시 400 반환")
     fun saveDraft_WithInvalidDeliveryDate_ReturnsBadRequest() {
         // given
         val request = OrderDraftRequest(
@@ -292,7 +292,7 @@ class OrderDraftControllerTest {
 
         // when & then
         mockMvc.perform(
-            post("/api/v1/me/orders/draft")
+            post("/api/v1/mobile/me/orders/draft")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request))
         )
@@ -303,11 +303,11 @@ class OrderDraftControllerTest {
     }
 
     @Test
-    @DisplayName("DELETE /api/v1/me/orders/draft - 임시저장 삭제 성공")
+    @DisplayName("DELETE /api/v1/mobile/me/orders/draft - 임시저장 삭제 성공")
     fun deleteDraft_WhenDraftExists_ReturnsSuccess() {
         // when & then
         mockMvc.perform(
-            delete("/api/v1/me/orders/draft")
+            delete("/api/v1/mobile/me/orders/draft")
                 .contentType(MediaType.APPLICATION_JSON)
         )
             .andExpect(status().isOk)
@@ -315,7 +315,7 @@ class OrderDraftControllerTest {
     }
 
     @Test
-    @DisplayName("DELETE /api/v1/me/orders/draft - 임시저장 미존재 시 404 반환")
+    @DisplayName("DELETE /api/v1/mobile/me/orders/draft - 임시저장 미존재 시 404 반환")
     fun deleteDraft_WhenNoDraft_ReturnsNotFound() {
         // given
         whenever(orderDraftService.deleteDraft(eq(1L)))
@@ -323,7 +323,7 @@ class OrderDraftControllerTest {
 
         // when & then
         mockMvc.perform(
-            delete("/api/v1/me/orders/draft")
+            delete("/api/v1/mobile/me/orders/draft")
                 .contentType(MediaType.APPLICATION_JSON)
         )
             .andExpect(status().isNotFound)

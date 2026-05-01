@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*
 import java.time.LocalDate
 
 @RestController
-@RequestMapping("/api/v1/alternative-holidays")
+@RequestMapping("/api/v1/mobile/alternative-holidays")
 class AlternativeHolidayController(
     private val alternativeHolidayService: AlternativeHolidayService
 ) {

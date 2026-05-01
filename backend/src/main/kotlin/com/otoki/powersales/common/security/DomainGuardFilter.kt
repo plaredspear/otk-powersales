@@ -14,24 +14,10 @@ class DomainGuardFilter(
 
     companion object {
         // 모바일 클라이언트가 호출하는 path 화이트리스트 + 개발 편의용 swagger/h2.
-        // 신규 모바일 endpoint 추가 시 backend/openapi.json 재생성 후 본 목록을 갱신한다.
+        // 모바일 전용 prefix(/api/v1/mobile/) 도입(스펙 #574) 이후, endpoint 추가 시에도 본 목록 갱신은 불필요하다.
         private val API_DOMAIN_ALLOWED_PREFIXES = listOf(
             "/api/health",
-            "/api/v1/accounts",
-            "/api/v1/alternative-holidays",
-            "/api/v1/attendance",
-            "/api/v1/auth",
-            "/api/v1/education",
-            "/api/v1/health",
-            "/api/v1/holidays",
-            "/api/v1/home",
-            "/api/v1/mypage",
-            "/api/v1/notices",
-            "/api/v1/product-expiration",
-            "/api/v1/products",
-            "/api/v1/promotions",
-            "/api/v1/safety-check",
-            "/api/v1/sales",
+            "/api/v1/mobile/",
             "/swagger-ui",
             "/v3/api-docs",
             "/h2-console"
@@ -39,7 +25,6 @@ class DomainGuardFilter(
         private const val ADMIN_PATH_PREFIX = "/api/v1/admin/"
 
         private val ADMIN_API_ALLOWED_PREFIXES = listOf(
-            "/api/v1/auth/",
             "/api/v1/admin/"
         )
     }

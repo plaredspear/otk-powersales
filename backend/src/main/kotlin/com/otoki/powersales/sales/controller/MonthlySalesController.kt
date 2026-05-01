@@ -12,14 +12,14 @@ import org.springframework.web.bind.annotation.*
  * 월매출 관련 API Controller
  */
 @RestController
-@RequestMapping("/api/v1/sales")
+@RequestMapping("/api/v1/mobile/sales")
 class MonthlySalesController(
     private val monthlySalesService: MonthlySalesService
 ) {
 
     /**
      * 월매출 조회
-     * GET /api/v1/sales/monthly
+     * GET /api/v1/mobile/sales/monthly
      */
     @GetMapping("/monthly")
     fun getMonthlySales(

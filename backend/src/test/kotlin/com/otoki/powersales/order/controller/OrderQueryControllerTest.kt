@@ -73,7 +73,7 @@ class OrderQueryControllerTest {
     // ========== 주문이력 제품 조회 ==========
 
     @Nested
-    @DisplayName("주문이력 제품 조회 - GET /api/v1/me/order-history/products")
+    @DisplayName("주문이력 제품 조회 - GET /api/v1/mobile/me/order-history/products")
     inner class GetOrderHistoryProducts {
 
         @Test
@@ -99,7 +99,7 @@ class OrderQueryControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/me/order-history/products")
+                get("/api/v1/mobile/me/order-history/products")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
@@ -131,7 +131,7 @@ class OrderQueryControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/me/order-history/products")
+                get("/api/v1/mobile/me/order-history/products")
                     .param("orderDateFrom", "2026-02-01")
                     .param("orderDateTo", "2026-02-10")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -144,7 +144,7 @@ class OrderQueryControllerTest {
     // ========== 거래처 여신잔액 조회 ==========
 
     @Nested
-    @DisplayName("거래처 여신잔액 조회 - GET /api/v1/clients/{clientId}/credit-balance")
+    @DisplayName("거래처 여신잔액 조회 - GET /api/v1/mobile/clients/{clientId}/credit-balance")
     inner class GetClientCreditBalance {
 
         @Test
@@ -163,7 +163,7 @@ class OrderQueryControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/clients/1/credit-balance")
+                get("/api/v1/mobile/clients/1/credit-balance")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
@@ -186,7 +186,7 @@ class OrderQueryControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/clients/999/credit-balance")
+                get("/api/v1/mobile/clients/999/credit-balance")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isNotFound)
@@ -198,7 +198,7 @@ class OrderQueryControllerTest {
     // ========== 제품 주문정보 조회 ==========
 
     @Nested
-    @DisplayName("제품 주문정보 조회 - GET /api/v1/products/{productCode}/order-info")
+    @DisplayName("제품 주문정보 조회 - GET /api/v1/mobile/products/{productCode}/order-info")
     inner class GetProductOrderInfo {
 
         @Test
@@ -218,7 +218,7 @@ class OrderQueryControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/products/01101123/order-info")
+                get("/api/v1/mobile/products/01101123/order-info")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
@@ -242,7 +242,7 @@ class OrderQueryControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/products/INVALID/order-info")
+                get("/api/v1/mobile/products/INVALID/order-info")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isNotFound)

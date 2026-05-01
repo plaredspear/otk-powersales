@@ -16,14 +16,14 @@ import org.springframework.web.bind.annotation.*
  * 임시저장 주문서 API Controller
  * /
 @RestController
-@RequestMapping("/api/v1/me/orders/draft")
+@RequestMapping("/api/v1/mobile/me/orders/draft")
 class OrderDraftController(
     private val orderDraftService: OrderDraftService
 ) {
 
     / **
      * 임시저장 주문서 조회
-     * GET /api/v1/me/orders/draft
+     * GET /api/v1/mobile/me/orders/draft
      * /
     @GetMapping
     fun getMyDraft(
@@ -35,7 +35,7 @@ class OrderDraftController(
 
     / **
      * 주문서 임시저장
-     * POST /api/v1/me/orders/draft
+     * POST /api/v1/mobile/me/orders/draft
      * /
     @PostMapping
     fun saveDraft(
@@ -48,7 +48,7 @@ class OrderDraftController(
 
     / **
      * 임시저장 주문서 삭제
-     * DELETE /api/v1/me/orders/draft
+     * DELETE /api/v1/mobile/me/orders/draft
      * /
     @DeleteMapping
     fun deleteDraft(

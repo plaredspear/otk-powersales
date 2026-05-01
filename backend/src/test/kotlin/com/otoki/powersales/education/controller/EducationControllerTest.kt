@@ -64,14 +64,14 @@ class EducationControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/v1/education/posts - 목록 조회")
+    @DisplayName("GET /api/v1/mobile/education/posts - 목록 조회")
     inner class GetPostsTests {
 
         @Test
         @DisplayName("category 파라미터 누락 시 400 Bad Request 반환")
         fun getPosts_missingCategory() {
             mockMvc.perform(
-                get("/api/v1/education/posts")
+                get("/api/v1/mobile/education/posts")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isBadRequest)
@@ -84,7 +84,7 @@ class EducationControllerTest {
                 .thenThrow(InvalidEducationCategoryException())
 
             mockMvc.perform(
-                get("/api/v1/education/posts")
+                get("/api/v1/mobile/education/posts")
                     .param("category", "INVALID")
                     .contentType(MediaType.APPLICATION_JSON)
             )
@@ -95,7 +95,7 @@ class EducationControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/v1/education/posts/{postId} - 상세 조회")
+    @DisplayName("GET /api/v1/mobile/education/posts/{postId} - 상세 조회")
     inner class GetPostDetailTests {
 
         @Test
@@ -105,7 +105,7 @@ class EducationControllerTest {
                 .thenThrow(EducationPostNotFoundException())
 
             mockMvc.perform(
-                get("/api/v1/education/posts/NONEXIST")
+                get("/api/v1/mobile/education/posts/NONEXIST")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isNotFound)

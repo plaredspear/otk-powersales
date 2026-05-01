@@ -46,7 +46,7 @@ class GpsConsentFilterTest {
         // Given
         val principal = UserPrincipal(userId = 1L, role = UserRole.USER, agreementFlag = true)
         setAuthentication(principal)
-        request.requestURI = "/api/v1/notices"
+        request.requestURI = "/api/v1/mobile/notices"
 
         // When
         filter.doFilter(request, response, filterChain)
@@ -61,7 +61,7 @@ class GpsConsentFilterTest {
         // Given
         val principal = UserPrincipal(userId = 1L, role = UserRole.USER, agreementFlag = false)
         setAuthentication(principal)
-        request.requestURI = "/api/v1/notices"
+        request.requestURI = "/api/v1/mobile/notices"
 
         // When
         filter.doFilter(request, response, filterChain)
@@ -78,7 +78,7 @@ class GpsConsentFilterTest {
         // Given
         val principal = UserPrincipal(userId = 1L, role = UserRole.USER, agreementFlag = false)
         setAuthentication(principal)
-        request.requestURI = "/api/v1/auth/gps-consent/terms"
+        request.requestURI = "/api/v1/mobile/auth/gps-consent/terms"
 
         // When
         filter.doFilter(request, response, filterChain)
@@ -93,7 +93,7 @@ class GpsConsentFilterTest {
         // Given
         val principal = UserPrincipal(userId = 1L, role = UserRole.USER, agreementFlag = false)
         setAuthentication(principal)
-        request.requestURI = "/api/v1/auth/login"
+        request.requestURI = "/api/v1/mobile/auth/login"
 
         // When
         filter.doFilter(request, response, filterChain)
@@ -108,7 +108,7 @@ class GpsConsentFilterTest {
         // Given
         val principal = UserPrincipal(userId = 1L, role = UserRole.USER, agreementFlag = false)
         setAuthentication(principal)
-        request.requestURI = "/api/v1/auth/change-password"
+        request.requestURI = "/api/v1/mobile/auth/change-password"
 
         // When
         filter.doFilter(request, response, filterChain)
@@ -136,7 +136,7 @@ class GpsConsentFilterTest {
     @DisplayName("미인증 요청 - 필터 스킵")
     fun unauthenticatedRequest_passesThrough() {
         // Given
-        request.requestURI = "/api/v1/notices"
+        request.requestURI = "/api/v1/mobile/notices"
 
         // When
         filter.doFilter(request, response, filterChain)
