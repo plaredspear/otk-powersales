@@ -1,9 +1,11 @@
 package com.otoki.powersales.sap.inbound.service
 
 import com.otoki.powersales.sap.auth.audit.SapInboundAudit
+import com.otoki.powersales.sap.auth.audit.SapInboundAuditEventType
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.schedule.entity.AttendInfo
 import com.otoki.powersales.sap.inbound.dto.attendance.AttendInfoRequestItem
+import com.otoki.powersales.sap.inbound.dto.attendance.ScheduleConversionSummary
 import com.otoki.powersales.sap.inbound.dto.sales.ChunkResult
 import com.otoki.powersales.sap.inbound.exception.SapPayloadTooLargeException
 import com.otoki.powersales.schedule.repository.AttendInfoRepository
@@ -16,14 +18,18 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import org.mockito.quality.Strictness
 
 @ExtendWith(MockitoExtension::class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("SapAttendInfoService 테스트")
 class SapAttendInfoServiceTest {
 
@@ -33,15 +39,21 @@ class SapAttendInfoServiceTest {
     @Mock
     private lateinit var auditService: SapInboundAuditService
 
+    @Mock
+    private lateinit var scheduleConverter: AttendInfoToScheduleConverter
+
     private lateinit var service: SapAttendInfoService
 
     @BeforeEach
     fun setUp() {
+        whenever(scheduleConverter.convert(any<List<AttendInfo>>()))
+            .thenReturn(ScheduleConversionSummary.ZERO)
         val helper = ChunkedUpsertHelper()
         service = SapAttendInfoService(
             attendInfoRepository = attendInfoRepository,
             chunkedUpsertHelper = helper,
             auditService = auditService,
+            scheduleConverter = scheduleConverter,
             chunkSize = 3,
             maxRows = 100
         )
@@ -87,7 +99,13 @@ class SapAttendInfoServiceTest {
             assertThat(saved.status).isEqualTo("정상")
             assertThat(detail.successCount).isEqualTo(1)
             assertThat(detail.chunks.single().status).isEqualTo(ChunkResult.STATUS_SUCCESS)
-            verify(auditService).record(any<SapInboundAudit>())
+            assertThat(detail.scheduleConversion).isEqualTo(ScheduleConversionSummary.ZERO)
+            val auditCaptor = argumentCaptor<SapInboundAudit>()
+            verify(auditService, times(2)).record(auditCaptor.capture())
+            assertThat(auditCaptor.allValues.map { it.eventType }).containsExactly(
+                SapInboundAuditEventType.REQUEST_ACCEPTED,
+                SapInboundAuditEventType.SCHEDULE_CONVERSION
+            )
         }
 
         @Test
@@ -193,6 +211,82 @@ class SapAttendInfoServiceTest {
             assertThat(detail.chunks[1].status).isEqualTo(ChunkResult.STATUS_SUCCESS)
             assertThat(detail.successCount).isEqualTo(2)
             assertThat(detail.failureCount).isEqualTo(3)
+        }
+    }
+
+    @Nested
+    @DisplayName("insert - 일정 변환 연동 (Spec #553)")
+    inner class ScheduleConversionWiring {
+
+        @Test
+        @DisplayName("저장 0건 - 변환 호출 없음, scheduleConversion=null")
+        fun noSavedRows_conversionNotCalled() {
+            val detail = service.insert(listOf(item(employeeCode = null)))
+
+            assertThat(detail.scheduleConversion).isNull()
+            verify(scheduleConverter, never()).convert(any<List<AttendInfo>>())
+            val auditCaptor = argumentCaptor<SapInboundAudit>()
+            verify(auditService).record(auditCaptor.capture())
+            assertThat(auditCaptor.firstValue.eventType).isEqualTo(SapInboundAuditEventType.REQUEST_ACCEPTED)
+        }
+
+        @Test
+        @DisplayName("청크별 변환 결과 합산 - 두 청크 결과가 합쳐서 노출")
+        fun aggregatesAcrossChunks() {
+            mockSaveAll()
+            whenever(scheduleConverter.convert(any<List<AttendInfo>>())).thenReturn(
+                ScheduleConversionSummary(
+                    convertedScheduleCount = 2,
+                    deletedScheduleCount = 1,
+                    skippedEmployeeNotFound = 0,
+                    skippedJobFilter = 1,
+                    skippedAttendTypeFilter = 0,
+                    skippedIdempotent = 0
+                )
+            )
+            val items = (1..5).map { item(startDate = "2026042$it", endDate = "2026042$it") }
+
+            val detail = service.insert(items)
+
+            verify(scheduleConverter, times(2)).convert(any<List<AttendInfo>>())
+            assertThat(detail.scheduleConversion).isEqualTo(
+                ScheduleConversionSummary(
+                    convertedScheduleCount = 4,
+                    deletedScheduleCount = 2,
+                    skippedEmployeeNotFound = 0,
+                    skippedJobFilter = 2,
+                    skippedAttendTypeFilter = 0,
+                    skippedIdempotent = 0
+                )
+            )
+            val auditCaptor = argumentCaptor<SapInboundAudit>()
+            verify(auditService, times(2)).record(auditCaptor.capture())
+            assertThat(auditCaptor.allValues.map { it.eventType }).containsExactly(
+                SapInboundAuditEventType.REQUEST_ACCEPTED,
+                SapInboundAuditEventType.SCHEDULE_CONVERSION
+            )
+        }
+
+        @Test
+        @DisplayName("변환 실패 - SCHEDULE_CONVERSION_FAILED audit 기록, INSERT 결과는 유지")
+        fun conversionFailure_auditFailedAndKeepInsert() {
+            mockSaveAll()
+            whenever(scheduleConverter.convert(any<List<AttendInfo>>()))
+                .thenThrow(RuntimeException("DB error"))
+
+            val detail = service.insert(listOf(item()))
+
+            assertThat(detail.successCount).isEqualTo(1)
+            assertThat(detail.scheduleConversion).isEqualTo(ScheduleConversionSummary.ZERO)
+            val auditCaptor = argumentCaptor<SapInboundAudit>()
+            verify(auditService, times(2)).record(auditCaptor.capture())
+            assertThat(auditCaptor.allValues.map { it.eventType }).containsExactly(
+                SapInboundAuditEventType.SCHEDULE_CONVERSION_FAILED,
+                SapInboundAuditEventType.REQUEST_ACCEPTED
+            )
+            assertThat(
+                auditCaptor.allValues.first { it.eventType == SapInboundAuditEventType.SCHEDULE_CONVERSION_FAILED }.reason
+            ).contains("DB error")
         }
     }
 }

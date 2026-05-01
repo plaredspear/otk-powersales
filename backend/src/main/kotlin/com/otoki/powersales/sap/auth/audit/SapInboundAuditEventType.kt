@@ -8,4 +8,10 @@ object SapInboundAuditEventType {
     const val REQUEST_REJECTED_SCOPE = "REQUEST_REJECTED_SCOPE"
     const val REQUEST_REJECTED_IP = "REQUEST_REJECTED_IP"
     const val REQUEST_REJECTED_SANITY = "REQUEST_REJECTED_SANITY"
+
+    /** Spec #553: `attend_info` → `team_member_schedule` 변환 처리 결과 카운트 기록 */
+    const val SCHEDULE_CONVERSION = "SCHEDULE_CONVERSION"
+
+    /** Spec #553: 변환 처리 트랜잭션이 예외로 실패한 경우 (인바운드 INSERT 는 유지) */
+    const val SCHEDULE_CONVERSION_FAILED = "SCHEDULE_CONVERSION_FAILED"
 }
