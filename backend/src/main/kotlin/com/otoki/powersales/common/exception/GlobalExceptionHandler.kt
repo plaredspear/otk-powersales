@@ -3,23 +3,31 @@ package com.otoki.powersales.common.exception
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.common.dto.ErrorDetail
 import com.otoki.powersales.promotion.exception.BatchValidationException
+import com.otoki.powersales.sap.inbound.dto.SapResultWrapper
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.AccessDeniedException
 import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.validation.FieldError
 import org.springframework.http.converter.HttpMessageNotReadableException
+import org.springframework.web.HttpRequestMethodNotSupportedException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.web.bind.annotation.ExceptionHandler
-import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.context.request.ServletWebRequest
 import org.springframework.web.context.request.WebRequest
 
 /**
- * 전역 예외 처리 핸들러 (REST API 전용)
+ * 전역 예외 처리 핸들러 (REST API 전용).
+ *
+ * `annotations = [RestController::class]` 제한을 두지 않는다 — 그 제한은 컨트롤러 매칭이
+ * 끝난 후에만 동작하므로, HTTP 메서드/미디어 타입 불일치처럼 매칭 단계 자체에서 발생하는
+ * 표준 예외를 가로챌 수 없다. 본 backend 는 view 반환용 `@Controller` 가 없고 모두
+ * `@RestController` 라 제한 제거 시 부작용 없음.
  */
-@RestControllerAdvice(annotations = [RestController::class])
+@RestControllerAdvice
 class GlobalExceptionHandler {
 
     /**
@@ -175,6 +183,30 @@ class GlobalExceptionHandler {
             .body(response)
     }
 
+    // HTTP 메서드 불일치는 컨트롤러 매칭 전에 발생해 RestControllerAdvice assignableTypes 로 잡히지 않으므로 글로벌에서 처리.
+    // SAP 인바운드 path 는 SapResultWrapper 형식, 그 외는 ApiResponse 형식.
+    @ExceptionHandler(HttpRequestMethodNotSupportedException::class)
+    fun handleMethodNotSupported(
+        ex: HttpRequestMethodNotSupportedException,
+        request: WebRequest
+    ): ResponseEntity<Any> {
+        val supported = ex.supportedMethods?.joinToString(", ") ?: "POST"
+        val message = "지원하지 않는 HTTP 메서드. 허용: $supported"
+        val body: Any = if (isSapInboundPath(request)) {
+            SapResultWrapper<Nothing>(SapResultWrapper.CODE_METHOD_NOT_ALLOWED, message)
+        } else {
+            ApiResponse.error<Any>(code = "METHOD_NOT_ALLOWED", message = message)
+        }
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(body)
+    }
+
+    private fun isSapInboundPath(request: WebRequest): Boolean {
+        val servletRequest = (request as? ServletWebRequest)?.request ?: return false
+        return servletRequest.requestURI?.startsWith("/api/v1/sap/") == true
+    }
+
     /**
      * 일반 예외 처리
      */
@@ -196,13 +228,3 @@ class GlobalExceptionHandler {
             .body(response)
     }
 }
-
-/**
- * 비즈니스 로직 예외
- */
-open class BusinessException(
-    val errorCode: String,
-    override val message: String,
-    val httpStatus: HttpStatus = HttpStatus.BAD_REQUEST,
-    override val cause: Throwable? = null
-) : RuntimeException(message, cause)

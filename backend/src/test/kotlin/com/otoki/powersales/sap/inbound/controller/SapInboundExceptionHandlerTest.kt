@@ -17,11 +17,14 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.mock.web.MockHttpServletRequest
 import org.springframework.security.access.AccessDeniedException
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.web.HttpMediaTypeNotAcceptableException
+import org.springframework.web.HttpMediaTypeNotSupportedException
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
 
@@ -98,5 +101,33 @@ class SapInboundExceptionHandlerTest {
 
         assertThat(response.statusCode).isEqualTo(HttpStatus.FORBIDDEN)
         assertThat(response.body?.resultCode).isEqualTo(SapResultWrapper.CODE_INSUFFICIENT_SCOPE)
+    }
+
+    @Test
+    @DisplayName("handleMediaTypeNotSupported - 415 + UNSUPPORTED_MEDIA_TYPE + Content-Type: application/json 강제")
+    fun handleMediaTypeNotSupported_responds415AsJson() {
+        val ex = HttpMediaTypeNotSupportedException(
+            MediaType.TEXT_PLAIN,
+            listOf(MediaType.APPLICATION_JSON)
+        )
+
+        val response = handler.handleMediaTypeNotSupported(ex)
+
+        assertThat(response.statusCode).isEqualTo(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+        assertThat(response.body?.resultCode).isEqualTo(SapResultWrapper.CODE_UNSUPPORTED_MEDIA_TYPE)
+        assertThat(response.body?.resultMsg).contains("application/json")
+        assertThat(response.headers.contentType).isEqualTo(MediaType.APPLICATION_JSON)
+    }
+
+    @Test
+    @DisplayName("handleNotAcceptable - 406 + NOT_ACCEPTABLE + Content-Type: application/json 강제")
+    fun handleNotAcceptable_responds406AsJson() {
+        val response = handler.handleNotAcceptable()
+
+        assertThat(response.statusCode).isEqualTo(HttpStatus.NOT_ACCEPTABLE)
+        assertThat(response.body?.resultCode).isEqualTo(SapResultWrapper.CODE_NOT_ACCEPTABLE)
+        assertThat(response.body?.resultMsg).contains("application/json")
+        // Accept 헤더가 잘못됐어도 응답은 항상 application/json (재귀적 직렬화 fail 차단)
+        assertThat(response.headers.contentType).isEqualTo(MediaType.APPLICATION_JSON)
     }
 }

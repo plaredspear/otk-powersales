@@ -22,6 +22,9 @@ data class SapResultWrapper<T>(
         const val CODE_OK: String = "200"
         const val CODE_INVALID_PAYLOAD: String = "INVALID_PAYLOAD"
         const val CODE_INSUFFICIENT_SCOPE: String = "INSUFFICIENT_SCOPE"
+        const val CODE_METHOD_NOT_ALLOWED: String = "METHOD_NOT_ALLOWED"
+        const val CODE_UNSUPPORTED_MEDIA_TYPE: String = "UNSUPPORTED_MEDIA_TYPE"
+        const val CODE_NOT_ACCEPTABLE: String = "NOT_ACCEPTABLE"
         const val CODE_INTERNAL_ERROR: String = "INTERNAL_ERROR"
 
         fun <T> ok(detail: T? = null): SapResultWrapper<T> = SapResultWrapper(CODE_OK, "OK", detail)
