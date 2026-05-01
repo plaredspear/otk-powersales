@@ -200,6 +200,13 @@ class TeamMemberSchedule(
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 
+    /**
+     * 대리 등록자(조장) employee_id. 조장이 본인 팀원의 일정을 대리 등록할 때 audit trail 용도로 저장.
+     * 본 스펙 외부 INSERT(스케줄러 자동 생성 등)는 NULL.
+     */
+    @Column(name = "proxy_registered_by")
+    val proxyRegisteredBy: Long? = null,
+
     // -- Relations --
 
     @ManyToOne(fetch = FetchType.LAZY)
