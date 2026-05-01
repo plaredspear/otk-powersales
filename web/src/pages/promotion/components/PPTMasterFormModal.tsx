@@ -6,19 +6,12 @@ import { fetchAccounts, type Account } from '@/api/account';
 import { useCreatePPTMaster, useUpdatePPTMaster } from '@/hooks/promotion/usePPTMasters';
 import type { PPTMaster } from '@/api/pptMaster';
 import { AxiosError } from 'axios';
-
-const TEAM_TYPES = [
-  { value: '라면세일조', label: '라면세일조' },
-  { value: '프레시세일조_냉장', label: '프레시세일조_냉장' },
-  { value: '프레시세일조_냉동', label: '프레시세일조_냉동' },
-  { value: '프레시세일조_만두', label: '프레시세일조_만두' },
-  { value: '카레행사조', label: '카레행사조' },
-];
+import { PPT_TEAM_TYPE_OPTIONS, type PPTTeamType } from '@/constants/pptTeamType';
 
 interface FormValues {
   employeeId: number;
   accountId: number;
-  teamType: string;
+  teamType: PPTTeamType;
   startDate: dayjs.Dayjs;
   endDate: dayjs.Dayjs | null;
   isConfirmed: boolean;
@@ -45,7 +38,7 @@ export default function PPTMasterFormModal({ open, editingItem, onClose }: Props
       form.setFieldsValue({
         employeeId: editingItem.employeeId,
         accountId: editingItem.accountId,
-        teamType: editingItem.teamType,
+        teamType: editingItem.teamType as PPTTeamType,
         startDate: dayjs(editingItem.startDate),
         endDate: editingItem.endDate ? dayjs(editingItem.endDate) : null,
         isConfirmed: editingItem.isConfirmed,
@@ -213,7 +206,7 @@ export default function PPTMasterFormModal({ open, editingItem, onClose }: Props
           label="전문행사조"
           rules={[{ required: true, message: '전문행사조를 선택해주세요' }]}
         >
-          <Select placeholder="전문행사조 선택" options={TEAM_TYPES} />
+          <Select placeholder="전문행사조 선택" options={PPT_TEAM_TYPE_OPTIONS} />
         </Form.Item>
 
         <Form.Item
