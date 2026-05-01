@@ -1,6 +1,7 @@
 package com.otoki.powersales.promotion.repository
 
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamMaster
+import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import java.time.LocalDate
@@ -10,7 +11,7 @@ interface PPTMasterRepositoryCustom {
     fun searchMasters(
         employeeName: String?,
         employeeCode: String?,
-        teamType: String?,
+        teamType: ProfessionalPromotionTeamType?,
         branchCode: String?,
         validOnly: Boolean,
         today: LocalDate,
@@ -24,7 +25,7 @@ interface PPTMasterRepositoryCustom {
     fun findValidMastersByEmployeeIdAndTeamType(
         employeeId: Long,
         accountId: Int,
-        teamType: String,
+        teamType: ProfessionalPromotionTeamType,
         startDate: LocalDate,
         excludeId: Long? = null
     ): List<ProfessionalPromotionTeamMaster>

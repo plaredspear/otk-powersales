@@ -2,6 +2,7 @@ package com.otoki.powersales.sap.inbound.service
 
 import com.otoki.powersales.schedule.entity.Appointment
 import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
 import com.otoki.powersales.common.entity.SystemCodeMaster
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.organization.repository.OrganizationRepository
@@ -110,7 +111,7 @@ class AppointmentUserProfileUpdaterTest {
 
             assertThat(employee.appAuthority).isEqualTo("여사원")
             assertThat(employee.appLoginActive).isTrue()
-            assertThat(employee.professionalPromotionTeam).isEqualTo("일반")
+            assertThat(employee.professionalPromotionTeam).isEqualTo(ProfessionalPromotionTeamType.GENERAL)
         }
 
         @Test
@@ -137,7 +138,7 @@ class AppointmentUserProfileUpdaterTest {
         @Test
         @DisplayName("승진 발령 - ordDetailNode=승진 -> professionalPromotionTeam 기존 값 유지")
         fun promotionKeepsPPT() {
-            val employee = createEmployee(professionalPromotionTeam = "특별반")
+            val employee = createEmployee(professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE)
             whenever(employeeRepository.findByEmployeeCode("100234")).thenReturn(Optional.of(employee))
 
             val appointment = createAppointment(
@@ -149,7 +150,7 @@ class AppointmentUserProfileUpdaterTest {
             updater.updateUserProfiles(listOf(appointment), today)
 
             assertThat(employee.appAuthority).isEqualTo("여사원")
-            assertThat(employee.professionalPromotionTeam).isEqualTo("특별반")
+            assertThat(employee.professionalPromotionTeam).isEqualTo(ProfessionalPromotionTeamType.RAMEN_SALE)
         }
     }
 
@@ -287,25 +288,25 @@ class AppointmentUserProfileUpdaterTest {
         @Test
         @DisplayName("여사원 + 전보 -> 일반으로 초기화")
         fun resetToGeneral() {
-            val employee = createEmployee(appAuthority = "여사원", professionalPromotionTeam = "특별반")
+            val employee = createEmployee(appAuthority = "여사원", professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE)
             updater.applyProfessionalPromotionTeamReset(employee, "전보")
-            assertThat(employee.professionalPromotionTeam).isEqualTo("일반")
+            assertThat(employee.professionalPromotionTeam).isEqualTo(ProfessionalPromotionTeamType.GENERAL)
         }
 
         @Test
         @DisplayName("여사원 + 승진 -> 기존 값 유지")
         fun keepOnPromotion() {
-            val employee = createEmployee(appAuthority = "여사원", professionalPromotionTeam = "특별반")
+            val employee = createEmployee(appAuthority = "여사원", professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE)
             updater.applyProfessionalPromotionTeamReset(employee, "승진")
-            assertThat(employee.professionalPromotionTeam).isEqualTo("특별반")
+            assertThat(employee.professionalPromotionTeam).isEqualTo(ProfessionalPromotionTeamType.RAMEN_SALE)
         }
 
         @Test
         @DisplayName("조장 -> 초기화 안 함")
         fun leaderNoReset() {
-            val employee = createEmployee(appAuthority = "조장", professionalPromotionTeam = "특별반")
+            val employee = createEmployee(appAuthority = "조장", professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE)
             updater.applyProfessionalPromotionTeamReset(employee, "전보")
-            assertThat(employee.professionalPromotionTeam).isEqualTo("특별반")
+            assertThat(employee.professionalPromotionTeam).isEqualTo(ProfessionalPromotionTeamType.RAMEN_SALE)
         }
     }
 
@@ -378,7 +379,7 @@ class AppointmentUserProfileUpdaterTest {
         appLoginActive: Boolean? = null,
         orgName: String? = null,
         costCenterCode: String? = null,
-        professionalPromotionTeam: String? = null
+        professionalPromotionTeam: ProfessionalPromotionTeamType? = null
     ): Employee = Employee(
         id = id,
         employeeCode = employeeCode,

@@ -5,6 +5,8 @@ import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
+import com.otoki.powersales.promotion.entity.converter.ProfessionalPromotionTeamTypeConverter
 import jakarta.persistence.*
 import java.math.BigDecimal
 
@@ -73,8 +75,9 @@ class MonthlyFemaleEmployeeIntegrationSchedule(
     val empBranchName: String? = null,
 
     @SFField("ProfessionalPromotionTeam__c")
+    @Convert(converter = ProfessionalPromotionTeamTypeConverter::class)
     @Column(name = "professional_promotion_team", length = 255)
-    val professionalPromotionTeam: String? = null,
+    val professionalPromotionTeam: ProfessionalPromotionTeamType? = null,
 
     @SFField("WorkingDaysMonth__c")
     @Column(name = "working_days_month", precision = 14, scale = 4)

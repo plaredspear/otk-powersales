@@ -3,6 +3,7 @@ package com.otoki.powersales.promotion.entity
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.promotion.entity.converter.ProfessionalPromotionTeamTypeConverter
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
@@ -24,12 +25,14 @@ class ProfessionalPromotionTeamHistory(
     val employeeSfid: String? = null,
 
     @SFField("oldValue__c")
+    @Convert(converter = ProfessionalPromotionTeamTypeConverter::class)
     @Column(name = "old_value", length = 50)
-    val oldValue: String? = null,
+    val oldValue: ProfessionalPromotionTeamType? = null,
 
     @SFField("newValue__c")
+    @Convert(converter = ProfessionalPromotionTeamTypeConverter::class)
     @Column(name = "new_value", nullable = false, length = 50)
-    val newValue: String,
+    val newValue: ProfessionalPromotionTeamType,
 
     @SFField("updateTime__c")
     @Column(name = "changed_at", nullable = false)

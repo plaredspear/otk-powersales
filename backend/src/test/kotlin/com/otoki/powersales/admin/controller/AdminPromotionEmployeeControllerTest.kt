@@ -4,6 +4,7 @@ import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.promotion.dto.request.PromotionEmployeeRequest
 import com.otoki.powersales.promotion.dto.response.PromotionEmployeeDetailResponse
 import com.otoki.powersales.promotion.dto.response.PromotionEmployeeListResponse
+import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
 import com.otoki.powersales.admin.scope.DataScopeHolder
 import com.otoki.powersales.admin.security.AdminAuthorityFilter
 import com.otoki.powersales.promotion.service.AdminPromotionConfirmService
@@ -262,7 +263,7 @@ class AdminPromotionEmployeeControllerTest {
         workType1 = "시식",
         workType3 = "고정",
         workType4 = "냉장",
-        professionalPromotionTeam = "라면세일조",
+        professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE,
         teamMemberScheduleId = null,
         promoCloseByTm = false,
         basePrice = 1500,
@@ -288,7 +289,7 @@ class AdminPromotionEmployeeControllerTest {
         workType1 = "시식",
         workType3 = "고정",
         workType4 = "냉장",
-        professionalPromotionTeam = "라면세일조",
+        professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE,
         teamMemberScheduleId = null,
         promoCloseByTm = false,
         basePrice = 1500,
@@ -312,7 +313,7 @@ class AdminPromotionEmployeeControllerTest {
         workType1 = "시식",
         workType3 = "고정",
         workType4 = "냉장",
-        professionalPromotionTeam = "라면세일조",
+        professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE,
         basePrice = 1500,
         dailyTargetCount = 100
     )

@@ -1,5 +1,6 @@
 package com.otoki.powersales.promotion.dto.response
 
+import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.entity.PromotionEmployee
 import java.time.LocalDate
@@ -109,7 +110,7 @@ data class MobilePromotionEmployeeItem(
     val scheduleDate: LocalDate?,
     val workStatus: String?,
     val workType3: String?,
-    val professionalPromotionTeam: String?,
+    val professionalPromotionTeam: ProfessionalPromotionTeamType?,
     val targetAmount: Long?,
     val actualAmount: Long?
 ) {

@@ -1,6 +1,7 @@
 package com.otoki.powersales.promotion.repository
 
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamMaster
+import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
 import com.otoki.powersales.promotion.entity.QProfessionalPromotionTeamMaster.Companion.professionalPromotionTeamMaster
 import com.otoki.powersales.account.entity.QAccount.Companion.account
 import com.otoki.powersales.employee.entity.QEmployee.Companion.employee
@@ -19,7 +20,7 @@ class PPTMasterRepositoryCustomImpl(
     override fun searchMasters(
         employeeName: String?,
         employeeCode: String?,
-        teamType: String?,
+        teamType: ProfessionalPromotionTeamType?,
         branchCode: String?,
         validOnly: Boolean,
         today: LocalDate,
@@ -35,7 +36,7 @@ class PPTMasterRepositoryCustomImpl(
             builder.and(employee.employeeCode.eq(employeeCode))
         }
 
-        if (!teamType.isNullOrBlank()) {
+        if (teamType != null) {
             builder.and(professionalPromotionTeamMaster.teamType.eq(teamType))
         }
 
@@ -104,7 +105,7 @@ class PPTMasterRepositoryCustomImpl(
     override fun findValidMastersByEmployeeIdAndTeamType(
         employeeId: Long,
         accountId: Int,
-        teamType: String,
+        teamType: ProfessionalPromotionTeamType,
         startDate: LocalDate,
         excludeId: Long?
     ): List<ProfessionalPromotionTeamMaster> {

@@ -9,6 +9,7 @@ import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
 import com.otoki.powersales.promotion.exception.PPTMasterDuplicateException
 import com.otoki.powersales.promotion.exception.PPTMasterNotFoundException
 import com.otoki.powersales.auth.entity.UserRole
@@ -61,7 +62,7 @@ class AdminPPTMasterControllerTest {
         accountId = 1,
         accountCode = "SAP001",
         accountName = "이마트 강남점",
-        teamType = "라면세일조",
+        teamType = ProfessionalPromotionTeamType.RAMEN_SALE,
         startDate = LocalDate.of(2026, 4, 1),
         endDate = null,
         isConfirmed = true,
@@ -129,7 +130,7 @@ class AdminPPTMasterControllerTest {
             whenever(adminPPTMasterService.createMaster(any())).thenReturn(createResponse())
 
             val request = PPTMasterCreateRequest(
-                employeeId = 1L, accountId = 1, teamType = "라면세일조",
+                employeeId = 1L, accountId = 1, teamType = ProfessionalPromotionTeamType.RAMEN_SALE,
                 startDate = LocalDate.of(2026, 4, 1), isConfirmed = true
             )
 
@@ -149,7 +150,7 @@ class AdminPPTMasterControllerTest {
             whenever(adminPPTMasterService.createMaster(any())).thenThrow(PPTMasterDuplicateException())
 
             val request = PPTMasterCreateRequest(
-                employeeId = 1L, accountId = 1, teamType = "라면세일조",
+                employeeId = 1L, accountId = 1, teamType = ProfessionalPromotionTeamType.RAMEN_SALE,
                 startDate = LocalDate.of(2026, 4, 1), isConfirmed = true
             )
 
@@ -170,7 +171,7 @@ class AdminPPTMasterControllerTest {
         @Test
         @DisplayName("성공 - 마스터 수정")
         fun updateMaster_success() {
-            val response = createResponse().copy(teamType = "프레시세일조_냉장")
+            val response = createResponse().copy(teamType = ProfessionalPromotionTeamType.FRESH_SALE_REFRIGERATED)
             whenever(adminPPTMasterService.updateMaster(eq(1L), any())).thenReturn(response)
 
             val requestJson = """{"employee_id":1,"account_id":1,"team_type":"프레시세일조_냉장","start_date":"2026-04-01","is_confirmed":false}"""
@@ -257,7 +258,7 @@ class AdminPPTMasterControllerTest {
                 content = listOf(
                     PPTMasterHistoryResponse(
                         id = 1L, employeeId = 1L, employeeName = "홍길동",
-                        oldValue = "일반", newValue = "라면세일조",
+                        oldValue = ProfessionalPromotionTeamType.GENERAL, newValue = ProfessionalPromotionTeamType.RAMEN_SALE,
                         changedAt = LocalDateTime.of(2026, 3, 22, 9, 0)
                     )
                 ),
