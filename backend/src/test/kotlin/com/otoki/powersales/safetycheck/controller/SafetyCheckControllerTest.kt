@@ -82,7 +82,7 @@ class SafetyCheckControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/v1/safety-check/items - 항목 조회")
+    @DisplayName("GET /api/v1/mobile/safety-check/items - 항목 조회")
     inner class GetChecklistItemsTests {
 
         @Test
@@ -119,7 +119,7 @@ class SafetyCheckControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/safety-check/items")
+                get("/api/v1/mobile/safety-check/items")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
@@ -142,7 +142,7 @@ class SafetyCheckControllerTest {
     }
 
     @Nested
-    @DisplayName("POST /api/v1/safety-check/submit - 제출")
+    @DisplayName("POST /api/v1/mobile/safety-check/submit - 제출")
     inner class SubmitTests {
 
         @Test
@@ -178,7 +178,7 @@ class SafetyCheckControllerTest {
 
             // When & Then
             mockMvc.perform(
-                post("/api/v1/safety-check/submit")
+                post("/api/v1/mobile/safety-check/submit")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson)
             )
@@ -202,7 +202,7 @@ class SafetyCheckControllerTest {
             """.trimIndent()
 
             mockMvc.perform(
-                post("/api/v1/safety-check/submit")
+                post("/api/v1/mobile/safety-check/submit")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson)
             )
@@ -227,7 +227,7 @@ class SafetyCheckControllerTest {
             """.trimIndent()
 
             mockMvc.perform(
-                post("/api/v1/safety-check/submit")
+                post("/api/v1/mobile/safety-check/submit")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson)
             )
@@ -252,7 +252,7 @@ class SafetyCheckControllerTest {
             """.trimIndent()
 
             mockMvc.perform(
-                post("/api/v1/safety-check/submit")
+                post("/api/v1/mobile/safety-check/submit")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson)
             )
@@ -263,7 +263,7 @@ class SafetyCheckControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/v1/safety-check/status - 안전점검 현황 조회")
+    @DisplayName("GET /api/v1/mobile/safety-check/status - 안전점검 현황 조회")
     inner class GetStatusTests {
 
         @Test
@@ -314,7 +314,7 @@ class SafetyCheckControllerTest {
             )
             whenever(adminSafetyCheckService.getStatus(eq(1L), any())).thenReturn(response)
 
-            mockMvc.perform(get("/api/v1/safety-check/status").param("date", "2026-03-21"))
+            mockMvc.perform(get("/api/v1/mobile/safety-check/status").param("date", "2026-03-21"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("조회 성공"))
@@ -341,7 +341,7 @@ class SafetyCheckControllerTest {
             )
             whenever(adminSafetyCheckService.getStatus(eq(1L), any())).thenReturn(response)
 
-            mockMvc.perform(get("/api/v1/safety-check/status"))
+            mockMvc.perform(get("/api/v1/mobile/safety-check/status"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.members").isEmpty)
@@ -350,14 +350,14 @@ class SafetyCheckControllerTest {
         @Test
         @DisplayName("실패 - 잘못된 날짜 형식")
         fun getStatus_invalidDateFormat() {
-            mockMvc.perform(get("/api/v1/safety-check/status").param("date", "20260321"))
+            mockMvc.perform(get("/api/v1/mobile/safety-check/status").param("date", "20260321"))
                 .andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.error.code").value("INVALID_DATE_FORMAT"))
         }
     }
 
     @Nested
-    @DisplayName("GET /api/v1/safety-check/today - 오늘 여부 조회")
+    @DisplayName("GET /api/v1/mobile/safety-check/today - 오늘 여부 조회")
     inner class GetTodayStatusTests {
 
         @Test
@@ -372,7 +372,7 @@ class SafetyCheckControllerTest {
             whenever(safetyCheckService.getTodayStatus(1L)).thenReturn(mockResponse)
 
             mockMvc.perform(
-                get("/api/v1/safety-check/today")
+                get("/api/v1/mobile/safety-check/today")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
@@ -392,7 +392,7 @@ class SafetyCheckControllerTest {
             whenever(safetyCheckService.getTodayStatus(1L)).thenReturn(mockResponse)
 
             mockMvc.perform(
-                get("/api/v1/safety-check/today")
+                get("/api/v1/mobile/safety-check/today")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)

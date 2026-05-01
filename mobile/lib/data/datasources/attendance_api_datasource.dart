@@ -22,7 +22,7 @@ class AttendanceApiDataSource {
     }
 
     final response = await _dio.get(
-      '/api/v1/attendance/accounts',
+      '/api/v1/mobile/attendance/accounts',
       queryParameters: queryParameters.isNotEmpty ? queryParameters : null,
     );
 
@@ -65,7 +65,7 @@ class AttendanceApiDataSource {
     }
 
     final response = await _dio.post(
-      '/api/v1/attendance',
+      '/api/v1/mobile/attendance',
       data: body,
     );
 
@@ -75,7 +75,7 @@ class AttendanceApiDataSource {
 
   /// 출근 현황 조회
   Future<AttendanceStatusResult> getAttendanceStatus() async {
-    final response = await _dio.get('/api/v1/attendance/status');
+    final response = await _dio.get('/api/v1/mobile/attendance/status');
 
     final data = response.data['data'] as Map<String, dynamic>;
     final statusListJson = data['status_list'] as List<dynamic>;

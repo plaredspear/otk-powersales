@@ -20,14 +20,14 @@ import org.springframework.web.bind.annotation.*
  * 인증 관련 API Controller
  */
 @RestController
-@RequestMapping("/api/v1/auth")
+@RequestMapping("/api/v1/mobile/auth")
 class AuthController(
     private val authService: AuthService
 ) {
 
     /**
      * 로그인
-     * POST /api/v1/auth/login
+     * POST /api/v1/mobile/auth/login
      */
     @PostMapping("/login")
     fun login(@Valid @RequestBody request: LoginRequest): ResponseEntity<ApiResponse<LoginResponse>> {
@@ -37,7 +37,7 @@ class AuthController(
 
     /**
      * 토큰 갱신
-     * POST /api/v1/auth/refresh
+     * POST /api/v1/mobile/auth/refresh
      */
     @PostMapping("/refresh")
     fun refresh(@Valid @RequestBody request: RefreshTokenRequest): ResponseEntity<ApiResponse<TokenResponse>> {
@@ -47,7 +47,7 @@ class AuthController(
 
     /**
      * 비밀번호 검증
-     * POST /api/v1/auth/verify-password
+     * POST /api/v1/mobile/auth/verify-password
      */
     @PostMapping("/verify-password")
     fun verifyPassword(
@@ -60,7 +60,7 @@ class AuthController(
 
     /**
      * 비밀번호 변경
-     * POST /api/v1/auth/change-password
+     * POST /api/v1/mobile/auth/change-password
      */
     @PostMapping("/change-password")
     fun changePassword(
@@ -73,7 +73,7 @@ class AuthController(
 
     /**
      * 로그아웃
-     * POST /api/v1/auth/logout
+     * POST /api/v1/mobile/auth/logout
      */
     @PostMapping("/logout")
     fun logout(request: HttpServletRequest): ResponseEntity<Void> {
@@ -86,7 +86,7 @@ class AuthController(
 
     /**
      * GPS 동의 약관 조회
-     * GET /api/v1/auth/gps-consent/terms
+     * GET /api/v1/mobile/auth/gps-consent/terms
      */
     @GetMapping("/gps-consent/terms")
     fun getGpsConsentTerms(
@@ -98,7 +98,7 @@ class AuthController(
 
     /**
      * GPS 동의 상태 조회
-     * GET /api/v1/auth/gps-consent/status
+     * GET /api/v1/mobile/auth/gps-consent/status
      */
     @GetMapping("/gps-consent/status")
     fun getGpsConsentStatus(
@@ -110,7 +110,7 @@ class AuthController(
 
     /**
      * GPS 동의 기록
-     * POST /api/v1/auth/gps-consent
+     * POST /api/v1/mobile/auth/gps-consent
      */
     @PostMapping("/gps-consent")
     fun recordGpsConsent(

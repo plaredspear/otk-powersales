@@ -103,7 +103,7 @@ class AuthControllerTest {
 
         // When & Then
         mockMvc.perform(
-            post("/api/v1/auth/login")
+            post("/api/v1/mobile/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request))
         )
@@ -137,7 +137,7 @@ class AuthControllerTest {
 
         // When & Then
         mockMvc.perform(
-            post("/api/v1/auth/login")
+            post("/api/v1/mobile/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"employee_code": "87654321", "password": "otg1"}""")
         )
@@ -154,7 +154,7 @@ class AuthControllerTest {
 
         // When & Then
         mockMvc.perform(
-            post("/api/v1/auth/login")
+            post("/api/v1/mobile/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"employee_code": "99999999", "password": "password123"}""")
         )
@@ -168,7 +168,7 @@ class AuthControllerTest {
     fun login_missingEmployeeNumber() {
         // When & Then
         mockMvc.perform(
-            post("/api/v1/auth/login")
+            post("/api/v1/mobile/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"employee_code": "", "password": "password123"}""")
         )
@@ -182,7 +182,7 @@ class AuthControllerTest {
     fun login_invalidEmployeeNumberFormat() {
         // When & Then
         mockMvc.perform(
-            post("/api/v1/auth/login")
+            post("/api/v1/mobile/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"employee_code": "123456", "password": "password123"}""")
         )
@@ -197,7 +197,7 @@ class AuthControllerTest {
     fun login_shortPassword() {
         // When & Then
         mockMvc.perform(
-            post("/api/v1/auth/login")
+            post("/api/v1/mobile/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"employee_code": "12345678", "password": "123"}""")
         )
@@ -223,7 +223,7 @@ class AuthControllerTest {
 
         // When & Then
         mockMvc.perform(
-            post("/api/v1/auth/refresh")
+            post("/api/v1/mobile/auth/refresh")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"refresh_token": "valid-refresh-token"}""")
         )
@@ -244,7 +244,7 @@ class AuthControllerTest {
 
         // When & Then
         mockMvc.perform(
-            post("/api/v1/auth/refresh")
+            post("/api/v1/mobile/auth/refresh")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"refresh_token": "reused-refresh-token"}""")
         )
@@ -262,7 +262,7 @@ class AuthControllerTest {
 
         // When & Then
         mockMvc.perform(
-            post("/api/v1/auth/refresh")
+            post("/api/v1/mobile/auth/refresh")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"refresh_token": "tampered-token"}""")
         )
@@ -275,7 +275,7 @@ class AuthControllerTest {
     fun refresh_missingToken() {
         // When & Then
         mockMvc.perform(
-            post("/api/v1/auth/refresh")
+            post("/api/v1/mobile/auth/refresh")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"refresh_token": ""}""")
         )
@@ -294,7 +294,7 @@ class AuthControllerTest {
 
         // When & Then
         mockMvc.perform(
-            post("/api/v1/auth/change-password")
+            post("/api/v1/mobile/auth/change-password")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"current_password": "oldPass", "new_password": "newPass1"}""")
         )
@@ -312,7 +312,7 @@ class AuthControllerTest {
 
         // When & Then
         mockMvc.perform(
-            post("/api/v1/auth/change-password")
+            post("/api/v1/mobile/auth/change-password")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"current_password": "wrongPass", "new_password": "newPass1"}""")
         )
@@ -326,7 +326,7 @@ class AuthControllerTest {
     fun changePassword_shortNewPassword() {
         // When & Then
         mockMvc.perform(
-            post("/api/v1/auth/change-password")
+            post("/api/v1/mobile/auth/change-password")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"current_password": "oldPass123", "new_password": "12"}""")
         )
@@ -345,7 +345,7 @@ class AuthControllerTest {
 
         // When & Then
         mockMvc.perform(
-            post("/api/v1/auth/verify-password")
+            post("/api/v1/mobile/auth/verify-password")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"password": "correctPass123"}""")
         )
@@ -364,7 +364,7 @@ class AuthControllerTest {
 
         // When & Then
         mockMvc.perform(
-            post("/api/v1/auth/verify-password")
+            post("/api/v1/mobile/auth/verify-password")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"password": "wrongPass"}""")
         )
@@ -378,7 +378,7 @@ class AuthControllerTest {
     fun verifyPassword_missingPassword() {
         // When & Then
         mockMvc.perform(
-            post("/api/v1/auth/verify-password")
+            post("/api/v1/mobile/auth/verify-password")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"password": ""}""")
         )
@@ -398,7 +398,7 @@ class AuthControllerTest {
 
         // When & Then
         mockMvc.perform(
-            post("/api/v1/auth/logout")
+            post("/api/v1/mobile/auth/logout")
                 .header("Authorization", "Bearer $accessToken")
         )
             .andExpect(status().isNoContent)
@@ -411,7 +411,7 @@ class AuthControllerTest {
     fun logout_withoutAuthHeader() {
         // When & Then
         mockMvc.perform(
-            post("/api/v1/auth/logout")
+            post("/api/v1/mobile/auth/logout")
         )
             .andExpect(status().isNoContent)
     }
@@ -426,7 +426,7 @@ class AuthControllerTest {
         whenever(authService.getGpsConsentTerms()).thenReturn(response)
 
         // When & Then
-        mockMvc.perform(get("/api/v1/auth/gps-consent/terms"))
+        mockMvc.perform(get("/api/v1/mobile/auth/gps-consent/terms"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data.agreement_number").value("AGR-2025-001"))
@@ -440,7 +440,7 @@ class AuthControllerTest {
         whenever(authService.getGpsConsentTerms()).thenThrow(TermsNotFoundException())
 
         // When & Then
-        mockMvc.perform(get("/api/v1/auth/gps-consent/terms"))
+        mockMvc.perform(get("/api/v1/mobile/auth/gps-consent/terms"))
             .andExpect(status().isNotFound)
             .andExpect(jsonPath("$.error.code").value("TERMS_NOT_FOUND"))
     }
@@ -455,7 +455,7 @@ class AuthControllerTest {
         whenever(authService.getGpsConsentStatus(1L)).thenReturn(response)
 
         // When & Then
-        mockMvc.perform(get("/api/v1/auth/gps-consent/status"))
+        mockMvc.perform(get("/api/v1/mobile/auth/gps-consent/status"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.requires_gps_consent").value(true))
     }
@@ -468,7 +468,7 @@ class AuthControllerTest {
         whenever(authService.getGpsConsentStatus(1L)).thenReturn(response)
 
         // When & Then
-        mockMvc.perform(get("/api/v1/auth/gps-consent/status"))
+        mockMvc.perform(get("/api/v1/mobile/auth/gps-consent/status"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.requires_gps_consent").value(false))
     }
@@ -484,7 +484,7 @@ class AuthControllerTest {
 
         // When & Then
         mockMvc.perform(
-            post("/api/v1/auth/gps-consent")
+            post("/api/v1/mobile/auth/gps-consent")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"agreement_number": "AGR-2025-001"}""")
         )
@@ -503,7 +503,7 @@ class AuthControllerTest {
         whenever(authService.recordGpsConsent(eq(1L), anyOrNull())).thenReturn(response)
 
         // When & Then
-        mockMvc.perform(post("/api/v1/auth/gps-consent"))
+        mockMvc.perform(post("/api/v1/mobile/auth/gps-consent"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data.access_token").value("new-token"))

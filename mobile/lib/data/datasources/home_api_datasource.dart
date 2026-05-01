@@ -11,7 +11,7 @@ class HomeApiDataSource implements HomeRemoteDataSource {
 
   @override
   Future<HomeResponseModel> getHomeData() async {
-    final response = await _dio.get('/api/v1/home');
+    final response = await _dio.get('/api/v1/mobile/home');
 
     return HomeResponseModel.fromJson(
       response.data as Map<String, dynamic>,

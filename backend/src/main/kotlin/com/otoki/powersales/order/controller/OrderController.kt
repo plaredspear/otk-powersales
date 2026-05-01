@@ -16,14 +16,14 @@ import java.time.LocalDate
  * 주문 API Controller
  */
 @RestController
-@RequestMapping("/api/v1/me")
+@RequestMapping("/api/v1/mobile/me")
 class OrderController(
     private val orderService: OrderService
 ) {
 
     /**
      * 내 주문 목록 조회
-     * GET /api/v1/me/orders
+     * GET /api/v1/mobile/me/orders
      */
     @GetMapping("/orders")
     fun getMyOrders(
@@ -51,10 +51,10 @@ class OrderController(
         return ResponseEntity.ok(ApiResponse.success(result, "조회 성공"))
     }
 
-    // TODO: Spec #XXX에서 활성화 — GET /api/v1/me/orders/{orderId} (주문 상세)
-    // TODO: Spec #XXX에서 활성화 — POST /api/v1/me/orders/{orderId}/resend (재전송)
-    // TODO: Spec #XXX에서 활성화 — POST /api/v1/me/orders/{orderId}/cancel (취소)
-    // TODO: Spec #XXX에서 활성화 — POST /api/v1/me/orders/validate (유효성 체크)
-    // TODO: Spec #XXX에서 활성화 — POST /api/v1/me/orders (주문서 제출)
+    // TODO: Spec #XXX에서 활성화 — GET /api/v1/mobile/me/orders/{orderId} (주문 상세)
+    // TODO: Spec #XXX에서 활성화 — POST /api/v1/mobile/me/orders/{orderId}/resend (재전송)
+    // TODO: Spec #XXX에서 활성화 — POST /api/v1/mobile/me/orders/{orderId}/cancel (취소)
+    // TODO: Spec #XXX에서 활성화 — POST /api/v1/mobile/me/orders/validate (유효성 체크)
+    // TODO: Spec #XXX에서 활성화 — POST /api/v1/mobile/me/orders (주문서 제출)
 }
 */

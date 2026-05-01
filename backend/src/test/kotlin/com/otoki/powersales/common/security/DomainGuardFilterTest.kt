@@ -26,7 +26,7 @@ class DomainGuardFilterTest {
         @Test
         @DisplayName("API 도메인 + 모바일 인증 경로 - 통과")
         fun apiDomain_authPath_passes() {
-            val request = createRequest(apiDomain, "/api/v1/auth/login")
+            val request = createRequest(apiDomain, "/api/v1/mobile/auth/login")
             val response = MockHttpServletResponse()
 
             filter.doFilter(request, response, filterChain)
@@ -37,7 +37,7 @@ class DomainGuardFilterTest {
         @Test
         @DisplayName("API 도메인 + 모바일 데이터 경로 - 통과")
         fun apiDomain_salesPath_passes() {
-            val request = createRequest(apiDomain, "/api/v1/sales/monthly")
+            val request = createRequest(apiDomain, "/api/v1/mobile/sales/monthly")
             val response = MockHttpServletResponse()
 
             filter.doFilter(request, response, filterChain)
@@ -48,12 +48,24 @@ class DomainGuardFilterTest {
         @Test
         @DisplayName("API 도메인 + 헬스체크 경로 - 통과")
         fun apiDomain_healthPath_passes() {
-            val request = createRequest(apiDomain, "/api/v1/health")
+            val request = createRequest(apiDomain, "/api/health")
             val response = MockHttpServletResponse()
 
             filter.doFilter(request, response, filterChain)
 
             verify(filterChain).doFilter(request, response)
+        }
+
+        @Test
+        @DisplayName("API 도메인 + 구 모바일 prefix 경로(/mobile/ 미부착) - 404 차단")
+        fun apiDomain_legacyMobilePath_blocked() {
+            val request = createRequest(apiDomain, "/api/v1/home")
+            val response = MockHttpServletResponse()
+
+            filter.doFilter(request, response, filterChain)
+
+            assertThat(response.status).isEqualTo(404)
+            verifyNoInteractions(filterChain)
         }
 
         @Test
@@ -132,14 +144,15 @@ class DomainGuardFilterTest {
     inner class AdminDomainTests {
 
         @Test
-        @DisplayName("Admin 도메인 + 인증 API 허용 - 통과")
-        fun adminDomain_authApi_passes() {
-            val request = createRequest(adminDomain, "/api/v1/auth/login")
+        @DisplayName("Admin 도메인 + 모바일 인증 API 차단 - 404 (admin auth는 /api/v1/admin/auth/* 사용)")
+        fun adminDomain_mobileAuthApi_blocked() {
+            val request = createRequest(adminDomain, "/api/v1/mobile/auth/login")
             val response = MockHttpServletResponse()
 
             filter.doFilter(request, response, filterChain)
 
-            verify(filterChain).doFilter(request, response)
+            assertThat(response.status).isEqualTo(404)
+            verifyNoInteractions(filterChain)
         }
 
         @Test
@@ -156,7 +169,7 @@ class DomainGuardFilterTest {
         @Test
         @DisplayName("Admin 도메인 + 모바일 API 차단 - 404")
         fun adminDomain_mobileApi_blocked() {
-            val request = createRequest(adminDomain, "/api/v1/home/dashboard")
+            val request = createRequest(adminDomain, "/api/v1/mobile/home/dashboard")
             val response = MockHttpServletResponse()
 
             filter.doFilter(request, response, filterChain)
@@ -195,7 +208,7 @@ class DomainGuardFilterTest {
         @Test
         @DisplayName("IP 주소 (ALB health check) - 통과")
         fun ipAddress_passes() {
-            val request = createRequest("10.0.1.50", "/api/v1/health")
+            val request = createRequest("10.0.1.50", "/api/health")
             val response = MockHttpServletResponse()
 
             filter.doFilter(request, response, filterChain)

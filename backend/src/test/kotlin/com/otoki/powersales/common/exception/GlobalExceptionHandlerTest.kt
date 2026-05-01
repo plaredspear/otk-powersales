@@ -50,7 +50,7 @@ class GlobalExceptionHandlerTest {
     @DisplayName("handleMethodNotSupported - 모바일 path 도 ApiResponse 형식")
     fun handleMethodNotSupported_mobilePathReturnsApiResponse() {
         val ex = HttpRequestMethodNotSupportedException("DELETE", listOf("POST"))
-        val request = ServletWebRequest(MockHttpServletRequest("DELETE", "/api/v1/auth/login"))
+        val request = ServletWebRequest(MockHttpServletRequest("DELETE", "/api/v1/mobile/auth/login"))
 
         val response = handler.handleMethodNotSupported(ex, request)
 

@@ -27,9 +27,9 @@ class OrderQueryController(
 
     / **
      * 주문이력 제품 조회
-     * GET /api/v1/me/order-history/products
+     * GET /api/v1/mobile/me/order-history/products
      * /
-    @GetMapping("/api/v1/me/order-history/products")
+    @GetMapping("/api/v1/mobile/me/order-history/products")
     fun getOrderHistoryProducts(
         @AuthenticationPrincipal principal: UserPrincipal,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) orderDateFrom: LocalDate?,
@@ -49,9 +49,9 @@ class OrderQueryController(
 
     / **
      * 거래처 여신잔액 조회
-     * GET /api/v1/clients/{clientId}/credit-balance
+     * GET /api/v1/mobile/clients/{clientId}/credit-balance
      * /
-    @GetMapping("/api/v1/clients/{clientId}/credit-balance")
+    @GetMapping("/api/v1/mobile/clients/{clientId}/credit-balance")
     fun getClientCreditBalance(
         @PathVariable clientId: Long
     ): ResponseEntity<ApiResponse<CreditBalanceResponse>> {
@@ -61,9 +61,9 @@ class OrderQueryController(
 
     / **
      * 제품 주문정보 조회
-     * GET /api/v1/products/{productCode}/order-info
+     * GET /api/v1/mobile/products/{productCode}/order-info
      * /
-    @GetMapping("/api/v1/products/{productCode}/order-info")
+    @GetMapping("/api/v1/mobile/products/{productCode}/order-info")
     fun getProductOrderInfo(
         @PathVariable productCode: String
     ): ResponseEntity<ApiResponse<ProductOrderInfoResponse>> {

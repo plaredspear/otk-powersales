@@ -69,7 +69,7 @@ class AccountControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/v1/accounts/my - 내 거래처 목록 조회")
+    @DisplayName("GET /api/v1/mobile/accounts/my - 내 거래처 목록 조회")
     inner class GetMyAccounts {
 
         @Test
@@ -103,7 +103,7 @@ class AccountControllerTest {
 
             // when & then
             mockMvc.perform(
-                get("/api/v1/accounts/my")
+                get("/api/v1/mobile/accounts/my")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
@@ -144,7 +144,7 @@ class AccountControllerTest {
 
             // when & then
             mockMvc.perform(
-                get("/api/v1/accounts/my")
+                get("/api/v1/mobile/accounts/my")
                     .param("keyword", keyword)
                     .contentType(MediaType.APPLICATION_JSON)
             )
@@ -165,7 +165,7 @@ class AccountControllerTest {
 
             // when & then
             mockMvc.perform(
-                get("/api/v1/accounts/my")
+                get("/api/v1/mobile/accounts/my")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
@@ -183,7 +183,7 @@ class AccountControllerTest {
 
             // when & then
             mockMvc.perform(
-                get("/api/v1/accounts/my")
+                get("/api/v1/mobile/accounts/my")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isNotFound)
@@ -200,7 +200,7 @@ class AccountControllerTest {
 
             // when & then
             mockMvc.perform(
-                get("/api/v1/accounts/my")
+                get("/api/v1/mobile/accounts/my")
                     .param("keyword", "가")
                     .contentType(MediaType.APPLICATION_JSON)
             )

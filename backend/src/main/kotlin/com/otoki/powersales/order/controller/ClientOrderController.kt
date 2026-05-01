@@ -16,14 +16,14 @@ import java.time.LocalDate
  * 거래처별 주문 API Controller (F28)
  */
 @RestController
-@RequestMapping("/api/v1/client-orders")
+@RequestMapping("/api/v1/mobile/client-orders")
 class ClientOrderController(
     private val clientOrderService: ClientOrderService
 ) {
 
     /**
      * 거래처별 주문 목록 조회
-     * GET /api/v1/client-orders?clientId=123&deliveryDate=2026-02-10&page=0&size=20
+     * GET /api/v1/mobile/client-orders?clientId=123&deliveryDate=2026-02-10&page=0&size=20
      *
      * @param principal 인증된 사용자 정보
      * @param clientId 거래처 ID (필수)
@@ -49,6 +49,6 @@ class ClientOrderController(
         return ResponseEntity.ok(ApiResponse.success(result, "조회 성공"))
     }
 
-    // TODO: Spec #XXX에서 활성화 — GET /api/v1/client-orders/{sapOrderNumber} (거래처별 주문 상세)
+    // TODO: Spec #XXX에서 활성화 — GET /api/v1/mobile/client-orders/{sapOrderNumber} (거래처별 주문 상세)
 }
 */

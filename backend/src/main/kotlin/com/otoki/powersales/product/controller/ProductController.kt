@@ -16,14 +16,14 @@ import org.springframework.web.bind.annotation.RestController
  * 제품 검색 API Controller
  */
 @RestController
-@RequestMapping("/api/v1/products")
+@RequestMapping("/api/v1/mobile/products")
 class ProductController(
     private val productService: ProductService
 ) {
 
     /**
      * 제품 검색
-     * GET /api/v1/products/search
+     * GET /api/v1/mobile/products/search
      *
      * @param query 검색어 (제품명/제품코드/바코드)
      * @param type 검색 유형 (text 또는 barcode, 기본: text)

@@ -1,6 +1,6 @@
 import '../../domain/entities/leader_account.dart';
 
-/// `GET /api/v1/leader/accounts` 응답의 단일 항목 모델.
+/// `GET /api/v1/mobile/leader/accounts` 응답의 단일 항목 모델.
 class LeaderAccountModel {
   final int id;
   final String? name;

@@ -109,7 +109,7 @@ class AuthInterceptor extends Interceptor {
       }
 
       final response = await _dio.post(
-        '/api/v1/auth/refresh',
+        '/api/v1/mobile/auth/refresh',
         data: {'refresh_token': refreshToken},
       );
 

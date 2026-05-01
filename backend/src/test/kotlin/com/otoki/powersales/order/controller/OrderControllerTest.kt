@@ -93,7 +93,7 @@ class OrderControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/me/orders")
+                get("/api/v1/mobile/me/orders")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
@@ -133,7 +133,7 @@ class OrderControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/me/orders")
+                get("/api/v1/mobile/me/orders")
                     .param("clientId", "123")
                     .contentType(MediaType.APPLICATION_JSON)
             )
@@ -157,7 +157,7 @@ class OrderControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/me/orders")
+                get("/api/v1/mobile/me/orders")
                     .param("status", "APPROVED")
                     .contentType(MediaType.APPLICATION_JSON)
             )
@@ -177,7 +177,7 @@ class OrderControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/me/orders")
+                get("/api/v1/mobile/me/orders")
                     .param("deliveryDateFrom", "2026-02-01")
                     .param("deliveryDateTo", "2026-02-28")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -198,7 +198,7 @@ class OrderControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/me/orders")
+                get("/api/v1/mobile/me/orders")
                     .param("sortBy", "totalAmount")
                     .param("sortDir", "DESC")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -222,7 +222,7 @@ class OrderControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/me/orders")
+                get("/api/v1/mobile/me/orders")
                     .param("page", "1")
                     .param("size", "10")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -246,7 +246,7 @@ class OrderControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/me/orders")
+                get("/api/v1/mobile/me/orders")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
@@ -275,7 +275,7 @@ class OrderControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/me/orders")
+                get("/api/v1/mobile/me/orders")
                     .param("status", "INVALID")
                     .contentType(MediaType.APPLICATION_JSON)
             )
@@ -296,7 +296,7 @@ class OrderControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/me/orders")
+                get("/api/v1/mobile/me/orders")
                     .param("deliveryDateFrom", "2026-02-28")
                     .param("deliveryDateTo", "2026-02-01")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -320,7 +320,7 @@ class OrderControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/me/orders")
+                get("/api/v1/mobile/me/orders")
                     .param("sortBy", "invalidField")
                     .contentType(MediaType.APPLICATION_JSON)
             )
@@ -360,7 +360,7 @@ class OrderControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/me/orders")
+                get("/api/v1/mobile/me/orders")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
@@ -391,7 +391,7 @@ class OrderControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/me/orders")
+                get("/api/v1/mobile/me/orders")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
@@ -402,7 +402,7 @@ class OrderControllerTest {
     // ========== 주문 상세 조회 테스트 ==========
 
     @Nested
-    @DisplayName("주문 상세 조회 - GET /api/v1/me/orders/{orderId}")
+    @DisplayName("주문 상세 조회 - GET /api/v1/mobile/me/orders/{orderId}")
     inner class GetOrderDetail {
 
         @Test
@@ -445,7 +445,7 @@ class OrderControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/me/orders/1")
+                get("/api/v1/mobile/me/orders/1")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
@@ -517,7 +517,7 @@ class OrderControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/me/orders/1")
+                get("/api/v1/mobile/me/orders/1")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
@@ -591,7 +591,7 @@ class OrderControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/me/orders/1")
+                get("/api/v1/mobile/me/orders/1")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
@@ -616,7 +616,7 @@ class OrderControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/me/orders/999")
+                get("/api/v1/mobile/me/orders/999")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isNotFound)
@@ -634,7 +634,7 @@ class OrderControllerTest {
 
             // When & Then
             mockMvc.perform(
-                get("/api/v1/me/orders/1")
+                get("/api/v1/mobile/me/orders/1")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isForbidden)
@@ -647,7 +647,7 @@ class OrderControllerTest {
     // ========== 주문 재전송 테스트 ==========
 
     @Nested
-    @DisplayName("주문 재전송 - POST /api/v1/me/orders/{orderId}/resend")
+    @DisplayName("주문 재전송 - POST /api/v1/mobile/me/orders/{orderId}/resend")
     inner class ResendOrder {
 
         @Test
@@ -658,7 +658,7 @@ class OrderControllerTest {
 
             // When & Then
             mockMvc.perform(
-                post("/api/v1/me/orders/1/resend")
+                post("/api/v1/mobile/me/orders/1/resend")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
@@ -676,7 +676,7 @@ class OrderControllerTest {
 
             // When & Then
             mockMvc.perform(
-                post("/api/v1/me/orders/1/resend")
+                post("/api/v1/mobile/me/orders/1/resend")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isBadRequest)
@@ -694,7 +694,7 @@ class OrderControllerTest {
 
             // When & Then
             mockMvc.perform(
-                post("/api/v1/me/orders/1/resend")
+                post("/api/v1/mobile/me/orders/1/resend")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isBadRequest)
@@ -712,7 +712,7 @@ class OrderControllerTest {
 
             // When & Then
             mockMvc.perform(
-                post("/api/v1/me/orders/999/resend")
+                post("/api/v1/mobile/me/orders/999/resend")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isNotFound)
@@ -730,7 +730,7 @@ class OrderControllerTest {
 
             // When & Then
             mockMvc.perform(
-                post("/api/v1/me/orders/1/resend")
+                post("/api/v1/mobile/me/orders/1/resend")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isForbidden)
@@ -743,7 +743,7 @@ class OrderControllerTest {
     // ========== 주문 취소 테스트 ==========
 
     @Nested
-    @DisplayName("주문 취소 - POST /api/v1/me/orders/{orderId}/cancel")
+    @DisplayName("주문 취소 - POST /api/v1/mobile/me/orders/{orderId}/cancel")
     inner class CancelOrder {
 
         @Test
@@ -759,7 +759,7 @@ class OrderControllerTest {
 
             // When & Then
             mockMvc.perform(
-                post("/api/v1/me/orders/1/cancel")
+                post("/api/v1/mobile/me/orders/1/cancel")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""{"product_codes": ["P001"]}""")
             )
@@ -785,7 +785,7 @@ class OrderControllerTest {
 
             // When & Then
             mockMvc.perform(
-                post("/api/v1/me/orders/1/cancel")
+                post("/api/v1/mobile/me/orders/1/cancel")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""{"product_codes": ["P001", "P002", "P003"]}""")
             )
@@ -801,7 +801,7 @@ class OrderControllerTest {
         fun cancelOrder_emptyProductCodes_returns400() {
             // When & Then
             mockMvc.perform(
-                post("/api/v1/me/orders/1/cancel")
+                post("/api/v1/mobile/me/orders/1/cancel")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""{"product_codes": []}""")
             )
@@ -815,7 +815,7 @@ class OrderControllerTest {
         fun cancelOrder_missingProductCodes_returns400() {
             // When & Then
             mockMvc.perform(
-                post("/api/v1/me/orders/1/cancel")
+                post("/api/v1/mobile/me/orders/1/cancel")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""{}""")
             )
@@ -833,7 +833,7 @@ class OrderControllerTest {
 
             // When & Then
             mockMvc.perform(
-                post("/api/v1/me/orders/999/cancel")
+                post("/api/v1/mobile/me/orders/999/cancel")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""{"product_codes": ["P001"]}""")
             )
@@ -852,7 +852,7 @@ class OrderControllerTest {
 
             // When & Then
             mockMvc.perform(
-                post("/api/v1/me/orders/1/cancel")
+                post("/api/v1/mobile/me/orders/1/cancel")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""{"product_codes": ["P001"]}""")
             )
@@ -871,7 +871,7 @@ class OrderControllerTest {
 
             // When & Then
             mockMvc.perform(
-                post("/api/v1/me/orders/1/cancel")
+                post("/api/v1/mobile/me/orders/1/cancel")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""{"product_codes": ["P001"]}""")
             )
@@ -890,7 +890,7 @@ class OrderControllerTest {
 
             // When & Then
             mockMvc.perform(
-                post("/api/v1/me/orders/1/cancel")
+                post("/api/v1/mobile/me/orders/1/cancel")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""{"product_codes": ["P001", "P002"]}""")
             )
@@ -909,7 +909,7 @@ class OrderControllerTest {
 
             // When & Then
             mockMvc.perform(
-                post("/api/v1/me/orders/1/cancel")
+                post("/api/v1/mobile/me/orders/1/cancel")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""{"product_codes": ["P999"]}""")
             )
@@ -923,7 +923,7 @@ class OrderControllerTest {
     // ========== 주문서 유효성 체크 테스트 ==========
 
     @Nested
-    @DisplayName("주문서 유효성 체크 - POST /api/v1/me/orders/validate")
+    @DisplayName("주문서 유효성 체크 - POST /api/v1/mobile/me/orders/validate")
     inner class ValidateOrder {
 
         @Test
@@ -938,7 +938,7 @@ class OrderControllerTest {
 
             // When & Then
             mockMvc.perform(
-                post("/api/v1/me/orders/validate")
+                post("/api/v1/mobile/me/orders/validate")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""
                         {
@@ -982,7 +982,7 @@ class OrderControllerTest {
 
             // When & Then
             mockMvc.perform(
-                post("/api/v1/me/orders/validate")
+                post("/api/v1/mobile/me/orders/validate")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""
                         {
@@ -1013,7 +1013,7 @@ class OrderControllerTest {
 
             // When & Then
             mockMvc.perform(
-                post("/api/v1/me/orders/validate")
+                post("/api/v1/mobile/me/orders/validate")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""
                         {
@@ -1034,7 +1034,7 @@ class OrderControllerTest {
     // ========== 주문서 제출 테스트 ==========
 
     @Nested
-    @DisplayName("주문서 제출 - POST /api/v1/me/orders")
+    @DisplayName("주문서 제출 - POST /api/v1/mobile/me/orders")
     inner class SubmitOrder {
 
         @Test
@@ -1052,7 +1052,7 @@ class OrderControllerTest {
 
             // When & Then
             mockMvc.perform(
-                post("/api/v1/me/orders")
+                post("/api/v1/mobile/me/orders")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""
                         {
@@ -1090,7 +1090,7 @@ class OrderControllerTest {
 
             // When & Then
             mockMvc.perform(
-                post("/api/v1/me/orders")
+                post("/api/v1/mobile/me/orders")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""
                         {
@@ -1118,7 +1118,7 @@ class OrderControllerTest {
 
             // When & Then
             mockMvc.perform(
-                post("/api/v1/me/orders")
+                post("/api/v1/mobile/me/orders")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""
                         {

@@ -18,14 +18,14 @@ import org.springframework.web.multipart.MultipartFile
  * 클레임 API Controller
  * /
 @RestController
-@RequestMapping("/api/v1/claims")
+@RequestMapping("/api/v1/mobile/claims")
 class ClaimController(
     private val claimService: ClaimService
 ) {
 
     / **
      * 클레임 등록
-     * POST /api/v1/claims
+     * POST /api/v1/mobile/claims
      *
      * @param principal 인증된 사용자
      * @param request 클레임 등록 요청 (multipart form fields)
@@ -56,7 +56,7 @@ class ClaimController(
 
     / **
      * 폼 초기화 데이터 조회
-     * GET /api/v1/claims/form-data
+     * GET /api/v1/mobile/claims/form-data
      *
      * @param principal 인증된 사용자
      * @return 종류1+종류2, 구매방법, 요청사항 통합 데이터

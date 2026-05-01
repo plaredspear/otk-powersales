@@ -1,6 +1,6 @@
 /// 비밀번호 변경 요청 DTO
 ///
-/// Backend API의 POST /api/v1/auth/change-password 요청에 사용됩니다.
+/// Backend API의 POST /api/v1/mobile/auth/change-password 요청에 사용됩니다.
 class ChangePasswordRequest {
   final String currentPassword;
   final String newPassword;

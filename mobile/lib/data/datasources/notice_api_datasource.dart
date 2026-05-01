@@ -34,7 +34,7 @@ class NoticeApiDataSource implements NoticeRemoteDataSource {
     }
 
     final response = await _dio.get(
-      '/api/v1/notices',
+      '/api/v1/mobile/notices',
       queryParameters: queryParameters,
     );
 
@@ -45,7 +45,7 @@ class NoticeApiDataSource implements NoticeRemoteDataSource {
 
   @override
   Future<NoticePostDetailModel> getPostDetail(int noticeId) async {
-    final response = await _dio.get('/api/v1/notices/$noticeId');
+    final response = await _dio.get('/api/v1/mobile/notices/$noticeId');
 
     return NoticePostDetailModel.fromJson(
       response.data['data'] as Map<String, dynamic>,

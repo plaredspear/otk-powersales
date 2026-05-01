@@ -41,7 +41,7 @@ final passwordValidationProvider =
 
 /// 현재 비밀번호 검증 상태 Notifier
 ///
-/// POST /api/v1/auth/verify-password API를 호출하여
+/// POST /api/v1/mobile/auth/verify-password API를 호출하여
 /// 현재 비밀번호가 일치하는지 확인합니다.
 class PasswordVerificationNotifier
     extends StateNotifier<AsyncValue<bool>> {
@@ -87,7 +87,7 @@ final passwordVerificationProvider = StateNotifierProvider<
 
 /// 비밀번호 변경 상태 Notifier
 ///
-/// POST /api/v1/auth/change-password API를 호출하여
+/// POST /api/v1/mobile/auth/change-password API를 호출하여
 /// 비밀번호를 변경합니다.
 class PasswordChangeNotifier extends StateNotifier<AsyncValue<void>> {
   final ChangePasswordUseCase _changePasswordUseCase;

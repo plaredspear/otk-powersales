@@ -13,14 +13,14 @@ import org.springframework.web.bind.annotation.*
  * 교육 API Controller
  */
 @RestController
-@RequestMapping("/api/v1/education")
+@RequestMapping("/api/v1/mobile/education")
 class EducationController(
     private val educationService: EducationService
 ) {
 
     /**
      * 교육 게시물 목록 조회
-     * GET /api/v1/education/posts?category=TASTING_MANUAL&search=시식&page=1&size=10
+     * GET /api/v1/mobile/education/posts?category=TASTING_MANUAL&search=시식&page=1&size=10
      *
      * @param category 카테고리 (필수, edu_code 값)
      * @param search 검색 키워드 (선택)
@@ -41,7 +41,7 @@ class EducationController(
 
     /**
      * 교육 게시물 상세 조회
-     * GET /api/v1/education/posts/{postId}
+     * GET /api/v1/mobile/education/posts/{postId}
      *
      * @param postId 게시물 ID (edu_id)
      */

@@ -33,10 +33,10 @@ class ClientOrderListNotifier extends StateNotifier<ClientOrderListState> {
 
   /// 초기 데이터 로딩
   ///
-  /// GET /api/v1/accounts/my 에서 거래처 목록 로딩
+  /// GET /api/v1/mobile/accounts/my 에서 거래처 목록 로딩
   Future<void> initialize() async {
     try {
-      final response = await _dio.get('/api/v1/accounts/my');
+      final response = await _dio.get('/api/v1/mobile/accounts/my');
       final data = response.data['data'] as Map<String, dynamic>;
       final accountsJson = data['accounts'] as List<dynamic>;
       final accountMap = <int, String>{};

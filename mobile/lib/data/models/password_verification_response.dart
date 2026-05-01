@@ -1,6 +1,6 @@
 /// 비밀번호 검증 응답 DTO
 ///
-/// Backend API의 POST /api/v1/auth/verify-password 응답을 파싱합니다.
+/// Backend API의 POST /api/v1/mobile/auth/verify-password 응답을 파싱합니다.
 class PasswordVerificationResponse {
   final bool isValid;
 

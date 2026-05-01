@@ -18,7 +18,7 @@ Dio _createMockDio() {
   final dio = Dio(BaseOptions(baseUrl: 'http://localhost'));
   dio.interceptors.add(InterceptorsWrapper(
     onRequest: (options, handler) {
-      if (options.path == '/api/v1/accounts/my') {
+      if (options.path == '/api/v1/mobile/accounts/my') {
         handler.resolve(Response(
           data: {
             'success': true,

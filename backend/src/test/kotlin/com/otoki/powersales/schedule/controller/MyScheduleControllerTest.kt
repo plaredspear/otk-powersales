@@ -89,7 +89,7 @@ class MyScheduleControllerTest {
 
         // When & Then
         mockMvc.perform(
-            get("/api/v1/mypage/schedule/monthly")
+            get("/api/v1/mobile/mypage/schedule/monthly")
                 .param("year", "2020")
                 .param("month", "8")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -109,7 +109,7 @@ class MyScheduleControllerTest {
     fun getMonthlySchedule_missingYear() {
         // When & Then
         mockMvc.perform(
-            get("/api/v1/mypage/schedule/monthly")
+            get("/api/v1/mobile/mypage/schedule/monthly")
                 .param("month", "8")
                 .contentType(MediaType.APPLICATION_JSON)
         )
@@ -121,7 +121,7 @@ class MyScheduleControllerTest {
     fun getMonthlySchedule_invalidMonth() {
         // When & Then
         mockMvc.perform(
-            get("/api/v1/mypage/schedule/monthly")
+            get("/api/v1/mobile/mypage/schedule/monthly")
                 .param("year", "2020")
                 .param("month", "13")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -161,7 +161,7 @@ class MyScheduleControllerTest {
 
         // When & Then
         mockMvc.perform(
-            get("/api/v1/mypage/schedule/daily")
+            get("/api/v1/mobile/mypage/schedule/daily")
                 .param("date", "2020-08-04")
                 .contentType(MediaType.APPLICATION_JSON)
         )
@@ -182,7 +182,7 @@ class MyScheduleControllerTest {
     fun getDailySchedule_missingDate() {
         // When & Then
         mockMvc.perform(
-            get("/api/v1/mypage/schedule/daily")
+            get("/api/v1/mobile/mypage/schedule/daily")
                 .contentType(MediaType.APPLICATION_JSON)
         )
             .andExpect(status().isBadRequest)
@@ -193,7 +193,7 @@ class MyScheduleControllerTest {
     fun getDailySchedule_invalidDateFormat() {
         // When & Then
         mockMvc.perform(
-            get("/api/v1/mypage/schedule/daily")
+            get("/api/v1/mobile/mypage/schedule/daily")
                 .param("date", "20200804")
                 .contentType(MediaType.APPLICATION_JSON)
         )

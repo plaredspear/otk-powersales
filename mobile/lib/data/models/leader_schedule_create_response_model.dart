@@ -1,6 +1,6 @@
 import '../../domain/entities/leader_schedule_created.dart';
 
-/// `POST /api/v1/leader/team-member-schedule` 응답 모델.
+/// `POST /api/v1/mobile/leader/team-member-schedule` 응답 모델.
 class LeaderScheduleCreateResponseModel {
   final int scheduleId;
   final int targetEmployeeId;

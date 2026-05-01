@@ -72,7 +72,7 @@ class PromotionControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/v1/promotions - 행사 목록 조회")
+    @DisplayName("GET /api/v1/mobile/promotions - 행사 목록 조회")
     inner class GetPromotions {
 
         @Test
@@ -123,7 +123,7 @@ class PromotionControllerTest {
                 )
             ).thenReturn(response)
 
-            mockMvc.perform(get("/api/v1/promotions"))
+            mockMvc.perform(get("/api/v1/mobile/promotions"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content").isArray)
@@ -164,7 +164,7 @@ class PromotionControllerTest {
             ).thenReturn(response)
 
             mockMvc.perform(
-                get("/api/v1/promotions")
+                get("/api/v1/mobile/promotions")
                     .param("startDate", "2026-03-01")
                     .param("endDate", "2026-03-31")
             )
@@ -209,7 +209,7 @@ class PromotionControllerTest {
             ).thenReturn(response)
 
             mockMvc.perform(
-                get("/api/v1/promotions")
+                get("/api/v1/mobile/promotions")
                     .param("keyword", "봄맞이")
             )
                 .andExpect(status().isOk)
@@ -229,7 +229,7 @@ class PromotionControllerTest {
             ).thenThrow(PromotionInvalidParameterException())
 
             mockMvc.perform(
-                get("/api/v1/promotions")
+                get("/api/v1/mobile/promotions")
                     .param("startDate", "invalid-date")
             )
                 .andExpect(status().isBadRequest)
@@ -238,7 +238,7 @@ class PromotionControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/v1/promotions/{id} - 행사 상세 조회")
+    @DisplayName("GET /api/v1/mobile/promotions/{id} - 행사 상세 조회")
     inner class GetPromotion {
 
         @Test
@@ -289,7 +289,7 @@ class PromotionControllerTest {
             )
             whenever(mobilePromotionService.getPromotion(eq(1L), eq(1L))).thenReturn(detail)
 
-            mockMvc.perform(get("/api/v1/promotions/1"))
+            mockMvc.perform(get("/api/v1/mobile/promotions/1"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1))
@@ -330,7 +330,7 @@ class PromotionControllerTest {
             whenever(mobilePromotionService.getPromotion(eq(1L), eq(999L)))
                 .thenThrow(PromotionNotFoundException())
 
-            mockMvc.perform(get("/api/v1/promotions/999"))
+            mockMvc.perform(get("/api/v1/mobile/promotions/999"))
                 .andExpect(status().isNotFound)
                 .andExpect(jsonPath("$.error.code").value("PROMOTION_NOT_FOUND"))
         }
@@ -341,7 +341,7 @@ class PromotionControllerTest {
             whenever(mobilePromotionService.getPromotion(eq(1L), eq(5L)))
                 .thenThrow(PromotionForbiddenException())
 
-            mockMvc.perform(get("/api/v1/promotions/5"))
+            mockMvc.perform(get("/api/v1/mobile/promotions/5"))
                 .andExpect(status().isForbidden)
                 .andExpect(jsonPath("$.error.code").value("FORBIDDEN"))
         }

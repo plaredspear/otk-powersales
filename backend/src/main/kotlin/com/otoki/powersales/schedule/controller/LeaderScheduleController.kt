@@ -22,14 +22,14 @@ import org.springframework.web.bind.annotation.RestController
  * 조장 대리 일정 등록 API Controller (Spec #554 P1-B).
  */
 @RestController
-@RequestMapping("/api/v1/leader")
+@RequestMapping("/api/v1/mobile/leader")
 class LeaderScheduleController(
     private val leaderScheduleService: LeaderScheduleService
 ) {
 
     /**
      * 조장 대리 일정 등록
-     * POST /api/v1/leader/team-member-schedule
+     * POST /api/v1/mobile/leader/team-member-schedule
      */
     @PostMapping("/team-member-schedule")
     fun createTeamMemberSchedule(
@@ -43,7 +43,7 @@ class LeaderScheduleController(
 
     /**
      * 본인 팀원 목록 조회
-     * GET /api/v1/leader/team-members
+     * GET /api/v1/mobile/leader/team-members
      */
     @GetMapping("/team-members")
     fun getTeamMembers(
@@ -55,7 +55,7 @@ class LeaderScheduleController(
 
     /**
      * 본인 거래처 목록 조회
-     * GET /api/v1/leader/accounts
+     * GET /api/v1/mobile/leader/accounts
      */
     @GetMapping("/accounts")
     fun getAccounts(

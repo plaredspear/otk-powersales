@@ -15,7 +15,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/api/v1/product-expiration")
+@RequestMapping("/api/v1/mobile/product-expiration")
 class ProductExpirationController(
     private val productExpirationService: ProductExpirationService
 ) {

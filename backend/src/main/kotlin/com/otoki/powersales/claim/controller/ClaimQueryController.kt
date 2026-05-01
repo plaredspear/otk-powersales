@@ -10,7 +10,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/api/v1/claims")
+@RequestMapping("/api/v1/mobile/claims")
 class ClaimQueryController(
     private val claimQueryService: ClaimQueryService
 ) {

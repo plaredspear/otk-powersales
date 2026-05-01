@@ -14,14 +14,14 @@ import java.time.LocalDate
  * 마이페이지 일정 API Controller
  */
 @RestController
-@RequestMapping("/api/v1/mypage/schedule")
+@RequestMapping("/api/v1/mobile/mypage/schedule")
 class MyScheduleController(
     private val myScheduleService: MyScheduleService
 ) {
 
     /**
      * 월간 일정 조회
-     * GET /api/v1/mypage/schedule/monthly
+     * GET /api/v1/mobile/mypage/schedule/monthly
      *
      * @param year 조회 연도 (필수)
      * @param month 조회 월 (1~12, 필수)
@@ -43,7 +43,7 @@ class MyScheduleController(
 
     /**
      * 일간 일정 상세 조회
-     * GET /api/v1/mypage/schedule/daily
+     * GET /api/v1/mobile/mypage/schedule/daily
      *
      * @param date 조회 날짜 (YYYY-MM-DD 형식, 필수)
      * @return 일간 거래처별 일정 + 등록 현황

@@ -3,7 +3,7 @@ import 'claim_code.dart';
 
 /// 클레임 등록 폼 초기화 데이터 Entity
 ///
-/// GET /api/v1/claims/form-data API 응답을 담는 통합 엔티티입니다.
+/// GET /api/v1/mobile/claims/form-data API 응답을 담는 통합 엔티티입니다.
 /// 클레임 종류 (categories + subcategories), 구매 방법, 요청사항 목록을 포함합니다.
 class ClaimFormData {
   const ClaimFormData({

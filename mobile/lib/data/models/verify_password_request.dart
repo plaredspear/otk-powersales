@@ -1,6 +1,6 @@
 /// 현재 비밀번호 검증 요청 DTO
 ///
-/// Backend API의 POST /api/v1/auth/verify-password 요청에 사용됩니다.
+/// Backend API의 POST /api/v1/mobile/auth/verify-password 요청에 사용됩니다.
 class VerifyPasswordRequest {
   final String currentPassword;
 

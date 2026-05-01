@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController
 import java.time.LocalDate
 
 @RestController
-@RequestMapping("/api/v1/holidays")
+@RequestMapping("/api/v1/mobile/holidays")
 class HolidayController(
     private val holidayMasterService: HolidayMasterService
 ) {

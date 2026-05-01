@@ -28,7 +28,7 @@ class ProductExpirationApiDataSource implements ProductExpirationRemoteDataSourc
     }
 
     final response = await _dio.get(
-      '/api/v1/product-expiration',
+      '/api/v1/mobile/product-expiration',
       queryParameters: queryParameters,
     );
 
@@ -43,7 +43,7 @@ class ProductExpirationApiDataSource implements ProductExpirationRemoteDataSourc
     ProductExpirationRegisterRequest request,
   ) async {
     final response = await _dio.post(
-      '/api/v1/product-expiration',
+      '/api/v1/mobile/product-expiration',
       data: request.toJson(),
     );
 
@@ -58,7 +58,7 @@ class ProductExpirationApiDataSource implements ProductExpirationRemoteDataSourc
     ProductExpirationUpdateRequest request,
   ) async {
     final response = await _dio.put(
-      '/api/v1/product-expiration/$seq',
+      '/api/v1/mobile/product-expiration/$seq',
       data: request.toJson(),
     );
 
@@ -69,7 +69,7 @@ class ProductExpirationApiDataSource implements ProductExpirationRemoteDataSourc
 
   @override
   Future<void> deleteProductExpiration(int seq) async {
-    await _dio.delete('/api/v1/product-expiration/$seq');
+    await _dio.delete('/api/v1/mobile/product-expiration/$seq');
   }
 
   @override
@@ -77,7 +77,7 @@ class ProductExpirationApiDataSource implements ProductExpirationRemoteDataSourc
     List<int> seqs,
   ) async {
     final response = await _dio.post(
-      '/api/v1/product-expiration/batch-delete',
+      '/api/v1/mobile/product-expiration/batch-delete',
       data: {'ids': seqs},
     );
 

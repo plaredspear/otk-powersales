@@ -18,14 +18,14 @@ import org.springframework.web.multipart.MultipartFile
  * 현장 점검 API Controller
  * /
 @RestController
-@RequestMapping("/api/v1/inspections")
+@RequestMapping("/api/v1/mobile/inspections")
 class InspectionController(
     private val inspectionService: InspectionService
 ) {
 
     / **
      * 현장 점검 목록 조회
-     * GET /api/v1/inspections
+     * GET /api/v1/mobile/inspections
      *
      * @param principal 인증된 사용자
      * @param accountId 거래처 ID (선택)
@@ -53,7 +53,7 @@ class InspectionController(
 
     / **
      * 현장 점검 상세 조회
-     * GET /api/v1/inspections/{inspectionId}
+     * GET /api/v1/mobile/inspections/{inspectionId}
      *
      * @param principal 인증된 사용자
      * @param inspectionId 점검 ID
@@ -72,7 +72,7 @@ class InspectionController(
 
     / **
      * 현장 점검 등록
-     * POST /api/v1/inspections
+     * POST /api/v1/mobile/inspections
      *
      * @param principal 인증된 사용자
      * @param request 등록 요청 (multipart form fields)
@@ -96,7 +96,7 @@ class InspectionController(
 
     / **
      * 테마 목록 조회
-     * GET /api/v1/inspections/themes
+     * GET /api/v1/mobile/inspections/themes
      * /
     @GetMapping("/themes")
     fun getThemes(

@@ -17,7 +17,7 @@ class AuthApiDataSource implements AuthRemoteDataSource {
   Future<LoginResponseModel> login(
       String employeeCode, String password, String deviceId) async {
     final response = await _dio.post(
-      '/api/v1/auth/login',
+      '/api/v1/mobile/auth/login',
       data: {
         'employee_code': employeeCode,
         'password': password,
@@ -32,7 +32,7 @@ class AuthApiDataSource implements AuthRemoteDataSource {
   @override
   Future<AuthTokenModel> refreshToken(String refreshToken) async {
     final response = await _dio.post(
-      '/api/v1/auth/refresh',
+      '/api/v1/mobile/auth/refresh',
       data: {
         'refresh_token': refreshToken,
       },
@@ -45,7 +45,7 @@ class AuthApiDataSource implements AuthRemoteDataSource {
   @override
   Future<bool> verifyCurrentPassword(String currentPassword) async {
     final response = await _dio.post(
-      '/api/v1/auth/verify-password',
+      '/api/v1/mobile/auth/verify-password',
       data: {
         'current_password': currentPassword,
       },
@@ -59,7 +59,7 @@ class AuthApiDataSource implements AuthRemoteDataSource {
   @override
   Future<void> changePassword(String currentPassword, String newPassword) async {
     await _dio.post(
-      '/api/v1/auth/change-password',
+      '/api/v1/mobile/auth/change-password',
       data: {
         'current_password': currentPassword,
         'new_password': newPassword,
@@ -69,25 +69,25 @@ class AuthApiDataSource implements AuthRemoteDataSource {
 
   @override
   Future<void> logout() async {
-    await _dio.post('/api/v1/auth/logout');
+    await _dio.post('/api/v1/mobile/auth/logout');
   }
 
   @override
   Future<Map<String, dynamic>> getGpsConsentTerms() async {
-    final response = await _dio.get('/api/v1/auth/gps-consent/terms');
+    final response = await _dio.get('/api/v1/mobile/auth/gps-consent/terms');
     return response.data['data'] as Map<String, dynamic>;
   }
 
   @override
   Future<Map<String, dynamic>> getGpsConsentStatus() async {
-    final response = await _dio.get('/api/v1/auth/gps-consent/status');
+    final response = await _dio.get('/api/v1/mobile/auth/gps-consent/status');
     return response.data['data'] as Map<String, dynamic>;
   }
 
   @override
   Future<Map<String, dynamic>> recordGpsConsent({String? agreementNumber}) async {
     final response = await _dio.post(
-      '/api/v1/auth/gps-consent',
+      '/api/v1/mobile/auth/gps-consent',
       data: agreementNumber != null
           ? {'agreement_number': agreementNumber}
           : null,

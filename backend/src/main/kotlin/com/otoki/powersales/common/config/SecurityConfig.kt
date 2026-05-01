@@ -45,8 +45,8 @@ class SecurityConfig(
                 auth
                     .requestMatchers(
                         "/api/health",
-                        "/api/v1/auth/login",
-                        "/api/v1/auth/refresh",
+                        "/api/v1/mobile/auth/login",
+                        "/api/v1/mobile/auth/refresh",
                         "/h2-console/**",
                         "/swagger-ui/**",
                         "/swagger-ui.html",

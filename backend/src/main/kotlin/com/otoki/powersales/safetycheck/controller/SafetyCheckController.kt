@@ -27,7 +27,7 @@ import java.time.format.DateTimeParseException
  * 안전점검 API Controller
  */
 @RestController
-@RequestMapping("/api/v1/safety-check")
+@RequestMapping("/api/v1/mobile/safety-check")
 class SafetyCheckController(
     private val safetyCheckService: SafetyCheckService,
     private val adminSafetyCheckService: AdminSafetyCheckService
@@ -35,7 +35,7 @@ class SafetyCheckController(
 
     /**
      * 안전점검 항목 조회
-     * GET /api/v1/safety-check/items
+     * GET /api/v1/mobile/safety-check/items
      */
     @GetMapping("/items")
     fun getChecklistItems(
@@ -47,7 +47,7 @@ class SafetyCheckController(
 
     /**
      * 안전점검 제출
-     * POST /api/v1/safety-check/submit
+     * POST /api/v1/mobile/safety-check/submit
      */
     @PostMapping("/submit")
     fun submitSafetyCheck(
@@ -60,7 +60,7 @@ class SafetyCheckController(
 
     /**
      * 소속 여사원 안전점검 현황 조회 (모바일)
-     * GET /api/v1/safety-check/status
+     * GET /api/v1/mobile/safety-check/status
      */
     @GetMapping("/status")
     fun getStatus(
@@ -83,7 +83,7 @@ class SafetyCheckController(
 
     /**
      * 오늘 안전점검 여부 조회
-     * GET /api/v1/safety-check/today
+     * GET /api/v1/mobile/safety-check/today
      */
     @GetMapping("/today")
     fun getTodayStatus(

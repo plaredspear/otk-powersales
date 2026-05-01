@@ -17,14 +17,14 @@ import org.springframework.web.multipart.MultipartFile
  * 제안하기 API Controller
  * /
 @RestController
-@RequestMapping("/api/v1/suggestions")
+@RequestMapping("/api/v1/mobile/suggestions")
 class SuggestionController(
     private val suggestionService: SuggestionService
 ) {
 
     / **
      * 제안하기 등록
-     * POST /api/v1/suggestions
+     * POST /api/v1/mobile/suggestions
      *
      * @param principal 인증된 사용자
      * @param request 제안 등록 요청 (multipart form fields)

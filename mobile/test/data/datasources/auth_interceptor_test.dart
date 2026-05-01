@@ -48,7 +48,7 @@ void main() {
     test('요청에 Authorization 헤더 자동 첨부', () async {
       fakeLocalDataSource.accessToken = _mockAccessToken;
 
-      await dio.get('/api/v1/sales/summary');
+      await dio.get('/api/v1/mobile/sales/summary');
 
       expect(capturedRequests, hasLength(1));
       expect(
@@ -60,7 +60,7 @@ void main() {
     test('login 엔드포인트에는 Authorization 헤더 미첨부', () async {
       fakeLocalDataSource.accessToken = _mockAccessToken;
 
-      await dio.post('/api/v1/auth/login', data: {
+      await dio.post('/api/v1/mobile/auth/login', data: {
         'employee_code': '20010585',
         'password': 'test1234',
       });
@@ -75,7 +75,7 @@ void main() {
     test('refresh 엔드포인트에는 Authorization 헤더 미첨부', () async {
       fakeLocalDataSource.accessToken = _mockAccessToken;
 
-      await dio.post('/api/v1/auth/refresh', data: {
+      await dio.post('/api/v1/mobile/auth/refresh', data: {
         'refresh_token': 'mock_refresh',
       });
 
@@ -89,7 +89,7 @@ void main() {
     test('토큰이 없으면 Authorization 헤더 미첨부', () async {
       fakeLocalDataSource.accessToken = null;
 
-      await dio.get('/api/v1/sales/summary');
+      await dio.get('/api/v1/mobile/sales/summary');
 
       expect(capturedRequests, hasLength(1));
       expect(
@@ -101,7 +101,7 @@ void main() {
     test('토큰이 빈 문자열이면 Authorization 헤더 미첨부', () async {
       fakeLocalDataSource.accessToken = '';
 
-      await dio.get('/api/v1/sales/summary');
+      await dio.get('/api/v1/mobile/sales/summary');
 
       expect(capturedRequests, hasLength(1));
       expect(
@@ -136,7 +136,7 @@ void main() {
       );
 
       try {
-        await d.get('/api/v1/schedule/monthly');
+        await d.get('/api/v1/mobile/schedule/monthly');
         fail('Expected DioException');
       } on DioException catch (e) {
         expect(e.type, DioExceptionType.cancel);
@@ -153,7 +153,7 @@ void main() {
       );
 
       try {
-        await d.get('/api/v1/schedule/monthly');
+        await d.get('/api/v1/mobile/schedule/monthly');
         fail('Expected DioException');
       } on DioException catch (e) {
         expect(e.type, DioExceptionType.cancel);
@@ -182,7 +182,7 @@ void main() {
       );
 
       try {
-        await d.get('/api/v1/schedule/monthly');
+        await d.get('/api/v1/mobile/schedule/monthly');
         fail('Expected DioException');
       } on DioException catch (e) {
         expect(e.type, DioExceptionType.badResponse);

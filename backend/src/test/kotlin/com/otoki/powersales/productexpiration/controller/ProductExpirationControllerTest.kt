@@ -91,7 +91,7 @@ class ProductExpirationControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/v1/product-expiration - 목록 조회")
+    @DisplayName("GET /api/v1/mobile/product-expiration - 목록 조회")
     inner class GetProductExpirationList {
 
         @Test
@@ -102,7 +102,7 @@ class ProductExpirationControllerTest {
                 .thenReturn(items)
 
             mockMvc.perform(
-                get("/api/v1/product-expiration")
+                get("/api/v1/mobile/product-expiration")
                     .param("fromDate", "2026-03-01")
                     .param("toDate", "2026-03-31")
             )
@@ -122,7 +122,7 @@ class ProductExpirationControllerTest {
                 .thenReturn(items)
 
             mockMvc.perform(
-                get("/api/v1/product-expiration")
+                get("/api/v1/mobile/product-expiration")
                     .param("accountCode", "1025172")
                     .param("fromDate", "2026-03-01")
                     .param("toDate", "2026-03-31")
@@ -138,7 +138,7 @@ class ProductExpirationControllerTest {
                 .thenThrow(InvalidProductExpirationDateRangeException("날짜 범위가 올바르지 않습니다"))
 
             mockMvc.perform(
-                get("/api/v1/product-expiration")
+                get("/api/v1/mobile/product-expiration")
                     .param("fromDate", "2026-01-01")
                     .param("toDate", "2026-12-31")
             )
@@ -149,7 +149,7 @@ class ProductExpirationControllerTest {
     }
 
     @Nested
-    @DisplayName("POST /api/v1/product-expiration - 등록")
+    @DisplayName("POST /api/v1/mobile/product-expiration - 등록")
     inner class CreateProductExpiration {
 
         @Test
@@ -170,7 +170,7 @@ class ProductExpirationControllerTest {
             """.trimIndent()
 
             mockMvc.perform(
-                post("/api/v1/product-expiration")
+                post("/api/v1/mobile/product-expiration")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson)
             )
@@ -192,7 +192,7 @@ class ProductExpirationControllerTest {
             """.trimIndent()
 
             mockMvc.perform(
-                post("/api/v1/product-expiration")
+                post("/api/v1/mobile/product-expiration")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson)
             )
@@ -218,7 +218,7 @@ class ProductExpirationControllerTest {
             """.trimIndent()
 
             mockMvc.perform(
-                post("/api/v1/product-expiration")
+                post("/api/v1/mobile/product-expiration")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson)
             )
@@ -228,7 +228,7 @@ class ProductExpirationControllerTest {
     }
 
     @Nested
-    @DisplayName("PUT /api/v1/product-expiration/{seq} - 수정")
+    @DisplayName("PUT /api/v1/mobile/product-expiration/{seq} - 수정")
     inner class UpdateProductExpiration {
 
         @Test
@@ -246,7 +246,7 @@ class ProductExpirationControllerTest {
             """.trimIndent()
 
             mockMvc.perform(
-                put("/api/v1/product-expiration/1")
+                put("/api/v1/mobile/product-expiration/1")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson)
             )
@@ -269,7 +269,7 @@ class ProductExpirationControllerTest {
             """.trimIndent()
 
             mockMvc.perform(
-                put("/api/v1/product-expiration/1")
+                put("/api/v1/mobile/product-expiration/1")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson)
             )
@@ -279,13 +279,13 @@ class ProductExpirationControllerTest {
     }
 
     @Nested
-    @DisplayName("DELETE /api/v1/product-expiration/{seq} - 단건 삭제")
+    @DisplayName("DELETE /api/v1/mobile/product-expiration/{seq} - 단건 삭제")
     inner class DeleteProductExpiration {
 
         @Test
         @DisplayName("성공 - 유통기한 삭제")
         fun delete_success() {
-            mockMvc.perform(delete("/api/v1/product-expiration/1"))
+            mockMvc.perform(delete("/api/v1/mobile/product-expiration/1"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("유통기한이 삭제되었습니다"))
@@ -297,14 +297,14 @@ class ProductExpirationControllerTest {
             whenever(productExpirationService.deleteProductExpiration(eq(1L), eq(999)))
                 .thenThrow(ProductExpirationNotFoundException())
 
-            mockMvc.perform(delete("/api/v1/product-expiration/999"))
+            mockMvc.perform(delete("/api/v1/mobile/product-expiration/999"))
                 .andExpect(status().isNotFound)
                 .andExpect(jsonPath("$.error.code").value("PRODUCT_EXPIRATION_NOT_FOUND"))
         }
     }
 
     @Nested
-    @DisplayName("POST /api/v1/product-expiration/batch-delete - 일괄 삭제")
+    @DisplayName("POST /api/v1/mobile/product-expiration/batch-delete - 일괄 삭제")
     inner class BatchDeleteProductExpiration {
 
         @Test
@@ -316,7 +316,7 @@ class ProductExpirationControllerTest {
             val requestJson = """{"ids": [1, 2, 3]}"""
 
             mockMvc.perform(
-                post("/api/v1/product-expiration/batch-delete")
+                post("/api/v1/mobile/product-expiration/batch-delete")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson)
             )
@@ -335,7 +335,7 @@ class ProductExpirationControllerTest {
             val requestJson = """{"ids": [1, 2]}"""
 
             mockMvc.perform(
-                post("/api/v1/product-expiration/batch-delete")
+                post("/api/v1/mobile/product-expiration/batch-delete")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson)
             )
@@ -349,7 +349,7 @@ class ProductExpirationControllerTest {
             val requestJson = """{"ids": []}"""
 
             mockMvc.perform(
-                post("/api/v1/product-expiration/batch-delete")
+                post("/api/v1/mobile/product-expiration/batch-delete")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson)
             )

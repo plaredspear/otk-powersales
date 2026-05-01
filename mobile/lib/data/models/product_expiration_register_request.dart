@@ -2,7 +2,7 @@ import '../../domain/entities/product_expiration_form.dart';
 
 /// 유통기한 등록 API 요청 모델
 ///
-/// POST /api/v1/product-expiration 요청 바디를 snake_case JSON으로 직렬화합니다.
+/// POST /api/v1/mobile/product-expiration 요청 바디를 snake_case JSON으로 직렬화합니다.
 class ProductExpirationRegisterRequest {
   final String accountCode;
   final String accountName;
