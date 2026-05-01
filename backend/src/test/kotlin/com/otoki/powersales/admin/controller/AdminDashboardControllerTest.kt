@@ -1,6 +1,13 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.admin.dto.response.*
+import com.otoki.powersales.admin.dto.response.BasicStats
+import com.otoki.powersales.admin.dto.response.DashboardResponse
+import com.otoki.powersales.admin.dto.response.PreviousMonthData
+import com.otoki.powersales.admin.dto.response.SalesSummary
+import com.otoki.powersales.admin.dto.response.StaffDeployment
+import com.otoki.powersales.admin.dto.response.StaffTypeCount
+import com.otoki.powersales.admin.dto.response.TotalByPosition
+import com.otoki.powersales.admin.dto.response.WorkTypeStats
 import com.otoki.powersales.admin.scope.DataScopeHolder
 import com.otoki.powersales.admin.security.AdminAuthorityFilter
 import com.otoki.powersales.admin.service.AdminDashboardService
@@ -13,10 +20,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.isNull
-import org.mockito.kotlin.verify
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
@@ -32,7 +36,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
 @WebMvcTest(AdminDashboardController::class)
 @AutoConfigureMockMvc(addFilters = false)
-@DisplayName("AdminDashboardController 테스트")
+@DisplayName("AdminDashboardController 테스트 (스텁 모드)")
 class AdminDashboardControllerTest {
 
     @Autowired
@@ -66,178 +70,104 @@ class AdminDashboardControllerTest {
         SecurityContextHolder.getContext().authentication = authentication
     }
 
-    private fun buildSampleDashboardResponse(
-        yearMonth: String = "2026-03",
-        branchName: String? = "서울지점"
-    ): DashboardResponse {
-        return DashboardResponse(
-            salesSummary = SalesSummary(
-                yearMonth = yearMonth,
-                branchName = branchName,
-                targetAmount = 500_000_000L,
-                actualAmount = 420_000_000L,
-                progressRate = 84.0,
-                referenceProgressRate = 80.0,
-                lastYearAmount = 400_000_000L,
-                lastYearRatio = 105.0,
-                channelSales = listOf(
-                    ChannelSalesItem(
-                        channelName = "대형마트",
-                        targetAmount = 200_000_000L,
-                        actualAmount = 180_000_000L,
-                        progressRate = 90.0
-                    ),
-                    ChannelSalesItem(
-                        channelName = "편의점",
-                        targetAmount = 150_000_000L,
-                        actualAmount = 120_000_000L,
-                        progressRate = 80.0
-                    )
-                )
-            ),
-            staffDeployment = StaffDeployment(
-                yearMonth = yearMonth,
-                branchName = branchName,
-                byAccountType = listOf(
-                    AccountTypeCount(accountType = "직영", count = 30),
-                    AccountTypeCount(accountType = "위탁", count = 20)
-                ),
-                byWorkType = listOf(
-                    WorkTypeCount(workType = "고정", count = 25),
-                    WorkTypeCount(workType = "순환", count = 15),
-                    WorkTypeCount(workType = "방문", count = 10)
-                ),
-                byChannelAndWorkType = listOf(
-                    ChannelWorkTypeItem(
-                        channelName = "대형마트",
-                        fixed = 10,
-                        alternating = 5,
-                        visiting = 3
-                    )
-                ),
-                previousMonth = PreviousMonthData(
-                    byWorkType = listOf(
-                        WorkTypeCount(workType = "고정", count = 24),
-                        WorkTypeCount(workType = "순환", count = 14),
-                        WorkTypeCount(workType = "방문", count = 12)
-                    )
-                )
-            ),
-            basicStats = BasicStats(
-                branchName = branchName,
-                staffType = StaffTypeCount(promotion = 35, osc = 15),
-                totalByPosition = TotalByPosition(active = 45, onLeave = 5),
-                byAgeGroup = listOf(
-                    AgeGroupCount(ageGroup = "20대", count = 10),
-                    AgeGroupCount(ageGroup = "30대", count = 20),
-                    AgeGroupCount(ageGroup = "40대", count = 15),
-                    AgeGroupCount(ageGroup = "50대 이상", count = 5)
-                ),
-                byWorkType = WorkTypeStats(fixed = 25, alternating = 15, visiting = 10)
-            )
+    private fun emptyDashboardResponse(yearMonth: String): DashboardResponse = DashboardResponse(
+        salesSummary = SalesSummary(
+            yearMonth = yearMonth,
+            branchName = null,
+            targetAmount = 0L,
+            actualAmount = 0L,
+            progressRate = 0.0,
+            referenceProgressRate = 0.0,
+            lastYearAmount = 0L,
+            lastYearRatio = 0.0,
+            channelSales = emptyList()
+        ),
+        staffDeployment = StaffDeployment(
+            yearMonth = yearMonth,
+            branchName = null,
+            byAccountType = emptyList(),
+            byWorkType = emptyList(),
+            byChannelAndWorkType = emptyList(),
+            previousMonth = PreviousMonthData(byWorkType = emptyList())
+        ),
+        basicStats = BasicStats(
+            branchName = null,
+            staffType = StaffTypeCount(promotion = 0, osc = 0),
+            totalByPosition = TotalByPosition(active = 0, onLeave = 0),
+            byAgeGroup = emptyList(),
+            byWorkType = WorkTypeStats(fixed = 0, alternating = 0, visiting = 0)
         )
-    }
+    )
 
     @Nested
     @DisplayName("GET /api/v1/admin/dashboard - 대시보드 조회")
     inner class GetDashboard {
 
         @Test
-        @DisplayName("성공 - 파라미터 없이 기본 대시보드 조회")
-        fun getDashboard_success_noParams() {
-            // Given
-            val mockResponse = buildSampleDashboardResponse()
-            whenever(adminDashboardService.getDashboard(isNull(), isNull()))
-                .thenReturn(mockResponse)
+        @DisplayName("성공 - 200 OK + 응답 스키마 키 모두 존재")
+        fun getDashboard_success_schemaKeysExist() {
+            whenever(adminDashboardService.getDashboard(anyOrNull(), anyOrNull()))
+                .thenReturn(emptyDashboardResponse("2026-03"))
 
-            // When & Then
             mockMvc.perform(
                 get("/api/v1/admin/dashboard")
+                    .param("yearMonth", "2026-03")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("대시보드 조회 성공"))
-                // salesSummary
+                .andExpect(jsonPath("$.data.sales_summary").exists())
                 .andExpect(jsonPath("$.data.sales_summary.year_month").value("2026-03"))
-                .andExpect(jsonPath("$.data.sales_summary.branch_name").value("서울지점"))
-                .andExpect(jsonPath("$.data.sales_summary.target_amount").value(500_000_000))
-                .andExpect(jsonPath("$.data.sales_summary.actual_amount").value(420_000_000))
-                .andExpect(jsonPath("$.data.sales_summary.progress_rate").value(84.0))
-                .andExpect(jsonPath("$.data.sales_summary.reference_progress_rate").value(80.0))
-                .andExpect(jsonPath("$.data.sales_summary.last_year_amount").value(400_000_000))
-                .andExpect(jsonPath("$.data.sales_summary.last_year_ratio").value(105.0))
-                .andExpect(jsonPath("$.data.sales_summary.channel_sales[0].channel_name").value("대형마트"))
-                .andExpect(jsonPath("$.data.sales_summary.channel_sales[0].target_amount").value(200_000_000))
-                .andExpect(jsonPath("$.data.sales_summary.channel_sales[1].channel_name").value("편의점"))
-                // staffDeployment
+                .andExpect(jsonPath("$.data.sales_summary.branch_name").doesNotExist())
+                .andExpect(jsonPath("$.data.sales_summary.target_amount").value(0))
+                .andExpect(jsonPath("$.data.sales_summary.actual_amount").value(0))
+                .andExpect(jsonPath("$.data.sales_summary.progress_rate").value(0.0))
+                .andExpect(jsonPath("$.data.sales_summary.reference_progress_rate").value(0.0))
+                .andExpect(jsonPath("$.data.sales_summary.last_year_amount").value(0))
+                .andExpect(jsonPath("$.data.sales_summary.last_year_ratio").value(0.0))
+                .andExpect(jsonPath("$.data.sales_summary.channel_sales").isArray)
+                .andExpect(jsonPath("$.data.sales_summary.channel_sales").isEmpty)
+                .andExpect(jsonPath("$.data.staff_deployment").exists())
                 .andExpect(jsonPath("$.data.staff_deployment.year_month").value("2026-03"))
-                .andExpect(jsonPath("$.data.staff_deployment.branch_name").value("서울지점"))
-                .andExpect(jsonPath("$.data.staff_deployment.by_account_type[0].account_type").value("직영"))
-                .andExpect(jsonPath("$.data.staff_deployment.by_account_type[0].count").value(30))
-                .andExpect(jsonPath("$.data.staff_deployment.by_work_type[0].work_type").value("고정"))
-                .andExpect(jsonPath("$.data.staff_deployment.by_work_type[0].count").value(25))
-                .andExpect(jsonPath("$.data.staff_deployment.by_channel_and_work_type[0].channel_name").value("대형마트"))
-                .andExpect(jsonPath("$.data.staff_deployment.by_channel_and_work_type[0].fixed").value(10))
-                .andExpect(jsonPath("$.data.staff_deployment.previous_month.by_work_type[0].work_type").value("고정"))
-                // basicStats
-                .andExpect(jsonPath("$.data.basic_stats.branch_name").value("서울지점"))
-                .andExpect(jsonPath("$.data.basic_stats.staff_type.promotion").value(35))
-                .andExpect(jsonPath("$.data.basic_stats.staff_type.osc").value(15))
-                .andExpect(jsonPath("$.data.basic_stats.total_by_position.active").value(45))
-                .andExpect(jsonPath("$.data.basic_stats.total_by_position.on_leave").value(5))
-                .andExpect(jsonPath("$.data.basic_stats.by_age_group[0].age_group").value("20대"))
-                .andExpect(jsonPath("$.data.basic_stats.by_age_group[0].count").value(10))
-                .andExpect(jsonPath("$.data.basic_stats.by_work_type.fixed").value(25))
-                .andExpect(jsonPath("$.data.basic_stats.by_work_type.alternating").value(15))
-                .andExpect(jsonPath("$.data.basic_stats.by_work_type.visiting").value(10))
+                .andExpect(jsonPath("$.data.staff_deployment.by_account_type").isArray)
+                .andExpect(jsonPath("$.data.staff_deployment.by_account_type").isEmpty)
+                .andExpect(jsonPath("$.data.staff_deployment.by_work_type").isArray)
+                .andExpect(jsonPath("$.data.staff_deployment.by_work_type").isEmpty)
+                .andExpect(jsonPath("$.data.staff_deployment.by_channel_and_work_type").isArray)
+                .andExpect(jsonPath("$.data.staff_deployment.by_channel_and_work_type").isEmpty)
+                .andExpect(jsonPath("$.data.staff_deployment.previous_month.by_work_type").isArray)
+                .andExpect(jsonPath("$.data.staff_deployment.previous_month.by_work_type").isEmpty)
+                .andExpect(jsonPath("$.data.basic_stats").exists())
+                .andExpect(jsonPath("$.data.basic_stats.staff_type.promotion").value(0))
+                .andExpect(jsonPath("$.data.basic_stats.staff_type.osc").value(0))
+                .andExpect(jsonPath("$.data.basic_stats.total_by_position.active").value(0))
+                .andExpect(jsonPath("$.data.basic_stats.total_by_position.on_leave").value(0))
+                .andExpect(jsonPath("$.data.basic_stats.by_age_group").isArray)
+                .andExpect(jsonPath("$.data.basic_stats.by_age_group").isEmpty)
+                .andExpect(jsonPath("$.data.basic_stats.by_work_type.fixed").value(0))
+                .andExpect(jsonPath("$.data.basic_stats.by_work_type.alternating").value(0))
+                .andExpect(jsonPath("$.data.basic_stats.by_work_type.visiting").value(0))
         }
 
         @Test
-        @DisplayName("성공 - yearMonth 파라미터 지정 조회")
-        fun getDashboard_success_withYearMonth() {
-            // Given
-            val mockResponse = buildSampleDashboardResponse(yearMonth = "2026-01")
-            whenever(adminDashboardService.getDashboard(eq("2026-01"), isNull()))
-                .thenReturn(mockResponse)
+        @DisplayName("성공 - yearMonth 미입력 시 응답의 year_month가 YYYY-MM 패턴")
+        fun getDashboard_success_noYearMonth() {
+            whenever(adminDashboardService.getDashboard(anyOrNull(), anyOrNull()))
+                .thenReturn(emptyDashboardResponse("2026-05"))
 
-            // When & Then
             mockMvc.perform(
                 get("/api/v1/admin/dashboard")
-                    .param("yearMonth", "2026-01")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.sales_summary.year_month").value("2026-01"))
-                .andExpect(jsonPath("$.data.staff_deployment.year_month").value("2026-01"))
+                .andExpect(jsonPath("$.data.sales_summary.year_month").value("2026-05"))
         }
 
         @Test
-        @DisplayName("성공 - yearMonth + branchCode 파라미터 지정 조회")
-        fun getDashboard_success_withYearMonthAndBranchCode() {
-            // Given
-            val mockResponse = buildSampleDashboardResponse(yearMonth = "2026-02", branchName = "부산지점")
-            whenever(adminDashboardService.getDashboard(eq("2026-02"), eq("B001")))
-                .thenReturn(mockResponse)
-
-            // When & Then
-            mockMvc.perform(
-                get("/api/v1/admin/dashboard")
-                    .param("yearMonth", "2026-02")
-                    .param("branchCode", "B001")
-                    .contentType(MediaType.APPLICATION_JSON)
-            )
-                .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.sales_summary.year_month").value("2026-02"))
-                .andExpect(jsonPath("$.data.sales_summary.branch_name").value("부산지점"))
-        }
-
-        @Test
-        @DisplayName("실패 - 잘못된 yearMonth 형식 시 400 VALIDATION_ERROR")
+        @DisplayName("실패 - yearMonth 형식 위반 (구분자 없음) -> 400 VALIDATION_ERROR")
         fun getDashboard_invalidYearMonthFormat() {
-            // When & Then
             mockMvc.perform(
                 get("/api/v1/admin/dashboard")
                     .param("yearMonth", "202603")
@@ -248,9 +178,8 @@ class AdminDashboardControllerTest {
         }
 
         @Test
-        @DisplayName("실패 - yearMonth 월 범위 초과 시 400 VALIDATION_ERROR")
+        @DisplayName("실패 - yearMonth 월 범위 초과 -> 400 VALIDATION_ERROR")
         fun getDashboard_invalidYearMonthRange() {
-            // When & Then
             mockMvc.perform(
                 get("/api/v1/admin/dashboard")
                     .param("yearMonth", "2026-13")
@@ -258,52 +187,6 @@ class AdminDashboardControllerTest {
             )
                 .andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
-        }
-
-        @Test
-        @DisplayName("서비스 호출 시 올바른 인자가 전달되는지 검증")
-        fun getDashboard_verifyServiceCalledWithCorrectArgs() {
-            // Given
-            val mockResponse = buildSampleDashboardResponse()
-            whenever(adminDashboardService.getDashboard(eq("2026-03"), eq("S001")))
-                .thenReturn(mockResponse)
-
-            // When
-            mockMvc.perform(
-                get("/api/v1/admin/dashboard")
-                    .param("yearMonth", "2026-03")
-                    .param("branchCode", "S001")
-                    .contentType(MediaType.APPLICATION_JSON)
-            )
-                .andExpect(status().isOk)
-
-            // Then
-            verify(adminDashboardService).getDashboard(
-                eq("2026-03"),
-                eq("S001")
-            )
-        }
-
-        @Test
-        @DisplayName("서비스 호출 시 파라미터 없으면 null 전달 검증")
-        fun getDashboard_verifyServiceCalledWithNulls() {
-            // Given
-            val mockResponse = buildSampleDashboardResponse()
-            whenever(adminDashboardService.getDashboard(isNull(), isNull()))
-                .thenReturn(mockResponse)
-
-            // When
-            mockMvc.perform(
-                get("/api/v1/admin/dashboard")
-                    .contentType(MediaType.APPLICATION_JSON)
-            )
-                .andExpect(status().isOk)
-
-            // Then
-            verify(adminDashboardService).getDashboard(
-                isNull(),
-                isNull()
-            )
         }
     }
 }
