@@ -3,6 +3,7 @@ package com.otoki.powersales.promotion.service
 import com.otoki.powersales.promotion.dto.request.BatchUpdatePromotionEmployeeItem
 import com.otoki.powersales.promotion.dto.request.BatchUpdatePromotionEmployeeRequest
 import com.otoki.powersales.promotion.dto.request.PromotionEmployeeRequest
+import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.entity.PromotionEmployee
 import com.otoki.powersales.account.entity.Account
@@ -78,7 +79,7 @@ class AdminPromotionEmployeeServiceTest {
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
             stubRollup()
 
-            val result = service.createEmployee(10L, createRequest(professionalPromotionTeam = "라면세일조"))
+            val result = service.createEmployee(10L, createRequest(professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE))
             assertThat(result.employeeCode).isEqualTo("20030117")
         }
 
@@ -104,7 +105,7 @@ class AdminPromotionEmployeeServiceTest {
 
             stubRollup()
 
-            service.createEmployee(10L, createRequest(professionalPromotionTeam = "일반"))
+            service.createEmployee(10L, createRequest(professionalPromotionTeam = ProfessionalPromotionTeamType.GENERAL))
         }
 
         @Test
@@ -116,7 +117,7 @@ class AdminPromotionEmployeeServiceTest {
 
             stubRollup()
 
-            service.createEmployee(10L, createRequest(professionalPromotionTeam = "프레시세일조_냉동"))
+            service.createEmployee(10L, createRequest(professionalPromotionTeam = ProfessionalPromotionTeamType.FRESH_SALE_FROZEN))
         }
 
         @Test
@@ -128,8 +129,8 @@ class AdminPromotionEmployeeServiceTest {
 
             stubRollup()
 
-            val result = service.createEmployee(10L, createRequest(professionalPromotionTeam = "프레시세일조_냉장"))
-            assertThat(result.professionalPromotionTeam).isEqualTo("프레시세일조_냉장")
+            val result = service.createEmployee(10L, createRequest(professionalPromotionTeam = ProfessionalPromotionTeamType.FRESH_SALE_REFRIGERATED))
+            assertThat(result.professionalPromotionTeam).isEqualTo(ProfessionalPromotionTeamType.FRESH_SALE_REFRIGERATED)
         }
 
         @Test
@@ -534,7 +535,7 @@ class AdminPromotionEmployeeServiceTest {
             // team + employeeId 동시 변경 -> team 변경이 있으므로 스케줄 삭제 안 함
             service.updateEmployee(1L, 1L, createRequest(
                 employeeId = 999L,
-                professionalPromotionTeam = "라면세일조B"
+                professionalPromotionTeam = ProfessionalPromotionTeamType.GENERAL
             ))
 
             verify(teamMemberScheduleRepository, never()).deleteAllByIdIn(any())
@@ -1238,7 +1239,7 @@ class AdminPromotionEmployeeServiceTest {
         id = id, promotionId = promotionId, employeeId = employeeId,
         scheduleDate = scheduleDate,
         workStatus = workStatus, workType1 = workType1, workType3 = "고정", workType4 = "냉장",
-        professionalPromotionTeam = "라면세일조", basePrice = 1500, dailyTargetCount = 100,
+        professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE, basePrice = 1500, dailyTargetCount = 100,
         teamMemberScheduleId = teamMemberScheduleId, promoCloseByTm = promoCloseByTm
     ).also {
         it.promotion = createPromotion()
@@ -1252,7 +1253,7 @@ class AdminPromotionEmployeeServiceTest {
     private fun createBatchItem(
         id: Long = 1L, employeeId: Long? = 1L, scheduleDate: LocalDate = LocalDate.of(2026, 3, 15),
         workStatus: String? = "근무", workType1: String? = "시식", workType3: String? = "고정",
-        workType4: String? = "냉장", professionalPromotionTeam: String? = "라면세일조",
+        workType4: String? = "냉장", professionalPromotionTeam: ProfessionalPromotionTeamType? = ProfessionalPromotionTeamType.RAMEN_SALE,
         basePrice: Long? = 1500, dailyTargetCount: Int? = 100,
         targetAmount: Long? = 0, actualAmount: Long? = 0,
         primaryProductAmount: Long? = null, otherSalesAmount: Long? = null
@@ -1267,7 +1268,7 @@ class AdminPromotionEmployeeServiceTest {
     private fun createRequest(
         employeeId: Long? = 1L, scheduleDate: LocalDate = LocalDate.of(2026, 3, 15),
         workStatus: String? = "근무", workType1: String? = "시식", workType3: String? = "고정",
-        workType4: String? = "냉장", professionalPromotionTeam: String? = "라면세일조",
+        workType4: String? = "냉장", professionalPromotionTeam: ProfessionalPromotionTeamType? = ProfessionalPromotionTeamType.RAMEN_SALE,
         basePrice: Long? = 1500, dailyTargetCount: Int? = 100,
         targetAmount: Long? = 0, actualAmount: Long? = 0,
         primaryProductAmount: Long? = null, otherSalesAmount: Long? = null

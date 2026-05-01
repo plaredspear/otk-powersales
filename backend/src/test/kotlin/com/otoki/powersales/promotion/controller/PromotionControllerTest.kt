@@ -16,6 +16,7 @@ import com.otoki.powersales.promotion.exception.PromotionInvalidParameterExcepti
 import com.otoki.powersales.promotion.exception.PromotionNotFoundException
 import com.otoki.powersales.promotion.service.MobilePromotionService
 import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -251,7 +252,7 @@ class PromotionControllerTest {
                     scheduleDate = LocalDate.of(2026, 3, 15),
                     workStatus = "근무",
                     workType3 = "고정",
-                    professionalPromotionTeam = "A팀",
+                    professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE,
                     targetAmount = 1000000L,
                     actualAmount = 800000L
                 ),
@@ -317,7 +318,7 @@ class PromotionControllerTest {
                 .andExpect(jsonPath("$.data.employees[0].schedule_date").value("2026-03-15"))
                 .andExpect(jsonPath("$.data.employees[0].work_status").value("근무"))
                 .andExpect(jsonPath("$.data.employees[0].work_type3").value("고정"))
-                .andExpect(jsonPath("$.data.employees[0].professional_promotion_team").value("A팀"))
+                .andExpect(jsonPath("$.data.employees[0].professional_promotion_team").value("라면세일조"))
                 .andExpect(jsonPath("$.data.employees[0].target_amount").value(1000000))
                 .andExpect(jsonPath("$.data.employees[0].actual_amount").value(800000))
                 .andExpect(jsonPath("$.data.employees[1].id").value(11))

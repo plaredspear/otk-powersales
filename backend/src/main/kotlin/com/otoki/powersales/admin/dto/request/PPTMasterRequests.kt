@@ -1,5 +1,6 @@
 package com.otoki.powersales.admin.dto.request
 
+import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
@@ -13,8 +14,8 @@ data class PPTMasterCreateRequest(
     @field:NotNull(message = "거래처 ID는 필수입니다")
     val accountId: Int,
 
-    @field:NotBlank(message = "전문행사조 유형은 필수입니다")
-    val teamType: String,
+    @field:NotNull(message = "전문행사조 유형은 필수입니다")
+    val teamType: ProfessionalPromotionTeamType,
 
     @field:NotNull(message = "시작일은 필수입니다")
     val startDate: LocalDate,
@@ -31,8 +32,8 @@ data class PPTMasterUpdateRequest(
     @field:NotNull(message = "거래처 ID는 필수입니다")
     val accountId: Int,
 
-    @field:NotBlank(message = "전문행사조 유형은 필수입니다")
-    val teamType: String,
+    @field:NotNull(message = "전문행사조 유형은 필수입니다")
+    val teamType: ProfessionalPromotionTeamType,
 
     @field:NotNull(message = "시작일은 필수입니다")
     val startDate: LocalDate,
@@ -55,8 +56,8 @@ data class PPTMasterBulkItem(
     @field:NotBlank(message = "거래처코드는 필수입니다")
     val accountCode: String,
 
-    @field:NotBlank(message = "전문행사조 유형은 필수입니다")
-    val teamType: String,
+    @field:NotNull(message = "전문행사조 유형은 필수입니다")
+    val teamType: ProfessionalPromotionTeamType,
 
     @field:NotNull(message = "시작일은 필수입니다")
     val startDate: LocalDate,

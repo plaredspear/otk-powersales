@@ -11,6 +11,8 @@ import org.hibernate.annotations.NotFoundAction
 import java.time.LocalDate
 import java.time.LocalDateTime
 import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
+import com.otoki.powersales.promotion.entity.converter.ProfessionalPromotionTeamTypeConverter
 
 /**
  * 사원 Entity
@@ -122,8 +124,9 @@ class Employee(
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 
+    @Convert(converter = ProfessionalPromotionTeamTypeConverter::class)
     @Column(name = "professional_promotion_team", length = 50)
-    var professionalPromotionTeam: String? = null,
+    var professionalPromotionTeam: ProfessionalPromotionTeamType? = null,
 
     @SFField("DKRetail__Jikchak__c")
     @Column(name = "jikchak", length = 100)

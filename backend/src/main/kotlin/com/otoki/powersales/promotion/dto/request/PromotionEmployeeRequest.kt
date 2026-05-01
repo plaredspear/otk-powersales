@@ -1,5 +1,6 @@
 package com.otoki.powersales.promotion.dto.request
 
+import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.Size
 import java.time.LocalDate
@@ -20,8 +21,7 @@ data class PromotionEmployeeRequest(
     @field:Size(max = 100, message = "근무유형4는 최대 100자입니다")
     val workType4: String? = null,
 
-    @field:Size(max = 100, message = "전문행사조는 최대 100자입니다")
-    val professionalPromotionTeam: String? = null,
+    val professionalPromotionTeam: ProfessionalPromotionTeamType? = null,
 
     @field:Min(value = 0, message = "판매단가는 0 이상이어야 합니다")
     val basePrice: Long? = null,

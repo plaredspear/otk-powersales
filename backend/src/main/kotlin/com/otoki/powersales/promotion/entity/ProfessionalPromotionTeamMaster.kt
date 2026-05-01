@@ -5,6 +5,7 @@ import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.promotion.entity.converter.ProfessionalPromotionTeamTypeConverter
 import jakarta.persistence.*
 import java.time.LocalDate
 
@@ -33,8 +34,9 @@ class ProfessionalPromotionTeamMaster(
     val accountSfid: String? = null,
 
     @SFField("ProfessionalPromotionTeam__c")
+    @Convert(converter = ProfessionalPromotionTeamTypeConverter::class)
     @Column(name = "team_type", nullable = false, length = 50)
-    var teamType: String,
+    var teamType: ProfessionalPromotionTeamType,
 
     @SFField("StartDate__c")
     @Column(name = "start_date", nullable = false)
@@ -69,7 +71,7 @@ class ProfessionalPromotionTeamMaster(
 ) : BaseEntity() {
 
     fun update(
-        teamType: String,
+        teamType: ProfessionalPromotionTeamType,
         startDate: LocalDate,
         endDate: LocalDate?,
         isConfirmed: Boolean,

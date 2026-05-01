@@ -4,6 +4,7 @@ import com.otoki.powersales.admin.dto.request.PPTMasterCreateRequest
 import com.otoki.powersales.admin.dto.request.PPTMasterUpdateRequest
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamHistory
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamMaster
+import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
 import com.otoki.powersales.promotion.exception.*
 import com.otoki.powersales.promotion.repository.PPTHistoryRepository
 import com.otoki.powersales.promotion.repository.PPTMasterRepository
@@ -48,7 +49,7 @@ class AdminPPTMasterServiceTest {
         id: Long = 1L,
         employeeCode: String = "12345678",
         name: String = "홍길동",
-        professionalPromotionTeam: String? = null
+        professionalPromotionTeam: ProfessionalPromotionTeamType? = null
     ): Employee {
         val emp = Employee(id = id, employeeCode = employeeCode, name = name)
         emp.costCenterCode = "1100"
@@ -71,7 +72,7 @@ class AdminPPTMasterServiceTest {
         id: Long = 1L,
         employeeId: Long = 1L,
         accountId: Int = 1,
-        teamType: String = "라면세일조",
+        teamType: ProfessionalPromotionTeamType = ProfessionalPromotionTeamType.RAMEN_SALE,
         startDate: LocalDate = LocalDate.of(2026, 3, 1),
         endDate: LocalDate? = null,
         isConfirmed: Boolean = true
@@ -98,7 +99,7 @@ class AdminPPTMasterServiceTest {
             val result = service.getMaster(1L)
 
             assertThat(result.id).isEqualTo(1L)
-            assertThat(result.teamType).isEqualTo("라면세일조")
+            assertThat(result.teamType).isEqualTo(ProfessionalPromotionTeamType.RAMEN_SALE)
             assertThat(result.employeeName).isEqualTo("홍길동")
         }
 
@@ -120,7 +121,7 @@ class AdminPPTMasterServiceTest {
         @DisplayName("성공 - 유효한 요청 -> 마스터 생성")
         fun createMaster_success() {
             val request = PPTMasterCreateRequest(
-                employeeId = 1L, accountId = 1, teamType = "라면세일조",
+                employeeId = 1L, accountId = 1, teamType = ProfessionalPromotionTeamType.RAMEN_SALE,
                 startDate = LocalDate.of(2026, 4, 1), isConfirmed = false
             )
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
@@ -133,7 +134,7 @@ class AdminPPTMasterServiceTest {
 
             val result = service.createMaster(request)
 
-            assertThat(result.teamType).isEqualTo("라면세일조")
+            assertThat(result.teamType).isEqualTo(ProfessionalPromotionTeamType.RAMEN_SALE)
             verify(pptHistoryRepository, never()).save(any())
         }
 
@@ -142,7 +143,7 @@ class AdminPPTMasterServiceTest {
         fun createMaster_immediateSync() {
             val today = LocalDate.now()
             val request = PPTMasterCreateRequest(
-                employeeId = 1L, accountId = 1, teamType = "라면세일조",
+                employeeId = 1L, accountId = 1, teamType = ProfessionalPromotionTeamType.RAMEN_SALE,
                 startDate = today, isConfirmed = true
             )
             val employee = createEmployee()
@@ -159,16 +160,16 @@ class AdminPPTMasterServiceTest {
 
             service.createMaster(request)
 
-            assertThat(employee.professionalPromotionTeam).isEqualTo("라면세일조")
+            assertThat(employee.professionalPromotionTeam).isEqualTo(ProfessionalPromotionTeamType.RAMEN_SALE)
             verify(pptHistoryRepository).save(any())
         }
 
         @Test
         @DisplayName("성공 - 기존 유효 마스터 자동 종료")
         fun createMaster_autoTerminate() {
-            val existingMaster = createMaster(id = 10L, teamType = "프레시세일조_냉장")
+            val existingMaster = createMaster(id = 10L, teamType = ProfessionalPromotionTeamType.FRESH_SALE_REFRIGERATED)
             val request = PPTMasterCreateRequest(
-                employeeId = 1L, accountId = 1, teamType = "라면세일조",
+                employeeId = 1L, accountId = 1, teamType = ProfessionalPromotionTeamType.RAMEN_SALE,
                 startDate = LocalDate.of(2026, 4, 1), isConfirmed = false
             )
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
@@ -185,24 +186,22 @@ class AdminPPTMasterServiceTest {
         }
 
         @Test
-        @DisplayName("실패 - 유효하지 않은 teamType -> PPTMasterInvalidTeamTypeException")
-        fun createMaster_invalidTeamType() {
+        @DisplayName("실패 - GENERAL은 마스터 등록 불가 -> PPTMasterGeneralNotAllowedException")
+        fun createMaster_generalNotAllowed() {
             val request = PPTMasterCreateRequest(
-                employeeId = 1L, accountId = 1, teamType = "존재하지않는값",
+                employeeId = 1L, accountId = 1, teamType = ProfessionalPromotionTeamType.GENERAL,
                 startDate = LocalDate.of(2026, 4, 1)
             )
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
-            whenever(accountRepository.findById(1)).thenReturn(Optional.of(createAccount()))
 
             assertThatThrownBy { service.createMaster(request) }
-                .isInstanceOf(PPTMasterInvalidTeamTypeException::class.java)
+                .isInstanceOf(PPTMasterGeneralNotAllowedException::class.java)
         }
 
         @Test
         @DisplayName("실패 - startDate > endDate -> PPTMasterInvalidDateRangeException")
         fun createMaster_invalidDateRange() {
             val request = PPTMasterCreateRequest(
-                employeeId = 1L, accountId = 1, teamType = "라면세일조",
+                employeeId = 1L, accountId = 1, teamType = ProfessionalPromotionTeamType.RAMEN_SALE,
                 startDate = LocalDate.of(2026, 5, 1), endDate = LocalDate.of(2026, 4, 1)
             )
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
@@ -216,7 +215,7 @@ class AdminPPTMasterServiceTest {
         @DisplayName("실패 - 사원 미존재 -> PPTMasterEmployeeNotFoundException")
         fun createMaster_employeeNotFound() {
             val request = PPTMasterCreateRequest(
-                employeeId = 999L, accountId = 1, teamType = "라면세일조",
+                employeeId = 999L, accountId = 1, teamType = ProfessionalPromotionTeamType.RAMEN_SALE,
                 startDate = LocalDate.of(2026, 4, 1)
             )
             whenever(employeeRepository.findById(999L)).thenReturn(Optional.empty())
@@ -229,7 +228,7 @@ class AdminPPTMasterServiceTest {
         @DisplayName("실패 - 거래처 미존재 -> PPTMasterAccountNotFoundException")
         fun createMaster_accountNotFound() {
             val request = PPTMasterCreateRequest(
-                employeeId = 1L, accountId = 999, teamType = "라면세일조",
+                employeeId = 1L, accountId = 999, teamType = ProfessionalPromotionTeamType.RAMEN_SALE,
                 startDate = LocalDate.of(2026, 4, 1)
             )
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
@@ -243,7 +242,7 @@ class AdminPPTMasterServiceTest {
         @DisplayName("실패 - 중복 유효 마스터 -> PPTMasterDuplicateException")
         fun createMaster_duplicate() {
             val request = PPTMasterCreateRequest(
-                employeeId = 1L, accountId = 1, teamType = "라면세일조",
+                employeeId = 1L, accountId = 1, teamType = ProfessionalPromotionTeamType.RAMEN_SALE,
                 startDate = LocalDate.of(2026, 4, 1)
             )
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
@@ -265,7 +264,7 @@ class AdminPPTMasterServiceTest {
         fun updateMaster_success() {
             val master = createMaster()
             val request = PPTMasterUpdateRequest(
-                employeeId = 1L, accountId = 1, teamType = "프레시세일조_냉장",
+                employeeId = 1L, accountId = 1, teamType = ProfessionalPromotionTeamType.FRESH_SALE_REFRIGERATED,
                 startDate = LocalDate.of(2026, 4, 1), isConfirmed = false
             )
             whenever(pptMasterRepository.findById(1L)).thenReturn(Optional.of(master))
@@ -278,7 +277,7 @@ class AdminPPTMasterServiceTest {
 
             val result = service.updateMaster(1L, request)
 
-            assertThat(result.teamType).isEqualTo("프레시세일조_냉장")
+            assertThat(result.teamType).isEqualTo(ProfessionalPromotionTeamType.FRESH_SALE_REFRIGERATED)
         }
 
         @Test
@@ -287,7 +286,7 @@ class AdminPPTMasterServiceTest {
             val master = createMaster(accountId = 1)
             val newAccount = createAccount(id = 2, externalKey = "SAP002", name = "홈플러스 강남점")
             val request = PPTMasterUpdateRequest(
-                employeeId = 1L, accountId = 2, teamType = "라면세일조",
+                employeeId = 1L, accountId = 2, teamType = ProfessionalPromotionTeamType.RAMEN_SALE,
                 startDate = LocalDate.of(2026, 4, 1), isConfirmed = false
             )
             whenever(pptMasterRepository.findById(1L)).thenReturn(Optional.of(master))
@@ -310,7 +309,7 @@ class AdminPPTMasterServiceTest {
             val master = createMaster(accountId = 1)
             val newAccount = createAccount(id = 2, externalKey = "SAP002", name = "홈플러스 강남점")
             val request = PPTMasterUpdateRequest(
-                employeeId = 1L, accountId = 2, teamType = "라면세일조",
+                employeeId = 1L, accountId = 2, teamType = ProfessionalPromotionTeamType.RAMEN_SALE,
                 startDate = LocalDate.of(2026, 4, 1), isConfirmed = false
             )
             whenever(pptMasterRepository.findById(1L)).thenReturn(Optional.of(master))
@@ -332,7 +331,7 @@ class AdminPPTMasterServiceTest {
         @DisplayName("성공 - 다른 유효 마스터 없음 -> 사원 일반으로 복귀")
         fun deleteMaster_revertToDefault() {
             val master = createMaster()
-            val employee = createEmployee(professionalPromotionTeam = "라면세일조")
+            val employee = createEmployee(professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE)
 
             whenever(pptMasterRepository.findById(1L)).thenReturn(Optional.of(master))
             whenever(pptMasterRepository.findValidMastersByEmployeeId(1L, LocalDate.now())).thenReturn(emptyList())
@@ -344,14 +343,14 @@ class AdminPPTMasterServiceTest {
             service.deleteMaster(1L)
 
             verify(pptMasterRepository).delete(master)
-            assertThat(employee.professionalPromotionTeam).isEqualTo("일반")
+            assertThat(employee.professionalPromotionTeam).isEqualTo(ProfessionalPromotionTeamType.GENERAL)
         }
 
         @Test
         @DisplayName("성공 - 다른 유효 마스터 존재 -> 사원 변경 없음")
         fun deleteMaster_otherMastersExist() {
             val master = createMaster(id = 1L)
-            val otherMaster = createMaster(id = 2L, teamType = "프레시세일조_냉장")
+            val otherMaster = createMaster(id = 2L, teamType = ProfessionalPromotionTeamType.FRESH_SALE_REFRIGERATED)
 
             whenever(pptMasterRepository.findById(1L)).thenReturn(Optional.of(master))
             whenever(pptMasterRepository.findValidMastersByEmployeeId(1L, LocalDate.now()))
@@ -401,8 +400,8 @@ class AdminPPTMasterServiceTest {
         @Test
         @DisplayName("성공 - 유효 마스터와 사원 값 불일치 -> 사원 업데이트")
         fun syncValidMasters_updatesEmployee() {
-            val master = createMaster(employeeId = 1L, teamType = "라면세일조")
-            val employee = createEmployee(professionalPromotionTeam = "일반")
+            val master = createMaster(employeeId = 1L, teamType = ProfessionalPromotionTeamType.RAMEN_SALE)
+            val employee = createEmployee(professionalPromotionTeam = ProfessionalPromotionTeamType.GENERAL)
 
             whenever(pptMasterRepository.findValidMasters(LocalDate.now())).thenReturn(listOf(master))
             whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(employee))
@@ -412,7 +411,7 @@ class AdminPPTMasterServiceTest {
 
             service.syncValidMasters()
 
-            assertThat(employee.professionalPromotionTeam).isEqualTo("라면세일조")
+            assertThat(employee.professionalPromotionTeam).isEqualTo(ProfessionalPromotionTeamType.RAMEN_SALE)
             verify(pptHistoryRepository).save(any())
         }
     }
@@ -426,7 +425,7 @@ class AdminPPTMasterServiceTest {
         fun expireMasters_revertToDefault() {
             val today = LocalDate.now()
             val master = createMaster(employeeId = 1L, endDate = today)
-            val employee = createEmployee(professionalPromotionTeam = "라면세일조")
+            val employee = createEmployee(professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE)
 
             whenever(pptMasterRepository.findExpiringMasters(today)).thenReturn(listOf(master))
             whenever(pptMasterRepository.findValidMastersByEmployeeId(1L, today)).thenReturn(listOf(master))
@@ -437,7 +436,7 @@ class AdminPPTMasterServiceTest {
 
             service.expireMasters()
 
-            assertThat(employee.professionalPromotionTeam).isEqualTo("일반")
+            assertThat(employee.professionalPromotionTeam).isEqualTo(ProfessionalPromotionTeamType.GENERAL)
         }
     }
 
@@ -450,10 +449,10 @@ class AdminPPTMasterServiceTest {
         fun updateEmployeeTeam_deletesFutureSchedules() {
             val today = LocalDate.now()
             val request = PPTMasterCreateRequest(
-                employeeId = 1L, accountId = 1, teamType = "라면세일조",
+                employeeId = 1L, accountId = 1, teamType = ProfessionalPromotionTeamType.RAMEN_SALE,
                 startDate = today, isConfirmed = true
             )
-            val employee = createEmployee(professionalPromotionTeam = "일반")
+            val employee = createEmployee(professionalPromotionTeam = ProfessionalPromotionTeamType.GENERAL)
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
             whenever(accountRepository.findById(1)).thenReturn(Optional.of(createAccount()))
             whenever(pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), anyOrNull()))
@@ -475,10 +474,10 @@ class AdminPPTMasterServiceTest {
         fun updateEmployeeTeam_sameValue_noDelete() {
             val today = LocalDate.now()
             val request = PPTMasterCreateRequest(
-                employeeId = 1L, accountId = 1, teamType = "라면세일조",
+                employeeId = 1L, accountId = 1, teamType = ProfessionalPromotionTeamType.RAMEN_SALE,
                 startDate = today, isConfirmed = true
             )
-            val employee = createEmployee(professionalPromotionTeam = "라면세일조")
+            val employee = createEmployee(professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE)
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
             whenever(accountRepository.findById(1)).thenReturn(Optional.of(createAccount()))
             whenever(pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), anyOrNull()))
@@ -500,7 +499,7 @@ class AdminPPTMasterServiceTest {
         fun deleteMaster_revertToDefault_deletesFutureSchedules() {
             val today = LocalDate.now()
             val master = createMaster()
-            val employee = createEmployee(professionalPromotionTeam = "라면세일조")
+            val employee = createEmployee(professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE)
 
             whenever(pptMasterRepository.findById(1L)).thenReturn(Optional.of(master))
             whenever(pptMasterRepository.findValidMastersByEmployeeId(1L, today)).thenReturn(emptyList())
@@ -518,8 +517,8 @@ class AdminPPTMasterServiceTest {
         @DisplayName("성공 - 배치 동기화 시 PPT 변경 → 미래 근무일정 삭제 호출됨")
         fun syncValidMasters_deletesFutureSchedules() {
             val today = LocalDate.now()
-            val master = createMaster(employeeId = 1L, teamType = "라면세일조")
-            val employee = createEmployee(professionalPromotionTeam = "일반")
+            val master = createMaster(employeeId = 1L, teamType = ProfessionalPromotionTeamType.RAMEN_SALE)
+            val employee = createEmployee(professionalPromotionTeam = ProfessionalPromotionTeamType.GENERAL)
 
             whenever(pptMasterRepository.findValidMasters(today)).thenReturn(listOf(master))
             whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(employee))
@@ -537,7 +536,7 @@ class AdminPPTMasterServiceTest {
         fun expireMasters_deletesFutureSchedules() {
             val today = LocalDate.now()
             val master = createMaster(employeeId = 1L, endDate = today)
-            val employee = createEmployee(professionalPromotionTeam = "라면세일조")
+            val employee = createEmployee(professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE)
 
             whenever(pptMasterRepository.findExpiringMasters(today)).thenReturn(listOf(master))
             whenever(pptMasterRepository.findValidMastersByEmployeeId(1L, today)).thenReturn(listOf(master))

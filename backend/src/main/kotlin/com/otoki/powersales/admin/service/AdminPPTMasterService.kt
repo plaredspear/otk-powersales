@@ -7,6 +7,7 @@ import com.otoki.powersales.admin.dto.request.PPTMasterUpdateRequest
 import com.otoki.powersales.admin.dto.response.*
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamHistory
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamMaster
+import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
 import com.otoki.powersales.promotion.exception.*
 import com.otoki.powersales.promotion.repository.PPTHistoryRepository
 import com.otoki.powersales.promotion.repository.PPTMasterRepository
@@ -34,11 +35,8 @@ class AdminPPTMasterService(
 ) {
 
     companion object {
-        val VALID_TEAM_TYPES = setOf(
-            "라면세일조", "프레시세일조_냉장", "프레시세일조_냉동", "프레시세일조_만두", "카레행사조"
-        )
         private const val BULK_MAX_SIZE = 450
-        private const val DEFAULT_TEAM = "일반"
+        private val DEFAULT_TEAM = ProfessionalPromotionTeamType.GENERAL
     }
 
     fun getMasters(
@@ -49,8 +47,9 @@ class AdminPPTMasterService(
         validOnly: Boolean,
         pageable: Pageable
     ): PPTMasterListResponse {
+        val teamTypeEnum = ProfessionalPromotionTeamType.fromDisplayNameOrNull(teamType)
         val page = pptMasterRepository.searchMasters(
-            employeeName, employeeCode, teamType, branchCode, validOnly, LocalDate.now(), pageable
+            employeeName, employeeCode, teamTypeEnum, branchCode, validOnly, LocalDate.now(), pageable
         )
         return PPTMasterListResponse(
             content = page.content.map { PPTMasterResponse.from(it) },
@@ -73,10 +72,11 @@ class AdminPPTMasterService(
 
     @Transactional
     fun createMaster(request: PPTMasterCreateRequest): PPTMasterResponse {
+        validateNotGeneral(request.teamType)
+
         val employee = findEmployeeById(request.employeeId)
         val account = findAccountById(request.accountId)
 
-        validateTeamType(request.teamType)
         validateDateRange(request.startDate, request.endDate)
         validateNoDuplicate(request.employeeId, request.accountId, request.teamType, request.startDate)
 
@@ -109,11 +109,12 @@ class AdminPPTMasterService(
 
     @Transactional
     fun updateMaster(id: Long, request: PPTMasterUpdateRequest): PPTMasterResponse {
+        validateNotGeneral(request.teamType)
+
         val master = findMasterById(id)
         val employee = findEmployeeById(request.employeeId)
         val account = findAccountById(request.accountId)
 
-        validateTeamType(request.teamType)
         validateDateRange(request.startDate, request.endDate)
 
         // teamType 변경 시 중복 검증
@@ -326,8 +327,8 @@ class AdminPPTMasterService(
         return accountRepository.findById(accountId).orElseThrow { PPTMasterAccountNotFoundException() }
     }
 
-    private fun validateTeamType(teamType: String) {
-        if (teamType !in VALID_TEAM_TYPES) throw PPTMasterInvalidTeamTypeException()
+    private fun validateNotGeneral(teamType: ProfessionalPromotionTeamType) {
+        if (teamType == ProfessionalPromotionTeamType.GENERAL) throw PPTMasterGeneralNotAllowedException()
     }
 
     private fun validateDateRange(startDate: LocalDate, endDate: LocalDate?) {
@@ -335,7 +336,7 @@ class AdminPPTMasterService(
     }
 
     private fun validateNoDuplicate(
-        employeeId: Long, accountId: Int, teamType: String, startDate: LocalDate, excludeId: Long? = null
+        employeeId: Long, accountId: Int, teamType: ProfessionalPromotionTeamType, startDate: LocalDate, excludeId: Long? = null
     ) {
         val duplicates = pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(
             employeeId, accountId, teamType, startDate, excludeId
@@ -351,7 +352,7 @@ class AdminPPTMasterService(
         }
     }
 
-    private fun updateEmployeeTeam(employee: Employee, newTeamType: String) {
+    private fun updateEmployeeTeam(employee: Employee, newTeamType: ProfessionalPromotionTeamType) {
         val oldValue = employee.professionalPromotionTeam
         employee.professionalPromotionTeam = newTeamType
         employeeRepository.save(employee)
@@ -390,9 +391,9 @@ class AdminPPTMasterService(
             return "거래처코드 ${item.accountCode}에 해당하는 거래처가 존재하지 않습니다"
         }
 
-        // teamType 검증
-        if (item.teamType !in VALID_TEAM_TYPES) {
-            return "전문행사조 유형 '${item.teamType}'은(는) 유효하지 않습니다"
+        // teamType 검증 - GENERAL은 마스터 등록 불가
+        if (item.teamType == ProfessionalPromotionTeamType.GENERAL) {
+            return "마스터 등록 시 '일반'은 사용할 수 없습니다"
         }
 
         // 날짜 검증

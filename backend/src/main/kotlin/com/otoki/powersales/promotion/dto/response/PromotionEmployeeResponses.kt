@@ -1,5 +1,6 @@
 package com.otoki.powersales.promotion.dto.response
 
+import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
 import com.otoki.powersales.promotion.entity.PromotionEmployee
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -15,7 +16,7 @@ data class PromotionEmployeeListResponse(
     val workType1: String?,
     val workType3: String?,
     val workType4: String?,
-    val professionalPromotionTeam: String?,
+    val professionalPromotionTeam: ProfessionalPromotionTeamType?,
     val teamMemberScheduleId: Long?,
     val promoCloseByTm: Boolean,
     val basePrice: Long?,
@@ -70,7 +71,7 @@ data class PromotionEmployeeDetailResponse(
     val workType1: String?,
     val workType3: String?,
     val workType4: String?,
-    val professionalPromotionTeam: String?,
+    val professionalPromotionTeam: ProfessionalPromotionTeamType?,
     val teamMemberScheduleId: Long?,
     val promoCloseByTm: Boolean,
     val basePrice: Long?,

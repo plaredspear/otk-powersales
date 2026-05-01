@@ -1,5 +1,6 @@
 package com.otoki.powersales.promotion.service
 
+import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.entity.PromotionEmployee
 import com.otoki.powersales.promotion.entity.PromotionType
@@ -122,7 +123,7 @@ class MobilePromotionServiceTest {
         scheduleDate: LocalDate? = LocalDate.of(2026, 3, 5),
         workStatus: String? = null,
         workType3: String? = null,
-        professionalPromotionTeam: String? = null,
+        professionalPromotionTeam: ProfessionalPromotionTeamType? = null,
         targetAmount: Long? = 0,
         actualAmount: Long? = 0
     ): PromotionEmployee = PromotionEmployee(

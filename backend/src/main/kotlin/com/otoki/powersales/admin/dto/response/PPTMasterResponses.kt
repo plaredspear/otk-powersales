@@ -2,6 +2,7 @@ package com.otoki.powersales.admin.dto.response
 
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamHistory
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamMaster
+import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
 import com.otoki.powersales.promotion.repository.PPTMasterSearchResult
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -14,7 +15,7 @@ data class PPTMasterResponse(
     val accountId: Int,
     val accountCode: String?,
     val accountName: String?,
-    val teamType: String,
+    val teamType: ProfessionalPromotionTeamType,
     val startDate: LocalDate,
     val endDate: LocalDate?,
     val isConfirmed: Boolean,
@@ -77,8 +78,8 @@ data class PPTMasterHistoryResponse(
     val id: Long,
     val employeeId: Long,
     val employeeName: String?,
-    val oldValue: String?,
-    val newValue: String,
+    val oldValue: ProfessionalPromotionTeamType?,
+    val newValue: ProfessionalPromotionTeamType,
     val changedAt: LocalDateTime
 ) {
     companion object {

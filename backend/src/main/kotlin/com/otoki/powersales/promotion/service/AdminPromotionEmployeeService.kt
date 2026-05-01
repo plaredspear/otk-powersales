@@ -7,6 +7,7 @@ import com.otoki.powersales.promotion.dto.response.BatchItemError
 import com.otoki.powersales.promotion.dto.response.BatchUpdatePromotionEmployeeResponse
 import com.otoki.powersales.promotion.dto.response.PromotionEmployeeDetailResponse
 import com.otoki.powersales.promotion.dto.response.PromotionEmployeeListResponse
+import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.entity.PromotionEmployee
 import com.otoki.powersales.promotion.exception.*
@@ -34,18 +35,21 @@ class AdminPromotionEmployeeService(
         private const val DEFAULT_WORK_TYPE1 = "행사"
         private const val DEFAULT_WORK_STATUS = "근무"
 
-        private val CATEGORY_TEAM_RULES: Map<String, List<String>> = mapOf(
-            "라면" to listOf("라면"),
-            "냉장" to listOf("냉장"),
-            "냉동" to listOf("냉동"),
-            "만두" to listOf("만두", "냉동")
+        private val CATEGORY_ALLOWED_TEAMS: Map<String, Set<ProfessionalPromotionTeamType>> = mapOf(
+            "라면" to setOf(ProfessionalPromotionTeamType.RAMEN_SALE),
+            "냉장" to setOf(ProfessionalPromotionTeamType.FRESH_SALE_REFRIGERATED),
+            "냉동" to setOf(ProfessionalPromotionTeamType.FRESH_SALE_FROZEN),
+            "만두" to setOf(
+                ProfessionalPromotionTeamType.FRESH_SALE_DUMPLING,
+                ProfessionalPromotionTeamType.FRESH_SALE_FROZEN
+            )
         )
 
         private val CATEGORY_TEAM_MESSAGES: Map<String, String> = mapOf(
-            "라면" to "대표제품이 라면인 행사에는 전문행사조가 라면세일조 혹은 일반인 사원만 배정 가능합니다",
-            "냉장" to "대표제품이 냉장인 행사에는 전문행사조가 프레시세일조_냉장 혹은 일반인 사원만 배정 가능합니다",
-            "냉동" to "대표제품이 냉동인 행사에는 전문행사조가 프레시세일조_냉동 혹은 일반인 사원만 배정 가능합니다",
-            "만두" to "대표제품이 만두인 행사에는 전문행사조가 프레시세일조_냉동, 프레시세일조_만두 혹은 일반인 사원만 배정 가능합니다"
+            "라면" to "대표제품이 라면인 행사에는 전문행사조가 ${ProfessionalPromotionTeamType.RAMEN_SALE.displayName} 혹은 ${ProfessionalPromotionTeamType.GENERAL.displayName}인 사원만 배정 가능합니다",
+            "냉장" to "대표제품이 냉장인 행사에는 전문행사조가 ${ProfessionalPromotionTeamType.FRESH_SALE_REFRIGERATED.displayName} 혹은 ${ProfessionalPromotionTeamType.GENERAL.displayName}인 사원만 배정 가능합니다",
+            "냉동" to "대표제품이 냉동인 행사에는 전문행사조가 ${ProfessionalPromotionTeamType.FRESH_SALE_FROZEN.displayName} 혹은 ${ProfessionalPromotionTeamType.GENERAL.displayName}인 사원만 배정 가능합니다",
+            "만두" to "대표제품이 만두인 행사에는 전문행사조가 ${ProfessionalPromotionTeamType.FRESH_SALE_FROZEN.displayName}, ${ProfessionalPromotionTeamType.FRESH_SALE_DUMPLING.displayName} 혹은 ${ProfessionalPromotionTeamType.GENERAL.displayName}인 사원만 배정 가능합니다"
         )
     }
 
@@ -338,18 +342,15 @@ class AdminPromotionEmployeeService(
 
         // 6. 전문행사조-카테고리 매칭
         val team = item.professionalPromotionTeam
-        if (!team.isNullOrBlank() && team != "일반") {
+        if (team != null && team != ProfessionalPromotionTeamType.GENERAL) {
             val category = promotion.category
             if (category != null) {
-                val allowedKeywords = CATEGORY_TEAM_RULES[category]
-                if (allowedKeywords != null) {
-                    val matches = allowedKeywords.any { keyword -> team.contains(keyword) }
-                    if (!matches) {
-                        return BatchItemError(
-                            index, item.employeeId, "TEAM_CATEGORY_MISMATCH",
-                            CATEGORY_TEAM_MESSAGES[category] ?: "전문행사조가 행사 카테고리와 일치하지 않습니다"
-                        )
-                    }
+                val allowedTeams = CATEGORY_ALLOWED_TEAMS[category]
+                if (allowedTeams != null && team !in allowedTeams) {
+                    return BatchItemError(
+                        index, item.employeeId, "TEAM_CATEGORY_MISMATCH",
+                        CATEGORY_TEAM_MESSAGES[category] ?: "전문행사조가 행사 카테고리와 일치하지 않습니다"
+                    )
                 }
             }
         }
@@ -406,13 +407,12 @@ class AdminPromotionEmployeeService(
         if (workType3 !in VALID_WORK_TYPE3) throw InvalidWorkType3Exception()
     }
 
-    private fun validateTeamCategory(promotion: Promotion, team: String?) {
-        if (team.isNullOrBlank() || team == "일반") return
+    private fun validateTeamCategory(promotion: Promotion, team: ProfessionalPromotionTeamType?) {
+        if (team == null || team == ProfessionalPromotionTeamType.GENERAL) return
         val category = promotion.category ?: return
-        val allowedKeywords = CATEGORY_TEAM_RULES[category] ?: return
+        val allowedTeams = CATEGORY_ALLOWED_TEAMS[category] ?: return
 
-        val matches = allowedKeywords.any { keyword -> team.contains(keyword) }
-        if (!matches) {
+        if (team !in allowedTeams) {
             throw TeamCategoryMismatchException(
                 CATEGORY_TEAM_MESSAGES[category] ?: "전문행사조가 행사 카테고리와 일치하지 않습니다"
             )
@@ -444,7 +444,7 @@ class AdminPromotionEmployeeService(
         newEmployeeId: Long?,
         scheduleDate: java.time.LocalDate?,
         workType3: String?,
-        professionalPromotionTeam: String?
+        professionalPromotionTeam: ProfessionalPromotionTeamType?
     ) {
         if (pe.teamMemberScheduleId == null) return
         if (pe.professionalPromotionTeam != professionalPromotionTeam) return

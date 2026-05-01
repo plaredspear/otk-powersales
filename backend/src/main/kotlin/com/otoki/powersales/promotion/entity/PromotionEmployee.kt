@@ -4,6 +4,7 @@ import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.promotion.entity.converter.ProfessionalPromotionTeamTypeConverter
 import jakarta.persistence.*
 import java.time.LocalDate
 
@@ -48,8 +49,9 @@ class PromotionEmployee(
     var workType4: String? = null,
 
     @SFField("ProfessionalPromotionTeam__c")
+    @Convert(converter = ProfessionalPromotionTeamTypeConverter::class)
     @Column(name = "professional_promotion_team", length = 100)
-    var professionalPromotionTeam: String? = null,
+    var professionalPromotionTeam: ProfessionalPromotionTeamType? = null,
 
     @Column(name = "team_member_schedule_id")
     var teamMemberScheduleId: Long? = null,
@@ -117,7 +119,7 @@ class PromotionEmployee(
         workType1: String?,
         workType3: String?,
         workType4: String?,
-        professionalPromotionTeam: String?,
+        professionalPromotionTeam: ProfessionalPromotionTeamType?,
         basePrice: Long?,
         dailyTargetCount: Int?,
         targetAmount: Long?,
