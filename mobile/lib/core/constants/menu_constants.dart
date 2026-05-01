@@ -106,7 +106,7 @@ abstract final class MenuConstants {
       MenuItem(
         id: 'team-schedule',
         label: '팀원 일정 관리',
-        route: '/my-schedule-calendar',
+        route: '/leader/team-members',
       ),
     ],
   );
