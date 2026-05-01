@@ -8,24 +8,12 @@ import { downloadPPTMasterTemplate } from '@/api/pptMaster';
 import type { PPTMaster, PPTMasterSearchParams } from '@/api/pptMaster';
 import PPTMasterFormModal from './components/PPTMasterFormModal';
 import PPTMasterUploadModal from './components/PPTMasterUploadModal';
+import {
+  PPT_TEAM_TYPE_OPTIONS,
+  getPPTTeamTypeColor,
+} from '@/constants/pptTeamType';
 
-const TEAM_TYPE_COLOR: Record<string, string> = {
-  '라면세일조': 'red',
-  '프레시세일조_냉장': 'blue',
-  '프레시세일조_냉동': 'cyan',
-  '프레시세일조_만두': 'green',
-  '카레행사조': 'orange',
-  '일반': 'default',
-};
-
-const TEAM_TYPE_OPTIONS = [
-  { value: '', label: '전체' },
-  { value: '라면세일조', label: '라면세일조' },
-  { value: '프레시세일조_냉장', label: '프레시세일조_냉장' },
-  { value: '프레시세일조_냉동', label: '프레시세일조_냉동' },
-  { value: '프레시세일조_만두', label: '프레시세일조_만두' },
-  { value: '카레행사조', label: '카레행사조' },
-];
+const TEAM_TYPE_FILTER_OPTIONS = [{ value: '', label: '전체' }, ...PPT_TEAM_TYPE_OPTIONS];
 
 const DEFAULT_PARAMS: PPTMasterSearchParams = {
   page: 0,
@@ -121,7 +109,7 @@ export default function PPTMasterPage() {
       width: 140,
       align: 'center',
       render: (val: string) => (
-        <Tag color={TEAM_TYPE_COLOR[val] ?? 'default'}>{val}</Tag>
+        <Tag color={getPPTTeamTypeColor(val)}>{val}</Tag>
       ),
     },
     { title: '시작일', dataIndex: 'startDate', width: 120, align: 'center' },
@@ -187,7 +175,7 @@ export default function PPTMasterPage() {
             value={filterTeamType}
             onChange={setFilterTeamType}
             style={{ width: 160 }}
-            options={TEAM_TYPE_OPTIONS}
+            options={TEAM_TYPE_FILTER_OPTIONS}
           />
           <Checkbox checked={filterValidOnly} onChange={(e) => setFilterValidOnly(e.target.checked)}>
             유효만

@@ -12,6 +12,7 @@ import {
   Space,
   Spin,
   Table,
+  Tag,
   Tooltip,
   Typography,
   message,
@@ -46,6 +47,7 @@ import PromotionProductSection, {
   type ProductFormValues,
 } from './sections/PromotionProductSection';
 import PromotionAmountSection from './sections/PromotionAmountSection';
+import { getPPTTeamTypeColor } from '@/constants/pptTeamType';
 
 const { Title } = Typography;
 
@@ -666,7 +668,8 @@ export default function PromotionDetailPage() {
         dataIndex: 'professionalPromotionTeam',
         width: 130,
         align: 'center' as const,
-        render: (v: string | null) => v ?? '-',
+        render: (v: string | null) =>
+          v ? <Tag color={getPPTTeamTypeColor(v)}>{v}</Tag> : '-',
       },
       {
         title: <span>투입일<span style={{ color: '#ff4d4f', marginLeft: 2 }}>*</span></span>,
@@ -825,7 +828,8 @@ export default function PromotionDetailPage() {
         dataIndex: 'professionalPromotionTeam',
         width: 130,
         align: 'center' as const,
-        render: (v: string | null) => v ?? '-',
+        render: (v: string | null) =>
+          v ? <Tag color={getPPTTeamTypeColor(v)}>{v}</Tag> : '-',
       },
       {
         title: <span>투입일<span style={{ color: '#ff4d4f', marginLeft: 2 }}>*</span></span>,
