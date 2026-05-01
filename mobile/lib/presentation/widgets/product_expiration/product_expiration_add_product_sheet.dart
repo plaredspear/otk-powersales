@@ -85,7 +85,7 @@ class _ProductExpirationAddProductSheetState
     try {
       final dio = ref.read(dioProvider);
       final response = await dio.get(
-        '/api/v1/products/search',
+        '/api/v1/mobile/products/search',
         queryParameters: {
           'query': query,
           'type': 'text',

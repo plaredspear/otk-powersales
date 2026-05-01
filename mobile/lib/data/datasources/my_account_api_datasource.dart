@@ -17,7 +17,7 @@ class MyAccountApiDataSource implements MyAccountRemoteDataSource {
     }
 
     final response = await _dio.get(
-      '/api/v1/accounts/my',
+      '/api/v1/mobile/accounts/my',
       queryParameters: queryParameters.isNotEmpty ? queryParameters : null,
     );
 

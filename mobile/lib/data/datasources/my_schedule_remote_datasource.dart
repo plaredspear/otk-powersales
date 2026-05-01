@@ -7,7 +7,7 @@ import '../models/monthly_schedule_day_model.dart';
 abstract class MyScheduleRemoteDataSource {
   /// 월간 일정 조회 API 호출
   ///
-  /// GET /api/v1/mypage/schedule/monthly?year={year}&month={month}
+  /// GET /api/v1/mobile/mypage/schedule/monthly?year={year}&month={month}
   ///
   /// [year]: 조회할 연도 (예: 2026)
   /// [month]: 조회할 월 (1-12)
@@ -20,7 +20,7 @@ abstract class MyScheduleRemoteDataSource {
 
   /// 일간 일정 상세 조회 API 호출
   ///
-  /// GET /api/v1/mypage/schedule/daily?date={date}
+  /// GET /api/v1/mobile/mypage/schedule/daily?date={date}
   ///
   /// [date]: 조회할 날짜 (ISO 8601 형식: YYYY-MM-DD)
   ///

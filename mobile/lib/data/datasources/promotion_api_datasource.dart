@@ -28,7 +28,7 @@ class PromotionApiDataSource {
     }
 
     final response = await _dio.get(
-      '/api/v1/promotions',
+      '/api/v1/mobile/promotions',
       queryParameters: queryParameters,
     );
 
@@ -52,7 +52,7 @@ class PromotionApiDataSource {
 
   /// 행사 상세 조회
   Future<PromotionDetail> getPromotion(int id) async {
-    final response = await _dio.get('/api/v1/promotions/$id');
+    final response = await _dio.get('/api/v1/mobile/promotions/$id');
     final data = response.data['data'] as Map<String, dynamic>;
     return PromotionDetail.fromJson(data);
   }

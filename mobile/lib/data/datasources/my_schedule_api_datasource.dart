@@ -17,7 +17,7 @@ class MyScheduleApiDataSource implements MyScheduleRemoteDataSource {
     int month,
   ) async {
     final response = await _dio.get(
-      '/api/v1/mypage/schedule/monthly',
+      '/api/v1/mobile/mypage/schedule/monthly',
       queryParameters: {
         'year': year,
         'month': month,
@@ -35,7 +35,7 @@ class MyScheduleApiDataSource implements MyScheduleRemoteDataSource {
   @override
   Future<DailyScheduleInfoModel> getDailySchedule(String date) async {
     final response = await _dio.get(
-      '/api/v1/mypage/schedule/daily',
+      '/api/v1/mobile/mypage/schedule/daily',
       queryParameters: {
         'date': date,
       },

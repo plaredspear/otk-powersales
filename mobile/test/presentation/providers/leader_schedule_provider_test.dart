@@ -132,9 +132,9 @@ void main() {
 
     test('load API 403 NOT_LEADER -> 한국어 메시지', () async {
       fakeRepo.exceptionToThrow = DioException(
-        requestOptions: RequestOptions(path: '/api/v1/leader/team-members'),
+        requestOptions: RequestOptions(path: '/api/v1/mobile/leader/team-members'),
         response: Response(
-          requestOptions: RequestOptions(path: '/api/v1/leader/team-members'),
+          requestOptions: RequestOptions(path: '/api/v1/mobile/leader/team-members'),
           statusCode: 403,
           data: {
             'success': false,
@@ -230,9 +230,9 @@ void main() {
 
     test('서버 409 DUPLICATE_WORK_SCHEDULE -> 한국어 SnackBar 메시지', () async {
       fakeRepo.exceptionToThrow = DioException(
-        requestOptions: RequestOptions(path: '/api/v1/leader/team-member-schedule'),
+        requestOptions: RequestOptions(path: '/api/v1/mobile/leader/team-member-schedule'),
         response: Response(
-          requestOptions: RequestOptions(path: '/api/v1/leader/team-member-schedule'),
+          requestOptions: RequestOptions(path: '/api/v1/mobile/leader/team-member-schedule'),
           statusCode: 409,
           data: {
             'success': false,
@@ -257,9 +257,9 @@ void main() {
 
     test('서버 409 CATEGORY3_CONFLICT -> 한국어 SnackBar 메시지', () async {
       fakeRepo.exceptionToThrow = DioException(
-        requestOptions: RequestOptions(path: '/api/v1/leader/team-member-schedule'),
+        requestOptions: RequestOptions(path: '/api/v1/mobile/leader/team-member-schedule'),
         response: Response(
-          requestOptions: RequestOptions(path: '/api/v1/leader/team-member-schedule'),
+          requestOptions: RequestOptions(path: '/api/v1/mobile/leader/team-member-schedule'),
           statusCode: 409,
           data: {
             'success': false,

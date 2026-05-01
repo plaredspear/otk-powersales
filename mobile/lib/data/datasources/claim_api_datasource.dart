@@ -33,7 +33,7 @@ class ClaimApiDataSource implements ClaimRemoteDataSource {
     if (endDate != null) queryParameters['end_date'] = endDate;
 
     final response = await _dio.get(
-      '/api/v1/claims',
+      '/api/v1/mobile/claims',
       queryParameters: queryParameters,
     );
 
@@ -45,7 +45,7 @@ class ClaimApiDataSource implements ClaimRemoteDataSource {
 
   @override
   Future<ClaimDetailModel> getClaimDetail(int claimId) async {
-    final response = await _dio.get('/api/v1/claims/$claimId');
+    final response = await _dio.get('/api/v1/mobile/claims/$claimId');
 
     return ClaimDetailModel.fromJson(
       response.data['data'] as Map<String, dynamic>,

@@ -7,7 +7,7 @@ import '../models/notice_post_detail_model.dart';
 abstract class NoticeRemoteDataSource {
   /// 공지사항 목록 조회 API 호출
   ///
-  /// GET /api/v1/notices
+  /// GET /api/v1/mobile/notices
   Future<NoticePostPageModel> getPosts({
     String? category,
     String? search,
@@ -17,6 +17,6 @@ abstract class NoticeRemoteDataSource {
 
   /// 공지사항 상세 조회 API 호출
   ///
-  /// GET /api/v1/notices/{noticeId}
+  /// GET /api/v1/mobile/notices/{noticeId}
   Future<NoticePostDetailModel> getPostDetail(int noticeId);
 }

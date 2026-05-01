@@ -10,7 +10,7 @@ import '../models/inspection_theme_model.dart';
 ///
 /// 현장 점검 관련 API 호출을 추상화합니다.
 abstract class InspectionRemoteDataSource {
-  /// GET /api/v1/inspections
+  /// GET /api/v1/mobile/inspections
   ///
   /// 현장 점검 목록을 조회합니다.
   ///
@@ -25,12 +25,12 @@ abstract class InspectionRemoteDataSource {
     required String toDate,
   });
 
-  /// GET /api/v1/inspections/{inspectionId}
+  /// GET /api/v1/mobile/inspections/{inspectionId}
   ///
   /// 현장 점검 상세 정보를 조회합니다.
   Future<InspectionDetailModel> getInspectionDetail(int inspectionId);
 
-  /// POST /api/v1/inspections
+  /// POST /api/v1/mobile/inspections
   ///
   /// 현장 점검을 등록합니다 (multipart/form-data).
   ///
@@ -39,12 +39,12 @@ abstract class InspectionRemoteDataSource {
     InspectionRegisterRequest request,
   );
 
-  /// GET /api/v1/inspections/themes
+  /// GET /api/v1/mobile/inspections/themes
   ///
   /// 테마 목록을 조회합니다 (오늘 기준 기간 포함 테마만).
   Future<List<InspectionThemeModel>> getThemes();
 
-  /// GET /api/v1/inspections/field-types
+  /// GET /api/v1/mobile/inspections/field-types
   ///
   /// 현장 유형 코드 목록을 조회합니다.
   Future<List<InspectionFieldTypeModel>> getFieldTypes();

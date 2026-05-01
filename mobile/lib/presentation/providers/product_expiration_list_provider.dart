@@ -53,11 +53,11 @@ class ProductExpirationListNotifier extends StateNotifier<ProductExpirationListS
     await searchProductExpiration();
   }
 
-  /// GET /api/v1/accounts/my 호출하여 거래처 목록 로드
+  /// GET /api/v1/mobile/accounts/my 호출하여 거래처 목록 로드
   Future<void> _loadAccounts() async {
     state = state.copyWith(isAccountsLoading: true);
     try {
-      final response = await _dio.get('/api/v1/accounts/my');
+      final response = await _dio.get('/api/v1/mobile/accounts/my');
       final data = response.data['data'] as Map<String, dynamic>;
       final accountsList = data['accounts'] as List<dynamic>;
       final accountsMap = <String, String>{};

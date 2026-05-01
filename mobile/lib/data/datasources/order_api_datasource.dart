@@ -44,7 +44,7 @@ class OrderApiDataSource implements OrderRemoteDataSource {
     }
 
     final response = await _dio.get(
-      '/api/v1/me/orders',
+      '/api/v1/mobile/me/orders',
       queryParameters: queryParameters,
     );
 
@@ -71,7 +71,7 @@ class OrderApiDataSource implements OrderRemoteDataSource {
     }
 
     final response = await _dio.get(
-      '/api/v1/client-orders',
+      '/api/v1/mobile/client-orders',
       queryParameters: queryParameters,
     );
 

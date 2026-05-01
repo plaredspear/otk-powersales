@@ -13,7 +13,7 @@ class LeaderScheduleApiDataSource {
 
   /// 본인 팀원 목록 조회.
   Future<List<LeaderTeamMemberModel>> getTeamMembers() async {
-    final response = await _dio.get('/api/v1/leader/team-members');
+    final response = await _dio.get('/api/v1/mobile/leader/team-members');
     final data = response.data['data'] as List<dynamic>;
     return data
         .map((json) =>
@@ -28,7 +28,7 @@ class LeaderScheduleApiDataSource {
       queryParams['keyword'] = keyword;
     }
     final response = await _dio.get(
-      '/api/v1/leader/accounts',
+      '/api/v1/mobile/leader/accounts',
       queryParameters: queryParams.isEmpty ? null : queryParams,
     );
     final data = response.data['data'] as List<dynamic>;
@@ -43,7 +43,7 @@ class LeaderScheduleApiDataSource {
     LeaderScheduleCreateRequestModel request,
   ) async {
     final response = await _dio.post(
-      '/api/v1/leader/team-member-schedule',
+      '/api/v1/mobile/leader/team-member-schedule',
       data: request.toJson(),
     );
     return LeaderScheduleCreateResponseModel.fromJson(

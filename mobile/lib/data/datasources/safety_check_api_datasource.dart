@@ -13,7 +13,7 @@ class SafetyCheckApiDataSource implements SafetyCheckRemoteDataSource {
 
   @override
   Future<List<SafetyCheckCategoryModel>> getItems() async {
-    final response = await _dio.get('/api/v1/safety-check/items');
+    final response = await _dio.get('/api/v1/mobile/safety-check/items');
 
     final data = response.data['data'] as Map<String, dynamic>;
     final categoriesJson = data['categories'] as List<dynamic>;
@@ -25,7 +25,7 @@ class SafetyCheckApiDataSource implements SafetyCheckRemoteDataSource {
 
   @override
   Future<SafetyCheckTodayStatusModel> getTodayStatus() async {
-    final response = await _dio.get('/api/v1/safety-check/today');
+    final response = await _dio.get('/api/v1/mobile/safety-check/today');
 
     final data = response.data['data'] as Map<String, dynamic>;
     return SafetyCheckTodayStatusModel.fromJson(data);
@@ -39,7 +39,7 @@ class SafetyCheckApiDataSource implements SafetyCheckRemoteDataSource {
     List<String>? precautions,
   }) async {
     final response = await _dio.post(
-      '/api/v1/safety-check/submit',
+      '/api/v1/mobile/safety-check/submit',
       data: {
         'start_time': startTime.toIso8601String(),
         'complete_time': completeTime.toIso8601String(),

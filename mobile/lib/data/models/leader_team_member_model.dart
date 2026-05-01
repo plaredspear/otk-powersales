@@ -1,6 +1,6 @@
 import '../../domain/entities/leader_team_member.dart';
 
-/// `GET /api/v1/leader/team-members` 응답의 단일 항목 모델.
+/// `GET /api/v1/mobile/leader/team-members` 응답의 단일 항목 모델.
 class LeaderTeamMemberModel {
   final int id;
   final String employeeCode;

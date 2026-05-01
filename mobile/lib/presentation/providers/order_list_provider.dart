@@ -52,9 +52,9 @@ class OrderListNotifier extends StateNotifier<OrderListState> {
   ///
   /// 거래처 목록 API 로딩 + 기본 필터로 주문 목록 조회
   Future<void> initialize() async {
-    // GET /api/v1/accounts/my 에서 거래처 목록 로딩
+    // GET /api/v1/mobile/accounts/my 에서 거래처 목록 로딩
     try {
-      final response = await _dio.get('/api/v1/accounts/my');
+      final response = await _dio.get('/api/v1/mobile/accounts/my');
       final data = response.data['data'] as Map<String, dynamic>;
       final accountsJson = data['accounts'] as List<dynamic>;
       final clientMap = <int, String>{};

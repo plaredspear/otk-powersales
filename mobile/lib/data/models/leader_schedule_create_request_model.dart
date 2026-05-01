@@ -1,4 +1,4 @@
-/// `POST /api/v1/leader/team-member-schedule` 요청 본문 모델.
+/// `POST /api/v1/mobile/leader/team-member-schedule` 요청 본문 모델.
 ///
 /// `working_type='근무'`, `working_category2='전담'` 은 백엔드 정책 보존을 위해
 /// 본 클래스에서 자동 채움 (스펙 §1.4 / P1-B §3.4 의 INVALID_*).

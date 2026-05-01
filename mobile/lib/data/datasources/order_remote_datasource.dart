@@ -52,7 +52,7 @@ class OrderListResponseModel {
 ///
 /// 주문 관련 API 호출을 추상화합니다.
 abstract class OrderRemoteDataSource {
-  /// GET /api/v1/me/orders
+  /// GET /api/v1/mobile/me/orders
   ///
   /// 내 주문 목록을 조회합니다.
   Future<OrderListResponseModel> getMyOrders({
@@ -66,17 +66,17 @@ abstract class OrderRemoteDataSource {
     int size = 20,
   });
 
-  /// GET /api/v1/me/orders/{orderId}
+  /// GET /api/v1/mobile/me/orders/{orderId}
   ///
   /// 주문 상세 정보를 조회합니다.
   Future<OrderDetailModel> getOrderDetail({required int orderId});
 
-  /// POST /api/v1/me/orders/{orderId}/resend
+  /// POST /api/v1/mobile/me/orders/{orderId}/resend
   ///
   /// 전송실패 주문을 재전송합니다.
   Future<void> resendOrder({required int orderId});
 
-  /// POST /api/v1/me/orders/{orderId}/cancel
+  /// POST /api/v1/mobile/me/orders/{orderId}/cancel
   ///
   /// 선택한 제품의 주문을 취소합니다.
   Future<OrderCancelResponseModel> cancelOrder({
@@ -86,17 +86,17 @@ abstract class OrderRemoteDataSource {
 
   // ─── 주문서 작성 관련 API (F22) ─────────────────────────────
 
-  /// GET /api/v1/accounts/{accountId}/credit
+  /// GET /api/v1/mobile/accounts/{accountId}/credit
   ///
   /// 거래처 여신 잔액을 조회합니다.
   Future<int> getCreditBalance({required int clientId});
 
-  /// GET /api/v1/products/favorites
+  /// GET /api/v1/mobile/products/favorites
   ///
   /// 즐겨찾기 제품 목록을 조회합니다.
   Future<List<ProductForOrderModel>> getFavoriteProducts();
 
-  /// GET /api/v1/products/search
+  /// GET /api/v1/mobile/products/search
   ///
   /// 제품을 검색합니다 (중분류/소분류/제품명/제품코드).
   Future<List<ProductForOrderModel>> searchProductsForOrder({
@@ -105,36 +105,36 @@ abstract class OrderRemoteDataSource {
     String? categorySub,
   });
 
-  /// GET /api/v1/products/barcode/{barcode}
+  /// GET /api/v1/mobile/products/barcode/{barcode}
   ///
   /// 바코드로 제품을 조회합니다.
   Future<ProductForOrderModel> getProductByBarcode({required String barcode});
 
-  /// POST /api/v1/me/orders/draft
+  /// POST /api/v1/mobile/me/orders/draft
   ///
   /// 주문서를 임시저장합니다 (서버 동기화).
   Future<void> saveDraftOrder({required OrderDraftModel draft});
 
-  /// GET /api/v1/me/orders/draft
+  /// GET /api/v1/mobile/me/orders/draft
   ///
   /// 서버에 임시저장된 주문서를 조회합니다.
   Future<OrderDraftModel?> loadDraftOrder();
 
-  /// POST /api/v1/me/orders/validate
+  /// POST /api/v1/mobile/me/orders/validate
   ///
   /// 주문서 유효성을 검증합니다.
   Future<ValidationResultModel> validateOrder({
     required OrderDraftModel draft,
   });
 
-  /// POST /api/v1/me/orders
+  /// POST /api/v1/mobile/me/orders
   ///
   /// 주문서를 전송합니다 (승인요청).
   Future<OrderSubmitResultModel> submitOrder({
     required OrderDraftModel draft,
   });
 
-  /// PUT /api/v1/me/orders/{orderId}
+  /// PUT /api/v1/mobile/me/orders/{orderId}
   ///
   /// 기존 주문서를 수정합니다.
   Future<OrderSubmitResultModel> updateOrder({
@@ -142,19 +142,19 @@ abstract class OrderRemoteDataSource {
     required OrderDraftModel draft,
   });
 
-  /// POST /api/v1/products/{productId}/favorite
+  /// POST /api/v1/mobile/products/{productId}/favorite
   ///
   /// 제품을 즐겨찾기에 추가합니다.
   Future<void> addToFavorites({required String productCode});
 
-  /// DELETE /api/v1/products/{productId}/favorite
+  /// DELETE /api/v1/mobile/products/{productId}/favorite
   ///
   /// 제품을 즐겨찾기에서 삭제합니다.
   Future<void> removeFromFavorites({required String productCode});
 
   // ─── 거래처별 주문 관련 API (F28) ─────────────────────────────
 
-  /// GET /api/v1/client-orders
+  /// GET /api/v1/mobile/client-orders
   ///
   /// 거래처별 주문 목록을 조회합니다.
   Future<ClientOrderListResponseModel> getClientOrders({
@@ -164,7 +164,7 @@ abstract class OrderRemoteDataSource {
     int size = 20,
   });
 
-  /// GET /api/v1/client-orders/{sapOrderNumber}
+  /// GET /api/v1/mobile/client-orders/{sapOrderNumber}
   ///
   /// 거래처별 주문 상세를 조회합니다.
   Future<ClientOrderDetailModel> getClientOrderDetail({

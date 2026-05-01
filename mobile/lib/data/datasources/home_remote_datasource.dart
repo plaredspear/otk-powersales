@@ -64,6 +64,6 @@ class HomeResponseModel {
 ///
 /// Backend API와 직접 통신하는 데이터 소스.
 abstract class HomeRemoteDataSource {
-  /// GET /api/v1/home
+  /// GET /api/v1/mobile/home
   Future<HomeResponseModel> getHomeData();
 }

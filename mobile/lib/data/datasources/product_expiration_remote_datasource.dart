@@ -20,7 +20,7 @@ class ProductExpirationBatchDeleteResponse {
 ///
 /// 유통기한 관련 API 호출을 추상화합니다.
 abstract class ProductExpirationRemoteDataSource {
-  /// GET /api/v1/product-expiration?accountCode=&fromDate=&toDate=
+  /// GET /api/v1/mobile/product-expiration?accountCode=&fromDate=&toDate=
   ///
   /// 유통기한 목록을 조회합니다.
   Future<List<ProductExpirationItemModel>> getProductExpirationList({
@@ -29,14 +29,14 @@ abstract class ProductExpirationRemoteDataSource {
     required String toDate,
   });
 
-  /// POST /api/v1/product-expiration
+  /// POST /api/v1/mobile/product-expiration
   ///
   /// 유통기한을 등록합니다.
   Future<ProductExpirationItemModel> registerProductExpiration(
     ProductExpirationRegisterRequest request,
   );
 
-  /// PUT /api/v1/product-expiration/{seq}
+  /// PUT /api/v1/mobile/product-expiration/{seq}
   ///
   /// 유통기한을 수정합니다.
   Future<ProductExpirationItemModel> updateProductExpiration(
@@ -44,12 +44,12 @@ abstract class ProductExpirationRemoteDataSource {
     ProductExpirationUpdateRequest request,
   );
 
-  /// DELETE /api/v1/product-expiration/{seq}
+  /// DELETE /api/v1/mobile/product-expiration/{seq}
   ///
   /// 유통기한 단건을 삭제합니다.
   Future<void> deleteProductExpiration(int seq);
 
-  /// POST /api/v1/product-expiration/batch-delete
+  /// POST /api/v1/mobile/product-expiration/batch-delete
   ///
   /// 유통기한을 일괄 삭제합니다.
   Future<ProductExpirationBatchDeleteResponse> deleteProductExpirationBatch(List<int> seqs);

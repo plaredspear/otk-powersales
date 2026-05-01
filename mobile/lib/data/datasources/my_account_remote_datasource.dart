@@ -26,6 +26,6 @@ class MyAccountListResponse {
 
 /// 내 거래처 Remote DataSource 인터페이스
 abstract class MyAccountRemoteDataSource {
-  /// GET /api/v1/accounts/my
+  /// GET /api/v1/mobile/accounts/my
   Future<MyAccountListResponse> getMyAccounts({String? keyword});
 }

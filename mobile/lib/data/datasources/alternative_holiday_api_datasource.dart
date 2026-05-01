@@ -13,7 +13,7 @@ class AlternativeHolidayApiDataSource {
     required String targetAltHolidayDate,
   }) async {
     final response = await _dio.post(
-      '/api/v1/alternative-holidays',
+      '/api/v1/mobile/alternative-holidays',
       data: {
         'actual_work_date': actualWorkDate,
         'target_alt_holiday_date': targetAltHolidayDate,
@@ -34,7 +34,7 @@ class AlternativeHolidayApiDataSource {
     if (endDate != null) queryParams['endDate'] = endDate;
 
     final response = await _dio.get(
-      '/api/v1/alternative-holidays',
+      '/api/v1/mobile/alternative-holidays',
       queryParameters: queryParams,
     );
 
@@ -48,7 +48,7 @@ class AlternativeHolidayApiDataSource {
   /// 공휴일 목록 조회
   Future<List<String>> getHolidays(int year) async {
     final response = await _dio.get(
-      '/api/v1/holidays',
+      '/api/v1/mobile/holidays',
       queryParameters: {'year': year},
     );
 

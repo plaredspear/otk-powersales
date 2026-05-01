@@ -14,7 +14,7 @@ class SafetyCheckStatusApiDataSource {
     }
 
     final response = await _dio.get(
-      '/api/v1/safety-check/status',
+      '/api/v1/mobile/safety-check/status',
       queryParameters: queryParams,
     );
 

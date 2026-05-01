@@ -17,7 +17,7 @@ void main() {
       test('정상 API 응답 시 OrderListResponseModel 반환', () async {
         dio.interceptors.add(InterceptorsWrapper(
           onRequest: (options, handler) {
-            if (options.path == '/api/v1/me/orders') {
+            if (options.path == '/api/v1/mobile/me/orders') {
               handler.resolve(Response(
                 data: {
                   'success': true,
@@ -72,7 +72,7 @@ void main() {
 
         dio.interceptors.add(InterceptorsWrapper(
           onRequest: (options, handler) {
-            if (options.path == '/api/v1/me/orders') {
+            if (options.path == '/api/v1/mobile/me/orders') {
               capturedParams = options.queryParameters;
               handler.resolve(Response(
                 data: {
@@ -115,7 +115,7 @@ void main() {
 
         dio.interceptors.add(InterceptorsWrapper(
           onRequest: (options, handler) {
-            if (options.path == '/api/v1/me/orders') {
+            if (options.path == '/api/v1/mobile/me/orders') {
               capturedParams = options.queryParameters;
               handler.resolve(Response(
                 data: {
@@ -178,7 +178,7 @@ void main() {
       test('정상 API 응답 시 ClientOrderListResponseModel 반환', () async {
         dio.interceptors.add(InterceptorsWrapper(
           onRequest: (options, handler) {
-            if (options.path == '/api/v1/client-orders') {
+            if (options.path == '/api/v1/mobile/client-orders') {
               handler.resolve(Response(
                 data: {
                   'success': true,
@@ -222,7 +222,7 @@ void main() {
 
         dio.interceptors.add(InterceptorsWrapper(
           onRequest: (options, handler) {
-            if (options.path == '/api/v1/client-orders') {
+            if (options.path == '/api/v1/mobile/client-orders') {
               capturedParams = options.queryParameters;
               handler.resolve(Response(
                 data: {

@@ -58,7 +58,7 @@ class ProductExpirationFormNotifier extends StateNotifier<ProductExpirationFormS
   /// 등록 모드 초기화 (거래처 목록 로드)
   Future<void> initializeForRegister() async {
     try {
-      final response = await _dio.get('/api/v1/accounts/my');
+      final response = await _dio.get('/api/v1/mobile/accounts/my');
       final data = response.data['data'] as Map<String, dynamic>;
       final accountsList = data['accounts'] as List<dynamic>;
       final accountsMap = <String, String>{};
