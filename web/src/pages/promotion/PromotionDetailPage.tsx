@@ -47,6 +47,7 @@ import PromotionProductSection, {
   type ProductFormValues,
 } from './sections/PromotionProductSection';
 import PromotionAmountSection from './sections/PromotionAmountSection';
+import PromotionScheduleSection from './components/PromotionScheduleSection';
 import { getPPTTeamTypeColor } from '@/constants/pptTeamType';
 
 const { Title } = Typography;
@@ -1254,6 +1255,15 @@ export default function PromotionDetailPage() {
           />
         )}
       </div>
+
+      {/* 일정 관리 섹션 (Spec #571 P2-W) */}
+      {hasDates && (
+        <PromotionScheduleSection
+          promotionId={promotionId}
+          promotionStartDate={promotion.startDate}
+          promotionEndDate={promotion.endDate}
+        />
+      )}
 
       {/* Scoped styles for promotion detail page */}
       <style>{`
