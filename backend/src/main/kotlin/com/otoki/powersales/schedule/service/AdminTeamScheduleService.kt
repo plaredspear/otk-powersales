@@ -1,6 +1,7 @@
 package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.admin.scope.AdminEmployeeHolder
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.schedule.dto.request.TeamScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.request.TeamScheduleUpdateRequest
 import com.otoki.powersales.schedule.dto.response.*
@@ -31,7 +32,7 @@ class AdminTeamScheduleService(
     fun getMembers(userId: Long): List<TeamMemberDto> {
         val currentEmployee = findEmployeeById(userId)
         val costCenterCode = currentEmployee.costCenterCode ?: return emptyList()
-        return employeeRepository.findWithEmployeeInfoByCostCenterCodeAndAppAuthority(costCenterCode, "여사원")
+        return employeeRepository.findWithEmployeeInfoByCostCenterCodeAndRole(costCenterCode, UserRole.WOMAN)
             .filter { it.isDeleted != true }
             .map { TeamMemberDto.from(it) }
     }
@@ -219,14 +220,14 @@ class AdminTeamScheduleService(
     @Transactional
     fun deleteSchedule(userId: Long, scheduleId: Long) {
         val currentEmployee = findEmployeeById(userId)
-        if (currentEmployee.appAuthority == "지점장") {
+        if (currentEmployee.role == UserRole.BRANCH_MANAGER) {
             throw TeamScheduleDeleteForbiddenException()
         }
 
         val schedule = teamMemberScheduleRepository.findById(scheduleId)
             .orElseThrow { TeamScheduleNotFoundException() }
 
-        if (currentEmployee.appAuthority != "시스템관리자" && schedule.commuteLogId != null) {
+        if (currentEmployee.role != UserRole.SYSTEM_ADMIN && schedule.commuteLogId != null) {
             throw TeamScheduleWorkReportDeleteException()
         }
 

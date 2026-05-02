@@ -60,7 +60,7 @@ class AdminEmployeeControllerTest {
 
     @BeforeEach
     fun setUp() {
-        val principal = UserPrincipal(userId = 1L, role = UserRole.ADMIN)
+        val principal = UserPrincipal(userId = 1L, role = UserRole.BRANCH_MANAGER)
         SecurityContextHolder.getContext().authentication =
             UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
     }
@@ -82,7 +82,8 @@ class AdminEmployeeControllerTest {
                         gender = "남",
                         orgName = "서울1지점",
                         costCenterCode = "A001",
-                        appAuthority = "조장",
+                        role = "LEADER",
+                        roleLabel = "조장",
                         startDate = "2020-03-15",
                         endDate = null,
                         appLoginActive = true,
@@ -112,7 +113,8 @@ class AdminEmployeeControllerTest {
                 .andExpect(jsonPath("$.data.content[0].gender").value("남"))
                 .andExpect(jsonPath("$.data.content[0].org_name").value("서울1지점"))
                 .andExpect(jsonPath("$.data.content[0].cost_center_code").value("A001"))
-                .andExpect(jsonPath("$.data.content[0].app_authority").value("조장"))
+                .andExpect(jsonPath("$.data.content[0].role").value("LEADER"))
+                .andExpect(jsonPath("$.data.content[0].role_label").value("조장"))
                 .andExpect(jsonPath("$.data.content[0].start_date").value("2020-03-15"))
                 .andExpect(jsonPath("$.data.content[0].app_login_active").value(true))
                 .andExpect(jsonPath("$.data.content[0].work_phone").value("010-1234-5678"))
@@ -130,7 +132,7 @@ class AdminEmployeeControllerTest {
                 totalElements = 0,
                 totalPages = 0
             )
-            whenever(adminEmployeeService.getEmployees(eq("재직"), eq("A001"), eq("홍"), eq("조장"), eq(0), eq(10)))
+            whenever(adminEmployeeService.getEmployees(eq("재직"), eq("A001"), eq("홍"), eq(UserRole.LEADER), eq(0), eq(10)))
                 .thenReturn(response)
 
             mockMvc.perform(
@@ -138,7 +140,7 @@ class AdminEmployeeControllerTest {
                     .param("status", "재직")
                     .param("costCenterCode", "A001")
                     .param("keyword", "홍")
-                    .param("appAuthority", "조장")
+                    .param("role", "LEADER")
                     .param("page", "0")
                     .param("size", "10")
             )

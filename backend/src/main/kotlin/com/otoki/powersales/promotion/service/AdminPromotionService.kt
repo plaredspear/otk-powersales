@@ -179,7 +179,7 @@ class AdminPromotionService(
             if (promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(id)) {
                 val employee = employeeRepository.findById(userId)
                     .orElseThrow { IllegalStateException("사용자를 찾을 수 없습니다: $userId") }
-                if (employee.role != UserRole.ADMIN) {
+                if (employee.role != UserRole.BRANCH_MANAGER) {
                     throw ClosedPromotionModificationException()
                 }
             }

@@ -47,7 +47,7 @@ class AdminPromotionTypeControllerTest {
 
     @BeforeEach
     fun setUp() {
-        val principal = UserPrincipal(userId = 1L, role = UserRole.ADMIN)
+        val principal = UserPrincipal(userId = 1L, role = UserRole.BRANCH_MANAGER)
         SecurityContextHolder.getContext().authentication =
             UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
     }

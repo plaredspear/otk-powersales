@@ -3,6 +3,7 @@ import { Alert, Button, Input, Select, Table, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useEmployees } from '@/hooks/employee/useEmployees';
 import type { Employee } from '@/api/employee';
+import { ROLE_OPTIONS_FOR_FILTER, type UserRole } from '@/constants/userRole';
 
 const STATUS_TAG: Record<string, string> = {
   재직: 'green',
@@ -10,14 +11,9 @@ const STATUS_TAG: Record<string, string> = {
   퇴직: 'red',
 };
 
-const AUTHORITY_OPTIONS = [
+const ROLE_FILTER_OPTIONS = [
   { value: '', label: '권한 전체' },
-  { value: '조장', label: '조장' },
-  { value: '지점장', label: '지점장' },
-  { value: '영업부장', label: '영업부장' },
-  { value: '사업부장', label: '사업부장' },
-  { value: '영업본부장', label: '영업본부장' },
-  { value: '영업지원실', label: '영업지원실' },
+  ...ROLE_OPTIONS_FOR_FILTER.map((opt) => ({ value: opt.value, label: opt.label })),
 ];
 
 const STATUS_OPTIONS = [
@@ -33,14 +29,14 @@ export default function EmployeePage() {
   const [status, setStatus] = useState<string | undefined>();
   const [costCenterCode, setCostCenterCode] = useState<string | undefined>();
   const [keyword, setKeyword] = useState<string | undefined>();
-  const [appAuthority, setAppAuthority] = useState<string | undefined>();
+  const [role, setRole] = useState<UserRole | undefined>();
   const [page, setPage] = useState(0);
 
   const { data, isLoading, isError, error, refetch } = useEmployees({
     status,
     costCenterCode,
     keyword,
-    appAuthority,
+    role,
     page,
     size: PAGE_SIZE,
   });
@@ -61,7 +57,7 @@ export default function EmployeePage() {
     { title: '지점코드', dataIndex: 'costCenterCode', width: 100, align: 'center', render: (val: string | null) => val ?? '-' },
     {
       title: '권한',
-      dataIndex: 'appAuthority',
+      dataIndex: 'roleLabel',
       width: 100,
       align: 'center',
       render: (val: string | null) => val ?? '-',
@@ -115,9 +111,9 @@ export default function EmployeePage() {
         />
         <Select
           style={{ width: 140 }}
-          value={appAuthority ?? ''}
-          options={AUTHORITY_OPTIONS}
-          onChange={(val) => { setAppAuthority(val || undefined); setPage(0); }}
+          value={role ?? ''}
+          options={ROLE_FILTER_OPTIONS}
+          onChange={(val) => { setRole((val || undefined) as UserRole | undefined); setPage(0); }}
         />
         <Input.Search
           placeholder="사번 또는 이름 검색"

@@ -643,7 +643,7 @@ class ScheduleUploadValidatorTest {
         name = name,
         sfid = sfid,
         status = status,
-        appAuthority = null,
+        role = null,
         appLoginActive = appLoginActive
     )
 

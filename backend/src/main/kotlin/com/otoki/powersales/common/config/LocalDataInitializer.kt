@@ -1,5 +1,6 @@
 package com.otoki.powersales.common.config
 
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.common.entity.AgreementWord
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee
@@ -62,17 +63,17 @@ class LocalDataInitializer(
         val encodedPassword = passwordEncoder.encode("1234")!!
 
         data class SeedEmployee(
-            val code: String, val name: String, val authority: String,
+            val code: String, val name: String, val role: UserRole,
             val orgName: String, val costCenterCode: String, val birthDate: String,
             val homePhone: String, val workPhone: String, val startDate: LocalDate
         )
 
         val seeds = listOf(
-            SeedEmployee("99990001", "개발테스트", "영업지원실", "테스트지점", "1111", "19850315", "02-1234-5678", "02-9876-5432", LocalDate.of(2015, 3, 1)),
-            SeedEmployee("99990002", "여사원테스트", "여사원", "테스트지점", "1111", "19920820", "02-2345-6789", "02-8765-4321", LocalDate.of(2018, 7, 1)),
-            SeedEmployee("99990003", "지점장테스트", "지점장", "테스트지점", "1111", "19780105", "02-3456-7890", "02-7654-3210", LocalDate.of(2010, 1, 15)),
-            SeedEmployee("99990004", "강남조장", "조장", "테스트지점", "1111", "19880510", "02-4567-8901", "02-6543-2109", LocalDate.of(2016, 5, 1)),
-            SeedEmployee("99990005", "강남여사원", "여사원", "강남지점", "1112", "19950320", "02-5678-9012", "02-5432-1098", LocalDate.of(2020, 3, 1))
+            SeedEmployee("99990001", "개발테스트", UserRole.SALES_SUPPORT, "테스트지점", "1111", "19850315", "02-1234-5678", "02-9876-5432", LocalDate.of(2015, 3, 1)),
+            SeedEmployee("99990002", "여사원테스트", UserRole.WOMAN, "테스트지점", "1111", "19920820", "02-2345-6789", "02-8765-4321", LocalDate.of(2018, 7, 1)),
+            SeedEmployee("99990003", "지점장테스트", UserRole.BRANCH_MANAGER, "테스트지점", "1111", "19780105", "02-3456-7890", "02-7654-3210", LocalDate.of(2010, 1, 15)),
+            SeedEmployee("99990004", "강남조장", UserRole.LEADER, "테스트지점", "1111", "19880510", "02-4567-8901", "02-6543-2109", LocalDate.of(2016, 5, 1)),
+            SeedEmployee("99990005", "강남여사원", UserRole.WOMAN, "강남지점", "1112", "19950320", "02-5678-9012", "02-5432-1098", LocalDate.of(2020, 3, 1))
         )
 
         for (seed in seeds) {
@@ -81,7 +82,7 @@ class LocalDataInitializer(
             val infoExists = employeeInfoExists(seed.code)
             val employee = Employee(
                 employeeCode = seed.code, name = seed.name, status = "재직",
-                appLoginActive = true, orgName = seed.orgName, appAuthority = seed.authority,
+                appLoginActive = true, orgName = seed.orgName, role = seed.role,
                 birthDate = seed.birthDate, homePhone = seed.homePhone, workPhone = seed.workPhone,
                 startDate = seed.startDate, costCenterCode = seed.costCenterCode,
                 password = encodedPassword, passwordChangeRequired = false

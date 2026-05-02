@@ -202,7 +202,7 @@ class ScheduleTemplateGeneratorTest {
         costCenterCode = costCenterCode,
         orgName = orgName,
         jikwee = jikwee,
-        appAuthority = null,
+        role = null,
         appLoginActive = true,
         status = "재직"
     )

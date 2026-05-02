@@ -24,6 +24,11 @@ import {
   updateEmployeeAuthority,
   type EmployeePermissionDetail,
 } from '@/api/employeePermission';
+import {
+  ROLE_OPTIONS_FOR_ADMIN_LOGIN,
+  roleLabel,
+  type UserRole,
+} from '@/constants/userRole';
 
 const { Title } = Typography;
 
@@ -40,33 +45,23 @@ const ALL_PERMISSIONS = [
   'PRODUCT_EXPIRATION_WRITE',
 ];
 
-const ALLOWED_AUTHORITIES = [
-  '시스템관리자',
-  '조장',
-  '지점장',
-  '영업부장',
-  '사업부장',
-  '영업본부장',
-  '영업지원실',
-];
-
 export default function EmployeePermissionPage() {
   const navigate = useNavigate();
   const [keyword, setKeyword] = useState('');
-  const [authorityFilter, setAuthorityFilter] = useState<string | undefined>(undefined);
-  const [searchParams, setSearchParams] = useState<{ keyword?: string; appAuthority?: string; page: number }>({ page: 0 });
+  const [roleFilter, setRoleFilter] = useState<UserRole | undefined>(undefined);
+  const [searchParams, setSearchParams] = useState<{ keyword?: string; role?: UserRole; page: number }>({ page: 0 });
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [permDetail, setPermDetail] = useState<EmployeePermissionDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [selectedAuthority, setSelectedAuthority] = useState<string>('');
+  const [selectedRole, setSelectedRole] = useState<UserRole | ''>('');
   const [editedUserPerms, setEditedUserPerms] = useState<string[]>([]);
   const [savingPerms, setSavingPerms] = useState(false);
   const [savingAuthority, setSavingAuthority] = useState(false);
 
   const { data: employeeData, isLoading } = useEmployees({
     keyword: searchParams.keyword,
-    appAuthority: searchParams.appAuthority,
+    role: searchParams.role,
     page: searchParams.page,
     size: 20,
   });
@@ -74,7 +69,7 @@ export default function EmployeePermissionPage() {
   const handleSearch = () => {
     setSearchParams({
       keyword: keyword || undefined,
-      appAuthority: authorityFilter,
+      role: roleFilter,
       page: 0,
     });
   };
@@ -84,7 +79,7 @@ export default function EmployeePermissionPage() {
     try {
       const detail = await fetchEmployeePermissions(employeeId);
       setPermDetail(detail);
-      setSelectedAuthority(detail.app_authority ?? '');
+      setSelectedRole(detail.role ?? '');
       setEditedUserPerms(detail.user_permissions.map((up) => up.permission));
     } catch (err) {
       notification.error({
@@ -109,17 +104,18 @@ export default function EmployeePermissionPage() {
   };
 
   const handleAuthorityChange = () => {
-    if (!selectedEmployee || !permDetail) return;
-    const previousAuthority = permDetail.app_authority;
+    if (!selectedEmployee || !permDetail || !selectedRole) return;
+    const previousLabel = roleLabel(permDetail.role);
+    const newLabel = roleLabel(selectedRole);
     Modal.confirm({
       title: '역할 변경',
-      content: `${selectedEmployee.name}의 역할을 '${previousAuthority}'에서 '${selectedAuthority}'으로 변경하시겠습니까?`,
+      content: `${selectedEmployee.name}의 역할을 '${previousLabel}'에서 '${newLabel}'으로 변경하시겠습니까?`,
       okText: '확인',
       cancelText: '취소',
       onOk: async () => {
         setSavingAuthority(true);
         try {
-          await updateEmployeeAuthority(selectedEmployee.id, { app_authority: selectedAuthority });
+          await updateEmployeeAuthority(selectedEmployee.id, { role: selectedRole });
           notification.success({ message: '역할이 변경되었습니다' });
           await loadPermissionDetail(selectedEmployee.id);
         } catch (err) {
@@ -200,7 +196,7 @@ export default function EmployeePermissionPage() {
     },
     {
       title: '역할',
-      dataIndex: 'appAuthority',
+      dataIndex: 'roleLabel',
       width: 100,
       render: (v: string | null) => v ?? '-',
     },
@@ -269,13 +265,13 @@ export default function EmployeePermissionPage() {
           onPressEnter={handleSearch}
           style={{ width: 200 }}
         />
-        <Select
+        <Select<UserRole>
           placeholder="역할"
           allowClear
-          value={authorityFilter}
-          onChange={setAuthorityFilter}
+          value={roleFilter}
+          onChange={(val) => setRoleFilter(val)}
           style={{ width: 140 }}
-          options={ALLOWED_AUTHORITIES.map((a) => ({ label: a, value: a }))}
+          options={ROLE_OPTIONS_FOR_ADMIN_LOGIN}
         />
         <Button type="primary" onClick={handleSearch}>검색</Button>
       </Space>
@@ -332,15 +328,15 @@ export default function EmployeePermissionPage() {
           <>
             <Title level={5}>역할</Title>
             <Space style={{ marginBottom: 24 }}>
-              <Select
-                value={selectedAuthority}
-                onChange={setSelectedAuthority}
+              <Select<UserRole>
+                value={selectedRole === '' ? undefined : selectedRole}
+                onChange={(val) => setSelectedRole(val)}
                 style={{ width: 160 }}
-                options={ALLOWED_AUTHORITIES.map((a) => ({ label: a, value: a }))}
+                options={ROLE_OPTIONS_FOR_ADMIN_LOGIN}
               />
               <Button
                 onClick={handleAuthorityChange}
-                disabled={selectedAuthority === permDetail.app_authority}
+                disabled={!selectedRole || selectedRole === permDetail.role}
                 loading={savingAuthority}
               >
                 역할 변경

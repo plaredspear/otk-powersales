@@ -1,6 +1,7 @@
 package com.otoki.powersales.admin.service
 
 import com.otoki.powersales.admin.entity.RolePermission
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.admin.entity.UserPermission
 import com.otoki.powersales.admin.repository.RolePermissionRepository
 import com.otoki.powersales.admin.repository.UserPermissionRepository
@@ -42,11 +43,11 @@ class AdminPermissionResolverTest {
         @DisplayName("역할 권한만 있는 경우 - role_permission 기반 권한 반환")
         fun resolve_roleOnly() {
             // Given
-            val employee = createEmployee(appAuthority = "지점장")
-            whenever(rolePermissionRepository.findByRole("지점장")).thenReturn(
+            val employee = createEmployee(role = UserRole.BRANCH_MANAGER)
+            whenever(rolePermissionRepository.findByRoleName("BRANCH_MANAGER")).thenReturn(
                 listOf(
-                    RolePermission(role = "지점장", permission = "DASHBOARD_READ"),
-                    RolePermission(role = "지점장", permission = "SCHEDULE_READ")
+                    RolePermission(role = "BRANCH_MANAGER", permission = "DASHBOARD_READ"),
+                    RolePermission(role = "BRANCH_MANAGER", permission = "SCHEDULE_READ")
                 )
             )
             whenever(userPermissionRepository.findByEmployeeId(1L)).thenReturn(emptyList())
@@ -62,9 +63,9 @@ class AdminPermissionResolverTest {
         @DisplayName("역할 + 개별 권한 합산 - union 결과 반환")
         fun resolve_roleAndUser() {
             // Given
-            val employee = createEmployee(appAuthority = "지점장")
-            whenever(rolePermissionRepository.findByRole("지점장")).thenReturn(
-                listOf(RolePermission(role = "지점장", permission = "DASHBOARD_READ"))
+            val employee = createEmployee(role = UserRole.BRANCH_MANAGER)
+            whenever(rolePermissionRepository.findByRoleName("BRANCH_MANAGER")).thenReturn(
+                listOf(RolePermission(role = "BRANCH_MANAGER", permission = "DASHBOARD_READ"))
             )
             whenever(userPermissionRepository.findByEmployeeId(1L)).thenReturn(
                 listOf(UserPermission(employeeId = 1L, permission = "SCHEDULE_WRITE", grantedBy = 2L))
@@ -81,7 +82,7 @@ class AdminPermissionResolverTest {
         @DisplayName("appAuthority가 null - user_permission만 반환")
         fun resolve_nullAuthority() {
             // Given
-            val employee = createEmployee(appAuthority = null)
+            val employee = createEmployee(role = null)
             whenever(userPermissionRepository.findByEmployeeId(1L)).thenReturn(
                 listOf(UserPermission(employeeId = 1L, permission = "DASHBOARD_READ", grantedBy = 2L))
             )
@@ -97,7 +98,7 @@ class AdminPermissionResolverTest {
         @DisplayName("권한 없음 - 빈 Set 반환")
         fun resolve_noPermissions() {
             // Given
-            val employee = createEmployee(appAuthority = null)
+            val employee = createEmployee(role = null)
             whenever(userPermissionRepository.findByEmployeeId(1L)).thenReturn(emptyList())
 
             // When
@@ -116,10 +117,10 @@ class AdminPermissionResolverTest {
         @DisplayName("역할 + 개별 권한 상세 - grantedByName 포함")
         fun resolveWithDetails_success() {
             // Given
-            val employee = createEmployee(appAuthority = "지점장")
+            val employee = createEmployee(role = UserRole.BRANCH_MANAGER)
             val granter = Employee(id = 2L, employeeCode = "00000002", name = "관리자김")
-            whenever(rolePermissionRepository.findByRole("지점장")).thenReturn(
-                listOf(RolePermission(role = "지점장", permission = "DASHBOARD_READ"))
+            whenever(rolePermissionRepository.findByRoleName("BRANCH_MANAGER")).thenReturn(
+                listOf(RolePermission(role = "BRANCH_MANAGER", permission = "DASHBOARD_READ"))
             )
             whenever(userPermissionRepository.findByEmployeeId(1L)).thenReturn(
                 listOf(UserPermission(employeeId = 1L, permission = "SCHEDULE_WRITE", grantedBy = 2L))
@@ -140,8 +141,8 @@ class AdminPermissionResolverTest {
 
     private fun createEmployee(
         id: Long = 1L,
-        appAuthority: String? = "조장"
+        role: UserRole? = UserRole.LEADER
     ): Employee {
-        return Employee(id = id, employeeCode = "00000001", name = "테스트", appAuthority = appAuthority)
+        return Employee(id = id, employeeCode = "00000001", name = "테스트", role = role)
     }
 }

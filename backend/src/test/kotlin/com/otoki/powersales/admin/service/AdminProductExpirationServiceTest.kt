@@ -1,6 +1,7 @@
 package com.otoki.powersales.admin.service
 
 import com.otoki.powersales.admin.dto.request.AdminProductExpirationBatchDeleteRequest
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.admin.dto.request.AdminProductExpirationCreateRequest
 import com.otoki.powersales.admin.dto.request.AdminProductExpirationUpdateRequest
 import com.otoki.powersales.admin.dto.response.AdminProductExpirationSummaryResponse
@@ -63,9 +64,9 @@ class AdminProductExpirationServiceTest {
         sfid: String? = "EMP_SFID_001",
         employeeCode: String = "E001",
         name: String = "홍길동",
-        appAuthority: String? = "지점장",
+        role: UserRole? = UserRole.BRANCH_MANAGER,
         orgName: String? = "서울1조"
-    ) = Employee(id = id, sfid = sfid, employeeCode = employeeCode, name = name, appAuthority = appAuthority, orgName = orgName)
+    ) = Employee(id = id, sfid = sfid, employeeCode = employeeCode, name = name, role = role, orgName = orgName)
 
     private fun createAccount(
         id: Int = 1,
@@ -143,21 +144,21 @@ class AdminProductExpirationServiceTest {
     )
 
     private fun mockAdminEmployee(userId: Long = 1L) {
-        val admin = createEmployee(id = userId, appAuthority = "지점장")
+        val admin = createEmployee(id = userId, role = UserRole.BRANCH_MANAGER)
         whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(admin))
     }
 
     private fun mockLeaderEmployee(userId: Long = 2L, orgName: String = "서울1조"): List<Employee> {
-        val leader = createEmployee(id = userId, employeeCode = "E002", name = "김조장", appAuthority = "조장", orgName = orgName)
+        val leader = createEmployee(id = userId, employeeCode = "E002", name = "김조장", role = UserRole.LEADER, orgName = orgName)
         whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(leader))
-        val teamMember = createEmployee(id = 3L, employeeCode = "E003", name = "박여사", appAuthority = "여사원", orgName = orgName)
+        val teamMember = createEmployee(id = 3L, employeeCode = "E003", name = "박여사", role = UserRole.WOMAN, orgName = orgName)
         val teamMembers = listOf(leader, teamMember)
         whenever(employeeRepository.findByOrgName(orgName)).thenReturn(teamMembers)
         return teamMembers
     }
 
     private fun mockUserEmployee(userId: Long = 4L) {
-        val user = createEmployee(id = userId, employeeCode = "E004", name = "이사원", appAuthority = "여사원")
+        val user = createEmployee(id = userId, employeeCode = "E004", name = "이사원", role = UserRole.WOMAN)
         whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(user))
     }
 
@@ -758,7 +759,7 @@ class AdminProductExpirationServiceTest {
         fun leader_nullOrgName_returnsSelfOnly() {
             // Given
             val userId = 5L
-            val leader = createEmployee(id = userId, employeeCode = "E005", name = "NULL조장", appAuthority = "조장", orgName = null)
+            val leader = createEmployee(id = userId, employeeCode = "E005", name = "NULL조장", role = UserRole.LEADER, orgName = null)
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(leader))
             val pageable = PageRequest.of(0, 20)
             val page = PageImpl(emptyList<ProductExpiration>(), pageable, 0L)

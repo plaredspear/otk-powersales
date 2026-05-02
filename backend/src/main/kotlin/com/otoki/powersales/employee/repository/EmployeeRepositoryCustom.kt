@@ -1,5 +1,6 @@
 package com.otoki.powersales.employee.repository
 
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.common.dto.response.BranchResponse
 import com.otoki.powersales.employee.entity.Employee
 import org.springframework.data.domain.Page
@@ -15,7 +16,7 @@ interface EmployeeRepositoryCustom {
 
     fun findWithEmployeeInfoByCostCenterCodeInAndStatus(costCenterCodes: List<String>, status: String): List<Employee>
 
-    fun findWithEmployeeInfoByCostCenterCodeAndAppAuthority(costCenterCode: String, appAuthority: String): List<Employee>
+    fun findWithEmployeeInfoByCostCenterCodeAndRole(costCenterCode: String, role: UserRole): List<Employee>
 
     fun findDistinctBranches(): List<BranchResponse>
 
@@ -25,7 +26,7 @@ interface EmployeeRepositoryCustom {
         status: String?,
         branchCodes: List<String>?,
         keyword: String?,
-        appAuthority: String?,
+        role: UserRole?,
         pageable: Pageable
     ): Page<Employee>
 }

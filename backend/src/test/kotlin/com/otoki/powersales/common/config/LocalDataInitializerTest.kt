@@ -152,14 +152,14 @@ class LocalDataInitializerTest {
             assertThat(leader.status).isEqualTo("재직")
             assertThat(leader.appLoginActive).isTrue()
             assertThat(leader.orgName).isEqualTo("테스트지점")
-            assertThat(leader.appAuthority).isEqualTo("영업지원실")
+            assertThat(leader.role).isEqualTo(UserRole.SALES_SUPPORT)
             assertThat(leader.password).isEqualTo("encoded_password")
             assertThat(leader.passwordChangeRequired).isFalse()
         }
 
         @Test
-        @DisplayName("역할 검증 - 영업지원실 사용자 -> UserRole.USER")
-        fun leaderUser_hasUserRole() {
+        @DisplayName("역할 검증 - 영업지원실 사용자 -> UserRole.SALES_SUPPORT")
+        fun leaderUser_hasSalesSupportRole() {
             // Given
             stubAllUsersNotExist()
             stubOtherSeedsExist()
@@ -170,7 +170,7 @@ class LocalDataInitializerTest {
             // Then
             val employees = captureAllSavedEmployees()
             val leader = employees.find { it.employeeCode == "99990001" }!!
-            assertThat(leader.role).isEqualTo(UserRole.USER)
+            assertThat(leader.role).isEqualTo(UserRole.SALES_SUPPORT)
         }
 
         @Test
@@ -209,13 +209,13 @@ class LocalDataInitializerTest {
             assertThat(salesUser.status).isEqualTo("재직")
             assertThat(salesUser.appLoginActive).isTrue()
             assertThat(salesUser.orgName).isEqualTo("테스트지점")
-            assertThat(salesUser.appAuthority).isEqualTo("여사원")
+            assertThat(salesUser.role).isEqualTo(UserRole.WOMAN)
             assertThat(salesUser.password).isEqualTo("encoded_password")
             assertThat(salesUser.passwordChangeRequired).isFalse()
         }
 
         @Test
-        @DisplayName("역할 검증 - 여사원 사용자 -> UserRole.USER")
+        @DisplayName("역할 검증 - 여사원 사용자 -> UserRole.WOMAN")
         fun salesUser_hasUserRole() {
             // Given
             stubAllUsersNotExist()
@@ -227,7 +227,7 @@ class LocalDataInitializerTest {
             // Then
             val employees = captureAllSavedEmployees()
             val salesUser = employees.find { it.employeeCode == "99990002" }!!
-            assertThat(salesUser.role).isEqualTo(UserRole.USER)
+            assertThat(salesUser.role).isEqualTo(UserRole.WOMAN)
         }
 
         @Test
@@ -276,13 +276,13 @@ class LocalDataInitializerTest {
             assertThat(admin.status).isEqualTo("재직")
             assertThat(admin.appLoginActive).isTrue()
             assertThat(admin.orgName).isEqualTo("테스트지점")
-            assertThat(admin.appAuthority).isEqualTo("지점장")
+            assertThat(admin.role).isEqualTo(UserRole.BRANCH_MANAGER)
             assertThat(admin.password).isEqualTo("encoded_password")
             assertThat(admin.passwordChangeRequired).isFalse()
         }
 
         @Test
-        @DisplayName("역할 검증 - 지점장 사용자 -> UserRole.ADMIN")
+        @DisplayName("역할 검증 - 지점장 사용자 -> UserRole.BRANCH_MANAGER")
         fun adminUser_hasAdminRole() {
             // Given
             stubAllUsersNotExist()
@@ -294,7 +294,7 @@ class LocalDataInitializerTest {
             // Then
             val employees = captureAllSavedEmployees()
             val admin = employees.find { it.employeeCode == "99990003" }!!
-            assertThat(admin.role).isEqualTo(UserRole.ADMIN)
+            assertThat(admin.role).isEqualTo(UserRole.BRANCH_MANAGER)
         }
 
         @Test

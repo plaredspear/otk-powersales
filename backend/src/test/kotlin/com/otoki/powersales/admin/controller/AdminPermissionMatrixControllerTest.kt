@@ -71,10 +71,10 @@ class AdminPermissionMatrixControllerTest {
                     PermissionDetail("EMPLOYEE_READ", "사원 조회", listOf("사원 > 여사원 현황"))
                 ),
                 roles = listOf(
-                    RolePermissions("조장", listOf("DASHBOARD_READ", "EMPLOYEE_READ")),
-                    RolePermissions("지점장", listOf("DASHBOARD_READ", "EMPLOYEE_READ"))
+                    RolePermissions("LEADER", "조장", listOf("DASHBOARD_READ", "EMPLOYEE_READ")),
+                    RolePermissions("BRANCH_MANAGER", "지점장", listOf("DASHBOARD_READ", "EMPLOYEE_READ"))
                 ),
-                currentUser = CurrentUserPermission("조장", listOf("DASHBOARD_READ", "EMPLOYEE_READ"))
+                currentUser = CurrentUserPermission("LEADER", "조장", listOf("DASHBOARD_READ", "EMPLOYEE_READ"))
             )
             whenever(adminPermissionMatrixService.getMatrix(1L)).thenReturn(mockResponse)
 
@@ -89,9 +89,11 @@ class AdminPermissionMatrixControllerTest {
                 .andExpect(jsonPath("$.data.permissions[0].menus[0]").value("대시보드"))
                 .andExpect(jsonPath("$.data.roles").isArray)
                 .andExpect(jsonPath("$.data.roles.length()").value(2))
-                .andExpect(jsonPath("$.data.roles[0].role").value("조장"))
+                .andExpect(jsonPath("$.data.roles[0].role").value("LEADER"))
+                .andExpect(jsonPath("$.data.roles[0].role_label").value("조장"))
                 .andExpect(jsonPath("$.data.roles[0].permissions[0]").value("DASHBOARD_READ"))
-                .andExpect(jsonPath("$.data.current_user.role").value("조장"))
+                .andExpect(jsonPath("$.data.current_user.role").value("LEADER"))
+                .andExpect(jsonPath("$.data.current_user.role_label").value("조장"))
                 .andExpect(jsonPath("$.data.current_user.permissions").isArray)
         }
     }

@@ -1,6 +1,7 @@
 package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.common.dto.response.AccountInfo
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.common.dto.response.AccountListResponse
 import com.otoki.powersales.common.util.GeoUtils
 import com.otoki.powersales.account.entity.Account
@@ -389,12 +390,11 @@ class AttendanceService(
 
     /**
      * 사원의 조직코드 기반 조장 조회
-     * costCenterCode로 appAuthority="조장"이고 appLoginActive=true인 사원 조회
      */
     private fun findTeamLeader(costCenterCode: String?): com.otoki.powersales.employee.entity.Employee? {
         if (costCenterCode.isNullOrBlank()) return null
-        val leaders = employeeRepository.findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrue(
-            listOf(costCenterCode), "조장"
+        val leaders = employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(
+            listOf(costCenterCode), UserRole.LEADER
         )
         return leaders.firstOrNull()
     }

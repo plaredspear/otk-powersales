@@ -1,4 +1,5 @@
 import client from './client';
+import type { UserRole } from '@/constants/userRole';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -15,7 +16,8 @@ export interface EmployeePermissionDetail {
   employee_id: number;
   employee_code: string;
   name: string;
-  app_authority: string;
+  role: UserRole | null;
+  role_label: string | null;
   role_permissions: string[];
   user_permissions: UserPermissionInfo[];
   effective_permissions: string[];
@@ -26,15 +28,17 @@ export interface UpdateUserPermissionsRequest {
 }
 
 export interface UpdateAuthorityRequest {
-  app_authority: string;
+  role: UserRole;
 }
 
 export interface UpdateAuthorityResponse {
   employee_id: number;
   employee_code: string;
   name: string;
-  previous_authority: string;
-  new_authority: string;
+  previous_role: UserRole | null;
+  previous_role_label: string | null;
+  new_role: UserRole;
+  new_role_label: string;
   effective_permissions: string[];
 }
 

@@ -65,7 +65,7 @@ class AdminEmployeePermissionControllerTest {
 
     @BeforeEach
     fun setUp() {
-        val principal = UserPrincipal(userId = 1L, role = UserRole.ADMIN)
+        val principal = UserPrincipal(userId = 1L, role = UserRole.BRANCH_MANAGER)
         SecurityContextHolder.getContext().authentication =
             UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
     }
@@ -82,7 +82,8 @@ class AdminEmployeePermissionControllerTest {
                 employeeId = 2L,
                 employeeCode = "00000002",
                 name = "홍길동",
-                appAuthority = "지점장",
+                role = "BRANCH_MANAGER",
+                roleLabel = "지점장",
                 rolePermissions = listOf("DASHBOARD_READ", "SCHEDULE_READ"),
                 userPermissions = listOf(UserPermissionDetailResponse("SCHEDULE_WRITE", "관리자김")),
                 effectivePermissions = listOf("DASHBOARD_READ", "SCHEDULE_READ", "SCHEDULE_WRITE")
@@ -133,7 +134,8 @@ class AdminEmployeePermissionControllerTest {
             // Given
             val response = EmployeePermissionDetailResponse(
                 employeeId = 2L, employeeCode = "00000002", name = "홍길동",
-                appAuthority = "지점장",
+                role = "BRANCH_MANAGER",
+                roleLabel = "지점장",
                 rolePermissions = listOf("DASHBOARD_READ"),
                 userPermissions = listOf(UserPermissionDetailResponse("SCHEDULE_WRITE", "시스템관리자")),
                 effectivePermissions = listOf("DASHBOARD_READ", "SCHEDULE_WRITE")
@@ -198,12 +200,13 @@ class AdminEmployeePermissionControllerTest {
             // Given
             val response = UpdateAuthorityResponse(
                 employeeId = 2L, employeeCode = "00000002", name = "홍길동",
-                previousAuthority = "지점장", newAuthority = "영업부장",
+                previousRole = "BRANCH_MANAGER", previousRoleLabel = "지점장",
+                newRole = "SALES_MANAGER", newRoleLabel = "영업부장",
                 effectivePermissions = listOf("DASHBOARD_READ")
             )
             whenever(adminEmployeePermissionService.updateAuthority(eq(2L), any())).thenReturn(response)
 
-            val request = UpdateAuthorityRequest(appAuthority = "영업부장")
+            val request = UpdateAuthorityRequest(role = UserRole.SALES_MANAGER)
 
             // When & Then
             mockMvc.perform(
@@ -213,8 +216,10 @@ class AdminEmployeePermissionControllerTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.previous_authority").value("지점장"))
-                .andExpect(jsonPath("$.data.new_authority").value("영업부장"))
+                .andExpect(jsonPath("$.data.previous_role").value("BRANCH_MANAGER"))
+                .andExpect(jsonPath("$.data.previous_role_label").value("지점장"))
+                .andExpect(jsonPath("$.data.new_role").value("SALES_MANAGER"))
+                .andExpect(jsonPath("$.data.new_role_label").value("영업부장"))
         }
     }
 }

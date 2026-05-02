@@ -69,7 +69,7 @@ class OrderDraftControllerTest {
 
     @BeforeEach
     fun setUp() {
-        testPrincipal = UserPrincipal(userId = 1L, role = UserRole.USER)
+        testPrincipal = UserPrincipal(userId = 1L, role = UserRole.WOMAN)
         val authentication = UsernamePasswordAuthenticationToken(
             testPrincipal, null, testPrincipal.authorities
         )

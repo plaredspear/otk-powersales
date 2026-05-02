@@ -1,5 +1,6 @@
 package com.otoki.powersales.sap.inbound.service
 
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.schedule.entity.Appointment
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.common.entity.SystemCodeMaster
@@ -131,16 +132,16 @@ class AppointmentUserProfileUpdater(
         if (jobCode == null || jobCode !in PROMOTION_JOB_CODES) return
 
         if (jikchak == "D0052") {
-            employee.appAuthority = "조장"
+            employee.role = UserRole.LEADER
             employee.appLoginActive = true
         } else {
-            employee.appAuthority = "여사원"
+            employee.role = UserRole.WOMAN
             employee.appLoginActive = true
         }
     }
 
     internal fun applyProfessionalPromotionTeamReset(employee: Employee, ordDetailNode: String?) {
-        if (employee.appAuthority != "여사원") return
+        if (employee.role != UserRole.WOMAN) return
         if (ordDetailNode != "승진") {
             employee.professionalPromotionTeam = ProfessionalPromotionTeamType.GENERAL
         }

@@ -59,7 +59,7 @@ class ProductExpirationControllerTest {
 
     @BeforeEach
     fun setUp() {
-        val principal = UserPrincipal(userId = 1L, role = UserRole.USER)
+        val principal = UserPrincipal(userId = 1L, role = UserRole.WOMAN)
         SecurityContextHolder.getContext().authentication =
             UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
     }

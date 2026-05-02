@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:56224",
+    "url" : "http://localhost:58630",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -596,7 +596,8 @@
           "in" : "path",
           "required" : true,
           "schema" : {
-            "type" : "string"
+            "type" : "string",
+            "enum" : [ "WOMAN", "LEADER", "BRANCH_MANAGER", "SALES_MANAGER", "BUSINESS_MANAGER", "HEADQUARTERS_MANAGER", "SALES_SUPPORT", "SYSTEM_ADMIN", "UNKNOWN" ]
           }
         } ],
         "requestBody" : {
@@ -2870,11 +2871,12 @@
             "type" : "string"
           }
         }, {
-          "name" : "appAuthority",
+          "name" : "role",
           "in" : "query",
           "required" : false,
           "schema" : {
-            "type" : "string"
+            "type" : "string",
+            "enum" : [ "WOMAN", "LEADER", "BRANCH_MANAGER", "SALES_MANAGER", "BUSINESS_MANAGER", "HEADQUARTERS_MANAGER", "SALES_SUPPORT", "SYSTEM_ADMIN", "UNKNOWN" ]
           }
         }, {
           "name" : "page",
@@ -3745,10 +3747,10 @@
           "remark" : {
             "type" : [ "string", "null" ]
           },
-          "deleted" : {
+          "closed" : {
             "type" : "boolean"
           },
-          "closed" : {
+          "deleted" : {
             "type" : "boolean"
           }
         }
@@ -4293,6 +4295,9 @@
           "role" : {
             "type" : "string"
           },
+          "roleLabel" : {
+            "type" : "string"
+          },
           "permissions" : {
             "type" : "array",
             "items" : {
@@ -4506,7 +4511,10 @@
           "name" : {
             "type" : "string"
           },
-          "appAuthority" : {
+          "role" : {
+            "type" : [ "string", "null" ]
+          },
+          "roleLabel" : {
             "type" : [ "string", "null" ]
           },
           "rolePermissions" : {
@@ -4543,11 +4551,12 @@
       "UpdateAuthorityRequest" : {
         "type" : "object",
         "properties" : {
-          "appAuthority" : {
-            "type" : "string"
+          "role" : {
+            "type" : "string",
+            "enum" : [ "WOMAN", "LEADER", "BRANCH_MANAGER", "SALES_MANAGER", "BUSINESS_MANAGER", "HEADQUARTERS_MANAGER", "SALES_SUPPORT", "SYSTEM_ADMIN", "UNKNOWN" ]
           }
         },
-        "required" : [ "appAuthority" ]
+        "required" : [ "role" ]
       },
       "ApiResponseUpdateAuthorityResponse" : {
         "type" : "object",
@@ -4591,10 +4600,16 @@
           "name" : {
             "type" : "string"
           },
-          "previousAuthority" : {
+          "previousRole" : {
             "type" : [ "string", "null" ]
           },
-          "newAuthority" : {
+          "previousRoleLabel" : {
+            "type" : [ "string", "null" ]
+          },
+          "newRole" : {
+            "type" : "string"
+          },
+          "newRoleLabel" : {
             "type" : "string"
           },
           "effectivePermissions" : {
@@ -5385,9 +5400,9 @@
             "type" : [ "string", "null" ]
           },
           "role" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
-          "appAuthority" : {
+          "roleLabel" : {
             "type" : [ "string", "null" ]
           },
           "costCenterCode" : {
@@ -6137,11 +6152,9 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "first" : {
             "type" : "boolean"
@@ -6149,9 +6162,11 @@
           "last" : {
             "type" : "boolean"
           },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "size" : {
             "type" : "integer",
@@ -6249,10 +6264,10 @@
       "SortObject" : {
         "type" : "object",
         "properties" : {
-          "unsorted" : {
+          "sorted" : {
             "type" : "boolean"
           },
-          "sorted" : {
+          "unsorted" : {
             "type" : "boolean"
           },
           "empty" : {
@@ -6473,10 +6488,10 @@
           "remark" : {
             "type" : [ "string", "null" ]
           },
-          "deleted" : {
+          "closed" : {
             "type" : "boolean"
           },
-          "closed" : {
+          "deleted" : {
             "type" : "boolean"
           }
         }
@@ -7198,6 +7213,9 @@
           "role" : {
             "type" : "string"
           },
+          "roleLabel" : {
+            "type" : "string"
+          },
           "permissions" : {
             "type" : "array",
             "items" : {
@@ -7250,6 +7268,9 @@
         "type" : "object",
         "properties" : {
           "role" : {
+            "type" : "string"
+          },
+          "roleLabel" : {
             "type" : "string"
           },
           "permissions" : {
@@ -7645,7 +7666,10 @@
           "costCenterCode" : {
             "type" : [ "string", "null" ]
           },
-          "appAuthority" : {
+          "role" : {
+            "type" : [ "string", "null" ]
+          },
+          "roleLabel" : {
             "type" : [ "string", "null" ]
           },
           "startDate" : {

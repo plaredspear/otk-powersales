@@ -10,6 +10,7 @@ import com.otoki.powersales.admin.dto.response.AdminLoginResponse
 import com.otoki.powersales.admin.dto.response.AdminTokenInfo
 import com.otoki.powersales.admin.dto.response.AdminUserInfo
 import com.otoki.powersales.admin.service.AdminPermissionResolver
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.auth.dto.response.*
 import com.otoki.powersales.common.dto.response.*
 import com.otoki.powersales.common.entity.AgreementHistory
@@ -77,7 +78,7 @@ class AuthService(
             log.warn("로그인 이력 기록 실패: employeeCode={}", employee.employeeCode, e)
         }
 
-        val accessToken = jwtTokenProvider.createAccessToken(employee.id, employee.role, employee.agreementFlag == true)
+        val accessToken = jwtTokenProvider.createAccessToken(employee.id, employee.role ?: UserRole.WOMAN, employee.agreementFlag == true)
 
         // Refresh Token Rotation: familyId + tokenId 생성
         val familyId = UUID.randomUUID().toString()
@@ -103,7 +104,7 @@ class AuthService(
      * 관리자 로그인
      * 1. 사번으로 사용자 조회
      * 2. BCrypt 비밀번호 검증
-     * 3. appAuthority 검증 (ALLOWED_AUTHORITIES)
+     * 3. role 검증 (UserRole.ALLOWED_FOR_ADMIN_LOGIN)
      * 4. 로그인 이력 기록
      * 5. Access Token + Refresh Token 생성
      * 6. AdminLoginResponse 반환
@@ -127,7 +128,7 @@ class AuthService(
             log.warn("로그인 이력 기록 실패: employeeCode={}", employee.employeeCode, e)
         }
 
-        val accessToken = jwtTokenProvider.createAccessToken(employee.id, employee.role, employee.agreementFlag == true)
+        val accessToken = jwtTokenProvider.createAccessToken(employee.id, employee.role ?: UserRole.WOMAN, employee.agreementFlag == true)
 
         val familyId = UUID.randomUUID().toString()
         val tokenId = UUID.randomUUID().toString()
@@ -172,7 +173,7 @@ class AuthService(
 
     /**
      * 로그인 권한 검증
-     * - WEB (deviceId 미전달): appAuthority가 허용 목록에 포함되어야 함
+     * - WEB (deviceId 미전달): role이 허용 목록에 포함되어야 함
      * - Mobile (deviceId 전달): appLoginActive가 true여야 함
      */
     private fun validateLoginAuthority(employee: Employee, deviceId: String?) {
@@ -260,7 +261,7 @@ class AuthService(
 
         // 7. 새 토큰 발급 (동일 familyId, 새 tokenId)
         val newTokenId = UUID.randomUUID().toString()
-        val newAccessToken = jwtTokenProvider.createAccessToken(employee.id, employee.role, employee.agreementFlag == true)
+        val newAccessToken = jwtTokenProvider.createAccessToken(employee.id, employee.role ?: UserRole.WOMAN, employee.agreementFlag == true)
         val newRefreshToken = jwtTokenProvider.createRefreshToken(employee.id, familyId, newTokenId)
 
         // 8. Redis에 새 Refresh Token 저장
@@ -364,7 +365,7 @@ class AuthService(
         employee.recordGpsConsent(terms.name)
         employeeRepository.save(employee)
 
-        val accessToken = jwtTokenProvider.createAccessToken(employee.id, employee.role, true)
+        val accessToken = jwtTokenProvider.createAccessToken(employee.id, employee.role ?: UserRole.WOMAN, true)
 
         return GpsConsentRecordResponse(
             accessToken = accessToken,

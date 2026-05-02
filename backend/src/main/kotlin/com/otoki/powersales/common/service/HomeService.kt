@@ -100,12 +100,11 @@ class HomeService(
         )
 
         // 안전점검 필요 여부 (조장은 항상 false)
-        val safetyCheckRequired = when (employee.role) {
-            UserRole.USER -> {
-                val todayStatus = safetyCheckService.getTodayStatus(userId)
-                !todayStatus.completed
-            }
-            else -> false
+        val safetyCheckRequired = if (employee.role == UserRole.WOMAN) {
+            val todayStatus = safetyCheckService.getTodayStatus(userId)
+            !todayStatus.completed
+        } else {
+            false
         }
 
         val expiryCount = productExpirationRepository.countByEmployeeIdAndAlarmDate(employee.id, today)

@@ -59,7 +59,7 @@ class AdminControllerTest {
         @DisplayName("성공 - ADMIN 권한으로 단말기 초기화")
         fun resetDevice_success() {
             // Given
-            setSecurityContext(UserRole.ADMIN)
+            setSecurityContext(UserRole.BRANCH_MANAGER)
             doNothing().`when`(authService).resetDevice("20010585")
 
             // When & Then
@@ -75,7 +75,7 @@ class AdminControllerTest {
         @DisplayName("실패 - 존재하지 않는 사번 시 404 USER_NOT_FOUND")
         fun resetDevice_userNotFound() {
             // Given
-            setSecurityContext(UserRole.ADMIN)
+            setSecurityContext(UserRole.BRANCH_MANAGER)
             doThrow(EmployeeNotFoundException()).`when`(authService).resetDevice("99999999")
 
             // When & Then

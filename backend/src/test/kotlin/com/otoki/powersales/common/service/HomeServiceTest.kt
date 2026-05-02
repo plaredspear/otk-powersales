@@ -1,6 +1,7 @@
 package com.otoki.powersales.common.service
 
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.account.entity.Account
@@ -31,6 +32,7 @@ import java.time.LocalDateTime
 import java.util.*
 
 @ExtendWith(MockitoExtension::class)
+@org.mockito.junit.jupiter.MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
 @DisplayName("HomeService 테스트")
 class HomeServiceTest {
 
@@ -70,7 +72,7 @@ class HomeServiceTest {
             // Given
             val userId = 1L
             val employeeCode = "20030117"
-            val employee = createEmployee(id = userId, employeeCode = employeeCode, appAuthority = null)
+            val employee = createEmployee(id = userId, employeeCode = employeeCode, role = null)
             val account = createAccount(id = 8938, name = "이마트 부산점")
 
             val teamMemberSchedules = listOf(
@@ -110,7 +112,7 @@ class HomeServiceTest {
             val member2EmpNum = "00000003"
             val orgName = "부산1지점"
 
-            val leader = createEmployee(id = userId, employeeCode = leaderEmpNum, orgName = orgName, appAuthority = "조장")
+            val leader = createEmployee(id = userId, employeeCode = leaderEmpNum, orgName = orgName, role = UserRole.LEADER)
             val member1 = createEmployee(id = member1Id, employeeCode = member1EmpNum, orgName = orgName, name = "김영희")
             val member2 = createEmployee(id = member2Id, employeeCode = member2EmpNum, orgName = orgName, name = "박미나")
             val teamEmployees = listOf(leader, member1, member2)
@@ -152,7 +154,7 @@ class HomeServiceTest {
         fun user_safetyCheckNotCompleted() {
             // Given
             val userId = 1L
-            val employee = createEmployee(id = userId, appAuthority = null)
+            val employee = createEmployee(id = userId, role = UserRole.WOMAN)
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(any(), any()))
@@ -176,7 +178,7 @@ class HomeServiceTest {
         fun user_safetyCheckCompleted() {
             // Given
             val userId = 1L
-            val employee = createEmployee(id = userId, appAuthority = null)
+            val employee = createEmployee(id = userId, role = UserRole.WOMAN)
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(any(), any()))
@@ -200,7 +202,7 @@ class HomeServiceTest {
         fun leader_safetyCheckAlwaysFalse() {
             // Given
             val userId = 1L
-            val leader = createEmployee(id = userId, orgName = "부산1지점", appAuthority = "조장")
+            val leader = createEmployee(id = userId, orgName = "부산1지점", role = UserRole.LEADER)
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(leader))
             whenever(employeeRepository.findByOrgName("부산1지점")).thenReturn(listOf(leader))
@@ -225,7 +227,7 @@ class HomeServiceTest {
         fun expiryAlert_withCount() {
             // Given
             val userId = 1L
-            val employee = createEmployee(id = userId, appAuthority = null)
+            val employee = createEmployee(id = userId, role = null)
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(eq(userId), any()))
@@ -255,7 +257,7 @@ class HomeServiceTest {
         fun expiryAlert_zeroCount() {
             // Given
             val userId = 1L
-            val employee = createEmployee(id = userId, appAuthority = null)
+            val employee = createEmployee(id = userId, role = null)
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(eq(userId), any()))
@@ -282,7 +284,7 @@ class HomeServiceTest {
         fun expiryAlert_employeeId() {
             // Given
             val userId = 1L
-            val employee = createEmployee(id = userId, appAuthority = null)
+            val employee = createEmployee(id = userId, role = null)
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(eq(userId), any()))
@@ -309,7 +311,7 @@ class HomeServiceTest {
         fun expiryAlert_orgNameNull() {
             // Given
             val userId = 1L
-            val employee = createEmployee(id = userId, orgName = null, appAuthority = null)
+            val employee = createEmployee(id = userId, orgName = null, role = null)
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(eq(userId), any()))
@@ -338,7 +340,7 @@ class HomeServiceTest {
         fun schedules_sortedByPriority() {
             // Given
             val userId = 1L
-            val employee = createEmployee(id = userId, appAuthority = null)
+            val employee = createEmployee(id = userId, role = null)
 
             // 진열 (priority 3)
             val displaySchedule = createTeamMemberSchedule(
@@ -409,7 +411,7 @@ class HomeServiceTest {
         fun schedules_deduplicatedById() {
             // Given
             val userId = 1L
-            val employee = createEmployee(id = userId, appAuthority = null)
+            val employee = createEmployee(id = userId, role = null)
 
             // 같은 id로 진열(priority 3)과 행사(priority 2) 스케줄 존재
             val displaySchedule = createTeamMemberSchedule(
@@ -463,7 +465,7 @@ class HomeServiceTest {
         fun attendanceSummary_correctCounts() {
             // Given
             val userId = 1L
-            val employee = createEmployee(id = userId, appAuthority = null)
+            val employee = createEmployee(id = userId, role = null)
 
             val teamMemberSchedules = listOf(
                 createTeamMemberSchedule(id = 1L, employeeId = userId, accountId = 8938, commuteLogId = "CLG001"),
@@ -499,7 +501,7 @@ class HomeServiceTest {
         fun displayWorkScheduleOnly_includedInSchedules() {
             // Given
             val userId = 1L
-            val employee = createEmployee(id = userId, appAuthority = null)
+            val employee = createEmployee(id = userId, role = null)
             val account = createAccount(id = 742, name = "테스트 거래처")
 
             val displayWorkSchedule = createDisplayWorkSchedule(
@@ -540,7 +542,7 @@ class HomeServiceTest {
         fun displayWorkSchedule_excludedWhenTmsExists() {
             // Given
             val userId = 1L
-            val employee = createEmployee(id = userId, appAuthority = null)
+            val employee = createEmployee(id = userId, role = null)
             val account = createAccount(id = 742, name = "테스트 거래처")
 
             val teamMemberSchedule = createTeamMemberSchedule(
@@ -592,7 +594,7 @@ class HomeServiceTest {
         name: String = "최금주",
         orgName: String? = "부산1지점",
         sfid: String? = null,
-        appAuthority: String? = null
+        role: UserRole? = null
     ): Employee {
         return Employee(
             id = id,
@@ -601,7 +603,7 @@ class HomeServiceTest {
             name = name,
             orgName = orgName,
             sfid = sfid,
-            appAuthority = appAuthority
+            role = role
         )
     }
 

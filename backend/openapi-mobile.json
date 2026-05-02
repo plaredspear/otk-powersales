@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:56224",
+    "url" : "http://localhost:58630",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -1254,12 +1254,12 @@
           "description" : {
             "type" : [ "string", "null" ]
           },
+          "expired" : {
+            "type" : "boolean"
+          },
           "dday" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "expired" : {
-            "type" : "boolean"
           }
         }
       },
@@ -1707,7 +1707,10 @@
             "type" : [ "string", "null" ]
           },
           "role" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
+          },
+          "roleLabel" : {
+            "type" : [ "string", "null" ]
           }
         }
       },
@@ -2602,11 +2605,9 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "first" : {
             "type" : "boolean"
@@ -2614,9 +2615,11 @@
           "last" : {
             "type" : "boolean"
           },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "size" : {
             "type" : "integer",
@@ -2692,10 +2695,10 @@
       "SortObject" : {
         "type" : "object",
         "properties" : {
-          "unsorted" : {
+          "sorted" : {
             "type" : "boolean"
           },
-          "sorted" : {
+          "unsorted" : {
             "type" : "boolean"
           },
           "empty" : {

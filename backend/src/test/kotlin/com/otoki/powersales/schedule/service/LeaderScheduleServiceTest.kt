@@ -1,6 +1,7 @@
 package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.employee.entity.Employee
@@ -61,8 +62,8 @@ class LeaderScheduleServiceTest {
         @DisplayName("정상 등록 - 조장이 본인 팀원의 근무 일정 등록 -> proxy_registered_by 저장")
         fun create_success() {
             // Given
-            val leader = createEmployee(id = 4001, authority = "조장", costCenterCode = "C001")
-            val target = createEmployee(id = 5012, authority = "여사원", costCenterCode = "C001", status = "활동")
+            val leader = createEmployee(id = 4001, authority = UserRole.LEADER, costCenterCode = "C001")
+            val target = createEmployee(id = 5012, authority = UserRole.WOMAN, costCenterCode = "C001", status = "활동")
             val account = createAccount(id = 90234, branchCode = "C001", accountGroup = "1000")
             val request = createRequest()
 
@@ -98,7 +99,7 @@ class LeaderScheduleServiceTest {
         @Test
         @DisplayName("실패 - 비조장 사용자 -> NOT_LEADER")
         fun create_notLeader() {
-            val nonLeader = createEmployee(id = 4001, authority = "여사원", costCenterCode = "C001")
+            val nonLeader = createEmployee(id = 4001, authority = UserRole.WOMAN, costCenterCode = "C001")
             whenever(employeeRepository.findById(nonLeader.id)).thenReturn(Optional.of(nonLeader))
 
             assertThatThrownBy { leaderScheduleService.createTeamMemberSchedule(nonLeader.id, createRequest()) }
@@ -108,7 +109,7 @@ class LeaderScheduleServiceTest {
         @Test
         @DisplayName("실패 - 근무 외 working_type -> INVALID_WORKING_TYPE")
         fun create_invalidWorkingType() {
-            val leader = createEmployee(id = 4001, authority = "조장", costCenterCode = "C001")
+            val leader = createEmployee(id = 4001, authority = UserRole.LEADER, costCenterCode = "C001")
             whenever(employeeRepository.findById(leader.id)).thenReturn(Optional.of(leader))
 
             val request = createRequest(workingType = "연차")
@@ -119,7 +120,7 @@ class LeaderScheduleServiceTest {
         @Test
         @DisplayName("실패 - 전담 외 working_category2 -> INVALID_WORK_CATEGORY2")
         fun create_invalidWorkCategory2() {
-            val leader = createEmployee(id = 4001, authority = "조장", costCenterCode = "C001")
+            val leader = createEmployee(id = 4001, authority = UserRole.LEADER, costCenterCode = "C001")
             whenever(employeeRepository.findById(leader.id)).thenReturn(Optional.of(leader))
 
             val request = createRequest(workingCategory2 = "파트")
@@ -130,7 +131,7 @@ class LeaderScheduleServiceTest {
         @Test
         @DisplayName("실패 - 카테고리3 잘못된 값 -> MISSING_WORK_CATEGORY3")
         fun create_invalidWorkCategory3() {
-            val leader = createEmployee(id = 4001, authority = "조장", costCenterCode = "C001")
+            val leader = createEmployee(id = 4001, authority = UserRole.LEADER, costCenterCode = "C001")
             whenever(employeeRepository.findById(leader.id)).thenReturn(Optional.of(leader))
 
             val request = createRequest(workingCategory3 = "기타")
@@ -141,7 +142,7 @@ class LeaderScheduleServiceTest {
         @Test
         @DisplayName("실패 - 거래처 누락 -> ACCOUNT_REQUIRED")
         fun create_accountRequired() {
-            val leader = createEmployee(id = 4001, authority = "조장", costCenterCode = "C001")
+            val leader = createEmployee(id = 4001, authority = UserRole.LEADER, costCenterCode = "C001")
             whenever(employeeRepository.findById(leader.id)).thenReturn(Optional.of(leader))
 
             val request = createRequest(accountId = null)
@@ -152,7 +153,7 @@ class LeaderScheduleServiceTest {
         @Test
         @DisplayName("실패 - 미존재 직원 -> TARGET_EMPLOYEE_NOT_FOUND")
         fun create_targetNotFound() {
-            val leader = createEmployee(id = 4001, authority = "조장", costCenterCode = "C001")
+            val leader = createEmployee(id = 4001, authority = UserRole.LEADER, costCenterCode = "C001")
             whenever(employeeRepository.findById(leader.id)).thenReturn(Optional.of(leader))
             whenever(employeeRepository.findById(5012L)).thenReturn(Optional.empty())
 
@@ -163,8 +164,8 @@ class LeaderScheduleServiceTest {
         @Test
         @DisplayName("실패 - 다른 팀의 직원 등록 -> NOT_TEAM_MEMBER")
         fun create_notTeamMember() {
-            val leader = createEmployee(id = 4001, authority = "조장", costCenterCode = "C001")
-            val target = createEmployee(id = 5012, authority = "여사원", costCenterCode = "C002", status = "활동")
+            val leader = createEmployee(id = 4001, authority = UserRole.LEADER, costCenterCode = "C001")
+            val target = createEmployee(id = 5012, authority = UserRole.WOMAN, costCenterCode = "C002", status = "활동")
             whenever(employeeRepository.findById(leader.id)).thenReturn(Optional.of(leader))
             whenever(employeeRepository.findById(target.id)).thenReturn(Optional.of(target))
 
@@ -175,8 +176,8 @@ class LeaderScheduleServiceTest {
         @Test
         @DisplayName("실패 - 휴직 직원 -> TARGET_EMPLOYEE_INACTIVE")
         fun create_targetOnLeave() {
-            val leader = createEmployee(id = 4001, authority = "조장", costCenterCode = "C001")
-            val target = createEmployee(id = 5012, authority = "여사원", costCenterCode = "C001", status = "휴직")
+            val leader = createEmployee(id = 4001, authority = UserRole.LEADER, costCenterCode = "C001")
+            val target = createEmployee(id = 5012, authority = UserRole.WOMAN, costCenterCode = "C001", status = "휴직")
             whenever(employeeRepository.findById(leader.id)).thenReturn(Optional.of(leader))
             whenever(employeeRepository.findById(target.id)).thenReturn(Optional.of(target))
 
@@ -187,8 +188,8 @@ class LeaderScheduleServiceTest {
         @Test
         @DisplayName("실패 - 퇴직 직원 -> TARGET_EMPLOYEE_INACTIVE")
         fun create_targetRetired() {
-            val leader = createEmployee(id = 4001, authority = "조장", costCenterCode = "C001")
-            val target = createEmployee(id = 5012, authority = "여사원", costCenterCode = "C001", status = "퇴직")
+            val leader = createEmployee(id = 4001, authority = UserRole.LEADER, costCenterCode = "C001")
+            val target = createEmployee(id = 5012, authority = UserRole.WOMAN, costCenterCode = "C001", status = "퇴직")
             whenever(employeeRepository.findById(leader.id)).thenReturn(Optional.of(leader))
             whenever(employeeRepository.findById(target.id)).thenReturn(Optional.of(target))
 
@@ -199,8 +200,8 @@ class LeaderScheduleServiceTest {
         @Test
         @DisplayName("실패 - 거래처 미존재 -> NOT_LEADER_ACCOUNT")
         fun create_accountNotFound() {
-            val leader = createEmployee(id = 4001, authority = "조장", costCenterCode = "C001")
-            val target = createEmployee(id = 5012, authority = "여사원", costCenterCode = "C001", status = "활동")
+            val leader = createEmployee(id = 4001, authority = UserRole.LEADER, costCenterCode = "C001")
+            val target = createEmployee(id = 5012, authority = UserRole.WOMAN, costCenterCode = "C001", status = "활동")
             whenever(employeeRepository.findById(leader.id)).thenReturn(Optional.of(leader))
             whenever(employeeRepository.findById(target.id)).thenReturn(Optional.of(target))
             whenever(accountRepository.findById(any<Int>())).thenReturn(Optional.empty())
@@ -212,8 +213,8 @@ class LeaderScheduleServiceTest {
         @Test
         @DisplayName("실패 - 다른 지점 거래처 -> NOT_LEADER_ACCOUNT")
         fun create_accountWrongBranch() {
-            val leader = createEmployee(id = 4001, authority = "조장", costCenterCode = "C001")
-            val target = createEmployee(id = 5012, authority = "여사원", costCenterCode = "C001", status = "활동")
+            val leader = createEmployee(id = 4001, authority = UserRole.LEADER, costCenterCode = "C001")
+            val target = createEmployee(id = 5012, authority = UserRole.WOMAN, costCenterCode = "C001", status = "활동")
             val account = createAccount(id = 90234, branchCode = "C999", accountGroup = "1000")
             whenever(employeeRepository.findById(leader.id)).thenReturn(Optional.of(leader))
             whenever(employeeRepository.findById(target.id)).thenReturn(Optional.of(target))
@@ -226,8 +227,8 @@ class LeaderScheduleServiceTest {
         @Test
         @DisplayName("실패 - 거래처 그룹 외 -> NOT_LEADER_ACCOUNT")
         fun create_accountWrongGroup() {
-            val leader = createEmployee(id = 4001, authority = "조장", costCenterCode = "C001")
-            val target = createEmployee(id = 5012, authority = "여사원", costCenterCode = "C001", status = "활동")
+            val leader = createEmployee(id = 4001, authority = UserRole.LEADER, costCenterCode = "C001")
+            val target = createEmployee(id = 5012, authority = UserRole.WOMAN, costCenterCode = "C001", status = "활동")
             val account = createAccount(id = 90234, branchCode = "C001", accountGroup = "9999")
             whenever(employeeRepository.findById(leader.id)).thenReturn(Optional.of(leader))
             whenever(employeeRepository.findById(target.id)).thenReturn(Optional.of(target))
@@ -246,12 +247,12 @@ class LeaderScheduleServiceTest {
         @Test
         @DisplayName("성공 - 조장의 팀원이 employee_code ASC 정렬되어 반환")
         fun getTeamMembers_success() {
-            val leader = createEmployee(id = 4001, authority = "조장", costCenterCode = "C001")
-            val m1 = createEmployee(id = 5012, employeeCode = "20300002", authority = "여사원", costCenterCode = "C001", status = "활동")
-            val m2 = createEmployee(id = 5013, employeeCode = "20300001", authority = "여사원", costCenterCode = "C001", status = "휴직")
+            val leader = createEmployee(id = 4001, authority = UserRole.LEADER, costCenterCode = "C001")
+            val m1 = createEmployee(id = 5012, employeeCode = "20300002", authority = UserRole.WOMAN, costCenterCode = "C001", status = "활동")
+            val m2 = createEmployee(id = 5013, employeeCode = "20300001", authority = UserRole.WOMAN, costCenterCode = "C001", status = "휴직")
 
             whenever(employeeRepository.findById(leader.id)).thenReturn(Optional.of(leader))
-            whenever(employeeRepository.findByCostCenterCodeAndAppAuthority("C001", "여사원"))
+            whenever(employeeRepository.findByCostCenterCodeAndRole("C001", UserRole.WOMAN))
                 .thenReturn(listOf(m1, m2))
 
             val result = leaderScheduleService.getTeamMembers(leader.id)
@@ -265,7 +266,7 @@ class LeaderScheduleServiceTest {
         @Test
         @DisplayName("실패 - 비조장 -> NOT_LEADER")
         fun getTeamMembers_notLeader() {
-            val nonLeader = createEmployee(id = 4001, authority = "여사원", costCenterCode = "C001")
+            val nonLeader = createEmployee(id = 4001, authority = UserRole.WOMAN, costCenterCode = "C001")
             whenever(employeeRepository.findById(nonLeader.id)).thenReturn(Optional.of(nonLeader))
 
             assertThatThrownBy { leaderScheduleService.getTeamMembers(nonLeader.id) }
@@ -280,7 +281,7 @@ class LeaderScheduleServiceTest {
         @Test
         @DisplayName("성공 - 조장의 거래처가 name ASC 정렬되어 반환")
         fun getAccounts_success() {
-            val leader = createEmployee(id = 4001, authority = "조장", costCenterCode = "C001")
+            val leader = createEmployee(id = 4001, authority = UserRole.LEADER, costCenterCode = "C001")
             val a1 = createAccount(id = 100, branchCode = "C001", accountGroup = "1000", name = "ZebraMart")
             val a2 = createAccount(id = 101, branchCode = "C001", accountGroup = "1010", name = "AlphaMart")
 
@@ -299,7 +300,7 @@ class LeaderScheduleServiceTest {
         @Test
         @DisplayName("성공 - keyword 부분 일치 필터")
         fun getAccounts_withKeyword() {
-            val leader = createEmployee(id = 4001, authority = "조장", costCenterCode = "C001")
+            val leader = createEmployee(id = 4001, authority = UserRole.LEADER, costCenterCode = "C001")
             val a1 = createAccount(id = 100, branchCode = "C001", accountGroup = "1000", name = "ZebraMart", address1 = "Seoul")
             val a2 = createAccount(id = 101, branchCode = "C001", accountGroup = "1010", name = "AlphaMart", address1 = "Busan")
 
@@ -317,7 +318,7 @@ class LeaderScheduleServiceTest {
         @Test
         @DisplayName("실패 - 비조장 -> NOT_LEADER")
         fun getAccounts_notLeader() {
-            val nonLeader = createEmployee(id = 4001, authority = "여사원", costCenterCode = "C001")
+            val nonLeader = createEmployee(id = 4001, authority = UserRole.WOMAN, costCenterCode = "C001")
             whenever(employeeRepository.findById(nonLeader.id)).thenReturn(Optional.of(nonLeader))
 
             assertThatThrownBy { leaderScheduleService.getAccounts(nonLeader.id, null) }
@@ -330,7 +331,7 @@ class LeaderScheduleServiceTest {
     private fun createEmployee(
         id: Long,
         employeeCode: String = "20030${id}",
-        authority: String,
+        authority: UserRole,
         costCenterCode: String?,
         status: String? = "활동",
         name: String = "사원$id"
@@ -339,7 +340,7 @@ class LeaderScheduleServiceTest {
         employeeCode = employeeCode,
         name = name,
         password = "encoded",
-        appAuthority = authority,
+        role = authority,
         costCenterCode = costCenterCode,
         status = status
     )

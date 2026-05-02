@@ -5,6 +5,7 @@ import com.otoki.powersales.admin.dto.response.PermissionMatrixResponse
 import com.otoki.powersales.admin.dto.response.RolePermissionsUpdateResponse
 import com.otoki.powersales.admin.service.AdminEmployeePermissionService
 import com.otoki.powersales.admin.service.AdminPermissionMatrixService
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.common.security.UserPrincipal
 import jakarta.validation.Valid
@@ -29,7 +30,7 @@ class AdminPermissionMatrixController(
 
     @PutMapping("/roles/{role}")
     fun updateRolePermissions(
-        @PathVariable role: String,
+        @PathVariable role: UserRole,
         @Valid @RequestBody request: UpdateRolePermissionsRequest
     ): ResponseEntity<ApiResponse<RolePermissionsUpdateResponse>> {
         val response = adminEmployeePermissionService.updateRolePermissions(role, request)

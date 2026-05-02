@@ -82,7 +82,7 @@ class AdminAuthControllerTest {
                 .andExpect(jsonPath("$.data.user.name").value("홍길동"))
                 .andExpect(jsonPath("$.data.user.org_name").value("서울지점"))
                 .andExpect(jsonPath("$.data.user.role").value("LEADER"))
-                .andExpect(jsonPath("$.data.user.app_authority").value("조장"))
+                .andExpect(jsonPath("$.data.user.role_label").value("조장"))
                 .andExpect(jsonPath("$.data.user.cost_center_code").value("CC001"))
                 .andExpect(jsonPath("$.data.user.permissions").isArray)
                 .andExpect(jsonPath("$.data.user.permissions.length()").value(8))

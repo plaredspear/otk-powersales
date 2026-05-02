@@ -1,5 +1,6 @@
 package com.otoki.powersales.employee.repository
 
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.common.dto.response.BranchResponse
 import com.otoki.powersales.employee.entity.QEmployee.Companion.employee
 import com.otoki.powersales.employee.entity.QEmployeeInfo.Companion.employeeInfo
@@ -54,16 +55,16 @@ class EmployeeRepositoryCustomImpl(
             .fetch()
     }
 
-    override fun findWithEmployeeInfoByCostCenterCodeAndAppAuthority(
+    override fun findWithEmployeeInfoByCostCenterCodeAndRole(
         costCenterCode: String,
-        appAuthority: String
+        role: UserRole
     ): List<Employee> {
         return queryFactory
             .selectFrom(employee)
             .leftJoin(employee.employeeInfo, employeeInfo).fetchJoin()
             .where(
                 employee.costCenterCode.eq(costCenterCode),
-                employee.appAuthority.eq(appAuthority)
+                employee.role.eq(role)
             )
             .fetch()
     }
@@ -101,7 +102,7 @@ class EmployeeRepositoryCustomImpl(
         status: String?,
         branchCodes: List<String>?,
         keyword: String?,
-        appAuthority: String?,
+        role: UserRole?,
         pageable: Pageable
     ): Page<Employee> {
         val where = BooleanBuilder()
@@ -119,8 +120,8 @@ class EmployeeRepositoryCustomImpl(
                     .or(employee.name.containsIgnoreCase(keyword))
             )
         }
-        if (appAuthority != null) {
-            where.and(employee.appAuthority.eq(appAuthority))
+        if (role != null) {
+            where.and(employee.role.eq(role))
         }
 
         val content = queryFactory

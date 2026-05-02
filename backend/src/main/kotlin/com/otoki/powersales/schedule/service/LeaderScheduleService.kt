@@ -2,6 +2,7 @@ package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
@@ -44,8 +45,6 @@ class LeaderScheduleService(
 ) {
 
     companion object {
-        private const val APP_AUTHORITY_LEADER = "조장"
-        private const val APP_AUTHORITY_MEMBER = "여사원"
         private const val EMPLOYEE_STATUS_ON_LEAVE = "휴직"
         private const val EMPLOYEE_STATUS_RETIRED = "퇴직"
         private const val WORKING_TYPE_WORK = "근무"
@@ -127,7 +126,7 @@ class LeaderScheduleService(
             ?: return emptyList()
 
         return employeeRepository
-            .findByCostCenterCodeAndAppAuthority(costCenterCode, APP_AUTHORITY_MEMBER)
+            .findByCostCenterCodeAndRole(costCenterCode, UserRole.WOMAN)
             .sortedBy { it.employeeCode }
             .map { LeaderTeamMemberListResponse.from(it) }
     }
@@ -166,7 +165,7 @@ class LeaderScheduleService(
             .orElseThrow { EmployeeNotFoundException() }
 
     private fun requireLeader(employee: Employee) {
-        if (employee.appAuthority != APP_AUTHORITY_LEADER) {
+        if (employee.role != UserRole.LEADER) {
             throw LeaderScheduleNotLeaderException()
         }
     }

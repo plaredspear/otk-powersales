@@ -1,14 +1,15 @@
 package com.otoki.powersales.admin.dto.response
 
 import com.otoki.powersales.admin.service.PermissionResolveResult
-import com.otoki.powersales.admin.service.UserPermissionDetail
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.employee.entity.Employee
 
 data class EmployeePermissionDetailResponse(
     val employeeId: Long,
     val employeeCode: String,
     val name: String,
-    val appAuthority: String?,
+    val role: String?,
+    val roleLabel: String?,
     val rolePermissions: List<String>,
     val userPermissions: List<UserPermissionDetailResponse>,
     val effectivePermissions: List<String>
@@ -19,7 +20,8 @@ data class EmployeePermissionDetailResponse(
                 employeeId = employee.id,
                 employeeCode = employee.employeeCode,
                 name = employee.name,
-                appAuthority = employee.appAuthority,
+                role = employee.role?.name,
+                roleLabel = employee.role?.toKorean(),
                 rolePermissions = result.rolePermissions,
                 userPermissions = result.userPermissions.map {
                     UserPermissionDetailResponse(
@@ -42,12 +44,20 @@ data class UpdateAuthorityResponse(
     val employeeId: Long,
     val employeeCode: String,
     val name: String,
-    val previousAuthority: String?,
-    val newAuthority: String,
+    val previousRole: String?,
+    val previousRoleLabel: String?,
+    val newRole: String,
+    val newRoleLabel: String,
     val effectivePermissions: List<String>
 )
 
 data class RolePermissionsUpdateResponse(
     val role: String,
+    val roleLabel: String,
     val permissions: List<String>
-)
+) {
+    companion object {
+        fun of(role: UserRole, permissions: List<String>): RolePermissionsUpdateResponse =
+            RolePermissionsUpdateResponse(role = role.name, roleLabel = role.toKorean(), permissions = permissions)
+    }
+}
