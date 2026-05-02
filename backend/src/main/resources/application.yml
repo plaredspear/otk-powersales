@@ -69,6 +69,10 @@ spring:
   jackson:
     property-naming-strategy: SNAKE_CASE
     time-zone: Asia/Seoul
+  web:
+    error:
+      include-message: always
+      include-binding-errors: always
 
 # ---------------------------------------------------------------------------
 # Actuator — /actuator/health 만 노출. show-details=always 는 web UI 에서
@@ -159,9 +163,6 @@ device:
 
 server:
   port: ${SERVER_PORT:8080}
-  error:
-    include-message: always
-    include-binding-errors: always
 
 logging:
   level:
