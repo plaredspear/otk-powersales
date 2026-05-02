@@ -156,21 +156,6 @@ class EmployeeRepositoryTest {
         assertThat(result).isEmpty()
     }
 
-    /**
-     * H2 2.4.240 + Hibernate 7 의 column-level `CHECK ((col IN (...)))` 평가 버그로
-     * `employee.role` 또는 `employee.professional_promotion_team` 에 enum 값을
-     * 직접 INSERT 하면 항상 ConstraintViolationException 이 발생한다 (#538-P1, #573).
-     *
-     * - INFORMATION_SCHEMA 의 CHECK_CLAUSE 는 모든 enum.name 을 정확히 포함
-     * - 동일 컬럼/값 조합으로 `SELECT 'WOMAN' IN ('SALES_MANAGER', ..., 'WOMAN', ...)` 은 PASS
-     * - 그러나 `INSERT ... VALUES ('WOMAN')` 은 동일 constraint 에서 FAIL
-     *
-     * production schema 는 Flyway 가 관리하며 column-level CHECK 를 사용하지 않으므로 영향 없다.
-     * 정책(BCR-TS-009): production 의 의미를 H2 에 맞춰 깎지 않으며, Repository 를 mock 으로
-     * 대체하지도 않는다. 후속 처리 방향은 build.gradle.kts 의 NoticeRepositoryTest exclude
-     * 코멘트와 동일하다.
-     */
-    @org.junit.jupiter.api.Disabled("H2 2.4.240 column-level IN-check 평가 버그 (#538-P1 family) — production Flyway schema 무관")
     @Test
     @DisplayName("findByOrgName - 다양한 역할의 사용자가 같은 조직에 있으면 모두 조회된다")
     fun findByOrgName_WithVariousRoles_ReturnsAllUsers() {

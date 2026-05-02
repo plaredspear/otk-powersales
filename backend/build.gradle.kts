@@ -77,7 +77,9 @@ dependencies {
 	implementation("net.javacrumbs.shedlock:shedlock-provider-jdbc-template:5.16.0")
 
 	developmentOnly("org.springframework.boot:spring-boot-devtools")
-	runtimeOnly("com.h2database:h2")
+	// H2 2.4.x 의 column-level CHECK ((col IN (...))) 평가 regression 회피 (#4302/#4311, Spec #573).
+	// PR #4311 fix 가 포함된 정식 릴리스가 나오면 Spring Boot 관리 버전으로 복귀한다.
+	runtimeOnly("com.h2database:h2:2.3.232")
 	runtimeOnly("org.postgresql:postgresql")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
@@ -121,12 +123,8 @@ tasks.test {
 	// OpenAPI spec 생성 테스트는 전용 task로만 실행
 	exclude("**/OpenApiSpecGeneratorTest*")
 
-	// Spring Boot 4 + H2 240 + Hibernate 7 조합에서 notice 테이블의 check constraint 가
-	// 빈 SQL 로 부트되어 모든 insert 가 ConstraintViolationException 으로 실패하는 H2 호환성 이슈 (#538-P1).
-	// 후속 스펙 처리 방향: (1) check constraint 의 *표현* 을 PG/H2 모두 동일하게 동작하는 표준 SQL 로 정렬해 재활성화,
-	// (2) PG 전용 기능이라 (1) 이 불가능하면 통합 환경 검증으로 보완하고 본 exclude 유지.
-	// production 행위(check constraint 의미) 자체를 H2 에 맞춰 깎지 않으며, Repository 를 mock 으로 대체하지도 않는다 (BCR-TS-009).
-	exclude("**/NoticeRepositoryTest*")
+	// (#538-P1) H2 2.4.x 의 column-level CHECK ((col IN (...))) 평가 regression (#4302).
+	// H2 dependency 를 2.3.232 로 고정하여 회피했으므로 본 exclude 도 함께 해제 시도한다.
 }
 
 tasks.register<Test>("generateOpenApiDocs") {
