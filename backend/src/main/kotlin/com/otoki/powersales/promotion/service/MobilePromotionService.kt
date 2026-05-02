@@ -1,5 +1,6 @@
 package com.otoki.powersales.promotion.service
 
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.promotion.dto.response.*
 import com.otoki.powersales.promotion.exception.PromotionForbiddenException
 import com.otoki.powersales.promotion.exception.PromotionInvalidParameterException
@@ -44,7 +45,7 @@ class MobilePromotionService(
         val employee = employeeRepository.findById(userId)
             .orElseThrow { IllegalStateException("사용자를 찾을 수 없습니다: $userId") }
 
-        val isWoman = employee.appAuthority == "여사원"
+        val isWoman = employee.role == UserRole.WOMAN
 
         val pageable = PageRequest.of(page, size)
         val promotionPage = promotionRepository.searchForMobile(
@@ -99,7 +100,7 @@ class MobilePromotionService(
             .filter { !it.isDeleted }
             .orElseThrow { PromotionNotFoundException() }
 
-        val isWoman = employee.appAuthority == "여사원"
+        val isWoman = employee.role == UserRole.WOMAN
 
         // 권한 검증
         if (isWoman) {

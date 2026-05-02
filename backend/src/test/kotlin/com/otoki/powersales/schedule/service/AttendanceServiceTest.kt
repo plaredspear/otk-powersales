@@ -1,6 +1,7 @@
 package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.account.entity.Account
@@ -1177,7 +1178,7 @@ class AttendanceServiceTest {
                 accountAbcTypeCode = "2110"
             )
 
-            val teamLeader = createEmployee(id = 99L, sfid = "LEADER001", name = "조장", appAuthority = "조장")
+            val teamLeader = createEmployee(id = 99L, sfid = "LEADER001", name = "조장", role = UserRole.LEADER)
 
             // 신규 생성될 TMS
             val newTms = createTeamMemberSchedule(
@@ -1191,7 +1192,7 @@ class AttendanceServiceTest {
             whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
             whenever(displayWorkScheduleRepository.findById(displayWorkScheduleId)).thenReturn(Optional.of(master))
             whenever(teamMemberScheduleRepository.findByEmployeeAndAccountAndWorkingDate(eq(employee), any(), eq(today))).thenReturn(null)
-            whenever(employeeRepository.findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrue(listOf("CC001"), "조장")).thenReturn(listOf(teamLeader))
+            whenever(employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("CC001"), UserRole.LEADER)).thenReturn(listOf(teamLeader))
             whenever(teamMemberScheduleRepository.save(any<TeamMemberSchedule>())).thenAnswer { it.getArgument<TeamMemberSchedule>(0).also { tms ->
                 // simulate saved entity with id
             } }.thenReturn(newTms)
@@ -1749,7 +1750,7 @@ class AttendanceServiceTest {
         employeeCode: String = "USR001",
         name: String = "테스트 사용자",
         orgName: String? = "서울지점",
-        appAuthority: String? = null,
+        role: UserRole? = null,
         costCenterCode: String? = null
     ): Employee {
         return Employee(
@@ -1758,7 +1759,7 @@ class AttendanceServiceTest {
             employeeCode = employeeCode,
             name = name,
             orgName = orgName,
-            appAuthority = appAuthority,
+            role = role,
             password = "encodedPassword",
             passwordChangeRequired = false,
             costCenterCode = costCenterCode

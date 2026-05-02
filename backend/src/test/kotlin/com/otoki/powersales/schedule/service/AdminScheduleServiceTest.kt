@@ -1,6 +1,7 @@
 package com.otoki.powersales.schedule.service
 
 import tools.jackson.databind.ObjectMapper
+import com.otoki.powersales.auth.entity.UserRole
 import tools.jackson.databind.json.JsonMapper
 import com.otoki.powersales.schedule.dto.response.RowError
 import com.otoki.powersales.schedule.dto.response.RowPreview
@@ -100,8 +101,8 @@ class AdminScheduleServiceTest {
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(organizationRepository.findFirstByCostCenterLevel5(costCenterCode)).thenReturn(org)
             whenever(
-                employeeRepository.findByCostCenterCodeAndAppAuthorityAndAppLoginActiveTrueAndStatus(
-                    costCenterCode, "여사원", "재직"
+                employeeRepository.findByCostCenterCodeAndRoleAndAppLoginActiveTrueAndStatus(
+                    costCenterCode, UserRole.WOMAN, "재직"
                 )
             ).thenReturn(employees)
             whenever(templateGenerator.generate(employees)).thenReturn(ByteArray(100))
@@ -167,8 +168,8 @@ class AdminScheduleServiceTest {
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(organizationRepository.findFirstByCostCenterLevel5(costCenterCode)).thenReturn(org)
             whenever(
-                employeeRepository.findByCostCenterCodeAndAppAuthorityAndAppLoginActiveTrueAndStatus(
-                    costCenterCode, "여사원", "재직"
+                employeeRepository.findByCostCenterCodeAndRoleAndAppLoginActiveTrueAndStatus(
+                    costCenterCode, UserRole.WOMAN, "재직"
                 )
             ).thenReturn(emptyList())
             whenever(templateGenerator.generate(emptyList())).thenReturn(ByteArray(50))
@@ -184,7 +185,7 @@ class AdminScheduleServiceTest {
         fun generateTemplate_salesSupport_multiBranch() {
             val userId = 1L
             val costCenterCode = "1111"
-            val employee = createEmployee(id = userId, costCenterCode = costCenterCode, appAuthority = "영업지원실")
+            val employee = createEmployee(id = userId, costCenterCode = costCenterCode, role = UserRole.SALES_SUPPORT)
             val org = Organization(id = 1, costCenterLevel5 = costCenterCode, costCenterLevel3 = "CC3")
             val orgA = Organization(id = 2, costCenterLevel3 = "CC3", costCenterLevel5 = "2222")
             val orgB = Organization(id = 3, costCenterLevel3 = "CC3", costCenterLevel5 = "3333")
@@ -197,8 +198,8 @@ class AdminScheduleServiceTest {
             whenever(organizationRepository.findFirstByCostCenterLevel5(costCenterCode)).thenReturn(org)
             whenever(organizationRepository.findByCostCenterLevel3("CC3")).thenReturn(listOf(org, orgA, orgB))
             whenever(
-                employeeRepository.findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrueAndStatus(
-                    listOf("1111", "2222", "3333"), "여사원", "재직"
+                employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrueAndStatus(
+                    listOf("1111", "2222", "3333"), UserRole.WOMAN, "재직"
                 )
             ).thenReturn(listOf(emp1, emp2, emp3))
             whenever(templateGenerator.generate(any())).thenReturn(ByteArray(200))
@@ -206,10 +207,10 @@ class AdminScheduleServiceTest {
             val result = adminScheduleService.generateTemplate(userId)
 
             assertThat(result.bytes).hasSize(200)
-            verify(employeeRepository).findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrueAndStatus(
-                listOf("1111", "2222", "3333"), "여사원", "재직"
+            verify(employeeRepository).findByCostCenterCodeInAndRoleAndAppLoginActiveTrueAndStatus(
+                listOf("1111", "2222", "3333"), UserRole.WOMAN, "재직"
             )
-            verify(employeeRepository, never()).findByCostCenterCodeAndAppAuthorityAndAppLoginActiveTrueAndStatus(
+            verify(employeeRepository, never()).findByCostCenterCodeAndRoleAndAppLoginActiveTrueAndStatus(
                 any(), any(), any()
             )
         }
@@ -219,7 +220,7 @@ class AdminScheduleServiceTest {
         fun generateTemplate_leader_singleBranch() {
             val userId = 1L
             val costCenterCode = "1234"
-            val employee = createEmployee(id = userId, costCenterCode = costCenterCode, appAuthority = "조장")
+            val employee = createEmployee(id = userId, costCenterCode = costCenterCode, role = UserRole.LEADER)
             val org = Organization(id = 1, costCenterLevel5 = costCenterCode)
             val employees = listOf(
                 createEmployee(employeeCode = "20030001", name = "홍길동", orgName = "A팀"),
@@ -229,8 +230,8 @@ class AdminScheduleServiceTest {
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(organizationRepository.findFirstByCostCenterLevel5(costCenterCode)).thenReturn(org)
             whenever(
-                employeeRepository.findByCostCenterCodeAndAppAuthorityAndAppLoginActiveTrueAndStatus(
-                    costCenterCode, "여사원", "재직"
+                employeeRepository.findByCostCenterCodeAndRoleAndAppLoginActiveTrueAndStatus(
+                    costCenterCode, UserRole.WOMAN, "재직"
                 )
             ).thenReturn(employees)
             whenever(templateGenerator.generate(employees)).thenReturn(ByteArray(100))
@@ -238,7 +239,7 @@ class AdminScheduleServiceTest {
             val result = adminScheduleService.generateTemplate(userId)
 
             assertThat(result.bytes).hasSize(100)
-            verify(employeeRepository, never()).findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrueAndStatus(
+            verify(employeeRepository, never()).findByCostCenterCodeInAndRoleAndAppLoginActiveTrueAndStatus(
                 any(), any(), any()
             )
         }
@@ -246,7 +247,7 @@ class AdminScheduleServiceTest {
         @Test
         @DisplayName("영업지원실이지만 코스트센터 없음 - MissingCostCenterException")
         fun generateTemplate_salesSupport_missingCostCenter() {
-            val employee = createEmployee(costCenterCode = null, appAuthority = "영업지원실")
+            val employee = createEmployee(costCenterCode = null, role = UserRole.SALES_SUPPORT)
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
 
             assertThatThrownBy { adminScheduleService.generateTemplate(1L) }
@@ -258,7 +259,7 @@ class AdminScheduleServiceTest {
         fun generateTemplate_salesSupport_noEmployees() {
             val userId = 1L
             val costCenterCode = "1111"
-            val employee = createEmployee(id = userId, costCenterCode = costCenterCode, appAuthority = "영업지원실")
+            val employee = createEmployee(id = userId, costCenterCode = costCenterCode, role = UserRole.SALES_SUPPORT)
             val org = Organization(id = 1, costCenterLevel5 = costCenterCode, costCenterLevel3 = "CC3")
             val orgA = Organization(id = 2, costCenterLevel3 = "CC3", costCenterLevel5 = "2222")
 
@@ -266,8 +267,8 @@ class AdminScheduleServiceTest {
             whenever(organizationRepository.findFirstByCostCenterLevel5(costCenterCode)).thenReturn(org)
             whenever(organizationRepository.findByCostCenterLevel3("CC3")).thenReturn(listOf(org, orgA))
             whenever(
-                employeeRepository.findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrueAndStatus(
-                    listOf("1111", "2222"), "여사원", "재직"
+                employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrueAndStatus(
+                    listOf("1111", "2222"), UserRole.WOMAN, "재직"
                 )
             ).thenReturn(emptyList())
             whenever(templateGenerator.generate(emptyList())).thenReturn(ByteArray(50))
@@ -457,7 +458,7 @@ class AdminScheduleServiceTest {
             whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
             whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(createEmployee(id = 1L)))
             whenever(accountRepository.findByIdIn(listOf(1))).thenReturn(listOf(createAccount(id = 1)))
-            whenever(employeeRepository.findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrue(listOf("A10010"), "조장"))
+            whenever(employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRole.LEADER))
                 .thenReturn(emptyList())
             whenever(scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>())).thenAnswer { it.getArgument<List<DisplayWorkSchedule>>(0) }
             whenever(redisTemplate.delete(any<String>())).thenReturn(true)
@@ -484,13 +485,13 @@ class AdminScheduleServiceTest {
                 errorCount = 0
             )
             val json = objectMapper.writeValueAsString(cacheData)
-            val manager = createEmployee(employeeCode = "20030099", name = "조장사원", costCenterCode = "A10010", appAuthority = "조장")
+            val manager = createEmployee(employeeCode = "20030099", name = "조장사원", costCenterCode = "A10010", role = UserRole.LEADER)
 
             whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
             whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
             whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(createEmployee(id = 1L)))
             whenever(accountRepository.findByIdIn(listOf(1))).thenReturn(listOf(createAccount(id = 1)))
-            whenever(employeeRepository.findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrue(listOf("A10010"), "조장"))
+            whenever(employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRole.LEADER))
                 .thenReturn(listOf(manager))
             whenever(scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>())).thenAnswer { it.getArgument<List<DisplayWorkSchedule>>(0) }
             whenever(redisTemplate.delete(any<String>())).thenReturn(true)
@@ -522,7 +523,7 @@ class AdminScheduleServiceTest {
             whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
             whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(createEmployee(id = 1L)))
             whenever(accountRepository.findByIdIn(listOf(1))).thenReturn(listOf(createAccount(id = 1)))
-            whenever(employeeRepository.findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrue(listOf("A10010"), "조장"))
+            whenever(employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRole.LEADER))
                 .thenReturn(emptyList())
             whenever(scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>())).thenAnswer { it.getArgument<List<DisplayWorkSchedule>>(0) }
             whenever(redisTemplate.delete(any<String>())).thenReturn(true)
@@ -560,7 +561,7 @@ class AdminScheduleServiceTest {
             whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
             whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
             whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(createEmployee(id = 1L)))
-            whenever(employeeRepository.findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrue(listOf("A10010"), "조장"))
+            whenever(employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRole.LEADER))
                 .thenReturn(emptyList())
             whenever(accountRepository.findByIdIn(listOf(1))).thenReturn(listOf(account))
             whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(any(), any(), eq(listOf(account))))
@@ -594,7 +595,7 @@ class AdminScheduleServiceTest {
             whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
             whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
             whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(createEmployee(id = 1L)))
-            whenever(employeeRepository.findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrue(listOf("A10010"), "조장"))
+            whenever(employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRole.LEADER))
                 .thenReturn(emptyList())
             whenever(accountRepository.findByIdIn(listOf(1))).thenReturn(emptyList())
             whenever(scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>())).thenAnswer { it.getArgument<List<DisplayWorkSchedule>>(0) }
@@ -831,7 +832,7 @@ class AdminScheduleServiceTest {
         @Test
         @DisplayName("시스템관리자 삭제 - 확정+여사원일정 존재해도 삭제 성공")
         fun deleteSchedule_systemAdmin_success() {
-            val employee = createEmployee(id = userId, appAuthority = "시스템관리자")
+            val employee = createEmployee(id = userId, role = UserRole.SYSTEM_ADMIN)
             val schedule = createSchedule(id = scheduleId, confirmed = true)
 
             whenever(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule))
@@ -845,7 +846,7 @@ class AdminScheduleServiceTest {
         @Test
         @DisplayName("영업지원실 삭제 - 확정+여사원일정 존재해도 삭제 성공")
         fun deleteSchedule_salesSupport_success() {
-            val employee = createEmployee(id = userId, appAuthority = "영업지원실")
+            val employee = createEmployee(id = userId, role = UserRole.SALES_SUPPORT)
             val schedule = createSchedule(id = scheduleId, confirmed = true)
 
             whenever(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule))
@@ -859,7 +860,7 @@ class AdminScheduleServiceTest {
         @Test
         @DisplayName("일반 사용자 미확정 삭제 - 삭제 성공")
         fun deleteSchedule_normalUser_unconfirmed_success() {
-            val employee = createEmployee(id = userId, appAuthority = "조장")
+            val employee = createEmployee(id = userId, role = UserRole.LEADER)
             val schedule = createSchedule(id = scheduleId, confirmed = false)
 
             whenever(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule))
@@ -879,7 +880,7 @@ class AdminScheduleServiceTest {
                 id = scheduleId, confirmed = true,
                 employee = scheduleEmployee, account = scheduleAccount
             )
-            val employee = createEmployee(id = userId, appAuthority = "조장")
+            val employee = createEmployee(id = userId, role = UserRole.LEADER)
 
             whenever(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule))
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
@@ -917,7 +918,7 @@ class AdminScheduleServiceTest {
         @Test
         @DisplayName("지점장 삭제 시도 - ScheduleDeleteForbiddenException")
         fun deleteSchedule_branchManager_forbidden() {
-            val employee = createEmployee(id = userId, appAuthority = "지점장")
+            val employee = createEmployee(id = userId, role = UserRole.BRANCH_MANAGER)
             val schedule = createSchedule(id = scheduleId)
 
             whenever(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule))
@@ -936,7 +937,7 @@ class AdminScheduleServiceTest {
                 id = scheduleId, confirmed = true,
                 employee = scheduleEmployee, account = scheduleAccount
             )
-            val employee = createEmployee(id = userId, appAuthority = "조장")
+            val employee = createEmployee(id = userId, role = UserRole.LEADER)
 
             whenever(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule))
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
@@ -980,14 +981,14 @@ class AdminScheduleServiceTest {
         orgName: String = "테스트팀",
         sfid: String? = "USR_SFID_001",
         status: String = "재직",
-        appAuthority: String? = null
+        role: UserRole? = null
     ): Employee = Employee(
         id = id,
         employeeCode = employeeCode,
         name = name,
         costCenterCode = costCenterCode,
         orgName = orgName,
-        appAuthority = appAuthority,
+        role = role,
         appLoginActive = true,
         status = status,
         sfid = sfid

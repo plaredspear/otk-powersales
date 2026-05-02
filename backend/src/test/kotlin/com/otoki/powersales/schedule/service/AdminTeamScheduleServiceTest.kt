@@ -1,6 +1,7 @@
 package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.admin.scope.AdminEmployeeHolder
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.schedule.dto.request.TeamScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.request.TeamScheduleUpdateRequest
 import com.otoki.powersales.schedule.exception.*
@@ -73,7 +74,7 @@ class AdminTeamScheduleServiceTest {
         employeeCode: String = "20030001",
         name: String = "테스트사원",
         status: String? = "재직",
-        appAuthority: String? = null,
+        role: UserRole? = null,
         costCenterCode: String? = "1234",
         isDeleted: Boolean? = false
     ): Employee = Employee(
@@ -82,7 +83,7 @@ class AdminTeamScheduleServiceTest {
         employeeCode = employeeCode,
         name = name,
         status = status,
-        appAuthority = appAuthority,
+        role = role,
         costCenterCode = costCenterCode,
         isDeleted = isDeleted
     )
@@ -155,12 +156,12 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("정상 조회 - 조장의 costCenterCode에 속한 여사원 목록 반환")
         fun getMembers_success() {
             // Given
-            val leader = createEmployee(id = 10L, costCenterCode = "1234", appAuthority = "조장")
-            val member1 = createEmployee(id = 2L, sfid = "USR_002", employeeCode = "20030002", name = "김영희", appAuthority = "여사원")
-            val member2 = createEmployee(id = 3L, sfid = "USR_003", employeeCode = "20030003", name = "이수진", appAuthority = "여사원")
+            val leader = createEmployee(id = 10L, costCenterCode = "1234", role = UserRole.LEADER)
+            val member1 = createEmployee(id = 2L, sfid = "USR_002", employeeCode = "20030002", name = "김영희", role = UserRole.WOMAN)
+            val member2 = createEmployee(id = 3L, sfid = "USR_003", employeeCode = "20030003", name = "이수진", role = UserRole.WOMAN)
 
             whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(leader)
-            whenever(employeeRepository.findWithEmployeeInfoByCostCenterCodeAndAppAuthority("1234", "여사원"))
+            whenever(employeeRepository.findWithEmployeeInfoByCostCenterCodeAndRole("1234", UserRole.WOMAN))
                 .thenReturn(listOf(member1, member2))
 
             // When
@@ -186,7 +187,7 @@ class AdminTeamScheduleServiceTest {
 
             // Then
             assertThat(result).isEmpty()
-            verify(employeeRepository, never()).findWithEmployeeInfoByCostCenterCodeAndAppAuthority(any(), any())
+            verify(employeeRepository, never()).findWithEmployeeInfoByCostCenterCodeAndRole(any(), any())
         }
     }
 
@@ -659,7 +660,7 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("정상 수정 - 거래처 변경")
         fun updateSchedule_success() {
             // Given
-            val currentUser = createEmployee(id = 10L, appAuthority = "조장")
+            val currentUser = createEmployee(id = 10L, role = UserRole.LEADER)
             val schedule = createSchedule(
                 id = 100L,
                 employeeId = 1L,
@@ -696,7 +697,7 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("미존재 일정 수정 - NOT_FOUND")
         fun updateSchedule_notFound() {
             // Given
-            val currentUser = createEmployee(id = 10L, appAuthority = "조장")
+            val currentUser = createEmployee(id = 10L, role = UserRole.LEADER)
             val request = TeamScheduleUpdateRequest(
                 workingDate = "2026-04-01",
                 workingType = "근무"
@@ -714,7 +715,7 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("진열마스터 연결 일정 수정 (일반 사용자) - DISPLAY_MASTER_LINK_CONSTRAINT")
         fun updateSchedule_displayMasterLinked_forbidden() {
             // Given
-            val currentUser = createEmployee(id = 10L, appAuthority = "조장")
+            val currentUser = createEmployee(id = 10L, role = UserRole.LEADER)
             val schedule = createSchedule(
                 id = 100L,
                 employeeId = 1L,
@@ -746,7 +747,7 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("진열마스터 연결 일정 수정 (시스템관리자) - 수정 성공")
         fun updateSchedule_displayMasterLinked_systemAdmin_success() {
             // Given
-            val admin = createEmployee(id = 10L, appAuthority = "시스템관리자")
+            val admin = createEmployee(id = 10L, role = UserRole.SYSTEM_ADMIN)
             val schedule = createSchedule(
                 id = 100L,
                 employeeId = 1L,
@@ -779,7 +780,7 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("진열마스터 연결 일정 수정 (영업지원실) - 수정 성공")
         fun updateSchedule_displayMasterLinked_salesSupport_success() {
             // Given
-            val salesSupport = createEmployee(id = 10L, appAuthority = "영업지원실")
+            val salesSupport = createEmployee(id = 10L, role = UserRole.SALES_SUPPORT)
             val schedule = createSchedule(
                 id = 100L,
                 employeeId = 1L,
@@ -812,7 +813,7 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("과거 진열 일정 날짜 변경 - PAST_DATE_CHANGE_NOT_ALLOWED")
         fun updateSchedule_pastDate_displaySchedule_dateChange() {
             // Given
-            val currentUser = createEmployee(id = 10L, appAuthority = "조장")
+            val currentUser = createEmployee(id = 10L, role = UserRole.LEADER)
             val yesterday = LocalDate.now().minusDays(1)
             val schedule = createSchedule(
                 id = 100L,
@@ -846,7 +847,7 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("과거 근무 일정 날짜 변경 (카테고리 null) - PAST_DATE_CHANGE_NOT_ALLOWED")
         fun updateSchedule_pastDate_nullCategory_dateChange() {
             // Given
-            val currentUser = createEmployee(id = 10L, appAuthority = "조장")
+            val currentUser = createEmployee(id = 10L, role = UserRole.LEADER)
             val threeDaysAgo = LocalDate.now().minusDays(3)
             val schedule = createSchedule(
                 id = 100L,
@@ -875,7 +876,7 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("과거 행사 일정 날짜 변경 - 수정 성공 (행사 예외)")
         fun updateSchedule_pastDate_eventSchedule_dateChange_success() {
             // Given
-            val currentUser = createEmployee(id = 10L, appAuthority = "조장")
+            val currentUser = createEmployee(id = 10L, role = UserRole.LEADER)
             val yesterday = LocalDate.now().minusDays(1)
             val tomorrow = LocalDate.now().plusDays(1)
             val schedule = createSchedule(
@@ -908,7 +909,7 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("과거 일자 비날짜 필드 수정 - 수정 성공")
         fun updateSchedule_pastDate_nonDateFieldChange_success() {
             // Given
-            val currentUser = createEmployee(id = 10L, appAuthority = "조장")
+            val currentUser = createEmployee(id = 10L, role = UserRole.LEADER)
             val yesterday = LocalDate.now().minusDays(1)
             val schedule = createSchedule(
                 id = 100L,
@@ -943,7 +944,7 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("오늘 일자 날짜 변경 - 수정 성공")
         fun updateSchedule_todayDate_dateChange_success() {
             // Given
-            val currentUser = createEmployee(id = 10L, appAuthority = "조장")
+            val currentUser = createEmployee(id = 10L, role = UserRole.LEADER)
             val today = LocalDate.now()
             val tomorrow = LocalDate.now().plusDays(1)
             val schedule = createSchedule(
@@ -982,7 +983,7 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("미래 일자 날짜 변경 - 수정 성공")
         fun updateSchedule_futureDate_dateChange_success() {
             // Given
-            val currentUser = createEmployee(id = 10L, appAuthority = "조장")
+            val currentUser = createEmployee(id = 10L, role = UserRole.LEADER)
             val tomorrow = LocalDate.now().plusDays(1)
             val dayAfter = LocalDate.now().plusDays(2)
             val schedule = createSchedule(
@@ -1021,7 +1022,7 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("비진열 일정 수정 (일반 사용자) - 수정 성공")
         fun updateSchedule_nonDisplay_success() {
             // Given
-            val currentUser = createEmployee(id = 10L, appAuthority = "조장")
+            val currentUser = createEmployee(id = 10L, role = UserRole.LEADER)
             val schedule = createSchedule(
                 id = 100L,
                 employeeId = 1L,
@@ -1052,7 +1053,7 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("근무→근무 수정 거래처 미지정 - ACCOUNT_REQUIRED")
         fun updateSchedule_workTypeWorkWithoutAccount() {
             // Given
-            val currentUser = createEmployee(id = 10L, appAuthority = "조장")
+            val currentUser = createEmployee(id = 10L, role = UserRole.LEADER)
             val schedule = createSchedule(
                 id = 100L,
                 employeeId = 1L,
@@ -1083,7 +1084,7 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("연차→근무 수정 거래처 미지정 - ACCOUNT_REQUIRED")
         fun updateSchedule_leaveToWorkWithoutAccount() {
             // Given
-            val currentUser = createEmployee(id = 10L, appAuthority = "조장")
+            val currentUser = createEmployee(id = 10L, role = UserRole.LEADER)
             val schedule = createSchedule(
                 id = 100L,
                 employeeId = 1L,
@@ -1112,7 +1113,7 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("근무→연차 수정 거래처 제거 - 정상 허용")
         fun updateSchedule_workToLeaveWithoutAccount_success() {
             // Given
-            val currentUser = createEmployee(id = 10L, appAuthority = "조장")
+            val currentUser = createEmployee(id = 10L, role = UserRole.LEADER)
             val schedule = createSchedule(
                 id = 100L,
                 employeeId = 1L,
@@ -1153,7 +1154,7 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("정상 삭제 - 조장 계정으로 삭제 성공")
         fun deleteSchedule_success() {
             // Given
-            val leader = createEmployee(id = 10L, appAuthority = "조장")
+            val leader = createEmployee(id = 10L, role = UserRole.LEADER)
             val schedule = createSchedule(id = 100L)
 
             whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(leader)
@@ -1172,7 +1173,7 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("지점장 삭제 시도 - FORBIDDEN")
         fun deleteSchedule_forbiddenForBranchManager() {
             // Given
-            val branchManager = createEmployee(id = 10L, appAuthority = "지점장")
+            val branchManager = createEmployee(id = 10L, role = UserRole.BRANCH_MANAGER)
             whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(branchManager)
 
             // When & Then
@@ -1185,7 +1186,7 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("미존재 일정 삭제 - NOT_FOUND")
         fun deleteSchedule_notFound() {
             // Given
-            val leader = createEmployee(id = 10L, appAuthority = "조장")
+            val leader = createEmployee(id = 10L, role = UserRole.LEADER)
             whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(leader)
             whenever(teamMemberScheduleRepository.findById(999L)).thenReturn(Optional.empty())
 
@@ -1198,7 +1199,7 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("근무등록 완료 일정 삭제 (일반 사용자) - WORK_REPORT_DELETE_CONSTRAINT")
         fun deleteSchedule_workReportCompleted_forbidden() {
             // Given
-            val leader = createEmployee(id = 10L, appAuthority = "조장")
+            val leader = createEmployee(id = 10L, role = UserRole.LEADER)
             val schedule = createSchedule(id = 100L, commuteLogId = "CL001")
 
             whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(leader)
@@ -1214,7 +1215,7 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("근무등록 완료 일정 삭제 (시스템관리자) - 삭제 성공")
         fun deleteSchedule_workReportCompleted_systemAdmin_success() {
             // Given
-            val admin = createEmployee(id = 10L, appAuthority = "시스템관리자")
+            val admin = createEmployee(id = 10L, role = UserRole.SYSTEM_ADMIN)
             val schedule = createSchedule(id = 100L, commuteLogId = "CL001")
 
             whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(admin)
@@ -1231,7 +1232,7 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("미등록 일정 삭제 (일반 사용자) - 삭제 성공")
         fun deleteSchedule_noWorkReport_success() {
             // Given
-            val leader = createEmployee(id = 10L, appAuthority = "조장")
+            val leader = createEmployee(id = 10L, role = UserRole.LEADER)
             val schedule = createSchedule(id = 100L, commuteLogId = null)
 
             whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(leader)
@@ -1250,7 +1251,7 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("진열마스터 연결 일정 삭제 (일반 사용자) - DISPLAY_MASTER_LINK_CONSTRAINT")
         fun deleteSchedule_displayMasterLinked_forbidden() {
             // Given
-            val leader = createEmployee(id = 10L, appAuthority = "조장")
+            val leader = createEmployee(id = 10L, role = UserRole.LEADER)
             val schedule = createSchedule(id = 100L, commuteLogId = null, workingCategory1 = "진열")
 
             whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(leader)
@@ -1268,7 +1269,7 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("진열마스터 연결 일정 삭제 (시스템관리자) - 삭제 성공")
         fun deleteSchedule_displayMasterLinked_systemAdmin_success() {
             // Given
-            val admin = createEmployee(id = 10L, appAuthority = "시스템관리자")
+            val admin = createEmployee(id = 10L, role = UserRole.SYSTEM_ADMIN)
             val schedule = createSchedule(id = 100L, commuteLogId = null, workingCategory1 = "진열")
 
             whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(admin)
@@ -1286,7 +1287,7 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("진열마스터 연결 일정 삭제 (영업지원실) - 삭제 성공")
         fun deleteSchedule_displayMasterLinked_salesSupport_success() {
             // Given
-            val salesSupport = createEmployee(id = 10L, appAuthority = "영업지원실")
+            val salesSupport = createEmployee(id = 10L, role = UserRole.SALES_SUPPORT)
             val schedule = createSchedule(id = 100L, commuteLogId = null, workingCategory1 = "진열")
 
             whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(salesSupport)

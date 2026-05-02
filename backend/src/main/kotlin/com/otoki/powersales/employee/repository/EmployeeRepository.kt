@@ -1,5 +1,6 @@
 package com.otoki.powersales.employee.repository
 
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.employee.entity.Employee
 import org.springframework.data.jpa.repository.JpaRepository
 import java.time.LocalDate
@@ -35,13 +36,13 @@ interface EmployeeRepository : JpaRepository<Employee, Long>, EmployeeRepository
      */
     fun findByStatus(status: String): List<Employee>
 
-/**
+    /**
      * 진열스케줄 템플릿용 사원 조회
-     * 조건: costCenterCode 일치, appAuthority 일치, appLoginActive=true, status 일치
+     * 조건: costCenterCode 일치, role 일치, appLoginActive=true, status 일치
      */
-    fun findByCostCenterCodeAndAppAuthorityAndAppLoginActiveTrueAndStatus(
+    fun findByCostCenterCodeAndRoleAndAppLoginActiveTrueAndStatus(
         costCenterCode: String,
-        appAuthority: String,
+        role: UserRole,
         status: String
     ): List<Employee>
 
@@ -51,34 +52,33 @@ interface EmployeeRepository : JpaRepository<Employee, Long>, EmployeeRepository
     fun findByEmployeeCodeIn(employeeCodes: List<String>): List<Employee>
 
     /**
-     * 조직(costCenterCode) + 권한(appAuthority)으로 사원 조회 (여사원 일정관리)
+     * 조직(costCenterCode) + 역할(role)로 사원 조회 (여사원 일정관리)
      */
-    fun findByCostCenterCodeAndAppAuthority(costCenterCode: String, appAuthority: String): List<Employee>
+    fun findByCostCenterCodeAndRole(costCenterCode: String, role: UserRole): List<Employee>
 
     /**
-     * 조직 목록(costCenterCode IN) + 권한(appAuthority)으로 사원 일괄 조회 (진열스케줄 업로드 - 조장 조회)
+     * 조직 목록(costCenterCode IN) + 역할(role)로 사원 일괄 조회 (진열스케줄 업로드 - 조장 조회)
      */
-    fun findByCostCenterCodeInAndAppAuthority(costCenterCodes: List<String>, appAuthority: String): List<Employee>
+    fun findByCostCenterCodeInAndRole(costCenterCodes: List<String>, role: UserRole): List<Employee>
 
     /**
-     * 조직 목록(costCenterCode IN) + 권한(appAuthority) + 앱 로그인 활성(appLoginActive=true)으로 사원 조회
-     * 진열스케줄 업로드 확정 시 활성 조장만 ownerId로 설정하기 위해 사용
+     * 조직 목록(costCenterCode IN) + 역할(role) + 앱 로그인 활성으로 사원 조회
      */
-    fun findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrue(costCenterCodes: List<String>, appAuthority: String): List<Employee>
+    fun findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(costCenterCodes: List<String>, role: UserRole): List<Employee>
 
     /**
-     * 권한(appAuthority) + 상태(status)로 사원 조회 (전문행사조 엑셀 템플릿용)
+     * 역할(role) + 상태(status)로 사원 조회 (전문행사조 엑셀 템플릿용)
      */
-    fun findByAppAuthorityAndStatus(appAuthority: String, status: String): List<Employee>
+    fun findByRoleAndStatus(role: UserRole, status: String): List<Employee>
 
     fun findByCrmWorkStartDateIsNotNullAndCrmWorkStartDateLessThanEqual(date: LocalDate): List<Employee>
 
     /**
-     * 다중 코스트센터 + 권한 + 앱 로그인 활성 + 상태로 사원 조회 (영업지원실 다중 지점 템플릿용)
+     * 다중 코스트센터 + 역할 + 앱 로그인 활성 + 상태로 사원 조회 (영업지원실 다중 지점 템플릿용)
      */
-    fun findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrueAndStatus(
+    fun findByCostCenterCodeInAndRoleAndAppLoginActiveTrueAndStatus(
         costCenterCodes: List<String>,
-        appAuthority: String,
+        role: UserRole,
         status: String
     ): List<Employee>
 }

@@ -74,7 +74,7 @@ class AuthControllerTest {
     @MockitoBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
-    private val testPrincipal = UserPrincipal(userId = 1L, role = UserRole.USER)
+    private val testPrincipal = UserPrincipal(userId = 1L, role = UserRole.WOMAN)
 
     @BeforeEach
     fun setUp() {
@@ -93,7 +93,7 @@ class AuthControllerTest {
         // Given
         val request = LoginRequest(employeeCode = "12345678", password = "password123")
         val mockResponse = LoginResponse(
-            user = UserInfo(1L, "12345678", "홍길동", "서울지점", "USER"),
+            user = UserInfo(1L, "12345678", "홍길동", "서울지점", "WOMAN", "여사원"),
             token = TokenInfo("access-token", "refresh-token", 3600),
             requiresPasswordChange = false,
             requiresGpsConsent = false
@@ -114,7 +114,7 @@ class AuthControllerTest {
             .andExpect(jsonPath("$.data.user.employee_code").value("12345678"))
             .andExpect(jsonPath("$.data.user.name").value("홍길동"))
             .andExpect(jsonPath("$.data.user.org_name").value("서울지점"))
-            .andExpect(jsonPath("$.data.user.role").value("USER"))
+            .andExpect(jsonPath("$.data.user.role").value("WOMAN"))
             .andExpect(jsonPath("$.data.token.access_token").value("access-token"))
             .andExpect(jsonPath("$.data.token.refresh_token").value("refresh-token"))
             .andExpect(jsonPath("$.data.token.expires_in").value(3600))
@@ -127,7 +127,7 @@ class AuthControllerTest {
     fun login_initialPassword() {
         // Given
         val mockResponse = LoginResponse(
-            user = UserInfo(2L, "87654321", "김철수", "부산지점", "USER"),
+            user = UserInfo(2L, "87654321", "김철수", "부산지점", "WOMAN", "여사원"),
             token = TokenInfo("access-token", "refresh-token", 3600),
             requiresPasswordChange = true,
             requiresGpsConsent = true

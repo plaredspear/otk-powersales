@@ -1,10 +1,70 @@
 package com.otoki.powersales.auth.entity
 
+import org.slf4j.LoggerFactory
+
 /**
- * 사용자 권한 Enum
+ * 사용자 권한 Enum.
+ *
+ * Salesforce/SAP 의 한글 직위(`appAuthority`) 와 1:1 매핑되는 단일 모델.
+ * `UNKNOWN` 은 SF/SAP 동기화 시 매핑 실패한 한글 값 또는 DB 의 미정의 값에 대한 fallback 이며,
+ * 어떤 운영 그룹 상수에도 포함되지 않아 모든 권한 판정에서 false 가 된다.
  */
-enum class UserRole {
-    USER,   // 일반 사용자 (영업사원)
-    LEADER, // 조장 (팀장)
-    ADMIN   // 관리자
+enum class UserRole(val korean: String) {
+    WOMAN("여사원"),
+    LEADER("조장"),
+    BRANCH_MANAGER("지점장"),
+    SALES_MANAGER("영업부장"),
+    BUSINESS_MANAGER("사업부장"),
+    HEADQUARTERS_MANAGER("영업본부장"),
+    SALES_SUPPORT("영업지원실"),
+    SYSTEM_ADMIN("시스템관리자"),
+    UNKNOWN("(미인지)");
+
+    fun toKorean(): String = korean
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(UserRole::class.java)
+
+        /** 전 지점 데이터 조회 가능 */
+        val ALL_BRANCHES: Set<UserRole> = setOf(
+            SALES_MANAGER, BUSINESS_MANAGER, HEADQUARTERS_MANAGER, SALES_SUPPORT
+        )
+
+        /** 자기 지점만 조회 */
+        val BRANCH_SCOPE: Set<UserRole> = setOf(LEADER, BRANCH_MANAGER)
+
+        /** 여사원 한정 */
+        val WOMAN_ONLY: Set<UserRole> = setOf(WOMAN)
+
+        /** 관리자급 (일정 무제한 변경 등) */
+        val ADMIN_GRADE: Set<UserRole> = setOf(SYSTEM_ADMIN, SALES_SUPPORT)
+
+        /** Web Admin 로그인 허용 (8개 운영 역할 중 WOMAN 제외 7개) */
+        val ALLOWED_FOR_ADMIN_LOGIN: Set<UserRole> = setOf(
+            LEADER, BRANCH_MANAGER, SALES_MANAGER, BUSINESS_MANAGER,
+            HEADQUARTERS_MANAGER, SALES_SUPPORT, SYSTEM_ADMIN
+        )
+
+        /** 권한 매트릭스 변경 가능 */
+        val MANAGE_PERMISSIONS: Set<UserRole> = setOf(SYSTEM_ADMIN)
+
+        private val KOREAN_TO_OPERATIONAL_ROLE: Map<String, UserRole> = entries
+            .filter { it != UNKNOWN }
+            .associateBy { it.korean }
+
+        /**
+         * 한글 표시명을 enum 으로 변환한다.
+         *
+         * - `null` 또는 빈 문자열 → `null`
+         * - 운영 역할 8종 한글 매칭 → 해당 enum
+         * - 매칭 실패 → WARN 로그 후 `UNKNOWN`
+         */
+        fun fromKorean(value: String?): UserRole? {
+            if (value.isNullOrEmpty()) return null
+            val matched = KOREAN_TO_OPERATIONAL_ROLE[value]
+            if (matched != null) return matched
+            logger.warn("Unknown UserRole korean value: {}", value)
+            return UNKNOWN
+        }
+    }
 }

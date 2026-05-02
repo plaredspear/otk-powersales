@@ -10,6 +10,7 @@ import org.hibernate.annotations.NotFound
 import org.hibernate.annotations.NotFoundAction
 import java.time.LocalDate
 import java.time.LocalDateTime
+import com.otoki.powersales.auth.converter.UserRoleConverter
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
 import com.otoki.powersales.promotion.entity.converter.ProfessionalPromotionTeamTypeConverter
@@ -66,8 +67,9 @@ class Employee(
 
     @SFField("DKRetail__AppAuthority__c")
     @HCColumn("dkretail__appauthority__c")
-    @Column(name = "app_authority", length = 255)
-    var appAuthority: String? = null,
+    @Convert(converter = UserRoleConverter::class)
+    @Column(name = "role", length = 50)
+    var role: UserRole? = null,
 
     @SFField("DKRetail__OrgName__c")
     @HCColumn("dkretail__orgname__c")
@@ -231,18 +233,6 @@ class Employee(
         }
         return employeeInfo!!
     }
-
-    // --- Computed properties ---
-
-    /**
-     * role은 DB에 저장하지 않고 appAuthority로부터 도출하는 computed property
-     */
-    val role: UserRole
-        get() = when (appAuthority) {
-            "조장" -> UserRole.LEADER
-            "지점장" -> UserRole.ADMIN
-            else -> UserRole.USER
-        }
 
     // --- Domain methods ---
 

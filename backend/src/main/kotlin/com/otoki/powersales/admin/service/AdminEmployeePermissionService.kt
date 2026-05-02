@@ -11,8 +11,10 @@ import com.otoki.powersales.admin.entity.UserPermission
 import com.otoki.powersales.admin.exception.*
 import com.otoki.powersales.admin.repository.RolePermissionRepository
 import com.otoki.powersales.admin.repository.UserPermissionRepository
+import com.otoki.powersales.admin.repository.deleteByRole
 import com.otoki.powersales.admin.scope.AdminEmployeeHolder
 import com.otoki.powersales.admin.security.AdminPermission
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import org.springframework.stereotype.Service
@@ -27,10 +29,6 @@ class AdminEmployeePermissionService(
     private val adminPermissionResolver: AdminPermissionResolver,
     private val adminEmployeeHolder: AdminEmployeeHolder
 ) {
-
-    companion object {
-        val ALLOWED_AUTHORITIES = setOf("시스템관리자", "조장", "지점장", "영업부장", "사업부장", "영업본부장", "영업지원실")
-    }
 
     fun getEmployeePermissions(employeeId: Long): EmployeePermissionDetailResponse {
         requireSystemAdmin()
@@ -77,12 +75,12 @@ class AdminEmployeePermissionService(
             throw CannotModifyOwnAuthorityException()
         }
 
-        if (request.appAuthority !in ALLOWED_AUTHORITIES) {
-            throw InvalidAuthorityException(request.appAuthority)
+        if (request.role !in UserRole.ALLOWED_FOR_ADMIN_LOGIN) {
+            throw InvalidAuthorityException(request.role.name)
         }
 
-        val previousAuthority = employee.appAuthority
-        employee.appAuthority = request.appAuthority
+        val previousRole = employee.role
+        employee.role = request.role
         employeeRepository.save(employee)
 
         val effectivePermissions = adminPermissionResolver.resolve(employee).map { it.name }
@@ -91,42 +89,42 @@ class AdminEmployeePermissionService(
             employeeId = employee.id,
             employeeCode = employee.employeeCode,
             name = employee.name,
-            previousAuthority = previousAuthority,
-            newAuthority = request.appAuthority,
+            previousRole = previousRole?.name,
+            previousRoleLabel = previousRole?.toKorean(),
+            newRole = request.role.name,
+            newRoleLabel = request.role.toKorean(),
             effectivePermissions = effectivePermissions
         )
     }
 
     @Transactional
-    fun updateRolePermissions(role: String, request: UpdateRolePermissionsRequest): RolePermissionsUpdateResponse {
+    fun updateRolePermissions(role: UserRole, request: UpdateRolePermissionsRequest): RolePermissionsUpdateResponse {
         requireSystemAdmin()
 
-        if (role !in ALLOWED_AUTHORITIES) {
-            throw InvalidAuthorityException(role)
+        if (role !in UserRole.ALLOWED_FOR_ADMIN_LOGIN) {
+            throw InvalidAuthorityException(role.name)
         }
 
         validatePermissions(request.permissions)
 
         rolePermissionRepository.deleteByRole(role)
+        rolePermissionRepository.flush()
         request.permissions.forEach { perm ->
             rolePermissionRepository.save(
                 RolePermission(
-                    role = role,
+                    role = role.name,
                     permission = perm
                 )
             )
         }
 
-        return RolePermissionsUpdateResponse(
-            role = role,
-            permissions = request.permissions
-        )
+        return RolePermissionsUpdateResponse.of(role, request.permissions)
     }
 
     private fun requireSystemAdmin(): com.otoki.powersales.employee.entity.Employee {
         val employee = adminEmployeeHolder.employee
             ?: throw AdminForbiddenException()
-        if (employee.appAuthority != "시스템관리자") {
+        if (employee.role != UserRole.SYSTEM_ADMIN) {
             throw AdminForbiddenException()
         }
         return employee

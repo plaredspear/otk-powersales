@@ -11,7 +11,7 @@ class RolePermission(
     @Column(name = "role_permission_id")
     val id: Long = 0,
 
-    @Column(name = "role", nullable = false, length = 20)
+    @Column(name = "role", nullable = false, length = 50)
     val role: String,
 
     @Column(name = "permission", nullable = false, length = 50)

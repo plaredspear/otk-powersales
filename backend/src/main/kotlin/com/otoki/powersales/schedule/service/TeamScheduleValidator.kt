@@ -1,5 +1,6 @@
 package com.otoki.powersales.schedule.service
 
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.schedule.exception.TeamScheduleConflictException
@@ -31,7 +32,7 @@ class TeamScheduleValidator(
     }
 
     fun validateDisplayMasterLink(currentEmployee: Employee, schedule: TeamMemberSchedule) {
-        if (currentEmployee.appAuthority == "시스템관리자" || currentEmployee.appAuthority == "영업지원실") return
+        if (currentEmployee.role in UserRole.ADMIN_GRADE) return
         if (schedule.workingCategory1 != "진열") return
 
         val employeeId = schedule.employee?.id ?: return

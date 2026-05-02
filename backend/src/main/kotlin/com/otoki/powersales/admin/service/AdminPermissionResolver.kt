@@ -2,7 +2,9 @@ package com.otoki.powersales.admin.service
 
 import com.otoki.powersales.admin.repository.RolePermissionRepository
 import com.otoki.powersales.admin.repository.UserPermissionRepository
+import com.otoki.powersales.admin.repository.findByRole
 import com.otoki.powersales.admin.security.AdminPermission
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import org.springframework.stereotype.Service
@@ -28,12 +30,17 @@ class AdminPermissionResolver(
 ) {
 
     fun resolve(employee: Employee): Set<AdminPermission> {
-        val rolePerms = if (employee.appAuthority != null) {
-            rolePermissionRepository.findByRole(employee.appAuthority!!)
+        val role = employee.role
+        val rolePerms = if (role != null && role != UserRole.UNKNOWN) {
+            rolePermissionRepository.findByRole(role)
                 .mapNotNull { parsePermission(it.permission) }
                 .toSet()
         } else {
             emptySet()
+        }
+
+        if (role == UserRole.UNKNOWN) {
+            return emptySet()
         }
 
         val userPerms = userPermissionRepository.findByEmployeeId(employee.id)
@@ -44,8 +51,16 @@ class AdminPermissionResolver(
     }
 
     fun resolveWithDetails(employee: Employee): PermissionResolveResult {
-        val rolePerms = if (employee.appAuthority != null) {
-            rolePermissionRepository.findByRole(employee.appAuthority!!)
+        val role = employee.role
+        if (role == UserRole.UNKNOWN) {
+            return PermissionResolveResult(
+                rolePermissions = emptyList(),
+                userPermissions = emptyList(),
+                effectivePermissions = emptyList()
+            )
+        }
+        val rolePerms = if (role != null) {
+            rolePermissionRepository.findByRole(role)
                 .mapNotNull { it.permission.takeIf { p -> parsePermission(p) != null } }
         } else {
             emptyList()

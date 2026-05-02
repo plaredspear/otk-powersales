@@ -1,6 +1,7 @@
 package com.otoki.powersales.admin.service
 
 import com.otoki.powersales.admin.dto.request.PPTMasterCreateRequest
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.admin.dto.request.PPTMasterUpdateRequest
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamHistory
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamMaster
@@ -55,7 +56,7 @@ class AdminPPTMasterServiceTest {
         emp.costCenterCode = "1100"
         emp.orgName = "서울지점"
         emp.status = "재직"
-        emp.appAuthority = "여사원"
+        emp.role = UserRole.WOMAN
         emp.professionalPromotionTeam = professionalPromotionTeam
         return emp
     }

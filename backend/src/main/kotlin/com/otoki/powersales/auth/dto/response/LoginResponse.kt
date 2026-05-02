@@ -20,7 +20,8 @@ data class UserInfo(
     val employeeCode: String,
     val name: String,
     val orgName: String?,
-    val role: String
+    val role: String?,
+    val roleLabel: String?
 ) {
     companion object {
         fun from(employee: Employee): UserInfo {
@@ -29,7 +30,8 @@ data class UserInfo(
                 employeeCode = employee.employeeCode,
                 name = employee.name,
                 orgName = employee.orgName,
-                role = employee.role.name
+                role = employee.role?.name,
+                roleLabel = employee.role?.toKorean()
             )
         }
     }

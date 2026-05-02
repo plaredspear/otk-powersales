@@ -1,6 +1,7 @@
 package com.otoki.powersales.promotion.service
 
 import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.admin.scope.DataScopeHolder
 import com.otoki.powersales.promotion.dto.request.PromotionCreateRequest
 import com.otoki.powersales.promotion.entity.Promotion
@@ -610,7 +611,7 @@ class AdminPromotionServiceTest {
             val promotion = createPromotion()
             whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
             whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(true)
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee(appAuthority = "지점장")))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee(role = UserRole.BRANCH_MANAGER)))
 
             val newAccount = createAccount(id = 200, name = "GS25 강남점")
             whenever(accountRepository.findById(200)).thenReturn(Optional.of(newAccount))
@@ -640,7 +641,7 @@ class AdminPromotionServiceTest {
             val promotion = createPromotion()
             whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
             whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(true)
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee(appAuthority = "지점장")))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee(role = UserRole.BRANCH_MANAGER)))
             whenever(promotionEmployeeRepository.findMinScheduleDateByPromotionId(1L)).thenReturn(LocalDate.of(2026, 3, 10))
             whenever(promotionEmployeeRepository.findMaxScheduleDateByPromotionId(1L)).thenReturn(LocalDate.of(2026, 3, 18))
             whenever(accountRepository.findById(100)).thenReturn(Optional.of(createAccount()))
@@ -662,7 +663,7 @@ class AdminPromotionServiceTest {
             val promotion = createPromotion()
             whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
             whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(true)
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee(appAuthority = "조장")))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee(role = UserRole.LEADER)))
 
             val request = createRequest(startDate = LocalDate.of(2026, 3, 5))
 
@@ -850,10 +851,10 @@ class AdminPromotionServiceTest {
         id: Long = 1L,
         employeeCode: String = "20030117",
         costCenterCode: String? = "1101",
-        appAuthority: String? = null
+        role: UserRole? = null
     ) = Employee(id = id, employeeCode = employeeCode, name = "테스트 사용자").also {
         it.costCenterCode = costCenterCode
-        it.appAuthority = appAuthority
+        it.role = role
     }
 
     private fun createRequest(

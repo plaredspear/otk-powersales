@@ -1,4 +1,5 @@
 import client from './client';
+import type { UserRole } from '@/constants/userRole';
 
 // --- Raw API response interfaces (snake_case from backend) ---
 
@@ -24,7 +25,8 @@ interface EmployeeItemRaw {
   gender: string | null;
   org_name: string | null;
   cost_center_code: string | null;
-  app_authority: string | null;
+  role: UserRole | null;
+  role_label: string | null;
   start_date: string | null;
   end_date: string | null;
   app_login_active: boolean | null;
@@ -43,7 +45,7 @@ export interface FetchEmployeesParams {
   status?: string;
   costCenterCode?: string;
   keyword?: string;
-  appAuthority?: string;
+  role?: UserRole;
   page?: number;
   size?: number;
 }
@@ -56,7 +58,8 @@ export interface Employee {
   gender: string | null;
   orgName: string | null;
   costCenterCode: string | null;
-  appAuthority: string | null;
+  role: UserRole | null;
+  roleLabel: string | null;
   startDate: string | null;
   endDate: string | null;
   appLoginActive: boolean | null;
@@ -89,7 +92,8 @@ function mapEmployeeList(raw: EmployeeListRaw): EmployeeListData {
       gender: item.gender,
       orgName: item.org_name,
       costCenterCode: item.cost_center_code,
-      appAuthority: item.app_authority,
+      role: item.role,
+      roleLabel: item.role_label,
       startDate: item.start_date,
       endDate: item.end_date,
       appLoginActive: item.app_login_active,

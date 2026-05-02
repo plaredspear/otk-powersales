@@ -17,7 +17,7 @@ class EmployeeTest {
         password: String = "encodedPassword",
         name: String = "홍길동",
         orgName: String = "서울지점",
-        appAuthority: String? = null,
+        role: UserRole? = null,
         passwordChangeRequired: Boolean = true,
         agreementFlag: Boolean? = null
     ): Employee {
@@ -26,7 +26,7 @@ class EmployeeTest {
             password = password,
             name = name,
             orgName = orgName,
-            appAuthority = appAuthority,
+            role = role,
             passwordChangeRequired = passwordChangeRequired,
             agreementFlag = agreementFlag
         )
@@ -147,36 +147,26 @@ class EmployeeTest {
 
         // then
         assertThat(employee.id).isEqualTo(0)
-        assertThat(employee.role).isEqualTo(UserRole.USER)
+        assertThat(employee.role).isNull()
         assertThat(employee.passwordChangeRequired).isTrue()
         assertThat(employee.agreementFlag).isNull()
     }
 
     @Test
-    @DisplayName("appAuthority로부터 role이 올바르게 도출된다")
-    fun role_ComputedFromAppAuthority() {
+    @DisplayName("role 필드가 입력값 그대로 저장된다 (Spec #573 — computed property 제거)")
+    fun role_StoredAsIs() {
         // given & when
-        val regularUser = createTestEmployee(appAuthority = null)
-        val regularUser2 = createTestEmployee(appAuthority = "여사원")
-        val leader = createTestEmployee(appAuthority = "조장")
-        val admin = createTestEmployee(appAuthority = "지점장")
+        val nullRole = createTestEmployee(role = null)
+        val woman = createTestEmployee(role = UserRole.WOMAN)
+        val leader = createTestEmployee(role = UserRole.LEADER)
+        val branchManager = createTestEmployee(role = UserRole.BRANCH_MANAGER)
+        val unknown = createTestEmployee(role = UserRole.UNKNOWN)
 
         // then
-        assertThat(regularUser.role).isEqualTo(UserRole.USER)
-        assertThat(regularUser2.role).isEqualTo(UserRole.USER)
+        assertThat(nullRole.role).isNull()
+        assertThat(woman.role).isEqualTo(UserRole.WOMAN)
         assertThat(leader.role).isEqualTo(UserRole.LEADER)
-        assertThat(admin.role).isEqualTo(UserRole.ADMIN)
-    }
-
-    @Test
-    @DisplayName("매핑 테이블에 없는 appAuthority 값은 USER로 폴백된다")
-    fun role_UnknownAppAuthority_FallsBackToUser() {
-        // given & when
-        val unknownRole = createTestEmployee(appAuthority = "대리")
-        val emptyRole = createTestEmployee(appAuthority = "")
-
-        // then
-        assertThat(unknownRole.role).isEqualTo(UserRole.USER)
-        assertThat(emptyRole.role).isEqualTo(UserRole.USER)
+        assertThat(branchManager.role).isEqualTo(UserRole.BRANCH_MANAGER)
+        assertThat(unknown.role).isEqualTo(UserRole.UNKNOWN)
     }
 }

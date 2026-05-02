@@ -248,7 +248,7 @@ export default function ProductExpirationPage() {
           내 팀 ({user.orgName ?? ''})
         </Tag>
       )}
-      {user?.role === 'USER' && (
+      {user?.role === 'WOMAN' && (
         <Tag style={{ marginBottom: 16, fontSize: 14, padding: '4px 12px' }}>
           내 데이터
         </Tag>

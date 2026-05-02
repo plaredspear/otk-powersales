@@ -95,10 +95,17 @@ class JwtTokenProvider(
 
     /**
      * 토큰에서 role 추출
+     *
+     * 신규 enum 매핑 실패 시(예: 구 토큰의 USER/ADMIN) `null` 을 반환하여
+     * 호출부가 401(재로그인 필요)로 응답할 수 있도록 한다.
      */
-    fun getRoleFromToken(token: String): UserRole {
-        val roleName = parseClaims(token).get("role", String::class.java)
-        return UserRole.valueOf(roleName)
+    fun getRoleFromToken(token: String): UserRole? {
+        val roleName = parseClaims(token).get("role", String::class.java) ?: return null
+        return try {
+            UserRole.valueOf(roleName)
+        } catch (_: IllegalArgumentException) {
+            null
+        }
     }
 
     /**

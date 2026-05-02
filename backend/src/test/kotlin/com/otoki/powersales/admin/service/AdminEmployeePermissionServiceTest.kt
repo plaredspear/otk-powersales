@@ -1,6 +1,7 @@
 package com.otoki.powersales.admin.service
 
 import com.otoki.powersales.admin.dto.request.UpdateAuthorityRequest
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.admin.dto.request.UpdateRolePermissionsRequest
 import com.otoki.powersales.admin.dto.request.UpdateUserPermissionsRequest
 import com.otoki.powersales.admin.entity.RolePermission
@@ -45,8 +46,8 @@ class AdminEmployeePermissionServiceTest {
     private lateinit var adminEmployeeHolder: AdminEmployeeHolder
     private lateinit var service: AdminEmployeePermissionService
 
-    private val systemAdmin = Employee(id = 1L, employeeCode = "00000001", name = "시스템관리자", appAuthority = "시스템관리자")
-    private val targetEmployee = Employee(id = 2L, employeeCode = "00000002", name = "홍길동", appAuthority = "지점장")
+    private val systemAdmin = Employee(id = 1L, employeeCode = "00000001", name = "시스템관리자", role = UserRole.SYSTEM_ADMIN)
+    private val targetEmployee = Employee(id = 2L, employeeCode = "00000002", name = "홍길동", role = UserRole.BRANCH_MANAGER)
 
     @BeforeEach
     fun setUp() {
@@ -90,7 +91,7 @@ class AdminEmployeePermissionServiceTest {
         @DisplayName("실패 - 비관리자 접근 → AdminForbiddenException")
         fun getEmployeePermissions_forbidden() {
             // Given
-            val nonAdmin = Employee(id = 3L, employeeCode = "00000003", name = "조장", appAuthority = "조장")
+            val nonAdmin = Employee(id = 3L, employeeCode = "00000003", name = "조장", role = UserRole.LEADER)
             adminEmployeeHolder.employee = nonAdmin
 
             // When & Then
@@ -198,14 +199,16 @@ class AdminEmployeePermissionServiceTest {
                 AdminPermission.entries.toSet() - AdminPermission.SCHEDULE_WRITE
             )
 
-            val request = UpdateAuthorityRequest(appAuthority = "영업부장")
+            val request = UpdateAuthorityRequest(role = UserRole.SALES_MANAGER)
 
             // When
             val result = service.updateAuthority(2L, request)
 
             // Then
-            assertThat(result.previousAuthority).isEqualTo("지점장")
-            assertThat(result.newAuthority).isEqualTo("영업부장")
+            assertThat(result.previousRole).isEqualTo("BRANCH_MANAGER")
+            assertThat(result.previousRoleLabel).isEqualTo("지점장")
+            assertThat(result.newRole).isEqualTo("SALES_MANAGER")
+            assertThat(result.newRoleLabel).isEqualTo("영업부장")
         }
 
         @Test
@@ -215,7 +218,7 @@ class AdminEmployeePermissionServiceTest {
             adminEmployeeHolder.employee = systemAdmin
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(systemAdmin))
 
-            val request = UpdateAuthorityRequest(appAuthority = "조장")
+            val request = UpdateAuthorityRequest(role = UserRole.LEADER)
 
             // When & Then
             assertThatThrownBy { service.updateAuthority(1L, request) }
@@ -229,7 +232,7 @@ class AdminEmployeePermissionServiceTest {
             adminEmployeeHolder.employee = systemAdmin
             whenever(employeeRepository.findById(2L)).thenReturn(Optional.of(targetEmployee))
 
-            val request = UpdateAuthorityRequest(appAuthority = "대리")
+            val request = UpdateAuthorityRequest(role = UserRole.WOMAN)
 
             // When & Then
             assertThatThrownBy { service.updateAuthority(2L, request) }
@@ -253,10 +256,10 @@ class AdminEmployeePermissionServiceTest {
             )
 
             // When
-            val result = service.updateRolePermissions("지점장", request)
+            val result = service.updateRolePermissions(UserRole.BRANCH_MANAGER, request)
 
             // Then
-            assertThat(result.role).isEqualTo("지점장")
+            assertThat(result.role).isEqualTo("BRANCH_MANAGER")
             assertThat(result.permissions).containsExactlyInAnyOrder("DASHBOARD_READ", "SCHEDULE_WRITE")
         }
 
@@ -269,7 +272,7 @@ class AdminEmployeePermissionServiceTest {
             val request = UpdateRolePermissionsRequest(permissions = listOf("DASHBOARD_READ"))
 
             // When & Then
-            assertThatThrownBy { service.updateRolePermissions("대리", request) }
+            assertThatThrownBy { service.updateRolePermissions(UserRole.WOMAN, request) }
                 .isInstanceOf(InvalidAuthorityException::class.java)
         }
 
@@ -277,13 +280,13 @@ class AdminEmployeePermissionServiceTest {
         @DisplayName("실패 - 비관리자 → AdminForbiddenException")
         fun updateRolePermissions_forbidden() {
             // Given
-            val nonAdmin = Employee(id = 3L, employeeCode = "00000003", name = "조장", appAuthority = "조장")
+            val nonAdmin = Employee(id = 3L, employeeCode = "00000003", name = "조장", role = UserRole.LEADER)
             adminEmployeeHolder.employee = nonAdmin
 
             val request = UpdateRolePermissionsRequest(permissions = listOf("DASHBOARD_READ"))
 
             // When & Then
-            assertThatThrownBy { service.updateRolePermissions("지점장", request) }
+            assertThatThrownBy { service.updateRolePermissions(UserRole.BRANCH_MANAGER, request) }
                 .isInstanceOf(AdminForbiddenException::class.java)
         }
     }

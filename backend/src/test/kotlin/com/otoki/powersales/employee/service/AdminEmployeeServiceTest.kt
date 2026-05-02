@@ -1,6 +1,7 @@
 package com.otoki.powersales.employee.service
 
 import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.admin.scope.DataScopeHolder
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
@@ -164,13 +165,13 @@ class AdminEmployeeServiceTest {
         name: String = "테스트",
         status: String? = "재직",
         costCenterCode: String? = "A001",
-        appAuthority: String? = null
+        role: UserRole? = null
     ): Employee = Employee(
         id = id,
         employeeCode = employeeCode,
         name = name,
         status = status,
         costCenterCode = costCenterCode,
-        appAuthority = appAuthority
+        role = role
     )
 }

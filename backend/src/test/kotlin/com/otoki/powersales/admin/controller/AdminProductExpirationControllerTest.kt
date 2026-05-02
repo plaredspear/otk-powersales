@@ -66,7 +66,7 @@ class AdminProductExpirationControllerTest {
     @MockitoBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
-    private fun setUpPrincipal(userId: Long = 1L, role: UserRole = UserRole.USER) {
+    private fun setUpPrincipal(userId: Long = 1L, role: UserRole = UserRole.WOMAN) {
         val principal = UserPrincipal(userId = userId, role = role)
         SecurityContextHolder.getContext().authentication =
             UsernamePasswordAuthenticationToken(principal, null, principal.authorities)

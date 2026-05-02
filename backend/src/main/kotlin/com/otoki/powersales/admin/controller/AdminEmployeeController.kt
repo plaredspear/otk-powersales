@@ -2,6 +2,7 @@ package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.admin.security.RequiresPermission
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.employee.dto.response.EmployeeListResponse
 import com.otoki.powersales.employee.service.AdminEmployeeService
 import com.otoki.powersales.common.dto.ApiResponse
@@ -26,7 +27,7 @@ class AdminEmployeeController(
         @RequestParam(required = false) status: String?,
         @RequestParam(required = false) costCenterCode: String?,
         @RequestParam(required = false) keyword: String?,
-        @RequestParam(required = false) appAuthority: String?,
+        @RequestParam(required = false) role: UserRole?,
         @RequestParam(required = false, defaultValue = "0") page: Int,
         @RequestParam(required = false, defaultValue = "20") size: Int
     ): ResponseEntity<ApiResponse<EmployeeListResponse>> {
@@ -34,7 +35,7 @@ class AdminEmployeeController(
             status = status,
             costCenterCode = costCenterCode,
             keyword = keyword,
-            appAuthority = appAuthority,
+            role = role,
             page = page,
             size = size
         )

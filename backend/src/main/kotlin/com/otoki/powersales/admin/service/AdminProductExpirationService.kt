@@ -149,17 +149,19 @@ class AdminProductExpirationService(
 
     /**
      * 로그인 사원의 역할에 따라 조회 가능한 사원 ID 목록을 반환한다.
-     * - ADMIN: null (전체)
+     * - 관리자급/지점장: null (전체)
      * - LEADER: 동일 orgName 팀원 ID 목록 (orgName이 null이면 본인만)
-     * - USER: 본인 ID만
+     * - 그 외(WOMAN, UNKNOWN, null 등): 본인 ID만
      */
     private fun resolveEmployeeScope(userId: Long): List<Long>? {
         val employee = employeeRepository.findById(userId)
             .orElseThrow { EmployeeNotFoundException() }
 
-        return when (employee.role) {
-            UserRole.ADMIN -> null
-            UserRole.LEADER -> {
+        val role = employee.role
+
+        return when {
+            role == UserRole.SYSTEM_ADMIN || role in UserRole.ALL_BRANCHES || role == UserRole.BRANCH_MANAGER -> null
+            role == UserRole.LEADER -> {
                 val orgName = employee.orgName
                 if (orgName != null) {
                     employeeRepository.findByOrgName(orgName).map { it.id }
@@ -167,7 +169,7 @@ class AdminProductExpirationService(
                     listOf(employee.id)
                 }
             }
-            UserRole.USER -> listOf(employee.id)
+            else -> listOf(employee.id)
         }
     }
 

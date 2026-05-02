@@ -1,6 +1,7 @@
 package com.otoki.powersales.schedule.service
 
 import tools.jackson.databind.ObjectMapper
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.schedule.dto.response.ScheduleBatchConfirmResultDto
 import com.otoki.powersales.schedule.dto.response.ScheduleConfirmResultDto
 import com.otoki.powersales.schedule.dto.response.ScheduleListItemDto
@@ -64,18 +65,18 @@ class AdminScheduleService(
             ?: organizationRepository.findFirstByCostCenterLevel4(costCenterCode)
             ?: throw OrganizationNotFoundException()
 
-        val employees = if (employee.appAuthority == "영업지원실") {
+        val employees = if (employee.role == UserRole.SALES_SUPPORT) {
             val costCenterLevel3 = org.costCenterLevel3
                 ?: throw OrganizationNotFoundException()
             val costCenterCodes = organizationRepository.findByCostCenterLevel3(costCenterLevel3)
                 .mapNotNull { it.costCenterLevel5 }
                 .distinct()
-            employeeRepository.findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrueAndStatus(
-                costCenterCodes, "여사원", "재직"
+            employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrueAndStatus(
+                costCenterCodes, UserRole.WOMAN, "재직"
             )
         } else {
-            employeeRepository.findByCostCenterCodeAndAppAuthorityAndAppLoginActiveTrueAndStatus(
-                costCenterCode, "여사원", "재직"
+            employeeRepository.findByCostCenterCodeAndRoleAndAppLoginActiveTrueAndStatus(
+                costCenterCode, UserRole.WOMAN, "재직"
             )
         }.sortedWith(compareBy({ it.orgName }, { it.employeeCode }))
 
@@ -178,10 +179,10 @@ class AdminScheduleService(
             emptyMap()
         }
 
-        // 조장 일괄 조회: costCenterCode 목록 → appAuthority="조장" 사원
+        // 조장 일괄 조회: costCenterCode 목록 → role=LEADER 사원
         val costCenterCodes = cacheData.validRows.mapNotNull { it.costCenterCode }.distinct()
         val managersByCostCenter = if (costCenterCodes.isNotEmpty()) {
-            employeeRepository.findByCostCenterCodeInAndAppAuthorityAndAppLoginActiveTrue(costCenterCodes, "조장")
+            employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(costCenterCodes, UserRole.LEADER)
                 .groupBy { it.costCenterCode }
         } else {
             emptyMap()
@@ -315,14 +316,14 @@ class AdminScheduleService(
         val employee = employeeRepository.findById(userId)
             .orElseThrow { EmployeeNotFoundException() }
 
-        val appAuthority = employee.appAuthority
+        val role = employee.role
 
-        if (appAuthority == "시스템관리자" || appAuthority == "영업지원실") {
+        if (role in UserRole.ADMIN_GRADE) {
             schedule.isDeleted = true
             return
         }
 
-        if (appAuthority == "지점장") {
+        if (role == UserRole.BRANCH_MANAGER) {
             throw ScheduleDeleteForbiddenException()
         }
 

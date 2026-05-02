@@ -96,7 +96,7 @@ class AuthServiceTest {
         whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode(employeeCode)).thenReturn(employee)
         whenever(passwordEncoder.matches(rawPassword, encodedPassword)).thenReturn(true)
         whenever(adminPermissionResolver.resolve(employee)).thenReturn(AdminPermission.entries.toSet())
-        whenever(jwtTokenProvider.createAccessToken(employee.id, employee.role, false)).thenReturn(accessToken)
+        whenever(jwtTokenProvider.createAccessToken(eq(employee.id), any<UserRole>(), eq(false))).thenReturn(accessToken)
         whenever(jwtTokenProvider.createRefreshToken(eq(employee.id), any(), any())).thenReturn(refreshToken)
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(expiresIn)
 
@@ -108,7 +108,7 @@ class AuthServiceTest {
         assertThat(response.user.employeeCode).isEqualTo(employeeCode)
         assertThat(response.user.name).isEqualTo("홍길동")
         assertThat(response.user.orgName).isEqualTo("서울지점")
-        assertThat(response.user.role).isEqualTo("USER")
+        assertThat(response.user.role).isEqualTo("SALES_MANAGER")
         assertThat(response.token.accessToken).isEqualTo(accessToken)
         assertThat(response.token.refreshToken).isEqualTo(refreshToken)
         assertThat(response.token.expiresIn).isEqualTo(expiresIn)
@@ -130,7 +130,7 @@ class AuthServiceTest {
         whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode(employeeCode)).thenReturn(employee)
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
         whenever(adminPermissionResolver.resolve(employee)).thenReturn(AdminPermission.entries.toSet())
-        whenever(jwtTokenProvider.createAccessToken(employee.id, employee.role)).thenReturn("token")
+        whenever(jwtTokenProvider.createAccessToken(eq(employee.id), any<UserRole>(), eq(false))).thenReturn("token")
         whenever(jwtTokenProvider.createRefreshToken(eq(employee.id), any(), any())).thenReturn("refresh")
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
@@ -156,7 +156,7 @@ class AuthServiceTest {
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
         whenever(adminPermissionResolver.resolve(employee)).thenReturn(AdminPermission.entries.toSet())
         whenever(loginHistoryRepository.save(any<LoginHistory>())).thenThrow(RuntimeException("DB error"))
-        whenever(jwtTokenProvider.createAccessToken(employee.id, employee.role)).thenReturn("token")
+        whenever(jwtTokenProvider.createAccessToken(eq(employee.id), any<UserRole>(), eq(false))).thenReturn("token")
         whenever(jwtTokenProvider.createRefreshToken(eq(employee.id), any(), any())).thenReturn("refresh")
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
@@ -301,7 +301,7 @@ class AuthServiceTest {
             whenever(jwtTokenProvider.isRefreshTokenStored(tokenId)).thenReturn(true)
             whenever(jwtTokenProvider.getUserIdFromToken(refreshToken)).thenReturn(userId)
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(jwtTokenProvider.createAccessToken(userId, UserRole.USER, false)).thenReturn(newAccessToken)
+            whenever(jwtTokenProvider.createAccessToken(eq(userId), any<UserRole>(), eq(false))).thenReturn(newAccessToken)
             whenever(jwtTokenProvider.createRefreshToken(eq(userId), eq(familyId), any())).thenReturn(newRefreshToken)
             whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(expiresIn)
 
@@ -517,7 +517,7 @@ class AuthServiceTest {
                 .thenReturn(Optional.of(activeTerms))
             whenever(agreementHistoryRepository.save(any<AgreementHistory>())).thenAnswer { it.arguments[0] }
             whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.arguments[0] }
-            whenever(jwtTokenProvider.createAccessToken(userId, UserRole.USER, true)).thenReturn("new-token")
+            whenever(jwtTokenProvider.createAccessToken(eq(userId), any<UserRole>(), eq(true))).thenReturn("new-token")
             whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
             // When
@@ -555,7 +555,7 @@ class AuthServiceTest {
                 .thenReturn(Optional.of(namedTerms))
             whenever(agreementHistoryRepository.save(any<AgreementHistory>())).thenAnswer { it.arguments[0] }
             whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.arguments[0] }
-            whenever(jwtTokenProvider.createAccessToken(userId, UserRole.USER, true)).thenReturn("new-token")
+            whenever(jwtTokenProvider.createAccessToken(eq(userId), any<UserRole>(), eq(true))).thenReturn("new-token")
             whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
             // When
@@ -662,7 +662,7 @@ class AuthServiceTest {
         whenever(deviceBindingProperties.enabled).thenReturn(true)
         whenever(deviceBindingProperties.isExcluded("12345678")).thenReturn(false)
         whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.arguments[0] }
-        whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER, false)).thenReturn("token")
+        whenever(jwtTokenProvider.createAccessToken(eq(1L), any<UserRole>(), eq(false))).thenReturn("token")
         whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
@@ -686,7 +686,7 @@ class AuthServiceTest {
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
         whenever(deviceBindingProperties.enabled).thenReturn(true)
         whenever(deviceBindingProperties.isExcluded("12345678")).thenReturn(false)
-        whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER, false)).thenReturn("token")
+        whenever(jwtTokenProvider.createAccessToken(eq(1L), any<UserRole>(), eq(false))).thenReturn("token")
         whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
@@ -724,7 +724,7 @@ class AuthServiceTest {
         whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678")).thenReturn(employee)
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
         whenever(adminPermissionResolver.resolve(employee)).thenReturn(AdminPermission.entries.toSet())
-        whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER, false)).thenReturn("token")
+        whenever(jwtTokenProvider.createAccessToken(eq(1L), any<UserRole>(), eq(false))).thenReturn("token")
         whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
@@ -745,7 +745,7 @@ class AuthServiceTest {
         whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678")).thenReturn(employee)
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
         whenever(deviceBindingProperties.enabled).thenReturn(false)
-        whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER, false)).thenReturn("token")
+        whenever(jwtTokenProvider.createAccessToken(eq(1L), any<UserRole>(), eq(false))).thenReturn("token")
         whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
@@ -767,7 +767,7 @@ class AuthServiceTest {
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
         whenever(deviceBindingProperties.enabled).thenReturn(true)
         whenever(deviceBindingProperties.isExcluded("20010585")).thenReturn(true)
-        whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER, false)).thenReturn("token")
+        whenever(jwtTokenProvider.createAccessToken(eq(1L), any<UserRole>(), eq(false))).thenReturn("token")
         whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
@@ -788,13 +788,13 @@ class AuthServiceTest {
         @DisplayName("WEB 로그인 성공 - 허용 권한(영업부장)으로 로그인 시 정상 반환")
         fun webLogin_allowedAuthority_success() {
             // Given
-            val employee = createTestEmployee(id = 1L, appAuthority = "영업부장")
+            val employee = createTestEmployee(id = 1L, role = UserRole.SALES_MANAGER)
             val request = LoginRequest("12345678", "password123")
 
             whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678")).thenReturn(employee)
             whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
             whenever(adminPermissionResolver.resolve(employee)).thenReturn(AdminPermission.entries.toSet())
-            whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER, false)).thenReturn("token")
+            whenever(jwtTokenProvider.createAccessToken(eq(1L), any<UserRole>(), eq(false))).thenReturn("token")
             whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
             whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
@@ -817,7 +817,7 @@ class AuthServiceTest {
             whenever(deviceBindingProperties.enabled).thenReturn(true)
             whenever(deviceBindingProperties.isExcluded("12345678")).thenReturn(false)
             whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.arguments[0] }
-            whenever(jwtTokenProvider.createAccessToken(1L, UserRole.USER, false)).thenReturn("token")
+            whenever(jwtTokenProvider.createAccessToken(eq(1L), any<UserRole>(), eq(false))).thenReturn("token")
             whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
             whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
@@ -832,7 +832,7 @@ class AuthServiceTest {
         @DisplayName("WEB 미허용 권한 - appAuthority가 허용 목록에 없으면 WebLoginNotAllowedException")
         fun webLogin_notAllowedAuthority_throws() {
             // Given
-            val employee = createTestEmployee(id = 1L, appAuthority = "여사원")
+            val employee = createTestEmployee(id = 1L, role = UserRole.WOMAN)
             val request = LoginRequest("12345678", "password123")
 
             whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678")).thenReturn(employee)
@@ -848,7 +848,7 @@ class AuthServiceTest {
         @DisplayName("WEB 권한 null - appAuthority가 null이면 WebLoginNotAllowedException")
         fun webLogin_nullAuthority_throws() {
             // Given
-            val employee = createTestEmployee(id = 1L, appAuthority = null)
+            val employee = createTestEmployee(id = 1L, role = null)
             val request = LoginRequest("12345678", "password123")
 
             whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678")).thenReturn(employee)
@@ -901,13 +901,13 @@ class AuthServiceTest {
         @DisplayName("성공 - 허용 권한(조장)으로 관리자 로그인 시 AdminLoginResponse 반환")
         fun adminLogin_success() {
             // Given
-            val employee = createTestEmployee(id = 1L, appAuthority = "조장", costCenterCode = "CC001")
+            val employee = createTestEmployee(id = 1L, role = UserRole.LEADER, costCenterCode = "CC001")
             val request = LoginRequest("12345678", "password123")
 
             whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678")).thenReturn(employee)
             whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
             whenever(adminPermissionResolver.resolve(employee)).thenReturn(AdminPermission.entries.toSet())
-            whenever(jwtTokenProvider.createAccessToken(1L, UserRole.LEADER, false)).thenReturn("admin-token")
+            whenever(jwtTokenProvider.createAccessToken(eq(1L), any<UserRole>(), eq(false))).thenReturn("admin-token")
             whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("admin-refresh")
             whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
@@ -917,9 +917,9 @@ class AuthServiceTest {
             // Then
             assertThat(response.user.id).isEqualTo(1L)
             assertThat(response.user.employeeCode).isEqualTo("12345678")
-            assertThat(response.user.appAuthority).isEqualTo("조장")
-            assertThat(response.user.costCenterCode).isEqualTo("CC001")
             assertThat(response.user.role).isEqualTo("LEADER")
+            assertThat(response.user.roleLabel).isEqualTo("조장")
+            assertThat(response.user.costCenterCode).isEqualTo("CC001")
             assertThat(response.token.accessToken).isEqualTo("admin-token")
             assertThat(response.token.refreshToken).isEqualTo("admin-refresh")
             assertThat(response.token.expiresIn).isEqualTo(3600)
@@ -943,7 +943,7 @@ class AuthServiceTest {
         @DisplayName("실패 - 비밀번호 불일치 시 InvalidCredentialsException")
         fun adminLogin_passwordMismatch() {
             // Given
-            val employee = createTestEmployee(id = 1L, appAuthority = "조장")
+            val employee = createTestEmployee(id = 1L, role = UserRole.LEADER)
             val request = LoginRequest("12345678", "wrong")
 
             whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678")).thenReturn(employee)
@@ -958,7 +958,7 @@ class AuthServiceTest {
         @DisplayName("실패 - appAuthority가 허용 목록에 없으면 WebLoginNotAllowedException")
         fun adminLogin_notAllowed() {
             // Given
-            val employee = createTestEmployee(id = 1L, appAuthority = "여사원")
+            val employee = createTestEmployee(id = 1L, role = UserRole.WOMAN)
             val request = LoginRequest("12345678", "password123")
 
             whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678")).thenReturn(employee)
@@ -974,7 +974,7 @@ class AuthServiceTest {
         @DisplayName("실패 - appAuthority가 null이면 WebLoginNotAllowedException")
         fun adminLogin_nullAuthority() {
             // Given
-            val employee = createTestEmployee(id = 1L, appAuthority = null)
+            val employee = createTestEmployee(id = 1L, role = null)
             val request = LoginRequest("12345678", "password123")
 
             whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678")).thenReturn(employee)
@@ -1025,7 +1025,7 @@ class AuthServiceTest {
         password: String = "encoded_password",
         name: String = "홍길동",
         orgName: String = "서울지점",
-        appAuthority: String? = "영업부장",
+        role: UserRole? = UserRole.SALES_MANAGER,
         appLoginActive: Boolean? = true,
         passwordChangeRequired: Boolean = true,
         agreementFlag: Boolean? = null,
@@ -1038,7 +1038,7 @@ class AuthServiceTest {
             password = password,
             name = name,
             orgName = orgName,
-            appAuthority = appAuthority,
+            role = role,
             appLoginActive = appLoginActive,
             passwordChangeRequired = passwordChangeRequired,
             agreementFlag = agreementFlag,

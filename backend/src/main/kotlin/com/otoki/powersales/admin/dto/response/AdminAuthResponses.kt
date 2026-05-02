@@ -13,8 +13,8 @@ data class AdminUserInfo(
     val employeeCode: String,
     val name: String,
     val orgName: String?,
-    val role: String,
-    val appAuthority: String?,
+    val role: String?,
+    val roleLabel: String?,
     val costCenterCode: String?,
     val permissions: List<String>
 ) {
@@ -27,8 +27,8 @@ data class AdminUserInfo(
                 employeeCode = employee.employeeCode,
                 name = employee.name,
                 orgName = employee.orgName,
-                role = employee.role.name,
-                appAuthority = employee.appAuthority,
+                role = employee.role?.name,
+                roleLabel = employee.role?.toKorean(),
                 costCenterCode = employee.costCenterCode,
                 permissions = permissionNames
             )

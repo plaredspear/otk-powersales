@@ -1,13 +1,14 @@
 import { create } from 'zustand';
 import { login as loginApi } from '@/api/auth';
+import type { UserRole } from '@/constants/userRole';
 
 export interface AuthUser {
   id: number;
   employeeCode: string;
   name: string;
   orgName: string | null;
-  role: string;
-  appAuthority: string | null;
+  role: UserRole | null;
+  roleLabel: string | null;
   costCenterCode: string | null;
   permissions: string[];
 }
@@ -36,7 +37,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       name: data.user.name,
       orgName: data.user.org_name,
       role: data.user.role,
-      appAuthority: data.user.app_authority,
+      roleLabel: data.user.role_label,
       costCenterCode: data.user.cost_center_code,
       permissions: data.user.permissions ?? [],
     };
@@ -72,6 +73,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     if (accessToken && userStr) {
       try {
         const user = JSON.parse(userStr) as AuthUser;
+        // Spec #573: 신규 스키마 검증 — `role` 필드 미존재 시 구 캐시로 간주하고 재로그인 유도
+        if (typeof user.role === 'undefined') {
+          throw new Error('legacy auth cache');
+        }
         set({ user, accessToken, isAuthenticated: true });
       } catch {
         localStorage.removeItem('accessToken');

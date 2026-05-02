@@ -1,9 +1,10 @@
 package com.otoki.powersales.employee.service
 
 import com.otoki.powersales.admin.dto.EffectiveBranchResult
+import com.otoki.powersales.admin.scope.DataScopeHolder
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.employee.dto.response.EmployeeListItem
 import com.otoki.powersales.employee.dto.response.EmployeeListResponse
-import com.otoki.powersales.admin.scope.DataScopeHolder
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
@@ -21,7 +22,7 @@ class AdminEmployeeService(
         status: String?,
         costCenterCode: String?,
         keyword: String?,
-        appAuthority: String?,
+        role: UserRole?,
         page: Int,
         size: Int
     ): EmployeeListResponse {
@@ -34,7 +35,7 @@ class AdminEmployeeService(
         }
 
         val pageable = PageRequest.of(page, size, Sort.by("name").ascending())
-        val userPage = employeeRepository.findEmployees(status, effectiveBranchCodes, keyword, appAuthority, pageable)
+        val userPage = employeeRepository.findEmployees(status, effectiveBranchCodes, keyword, role, pageable)
 
         return EmployeeListResponse(
             content = userPage.content.map { EmployeeListItem.from(it) },

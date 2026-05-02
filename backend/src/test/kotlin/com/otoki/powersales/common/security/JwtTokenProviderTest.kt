@@ -31,7 +31,7 @@ class JwtTokenProviderTest {
     fun createAccessToken_returnsValidJwt() {
         // Given
         val userId = 12345L
-        val role = UserRole.USER
+        val role = UserRole.WOMAN
 
         // When
         val token = jwtTokenProvider.createAccessToken(userId, role)
@@ -64,7 +64,7 @@ class JwtTokenProviderTest {
     fun validateToken_returnsTrue_forValidToken() {
         // Given
         val userId = 12345L
-        val role = UserRole.USER
+        val role = UserRole.WOMAN
         val token = jwtTokenProvider.createAccessToken(userId, role)
 
         // When
@@ -86,7 +86,7 @@ class JwtTokenProviderTest {
             objectMapper = objectMapper
         )
         val userId = 12345L
-        val role = UserRole.USER
+        val role = UserRole.WOMAN
         val token = shortLivedProvider.createAccessToken(userId, role)
 
         // When: 토큰이 만료될 때까지 대기
@@ -102,7 +102,7 @@ class JwtTokenProviderTest {
     fun validateToken_returnsFalse_forBlacklistedToken() {
         // Given
         val userId = 12345L
-        val role = UserRole.USER
+        val role = UserRole.WOMAN
         val token = jwtTokenProvider.createAccessToken(userId, role)
 
         // When: 토큰을 블랙리스트에 추가
@@ -118,7 +118,7 @@ class JwtTokenProviderTest {
     fun validateToken_returnsFalse_forTamperedToken() {
         // Given: 유효한 토큰 생성 후 일부 변조
         val userId = 12345L
-        val role = UserRole.USER
+        val role = UserRole.WOMAN
         val validToken = jwtTokenProvider.createAccessToken(userId, role)
         val tamperedToken = validToken.dropLast(10) + "TAMPERED123"
 
@@ -147,7 +147,7 @@ class JwtTokenProviderTest {
     fun getUserIdFromToken_extractsCorrectUserId() {
         // Given
         val userId = 12345L
-        val role = UserRole.USER
+        val role = UserRole.WOMAN
         val token = jwtTokenProvider.createAccessToken(userId, role)
 
         // When
@@ -162,7 +162,7 @@ class JwtTokenProviderTest {
     fun getRoleFromToken_extractsCorrectRole() {
         // Given
         val userId = 12345L
-        val role = UserRole.ADMIN
+        val role = UserRole.BRANCH_MANAGER
         val token = jwtTokenProvider.createAccessToken(userId, role)
 
         // When
@@ -190,7 +190,7 @@ class JwtTokenProviderTest {
     fun getTokenType_returnsAccess_forAccessToken() {
         // Given
         val userId = 12345L
-        val role = UserRole.USER
+        val role = UserRole.WOMAN
         val token = jwtTokenProvider.createAccessToken(userId, role)
 
         // When
@@ -232,7 +232,7 @@ class JwtTokenProviderTest {
     fun blacklistToken_addsTokenToBlacklist() {
         // Given
         val userId = 12345L
-        val role = UserRole.USER
+        val role = UserRole.WOMAN
         val token = jwtTokenProvider.createAccessToken(userId, role)
 
         // When: 처음에는 유효
@@ -255,7 +255,7 @@ class JwtTokenProviderTest {
             objectMapper = objectMapper
         )
         val userId = 12345L
-        val role = UserRole.USER
+        val role = UserRole.WOMAN
         val token = shortLivedProvider.createAccessToken(userId, role)
         Thread.sleep(10)
 
@@ -271,7 +271,7 @@ class JwtTokenProviderTest {
         // Given
         val userId1 = 100L
         val userId2 = 200L
-        val role = UserRole.USER
+        val role = UserRole.WOMAN
 
         // When
         val token1 = jwtTokenProvider.createAccessToken(userId1, role)
@@ -288,7 +288,7 @@ class JwtTokenProviderTest {
     fun multipleTokensForSameUser_areAllValid() {
         // Given
         val userId = 12345L
-        val role = UserRole.USER
+        val role = UserRole.WOMAN
 
         // When: 동일 사용자로 여러 토큰 생성
         val token1 = jwtTokenProvider.createAccessToken(userId, role)
@@ -317,7 +317,7 @@ class JwtTokenProviderTest {
     @DisplayName("getAgreementFlagFromToken은 agreement_flag=true를 올바르게 추출한다")
     fun getAgreementFlagFromToken_true() {
         // Given
-        val token = jwtTokenProvider.createAccessToken(1L, UserRole.USER, true)
+        val token = jwtTokenProvider.createAccessToken(1L, UserRole.WOMAN, true)
 
         // When
         val flag = jwtTokenProvider.getAgreementFlagFromToken(token)
@@ -330,7 +330,7 @@ class JwtTokenProviderTest {
     @DisplayName("getAgreementFlagFromToken은 agreement_flag=false를 올바르게 추출한다")
     fun getAgreementFlagFromToken_false() {
         // Given
-        val token = jwtTokenProvider.createAccessToken(1L, UserRole.USER, false)
+        val token = jwtTokenProvider.createAccessToken(1L, UserRole.WOMAN, false)
 
         // When
         val flag = jwtTokenProvider.getAgreementFlagFromToken(token)
@@ -343,7 +343,7 @@ class JwtTokenProviderTest {
     @DisplayName("getAgreementFlagFromToken은 기본값(agreementFlag 미지정) 시 false를 반환한다")
     fun getAgreementFlagFromToken_default() {
         // Given
-        val token = jwtTokenProvider.createAccessToken(1L, UserRole.USER)
+        val token = jwtTokenProvider.createAccessToken(1L, UserRole.WOMAN)
 
         // When
         val flag = jwtTokenProvider.getAgreementFlagFromToken(token)
@@ -353,16 +353,17 @@ class JwtTokenProviderTest {
     }
 
     @Test
-    @DisplayName("refresh token은 role 정보를 포함하지 않는다")
+    @DisplayName("refresh token은 role 정보를 포함하지 않는다 — null 반환 (Spec #573)")
     fun refreshToken_doesNotContainRole() {
         // Given
         val userId = 12345L
         val refreshToken = jwtTokenProvider.createRefreshToken(userId, "family-1", "token-1")
 
-        // When & Then: refresh token에서 role을 추출하려 하면 예외 발생
-        assertThrows<Exception> {
-            jwtTokenProvider.getRoleFromToken(refreshToken)
-        }
+        // When
+        val role = jwtTokenProvider.getRoleFromToken(refreshToken)
+
+        // Then: refresh token에는 role 클레임이 없으므로 null 반환
+        assertNull(role)
     }
 
     // ========== isTokenExpired 테스트 ==========
@@ -382,7 +383,7 @@ class JwtTokenProviderTest {
                 redisTemplate = redisTemplate,
                 objectMapper = objectMapper
             )
-            val token = shortLivedProvider.createAccessToken(1L, UserRole.USER)
+            val token = shortLivedProvider.createAccessToken(1L, UserRole.WOMAN)
             Thread.sleep(10)
 
             // When & Then
@@ -393,7 +394,7 @@ class JwtTokenProviderTest {
         @DisplayName("유효한 토큰 - false 반환")
         fun isTokenExpired_returnsFalse_forValidToken() {
             // Given
-            val token = jwtTokenProvider.createAccessToken(1L, UserRole.USER)
+            val token = jwtTokenProvider.createAccessToken(1L, UserRole.WOMAN)
 
             // When & Then
             assertFalse(jwtTokenProvider.isTokenExpired(token))
@@ -403,7 +404,7 @@ class JwtTokenProviderTest {
         @DisplayName("잘못된 서명 토큰 - false 반환 (만료가 아닌 다른 이유)")
         fun isTokenExpired_returnsFalse_forTamperedToken() {
             // Given
-            val token = jwtTokenProvider.createAccessToken(1L, UserRole.USER)
+            val token = jwtTokenProvider.createAccessToken(1L, UserRole.WOMAN)
             val tampered = token.dropLast(10) + "TAMPERED123"
 
             // When & Then

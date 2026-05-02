@@ -1,6 +1,7 @@
 package com.otoki.powersales.admin.service
 
 import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import org.assertj.core.api.Assertions.assertThat
@@ -35,7 +36,7 @@ class AdminDataScopeServiceTest {
         fun resolve_withSalesDirector_returnsAllBranches() {
             // Given
             val userId = 1L
-            val employee = createTestEmployee(id = userId, appAuthority = "영업부장", costCenterCode = "B001")
+            val employee = createTestEmployee(id = userId, role = UserRole.SALES_MANAGER, costCenterCode = "B001")
             whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
 
             // When
@@ -51,7 +52,7 @@ class AdminDataScopeServiceTest {
         fun resolve_withDivisionDirector_returnsAllBranches() {
             // Given
             val userId = 2L
-            val employee = createTestEmployee(id = userId, appAuthority = "사업부장", costCenterCode = "B002")
+            val employee = createTestEmployee(id = userId, role = UserRole.BUSINESS_MANAGER, costCenterCode = "B002")
             whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
 
             // When
@@ -67,7 +68,7 @@ class AdminDataScopeServiceTest {
         fun resolve_withSalesHeadquartersDirector_returnsAllBranches() {
             // Given
             val userId = 3L
-            val employee = createTestEmployee(id = userId, appAuthority = "영업본부장", costCenterCode = "B003")
+            val employee = createTestEmployee(id = userId, role = UserRole.HEADQUARTERS_MANAGER, costCenterCode = "B003")
             whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
 
             // When
@@ -83,7 +84,7 @@ class AdminDataScopeServiceTest {
         fun resolve_withSalesSupportOffice_returnsAllBranches() {
             // Given
             val userId = 4L
-            val employee = createTestEmployee(id = userId, appAuthority = "영업지원실", costCenterCode = "B004")
+            val employee = createTestEmployee(id = userId, role = UserRole.SALES_SUPPORT, costCenterCode = "B004")
             whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
 
             // When
@@ -101,7 +102,7 @@ class AdminDataScopeServiceTest {
         fun resolve_withLeaderAndCostCenter_returnsBranchScope() {
             // Given
             val userId = 5L
-            val employee = createTestEmployee(id = userId, appAuthority = "조장", costCenterCode = "B100")
+            val employee = createTestEmployee(id = userId, role = UserRole.LEADER, costCenterCode = "B100")
             whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
 
             // When
@@ -117,7 +118,7 @@ class AdminDataScopeServiceTest {
         fun resolve_withBranchManagerAndCostCenter_returnsBranchScope() {
             // Given
             val userId = 6L
-            val employee = createTestEmployee(id = userId, appAuthority = "지점장", costCenterCode = "B200")
+            val employee = createTestEmployee(id = userId, role = UserRole.BRANCH_MANAGER, costCenterCode = "B200")
             whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
 
             // When
@@ -133,7 +134,7 @@ class AdminDataScopeServiceTest {
         fun resolve_withLeaderAndNullCostCenter_returnsEmptyBranchCodes() {
             // Given
             val userId = 7L
-            val employee = createTestEmployee(id = userId, appAuthority = "조장", costCenterCode = null)
+            val employee = createTestEmployee(id = userId, role = UserRole.LEADER, costCenterCode = null)
             whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
 
             // When
@@ -151,7 +152,7 @@ class AdminDataScopeServiceTest {
         fun resolve_withNullAuthorityAndCostCenter_returnsBranchScope() {
             // Given
             val userId = 8L
-            val employee = createTestEmployee(id = userId, appAuthority = null, costCenterCode = "B300")
+            val employee = createTestEmployee(id = userId, role = null, costCenterCode = "B300")
             whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
 
             // When
@@ -167,7 +168,7 @@ class AdminDataScopeServiceTest {
         fun resolve_withNullAuthorityAndNullCostCenter_returnsEmptyBranchCodes() {
             // Given
             val userId = 9L
-            val employee = createTestEmployee(id = userId, appAuthority = null, costCenterCode = null)
+            val employee = createTestEmployee(id = userId, role = null, costCenterCode = null)
             whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
 
             // When
@@ -181,11 +182,11 @@ class AdminDataScopeServiceTest {
         // ========== 기타 권한 (else 분기) ==========
 
         @Test
-        @DisplayName("알 수 없는 권한 + costCenterCode 있음 - userId 조회 -> isAllBranches=false, branchCodes에 costCenterCode 포함")
-        fun resolve_withUnknownAuthorityAndCostCenter_returnsBranchScope() {
+        @DisplayName("UNKNOWN 권한 - 빈 데이터 스코프 반환 (Spec #573)")
+        fun resolve_withUnknownAuthorityAndCostCenter_returnsEmpty() {
             // Given
             val userId = 10L
-            val employee = createTestEmployee(id = userId, appAuthority = "기타권한", costCenterCode = "B400")
+            val employee = createTestEmployee(id = userId, role = UserRole.UNKNOWN, costCenterCode = "B400")
             whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
 
             // When
@@ -193,7 +194,7 @@ class AdminDataScopeServiceTest {
 
             // Then
             assertThat(result.isAllBranches).isFalse()
-            assertThat(result.branchCodes).containsExactly("B400")
+            assertThat(result.branchCodes).isEmpty()
         }
 
         @Test
@@ -201,7 +202,7 @@ class AdminDataScopeServiceTest {
         fun resolve_withUnknownAuthorityAndNullCostCenter_returnsEmptyBranchCodes() {
             // Given
             val userId = 11L
-            val employee = createTestEmployee(id = userId, appAuthority = "기타권한", costCenterCode = null)
+            val employee = createTestEmployee(id = userId, role = UserRole.UNKNOWN, costCenterCode = null)
             whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
 
             // When
@@ -235,14 +236,14 @@ class AdminDataScopeServiceTest {
         id: Long = 1L,
         employeeCode: String = "12345678",
         name: String = "홍길동",
-        appAuthority: String? = null,
+        role: UserRole? = null,
         costCenterCode: String? = null
     ): Employee {
         return Employee(
             id = id,
             employeeCode = employeeCode,
             name = name,
-            appAuthority = appAuthority,
+            role = role,
             costCenterCode = costCenterCode
         )
     }

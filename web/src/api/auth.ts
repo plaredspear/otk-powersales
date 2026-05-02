@@ -1,4 +1,5 @@
 import axios, { AxiosError } from 'axios';
+import type { UserRole } from '@/constants/userRole';
 
 interface LoginRequest {
   employee_code: string;
@@ -10,8 +11,8 @@ interface AdminUserInfo {
   employee_code: string;
   name: string;
   org_name: string | null;
-  role: string;
-  app_authority: string | null;
+  role: UserRole | null;
+  role_label: string | null;
   cost_center_code: string | null;
   permissions: string[];
 }

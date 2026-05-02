@@ -1,6 +1,7 @@
 package com.otoki.powersales.promotion.service
 
 import com.otoki.powersales.promotion.dto.request.BatchUpdatePromotionEmployeeItem
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.promotion.dto.request.BatchUpdatePromotionEmployeeRequest
 import com.otoki.powersales.promotion.dto.request.PromotionEmployeeRequest
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
@@ -475,7 +476,7 @@ class AdminPromotionEmployeeServiceTest {
         fun updateEmployee_adminClosedCriticalField_allowed() {
             val pe = createPe(teamMemberScheduleId = 100L, promoCloseByTm = true)
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee(appAuthority = "지점장")))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee(role = UserRole.BRANCH_MANAGER)))
             whenever(employeeRepository.findById(999L)).thenReturn(Optional.empty())
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
@@ -491,7 +492,7 @@ class AdminPromotionEmployeeServiceTest {
         fun updateEmployee_adminClosedScheduleDate_allowed() {
             val pe = createPe(teamMemberScheduleId = 100L, promoCloseByTm = true)
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee(appAuthority = "지점장")))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee(role = UserRole.BRANCH_MANAGER)))
 
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
@@ -974,7 +975,7 @@ class AdminPromotionEmployeeServiceTest {
         fun batchUpdate_adminClosedEmployeeModification_allowed() {
             val pe = createPe(id = 1L, teamMemberScheduleId = 100L, promoCloseByTm = true)
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee(appAuthority = "지점장")))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee(role = UserRole.BRANCH_MANAGER)))
             whenever(employeeRepository.findById(999L)).thenReturn(Optional.empty())
 
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
@@ -1246,8 +1247,8 @@ class AdminPromotionEmployeeServiceTest {
         if (employeeId != null) it.employee = createEmployee()
     }
 
-    private fun createEmployee(appAuthority: String? = null) = Employee(id = 1L, sfid = "a0B5g00000XYZabc", employeeCode = "20030117", name = "김여사").also {
-        it.appAuthority = appAuthority
+    private fun createEmployee(role: UserRole? = null) = Employee(id = 1L, sfid = "a0B5g00000XYZabc", employeeCode = "20030117", name = "김여사").also {
+        it.role = role
     }
 
     private fun createBatchItem(

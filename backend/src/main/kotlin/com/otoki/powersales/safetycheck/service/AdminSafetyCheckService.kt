@@ -1,5 +1,6 @@
 package com.otoki.powersales.safetycheck.service
 
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.safetycheck.dto.response.EquipmentStatus
 import com.otoki.powersales.safetycheck.dto.response.MemberStatus
 import com.otoki.powersales.safetycheck.dto.response.SafetyCheckStatusResponse
@@ -45,7 +46,7 @@ class AdminSafetyCheckService(
             ?: return emptyResponse(date)
 
         // 1. 소속 여사원 조회
-        val members = employeeRepository.findByCostCenterCodeAndAppAuthority(costCenterCode, "여사원")
+        val members = employeeRepository.findByCostCenterCodeAndRole(costCenterCode, UserRole.WOMAN)
             .filter { it.isDeleted != true }
         if (members.isEmpty()) return emptyResponse(date)
 

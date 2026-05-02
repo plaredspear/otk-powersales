@@ -2,6 +2,7 @@
 package com.otoki.powersales.order.service
 
 import com.otoki.powersales.order.dto.response.ClientOrderDetailResponse
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.order.dto.response.ClientOrderSummaryResponse
 import com.otoki.powersales.entity.*
 import com.otoki.powersales.common.entity.*
@@ -509,7 +510,7 @@ class ClientOrderServiceTest {
             password = "password",
             name = "매핑 테스트 사용자",
             orgName = "부산지점",
-            appAuthority = "지점장"
+            role = UserRole.BRANCH_MANAGER
         )
         val order = Order(
             id = 999L,

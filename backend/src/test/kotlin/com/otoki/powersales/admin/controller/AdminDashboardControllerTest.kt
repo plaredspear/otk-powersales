@@ -64,7 +64,7 @@ class AdminDashboardControllerTest {
     @MockitoBean
     private lateinit var dataScopeHolder: DataScopeHolder
 
-    private val testPrincipal = UserPrincipal(userId = 1L, role = UserRole.ADMIN)
+    private val testPrincipal = UserPrincipal(userId = 1L, role = UserRole.BRANCH_MANAGER)
 
     @BeforeEach
     fun setUp() {

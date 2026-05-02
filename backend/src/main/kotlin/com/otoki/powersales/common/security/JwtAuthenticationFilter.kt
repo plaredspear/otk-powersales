@@ -31,16 +31,21 @@ class JwtAuthenticationFilter(
                 if (tokenType == "access") {
                     val userId = jwtTokenProvider.getUserIdFromToken(token)
                     val role = jwtTokenProvider.getRoleFromToken(token)
-                    val agreementFlag = jwtTokenProvider.getAgreementFlagFromToken(token)
-                    val principal = UserPrincipal(userId, role, agreementFlag)
+                    if (role == null) {
+                        // 신규 enum 매핑 실패 (구 토큰의 USER/ADMIN 등) — 인증 미설정 → 401 처리
+                        request.setAttribute("jwt.invalidRole", true)
+                    } else {
+                        val agreementFlag = jwtTokenProvider.getAgreementFlagFromToken(token)
+                        val principal = UserPrincipal(userId, role, agreementFlag)
 
-                    val authentication = UsernamePasswordAuthenticationToken(
-                        principal,
-                        null,
-                        principal.authorities
-                    )
-                    authentication.details = WebAuthenticationDetailsSource().buildDetails(request)
-                    SecurityContextHolder.getContext().authentication = authentication
+                        val authentication = UsernamePasswordAuthenticationToken(
+                            principal,
+                            null,
+                            principal.authorities
+                        )
+                        authentication.details = WebAuthenticationDetailsSource().buildDetails(request)
+                        SecurityContextHolder.getContext().authentication = authentication
+                    }
                 }
             } else if (jwtTokenProvider.isTokenExpired(token)) {
                 request.setAttribute("jwt.expired", true)

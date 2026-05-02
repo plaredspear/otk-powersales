@@ -56,7 +56,7 @@ class MyScheduleControllerTest {
     @MockitoBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
-    private val testPrincipal = UserPrincipal(userId = 1L, role = UserRole.USER)
+    private val testPrincipal = UserPrincipal(userId = 1L, role = UserRole.WOMAN)
 
     @BeforeEach
     fun setUp() {

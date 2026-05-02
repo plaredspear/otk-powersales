@@ -3,6 +3,7 @@ package com.otoki.powersales.admin.service
 import com.otoki.powersales.admin.dto.response.*
 import com.otoki.powersales.admin.repository.RolePermissionRepository
 import com.otoki.powersales.admin.security.AdminPermission
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import org.springframework.stereotype.Service
@@ -39,28 +40,37 @@ class AdminPermissionMatrixService(
 
         val allRolePermissions = rolePermissionRepository.findAll()
             .groupBy { it.role }
-            .map { (role, perms) ->
+            .mapNotNull { (roleName, perms) ->
+                val role = parseRole(roleName) ?: return@mapNotNull null
                 RolePermissions(
-                    role = role,
+                    role = role.name,
+                    roleLabel = role.toKorean(),
                     permissions = perms.map { it.permission }
                 )
             }
 
         val employee = employeeRepository.findById(userId)
             .orElseThrow { EmployeeNotFoundException() }
-        val userRole = employee.appAuthority ?: ""
+        val role = employee.role
         val userPermissions = adminPermissionResolver.resolve(employee)
             .map { it.name }
-        val isSystemAdmin = employee.appAuthority == "시스템관리자"
+        val isSystemAdmin = role == UserRole.SYSTEM_ADMIN
 
         return PermissionMatrixResponse(
             permissions = permissions,
             roles = allRolePermissions,
             currentUser = CurrentUserPermission(
-                role = userRole,
+                role = role?.name ?: "",
+                roleLabel = role?.toKorean() ?: "",
                 permissions = userPermissions,
                 canManagePermissions = isSystemAdmin
             )
         )
+    }
+
+    private fun parseRole(name: String): UserRole? = try {
+        UserRole.valueOf(name)
+    } catch (_: IllegalArgumentException) {
+        null
     }
 }
