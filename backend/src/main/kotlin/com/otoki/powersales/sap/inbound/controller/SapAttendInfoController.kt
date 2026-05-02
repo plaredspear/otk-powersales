@@ -5,6 +5,7 @@ import com.otoki.powersales.sap.inbound.dto.attendance.AttendInfoDetail
 import com.otoki.powersales.sap.inbound.dto.attendance.AttendInfoRequest
 import com.otoki.powersales.sap.inbound.exception.SapInvalidPayloadException
 import com.otoki.powersales.sap.inbound.service.SapAttendInfoService
+import io.swagger.v3.oas.annotations.Operation
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
@@ -26,6 +27,17 @@ class SapAttendInfoController(
     private val sapAttendInfoService: SapAttendInfoService
 ) {
 
+    @Operation(
+        summary = "출근 정보 적재 (UPSERT)",
+        description = """
+            SAP 출근 정보를 적재합니다.
+            한 호출 최대 행 수 초과 시 `413 PAYLOAD_TOO_LARGE`.
+
+            **레거시 호환**
+            - 레거시 엔드포인트: `POST /services/apexrest/sap/AttendInfo`
+            - 레거시 Apex 클래스: `IF_REST_SAP_AttendInfo`
+        """
+    )
     @PostMapping("/attend-info")
     @PreAuthorize("hasAuthority('SCOPE_sap.attendance.write')")
     fun insertAttendInfo(

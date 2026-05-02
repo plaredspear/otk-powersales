@@ -5,6 +5,7 @@ import com.otoki.powersales.sap.inbound.dto.appointment.AppointmentDetail
 import com.otoki.powersales.sap.inbound.dto.appointment.AppointmentRequest
 import com.otoki.powersales.sap.inbound.exception.SapInvalidPayloadException
 import com.otoki.powersales.sap.inbound.service.SapAppointmentService
+import io.swagger.v3.oas.annotations.Operation
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
@@ -24,6 +25,16 @@ class SapAppointmentController(
     private val sapAppointmentService: SapAppointmentService
 ) {
 
+    @Operation(
+        summary = "인사발령 적재 (UPSERT)",
+        description = """
+            SAP 인사발령 데이터를 적재합니다.
+
+            **레거시 호환**
+            - 레거시 엔드포인트: `POST /services/apexrest/sap/Appointment`
+            - 레거시 Apex 클래스: `IF_REST_SAP_Appointment`
+        """
+    )
     @PostMapping("/appointment")
     @PreAuthorize("hasAuthority('SCOPE_sap.attendance.write')")
     fun insertAppointment(

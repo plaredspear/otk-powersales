@@ -5,6 +5,7 @@ import com.otoki.powersales.sap.inbound.dto.organize.OrganizeMasterDetail
 import com.otoki.powersales.sap.inbound.dto.organize.OrganizeMasterRequest
 import com.otoki.powersales.sap.inbound.exception.SapInvalidPayloadException
 import com.otoki.powersales.sap.inbound.service.SapOrganizeMasterService
+import io.swagger.v3.oas.annotations.Operation
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
@@ -26,6 +27,19 @@ class SapOrganizeMasterController(
     private val sapOrganizeMasterService: SapOrganizeMasterService
 ) {
 
+    @Operation(
+        summary = "조직 마스터 적재 (DELETE→INSERT)",
+        description = """
+            SAP 조직 마스터 데이터를 전체 교체합니다 (파괴적 인터페이스).
+
+            **레거시 호환**
+            - 레거시 엔드포인트: `POST /services/apexrest/sap/OrganizeMasterReceive`
+            - 레거시 Apex 클래스: `IF_REST_SAP_OrganizeMasterReceive`
+
+            **동작 차이**
+            - 신규는 직전 적재 건수 대비 ±20% 초과 변동 시 `422 SANITY_CHECK_FAILED` 로 거부 (레거시는 가드 없이 무조건 실행)
+        """
+    )
     @PostMapping("/organization")
     @PreAuthorize("hasAuthority('SCOPE_sap.org.write')")
     fun replaceOrganizations(

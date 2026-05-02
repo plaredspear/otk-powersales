@@ -9,6 +9,7 @@ import com.otoki.powersales.sap.inbound.exception.SapInvalidPayloadException
 import com.otoki.powersales.sap.inbound.service.SapBarcodeMasterService
 import com.otoki.powersales.sap.inbound.service.SapProductMasterService
 import com.otoki.powersales.sap.inbound.service.SapSystemCodeMasterService
+import io.swagger.v3.oas.annotations.Operation
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
@@ -31,6 +32,18 @@ class SapProductMasterController(
     private val sapSystemCodeMasterService: SapSystemCodeMasterService
 ) {
 
+    @Operation(
+        summary = "제품 마스터 적재 (UPSERT)",
+        description = """
+            SAP 제품 마스터를 ProductCode 기준으로 UPSERT 합니다.
+
+            **레거시 호환**
+            - 레거시 엔드포인트: `POST /services/apexrest/sap/ProductMasterSend`
+            - 레거시 Apex 클래스: `IF_REST_SAP_ProductMasterSend`
+
+            **명명 주의**: 레거시명 `ProductMasterSend` 의 `Send` 접미사는 SF→SAP 송신을 의미하지 않습니다. 실제는 SAP→backend 인바운드 (UPSERT) 로 동작합니다.
+        """
+    )
     @PostMapping("/product")
     @PreAuthorize("hasAuthority('SCOPE_sap.product.write')")
     fun upsertProduct(
@@ -42,6 +55,16 @@ class SapProductMasterController(
         return ResponseEntity.ok(SapResultWrapper.ok(detail))
     }
 
+    @Operation(
+        summary = "제품 바코드 마스터 적재 (UPSERT)",
+        description = """
+            SAP 제품 바코드 마스터를 (ProductCode + ProductUnit + ProductSequence) 복합키 기준으로 UPSERT 합니다.
+
+            **레거시 호환**
+            - 레거시 엔드포인트: `POST /services/apexrest/sap/BarcodeMaster`
+            - 레거시 Apex 클래스: `IF_REST_SAP_BarcodeMaster`
+        """
+    )
     @PostMapping("/product-barcode")
     @PreAuthorize("hasAuthority('SCOPE_sap.product.write')")
     fun upsertProductBarcode(
@@ -53,6 +76,16 @@ class SapProductMasterController(
         return ResponseEntity.ok(SapResultWrapper.ok(detail))
     }
 
+    @Operation(
+        summary = "시스템 공통 코드 마스터 적재 (UPSERT)",
+        description = """
+            SAP 시스템 공통 코드 마스터를 (CompanyCode + GroupCode + DetailCode) 복합키 기준으로 UPSERT 합니다.
+
+            **레거시 호환**
+            - 레거시 엔드포인트: `POST /services/apexrest/sap/SystemCodeMaster`
+            - 레거시 Apex 클래스: `IF_REST_SAP_SystemCodeMaster`
+        """
+    )
     @PostMapping("/system-code")
     @PreAuthorize("hasAuthority('SCOPE_sap.product.write')")
     fun upsertSystemCode(

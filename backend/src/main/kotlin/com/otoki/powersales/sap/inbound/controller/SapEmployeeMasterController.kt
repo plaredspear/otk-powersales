@@ -5,6 +5,7 @@ import com.otoki.powersales.sap.inbound.dto.employee.EmployeeMasterDetail
 import com.otoki.powersales.sap.inbound.dto.employee.EmployeeMasterRequest
 import com.otoki.powersales.sap.inbound.exception.SapInvalidPayloadException
 import com.otoki.powersales.sap.inbound.service.SapEmployeeMasterService
+import io.swagger.v3.oas.annotations.Operation
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
@@ -25,6 +26,16 @@ class SapEmployeeMasterController(
     private val sapEmployeeMasterService: SapEmployeeMasterService
 ) {
 
+    @Operation(
+        summary = "직원 마스터 적재 (UPSERT)",
+        description = """
+            SAP 직원 마스터 데이터를 EmployeeCode 기준으로 UPSERT 합니다.
+
+            **레거시 호환**
+            - 레거시 엔드포인트: `POST /services/apexrest/sap/employeeMaster`
+            - 레거시 Apex 클래스: `IF_REST_SAP_EmployeeMaster`
+        """
+    )
     @PostMapping("/employee")
     @PreAuthorize("hasAuthority('SCOPE_sap.employee.write')")
     fun upsertEmployee(

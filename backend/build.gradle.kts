@@ -128,6 +128,8 @@ tasks.test {
 tasks.register<Test>("generateOpenApiDocs") {
 	group = "documentation"
 	description = "OpenAPI spec JSON 파일 생성 (backend/openapi.json). 실 DB(local Postgres 또는 dev RDS) 가 활성 상태여야 컨텍스트가 기동된다."
+	testClassesDirs = sourceSets.test.get().output.classesDirs
+	classpath = sourceSets.test.get().runtimeClasspath
 	filter {
 		includeTestsMatching("com.otoki.powersales.OpenApiSpecGeneratorTest")
 	}

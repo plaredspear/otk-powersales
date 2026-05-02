@@ -7,6 +7,7 @@ import com.otoki.powersales.sap.inbound.dto.account.ClientMasterRequest
 import com.otoki.powersales.sap.inbound.exception.SapInvalidPayloadException
 import com.otoki.powersales.sap.inbound.service.SapAccountCategoryService
 import com.otoki.powersales.sap.inbound.service.SapClientMasterService
+import io.swagger.v3.oas.annotations.Operation
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
@@ -28,6 +29,19 @@ class SapAccountMasterController(
     private val sapAccountCategoryService: SapAccountCategoryService
 ) {
 
+    @Operation(
+        summary = "거래처 마스터 적재 (UPSERT)",
+        description = """
+            SAP 거래처 마스터(매장) 데이터를 SAPAccountCode 기준으로 UPSERT 합니다.
+            EmployeeCode 가 직원 마스터에 존재하지 않으면 행 단위 부분 실패로 보고됩니다.
+
+            **레거시 호환**
+            - 레거시 엔드포인트: `POST /services/apexrest/sap/ClientMasterReceive`
+            - 레거시 Apex 클래스: `IF_REST_SAP_ClientMasterReceive`
+
+            **레거시 정정**: `BusinessLiicenseNumber` (오타) → `BusinessLicenseNumber`
+        """
+    )
     @PostMapping("/account")
     @PreAuthorize("hasAuthority('SCOPE_sap.account.write')")
     fun upsertAccount(
@@ -39,6 +53,18 @@ class SapAccountMasterController(
         return ResponseEntity.ok(SapResultWrapper.ok(detail))
     }
 
+    @Operation(
+        summary = "거래처 카테고리 마스터 적재 (UPSERT)",
+        description = """
+            SAP 거래처 카테고리(등급) 마스터를 AccountCode 기준으로 UPSERT 합니다.
+
+            **레거시 호환**
+            - 레거시 엔드포인트: `POST /services/apexrest/sap/AccountMaster`
+            - 레거시 Apex 클래스: `IF_REST_SAP_AccountMaster` (Salesforce `AccountCategoryMaster__c` SObject 매핑)
+
+            **명명 주의**: 레거시명 `AccountMaster` 는 Salesforce 표준 `Account` (거래처 본체) 와 다른 카테고리 마스터입니다. 거래처 본체는 `/account` (`ClientMasterReceive`).
+        """
+    )
     @PostMapping("/account-category")
     @PreAuthorize("hasAuthority('SCOPE_sap.account.write')")
     fun upsertAccountCategory(
