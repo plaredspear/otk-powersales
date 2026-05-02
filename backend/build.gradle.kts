@@ -83,6 +83,10 @@ dependencies {
 	testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
 	testImplementation("org.springframework.boot:spring-boot-starter-data-jpa-test")
 	testImplementation("org.springframework.boot:spring-boot-resttestclient")
+	// Spring Boot 4 에서 RestTemplateBuilder 가 spring-boot-restclient 모듈로 분리되었고,
+	// spring-boot-resttestclient 의 TestRestTemplateTestAutoConfiguration 이 이를 참조한다.
+	// 누락 시 NoClassDefFoundError: org/springframework/boot/restclient/RestTemplateBuilder.
+	testImplementation("org.springframework.boot:spring-boot-restclient")
 	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 	testImplementation("org.springframework.security:spring-security-test")
 	testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
