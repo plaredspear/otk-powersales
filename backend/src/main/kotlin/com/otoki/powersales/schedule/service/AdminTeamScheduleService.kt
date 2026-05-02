@@ -7,7 +7,6 @@ import com.otoki.powersales.schedule.dto.response.*
 import com.otoki.powersales.schedule.exception.*
 import com.otoki.powersales.common.dto.response.BranchResponse
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
-import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.account.repository.AccountRepository
@@ -22,11 +21,11 @@ import java.time.format.DateTimeFormatter
 @Transactional(readOnly = true)
 class AdminTeamScheduleService(
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
-    private val displayWorkScheduleRepository: DisplayWorkScheduleRepository,
     private val employeeRepository: EmployeeRepository,
     private val accountRepository: AccountRepository,
     private val adminEmployeeHolder: AdminEmployeeHolder,
-    private val adminMonthlyIntegrationService: AdminMonthlyIntegrationService
+    private val adminMonthlyIntegrationService: AdminMonthlyIntegrationService,
+    private val teamScheduleValidator: TeamScheduleValidator
 ) {
 
     fun getMembers(userId: Long): List<TeamMemberDto> {
@@ -114,7 +113,7 @@ class AdminTeamScheduleService(
         val employee = employeeRepository.findByEmployeeCode(request.employeeCode)
             .orElseThrow { TeamScheduleEmployeeNotFoundException() }
 
-        validateEmployeeStatus(employee)
+        teamScheduleValidator.validateEmployeeStatus(employee)
 
         if (request.workingType == "근무" && request.accountId == null) {
             throw TeamScheduleAccountRequiredException()
@@ -123,7 +122,7 @@ class AdminTeamScheduleService(
         val workingDate = LocalDate.parse(request.workingDate, DateTimeFormatter.ISO_LOCAL_DATE)
 
         if (request.workingType == "근무" && request.workingCategory1 == "진열") {
-            validateScheduleConflict(employee.id, workingDate, request.workingCategory3, null)
+            teamScheduleValidator.validateScheduleConflict(employee.id, workingDate, request.workingCategory3, null)
         }
 
         val account = if (request.accountId != null) {
@@ -159,11 +158,11 @@ class AdminTeamScheduleService(
         val schedule = teamMemberScheduleRepository.findById(scheduleId)
             .orElseThrow { TeamScheduleNotFoundException() }
 
-        validateDisplayMasterLink(currentEmployee, schedule)
+        teamScheduleValidator.validateDisplayMasterLink(currentEmployee, schedule)
 
         val employee = schedule.employee
         if (employee != null) {
-            validateEmployeeStatus(employee)
+            teamScheduleValidator.validateEmployeeStatus(employee)
         }
 
         if (request.workingType == "근무" && request.accountId == null) {
@@ -183,7 +182,7 @@ class AdminTeamScheduleService(
         }
 
         if (request.workingType == "근무" && request.workingCategory1 == "진열" && (dateChanged || category3Changed)) {
-            validateScheduleConflict(schedule.employee!!.id, newWorkingDate, request.workingCategory3, scheduleId)
+            teamScheduleValidator.validateScheduleConflict(schedule.employee!!.id, newWorkingDate, request.workingCategory3, scheduleId)
         }
 
         val newAccount = if (request.accountId != null && request.accountId != schedule.account?.id) {
@@ -231,7 +230,7 @@ class AdminTeamScheduleService(
             throw TeamScheduleWorkReportDeleteException()
         }
 
-        validateDisplayMasterLink(currentEmployee, schedule)
+        teamScheduleValidator.validateDisplayMasterLink(currentEmployee, schedule)
 
         val employeeId = schedule.employee?.id
         val accountId = schedule.account?.id
@@ -250,66 +249,6 @@ class AdminTeamScheduleService(
         return adminEmployeeHolder.employee
             ?: employeeRepository.findWithEmployeeInfoById(userId)
             ?: throw TeamScheduleEmployeeNotFoundException()
-    }
-
-    private fun validateDisplayMasterLink(currentEmployee: Employee, schedule: TeamMemberSchedule) {
-        if (currentEmployee.appAuthority == "시스템관리자" || currentEmployee.appAuthority == "영업지원실") return
-        if (schedule.workingCategory1 != "진열") return
-
-        val employeeId = schedule.employee?.id ?: return
-        val accountId = schedule.account?.id ?: return
-        val workingDate = schedule.workingDate ?: return
-
-        if (displayWorkScheduleRepository.existsConfirmedByEmployeeAndAccountAndDate(employeeId, accountId, workingDate)) {
-            throw TeamScheduleDisplayMasterLinkException()
-        }
-    }
-
-    private fun validateEmployeeStatus(employee: Employee) {
-        when (employee.status) {
-            "휴직" -> throw TeamScheduleEmployeeOnLeaveException()
-            "퇴직" -> throw TeamScheduleEmployeeResignedException()
-        }
-    }
-
-    private fun validateScheduleConflict(
-        employeeId: Long,
-        workingDate: LocalDate,
-        workingCategory3: String?,
-        excludeId: Long?
-    ) {
-        val existing = teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(employeeId, workingDate)
-            .filter { it.id != excludeId }
-
-        if (existing.isEmpty()) return
-
-        when (workingCategory3) {
-            "고정" -> {
-                if (existing.any { it.workingCategory3 == "고정" }) {
-                    throw TeamScheduleConflictException("해당 날짜에 고정 일정이 이미 존재합니다")
-                }
-                if (existing.isNotEmpty()) {
-                    throw TeamScheduleConflictException("다른 유형의 일정이 있는 날짜에 고정을 추가할 수 없습니다")
-                }
-            }
-            "격고" -> {
-                if (existing.any { it.workingCategory3 == "고정" }) {
-                    throw TeamScheduleConflictException("고정 일정이 있는 날짜에는 다른 유형을 추가할 수 없습니다")
-                }
-                val alternateCount = existing.count { it.workingCategory3 == "격고" }
-                if (alternateCount >= 2) {
-                    throw TeamScheduleConflictException("해당 날짜에 격고 일정이 이미 2건 존재합니다")
-                }
-                if (existing.any { it.workingCategory3 == "순회" } && alternateCount >= 1) {
-                    throw TeamScheduleConflictException("순회 일정이 존재하므로 격고는 1건만 등록 가능합니다")
-                }
-            }
-            "순회" -> {
-                if (existing.any { it.workingCategory3 == "고정" }) {
-                    throw TeamScheduleConflictException("고정 일정이 있는 날짜에는 다른 유형을 추가할 수 없습니다")
-                }
-            }
-        }
     }
 
 }
