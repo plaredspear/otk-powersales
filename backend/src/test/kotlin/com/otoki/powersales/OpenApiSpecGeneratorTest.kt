@@ -28,35 +28,46 @@ class OpenApiSpecGeneratorTest {
     private lateinit var redisTemplate: RedisTemplate<String, String>
 
     @Test
-    @DisplayName("OpenAPI spec JSON 파일 생성")
+    @DisplayName("OpenAPI spec JSON 파일 생성 (통합 + 그룹별)")
     fun generateOpenApiSpec() {
-        // Given
-        val outputFile = File(System.getProperty("user.dir"), "openapi.json")
-
-        // When
-        val response = restTemplate.getForEntity("/v3/api-docs", String::class.java)
-
-        // Then — HTTP 200 응답
-        assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
-
-        val body = response.body!!
+        // GroupedOpenApi 빈에 대응하는 그룹별 endpoint 도 추가 생성한다 (OpenApiConfig).
+        // 통합본은 `/v3/api-docs`, 그룹본은 `/v3/api-docs/<group>` 으로 노출되며
+        // 각각 backend/openapi.json, backend/openapi-<group>.json 으로 저장된다.
+        val groups = listOf(
+            "" to "openapi.json",
+            "admin" to "openapi-admin.json",
+            "sap" to "openapi-sap.json",
+            "mobile" to "openapi-mobile.json"
+        )
         val objectMapper = JsonMapper.builder()
             .enable(SerializationFeature.INDENT_OUTPUT)
             .build()
-        val jsonNode = objectMapper.readTree(body)
+        val baseUrl = "/v3/api-docs"
 
-        // Then — JSON에 openapi 키 존재
-        assertThat(jsonNode.has("openapi")).isTrue()
-        assertThat(jsonNode.has("paths")).isTrue()
+        for ((group, fileName) in groups) {
+            val url = if (group.isEmpty()) baseUrl else "$baseUrl/$group"
+            val response = restTemplate.getForEntity(url, String::class.java)
 
-        // Pretty-print 후 파일 저장
-        val prettyJson = objectMapper.writeValueAsString(jsonNode)
-        outputFile.writeText(prettyJson)
+            assertThat(response.statusCode)
+                .withFailMessage { "OpenAPI 응답 실패: $url -> ${response.statusCode}" }
+                .isEqualTo(HttpStatus.OK)
 
-        // Then — 파일 생성 확인
-        assertThat(outputFile.exists()).isTrue()
-        assertThat(outputFile.length()).isGreaterThan(0)
+            val body = response.body!!
+            val jsonNode = objectMapper.readTree(body)
+            assertThat(jsonNode.has("openapi"))
+                .withFailMessage { "openapi 키 누락: $url" }
+                .isTrue()
+            assertThat(jsonNode.has("paths"))
+                .withFailMessage { "paths 키 누락: $url" }
+                .isTrue()
 
-        println("OpenAPI spec generated: ${outputFile.absolutePath} (${outputFile.length()} bytes)")
+            val prettyJson = objectMapper.writeValueAsString(jsonNode)
+            val outputFile = File(System.getProperty("user.dir"), fileName)
+            outputFile.writeText(prettyJson)
+
+            assertThat(outputFile.exists()).isTrue()
+            assertThat(outputFile.length()).isGreaterThan(0)
+            println("OpenAPI spec generated: ${outputFile.absolutePath} (${outputFile.length()} bytes)")
+        }
     }
 }

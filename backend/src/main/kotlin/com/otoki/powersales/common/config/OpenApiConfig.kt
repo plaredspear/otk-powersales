@@ -5,6 +5,7 @@ import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.info.Info
 import io.swagger.v3.oas.models.security.SecurityRequirement
 import io.swagger.v3.oas.models.security.SecurityScheme
+import org.springdoc.core.models.GroupedOpenApi
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
@@ -35,4 +36,28 @@ class OpenApiConfig {
                     )
             )
     }
+
+    // 그룹별 API 문서 분리. Swagger UI 우상단 select 박스 + `/v3/api-docs/<group>` JSON URL 노출.
+    // path 패턴은 `/api/*/<group>/**` 와일드카드로 v1/v2 등 향후 API 버전 변경에도 영향 없음.
+
+    @Bean
+    fun adminApi(): GroupedOpenApi = GroupedOpenApi.builder()
+        .group("admin")
+        .displayName("Admin API")
+        .pathsToMatch("/api/*/admin/**")
+        .build()
+
+    @Bean
+    fun sapApi(): GroupedOpenApi = GroupedOpenApi.builder()
+        .group("sap")
+        .displayName("SAP Inbound API")
+        .pathsToMatch("/api/*/sap/**")
+        .build()
+
+    @Bean
+    fun mobileApi(): GroupedOpenApi = GroupedOpenApi.builder()
+        .group("mobile")
+        .displayName("Mobile API")
+        .pathsToMatch("/api/*/mobile/**")
+        .build()
 }

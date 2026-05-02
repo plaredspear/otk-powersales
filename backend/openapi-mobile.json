@@ -1,0 +1,4085 @@
+{
+  "openapi" : "3.1.0",
+  "info" : {
+    "title" : "오뚜기 파워세일즈 API",
+    "description" : "B2B 영업사원 실적 조회 및 목표 관리 시스템 API",
+    "version" : "v1.0.0"
+  },
+  "servers" : [ {
+    "url" : "http://localhost:54388",
+    "description" : "Generated server url"
+  } ],
+  "security" : [ {
+    "Bearer Authentication" : [ ]
+  } ],
+  "paths" : {
+    "/api/v1/mobile/product-expiration/{seq}" : {
+      "put" : {
+        "tags" : [ "product-expiration-controller" ],
+        "operationId" : "updateProductExpiration",
+        "parameters" : [ {
+          "name" : "seq",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ProductExpirationUpdateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseProductExpirationItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "product-expiration-controller" ],
+        "operationId" : "deleteProductExpiration",
+        "parameters" : [ {
+          "name" : "seq",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseObject"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/safety-check/submit" : {
+      "post" : {
+        "tags" : [ "safety-check-controller" ],
+        "operationId" : "submitSafetyCheck",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SafetyCheckSubmitRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSafetyCheckSubmitResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/product-expiration" : {
+      "get" : {
+        "tags" : [ "product-expiration-controller" ],
+        "operationId" : "getProductExpirationList",
+        "parameters" : [ {
+          "name" : "accountCode",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "fromDate",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "toDate",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListProductExpirationItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "product-expiration-controller" ],
+        "operationId" : "createProductExpiration",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ProductExpirationCreateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseProductExpirationItemResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/product-expiration/batch-delete" : {
+      "post" : {
+        "tags" : [ "product-expiration-controller" ],
+        "operationId" : "deleteProductExpirationBatch",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ProductExpirationBatchDeleteRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseProductExpirationBatchDeleteResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/leader/team-member-schedule" : {
+      "post" : {
+        "tags" : [ "leader-schedule-controller" ],
+        "operationId" : "createTeamMemberSchedule",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/LeaderScheduleCreateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseLeaderScheduleCreateResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/auth/verify-password" : {
+      "post" : {
+        "tags" : [ "auth-controller" ],
+        "operationId" : "verifyPassword",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VerifyPasswordRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseObject"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/auth/refresh" : {
+      "post" : {
+        "tags" : [ "auth-controller" ],
+        "operationId" : "refresh",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RefreshTokenRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseTokenResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/auth/logout" : {
+      "post" : {
+        "tags" : [ "auth-controller" ],
+        "operationId" : "logout",
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/auth/login" : {
+      "post" : {
+        "tags" : [ "auth-controller" ],
+        "operationId" : "login",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseLoginResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/auth/gps-consent" : {
+      "post" : {
+        "tags" : [ "auth-controller" ],
+        "operationId" : "recordGpsConsent",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/GpsConsentRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseGpsConsentRecordResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/auth/change-password" : {
+      "post" : {
+        "tags" : [ "auth-controller" ],
+        "operationId" : "changePassword",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ChangePasswordRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseObject"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/attendance" : {
+      "post" : {
+        "tags" : [ "attendance-controller" ],
+        "operationId" : "register",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AttendanceRegisterRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAttendanceRegisterResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/alternative-holidays" : {
+      "get" : {
+        "tags" : [ "alternative-holiday-controller" ],
+        "operationId" : "getAlternativeHolidays",
+        "parameters" : [ {
+          "name" : "startDate",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "endDate",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListAlternativeHolidayListItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "alternative-holiday-controller" ],
+        "operationId" : "createAlternativeHoliday",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AlternativeHolidayRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAlternativeHolidayCreateResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/sales/monthly" : {
+      "get" : {
+        "tags" : [ "monthly-sales-controller" ],
+        "operationId" : "getMonthlySales",
+        "parameters" : [ {
+          "name" : "request",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/MonthlySalesRequest"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseMonthlySalesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/safety-check/today" : {
+      "get" : {
+        "tags" : [ "safety-check-controller" ],
+        "operationId" : "getTodayStatus",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSafetyCheckTodayResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/safety-check/status" : {
+      "get" : {
+        "tags" : [ "safety-check-controller" ],
+        "operationId" : "getStatus",
+        "parameters" : [ {
+          "name" : "date",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSafetyCheckStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/safety-check/items" : {
+      "get" : {
+        "tags" : [ "safety-check-controller" ],
+        "operationId" : "getChecklistItems",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSafetyCheckItemsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/promotions" : {
+      "get" : {
+        "tags" : [ "promotion-controller" ],
+        "operationId" : "getPromotions",
+        "parameters" : [ {
+          "name" : "startDate",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "endDate",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "keyword",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 20
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseMobilePromotionListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/promotions/{id}" : {
+      "get" : {
+        "tags" : [ "promotion-controller" ],
+        "operationId" : "getPromotion",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseMobilePromotionDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/products/search" : {
+      "get" : {
+        "tags" : [ "product-controller" ],
+        "operationId" : "searchProducts",
+        "parameters" : [ {
+          "name" : "query",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "type",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "default" : "text"
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 20
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePageProductDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/notices" : {
+      "get" : {
+        "tags" : [ "notice-controller" ],
+        "operationId" : "getPosts",
+        "parameters" : [ {
+          "name" : "category",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "search",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 1
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 10
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseNoticePostListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/notices/{noticeId}" : {
+      "get" : {
+        "tags" : [ "notice-controller" ],
+        "operationId" : "getNoticeDetail",
+        "parameters" : [ {
+          "name" : "noticeId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseNoticePostDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/mypage/schedule/monthly" : {
+      "get" : {
+        "tags" : [ "my-schedule-controller" ],
+        "operationId" : "getMonthlySchedule",
+        "parameters" : [ {
+          "name" : "year",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "month",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseMonthlyScheduleResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/mypage/schedule/daily" : {
+      "get" : {
+        "tags" : [ "my-schedule-controller" ],
+        "operationId" : "getDailySchedule",
+        "parameters" : [ {
+          "name" : "date",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseDailyScheduleResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/leader/team-members" : {
+      "get" : {
+        "tags" : [ "leader-schedule-controller" ],
+        "operationId" : "getTeamMembers",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListLeaderTeamMemberListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/leader/accounts" : {
+      "get" : {
+        "tags" : [ "leader-schedule-controller" ],
+        "operationId" : "getAccounts",
+        "parameters" : [ {
+          "name" : "keyword",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListLeaderAccountListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/home" : {
+      "get" : {
+        "tags" : [ "home-controller" ],
+        "operationId" : "getHomeData",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseHomeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/holidays" : {
+      "get" : {
+        "tags" : [ "holiday-controller" ],
+        "operationId" : "getHolidays",
+        "parameters" : [ {
+          "name" : "year",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListHolidayDateResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/education/posts" : {
+      "get" : {
+        "tags" : [ "education-controller" ],
+        "operationId" : "getPosts_1",
+        "parameters" : [ {
+          "name" : "category",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "search",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 1
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 10
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseEducationPostListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/education/posts/{postId}" : {
+      "get" : {
+        "tags" : [ "education-controller" ],
+        "operationId" : "getPostDetail",
+        "parameters" : [ {
+          "name" : "postId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseEducationPostDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/claims" : {
+      "get" : {
+        "tags" : [ "claim-query-controller" ],
+        "operationId" : "getClaims",
+        "parameters" : [ {
+          "name" : "startDate",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "endDate",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListClaimListItemResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/claims/{claimId}" : {
+      "get" : {
+        "tags" : [ "claim-query-controller" ],
+        "operationId" : "getClaimDetail",
+        "parameters" : [ {
+          "name" : "claimId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseClaimDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/auth/gps-consent/terms" : {
+      "get" : {
+        "tags" : [ "auth-controller" ],
+        "operationId" : "getGpsConsentTerms",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseGpsConsentTermsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/auth/gps-consent/status" : {
+      "get" : {
+        "tags" : [ "auth-controller" ],
+        "operationId" : "getGpsConsentStatus",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseGpsConsentStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/attendance/status" : {
+      "get" : {
+        "tags" : [ "attendance-controller" ],
+        "operationId" : "getStatus_1",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAttendanceStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/attendance/accounts" : {
+      "get" : {
+        "tags" : [ "attendance-controller" ],
+        "operationId" : "getAccountList",
+        "parameters" : [ {
+          "name" : "keyword",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAccountListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/accounts/my" : {
+      "get" : {
+        "tags" : [ "account-controller" ],
+        "operationId" : "getMyAccounts",
+        "parameters" : [ {
+          "name" : "keyword",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "maxLength" : 100,
+            "minLength" : 0
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseMyAccountListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "ProductExpirationUpdateRequest" : {
+        "type" : "object",
+        "properties" : {
+          "expirationDate" : {
+            "type" : "string",
+            "minLength" : 1,
+            "pattern" : "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "alarmDate" : {
+            "type" : "string",
+            "minLength" : 1,
+            "pattern" : "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "description" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 500,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "alarmDate", "expirationDate" ]
+      },
+      "ApiResponseProductExpirationItemResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ProductExpirationItemResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "ErrorDetail" : {
+        "type" : "object",
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "message" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ProductExpirationItemResponse" : {
+        "type" : "object",
+        "properties" : {
+          "seq" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "productCode" : {
+            "type" : "string"
+          },
+          "productName" : {
+            "type" : "string"
+          },
+          "accountCode" : {
+            "type" : "string"
+          },
+          "accountName" : {
+            "type" : "string"
+          },
+          "expirationDate" : {
+            "type" : "string"
+          },
+          "alarmDate" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : [ "string", "null" ]
+          },
+          "dday" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "expired" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "EquipmentAnswer" : {
+        "type" : "object",
+        "properties" : {
+          "seqNum" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "answer" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "answer", "seqNum" ]
+      },
+      "SafetyCheckSubmitRequest" : {
+        "type" : "object",
+        "properties" : {
+          "startTime" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "completeTime" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "equipments" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/EquipmentAnswer"
+            },
+            "minItems" : 1
+          },
+          "precautions" : {
+            "type" : [ "array", "null" ],
+            "items" : {
+              "type" : "string"
+            }
+          }
+        },
+        "required" : [ "completeTime", "equipments", "startTime" ]
+      },
+      "ApiResponseSafetyCheckSubmitResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/SafetyCheckSubmitResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "SafetyCheckSubmitResponse" : {
+        "type" : "object",
+        "properties" : {
+          "submittedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "safetyCheckCompleted" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "ProductExpirationCreateRequest" : {
+        "type" : "object",
+        "properties" : {
+          "accountCode" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "accountName" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "productCode" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "productName" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "expirationDate" : {
+            "type" : "string",
+            "minLength" : 1,
+            "pattern" : "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "alarmDate" : {
+            "type" : "string",
+            "minLength" : 1,
+            "pattern" : "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "description" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 500,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "accountCode", "accountName", "alarmDate", "expirationDate", "productCode", "productName" ]
+      },
+      "ProductExpirationBatchDeleteRequest" : {
+        "type" : "object",
+        "properties" : {
+          "ids" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int32"
+            },
+            "minItems" : 1
+          }
+        },
+        "required" : [ "ids" ]
+      },
+      "ApiResponseProductExpirationBatchDeleteResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ProductExpirationBatchDeleteResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "ProductExpirationBatchDeleteResponse" : {
+        "type" : "object",
+        "properties" : {
+          "deletedCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "LeaderScheduleCreateRequest" : {
+        "type" : "object",
+        "properties" : {
+          "targetEmployeeId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "workingDate" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "workingType" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "workingCategory2" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "workingCategory3" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "accountId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "workingCategory1" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "targetEmployeeId", "workingCategory2", "workingCategory3", "workingDate", "workingType" ]
+      },
+      "ApiResponseLeaderScheduleCreateResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/LeaderScheduleCreateResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "LeaderScheduleCreateResponse" : {
+        "type" : "object",
+        "properties" : {
+          "scheduleId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "targetEmployeeId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "workingDate" : {
+            "type" : "string"
+          },
+          "workingType" : {
+            "type" : "string"
+          },
+          "workingCategory3" : {
+            "type" : "string"
+          },
+          "proxyRegisteredBy" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "VerifyPasswordRequest" : {
+        "type" : "object",
+        "properties" : {
+          "password" : {
+            "type" : "string",
+            "minLength" : 1
+          }
+        },
+        "required" : [ "password" ]
+      },
+      "ApiResponseObject" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "type" : "null"
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "RefreshTokenRequest" : {
+        "type" : "object",
+        "properties" : {
+          "refreshToken" : {
+            "type" : "string",
+            "minLength" : 1
+          }
+        },
+        "required" : [ "refreshToken" ]
+      },
+      "ApiResponseTokenResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/TokenResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "TokenResponse" : {
+        "type" : "object",
+        "properties" : {
+          "accessToken" : {
+            "type" : "string"
+          },
+          "refreshToken" : {
+            "type" : "string"
+          },
+          "expiresIn" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "LoginRequest" : {
+        "type" : "object",
+        "properties" : {
+          "employeeCode" : {
+            "type" : "string",
+            "minLength" : 1,
+            "pattern" : "^\\d{8}$"
+          },
+          "password" : {
+            "type" : "string",
+            "maxLength" : 2147483647,
+            "minLength" : 4
+          },
+          "deviceId" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "employeeCode", "password" ]
+      },
+      "ApiResponseLoginResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/LoginResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "LoginResponse" : {
+        "type" : "object",
+        "properties" : {
+          "user" : {
+            "$ref" : "#/components/schemas/UserInfo"
+          },
+          "token" : {
+            "$ref" : "#/components/schemas/TokenInfo"
+          },
+          "requiresPasswordChange" : {
+            "type" : "boolean"
+          },
+          "requiresGpsConsent" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "TokenInfo" : {
+        "type" : "object",
+        "properties" : {
+          "accessToken" : {
+            "type" : "string"
+          },
+          "refreshToken" : {
+            "type" : "string"
+          },
+          "expiresIn" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "UserInfo" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "employeeCode" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "orgName" : {
+            "type" : [ "string", "null" ]
+          },
+          "role" : {
+            "type" : "string"
+          }
+        }
+      },
+      "GpsConsentRequest" : {
+        "type" : "object",
+        "properties" : {
+          "agreementNumber" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "ApiResponseGpsConsentRecordResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/GpsConsentRecordResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "GpsConsentRecordResponse" : {
+        "type" : "object",
+        "properties" : {
+          "accessToken" : {
+            "type" : "string"
+          },
+          "expiresIn" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "ChangePasswordRequest" : {
+        "type" : "object",
+        "properties" : {
+          "currentPassword" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "newPassword" : {
+            "type" : "string",
+            "maxLength" : 2147483647,
+            "minLength" : 4
+          }
+        },
+        "required" : [ "currentPassword", "newPassword" ]
+      },
+      "AttendanceRegisterRequest" : {
+        "type" : "object",
+        "properties" : {
+          "scheduleId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "displayWorkScheduleId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "latitude" : {
+            "type" : [ "number", "null" ],
+            "format" : "double",
+            "maximum" : 90,
+            "minimum" : -90
+          },
+          "longitude" : {
+            "type" : [ "number", "null" ],
+            "format" : "double",
+            "maximum" : 180,
+            "minimum" : -180
+          },
+          "workType" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "latitude", "longitude" ]
+      },
+      "ApiResponseAttendanceRegisterResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AttendanceRegisterResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "AttendanceRegisterResponse" : {
+        "type" : "object",
+        "properties" : {
+          "scheduleId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "accountName" : {
+            "type" : "string"
+          },
+          "workType" : {
+            "type" : [ "string", "null" ]
+          },
+          "distanceKm" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "totalCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "registeredCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "AlternativeHolidayRequest" : {
+        "type" : "object",
+        "properties" : {
+          "actualWorkDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "targetAltHolidayDate" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        },
+        "required" : [ "actualWorkDate", "targetAltHolidayDate" ]
+      },
+      "AlternativeHolidayCreateResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "actualWorkDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "targetAltHolidayDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "ApiResponseAlternativeHolidayCreateResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AlternativeHolidayCreateResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "MonthlySalesRequest" : {
+        "type" : "object",
+        "properties" : {
+          "customerId" : {
+            "type" : [ "string", "null" ]
+          },
+          "yearMonth" : {
+            "type" : "string",
+            "minLength" : 1,
+            "pattern" : "^\\d{6}$"
+          },
+          "previousYearMonth" : {
+            "type" : "string"
+          },
+          "year" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "month" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "yearMonth" ]
+      },
+      "ApiResponseMonthlySalesResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/MonthlySalesResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "CategorySalesInfo" : {
+        "type" : "object",
+        "properties" : {
+          "category" : {
+            "type" : "string"
+          },
+          "targetAmount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "achievedAmount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "achievementRate" : {
+            "type" : "number",
+            "format" : "double"
+          }
+        }
+      },
+      "MonthlyAverageInfo" : {
+        "type" : "object",
+        "properties" : {
+          "currentYearAverage" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "previousYearAverage" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "startMonth" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "endMonth" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "MonthlySalesResponse" : {
+        "type" : "object",
+        "properties" : {
+          "customerId" : {
+            "type" : "string"
+          },
+          "customerName" : {
+            "type" : "string"
+          },
+          "yearMonth" : {
+            "type" : "string"
+          },
+          "targetAmount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "achievedAmount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "achievementRate" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "categorySales" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/CategorySalesInfo"
+            }
+          },
+          "yearComparison" : {
+            "$ref" : "#/components/schemas/YearComparisonInfo"
+          },
+          "monthlyAverage" : {
+            "$ref" : "#/components/schemas/MonthlyAverageInfo"
+          }
+        }
+      },
+      "YearComparisonInfo" : {
+        "type" : "object",
+        "properties" : {
+          "currentYear" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "previousYear" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "ApiResponseSafetyCheckTodayResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/SafetyCheckTodayResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "SafetyCheckTodayResponse" : {
+        "type" : "object",
+        "properties" : {
+          "completed" : {
+            "type" : "boolean"
+          },
+          "submittedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          }
+        }
+      },
+      "ApiResponseSafetyCheckStatusResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/SafetyCheckStatusResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "EquipmentStatus" : {
+        "type" : "object",
+        "properties" : {
+          "seqNum" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "label" : {
+            "type" : "string"
+          },
+          "answer" : {
+            "type" : "string"
+          }
+        }
+      },
+      "MemberStatus" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "employeeCode" : {
+            "type" : "string"
+          },
+          "employeeName" : {
+            "type" : "string"
+          },
+          "accountCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "submitted" : {
+            "type" : "boolean"
+          },
+          "submittedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "startTime" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "equipments" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/EquipmentStatus"
+            }
+          },
+          "yesCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "noCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "precautions" : {
+            "type" : [ "string", "null" ]
+          },
+          "precautionCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "workReportStatus" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "SafetyCheckStatusResponse" : {
+        "type" : "object",
+        "properties" : {
+          "date" : {
+            "type" : "string"
+          },
+          "totalCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "submittedCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "notSubmittedCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "members" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/MemberStatus"
+            }
+          }
+        }
+      },
+      "ApiResponseSafetyCheckItemsResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/SafetyCheckItemsResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "CategoryInfo" : {
+        "type" : "object",
+        "properties" : {
+          "questionNum" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "inputType" : {
+            "type" : "string"
+          },
+          "required" : {
+            "type" : "boolean"
+          },
+          "options" : {
+            "type" : [ "array", "null" ],
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/CheckItemInfo"
+            }
+          }
+        }
+      },
+      "CheckItemInfo" : {
+        "type" : "object",
+        "properties" : {
+          "seqNum" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "contents" : {
+            "type" : "string"
+          }
+        }
+      },
+      "SafetyCheckItemsResponse" : {
+        "type" : "object",
+        "properties" : {
+          "categories" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/CategoryInfo"
+            }
+          }
+        }
+      },
+      "ApiResponseMobilePromotionListResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/MobilePromotionListResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "MobilePromotionListItem" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "promotionNumber" : {
+            "type" : "string"
+          },
+          "promotionName" : {
+            "type" : [ "string", "null" ]
+          },
+          "promotionTypeName" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "startDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "endDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "category" : {
+            "type" : [ "string", "null" ]
+          },
+          "standLocation" : {
+            "type" : [ "string", "null" ]
+          },
+          "targetAmount" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "actualAmount" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "myScheduleDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "closed" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "MobilePromotionListResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/MobilePromotionListItem"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "ApiResponseMobilePromotionDetailResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/MobilePromotionDetailResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "MobilePromotionDetailResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "promotionNumber" : {
+            "type" : "string"
+          },
+          "promotionName" : {
+            "type" : [ "string", "null" ]
+          },
+          "promotionTypeName" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountId" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "startDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "endDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "primaryProductName" : {
+            "type" : [ "string", "null" ]
+          },
+          "otherProduct" : {
+            "type" : [ "string", "null" ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "standLocation" : {
+            "type" : [ "string", "null" ]
+          },
+          "category" : {
+            "type" : [ "string", "null" ]
+          },
+          "productType" : {
+            "type" : [ "string", "null" ]
+          },
+          "targetAmount" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "actualAmount" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "remark" : {
+            "type" : [ "string", "null" ]
+          },
+          "employees" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/MobilePromotionEmployeeItem"
+            }
+          },
+          "closed" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "MobilePromotionEmployeeItem" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "employeeName" : {
+            "type" : [ "string", "null" ]
+          },
+          "scheduleDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "workStatus" : {
+            "type" : [ "string", "null" ]
+          },
+          "workType3" : {
+            "type" : [ "string", "null" ]
+          },
+          "professionalPromotionTeam" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "일반", "라면세일조", "프레시세일조_냉장", "프레시세일조_냉동", "프레시세일조_만두", "카레행사조" ]
+          },
+          "targetAmount" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "actualAmount" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          }
+        }
+      },
+      "ApiResponsePageProductDto" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PageProductDto"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "PageProductDto" : {
+        "type" : "object",
+        "properties" : {
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
+          },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ProductDto"
+            }
+          },
+          "number" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "empty" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "PageableObject" : {
+        "type" : "object",
+        "properties" : {
+          "pageNumber" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "pageSize" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
+          },
+          "paged" : {
+            "type" : "boolean"
+          },
+          "unpaged" : {
+            "type" : "boolean"
+          },
+          "offset" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "ProductDto" : {
+        "type" : "object",
+        "properties" : {
+          "productCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "productName" : {
+            "type" : [ "string", "null" ]
+          },
+          "logisticsBarcode" : {
+            "type" : [ "string", "null" ]
+          },
+          "storageCondition" : {
+            "type" : [ "string", "null" ]
+          },
+          "shelfLife" : {
+            "type" : [ "string", "null" ]
+          },
+          "category1" : {
+            "type" : [ "string", "null" ]
+          },
+          "category2" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "SortObject" : {
+        "type" : "object",
+        "properties" : {
+          "unsorted" : {
+            "type" : "boolean"
+          },
+          "sorted" : {
+            "type" : "boolean"
+          },
+          "empty" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "ApiResponseListProductExpirationItemResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "type" : [ "array", "null" ],
+            "items" : {
+              "$ref" : "#/components/schemas/ProductExpirationItemResponse"
+            }
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "ApiResponseNoticePostListResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/NoticePostListResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "NoticePostListResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/NoticePostSummaryResponse"
+            }
+          },
+          "totalCount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "currentPage" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "NoticePostSummaryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "category" : {
+            "type" : "string"
+          },
+          "categoryName" : {
+            "type" : "string"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ApiResponseNoticePostDetailResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/NoticePostDetailResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "NoticeImageResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "url" : {
+            "type" : "string"
+          },
+          "sortOrder" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "NoticePostDetailResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "category" : {
+            "type" : "string"
+          },
+          "categoryName" : {
+            "type" : "string"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "content" : {
+            "type" : "string"
+          },
+          "branch" : {
+            "type" : [ "string", "null" ]
+          },
+          "branchCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "createdAt" : {
+            "type" : "string"
+          },
+          "images" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/NoticeImageResponse"
+            }
+          }
+        }
+      },
+      "ApiResponseMonthlyScheduleResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/MonthlyScheduleResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "MonthlyScheduleResponse" : {
+        "type" : "object",
+        "properties" : {
+          "work_days" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/WorkDayDto"
+            }
+          },
+          "year" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "month" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "annualLeaveCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "substituteHolidayCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "WorkDayDto" : {
+        "type" : "object",
+        "properties" : {
+          "has_work" : {
+            "type" : "boolean"
+          },
+          "date" : {
+            "type" : "string"
+          },
+          "workingType" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "ApiResponseDailyScheduleResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/DailyScheduleResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "DailyScheduleResponse" : {
+        "type" : "object",
+        "properties" : {
+          "day_of_week" : {
+            "type" : "string"
+          },
+          "member_name" : {
+            "type" : "string"
+          },
+          "employee_code" : {
+            "type" : "string"
+          },
+          "report_progress" : {
+            "$ref" : "#/components/schemas/ReportProgressDto"
+          },
+          "date" : {
+            "type" : "string"
+          },
+          "workingType" : {
+            "type" : [ "string", "null" ]
+          },
+          "accounts" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DisplayWorkScheduleItemDto"
+            }
+          }
+        }
+      },
+      "DisplayWorkScheduleItemDto" : {
+        "type" : "object",
+        "properties" : {
+          "account_id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "account_name" : {
+            "type" : "string"
+          },
+          "work_type_1" : {
+            "type" : "string"
+          },
+          "work_type_2" : {
+            "type" : "string"
+          },
+          "work_type_3" : {
+            "type" : "string"
+          },
+          "is_registered" : {
+            "type" : "boolean"
+          },
+          "registered" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "ReportProgressDto" : {
+        "type" : "object",
+        "properties" : {
+          "work_type" : {
+            "type" : "string"
+          },
+          "completed" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "total" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "ApiResponseListLeaderTeamMemberListResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "type" : [ "array", "null" ],
+            "items" : {
+              "$ref" : "#/components/schemas/LeaderTeamMemberListResponse"
+            }
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "LeaderTeamMemberListResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "employeeCode" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : [ "string", "null" ]
+          },
+          "costCenterCode" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "ApiResponseListLeaderAccountListResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "type" : [ "array", "null" ],
+            "items" : {
+              "$ref" : "#/components/schemas/LeaderAccountListResponse"
+            }
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "LeaderAccountListResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "name" : {
+            "type" : [ "string", "null" ]
+          },
+          "address1" : {
+            "type" : [ "string", "null" ]
+          },
+          "branchCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountGroup" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountType" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "ApiResponseHomeResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/HomeResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "AttendanceSummaryInfo" : {
+        "type" : "object",
+        "properties" : {
+          "totalCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "registeredCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "ExpiryAlertInfo" : {
+        "type" : "object",
+        "properties" : {
+          "branchName" : {
+            "type" : "string"
+          },
+          "employeeName" : {
+            "type" : "string"
+          },
+          "employeeCode" : {
+            "type" : "string"
+          },
+          "expiryCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "HomeResponse" : {
+        "type" : "object",
+        "properties" : {
+          "todaySchedules" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TeamMemberScheduleInfo"
+            }
+          },
+          "attendanceSummary" : {
+            "$ref" : "#/components/schemas/AttendanceSummaryInfo"
+          },
+          "safetyCheckRequired" : {
+            "type" : "boolean"
+          },
+          "expiryAlert" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ExpiryAlertInfo"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "notices" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/NoticeInfo"
+            }
+          },
+          "currentDate" : {
+            "type" : "string"
+          }
+        }
+      },
+      "NoticeInfo" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "category" : {
+            "type" : "string"
+          },
+          "categoryName" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "TeamMemberScheduleInfo" : {
+        "type" : "object",
+        "properties" : {
+          "scheduleId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "displayWorkScheduleId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "employeeName" : {
+            "type" : "string"
+          },
+          "employeeCode" : {
+            "type" : "string"
+          },
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "workCategory" : {
+            "type" : "string"
+          },
+          "workType" : {
+            "type" : [ "string", "null" ]
+          },
+          "commuteRegisteredAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "commuteRegistered" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "ApiResponseListHolidayDateResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "type" : [ "array", "null" ],
+            "items" : {
+              "$ref" : "#/components/schemas/HolidayDateResponse"
+            }
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "HolidayDateResponse" : {
+        "type" : "object",
+        "properties" : {
+          "date" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ApiResponseEducationPostListResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/EducationPostListResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "EducationPostListResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/EducationPostSummaryResponse"
+            }
+          },
+          "totalCount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "currentPage" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "EducationPostSummaryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ApiResponseEducationPostDetailResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/EducationPostDetailResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "EducationAttachmentResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "fileName" : {
+            "type" : "string"
+          },
+          "fileUrl" : {
+            "type" : "string"
+          },
+          "fileSize" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "EducationPostDetailResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "category" : {
+            "type" : "string"
+          },
+          "categoryName" : {
+            "type" : "string"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "content" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "type" : "string"
+          },
+          "images" : {
+            "type" : "array",
+            "items" : { }
+          },
+          "attachments" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/EducationAttachmentResponse"
+            }
+          }
+        }
+      },
+      "ApiResponseListClaimListItemResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "type" : [ "array", "null" ],
+            "items" : {
+              "$ref" : "#/components/schemas/ClaimListItemResponse"
+            }
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "ClaimListItemResponse" : {
+        "type" : "object",
+        "properties" : {
+          "claimId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "productName" : {
+            "type" : [ "string", "null" ]
+          },
+          "productCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "categoryName" : {
+            "type" : [ "string", "null" ]
+          },
+          "subcategoryName" : {
+            "type" : [ "string", "null" ]
+          },
+          "defectQuantity" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "statusLabel" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "ApiResponseClaimDetailResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ClaimDetailResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "ClaimDetailResponse" : {
+        "type" : "object",
+        "properties" : {
+          "claimId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "productName" : {
+            "type" : [ "string", "null" ]
+          },
+          "productCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "dateType" : {
+            "type" : [ "string", "null" ]
+          },
+          "dateTypeLabel" : {
+            "type" : [ "string", "null" ]
+          },
+          "date" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "categoryName" : {
+            "type" : [ "string", "null" ]
+          },
+          "subcategoryName" : {
+            "type" : [ "string", "null" ]
+          },
+          "defectDescription" : {
+            "type" : [ "string", "null" ]
+          },
+          "defectQuantity" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "purchaseAmount" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "purchaseMethodName" : {
+            "type" : [ "string", "null" ]
+          },
+          "requestTypeName" : {
+            "type" : [ "string", "null" ]
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "statusLabel" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "photos" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ClaimPhotoItem"
+            }
+          }
+        }
+      },
+      "ClaimPhotoItem" : {
+        "type" : "object",
+        "properties" : {
+          "photoId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "photoType" : {
+            "type" : "string"
+          },
+          "photoTypeLabel" : {
+            "type" : "string"
+          },
+          "url" : {
+            "type" : "string"
+          },
+          "originalFileName" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "ApiResponseGpsConsentTermsResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/GpsConsentTermsResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "GpsConsentTermsResponse" : {
+        "type" : "object",
+        "properties" : {
+          "agreementNumber" : {
+            "type" : [ "string", "null" ]
+          },
+          "contents" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "ApiResponseGpsConsentStatusResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/GpsConsentStatusResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "GpsConsentStatusResponse" : {
+        "type" : "object",
+        "properties" : {
+          "requiresGpsConsent" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "ApiResponseAttendanceStatusResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AttendanceStatusResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "AttendanceStatusItem" : {
+        "type" : "object",
+        "properties" : {
+          "scheduleId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "accountName" : {
+            "type" : "string"
+          },
+          "workCategory" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        }
+      },
+      "AttendanceStatusResponse" : {
+        "type" : "object",
+        "properties" : {
+          "totalCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "registeredCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "statusList" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AttendanceStatusItem"
+            }
+          },
+          "currentDate" : {
+            "type" : "string"
+          }
+        }
+      },
+      "AccountInfo" : {
+        "type" : "object",
+        "properties" : {
+          "scheduleId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "displayWorkScheduleId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "accountId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "accountName" : {
+            "type" : "string"
+          },
+          "accountTypeCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "workCategory" : {
+            "type" : "string"
+          },
+          "workCategory2" : {
+            "type" : [ "string", "null" ]
+          },
+          "workCategory3" : {
+            "type" : [ "string", "null" ]
+          },
+          "address" : {
+            "type" : [ "string", "null" ]
+          },
+          "latitude" : {
+            "type" : [ "number", "null" ],
+            "format" : "double"
+          },
+          "longitude" : {
+            "type" : [ "number", "null" ],
+            "format" : "double"
+          },
+          "source" : {
+            "type" : "string"
+          },
+          "registered" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "AccountListResponse" : {
+        "type" : "object",
+        "properties" : {
+          "safetyCheckCompleted" : {
+            "type" : "boolean"
+          },
+          "accounts" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AccountInfo"
+            }
+          },
+          "totalCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "registeredCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "currentDate" : {
+            "type" : "string"
+          },
+          "registrationDeadline" : {
+            "type" : "string"
+          },
+          "registrationClosed" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "ApiResponseAccountListResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AccountListResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "AlternativeHolidayListItemResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "actualWorkDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "targetAltHolidayDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "confirmAltHolidayDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "changeReason" : {
+            "type" : [ "string", "null" ]
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "ApiResponseListAlternativeHolidayListItemResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "type" : [ "array", "null" ],
+            "items" : {
+              "$ref" : "#/components/schemas/AlternativeHolidayListItemResponse"
+            }
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "ApiResponseMyAccountListResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/MyAccountListResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "MyAccountInfo" : {
+        "type" : "object",
+        "properties" : {
+          "accountId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "accountName" : {
+            "type" : "string"
+          },
+          "accountCode" : {
+            "type" : "string"
+          },
+          "address" : {
+            "type" : [ "string", "null" ]
+          },
+          "addressDetail" : {
+            "type" : [ "string", "null" ]
+          },
+          "representativeName" : {
+            "type" : [ "string", "null" ]
+          },
+          "phoneNumber" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "MyAccountListResponse" : {
+        "type" : "object",
+        "properties" : {
+          "stores" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/MyAccountInfo"
+            }
+          },
+          "totalCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      }
+    },
+    "securitySchemes" : {
+      "Bearer Authentication" : {
+        "type" : "http",
+        "name" : "Bearer Authentication",
+        "scheme" : "bearer",
+        "bearerFormat" : "JWT"
+      }
+    }
+  }
+}
