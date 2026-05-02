@@ -14,11 +14,11 @@ import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.*
@@ -47,8 +47,23 @@ class AdminTeamScheduleServiceTest {
     @Mock
     private lateinit var adminMonthlyIntegrationService: AdminMonthlyIntegrationService
 
-    @InjectMocks
     private lateinit var service: AdminTeamScheduleService
+
+    @BeforeEach
+    fun setUpService() {
+        val teamScheduleValidator = TeamScheduleValidator(
+            teamMemberScheduleRepository,
+            displayWorkScheduleRepository
+        )
+        service = AdminTeamScheduleService(
+            teamMemberScheduleRepository = teamMemberScheduleRepository,
+            employeeRepository = employeeRepository,
+            accountRepository = accountRepository,
+            adminEmployeeHolder = adminEmployeeHolder,
+            adminMonthlyIntegrationService = adminMonthlyIntegrationService,
+            teamScheduleValidator = teamScheduleValidator
+        )
+    }
 
     // --- Helper factories ---
 

@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:54388",
+    "url" : "http://localhost:56224",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -650,14 +650,14 @@
       "OrganizeMasterRequest" : {
         "type" : "object",
         "properties" : {
-          "req_item_list" : {
-            "type" : "array",
+          "reqItemList" : {
+            "type" : [ "array", "null" ],
             "items" : {
               "$ref" : "#/components/schemas/OrganizeMasterRequestItem"
             }
           }
         },
-        "required" : [ "req_item_list" ]
+        "required" : [ "reqItemList" ]
       },
       "OrganizeMasterRequestItem" : {
         "type" : "object",
@@ -1470,14 +1470,14 @@
       "ClientMasterRequest" : {
         "type" : "object",
         "properties" : {
-          "req_item_list" : {
-            "type" : "array",
+          "reqItemList" : {
+            "type" : [ "array", "null" ],
             "items" : {
               "$ref" : "#/components/schemas/ClientMasterRequestItem"
             }
           }
         },
-        "required" : [ "req_item_list" ]
+        "required" : [ "reqItemList" ]
       },
       "ClientMasterRequestItem" : {
         "type" : "object",
@@ -1628,14 +1628,14 @@
       "AccountCategoryRequest" : {
         "type" : "object",
         "properties" : {
-          "req_item_list" : {
-            "type" : "array",
+          "reqItemList" : {
+            "type" : [ "array", "null" ],
             "items" : {
               "$ref" : "#/components/schemas/AccountCategoryRequestItem"
             }
           }
         },
-        "required" : [ "req_item_list" ]
+        "required" : [ "reqItemList" ]
       },
       "AccountCategoryRequestItem" : {
         "type" : "object",

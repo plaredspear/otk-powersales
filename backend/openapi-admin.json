@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:54388",
+    "url" : "http://localhost:56224",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -68,6 +68,78 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseObject"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/promotions/{promotionId}/schedules/bulk" : {
+      "put" : {
+        "tags" : [ "admin-promotion-schedule-controller" ],
+        "operationId" : "bulkUpdate",
+        "parameters" : [ {
+          "name" : "promotionId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PromotionScheduleBulkUpdateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePromotionScheduleBulkUpdateResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "admin-promotion-schedule-controller" ],
+        "operationId" : "bulkDelete",
+        "parameters" : [ {
+          "name" : "promotionId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PromotionScheduleBulkDeleteRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePromotionScheduleBulkDeleteResponse"
                 }
               }
             }
@@ -2465,6 +2537,49 @@
         }
       }
     },
+    "/api/v1/admin/promotions/{promotionId}/schedules" : {
+      "get" : {
+        "tags" : [ "admin-promotion-schedule-controller" ],
+        "operationId" : "getSchedules",
+        "parameters" : [ {
+          "name" : "promotionId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "startDate",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "endDate",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePromotionScheduleListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/promotions/form-meta" : {
       "get" : {
         "tags" : [ "admin-promotion-controller" ],
@@ -3142,6 +3257,92 @@
           }
         }
       },
+      "PromotionScheduleBulkUpdateItem" : {
+        "type" : "object",
+        "properties" : {
+          "scheduleId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "accountId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "workingDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "workingCategory1" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory3" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory4" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "accountId", "scheduleId", "workingCategory1", "workingCategory3", "workingDate" ]
+      },
+      "PromotionScheduleBulkUpdateRequest" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PromotionScheduleBulkUpdateItem"
+            },
+            "maxItems" : 500,
+            "minItems" : 1
+          }
+        },
+        "required" : [ "items" ]
+      },
+      "ApiResponsePromotionScheduleBulkUpdateResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PromotionScheduleBulkUpdateResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "PromotionScheduleBulkUpdateResponse" : {
+        "type" : "object",
+        "properties" : {
+          "updatedCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "scheduleIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int64"
+            }
+          }
+        }
+      },
       "BatchUpdatePromotionEmployeeItem" : {
         "type" : "object",
         "properties" : {
@@ -3544,10 +3745,10 @@
           "remark" : {
             "type" : [ "string", "null" ]
           },
-          "closed" : {
+          "deleted" : {
             "type" : "boolean"
           },
-          "deleted" : {
+          "closed" : {
             "type" : "boolean"
           }
         }
@@ -5936,6 +6137,12 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
+          },
           "first" : {
             "type" : "boolean"
           },
@@ -5945,12 +6152,6 @@
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
           },
           "size" : {
             "type" : "integer",
@@ -5974,10 +6175,6 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
-          "pageNumber" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
           "pageSize" : {
             "type" : "integer",
             "format" : "int32"
@@ -5987,6 +6184,10 @@
           },
           "paged" : {
             "type" : "boolean"
+          },
+          "pageNumber" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "unpaged" : {
             "type" : "boolean"
@@ -6272,10 +6473,10 @@
           "remark" : {
             "type" : [ "string", "null" ]
           },
-          "closed" : {
+          "deleted" : {
             "type" : "boolean"
           },
-          "deleted" : {
+          "closed" : {
             "type" : "boolean"
           }
         }
@@ -6304,6 +6505,138 @@
           "totalPages" : {
             "type" : "integer",
             "format" : "int32"
+          }
+        }
+      },
+      "ApiResponsePromotionScheduleListResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PromotionScheduleListResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "PromotionScheduleItem" : {
+        "type" : "object",
+        "properties" : {
+          "scheduleId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "workingDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "accountId" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "accountCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountName" : {
+            "type" : "string"
+          },
+          "workingCategory1" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory3" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory4" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "PromotionScheduleListResponse" : {
+        "type" : "object",
+        "properties" : {
+          "promotionId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "promotionName" : {
+            "type" : [ "string", "null" ]
+          },
+          "schedulePeriod" : {
+            "$ref" : "#/components/schemas/SchedulePeriod"
+          },
+          "members" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PromotionScheduleMember"
+            }
+          },
+          "totalMemberCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalScheduleCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "PromotionScheduleMember" : {
+        "type" : "object",
+        "properties" : {
+          "promotionEmployeeId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "employeeId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "employeeNumber" : {
+            "type" : "string"
+          },
+          "employeeName" : {
+            "type" : "string"
+          },
+          "professionalPromotionTeam" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "일반", "라면세일조", "프레시세일조_냉장", "프레시세일조_냉동", "프레시세일조_만두", "카레행사조" ]
+          },
+          "schedules" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PromotionScheduleItem"
+            }
+          }
+        }
+      },
+      "SchedulePeriod" : {
+        "type" : "object",
+        "properties" : {
+          "startDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "endDate" : {
+            "type" : "string",
+            "format" : "date"
           }
         }
       },
@@ -8276,6 +8609,59 @@
           "timestamp" : {
             "type" : "string",
             "format" : "date-time"
+          }
+        }
+      },
+      "PromotionScheduleBulkDeleteRequest" : {
+        "type" : "object",
+        "properties" : {
+          "scheduleIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int64"
+            },
+            "maxItems" : 500,
+            "minItems" : 1
+          }
+        },
+        "required" : [ "scheduleIds" ]
+      },
+      "ApiResponsePromotionScheduleBulkDeleteResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PromotionScheduleBulkDeleteResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "PromotionScheduleBulkDeleteResponse" : {
+        "type" : "object",
+        "properties" : {
+          "deletedCount" : {
+            "type" : "integer",
+            "format" : "int32"
           }
         }
       }
