@@ -24,7 +24,7 @@ class SapBearerTokenFilterTest {
 
     private val signingKey = "sap-bearer-filter-test-signing-key-with-256-bits-of-entropy-12"
     private val codec = SapJwtCodec(
-        SapAuthProperties(jwtSigningKey = signingKey, tokenTtlSeconds = 900)
+        SapAuthProperties(jwtSigningKey = signingKey, tokenTtlSeconds = 86400)
     )
     private val auditService: SapInboundAuditService = mock<SapInboundAuditService>().apply {
         whenever(this.record(any())).thenAnswer { it.getArgument<SapInboundAudit>(0) }

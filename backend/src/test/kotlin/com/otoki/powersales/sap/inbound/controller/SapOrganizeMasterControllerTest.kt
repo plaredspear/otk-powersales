@@ -72,7 +72,7 @@ class SapOrganizeMasterControllerTest {
 
     private fun samplePayload(): String = """
         {
-          "req_item_list": [
+          "reqItemList": [
             {
               "CC_CD2": "1000",
               "ORG_CD2": "10000",
@@ -157,9 +157,9 @@ class SapOrganizeMasterControllerTest {
         }
 
         @Test
-        @DisplayName("실패 - req_item_list 누락 -> 400 + RESULT_CODE=INVALID_PAYLOAD")
+        @DisplayName("실패 - reqItemList 누락 -> 400 + RESULT_CODE=INVALID_PAYLOAD")
         fun replace_missingReqItemList() {
-            val payload = """{"other_field": []}"""
+            val payload = """{"otherField": []}"""
 
             mockMvc.perform(
                 post("/api/v1/sap/organization")

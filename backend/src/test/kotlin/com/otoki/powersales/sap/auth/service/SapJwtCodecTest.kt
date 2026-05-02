@@ -16,7 +16,7 @@ class SapJwtCodecTest {
     private val codec = SapJwtCodec(
         SapAuthProperties(
             jwtSigningKey = signingKey,
-            tokenTtlSeconds = 900
+            tokenTtlSeconds = 86400
         )
     )
 
@@ -31,14 +31,14 @@ class SapJwtCodecTest {
             val issued = codec.issue("client-1", listOf("sap.org.write", "sap.employee.write"), now)
 
             assertThat(issued.token).isNotBlank()
-            assertThat(issued.expiresIn).isEqualTo(900)
+            assertThat(issued.expiresIn).isEqualTo(86400)
             assertThat(issued.jti).isNotBlank()
 
             val claims = codec.parse(issued.token)
             assertThat(claims.subject).isEqualTo("client-1")
             assertThat(claims.get("scope", String::class.java))
                 .isEqualTo("sap.org.write sap.employee.write")
-            assertThat(claims.expiration.time - claims.issuedAt.time).isEqualTo(900_000L)
+            assertThat(claims.expiration.time - claims.issuedAt.time).isEqualTo(86_400_000L)
             assertThat(claims.id).isEqualTo(issued.jti)
         }
     }
@@ -74,7 +74,7 @@ class SapJwtCodecTest {
             val otherCodec = SapJwtCodec(
                 SapAuthProperties(
                     jwtSigningKey = "different-signing-key-with-at-least-256-bits-of-entropy-AAAA",
-                    tokenTtlSeconds = 900
+                    tokenTtlSeconds = 86400
                 )
             )
             val issued = otherCodec.issue("client-1", listOf("sap.org.write"))

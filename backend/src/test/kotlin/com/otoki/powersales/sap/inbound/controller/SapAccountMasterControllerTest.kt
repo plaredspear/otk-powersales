@@ -87,7 +87,7 @@ class SapAccountMasterControllerTest {
 
             val payload = """
                 {
-                  "req_item_list": [
+                  "reqItemList": [
                     { "SAPAccountCode": "1032619", "Name": "(주)홍길동상회", "EmployeeCode": "100123" }
                   ]
                 }
@@ -118,7 +118,7 @@ class SapAccountMasterControllerTest {
 
             val payload = """
                 {
-                  "req_item_list": [
+                  "reqItemList": [
                     { "SAPAccountCode": "1032619", "Name": "(주)홍길동상회" },
                     { "SAPAccountCode": "1032620" }
                   ]
@@ -165,7 +165,7 @@ class SapAccountMasterControllerTest {
 
             val payload = """
                 {
-                  "req_item_list": [
+                  "reqItemList": [
                     { "AccountCode": "Z001", "Name": "일반거래처" },
                     { "AccountCode": "Z002", "Name": "위탁거래처" }
                   ]
@@ -202,21 +202,21 @@ class SapAccountMasterControllerTest {
         @JvmStatic
         fun invalidAccountPayloadCases(): List<Arguments> = listOf(
             Arguments.of("빈 객체", 400, """{}"""),
-            Arguments.of("외부 래퍼 키 오타 (camelCase 잘못 사용)", 400, """{"reqItemList": [{"SAPAccountCode":"1032619"}]}"""),
-            Arguments.of("req_item_list 명시적 null", 400, """{"req_item_list": null}"""),
-            Arguments.of("req_item_list 빈 배열", 422, """{"req_item_list": []}"""),
-            Arguments.of("malformed JSON", 400, """{"req_item_list": ["""),
-            Arguments.of("req_item_list 가 array 아닌 type", 400, """{"req_item_list": "not-array"}""")
+            Arguments.of("외부 래퍼 키 오타 (snake_case 잘못 사용)", 400, """{"req_item_list": [{"SAPAccountCode":"1032619"}]}"""),
+            Arguments.of("reqItemList 명시적 null", 400, """{"reqItemList": null}"""),
+            Arguments.of("reqItemList 빈 배열", 422, """{"reqItemList": []}"""),
+            Arguments.of("malformed JSON", 400, """{"reqItemList": ["""),
+            Arguments.of("reqItemList 가 array 아닌 type", 400, """{"reqItemList": "not-array"}""")
         )
 
         @JvmStatic
         fun invalidAccountCategoryPayloadCases(): List<Arguments> = listOf(
             Arguments.of("빈 객체", 400, """{}"""),
-            Arguments.of("외부 래퍼 키 오타 (camelCase 잘못 사용)", 400, """{"reqItemList": [{"AccountCode":"Z001"}]}"""),
-            Arguments.of("req_item_list 명시적 null", 400, """{"req_item_list": null}"""),
-            Arguments.of("req_item_list 빈 배열", 422, """{"req_item_list": []}"""),
-            Arguments.of("malformed JSON", 400, """{"req_item_list": ["""),
-            Arguments.of("req_item_list 가 array 아닌 type", 400, """{"req_item_list": "not-array"}""")
+            Arguments.of("외부 래퍼 키 오타 (snake_case 잘못 사용)", 400, """{"req_item_list": [{"AccountCode":"Z001"}]}"""),
+            Arguments.of("reqItemList 명시적 null", 400, """{"reqItemList": null}"""),
+            Arguments.of("reqItemList 빈 배열", 422, """{"reqItemList": []}"""),
+            Arguments.of("malformed JSON", 400, """{"reqItemList": ["""),
+            Arguments.of("reqItemList 가 array 아닌 type", 400, """{"reqItemList": "not-array"}""")
         )
     }
 }

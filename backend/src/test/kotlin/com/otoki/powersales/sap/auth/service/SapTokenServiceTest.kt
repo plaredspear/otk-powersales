@@ -40,7 +40,7 @@ class SapTokenServiceTest {
             clientId = "otoki-sap-client",
             clientSecretHash = secretHash,
             jwtSigningKey = signingKey,
-            tokenTtlSeconds = 900,
+            tokenTtlSeconds = 86400,
             allowedScopes = allowedScopes,
             allowedIps = allowedIps
         )
@@ -62,12 +62,12 @@ class SapTokenServiceTest {
     inner class HappyPath {
 
         @Test
-        @DisplayName("정상 발급 - JWT + expires_in=900 + scope 반환")
+        @DisplayName("정상 발급 - JWT + expires_in=86400 + scope 반환")
         fun issue_success() {
             val response = service().issue(validRequest(), "127.0.0.1")
             assertThat(response.accessToken).isNotBlank()
             assertThat(response.tokenType).isEqualTo("Bearer")
-            assertThat(response.expiresIn).isEqualTo(900)
+            assertThat(response.expiresIn).isEqualTo(86400)
             assertThat(response.scope).isEqualTo("sap.org.write sap.employee.write")
 
             val captor = argumentCaptor<SapInboundAudit>()

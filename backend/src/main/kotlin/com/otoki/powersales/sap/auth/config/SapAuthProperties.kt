@@ -7,7 +7,7 @@ data class SapAuthProperties(
     val clientId: String = "",
     val clientSecretHash: String = "",
     val jwtSigningKey: String = "",
-    val tokenTtlSeconds: Long = 900,
+    val tokenTtlSeconds: Long = 86400,
     val allowedScopes: List<String> = emptyList(),
     val allowedIps: List<String> = emptyList()
 )

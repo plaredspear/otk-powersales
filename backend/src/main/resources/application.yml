@@ -106,7 +106,7 @@ sap:
     client-id: ${SAP_CLIENT_ID:}
     client-secret-hash: ${SAP_CLIENT_SECRET_HASH:}
     jwt-signing-key: ${SAP_JWT_SIGNING_KEY:otoki-sap-inbound-dev-signing-key-change-in-production-256-bits}
-    token-ttl-seconds: 900
+    token-ttl-seconds: 86400
     allowed-scopes:
       - sap.org.write
       - sap.employee.write
@@ -190,3 +190,20 @@ spring:
     aws:
       region:
         static: ${AWS_REGION}
+
+---
+# ---------------------------------------------------------------------------
+# prod 전용 — API 문서 비활성화 (보안)
+# Swagger UI / OpenAPI JSON 모두 비활성화하여 인터페이스 스펙 노출을 차단한다.
+# 인터페이스 스펙은 dev 환경 Swagger UI 또는 SAP 인바운드 가이드 문서를 기준으로 한다.
+# ---------------------------------------------------------------------------
+spring:
+  config:
+    activate:
+      on-profile: "prod"
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
