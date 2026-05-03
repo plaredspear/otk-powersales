@@ -33,22 +33,20 @@ class ExpiryAlertCard extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: AppSpacing.cardBorderRadius,
+      borderRadius: BorderRadius.circular(AppSpacing.homeCardRadius),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // 프로필 아바타
-            const CircleAvatar(
-              radius: 24,
-              backgroundColor: AppColors.surfaceVariant,
-              child: Icon(
-                Icons.person,
-                size: 28,
-                color: AppColors.textTertiary,
-              ),
+            // 프로필 일러스트 (레거시 64×64)
+            Image.asset(
+              'assets/images/img_profile.png',
+              width: AppSpacing.homeProfileSize,
+              height: AppSpacing.homeProfileSize,
+              fit: BoxFit.contain,
             ),
-            const SizedBox(width: AppSpacing.md),
+            const SizedBox(width: 10),
 
             // 지점/이름 + 유통기한 알림
             Expanded(
@@ -57,33 +55,28 @@ class ExpiryAlertCard extends StatelessWidget {
                 children: [
                   Text(
                     '${alert.branchName}, ${alert.employeeName}(${alert.employeeCode})',
-                    style: AppTypography.bodyMedium.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: AppTypography.legacyTitleLG,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: AppSpacing.xxs),
+                  const SizedBox(height: 5),
                   Row(
                     children: [
-                      const Icon(
-                        Icons.notifications_outlined,
-                        size: 16,
-                        color: AppColors.textSecondary,
+                      Image.asset(
+                        'assets/images/ico_alert.png',
+                        width: 15,
+                        height: 18,
+                        fit: BoxFit.contain,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         '유통기한 임박제품 : ',
-                        style: AppTypography.bodySmall.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
+                        style: AppTypography.legacyBody,
                       ),
                       Text(
                         '${alert.expiryCount}건',
-                        style: AppTypography.bodySmall.copyWith(
-                          color: alert.expiryCount > 0
-                              ? AppColors.otokiBlue
-                              : AppColors.textSecondary,
-                          fontWeight: FontWeight.w700,
+                        style: AppTypography.legacyBody.copyWith(
+                          color: AppColors.legacyDanger,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
                     ],

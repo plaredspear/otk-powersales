@@ -20,27 +20,28 @@ class ProductSearchBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+      borderRadius: BorderRadius.circular(AppSpacing.homeCardRadius),
       child: Container(
-        height: AppSpacing.searchBarHeight,
+        height: 40,
         decoration: BoxDecoration(
           color: AppColors.white,
-          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+          borderRadius: BorderRadius.circular(AppSpacing.homeCardRadius),
           boxShadow: AppSpacing.cardShadow,
         ),
         child: Row(
           children: [
-            const SizedBox(width: AppSpacing.md),
+            const SizedBox(width: AppSpacing.homeGutter),
             Image.asset(
               'assets/images/ico_search.png',
-              width: 20,
-              height: 20,
+              width: 18,
+              height: 18,
             ),
-            const SizedBox(width: AppSpacing.sm),
+            const SizedBox(width: 9),
             Text(
               '제품 검색',
-              style: AppTypography.bodyMedium.copyWith(
-                color: AppColors.textTertiary,
+              style: AppTypography.legacyTitleMD.copyWith(
+                fontWeight: FontWeight.w700,
+                color: AppColors.legacyPlaceholder,
               ),
             ),
           ],

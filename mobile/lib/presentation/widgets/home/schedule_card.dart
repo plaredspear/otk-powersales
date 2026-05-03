@@ -4,7 +4,6 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../domain/entities/attendance_summary.dart';
 import '../../../domain/entities/schedule.dart';
-import '../common/primary_button.dart';
 
 /// 일정 카드 위젯
 ///
@@ -57,27 +56,28 @@ class ScheduleCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: AppSpacing.cardBorderRadius,
+        borderRadius: BorderRadius.circular(AppSpacing.homeCardRadius),
         boxShadow: AppSpacing.cardShadow,
       ),
       child: Padding(
-        padding: AppSpacing.cardPadding,
+        padding: const EdgeInsets.all(AppSpacing.homeGutter),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 날짜 헤더 + 링크 + 출근 카운트 배지
             Row(
               children: [
-                Text(
-                  _formatDate(currentDate),
-                  style: AppTypography.headlineLarge.copyWith(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
+                Expanded(
+                  child: Text(
+                    _formatDate(currentDate),
+                    style: AppTypography.legacyTitleXXL,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const Spacer(),
-                if (!_isLeaderView && totalCount > 0)
+                if (!_isLeaderView && totalCount > 0) ...[
+                  const SizedBox(width: AppSpacing.sm),
                   _buildAttendanceBadge(registeredCount, totalCount),
+                ],
               ],
             ),
 
@@ -85,7 +85,7 @@ class ScheduleCard extends StatelessWidget {
             if (_isLeaderView) ...[
               const SizedBox(height: AppSpacing.sm),
               Text(
-                '팀 출근 현황: ${totalCount}명 중 ${registeredCount}명 등록 완료',
+                '팀 출근 현황: $totalCount명 중 $registeredCount명 등록 완료',
                 style: AppTypography.bodySmall.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -105,16 +105,9 @@ class ScheduleCard extends StatelessWidget {
               else
                 _buildScheduleList(),
 
-              // 등록 버튼 (일반 사원만)
+              // 등록 버튼 (일반 사원만) - 레거시 navy/slate/disabled
               const SizedBox(height: AppSpacing.md),
-              PrimaryButton(
-                text: _buttonText(totalCount, registeredCount),
-                onPressed: _isButtonEnabled(totalCount, registeredCount)
-                    ? onRegisterTap
-                    : null,
-                height: AppSpacing.buttonHeightSmall,
-                fontSize: 14,
-              ),
+              _buildRegisterButton(totalCount, registeredCount),
             ],
             const SizedBox(height: AppSpacing.sm),
           ],
@@ -123,33 +116,60 @@ class ScheduleCard extends StatelessWidget {
     );
   }
 
-  /// 출근 카운트 배지
+  /// 출근 카운트 배지 (레거시 pill: 78×28, radius 50)
   Widget _buildAttendanceBadge(int registeredCount, int totalCount) {
-    final isComplete = registeredCount == totalCount;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      width: 78,
+      height: 28,
+      alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: isComplete ? AppColors.success.withOpacity(0.1) : null,
-        border: Border.all(color: isComplete ? AppColors.success : AppColors.border),
-        borderRadius: BorderRadius.circular(8),
+        color: const Color(0x05000000), // rgba(0,0,0,0.02)
+        border: Border.all(color: const Color(0x1A000000)), // rgba(0,0,0,0.1)
+        borderRadius: BorderRadius.circular(AppSpacing.homePillRadius),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.check,
-            size: 16,
-            color: isComplete ? AppColors.success : AppColors.textSecondary,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            '$registeredCount/$totalCount',
-            style: AppTypography.headlineSmall.copyWith(
-              fontWeight: FontWeight.w700,
-              color: isComplete ? AppColors.success : AppColors.textSecondary,
+      child: Text(
+        '$registeredCount/$totalCount',
+        style: AppTypography.legacyBody,
+      ),
+    );
+  }
+
+  /// 등록 버튼 (레거시 height 44, radius 8, navy/slate/disabled)
+  Widget _buildRegisterButton(int totalCount, int registeredCount) {
+    final isComplete = totalCount > 0 && registeredCount == totalCount;
+    final isDisabled = totalCount == 0;
+    final enabled = !isDisabled && !isComplete;
+
+    final Color background;
+    final Color textColor;
+    if (isDisabled) {
+      // 휴무/일정 없음
+      background = AppColors.surface; // #F7F7F7
+      textColor = AppColors.legacyPlaceholder;
+    } else if (isComplete) {
+      background = AppColors.legacySlate;
+      textColor = AppColors.white;
+    } else {
+      background = AppColors.legacyNavy;
+      textColor = AppColors.white;
+    }
+
+    return SizedBox(
+      width: double.infinity,
+      height: AppSpacing.buttonHeight, // 44
+      child: Material(
+        color: background,
+        borderRadius: BorderRadius.circular(AppSpacing.homeButtonRadius),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppSpacing.homeButtonRadius),
+          onTap: enabled ? onRegisterTap : null,
+          child: Center(
+            child: Text(
+              _buttonText(totalCount, registeredCount),
+              style: AppTypography.legacyButton.copyWith(color: textColor),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -365,12 +385,6 @@ class ScheduleCard extends StatelessWidget {
     if (totalCount == 0 || registeredCount == 0) return '등록';
     if (registeredCount == totalCount) return '등록 완료';
     return '다음 등록';
-  }
-
-  /// 버튼 활성 여부 결정
-  bool _isButtonEnabled(int totalCount, int registeredCount) {
-    if (totalCount == 0) return false;
-    return registeredCount < totalCount;
   }
 
   /// 날짜 문자열을 "MM월 dd일 (요일)" 형식으로 변환

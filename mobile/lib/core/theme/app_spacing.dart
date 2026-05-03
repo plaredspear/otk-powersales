@@ -72,9 +72,36 @@ abstract final class AppSpacing {
   static BorderRadius get inputBorderRadius =>
       BorderRadius.circular(radiusMd);
 
-  // ─── Home Layout ────────────────────────────────────────
-  /// 홈 화면 노란 배경이 스케줄 카드와 겹치는 깊이 (dp)
-  static const double homeYellowOverlap = 60;
+  // ─── Home Layout (레거시 디자인 정렬용) ──────────────────
+  /// 홈 노란 헤더 콘텐츠 영역 높이 (status bar 제외, 레거시 CSS height:116px)
+  static const double homeHeaderHeight = 116;
+
+  /// 스케줄 카드가 노란 헤더 위로 솟아오르는 깊이 (translate.y = -55)
+  static const double homeCardOverlap = 55;
+
+  /// 홈 카드 (스케줄/공지/검색) 모서리
+  static const double homeCardRadius = 10;
+
+  /// 스케줄 카드 등록 버튼 모서리
+  static const double homeButtonRadius = 8;
+
+  /// 출근 카운트 배지 (pill)
+  static const double homePillRadius = 50;
+
+  /// 홈 본문 좌우 거터
+  static const double homeGutter = 20;
+
+  /// 공지 카드 너비
+  static const double homeNoticeCardWidth = 150;
+
+  /// 공지 카드 높이
+  static const double homeNoticeCardHeight = 146;
+
+  /// 공지 카드 간 간격
+  static const double homeNoticeCardGap = 7;
+
+  /// 직원 정보 영역 캐릭터 일러스트 크기
+  static const double homeProfileSize = 64;
 
   // ─── Component Sizes ─────────────────────────────────────
   /// AppBar 높이

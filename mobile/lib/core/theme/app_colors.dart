@@ -106,4 +106,32 @@ abstract final class AppColors {
 
   /// Snackbar 배경
   static const Color snackbarBackground = Color(0xE6212121); // 90%
+
+  // ─── Legacy (Heroku 디자인 정렬용) ────────────────────────
+  /// 홈 헤더 배경, 알림/공지 아이콘 강조색 (레거시 #FFE40C)
+  static const Color legacyYellow = Color(0xFFFFE40C);
+
+  /// 스케줄 카드 등록 버튼 활성 (레거시 #0B3F8C)
+  static const Color legacyNavy = Color(0xFF0B3F8C);
+
+  /// 스케줄 카드 등록 완료 상태 (레거시 #7C91A7)
+  static const Color legacySlate = Color(0xFF7C91A7);
+
+  /// 유통기한 카운트 강조, NEW 배지 배경 (레거시 #DC2C34)
+  static const Color legacyDanger = Color(0xFFDC2C34);
+
+  /// 퀵 메뉴 라벨, 공지 본문 (레거시 #333)
+  static const Color legacyTextSub = Color(0xFF333333);
+
+  /// 공지 작성일, 직원정보 보조 (레거시 #666)
+  static const Color legacyTextMute = Color(0xFF666666);
+
+  /// 검색바 placeholder, 비활성 텍스트 (레거시 #CCC)
+  static const Color legacyPlaceholder = Color(0xFFCCCCCC);
+
+  /// 홈 본문 배경 그라데이션 시작 (레거시 #F7F7F7)
+  static const Color homeBgGradientStart = Color(0xFFF7F7F7);
+
+  /// 홈 본문 배경 그라데이션 끝 (레거시 #FFFFFF)
+  static const Color homeBgGradientEnd = Color(0xFFFFFFFF);
 }
