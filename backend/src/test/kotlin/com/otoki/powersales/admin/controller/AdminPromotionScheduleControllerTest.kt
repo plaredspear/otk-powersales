@@ -188,7 +188,7 @@ class AdminPromotionScheduleControllerTest {
                     .content(body)
             )
                 .andExpect(status().isForbidden)
-                .andExpect(jsonPath("$.error.code").value("FORBIDDEN"))
+                .andExpect(jsonPath("$.error.code").value("SCHEDULE_NOT_IN_PROMOTION"))
         }
     }
 
@@ -229,8 +229,8 @@ class AdminPromotionScheduleControllerTest {
             )
                 .andExpect(status().isNotFound)
                 .andExpect(jsonPath("$.error.code").value("SCHEDULE_NOT_FOUND_PARTIAL"))
-                .andExpect(jsonPath("$.error.missing_ids[0]").value(1003))
-                .andExpect(jsonPath("$.error.missing_ids[1]").value(1005))
+                .andExpect(jsonPath("$.error.details.missing_ids[0]").value(1003))
+                .andExpect(jsonPath("$.error.details.missing_ids[1]").value(1005))
         }
     }
 }
