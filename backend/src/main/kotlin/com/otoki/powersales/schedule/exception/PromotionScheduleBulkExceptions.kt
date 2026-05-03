@@ -6,13 +6,13 @@ import org.springframework.http.HttpStatus
 // ===== Spec #571 P1-B: 행사 단위 일정 일괄 변경 =====
 
 class PromotionScheduleBulkInvalidSizeException : BusinessException(
-    errorCode = "BAD_REQUEST",
+    errorCode = "SCHEDULE_BULK_INVALID_SIZE",
     message = "items는 1~500건이어야 합니다",
     httpStatus = HttpStatus.BAD_REQUEST
 )
 
 class PromotionScheduleBulkDeleteInvalidSizeException : BusinessException(
-    errorCode = "BAD_REQUEST",
+    errorCode = "SCHEDULE_BULK_DELETE_INVALID_SIZE",
     message = "schedule_ids는 1~500건이어야 합니다",
     httpStatus = HttpStatus.BAD_REQUEST
 )
@@ -36,7 +36,7 @@ class PromotionScheduleInvalidWorkingCategoryException(value: String) : Business
 )
 
 class PromotionScheduleNotInPromotionException : BusinessException(
-    errorCode = "FORBIDDEN",
+    errorCode = "SCHEDULE_NOT_IN_PROMOTION",
     message = "다른 행사의 일정은 변경할 수 없습니다",
     httpStatus = HttpStatus.FORBIDDEN
 )

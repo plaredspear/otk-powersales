@@ -167,25 +167,25 @@ class GlobalExceptionHandler {
     }
 
     /**
-     * 일괄 삭제 부분 미존재 예외 처리 — error 응답에 missing_ids 를 포함한다 (Spec #571 P1-B).
+     * 일괄 삭제 부분 미존재 예외 처리 — error.details.missing_ids 에 누락된 ID 목록을 포함한다 (Spec #571 P1-B, #576).
+     *
+     * 응답 형식은 글로벌 ApiResponse 계약을 따른다:
+     * `{ success, data, error: { code, message, details: { missing_ids: [...] } }, message, timestamp }`
      */
     @ExceptionHandler(PromotionScheduleNotFoundPartialException::class)
     fun handlePromotionScheduleNotFoundPartialException(
         ex: PromotionScheduleNotFoundPartialException,
         request: WebRequest
-    ): ResponseEntity<Map<String, Any>> {
-        val body = mapOf(
-            "success" to false,
-            "error" to mapOf(
-                "code" to ex.errorCode,
-                "message" to (ex.message ?: ""),
-                "missing_ids" to ex.missingIds
-            )
+    ): ResponseEntity<ApiResponse<Any?>> {
+        val errorDetail = ErrorDetail(
+            code = ex.errorCode,
+            message = ex.message ?: "",
+            details = mapOf("missing_ids" to ex.missingIds)
         )
 
         return ResponseEntity
             .status(ex.httpStatus)
-            .body(body)
+            .body(ApiResponse.error<Any?>(errorDetail))
     }
 
     /**
