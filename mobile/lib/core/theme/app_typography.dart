@@ -95,6 +95,70 @@ abstract final class AppTypography {
     color: AppColors.textSecondary,
   );
 
+  // ─── Legacy (Heroku 디자인 정렬용) ───────────────────────
+  /// 레거시 폰트 패밀리 (NanumSquareNeo)
+  static const String legacyFontFamily = 'NanumSquareNeo';
+
+  /// 스케줄 카드 날짜 헤더 (22/800)
+  static const TextStyle legacyTitleXXL = TextStyle(
+    fontFamily: legacyFontFamily,
+    fontSize: 22,
+    fontWeight: FontWeight.w800,
+    height: 1.4,
+    letterSpacing: -0.55,
+    color: AppColors.textPrimary,
+  );
+
+  /// 직원 정보 지점·이름 (18/800)
+  static const TextStyle legacyTitleLG = TextStyle(
+    fontFamily: legacyFontFamily,
+    fontSize: 18,
+    fontWeight: FontWeight.w800,
+    height: 1.4,
+    letterSpacing: -0.9,
+    color: AppColors.textPrimary,
+  );
+
+  /// 공지 카드 헤더 (16/800)
+  static const TextStyle legacyTitleMD = TextStyle(
+    fontFamily: legacyFontFamily,
+    fontSize: 16,
+    fontWeight: FontWeight.w800,
+    height: 1.4,
+    letterSpacing: -0.4,
+    color: AppColors.textPrimary,
+  );
+
+  /// 등록 버튼 텍스트 (16/700)
+  static const TextStyle legacyButton = TextStyle(
+    fontFamily: legacyFontFamily,
+    fontSize: 16,
+    fontWeight: FontWeight.w700,
+    height: 1.4,
+    letterSpacing: -0.4,
+    color: AppColors.white,
+  );
+
+  /// 퀵 메뉴 라벨, 일반 본문 (15/700)
+  static const TextStyle legacyBody = TextStyle(
+    fontFamily: legacyFontFamily,
+    fontSize: 15,
+    fontWeight: FontWeight.w700,
+    height: 1.4,
+    letterSpacing: -0.25,
+    color: AppColors.textPrimary,
+  );
+
+  /// 공지 작성일 (14/400)
+  static const TextStyle legacyCaption = TextStyle(
+    fontFamily: legacyFontFamily,
+    fontSize: 14,
+    fontWeight: FontWeight.w400,
+    height: 1.4,
+    letterSpacing: -0.25,
+    color: AppColors.legacyTextMute,
+  );
+
   // ─── TextTheme (Material 3 매핑) ─────────────────────────
   /// Material 3 TextTheme으로 변환
   static TextTheme get textTheme => const TextTheme(

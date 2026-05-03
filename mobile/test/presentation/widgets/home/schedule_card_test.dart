@@ -66,7 +66,7 @@ void main() {
         ));
 
         expect(find.text('0/8'), findsOneWidget);
-        expect(find.byIcon(Icons.check), findsOneWidget);
+        // 레거시 정렬: 배지 내 체크 아이콘 제거 (텍스트만 표시)
       });
 
       testWidgets('T3: 부분 출근 시 "X/N" 배지 표시', (tester) async {
@@ -128,19 +128,18 @@ void main() {
 
     group('등록 버튼', () {
       testWidgets('T1: totalCount == 0 이면 "등록" 버튼 비활성', (tester) async {
+        var tapped = false;
         await tester.pumpWidget(buildTestWidget(
           attendanceSummary:
               const AttendanceSummary(totalCount: 0, registeredCount: 0),
-          onRegisterTap: () {},
+          onRegisterTap: () => tapped = true,
         ));
 
-        final button = find.widgetWithText(ElevatedButton, '등록');
+        final button = find.text('등록');
         expect(button, findsOneWidget);
-
-        // 비활성이므로 onPressed가 null
-        final elevatedButton =
-            tester.widget<ElevatedButton>(find.byType(ElevatedButton));
-        expect(elevatedButton.onPressed, isNull);
+        // 비활성이면 InkWell.onTap이 null이라 콜백이 호출되지 않는다
+        await tester.tap(button);
+        expect(tapped, isFalse);
       });
 
       testWidgets('T2: registeredCount < totalCount 이면 "등록" 버튼 활성',
@@ -153,7 +152,7 @@ void main() {
           onRegisterTap: () => tapped = true,
         ));
 
-        final button = find.widgetWithText(ElevatedButton, '등록');
+        final button = find.text('등록');
         expect(button, findsOneWidget);
         await tester.tap(button);
         expect(tapped, isTrue);
@@ -168,7 +167,7 @@ void main() {
           onRegisterTap: () => tapped = true,
         ));
 
-        final button = find.widgetWithText(ElevatedButton, '다음 등록');
+        final button = find.text('다음 등록');
         expect(button, findsOneWidget);
         await tester.tap(button);
         expect(tapped, isTrue);
@@ -176,20 +175,18 @@ void main() {
 
       testWidgets('T4: registeredCount == totalCount 이면 "등록 완료" 비활성',
           (tester) async {
+        var tapped = false;
         await tester.pumpWidget(buildTestWidget(
           schedules: _makeSchedules(8, registered: 8),
           attendanceSummary:
               const AttendanceSummary(totalCount: 8, registeredCount: 8),
-          onRegisterTap: () {},
+          onRegisterTap: () => tapped = true,
         ));
 
-        final button = find.widgetWithText(ElevatedButton, '등록 완료');
+        final button = find.text('등록 완료');
         expect(button, findsOneWidget);
-
-        // 비활성이므로 ElevatedButton의 onPressed가 null
-        final elevatedButton =
-            tester.widget<ElevatedButton>(find.byType(ElevatedButton));
-        expect(elevatedButton.onPressed, isNull);
+        await tester.tap(button);
+        expect(tapped, isFalse);
       });
     });
 
@@ -250,7 +247,10 @@ void main() {
           onRegisterTap: () {},
         ));
 
-        expect(find.byType(ElevatedButton), findsNothing);
+        // 등록 버튼 텍스트가 LEADER 뷰에서는 표시되지 않음
+        expect(find.text('등록'), findsNothing);
+        expect(find.text('다음 등록'), findsNothing);
+        expect(find.text('등록 완료'), findsNothing);
       });
 
       testWidgets('출근 완료 시 체크 아이콘과 시간이 표시되어야 한다', (tester) async {
@@ -353,7 +353,8 @@ void main() {
         expect(find.text('일정 관리'), findsNothing);
         expect(find.text('팀 출근 현황: 3명 중 1명 등록 완료'), findsOneWidget);
         expect(find.text('내 일정'), findsNothing);
-        expect(find.byType(ElevatedButton), findsNothing);
+        // 등록 버튼은 USER 뷰에서만 노출
+        expect(find.text('다음 등록'), findsNothing);
       });
     });
 
@@ -376,7 +377,7 @@ void main() {
           onRegisterTap: () {},
         ));
 
-        expect(find.byType(ElevatedButton), findsOneWidget);
+        expect(find.text('다음 등록'), findsOneWidget);
       });
 
       testWidgets('USER는 팀 출근 현황 텍스트가 표시되지 않아야 한다', (tester) async {
@@ -410,7 +411,7 @@ void main() {
         ));
 
         expect(find.text('1/1'), findsOneWidget);
-        expect(find.widgetWithText(ElevatedButton, '등록 완료'), findsOneWidget);
+        expect(find.text('등록 완료'), findsOneWidget);
       });
 
       testWidgets('T8: attendanceSummary 기본값(0/0)이면 휴무 상태 표시',

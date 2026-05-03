@@ -7,9 +7,8 @@ import '../../../domain/entities/notice.dart';
 /// 공지 가로 스크롤 위젯
 ///
 /// 홈 화면의 #3 영역: 최근 공지사항을 가로 스크롤 카드로 표시한다.
-/// - 스피커 아이콘 + "전체 공지" 라벨
-/// - 제목 + 날짜(요일) 형식
-/// - 공지 없음: "공지사항이 없습니다." 메시지
+/// - 카드 150×146 고정, 간격 7dp
+/// - createdAt이 현재 시각으로부터 7일 이내인 공지에 우상단 NEW 배지 표시
 class NoticeCarousel extends StatelessWidget {
   /// 공지사항 목록
   final List<Notice> notices;
@@ -20,12 +19,24 @@ class NoticeCarousel extends StatelessWidget {
   /// 전체보기 카드 탭 콜백 (공지사항 목록 화면으로 이동)
   final VoidCallback? onViewAllTap;
 
+  /// NEW 배지 판정 기준 시각 (테스트 주입용. 미지정 시 DateTime.now())
+  final DateTime? now;
+
   const NoticeCarousel({
     super.key,
     required this.notices,
     this.onNoticeTap,
     this.onViewAllTap,
+    this.now,
   });
+
+  /// NEW 배지 표시 기준: createdAt이 기준 시각으로부터 7일 이내
+  static const Duration _newThreshold = Duration(days: 7);
+
+  bool _isNew(Notice notice) {
+    final base = now ?? DateTime.now();
+    return base.difference(notice.createdAt) < _newThreshold;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,133 +44,151 @@ class NoticeCarousel extends StatelessWidget {
       return _buildEmptyNotice();
     }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final cardWidth = constraints.maxWidth * 0.4;
-        return SizedBox(
-          height: 130,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            itemCount: notices.length + 1,
-            separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
-            itemBuilder: (context, index) {
-              if (index == notices.length) {
-                return _buildViewAllCard(cardWidth);
-              }
-              return _buildNoticeCard(notices[index], cardWidth);
-            },
-          ),
-        );
-      },
+    return SizedBox(
+      height: AppSpacing.homeNoticeCardHeight,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.homeGutter),
+        itemCount: notices.length + 1,
+        separatorBuilder: (_, __) =>
+            const SizedBox(width: AppSpacing.homeNoticeCardGap),
+        itemBuilder: (context, index) {
+          if (index == notices.length) {
+            return _buildViewAllCard();
+          }
+          return _buildNoticeCard(notices[index]);
+        },
+      ),
     );
   }
 
   /// 공지 없음 UI
   Widget _buildEmptyNotice() {
     return Padding(
-      padding: AppSpacing.screenHorizontal,
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.homeGutter),
       child: Center(
         child: Text(
           '공지사항이 없습니다.',
-          style: AppTypography.bodyMedium.copyWith(
-            color: AppColors.textSecondary,
+          style: AppTypography.legacyBody.copyWith(
+            color: AppColors.legacyTextMute,
           ),
         ),
       ),
     );
   }
 
-  /// 공지 카드 UI
-  Widget _buildNoticeCard(Notice notice, double cardWidth) {
+  /// 공지 카드 UI (150×146, radius 10)
+  Widget _buildNoticeCard(Notice notice) {
+    final showNew = _isNew(notice);
+
     return InkWell(
       onTap: onNoticeTap != null ? () => onNoticeTap!(notice) : null,
-      borderRadius: AppSpacing.cardBorderRadius,
+      borderRadius: BorderRadius.circular(AppSpacing.homeCardRadius),
       child: Container(
-        width: cardWidth,
+        width: AppSpacing.homeNoticeCardWidth,
+        height: AppSpacing.homeNoticeCardHeight,
         decoration: BoxDecoration(
           color: AppColors.card,
-          borderRadius: AppSpacing.cardBorderRadius,
+          borderRadius: BorderRadius.circular(AppSpacing.homeCardRadius),
           boxShadow: AppSpacing.cardShadow,
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 스피커 아이콘 + "전체 공지" 라벨
-              Row(
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 15,
+                vertical: 20,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(
-                    Icons.campaign_outlined,
-                    size: 18,
-                    color: AppColors.textPrimary,
+                  // 헤더: 노란 종 아이콘 + 카테고리명 (16/800)
+                  Row(
+                    children: [
+                      Image.asset(
+                        'assets/images/ico_notice.png',
+                        width: 19,
+                        height: 18,
+                        fit: BoxFit.contain,
+                      ),
+                      const SizedBox(width: 3),
+                      Expanded(
+                        child: Text(
+                          notice.categoryName,
+                          style: AppTypography.legacyTitleMD,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 4),
-                  Text(
-                    notice.categoryName,
-                    style: AppTypography.labelLarge.copyWith(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
+                  const SizedBox(height: AppSpacing.sm),
+
+                  // 본문 3줄 ellipsis
+                  Expanded(
+                    child: Text(
+                      notice.title,
+                      style: AppTypography.legacyBody.copyWith(
+                        color: AppColors.legacyTextSub,
+                        height: 16 / 15,
+                      ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
                     ),
+                  ),
+
+                  // 작성일 (yyyy.MM.dd(요일))
+                  Text(
+                    _formatDateWithDay(notice.createdAt),
+                    style: AppTypography.legacyCaption,
                   ),
                 ],
               ),
-              const SizedBox(height: AppSpacing.sm),
-
-              // 제목
-              Expanded(
-                child: Text(
-                  notice.title,
-                  style: AppTypography.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
-                    height: 1.4,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+            ),
+            // NEW 배지 (우상단 24×24)
+            if (showNew)
+              Positioned(
+                top: 0,
+                right: 0,
+                child: Image.asset(
+                  'assets/images/ico_new.png',
+                  width: 24,
+                  height: 24,
+                  fit: BoxFit.contain,
                 ),
               ),
-
-              // 작성일 (yyyy.MM.dd(요일))
-              Text(
-                _formatDateWithDay(notice.createdAt),
-                style: AppTypography.bodySmall.copyWith(
-                  color: AppColors.textTertiary,
-                ),
-              ),
-            ],
-          ),
+          ],
         ),
       ),
     );
   }
 
-  /// 전체보기 카드 UI
-  Widget _buildViewAllCard(double cardWidth) {
+  /// 전체보기 카드 UI (150×146)
+  Widget _buildViewAllCard() {
     return InkWell(
       onTap: onViewAllTap,
-      borderRadius: AppSpacing.cardBorderRadius,
+      borderRadius: BorderRadius.circular(AppSpacing.homeCardRadius),
       child: Container(
-        width: cardWidth,
+        width: AppSpacing.homeNoticeCardWidth,
+        height: AppSpacing.homeNoticeCardHeight,
         decoration: BoxDecoration(
           color: AppColors.card,
-          borderRadius: AppSpacing.cardBorderRadius,
+          borderRadius: BorderRadius.circular(AppSpacing.homeCardRadius),
           boxShadow: AppSpacing.cardShadow,
         ),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
+              const Icon(
                 Icons.arrow_forward_ios,
                 size: 24,
-                color: AppColors.textSecondary,
+                color: AppColors.legacyTextMute,
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
                 '전체보기',
-                style: AppTypography.labelLarge.copyWith(
-                  color: AppColors.textSecondary,
+                style: AppTypography.legacyBody.copyWith(
+                  color: AppColors.legacyTextMute,
                 ),
               ),
             ],

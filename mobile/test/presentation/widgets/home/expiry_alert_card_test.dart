@@ -34,7 +34,7 @@ void main() {
       expect(find.text('유통기한 임박제품 : '), findsOneWidget);
     });
 
-    testWidgets('T1: 0건일 때 건수 텍스트가 textSecondary 색상이어야 한다',
+    testWidgets('T1: 0건일 때도 건수 텍스트가 legacyDanger 색상이어야 한다 (레거시 정렬)',
         (tester) async {
       await tester.pumpWidget(buildTestWidget(
         expiryAlert: const ExpiryAlert(
@@ -47,10 +47,10 @@ void main() {
 
       final countText = tester.widget<Text>(find.text('0건'));
       final style = countText.style!;
-      expect(style.color, equals(AppColors.textSecondary));
+      expect(style.color, equals(AppColors.legacyDanger));
     });
 
-    testWidgets('T2: N건일 때 건수 텍스트가 otokiBlue 색상이어야 한다',
+    testWidgets('T2: N건일 때 건수 텍스트가 legacyDanger 색상이어야 한다',
         (tester) async {
       await tester.pumpWidget(buildTestWidget(
         expiryAlert: const ExpiryAlert(
@@ -63,7 +63,7 @@ void main() {
 
       final countText = tester.widget<Text>(find.text('5건'));
       final style = countText.style!;
-      expect(style.color, equals(AppColors.otokiBlue));
+      expect(style.color, equals(AppColors.legacyDanger));
     });
 
     testWidgets('T3: expiryAlert가 null이면 카드가 숨겨져야 한다',

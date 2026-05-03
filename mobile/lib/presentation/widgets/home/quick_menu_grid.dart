@@ -71,24 +71,27 @@ class QuickMenuGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = _menuItems;
-    return GridView.count(
-      crossAxisCount: 3,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: AppSpacing.lg,
-      crossAxisSpacing: AppSpacing.md,
-      childAspectRatio: 1.1,
-      children: items.map((item) {
-        return _buildMenuItem(item);
-      }).toList(),
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.homeGutter),
+      child: GridView.count(
+        crossAxisCount: 3,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        mainAxisSpacing: 15,
+        crossAxisSpacing: 0,
+        childAspectRatio: 1.0,
+        children: items.map((item) {
+          return _buildMenuItem(item);
+        }).toList(),
+      ),
     );
   }
 
-  /// 메뉴 아이템 UI
+  /// 메뉴 아이템 UI - 레거시 라벨 15/700/#333, 아이콘-라벨 간격 5
   Widget _buildMenuItem(QuickMenuItem item) {
     return InkWell(
       onTap: onMenuTap != null ? () => onMenuTap!(item) : null,
-      borderRadius: AppSpacing.cardBorderRadius,
+      borderRadius: BorderRadius.circular(AppSpacing.homeCardRadius),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -104,11 +107,11 @@ class QuickMenuGrid extends StatelessWidget {
               width: AppSpacing.iconSizeMenu,
               height: AppSpacing.iconSizeMenu,
             ),
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: 5),
           Text(
             item.label,
-            style: AppTypography.labelMedium.copyWith(
-              color: AppColors.textPrimary,
+            style: AppTypography.legacyBody.copyWith(
+              color: AppColors.legacyTextSub,
             ),
             textAlign: TextAlign.center,
           ),
