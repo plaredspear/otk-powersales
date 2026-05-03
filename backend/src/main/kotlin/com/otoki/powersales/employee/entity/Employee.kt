@@ -170,6 +170,10 @@ class Employee(
     @Column(name = "crm_work_start_date")
     var crmWorkStartDate: LocalDate? = null,
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "origin", nullable = false, length = 20)
+    var origin: EmployeeOrigin = EmployeeOrigin.SAP,
+
     // --- Secondary Table (employee_info) 필드: constructor param only (JPA 미매핑) ---
 
     password: String = "",

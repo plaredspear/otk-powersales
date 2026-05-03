@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:60019",
+    "url" : "http://localhost:56638",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -2699,10 +2699,10 @@
       "SortObject" : {
         "type" : "object",
         "properties" : {
-          "sorted" : {
+          "unsorted" : {
             "type" : "boolean"
           },
-          "unsorted" : {
+          "sorted" : {
             "type" : "boolean"
           },
           "empty" : {

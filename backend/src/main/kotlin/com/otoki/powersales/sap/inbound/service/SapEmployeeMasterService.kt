@@ -5,6 +5,7 @@ import com.otoki.powersales.sap.auth.audit.SapInboundAuditEventType
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.sap.auth.util.ClientIpResolver
 import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.employee.entity.EmployeeOrigin
 import com.otoki.powersales.employee.entity.Gender
 import com.otoki.powersales.sap.inbound.dto.employee.EmployeeMasterDetail
 import com.otoki.powersales.sap.inbound.dto.employee.EmployeeMasterRequestItem
@@ -60,6 +61,7 @@ class SapEmployeeMasterService(
 
         val failures = mutableListOf<FailureItem>()
         val toSave = mutableListOf<Employee>()
+        val protectedManualCodes = mutableListOf<String>()
 
         items.forEach { item ->
             try {
@@ -68,6 +70,14 @@ class SapEmployeeMasterService(
                 val employeeName = item.employeeName?.takeIf { it.isNotBlank() }
                     ?: throw IllegalArgumentException("EmployeeName 필수")
 
+                val existing = cache[employeeCode]
+                if (existing != null && existing.origin == EmployeeOrigin.MANUAL) {
+                    // Spec #579: origin=MANUAL 직원은 SAP 인바운드 갱신 대상에서 제외.
+                    // 응답·카운트에 영향 없음. audit 만 기록.
+                    protectedManualCodes += employeeCode
+                    return@forEach
+                }
+
                 val convertedGender = Gender.fromSapCode(item.gender)
                 val startDate = parseDate(item.startDate, "StartDate")
                 val endDate = parseDate(item.endDate, "EndDate")
@@ -75,7 +85,7 @@ class SapEmployeeMasterService(
                 val resolvedStatus = item.status?.let { statusCodeMap[it] ?: it }
                 val appLoginActive = item.lockingFlag != "Y"
 
-                val entity = cache[employeeCode]?.also {
+                val entity = existing?.also {
                     applyMutableFields(it, item, employeeName, convertedGender, startDate, endDate, birthDate, resolvedStatus, appLoginActive)
                 } ?: Employee(employeeCode = employeeCode, name = employeeName).also {
                     applyMutableFields(it, item, employeeName, convertedGender, startDate, endDate, birthDate, resolvedStatus, appLoginActive)
@@ -92,6 +102,10 @@ class SapEmployeeMasterService(
         }
 
         recordAccepted(items.size, toSave.size, failures.size)
+
+        if (protectedManualCodes.isNotEmpty()) {
+            recordManualOriginProtected(items.size, protectedManualCodes)
+        }
 
         return EmployeeMasterDetail(
             successCount = toSave.size,
@@ -160,6 +174,26 @@ class SapEmployeeMasterService(
         )
     }
 
+    private fun recordManualOriginProtected(received: Int, protectedCodes: List<String>) {
+        val request = currentRequest()
+        val endpoint = request?.requestURI ?: ""
+        val httpMethod = request?.method
+        val clientIp = request?.let { ClientIpResolver.resolve(it) } ?: ""
+        val clientId = SecurityContextHolder.getContext().authentication?.name
+        val reason = protectedCodes.joinToString(",").take(REASON_MAX_LENGTH)
+        auditService.record(
+            SapInboundAudit(
+                eventType = SapInboundAuditEventType.MANUAL_ORIGIN_PROTECTED,
+                clientId = clientId,
+                endpoint = endpoint,
+                httpMethod = httpMethod,
+                clientIp = clientIp,
+                receivedCount = received,
+                reason = reason
+            )
+        )
+    }
+
     private fun currentRequest(): HttpServletRequest? {
         val attrs = RequestContextHolder.getRequestAttributes() as? ServletRequestAttributes
         return attrs?.request
@@ -169,6 +203,7 @@ class SapEmployeeMasterService(
         private const val STATUS_GROUP_CODE = "H10010"
         private const val STATUS_COMPANY_CODE = "1000"
         private const val EMPTY_DATE = "00000000"
+        private const val REASON_MAX_LENGTH = 1000
         private val DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd")
     }
 }
