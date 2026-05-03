@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional
  * - 비밀번호는 [AdminPasswordPolicyValidator] 검증 후 BCrypt 해시로 저장된다.
  */
 @Service
+@Transactional(readOnly = true)
 class AdminEmployeeRegisterService(
     private val employeeRepository: EmployeeRepository,
     private val passwordEncoder: PasswordEncoder,

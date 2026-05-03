@@ -20,7 +20,7 @@ object AdminPasswordPolicyValidator {
     private const val MIN_CATEGORIES = 2
     private const val MAX_CONSECUTIVE_SAME_CHAR = 4
 
-    private val SPECIAL_CHARS = "!@#$%^&*()_+\\-=[]{};':\"\\|,.<>/?".toSet()
+    private val SPECIAL_CHARS = "!@#$%^&*()_+-=[]{};':\"|,.<>/?".toSet()
 
     fun validate(password: String) {
         if (password.length < MIN_LENGTH || password.length > MAX_LENGTH) {

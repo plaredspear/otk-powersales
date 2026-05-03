@@ -26,9 +26,11 @@ data class AdminEmployeeRegisterRequest(
     val name: String,
 
     @field:NotBlank(message = "비밀번호는 필수입니다")
+    @field:Size(min = 8, max = 64, message = "비밀번호는 8자 이상 64자 이하여야 합니다")
     val password: String,
 
     @field:NotBlank(message = "비밀번호 확인은 필수입니다")
+    @field:Size(min = 8, max = 64, message = "비밀번호 확인은 8자 이상 64자 이하여야 합니다")
     val passwordConfirm: String,
 
     @field:Email(message = "이메일 형식이 올바르지 않습니다")
