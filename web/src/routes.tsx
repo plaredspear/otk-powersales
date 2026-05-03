@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { Spin } from 'antd';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import PermissionRoute from '@/components/PermissionRoute';
+import RoleRoute from '@/components/RoleRoute';
 import AdminLayout from '@/layouts/AdminLayout';
 
 const LoginPage = lazy(() => import('@/pages/LoginPage'));
@@ -41,6 +42,7 @@ const PPTMasterPage = lazy(() => import('@/pages/promotion/PPTMasterPage'));
 const PermissionMatrixPage = lazy(() => import('@/pages/settings/PermissionMatrixPage'));
 const ProductExpirationPage = lazy(() => import('@/pages/ProductExpirationPage'));
 const EmployeePermissionPage = lazy(() => import('@/pages/settings/EmployeePermissionPage'));
+const AdminAccountRegisterPage = lazy(() => import('@/pages/settings/AdminAccountRegisterPage'));
 
 // eslint-disable-next-line react-refresh/only-export-components
 function LazyWrapper({ children }: { children: React.ReactNode }) {
@@ -101,6 +103,12 @@ export const router = createBrowserRouter(
             { path: '/settings/holiday-masters', element: <LazyWrapper><HolidayMasterListPage /></LazyWrapper> },
             { path: '/settings/permissions', element: <LazyWrapper><PermissionMatrixPage /></LazyWrapper> },
             { path: '/settings/permissions/employees', element: <LazyWrapper><EmployeePermissionPage /></LazyWrapper> },
+            {
+              element: <RoleRoute allowedRoles={['SYSTEM_ADMIN']} />,
+              children: [
+                { path: '/settings/admin-accounts/new', element: <LazyWrapper><AdminAccountRegisterPage /></LazyWrapper> },
+              ],
+            },
             { path: '/monthly-integration', element: <LazyWrapper><MonthlyIntegrationSchedulePage /></LazyWrapper> },
             { path: '/monthly-integration/category', element: <LazyWrapper><CategorySchedulePage /></LazyWrapper> },
             { path: '/promotion/ppt-masters', element: <LazyWrapper><PPTMasterPage /></LazyWrapper> },
