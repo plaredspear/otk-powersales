@@ -152,5 +152,46 @@ class Account(
     var employeeCode: String? = null,
 
     @Column(name = "distribution", length = 1)
-    var distribution: String? = null
+    var distribution: String? = null,
+
+    // --- Spec #575: SAP 인바운드 레거시 필드 13개 보존 ---
+
+    @Column(name = "account_status_code", length = 20)
+    var accountStatusCode: String? = null,
+
+    @Column(name = "business_type", length = 50)
+    var businessType: String? = null,
+
+    @Column(name = "business_category", length = 50)
+    var businessCategory: String? = null,
+
+    @Column(name = "business_license_number", length = 50)
+    var businessLicenseNumber: String? = null,
+
+    @Column(name = "email", length = 100)
+    var email: String? = null,
+
+    @Column(name = "division_name", length = 50)
+    var divisionName: String? = null,
+
+    @Column(name = "sales_dept_name", length = 50)
+    var salesDeptName: String? = null,
+
+    @Column(name = "consignment_acc", length = 1)
+    var consignmentAcc: String? = null,
+
+    @Column(name = "werk1", length = 20)
+    var werk1: String? = null,
+
+    @Column(name = "werk2", length = 20)
+    var werk2: String? = null,
+
+    @Column(name = "werk3", length = 20)
+    var werk3: String? = null,
+
+    @Column(name = "sales_dept_cost_center", length = 20)
+    var salesDeptCostCenter: String? = null,
+
+    @Column(name = "division_cost_center", length = 20)
+    var divisionCostCenter: String? = null
 ) : BaseEntity()

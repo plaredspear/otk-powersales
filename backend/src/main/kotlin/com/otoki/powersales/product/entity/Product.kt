@@ -200,7 +200,15 @@ class Product(
 
     @HCColumn("isdeleted")
     @Column(name = "is_deleted")
-    val isDeleted: Boolean? = null
+    val isDeleted: Boolean? = null,
+
+    // --- Spec #575: SAP 인바운드 레거시 필드 2개 보존 ---
+
+    @Column(name = "product_barcode", length = 50)
+    var productBarcode: String? = null,
+
+    @Column(name = "pallet")
+    var pallet: Double? = null
 
     /* --- 주석 처리: V1에 없는 기존 필드 ---
     productId: V1에 없음 (sfid로 대체)

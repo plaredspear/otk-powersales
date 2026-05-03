@@ -45,7 +45,8 @@ class SapProductMasterServiceTest {
         category1: String? = null,
         storeCondition: String? = null,
         logisticsBarCode: String? = null,
-        productBarcode: String? = null
+        productBarcode: String? = null,
+        pallet: String? = null
     ): ProductMasterRequestItem = ProductMasterRequestItem(
         productCode = productCode,
         productName = productName,
@@ -58,7 +59,8 @@ class SapProductMasterServiceTest {
         category1 = category1,
         storeCondition = storeCondition,
         logisticsBarCode = logisticsBarCode,
-        productBarcode = productBarcode
+        productBarcode = productBarcode,
+        pallet = pallet
     )
 
     @Nested
@@ -128,6 +130,46 @@ class SapProductMasterServiceTest {
             verify(productRepository).saveAll(captor.capture())
             assertThat(captor.firstValue.single().storageCondition).isEqualTo("냉장보관")
         }
+
+        // Spec #575
+
+        @Test
+        @DisplayName("Spec #575 - ProductBarcode + Pallet 정상 매핑")
+        fun upsert_legacyFieldsMapped() {
+            whenever(productRepository.findByProductCodeIn(listOf("100100"))).thenReturn(emptyList())
+
+            service.upsert(listOf(item(productBarcode = "8801007123456", pallet = "100")))
+
+            val captor = argumentCaptor<List<Product>>()
+            verify(productRepository).saveAll(captor.capture())
+            val saved = captor.firstValue.single()
+            assertThat(saved.productBarcode).isEqualTo("8801007123456")
+            assertThat(saved.pallet).isEqualTo(100.0)
+        }
+
+        @Test
+        @DisplayName("Spec #575 - Pallet blank → 0.0")
+        fun upsert_palletBlank() {
+            whenever(productRepository.findByProductCodeIn(listOf("100100"))).thenReturn(emptyList())
+
+            service.upsert(listOf(item(pallet = "")))
+
+            val captor = argumentCaptor<List<Product>>()
+            verify(productRepository).saveAll(captor.capture())
+            assertThat(captor.firstValue.single().pallet).isEqualTo(0.0)
+        }
+
+        @Test
+        @DisplayName("Spec #575 - Pallet null (필드 미포함) → 0.0")
+        fun upsert_palletNull() {
+            whenever(productRepository.findByProductCodeIn(listOf("100100"))).thenReturn(emptyList())
+
+            service.upsert(listOf(item(pallet = null)))
+
+            val captor = argumentCaptor<List<Product>>()
+            verify(productRepository).saveAll(captor.capture())
+            assertThat(captor.firstValue.single().pallet).isEqualTo(0.0)
+        }
     }
 
     @Nested
@@ -168,6 +210,20 @@ class SapProductMasterServiceTest {
 
             assertThat(detail.failureCount).isEqualTo(1)
             assertThat(detail.failures.single().reason).contains("ProductName 필수")
+        }
+
+        @Test
+        @DisplayName("Spec #575 - Pallet 비숫자 → 행 단위 부분 실패")
+        fun upsert_palletInvalid() {
+            whenever(productRepository.findByProductCodeIn(listOf("100100"))).thenReturn(emptyList())
+
+            val detail = service.upsert(listOf(item(pallet = "abc")))
+
+            assertThat(detail.successCount).isEqualTo(0)
+            assertThat(detail.failureCount).isEqualTo(1)
+            assertThat(detail.failures.single().identifier).isEqualTo("100100")
+            assertThat(detail.failures.single().reason).contains("Pallet 형식 오류: abc")
+            verify(productRepository, never()).saveAll(any<List<Product>>())
         }
     }
 }

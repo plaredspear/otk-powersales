@@ -72,6 +72,11 @@ class SapClientMasterService(
                     return@forEach
                 }
 
+                if (item.consignmentAcc != null && item.consignmentAcc !in CONSIGNMENT_ACC_ALLOWED) {
+                    failures += FailureItem(externalKey, "ConsignmentAcc 형식 오류: ${item.consignmentAcc}")
+                    return@forEach
+                }
+
                 val matchedOrg = lookupOrganization(item, orgCache)
                 val account = accountCache[externalKey]?.also { applyToEntity(it, item, name, matchedOrg) }
                     ?: createAccount(externalKey, item, name, matchedOrg).also { accountCache[externalKey] = it }
@@ -158,6 +163,21 @@ class SapClientMasterService(
         account.werk3Tx = item.werk3Tx
         account.employeeCode = item.employeeCode
 
+        // Spec #575: SAP 인바운드 레거시 필드 13개 보존 (변환 없이 그대로 set)
+        account.accountStatusCode = item.accountStatusCode
+        account.businessType = item.businessType
+        account.businessCategory = item.businessCategory
+        account.businessLicenseNumber = item.businessLicenseNumber
+        account.email = item.email
+        account.divisionName = item.divisionName
+        account.salesDeptName = item.salesDeptName
+        account.consignmentAcc = item.consignmentAcc
+        account.werk1 = item.werk1
+        account.werk2 = item.werk2
+        account.werk3 = item.werk3
+        account.salesDeptCostCenter = item.salesDeptCode
+        account.divisionCostCenter = item.divisionCode
+
         // 지점 코드/명: Organization 매칭 시 OrgCode/OrgName 의 deepest non-blank 값을 우선 사용,
         // 매칭 실패 시 페이로드 raw 값을 그대로 저장한다 (레거시 폴백 동작과 동일).
         val resolvedBranchCode = matchedOrg?.let { firstNonBlank(it.orgCodeLevel5, it.orgCodeLevel4, it.orgCodeLevel3) }
@@ -193,5 +213,10 @@ class SapClientMasterService(
     private fun currentRequest(): HttpServletRequest? {
         val attrs = RequestContextHolder.getRequestAttributes() as? ServletRequestAttributes
         return attrs?.request
+    }
+
+    companion object {
+        // Spec #575: ConsignmentAcc 허용 값. null 은 미입력 → 검증 스킵.
+        private val CONSIGNMENT_ACC_ALLOWED = setOf("Y", "N", "")
     }
 }

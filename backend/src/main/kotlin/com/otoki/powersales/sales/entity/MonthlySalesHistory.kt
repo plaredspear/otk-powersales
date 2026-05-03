@@ -108,6 +108,10 @@ class MonthlySalesHistory(
     @Column(name = "rl_sales")
     var rlsalesC: Double? = null,
 
+    // Spec #575: SAP TotalLedgerAmount 보존 (누적 합산 로직은 D1 결정으로 별도 스펙 분리)
+    @Column(name = "total_ledger_amount")
+    var totalLedgerAmount: Double? = null,
+
     @HCColumn("createddate")
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
