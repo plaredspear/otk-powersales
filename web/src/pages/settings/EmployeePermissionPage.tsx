@@ -14,9 +14,11 @@ import {
   Typography,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { ArrowLeftOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, PlusOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useEmployees } from '@/hooks/employee/useEmployees';
+import { useAuthStore } from '@/stores/authStore';
+import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import type { Employee } from '@/api/employee';
 import {
   fetchEmployeePermissions,
@@ -47,6 +49,9 @@ const ALL_PERMISSIONS = [
 
 export default function EmployeePermissionPage() {
   const navigate = useNavigate();
+  const currentUserRole = useAuthStore((state) => state.user?.role ?? null);
+  const canRegisterAdmin = currentUserRole === 'SYSTEM_ADMIN';
+  const handleRegisterAdmin = useThrottleClick(() => navigate('/settings/admin-accounts/new'));
   const [keyword, setKeyword] = useState('');
   const [roleFilter, setRoleFilter] = useState<UserRole | undefined>(undefined);
   const [searchParams, setSearchParams] = useState<{ keyword?: string; role?: UserRole; page: number }>({ page: 0 });
@@ -250,12 +255,23 @@ export default function EmployeePermissionPage() {
 
   return (
     <div style={{ padding: 16 }}>
-      <Space align="center" style={{ marginBottom: 16 }}>
-        <Button icon={<ArrowLeftOutlined />} type="text" onClick={() => navigate('/settings/permissions')}>
-          권한 관리
-        </Button>
-        <Title level={4} style={{ margin: 0 }}>사원별 권한 관리</Title>
-      </Space>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <Space align="center">
+          <Button icon={<ArrowLeftOutlined />} type="text" onClick={() => navigate('/settings/permissions')}>
+            권한 관리
+          </Button>
+          <Title level={4} style={{ margin: 0 }}>사원별 권한 관리</Title>
+        </Space>
+        {canRegisterAdmin && (
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleRegisterAdmin}
+          >
+            관리자 등록
+          </Button>
+        )}
+      </div>
 
       <Space style={{ marginBottom: 16 }}>
         <Input
