@@ -32,7 +32,7 @@ interface RawFormValues {
   costCenterCode?: string;
 }
 
-interface Props {
+interface AdminAccountRegisterFormProps {
   form: FormInstance<RawFormValues>;
   isSubmitting: boolean;
   onSubmit: (values: AdminAccountRegisterFormValues) => Promise<void> | void;
@@ -70,7 +70,7 @@ function hasFourConsecutiveSameChars(value: string): boolean {
   return false;
 }
 
-export default function AdminAccountRegisterForm({ form, isSubmitting, onSubmit, onCancel }: Props) {
+export default function AdminAccountRegisterForm({ form, isSubmitting, onSubmit, onCancel }: AdminAccountRegisterFormProps) {
   const handleFinish = async (values: RawFormValues) => {
     const payload: AdminAccountRegisterFormValues = {
       employeeCode: `ADMIN-${values.employeeCodeBody}`,

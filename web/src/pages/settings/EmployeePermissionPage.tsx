@@ -18,6 +18,7 @@ import { ArrowLeftOutlined, PlusOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useEmployees } from '@/hooks/employee/useEmployees';
 import { useAuthStore } from '@/stores/authStore';
+import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import type { Employee } from '@/api/employee';
 import {
   fetchEmployeePermissions,
@@ -50,6 +51,7 @@ export default function EmployeePermissionPage() {
   const navigate = useNavigate();
   const currentUserRole = useAuthStore((state) => state.user?.role ?? null);
   const canRegisterAdmin = currentUserRole === 'SYSTEM_ADMIN';
+  const handleRegisterAdmin = useThrottleClick(() => navigate('/settings/admin-accounts/new'));
   const [keyword, setKeyword] = useState('');
   const [roleFilter, setRoleFilter] = useState<UserRole | undefined>(undefined);
   const [searchParams, setSearchParams] = useState<{ keyword?: string; role?: UserRole; page: number }>({ page: 0 });
@@ -264,7 +266,7 @@ export default function EmployeePermissionPage() {
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            onClick={() => navigate('/settings/admin-accounts/new')}
+            onClick={handleRegisterAdmin}
           >
             관리자 등록
           </Button>

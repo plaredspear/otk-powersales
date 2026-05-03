@@ -6,7 +6,8 @@ import { AxiosError } from 'axios';
 import AdminAccountRegisterForm, {
   type AdminAccountRegisterFormValues,
 } from './components/AdminAccountRegisterForm';
-import { useRegisterAdminAccount } from '@/hooks/useRegisterAdminAccount';
+import { useRegisterAdminAccount } from '@/hooks/admin/useAdminAccountMutation';
+import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 
 const { Title } = Typography;
 
@@ -21,9 +22,19 @@ interface RawFormValues {
   costCenterCode?: string;
 }
 
-interface ApiError {
+interface ApiErrorBody {
   success?: boolean;
   error?: { code: string; message: string };
+}
+
+function isApiErrorBody(value: unknown): value is ApiErrorBody {
+  if (typeof value !== 'object' || value === null) return false;
+  const errorField = (value as { error?: unknown }).error;
+  return (
+    typeof errorField === 'object' &&
+    errorField !== null &&
+    typeof (errorField as { code?: unknown }).code === 'string'
+  );
 }
 
 const ERROR_FIELD_MAP: Record<string, keyof RawFormValues | null> = {
@@ -44,12 +55,13 @@ export default function AdminAccountRegisterPage() {
   const navigate = useNavigate();
   const [form] = Form.useForm<RawFormValues>();
   const mutation = useRegisterAdminAccount();
+  const navigateToList = useThrottleClick(() => navigate('/settings/permissions/employees'));
+  const navigateBack = useThrottleClick(() => navigate(-1));
 
   const handleCancel = useCallback(() => {
     const isDirty = form.isFieldsTouched();
-    const goBack = () => navigate('/settings/permissions/employees');
     if (!isDirty) {
-      goBack();
+      navigateToList();
       return;
     }
     Modal.confirm({
@@ -58,9 +70,9 @@ export default function AdminAccountRegisterPage() {
       okText: '이탈',
       okButtonProps: { danger: true },
       cancelText: '머무르기',
-      onOk: goBack,
+      onOk: navigateToList,
     });
-  }, [form, navigate]);
+  }, [form, navigateToList]);
 
   const handleSubmit = async (values: AdminAccountRegisterFormValues) => {
     try {
@@ -77,7 +89,7 @@ export default function AdminAccountRegisterPage() {
       notification.success({
         message: '관리자 계정이 등록되었습니다',
       });
-      navigate('/settings/permissions/employees');
+      navigateToList();
     } catch (err) {
       handleApiError(err);
     }
@@ -86,16 +98,16 @@ export default function AdminAccountRegisterPage() {
   const handleApiError = (err: unknown) => {
     if (err instanceof AxiosError) {
       const status = err.response?.status;
-      const data = err.response?.data as ApiError | undefined;
-      const code = data?.error?.code;
-      const message = data?.error?.message;
+      const raw = err.response?.data;
+      const code = isApiErrorBody(raw) ? raw.error?.code : undefined;
+      const message = isApiErrorBody(raw) ? raw.error?.message : undefined;
 
       if (status === 403) {
         notification.error({
           message: '권한 없음',
           description: '이 작업을 수행할 권한이 없습니다',
         });
-        navigate(-1);
+        navigateBack();
         return;
       }
 
@@ -136,7 +148,7 @@ export default function AdminAccountRegisterPage() {
         <Button
           icon={<ArrowLeftOutlined />}
           type="text"
-          onClick={() => navigate('/settings/permissions/employees')}
+          onClick={navigateToList}
         >
           직원 권한 관리
         </Button>
