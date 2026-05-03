@@ -20,13 +20,14 @@ import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 
 /**
- * SAP 제품 마스터 인바운드 UPSERT 서비스. (Spec #559)
+ * SAP 제품 마스터 인바운드 UPSERT 서비스. (Spec #559, Spec #575)
  *
  * - UPSERT 키: [Product.productCode]
  * - 부분 실패 허용 (행 단위 검증 후 saveAll 일괄)
  * - StoreCondition 페이로드는 엔티티 [Product.storageCondition] 에 매핑 (D1)
  * - StandardPrice 는 [Product.standardPrice] 에 매핑 (var, mutable)
- * - ProductBarcode / Pallet 페이로드는 엔티티 컬럼이 없어 무시 (D1)
+ * - Spec #575: ProductBarcode → [Product.productBarcode], Pallet → [Product.pallet]
+ *   (Pallet 은 null/blank/"0" → 0.0, 비숫자 → 행 단위 부분 실패)
  */
 @Service
 class SapProductMasterService(
@@ -81,10 +82,16 @@ class SapProductMasterService(
                 failures += FailureItem(productCode, "LaunchDate 형식 오류: ${item.launchDate}")
                 return@forEach
             }
+            // Spec #575: Pallet 변환. null/blank/"0" → 0.0. 비숫자 → 행 단위 부분 실패.
+            val pallet = parseDouble(item.pallet, allowBlankAsZero = true)
+            if (pallet.isFailure) {
+                failures += FailureItem(productCode, "Pallet 형식 오류: ${item.pallet}")
+                return@forEach
+            }
 
             val entity = cache[productCode]
-                ?.also { applyToEntity(it, item, productName, standardPrice.value, boxQty.value, superTax.value, launchDate.value) }
-                ?: createProduct(productCode, productName, item, standardPrice.value, boxQty.value, superTax.value, launchDate.value)
+                ?.also { applyToEntity(it, item, productName, standardPrice.value, boxQty.value, superTax.value, launchDate.value, pallet.value) }
+                ?: createProduct(productCode, productName, item, standardPrice.value, boxQty.value, superTax.value, launchDate.value, pallet.value)
                     .also { cache[productCode] = it }
             toSave += entity
         }
@@ -108,10 +115,11 @@ class SapProductMasterService(
         standardPrice: Double?,
         boxQty: Double?,
         superTax: Double?,
-        launchDate: LocalDate?
+        launchDate: LocalDate?,
+        pallet: Double?
     ): Product {
         val product = Product(productCode = productCode, name = productName)
-        applyMutableFields(product, item, standardPrice, boxQty, superTax, launchDate)
+        applyMutableFields(product, item, standardPrice, boxQty, superTax, launchDate, pallet)
         return product
     }
 
@@ -122,10 +130,11 @@ class SapProductMasterService(
         standardPrice: Double?,
         boxQty: Double?,
         superTax: Double?,
-        launchDate: LocalDate?
+        launchDate: LocalDate?,
+        pallet: Double?
     ) {
         product.name = productName
-        applyMutableFields(product, item, standardPrice, boxQty, superTax, launchDate)
+        applyMutableFields(product, item, standardPrice, boxQty, superTax, launchDate, pallet)
     }
 
     private fun applyMutableFields(
@@ -134,7 +143,8 @@ class SapProductMasterService(
         standardPrice: Double?,
         boxQty: Double?,
         superTax: Double?,
-        launchDate: LocalDate?
+        launchDate: LocalDate?,
+        pallet: Double?
     ) {
         product.productStatus = item.productStatus
         product.productType = item.productType
@@ -154,6 +164,9 @@ class SapProductMasterService(
         product.boxReceivingQuantity = boxQty
         product.superTax = superTax ?: 0.0
         product.launchDate = launchDate
+        // Spec #575
+        product.productBarcode = item.productBarcode
+        product.pallet = pallet
     }
 
     private data class ParseResult<T>(val value: T?, val isFailure: Boolean)

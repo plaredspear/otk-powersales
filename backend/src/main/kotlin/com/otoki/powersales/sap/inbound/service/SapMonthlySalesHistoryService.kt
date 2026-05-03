@@ -152,8 +152,7 @@ class SapMonthlySalesHistoryService(
         entity.abcClosingAmount1 = amounts[0]
         entity.abcClosingAmount2 = amounts[1]
         entity.abcClosingAmount3 = amounts[2]
-        // TotalLedgerAmount: 신규 엔티티에 별도 컬럼 없음 (D5 — 레거시 호환만 수신, 무시)
-        // 필요 시 향후 컬럼 추가
+        entity.totalLedgerAmount = amounts[3] // Spec #575: SAP TotalLedgerAmount 보존
         entity.shipClosingAmount = amounts[4]
         entity.rlsalesC = amounts[5]
     }

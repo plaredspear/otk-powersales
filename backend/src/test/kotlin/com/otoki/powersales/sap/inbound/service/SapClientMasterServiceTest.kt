@@ -50,7 +50,18 @@ class SapClientMasterServiceTest {
         salesDeptCode: String? = null,
         divisionCode: String? = null,
         branchName: String? = null,
-        phone: String? = null
+        phone: String? = null,
+        accountStatusCode: String? = null,
+        businessType: String? = null,
+        businessCategory: String? = null,
+        businessLicenseNumber: String? = null,
+        email: String? = null,
+        divisionName: String? = null,
+        salesDeptName: String? = null,
+        consignmentAcc: String? = null,
+        werk1: String? = null,
+        werk2: String? = null,
+        werk3: String? = null
     ): ClientMasterRequestItem = ClientMasterRequestItem(
         sapAccountCode = sapAccountCode,
         name = name,
@@ -59,7 +70,18 @@ class SapClientMasterServiceTest {
         salesDeptCode = salesDeptCode,
         divisionCode = divisionCode,
         branchName = branchName,
-        phone = phone
+        phone = phone,
+        accountStatusCode = accountStatusCode,
+        businessType = businessType,
+        businessCategory = businessCategory,
+        businessLicenseNumber = businessLicenseNumber,
+        email = email,
+        divisionName = divisionName,
+        salesDeptName = salesDeptName,
+        consignmentAcc = consignmentAcc,
+        werk1 = werk1,
+        werk2 = werk2,
+        werk3 = werk3
     )
 
     private fun organization(
@@ -191,6 +213,96 @@ class SapClientMasterServiceTest {
             verify(accountRepository).saveAll(captor.capture())
             assertThat(captor.firstValue.single().employeeCode).isEqualTo("100123")
         }
+
+        // Spec #575: SAP 인바운드 레거시 필드 13개 보존
+
+        @Test
+        @DisplayName("Spec #575 - 13개 레거시 필드 모두 entity 에 저장됨")
+        fun upsert_legacyFields_allMapped() {
+            whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
+            whenever(organizationRepository.findAll()).thenReturn(emptyList())
+
+            service.upsert(
+                listOf(
+                    item(
+                        accountStatusCode = "01",
+                        businessType = "유통업",
+                        businessCategory = "도매",
+                        businessLicenseNumber = "123-45-67890",
+                        email = "shop@test.com",
+                        divisionName = "제1사업부",
+                        salesDeptName = "수도권영업팀",
+                        consignmentAcc = "Y",
+                        werk1 = "1100",
+                        werk2 = "1200",
+                        werk3 = "1300",
+                        salesDeptCode = "1110",
+                        divisionCode = "1100"
+                    )
+                )
+            )
+
+            val captor = argumentCaptor<List<Account>>()
+            verify(accountRepository).saveAll(captor.capture())
+            val saved = captor.firstValue.single()
+            assertThat(saved.accountStatusCode).isEqualTo("01")
+            assertThat(saved.businessType).isEqualTo("유통업")
+            assertThat(saved.businessCategory).isEqualTo("도매")
+            assertThat(saved.businessLicenseNumber).isEqualTo("123-45-67890")
+            assertThat(saved.email).isEqualTo("shop@test.com")
+            assertThat(saved.divisionName).isEqualTo("제1사업부")
+            assertThat(saved.salesDeptName).isEqualTo("수도권영업팀")
+            assertThat(saved.consignmentAcc).isEqualTo("Y")
+            assertThat(saved.werk1).isEqualTo("1100")
+            assertThat(saved.werk2).isEqualTo("1200")
+            assertThat(saved.werk3).isEqualTo("1300")
+            assertThat(saved.salesDeptCostCenter).isEqualTo("1110")
+            assertThat(saved.divisionCostCenter).isEqualTo("1100")
+        }
+
+        @Test
+        @DisplayName("Spec #575 - 13개 레거시 필드 빈 문자열 → 빈 문자열 그대로 저장")
+        fun upsert_legacyFields_blankPreserved() {
+            whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
+            whenever(organizationRepository.findAll()).thenReturn(emptyList())
+
+            service.upsert(
+                listOf(
+                    item(
+                        accountStatusCode = "",
+                        businessType = "",
+                        businessCategory = "",
+                        businessLicenseNumber = "",
+                        email = "",
+                        divisionName = "",
+                        salesDeptName = "",
+                        consignmentAcc = "",
+                        werk1 = "",
+                        werk2 = "",
+                        werk3 = ""
+                    )
+                )
+            )
+
+            val captor = argumentCaptor<List<Account>>()
+            verify(accountRepository).saveAll(captor.capture())
+            val saved = captor.firstValue.single()
+            assertThat(saved.accountStatusCode).isEqualTo("")
+            assertThat(saved.consignmentAcc).isEqualTo("")
+            assertThat(saved.werk1).isEqualTo("")
+        }
+
+        @Test
+        @DisplayName("Spec #575 - ConsignmentAcc=N 정상 저장")
+        fun upsert_consignmentAccN_pass() {
+            whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
+            whenever(organizationRepository.findAll()).thenReturn(emptyList())
+
+            val detail = service.upsert(listOf(item(consignmentAcc = "N")))
+
+            assertThat(detail.successCount).isEqualTo(1)
+            assertThat(detail.failureCount).isEqualTo(0)
+        }
     }
 
     @Nested
@@ -238,6 +350,33 @@ class SapClientMasterServiceTest {
             assertThat(detail.failureCount).isEqualTo(1)
             assertThat(detail.failures.single().identifier).isEqualTo("1032619")
             assertThat(detail.failures.single().reason).contains("Name 필수")
+        }
+
+        @Test
+        @DisplayName("Spec #575 - ConsignmentAcc 형식 위반 (소문자 'y') → 행 단위 부분 실패")
+        fun upsert_consignmentAccInvalidLowercase() {
+            whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
+            whenever(organizationRepository.findAll()).thenReturn(emptyList())
+
+            val detail = service.upsert(listOf(item(consignmentAcc = "y")))
+
+            assertThat(detail.successCount).isEqualTo(0)
+            assertThat(detail.failureCount).isEqualTo(1)
+            assertThat(detail.failures.single().identifier).isEqualTo("1032619")
+            assertThat(detail.failures.single().reason).contains("ConsignmentAcc 형식 오류: y")
+            verify(accountRepository, never()).saveAll(any<List<Account>>())
+        }
+
+        @Test
+        @DisplayName("Spec #575 - ConsignmentAcc 형식 위반 (2자) → 행 단위 부분 실패")
+        fun upsert_consignmentAccInvalidLength() {
+            whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
+            whenever(organizationRepository.findAll()).thenReturn(emptyList())
+
+            val detail = service.upsert(listOf(item(consignmentAcc = "YN")))
+
+            assertThat(detail.failureCount).isEqualTo(1)
+            assertThat(detail.failures.single().reason).contains("ConsignmentAcc 형식 오류: YN")
         }
 
         @Test

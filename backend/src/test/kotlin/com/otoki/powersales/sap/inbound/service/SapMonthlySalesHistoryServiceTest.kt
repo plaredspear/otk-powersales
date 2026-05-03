@@ -51,13 +51,15 @@ class SapMonthlySalesHistoryServiceTest {
         salesYearMonth: String? = "202604",
         abcClosingAmount1: String? = null,
         shipClosingAmount: String? = null,
-        rlsales: String? = null
+        rlsales: String? = null,
+        totalLedgerAmount: String? = null
     ): MonthlySalesHistoryRequestItem = MonthlySalesHistoryRequestItem(
         sapAccountCode = sapAccountCode,
         salesYearMonth = salesYearMonth,
         abcClosingAmount1 = abcClosingAmount1,
         shipClosingAmount = shipClosingAmount,
-        rlsales = rlsales
+        rlsales = rlsales,
+        totalLedgerAmount = totalLedgerAmount
     )
 
     @Nested
@@ -101,6 +103,47 @@ class SapMonthlySalesHistoryServiceTest {
             verify(monthlySalesHistoryRepository).saveAll(captor.capture())
             assertThat(captor.firstValue.single()).isSameAs(existing)
             assertThat(existing.shipClosingAmount).isEqualTo(9999.0)
+        }
+
+        // Spec #575: TotalLedgerAmount 보존
+
+        @Test
+        @DisplayName("Spec #575 - TotalLedgerAmount 정상 매핑")
+        fun upsert_totalLedgerAmountMapped() {
+            whenever(monthlySalesHistoryRepository.findByExternalkeyCIn(listOf("1032619202604")))
+                .thenReturn(emptyList())
+
+            service.upsert(listOf(item(totalLedgerAmount = "1000000")))
+
+            val captor = argumentCaptor<List<MonthlySalesHistory>>()
+            verify(monthlySalesHistoryRepository).saveAll(captor.capture())
+            assertThat(captor.firstValue.single().totalLedgerAmount).isEqualTo(1000000.0)
+        }
+
+        @Test
+        @DisplayName("Spec #575 - TotalLedgerAmount blank → 0.0")
+        fun upsert_totalLedgerAmountBlank() {
+            whenever(monthlySalesHistoryRepository.findByExternalkeyCIn(listOf("1032619202604")))
+                .thenReturn(emptyList())
+
+            service.upsert(listOf(item(totalLedgerAmount = "")))
+
+            val captor = argumentCaptor<List<MonthlySalesHistory>>()
+            verify(monthlySalesHistoryRepository).saveAll(captor.capture())
+            assertThat(captor.firstValue.single().totalLedgerAmount).isEqualTo(0.0)
+        }
+
+        @Test
+        @DisplayName("Spec #575 - TotalLedgerAmount null (미입력) → 0.0")
+        fun upsert_totalLedgerAmountNull() {
+            whenever(monthlySalesHistoryRepository.findByExternalkeyCIn(listOf("1032619202604")))
+                .thenReturn(emptyList())
+
+            service.upsert(listOf(item(totalLedgerAmount = null)))
+
+            val captor = argumentCaptor<List<MonthlySalesHistory>>()
+            verify(monthlySalesHistoryRepository).saveAll(captor.capture())
+            assertThat(captor.firstValue.single().totalLedgerAmount).isEqualTo(0.0)
         }
     }
 
@@ -150,6 +193,18 @@ class SapMonthlySalesHistoryServiceTest {
 
             assertThat(detail.failureCount).isEqualTo(1)
             assertThat(detail.failures.single().reason).contains("월 범위 오류")
+        }
+
+        @Test
+        @DisplayName("Spec #575 - TotalLedgerAmount 비숫자 → 행 단위 부분 실패")
+        fun upsert_totalLedgerAmountInvalid() {
+            whenever(monthlySalesHistoryRepository.findByExternalkeyCIn(any())).thenReturn(emptyList())
+
+            val detail = service.upsert(listOf(item(totalLedgerAmount = "abc")))
+
+            assertThat(detail.successCount).isEqualTo(0)
+            assertThat(detail.failureCount).isEqualTo(1)
+            assertThat(detail.failures.single().reason).contains("금액 변환 실패")
         }
     }
 }

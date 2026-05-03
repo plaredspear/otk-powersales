@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:58630",
+    "url" : "http://localhost:59621",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -2615,11 +2615,11 @@
           "last" : {
             "type" : "boolean"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "size" : {
             "type" : "integer",
@@ -2643,15 +2643,15 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
-          "pageSize" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
           "paged" : {
             "type" : "boolean"
+          },
+          "pageSize" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "pageNumber" : {
             "type" : "integer",
