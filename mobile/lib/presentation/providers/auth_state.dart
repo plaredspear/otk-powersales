@@ -7,7 +7,7 @@ import '../../domain/entities/user.dart';
 /// - loading: API 호출 중 (로그인, 자동 로그인, 비밀번호 변경 등)
 /// - authenticated: 인증 완료 (홈 화면 진입 가능)
 /// - unauthenticated: 미인증 (로그인 화면 표시)
-/// - requiresPasswordChange: 초기 비밀번호 변경 필요
+/// - passwordChangeRequired: 초기 비밀번호 변경 필요
 /// - requiresGpsConsent: GPS 동의 필요
 /// - error: 인증 에러 발생
 class AuthState {
@@ -21,7 +21,7 @@ class AuthState {
   final String? errorMessage;
 
   /// 비밀번호 변경 필요 여부
-  final bool requiresPasswordChange;
+  final bool passwordChangeRequired;
 
   /// GPS 동의 필요 여부
   final bool requiresGpsConsent;
@@ -42,7 +42,7 @@ class AuthState {
     this.isLoading = false,
     this.user,
     this.errorMessage,
-    this.requiresPasswordChange = false,
+    this.passwordChangeRequired = false,
     this.requiresGpsConsent = false,
     this.savedEmployeeNumber,
     this.rememberEmployeeNumber = false,
@@ -69,7 +69,7 @@ class AuthState {
       isLoading: false,
       user: user,
       errorMessage: null,
-      requiresPasswordChange: false,
+      passwordChangeRequired: false,
       requiresGpsConsent: false,
       isInitialized: true,
     );
@@ -81,7 +81,7 @@ class AuthState {
       isLoading: false,
       user: null,
       errorMessage: null,
-      requiresPasswordChange: false,
+      passwordChangeRequired: false,
       requiresGpsConsent: false,
       savedEmployeeNumber: savedEmployeeNumber,
       rememberEmployeeNumber: rememberEmployeeNumber,
@@ -102,7 +102,7 @@ class AuthState {
   /// 인증 완료 여부
   bool get isAuthenticated =>
       user != null &&
-      !requiresPasswordChange &&
+      !passwordChangeRequired &&
       !requiresGpsConsent;
 
   /// copyWith
@@ -110,7 +110,7 @@ class AuthState {
     bool? isLoading,
     User? user,
     String? errorMessage,
-    bool? requiresPasswordChange,
+    bool? passwordChangeRequired,
     bool? requiresGpsConsent,
     String? savedEmployeeNumber,
     bool? rememberEmployeeNumber,
@@ -121,8 +121,8 @@ class AuthState {
       isLoading: isLoading ?? this.isLoading,
       user: user ?? this.user,
       errorMessage: errorMessage,
-      requiresPasswordChange:
-          requiresPasswordChange ?? this.requiresPasswordChange,
+      passwordChangeRequired:
+          passwordChangeRequired ?? this.passwordChangeRequired,
       requiresGpsConsent: requiresGpsConsent ?? this.requiresGpsConsent,
       savedEmployeeNumber: savedEmployeeNumber ?? this.savedEmployeeNumber,
       rememberEmployeeNumber: rememberEmployeeNumber ?? this.rememberEmployeeNumber,

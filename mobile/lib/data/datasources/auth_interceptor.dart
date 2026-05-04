@@ -168,8 +168,20 @@ class AuthInterceptor extends Interceptor {
         );
         return;
       }
+      if (code == 'AUTH_PASSWORD_CHANGE_REQUIRED') {
+        // Spec #584: 강제 변경 미완료 사원이 화이트리스트 외 호출 시 자동 라우팅.
+        _navigateToPasswordChangeRequired();
+        handler.reject(
+          DioException(
+            requestOptions: err.requestOptions,
+            type: DioExceptionType.cancel,
+            message: '',
+          ),
+        );
+        return;
+      }
     }
-    // GPS 외 403 에러는 일반 에러로 전달
+    // 기타 403 에러는 일반 에러로 전달
     handler.next(err);
   }
 
@@ -178,6 +190,17 @@ class AuthInterceptor extends Interceptor {
     final navigator = navigatorKey.currentState;
     if (navigator != null) {
       navigator.pushNamed(AppRouter.gpsConsent);
+    }
+  }
+
+  /// 강제 비밀번호 변경 화면으로 네비게이션 (Spec #584).
+  void _navigateToPasswordChangeRequired() {
+    final navigator = navigatorKey.currentState;
+    if (navigator != null) {
+      navigator.pushNamedAndRemoveUntil(
+        AppRouter.changePassword,
+        (route) => false,
+      );
     }
   }
 

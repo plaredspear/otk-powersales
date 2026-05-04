@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../domain/entities/password_validation.dart';
 import '../providers/password_provider.dart';
+import '../widgets/auth/password_policy_checklist.dart';
 
 /// 새 비밀번호 입력 페이지 (F54 2단계)
 ///
@@ -126,12 +126,6 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
 
   @override
   Widget build(BuildContext context) {
-    final newPasswordValidation = _newPasswordController.text.isEmpty
-        ? null
-        : ref.watch(
-            passwordValidationProvider(_newPasswordController.text),
-          );
-
     final passwordsMatch = _confirmPasswordController.text.isEmpty
         ? true
         : _newPasswordController.text == _confirmPasswordController.text;
@@ -176,9 +170,10 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
               ),
               const SizedBox(height: 8),
 
-              // 새 비밀번호 유효성 피드백
-              if (newPasswordValidation != null)
-                _buildValidationFeedback(newPasswordValidation),
+              // 새 비밀번호 정책 실시간 체크리스트
+              PasswordPolicyChecklist(
+                password: _newPasswordController.text,
+              ),
               const SizedBox(height: 16),
 
               // 새 비밀번호 확인 입력
@@ -287,44 +282,6 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
           ),
         ),
       ),
-    );
-  }
-
-  /// 유효성 검증 피드백
-  Widget _buildValidationFeedback(PasswordValidation validation) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildValidationItem(
-          '4글자 이상',
-          validation.isLengthValid,
-        ),
-        _buildValidationItem(
-          '동일 문자 반복 불가 (예: 1111, aaaa)',
-          validation.isNotRepeating,
-        ),
-      ],
-    );
-  }
-
-  /// 유효성 검증 항목
-  Widget _buildValidationItem(String text, bool isValid) {
-    return Row(
-      children: [
-        Icon(
-          isValid ? Icons.check_circle : Icons.cancel,
-          size: 16,
-          color: isValid ? Colors.green : Colors.red,
-        ),
-        const SizedBox(width: 4),
-        Text(
-          text,
-          style: TextStyle(
-            fontSize: 12,
-            color: isValid ? Colors.green : Colors.red,
-          ),
-        ),
-      ],
     );
   }
 

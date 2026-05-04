@@ -94,7 +94,7 @@ class _OtokiAppState extends ConsumerState<OtokiApp>
           AppRouter.main,
           (route) => false,
         );
-      } else if (next.requiresPasswordChange) {
+      } else if (next.passwordChangeRequired) {
         // 비밀번호 변경 필요 → 비밀번호 변경 화면
         navigator.pushNamedAndRemoveUntil(
           AppRouter.changePassword,

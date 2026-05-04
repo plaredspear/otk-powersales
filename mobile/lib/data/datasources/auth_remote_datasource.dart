@@ -15,8 +15,13 @@ abstract class AuthRemoteDataSource {
   /// 현재 비밀번호 검증 API 호출
   Future<bool> verifyCurrentPassword(String currentPassword);
 
-  /// 비밀번호 변경 API 호출
-  Future<void> changePassword(String currentPassword, String newPassword);
+  /// 비밀번호 변경 API 호출 (Spec #584).
+  ///
+  /// 강제 변경 시 [currentPassword] 는 null 로 호출 가능. 응답에 새 토큰 페어 포함.
+  Future<AuthTokenModel> changePassword({
+    String? currentPassword,
+    required String newPassword,
+  });
 
   /// 로그아웃 API 호출
   Future<void> logout();

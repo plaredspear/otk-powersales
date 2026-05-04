@@ -23,6 +23,7 @@ class _VerifyPasswordPageState extends ConsumerState<VerifyPasswordPage> {
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
   bool _isLoading = false;
+  String? _inlineError;
 
   @override
   void dispose() {
@@ -36,7 +37,10 @@ class _VerifyPasswordPageState extends ConsumerState<VerifyPasswordPage> {
       return;
     }
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _inlineError = null;
+    });
 
     try {
       final notifier = ref.read(passwordVerificationProvider.notifier);
@@ -51,12 +55,20 @@ class _VerifyPasswordPageState extends ConsumerState<VerifyPasswordPage> {
           arguments: _passwordController.text, // 현재 비밀번호 전달
         );
       } else {
-        // 실패: 에러 메시지 표시
-        _showErrorSnackBar('비밀번호가 일치하지 않습니다.');
+        // 백엔드가 false 를 반환하는 경로는 없지만 안전망.
+        setState(() => _inlineError = '현재 비밀번호가 일치하지 않습니다.');
       }
     } catch (e) {
       if (!mounted) return;
-      _showErrorSnackBar('오류가 발생했습니다. 다시 시도해주세요.');
+      // 401 AUTH_CURRENT_PASSWORD_MISMATCH 는 인라인 에러로 표시.
+      // 그 외 네트워크/500 등은 SnackBar 로 표시.
+      final errorString = e.toString();
+      if (errorString.contains('AUTH_CURRENT_PASSWORD_MISMATCH') ||
+          errorString.contains('401')) {
+        setState(() => _inlineError = '현재 비밀번호가 일치하지 않습니다.');
+      } else {
+        _showErrorSnackBar('잠시 후 다시 시도해주세요.');
+      }
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -135,8 +147,29 @@ class _VerifyPasswordPageState extends ConsumerState<VerifyPasswordPage> {
                   }
                   return null;
                 },
-                onChanged: (_) => setState(() {}), // 버튼 활성화 상태 업데이트
+                onChanged: (_) => setState(() {
+                  _inlineError = null;
+                }),
               ),
+              if (_inlineError != null) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.error_outline,
+                        size: 16, color: Colors.red),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        _inlineError!,
+                        style: const TextStyle(
+                          color: Colors.red,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 24),
 
               // 우측 설명 패널

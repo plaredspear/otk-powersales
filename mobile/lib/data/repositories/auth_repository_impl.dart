@@ -42,8 +42,19 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<void> changePassword(String currentPassword, String newPassword) async {
-    await _remoteDataSource.changePassword(currentPassword, newPassword);
+  Future<AuthToken> changePassword({
+    String? currentPassword,
+    required String newPassword,
+  }) async {
+    final tokenModel = await _remoteDataSource.changePassword(
+      currentPassword: currentPassword,
+      newPassword: newPassword,
+    );
+    final token = tokenModel.toEntity();
+    // 새 토큰 페어 저장 (클레임 passwordChangeRequired=false 반영)
+    await _localDataSource.saveAccessToken(token.accessToken);
+    await _localDataSource.saveRefreshToken(token.refreshToken);
+    return token;
   }
 
   @override
