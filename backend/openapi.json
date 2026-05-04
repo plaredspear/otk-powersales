@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:50722",
+    "url" : "http://localhost:63923",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -1779,7 +1779,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseObject"
+                  "$ref" : "#/components/schemas/ApiResponseChangePasswordResponse"
                 }
               }
             }
@@ -4973,12 +4973,12 @@
           "description" : {
             "type" : [ "string", "null" ]
           },
+          "expired" : {
+            "type" : "boolean"
+          },
           "dday" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "expired" : {
-            "type" : "boolean"
           }
         }
       },
@@ -5522,10 +5522,10 @@
           "remark" : {
             "type" : [ "string", "null" ]
           },
-          "deleted" : {
+          "closed" : {
             "type" : "boolean"
           },
-          "closed" : {
+          "deleted" : {
             "type" : "boolean"
           }
         }
@@ -7930,12 +7930,12 @@
       "VerifyPasswordRequest" : {
         "type" : "object",
         "properties" : {
-          "password" : {
+          "currentPassword" : {
             "type" : "string",
             "minLength" : 1
           }
         },
-        "required" : [ "password" ]
+        "required" : [ "currentPassword" ]
       },
       "RefreshTokenRequest" : {
         "type" : "object",
@@ -8033,7 +8033,7 @@
           "token" : {
             "$ref" : "#/components/schemas/TokenInfo"
           },
-          "requiresPasswordChange" : {
+          "passwordChangeRequired" : {
             "type" : "boolean"
           },
           "requiresGpsConsent" : {
@@ -8133,16 +8133,58 @@
         "type" : "object",
         "properties" : {
           "currentPassword" : {
-            "type" : "string",
-            "minLength" : 1
+            "type" : [ "string", "null" ]
           },
           "newPassword" : {
             "type" : "string",
-            "maxLength" : 2147483647,
-            "minLength" : 4
+            "minLength" : 1
           }
         },
-        "required" : [ "currentPassword", "newPassword" ]
+        "required" : [ "newPassword" ]
+      },
+      "ApiResponseChangePasswordResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ChangePasswordResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "ChangePasswordResponse" : {
+        "type" : "object",
+        "properties" : {
+          "accessToken" : {
+            "type" : "string"
+          },
+          "refreshToken" : {
+            "type" : "string"
+          },
+          "expiresIn" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
       },
       "AttendanceRegisterRequest" : {
         "type" : "object",
@@ -8157,15 +8199,11 @@
           },
           "latitude" : {
             "type" : [ "number", "null" ],
-            "format" : "double",
-            "maximum" : 90,
-            "minimum" : -90
+            "format" : "double"
           },
           "longitude" : {
             "type" : [ "number", "null" ],
-            "format" : "double",
-            "maximum" : 180,
-            "minimum" : -180
+            "format" : "double"
           },
           "workType" : {
             "type" : [ "string", "null" ]
@@ -10036,11 +10074,9 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "first" : {
             "type" : "boolean"
@@ -10048,9 +10084,11 @@
           "last" : {
             "type" : "boolean"
           },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "size" : {
             "type" : "integer",
@@ -10126,10 +10164,10 @@
       "SortObject" : {
         "type" : "object",
         "properties" : {
-          "unsorted" : {
+          "sorted" : {
             "type" : "boolean"
           },
-          "sorted" : {
+          "unsorted" : {
             "type" : "boolean"
           },
           "empty" : {
@@ -11991,11 +12029,9 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "first" : {
             "type" : "boolean"
@@ -12003,9 +12039,11 @@
           "last" : {
             "type" : "boolean"
           },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "size" : {
             "type" : "integer",
@@ -12161,10 +12199,10 @@
           "remark" : {
             "type" : [ "string", "null" ]
           },
-          "deleted" : {
+          "closed" : {
             "type" : "boolean"
           },
-          "closed" : {
+          "deleted" : {
             "type" : "boolean"
           }
         }

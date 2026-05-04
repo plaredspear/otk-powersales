@@ -31,11 +31,35 @@ class SafetyCheckRequiredException : BusinessException(
 )
 
 /**
- * GPS 거리 초과
+ * GPS 거리 초과 (Spec #585).
+ *
+ * 거리 값은 응답에 노출하지 않는다 (Q4). 서버 로그/감사 로그에만 기록한다.
  */
-class DistanceExceededException(distanceKm: Double) : BusinessException(
-    errorCode = "DISTANCE_EXCEEDED",
-    message = "현재 위치가 거래처에서 너무 멀리 떨어져 있습니다 (${String.format("%.1f", distanceKm)}km)",
+class DistanceExceededException : BusinessException(
+    errorCode = "ATT_GPS_DISTANCE_EXCEEDED",
+    message = "거래처와의 거리가 허용 범위를 초과했습니다.",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+/**
+ * 거래처 좌표 누락 (Spec #585 §3-3).
+ *
+ * 다음 케이스에서 발생: ① null ② 빈 문자열 ③ 공백 ④ Double 파싱 실패 ⑤ 위경도 범위 초과.
+ */
+class AccountCoordsMissingException : BusinessException(
+    errorCode = "ATT_ACCOUNT_COORDS_MISSING",
+    message = "거래처 위경도 정보가 없어 출근 등록이 불가합니다.",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+/**
+ * 사원 현재 위치 좌표 무효 (Spec #585 §4).
+ *
+ * currentLat ∉ [-90, 90] 또는 currentLng ∉ [-180, 180].
+ */
+class InvalidCoordsException : BusinessException(
+    errorCode = "ATT_INVALID_COORDS",
+    message = "현재 위치 좌표가 유효 범위를 벗어났습니다.",
     httpStatus = HttpStatus.BAD_REQUEST
 )
 

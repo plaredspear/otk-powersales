@@ -7,6 +7,7 @@ import com.otoki.powersales.common.util.GeoUtils
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.safetycheck.repository.SafetyCheckSubmissionRepository
+import com.otoki.powersales.schedule.config.AttendanceProperties
 import com.otoki.powersales.schedule.dto.response.AttendanceRegisterResponse
 import com.otoki.powersales.schedule.dto.response.AttendanceStatusItem
 import com.otoki.powersales.schedule.dto.response.AttendanceStatusResponse
@@ -17,7 +18,9 @@ import com.otoki.powersales.schedule.integration.OroraApiService
 import com.otoki.powersales.schedule.integration.OroraWorkReportRequest
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
+import com.otoki.powersales.schedule.util.AccountCoordinateParser
 import com.otoki.powersales.employee.repository.EmployeeRepository
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
@@ -36,14 +39,20 @@ class AttendanceService(
     private val safetyCheckSubmissionRepository: SafetyCheckSubmissionRepository,
     private val ororaApiService: OroraApiService,
     private val adminMonthlyIntegrationService: AdminMonthlyIntegrationService,
+    private val attendanceProperties: AttendanceProperties,
     private val clock: Clock
 ) {
 
+    private val log = LoggerFactory.getLogger(AttendanceService::class.java)
+
     companion object {
         private val DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-        private const val DEFAULT_ALLOWED_DISTANCE_KM = 0.5
         private val SEOUL_ZONE = ZoneId.of("Asia/Seoul")
         private val REGISTRATION_DEADLINE = LocalTime.of(17, 0)
+        private const val LAT_MIN = -90.0
+        private const val LAT_MAX = 90.0
+        private const val LNG_MIN = -180.0
+        private const val LNG_MAX = 180.0
 
         /** 대리점 유형코드 면제 목록 — GPS 거리 검증 생략 */
         private val EXEMPT_ACCOUNT_TYPE_CODES = setOf(
@@ -204,7 +213,7 @@ class AttendanceService(
 
         // 4. 거래처 정보 조회 + GPS 거리 검증
         val account = teamMemberSchedule.account
-        val distanceKm = validateDistance(latitude, longitude, account)
+        validateDistance(latitude, longitude, account, employee.id)
 
         // 5. SafetyCheckSubmission 조회 + OroraWorkReportRequest 구성 + 전송
         val safetyCheckSubmission = safetyCheckSubmissionRepository
@@ -276,7 +285,7 @@ class AttendanceService(
             scheduleId = teamMemberSchedule.id,
             accountName = account?.name ?: "",
             workType = workType ?: teamMemberSchedule.workingType,
-            distanceKm = distanceKm,
+            distanceKm = 0.0, // Spec #585 Q4: 실제 거리는 응답에 노출하지 않음 (서버 로그에만 기록)
             totalCount = totalCount,
             registeredCount = registeredCount
         )
@@ -413,30 +422,50 @@ class AttendanceService(
     }
 
     /**
-     * GPS 거리 검증
-     * @return 계산된 거리 (km). 면제 시 0.0
+     * GPS 거리 검증 (Spec #585).
+     *
+     * 1. 사원 현재 좌표 범위 검증 (lat ±90 / lng ±180) → 위반 시 [InvalidCoordsException]
+     * 2. ABC 면제 코드 (#586 별도 도메인) 면제 시 거리 검증 생략
+     * 3. 거래처 위경도 (String?) → Double 파싱 실패/공백/범위 초과 시 [AccountCoordsMissingException]
+     * 4. Haversine 으로 거리(m) 계산 후 임계값 비교 → 초과 시 [DistanceExceededException]
+     *
+     * Q4: 거리 값은 응답에 노출하지 않고 서버 로그에만 기록한다.
      */
-    private fun validateDistance(userLat: Double, userLon: Double, account: Account?): Double {
-        // 면제 코드 확인
+    private fun validateDistance(userLat: Double, userLon: Double, account: Account?, employeeId: Long) {
+        // 1. 사원 현재 위치 좌표 범위 검증
+        if (userLat !in LAT_MIN..LAT_MAX || userLon !in LNG_MIN..LNG_MAX) {
+            throw InvalidCoordsException()
+        }
+
+        // 2. ABC 면제 코드 (#586 별도 도메인 — 본 스펙 범위는 아니지만 기존 정책 유지)
         val accountTypeCode = account?.abcTypeCode
         if (accountTypeCode != null && accountTypeCode in EXEMPT_ACCOUNT_TYPE_CODES) {
-            return 0.0
+            return
         }
 
-        // 거래처 위경도 확인
-        val accountLat = account?.latitude?.toDoubleOrNull() ?: return 0.0
-        val accountLon = account.longitude?.toDoubleOrNull() ?: return 0.0
+        // 3. 거래처 위경도 파싱 (누락/공백/파싱실패/범위초과 → 등록 거부)
+        val coords = AccountCoordinateParser.parse(account?.latitude, account?.longitude)
+        if (coords is AccountCoordinateParser.Coords.Missing) {
+            throw AccountCoordsMissingException()
+        }
+        coords as AccountCoordinateParser.Coords.Valid
 
-        // Haversine 거리 계산
-        val distance = GeoUtils.calculateDistance(userLat, userLon, accountLat, accountLon)
+        // 4. Haversine 거리 계산 (m 단위)
+        val distanceKm = GeoUtils.calculateDistance(userLat, userLon, coords.latitude, coords.longitude)
+        val distanceMeters = distanceKm * 1000.0
+        val thresholdMeters = attendanceProperties.gpsThresholdMeters
 
-        // 허용 거리 비교 (commute_distance 테이블 미구현 → 기본값 사용)
-        val allowedDistance = DEFAULT_ALLOWED_DISTANCE_KM
-
-        if (distance > allowedDistance) {
-            throw DistanceExceededException(distance)
+        if (distanceMeters > thresholdMeters) {
+            log.info(
+                "ATT_GPS_DISTANCE_EXCEEDED employeeId={} accountId={} distanceMeters={} thresholdMeters={}",
+                employeeId, account?.id, distanceMeters, thresholdMeters
+            )
+            throw DistanceExceededException()
         }
 
-        return distance
+        log.debug(
+            "ATT_GPS_DISTANCE_OK employeeId={} accountId={} distanceMeters={} thresholdMeters={}",
+            employeeId, account?.id, distanceMeters, thresholdMeters
+        )
     }
 }

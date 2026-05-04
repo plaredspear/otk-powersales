@@ -1,7 +1,5 @@
 package com.otoki.powersales.schedule.dto.request
 
-import jakarta.validation.constraints.DecimalMax
-import jakarta.validation.constraints.DecimalMin
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Positive
 
@@ -12,6 +10,10 @@ import jakarta.validation.constraints.Positive
  * - 둘 다 null이면 ATTENDANCE_TARGET_REQUIRED 에러
  * - 둘 다 값이 있으면 ATTENDANCE_TARGET_CONFLICT 에러
  * 서비스 레이어에서 검증한다.
+ *
+ * latitude/longitude 범위(±90 / ±180) 검증은 [com.otoki.powersales.schedule.service.AttendanceService]
+ * 에서 [com.otoki.powersales.schedule.exception.InvalidCoordsException] (errorCode `ATT_INVALID_COORDS`)
+ * 으로 처리한다 (Spec #585 §4).
  */
 data class AttendanceRegisterRequest(
 
@@ -22,13 +24,9 @@ data class AttendanceRegisterRequest(
     val displayWorkScheduleId: Long? = null,
 
     @field:NotNull(message = "위도는 필수입니다")
-    @field:DecimalMin(value = "-90", message = "위도는 -90 이상이어야 합니다")
-    @field:DecimalMax(value = "90", message = "위도는 90 이하여야 합니다")
     val latitude: Double?,
 
     @field:NotNull(message = "경도는 필수입니다")
-    @field:DecimalMin(value = "-180", message = "경도는 -180 이상이어야 합니다")
-    @field:DecimalMax(value = "180", message = "경도는 180 이하여야 합니다")
     val longitude: Double?,
 
     val workType: String? = null

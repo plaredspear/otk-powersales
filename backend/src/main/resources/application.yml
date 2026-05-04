@@ -160,6 +160,9 @@ app:
       enabled: ${UUID_CHECK_ENABLED:true}
       excluded-employee-numbers: ${UUID_CHECK_EXCLUDED:}
 
+  attendance:
+    gps-threshold-meters: ${ATTENDANCE_GPS_THRESHOLD_METERS:500}
+
 server:
   port: ${SERVER_PORT:8080}
 

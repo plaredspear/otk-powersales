@@ -87,7 +87,7 @@ class AttendanceControllerTest {
                 scheduleId = 10L,
                 accountName = "이마트 부산점",
                 workType = "ROOM_TEMP",
-                distanceKm = 0.12,
+                distanceKm = 0.0, // Spec #585 Q4: 응답에 실제 거리 미노출
                 totalCount = 5,
                 registeredCount = 2
             )
@@ -119,7 +119,7 @@ class AttendanceControllerTest {
                 .andExpect(jsonPath("$.data.scheduleId").value(10))
                 .andExpect(jsonPath("$.data.accountName").value("이마트 부산점"))
                 .andExpect(jsonPath("$.data.workType").value("ROOM_TEMP"))
-                .andExpect(jsonPath("$.data.distanceKm").value(0.12))
+                .andExpect(jsonPath("$.data.distanceKm").value(0.0))
                 .andExpect(jsonPath("$.data.totalCount").value(5))
                 .andExpect(jsonPath("$.data.registeredCount").value(2))
         }
@@ -154,14 +154,14 @@ class AttendanceControllerTest {
         }
 
         @Test
-        @DisplayName("거리 초과 - 400 DISTANCE_EXCEEDED")
+        @DisplayName("거리 초과 - 400 ATT_GPS_DISTANCE_EXCEEDED")
         fun register_distanceExceeded() {
             // Given
             whenever(
                 attendanceService.register(
                     eq(1L), eq(10L), eq(null), eq(35.1234), eq(129.0567), anyOrNull()
                 )
-            ).thenThrow(DistanceExceededException(1.5))
+            ).thenThrow(DistanceExceededException())
 
             val requestJson = """
                 {
@@ -179,7 +179,65 @@ class AttendanceControllerTest {
             )
                 .andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.error.code").value("DISTANCE_EXCEEDED"))
+                .andExpect(jsonPath("$.error.code").value("ATT_GPS_DISTANCE_EXCEEDED"))
+        }
+
+        @Test
+        @DisplayName("거래처 좌표 누락 - 400 ATT_ACCOUNT_COORDS_MISSING")
+        fun register_accountCoordsMissing() {
+            // Given
+            whenever(
+                attendanceService.register(
+                    eq(1L), eq(10L), eq(null), eq(35.1234), eq(129.0567), anyOrNull()
+                )
+            ).thenThrow(AccountCoordsMissingException())
+
+            val requestJson = """
+                {
+                    "scheduleId": 10,
+                    "latitude": 35.1234,
+                    "longitude": 129.0567
+                }
+            """.trimIndent()
+
+            // When & Then
+            mockMvc.perform(
+                post("/api/v1/mobile/attendance")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(requestJson)
+            )
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("ATT_ACCOUNT_COORDS_MISSING"))
+        }
+
+        @Test
+        @DisplayName("사원 위치 좌표 무효 - 400 ATT_INVALID_COORDS")
+        fun register_invalidCoords() {
+            // Given
+            whenever(
+                attendanceService.register(
+                    eq(1L), eq(10L), eq(null), eq(91.0), eq(129.0567), anyOrNull()
+                )
+            ).thenThrow(InvalidCoordsException())
+
+            val requestJson = """
+                {
+                    "scheduleId": 10,
+                    "latitude": 91.0,
+                    "longitude": 129.0567
+                }
+            """.trimIndent()
+
+            // When & Then
+            mockMvc.perform(
+                post("/api/v1/mobile/attendance")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(requestJson)
+            )
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("ATT_INVALID_COORDS"))
         }
 
         @Test
