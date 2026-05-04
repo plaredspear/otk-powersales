@@ -19,8 +19,12 @@ spring:
       - org.springframework.boot.data.redis.autoconfigure.DataRedisRepositoriesAutoConfiguration
       - org.springframework.boot.data.redis.autoconfigure.health.DataRedisHealthContributorAutoConfiguration
       - org.springframework.boot.data.redis.autoconfigure.health.DataRedisReactiveHealthContributorAutoConfiguration
-      # Spring Cloud AWS S3 — test 에서는 region/credentials 미설정 시 S3Client
-      # 빈 생성이 실패하므로 S3 와 그 의존 core auto-config 를 모두 비활성화한다.
+      # Spring Cloud AWS — test 에서는 region/credentials 미설정 시 SDK 클라이언트
+      # 빈 생성이 SdkClientException 으로 실패한다 (DefaultRegionProviderChain 해결 실패).
+      # S3, Secrets Manager, 그리고 공통 core(region/credentials) auto-config 를 모두 비활성화한다.
       - io.awspring.cloud.autoconfigure.s3.S3AutoConfiguration
       - io.awspring.cloud.autoconfigure.s3.S3TransferManagerAutoConfiguration
       - io.awspring.cloud.autoconfigure.s3.S3CrtAsyncClientAutoConfiguration
+      - io.awspring.cloud.autoconfigure.secretsmanager.SecretsManagerAutoConfiguration
+      - io.awspring.cloud.autoconfigure.core.CredentialsProviderAutoConfiguration
+      - io.awspring.cloud.autoconfigure.core.RegionProviderAutoConfiguration
