@@ -1,6 +1,6 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.admin.dto.response.EmployeeAnnualLeaveDto
+import com.otoki.powersales.leave.dto.response.EmployeeAnnualLeaveDto
 import com.otoki.powersales.leave.service.AdminAnnualLeaveService
 import com.otoki.powersales.admin.exception.InvalidYearMonthException
 import com.otoki.powersales.common.dto.ApiResponse

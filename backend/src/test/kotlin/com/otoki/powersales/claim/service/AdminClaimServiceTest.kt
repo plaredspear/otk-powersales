@@ -1,4 +1,4 @@
-package com.otoki.powersales.admin.service
+package com.otoki.powersales.claim.service
 
 import com.otoki.powersales.claim.entity.*
 import com.otoki.powersales.claim.exception.ClaimNotFoundException

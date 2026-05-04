@@ -1,4 +1,4 @@
-package com.otoki.powersales.admin.dto.response
+package com.otoki.powersales.schedule.dto.response
 
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
 import java.time.LocalDate

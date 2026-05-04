@@ -1,4 +1,4 @@
-package com.otoki.powersales.admin.service
+package com.otoki.powersales.leave.service
 
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository

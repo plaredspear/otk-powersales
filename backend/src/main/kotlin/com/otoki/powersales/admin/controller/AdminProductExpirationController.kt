@@ -1,12 +1,12 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.admin.dto.request.AdminProductExpirationBatchDeleteRequest
-import com.otoki.powersales.admin.dto.request.AdminProductExpirationCreateRequest
-import com.otoki.powersales.admin.dto.request.AdminProductExpirationUpdateRequest
-import com.otoki.powersales.admin.dto.response.AdminProductExpirationBatchDeleteResponse
-import com.otoki.powersales.admin.dto.response.AdminProductExpirationListResponse
-import com.otoki.powersales.admin.dto.response.AdminProductExpirationResponse
-import com.otoki.powersales.admin.dto.response.AdminProductExpirationSummaryResponse
+import com.otoki.powersales.productexpiration.dto.request.AdminProductExpirationBatchDeleteRequest
+import com.otoki.powersales.productexpiration.dto.request.AdminProductExpirationCreateRequest
+import com.otoki.powersales.productexpiration.dto.request.AdminProductExpirationUpdateRequest
+import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationBatchDeleteResponse
+import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationListResponse
+import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationResponse
+import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationSummaryResponse
 import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.productexpiration.service.AdminProductExpirationService

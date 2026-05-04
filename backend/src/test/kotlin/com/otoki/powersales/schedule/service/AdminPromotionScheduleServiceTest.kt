@@ -1,10 +1,10 @@
-package com.otoki.powersales.admin.service
+package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.account.repository.AccountRepository
-import com.otoki.powersales.admin.dto.request.PromotionScheduleBulkDeleteRequest
-import com.otoki.powersales.admin.dto.request.PromotionScheduleBulkUpdateItem
-import com.otoki.powersales.admin.dto.request.PromotionScheduleBulkUpdateRequest
+import com.otoki.powersales.schedule.dto.request.PromotionScheduleBulkDeleteRequest
+import com.otoki.powersales.schedule.dto.request.PromotionScheduleBulkUpdateItem
+import com.otoki.powersales.schedule.dto.request.PromotionScheduleBulkUpdateRequest
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
 import com.otoki.powersales.promotion.entity.Promotion

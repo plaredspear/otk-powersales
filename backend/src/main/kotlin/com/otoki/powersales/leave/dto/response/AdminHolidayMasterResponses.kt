@@ -1,4 +1,4 @@
-package com.otoki.powersales.admin.dto.response
+package com.otoki.powersales.leave.dto.response
 
 import com.otoki.powersales.leave.entity.HolidayMaster
 import java.time.LocalDate

@@ -1,6 +1,6 @@
 package com.otoki.powersales.productexpiration.repository
 
-import com.otoki.powersales.admin.dto.response.AdminProductExpirationSummaryResponse
+import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationSummaryResponse
 import com.otoki.powersales.productexpiration.entity.ProductExpiration
 import com.otoki.powersales.productexpiration.entity.QProductExpiration.Companion.productExpiration
 import com.otoki.powersales.employee.entity.QEmployee.Companion.employee

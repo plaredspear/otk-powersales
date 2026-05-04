@@ -1,8 +1,8 @@
 package com.otoki.powersales.admin.controller
 
 import tools.jackson.databind.ObjectMapper
-import com.otoki.powersales.admin.dto.request.PPTMasterCreateRequest
-import com.otoki.powersales.admin.dto.response.*
+import com.otoki.powersales.promotion.dto.request.PPTMasterCreateRequest
+import com.otoki.powersales.promotion.dto.response.*
 import com.otoki.powersales.admin.security.AdminAuthorityFilter
 import com.otoki.powersales.promotion.service.AdminPPTMasterService
 import com.otoki.powersales.common.security.JwtAuthenticationFilter

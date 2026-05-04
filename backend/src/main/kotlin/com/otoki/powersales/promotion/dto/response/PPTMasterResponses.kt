@@ -1,4 +1,4 @@
-package com.otoki.powersales.admin.dto.response
+package com.otoki.powersales.promotion.dto.response
 
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamHistory
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamMaster

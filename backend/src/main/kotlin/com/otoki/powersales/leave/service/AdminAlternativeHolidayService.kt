@@ -1,12 +1,12 @@
 package com.otoki.powersales.leave.service
 
-import com.otoki.powersales.admin.dto.request.AlternativeHolidayApproveRequest
-import com.otoki.powersales.admin.dto.request.AlternativeHolidayCreateRequest
-import com.otoki.powersales.admin.dto.request.AlternativeHolidayRejectRequest
-import com.otoki.powersales.admin.dto.response.AlternativeHolidayApproveResponse
-import com.otoki.powersales.admin.dto.response.AlternativeHolidayCreateResponse
-import com.otoki.powersales.admin.dto.response.AlternativeHolidayListItem
-import com.otoki.powersales.admin.dto.response.AlternativeHolidayRejectResponse
+import com.otoki.powersales.leave.dto.request.AlternativeHolidayApproveRequest
+import com.otoki.powersales.leave.dto.request.AlternativeHolidayCreateRequest
+import com.otoki.powersales.leave.dto.request.AlternativeHolidayRejectRequest
+import com.otoki.powersales.leave.dto.response.AlternativeHolidayApproveResponse
+import com.otoki.powersales.leave.dto.response.AlternativeHolidayCreateResponse
+import com.otoki.powersales.leave.dto.response.AlternativeHolidayListItem
+import com.otoki.powersales.leave.dto.response.AlternativeHolidayRejectResponse
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.leave.entity.AlternativeHoliday
 import com.otoki.powersales.leave.exception.AltHolidayInvalidStatusException

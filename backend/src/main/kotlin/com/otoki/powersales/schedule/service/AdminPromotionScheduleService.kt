@@ -1,15 +1,15 @@
 package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.account.repository.AccountRepository
-import com.otoki.powersales.admin.dto.request.PromotionScheduleBulkDeleteRequest
-import com.otoki.powersales.admin.dto.request.PromotionScheduleBulkUpdateItem
-import com.otoki.powersales.admin.dto.request.PromotionScheduleBulkUpdateRequest
-import com.otoki.powersales.admin.dto.response.PromotionScheduleBulkDeleteResponse
-import com.otoki.powersales.admin.dto.response.PromotionScheduleBulkUpdateResponse
-import com.otoki.powersales.admin.dto.response.PromotionScheduleItem
-import com.otoki.powersales.admin.dto.response.PromotionScheduleListResponse
-import com.otoki.powersales.admin.dto.response.PromotionScheduleMember
-import com.otoki.powersales.admin.dto.response.SchedulePeriod
+import com.otoki.powersales.schedule.dto.request.PromotionScheduleBulkDeleteRequest
+import com.otoki.powersales.schedule.dto.request.PromotionScheduleBulkUpdateItem
+import com.otoki.powersales.schedule.dto.request.PromotionScheduleBulkUpdateRequest
+import com.otoki.powersales.schedule.dto.response.PromotionScheduleBulkDeleteResponse
+import com.otoki.powersales.schedule.dto.response.PromotionScheduleBulkUpdateResponse
+import com.otoki.powersales.schedule.dto.response.PromotionScheduleItem
+import com.otoki.powersales.schedule.dto.response.PromotionScheduleListResponse
+import com.otoki.powersales.schedule.dto.response.PromotionScheduleMember
+import com.otoki.powersales.schedule.dto.response.SchedulePeriod
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.exception.PromotionNotFoundException
 import com.otoki.powersales.promotion.repository.PromotionEmployeeRepository

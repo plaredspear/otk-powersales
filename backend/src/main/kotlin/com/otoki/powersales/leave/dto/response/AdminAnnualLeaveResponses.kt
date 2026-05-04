@@ -1,4 +1,4 @@
-package com.otoki.powersales.admin.dto.response
+package com.otoki.powersales.leave.dto.response
 
 data class AnnualLeaveDayDto(
     val date: String,

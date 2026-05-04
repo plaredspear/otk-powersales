@@ -1,7 +1,7 @@
-package com.otoki.powersales.admin.service
+package com.otoki.powersales.leave.service
 
-import com.otoki.powersales.admin.dto.request.HolidayMasterCreateRequest
-import com.otoki.powersales.admin.dto.request.HolidayMasterUpdateRequest
+import com.otoki.powersales.leave.dto.request.HolidayMasterCreateRequest
+import com.otoki.powersales.leave.dto.request.HolidayMasterUpdateRequest
 import com.otoki.powersales.leave.entity.HolidayMaster
 import com.otoki.powersales.leave.exception.HolidayDateDuplicateException
 import com.otoki.powersales.leave.exception.HolidayNotFoundException

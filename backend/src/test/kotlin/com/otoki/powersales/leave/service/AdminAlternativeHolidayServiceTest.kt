@@ -1,8 +1,8 @@
-package com.otoki.powersales.admin.service
+package com.otoki.powersales.leave.service
 
-import com.otoki.powersales.admin.dto.request.AlternativeHolidayApproveRequest
-import com.otoki.powersales.admin.dto.request.AlternativeHolidayCreateRequest
-import com.otoki.powersales.admin.dto.request.AlternativeHolidayRejectRequest
+import com.otoki.powersales.leave.dto.request.AlternativeHolidayApproveRequest
+import com.otoki.powersales.leave.dto.request.AlternativeHolidayCreateRequest
+import com.otoki.powersales.leave.dto.request.AlternativeHolidayRejectRequest
 import com.otoki.powersales.leave.entity.AlternativeHoliday
 import com.otoki.powersales.leave.exception.*
 import com.otoki.powersales.leave.repository.AlternativeHolidayRepository

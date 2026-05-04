@@ -1,10 +1,10 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.admin.dto.request.PromotionScheduleBulkDeleteRequest
-import com.otoki.powersales.admin.dto.request.PromotionScheduleBulkUpdateRequest
-import com.otoki.powersales.admin.dto.response.PromotionScheduleBulkDeleteResponse
-import com.otoki.powersales.admin.dto.response.PromotionScheduleBulkUpdateResponse
-import com.otoki.powersales.admin.dto.response.PromotionScheduleListResponse
+import com.otoki.powersales.schedule.dto.request.PromotionScheduleBulkDeleteRequest
+import com.otoki.powersales.schedule.dto.request.PromotionScheduleBulkUpdateRequest
+import com.otoki.powersales.schedule.dto.response.PromotionScheduleBulkDeleteResponse
+import com.otoki.powersales.schedule.dto.response.PromotionScheduleBulkUpdateResponse
+import com.otoki.powersales.schedule.dto.response.PromotionScheduleListResponse
 import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.schedule.service.AdminPromotionScheduleService

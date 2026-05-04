@@ -1,9 +1,9 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.admin.dto.request.PPTMasterBulkValidateRequest
-import com.otoki.powersales.admin.dto.request.PPTMasterCreateRequest
-import com.otoki.powersales.admin.dto.request.PPTMasterUpdateRequest
-import com.otoki.powersales.admin.dto.response.*
+import com.otoki.powersales.promotion.dto.request.PPTMasterBulkValidateRequest
+import com.otoki.powersales.promotion.dto.request.PPTMasterCreateRequest
+import com.otoki.powersales.promotion.dto.request.PPTMasterUpdateRequest
+import com.otoki.powersales.promotion.dto.response.*
 import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.promotion.service.AdminPPTMasterService

@@ -1,4 +1,4 @@
-package com.otoki.powersales.admin.dto.response
+package com.otoki.powersales.productexpiration.dto.response
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.otoki.powersales.productexpiration.entity.ProductExpiration

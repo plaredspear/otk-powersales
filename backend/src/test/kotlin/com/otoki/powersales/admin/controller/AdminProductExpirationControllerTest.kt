@@ -1,10 +1,10 @@
 package com.otoki.powersales.admin.controller
 
 import tools.jackson.databind.ObjectMapper
-import com.otoki.powersales.admin.dto.response.AdminProductExpirationBatchDeleteResponse
-import com.otoki.powersales.admin.dto.response.AdminProductExpirationListResponse
-import com.otoki.powersales.admin.dto.response.AdminProductExpirationResponse
-import com.otoki.powersales.admin.dto.response.AdminProductExpirationSummaryResponse
+import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationBatchDeleteResponse
+import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationListResponse
+import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationResponse
+import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationSummaryResponse
 import com.otoki.powersales.admin.security.AdminAuthorityFilter
 import com.otoki.powersales.productexpiration.service.AdminProductExpirationService
 import com.otoki.powersales.common.security.GpsConsentFilter

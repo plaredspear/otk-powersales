@@ -1,7 +1,7 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.admin.dto.response.AnnualLeaveDayDto
-import com.otoki.powersales.admin.dto.response.EmployeeAnnualLeaveDto
+import com.otoki.powersales.leave.dto.response.AnnualLeaveDayDto
+import com.otoki.powersales.leave.dto.response.EmployeeAnnualLeaveDto
 import com.otoki.powersales.leave.service.AdminAnnualLeaveService
 import com.otoki.powersales.admin.security.AdminAuthorityFilter
 import com.otoki.powersales.common.security.GpsConsentFilter

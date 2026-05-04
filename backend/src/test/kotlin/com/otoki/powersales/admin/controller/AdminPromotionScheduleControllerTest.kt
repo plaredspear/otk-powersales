@@ -1,11 +1,11 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.admin.dto.response.PromotionScheduleBulkDeleteResponse
-import com.otoki.powersales.admin.dto.response.PromotionScheduleBulkUpdateResponse
-import com.otoki.powersales.admin.dto.response.PromotionScheduleItem
-import com.otoki.powersales.admin.dto.response.PromotionScheduleListResponse
-import com.otoki.powersales.admin.dto.response.PromotionScheduleMember
-import com.otoki.powersales.admin.dto.response.SchedulePeriod
+import com.otoki.powersales.schedule.dto.response.PromotionScheduleBulkDeleteResponse
+import com.otoki.powersales.schedule.dto.response.PromotionScheduleBulkUpdateResponse
+import com.otoki.powersales.schedule.dto.response.PromotionScheduleItem
+import com.otoki.powersales.schedule.dto.response.PromotionScheduleListResponse
+import com.otoki.powersales.schedule.dto.response.PromotionScheduleMember
+import com.otoki.powersales.schedule.dto.response.SchedulePeriod
 import com.otoki.powersales.admin.security.AdminAuthorityFilter
 import com.otoki.powersales.schedule.service.AdminPromotionScheduleService
 import com.otoki.powersales.auth.entity.UserRole

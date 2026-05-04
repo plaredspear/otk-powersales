@@ -1,10 +1,10 @@
-package com.otoki.powersales.admin.service
+package com.otoki.powersales.productexpiration.service
 
-import com.otoki.powersales.admin.dto.request.AdminProductExpirationBatchDeleteRequest
+import com.otoki.powersales.productexpiration.dto.request.AdminProductExpirationBatchDeleteRequest
 import com.otoki.powersales.auth.entity.UserRole
-import com.otoki.powersales.admin.dto.request.AdminProductExpirationCreateRequest
-import com.otoki.powersales.admin.dto.request.AdminProductExpirationUpdateRequest
-import com.otoki.powersales.admin.dto.response.AdminProductExpirationSummaryResponse
+import com.otoki.powersales.productexpiration.dto.request.AdminProductExpirationCreateRequest
+import com.otoki.powersales.productexpiration.dto.request.AdminProductExpirationUpdateRequest
+import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationSummaryResponse
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.common.exception.ProductNotFoundException
 import com.otoki.powersales.productexpiration.entity.ProductExpiration

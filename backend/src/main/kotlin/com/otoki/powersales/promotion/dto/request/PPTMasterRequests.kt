@@ -1,4 +1,4 @@
-package com.otoki.powersales.admin.dto.request
+package com.otoki.powersales.promotion.dto.request
 
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
 import jakarta.validation.Valid

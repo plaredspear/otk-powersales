@@ -1,4 +1,4 @@
-package com.otoki.powersales.admin.dto.request
+package com.otoki.powersales.leave.dto.request
 
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull

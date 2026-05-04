@@ -1,4 +1,4 @@
-package com.otoki.powersales.admin.dto.response
+package com.otoki.powersales.claim.dto.response
 
 import com.otoki.powersales.claim.entity.Claim
 import com.otoki.powersales.claim.entity.ClaimPhoto

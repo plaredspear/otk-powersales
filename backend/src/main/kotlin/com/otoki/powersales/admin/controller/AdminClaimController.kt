@@ -1,7 +1,7 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.admin.dto.response.AdminClaimDetailResponse
-import com.otoki.powersales.admin.dto.response.AdminClaimListResponse
+import com.otoki.powersales.claim.dto.response.AdminClaimDetailResponse
+import com.otoki.powersales.claim.dto.response.AdminClaimListResponse
 import com.otoki.powersales.claim.service.AdminClaimService
 import com.otoki.powersales.common.dto.ApiResponse
 import org.springframework.format.annotation.DateTimeFormat

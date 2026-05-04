@@ -1,8 +1,8 @@
-package com.otoki.powersales.admin.service
+package com.otoki.powersales.promotion.service
 
-import com.otoki.powersales.admin.dto.request.PPTMasterCreateRequest
+import com.otoki.powersales.promotion.dto.request.PPTMasterCreateRequest
 import com.otoki.powersales.auth.entity.UserRole
-import com.otoki.powersales.admin.dto.request.PPTMasterUpdateRequest
+import com.otoki.powersales.promotion.dto.request.PPTMasterUpdateRequest
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamHistory
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamMaster
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType

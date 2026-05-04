@@ -1,6 +1,6 @@
 package com.otoki.powersales.leave.repository
 
-import com.otoki.powersales.admin.dto.response.AlternativeHolidayListItem
+import com.otoki.powersales.leave.dto.response.AlternativeHolidayListItem
 import java.time.LocalDate
 
 interface AlternativeHolidayRepositoryCustom {

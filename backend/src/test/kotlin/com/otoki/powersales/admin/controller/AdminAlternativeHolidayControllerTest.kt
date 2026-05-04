@@ -1,12 +1,12 @@
 package com.otoki.powersales.admin.controller
 
 import tools.jackson.databind.ObjectMapper
-import com.otoki.powersales.admin.dto.request.AlternativeHolidayCreateRequest
-import com.otoki.powersales.admin.dto.request.AlternativeHolidayRejectRequest
-import com.otoki.powersales.admin.dto.response.AlternativeHolidayApproveResponse
-import com.otoki.powersales.admin.dto.response.AlternativeHolidayCreateResponse
-import com.otoki.powersales.admin.dto.response.AlternativeHolidayListItem
-import com.otoki.powersales.admin.dto.response.AlternativeHolidayRejectResponse
+import com.otoki.powersales.leave.dto.request.AlternativeHolidayCreateRequest
+import com.otoki.powersales.leave.dto.request.AlternativeHolidayRejectRequest
+import com.otoki.powersales.leave.dto.response.AlternativeHolidayApproveResponse
+import com.otoki.powersales.leave.dto.response.AlternativeHolidayCreateResponse
+import com.otoki.powersales.leave.dto.response.AlternativeHolidayListItem
+import com.otoki.powersales.leave.dto.response.AlternativeHolidayRejectResponse
 import com.otoki.powersales.admin.security.AdminAuthorityFilter
 import com.otoki.powersales.leave.service.AdminAlternativeHolidayService
 import com.otoki.powersales.common.security.JwtAuthenticationFilter

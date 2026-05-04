@@ -1,8 +1,8 @@
 package com.otoki.powersales.claim.service
 
-import com.otoki.powersales.admin.dto.response.AdminClaimDetailResponse
-import com.otoki.powersales.admin.dto.response.AdminClaimListItem
-import com.otoki.powersales.admin.dto.response.AdminClaimListResponse
+import com.otoki.powersales.claim.dto.response.AdminClaimDetailResponse
+import com.otoki.powersales.claim.dto.response.AdminClaimListItem
+import com.otoki.powersales.claim.dto.response.AdminClaimListResponse
 import com.otoki.powersales.claim.entity.ClaimStatus
 import com.otoki.powersales.claim.exception.ClaimNotFoundException
 import com.otoki.powersales.claim.repository.AdminClaimPhotoRepository
