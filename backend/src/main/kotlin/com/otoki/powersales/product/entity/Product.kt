@@ -6,6 +6,7 @@ import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import jakarta.persistence.*
+import java.math.BigDecimal
 import java.time.LocalDate
 
 /**
@@ -207,8 +208,8 @@ class Product(
     @Column(name = "product_barcode", length = 50)
     var productBarcode: String? = null,
 
-    @Column(name = "pallet")
-    var pallet: Double? = null
+    @Column(name = "pallet", precision = 18, scale = 4)
+    var pallet: BigDecimal? = null
 
     /* --- 주석 처리: V1에 없는 기존 필드 ---
     productId: V1에 없음 (sfid로 대체)

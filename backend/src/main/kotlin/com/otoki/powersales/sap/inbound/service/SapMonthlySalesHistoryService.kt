@@ -18,6 +18,7 @@ import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
+import java.math.BigDecimal
 
 /**
  * SAP 월 매출 이력 인바운드 UPSERT 서비스. (Spec #560)
@@ -152,7 +153,7 @@ class SapMonthlySalesHistoryService(
         entity.abcClosingAmount1 = amounts[0]
         entity.abcClosingAmount2 = amounts[1]
         entity.abcClosingAmount3 = amounts[2]
-        entity.totalLedgerAmount = amounts[3] // Spec #575: SAP TotalLedgerAmount 보존
+        entity.totalLedgerAmount = BigDecimal.valueOf(amounts[3]) // Spec #575: SAP TotalLedgerAmount 보존
         entity.shipClosingAmount = amounts[4]
         entity.rlsalesC = amounts[5]
     }

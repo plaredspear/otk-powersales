@@ -155,7 +155,6 @@ app:
     api: ${API_DOMAIN:}
     admin: ${ADMIN_DOMAIN:}
 
-app:
   auth:
     uuid-check:
       enabled: ${UUID_CHECK_ENABLED:true}

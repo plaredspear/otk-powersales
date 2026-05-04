@@ -5,6 +5,7 @@ import com.otoki.powersales.common.salesforce.HCTable
 import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
+import java.math.BigDecimal
 import java.time.LocalDateTime
 import com.otoki.powersales.common.entity.AuditedEntity
 import com.otoki.powersales.account.entity.Account
@@ -109,8 +110,8 @@ class MonthlySalesHistory(
     var rlsalesC: Double? = null,
 
     // Spec #575: SAP TotalLedgerAmount 보존 (누적 합산 로직은 D1 결정으로 별도 스펙 분리)
-    @Column(name = "total_ledger_amount")
-    var totalLedgerAmount: Double? = null,
+    @Column(name = "total_ledger_amount", precision = 18, scale = 4)
+    var totalLedgerAmount: BigDecimal? = null,
 
     @HCColumn("createddate")
     @CreatedDate

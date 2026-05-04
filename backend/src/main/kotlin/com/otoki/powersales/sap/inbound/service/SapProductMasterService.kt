@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
@@ -166,7 +167,7 @@ class SapProductMasterService(
         product.launchDate = launchDate
         // Spec #575
         product.productBarcode = item.productBarcode
-        product.pallet = pallet
+        product.pallet = pallet?.let { BigDecimal.valueOf(it) }
     }
 
     private data class ParseResult<T>(val value: T?, val isFailure: Boolean)

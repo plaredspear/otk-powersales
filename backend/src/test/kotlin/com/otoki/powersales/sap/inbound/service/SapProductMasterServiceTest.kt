@@ -18,6 +18,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.math.BigDecimal
 import java.time.LocalDate
 
 @ExtendWith(MockitoExtension::class)
@@ -144,11 +145,11 @@ class SapProductMasterServiceTest {
             verify(productRepository).saveAll(captor.capture())
             val saved = captor.firstValue.single()
             assertThat(saved.productBarcode).isEqualTo("8801007123456")
-            assertThat(saved.pallet).isEqualTo(100.0)
+            assertThat(saved.pallet).isEqualByComparingTo(BigDecimal("100"))
         }
 
         @Test
-        @DisplayName("Spec #575 - Pallet blank → 0.0")
+        @DisplayName("Spec #575 - Pallet blank → 0")
         fun upsert_palletBlank() {
             whenever(productRepository.findByProductCodeIn(listOf("100100"))).thenReturn(emptyList())
 
@@ -156,11 +157,11 @@ class SapProductMasterServiceTest {
 
             val captor = argumentCaptor<List<Product>>()
             verify(productRepository).saveAll(captor.capture())
-            assertThat(captor.firstValue.single().pallet).isEqualTo(0.0)
+            assertThat(captor.firstValue.single().pallet).isEqualByComparingTo(BigDecimal.ZERO)
         }
 
         @Test
-        @DisplayName("Spec #575 - Pallet null (필드 미포함) → 0.0")
+        @DisplayName("Spec #575 - Pallet null (필드 미포함) → 0")
         fun upsert_palletNull() {
             whenever(productRepository.findByProductCodeIn(listOf("100100"))).thenReturn(emptyList())
 
@@ -168,7 +169,7 @@ class SapProductMasterServiceTest {
 
             val captor = argumentCaptor<List<Product>>()
             verify(productRepository).saveAll(captor.capture())
-            assertThat(captor.firstValue.single().pallet).isEqualTo(0.0)
+            assertThat(captor.firstValue.single().pallet).isEqualByComparingTo(BigDecimal.ZERO)
         }
     }
 

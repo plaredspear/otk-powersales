@@ -21,6 +21,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.math.BigDecimal
 
 @ExtendWith(MockitoExtension::class)
 @DisplayName("SapMonthlySalesHistoryService 테스트")
@@ -117,11 +118,11 @@ class SapMonthlySalesHistoryServiceTest {
 
             val captor = argumentCaptor<List<MonthlySalesHistory>>()
             verify(monthlySalesHistoryRepository).saveAll(captor.capture())
-            assertThat(captor.firstValue.single().totalLedgerAmount).isEqualTo(1000000.0)
+            assertThat(captor.firstValue.single().totalLedgerAmount).isEqualByComparingTo(BigDecimal("1000000"))
         }
 
         @Test
-        @DisplayName("Spec #575 - TotalLedgerAmount blank → 0.0")
+        @DisplayName("Spec #575 - TotalLedgerAmount blank → 0")
         fun upsert_totalLedgerAmountBlank() {
             whenever(monthlySalesHistoryRepository.findByExternalkeyCIn(listOf("1032619202604")))
                 .thenReturn(emptyList())
@@ -130,11 +131,11 @@ class SapMonthlySalesHistoryServiceTest {
 
             val captor = argumentCaptor<List<MonthlySalesHistory>>()
             verify(monthlySalesHistoryRepository).saveAll(captor.capture())
-            assertThat(captor.firstValue.single().totalLedgerAmount).isEqualTo(0.0)
+            assertThat(captor.firstValue.single().totalLedgerAmount).isEqualByComparingTo(BigDecimal.ZERO)
         }
 
         @Test
-        @DisplayName("Spec #575 - TotalLedgerAmount null (미입력) → 0.0")
+        @DisplayName("Spec #575 - TotalLedgerAmount null (미입력) → 0")
         fun upsert_totalLedgerAmountNull() {
             whenever(monthlySalesHistoryRepository.findByExternalkeyCIn(listOf("1032619202604")))
                 .thenReturn(emptyList())
@@ -143,7 +144,7 @@ class SapMonthlySalesHistoryServiceTest {
 
             val captor = argumentCaptor<List<MonthlySalesHistory>>()
             verify(monthlySalesHistoryRepository).saveAll(captor.capture())
-            assertThat(captor.firstValue.single().totalLedgerAmount).isEqualTo(0.0)
+            assertThat(captor.firstValue.single().totalLedgerAmount).isEqualByComparingTo(BigDecimal.ZERO)
         }
     }
 
