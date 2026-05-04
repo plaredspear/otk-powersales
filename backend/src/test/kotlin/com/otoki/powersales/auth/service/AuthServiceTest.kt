@@ -18,8 +18,11 @@ import com.otoki.powersales.common.repository.AgreementWordRepository
 import com.otoki.powersales.common.repository.LoginHistoryRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.common.security.JwtTokenProvider
+import com.otoki.powersales.common.util.TimeZones
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -35,6 +38,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.security.crypto.password.PasswordEncoder
+import java.time.LocalDate
 import java.util.*
 
 @ExtendWith(MockitoExtension::class)
@@ -611,6 +615,101 @@ class AuthServiceTest {
             // When & Then
             assertThatThrownBy { authService.recordGpsConsent(userId, request) }
                 .isInstanceOf(TermsNotFoundException::class.java)
+        }
+
+        @Nested
+        @DisplayName("스펙 #583 — 정합성 보강")
+        inner class Spec583Tests {
+
+            private val originalTimeZone: TimeZone = TimeZone.getDefault()
+
+            @BeforeEach
+            fun forceUtcDefaultZone() {
+                // 스펙 #583 G2: JVM 기본 timezone 이 UTC 인 환경에서도 KST 기준 today 가 기록되는지 검증
+                TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
+            }
+
+            @AfterEach
+            fun restoreOriginalZone() {
+                TimeZone.setDefault(originalTimeZone)
+            }
+
+            @Test
+            @DisplayName("T1 - JVM=UTC 환경에서도 agreement_date 가 KST today 로 기록")
+            fun recordGpsConsent_usesSeoulZoneForToday() {
+                // Given
+                val userId = 1L
+                val employee = createTestEmployee(id = userId, agreementFlag = null)
+
+                whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
+                whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
+                    .thenReturn(Optional.of(activeTerms))
+                whenever(agreementHistoryRepository.save(any<AgreementHistory>())).thenAnswer { it.arguments[0] }
+                whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.arguments[0] }
+                whenever(jwtTokenProvider.createAccessToken(eq(userId), any<UserRole>(), eq(true))).thenReturn("token")
+                whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
+
+                val expectedKstToday = LocalDate.now(TimeZones.SEOUL_ZONE)
+
+                // When
+                authService.recordGpsConsent(userId)
+
+                // Then
+                val historyCaptor = ArgumentCaptor.forClass(AgreementHistory::class.java)
+                verify(agreementHistoryRepository).save(historyCaptor.capture())
+                assertThat(historyCaptor.value.agreementDate).isEqualTo(expectedKstToday)
+            }
+
+            @Test
+            @DisplayName("T2 - 신규 동의 row 의 sfid / employee_sfid / agreement_word_sfid 모두 NULL")
+            fun recordGpsConsent_sfidColumnsAreNullByDefault() {
+                // Given
+                val userId = 1L
+                val employee = createTestEmployee(id = userId, agreementFlag = null)
+
+                whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
+                whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
+                    .thenReturn(Optional.of(activeTerms))
+                whenever(agreementHistoryRepository.save(any<AgreementHistory>())).thenAnswer { it.arguments[0] }
+                whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.arguments[0] }
+                whenever(jwtTokenProvider.createAccessToken(eq(userId), any<UserRole>(), eq(true))).thenReturn("token")
+                whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
+
+                // When
+                authService.recordGpsConsent(userId)
+
+                // Then
+                val historyCaptor = ArgumentCaptor.forClass(AgreementHistory::class.java)
+                verify(agreementHistoryRepository).save(historyCaptor.capture())
+                val history = historyCaptor.value
+                assertThat(history.sfid).isNull()
+                assertThat(history.employeeSfid).isNull()
+                assertThat(history.agreementWordSfid).isNull()
+            }
+
+            @Test
+            @DisplayName("T4 - 등록 직후 상태 조회 시 미동의 해제 (requiresGpsConsent=false)")
+            fun recordGpsConsentThenStatus_unblocksConsent() {
+                // Given
+                val userId = 1L
+                val employee = createTestEmployee(id = userId, agreementFlag = null)
+
+                whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
+                whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
+                    .thenReturn(Optional.of(activeTerms))
+                whenever(agreementHistoryRepository.save(any<AgreementHistory>())).thenAnswer { it.arguments[0] }
+                whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.arguments[0] }
+                whenever(jwtTokenProvider.createAccessToken(eq(userId), any<UserRole>(), eq(true))).thenReturn("token")
+                whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
+                whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+
+                // When
+                authService.recordGpsConsent(userId)
+                val status = authService.getGpsConsentStatus(userId)
+
+                // Then
+                assertThat(status.requiresGpsConsent).isFalse()
+            }
         }
     }
 
