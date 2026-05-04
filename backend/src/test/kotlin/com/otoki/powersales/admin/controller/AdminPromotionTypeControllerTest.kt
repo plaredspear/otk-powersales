@@ -69,7 +69,7 @@ class AdminPromotionTypeControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data[0].name").value("시식"))
-                .andExpect(jsonPath("$.data[0].display_order").value(1))
+                .andExpect(jsonPath("$.data[0].displayOrder").value(1))
                 .andExpect(jsonPath("$.data[1].name").value("시음"))
         }
     }
@@ -113,7 +113,7 @@ class AdminPromotionTypeControllerTest {
         @Test
         @DisplayName("실패 - 이름 빈 문자열")
         fun createPromotionType_emptyName() {
-            val invalidJson = """{"name": "", "display_order": 1}"""
+            val invalidJson = """{"name": "", "displayOrder": 1}"""
 
             mockMvc.perform(
                 post("/api/v1/admin/promotion-types")

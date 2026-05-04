@@ -5,6 +5,6 @@ import com.fasterxml.jackson.annotation.JsonProperty
 data class PromotionConfirmResponse(
     val promotionId: Long,
     val totalEmployees: Int,
-    @JsonProperty("upserted_schedules")
+    @JsonProperty("upsertedSchedules")
     val upsertedTeamMemberSchedules: Int
 )

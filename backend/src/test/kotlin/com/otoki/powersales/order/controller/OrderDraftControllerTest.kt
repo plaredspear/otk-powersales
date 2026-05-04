@@ -113,18 +113,18 @@ class OrderDraftControllerTest {
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data").exists())
-            .andExpect(jsonPath("$.data.client_id").value(100))
-            .andExpect(jsonPath("$.data.client_name").value("테스트 거래처"))
-            .andExpect(jsonPath("$.data.delivery_date").value("2026-02-15"))
+            .andExpect(jsonPath("$.data.clientId").value(100))
+            .andExpect(jsonPath("$.data.clientName").value("테스트 거래처"))
+            .andExpect(jsonPath("$.data.deliveryDate").value("2026-02-15"))
             .andExpect(jsonPath("$.data.items").isArray)
-            .andExpect(jsonPath("$.data.items[0].product_code").value("P001"))
-            .andExpect(jsonPath("$.data.items[0].product_name").value("테스트 상품"))
-            .andExpect(jsonPath("$.data.items[0].box_quantity").value(5))
-            .andExpect(jsonPath("$.data.items[0].piece_quantity").value(3))
-            .andExpect(jsonPath("$.data.items[0].unit_price").value(10000))
+            .andExpect(jsonPath("$.data.items[0].productCode").value("P001"))
+            .andExpect(jsonPath("$.data.items[0].productName").value("테스트 상품"))
+            .andExpect(jsonPath("$.data.items[0].boxQuantity").value(5))
+            .andExpect(jsonPath("$.data.items[0].pieceQuantity").value(3))
+            .andExpect(jsonPath("$.data.items[0].unitPrice").value(10000))
             .andExpect(jsonPath("$.data.items[0].amount").value(53000))
-            .andExpect(jsonPath("$.data.total_amount").value(53000))
-            .andExpect(jsonPath("$.data.saved_at").value(savedAt))
+            .andExpect(jsonPath("$.data.totalAmount").value(53000))
+            .andExpect(jsonPath("$.data.savedAt").value(savedAt))
     }
 
     @Test
@@ -172,7 +172,7 @@ class OrderDraftControllerTest {
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
-            .andExpect(jsonPath("$.data.saved_at").value(savedAt))
+            .andExpect(jsonPath("$.data.savedAt").value(savedAt))
     }
 
     @Test
@@ -181,9 +181,9 @@ class OrderDraftControllerTest {
         // given - snake_case JSON으로 직접 구성
         val invalidJson = """
             {
-                "client_id": null,
-                "delivery_date": "2026-02-15",
-                "items": [{"product_code": "P001", "box_quantity": 5, "piece_quantity": 3}]
+                "clientId": null,
+                "deliveryDate": "2026-02-15",
+                "items": [{"productCode": "P001", "boxQuantity": 5, "pieceQuantity": 3}]
             }
         """.trimIndent()
 
@@ -204,8 +204,8 @@ class OrderDraftControllerTest {
         // given
         val invalidJson = """
             {
-                "client_id": 100,
-                "delivery_date": "2026-02-15",
+                "clientId": 100,
+                "deliveryDate": "2026-02-15",
                 "items": []
             }
         """.trimIndent()

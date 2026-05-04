@@ -99,19 +99,19 @@ class AdminAccountControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content").isArray)
-                .andExpect(jsonPath("$.data.content[0].external_key").value("AC001234"))
+                .andExpect(jsonPath("$.data.content[0].externalKey").value("AC001234"))
                 .andExpect(jsonPath("$.data.content[0].name").value("GS25 역삼점"))
-                .andExpect(jsonPath("$.data.content[0].abc_type").value("편의점"))
-                .andExpect(jsonPath("$.data.content[0].branch_code").value("A001"))
-                .andExpect(jsonPath("$.data.content[0].branch_name").value("서울1지점"))
-                .andExpect(jsonPath("$.data.content[0].employee_code").value("123456"))
+                .andExpect(jsonPath("$.data.content[0].abcType").value("편의점"))
+                .andExpect(jsonPath("$.data.content[0].branchCode").value("A001"))
+                .andExpect(jsonPath("$.data.content[0].branchName").value("서울1지점"))
+                .andExpect(jsonPath("$.data.content[0].employeeCode").value("123456"))
                 .andExpect(jsonPath("$.data.content[0].address1").value("서울시 강남구 역삼동 123-4"))
                 .andExpect(jsonPath("$.data.content[0].phone").value("02-1234-5678"))
-                .andExpect(jsonPath("$.data.content[0].account_status_name").value("활성"))
+                .andExpect(jsonPath("$.data.content[0].accountStatusName").value("활성"))
                 .andExpect(jsonPath("$.data.page").value(0))
                 .andExpect(jsonPath("$.data.size").value(20))
-                .andExpect(jsonPath("$.data.total_elements").value(1))
-                .andExpect(jsonPath("$.data.total_pages").value(1))
+                .andExpect(jsonPath("$.data.totalElements").value(1))
+                .andExpect(jsonPath("$.data.totalPages").value(1))
         }
 
         @Test
@@ -139,7 +139,7 @@ class AdminAccountControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content").isEmpty)
-                .andExpect(jsonPath("$.data.total_elements").value(0))
+                .andExpect(jsonPath("$.data.totalElements").value(0))
         }
 
         @Test
@@ -159,8 +159,8 @@ class AdminAccountControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content").isEmpty)
-                .andExpect(jsonPath("$.data.total_elements").value(0))
-                .andExpect(jsonPath("$.data.total_pages").value(0))
+                .andExpect(jsonPath("$.data.totalElements").value(0))
+                .andExpect(jsonPath("$.data.totalPages").value(0))
         }
     }
 }

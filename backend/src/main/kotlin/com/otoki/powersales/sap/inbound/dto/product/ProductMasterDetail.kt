@@ -1,5 +1,8 @@
 package com.otoki.powersales.sap.inbound.dto.product
 
+import tools.jackson.databind.PropertyNamingStrategies
+import tools.jackson.databind.annotation.JsonNaming
+
 /**
  * SAP 제품 / 바코드 / 시스템 코드 마스터 인바운드 응답의 RESULT_DETAIL 페이로드. (Spec #559)
  *
@@ -7,13 +10,17 @@ package com.otoki.powersales.sap.inbound.dto.product
  * - product: identifier = ProductCode
  * - product-barcode: identifier = customKey
  * - system-code: identifier = externalKey
+ *
+ * SAP 호환 보존을 위해 RESULT_DETAIL 내부 키는 SnakeCase 로 직렬화된다 (Spec #580 P1-B).
  */
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
 data class ProductMasterDetail(
     val successCount: Int,
     val failureCount: Int,
     val failures: List<FailureItem>
 )
 
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
 data class FailureItem(
     val identifier: String?,
     val reason: String

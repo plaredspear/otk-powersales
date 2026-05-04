@@ -1,6 +1,5 @@
 package com.otoki.powersales.productexpiration.dto.response
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.otoki.powersales.productexpiration.entity.ProductExpiration
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -17,7 +16,6 @@ data class AdminProductExpirationResponse(
     val employeeCode: String,
     val expirationDate: String,
     val alarmDate: String,
-    @get:JsonProperty("d_day")
     val dDay: Int,
     val status: String,
     val description: String?,

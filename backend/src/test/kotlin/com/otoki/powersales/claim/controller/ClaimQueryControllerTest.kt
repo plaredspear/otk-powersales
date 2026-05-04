@@ -90,10 +90,10 @@ class ClaimQueryControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
-                .andExpect(jsonPath("$.data[0].claim_id").value(1))
-                .andExpect(jsonPath("$.data[0].account_name").value("미광종합물류"))
+                .andExpect(jsonPath("$.data[0].claimId").value(1))
+                .andExpect(jsonPath("$.data[0].accountName").value("미광종합물류"))
                 .andExpect(jsonPath("$.data[0].status").value("SUBMITTED"))
-                .andExpect(jsonPath("$.data[0].status_label").value("접수"))
+                .andExpect(jsonPath("$.data[0].statusLabel").value("접수"))
         }
 
         @Test
@@ -183,11 +183,11 @@ class ClaimQueryControllerTest {
             mockMvc.perform(get("/api/v1/mobile/claims/1"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.claim_id").value(1))
-                .andExpect(jsonPath("$.data.date_type").value("EXPIRY_DATE"))
-                .andExpect(jsonPath("$.data.date_type_label").value("유통기한"))
-                .andExpect(jsonPath("$.data.photos[0].photo_type").value("DEFECT"))
-                .andExpect(jsonPath("$.data.photos[0].photo_type_label").value("불량 사진"))
+                .andExpect(jsonPath("$.data.claimId").value(1))
+                .andExpect(jsonPath("$.data.dateType").value("EXPIRY_DATE"))
+                .andExpect(jsonPath("$.data.dateTypeLabel").value("유통기한"))
+                .andExpect(jsonPath("$.data.photos[0].photoType").value("DEFECT"))
+                .andExpect(jsonPath("$.data.photos[0].photoTypeLabel").value("불량 사진"))
         }
 
         @Test

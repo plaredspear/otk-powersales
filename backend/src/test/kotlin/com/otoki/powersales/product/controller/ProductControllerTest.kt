@@ -94,11 +94,11 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content").isArray)
                 .andExpect(jsonPath("$.data.content.length()").value(2))
-                .andExpect(jsonPath("$.data.content[0].product_name").value("열라면_용기105G"))
-                .andExpect(jsonPath("$.data.content[0].product_code").value("18110014"))
-                .andExpect(jsonPath("$.data.content[0].logistics_barcode").value("8801045570716"))
-                .andExpect(jsonPath("$.data.total_elements").value(2))
-                .andExpect(jsonPath("$.data.total_pages").value(1))
+                .andExpect(jsonPath("$.data.content[0].productName").value("열라면_용기105G"))
+                .andExpect(jsonPath("$.data.content[0].productCode").value("18110014"))
+                .andExpect(jsonPath("$.data.content[0].logisticsBarcode").value("8801045570716"))
+                .andExpect(jsonPath("$.data.totalElements").value(2))
+                .andExpect(jsonPath("$.data.totalPages").value(1))
                 .andExpect(jsonPath("$.data.number").value(0))
                 .andExpect(jsonPath("$.data.size").value(20))
                 .andExpect(jsonPath("$.data.first").value(true))
@@ -126,7 +126,7 @@ class ProductControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content.length()").value(1))
-                .andExpect(jsonPath("$.data.content[0].logistics_barcode").value("8801045570716"))
+                .andExpect(jsonPath("$.data.content[0].logisticsBarcode").value("8801045570716"))
         }
 
         @Test
@@ -146,7 +146,7 @@ class ProductControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content").isEmpty)
-                .andExpect(jsonPath("$.data.total_elements").value(0))
+                .andExpect(jsonPath("$.data.totalElements").value(0))
         }
 
         @Test
@@ -171,8 +171,8 @@ class ProductControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.number").value(1))
                 .andExpect(jsonPath("$.data.size").value(5))
-                .andExpect(jsonPath("$.data.total_elements").value(6))
-                .andExpect(jsonPath("$.data.total_pages").value(2))
+                .andExpect(jsonPath("$.data.totalElements").value(6))
+                .andExpect(jsonPath("$.data.totalPages").value(2))
         }
     }
 

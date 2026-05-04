@@ -99,9 +99,9 @@ class MyScheduleControllerTest {
             .andExpect(jsonPath("$.message").value("월간 일정 조회 성공"))
             .andExpect(jsonPath("$.data.year").value(2020))
             .andExpect(jsonPath("$.data.month").value(8))
-            .andExpect(jsonPath("$.data.work_days").isArray)
-            .andExpect(jsonPath("$.data.work_days[0].date").value("2020-08-01"))
-            .andExpect(jsonPath("$.data.work_days[0].has_work").value(true))
+            .andExpect(jsonPath("$.data.workDays").isArray)
+            .andExpect(jsonPath("$.data.workDays[0].date").value("2020-08-01"))
+            .andExpect(jsonPath("$.data.workDays[0].hasWork").value(true))
     }
 
     @Test
@@ -169,11 +169,11 @@ class MyScheduleControllerTest {
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.message").value("일간 일정 조회 성공"))
             .andExpect(jsonPath("$.data.date").value("2020-08-04"))
-            .andExpect(jsonPath("$.data.day_of_week").value("화"))
-            .andExpect(jsonPath("$.data.member_name").value("최금주"))
-            .andExpect(jsonPath("$.data.employee_code").value("20030117"))
-            .andExpect(jsonPath("$.data.report_progress.completed").value(0))
-            .andExpect(jsonPath("$.data.report_progress.total").value(3))
+            .andExpect(jsonPath("$.data.dayOfWeek").value("화"))
+            .andExpect(jsonPath("$.data.memberName").value("최금주"))
+            .andExpect(jsonPath("$.data.employeeCode").value("20030117"))
+            .andExpect(jsonPath("$.data.reportProgress.completed").value(0))
+            .andExpect(jsonPath("$.data.reportProgress.total").value(3))
             .andExpect(jsonPath("$.data.accounts").isArray)
     }
 

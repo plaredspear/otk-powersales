@@ -126,16 +126,16 @@ class SafetyCheckControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("조회 성공"))
                 .andExpect(jsonPath("$.data.categories").isArray)
-                .andExpect(jsonPath("$.data.categories[0].question_num").value(1))
+                .andExpect(jsonPath("$.data.categories[0].questionNum").value(1))
                 .andExpect(jsonPath("$.data.categories[0].title").value("안전예방 장비 착용"))
-                .andExpect(jsonPath("$.data.categories[0].input_type").value("RADIO"))
+                .andExpect(jsonPath("$.data.categories[0].inputType").value("RADIO"))
                 .andExpect(jsonPath("$.data.categories[0].required").value(true))
                 .andExpect(jsonPath("$.data.categories[0].options[0]").value("예"))
                 .andExpect(jsonPath("$.data.categories[0].options[1]").value("해당없음"))
-                .andExpect(jsonPath("$.data.categories[0].items[0].seq_num").value(1))
+                .andExpect(jsonPath("$.data.categories[0].items[0].seqNum").value(1))
                 .andExpect(jsonPath("$.data.categories[0].items[0].contents").value("손목보호대를 착용했습니다"))
-                .andExpect(jsonPath("$.data.categories[1].question_num").value(2))
-                .andExpect(jsonPath("$.data.categories[1].input_type").value("CHECKBOX"))
+                .andExpect(jsonPath("$.data.categories[1].questionNum").value(2))
+                .andExpect(jsonPath("$.data.categories[1].inputType").value("CHECKBOX"))
                 .andExpect(jsonPath("$.data.categories[1].required").value(false))
                 .andExpect(jsonPath("$.data.categories[1].options").doesNotExist())
         }
@@ -159,18 +159,18 @@ class SafetyCheckControllerTest {
 
             val requestJson = """
             {
-                "start_time": "2026-03-15T09:00:00",
-                "complete_time": "2026-03-15T09:02:30",
+                "startTime": "2026-03-15T09:00:00",
+                "completeTime": "2026-03-15T09:02:30",
                 "equipments": [
-                    {"seq_num": 1, "answer": "예"},
-                    {"seq_num": 2, "answer": "해당없음"},
-                    {"seq_num": 3, "answer": "예"},
-                    {"seq_num": 4, "answer": "예"},
-                    {"seq_num": 5, "answer": "해당없음"},
-                    {"seq_num": 6, "answer": "해당없음"},
-                    {"seq_num": 7, "answer": "예"},
-                    {"seq_num": 8, "answer": "예"},
-                    {"seq_num": 9, "answer": "예"}
+                    {"seqNum": 1, "answer": "예"},
+                    {"seqNum": 2, "answer": "해당없음"},
+                    {"seqNum": 3, "answer": "예"},
+                    {"seqNum": 4, "answer": "예"},
+                    {"seqNum": 5, "answer": "해당없음"},
+                    {"seqNum": 6, "answer": "해당없음"},
+                    {"seqNum": 7, "answer": "예"},
+                    {"seqNum": 8, "answer": "예"},
+                    {"seqNum": 9, "answer": "예"}
                 ],
                 "precautions": ["예방사항 1", "예방사항 3"]
             }
@@ -185,8 +185,8 @@ class SafetyCheckControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("안전점검이 완료되었습니다."))
-                .andExpect(jsonPath("$.data.safety_check_completed").value(true))
-                .andExpect(jsonPath("$.data.submitted_at").exists())
+                .andExpect(jsonPath("$.data.safetyCheckCompleted").value(true))
+                .andExpect(jsonPath("$.data.submittedAt").exists())
         }
 
         @Test
@@ -194,8 +194,8 @@ class SafetyCheckControllerTest {
         fun submit_emptyEquipments() {
             val requestJson = """
             {
-                "start_time": "2026-03-15T09:00:00",
-                "complete_time": "2026-03-15T09:02:30",
+                "startTime": "2026-03-15T09:00:00",
+                "completeTime": "2026-03-15T09:02:30",
                 "equipments": [],
                 "precautions": []
             }
@@ -219,9 +219,9 @@ class SafetyCheckControllerTest {
 
             val requestJson = """
             {
-                "start_time": "2026-03-15T09:00:00",
-                "complete_time": "2026-03-15T09:02:30",
-                "equipments": [{"seq_num": 1, "answer": "예"}, {"seq_num": 2, "answer": "예"}],
+                "startTime": "2026-03-15T09:00:00",
+                "completeTime": "2026-03-15T09:02:30",
+                "equipments": [{"seqNum": 1, "answer": "예"}, {"seqNum": 2, "answer": "예"}],
                 "precautions": []
             }
             """.trimIndent()
@@ -244,9 +244,9 @@ class SafetyCheckControllerTest {
 
             val requestJson = """
             {
-                "start_time": "2026-03-15T09:00:00",
-                "complete_time": "2026-03-15T09:02:30",
-                "equipments": [{"seq_num": 1, "answer": "예"}],
+                "startTime": "2026-03-15T09:00:00",
+                "completeTime": "2026-03-15T09:02:30",
+                "equipments": [{"seqNum": 1, "answer": "예"}],
                 "precautions": []
             }
             """.trimIndent()
@@ -319,12 +319,12 @@ class SafetyCheckControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("조회 성공"))
                 .andExpect(jsonPath("$.data.date").value("2026-03-21"))
-                .andExpect(jsonPath("$.data.total_count").value(2))
-                .andExpect(jsonPath("$.data.submitted_count").value(1))
-                .andExpect(jsonPath("$.data.not_submitted_count").value(1))
-                .andExpect(jsonPath("$.data.members[0].employee_code").value("123456"))
+                .andExpect(jsonPath("$.data.totalCount").value(2))
+                .andExpect(jsonPath("$.data.submittedCount").value(1))
+                .andExpect(jsonPath("$.data.notSubmittedCount").value(1))
+                .andExpect(jsonPath("$.data.members[0].employeeCode").value("123456"))
                 .andExpect(jsonPath("$.data.members[0].submitted").value(true))
-                .andExpect(jsonPath("$.data.members[0].equipments[0].seq_num").value(1))
+                .andExpect(jsonPath("$.data.members[0].equipments[0].seqNum").value(1))
                 .andExpect(jsonPath("$.data.members[1].submitted").value(false))
                 .andExpect(jsonPath("$.data.members[1].equipments").isEmpty)
         }
@@ -378,7 +378,7 @@ class SafetyCheckControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.completed").value(true))
-                .andExpect(jsonPath("$.data.submitted_at").exists())
+                .andExpect(jsonPath("$.data.submittedAt").exists())
         }
 
         @Test
@@ -398,7 +398,7 @@ class SafetyCheckControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.completed").value(false))
-                .andExpect(jsonPath("$.data.submitted_at").doesNotExist())
+                .andExpect(jsonPath("$.data.submittedAt").doesNotExist())
         }
     }
 }

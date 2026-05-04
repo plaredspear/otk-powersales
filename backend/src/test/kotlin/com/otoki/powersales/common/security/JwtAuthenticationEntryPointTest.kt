@@ -1,6 +1,5 @@
 package com.otoki.powersales.common.security
 
-import tools.jackson.databind.PropertyNamingStrategies
 import tools.jackson.databind.json.JsonMapper
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -14,9 +13,7 @@ import org.springframework.security.authentication.AuthenticationCredentialsNotF
 @DisplayName("JwtAuthenticationEntryPoint 테스트")
 class JwtAuthenticationEntryPointTest {
 
-    private val objectMapper = JsonMapper.builder()
-        .propertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
-        .build()
+    private val objectMapper = JsonMapper.builder().build()
     private lateinit var entryPoint: JwtAuthenticationEntryPoint
     private lateinit var request: MockHttpServletRequest
     private lateinit var response: MockHttpServletResponse

@@ -67,9 +67,9 @@ class AdminPromotionConfirmControllerTest {
             mockMvc.perform(post("/api/v1/admin/promotions/10/confirm"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.promotion_id").value(10))
-                .andExpect(jsonPath("$.data.total_employees").value(3))
-                .andExpect(jsonPath("$.data.upserted_schedules").value(3))
+                .andExpect(jsonPath("$.data.promotionId").value(10))
+                .andExpect(jsonPath("$.data.totalEmployees").value(3))
+                .andExpect(jsonPath("$.data.upsertedSchedules").value(3))
         }
 
         @Test

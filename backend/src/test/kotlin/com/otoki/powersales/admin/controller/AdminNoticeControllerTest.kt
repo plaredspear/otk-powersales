@@ -98,7 +98,7 @@ class AdminNoticeControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content[0].title").value("테스트 공지"))
-                .andExpect(jsonPath("$.data.total_count").value(1))
+                .andExpect(jsonPath("$.data.totalCount").value(1))
         }
     }
 
@@ -129,8 +129,8 @@ class AdminNoticeControllerTest {
                 .andExpect(jsonPath("$.data.categories[0].code").value("COMPANY"))
                 .andExpect(jsonPath("$.data.categories[0].name").value("회사공지"))
                 .andExpect(jsonPath("$.data.branches").isArray)
-                .andExpect(jsonPath("$.data.branches[0].branch_code").value("1101"))
-                .andExpect(jsonPath("$.data.branches[0].branch_name").value("[제1사업부] 1영업부-서울1지점"))
+                .andExpect(jsonPath("$.data.branches[0].branchCode").value("1101"))
+                .andExpect(jsonPath("$.data.branches[0].branchName").value("[제1사업부] 1영업부-서울1지점"))
         }
     }
 
@@ -202,7 +202,7 @@ class AdminNoticeControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(100))
                 .andExpect(jsonPath("$.data.category").value("COMPANY"))
-                .andExpect(jsonPath("$.data.category_name").value("회사공지"))
+                .andExpect(jsonPath("$.data.categoryName").value("회사공지"))
         }
 
         @Test

@@ -107,12 +107,12 @@ class AdminScheduleControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content[0].id").value(1))
-                .andExpect(jsonPath("$.data.content[0].employee_code").value("20030001"))
-                .andExpect(jsonPath("$.data.content[0].employee_name").value("홍길동"))
-                .andExpect(jsonPath("$.data.content[0].account_code").value("SAP001"))
-                .andExpect(jsonPath("$.data.content[0].account_name").value("이마트 성수점"))
+                .andExpect(jsonPath("$.data.content[0].employeeCode").value("20030001"))
+                .andExpect(jsonPath("$.data.content[0].employeeName").value("홍길동"))
+                .andExpect(jsonPath("$.data.content[0].accountCode").value("SAP001"))
+                .andExpect(jsonPath("$.data.content[0].accountName").value("이마트 성수점"))
                 .andExpect(jsonPath("$.data.content[0].confirmed").value(false))
-                .andExpect(jsonPath("$.data.total_elements").value(1))
+                .andExpect(jsonPath("$.data.totalElements").value(1))
         }
 
         @Test
@@ -142,7 +142,7 @@ class AdminScheduleControllerTest {
             mockMvc.perform(get("/api/v1/admin/schedule/list"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.content").isEmpty())
-                .andExpect(jsonPath("$.data.total_elements").value(0))
+                .andExpect(jsonPath("$.data.totalElements").value(0))
         }
     }
 
@@ -163,7 +163,7 @@ class AdminScheduleControllerTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.updated_count").value(3))
+                .andExpect(jsonPath("$.data.updatedCount").value(3))
                 .andExpect(jsonPath("$.message").value("3건이 확정되었습니다"))
         }
 
@@ -211,7 +211,7 @@ class AdminScheduleControllerTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.updated_count").value(2))
+                .andExpect(jsonPath("$.data.updatedCount").value(2))
                 .andExpect(jsonPath("$.message").value("2건이 확정 해제되었습니다"))
         }
 
@@ -342,15 +342,15 @@ class AdminScheduleControllerTest {
             mockMvc.perform(multipart("/api/v1/admin/schedule/upload").file(file))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.upload_id").value("test-uuid"))
-                .andExpect(jsonPath("$.data.total_rows").value(2))
-                .andExpect(jsonPath("$.data.success_rows").value(1))
-                .andExpect(jsonPath("$.data.error_rows").value(1))
+                .andExpect(jsonPath("$.data.uploadId").value("test-uuid"))
+                .andExpect(jsonPath("$.data.totalRows").value(2))
+                .andExpect(jsonPath("$.data.successRows").value(1))
+                .andExpect(jsonPath("$.data.errorRows").value(1))
                 .andExpect(jsonPath("$.data.errors[0].row").value(5))
                 .andExpect(jsonPath("$.data.errors[0].column").value("A"))
                 .andExpect(jsonPath("$.data.errors[0].message").value("사원번호 999999: 존재하지 않는 사원"))
-                .andExpect(jsonPath("$.data.previews[0].employee_code").value("20030001"))
-                .andExpect(jsonPath("$.data.previews[0].account_name").value("이마트 강남점"))
+                .andExpect(jsonPath("$.data.previews[0].employeeCode").value("20030001"))
+                .andExpect(jsonPath("$.data.previews[0].accountName").value("이마트 강남점"))
         }
 
         @Test
@@ -430,7 +430,7 @@ class AdminScheduleControllerTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.inserted_count").value(10))
+                .andExpect(jsonPath("$.data.insertedCount").value(10))
                 .andExpect(jsonPath("$.message").value("등록이 완료되었습니다"))
         }
 

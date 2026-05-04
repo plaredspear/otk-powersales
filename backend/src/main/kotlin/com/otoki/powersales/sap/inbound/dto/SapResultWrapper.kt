@@ -7,8 +7,9 @@ package com.otoki.powersales.sap.inbound.dto
  * `IF_REST_SAP_*` 응답 형태(`RESULT_CODE` / `RESULT_MSG`) 를 그대로 사용한다 (Spec #557, #558).
  *
  * 부분 실패 정보 등 추가 데이터가 있는 인터페이스는 [resultDetail] 필드에 페이로드를 담는다.
- * `RESULT_DETAIL` 내부 키는 SAP 측 호환과 무관한 신규 backend 정의이므로 글로벌 SNAKE_CASE
- * 정책을 따른다 (예: `success_count`).
+ * SAP 호환 보존을 위해 RESULT_DETAIL 내부는 SnakeCase 유지 — 각 Detail DTO 의 `@JsonNaming`
+ * 어노테이션으로 보장한다 (Spec #580 P1-B). 외부 래퍼 `RESULT_CODE` / `RESULT_MSG` /
+ * `RESULT_DETAIL` 키는 [JsonProperty] 로 보존한다.
  */
 data class SapResultWrapper<T>(
     @com.fasterxml.jackson.annotation.JsonProperty("RESULT_CODE")

@@ -89,8 +89,8 @@ class AdminPPTMasterControllerTest {
             mockMvc.perform(get("/api/v1/admin/ppt-masters"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.content[0].team_type").value("라면세일조"))
-                .andExpect(jsonPath("$.data.total_elements").value(1))
+                .andExpect(jsonPath("$.data.content[0].teamType").value("라면세일조"))
+                .andExpect(jsonPath("$.data.totalElements").value(1))
         }
     }
 
@@ -106,7 +106,7 @@ class AdminPPTMasterControllerTest {
             mockMvc.perform(get("/api/v1/admin/ppt-masters/1"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.employee_name").value("홍길동"))
+                .andExpect(jsonPath("$.data.employeeName").value("홍길동"))
         }
 
         @Test
@@ -141,7 +141,7 @@ class AdminPPTMasterControllerTest {
             )
                 .andExpect(status().isCreated)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.team_type").value("라면세일조"))
+                .andExpect(jsonPath("$.data.teamType").value("라면세일조"))
         }
 
         @Test
@@ -174,7 +174,7 @@ class AdminPPTMasterControllerTest {
             val response = createResponse().copy(teamType = ProfessionalPromotionTeamType.FRESH_SALE_REFRIGERATED)
             whenever(adminPPTMasterService.updateMaster(eq(1L), any())).thenReturn(response)
 
-            val requestJson = """{"employee_id":1,"account_id":1,"team_type":"프레시세일조_냉장","start_date":"2026-04-01","is_confirmed":false}"""
+            val requestJson = """{"employeeId":1,"accountId":1,"teamType":"프레시세일조_냉장","startDate":"2026-04-01","isConfirmed":false}"""
 
             mockMvc.perform(
                 put("/api/v1/admin/ppt-masters/1")
@@ -182,7 +182,7 @@ class AdminPPTMasterControllerTest {
                     .content(requestJson)
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.data.team_type").value("프레시세일조_냉장"))
+                .andExpect(jsonPath("$.data.teamType").value("프레시세일조_냉장"))
         }
     }
 
@@ -214,7 +214,7 @@ class AdminPPTMasterControllerTest {
             )
             whenever(adminPPTMasterService.validateBulk(any())).thenReturn(response)
 
-            val requestJson = """{"items":[{"employee_code":"12345678","account_code":"SAP001","team_type":"라면세일조","start_date":"2026-04-01"}]}"""
+            val requestJson = """{"items":[{"employeeCode":"12345678","accountCode":"SAP001","teamType":"라면세일조","startDate":"2026-04-01"}]}"""
 
             mockMvc.perform(
                 post("/api/v1/admin/ppt-masters/bulk")
@@ -222,7 +222,7 @@ class AdminPPTMasterControllerTest {
                     .content(requestJson)
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.data.is_all_valid").value(true))
+                .andExpect(jsonPath("$.data.isAllValid").value(true))
         }
     }
 
@@ -235,7 +235,7 @@ class AdminPPTMasterControllerTest {
         fun confirmBulk_success() {
             whenever(adminPPTMasterService.confirmBulk(any())).thenReturn(BulkConfirmResponse(createdCount = 3))
 
-            val requestJson = """{"items":[{"employee_code":"12345678","account_code":"SAP001","team_type":"라면세일조","start_date":"2026-04-01"}]}"""
+            val requestJson = """{"items":[{"employeeCode":"12345678","accountCode":"SAP001","teamType":"라면세일조","startDate":"2026-04-01"}]}"""
 
             mockMvc.perform(
                 post("/api/v1/admin/ppt-masters/bulk/confirm")
@@ -243,7 +243,7 @@ class AdminPPTMasterControllerTest {
                     .content(requestJson)
             )
                 .andExpect(status().isCreated)
-                .andExpect(jsonPath("$.data.created_count").value(3))
+                .andExpect(jsonPath("$.data.createdCount").value(3))
         }
     }
 
@@ -268,8 +268,8 @@ class AdminPPTMasterControllerTest {
 
             mockMvc.perform(get("/api/v1/admin/ppt-masters/1/history"))
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.data.content[0].old_value").value("일반"))
-                .andExpect(jsonPath("$.data.content[0].new_value").value("라면세일조"))
+                .andExpect(jsonPath("$.data.content[0].oldValue").value("일반"))
+                .andExpect(jsonPath("$.data.content[0].newValue").value("라면세일조"))
         }
     }
 }

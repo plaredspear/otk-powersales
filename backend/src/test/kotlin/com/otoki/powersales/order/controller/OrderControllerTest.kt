@@ -101,16 +101,16 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.data.content").isArray)
                 .andExpect(jsonPath("$.data.content.length()").value(2))
                 .andExpect(jsonPath("$.data.content[0].id").value(1))
-                .andExpect(jsonPath("$.data.content[0].order_request_number").value("OP00000074"))
-                .andExpect(jsonPath("$.data.content[0].client_id").value(100))
-                .andExpect(jsonPath("$.data.content[0].client_name").value("천사푸드"))
-                .andExpect(jsonPath("$.data.content[0].approval_status").value("APPROVED"))
-                .andExpect(jsonPath("$.data.content[0].order_date").value("2026-02-01"))
-                .andExpect(jsonPath("$.data.content[0].delivery_date").value("2026-02-04"))
-                .andExpect(jsonPath("$.data.content[0].total_amount").value(612000000))
-                .andExpect(jsonPath("$.data.content[0].is_closed").value(false))
-                .andExpect(jsonPath("$.data.total_elements").value(2))
-                .andExpect(jsonPath("$.data.total_pages").value(1))
+                .andExpect(jsonPath("$.data.content[0].orderRequestNumber").value("OP00000074"))
+                .andExpect(jsonPath("$.data.content[0].clientId").value(100))
+                .andExpect(jsonPath("$.data.content[0].clientName").value("천사푸드"))
+                .andExpect(jsonPath("$.data.content[0].approvalStatus").value("APPROVED"))
+                .andExpect(jsonPath("$.data.content[0].orderDate").value("2026-02-01"))
+                .andExpect(jsonPath("$.data.content[0].deliveryDate").value("2026-02-04"))
+                .andExpect(jsonPath("$.data.content[0].totalAmount").value(612000000))
+                .andExpect(jsonPath("$.data.content[0].isClosed").value(false))
+                .andExpect(jsonPath("$.data.totalElements").value(2))
+                .andExpect(jsonPath("$.data.totalPages").value(1))
                 .andExpect(jsonPath("$.data.number").value(0))
                 .andExpect(jsonPath("$.data.size").value(20))
                 .andExpect(jsonPath("$.data.first").value(true))
@@ -230,8 +230,8 @@ class OrderControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.number").value(1))
                 .andExpect(jsonPath("$.data.size").value(10))
-                .andExpect(jsonPath("$.data.total_elements").value(25))
-                .andExpect(jsonPath("$.data.total_pages").value(3))
+                .andExpect(jsonPath("$.data.totalElements").value(25))
+                .andExpect(jsonPath("$.data.totalPages").value(3))
         }
 
         @Test
@@ -252,7 +252,7 @@ class OrderControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content").isEmpty)
-                .andExpect(jsonPath("$.data.total_elements").value(0))
+                .andExpect(jsonPath("$.data.totalElements").value(0))
         }
     }
 
@@ -364,7 +364,7 @@ class OrderControllerTest {
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.data.content[0].client_deadline_time").value("13:40"))
+                .andExpect(jsonPath("$.data.content[0].clientDeadlineTime").value("13:40"))
         }
 
         @Test
@@ -395,7 +395,7 @@ class OrderControllerTest {
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.data.content[0].client_deadline_time").doesNotExist())
+                .andExpect(jsonPath("$.data.content[0].clientDeadlineTime").doesNotExist())
         }
     }
 
@@ -451,26 +451,26 @@ class OrderControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1))
-                .andExpect(jsonPath("$.data.order_request_number").value("OP00000074"))
-                .andExpect(jsonPath("$.data.client_id").value(100))
-                .andExpect(jsonPath("$.data.client_name").value("천사푸드"))
-                .andExpect(jsonPath("$.data.client_deadline_time").value("13:40"))
-                .andExpect(jsonPath("$.data.order_date").value("2026-02-01"))
-                .andExpect(jsonPath("$.data.delivery_date").value("2026-02-04"))
-                .andExpect(jsonPath("$.data.total_amount").value(612000000))
-                .andExpect(jsonPath("$.data.total_approved_amount").value(612000000))
-                .andExpect(jsonPath("$.data.approval_status").value("APPROVED"))
-                .andExpect(jsonPath("$.data.is_closed").value(false))
-                .andExpect(jsonPath("$.data.ordered_item_count").value(2))
-                .andExpect(jsonPath("$.data.ordered_items").isArray)
-                .andExpect(jsonPath("$.data.ordered_items.length()").value(2))
-                .andExpect(jsonPath("$.data.ordered_items[0].product_code").value("P001"))
-                .andExpect(jsonPath("$.data.ordered_items[0].product_name").value("진라면 순한맛 120g*40입"))
-                .andExpect(jsonPath("$.data.ordered_items[0].total_quantity_boxes").value(50.0))
-                .andExpect(jsonPath("$.data.ordered_items[0].total_quantity_pieces").value(0))
-                .andExpect(jsonPath("$.data.ordered_items[0].is_cancelled").value(false))
-                .andExpect(jsonPath("$.data.order_processing_status").doesNotExist())
-                .andExpect(jsonPath("$.data.rejected_items").doesNotExist())
+                .andExpect(jsonPath("$.data.orderRequestNumber").value("OP00000074"))
+                .andExpect(jsonPath("$.data.clientId").value(100))
+                .andExpect(jsonPath("$.data.clientName").value("천사푸드"))
+                .andExpect(jsonPath("$.data.clientDeadlineTime").value("13:40"))
+                .andExpect(jsonPath("$.data.orderDate").value("2026-02-01"))
+                .andExpect(jsonPath("$.data.deliveryDate").value("2026-02-04"))
+                .andExpect(jsonPath("$.data.totalAmount").value(612000000))
+                .andExpect(jsonPath("$.data.totalApprovedAmount").value(612000000))
+                .andExpect(jsonPath("$.data.approvalStatus").value("APPROVED"))
+                .andExpect(jsonPath("$.data.isClosed").value(false))
+                .andExpect(jsonPath("$.data.orderedItemCount").value(2))
+                .andExpect(jsonPath("$.data.orderedItems").isArray)
+                .andExpect(jsonPath("$.data.orderedItems.length()").value(2))
+                .andExpect(jsonPath("$.data.orderedItems[0].productCode").value("P001"))
+                .andExpect(jsonPath("$.data.orderedItems[0].productName").value("진라면 순한맛 120g*40입"))
+                .andExpect(jsonPath("$.data.orderedItems[0].totalQuantityBoxes").value(50.0))
+                .andExpect(jsonPath("$.data.orderedItems[0].totalQuantityPieces").value(0))
+                .andExpect(jsonPath("$.data.orderedItems[0].isCancelled").value(false))
+                .andExpect(jsonPath("$.data.orderProcessingStatus").doesNotExist())
+                .andExpect(jsonPath("$.data.rejectedItems").doesNotExist())
                 .andExpect(jsonPath("$.message").value("조회 성공"))
         }
 
@@ -522,16 +522,16 @@ class OrderControllerTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.is_closed").value(true))
-                .andExpect(jsonPath("$.data.order_processing_status").exists())
-                .andExpect(jsonPath("$.data.order_processing_status.sap_order_number").value("SAP1234567"))
-                .andExpect(jsonPath("$.data.order_processing_status.items").isArray)
-                .andExpect(jsonPath("$.data.order_processing_status.items.length()").value(1))
-                .andExpect(jsonPath("$.data.order_processing_status.items[0].product_code").value("P001"))
-                .andExpect(jsonPath("$.data.order_processing_status.items[0].product_name").value("진라면 순한맛 120g*40입"))
-                .andExpect(jsonPath("$.data.order_processing_status.items[0].delivered_quantity").value("50박스"))
-                .andExpect(jsonPath("$.data.order_processing_status.items[0].delivery_status").value("출하완료"))
-                .andExpect(jsonPath("$.data.rejected_items").doesNotExist())
+                .andExpect(jsonPath("$.data.isClosed").value(true))
+                .andExpect(jsonPath("$.data.orderProcessingStatus").exists())
+                .andExpect(jsonPath("$.data.orderProcessingStatus.sapOrderNumber").value("SAP1234567"))
+                .andExpect(jsonPath("$.data.orderProcessingStatus.items").isArray)
+                .andExpect(jsonPath("$.data.orderProcessingStatus.items.length()").value(1))
+                .andExpect(jsonPath("$.data.orderProcessingStatus.items[0].productCode").value("P001"))
+                .andExpect(jsonPath("$.data.orderProcessingStatus.items[0].productName").value("진라면 순한맛 120g*40입"))
+                .andExpect(jsonPath("$.data.orderProcessingStatus.items[0].deliveredQuantity").value("50박스"))
+                .andExpect(jsonPath("$.data.orderProcessingStatus.items[0].deliveryStatus").value("출하완료"))
+                .andExpect(jsonPath("$.data.rejectedItems").doesNotExist())
         }
 
         @Test
@@ -596,15 +596,15 @@ class OrderControllerTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.is_closed").value(true))
-                .andExpect(jsonPath("$.data.total_amount").value(612000000))
-                .andExpect(jsonPath("$.data.total_approved_amount").value(400000000))
-                .andExpect(jsonPath("$.data.rejected_items").isArray)
-                .andExpect(jsonPath("$.data.rejected_items.length()").value(1))
-                .andExpect(jsonPath("$.data.rejected_items[0].product_code").value("P002"))
-                .andExpect(jsonPath("$.data.rejected_items[0].product_name").value("진라면 매운맛 120g*40입"))
-                .andExpect(jsonPath("$.data.rejected_items[0].order_quantity_boxes").value(30))
-                .andExpect(jsonPath("$.data.rejected_items[0].rejection_reason").value("재고부족"))
+                .andExpect(jsonPath("$.data.isClosed").value(true))
+                .andExpect(jsonPath("$.data.totalAmount").value(612000000))
+                .andExpect(jsonPath("$.data.totalApprovedAmount").value(400000000))
+                .andExpect(jsonPath("$.data.rejectedItems").isArray)
+                .andExpect(jsonPath("$.data.rejectedItems.length()").value(1))
+                .andExpect(jsonPath("$.data.rejectedItems[0].productCode").value("P002"))
+                .andExpect(jsonPath("$.data.rejectedItems[0].productName").value("진라면 매운맛 120g*40입"))
+                .andExpect(jsonPath("$.data.rejectedItems[0].orderQuantityBoxes").value(30))
+                .andExpect(jsonPath("$.data.rejectedItems[0].rejectionReason").value("재고부족"))
         }
 
         @Test
@@ -761,14 +761,14 @@ class OrderControllerTest {
             mockMvc.perform(
                 post("/api/v1/mobile/me/orders/1/cancel")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content("""{"product_codes": ["P001"]}""")
+                    .content("""{"productCodes": ["P001"]}""")
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.cancelled_count").value(1))
-                .andExpect(jsonPath("$.data.cancelled_product_codes").isArray)
-                .andExpect(jsonPath("$.data.cancelled_product_codes.length()").value(1))
-                .andExpect(jsonPath("$.data.cancelled_product_codes[0]").value("P001"))
+                .andExpect(jsonPath("$.data.cancelledCount").value(1))
+                .andExpect(jsonPath("$.data.cancelledProductCodes").isArray)
+                .andExpect(jsonPath("$.data.cancelledProductCodes.length()").value(1))
+                .andExpect(jsonPath("$.data.cancelledProductCodes[0]").value("P001"))
                 .andExpect(jsonPath("$.message").value("주문이 취소되었습니다"))
         }
 
@@ -787,12 +787,12 @@ class OrderControllerTest {
             mockMvc.perform(
                 post("/api/v1/mobile/me/orders/1/cancel")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content("""{"product_codes": ["P001", "P002", "P003"]}""")
+                    .content("""{"productCodes": ["P001", "P002", "P003"]}""")
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.cancelled_count").value(3))
-                .andExpect(jsonPath("$.data.cancelled_product_codes.length()").value(3))
+                .andExpect(jsonPath("$.data.cancelledCount").value(3))
+                .andExpect(jsonPath("$.data.cancelledProductCodes.length()").value(3))
                 .andExpect(jsonPath("$.message").value("주문이 취소되었습니다"))
         }
 
@@ -803,7 +803,7 @@ class OrderControllerTest {
             mockMvc.perform(
                 post("/api/v1/mobile/me/orders/1/cancel")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content("""{"product_codes": []}""")
+                    .content("""{"productCodes": []}""")
             )
                 .andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.success").value(false))
@@ -835,7 +835,7 @@ class OrderControllerTest {
             mockMvc.perform(
                 post("/api/v1/mobile/me/orders/999/cancel")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content("""{"product_codes": ["P001"]}""")
+                    .content("""{"productCodes": ["P001"]}""")
             )
                 .andExpect(status().isNotFound)
                 .andExpect(jsonPath("$.success").value(false))
@@ -854,7 +854,7 @@ class OrderControllerTest {
             mockMvc.perform(
                 post("/api/v1/mobile/me/orders/1/cancel")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content("""{"product_codes": ["P001"]}""")
+                    .content("""{"productCodes": ["P001"]}""")
             )
                 .andExpect(status().isForbidden)
                 .andExpect(jsonPath("$.success").value(false))
@@ -873,7 +873,7 @@ class OrderControllerTest {
             mockMvc.perform(
                 post("/api/v1/mobile/me/orders/1/cancel")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content("""{"product_codes": ["P001"]}""")
+                    .content("""{"productCodes": ["P001"]}""")
             )
                 .andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.success").value(false))
@@ -892,7 +892,7 @@ class OrderControllerTest {
             mockMvc.perform(
                 post("/api/v1/mobile/me/orders/1/cancel")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content("""{"product_codes": ["P001", "P002"]}""")
+                    .content("""{"productCodes": ["P001", "P002"]}""")
             )
                 .andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.success").value(false))
@@ -911,7 +911,7 @@ class OrderControllerTest {
             mockMvc.perform(
                 post("/api/v1/mobile/me/orders/1/cancel")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content("""{"product_codes": ["P999"]}""")
+                    .content("""{"productCodes": ["P999"]}""")
             )
                 .andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.success").value(false))
@@ -942,19 +942,19 @@ class OrderControllerTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""
                         {
-                            "client_id": 1,
-                            "delivery_date": "2026-03-01",
+                            "clientId": 1,
+                            "deliveryDate": "2026-03-01",
                             "items": [
-                                {"product_code": "P001", "box_quantity": 5, "piece_quantity": 10}
+                                {"productCode": "P001", "boxQuantity": 5, "pieceQuantity": 10}
                             ]
                         }
                     """.trimIndent())
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.is_valid").value(true))
-                .andExpect(jsonPath("$.data.invalid_items").isArray)
-                .andExpect(jsonPath("$.data.invalid_items.length()").value(0))
+                .andExpect(jsonPath("$.data.isValid").value(true))
+                .andExpect(jsonPath("$.data.invalidItems").isArray)
+                .andExpect(jsonPath("$.data.invalidItems.length()").value(0))
                 .andExpect(jsonPath("$.message").value("유효성 검증 통과"))
         }
 
@@ -986,21 +986,21 @@ class OrderControllerTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""
                         {
-                            "client_id": 1,
-                            "delivery_date": "2026-03-01",
+                            "clientId": 1,
+                            "deliveryDate": "2026-03-01",
                             "items": [
-                                {"product_code": "P001", "box_quantity": 0, "piece_quantity": 5}
+                                {"productCode": "P001", "boxQuantity": 0, "pieceQuantity": 5}
                             ]
                         }
                     """.trimIndent())
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.is_valid").value(false))
-                .andExpect(jsonPath("$.data.invalid_items.length()").value(1))
-                .andExpect(jsonPath("$.data.invalid_items[0].product_code").value("P001"))
-                .andExpect(jsonPath("$.data.invalid_items[0].product_name").value("오뚜기 카레"))
-                .andExpect(jsonPath("$.data.invalid_items[0].validation_errors[0]").value("수량이 최소주문단위(10개)보다 작습니다"))
+                .andExpect(jsonPath("$.data.isValid").value(false))
+                .andExpect(jsonPath("$.data.invalidItems.length()").value(1))
+                .andExpect(jsonPath("$.data.invalidItems[0].productCode").value("P001"))
+                .andExpect(jsonPath("$.data.invalidItems[0].productName").value("오뚜기 카레"))
+                .andExpect(jsonPath("$.data.invalidItems[0].validationErrors[0]").value("수량이 최소주문단위(10개)보다 작습니다"))
                 .andExpect(jsonPath("$.message").value("유효성 검증 실패"))
         }
 
@@ -1017,10 +1017,10 @@ class OrderControllerTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""
                         {
-                            "client_id": 1,
-                            "delivery_date": "2026-03-01",
+                            "clientId": 1,
+                            "deliveryDate": "2026-03-01",
                             "items": [
-                                {"product_code": "INVALID", "box_quantity": 5, "piece_quantity": 10}
+                                {"productCode": "INVALID", "boxQuantity": 5, "pieceQuantity": 10}
                             ]
                         }
                     """.trimIndent())
@@ -1056,21 +1056,21 @@ class OrderControllerTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""
                         {
-                            "client_id": 1,
-                            "delivery_date": "2026-03-01",
+                            "clientId": 1,
+                            "deliveryDate": "2026-03-01",
                             "items": [
-                                {"product_code": "P001", "box_quantity": 5, "piece_quantity": 10}
+                                {"productCode": "P001", "boxQuantity": 5, "pieceQuantity": 10}
                             ]
                         }
                     """.trimIndent())
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.order_id").value(1))
-                .andExpect(jsonPath("$.data.order_request_number").value("OP00000074"))
-                .andExpect(jsonPath("$.data.approval_status").value("APPROVED"))
-                .andExpect(jsonPath("$.data.total_amount").value(1300000))
-                .andExpect(jsonPath("$.data.submitted_at").value("2026-02-10T14:30:00"))
+                .andExpect(jsonPath("$.data.orderId").value(1))
+                .andExpect(jsonPath("$.data.orderRequestNumber").value("OP00000074"))
+                .andExpect(jsonPath("$.data.approvalStatus").value("APPROVED"))
+                .andExpect(jsonPath("$.data.totalAmount").value(1300000))
+                .andExpect(jsonPath("$.data.submittedAt").value("2026-02-10T14:30:00"))
                 .andExpect(jsonPath("$.message").value("주문이 승인되었습니다"))
         }
 
@@ -1094,18 +1094,18 @@ class OrderControllerTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""
                         {
-                            "client_id": 1,
-                            "delivery_date": "2026-03-01",
+                            "clientId": 1,
+                            "deliveryDate": "2026-03-01",
                             "items": [
-                                {"product_code": "P001", "box_quantity": 5, "piece_quantity": 10}
+                                {"productCode": "P001", "boxQuantity": 5, "pieceQuantity": 10}
                             ]
                         }
                     """.trimIndent())
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.approval_status").value("SEND_FAILED"))
-                .andExpect(jsonPath("$.data.failure_reason").value("SAP 연결 오류"))
+                .andExpect(jsonPath("$.data.approvalStatus").value("SEND_FAILED"))
+                .andExpect(jsonPath("$.data.failureReason").value("SAP 연결 오류"))
                 .andExpect(jsonPath("$.message").value("주문 전송에 실패했습니다"))
         }
 
@@ -1122,10 +1122,10 @@ class OrderControllerTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""
                         {
-                            "client_id": 1,
-                            "delivery_date": "2026-03-01",
+                            "clientId": 1,
+                            "deliveryDate": "2026-03-01",
                             "items": [
-                                {"product_code": "P001", "box_quantity": 0, "piece_quantity": 0}
+                                {"productCode": "P001", "boxQuantity": 0, "pieceQuantity": 0}
                             ]
                         }
                     """.trimIndent())

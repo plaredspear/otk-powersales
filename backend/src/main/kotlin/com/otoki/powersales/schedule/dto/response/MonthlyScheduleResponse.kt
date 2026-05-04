@@ -1,14 +1,11 @@
 package com.otoki.powersales.schedule.dto.response
 
-import com.fasterxml.jackson.annotation.JsonProperty
-
 /**
  * 월간 일정 조회 응답 DTO
  */
 data class MonthlyScheduleResponse(
     val year: Int,
     val month: Int,
-    @JsonProperty("work_days")
     val workDays: List<WorkDayDto>,
     val annualLeaveCount: Int,
     val substituteHolidayCount: Int
@@ -19,7 +16,6 @@ data class MonthlyScheduleResponse(
  */
 data class WorkDayDto(
     val date: String, // YYYY-MM-DD 형식
-    @JsonProperty("has_work")
     val hasWork: Boolean,
     val workingType: String? = null
 )

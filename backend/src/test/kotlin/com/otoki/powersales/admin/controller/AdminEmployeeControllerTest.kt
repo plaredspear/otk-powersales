@@ -107,19 +107,19 @@ class AdminEmployeeControllerTest {
             mockMvc.perform(get("/api/v1/admin/employees"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.content[0].employee_code").value("10000001"))
+                .andExpect(jsonPath("$.data.content[0].employeeCode").value("10000001"))
                 .andExpect(jsonPath("$.data.content[0].name").value("홍길동"))
                 .andExpect(jsonPath("$.data.content[0].status").value("재직"))
                 .andExpect(jsonPath("$.data.content[0].gender").value("남"))
-                .andExpect(jsonPath("$.data.content[0].org_name").value("서울1지점"))
-                .andExpect(jsonPath("$.data.content[0].cost_center_code").value("A001"))
+                .andExpect(jsonPath("$.data.content[0].orgName").value("서울1지점"))
+                .andExpect(jsonPath("$.data.content[0].costCenterCode").value("A001"))
                 .andExpect(jsonPath("$.data.content[0].role").value("LEADER"))
-                .andExpect(jsonPath("$.data.content[0].role_label").value("조장"))
-                .andExpect(jsonPath("$.data.content[0].start_date").value("2020-03-15"))
-                .andExpect(jsonPath("$.data.content[0].app_login_active").value(true))
-                .andExpect(jsonPath("$.data.content[0].work_phone").value("010-1234-5678"))
-                .andExpect(jsonPath("$.data.total_elements").value(1))
-                .andExpect(jsonPath("$.data.total_pages").value(1))
+                .andExpect(jsonPath("$.data.content[0].roleLabel").value("조장"))
+                .andExpect(jsonPath("$.data.content[0].startDate").value("2020-03-15"))
+                .andExpect(jsonPath("$.data.content[0].appLoginActive").value(true))
+                .andExpect(jsonPath("$.data.content[0].workPhone").value("010-1234-5678"))
+                .andExpect(jsonPath("$.data.totalElements").value(1))
+                .andExpect(jsonPath("$.data.totalPages").value(1))
         }
 
         @Test
@@ -147,7 +147,7 @@ class AdminEmployeeControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content").isEmpty)
-                .andExpect(jsonPath("$.data.total_elements").value(0))
+                .andExpect(jsonPath("$.data.totalElements").value(0))
         }
 
         @Test
@@ -167,8 +167,8 @@ class AdminEmployeeControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content").isEmpty)
-                .andExpect(jsonPath("$.data.total_elements").value(0))
-                .andExpect(jsonPath("$.data.total_pages").value(0))
+                .andExpect(jsonPath("$.data.totalElements").value(0))
+                .andExpect(jsonPath("$.data.totalPages").value(0))
         }
     }
 }

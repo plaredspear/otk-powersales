@@ -94,12 +94,12 @@ class LeaderScheduleControllerTest {
             )
                 .andExpect(status().isCreated)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.schedule_id").value(78901))
-                .andExpect(jsonPath("$.data.target_employee_id").value(5012))
-                .andExpect(jsonPath("$.data.working_date").value("2026-05-15"))
-                .andExpect(jsonPath("$.data.working_type").value("근무"))
-                .andExpect(jsonPath("$.data.working_category3").value("고정"))
-                .andExpect(jsonPath("$.data.proxy_registered_by").value(leaderId))
+                .andExpect(jsonPath("$.data.scheduleId").value(78901))
+                .andExpect(jsonPath("$.data.targetEmployeeId").value(5012))
+                .andExpect(jsonPath("$.data.workingDate").value("2026-05-15"))
+                .andExpect(jsonPath("$.data.workingType").value("근무"))
+                .andExpect(jsonPath("$.data.workingCategory3").value("고정"))
+                .andExpect(jsonPath("$.data.proxyRegisteredBy").value(leaderId))
         }
 
         @Test
@@ -188,11 +188,11 @@ class LeaderScheduleControllerTest {
         fun create_missingWorkingDate() {
             val invalidJson = """
                 {
-                  "target_employee_id": 5012,
-                  "working_type": "근무",
-                  "working_category2": "전담",
-                  "working_category3": "고정",
-                  "account_id": 90234
+                  "targetEmployeeId": 5012,
+                  "workingType": "근무",
+                  "workingCategory2": "전담",
+                  "workingCategory3": "고정",
+                  "accountId": 90234
                 }
             """.trimIndent()
             mockMvc.perform(
@@ -237,8 +237,8 @@ class LeaderScheduleControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
-                .andExpect(jsonPath("$.data[0].employee_code").value("20300001"))
-                .andExpect(jsonPath("$.data[0].cost_center_code").value("C001"))
+                .andExpect(jsonPath("$.data[0].employeeCode").value("20300001"))
+                .andExpect(jsonPath("$.data[0].costCenterCode").value("C001"))
                 .andExpect(jsonPath("$.data[1].status").value("휴직"))
         }
 
@@ -273,9 +273,9 @@ class LeaderScheduleControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data[0].id").value(90234))
-                .andExpect(jsonPath("$.data[0].branch_code").value("C001"))
-                .andExpect(jsonPath("$.data[0].account_group").value("1000"))
-                .andExpect(jsonPath("$.data[0].account_type").value("TYPE_A"))
+                .andExpect(jsonPath("$.data[0].branchCode").value("C001"))
+                .andExpect(jsonPath("$.data[0].accountGroup").value("1000"))
+                .andExpect(jsonPath("$.data[0].accountType").value("TYPE_A"))
         }
 
         @Test

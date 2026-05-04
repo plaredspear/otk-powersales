@@ -8,7 +8,6 @@ spring:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
 
   jackson:
-    property-naming-strategy: SNAKE_CASE
     time-zone: Asia/Seoul
 
 jwt:

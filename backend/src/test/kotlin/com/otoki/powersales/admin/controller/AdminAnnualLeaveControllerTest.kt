@@ -89,12 +89,12 @@ class AdminAnnualLeaveControllerTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data[0].employee_code").value("EMP001"))
-                .andExpect(jsonPath("$.data[0].employee_name").value("홍길동"))
-                .andExpect(jsonPath("$.data[0].org_name").value("서울1팀"))
-                .andExpect(jsonPath("$.data[0].annual_leave_days[0].date").value("2026-03-05"))
-                .andExpect(jsonPath("$.data[0].annual_leave_days[0].attend_type_name").value("연차"))
-                .andExpect(jsonPath("$.data[0].total_count").value(2))
+                .andExpect(jsonPath("$.data[0].employeeCode").value("EMP001"))
+                .andExpect(jsonPath("$.data[0].employeeName").value("홍길동"))
+                .andExpect(jsonPath("$.data[0].orgName").value("서울1팀"))
+                .andExpect(jsonPath("$.data[0].annualLeaveDays[0].date").value("2026-03-05"))
+                .andExpect(jsonPath("$.data[0].annualLeaveDays[0].attendTypeName").value("연차"))
+                .andExpect(jsonPath("$.data[0].totalCount").value(2))
         }
 
         @Test
@@ -132,9 +132,9 @@ class AdminAnnualLeaveControllerTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data[0].employee_code").value("EMP001"))
-                .andExpect(jsonPath("$.data[0].org_name").value("서울1팀"))
-                .andExpect(jsonPath("$.data[0].total_count").value(1))
+                .andExpect(jsonPath("$.data[0].employeeCode").value("EMP001"))
+                .andExpect(jsonPath("$.data[0].orgName").value("서울1팀"))
+                .andExpect(jsonPath("$.data[0].totalCount").value(1))
         }
     }
 }

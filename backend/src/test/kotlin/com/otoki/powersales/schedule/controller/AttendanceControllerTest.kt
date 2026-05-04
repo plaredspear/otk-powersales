@@ -100,10 +100,10 @@ class AttendanceControllerTest {
 
             val requestJson = """
                 {
-                    "schedule_id": 10,
+                    "scheduleId": 10,
                     "latitude": 35.1234,
                     "longitude": 129.0567,
-                    "work_type": "ROOM_TEMP"
+                    "workType": "ROOM_TEMP"
                 }
             """.trimIndent()
 
@@ -116,12 +116,12 @@ class AttendanceControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("출근등록 완료"))
-                .andExpect(jsonPath("$.data.schedule_id").value(10))
-                .andExpect(jsonPath("$.data.account_name").value("이마트 부산점"))
-                .andExpect(jsonPath("$.data.work_type").value("ROOM_TEMP"))
-                .andExpect(jsonPath("$.data.distance_km").value(0.12))
-                .andExpect(jsonPath("$.data.total_count").value(5))
-                .andExpect(jsonPath("$.data.registered_count").value(2))
+                .andExpect(jsonPath("$.data.scheduleId").value(10))
+                .andExpect(jsonPath("$.data.accountName").value("이마트 부산점"))
+                .andExpect(jsonPath("$.data.workType").value("ROOM_TEMP"))
+                .andExpect(jsonPath("$.data.distanceKm").value(0.12))
+                .andExpect(jsonPath("$.data.totalCount").value(5))
+                .andExpect(jsonPath("$.data.registeredCount").value(2))
         }
 
         @Test
@@ -136,7 +136,7 @@ class AttendanceControllerTest {
 
             val requestJson = """
                 {
-                    "schedule_id": 10,
+                    "scheduleId": 10,
                     "latitude": 35.1234,
                     "longitude": 129.0567
                 }
@@ -165,7 +165,7 @@ class AttendanceControllerTest {
 
             val requestJson = """
                 {
-                    "schedule_id": 10,
+                    "scheduleId": 10,
                     "latitude": 35.1234,
                     "longitude": 129.0567
                 }
@@ -222,7 +222,7 @@ class AttendanceControllerTest {
 
             val requestJson = """
                 {
-                    "schedule_id": 10,
+                    "scheduleId": 10,
                     "latitude": 35.1234,
                     "longitude": 129.0567
                 }
@@ -251,7 +251,7 @@ class AttendanceControllerTest {
 
             val requestJson = """
                 {
-                    "schedule_id": 10,
+                    "scheduleId": 10,
                     "latitude": 35.1234,
                     "longitude": 129.0567
                 }
@@ -280,7 +280,7 @@ class AttendanceControllerTest {
 
             val requestJson = """
                 {
-                    "schedule_id": 99999,
+                    "scheduleId": 99999,
                     "latitude": 35.1234,
                     "longitude": 129.0567
                 }
@@ -349,22 +349,22 @@ class AttendanceControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("조회 성공"))
-                .andExpect(jsonPath("$.data.safety_check_completed").value(true))
+                .andExpect(jsonPath("$.data.safetyCheckCompleted").value(true))
                 .andExpect(jsonPath("$.data.accounts").isArray)
-                .andExpect(jsonPath("$.data.accounts[0].schedule_id").value(1))
-                .andExpect(jsonPath("$.data.accounts[0].account_id").value(1))
-                .andExpect(jsonPath("$.data.accounts[0].account_name").value("이마트 부산점"))
-                .andExpect(jsonPath("$.data.accounts[0].account_type_code").value("2110"))
-                .andExpect(jsonPath("$.data.accounts[0].work_category").value("진열"))
+                .andExpect(jsonPath("$.data.accounts[0].scheduleId").value(1))
+                .andExpect(jsonPath("$.data.accounts[0].accountId").value(1))
+                .andExpect(jsonPath("$.data.accounts[0].accountName").value("이마트 부산점"))
+                .andExpect(jsonPath("$.data.accounts[0].accountTypeCode").value("2110"))
+                .andExpect(jsonPath("$.data.accounts[0].workCategory").value("진열"))
                 .andExpect(jsonPath("$.data.accounts[0].latitude").value(35.1696))
                 .andExpect(jsonPath("$.data.accounts[0].longitude").value(129.1314))
-                .andExpect(jsonPath("$.data.accounts[0].is_registered").value(false))
-                .andExpect(jsonPath("$.data.accounts[1].is_registered").value(true))
-                .andExpect(jsonPath("$.data.total_count").value(2))
-                .andExpect(jsonPath("$.data.registered_count").value(1))
-                .andExpect(jsonPath("$.data.current_date").value("2026-02-25"))
-                .andExpect(jsonPath("$.data.registration_deadline").value("17:00"))
-                .andExpect(jsonPath("$.data.is_registration_closed").value(false))
+                .andExpect(jsonPath("$.data.accounts[0].isRegistered").value(false))
+                .andExpect(jsonPath("$.data.accounts[1].isRegistered").value(true))
+                .andExpect(jsonPath("$.data.totalCount").value(2))
+                .andExpect(jsonPath("$.data.registeredCount").value(1))
+                .andExpect(jsonPath("$.data.currentDate").value("2026-02-25"))
+                .andExpect(jsonPath("$.data.registrationDeadline").value("17:00"))
+                .andExpect(jsonPath("$.data.isRegistrationClosed").value(false))
         }
 
         @Test
@@ -401,11 +401,11 @@ class AttendanceControllerTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.safety_check_completed").value(false))
+                .andExpect(jsonPath("$.data.safetyCheckCompleted").value(false))
                 .andExpect(jsonPath("$.data.accounts").isArray)
-                .andExpect(jsonPath("$.data.accounts[0].account_name").value("이마트 부산점"))
-                .andExpect(jsonPath("$.data.total_count").value(1))
-                .andExpect(jsonPath("$.data.registered_count").value(0))
+                .andExpect(jsonPath("$.data.accounts[0].accountName").value("이마트 부산점"))
+                .andExpect(jsonPath("$.data.totalCount").value(1))
+                .andExpect(jsonPath("$.data.registeredCount").value(0))
         }
     }
 
@@ -455,17 +455,17 @@ class AttendanceControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("조회 성공"))
-                .andExpect(jsonPath("$.data.total_count").value(3))
-                .andExpect(jsonPath("$.data.registered_count").value(1))
-                .andExpect(jsonPath("$.data.status_list").isArray)
-                .andExpect(jsonPath("$.data.status_list[0].schedule_id").value(1))
-                .andExpect(jsonPath("$.data.status_list[0].account_name").value("이마트 부산점"))
-                .andExpect(jsonPath("$.data.status_list[0].work_category").value("진열"))
-                .andExpect(jsonPath("$.data.status_list[0].status").value("REGISTERED"))
-                .andExpect(jsonPath("$.data.status_list[1].schedule_id").value(2))
-                .andExpect(jsonPath("$.data.status_list[1].account_name").value("홈플러스 서면점"))
-                .andExpect(jsonPath("$.data.status_list[1].status").value("PENDING"))
-                .andExpect(jsonPath("$.data.current_date").value("2026-02-25"))
+                .andExpect(jsonPath("$.data.totalCount").value(3))
+                .andExpect(jsonPath("$.data.registeredCount").value(1))
+                .andExpect(jsonPath("$.data.statusList").isArray)
+                .andExpect(jsonPath("$.data.statusList[0].scheduleId").value(1))
+                .andExpect(jsonPath("$.data.statusList[0].accountName").value("이마트 부산점"))
+                .andExpect(jsonPath("$.data.statusList[0].workCategory").value("진열"))
+                .andExpect(jsonPath("$.data.statusList[0].status").value("REGISTERED"))
+                .andExpect(jsonPath("$.data.statusList[1].scheduleId").value(2))
+                .andExpect(jsonPath("$.data.statusList[1].accountName").value("홈플러스 서면점"))
+                .andExpect(jsonPath("$.data.statusList[1].status").value("PENDING"))
+                .andExpect(jsonPath("$.data.currentDate").value("2026-02-25"))
         }
     }
 }

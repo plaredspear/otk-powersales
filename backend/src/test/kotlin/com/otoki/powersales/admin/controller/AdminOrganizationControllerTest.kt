@@ -98,13 +98,13 @@ class AdminOrganizationControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
                 .andExpect(jsonPath("$.data[0].id").value(1))
-                .andExpect(jsonPath("$.data[0].cost_center_level2").value("1000"))
-                .andExpect(jsonPath("$.data[0].org_code_level2").value("A100"))
-                .andExpect(jsonPath("$.data[0].org_name_level2").value("영업본부"))
-                .andExpect(jsonPath("$.data[0].cost_center_level4").value("1101"))
-                .andExpect(jsonPath("$.data[0].org_name_level4").value("강남지점"))
-                .andExpect(jsonPath("$.data[0].cost_center_level5").value("1101A"))
-                .andExpect(jsonPath("$.data[0].org_name_level5").value("강남1조"))
+                .andExpect(jsonPath("$.data[0].costCenterLevel2").value("1000"))
+                .andExpect(jsonPath("$.data[0].orgCodeLevel2").value("A100"))
+                .andExpect(jsonPath("$.data[0].orgNameLevel2").value("영업본부"))
+                .andExpect(jsonPath("$.data[0].costCenterLevel4").value("1101"))
+                .andExpect(jsonPath("$.data[0].orgNameLevel4").value("강남지점"))
+                .andExpect(jsonPath("$.data[0].costCenterLevel5").value("1101A"))
+                .andExpect(jsonPath("$.data[0].orgNameLevel5").value("강남1조"))
         }
 
         @Test

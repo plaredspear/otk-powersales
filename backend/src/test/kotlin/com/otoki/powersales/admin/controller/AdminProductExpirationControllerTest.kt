@@ -115,16 +115,16 @@ class AdminProductExpirationControllerTest {
             mockMvc.perform(get("/api/v1/admin/product-expiration"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.content[0].product_name").value("진라면"))
-                .andExpect(jsonPath("$.data.content[0].product_code").value("P001"))
-                .andExpect(jsonPath("$.data.content[0].account_name").value("이마트 강남점"))
-                .andExpect(jsonPath("$.data.content[0].employee_name").value("홍길동"))
-                .andExpect(jsonPath("$.data.content[0].expiration_date").value("2026-05-01"))
-                .andExpect(jsonPath("$.data.content[0].alarm_date").value("2026-04-24"))
-                .andExpect(jsonPath("$.data.content[0].d_day").value(26))
+                .andExpect(jsonPath("$.data.content[0].productName").value("진라면"))
+                .andExpect(jsonPath("$.data.content[0].productCode").value("P001"))
+                .andExpect(jsonPath("$.data.content[0].accountName").value("이마트 강남점"))
+                .andExpect(jsonPath("$.data.content[0].employeeName").value("홍길동"))
+                .andExpect(jsonPath("$.data.content[0].expirationDate").value("2026-05-01"))
+                .andExpect(jsonPath("$.data.content[0].alarmDate").value("2026-04-24"))
+                .andExpect(jsonPath("$.data.content[0].dDay").value(26))
                 .andExpect(jsonPath("$.data.content[0].status").value("NORMAL"))
-                .andExpect(jsonPath("$.data.total_elements").value(1))
-                .andExpect(jsonPath("$.data.total_pages").value(1))
+                .andExpect(jsonPath("$.data.totalElements").value(1))
+                .andExpect(jsonPath("$.data.totalPages").value(1))
         }
     }
 
@@ -141,8 +141,8 @@ class AdminProductExpirationControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1))
-                .andExpect(jsonPath("$.data.product_name").value("진라면"))
-                .andExpect(jsonPath("$.data.d_day").value(26))
+                .andExpect(jsonPath("$.data.productName").value("진라면"))
+                .andExpect(jsonPath("$.data.dDay").value(26))
                 .andExpect(jsonPath("$.data.description").value("테스트 설명"))
         }
 
@@ -169,11 +169,11 @@ class AdminProductExpirationControllerTest {
 
             val json = """
                 {
-                    "employee_code": "E001",
-                    "account_code": "A001",
-                    "product_code": "P001",
-                    "expiration_date": "2026-05-01",
-                    "alarm_date": "2026-04-24",
+                    "employeeCode": "E001",
+                    "accountCode": "A001",
+                    "productCode": "P001",
+                    "expirationDate": "2026-05-01",
+                    "alarmDate": "2026-04-24",
                     "description": "테스트 설명"
                 }
             """.trimIndent()
@@ -186,7 +186,7 @@ class AdminProductExpirationControllerTest {
                 .andExpect(status().isCreated)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1))
-                .andExpect(jsonPath("$.data.product_name").value("진라면"))
+                .andExpect(jsonPath("$.data.productName").value("진라면"))
         }
 
         @Test
@@ -194,8 +194,8 @@ class AdminProductExpirationControllerTest {
         fun create_missingRequiredField() {
             val json = """
                 {
-                    "employee_code": "E001",
-                    "account_code": "A001"
+                    "employeeCode": "E001",
+                    "accountCode": "A001"
                 }
             """.trimIndent()
 
@@ -215,11 +215,11 @@ class AdminProductExpirationControllerTest {
 
             val json = """
                 {
-                    "employee_code": "E001",
-                    "account_code": "A001",
-                    "product_code": "P001",
-                    "expiration_date": "2026-05-01",
-                    "alarm_date": "2026-06-01",
+                    "employeeCode": "E001",
+                    "accountCode": "A001",
+                    "productCode": "P001",
+                    "expirationDate": "2026-05-01",
+                    "alarmDate": "2026-06-01",
                     "description": null
                 }
             """.trimIndent()
@@ -241,11 +241,11 @@ class AdminProductExpirationControllerTest {
 
             val json = """
                 {
-                    "employee_code": "E099",
-                    "account_code": "A001",
-                    "product_code": "P001",
-                    "expiration_date": "2026-05-01",
-                    "alarm_date": "2026-04-24",
+                    "employeeCode": "E099",
+                    "accountCode": "A001",
+                    "productCode": "P001",
+                    "expirationDate": "2026-05-01",
+                    "alarmDate": "2026-04-24",
                     "description": null
                 }
             """.trimIndent()
@@ -276,8 +276,8 @@ class AdminProductExpirationControllerTest {
 
             val json = """
                 {
-                    "expiration_date": "2026-06-01",
-                    "alarm_date": "2026-05-25",
+                    "expirationDate": "2026-06-01",
+                    "alarmDate": "2026-05-25",
                     "description": "테스트 설명"
                 }
             """.trimIndent()
@@ -289,9 +289,9 @@ class AdminProductExpirationControllerTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.expiration_date").value("2026-06-01"))
-                .andExpect(jsonPath("$.data.alarm_date").value("2026-05-25"))
-                .andExpect(jsonPath("$.data.d_day").value(57))
+                .andExpect(jsonPath("$.data.expirationDate").value("2026-06-01"))
+                .andExpect(jsonPath("$.data.alarmDate").value("2026-05-25"))
+                .andExpect(jsonPath("$.data.dDay").value(57))
         }
 
         @Test
@@ -302,8 +302,8 @@ class AdminProductExpirationControllerTest {
 
             val json = """
                 {
-                    "expiration_date": "2026-06-01",
-                    "alarm_date": "2026-05-25"
+                    "expirationDate": "2026-06-01",
+                    "alarmDate": "2026-05-25"
                 }
             """.trimIndent()
 
@@ -350,7 +350,7 @@ class AdminProductExpirationControllerTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.deleted_count").value(3))
+                .andExpect(jsonPath("$.data.deletedCount").value(3))
         }
     }
 
@@ -372,10 +372,10 @@ class AdminProductExpirationControllerTest {
             mockMvc.perform(get("/api/v1/admin/product-expiration/summary"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.total_count").value(100))
-                .andExpect(jsonPath("$.data.expired_count").value(10))
-                .andExpect(jsonPath("$.data.imminent_count").value(20))
-                .andExpect(jsonPath("$.data.normal_count").value(70))
+                .andExpect(jsonPath("$.data.totalCount").value(100))
+                .andExpect(jsonPath("$.data.expiredCount").value(10))
+                .andExpect(jsonPath("$.data.imminentCount").value(20))
+                .andExpect(jsonPath("$.data.normalCount").value(70))
         }
     }
 }

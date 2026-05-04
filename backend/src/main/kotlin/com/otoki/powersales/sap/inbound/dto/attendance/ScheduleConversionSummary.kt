@@ -1,10 +1,14 @@
 package com.otoki.powersales.sap.inbound.dto.attendance
 
+import tools.jackson.databind.PropertyNamingStrategies
+import tools.jackson.databind.annotation.JsonNaming
+
 /**
  * `attend_info` → `team_member_schedule` 변환 처리 카운트. (Spec #553)
  *
- * Jackson SNAKE_CASE 정책에 의해 응답에서는 `converted_schedule_count` 등 snake_case 키로 직렬화된다.
+ * SAP 호환 보존을 위해 응답에서 `converted_schedule_count` 등 snake_case 키로 직렬화된다 (Spec #580 P1-B).
  */
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
 data class ScheduleConversionSummary(
     val convertedScheduleCount: Int,
     val deletedScheduleCount: Int,
