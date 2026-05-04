@@ -8,7 +8,7 @@ import com.otoki.powersales.employee.entity.Employee
 data class LoginResponse(
     val user: UserInfo,
     val token: TokenInfo,
-    val requiresPasswordChange: Boolean,
+    val passwordChangeRequired: Boolean,
     val requiresGpsConsent: Boolean
 )
 

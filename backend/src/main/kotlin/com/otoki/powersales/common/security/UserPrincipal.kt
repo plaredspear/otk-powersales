@@ -12,7 +12,8 @@ import org.springframework.security.core.userdetails.UserDetails
 data class UserPrincipal(
     val userId: Long,
     val role: UserRole,
-    val agreementFlag: Boolean = false
+    val agreementFlag: Boolean = false,
+    val passwordChangeRequired: Boolean = false
 ) : UserDetails {
 
     override fun getAuthorities(): Collection<GrantedAuthority> {

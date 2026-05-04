@@ -1,5 +1,6 @@
 package com.otoki.powersales.common.exception
 
+import com.otoki.powersales.auth.exception.NewPasswordPolicyViolationException
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.common.dto.ErrorDetail
 import com.otoki.powersales.promotion.exception.BatchValidationException
@@ -183,6 +184,24 @@ class GlobalExceptionHandler {
             details = mapOf("missingIds" to ex.missingIds)
         )
 
+        return ResponseEntity
+            .status(ex.httpStatus)
+            .body(ApiResponse.error<Any?>(errorDetail))
+    }
+
+    /**
+     * 새 비밀번호 정책 위반 (Spec #584) — `error.details.violations` 에 위반 규칙 코드 배열을 포함한다.
+     */
+    @ExceptionHandler(NewPasswordPolicyViolationException::class)
+    fun handleNewPasswordPolicyViolationException(
+        ex: NewPasswordPolicyViolationException,
+        request: WebRequest
+    ): ResponseEntity<ApiResponse<Any?>> {
+        val errorDetail = ErrorDetail(
+            code = ex.errorCode,
+            message = ex.message ?: "",
+            details = mapOf("violations" to ex.violations)
+        )
         return ResponseEntity
             .status(ex.httpStatus)
             .body(ApiResponse.error<Any?>(errorDetail))

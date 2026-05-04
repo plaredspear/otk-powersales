@@ -59,16 +59,18 @@ class AuthController(
     }
 
     /**
-     * 비밀번호 변경
+     * 비밀번호 변경 (강제/자발 통합 — Spec #584)
      * POST /api/v1/mobile/auth/change-password
+     *
+     * 응답에 새 토큰 페어를 포함한다 (클레임 `passwordChangeRequired=false` 반영).
      */
     @PostMapping("/change-password")
     fun changePassword(
         @AuthenticationPrincipal principal: UserPrincipal,
         @Valid @RequestBody request: ChangePasswordRequest
-    ): ResponseEntity<ApiResponse<Any?>> {
-        authService.changePassword(principal.userId, request)
-        return ResponseEntity.ok(ApiResponse.success(null, "비밀번호가 변경되었습니다"))
+    ): ResponseEntity<ApiResponse<ChangePasswordResponse>> {
+        val response = authService.changePassword(principal, request)
+        return ResponseEntity.ok(ApiResponse.success(response, "비밀번호가 변경되었습니다"))
     }
 
     /**

@@ -17,7 +17,9 @@ import com.otoki.powersales.common.repository.AgreementHistoryRepository
 import com.otoki.powersales.common.repository.AgreementWordRepository
 import com.otoki.powersales.common.repository.LoginHistoryRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.auth.policy.PasswordPolicyValidator
 import com.otoki.powersales.common.security.JwtTokenProvider
+import com.otoki.powersales.common.security.UserPrincipal
 import com.otoki.powersales.common.util.TimeZones
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -69,6 +71,9 @@ class AuthServiceTest {
     @Mock
     private lateinit var adminPermissionResolver: com.otoki.powersales.admin.service.AdminPermissionResolver
 
+    @org.mockito.Spy
+    private val passwordPolicyValidator: PasswordPolicyValidator = PasswordPolicyValidator()
+
     @InjectMocks
     private lateinit var authService: AuthService
 
@@ -100,7 +105,7 @@ class AuthServiceTest {
         whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode(employeeCode)).thenReturn(employee)
         whenever(passwordEncoder.matches(rawPassword, encodedPassword)).thenReturn(true)
         whenever(adminPermissionResolver.resolve(employee)).thenReturn(AdminPermission.entries.toSet())
-        whenever(jwtTokenProvider.createAccessToken(eq(employee.id), any<UserRole>(), eq(false))).thenReturn(accessToken)
+        whenever(jwtTokenProvider.createAccessToken(eq(employee.id), any<UserRole>(), eq(false), any())).thenReturn(accessToken)
         whenever(jwtTokenProvider.createRefreshToken(eq(employee.id), any(), any())).thenReturn(refreshToken)
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(expiresIn)
 
@@ -116,7 +121,7 @@ class AuthServiceTest {
         assertThat(response.token.accessToken).isEqualTo(accessToken)
         assertThat(response.token.refreshToken).isEqualTo(refreshToken)
         assertThat(response.token.expiresIn).isEqualTo(expiresIn)
-        assertThat(response.requiresPasswordChange).isTrue()
+        assertThat(response.passwordChangeRequired).isTrue()
         assertThat(response.requiresGpsConsent).isTrue()
         verify(loginHistoryRepository).save(any<LoginHistory>())
         verify(jwtTokenProvider).storeRefreshToken(any(), eq(employee.id), any())
@@ -134,7 +139,7 @@ class AuthServiceTest {
         whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode(employeeCode)).thenReturn(employee)
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
         whenever(adminPermissionResolver.resolve(employee)).thenReturn(AdminPermission.entries.toSet())
-        whenever(jwtTokenProvider.createAccessToken(eq(employee.id), any<UserRole>(), eq(false))).thenReturn("token")
+        whenever(jwtTokenProvider.createAccessToken(eq(employee.id), any<UserRole>(), eq(false), any())).thenReturn("token")
         whenever(jwtTokenProvider.createRefreshToken(eq(employee.id), any(), any())).thenReturn("refresh")
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
@@ -160,7 +165,7 @@ class AuthServiceTest {
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
         whenever(adminPermissionResolver.resolve(employee)).thenReturn(AdminPermission.entries.toSet())
         whenever(loginHistoryRepository.save(any<LoginHistory>())).thenThrow(RuntimeException("DB error"))
-        whenever(jwtTokenProvider.createAccessToken(eq(employee.id), any<UserRole>(), eq(false))).thenReturn("token")
+        whenever(jwtTokenProvider.createAccessToken(eq(employee.id), any<UserRole>(), eq(false), any())).thenReturn("token")
         whenever(jwtTokenProvider.createRefreshToken(eq(employee.id), any(), any())).thenReturn("refresh")
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
@@ -202,80 +207,135 @@ class AuthServiceTest {
         verify(loginHistoryRepository, never()).save(any<LoginHistory>())
     }
 
-    // ========== Change Password Tests ==========
+    // ========== Change Password Tests (Spec #584 통합) ==========
 
     @Test
-    @DisplayName("비밀번호 변경 성공 - 유효한 현재 비밀번호와 새 비밀번호로 변경")
-    fun changePassword_success() {
+    @DisplayName("자발 변경 성공 - currentPassword 일치 + 정책 통과 -> 새 토큰 발급")
+    fun changePassword_voluntary_success() {
         // Given
         val userId = 1L
-        val employee = createTestEmployee(id = userId, password = "encoded_old", passwordChangeRequired = true)
-        val request = ChangePasswordRequest("old_password", "new_pass")
+        val employee = createTestEmployee(id = userId, password = "encoded_old", passwordChangeRequired = false)
+        val request = ChangePasswordRequest("old_password", "newpass1")
+        val principal = principal(userId, passwordChangeRequired = false)
 
         whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
         whenever(passwordEncoder.matches("old_password", "encoded_old")).thenReturn(true)
-        whenever(passwordEncoder.encode("new_pass")).thenReturn("encoded_new")
+        whenever(passwordEncoder.encode("newpass1")).thenReturn("encoded_new")
         whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.arguments[0] }
+        whenever(jwtTokenProvider.createAccessToken(eq(userId), any<UserRole>(), any(), eq(false))).thenReturn("new-access")
+        whenever(jwtTokenProvider.createRefreshToken(eq(userId), any(), any())).thenReturn("new-refresh")
+        whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
         // When
-        authService.changePassword(userId, request)
+        val response = authService.changePassword(principal, request)
 
         // Then
         verify(employeeRepository).save(employeeCaptor.capture())
         val savedEmployee = employeeCaptor.value
         assertThat(savedEmployee.password).isEqualTo("encoded_new")
         assertThat(savedEmployee.passwordChangeRequired).isFalse()
+        assertThat(response.accessToken).isEqualTo("new-access")
+        assertThat(response.refreshToken).isEqualTo("new-refresh")
+        verify(jwtTokenProvider).storeRefreshToken(any(), eq(userId), any())
     }
 
     @Test
-    @DisplayName("비밀번호 변경 실패 - 현재 비밀번호 불일치 시 InvalidCurrentPasswordException 발생")
-    fun changePassword_currentPasswordMismatch() {
+    @DisplayName("강제 변경 성공 - currentPassword 무시, 정책 통과 -> 새 토큰 발급")
+    fun changePassword_forced_success() {
+        // Given
+        val userId = 1L
+        val employee = createTestEmployee(id = userId, password = "encoded_old", passwordChangeRequired = true)
+        val request = ChangePasswordRequest(currentPassword = null, newPassword = "newpass1")
+        val principal = principal(userId, passwordChangeRequired = true)
+
+        whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
+        whenever(passwordEncoder.encode("newpass1")).thenReturn("encoded_new")
+        whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.arguments[0] }
+        whenever(jwtTokenProvider.createAccessToken(eq(userId), any<UserRole>(), any(), eq(false))).thenReturn("new-access")
+        whenever(jwtTokenProvider.createRefreshToken(eq(userId), any(), any())).thenReturn("new-refresh")
+        whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
+
+        // When
+        val response = authService.changePassword(principal, request)
+
+        // Then
+        verify(passwordEncoder, never()).matches(any(), any())
+        verify(employeeRepository).save(employeeCaptor.capture())
+        assertThat(employeeCaptor.value.passwordChangeRequired).isFalse()
+        assertThat(response.accessToken).isEqualTo("new-access")
+    }
+
+    @Test
+    @DisplayName("자발 변경 실패 - currentPassword 누락 시 CurrentPasswordRequiredException")
+    fun changePassword_voluntary_currentPasswordMissing() {
+        // Given
+        val userId = 1L
+        val employee = createTestEmployee(id = userId, password = "encoded_old", passwordChangeRequired = false)
+        val request = ChangePasswordRequest(currentPassword = null, newPassword = "newpass1")
+        val principal = principal(userId, passwordChangeRequired = false)
+
+        whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
+
+        // When & Then
+        assertThatThrownBy { authService.changePassword(principal, request) }
+            .isInstanceOf(CurrentPasswordRequiredException::class.java)
+    }
+
+    @Test
+    @DisplayName("자발 변경 실패 - currentPassword 불일치 시 InvalidCurrentPasswordException")
+    fun changePassword_voluntary_currentPasswordMismatch() {
         // Given
         val userId = 1L
         val employee = createTestEmployee(id = userId, password = "encoded_old")
-        val request = ChangePasswordRequest("wrong_password", "new_pass")
+        val request = ChangePasswordRequest("wrong_password", "newpass1")
+        val principal = principal(userId, passwordChangeRequired = false)
 
         whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
         whenever(passwordEncoder.matches("wrong_password", "encoded_old")).thenReturn(false)
 
         // When & Then
-        assertThatThrownBy { authService.changePassword(userId, request) }
+        assertThatThrownBy { authService.changePassword(principal, request) }
             .isInstanceOf(InvalidCurrentPasswordException::class.java)
     }
 
     @Test
-    @DisplayName("비밀번호 변경 실패 - 새 비밀번호가 4자 미만일 경우 InvalidPasswordFormatException 발생")
-    fun changePassword_passwordTooShort() {
+    @DisplayName("정책 위반 - 길이 미달 (3자) -> NewPasswordPolicyViolationException")
+    fun changePassword_policyViolation_tooShort() {
         // Given
         val userId = 1L
         val employee = createTestEmployee(id = userId, password = "encoded_old")
-        val request = ChangePasswordRequest("old_password", "123")
+        val request = ChangePasswordRequest(currentPassword = null, newPassword = "abc")
+        val principal = principal(userId, passwordChangeRequired = true)
 
         whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
-        whenever(passwordEncoder.matches("old_password", "encoded_old")).thenReturn(true)
 
         // When & Then
-        assertThatThrownBy { authService.changePassword(userId, request) }
-            .isInstanceOf(InvalidPasswordFormatException::class.java)
-            .hasMessageContaining("4글자 이상")
+        assertThatThrownBy { authService.changePassword(principal, request) }
+            .isInstanceOf(NewPasswordPolicyViolationException::class.java)
     }
 
     @Test
-    @DisplayName("비밀번호 변경 실패 - 동일 문자 반복 비밀번호(1111) 사용 시 InvalidPasswordFormatException 발생")
-    fun changePassword_repeatedCharacters() {
+    @DisplayName("정책 위반 - 임시 비밀번호(1234) 동일 -> NewPasswordSameAsTemporaryException")
+    fun changePassword_sameAsTemporary() {
         // Given
         val userId = 1L
         val employee = createTestEmployee(id = userId, password = "encoded_old")
-        val request = ChangePasswordRequest("old_password", "1111")
+        val request = ChangePasswordRequest(currentPassword = null, newPassword = "1234")
+        val principal = principal(userId, passwordChangeRequired = true)
 
         whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
-        whenever(passwordEncoder.matches("old_password", "encoded_old")).thenReturn(true)
 
         // When & Then
-        assertThatThrownBy { authService.changePassword(userId, request) }
-            .isInstanceOf(InvalidPasswordFormatException::class.java)
-            .hasMessageContaining("동일한 비밀번호")
+        assertThatThrownBy { authService.changePassword(principal, request) }
+            .isInstanceOf(NewPasswordSameAsTemporaryException::class.java)
     }
+
+    private fun principal(userId: Long, passwordChangeRequired: Boolean) = UserPrincipal(
+        userId = userId,
+        role = UserRole.SALES_MANAGER,
+        agreementFlag = true,
+        passwordChangeRequired = passwordChangeRequired
+    )
 
     // ========== Refresh Token Rotation Tests ==========
 
@@ -305,7 +365,7 @@ class AuthServiceTest {
             whenever(jwtTokenProvider.isRefreshTokenStored(tokenId)).thenReturn(true)
             whenever(jwtTokenProvider.getUserIdFromToken(refreshToken)).thenReturn(userId)
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(jwtTokenProvider.createAccessToken(eq(userId), any<UserRole>(), eq(false))).thenReturn(newAccessToken)
+            whenever(jwtTokenProvider.createAccessToken(eq(userId), any<UserRole>(), eq(false), any())).thenReturn(newAccessToken)
             whenever(jwtTokenProvider.createRefreshToken(eq(userId), eq(familyId), any())).thenReturn(newRefreshToken)
             whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(expiresIn)
 
@@ -399,7 +459,7 @@ class AuthServiceTest {
         // Given
         val userId = 1L
         val employee = createTestEmployee(id = userId, password = "encoded_password")
-        val request = VerifyPasswordRequest("correct_password")
+        val request = VerifyPasswordRequest(currentPassword = "correct_password")
 
         whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
         whenever(passwordEncoder.matches("correct_password", "encoded_password")).thenReturn(true)
@@ -414,7 +474,7 @@ class AuthServiceTest {
         // Given
         val userId = 1L
         val employee = createTestEmployee(id = userId, password = "encoded_password")
-        val request = VerifyPasswordRequest("wrong_password")
+        val request = VerifyPasswordRequest(currentPassword = "wrong_password")
 
         whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
         whenever(passwordEncoder.matches("wrong_password", "encoded_password")).thenReturn(false)
@@ -428,7 +488,7 @@ class AuthServiceTest {
     @DisplayName("비밀번호 검증 실패 - 존재하지 않는 사용자 ID로 요청 시 UserNotFoundException 발생")
     fun verifyPassword_userNotFound() {
         // Given
-        val request = VerifyPasswordRequest("some_password")
+        val request = VerifyPasswordRequest(currentPassword = "some_password")
 
         whenever(employeeRepository.findWithEmployeeInfoById(999L)).thenReturn(null)
 
@@ -521,7 +581,7 @@ class AuthServiceTest {
                 .thenReturn(Optional.of(activeTerms))
             whenever(agreementHistoryRepository.save(any<AgreementHistory>())).thenAnswer { it.arguments[0] }
             whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.arguments[0] }
-            whenever(jwtTokenProvider.createAccessToken(eq(userId), any<UserRole>(), eq(true))).thenReturn("new-token")
+            whenever(jwtTokenProvider.createAccessToken(eq(userId), any<UserRole>(), eq(true), any())).thenReturn("new-token")
             whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
             // When
@@ -559,7 +619,7 @@ class AuthServiceTest {
                 .thenReturn(Optional.of(namedTerms))
             whenever(agreementHistoryRepository.save(any<AgreementHistory>())).thenAnswer { it.arguments[0] }
             whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.arguments[0] }
-            whenever(jwtTokenProvider.createAccessToken(eq(userId), any<UserRole>(), eq(true))).thenReturn("new-token")
+            whenever(jwtTokenProvider.createAccessToken(eq(userId), any<UserRole>(), eq(true), any())).thenReturn("new-token")
             whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
             // When
@@ -646,7 +706,7 @@ class AuthServiceTest {
                     .thenReturn(Optional.of(activeTerms))
                 whenever(agreementHistoryRepository.save(any<AgreementHistory>())).thenAnswer { it.arguments[0] }
                 whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.arguments[0] }
-                whenever(jwtTokenProvider.createAccessToken(eq(userId), any<UserRole>(), eq(true))).thenReturn("token")
+                whenever(jwtTokenProvider.createAccessToken(eq(userId), any<UserRole>(), eq(true), any())).thenReturn("token")
                 whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
                 val expectedKstToday = LocalDate.now(TimeZones.SEOUL_ZONE)
@@ -672,7 +732,7 @@ class AuthServiceTest {
                     .thenReturn(Optional.of(activeTerms))
                 whenever(agreementHistoryRepository.save(any<AgreementHistory>())).thenAnswer { it.arguments[0] }
                 whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.arguments[0] }
-                whenever(jwtTokenProvider.createAccessToken(eq(userId), any<UserRole>(), eq(true))).thenReturn("token")
+                whenever(jwtTokenProvider.createAccessToken(eq(userId), any<UserRole>(), eq(true), any())).thenReturn("token")
                 whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
                 // When
@@ -699,7 +759,7 @@ class AuthServiceTest {
                     .thenReturn(Optional.of(activeTerms))
                 whenever(agreementHistoryRepository.save(any<AgreementHistory>())).thenAnswer { it.arguments[0] }
                 whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.arguments[0] }
-                whenever(jwtTokenProvider.createAccessToken(eq(userId), any<UserRole>(), eq(true))).thenReturn("token")
+                whenever(jwtTokenProvider.createAccessToken(eq(userId), any<UserRole>(), eq(true), any())).thenReturn("token")
                 whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
                 whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
 
@@ -761,7 +821,7 @@ class AuthServiceTest {
         whenever(uuidCheckProperties.enabled).thenReturn(true)
         whenever(uuidCheckProperties.isExcluded("12345678")).thenReturn(false)
         whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.arguments[0] }
-        whenever(jwtTokenProvider.createAccessToken(eq(1L), any<UserRole>(), eq(false))).thenReturn("token")
+        whenever(jwtTokenProvider.createAccessToken(eq(1L), any<UserRole>(), eq(false), any())).thenReturn("token")
         whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
@@ -785,7 +845,7 @@ class AuthServiceTest {
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
         whenever(uuidCheckProperties.enabled).thenReturn(true)
         whenever(uuidCheckProperties.isExcluded("12345678")).thenReturn(false)
-        whenever(jwtTokenProvider.createAccessToken(eq(1L), any<UserRole>(), eq(false))).thenReturn("token")
+        whenever(jwtTokenProvider.createAccessToken(eq(1L), any<UserRole>(), eq(false), any())).thenReturn("token")
         whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
@@ -823,7 +883,7 @@ class AuthServiceTest {
         whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678")).thenReturn(employee)
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
         whenever(adminPermissionResolver.resolve(employee)).thenReturn(AdminPermission.entries.toSet())
-        whenever(jwtTokenProvider.createAccessToken(eq(1L), any<UserRole>(), eq(false))).thenReturn("token")
+        whenever(jwtTokenProvider.createAccessToken(eq(1L), any<UserRole>(), eq(false), any())).thenReturn("token")
         whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
@@ -844,7 +904,7 @@ class AuthServiceTest {
         whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678")).thenReturn(employee)
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
         whenever(uuidCheckProperties.enabled).thenReturn(false)
-        whenever(jwtTokenProvider.createAccessToken(eq(1L), any<UserRole>(), eq(false))).thenReturn("token")
+        whenever(jwtTokenProvider.createAccessToken(eq(1L), any<UserRole>(), eq(false), any())).thenReturn("token")
         whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
@@ -866,7 +926,7 @@ class AuthServiceTest {
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
         whenever(uuidCheckProperties.enabled).thenReturn(true)
         whenever(uuidCheckProperties.isExcluded("20010585")).thenReturn(true)
-        whenever(jwtTokenProvider.createAccessToken(eq(1L), any<UserRole>(), eq(false))).thenReturn("token")
+        whenever(jwtTokenProvider.createAccessToken(eq(1L), any<UserRole>(), eq(false), any())).thenReturn("token")
         whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
@@ -893,7 +953,7 @@ class AuthServiceTest {
             whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678")).thenReturn(employee)
             whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
             whenever(adminPermissionResolver.resolve(employee)).thenReturn(AdminPermission.entries.toSet())
-            whenever(jwtTokenProvider.createAccessToken(eq(1L), any<UserRole>(), eq(false))).thenReturn("token")
+            whenever(jwtTokenProvider.createAccessToken(eq(1L), any<UserRole>(), eq(false), any())).thenReturn("token")
             whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
             whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
@@ -916,7 +976,7 @@ class AuthServiceTest {
             whenever(uuidCheckProperties.enabled).thenReturn(true)
             whenever(uuidCheckProperties.isExcluded("12345678")).thenReturn(false)
             whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.arguments[0] }
-            whenever(jwtTokenProvider.createAccessToken(eq(1L), any<UserRole>(), eq(false))).thenReturn("token")
+            whenever(jwtTokenProvider.createAccessToken(eq(1L), any<UserRole>(), eq(false), any())).thenReturn("token")
             whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
             whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
@@ -1006,7 +1066,7 @@ class AuthServiceTest {
             whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678")).thenReturn(employee)
             whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
             whenever(adminPermissionResolver.resolve(employee)).thenReturn(AdminPermission.entries.toSet())
-            whenever(jwtTokenProvider.createAccessToken(eq(1L), any<UserRole>(), eq(false))).thenReturn("admin-token")
+            whenever(jwtTokenProvider.createAccessToken(eq(1L), any<UserRole>(), eq(false), any())).thenReturn("admin-token")
             whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("admin-refresh")
             whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 

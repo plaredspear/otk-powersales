@@ -4,6 +4,7 @@ import com.otoki.powersales.common.security.DomainGuardFilter
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationEntryPoint
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
+import com.otoki.powersales.common.security.PasswordChangeRequiredFilter
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.web.servlet.FilterRegistrationBean
 import org.springframework.context.annotation.Bean
@@ -31,6 +32,7 @@ class SecurityConfig(
     private val jwtAuthenticationFilter: JwtAuthenticationFilter,
     private val jwtAuthenticationEntryPoint: JwtAuthenticationEntryPoint,
     private val gpsConsentFilter: GpsConsentFilter,
+    private val passwordChangeRequiredFilter: PasswordChangeRequiredFilter,
     private val domainProperties: DomainProperties
 ) {
 
@@ -59,7 +61,8 @@ class SecurityConfig(
             }
             .exceptionHandling { it.authenticationEntryPoint(jwtAuthenticationEntryPoint) }
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
-            .addFilterAfter(gpsConsentFilter, JwtAuthenticationFilter::class.java)
+            .addFilterAfter(passwordChangeRequiredFilter, JwtAuthenticationFilter::class.java)
+            .addFilterAfter(gpsConsentFilter, PasswordChangeRequiredFilter::class.java)
 
         return http.build()
     }

@@ -11,12 +11,15 @@ import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.auth.exception.InvalidCredentialsException
 import com.otoki.powersales.auth.exception.InvalidCurrentPasswordException
 import com.otoki.powersales.auth.exception.InvalidTokenException
+import com.otoki.powersales.auth.exception.NewPasswordPolicyViolationException
+import com.otoki.powersales.auth.exception.NewPasswordSameAsTemporaryException
 import com.otoki.powersales.auth.exception.TermsNotFoundException
 import com.otoki.powersales.auth.exception.TokenReuseDetectedException
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.admin.security.AdminAuthorityFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
+import com.otoki.powersales.common.security.PasswordChangeRequiredFilter
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.common.security.UserPrincipal
 import com.otoki.powersales.auth.service.AuthService
@@ -74,6 +77,9 @@ class AuthControllerTest {
     @MockitoBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
+    @MockitoBean
+    private lateinit var passwordChangeRequiredFilter: PasswordChangeRequiredFilter
+
     private val testPrincipal = UserPrincipal(userId = 1L, role = UserRole.WOMAN)
 
     @BeforeEach
@@ -95,7 +101,7 @@ class AuthControllerTest {
         val mockResponse = LoginResponse(
             user = UserInfo(1L, "12345678", "홍길동", "서울지점", "WOMAN", "여사원"),
             token = TokenInfo("access-token", "refresh-token", 3600),
-            requiresPasswordChange = false,
+            passwordChangeRequired = false,
             requiresGpsConsent = false
         )
 
@@ -118,18 +124,18 @@ class AuthControllerTest {
             .andExpect(jsonPath("$.data.token.accessToken").value("access-token"))
             .andExpect(jsonPath("$.data.token.refreshToken").value("refresh-token"))
             .andExpect(jsonPath("$.data.token.expiresIn").value(3600))
-            .andExpect(jsonPath("$.data.requiresPasswordChange").value(false))
+            .andExpect(jsonPath("$.data.passwordChangeRequired").value(false))
             .andExpect(jsonPath("$.data.requiresGpsConsent").value(false))
     }
 
     @Test
-    @DisplayName("초기 비밀번호로 로그인 - 200 OK, requires_password_change=true")
+    @DisplayName("초기 비밀번호로 로그인 - 200 OK, password_change_required=true")
     fun login_initialPassword() {
         // Given
         val mockResponse = LoginResponse(
             user = UserInfo(2L, "87654321", "김철수", "부산지점", "WOMAN", "여사원"),
             token = TokenInfo("access-token", "refresh-token", 3600),
-            requiresPasswordChange = true,
+            passwordChangeRequired = true,
             requiresGpsConsent = true
         )
 
@@ -142,7 +148,7 @@ class AuthControllerTest {
                 .content("""{"employeeCode": "87654321", "password": "otg1"}""")
         )
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.data.requiresPasswordChange").value(true))
+            .andExpect(jsonPath("$.data.passwordChangeRequired").value(true))
             .andExpect(jsonPath("$.data.requiresGpsConsent").value(true))
     }
 
@@ -287,10 +293,11 @@ class AuthControllerTest {
     // ========== Change Password Tests ==========
 
     @Test
-    @DisplayName("비밀번호 변경 성공 - 200 OK (인증 필요)")
+    @DisplayName("비밀번호 변경 성공 - 200 OK + 새 토큰")
     fun changePassword_success() {
         // Given
-        doNothing().whenever(authService).changePassword(eq(1L), any())
+        val mockResponse = ChangePasswordResponse("new-access", "new-refresh", 3600)
+        whenever(authService.changePassword(any<UserPrincipal>(), any())).thenReturn(mockResponse)
 
         // When & Then
         mockMvc.perform(
@@ -301,14 +308,16 @@ class AuthControllerTest {
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.message").value("비밀번호가 변경되었습니다"))
+            .andExpect(jsonPath("$.data.accessToken").value("new-access"))
+            .andExpect(jsonPath("$.data.refreshToken").value("new-refresh"))
     }
 
     @Test
-    @DisplayName("비밀번호 변경 - 현재 비밀번호 불일치 시 401")
+    @DisplayName("비밀번호 변경 - 현재 비밀번호 불일치 시 401 AUTH_CURRENT_PASSWORD_MISMATCH")
     fun changePassword_wrongCurrentPassword() {
         // Given
-        doThrow(InvalidCurrentPasswordException())
-            .whenever(authService).changePassword(eq(1L), any())
+        whenever(authService.changePassword(any<UserPrincipal>(), any()))
+            .thenThrow(InvalidCurrentPasswordException())
 
         // When & Then
         mockMvc.perform(
@@ -318,21 +327,57 @@ class AuthControllerTest {
         )
             .andExpect(status().isUnauthorized)
             .andExpect(jsonPath("$.success").value(false))
-            .andExpect(jsonPath("$.error.code").value("INVALID_CURRENT_PASSWORD"))
+            .andExpect(jsonPath("$.error.code").value("AUTH_CURRENT_PASSWORD_MISMATCH"))
     }
 
     @Test
-    @DisplayName("비밀번호 변경 - 새 비밀번호 길이 부족 시 400")
-    fun changePassword_shortNewPassword() {
+    @DisplayName("비밀번호 변경 - 새 비밀번호 누락 시 400 INVALID_PARAMETER")
+    fun changePassword_missingNewPassword() {
         // When & Then
         mockMvc.perform(
             post("/api/v1/mobile/auth/change-password")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"currentPassword": "oldPass123", "newPassword": "12"}""")
+                .content("""{"currentPassword": "oldPass123", "newPassword": ""}""")
         )
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"))
+    }
+
+    @Test
+    @DisplayName("비밀번호 변경 - 정책 위반 시 400 AUTH_NEW_PASSWORD_INVALID + violations 배열")
+    fun changePassword_policyViolation() {
+        // Given
+        whenever(authService.changePassword(any<UserPrincipal>(), any()))
+            .thenThrow(NewPasswordPolicyViolationException(listOf("LENGTH_TOO_SHORT")))
+
+        // When & Then
+        mockMvc.perform(
+            post("/api/v1/mobile/auth/change-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"newPassword": "abc"}""")
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.code").value("AUTH_NEW_PASSWORD_INVALID"))
+            .andExpect(jsonPath("$.error.details.violations[0]").value("LENGTH_TOO_SHORT"))
+    }
+
+    @Test
+    @DisplayName("비밀번호 변경 - 임시 비번 동일 시 400 AUTH_NEW_PASSWORD_SAME_AS_TEMP")
+    fun changePassword_sameAsTemporary() {
+        // Given
+        whenever(authService.changePassword(any<UserPrincipal>(), any()))
+            .thenThrow(NewPasswordSameAsTemporaryException())
+
+        // When & Then
+        mockMvc.perform(
+            post("/api/v1/mobile/auth/change-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"newPassword": "1234"}""")
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.error.code").value("AUTH_NEW_PASSWORD_SAME_AS_TEMP"))
     }
 
     // ========== Verify Password Tests ==========
@@ -347,7 +392,7 @@ class AuthControllerTest {
         mockMvc.perform(
             post("/api/v1/mobile/auth/verify-password")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"password": "correctPass123"}""")
+                .content("""{"currentPassword": "correctPass123"}""")
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
@@ -356,7 +401,7 @@ class AuthControllerTest {
     }
 
     @Test
-    @DisplayName("비밀번호 검증 실패 - 비밀번호 불일치 시 401")
+    @DisplayName("비밀번호 검증 실패 - 비밀번호 불일치 시 401 AUTH_CURRENT_PASSWORD_MISMATCH")
     fun verifyPassword_passwordMismatch() {
         // Given
         doThrow(InvalidCurrentPasswordException())
@@ -366,11 +411,11 @@ class AuthControllerTest {
         mockMvc.perform(
             post("/api/v1/mobile/auth/verify-password")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"password": "wrongPass"}""")
+                .content("""{"currentPassword": "wrongPass"}""")
         )
             .andExpect(status().isUnauthorized)
             .andExpect(jsonPath("$.success").value(false))
-            .andExpect(jsonPath("$.error.code").value("INVALID_CURRENT_PASSWORD"))
+            .andExpect(jsonPath("$.error.code").value("AUTH_CURRENT_PASSWORD_MISMATCH"))
     }
 
     @Test

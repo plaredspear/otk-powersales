@@ -34,9 +34,17 @@ class JwtTokenProvider(
     private val blacklist = ConcurrentHashMap<String, Date>()
 
     /**
-     * Access Token 생성
+     * Access Token 생성.
+     *
+     * @param passwordChangeRequired 강제 변경 미완료 사원 여부 (Spec #584). `true` 면 가드 필터가
+     *  화이트리스트(change-password/logout/refresh) 외 호출을 차단한다.
      */
-    fun createAccessToken(userId: Long, role: UserRole, agreementFlag: Boolean = false): String {
+    fun createAccessToken(
+        userId: Long,
+        role: UserRole,
+        agreementFlag: Boolean = false,
+        passwordChangeRequired: Boolean = false
+    ): String {
         val now = Date()
         val expiry = Date(now.time + accessExpiration)
 
@@ -45,6 +53,7 @@ class JwtTokenProvider(
             .claim("role", role.name)
             .claim("type", "access")
             .claim("agreement_flag", agreementFlag)
+            .claim("password_change_required", passwordChangeRequired)
             .issuedAt(now)
             .expiration(expiry)
             .signWith(key)
@@ -113,6 +122,14 @@ class JwtTokenProvider(
      */
     fun getAgreementFlagFromToken(token: String): Boolean {
         return parseClaims(token).get("agreement_flag", java.lang.Boolean::class.java)?.booleanValue() ?: false
+    }
+
+    /**
+     * 토큰에서 password_change_required 추출 (Spec #584).
+     * 클레임이 없는 구 토큰은 `false` 로 간주하여 동작 호환을 유지한다.
+     */
+    fun getPasswordChangeRequiredFromToken(token: String): Boolean {
+        return parseClaims(token).get("password_change_required", java.lang.Boolean::class.java)?.booleanValue() ?: false
     }
 
     /**
