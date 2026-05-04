@@ -1,30 +1,79 @@
 # test 프로파일 — Gradle test 태스크가 SPRING_PROFILES_ACTIVE=test 로 활성.
-# Redis / DB / S3 가 없는 환경에서 auto-config 가 빈 생성을 시도해 컨텍스트
-# 로드가 실패하지 않도록 인프라 의존 auto-config 를 모두 제외한다. EB (dev/prod)
-# 는 이 파일이 로드되지 않으므로 영향 없음.
+# DB 가 없는 환경에서 컨텍스트가 떠야 하므로 H2 인메모리 + Flyway off 로 띄운다.
+# Hibernate ddl-auto: create-drop 이 엔티티 기준으로 스키마를 생성한다.
 #
-# Spring Boot 4 에서 Data 관련 auto-config 클래스명이 Data* 로 리네임된다
+# 본 파일은 단일 진실(single source of truth) 이며, src/test/resources 에 동일
+# 이름의 파일을 두지 않는다 — 클래스패스 우선순위 때문에 한쪽만 로드되어 의도와
+# 다른 설정이 적용되는 함정을 막기 위함이다.
+#
+# Spring Cloud AWS 자격증명/리전:
+#  - test 환경에서 spring-cloud-aws starter 가 S3Client / SecretsManagerClient
+#    빈을 만들 때 region/credentials provider 를 해석한다. 노트북에서는
+#    ~/.aws/* 가 채워주지만, CodeBuild Docker 처럼 자격증명·리전이 없는 환경에서는
+#    `SdkClientException` (DefaultRegionProviderChain 해결 실패) 으로 컨텍스트
+#    로드가 깨진다.
+#  - exclude 로 막으려 하면 spring-cloud-aws 의 다양한 auto-config (core/s3/
+#    secretsmanager/config.secretsmanager 등) 를 빠짐없이 나열해야 하고, 모듈
+#    추가 시 또 깨지기 쉬워 stub 값 주입 방식을 택한다. 더미 region/credentials
+#    가 있으면 client 빈이 정상 생성되며, 실제 AWS 호출은 일어나지 않는다
+#    (S3StorageService 는 @Profile("dev | prod") 로 비활성, Secrets Manager 의
+#    spring.config.import 도 dev/prod document 에서만 활성).
+#
+# Spring Boot 4 에서 Data 관련 auto-config 클래스명이 Data* 로 리네임됐다
 # (RedisAutoConfiguration → DataRedisAutoConfiguration 등). Health Contributor
-# auto-config 는 별도 빈을 만들기 위해 Lettuce/Connection 구성을 트리거하므로
-# 함께 제외해야 placeholder 가 남아있어도 컨텍스트 로드가 깨지지 않는다.
+# auto-config 는 별도 빈 생성을 위해 Lettuce/Connection 구성을 트리거하므로 함께 제외.
 
 spring:
   autoconfigure:
     exclude:
-      - org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration
-      - org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration
-      - org.springframework.boot.data.jpa.autoconfigure.DataJpaRepositoriesAutoConfiguration
       - org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration
       - org.springframework.boot.data.redis.autoconfigure.DataRedisReactiveAutoConfiguration
       - org.springframework.boot.data.redis.autoconfigure.DataRedisRepositoriesAutoConfiguration
       - org.springframework.boot.data.redis.autoconfigure.health.DataRedisHealthContributorAutoConfiguration
       - org.springframework.boot.data.redis.autoconfigure.health.DataRedisReactiveHealthContributorAutoConfiguration
-      # Spring Cloud AWS — test 에서는 region/credentials 미설정 시 SDK 클라이언트
-      # 빈 생성이 SdkClientException 으로 실패한다 (DefaultRegionProviderChain 해결 실패).
-      # S3, Secrets Manager, 그리고 공통 core(region/credentials) auto-config 를 모두 비활성화한다.
-      - io.awspring.cloud.autoconfigure.s3.S3AutoConfiguration
-      - io.awspring.cloud.autoconfigure.s3.S3TransferManagerAutoConfiguration
-      - io.awspring.cloud.autoconfigure.s3.S3CrtAsyncClientAutoConfiguration
-      - io.awspring.cloud.autoconfigure.secretsmanager.SecretsManagerAutoConfiguration
-      - io.awspring.cloud.autoconfigure.core.CredentialsProviderAutoConfiguration
-      - io.awspring.cloud.autoconfigure.core.RegionProviderAutoConfiguration
+
+  cloud:
+    aws:
+      region:
+        static: ap-northeast-2
+      credentials:
+        access-key: test
+        secret-key: test
+
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        format_sql: true
+        show_sql: false
+    defer-datasource-initialization: false
+
+  flyway:
+    enabled: false
+
+  sql:
+    init:
+      mode: never  # data.sql 자동 실행 방지
+
+  data:
+    redis:
+      repositories:
+        enabled: false
+
+app:
+  auth:
+    uuid-check:
+      enabled: true
+      excluded-employee-numbers: ""
+
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
