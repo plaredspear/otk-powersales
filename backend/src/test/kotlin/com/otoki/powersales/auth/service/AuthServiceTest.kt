@@ -1,6 +1,6 @@
 package com.otoki.powersales.auth.service
 
-import com.otoki.powersales.common.config.DeviceBindingProperties
+import com.otoki.powersales.common.config.UuidCheckProperties
 import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.auth.dto.request.ChangePasswordRequest
 import com.otoki.powersales.common.dto.request.GpsConsentRequest
@@ -60,7 +60,7 @@ class AuthServiceTest {
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
     @Mock
-    private lateinit var deviceBindingProperties: DeviceBindingProperties
+    private lateinit var uuidCheckProperties: UuidCheckProperties
 
     @Mock
     private lateinit var adminPermissionResolver: com.otoki.powersales.admin.service.AdminPermissionResolver
@@ -659,8 +659,8 @@ class AuthServiceTest {
 
         whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678")).thenReturn(employee)
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
-        whenever(deviceBindingProperties.enabled).thenReturn(true)
-        whenever(deviceBindingProperties.isExcluded("12345678")).thenReturn(false)
+        whenever(uuidCheckProperties.enabled).thenReturn(true)
+        whenever(uuidCheckProperties.isExcluded("12345678")).thenReturn(false)
         whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.arguments[0] }
         whenever(jwtTokenProvider.createAccessToken(eq(1L), any<UserRole>(), eq(false))).thenReturn("token")
         whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
@@ -684,8 +684,8 @@ class AuthServiceTest {
 
         whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678")).thenReturn(employee)
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
-        whenever(deviceBindingProperties.enabled).thenReturn(true)
-        whenever(deviceBindingProperties.isExcluded("12345678")).thenReturn(false)
+        whenever(uuidCheckProperties.enabled).thenReturn(true)
+        whenever(uuidCheckProperties.isExcluded("12345678")).thenReturn(false)
         whenever(jwtTokenProvider.createAccessToken(eq(1L), any<UserRole>(), eq(false))).thenReturn("token")
         whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
@@ -706,8 +706,8 @@ class AuthServiceTest {
 
         whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678")).thenReturn(employee)
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
-        whenever(deviceBindingProperties.enabled).thenReturn(true)
-        whenever(deviceBindingProperties.isExcluded("12345678")).thenReturn(false)
+        whenever(uuidCheckProperties.enabled).thenReturn(true)
+        whenever(uuidCheckProperties.isExcluded("12345678")).thenReturn(false)
 
         // When & Then
         assertThatThrownBy { authService.login(request) }
@@ -744,7 +744,7 @@ class AuthServiceTest {
 
         whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678")).thenReturn(employee)
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
-        whenever(deviceBindingProperties.enabled).thenReturn(false)
+        whenever(uuidCheckProperties.enabled).thenReturn(false)
         whenever(jwtTokenProvider.createAccessToken(eq(1L), any<UserRole>(), eq(false))).thenReturn("token")
         whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
@@ -757,7 +757,7 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("예외 사번 로그인 - excluded-ids에 포함된 사번은 device_id 불일치여도 로그인 성공")
+    @DisplayName("예외 사번 로그인 - excluded-employee-numbers에 포함된 사번은 device_id 불일치여도 로그인 성공")
     fun login_excludedEmployee_skipsValidation() {
         // Given
         val employee = createTestEmployee(id = 1L, employeeCode = "20010585", deviceUuid = "device-abc-123")
@@ -765,8 +765,8 @@ class AuthServiceTest {
 
         whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("20010585")).thenReturn(employee)
         whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
-        whenever(deviceBindingProperties.enabled).thenReturn(true)
-        whenever(deviceBindingProperties.isExcluded("20010585")).thenReturn(true)
+        whenever(uuidCheckProperties.enabled).thenReturn(true)
+        whenever(uuidCheckProperties.isExcluded("20010585")).thenReturn(true)
         whenever(jwtTokenProvider.createAccessToken(eq(1L), any<UserRole>(), eq(false))).thenReturn("token")
         whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
         whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
@@ -814,8 +814,8 @@ class AuthServiceTest {
 
             whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678")).thenReturn(employee)
             whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
-            whenever(deviceBindingProperties.enabled).thenReturn(true)
-            whenever(deviceBindingProperties.isExcluded("12345678")).thenReturn(false)
+            whenever(uuidCheckProperties.enabled).thenReturn(true)
+            whenever(uuidCheckProperties.isExcluded("12345678")).thenReturn(false)
             whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.arguments[0] }
             whenever(jwtTokenProvider.createAccessToken(eq(1L), any<UserRole>(), eq(false))).thenReturn("token")
             whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")

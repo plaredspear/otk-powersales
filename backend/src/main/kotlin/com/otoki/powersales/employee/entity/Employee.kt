@@ -246,6 +246,17 @@ class Employee(
         this.updatedAt = LocalDateTime.now()
     }
 
+    /**
+     * 운영자가 임시 비밀번호로 리셋 (Spec #582 P1-B §3.2.1).
+     *
+     * `changePassword` 와의 차이: 강제 변경 유도를 위해 `passwordChangeRequired = true` 로 설정한다.
+     */
+    fun resetPasswordToTemporary(encodedTemporaryPassword: String) {
+        this.password = encodedTemporaryPassword
+        this.passwordChangeRequired = true
+        this.updatedAt = LocalDateTime.now()
+    }
+
     fun requiresGpsConsent(): Boolean {
         return agreementFlag != true
     }

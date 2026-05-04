@@ -1,6 +1,6 @@
 package com.otoki.powersales.auth.service
 
-import com.otoki.powersales.common.config.DeviceBindingProperties
+import com.otoki.powersales.common.config.UuidCheckProperties
 import com.otoki.powersales.auth.dto.request.ChangePasswordRequest
 import com.otoki.powersales.common.dto.request.GpsConsentRequest
 import com.otoki.powersales.auth.dto.request.LoginRequest
@@ -41,7 +41,7 @@ class AuthService(
     private val agreementHistoryRepository: AgreementHistoryRepository,
     private val passwordEncoder: PasswordEncoder,
     private val jwtTokenProvider: JwtTokenProvider,
-    private val deviceBindingProperties: DeviceBindingProperties,
+    private val uuidCheckProperties: UuidCheckProperties,
     private val adminPermissionResolver: AdminPermissionResolver
 ) {
 
@@ -157,8 +157,8 @@ class AuthService(
      */
     private fun validateDeviceBinding(employee: Employee, deviceId: String?) {
         if (deviceId.isNullOrBlank()) return
-        if (!deviceBindingProperties.enabled) return
-        if (deviceBindingProperties.isExcluded(employee.employeeCode)) return
+        if (!uuidCheckProperties.enabled) return
+        if (uuidCheckProperties.isExcluded(employee.employeeCode)) return
 
         if (employee.deviceUuid == null) {
             employee.bindDevice(deviceId)
