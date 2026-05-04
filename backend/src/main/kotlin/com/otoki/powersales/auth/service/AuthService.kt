@@ -12,6 +12,7 @@ import com.otoki.powersales.admin.dto.response.AdminUserInfo
 import com.otoki.powersales.admin.service.AdminPermissionResolver
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.auth.dto.response.*
+import com.otoki.powersales.auth.policy.PasswordPolicyValidator
 import com.otoki.powersales.common.dto.response.*
 import com.otoki.powersales.common.entity.AgreementHistory
 import com.otoki.powersales.common.entity.LoginHistory
@@ -22,6 +23,7 @@ import com.otoki.powersales.common.repository.AgreementWordRepository
 import com.otoki.powersales.common.repository.LoginHistoryRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.common.security.JwtTokenProvider
+import com.otoki.powersales.common.security.UserPrincipal
 import com.otoki.powersales.common.util.TimeZones
 import org.slf4j.LoggerFactory
 import org.springframework.security.crypto.password.PasswordEncoder
@@ -43,7 +45,8 @@ class AuthService(
     private val passwordEncoder: PasswordEncoder,
     private val jwtTokenProvider: JwtTokenProvider,
     private val uuidCheckProperties: UuidCheckProperties,
-    private val adminPermissionResolver: AdminPermissionResolver
+    private val adminPermissionResolver: AdminPermissionResolver,
+    private val passwordPolicyValidator: PasswordPolicyValidator
 ) {
 
     private val log = LoggerFactory.getLogger(AuthService::class.java)
@@ -55,7 +58,7 @@ class AuthService(
      * 3. 단말기 바인딩 검증 (device_id 존재 시)
      * 4. Access Token + Refresh Token 생성 (familyId, tokenId 포함)
      * 5. Redis에 Refresh Token 메타데이터 저장
-     * 6. requiresPasswordChange, requiresGpsConsent 포함하여 반환
+     * 6. passwordChangeRequired, requiresGpsConsent 포함하여 반환
      */
     @Transactional
     fun login(request: LoginRequest): LoginResponse {
@@ -79,7 +82,13 @@ class AuthService(
             log.warn("로그인 이력 기록 실패: employeeCode={}", employee.employeeCode, e)
         }
 
-        val accessToken = jwtTokenProvider.createAccessToken(employee.id, employee.role ?: UserRole.WOMAN, employee.agreementFlag == true)
+        val passwordChangeRequired = employee.passwordChangeRequired ?: true
+        val accessToken = jwtTokenProvider.createAccessToken(
+            employee.id,
+            employee.role ?: UserRole.WOMAN,
+            employee.agreementFlag == true,
+            passwordChangeRequired
+        )
 
         // Refresh Token Rotation: familyId + tokenId 생성
         val familyId = UUID.randomUUID().toString()
@@ -96,7 +105,7 @@ class AuthService(
                 refreshToken = refreshToken,
                 expiresIn = jwtTokenProvider.getAccessTokenExpirationSeconds()
             ),
-            requiresPasswordChange = employee.passwordChangeRequired ?: true,
+            passwordChangeRequired = passwordChangeRequired,
             requiresGpsConsent = employee.requiresGpsConsent()
         )
     }
@@ -192,26 +201,55 @@ class AuthService(
     }
 
     /**
-     * 비밀번호 변경
-     * 1. userId로 사용자 조회
-     * 2. 현재 비밀번호 BCrypt 검증
-     * 3. 새 비밀번호 유효성 검증 (4자 이상, 동일 문자 반복 불가)
-     * 4. BCrypt 암호화 저장, passwordChangeRequired = false
+     * 비밀번호 변경 (강제/자발 통합 — Spec #584).
+     *
+     * 분기 (토큰 클레임 `passwordChangeRequired` 기반):
+     * - true (강제 변경): `currentPassword` 무시 (전달되어도 미검증).
+     * - false (자발 변경): `currentPassword` 누락 시 `AUTH_CURRENT_PASSWORD_REQUIRED`,
+     *                       BCrypt 불일치 시 `AUTH_CURRENT_PASSWORD_MISMATCH`.
+     *
+     * 처리:
+     * 1. 새 비밀번호 정책 검증 ([PasswordPolicyValidator])
+     * 2. BCrypt 암호화 + `Employee.changePassword(...)` (passwordChangeRequired=false 자동)
+     * 3. 새 토큰 페어 발급 (familyId 신규, 클레임 `passwordChangeRequired=false` 반영)
+     * 4. Redis 에 새 refresh token 저장
      */
     @Transactional
-    fun changePassword(userId: Long, request: ChangePasswordRequest) {
-        val employee = employeeRepository.findWithEmployeeInfoById(userId)
+    fun changePassword(principal: UserPrincipal, request: ChangePasswordRequest): ChangePasswordResponse {
+        val employee = employeeRepository.findWithEmployeeInfoById(principal.userId)
             ?: throw EmployeeNotFoundException()
 
-        if (!passwordEncoder.matches(request.currentPassword, employee.password)) {
-            throw InvalidCurrentPasswordException()
+        if (!principal.passwordChangeRequired) {
+            val currentPassword = request.currentPassword
+                ?.takeIf { it.isNotBlank() }
+                ?: throw CurrentPasswordRequiredException()
+            if (!passwordEncoder.matches(currentPassword, employee.password)) {
+                throw InvalidCurrentPasswordException()
+            }
         }
 
-        validateNewPassword(request.newPassword)
+        passwordPolicyValidator.validate(request.newPassword)
 
         val encodedPassword = passwordEncoder.encode(request.newPassword)!!
         employee.changePassword(encodedPassword)
         employeeRepository.save(employee)
+
+        val accessToken = jwtTokenProvider.createAccessToken(
+            employee.id,
+            employee.role ?: UserRole.WOMAN,
+            employee.agreementFlag == true,
+            false
+        )
+        val familyId = UUID.randomUUID().toString()
+        val tokenId = UUID.randomUUID().toString()
+        val refreshToken = jwtTokenProvider.createRefreshToken(employee.id, familyId, tokenId)
+        jwtTokenProvider.storeRefreshToken(tokenId, employee.id, familyId)
+
+        return ChangePasswordResponse(
+            accessToken = accessToken,
+            refreshToken = refreshToken,
+            expiresIn = jwtTokenProvider.getAccessTokenExpirationSeconds()
+        )
     }
 
     /**
@@ -302,7 +340,7 @@ class AuthService(
         val employee = employeeRepository.findWithEmployeeInfoById(userId)
             ?: throw EmployeeNotFoundException()
 
-        if (!passwordEncoder.matches(request.password, employee.password)) {
+        if (!passwordEncoder.matches(request.currentPassword, employee.password)) {
             throw InvalidCurrentPasswordException()
         }
     }
@@ -386,18 +424,4 @@ class AuthService(
         employeeRepository.save(employee)
     }
 
-    /**
-     * 새 비밀번호 유효성 검증
-     * - 4글자 미만 불가
-     * - 모든 글자가 동일한 문자 불가 (예: 1111, aaaa)
-     */
-    private fun validateNewPassword(password: String) {
-        if (password.length < 4) {
-            throw InvalidPasswordFormatException("비밀번호는 4글자 이상이어야 합니다")
-        }
-
-        if (password.all { it == password[0] }) {
-            throw InvalidPasswordFormatException("모든 글자가 동일한 비밀번호는 사용할 수 없습니다")
-        }
-    }
 }

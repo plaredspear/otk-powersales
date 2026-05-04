@@ -20,14 +20,17 @@ data class LoginRequest(
 )
 
 /**
- * 비밀번호 변경 요청 DTO
+ * 비밀번호 변경 요청 DTO (강제/자발 통합).
+ *
+ * - 강제 변경 (토큰 `passwordChangeRequired=true`): `currentPassword` 무시 (전달되어도 미검증).
+ * - 자발 변경: `currentPassword` 필수 — 누락 시 `AUTH_CURRENT_PASSWORD_REQUIRED`, 불일치 시 `AUTH_CURRENT_PASSWORD_MISMATCH`.
+ *
+ * 신규 비밀번호 정책 검증은 [com.otoki.powersales.auth.policy.PasswordPolicyValidator] 가 권위.
  */
 data class ChangePasswordRequest(
-    @field:NotBlank(message = "현재 비밀번호는 필수입니다")
-    val currentPassword: String,
+    val currentPassword: String? = null,
 
     @field:NotBlank(message = "새 비밀번호는 필수입니다")
-    @field:Size(min = 4, message = "비밀번호는 4글자 이상이어야 합니다")
     val newPassword: String
 )
 
@@ -40,9 +43,9 @@ data class RefreshTokenRequest(
 )
 
 /**
- * 비밀번호 검증 요청 DTO
+ * 비밀번호 검증 요청 DTO (자발 변경 1단계).
  */
 data class VerifyPasswordRequest(
     @field:NotBlank(message = "비밀번호를 입력해주세요")
-    val password: String
+    val currentPassword: String
 )

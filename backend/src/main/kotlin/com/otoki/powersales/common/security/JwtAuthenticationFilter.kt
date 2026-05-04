@@ -36,7 +36,8 @@ class JwtAuthenticationFilter(
                         request.setAttribute("jwt.invalidRole", true)
                     } else {
                         val agreementFlag = jwtTokenProvider.getAgreementFlagFromToken(token)
-                        val principal = UserPrincipal(userId, role, agreementFlag)
+                        val passwordChangeRequired = jwtTokenProvider.getPasswordChangeRequiredFromToken(token)
+                        val principal = UserPrincipal(userId, role, agreementFlag, passwordChangeRequired)
 
                         val authentication = UsernamePasswordAuthenticationToken(
                             principal,

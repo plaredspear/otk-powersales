@@ -14,21 +14,55 @@ class InvalidCredentialsException : BusinessException(
 )
 
 /**
- * 현재 비밀번호 불일치
+ * 현재 비밀번호 불일치 (자발 변경 / 본인 검증).
  */
 class InvalidCurrentPasswordException : BusinessException(
-    errorCode = "INVALID_CURRENT_PASSWORD",
-    message = "현재 비밀번호가 올바르지 않습니다",
+    errorCode = "AUTH_CURRENT_PASSWORD_MISMATCH",
+    message = "현재 비밀번호가 일치하지 않습니다",
     httpStatus = HttpStatus.UNAUTHORIZED
 )
 
 /**
- * 비밀번호 형식 오류
+ * 자발 변경 시 현재 비밀번호 누락.
  */
-class InvalidPasswordFormatException(detail: String? = null) : BusinessException(
-    errorCode = "INVALID_PASSWORD_FORMAT",
-    message = detail ?: "비밀번호 형식이 올바르지 않습니다",
+class CurrentPasswordRequiredException : BusinessException(
+    errorCode = "AUTH_CURRENT_PASSWORD_REQUIRED",
+    message = "현재 비밀번호를 입력해주세요",
     httpStatus = HttpStatus.BAD_REQUEST
+)
+
+/**
+ * 새 비밀번호 정책 위반 (길이/반복).
+ *
+ * `violations` 는 위반 규칙 코드 배열 (예: ["LENGTH_TOO_SHORT", "REPEATED_CHARACTERS"]).
+ * GlobalExceptionHandler 가 `error.details.violations` 로 노출한다.
+ */
+class NewPasswordPolicyViolationException(
+    val violations: List<String>
+) : BusinessException(
+    errorCode = "AUTH_NEW_PASSWORD_INVALID",
+    message = "비밀번호가 정책을 충족하지 않습니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+/**
+ * 새 비밀번호가 임시 비밀번호("1234") 와 동일.
+ */
+class NewPasswordSameAsTemporaryException : BusinessException(
+    errorCode = "AUTH_NEW_PASSWORD_SAME_AS_TEMP",
+    message = "임시 비밀번호와 동일한 비밀번호는 사용할 수 없습니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+/**
+ * 강제 변경 미완료 사원이 화이트리스트 외 API 호출.
+ *
+ * 화이트리스트: change-password / logout / refresh-token.
+ */
+class PasswordChangeRequiredException : BusinessException(
+    errorCode = "AUTH_PASSWORD_CHANGE_REQUIRED",
+    message = "비밀번호를 변경해주세요. 임시 비밀번호 상태에서는 다른 기능을 사용할 수 없습니다",
+    httpStatus = HttpStatus.FORBIDDEN
 )
 
 /**
