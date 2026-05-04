@@ -33,10 +33,11 @@ class MockAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<void> changePassword(String currentPassword, String newPassword) async {
+  Future<AuthToken> changePassword({String? currentPassword, required String newPassword}) async {
     lastCurrentPassword = currentPassword;
     lastNewPassword = newPassword;
     if (exceptionToThrow != null) throw exceptionToThrow!;
+    return const AuthToken(accessToken: "new-access", refreshToken: "new-refresh", expiresIn: 3600);
   }
 
   @override
@@ -89,25 +90,14 @@ void main() {
       expect(mockRepository.lastNewPassword, equals(newPassword));
     });
 
-    test('현재 비밀번호 빈 문자열 → 에러', () async {
-      // Act & Assert
-      expect(
-        () => changePasswordUseCase.call(
-          currentPassword: '',
-          newPassword: 'newpass1234',
-        ),
-        throwsA(
-          isA<ArgumentError>().having(
-            (e) => e.message,
-            'message',
-            '현재 비밀번호를 입력해주세요',
-          ),
-        ),
-      );
+    test('강제 변경: currentPassword null 허용', () async {
+      // 강제 변경 시 currentPassword 미전달 — Repository 호출 시 null 로 전달
+      await changePasswordUseCase.call(newPassword: 'newpass1234');
+      expect(mockRepository.lastCurrentPassword, isNull);
+      expect(mockRepository.lastNewPassword, equals('newpass1234'));
     });
 
-    test('새 비밀번호 3글자 → 에러', () async {
-      // Act & Assert
+    test('새 비밀번호 3글자 → ArgumentError (길이 위반)', () async {
       expect(
         () => changePasswordUseCase.call(
           currentPassword: 'oldpass1234',
@@ -117,14 +107,25 @@ void main() {
           isA<ArgumentError>().having(
             (e) => e.message,
             'message',
-            '비밀번호는 4글자 이상이어야 합니다',
+            contains('4자 이상 32자 이하'),
           ),
         ),
       );
     });
 
-    test('새 비밀번호 "1111" → 에러', () async {
-      // Act & Assert
+    test('새 비밀번호 33자 → ArgumentError (길이 초과)', () async {
+      // 33자 + 반복 없음 → 길이 위반
+      final tooLong = List.generate(33, (i) => String.fromCharCode(0x61 + (i % 26))).join();
+      expect(
+        () => changePasswordUseCase.call(
+          currentPassword: 'oldpass1234',
+          newPassword: tooLong,
+        ),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    test('새 비밀번호 "1111" → ArgumentError (4연속 위반)', () async {
       expect(
         () => changePasswordUseCase.call(
           currentPassword: 'oldpass1234',
@@ -134,14 +135,13 @@ void main() {
           isA<ArgumentError>().having(
             (e) => e.message,
             'message',
-            '동일한 문자의 반복은 사용할 수 없습니다',
+            contains('4번 연속'),
           ),
         ),
       );
     });
 
-    test('새 비밀번호 "aaaa" → 에러', () async {
-      // Act & Assert
+    test('새 비밀번호 "aaaa" → ArgumentError (4연속 위반)', () async {
       expect(
         () => changePasswordUseCase.call(
           currentPassword: 'oldpass1234',
@@ -151,7 +151,23 @@ void main() {
           isA<ArgumentError>().having(
             (e) => e.message,
             'message',
-            '동일한 문자의 반복은 사용할 수 없습니다',
+            contains('4번 연속'),
+          ),
+        ),
+      );
+    });
+
+    test('새 비밀번호 "1234" (임시 비번 동일) → ArgumentError', () async {
+      expect(
+        () => changePasswordUseCase.call(
+          currentPassword: 'oldpass1234',
+          newPassword: '1234',
+        ),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            contains('임시 비밀번호'),
           ),
         ),
       );

@@ -15,7 +15,11 @@ import '../../core/network/dio_provider.dart';
 final passwordRepositoryProvider = Provider<PasswordRepository>((ref) {
   final dio = ref.watch(dioProvider);
   final authRemoteDataSource = AuthApiDataSource(dio);
-  return PasswordRepositoryImpl(remoteDataSource: authRemoteDataSource);
+  final localDataSource = ref.watch(authLocalDataSourceProvider);
+  return PasswordRepositoryImpl(
+    remoteDataSource: authRemoteDataSource,
+    localDataSource: localDataSource,
+  );
 });
 
 /// VerifyCurrentPasswordUseCase Provider

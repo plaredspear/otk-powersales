@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/domain/entities/auth_token.dart';
 import 'package:mobile/domain/repositories/password_repository.dart';
 import 'package:mobile/domain/usecases/verify_current_password_usecase.dart';
 
@@ -14,8 +15,13 @@ class MockPasswordRepository implements PasswordRepository {
   }
 
   @override
-  Future<void> changePassword(String currentPassword, String newPassword) async {
+  Future<AuthToken> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
     // Not used in this test
+    return const AuthToken(
+      accessToken: 'mock', refreshToken: 'mock', expiresIn: 3600);
   }
 }
 

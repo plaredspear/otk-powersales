@@ -4,12 +4,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../domain/entities/password_validation.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/auth/password_policy_checklist.dart';
 
-/// 비밀번호 변경 화면
+/// 임시 비밀번호 강제 변경 화면 (Spec #584 P2-M).
 ///
-/// 초기 비밀번호(otg1) 사용자가 최초 로그인 시 비밀번호 변경을 강제합니다.
-/// 뒤로가기 불가 (초기 비밀번호 변경 시).
+/// 운영자가 임시 비밀번호로 리셋한 사원이 첫 로그인 시 진입한다.
+/// - currentPassword 입력 없음 (백엔드는 토큰 클레임으로 강제 변경 식별)
+/// - PopScope 로 OS 백버튼 차단
+/// - PasswordPolicyChecklist 로 정책 실시간 표시
+/// - 변경 성공 시 새 토큰으로 자동 로그인 갱신 후 홈 진입
 class ChangePasswordScreen extends ConsumerStatefulWidget {
   const ChangePasswordScreen({super.key});
 
@@ -20,62 +25,52 @@ class ChangePasswordScreen extends ConsumerStatefulWidget {
 
 class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _currentPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _newPasswordFocusNode = FocusNode();
   final _confirmPasswordFocusNode = FocusNode();
 
   @override
+  void initState() {
+    super.initState();
+    _newPasswordController.addListener(_onPasswordChanged);
+    _confirmPasswordController.addListener(_onPasswordChanged);
+  }
+
+  @override
   void dispose() {
-    _currentPasswordController.dispose();
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
-    _newPasswordFocusNode.dispose();
     _confirmPasswordFocusNode.dispose();
     super.dispose();
   }
 
-  /// 비밀번호 변경 실행
+  void _onPasswordChanged() {
+    setState(() {});
+  }
+
+  bool get _isFormValid {
+    final pwd = _newPasswordController.text;
+    final confirm = _confirmPasswordController.text;
+    if (pwd.isEmpty || confirm.isEmpty) return false;
+    if (pwd != confirm) return false;
+    return PasswordValidation.fromPassword(pwd).isValid;
+  }
+
   Future<void> _handleChangePassword() async {
     if (!_formKey.currentState!.validate()) return;
+    if (!_isFormValid) return;
 
-    ref.read(authProvider.notifier).changePassword(
-          currentPassword: _currentPasswordController.text,
+    // 강제 변경: currentPassword 미전달 (토큰 클레임으로 분기)
+    await ref.read(authProvider.notifier).changePassword(
+          currentPassword: null,
           newPassword: _newPasswordController.text,
         );
-  }
-
-  /// 새 비밀번호 유효성 검증
-  String? _validateNewPassword(String? value) {
-    if (value == null || value.isEmpty) {
-      return '새 비밀번호를 입력해주세요';
-    }
-    if (value.length < 4) {
-      return '비밀번호는 4글자 이상이어야 합니다';
-    }
-    if (value.split('').toSet().length == 1) {
-      return '동일한 문자의 반복은 사용할 수 없습니다';
-    }
-    return null;
-  }
-
-  /// 비밀번호 확인 유효성 검증
-  String? _validateConfirmPassword(String? value) {
-    if (value == null || value.isEmpty) {
-      return '비밀번호 확인을 입력해주세요';
-    }
-    if (value != _newPasswordController.text) {
-      return '비밀번호가 일치하지 않습니다';
-    }
-    return null;
   }
 
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
 
-    // 에러 메시지 SnackBar 표시
     ref.listen<String?>(
       authProvider.select((state) => state.errorMessage),
       (previous, next) {
@@ -92,14 +87,13 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       },
     );
 
-    // ignore: deprecated_member_use
-    return WillPopScope(
-      onWillPop: () async => false, // 뒤로가기 비활성화
+    return PopScope(
+      canPop: false,
       child: Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
           title: const Text('비밀번호 변경'),
-          automaticallyImplyLeading: false, // 뒤로가기 버튼 숨김
+          automaticallyImplyLeading: false,
         ),
         body: SafeArea(
           child: SingleChildScrollView(
@@ -110,28 +104,16 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(height: AppSpacing.xxl),
-
-                  // 안내 문구
-                  _buildGuideText(),
+                  _buildGuideBanner(),
                   const SizedBox(height: AppSpacing.xxxl),
-
-                  // 현재 비밀번호
-                  _buildCurrentPasswordField(),
-                  const SizedBox(height: AppSpacing.lg),
-
-                  // 새 비밀번호
                   _buildNewPasswordField(),
-                  const SizedBox(height: AppSpacing.sm),
-
-                  // 비밀번호 규칙 안내
-                  _buildPasswordRules(),
                   const SizedBox(height: AppSpacing.lg),
-
-                  // 새 비밀번호 확인
                   _buildConfirmPasswordField(),
+                  const SizedBox(height: AppSpacing.lg),
+                  PasswordPolicyChecklist(
+                    password: _newPasswordController.text,
+                  ),
                   const SizedBox(height: AppSpacing.xxxl),
-
-                  // 변경 버튼
                   _buildChangeButton(authState.isLoading),
                 ],
               ),
@@ -142,28 +124,27 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
     );
   }
 
-  /// 안내 문구
-  Widget _buildGuideText() {
+  /// 안내 배너 — 운영자 리셋 사유 안내 (Q-F).
+  Widget _buildGuideBanner() {
     return Container(
       padding: AppSpacing.cardPadding,
       decoration: BoxDecoration(
         color: AppColors.secondaryLight.withAlpha(26),
         borderRadius: AppSpacing.cardBorderRadius,
-        border: Border.all(
-          color: AppColors.secondary.withAlpha(51),
-        ),
+        border: Border.all(color: AppColors.secondary.withAlpha(51)),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Icon(
-            Icons.info_outline,
+            Icons.warning_amber_outlined,
             color: AppColors.secondary,
             size: AppSpacing.iconSize,
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Text(
-              '비밀번호를 변경해주세요.\n보안을 위해 초기 비밀번호는 반드시 변경해야 합니다.',
+              '운영자가 비밀번호를 임시 비밀번호로 리셋했습니다.\n새 비밀번호를 설정해주세요.',
               style: AppTypography.bodyMedium.copyWith(
                 color: AppColors.secondary,
               ),
@@ -174,52 +155,9 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
     );
   }
 
-  /// 현재 비밀번호 입력 필드
-  Widget _buildCurrentPasswordField() {
-    return TextFormField(
-      controller: _currentPasswordController,
-      obscureText: true,
-      decoration: InputDecoration(
-        labelText: '현재 비밀번호',
-        hintText: '현재 비밀번호를 입력해주세요',
-        prefixIcon: const Icon(Icons.lock_outline),
-        filled: true,
-        fillColor: AppColors.surfaceVariant,
-        border: OutlineInputBorder(
-          borderRadius: AppSpacing.inputBorderRadius,
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: AppSpacing.inputBorderRadius,
-          borderSide: const BorderSide(color: AppColors.secondary, width: 2),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: AppSpacing.inputBorderRadius,
-          borderSide: const BorderSide(color: AppColors.error),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: AppSpacing.inputBorderRadius,
-          borderSide: const BorderSide(color: AppColors.error, width: 2),
-        ),
-      ),
-      textInputAction: TextInputAction.next,
-      onFieldSubmitted: (_) {
-        FocusScope.of(context).requestFocus(_newPasswordFocusNode);
-      },
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return '현재 비밀번호를 입력해주세요';
-        }
-        return null;
-      },
-    );
-  }
-
-  /// 새 비밀번호 입력 필드
   Widget _buildNewPasswordField() {
     return TextFormField(
       controller: _newPasswordController,
-      focusNode: _newPasswordFocusNode,
       obscureText: true,
       decoration: InputDecoration(
         labelText: '새 비밀번호',
@@ -248,64 +186,15 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       onFieldSubmitted: (_) {
         FocusScope.of(context).requestFocus(_confirmPasswordFocusNode);
       },
-      onChanged: (_) {
-        // 실시간 유효성 피드백을 위해 setState
-        setState(() {});
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return '새 비밀번호를 입력해주세요';
+        }
+        return null;
       },
-      validator: _validateNewPassword,
     );
   }
 
-  /// 비밀번호 규칙 안내
-  Widget _buildPasswordRules() {
-    final password = _newPasswordController.text;
-    final hasMinLength = password.length >= 4;
-    final hasNoRepeating =
-        password.isEmpty || password.split('').toSet().length > 1;
-
-    return Padding(
-      padding: const EdgeInsets.only(left: AppSpacing.xs),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildRuleItem('4글자 이상', hasMinLength, password.isNotEmpty),
-          const SizedBox(height: AppSpacing.xs),
-          _buildRuleItem(
-              '동일 문자 반복 불가', hasNoRepeating, password.isNotEmpty),
-        ],
-      ),
-    );
-  }
-
-  /// 비밀번호 규칙 항목
-  Widget _buildRuleItem(String text, bool isValid, bool showStatus) {
-    final Color color;
-    final IconData icon;
-
-    if (!showStatus) {
-      color = AppColors.textTertiary;
-      icon = Icons.circle_outlined;
-    } else if (isValid) {
-      color = AppColors.success;
-      icon = Icons.check_circle;
-    } else {
-      color = AppColors.error;
-      icon = Icons.cancel;
-    }
-
-    return Row(
-      children: [
-        Icon(icon, size: 16, color: color),
-        const SizedBox(width: AppSpacing.xs),
-        Text(
-          text,
-          style: AppTypography.bodySmall.copyWith(color: color),
-        ),
-      ],
-    );
-  }
-
-  /// 새 비밀번호 확인 입력 필드
   Widget _buildConfirmPasswordField() {
     return TextFormField(
       controller: _confirmPasswordController,
@@ -336,16 +225,24 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       ),
       textInputAction: TextInputAction.done,
       onFieldSubmitted: (_) => _handleChangePassword(),
-      validator: _validateConfirmPassword,
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return '비밀번호 확인을 입력해주세요';
+        }
+        if (value != _newPasswordController.text) {
+          return '비밀번호가 일치하지 않습니다';
+        }
+        return null;
+      },
     );
   }
 
-  /// 변경 버튼
   Widget _buildChangeButton(bool isLoading) {
+    final canSubmit = !isLoading && _isFormValid;
     return SizedBox(
       height: AppSpacing.buttonHeight,
       child: ElevatedButton(
-        onPressed: isLoading ? null : _handleChangePassword,
+        onPressed: canSubmit ? _handleChangePassword : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: AppColors.onPrimary,

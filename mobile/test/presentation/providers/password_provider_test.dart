@@ -17,31 +17,30 @@ void main() {
   });
 
   group('PasswordValidation (사용되는 로직)', () {
-    test('4글자 이상이고 반복 아닌 비밀번호는 유효', () {
+    test('"1234" 는 임시 비밀번호와 동일 -> 무효 (Spec #584)', () {
       final validation = PasswordValidation.fromPassword('1234');
 
       expect(validation.isLengthValid, true);
-      expect(validation.isNotRepeating, true); // 서로 다른 문자
-      expect(validation.isValid, true);
-    });
-
-    test('동일 문자 반복 비밀번호는 무효', () {
-      final validation = PasswordValidation.fromPassword('1111');
-
-      expect(validation.isLengthValid, true);
-      expect(validation.isNotRepeating, false); // 모든 문자가 같음
+      expect(validation.isNotRepeating, true);
+      expect(validation.isNotTemporary, false);
       expect(validation.isValid, false);
     });
 
-    test('반복 문자가 아닌 비밀번호는 유효', () {
-      final validation = PasswordValidation.fromPassword('abcd');
+    test('동일 문자 4연속 ("1111") -> 무효', () {
+      final validation = PasswordValidation.fromPassword('1111');
 
       expect(validation.isLengthValid, true);
-      expect(validation.isNotRepeating, true);
+      expect(validation.isNotRepeating, false);
+      expect(validation.isValid, false);
+    });
+
+    test('"abcd" -> 모두 충족', () {
+      final validation = PasswordValidation.fromPassword('abcd');
+
       expect(validation.isValid, true);
     });
 
-    test('3글자 이하 비밀번호는 길이 무효', () {
+    test('3글자 이하 -> 길이 무효', () {
       final validation = PasswordValidation.fromPassword('123');
 
       expect(validation.isLengthValid, false);
@@ -178,12 +177,13 @@ class MockPasswordRepository implements PasswordRepository {
   }
 
   @override
-  Future<void> changePassword(String currentPassword, String newPassword) async {
+  Future<AuthToken> changePassword({required String currentPassword, required String newPassword}) async {
     if (shouldThrowError) {
       throw Exception('Network error');
     }
     lastCurrentPassword = currentPassword;
     lastNewPassword = newPassword;
+    return const AuthToken(accessToken: "new-access", refreshToken: "new-refresh", expiresIn: 3600);
   }
 }
 
@@ -194,12 +194,13 @@ class MockAuthRepository implements AuthRepository {
   String? lastNewPassword;
 
   @override
-  Future<void> changePassword(String currentPassword, String newPassword) async {
+  Future<AuthToken> changePassword({String? currentPassword, required String newPassword}) async {
     if (shouldThrowError) {
       throw Exception('Network error');
     }
     lastCurrentPassword = currentPassword;
     lastNewPassword = newPassword;
+    return const AuthToken(accessToken: "new-access", refreshToken: "new-refresh", expiresIn: 3600);
   }
 
   @override

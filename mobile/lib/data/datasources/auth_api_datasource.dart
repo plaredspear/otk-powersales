@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import '../models/change_password_request.dart';
 import '../models/login_response_model.dart';
 import '../models/auth_token_model.dart';
 import '../models/password_verification_response.dart';
@@ -57,13 +58,20 @@ class AuthApiDataSource implements AuthRemoteDataSource {
   }
 
   @override
-  Future<void> changePassword(String currentPassword, String newPassword) async {
-    await _dio.post(
+  Future<AuthTokenModel> changePassword({
+    String? currentPassword,
+    required String newPassword,
+  }) async {
+    final request = ChangePasswordRequest(
+      currentPassword: currentPassword,
+      newPassword: newPassword,
+    );
+    final response = await _dio.post(
       '/api/v1/mobile/auth/change-password',
-      data: {
-        'currentPassword': currentPassword,
-        'newPassword': newPassword,
-      },
+      data: request.toJson(),
+    );
+    return AuthTokenModel.fromJson(
+      response.data['data'] as Map<String, dynamic>,
     );
   }
 

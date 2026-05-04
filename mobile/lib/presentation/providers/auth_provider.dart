@@ -202,12 +202,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await _localDataSource.setAutoLogin(autoLogin);
 
       // 비밀번호 변경 / GPS 동의 필요 여부 확인
-      if (result.requiresPasswordChange) {
+      if (result.passwordChangeRequired) {
         state = state.copyWith(
           isLoading: false,
           user: result.user,
           errorMessage: null,
-          requiresPasswordChange: true,
+          passwordChangeRequired: true,
           requiresGpsConsent: result.requiresGpsConsent,
           rememberEmployeeNumber: rememberEmployeeNumber,
           autoLogin: autoLogin,
@@ -218,7 +218,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
           isLoading: false,
           user: result.user,
           errorMessage: null,
-          requiresPasswordChange: false,
+          passwordChangeRequired: false,
           requiresGpsConsent: true,
           rememberEmployeeNumber: rememberEmployeeNumber,
           autoLogin: autoLogin,
@@ -235,12 +235,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  /// 비밀번호 변경
+  /// 비밀번호 변경 (강제/자발 통합 — Spec #584).
   ///
-  /// [currentPassword]: 현재 비밀번호
-  /// [newPassword]: 새 비밀번호
+  /// 강제 변경 (`state.passwordChangeRequired=true`) 시 [currentPassword] 는 null/empty 로 호출.
+  /// 응답에 새 토큰 페어 포함 — 호출 측에서 별도 저장 없이 [AuthRepositoryImpl] 가 처리.
   Future<void> changePassword({
-    required String currentPassword,
+    String? currentPassword,
     required String newPassword,
   }) async {
     state = state.toLoading();
@@ -255,7 +255,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       if (state.requiresGpsConsent) {
         state = state.copyWith(
           isLoading: false,
-          requiresPasswordChange: false,
+          passwordChangeRequired: false,
           errorMessage: null,
         );
       } else {

@@ -11,8 +11,8 @@ class LoginResult {
   /// 인증 토큰
   final AuthToken token;
 
-  /// 비밀번호 변경 필요 여부
-  final bool requiresPasswordChange;
+  /// 비밀번호 변경 필요 여부 (강제 변경 플래그 — Spec #584)
+  final bool passwordChangeRequired;
 
   /// GPS 동의 필요 여부
   final bool requiresGpsConsent;
@@ -20,7 +20,7 @@ class LoginResult {
   const LoginResult({
     required this.user,
     required this.token,
-    required this.requiresPasswordChange,
+    required this.passwordChangeRequired,
     required this.requiresGpsConsent,
   });
 
@@ -30,7 +30,7 @@ class LoginResult {
     return other is LoginResult &&
         other.user == user &&
         other.token == token &&
-        other.requiresPasswordChange == requiresPasswordChange &&
+        other.passwordChangeRequired == passwordChangeRequired &&
         other.requiresGpsConsent == requiresGpsConsent;
   }
 
@@ -39,14 +39,14 @@ class LoginResult {
     return Object.hash(
       user,
       token,
-      requiresPasswordChange,
+      passwordChangeRequired,
       requiresGpsConsent,
     );
   }
 
   @override
   String toString() {
-    return 'LoginResult(user: $user, token: $token, requiresPasswordChange: $requiresPasswordChange, requiresGpsConsent: $requiresGpsConsent)';
+    return 'LoginResult(user: $user, token: $token, passwordChangeRequired: $passwordChangeRequired, requiresGpsConsent: $requiresGpsConsent)';
   }
 }
 
@@ -72,11 +72,17 @@ abstract class AuthRepository {
   /// Returns: 새로운 인증 토큰
   Future<AuthToken> refreshToken(String refreshToken);
 
-  /// 비밀번호 변경
+  /// 비밀번호 변경 (강제/자발 통합 — Spec #584).
   ///
-  /// [currentPassword]: 현재 비밀번호
-  /// [newPassword]: 새 비밀번호
-  Future<void> changePassword(String currentPassword, String newPassword);
+  /// 강제 변경 (토큰 클레임 `passwordChangeRequired=true`) 시 [currentPassword] 는 무시되므로
+  /// `null` 또는 빈 문자열로 호출 가능. 자발 변경 시는 필수.
+  ///
+  /// 응답에 새 토큰 페어(클레임 `passwordChangeRequired=false` 반영) 가 포함되며 호출자는
+  /// 반환된 [AuthToken] 으로 자동 로그인 상태를 갱신해야 한다.
+  Future<AuthToken> changePassword({
+    String? currentPassword,
+    required String newPassword,
+  });
 
   /// 로그아웃
   ///

@@ -2,126 +2,139 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/domain/entities/password_validation.dart';
 
 void main() {
-  group('PasswordValidation 엔티티', () {
-    test('올바른 비밀번호로 유효한 객체가 생성된다', () {
+  group('PasswordValidation 엔티티 (Spec #584)', () {
+    test('모든 규칙 충족 -> isValid=true', () {
       const validation = PasswordValidation(
         isLengthValid: true,
         isNotRepeating: true,
+        isNotTemporary: true,
       );
 
-      expect(validation.isLengthValid, true);
-      expect(validation.isNotRepeating, true);
       expect(validation.isValid, true);
     });
 
-    test('길이가 부족하면 isValid가 false', () {
+    test('길이 미충족 -> isValid=false', () {
       const validation = PasswordValidation(
         isLengthValid: false,
         isNotRepeating: true,
+        isNotTemporary: true,
       );
 
       expect(validation.isValid, false);
     });
 
-    test('동일 문자 반복이면 isValid가 false', () {
+    test('반복 문자 위반 -> isValid=false', () {
       const validation = PasswordValidation(
         isLengthValid: true,
         isNotRepeating: false,
+        isNotTemporary: true,
       );
 
       expect(validation.isValid, false);
     });
 
-    test('fromPassword factory: 4글자 이상 비밀번호는 유효', () {
-      final validation = PasswordValidation.fromPassword('1234');
+    test('임시 비밀번호 동일 -> isValid=false', () {
+      const validation = PasswordValidation(
+        isLengthValid: true,
+        isNotRepeating: true,
+        isNotTemporary: false,
+      );
 
-      expect(validation.isLengthValid, true);
-      expect(validation.isNotRepeating, true);
-      expect(validation.isValid, true);
-    });
-
-    test('fromPassword factory: 3글자 이하 비밀번호는 무효', () {
-      final validation = PasswordValidation.fromPassword('123');
-
-      expect(validation.isLengthValid, false);
       expect(validation.isValid, false);
     });
 
-    test('fromPassword factory: 동일 문자 반복 비밀번호는 무효', () {
-      final validation = PasswordValidation.fromPassword('1111');
+    group('fromPassword factory', () {
+      test('"abcd" -> 모두 충족', () {
+        final v = PasswordValidation.fromPassword('abcd');
+        expect(v.isLengthValid, true);
+        expect(v.isNotRepeating, true);
+        expect(v.isNotTemporary, true);
+        expect(v.isValid, true);
+      });
 
-      expect(validation.isNotRepeating, false);
-      expect(validation.isValid, false);
+      test('"abc" -> 길이 부족', () {
+        final v = PasswordValidation.fromPassword('abc');
+        expect(v.isLengthValid, false);
+        expect(v.isValid, false);
+      });
+
+      test('33자 -> 길이 초과', () {
+        final v = PasswordValidation.fromPassword('a' * 33);
+        expect(v.isLengthValid, false);
+      });
+
+      test('32자 (반복 없음) -> 길이 충족', () {
+        final v = PasswordValidation.fromPassword(
+            List.generate(32, (i) => String.fromCharCode(0x61 + (i % 26))).join());
+        expect(v.isLengthValid, true);
+      });
+
+      test('"aaaa" -> 동일 문자 4연속 위반', () {
+        final v = PasswordValidation.fromPassword('aaaa');
+        expect(v.isNotRepeating, false);
+      });
+
+      test('"가가가가" -> 한글 4연속 위반', () {
+        final v = PasswordValidation.fromPassword('가가가가');
+        expect(v.isNotRepeating, false);
+      });
+
+      test('"!!!!" -> 특수문자 4연속 위반', () {
+        final v = PasswordValidation.fromPassword('!!!!');
+        expect(v.isNotRepeating, false);
+      });
+
+      test('"1234" -> 임시 비밀번호 동일', () {
+        final v = PasswordValidation.fromPassword('1234');
+        expect(v.isNotTemporary, false);
+        expect(v.isValid, false);
+      });
+
+      test('빈 문자열 -> 길이 부족', () {
+        final v = PasswordValidation.fromPassword('');
+        expect(v.isLengthValid, false);
+      });
+
+      test('한글/특수문자 혼합 -> 모두 충족', () {
+        final v = PasswordValidation.fromPassword('abcd1234!@한');
+        expect(v.isValid, true);
+      });
     });
 
-    test('fromPassword factory: 문자 동일 반복 비밀번호는 무효', () {
-      final validation = PasswordValidation.fromPassword('aaaa');
-
-      expect(validation.isNotRepeating, false);
-      expect(validation.isValid, false);
-    });
-
-    test('fromPassword factory: 빈 문자열은 무효', () {
-      final validation = PasswordValidation.fromPassword('');
-
-      expect(validation.isLengthValid, false);
-      expect(validation.isValid, false);
-    });
-
-    test('copyWith 메서드가 올바르게 동작한다', () {
+    test('copyWith 동작', () {
       const original = PasswordValidation(
         isLengthValid: true,
         isNotRepeating: false,
+        isNotTemporary: true,
       );
-
       final copied = original.copyWith(isNotRepeating: true);
 
       expect(copied.isLengthValid, true);
       expect(copied.isNotRepeating, true);
+      expect(copied.isNotTemporary, true);
       expect(copied.isValid, true);
     });
 
-    test('같은 값을 가진 객체는 동일하게 비교된다', () {
-      const validation1 = PasswordValidation(
+    test('동등성 비교', () {
+      const a = PasswordValidation(
         isLengthValid: true,
         isNotRepeating: true,
+        isNotTemporary: true,
       );
-
-      const validation2 = PasswordValidation(
+      const b = PasswordValidation(
         isLengthValid: true,
         isNotRepeating: true,
+        isNotTemporary: true,
       );
-
-      expect(validation1, validation2);
-      expect(validation1.hashCode, validation2.hashCode);
-    });
-
-    test('다른 값을 가진 객체는 다르게 비교된다', () {
-      const validation1 = PasswordValidation(
-        isLengthValid: true,
-        isNotRepeating: true,
-      );
-
-      const validation2 = PasswordValidation(
+      const c = PasswordValidation(
         isLengthValid: false,
         isNotRepeating: true,
+        isNotTemporary: true,
       );
 
-      expect(validation1, isNot(validation2));
-    });
-
-    test('toString 메서드가 올바르게 동작한다', () {
-      const validation = PasswordValidation(
-        isLengthValid: true,
-        isNotRepeating: true,
-      );
-
-      final stringValue = validation.toString();
-
-      expect(stringValue, contains('PasswordValidation'));
-      expect(stringValue, contains('isLengthValid: true'));
-      expect(stringValue, contains('isNotRepeating: true'));
-      expect(stringValue, contains('isValid: true'));
+      expect(a, b);
+      expect(a.hashCode, b.hashCode);
+      expect(a, isNot(c));
     });
   });
 }

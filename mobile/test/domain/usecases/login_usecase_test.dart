@@ -34,10 +34,11 @@ class MockAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<void> changePassword(String currentPassword, String newPassword) async {
+  Future<AuthToken> changePassword({String? currentPassword, required String newPassword}) async {
     lastCurrentPassword = currentPassword;
     lastNewPassword = newPassword;
     if (exceptionToThrow != null) throw exceptionToThrow!;
+    return const AuthToken(accessToken: "new-access", refreshToken: "new-refresh", expiresIn: 3600);
   }
 
   @override
@@ -91,7 +92,7 @@ void main() {
       const expectedLoginResult = LoginResult(
         user: expectedUser,
         token: expectedToken,
-        requiresPasswordChange: false,
+        passwordChangeRequired: false,
         requiresGpsConsent: false,
       );
       mockRepository.loginResult = expectedLoginResult;
@@ -165,7 +166,7 @@ void main() {
           refreshToken: 'mockRefreshToken',
           expiresIn: 3600,
         ),
-        requiresPasswordChange: false,
+        passwordChangeRequired: false,
         requiresGpsConsent: false,
       );
       mockRepository.loginResult = mockLoginResult;

@@ -4,15 +4,14 @@ import 'auth_token_model.dart';
 
 /// 로그인 응답 모델 (DTO)
 ///
-/// Backend API의 로그인 응답 JSON을 파싱하여 LoginResult로 변환합니다.
-/// 응답 형식:
+/// Backend API 응답:
 /// ```json
 /// {
 ///   "success": true,
 ///   "data": {
 ///     "user": { ... },
 ///     "token": { ... },
-///     "requiresPasswordChange": true,
+///     "passwordChangeRequired": true,
 ///     "requiresGpsConsent": false
 ///   },
 ///   "message": "로그인 성공"
@@ -21,42 +20,39 @@ import 'auth_token_model.dart';
 class LoginResponseModel {
   final UserModel user;
   final AuthTokenModel token;
-  final bool requiresPasswordChange;
+  final bool passwordChangeRequired;
   final bool requiresGpsConsent;
 
   const LoginResponseModel({
     required this.user,
     required this.token,
-    required this.requiresPasswordChange,
+    required this.passwordChangeRequired,
     required this.requiresGpsConsent,
   });
 
-  /// snake_case JSON에서 파싱 (data 객체를 파싱)
   factory LoginResponseModel.fromJson(Map<String, dynamic> json) {
     return LoginResponseModel(
       user: UserModel.fromJson(json['user'] as Map<String, dynamic>),
       token: AuthTokenModel.fromJson(json['token'] as Map<String, dynamic>),
-      requiresPasswordChange: json['requiresPasswordChange'] as bool,
+      passwordChangeRequired: json['passwordChangeRequired'] as bool,
       requiresGpsConsent: json['requiresGpsConsent'] as bool,
     );
   }
 
-  /// snake_case JSON으로 직렬화
   Map<String, dynamic> toJson() {
     return {
       'user': user.toJson(),
       'token': token.toJson(),
-      'requiresPasswordChange': requiresPasswordChange,
+      'passwordChangeRequired': passwordChangeRequired,
       'requiresGpsConsent': requiresGpsConsent,
     };
   }
 
-  /// Domain LoginResult로 변환
   LoginResult toLoginResult() {
     return LoginResult(
       user: user.toEntity(),
       token: token.toEntity(),
-      requiresPasswordChange: requiresPasswordChange,
+      passwordChangeRequired: passwordChangeRequired,
       requiresGpsConsent: requiresGpsConsent,
     );
   }
@@ -67,7 +63,7 @@ class LoginResponseModel {
     return other is LoginResponseModel &&
         other.user == user &&
         other.token == token &&
-        other.requiresPasswordChange == requiresPasswordChange &&
+        other.passwordChangeRequired == passwordChangeRequired &&
         other.requiresGpsConsent == requiresGpsConsent;
   }
 
@@ -76,13 +72,13 @@ class LoginResponseModel {
     return Object.hash(
       user,
       token,
-      requiresPasswordChange,
+      passwordChangeRequired,
       requiresGpsConsent,
     );
   }
 
   @override
   String toString() {
-    return 'LoginResponseModel(user: $user, token: $token, requiresPasswordChange: $requiresPasswordChange, requiresGpsConsent: $requiresGpsConsent)';
+    return 'LoginResponseModel(user: $user, token: $token, passwordChangeRequired: $passwordChangeRequired, requiresGpsConsent: $requiresGpsConsent)';
   }
 }
