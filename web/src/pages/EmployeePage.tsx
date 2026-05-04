@@ -1,9 +1,12 @@
 import { useState } from 'react';
-import { Alert, Button, Input, Select, Table, Tag } from 'antd';
+import { Alert, Button, Input, Select, Space, Table, Tag, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useEmployees } from '@/hooks/employee/useEmployees';
 import type { Employee } from '@/api/employee';
 import { ROLE_OPTIONS_FOR_FILTER, type UserRole } from '@/constants/userRole';
+import { usePermission } from '@/hooks/usePermission';
+import DeviceResetModal from '@/pages/employee/components/DeviceResetModal';
+import PasswordResetModal from '@/pages/employee/components/PasswordResetModal';
 
 const STATUS_TAG: Record<string, string> = {
   재직: 'green',
@@ -25,12 +28,24 @@ const STATUS_OPTIONS = [
 
 const PAGE_SIZE = 20;
 
+const RESET_PERMISSION = 'EMPLOYEE_RESET_CREDENTIALS';
+
+const DEVICE_TOOLTIP =
+  '단말 바인딩(deviceUuid)이 해제됩니다. 사원이 다음에 어떤 단말로 로그인하더라도 새 단말로 자동 등록됩니다.';
+const PASSWORD_TOOLTIP =
+  "임시 비밀번호 '1234' 로 초기화됩니다. 사원은 다음 로그인 시 비밀번호 변경을 요구받습니다.";
+const INACTIVE_NOTICE = '앱 로그인이 비활성화된 사원입니다. 사원 정보를 먼저 활성화해 주세요.';
+
 export default function EmployeePage() {
   const [status, setStatus] = useState<string | undefined>();
   const [costCenterCode, setCostCenterCode] = useState<string | undefined>();
   const [keyword, setKeyword] = useState<string | undefined>();
   const [role, setRole] = useState<UserRole | undefined>();
   const [page, setPage] = useState(0);
+  const [deviceTarget, setDeviceTarget] = useState<Employee | null>(null);
+  const [passwordTarget, setPasswordTarget] = useState<Employee | null>(null);
+  const { hasPermission } = usePermission();
+  const canResetCredentials = hasPermission(RESET_PERMISSION);
 
   const { data, isLoading, isError, error, refetch } = useEmployees({
     status,
@@ -77,6 +92,44 @@ export default function EmployeePage() {
       render: (val: boolean | null) =>
         val ? <Tag color="blue">활성</Tag> : <Tag>비활성</Tag>,
     },
+    ...(canResetCredentials
+      ? [
+          {
+            title: '계정 관리',
+            key: 'credentialReset',
+            width: 220,
+            align: 'center' as const,
+            render: (_: unknown, record: Employee) => {
+              const inactive = record.appLoginActive !== true;
+              const inactiveTooltip = inactive ? INACTIVE_NOTICE : null;
+              return (
+                <Space size={4}>
+                  <Tooltip title={inactiveTooltip ?? DEVICE_TOOLTIP}>
+                    <Button
+                      size="small"
+                      danger
+                      disabled={inactive}
+                      onClick={() => setDeviceTarget(record)}
+                    >
+                      단말 초기화
+                    </Button>
+                  </Tooltip>
+                  <Tooltip title={inactiveTooltip ?? PASSWORD_TOOLTIP}>
+                    <Button
+                      size="small"
+                      danger
+                      disabled={inactive}
+                      onClick={() => setPasswordTarget(record)}
+                    >
+                      비밀번호 초기화
+                    </Button>
+                  </Tooltip>
+                </Space>
+              );
+            },
+          },
+        ]
+      : []),
   ];
 
   if (isError) {
@@ -137,6 +190,20 @@ export default function EmployeePage() {
           onChange: (p) => setPage(p - 1),
         }}
       />
+      {deviceTarget && (
+        <DeviceResetModal
+          employee={deviceTarget}
+          open={true}
+          onClose={() => setDeviceTarget(null)}
+        />
+      )}
+      {passwordTarget && (
+        <PasswordResetModal
+          employee={passwordTarget}
+          open={true}
+          onClose={() => setPasswordTarget(null)}
+        />
+      )}
     </div>
   );
 }
