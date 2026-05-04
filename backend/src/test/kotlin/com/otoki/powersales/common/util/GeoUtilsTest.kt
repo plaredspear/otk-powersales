@@ -66,5 +66,32 @@ class GeoUtilsTest {
             // then
             assertThat(distance).isCloseTo(325.0, Offset.offset(20.0))
         }
+
+        @Test
+        @DisplayName("Spec #585 §7-#9 — 적도(0,0) ↔ 북극(90,0) 거리 ~10001.965km (±1m)")
+        fun equatorToNorthPole() {
+            // given — 적도(0°, 0°) ↔ 북극(90°, 0°) ≈ 지구 둘레/4 ≈ R * π/2
+            // R = 6371km → 6371 * π / 2 ≈ 10007.543km
+            val expectedKm = 6371.0 * Math.PI / 2
+
+            // when
+            val distance = GeoUtils.calculateDistance(0.0, 0.0, 90.0, 0.0)
+
+            // then — 1m (0.001km) 이내 일치
+            assertThat(distance).isCloseTo(expectedKm, Offset.offset(0.001))
+        }
+
+        @Test
+        @DisplayName("Spec #585 §7-#9 — 동일 위도/경도 차 1° ↔ 적도 위 100°→101° ~111.195km")
+        fun equatorOneDegreeLongitudeApart() {
+            // given — 적도 위 1° 경도 차 ≈ R * (π/180) ≈ 111.195km
+            val expectedKm = 6371.0 * Math.PI / 180.0
+
+            // when
+            val distance = GeoUtils.calculateDistance(0.0, 100.0, 0.0, 101.0)
+
+            // then — 1m 이내 일치
+            assertThat(distance).isCloseTo(expectedKm, Offset.offset(0.001))
+        }
     }
 }

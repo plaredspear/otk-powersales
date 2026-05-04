@@ -9,6 +9,8 @@ import com.otoki.powersales.safetycheck.entity.SafetyCheckSubmission
 import com.otoki.powersales.safetycheck.repository.SafetyCheckSubmissionRepository
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
+import com.otoki.powersales.schedule.config.AttendanceProperties
+import com.otoki.powersales.schedule.exception.AccountCoordsMissingException
 import com.otoki.powersales.schedule.exception.AttendanceDayOffConflictException
 import com.otoki.powersales.schedule.exception.AttendanceTimeExceededException
 import com.otoki.powersales.schedule.exception.AlreadyRegisteredException
@@ -18,6 +20,7 @@ import com.otoki.powersales.schedule.exception.DisplayScheduleNotConfirmedExcept
 import com.otoki.powersales.schedule.exception.DisplayScheduleNotFoundException
 import com.otoki.powersales.schedule.exception.DisplayScheduleOutOfRangeException
 import com.otoki.powersales.schedule.exception.DistanceExceededException
+import com.otoki.powersales.schedule.exception.InvalidCoordsException
 import com.otoki.powersales.schedule.exception.SafetyCheckRequiredException
 import com.otoki.powersales.schedule.exception.TeamMemberScheduleNotFoundException
 import com.otoki.powersales.schedule.integration.OroraApiService
@@ -33,6 +36,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.InjectMocks
 import org.mockito.Mock
+import org.mockito.Spy
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.Mockito
 import org.mockito.kotlin.any
@@ -73,6 +77,9 @@ class AttendanceServiceTest {
 
     @Mock
     private lateinit var clock: Clock
+
+    @Spy
+    private var attendanceProperties: AttendanceProperties = AttendanceProperties(gpsThresholdMeters = 500)
 
     @InjectMocks
     private lateinit var attendanceService: AttendanceService
@@ -743,8 +750,8 @@ class AttendanceServiceTest {
             // Then
             assertThat(result.scheduleId).isEqualTo(scheduleId)
             assertThat(result.accountName).isEqualTo("이마트 강남점")
-            assertThat(result.distanceKm).isLessThan(0.5)
-            assertThat(result.distanceKm).isEqualTo(0.277)
+            // Spec #585 Q4: 응답에 실제 거리 미노출 → 항상 0.0
+            assertThat(result.distanceKm).isEqualTo(0.0)
             assertThat(result.workType).isEqualTo("상온")
         }
 
@@ -1131,6 +1138,236 @@ class AttendanceServiceTest {
             assertThatThrownBy {
                 attendanceService.register(userId, 10L, null, nearUserLat, nearUserLon, null)
             }.isInstanceOf(SafetyCheckRequiredException::class.java)
+        }
+
+        // ========== Spec #585 — GPS Haversine 거리 검증 (m 기준) ==========
+
+        @Test
+        @DisplayName("Spec #585 §7-#3 — 임계값 1m 초과(distance ~1212m, threshold=500) -> ATT_GPS_DISTANCE_EXCEEDED")
+        fun register_overThreshold_throwsAttGpsDistanceExceeded() {
+            // Given (default threshold = 500m, far ~1.2km)
+            val userId = 1L
+            val scheduleId = 10L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            val teamMemberSchedule = createTeamMemberSchedule(
+                id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
+                commuteLogId = null,
+                accountName = "이마트 강남점", accountAbcTypeCode = "2110",
+                accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
+
+            // When & Then
+            val ex = assertThatThrownBy {
+                attendanceService.register(userId, scheduleId, null, farUserLat, farUserLon, null)
+            }.isInstanceOf(DistanceExceededException::class.java)
+            // 에러코드 검증
+            assertThat(DistanceExceededException().errorCode).isEqualTo("ATT_GPS_DISTANCE_EXCEEDED")
+        }
+
+        @Test
+        @DisplayName("Spec #585 §7-#2 — 임계값(=277m) 정확 일치 시 등록 통과 (> 비교)")
+        fun register_exactlyAtThreshold_passes() {
+            // Given (계산 거리 ~277m, threshold = 277m → distanceMeters > thresholdMeters 거짓 → 통과)
+            whenever(attendanceProperties.gpsThresholdMeters).thenReturn(277)
+
+            val userId = 1L
+            val scheduleId = 10L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            val teamMemberSchedule = createTeamMemberSchedule(
+                id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
+                workingType = "상온", commuteLogId = null,
+                accountName = "이마트 강남점", accountAbcTypeCode = "2110",
+                accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.empty())
+            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
+            doReturn(OroraWorkReportResult("200", "SUCCESS"))
+                .whenever(ororaApiService).sendWorkReport(any())
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
+                .thenReturn(listOf(teamMemberSchedule))
+
+            // When
+            val result = attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
+
+            // Then
+            assertThat(result.scheduleId).isEqualTo(scheduleId)
+            assertThat(result.distanceKm).isEqualTo(0.0)
+        }
+
+        @Test
+        @DisplayName("Spec #585 §7-#4 — 거래처 latitude=null -> ATT_ACCOUNT_COORDS_MISSING")
+        fun register_accountLatitudeNull_throwsAccountCoordsMissing() {
+            // Given
+            val userId = 1L
+            val scheduleId = 10L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            val teamMemberSchedule = createTeamMemberSchedule(
+                id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
+                commuteLogId = null,
+                accountName = "이마트 강남점", accountAbcTypeCode = "2110",
+                accountLatitude = null, accountLongitude = accountLon.toString()
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
+
+            // When & Then
+            assertThatThrownBy {
+                attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
+            }.isInstanceOf(AccountCoordsMissingException::class.java)
+        }
+
+        @Test
+        @DisplayName("Spec #585 §7-#5 — 거래처 latitude=공백 -> ATT_ACCOUNT_COORDS_MISSING")
+        fun register_accountLatitudeBlank_throwsAccountCoordsMissing() {
+            // Given
+            val userId = 1L
+            val scheduleId = 10L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            val teamMemberSchedule = createTeamMemberSchedule(
+                id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
+                commuteLogId = null,
+                accountName = "이마트 강남점", accountAbcTypeCode = "2110",
+                accountLatitude = "   ", accountLongitude = accountLon.toString()
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
+
+            // When & Then
+            assertThatThrownBy {
+                attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
+            }.isInstanceOf(AccountCoordsMissingException::class.java)
+        }
+
+        @Test
+        @DisplayName("Spec #585 §7-#6 — 거래처 latitude='abc'(파싱 실패) -> ATT_ACCOUNT_COORDS_MISSING")
+        fun register_accountLatitudeNotNumeric_throwsAccountCoordsMissing() {
+            // Given
+            val userId = 1L
+            val scheduleId = 10L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            val teamMemberSchedule = createTeamMemberSchedule(
+                id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
+                commuteLogId = null,
+                accountName = "이마트 강남점", accountAbcTypeCode = "2110",
+                accountLatitude = "abc", accountLongitude = accountLon.toString()
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
+
+            // When & Then
+            assertThatThrownBy {
+                attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
+            }.isInstanceOf(AccountCoordsMissingException::class.java)
+        }
+
+        @Test
+        @DisplayName("Spec #585 §7-#7 — 거래처 latitude='91.0'(범위 초과) -> ATT_ACCOUNT_COORDS_MISSING")
+        fun register_accountLatitudeOutOfRange_throwsAccountCoordsMissing() {
+            // Given
+            val userId = 1L
+            val scheduleId = 10L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            val teamMemberSchedule = createTeamMemberSchedule(
+                id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
+                commuteLogId = null,
+                accountName = "이마트 강남점", accountAbcTypeCode = "2110",
+                accountLatitude = "91.0", accountLongitude = accountLon.toString()
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
+
+            // When & Then
+            assertThatThrownBy {
+                attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
+            }.isInstanceOf(AccountCoordsMissingException::class.java)
+        }
+
+        @Test
+        @DisplayName("Spec #585 §7-#8 — 사원 currentLat=91.0(범위 초과) -> ATT_INVALID_COORDS")
+        fun register_currentLatitudeOutOfRange_throwsInvalidCoords() {
+            // Given
+            val userId = 1L
+            val scheduleId = 10L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            val teamMemberSchedule = createTeamMemberSchedule(
+                id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
+                commuteLogId = null,
+                accountName = "이마트 강남점", accountAbcTypeCode = "2110",
+                accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
+
+            // When & Then
+            assertThatThrownBy {
+                attendanceService.register(userId, scheduleId, null, 91.0, nearUserLon, null)
+            }.isInstanceOf(InvalidCoordsException::class.java)
+        }
+
+        @Test
+        @DisplayName("Spec #585 — 임계값 환경 override(1000m)로 ~1.2km 거리 통과 가능")
+        fun register_thresholdOverride_passesAtFarDistance() {
+            // Given — threshold 를 1500m 로 override 하면 ~1212m 거리는 통과
+            whenever(attendanceProperties.gpsThresholdMeters).thenReturn(1500)
+
+            val userId = 1L
+            val scheduleId = 10L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            val teamMemberSchedule = createTeamMemberSchedule(
+                id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
+                workingType = "상온", commuteLogId = null,
+                accountName = "이마트 강남점", accountAbcTypeCode = "2110",
+                accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.empty())
+            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
+            doReturn(OroraWorkReportResult("200", "SUCCESS"))
+                .whenever(ororaApiService).sendWorkReport(any())
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
+                .thenReturn(listOf(teamMemberSchedule))
+
+            // When
+            val result = attendanceService.register(userId, scheduleId, null, farUserLat, farUserLon, null)
+
+            // Then
+            assertThat(result.scheduleId).isEqualTo(scheduleId)
+            assertThat(result.distanceKm).isEqualTo(0.0)
         }
     }
 
