@@ -22,6 +22,7 @@ import com.otoki.powersales.common.repository.AgreementWordRepository
 import com.otoki.powersales.common.repository.LoginHistoryRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.common.security.JwtTokenProvider
+import com.otoki.powersales.common.util.TimeZones
 import org.slf4j.LoggerFactory
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
@@ -357,7 +358,7 @@ class AuthService(
             AgreementHistory(
                 employeeId = employee.id,
                 agreementFlag = true,
-                agreementDate = LocalDate.now(),
+                agreementDate = LocalDate.now(TimeZones.SEOUL_ZONE),
                 agreementWordId = terms.id.toLong()
             )
         )

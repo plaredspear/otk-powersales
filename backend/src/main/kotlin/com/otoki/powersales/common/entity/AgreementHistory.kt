@@ -16,8 +16,15 @@ class AgreementHistory(
     @Column(name = "agreement_history_id")
     val id: Long = 0,
 
+    @Column(name = "sfid", length = 18)
+    val sfid: String? = null,
+
     @Column(name = "employee_id", nullable = false)
     val employeeId: Long,
+
+    @SFField("EmployeeId__c")
+    @Column(name = "employee_sfid", length = 18)
+    val employeeSfid: String? = null,
 
     @SFField("AgreementFlag__c")
     @Column(name = "agreement_flag", nullable = false)
@@ -27,9 +34,12 @@ class AgreementHistory(
     @Column(name = "agreement_date", nullable = false)
     val agreementDate: LocalDate,
 
-    @SFField("AgreementWordId__c")
     @Column(name = "agreement_word_id", nullable = false)
     val agreementWordId: Long,
+
+    @SFField("AgreementWordId__c")
+    @Column(name = "agreement_word_sfid", length = 18)
+    val agreementWordSfid: String? = null,
 
     @Column(name = "is_deleted", nullable = false)
     val isDeleted: Boolean = false,
