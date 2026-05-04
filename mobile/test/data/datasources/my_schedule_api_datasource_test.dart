@@ -26,9 +26,9 @@ void main() {
                 'data': {
                   'year': 2026,
                   'month': 3,
-                  'work_days': [
-                    {'date': '2026-03-01', 'has_work': true},
-                    {'date': '2026-03-02', 'has_work': false},
+                  'workDays': [
+                    {'date': '2026-03-01', 'hasWork': true},
+                    {'date': '2026-03-02', 'hasWork': false},
                   ],
                 },
                 'message': '월간 일정 조회 성공',
@@ -64,7 +64,7 @@ void main() {
                 'data': {
                   'year': 2026,
                   'month': 3,
-                  'work_days': [],
+                  'workDays': [],
                 },
               },
             ));
@@ -90,7 +90,7 @@ void main() {
                 'data': {
                   'year': 2026,
                   'month': 3,
-                  'work_days': null,
+                  'workDays': null,
                 },
               },
             ));

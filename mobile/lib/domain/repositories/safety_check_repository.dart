@@ -30,7 +30,7 @@ class EquipmentAnswer {
   });
 
   Map<String, dynamic> toJson() => {
-        'seq_num': seqNum,
+        'seqNum': seqNum,
         'answer': answer,
       };
 }

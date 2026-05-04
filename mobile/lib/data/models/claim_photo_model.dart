@@ -18,11 +18,11 @@ class ClaimPhotoModel {
 
   factory ClaimPhotoModel.fromJson(Map<String, dynamic> json) {
     return ClaimPhotoModel(
-      photoId: json['photo_id'] as int,
-      photoType: json['photo_type'] as String,
-      photoTypeLabel: json['photo_type_label'] as String,
+      photoId: json['photoId'] as int,
+      photoType: json['photoType'] as String,
+      photoTypeLabel: json['photoTypeLabel'] as String,
       url: json['url'] as String,
-      originalFileName: json['original_file_name'] as String?,
+      originalFileName: json['originalFileName'] as String?,
     );
   }
 

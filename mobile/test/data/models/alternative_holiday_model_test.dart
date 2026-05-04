@@ -6,12 +6,12 @@ void main() {
     test('fromJson으로 정상 파싱되어야 한다', () {
       final json = {
         'id': 1,
-        'actual_work_date': '2026-03-07',
-        'target_alt_holiday_date': '2026-03-09',
-        'confirm_alt_holiday_date': null,
+        'actualWorkDate': '2026-03-07',
+        'targetAltHolidayDate': '2026-03-09',
+        'confirmAltHolidayDate': null,
         'status': '신규',
-        'change_reason': null,
-        'created_at': '2026-03-09T10:30:00',
+        'changeReason': null,
+        'createdAt': '2026-03-09T10:30:00',
       };
 
       final model = AlternativeHolidayModel.fromJson(json);
@@ -45,12 +45,12 @@ void main() {
     test('승인 건의 confirm_alt_holiday_date가 정상 파싱되어야 한다', () {
       final json = {
         'id': 3,
-        'actual_work_date': '2026-03-08',
-        'target_alt_holiday_date': '2026-03-10',
-        'confirm_alt_holiday_date': '2026-03-11',
+        'actualWorkDate': '2026-03-08',
+        'targetAltHolidayDate': '2026-03-10',
+        'confirmAltHolidayDate': '2026-03-11',
         'status': '조정',
-        'change_reason': '관리자 조정',
-        'created_at': '2026-03-09T10:00:00',
+        'changeReason': '관리자 조정',
+        'createdAt': '2026-03-09T10:00:00',
       };
 
       final entity = AlternativeHolidayModel.fromJson(json).toEntity();

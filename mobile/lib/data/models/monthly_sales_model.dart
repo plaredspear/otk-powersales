@@ -19,18 +19,18 @@ class CategorySalesModel {
   factory CategorySalesModel.fromJson(Map<String, dynamic> json) {
     return CategorySalesModel(
       category: json['category'] as String,
-      targetAmount: json['target_amount'] as int,
-      achievedAmount: json['achieved_amount'] as int,
-      achievementRate: (json['achievement_rate'] as num).toDouble(),
+      targetAmount: json['targetAmount'] as int,
+      achievedAmount: json['achievedAmount'] as int,
+      achievementRate: (json['achievementRate'] as num).toDouble(),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'category': category,
-      'target_amount': targetAmount,
-      'achieved_amount': achievedAmount,
-      'achievement_rate': achievementRate,
+      'targetAmount': targetAmount,
+      'achievedAmount': achievedAmount,
+      'achievementRate': achievementRate,
     };
   }
 
@@ -93,19 +93,19 @@ class MonthlyAverageModel {
 
   factory MonthlyAverageModel.fromJson(Map<String, dynamic> json) {
     return MonthlyAverageModel(
-      currentYearAverage: json['current_year_average'] as int,
-      previousYearAverage: json['previous_year_average'] as int,
-      startMonth: json['start_month'] as int,
-      endMonth: json['end_month'] as int,
+      currentYearAverage: json['currentYearAverage'] as int,
+      previousYearAverage: json['previousYearAverage'] as int,
+      startMonth: json['startMonth'] as int,
+      endMonth: json['endMonth'] as int,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'current_year_average': currentYearAverage,
-      'previous_year_average': previousYearAverage,
-      'start_month': startMonth,
-      'end_month': endMonth,
+      'currentYearAverage': currentYearAverage,
+      'previousYearAverage': previousYearAverage,
+      'startMonth': startMonth,
+      'endMonth': endMonth,
     };
   }
 
@@ -183,33 +183,33 @@ class MonthlySalesModel {
 
   factory MonthlySalesModel.fromJson(Map<String, dynamic> json) {
     return MonthlySalesModel(
-      customerId: json['customer_id'] as String,
-      customerName: json['customer_name'] as String,
-      yearMonth: json['year_month'] as String,
-      targetAmount: json['target_amount'] as int,
-      achievedAmount: json['achieved_amount'] as int,
-      achievementRate: (json['achievement_rate'] as num).toDouble(),
-      categorySales: (json['category_sales'] as List<dynamic>)
+      customerId: json['customerId'] as String,
+      customerName: json['customerName'] as String,
+      yearMonth: json['yearMonth'] as String,
+      targetAmount: json['targetAmount'] as int,
+      achievedAmount: json['achievedAmount'] as int,
+      achievementRate: (json['achievementRate'] as num).toDouble(),
+      categorySales: (json['categorySales'] as List<dynamic>)
           .map((item) => CategorySalesModel.fromJson(item as Map<String, dynamic>))
           .toList(),
-      previousYearSameMonth: json['previous_year_same_month'] as int,
+      previousYearSameMonth: json['previousYearSameMonth'] as int,
       monthlyAverage: MonthlyAverageModel.fromJson(
-        json['monthly_average'] as Map<String, dynamic>,
+        json['monthlyAverage'] as Map<String, dynamic>,
       ),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'customer_id': customerId,
-      'customer_name': customerName,
-      'year_month': yearMonth,
-      'target_amount': targetAmount,
-      'achieved_amount': achievedAmount,
-      'achievement_rate': achievementRate,
-      'category_sales': categorySales.map((item) => item.toJson()).toList(),
-      'previous_year_same_month': previousYearSameMonth,
-      'monthly_average': monthlyAverage.toJson(),
+      'customerId': customerId,
+      'customerName': customerName,
+      'yearMonth': yearMonth,
+      'targetAmount': targetAmount,
+      'achievedAmount': achievedAmount,
+      'achievementRate': achievementRate,
+      'categorySales': categorySales.map((item) => item.toJson()).toList(),
+      'previousYearSameMonth': previousYearSameMonth,
+      'monthlyAverage': monthlyAverage.toJson(),
     };
   }
 

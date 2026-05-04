@@ -42,7 +42,7 @@ class ClientOrderListNotifier extends StateNotifier<ClientOrderListState> {
       final accountMap = <int, String>{};
       for (final account in accountsJson) {
         final json = account as Map<String, dynamic>;
-        accountMap[json['account_id'] as int] = json['account_name'] as String;
+        accountMap[json['accountId'] as int] = json['accountName'] as String;
       }
       state = state.copyWith(accounts: accountMap);
     } catch (e) {

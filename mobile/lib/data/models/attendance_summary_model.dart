@@ -14,15 +14,15 @@ class AttendanceSummaryModel {
 
   factory AttendanceSummaryModel.fromJson(Map<String, dynamic> json) {
     return AttendanceSummaryModel(
-      totalCount: json['total_count'] as int,
-      registeredCount: json['registered_count'] as int,
+      totalCount: json['totalCount'] as int,
+      registeredCount: json['registeredCount'] as int,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'total_count': totalCount,
-      'registered_count': registeredCount,
+      'totalCount': totalCount,
+      'registeredCount': registeredCount,
     };
   }
 

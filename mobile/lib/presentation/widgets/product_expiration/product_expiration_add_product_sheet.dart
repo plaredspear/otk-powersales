@@ -100,8 +100,8 @@ class _ProductExpirationAddProductSheetState
       final results = content.map((e) {
         final item = e as Map<String, dynamic>;
         return ProductSelection(
-          productCode: item['product_code'] as String,
-          productName: item['product_name'] as String,
+          productCode: item['productCode'] as String,
+          productName: item['productName'] as String,
         );
       }).toList();
 

@@ -38,26 +38,26 @@ class MyAccountModel {
   /// snake_case JSON에서 파싱
   factory MyAccountModel.fromJson(Map<String, dynamic> json) {
     return MyAccountModel(
-      accountId: json['account_id'] as int,
-      accountName: json['account_name'] as String,
-      accountCode: json['account_code'] as String,
+      accountId: json['accountId'] as int,
+      accountName: json['accountName'] as String,
+      accountCode: json['accountCode'] as String,
       address: json['address'] as String?,
-      addressDetail: json['address_detail'] as String?,
-      representativeName: json['representative_name'] as String?,
-      phoneNumber: json['phone_number'] as String?,
+      addressDetail: json['addressDetail'] as String?,
+      representativeName: json['representativeName'] as String?,
+      phoneNumber: json['phoneNumber'] as String?,
     );
   }
 
   /// snake_case JSON으로 직렬화
   Map<String, dynamic> toJson() {
     return {
-      'account_id': accountId,
-      'account_name': accountName,
-      'account_code': accountCode,
+      'accountId': accountId,
+      'accountName': accountName,
+      'accountCode': accountCode,
       'address': address,
-      'address_detail': addressDetail,
-      'representative_name': representativeName,
-      'phone_number': phoneNumber,
+      'addressDetail': addressDetail,
+      'representativeName': representativeName,
+      'phoneNumber': phoneNumber,
     };
   }
 

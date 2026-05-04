@@ -13,8 +13,8 @@ class ChangePasswordRequest {
   /// snake_case JSON으로 직렬화
   Map<String, dynamic> toJson() {
     return {
-      'current_password': currentPassword,
-      'new_password': newPassword,
+      'currentPassword': currentPassword,
+      'newPassword': newPassword,
     };
   }
 }

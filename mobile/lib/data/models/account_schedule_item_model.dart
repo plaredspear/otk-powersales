@@ -35,17 +35,17 @@ class AccountScheduleItemModel {
   /// snake_case JSON에서 파싱
   factory AccountScheduleItemModel.fromJson(Map<String, dynamic> json) {
     return AccountScheduleItemModel(
-      scheduleId: (json['schedule_id'] as int?) ?? 0,
-      displayWorkScheduleId: json['display_work_schedule_id'] as int?,
-      accountId: json['account_id'] as int?,
-      accountName: json['account_name'] as String,
-      accountTypeCode: json['account_type_code'] as String?,
-      workCategory: json['work_category'] as String,
-      workCategory3: json['work_category3'] as String?,
+      scheduleId: (json['scheduleId'] as int?) ?? 0,
+      displayWorkScheduleId: json['displayWorkScheduleId'] as int?,
+      accountId: json['accountId'] as int?,
+      accountName: json['accountName'] as String,
+      accountTypeCode: json['accountTypeCode'] as String?,
+      workCategory: json['workCategory'] as String,
+      workCategory3: json['workCategory3'] as String?,
       address: json['address'] as String?,
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
-      isRegistered: json['is_registered'] as bool,
+      isRegistered: json['isRegistered'] as bool,
       source: json['source'] as String? ?? 'schedule',
     );
   }

@@ -11,7 +11,7 @@ class ProductExpirationBatchDeleteResponse {
   factory ProductExpirationBatchDeleteResponse.fromJson(Map<String, dynamic> json) {
     final data = json['data'] as Map<String, dynamic>;
     return ProductExpirationBatchDeleteResponse(
-      deletedCount: data['deleted_count'] as int,
+      deletedCount: data['deletedCount'] as int,
     );
   }
 }

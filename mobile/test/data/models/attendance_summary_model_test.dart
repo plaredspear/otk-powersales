@@ -6,8 +6,8 @@ void main() {
     group('fromJson', () {
       test('JSON을 올바르게 파싱해야 한다', () {
         final json = {
-          'total_count': 5,
-          'registered_count': 3,
+          'totalCount': 5,
+          'registeredCount': 3,
         };
 
         final model = AttendanceSummaryModel.fromJson(json);
@@ -40,8 +40,8 @@ void main() {
 
         final json = model.toJson();
 
-        expect(json['total_count'], 5);
-        expect(json['registered_count'], 3);
+        expect(json['totalCount'], 5);
+        expect(json['registeredCount'], 3);
       });
     });
 

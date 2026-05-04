@@ -6,15 +6,15 @@ void main() {
     group('fromJson', () {
       test('모든 필드가 있는 JSON을 올바르게 파싱해야 한다', () {
         final json = {
-          'schedule_id': 12345,
-          'employee_name': '홍길동',
-          'employee_code': '005xxxxxxxxx',
-          'account_name': '이마트 부산점',
-          'account_id': 456,
-          'work_category': '방판',
-          'work_type': '정기',
-          'is_commute_registered': true,
-          'commute_registered_at': '2026-03-01T09:00:00',
+          'scheduleId': 12345,
+          'employeeName': '홍길동',
+          'employeeCode': '005xxxxxxxxx',
+          'accountName': '이마트 부산점',
+          'accountId': 456,
+          'workCategory': '방판',
+          'workType': '정기',
+          'isCommuteRegistered': true,
+          'commuteRegisteredAt': '2026-03-01T09:00:00',
         };
 
         final model = ScheduleModel.fromJson(json);
@@ -32,15 +32,15 @@ void main() {
 
       test('nullable 필드가 null인 JSON을 올바르게 파싱해야 한다', () {
         final json = {
-          'schedule_id': 12345,
-          'employee_name': '홍길동',
-          'employee_code': '005xxxxxxxxx',
-          'account_name': null,
-          'account_id': null,
-          'work_category': '방판',
-          'work_type': null,
-          'is_commute_registered': false,
-          'commute_registered_at': null,
+          'scheduleId': 12345,
+          'employeeName': '홍길동',
+          'employeeCode': '005xxxxxxxxx',
+          'accountName': null,
+          'accountId': null,
+          'workCategory': '방판',
+          'workType': null,
+          'isCommuteRegistered': false,
+          'commuteRegisteredAt': null,
         };
 
         final model = ScheduleModel.fromJson(json);
@@ -90,10 +90,10 @@ void main() {
 
         final json = model.toJson();
 
-        expect(json['schedule_id'], 12345);
-        expect(json['employee_name'], '홍길동');
-        expect(json['work_category'], '방판');
-        expect(json['is_commute_registered'], true);
+        expect(json['scheduleId'], 12345);
+        expect(json['employeeName'], '홍길동');
+        expect(json['workCategory'], '방판');
+        expect(json['isCommuteRegistered'], true);
       });
     });
 

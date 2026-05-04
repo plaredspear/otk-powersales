@@ -27,11 +27,11 @@ class InspectionListItemModel {
     return InspectionListItemModel(
       id: json['id'] as int,
       category: json['category'] as String,
-      accountName: json['account_name'] as String,
-      accountId: json['account_id'] as int,
-      inspectionDate: json['inspection_date'] as String,
-      fieldType: json['field_type'] as String,
-      fieldTypeCode: json['field_type_code'] as String,
+      accountName: json['accountName'] as String,
+      accountId: json['accountId'] as int,
+      inspectionDate: json['inspectionDate'] as String,
+      fieldType: json['fieldType'] as String,
+      fieldTypeCode: json['fieldTypeCode'] as String,
     );
   }
 
@@ -40,11 +40,11 @@ class InspectionListItemModel {
     return {
       'id': id,
       'category': category,
-      'account_name': accountName,
-      'account_id': accountId,
-      'inspection_date': inspectionDate,
-      'field_type': fieldType,
-      'field_type_code': fieldTypeCode,
+      'accountName': accountName,
+      'accountId': accountId,
+      'inspectionDate': inspectionDate,
+      'fieldType': fieldType,
+      'fieldTypeCode': fieldTypeCode,
     };
   }
 

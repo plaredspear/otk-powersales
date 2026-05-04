@@ -12,8 +12,8 @@ import 'auth_token_model.dart';
 ///   "data": {
 ///     "user": { ... },
 ///     "token": { ... },
-///     "requires_password_change": true,
-///     "requires_gps_consent": false
+///     "requiresPasswordChange": true,
+///     "requiresGpsConsent": false
 ///   },
 ///   "message": "로그인 성공"
 /// }
@@ -36,8 +36,8 @@ class LoginResponseModel {
     return LoginResponseModel(
       user: UserModel.fromJson(json['user'] as Map<String, dynamic>),
       token: AuthTokenModel.fromJson(json['token'] as Map<String, dynamic>),
-      requiresPasswordChange: json['requires_password_change'] as bool,
-      requiresGpsConsent: json['requires_gps_consent'] as bool,
+      requiresPasswordChange: json['requiresPasswordChange'] as bool,
+      requiresGpsConsent: json['requiresGpsConsent'] as bool,
     );
   }
 
@@ -46,8 +46,8 @@ class LoginResponseModel {
     return {
       'user': user.toJson(),
       'token': token.toJson(),
-      'requires_password_change': requiresPasswordChange,
-      'requires_gps_consent': requiresGpsConsent,
+      'requiresPasswordChange': requiresPasswordChange,
+      'requiresGpsConsent': requiresGpsConsent,
     };
   }
 

@@ -111,36 +111,36 @@ void main() {
 
       // Then: local datasource에 JSON 형태로 저장된다
       expect(fakeLocalDataSource.savedDraft, isNotNull);
-      expect(fakeLocalDataSource.savedDraft!['client_id'], 100);
-      expect(fakeLocalDataSource.savedDraft!['client_name'], '테스트거래처');
-      expect(fakeLocalDataSource.savedDraft!['delivery_date'], '2026-03-01');
+      expect(fakeLocalDataSource.savedDraft!['clientId'], 100);
+      expect(fakeLocalDataSource.savedDraft!['clientName'], '테스트거래처');
+      expect(fakeLocalDataSource.savedDraft!['deliveryDate'], '2026-03-01');
       expect(fakeLocalDataSource.savedDraft!['items'], isList);
       expect((fakeLocalDataSource.savedDraft!['items'] as List).length, 1);
-      expect(fakeLocalDataSource.savedDraft!['total_amount'], 72000);
-      expect(fakeLocalDataSource.savedDraft!['is_draft'], false);
+      expect(fakeLocalDataSource.savedDraft!['totalAmount'], 72000);
+      expect(fakeLocalDataSource.savedDraft!['isDraft'], false);
     });
 
     test('주문서 불러오기: local datasource에서 불러와 엔티티로 변환한다', () async {
       // Given: local datasource에 임시저장된 주문서가 있다
       fakeLocalDataSource.draftToReturn = {
-        'client_id': 100,
-        'client_name': '테스트거래처',
-        'delivery_date': '2026-03-01',
+        'clientId': 100,
+        'clientName': '테스트거래처',
+        'deliveryDate': '2026-03-01',
         'items': [
           {
-            'product_code': '01234567',
-            'product_name': '오뚜기 진라면',
-            'quantity_boxes': 5.0,
-            'quantity_pieces': 10,
-            'unit_price': 1200,
-            'box_size': 20,
-            'total_price': 72000,
-            'is_selected': false,
+            'productCode': '01234567',
+            'productName': '오뚜기 진라면',
+            'quantityBoxes': 5.0,
+            'quantityPieces': 10,
+            'unitPrice': 1200,
+            'boxSize': 20,
+            'totalPrice': 72000,
+            'isSelected': false,
           }
         ],
-        'total_amount': 72000,
-        'is_draft': true,
-        'last_modified': '2026-02-10T10:30:00.000Z',
+        'totalAmount': 72000,
+        'isDraft': true,
+        'lastModified': '2026-02-10T10:30:00.000Z',
       };
 
       // When: 주문서를 불러온다

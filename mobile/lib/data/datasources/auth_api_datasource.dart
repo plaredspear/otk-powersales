@@ -19,9 +19,9 @@ class AuthApiDataSource implements AuthRemoteDataSource {
     final response = await _dio.post(
       '/api/v1/mobile/auth/login',
       data: {
-        'employee_code': employeeCode,
+        'employeeCode': employeeCode,
         'password': password,
-        'device_id': deviceId,
+        'deviceId': deviceId,
       },
     );
     return LoginResponseModel.fromJson(
@@ -34,7 +34,7 @@ class AuthApiDataSource implements AuthRemoteDataSource {
     final response = await _dio.post(
       '/api/v1/mobile/auth/refresh',
       data: {
-        'refresh_token': refreshToken,
+        'refreshToken': refreshToken,
       },
     );
     return AuthTokenModel.fromJson(
@@ -47,7 +47,7 @@ class AuthApiDataSource implements AuthRemoteDataSource {
     final response = await _dio.post(
       '/api/v1/mobile/auth/verify-password',
       data: {
-        'current_password': currentPassword,
+        'currentPassword': currentPassword,
       },
     );
     final verification = PasswordVerificationResponse.fromJson(
@@ -61,8 +61,8 @@ class AuthApiDataSource implements AuthRemoteDataSource {
     await _dio.post(
       '/api/v1/mobile/auth/change-password',
       data: {
-        'current_password': currentPassword,
-        'new_password': newPassword,
+        'currentPassword': currentPassword,
+        'newPassword': newPassword,
       },
     );
   }
@@ -89,7 +89,7 @@ class AuthApiDataSource implements AuthRemoteDataSource {
     final response = await _dio.post(
       '/api/v1/mobile/auth/gps-consent',
       data: agreementNumber != null
-          ? {'agreement_number': agreementNumber}
+          ? {'agreementNumber': agreementNumber}
           : null,
     );
     return response.data['data'] as Map<String, dynamic>;

@@ -60,7 +60,7 @@ class MockAuthRepository implements AuthRepository {
   Future<GpsConsentRecordResult> recordGpsConsent({String? agreementNumber}) async {
     recordGpsConsentCalled = true;
     if (exceptionToThrow != null) throw exceptionToThrow!;
-    return const GpsConsentRecordResult(accessToken: 'mock_token', expiresIn: 3600);
+    return const GpsConsentRecordResult(accessToken: 'mockToken', expiresIn: 3600);
   }
 }
 
@@ -84,8 +84,8 @@ void main() {
         role: 'USER',
       );
       const expectedToken = AuthToken(
-        accessToken: 'mock_access_token',
-        refreshToken: 'mock_refresh_token',
+        accessToken: 'mockAccessToken',
+        refreshToken: 'mockRefreshToken',
         expiresIn: 3600,
       );
       const expectedLoginResult = LoginResult(
@@ -161,8 +161,8 @@ void main() {
           role: 'USER',
         ),
         token: AuthToken(
-          accessToken: 'mock_access_token',
-          refreshToken: 'mock_refresh_token',
+          accessToken: 'mockAccessToken',
+          refreshToken: 'mockRefreshToken',
           expiresIn: 3600,
         ),
         requiresPasswordChange: false,

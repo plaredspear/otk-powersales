@@ -61,7 +61,7 @@ void main() {
       fakeLocalDataSource.accessToken = _mockAccessToken;
 
       await dio.post('/api/v1/mobile/auth/login', data: {
-        'employee_code': '20010585',
+        'employeeCode': '20010585',
         'password': 'test1234',
       });
 
@@ -76,7 +76,7 @@ void main() {
       fakeLocalDataSource.accessToken = _mockAccessToken;
 
       await dio.post('/api/v1/mobile/auth/refresh', data: {
-        'refresh_token': 'mock_refresh',
+        'refreshToken': 'mockRefresh',
       });
 
       expect(capturedRequests, hasLength(1));
@@ -300,4 +300,4 @@ class _Mock403Adapter implements HttpClientAdapter {
 
 // --- Test Data ---
 
-const _mockAccessToken = 'test_access_token_abc123';
+const _mockAccessToken = 'testAccessTokenAbc123';

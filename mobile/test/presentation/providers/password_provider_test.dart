@@ -229,6 +229,6 @@ class MockAuthRepository implements AuthRepository {
 
   @override
   Future<GpsConsentRecordResult> recordGpsConsent({String? agreementNumber}) async {
-    return const GpsConsentRecordResult(accessToken: 'mock_token', expiresIn: 3600);
+    return const GpsConsentRecordResult(accessToken: 'mockToken', expiresIn: 3600);
   }
 }

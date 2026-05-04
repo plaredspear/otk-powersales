@@ -22,12 +22,12 @@ class AlternativeHolidayModel {
   factory AlternativeHolidayModel.fromJson(Map<String, dynamic> json) {
     return AlternativeHolidayModel(
       id: json['id'] as int,
-      actualWorkDate: json['actual_work_date'] as String,
-      targetAltHolidayDate: json['target_alt_holiday_date'] as String,
-      confirmAltHolidayDate: json['confirm_alt_holiday_date'] as String?,
+      actualWorkDate: json['actualWorkDate'] as String,
+      targetAltHolidayDate: json['targetAltHolidayDate'] as String,
+      confirmAltHolidayDate: json['confirmAltHolidayDate'] as String?,
       status: json['status'] as String,
-      changeReason: json['change_reason'] as String?,
-      createdAt: json['created_at'] as String,
+      changeReason: json['changeReason'] as String?,
+      createdAt: json['createdAt'] as String,
     );
   }
 

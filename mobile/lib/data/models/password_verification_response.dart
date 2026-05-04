@@ -11,7 +11,7 @@ class PasswordVerificationResponse {
   /// snake_case JSON에서 파싱
   factory PasswordVerificationResponse.fromJson(Map<String, dynamic> json) {
     return PasswordVerificationResponse(
-      isValid: json['is_valid'] as bool,
+      isValid: json['isValid'] as bool,
     );
   }
 }

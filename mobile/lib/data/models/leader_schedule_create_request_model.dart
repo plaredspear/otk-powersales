@@ -22,12 +22,12 @@ class LeaderScheduleCreateRequestModel {
   });
 
   Map<String, dynamic> toJson() => {
-        'target_employee_id': targetEmployeeId,
-        'working_date': workingDate,
-        'working_type': workingType,
-        'working_category2': workingCategory2,
-        'working_category3': workingCategory3,
-        'account_id': accountId,
-        if (workingCategory1 != null) 'working_category1': workingCategory1,
+        'targetEmployeeId': targetEmployeeId,
+        'workingDate': workingDate,
+        'workingType': workingType,
+        'workingCategory2': workingCategory2,
+        'workingCategory3': workingCategory3,
+        'accountId': accountId,
+        if (workingCategory1 != null) 'workingCategory1': workingCategory1,
       };
 }

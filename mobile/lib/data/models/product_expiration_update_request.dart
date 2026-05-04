@@ -17,8 +17,8 @@ class ProductExpirationUpdateRequest {
   /// snake_case JSON으로 직렬화
   Map<String, dynamic> toJson() {
     return {
-      'expiration_date': expirationDate,
-      'alarm_date': alarmDate,
+      'expirationDate': expirationDate,
+      'alarmDate': alarmDate,
       'description': description,
     };
   }

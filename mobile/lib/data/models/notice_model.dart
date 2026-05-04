@@ -23,8 +23,8 @@ class NoticeModel {
       id: json['id'] as int,
       title: json['title'] as String,
       category: json['category'] as String,
-      categoryName: json['category_name'] as String,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      categoryName: json['categoryName'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
     );
   }
 
@@ -33,8 +33,8 @@ class NoticeModel {
       'id': id,
       'title': title,
       'category': category,
-      'category_name': categoryName,
-      'created_at': createdAt.toIso8601String(),
+      'categoryName': categoryName,
+      'createdAt': createdAt.toIso8601String(),
     };
   }
 

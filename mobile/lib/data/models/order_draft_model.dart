@@ -30,17 +30,17 @@ class OrderDraftItemModel {
   /// snake_case JSON에서 파싱 (API 응답 또는 로컬 저장소)
   factory OrderDraftItemModel.fromJson(Map<String, dynamic> json) {
     return OrderDraftItemModel(
-      productCode: json['product_code'] as String,
-      productName: json['product_name'] as String,
-      quantityBoxes: (json['quantity_boxes'] as num).toDouble(),
-      quantityPieces: json['quantity_pieces'] as int,
-      unitPrice: json['unit_price'] as int,
-      boxSize: json['box_size'] as int,
-      totalPrice: json['total_price'] as int,
-      isSelected: json['is_selected'] as bool? ?? false,
-      validationError: json['validation_error'] != null
+      productCode: json['productCode'] as String,
+      productName: json['productName'] as String,
+      quantityBoxes: (json['quantityBoxes'] as num).toDouble(),
+      quantityPieces: json['quantityPieces'] as int,
+      unitPrice: json['unitPrice'] as int,
+      boxSize: json['boxSize'] as int,
+      totalPrice: json['totalPrice'] as int,
+      isSelected: json['isSelected'] as bool? ?? false,
+      validationError: json['validationError'] != null
           ? ValidationError.fromJson(
-              json['validation_error'] as Map<String, dynamic>)
+              json['validationError'] as Map<String, dynamic>)
           : null,
     );
   }
@@ -48,15 +48,15 @@ class OrderDraftItemModel {
   /// snake_case JSON으로 직렬화 (로컬 저장소용 - UI 필드 포함)
   Map<String, dynamic> toJson() {
     return {
-      'product_code': productCode,
-      'product_name': productName,
-      'quantity_boxes': quantityBoxes,
-      'quantity_pieces': quantityPieces,
-      'unit_price': unitPrice,
-      'box_size': boxSize,
-      'total_price': totalPrice,
-      'is_selected': isSelected,
-      'validation_error': validationError?.toJson(),
+      'productCode': productCode,
+      'productName': productName,
+      'quantityBoxes': quantityBoxes,
+      'quantityPieces': quantityPieces,
+      'unitPrice': unitPrice,
+      'boxSize': boxSize,
+      'totalPrice': totalPrice,
+      'isSelected': isSelected,
+      'validationError': validationError?.toJson(),
     };
   }
 
@@ -167,16 +167,16 @@ class OrderDraftModel {
 
     return OrderDraftModel(
       id: data['id'] as int?,
-      clientId: data['client_id'] as int?,
-      clientName: data['client_name'] as String?,
-      creditBalance: data['credit_balance'] as int?,
-      deliveryDate: data['delivery_date'] as String?,
+      clientId: data['clientId'] as int?,
+      clientName: data['clientName'] as String?,
+      creditBalance: data['creditBalance'] as int?,
+      deliveryDate: data['deliveryDate'] as String?,
       items: itemsJson
           .map((e) => OrderDraftItemModel.fromJson(e as Map<String, dynamic>))
           .toList(),
-      totalAmount: data['total_amount'] as int,
-      isDraft: data['is_draft'] as bool,
-      lastModified: data['last_modified'] as String,
+      totalAmount: data['totalAmount'] as int,
+      isDraft: data['isDraft'] as bool,
+      lastModified: data['lastModified'] as String,
     );
   }
 
@@ -184,14 +184,14 @@ class OrderDraftModel {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'client_id': clientId,
-      'client_name': clientName,
-      'credit_balance': creditBalance,
-      'delivery_date': deliveryDate,
+      'clientId': clientId,
+      'clientName': clientName,
+      'creditBalance': creditBalance,
+      'deliveryDate': deliveryDate,
       'items': items.map((e) => e.toJson()).toList(),
-      'total_amount': totalAmount,
-      'is_draft': isDraft,
-      'last_modified': lastModified,
+      'totalAmount': totalAmount,
+      'isDraft': isDraft,
+      'lastModified': lastModified,
     };
   }
 
@@ -199,13 +199,13 @@ class OrderDraftModel {
   /// UI 필드 제외, 필수 필드만 포함
   Map<String, dynamic> toRequestJson() {
     return {
-      'client_id': clientId,
-      'delivery_date': deliveryDate,
+      'clientId': clientId,
+      'deliveryDate': deliveryDate,
       'items': items
           .map((e) => {
-                'product_code': e.productCode,
-                'quantity_boxes': e.quantityBoxes,
-                'quantity_pieces': e.quantityPieces,
+                'productCode': e.productCode,
+                'quantityBoxes': e.quantityBoxes,
+                'quantityPieces': e.quantityPieces,
               })
           .toList(),
     };

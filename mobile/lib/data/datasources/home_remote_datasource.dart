@@ -24,20 +24,20 @@ class HomeResponseModel {
   factory HomeResponseModel.fromJson(Map<String, dynamic> json) {
     final data = json['data'] as Map<String, dynamic>;
 
-    final schedulesJson = data['today_schedules'] as List<dynamic>? ?? [];
+    final schedulesJson = data['todaySchedules'] as List<dynamic>? ?? [];
     final todaySchedules = schedulesJson
         .map((e) => ScheduleModel.fromJson(e as Map<String, dynamic>))
         .toList();
 
     final attendanceSummaryJson =
-        data['attendance_summary'] as Map<String, dynamic>;
+        data['attendanceSummary'] as Map<String, dynamic>;
     final attendanceSummary =
         AttendanceSummaryModel.fromJson(attendanceSummaryJson);
 
-    final safetyCheckRequired = data['safety_check_required'] as bool;
+    final safetyCheckRequired = data['safetyCheckRequired'] as bool;
 
     ExpiryAlertModel? expiryAlert;
-    final expiryAlertJson = data['expiry_alert'] as Map<String, dynamic>?;
+    final expiryAlertJson = data['expiryAlert'] as Map<String, dynamic>?;
     if (expiryAlertJson != null) {
       expiryAlert = ExpiryAlertModel.fromJson(expiryAlertJson);
     }
@@ -47,7 +47,7 @@ class HomeResponseModel {
         .map((e) => NoticeModel.fromJson(e as Map<String, dynamic>))
         .toList();
 
-    final currentDate = data['current_date'] as String;
+    final currentDate = data['currentDate'] as String;
 
     return HomeResponseModel(
       todaySchedules: todaySchedules,

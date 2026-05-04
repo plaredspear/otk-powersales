@@ -28,16 +28,16 @@ class ClaimListItemModel {
 
   factory ClaimListItemModel.fromJson(Map<String, dynamic> json) {
     return ClaimListItemModel(
-      claimId: json['claim_id'] as int,
-      accountName: json['account_name'] as String?,
-      productName: json['product_name'] as String?,
-      productCode: json['product_code'] as String?,
-      categoryName: json['category_name'] as String?,
-      subcategoryName: json['subcategory_name'] as String?,
-      defectQuantity: json['defect_quantity'] as int?,
+      claimId: json['claimId'] as int,
+      accountName: json['accountName'] as String?,
+      productName: json['productName'] as String?,
+      productCode: json['productCode'] as String?,
+      categoryName: json['categoryName'] as String?,
+      subcategoryName: json['subcategoryName'] as String?,
+      defectQuantity: json['defectQuantity'] as int?,
       status: json['status'] as String,
-      statusLabel: json['status_label'] as String,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      statusLabel: json['statusLabel'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
     );
   }
 
