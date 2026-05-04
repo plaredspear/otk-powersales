@@ -73,7 +73,9 @@ class LocalDataInitializer(
             SeedEmployee("99990002", "여사원테스트", UserRole.WOMAN, "테스트지점", "1111", "19920820", "02-2345-6789", "02-8765-4321", LocalDate.of(2018, 7, 1)),
             SeedEmployee("99990003", "지점장테스트", UserRole.BRANCH_MANAGER, "테스트지점", "1111", "19780105", "02-3456-7890", "02-7654-3210", LocalDate.of(2010, 1, 15)),
             SeedEmployee("99990004", "강남조장", UserRole.LEADER, "테스트지점", "1111", "19880510", "02-4567-8901", "02-6543-2109", LocalDate.of(2016, 5, 1)),
-            SeedEmployee("99990005", "강남여사원", UserRole.WOMAN, "강남지점", "1112", "19950320", "02-5678-9012", "02-5432-1098", LocalDate.of(2020, 3, 1))
+            SeedEmployee("99990005", "강남여사원", UserRole.WOMAN, "강남지점", "1112", "19950320", "02-5678-9012", "02-5432-1098", LocalDate.of(2020, 3, 1)),
+            // Spec #579: SYSTEM_ADMIN 부트스트랩 시드 — Web Admin 의 관리자 등록 API 호출자 권한 충족용
+            SeedEmployee("99990099", "시스템관리자테스트", UserRole.SYSTEM_ADMIN, "본사 IT팀", "9000", "19800101", "02-9999-0001", "02-9999-0099", LocalDate.of(2008, 1, 1))
         )
 
         for (seed in seeds) {
