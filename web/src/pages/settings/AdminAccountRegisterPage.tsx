@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useContext, useEffect } from 'react';
 import { Button, Form, Modal, Space, Typography, notification } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
@@ -8,6 +8,7 @@ import AdminAccountRegisterForm, {
 } from './components/AdminAccountRegisterForm';
 import { useRegisterAdminAccount } from '@/hooks/admin/useAdminAccountMutation';
 import { useThrottleClick } from '@/hooks/common/useThrottleClick';
+import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
 
 const { Title } = Typography;
 
@@ -57,6 +58,12 @@ export default function AdminAccountRegisterPage() {
   const mutation = useRegisterAdminAccount();
   const navigateToList = useThrottleClick(() => navigate('/settings/permissions/employees'));
   const navigateBack = useThrottleClick(() => navigate(-1));
+
+  const { setDynamicTitle } = useContext(BreadcrumbContext);
+  useEffect(() => {
+    setDynamicTitle('시스템 관리자 등록');
+    return () => setDynamicTitle(null);
+  }, [setDynamicTitle]);
 
   const handleCancel = useCallback(() => {
     const isDirty = form.isFieldsTouched();

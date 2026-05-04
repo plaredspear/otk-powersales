@@ -112,16 +112,16 @@ export default function AdminAccountRegisterForm({ form, isSubmitting, onSubmit,
               if (!value) return Promise.resolve();
               if (!EMPLOYEE_CODE_BODY_PATTERN.test(value)) {
                 return Promise.reject(
-                  new Error('사번은 ADMIN- 으로 시작하고 영문/숫자/하이픈/언더스코어만 사용 (1~30자)'),
+                  new Error('사번 본문은 영문/숫자/하이픈/언더스코어 1~30자만 가능합니다'),
                 );
               }
               return Promise.resolve();
             },
           },
         ]}
-        extra="ADMIN-{사번 본문} 형식. 영문/숫자/-/_ 가능 (1~30자)"
+        extra="ADMIN-{사번 본문} 형식. 본문은 영문/숫자/하이픈/언더스코어 1~30자 (사번 전체 7~36자)"
       >
-        <Input addonBefore="ADMIN-" placeholder="예: 001" maxLength={30} />
+        <Input addonBefore="ADMIN-" placeholder="예: 001" maxLength={30} autoFocus />
       </Form.Item>
 
       <Form.Item
