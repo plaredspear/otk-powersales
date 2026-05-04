@@ -4,6 +4,7 @@ import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.common.entity.AgreementWord
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.employee.entity.EmployeeOrigin
 import com.otoki.powersales.common.repository.AgreementWordRepository
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
@@ -38,6 +39,7 @@ class LocalDataInitializer(
 
     override fun run(args: ApplicationArguments) {
         runSafely("seedUser") { seedUser() }
+        runSafely("seedSystemAdmin") { seedSystemAdmin() }
         runSafely("seedAgreementWord") { seedAgreementWord() }
         runSafely("seedOrg") { seedOrg() }
         runSafely("seedAccount") { seedAccount() }
@@ -73,9 +75,7 @@ class LocalDataInitializer(
             SeedEmployee("99990002", "여사원테스트", UserRole.WOMAN, "테스트지점", "1111", "19920820", "02-2345-6789", "02-8765-4321", LocalDate.of(2018, 7, 1)),
             SeedEmployee("99990003", "지점장테스트", UserRole.BRANCH_MANAGER, "테스트지점", "1111", "19780105", "02-3456-7890", "02-7654-3210", LocalDate.of(2010, 1, 15)),
             SeedEmployee("99990004", "강남조장", UserRole.LEADER, "테스트지점", "1111", "19880510", "02-4567-8901", "02-6543-2109", LocalDate.of(2016, 5, 1)),
-            SeedEmployee("99990005", "강남여사원", UserRole.WOMAN, "강남지점", "1112", "19950320", "02-5678-9012", "02-5432-1098", LocalDate.of(2020, 3, 1)),
-            // Spec #579: SYSTEM_ADMIN 부트스트랩 시드 — Web Admin 의 관리자 등록 API 호출자 권한 충족용
-            SeedEmployee("99990099", "시스템관리자테스트", UserRole.SYSTEM_ADMIN, "본사 IT팀", "9000", "19800101", "02-9999-0001", "02-9999-0099", LocalDate.of(2008, 1, 1))
+            SeedEmployee("99990005", "강남여사원", UserRole.WOMAN, "강남지점", "1112", "19950320", "02-5678-9012", "02-5432-1098", LocalDate.of(2020, 3, 1))
         )
 
         for (seed in seeds) {
@@ -95,6 +95,41 @@ class LocalDataInitializer(
             employeeRepository.save(employee)
             log.info("시드 계정 생성 완료: employeeCode={}, name={}", seed.code, seed.name)
         }
+    }
+
+    /**
+     * Spec #579: Web Admin 수동 등록 SYSTEM_ADMIN 부트스트랩 시드.
+     *
+     * 등록 API (`POST /api/v1/admin/employees`) 의 호출자 권한 (`UserRole.MANAGE_PERMISSIONS`)
+     * 을 충족하는 첫 SYSTEM_ADMIN 계정을 생성한다. spec §1.2 정책에 따라 다음을 적용한다:
+     * - `ADMIN-` prefix 사번
+     * - `origin = MANUAL` (SAP 인바운드 갱신 보호 대상)
+     * - `appLoginActive = false` (Web Admin 만 허용)
+     * - SAP 미수신 필드(`status`, `birthDate`, `homePhone`, `workPhone`, `startDate`,
+     *   `costCenterCode`)는 null
+     */
+    private fun seedSystemAdmin() {
+        val code = "ADMIN-LOCAL-001"
+        if (employeeRepository.existsByEmployeeCode(code)) return
+
+        val infoExists = employeeInfoExists(code)
+        val encodedPassword = passwordEncoder.encode("1234")!!
+        val employee = Employee(
+            employeeCode = code,
+            name = "시스템관리자(로컬)",
+            orgName = "본사 IT팀",
+            password = encodedPassword,
+            passwordChangeRequired = false
+        ).apply {
+            role = UserRole.SYSTEM_ADMIN
+            origin = EmployeeOrigin.MANUAL
+            appLoginActive = false
+        }
+        if (infoExists) {
+            employee.employeeInfo = null
+        }
+        employeeRepository.save(employee)
+        log.info("시드 SYSTEM_ADMIN 계정 생성 완료: employeeCode={}", code)
     }
 
     private fun seedAgreementWord() {
