@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:56532",
+    "url" : "http://localhost:50722",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -2780,6 +2780,60 @@
         }
       }
     },
+    "/api/v1/admin/employees/{employeeId}/reset-password" : {
+      "post" : {
+        "tags" : [ "admin-employee-controller" ],
+        "operationId" : "resetPassword",
+        "parameters" : [ {
+          "name" : "employeeId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseResetPasswordResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/employees/{employeeId}/reset-device" : {
+      "post" : {
+        "tags" : [ "admin-employee-controller" ],
+        "operationId" : "resetDevice_1",
+        "parameters" : [ {
+          "name" : "employeeId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseResetDeviceResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/education/posts" : {
       "get" : {
         "tags" : [ "admin-education-controller" ],
@@ -4919,12 +4973,12 @@
           "description" : {
             "type" : [ "string", "null" ]
           },
-          "expired" : {
-            "type" : "boolean"
-          },
           "dday" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "expired" : {
+            "type" : "boolean"
           }
         }
       },
@@ -5468,10 +5522,10 @@
           "remark" : {
             "type" : [ "string", "null" ]
           },
-          "closed" : {
+          "deleted" : {
             "type" : "boolean"
           },
-          "deleted" : {
+          "closed" : {
             "type" : "boolean"
           }
         }
@@ -8936,6 +8990,111 @@
           }
         }
       },
+      "ApiResponseResetPasswordResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ResetPasswordResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "ResetPasswordResponse" : {
+        "type" : "object",
+        "properties" : {
+          "employeeId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "employeeCode" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "temporaryPasswordIssued" : {
+            "type" : "boolean"
+          },
+          "passwordChangeRequired" : {
+            "type" : "boolean"
+          },
+          "resetAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "ApiResponseResetDeviceResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ResetDeviceResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "ResetDeviceResponse" : {
+        "type" : "object",
+        "properties" : {
+          "employeeId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "employeeCode" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "previousDeviceBound" : {
+            "type" : "boolean"
+          },
+          "resetAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
       "AdminLoginResponse" : {
         "type" : "object",
         "properties" : {
@@ -9877,9 +10036,11 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "first" : {
             "type" : "boolean"
@@ -9887,11 +10048,9 @@
           "last" : {
             "type" : "boolean"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "size" : {
             "type" : "integer",
@@ -9967,10 +10126,10 @@
       "SortObject" : {
         "type" : "object",
         "properties" : {
-          "sorted" : {
+          "unsorted" : {
             "type" : "boolean"
           },
-          "unsorted" : {
+          "sorted" : {
             "type" : "boolean"
           },
           "empty" : {
@@ -11832,9 +11991,11 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "first" : {
             "type" : "boolean"
@@ -11842,11 +12003,9 @@
           "last" : {
             "type" : "boolean"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "size" : {
             "type" : "integer",
@@ -12002,10 +12161,10 @@
           "remark" : {
             "type" : [ "string", "null" ]
           },
-          "closed" : {
+          "deleted" : {
             "type" : "boolean"
           },
-          "deleted" : {
+          "closed" : {
             "type" : "boolean"
           }
         }

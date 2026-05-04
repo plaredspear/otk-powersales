@@ -155,10 +155,11 @@ app:
     api: ${API_DOMAIN:}
     admin: ${ADMIN_DOMAIN:}
 
-device:
-  binding:
-    enabled: true
-    excluded-ids: ""
+app:
+  auth:
+    uuid-check:
+      enabled: ${UUID_CHECK_ENABLED:true}
+      excluded-employee-numbers: ${UUID_CHECK_EXCLUDED:}
 
 server:
   port: ${SERVER_PORT:8080}

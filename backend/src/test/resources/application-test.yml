@@ -26,10 +26,11 @@ spring:
       repositories:
         enabled: false
 
-device:
-  binding:
-    enabled: true
-    excluded-ids: ""
+app:
+  auth:
+    uuid-check:
+      enabled: true
+      excluded-employee-numbers: ""
 
 logging:
   level:

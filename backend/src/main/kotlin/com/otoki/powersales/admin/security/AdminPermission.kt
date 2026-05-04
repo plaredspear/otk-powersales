@@ -3,6 +3,7 @@ package com.otoki.powersales.admin.security
 enum class AdminPermission {
     DASHBOARD_READ,
     EMPLOYEE_READ,
+    EMPLOYEE_RESET_CREDENTIALS,
     ACCOUNT_READ,
     PROMOTION_READ,
     PROMOTION_WRITE,
