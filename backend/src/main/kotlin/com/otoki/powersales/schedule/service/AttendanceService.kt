@@ -16,6 +16,7 @@ import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.schedule.exception.*
 import com.otoki.powersales.schedule.integration.OroraApiService
 import com.otoki.powersales.schedule.integration.OroraWorkReportRequest
+import com.otoki.powersales.schedule.policy.AbcExemptPolicy
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.schedule.util.AccountCoordinateParser
@@ -53,14 +54,6 @@ class AttendanceService(
         private const val LAT_MAX = 90.0
         private const val LNG_MIN = -180.0
         private const val LNG_MAX = 180.0
-
-        /** 대리점 유형코드 면제 목록 — GPS 거리 검증 생략 */
-        private val EXEMPT_ACCOUNT_TYPE_CODES = setOf(
-            "1110", "1120", "1130", "1140",
-            "1210", "1220",
-            "1510", "1530",
-            "1810", "1900"
-        )
     }
 
     /**
@@ -211,9 +204,17 @@ class AttendanceService(
             throw AlreadyRegisteredException()
         }
 
-        // 4. 거래처 정보 조회 + GPS 거리 검증
+        // 4. 거래처 정보 조회 + 면제 평가 (Spec #586) → 미면제 시 GPS 거리 검증 (Spec #585)
         val account = teamMemberSchedule.account
-        validateDistance(latitude, longitude, account, employee.id)
+        val exemptResult = AbcExemptPolicy.evaluate(account)
+        if (!exemptResult.skipped) {
+            validateDistance(latitude, longitude, account, employee.id)
+        } else {
+            log.info(
+                "ATT_GPS_SKIPPED employeeId={} accountId={} reason={}",
+                employee.id, account?.id, exemptResult.reason
+            )
+        }
 
         // 5. SafetyCheckSubmission 조회 + OroraWorkReportRequest 구성 + 전송
         val safetyCheckSubmission = safetyCheckSubmissionRepository
@@ -287,7 +288,9 @@ class AttendanceService(
             workType = workType ?: teamMemberSchedule.workingType,
             distanceKm = 0.0, // Spec #585 Q4: 실제 거리는 응답에 노출하지 않음 (서버 로그에만 기록)
             totalCount = totalCount,
-            registeredCount = registeredCount
+            registeredCount = registeredCount,
+            gpsSkipped = exemptResult.skipped, // Spec #586: ABC 면제 정책 적용 여부
+            gpsSkipReason = exemptResult.reason
         )
     }
 
@@ -424,10 +427,12 @@ class AttendanceService(
     /**
      * GPS 거리 검증 (Spec #585).
      *
+     * 호출 전에 [com.otoki.powersales.schedule.policy.AbcExemptPolicy] 면제 평가가
+     * 끝났음을 가정한다 (Spec #586). 따라서 본 메서드는 면제 분기를 수행하지 않는다.
+     *
      * 1. 사원 현재 좌표 범위 검증 (lat ±90 / lng ±180) → 위반 시 [InvalidCoordsException]
-     * 2. ABC 면제 코드 (#586 별도 도메인) 면제 시 거리 검증 생략
-     * 3. 거래처 위경도 (String?) → Double 파싱 실패/공백/범위 초과 시 [AccountCoordsMissingException]
-     * 4. Haversine 으로 거리(m) 계산 후 임계값 비교 → 초과 시 [DistanceExceededException]
+     * 2. 거래처 위경도 (String?) → Double 파싱 실패/공백/범위 초과 시 [AccountCoordsMissingException]
+     * 3. Haversine 으로 거리(m) 계산 후 임계값 비교 → 초과 시 [DistanceExceededException]
      *
      * Q4: 거리 값은 응답에 노출하지 않고 서버 로그에만 기록한다.
      */
@@ -437,20 +442,14 @@ class AttendanceService(
             throw InvalidCoordsException()
         }
 
-        // 2. ABC 면제 코드 (#586 별도 도메인 — 본 스펙 범위는 아니지만 기존 정책 유지)
-        val accountTypeCode = account?.abcTypeCode
-        if (accountTypeCode != null && accountTypeCode in EXEMPT_ACCOUNT_TYPE_CODES) {
-            return
-        }
-
-        // 3. 거래처 위경도 파싱 (누락/공백/파싱실패/범위초과 → 등록 거부)
+        // 2. 거래처 위경도 파싱 (누락/공백/파싱실패/범위초과 → 등록 거부)
         val coords = AccountCoordinateParser.parse(account?.latitude, account?.longitude)
         if (coords is AccountCoordinateParser.Coords.Missing) {
             throw AccountCoordsMissingException()
         }
         coords as AccountCoordinateParser.Coords.Valid
 
-        // 4. Haversine 거리 계산 (m 단위)
+        // 3. Haversine 거리 계산 (m 단위)
         val distanceKm = GeoUtils.calculateDistance(userLat, userLon, coords.latitude, coords.longitude)
         val distanceMeters = distanceKm * 1000.0
         val thresholdMeters = attendanceProperties.gpsThresholdMeters

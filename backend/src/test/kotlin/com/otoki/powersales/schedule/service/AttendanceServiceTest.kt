@@ -835,6 +835,9 @@ class AttendanceServiceTest {
             assertThat(result.scheduleId).isEqualTo(scheduleId)
             assertThat(result.distanceKm).isEqualTo(0.0)
             assertThat(result.accountName).isEqualTo("대리점A")
+            // Spec #586: 면제 코드 적용 시 gpsSkipped=true, gpsSkipReason=ABC_EXEMPT
+            assertThat(result.gpsSkipped).isTrue()
+            assertThat(result.gpsSkipReason).isEqualTo("ABC_EXEMPT")
         }
 
         @Test
@@ -873,6 +876,135 @@ class AttendanceServiceTest {
             assertThat(result.scheduleId).isEqualTo(scheduleId)
             assertThat(result.distanceKm).isEqualTo(0.0)
             assertThat(result.accountName).isEqualTo("특수거래처B")
+            // Spec #586: 면제 코드 적용 시 gpsSkipped=true, gpsSkipReason=ABC_EXEMPT
+            assertThat(result.gpsSkipped).isTrue()
+            assertThat(result.gpsSkipReason).isEqualTo("ABC_EXEMPT")
+        }
+
+        @Test
+        @DisplayName("Spec #586 §8-H5 — 면제 거래처 + 거래처 좌표 누락(null) → 등록 성공, gpsSkipped=true (좌표 누락 검증 미진입)")
+        fun register_exemptCodeWithNullAccountCoords_success() {
+            // Given — 면제 코드 1110 + 거래처 latitude/longitude 모두 null
+            val userId = 1L
+            val scheduleId = 10L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            val teamMemberSchedule = createTeamMemberSchedule(
+                id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
+                workingType = "상온", commuteLogId = null,
+                accountName = "대리점A", accountAbcTypeCode = "1110",
+                accountLatitude = null, accountLongitude = null
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.empty())
+            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
+            doReturn(OroraWorkReportResult("200", "SUCCESS"))
+                .whenever(ororaApiService).sendWorkReport(any())
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
+                .thenReturn(listOf(teamMemberSchedule))
+
+            // When — 좌표 누락이지만 면제 코드이므로 ATT_ACCOUNT_COORDS_MISSING 미발생
+            val result = attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
+
+            // Then
+            assertThat(result.scheduleId).isEqualTo(scheduleId)
+            assertThat(result.gpsSkipped).isTrue()
+            assertThat(result.gpsSkipReason).isEqualTo("ABC_EXEMPT")
+        }
+
+        @Test
+        @DisplayName("Spec #586 §8-H6 — 면제 거래처 + 거래처 좌표 파싱 불가 → 등록 성공")
+        fun register_exemptCodeWithUnparseableAccountCoords_success() {
+            // Given — 면제 코드 1900 + 거래처 latitude='invalid'
+            val userId = 1L
+            val scheduleId = 10L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            val teamMemberSchedule = createTeamMemberSchedule(
+                id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
+                workingType = "냉장", commuteLogId = null,
+                accountName = "특수거래처B", accountAbcTypeCode = "1900",
+                accountLatitude = "invalid", accountLongitude = "invalid"
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.empty())
+            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
+            doReturn(OroraWorkReportResult("200", "SUCCESS"))
+                .whenever(ororaApiService).sendWorkReport(any())
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
+                .thenReturn(listOf(teamMemberSchedule))
+
+            // When
+            val result = attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
+
+            // Then
+            assertThat(result.gpsSkipped).isTrue()
+            assertThat(result.gpsSkipReason).isEqualTo("ABC_EXEMPT")
+        }
+
+        @Test
+        @DisplayName("Spec #586 §8-H7 — 비면제 거래처 + 거리 통과 → gpsSkipped=false, gpsSkipReason=null")
+        fun register_nonExemptWithinDistance_gpsSkippedFalse() {
+            // Given (비면제 코드 + 거리 ~277m, threshold=500m → 통과)
+            val userId = 1L
+            val scheduleId = 10L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            val teamMemberSchedule = createTeamMemberSchedule(
+                id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
+                workingType = "상온", commuteLogId = null,
+                accountName = "이마트 강남점", accountAbcTypeCode = "9999",
+                accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.empty())
+            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
+            doReturn(OroraWorkReportResult("200", "SUCCESS"))
+                .whenever(ororaApiService).sendWorkReport(any())
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
+                .thenReturn(listOf(teamMemberSchedule))
+
+            // When
+            val result = attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
+
+            // Then
+            assertThat(result.gpsSkipped).isFalse()
+            assertThat(result.gpsSkipReason).isNull()
+        }
+
+        @Test
+        @DisplayName("Spec #586 §8-H9 — 비면제 거래처 + 좌표 누락 → ATT_ACCOUNT_COORDS_MISSING (면제 정책 미적용)")
+        fun register_nonExemptWithMissingCoords_throwsAccountCoordsMissing() {
+            // Given (비면제 코드 9999 + latitude=null)
+            val userId = 1L
+            val scheduleId = 10L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            val teamMemberSchedule = createTeamMemberSchedule(
+                id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
+                commuteLogId = null,
+                accountName = "일반매장", accountAbcTypeCode = "9999",
+                accountLatitude = null, accountLongitude = null
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
+
+            // When & Then
+            assertThatThrownBy {
+                attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
+            }.isInstanceOf(AccountCoordsMissingException::class.java)
         }
 
         @Test
