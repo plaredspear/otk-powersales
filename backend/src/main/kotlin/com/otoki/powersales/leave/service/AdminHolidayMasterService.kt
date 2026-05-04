@@ -1,4 +1,4 @@
-package com.otoki.powersales.admin.service
+package com.otoki.powersales.leave.service
 
 import com.otoki.powersales.admin.dto.request.HolidayMasterCreateRequest
 import com.otoki.powersales.admin.dto.request.HolidayMasterUpdateRequest
@@ -19,7 +19,7 @@ class AdminHolidayMasterService(
 
     fun getHolidayMasters(year: Int): List<HolidayMasterResponse> {
         return holidayMasterRepository.findByYearOrderByHolidayDateAsc(year)
-            .map { HolidayMasterResponse.from(it) }
+            .map { HolidayMasterResponse.Companion.from(it) }
     }
 
     @Transactional
@@ -39,7 +39,7 @@ class AdminHolidayMasterService(
             )
         )
 
-        return HolidayMasterResponse.from(holidayMaster)
+        return HolidayMasterResponse.Companion.from(holidayMaster)
     }
 
     @Transactional
@@ -59,7 +59,7 @@ class AdminHolidayMasterService(
             type = request.type
         )
 
-        return HolidayMasterResponse.from(holidayMaster)
+        return HolidayMasterResponse.Companion.from(holidayMaster)
     }
 
     @Transactional
@@ -71,7 +71,7 @@ class AdminHolidayMasterService(
     }
 
     private fun validateType(type: String) {
-        if (type !in HolidayMaster.VALID_TYPES) {
+        if (type !in HolidayMaster.Companion.VALID_TYPES) {
             throw InvalidHolidayTypeException()
         }
     }

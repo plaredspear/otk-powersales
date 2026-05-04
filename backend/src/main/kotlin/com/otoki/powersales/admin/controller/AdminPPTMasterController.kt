@@ -6,7 +6,7 @@ import com.otoki.powersales.admin.dto.request.PPTMasterUpdateRequest
 import com.otoki.powersales.admin.dto.response.*
 import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.admin.security.RequiresPermission
-import com.otoki.powersales.admin.service.AdminPPTMasterService
+import com.otoki.powersales.promotion.service.AdminPPTMasterService
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.common.security.UserPrincipal
 import jakarta.validation.Valid

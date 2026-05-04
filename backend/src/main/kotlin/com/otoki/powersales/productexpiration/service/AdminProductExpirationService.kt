@@ -1,5 +1,6 @@
-package com.otoki.powersales.admin.service
+package com.otoki.powersales.productexpiration.service
 
+import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.admin.dto.request.AdminProductExpirationBatchDeleteRequest
 import com.otoki.powersales.admin.dto.request.AdminProductExpirationCreateRequest
 import com.otoki.powersales.admin.dto.request.AdminProductExpirationUpdateRequest
@@ -7,18 +8,17 @@ import com.otoki.powersales.admin.dto.response.AdminProductExpirationBatchDelete
 import com.otoki.powersales.admin.dto.response.AdminProductExpirationListResponse
 import com.otoki.powersales.admin.dto.response.AdminProductExpirationResponse
 import com.otoki.powersales.admin.dto.response.AdminProductExpirationSummaryResponse
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.common.exception.ProductNotFoundException
+import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.product.repository.ProductRepository
 import com.otoki.powersales.productexpiration.entity.ProductExpiration
 import com.otoki.powersales.productexpiration.exception.InvalidAlertDateException
 import com.otoki.powersales.productexpiration.exception.ProductExpirationAccountNotFoundException
 import com.otoki.powersales.productexpiration.exception.ProductExpirationForbiddenException
 import com.otoki.powersales.productexpiration.exception.ProductExpirationNotFoundException
 import com.otoki.powersales.productexpiration.repository.ProductExpirationRepository
-import com.otoki.powersales.auth.entity.UserRole
-import com.otoki.powersales.account.repository.AccountRepository
-import com.otoki.powersales.employee.repository.EmployeeRepository
-import com.otoki.powersales.product.repository.ProductRepository
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -49,7 +49,7 @@ class AdminProductExpirationService(
             fromDate, toDate, employeeKeyword, accountKeyword, status, today, pageable, employeeIds
         )
 
-        val content = page.content.map { AdminProductExpirationResponse.from(it, today) }
+        val content = page.content.map { AdminProductExpirationResponse.Companion.from(it, today) }
         return AdminProductExpirationListResponse(
             content = content,
             page = page.number,
@@ -62,7 +62,7 @@ class AdminProductExpirationService(
     fun getDetail(userId: Long, id: Int): AdminProductExpirationResponse {
         val entity = findById(id)
         validateScope(entity, resolveEmployeeScope(userId))
-        return AdminProductExpirationResponse.from(entity)
+        return AdminProductExpirationResponse.Companion.from(entity)
     }
 
     @Transactional
@@ -120,7 +120,7 @@ class AdminProductExpirationService(
         }
 
         entity.update(expirationDate, alarmDate, request.description)
-        return AdminProductExpirationResponse.from(entity)
+        return AdminProductExpirationResponse.Companion.from(entity)
     }
 
     @Transactional
@@ -160,7 +160,7 @@ class AdminProductExpirationService(
         val role = employee.role
 
         return when {
-            role == UserRole.SYSTEM_ADMIN || role in UserRole.ALL_BRANCHES || role == UserRole.BRANCH_MANAGER -> null
+            role == UserRole.SYSTEM_ADMIN || role in UserRole.Companion.ALL_BRANCHES || role == UserRole.BRANCH_MANAGER -> null
             role == UserRole.LEADER -> {
                 val orgName = employee.orgName
                 if (orgName != null) {

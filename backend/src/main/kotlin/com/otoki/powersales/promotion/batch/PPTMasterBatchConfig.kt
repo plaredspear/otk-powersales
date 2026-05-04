@@ -1,6 +1,6 @@
 package com.otoki.powersales.promotion.batch
 
-import com.otoki.powersales.admin.service.AdminPPTMasterService
+import com.otoki.powersales.promotion.service.AdminPPTMasterService
 import com.otoki.powersales.common.jobrun.ScheduledJobRunner
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.slf4j.LoggerFactory

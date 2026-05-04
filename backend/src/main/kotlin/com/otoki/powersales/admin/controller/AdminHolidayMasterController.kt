@@ -3,7 +3,7 @@ package com.otoki.powersales.admin.controller
 import com.otoki.powersales.admin.dto.request.HolidayMasterCreateRequest
 import com.otoki.powersales.admin.dto.request.HolidayMasterUpdateRequest
 import com.otoki.powersales.admin.dto.response.HolidayMasterResponse
-import com.otoki.powersales.admin.service.AdminHolidayMasterService
+import com.otoki.powersales.leave.service.AdminHolidayMasterService
 import com.otoki.powersales.common.dto.ApiResponse
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus

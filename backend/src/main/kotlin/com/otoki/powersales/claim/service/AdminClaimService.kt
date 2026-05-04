@@ -1,4 +1,4 @@
-package com.otoki.powersales.admin.service
+package com.otoki.powersales.claim.service
 
 import com.otoki.powersales.admin.dto.response.AdminClaimDetailResponse
 import com.otoki.powersales.admin.dto.response.AdminClaimListItem
@@ -11,7 +11,6 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.time.LocalTime
 
 @Service
@@ -50,7 +49,7 @@ class AdminClaimService(
         )
 
         return AdminClaimListResponse(
-            content = claimPage.content.map { AdminClaimListItem.from(it) },
+            content = claimPage.content.map { AdminClaimListItem.Companion.from(it) },
             page = claimPage.number,
             size = claimPage.size,
             totalElements = claimPage.totalElements,
@@ -62,6 +61,6 @@ class AdminClaimService(
         val claim = adminClaimRepository.findById(claimId)
             .orElseThrow { ClaimNotFoundException(claimId) }
         val photos = adminClaimPhotoRepository.findByClaimId(claimId)
-        return AdminClaimDetailResponse.from(claim, photos)
+        return AdminClaimDetailResponse.Companion.from(claim, photos)
     }
 }

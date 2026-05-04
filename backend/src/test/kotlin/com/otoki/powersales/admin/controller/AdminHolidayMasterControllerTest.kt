@@ -4,7 +4,7 @@ import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.admin.dto.request.HolidayMasterCreateRequest
 import com.otoki.powersales.admin.dto.request.HolidayMasterUpdateRequest
 import com.otoki.powersales.admin.dto.response.HolidayMasterResponse
-import com.otoki.powersales.admin.service.AdminHolidayMasterService
+import com.otoki.powersales.leave.service.AdminHolidayMasterService
 import com.otoki.powersales.admin.security.AdminAuthorityFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider

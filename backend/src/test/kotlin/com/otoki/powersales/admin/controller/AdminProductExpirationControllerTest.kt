@@ -6,7 +6,7 @@ import com.otoki.powersales.admin.dto.response.AdminProductExpirationListRespons
 import com.otoki.powersales.admin.dto.response.AdminProductExpirationResponse
 import com.otoki.powersales.admin.dto.response.AdminProductExpirationSummaryResponse
 import com.otoki.powersales.admin.security.AdminAuthorityFilter
-import com.otoki.powersales.admin.service.AdminProductExpirationService
+import com.otoki.powersales.productexpiration.service.AdminProductExpirationService
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider

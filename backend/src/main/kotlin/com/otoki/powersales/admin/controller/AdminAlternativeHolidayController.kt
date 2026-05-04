@@ -7,7 +7,7 @@ import com.otoki.powersales.admin.dto.response.AlternativeHolidayApproveResponse
 import com.otoki.powersales.admin.dto.response.AlternativeHolidayCreateResponse
 import com.otoki.powersales.admin.dto.response.AlternativeHolidayListItem
 import com.otoki.powersales.admin.dto.response.AlternativeHolidayRejectResponse
-import com.otoki.powersales.admin.service.AdminAlternativeHolidayService
+import com.otoki.powersales.leave.service.AdminAlternativeHolidayService
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.common.security.UserPrincipal
 import jakarta.validation.Valid

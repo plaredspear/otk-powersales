@@ -1,4 +1,4 @@
-package com.otoki.powersales.admin.service
+package com.otoki.powersales.leave.service
 
 import com.otoki.powersales.admin.dto.request.AlternativeHolidayApproveRequest
 import com.otoki.powersales.admin.dto.request.AlternativeHolidayCreateRequest
@@ -7,11 +7,13 @@ import com.otoki.powersales.admin.dto.response.AlternativeHolidayApproveResponse
 import com.otoki.powersales.admin.dto.response.AlternativeHolidayCreateResponse
 import com.otoki.powersales.admin.dto.response.AlternativeHolidayListItem
 import com.otoki.powersales.admin.dto.response.AlternativeHolidayRejectResponse
-import com.otoki.powersales.leave.entity.AlternativeHoliday
-import com.otoki.powersales.leave.exception.*
-import com.otoki.powersales.leave.repository.AlternativeHolidayRepository
-import com.otoki.powersales.leave.service.AlternativeHolidayValidator
 import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.leave.entity.AlternativeHoliday
+import com.otoki.powersales.leave.exception.AltHolidayInvalidStatusException
+import com.otoki.powersales.leave.exception.AltHolidayNotFoundException
+import com.otoki.powersales.leave.exception.ChangeReasonRequiredException
+import com.otoki.powersales.leave.exception.EmployeeNotFoundException
+import com.otoki.powersales.leave.repository.AlternativeHolidayRepository
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import org.springframework.stereotype.Service
@@ -43,10 +45,10 @@ class AdminAlternativeHolidayService(
         adminUserId: Long
     ): AlternativeHolidayCreateResponse {
         val employee = employeeRepository.findByEmployeeCode(request.employeeCode)
-            .orElseThrow { com.otoki.powersales.leave.exception.EmployeeNotFoundException() }
+            .orElseThrow { EmployeeNotFoundException() }
 
         val admin = employeeRepository.findById(adminUserId)
-            .orElseThrow { com.otoki.powersales.leave.exception.EmployeeNotFoundException() }
+            .orElseThrow { EmployeeNotFoundException() }
 
         validator.validateConfirmDate(request.targetAltHolidayDate)
         validator.validateActualWorkDate(request.actualWorkDate)
@@ -64,7 +66,7 @@ class AdminAlternativeHolidayService(
             )
         )
 
-        return AlternativeHolidayCreateResponse.from(altHoliday)
+        return AlternativeHolidayCreateResponse.Companion.from(altHoliday)
     }
 
     @Transactional
@@ -99,7 +101,7 @@ class AdminAlternativeHolidayService(
             )
         )
 
-        return AlternativeHolidayApproveResponse.from(altHoliday)
+        return AlternativeHolidayApproveResponse.Companion.from(altHoliday)
     }
 
     @Transactional
@@ -116,7 +118,7 @@ class AdminAlternativeHolidayService(
 
         altHoliday.reject(request.changeReason)
 
-        return AlternativeHolidayRejectResponse.from(altHoliday)
+        return AlternativeHolidayRejectResponse.Companion.from(altHoliday)
     }
 
     private fun findById(id: Long): AlternativeHoliday =

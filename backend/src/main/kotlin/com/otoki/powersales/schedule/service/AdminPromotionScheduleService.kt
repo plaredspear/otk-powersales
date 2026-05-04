@@ -1,4 +1,4 @@
-package com.otoki.powersales.admin.service
+package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.admin.dto.request.PromotionScheduleBulkDeleteRequest
@@ -10,6 +10,7 @@ import com.otoki.powersales.admin.dto.response.PromotionScheduleItem
 import com.otoki.powersales.admin.dto.response.PromotionScheduleListResponse
 import com.otoki.powersales.admin.dto.response.PromotionScheduleMember
 import com.otoki.powersales.admin.dto.response.SchedulePeriod
+import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.exception.PromotionNotFoundException
 import com.otoki.powersales.promotion.repository.PromotionEmployeeRepository
 import com.otoki.powersales.promotion.repository.PromotionRepository
@@ -24,10 +25,10 @@ import com.otoki.powersales.schedule.exception.PromotionScheduleWorkingDateOutOf
 import com.otoki.powersales.schedule.exception.TeamScheduleAccountNotFoundException
 import com.otoki.powersales.schedule.exception.TeamScheduleNotFoundException
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
-import com.otoki.powersales.schedule.service.TeamScheduleValidator
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
+import kotlin.collections.get
 
 /**
  * 행사 단위 일정 일괄 변경/삭제 서비스 (Spec #571 P1-B).
@@ -235,7 +236,7 @@ class AdminPromotionScheduleService(
 
     // --- Private helpers ---
 
-    private fun findActivePromotion(promotionId: Long): com.otoki.powersales.promotion.entity.Promotion {
+    private fun findActivePromotion(promotionId: Long): Promotion {
         val promotion = promotionRepository.findById(promotionId)
             .orElseThrow { PromotionNotFoundException() }
         if (promotion.isDeleted) throw PromotionNotFoundException()

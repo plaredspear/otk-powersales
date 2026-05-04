@@ -7,7 +7,7 @@ import com.otoki.powersales.admin.dto.response.PromotionScheduleListResponse
 import com.otoki.powersales.admin.dto.response.PromotionScheduleMember
 import com.otoki.powersales.admin.dto.response.SchedulePeriod
 import com.otoki.powersales.admin.security.AdminAuthorityFilter
-import com.otoki.powersales.admin.service.AdminPromotionScheduleService
+import com.otoki.powersales.schedule.service.AdminPromotionScheduleService
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider

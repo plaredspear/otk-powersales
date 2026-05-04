@@ -25,6 +25,7 @@ import com.otoki.powersales.schedule.exception.TeamScheduleConflictException
 import com.otoki.powersales.schedule.exception.TeamScheduleNotFoundException
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
+import com.otoki.powersales.schedule.service.AdminPromotionScheduleService
 import com.otoki.powersales.schedule.service.TeamScheduleValidator
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy

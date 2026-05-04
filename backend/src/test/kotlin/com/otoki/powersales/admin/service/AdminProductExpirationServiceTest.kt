@@ -19,6 +19,7 @@ import com.otoki.powersales.product.entity.Product
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.product.repository.ProductRepository
+import com.otoki.powersales.productexpiration.service.AdminProductExpirationService
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName

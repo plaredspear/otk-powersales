@@ -7,7 +7,7 @@ import com.otoki.powersales.admin.dto.response.PromotionScheduleBulkUpdateRespon
 import com.otoki.powersales.admin.dto.response.PromotionScheduleListResponse
 import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.admin.security.RequiresPermission
-import com.otoki.powersales.admin.service.AdminPromotionScheduleService
+import com.otoki.powersales.schedule.service.AdminPromotionScheduleService
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.common.security.UserPrincipal
 import jakarta.validation.Valid

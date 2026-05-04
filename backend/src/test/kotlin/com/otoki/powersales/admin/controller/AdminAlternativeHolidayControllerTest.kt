@@ -8,7 +8,7 @@ import com.otoki.powersales.admin.dto.response.AlternativeHolidayCreateResponse
 import com.otoki.powersales.admin.dto.response.AlternativeHolidayListItem
 import com.otoki.powersales.admin.dto.response.AlternativeHolidayRejectResponse
 import com.otoki.powersales.admin.security.AdminAuthorityFilter
-import com.otoki.powersales.admin.service.AdminAlternativeHolidayService
+import com.otoki.powersales.leave.service.AdminAlternativeHolidayService
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService

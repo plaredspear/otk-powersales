@@ -5,6 +5,7 @@ import com.otoki.powersales.claim.exception.ClaimNotFoundException
 import com.otoki.powersales.claim.repository.AdminClaimPhotoRepository
 import com.otoki.powersales.claim.repository.AdminClaimRepository
 import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.claim.service.AdminClaimService
 import com.otoki.powersales.employee.entity.Employee
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
