@@ -79,9 +79,9 @@ export default function AlternativeHolidayPage() {
     try {
       const values = await createForm.validateFields();
       await createMutation.mutateAsync({
-        employee_code: values.employeeCode,
-        actual_work_date: values.actualWorkDate.format('YYYY-MM-DD'),
-        target_alt_holiday_date: values.targetAltHolidayDate.format('YYYY-MM-DD'),
+        employeeCode: values.employeeCode,
+        actualWorkDate: values.actualWorkDate.format('YYYY-MM-DD'),
+        targetAltHolidayDate: values.targetAltHolidayDate.format('YYYY-MM-DD'),
       });
       message.success('대체휴무가 신청되었습니다');
       setCreateOpen(false);
@@ -108,7 +108,7 @@ export default function AlternativeHolidayPage() {
       const confirmDate = values.confirmAltHolidayDate?.format('YYYY-MM-DD') || null;
       await approveMutation.mutateAsync({
         id: approveTarget.id,
-        data: { confirm_alt_holiday_date: confirmDate },
+        data: { confirmAltHolidayDate: confirmDate },
       });
       message.success('대체휴무가 승인되었습니다');
       setApproveOpen(false);
@@ -131,7 +131,7 @@ export default function AlternativeHolidayPage() {
       const values = await rejectForm.validateFields();
       await rejectMutation.mutateAsync({
         id: rejectTarget.id,
-        data: { change_reason: values.changeReason },
+        data: { changeReason: values.changeReason },
       });
       message.success('대체휴무가 반려되었습니다');
       setRejectOpen(false);

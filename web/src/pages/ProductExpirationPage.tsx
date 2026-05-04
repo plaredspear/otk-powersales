@@ -54,10 +54,10 @@ export default function ProductExpirationPage() {
 
   // Applied filter (only updates on search click)
   const [appliedFilter, setAppliedFilter] = useState({
-    employee_keyword: '',
-    account_keyword: '',
-    from_date: '',
-    to_date: '',
+    employeeKeyword: '',
+    accountKeyword: '',
+    fromDate: '',
+    toDate: '',
     status: '',
   });
 
@@ -69,11 +69,11 @@ export default function ProductExpirationPage() {
   // Queries
   const { data, isLoading } = useProductExpirations({
     ...appliedFilter,
-    from_date: appliedFilter.from_date || undefined,
-    to_date: appliedFilter.to_date || undefined,
+    fromDate: appliedFilter.fromDate || undefined,
+    toDate: appliedFilter.toDate || undefined,
     status: appliedFilter.status || undefined,
-    employee_keyword: appliedFilter.employee_keyword || undefined,
-    account_keyword: appliedFilter.account_keyword || undefined,
+    employeeKeyword: appliedFilter.employeeKeyword || undefined,
+    accountKeyword: appliedFilter.accountKeyword || undefined,
     page: page - 1,
     size: 20,
   });
@@ -88,10 +88,10 @@ export default function ProductExpirationPage() {
   const handleSearch = () => {
     setPage(1);
     setAppliedFilter({
-      employee_keyword: employeeKeyword,
-      account_keyword: accountKeyword,
-      from_date: dateRange ? dateRange[0].format('YYYY-MM-DD') : '',
-      to_date: dateRange ? dateRange[1].format('YYYY-MM-DD') : '',
+      employeeKeyword: employeeKeyword,
+      accountKeyword: accountKeyword,
+      fromDate: dateRange ? dateRange[0].format('YYYY-MM-DD') : '',
+      toDate: dateRange ? dateRange[1].format('YYYY-MM-DD') : '',
       status,
     });
   };
@@ -103,10 +103,10 @@ export default function ProductExpirationPage() {
     setStatus('');
     setPage(1);
     setAppliedFilter({
-      employee_keyword: '',
-      account_keyword: '',
-      from_date: '',
-      to_date: '',
+      employeeKeyword: '',
+      accountKeyword: '',
+      fromDate: '',
+      toDate: '',
       status: '',
     });
   };
@@ -453,11 +453,11 @@ function CreateModal({
     description?: string;
   }) => {
     const payload: CreateProductExpirationRequest = {
-      employee_code: values.employeeCode,
-      account_code: values.accountCode,
-      product_code: values.productCode,
-      expiration_date: values.expirationDate.format('YYYY-MM-DD'),
-      alarm_date: values.alarmDate.format('YYYY-MM-DD'),
+      employeeCode: values.employeeCode,
+      accountCode: values.accountCode,
+      productCode: values.productCode,
+      expirationDate: values.expirationDate.format('YYYY-MM-DD'),
+      alarmDate: values.alarmDate.format('YYYY-MM-DD'),
       description: values.description,
     };
     await mutation.mutateAsync(payload);
@@ -575,8 +575,8 @@ function EditModal({
   }) => {
     if (!record) return;
     const payload: UpdateProductExpirationRequest = {
-      expiration_date: values.expirationDate.format('YYYY-MM-DD'),
-      alarm_date: values.alarmDate.format('YYYY-MM-DD'),
+      expirationDate: values.expirationDate.format('YYYY-MM-DD'),
+      alarmDate: values.alarmDate.format('YYYY-MM-DD'),
       description: values.description,
     };
     await mutation.mutateAsync({ id: record.id, data: payload });

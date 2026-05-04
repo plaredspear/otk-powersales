@@ -1,64 +1,6 @@
 import client from './client';
+import type { ApiResponse } from './types';
 
-// --- Raw API response interfaces (snake_case from backend) ---
-
-interface ApiResponse<T> {
-  success: boolean;
-  data: T | null;
-  message?: string;
-  error?: { code: string; message: string };
-}
-
-interface MonthlyIntegrationScheduleItemRaw {
-  branch_name: string;
-  account_branch_name: string | null;
-  account_code: string;
-  account_name: string;
-  employee_code: string;
-  title: string | null;
-  employee_name: string;
-  working_category1: string;
-  working_category3: string | null;
-  working_category4: string | null;
-  working_category5: string | null;
-  total_input_count: number;
-  equivalent_working_days: number;
-  converted_headcount: number;
-  avg_closing_amount: number;
-}
-
-interface MonthlyIntegrationScheduleResponseRaw {
-  year: number;
-  month: number;
-  items: MonthlyIntegrationScheduleItemRaw[];
-  total_count: number;
-}
-
-interface CategoryScheduleItemRaw {
-  branch_name: string;
-  current_month_total: number;
-  previous_month_total: number;
-  total_change: number;
-  display_fixed: number;
-  display_alternate: number;
-  display_patrol: number;
-  current_month_display_total: number;
-  previous_month_display_total: number;
-  display_change: number;
-  event_ambient: number;
-  event_frozen_chilled: number;
-  current_month_event_total: number;
-  previous_month_event_total: number;
-  event_change: number;
-}
-
-interface CategoryScheduleResponseRaw {
-  year: number;
-  month: number;
-  items: CategoryScheduleItemRaw[];
-}
-
-// --- Frontend interfaces (camelCase) ---
 
 export interface MonthlyIntegrationScheduleItem {
   branchName: string;
@@ -109,47 +51,6 @@ export interface CategoryScheduleResponse {
   items: CategoryScheduleItem[];
 }
 
-// --- Mappers ---
-
-function mapIntegrationItem(raw: MonthlyIntegrationScheduleItemRaw): MonthlyIntegrationScheduleItem {
-  return {
-    branchName: raw.branch_name,
-    accountBranchName: raw.account_branch_name,
-    accountCode: raw.account_code,
-    accountName: raw.account_name,
-    employeeCode: raw.employee_code,
-    title: raw.title,
-    employeeName: raw.employee_name,
-    workingCategory1: raw.working_category1,
-    workingCategory3: raw.working_category3,
-    workingCategory4: raw.working_category4,
-    workingCategory5: raw.working_category5,
-    totalInputCount: raw.total_input_count,
-    equivalentWorkingDays: raw.equivalent_working_days,
-    convertedHeadcount: raw.converted_headcount,
-    avgClosingAmount: raw.avg_closing_amount,
-  };
-}
-
-function mapCategoryItem(raw: CategoryScheduleItemRaw): CategoryScheduleItem {
-  return {
-    branchName: raw.branch_name,
-    currentMonthTotal: raw.current_month_total,
-    previousMonthTotal: raw.previous_month_total,
-    totalChange: raw.total_change,
-    displayFixed: raw.display_fixed,
-    displayAlternate: raw.display_alternate,
-    displayPatrol: raw.display_patrol,
-    currentMonthDisplayTotal: raw.current_month_display_total,
-    previousMonthDisplayTotal: raw.previous_month_display_total,
-    displayChange: raw.display_change,
-    eventAmbient: raw.event_ambient,
-    eventFrozenChilled: raw.event_frozen_chilled,
-    currentMonthEventTotal: raw.current_month_event_total,
-    previousMonthEventTotal: raw.previous_month_event_total,
-    eventChange: raw.event_change,
-  };
-}
 
 // --- API functions ---
 
@@ -158,20 +59,14 @@ export async function fetchMonthlyIntegrationSchedule(
   month: number,
   costCenterCodes: string[],
 ): Promise<MonthlyIntegrationScheduleResponse> {
-  const res = await client.get<ApiResponse<MonthlyIntegrationScheduleResponseRaw>>(
+  const res = await client.get<ApiResponse<MonthlyIntegrationScheduleResponse>>(
     '/api/v1/admin/schedules/monthly-integration',
     { params: { year, month, costCenterCodes: costCenterCodes.join(',') } },
   );
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.error?.message || res.data.message || '통합일정 조회에 실패했습니다');
   }
-  const raw = res.data.data;
-  return {
-    year: raw.year,
-    month: raw.month,
-    items: raw.items.map(mapIntegrationItem),
-    totalCount: raw.total_count,
-  };
+  return res.data.data;
 }
 
 export async function fetchMonthlyIntegrationExport(
@@ -209,19 +104,14 @@ export async function fetchCategorySchedule(
   month: number,
   costCenterCodes: string[],
 ): Promise<CategoryScheduleResponse> {
-  const res = await client.get<ApiResponse<CategoryScheduleResponseRaw>>(
+  const res = await client.get<ApiResponse<CategoryScheduleResponse>>(
     '/api/v1/admin/schedules/monthly-integration/category',
     { params: { year, month, costCenterCodes: costCenterCodes.join(',') } },
   );
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.error?.message || res.data.message || '근무형태별 인원현황 조회에 실패했습니다');
   }
-  const raw = res.data.data;
-  return {
-    year: raw.year,
-    month: raw.month,
-    items: raw.items.map(mapCategoryItem),
-  };
+  return res.data.data;
 }
 
 export async function fetchCategoryExport(

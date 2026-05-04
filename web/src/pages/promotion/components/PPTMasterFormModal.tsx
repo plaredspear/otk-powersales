@@ -118,12 +118,12 @@ export default function PPTMasterFormModal({ open, editingItem, onClose }: Props
     try {
       const values = await form.validateFields();
       const payload = {
-        employee_id: values.employeeId,
-        account_id: values.accountId,
-        team_type: values.teamType,
-        start_date: values.startDate.format('YYYY-MM-DD'),
-        end_date: values.endDate ? values.endDate.format('YYYY-MM-DD') : null,
-        is_confirmed: values.isConfirmed ?? false,
+        employeeId: values.employeeId,
+        accountId: values.accountId,
+        teamType: values.teamType,
+        startDate: values.startDate.format('YYYY-MM-DD'),
+        endDate: values.endDate ? values.endDate.format('YYYY-MM-DD') : null,
+        isConfirmed: values.isConfirmed ?? false,
       };
 
       if (editingItem) {

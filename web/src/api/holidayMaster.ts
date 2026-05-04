@@ -1,17 +1,6 @@
 import client from './client';
+import type { ApiResponse } from './types';
 
-interface ApiResponse<T> {
-  success: boolean;
-  data: T | null;
-  message?: string;
-}
-
-interface HolidayMasterRaw {
-  id: number;
-  holiday_date: string;
-  name: string;
-  type: string;
-}
 
 export interface HolidayMaster {
   id: number;
@@ -21,53 +10,45 @@ export interface HolidayMaster {
 }
 
 export interface HolidayMasterRequest {
-  holiday_date: string;
+  holidayDate: string;
   name: string;
   type: string;
 }
 
-function mapHolidayMaster(raw: HolidayMasterRaw): HolidayMaster {
-  return {
-    id: raw.id,
-    holidayDate: raw.holiday_date,
-    name: raw.name,
-    type: raw.type,
-  };
-}
 
 export async function fetchHolidayMasters(year: number): Promise<HolidayMaster[]> {
-  const res = await client.get<ApiResponse<HolidayMasterRaw[]>>(
+  const res = await client.get<ApiResponse<HolidayMaster[]>>(
     `/api/v1/admin/holiday-masters?year=${year}`,
   );
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.message || '공휴일 목록 조회에 실패했습니다');
   }
-  return res.data.data.map(mapHolidayMaster);
+  return res.data.data;
 }
 
 export async function createHolidayMaster(data: HolidayMasterRequest): Promise<HolidayMaster> {
-  const res = await client.post<ApiResponse<HolidayMasterRaw>>(
+  const res = await client.post<ApiResponse<HolidayMaster>>(
     '/api/v1/admin/holiday-masters',
     data,
   );
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.message || '공휴일 등록에 실패했습니다');
   }
-  return mapHolidayMaster(res.data.data);
+  return res.data.data;
 }
 
 export async function updateHolidayMaster(
   id: number,
   data: HolidayMasterRequest,
 ): Promise<HolidayMaster> {
-  const res = await client.put<ApiResponse<HolidayMasterRaw>>(
+  const res = await client.put<ApiResponse<HolidayMaster>>(
     `/api/v1/admin/holiday-masters/${id}`,
     data,
   );
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.message || '공휴일 수정에 실패했습니다');
   }
-  return mapHolidayMaster(res.data.data);
+  return res.data.data;
 }
 
 export async function deleteHolidayMaster(id: number): Promise<void> {

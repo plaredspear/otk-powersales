@@ -1,28 +1,22 @@
 import client from './client';
+import type { ApiResponse } from './types';
 
-// --- Raw API response interfaces (snake_case from backend) ---
-
-interface ApiResponse<T> {
-  success: boolean;
-  data: T | null;
-  message?: string;
-}
 
 export interface Organization {
   id: number;
-  cc_cd2: string | null;
-  org_cd2: string | null;
-  org_nm2: string | null;
-  cc_cd3: string | null;
-  org_cd3: string | null;
-  org_nm3: string | null;
-  cc_cd4: string | null;
-  org_cd4: string | null;
-  org_nm4: string | null;
-  cc_cd5: string | null;
-  org_cd5: string | null;
-  org_nm5: string | null;
-  created_at: string;
+  ccCd2: string | null;
+  orgCd2: string | null;
+  orgNm2: string | null;
+  ccCd3: string | null;
+  orgCd3: string | null;
+  orgNm3: string | null;
+  ccCd4: string | null;
+  orgCd4: string | null;
+  orgNm4: string | null;
+  ccCd5: string | null;
+  orgCd5: string | null;
+  orgNm5: string | null;
+  createdAt: string;
 }
 
 export interface FetchOrganizationsParams {

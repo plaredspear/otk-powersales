@@ -29,26 +29,26 @@ export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
 
   login: async (employeeCode: string, password: string) => {
-    const data = await loginApi({ employee_code: employeeCode, password });
+    const data = await loginApi({ employeeCode: employeeCode, password });
 
     const user: AuthUser = {
       id: data.user.id,
-      employeeCode: data.user.employee_code,
+      employeeCode: data.user.employeeCode,
       name: data.user.name,
-      orgName: data.user.org_name,
+      orgName: data.user.orgName,
       role: data.user.role,
-      roleLabel: data.user.role_label,
-      costCenterCode: data.user.cost_center_code,
+      roleLabel: data.user.roleLabel,
+      costCenterCode: data.user.costCenterCode,
       permissions: data.user.permissions ?? [],
     };
 
-    localStorage.setItem('accessToken', data.token.access_token);
-    localStorage.setItem('refreshToken', data.token.refresh_token);
+    localStorage.setItem('accessToken', data.token.accessToken);
+    localStorage.setItem('refreshToken', data.token.refreshToken);
     localStorage.setItem('user', JSON.stringify(user));
 
     set({
       user,
-      accessToken: data.token.access_token,
+      accessToken: data.token.accessToken,
       isAuthenticated: true,
     });
   },

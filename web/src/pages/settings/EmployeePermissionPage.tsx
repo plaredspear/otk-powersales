@@ -85,7 +85,7 @@ export default function EmployeePermissionPage() {
       const detail = await fetchEmployeePermissions(employeeId);
       setPermDetail(detail);
       setSelectedRole(detail.role ?? '');
-      setEditedUserPerms(detail.user_permissions.map((up) => up.permission));
+      setEditedUserPerms(detail.userPermissions.map((up) => up.permission));
     } catch (err) {
       notification.error({
         message: '권한 조회 실패',
@@ -143,7 +143,7 @@ export default function EmployeePermissionPage() {
 
   const hasPermChanges = (() => {
     if (!permDetail) return false;
-    const original = permDetail.user_permissions.map((up) => up.permission).sort();
+    const original = permDetail.userPermissions.map((up) => up.permission).sort();
     const edited = [...editedUserPerms].sort();
     return original.length !== edited.length || !original.every((v, i) => v === edited[i]);
   })();
@@ -227,7 +227,7 @@ export default function EmployeePermissionPage() {
       width: 100,
       align: 'center',
       render: (_: unknown, record: { permission: string }) => {
-        const isRolePerm = permDetail?.role_permissions.includes(record.permission);
+        const isRolePerm = permDetail?.rolePermissions.includes(record.permission);
         return isRolePerm ? <Tag color="blue">O</Tag> : <Tag>X</Tag>;
       },
     },
@@ -236,7 +236,7 @@ export default function EmployeePermissionPage() {
       width: 100,
       align: 'center',
       render: (_: unknown, record: { permission: string }) => {
-        const isRolePerm = permDetail?.role_permissions.includes(record.permission);
+        const isRolePerm = permDetail?.rolePermissions.includes(record.permission);
         const isUserPerm = editedUserPerms.includes(record.permission);
         if (isRolePerm) {
           return <Checkbox checked={false} disabled />;
@@ -319,7 +319,7 @@ export default function EmployeePermissionPage() {
               <Button
                 danger
                 onClick={handleResetPerms}
-                disabled={permDetail.user_permissions.length === 0}
+                disabled={permDetail.userPermissions.length === 0}
                 loading={savingPerms}
               >
                 개별 권한 초기화

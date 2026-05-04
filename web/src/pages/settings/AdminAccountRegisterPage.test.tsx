@@ -73,14 +73,14 @@ describe('AdminAccountRegisterPage', () => {
 
   it('정상 제출 — 사번이 ADMIN-{본문} 으로 합쳐져 API 호출, 성공 후 목록으로 navigate', async () => {
     mockedRegister.mockResolvedValueOnce({
-      employee_id: 12345,
-      employee_code: 'ADMIN-001',
+      employeeId: 12345,
+      employeeCode: 'ADMIN-001',
       name: '홍길동',
       role: 'SYSTEM_ADMIN',
       origin: 'MANUAL',
-      app_login_active: false,
-      password_change_required: true,
-      created_at: '2026-05-03T14:30:00',
+      appLoginActive: false,
+      passwordChangeRequired: true,
+      createdAt: '2026-05-03T14:30:00',
     });
 
     const user = userEvent.setup();
@@ -97,15 +97,15 @@ describe('AdminAccountRegisterPage', () => {
     });
 
     const payload = mockedRegister.mock.calls[0][0];
-    expect(payload.employee_code).toBe('ADMIN-001');
+    expect(payload.employeeCode).toBe('ADMIN-001');
     expect(payload.name).toBe('홍길동');
     expect(payload.password).toBe('Admin@2026!');
-    expect(payload.password_confirm).toBe('Admin@2026!');
+    expect(payload.passwordConfirm).toBe('Admin@2026!');
     // 빈 부가 정보 필드는 null 로 변환
-    expect(payload.work_email).toBeNull();
-    expect(payload.work_phone).toBeNull();
-    expect(payload.org_name).toBeNull();
-    expect(payload.cost_center_code).toBeNull();
+    expect(payload.workEmail).toBeNull();
+    expect(payload.workPhone).toBeNull();
+    expect(payload.orgName).toBeNull();
+    expect(payload.costCenterCode).toBeNull();
     // role 은 송신하지 않는다 (백엔드 고정 SYSTEM_ADMIN)
     expect(payload).not.toHaveProperty('role');
 

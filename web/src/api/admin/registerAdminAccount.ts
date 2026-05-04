@@ -1,14 +1,9 @@
 import client from '@/api/client';
+import type { ApiResponse } from '../types';
 import type {
   AdminAccountRegisterRequest,
   AdminAccountRegisterResponse,
 } from './types';
-
-interface ApiResponse<T> {
-  success: boolean;
-  data: T | null;
-  message?: string;
-}
 
 /**
  * 시스템 관리자 수동 등록 (Spec #579).

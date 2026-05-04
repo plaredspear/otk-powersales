@@ -30,7 +30,7 @@ export default function PromotionScheduleBulkDeleteDialog({
     try {
       const result = await bulkDelete.mutateAsync({
         promotionId,
-        data: { schedule_ids: selected.map((s) => s.schedule.scheduleId) },
+        data: { scheduleIds: selected.map((s) => s.schedule.scheduleId) },
       });
       message.success(`${result.deletedCount}건 삭제 완료`);
       onSuccess();

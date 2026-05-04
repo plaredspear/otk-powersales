@@ -100,13 +100,13 @@ export function ScheduleEditModal({
       await updateMutation.mutateAsync({
         id: schedule.id,
         data: {
-          working_date: values.workingDate.format('YYYY-MM-DD'),
-          working_type: values.workingType,
+          workingDate: values.workingDate.format('YYYY-MM-DD'),
+          workingType: values.workingType,
           ...(isWork && {
-            working_category1: values.workingCategory1,
-            working_category2: values.workingCategory2,
-            working_category3: values.workingCategory3,
-            account_id: values.accountId,
+            workingCategory1: values.workingCategory1,
+            workingCategory2: values.workingCategory2,
+            workingCategory3: values.workingCategory3,
+            accountId: values.accountId,
           }),
         },
       });

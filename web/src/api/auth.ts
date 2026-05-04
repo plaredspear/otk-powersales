@@ -1,26 +1,27 @@
 import axios, { AxiosError } from 'axios';
 import type { UserRole } from '@/constants/userRole';
+import type { ApiResponse } from './types';
 
 interface LoginRequest {
-  employee_code: string;
+  employeeCode: string;
   password: string;
 }
 
 interface AdminUserInfo {
   id: number;
-  employee_code: string;
+  employeeCode: string;
   name: string;
-  org_name: string | null;
+  orgName: string | null;
   role: UserRole | null;
-  role_label: string | null;
-  cost_center_code: string | null;
+  roleLabel: string | null;
+  costCenterCode: string | null;
   permissions: string[];
 }
 
 interface AdminTokenInfo {
-  access_token: string;
-  refresh_token: string;
-  expires_in: number;
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
 }
 
 interface LoginData {
@@ -29,16 +30,9 @@ interface LoginData {
 }
 
 interface RefreshData {
-  access_token: string;
-  refresh_token: string;
-  expires_in: number;
-}
-
-interface ApiResponse<T> {
-  success: boolean;
-  data: T | null;
-  error?: { code: string; message: string };
-  message?: string;
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
 }
 
 export async function login(request: LoginRequest): Promise<LoginData> {
@@ -68,7 +62,7 @@ export async function login(request: LoginRequest): Promise<LoginData> {
 
 export async function refreshToken(token: string): Promise<RefreshData> {
   const res = await axios.post<ApiResponse<RefreshData>>('/api/v1/admin/auth/refresh', {
-    refresh_token: token,
+    refreshToken: token,
   });
   if (!res.data.success || !res.data.data) {
     throw new Error('토큰 갱신에 실패했습니다');

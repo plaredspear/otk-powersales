@@ -1,26 +1,21 @@
 import client from './client';
 import type { UserRole } from '@/constants/userRole';
-
-interface ApiResponse<T> {
-  success: boolean;
-  data: T | null;
-  message?: string;
-}
+import type { ApiResponse } from './types';
 
 export interface UserPermissionInfo {
   permission: string;
-  granted_by_name: string;
+  grantedByName: string;
 }
 
 export interface EmployeePermissionDetail {
-  employee_id: number;
-  employee_code: string;
+  employeeId: number;
+  employeeCode: string;
   name: string;
   role: UserRole | null;
-  role_label: string | null;
-  role_permissions: string[];
-  user_permissions: UserPermissionInfo[];
-  effective_permissions: string[];
+  roleLabel: string | null;
+  rolePermissions: string[];
+  userPermissions: UserPermissionInfo[];
+  effectivePermissions: string[];
 }
 
 export interface UpdateUserPermissionsRequest {
@@ -32,14 +27,14 @@ export interface UpdateAuthorityRequest {
 }
 
 export interface UpdateAuthorityResponse {
-  employee_id: number;
-  employee_code: string;
+  employeeId: number;
+  employeeCode: string;
   name: string;
-  previous_role: UserRole | null;
-  previous_role_label: string | null;
-  new_role: UserRole;
-  new_role_label: string;
-  effective_permissions: string[];
+  previousRole: UserRole | null;
+  previousRoleLabel: string | null;
+  newRole: UserRole;
+  newRoleLabel: string;
+  effectivePermissions: string[];
 }
 
 export async function fetchEmployeePermissions(

@@ -1,45 +1,6 @@
 import client from './client';
+import type { ApiResponse } from './types';
 
-// --- Raw API response interfaces (snake_case from backend) ---
-
-interface ApiResponse<T> {
-  success: boolean;
-  data: T | null;
-  message?: string;
-  error?: { code: string; message: string };
-}
-
-interface AlternativeHolidayItemRaw {
-  id: number;
-  employee_code: string;
-  employee_name: string;
-  org_name: string | null;
-  actual_work_date: string;
-  target_alt_holiday_date: string;
-  confirm_alt_holiday_date: string | null;
-  status: string;
-  change_reason: string | null;
-  created_by: string;
-  created_at: string;
-}
-
-interface AlternativeHolidayCreateResultRaw {
-  id: number;
-  status: string;
-}
-
-interface AlternativeHolidayApproveResultRaw {
-  id: number;
-  status: string;
-  confirm_alt_holiday_date: string | null;
-}
-
-interface AlternativeHolidayRejectResultRaw {
-  id: number;
-  status: string;
-}
-
-// --- Frontend interfaces (camelCase) ---
 
 export interface AlternativeHolidayItem {
   id: number;
@@ -64,36 +25,19 @@ export interface AlternativeHolidayListParams {
 }
 
 export interface CreateAlternativeHolidayPayload {
-  employee_code: string;
-  actual_work_date: string;
-  target_alt_holiday_date: string;
+  employeeCode: string;
+  actualWorkDate: string;
+  targetAltHolidayDate: string;
 }
 
 export interface ApproveAlternativeHolidayPayload {
-  confirm_alt_holiday_date?: string | null;
+  confirmAltHolidayDate?: string | null;
 }
 
 export interface RejectAlternativeHolidayPayload {
-  change_reason: string;
+  changeReason: string;
 }
 
-// --- Mapper ---
-
-function mapItem(raw: AlternativeHolidayItemRaw): AlternativeHolidayItem {
-  return {
-    id: raw.id,
-    employeeCode: raw.employee_code,
-    employeeName: raw.employee_name,
-    orgName: raw.org_name,
-    actualWorkDate: raw.actual_work_date,
-    targetAltHolidayDate: raw.target_alt_holiday_date,
-    confirmAltHolidayDate: raw.confirm_alt_holiday_date,
-    status: raw.status,
-    changeReason: raw.change_reason,
-    createdBy: raw.created_by,
-    createdAt: raw.created_at,
-  };
-}
 
 // --- API functions ---
 
@@ -108,7 +52,7 @@ export async function fetchAlternativeHolidays(
   if (params.employeeCode) queryParams.employeeCode = params.employeeCode;
   if (params.orgCode) queryParams.orgCode = params.orgCode;
 
-  const res = await client.get<ApiResponse<AlternativeHolidayItemRaw[]>>(
+  const res = await client.get<ApiResponse<AlternativeHolidayItem[]>>(
     '/api/v1/admin/alternative-holidays',
     { params: queryParams },
   );
@@ -117,13 +61,13 @@ export async function fetchAlternativeHolidays(
     throw new Error(res.data.error?.message || res.data.message || '목록 조회에 실패했습니다');
   }
 
-  return res.data.data.map(mapItem);
+  return res.data.data;
 }
 
 export async function createAlternativeHoliday(
   payload: CreateAlternativeHolidayPayload,
 ): Promise<{ id: number; status: string }> {
-  const res = await client.post<ApiResponse<AlternativeHolidayCreateResultRaw>>(
+  const res = await client.post<ApiResponse<{ id: number; status: string }>>(
     '/api/v1/admin/alternative-holidays',
     payload,
   );
@@ -139,7 +83,7 @@ export async function approveAlternativeHoliday(
   id: number,
   payload: ApproveAlternativeHolidayPayload,
 ): Promise<{ id: number; status: string; confirmAltHolidayDate: string | null }> {
-  const res = await client.post<ApiResponse<AlternativeHolidayApproveResultRaw>>(
+  const res = await client.post<ApiResponse<{ id: number; status: string; confirmAltHolidayDate: string | null }>>(
     `/api/v1/admin/alternative-holidays/${id}/approve`,
     payload,
   );
@@ -151,7 +95,7 @@ export async function approveAlternativeHoliday(
   return {
     id: res.data.data.id,
     status: res.data.data.status,
-    confirmAltHolidayDate: res.data.data.confirm_alt_holiday_date,
+    confirmAltHolidayDate: res.data.data.confirmAltHolidayDate,
   };
 }
 
@@ -159,7 +103,7 @@ export async function rejectAlternativeHoliday(
   id: number,
   payload: RejectAlternativeHolidayPayload,
 ): Promise<{ id: number; status: string }> {
-  const res = await client.post<ApiResponse<AlternativeHolidayRejectResultRaw>>(
+  const res = await client.post<ApiResponse<{ id: number; status: string }>>(
     `/api/v1/admin/alternative-holidays/${id}/reject`,
     payload,
   );

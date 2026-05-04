@@ -77,14 +77,14 @@ export default function AdminAccountRegisterPage() {
   const handleSubmit = async (values: AdminAccountRegisterFormValues) => {
     try {
       await mutation.mutateAsync({
-        employee_code: values.employeeCode,
+        employeeCode: values.employeeCode,
         name: values.name,
         password: values.password,
-        password_confirm: values.passwordConfirm,
-        work_email: values.workEmail || null,
-        work_phone: values.workPhone || null,
-        org_name: values.orgName || null,
-        cost_center_code: values.costCenterCode || null,
+        passwordConfirm: values.passwordConfirm,
+        workEmail: values.workEmail || null,
+        workPhone: values.workPhone || null,
+        orgName: values.orgName || null,
+        costCenterCode: values.costCenterCode || null,
       });
       notification.success({
         message: '관리자 계정이 등록되었습니다',

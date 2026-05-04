@@ -18,7 +18,7 @@ const TEAM_TYPE_FILTER_OPTIONS = [{ value: '', label: '전체' }, ...PPT_TEAM_TY
 const DEFAULT_PARAMS: PPTMasterSearchParams = {
   page: 0,
   size: 20,
-  valid_only: true,
+  validOnly: true,
 };
 
 export default function PPTMasterPage() {
@@ -39,10 +39,10 @@ export default function PPTMasterPage() {
     setSearchParams({
       ...searchParams,
       page: 0,
-      employee_name: filterEmployeeName || undefined,
-      employee_code: filterEmployeeNumber || undefined,
-      team_type: filterTeamType || undefined,
-      valid_only: filterValidOnly,
+      employeeName: filterEmployeeName || undefined,
+      employeeCode: filterEmployeeNumber || undefined,
+      teamType: filterTeamType || undefined,
+      validOnly: filterValidOnly,
     });
   };
 

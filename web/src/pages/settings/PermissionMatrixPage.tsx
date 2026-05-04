@@ -38,7 +38,7 @@ export default function PermissionMatrixPage() {
     loadData();
   }, [loadData]);
 
-  const canManage = data?.current_user.can_manage_permissions ?? false;
+  const canManage = data?.currentUser.canManagePermissions ?? false;
 
   const changedRoles = useMemo(() => {
     if (!data) return [];
@@ -115,7 +115,7 @@ export default function PermissionMatrixPage() {
       width: 120,
       fixed: 'left',
       render: (role: string) =>
-        role === data.current_user.role ? <>{role} <Tag color="blue">내 역할</Tag></> : role,
+        role === data.currentUser.role ? <>{role} <Tag color="blue">내 역할</Tag></> : role,
     },
     ...data.permissions.map((perm) => ({
       title: perm.description,
@@ -152,7 +152,7 @@ export default function PermissionMatrixPage() {
       <Alert
         type="info"
         showIcon
-        message={`내 권한: ${data.current_user.role} (${data.current_user.permissions.length}개 권한 보유)`}
+        message={`내 권한: ${data.currentUser.role} (${data.currentUser.permissions.length}개 권한 보유)`}
         style={{ marginBottom: 24 }}
       />
 
@@ -175,7 +175,7 @@ export default function PermissionMatrixPage() {
         size="small"
         scroll={{ x: 900 }}
         rowClassName={(record) =>
-          record.role === data.current_user.role ? 'permission-matrix-highlight' : ''
+          record.role === data.currentUser.role ? 'permission-matrix-highlight' : ''
         }
       />
 
