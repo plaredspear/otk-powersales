@@ -12,8 +12,6 @@ import org.springframework.test.context.ActiveProfiles
 import com.otoki.powersales.common.config.QueryDslConfig
 import com.otoki.powersales.common.entity.HqReview
 import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.temporal.ChronoUnit
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
@@ -83,26 +81,24 @@ class HqReviewTest {
     @DisplayName("HqReview 생성 - SF 공통 필드 매핑 확인")
     fun createHqReview_sfCommonFields() {
         // Given
-        val now = LocalDateTime.now().truncatedTo(ChronoUnit.MICROS)
         val hqReview = HqReview(
             branchCode = "B001",
             sfid = "a0B5g000001ABC",
             isDeleted = false
-        ).apply {
-            createdAt = now
-            updatedAt = now
-        }
+        )
 
         // When
         val persisted = testEntityManager.persistAndFlush(hqReview)
         testEntityManager.clear()
         val found = testEntityManager.find(HqReview::class.java, persisted.id)!!
 
-        // Then
+        // Then — JPA save 경로는 AuditingEntityListener 가 createdAt/updatedAt 을
+        // 자동 채운다. 본 테스트의 관심사는 sfid/isDeleted 매핑이므로 timestamp 는
+        // 비어있지 않은지만 확인한다 (Migration 경로의 timestamp 보존은 native INSERT 경로).
         assertThat(found).isNotNull
         assertThat(found.sfid).isEqualTo("a0B5g000001ABC")
         assertThat(found.isDeleted).isFalse()
-        assertThat(found.createdAt).isEqualTo(now)
-        assertThat(found.updatedAt).isEqualTo(now)
+        assertThat(found.createdAt).isNotNull()
+        assertThat(found.updatedAt).isNotNull()
     }
 }

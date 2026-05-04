@@ -35,6 +35,10 @@ class NoticeRepositoryTest {
         testEntityManager.clear()
     }
 
+    // findRecentNotices 의 정렬 검증을 위해 createdAt 을 임의 시각으로 고정해야 한다.
+    // JPA persist 경로는 AuditingEntityListener 가 createdAt 을 현재 시각으로 덮으므로,
+    // persist 후 native UPDATE 로 직접 갱신한다 (Migration 경로의 native INSERT 와 동일하게
+    // auditor 를 우회하는 정책).
     private fun persistNotice(
         name: String = "테스트 공지",
         category: NoticeCategory? = NoticeCategory.COMPANY,
@@ -49,10 +53,15 @@ class NoticeRepositoryTest {
             branch = branch,
             contents = contents,
             isDeleted = isDeleted
-        ).apply {
-            if (createdDate != null) createdAt = createdDate
-        }
+        )
         val persisted = testEntityManager.persistAndFlush(notice)
+        if (createdDate != null) {
+            testEntityManager.entityManager
+                .createNativeQuery("UPDATE notice SET created_at = :ts WHERE notice_id = :id")
+                .setParameter("ts", createdDate)
+                .setParameter("id", persisted.id)
+                .executeUpdate()
+        }
         testEntityManager.clear()
         return persisted
     }

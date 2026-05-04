@@ -11,8 +11,6 @@ import org.springframework.context.annotation.Import
 import org.springframework.test.context.ActiveProfiles
 import com.otoki.powersales.common.config.QueryDslConfig
 import com.otoki.powersales.common.entity.StaffReview
-import java.time.LocalDateTime
-import java.time.temporal.ChronoUnit
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
@@ -111,25 +109,21 @@ class StaffReviewTest {
     @DisplayName("StaffReview 생성 - SF 공통 필드 매핑 확인")
     fun createStaffReview_sfCommonFields() {
         // Given
-        val now = LocalDateTime.now().truncatedTo(ChronoUnit.MICROS)
         val staffReview = StaffReview(
             sfid = "a0B5g000001ABC",
             isDeleted = false
-        ).apply {
-            createdAt = now
-            updatedAt = now
-        }
+        )
 
         // When
         val persisted = testEntityManager.persistAndFlush(staffReview)
         testEntityManager.clear()
         val found = testEntityManager.find(StaffReview::class.java, persisted.id)!!
 
-        // Then
+        // Then — JPA save 경로는 AuditingEntityListener 가 createdAt/updatedAt 을 자동 채운다.
         assertThat(found).isNotNull
         assertThat(found.sfid).isEqualTo("a0B5g000001ABC")
         assertThat(found.isDeleted).isFalse()
-        assertThat(found.createdAt).isEqualTo(now)
-        assertThat(found.updatedAt).isEqualTo(now)
+        assertThat(found.createdAt).isNotNull()
+        assertThat(found.updatedAt).isNotNull()
     }
 }

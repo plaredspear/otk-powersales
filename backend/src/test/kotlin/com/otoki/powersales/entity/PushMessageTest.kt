@@ -74,24 +74,22 @@ class PushMessageTest {
     @DisplayName("PushMessage 생성 - SF 공통 필드 매핑 확인")
     fun createPushMessage_sfCommonFields() {
         // Given
-        val now = LocalDateTime.now().truncatedTo(ChronoUnit.MICROS)
         val pushMessage = PushMessage(
             sfid = "a0B5g000001ABC",
             isDeleted = false
-        ).apply {
-            createdAt = now
-            updatedAt = now
-        }
+        )
 
         // When
         val persisted = testEntityManager.persistAndFlush(pushMessage)
         testEntityManager.clear()
         val found = testEntityManager.find(PushMessage::class.java, persisted.id)!!
 
-        // Then
+        // Then — JPA save 경로는 AuditingEntityListener 가 createdAt/updatedAt 을
+        // 자동 채운다. 본 테스트의 관심사는 sfid/isDeleted 매핑이므로 timestamp 는
+        // 비어있지 않은지만 확인한다.
         assertThat(found.sfid).isEqualTo("a0B5g000001ABC")
         assertThat(found.isDeleted).isFalse()
-        assertThat(found.createdAt).isEqualTo(now)
-        assertThat(found.updatedAt).isEqualTo(now)
+        assertThat(found.createdAt).isNotNull()
+        assertThat(found.updatedAt).isNotNull()
     }
 }

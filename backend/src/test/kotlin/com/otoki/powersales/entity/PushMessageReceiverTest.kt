@@ -11,8 +11,6 @@ import org.springframework.context.annotation.Import
 import org.springframework.test.context.ActiveProfiles
 import com.otoki.powersales.common.config.QueryDslConfig
 import com.otoki.powersales.common.entity.PushMessageReceiver
-import java.time.LocalDateTime
-import java.time.temporal.ChronoUnit
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
@@ -75,25 +73,21 @@ class PushMessageReceiverTest {
     @DisplayName("PushMessageReceiver 생성 - SF 공통 필드 매핑 확인")
     fun createPushMessageReceiver_sfCommonFields() {
         // Given
-        val now = LocalDateTime.now().truncatedTo(ChronoUnit.MICROS)
         val receiver = PushMessageReceiver(
             sfid = "a0D5g000003GHI",
             isDeleted = false
-        ).apply {
-            createdAt = now
-            updatedAt = now
-        }
+        )
 
         // When
         val persisted = testEntityManager.persistAndFlush(receiver)
         testEntityManager.clear()
         val found = testEntityManager.find(PushMessageReceiver::class.java, persisted.id)!!
 
-        // Then
+        // Then — JPA save 경로는 AuditingEntityListener 가 createdAt/updatedAt 을 자동 채운다.
         assertThat(found.sfid).isEqualTo("a0D5g000003GHI")
         assertThat(found.isDeleted).isFalse()
-        assertThat(found.createdAt).isEqualTo(now)
-        assertThat(found.updatedAt).isEqualTo(now)
+        assertThat(found.createdAt).isNotNull()
+        assertThat(found.updatedAt).isNotNull()
     }
 
     @Test

@@ -14,7 +14,6 @@ import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.ActiveProfiles
 import com.otoki.powersales.common.config.QueryDslConfig
-import java.time.LocalDateTime
 
 /**
  * FavoriteProduct V1 리매핑 테스트
@@ -51,24 +50,22 @@ class FavoriteProductRepositoryTest {
             val favorite = FavoriteProduct(
                 employeeCode = "20030117",
                 productCode = "30310009"
-            ).apply {
-                createdAt = LocalDateTime.of(2026, 2, 23, 10, 0)
-                updatedAt = LocalDateTime.of(2026, 2, 23, 10, 0)
-            }
+            )
 
             // When
             favoriteProductRepository.save(favorite)
             testEntityManager.flush()
             testEntityManager.clear()
 
-            // Then
+            // Then — JPA save 경로는 AuditingEntityListener 가 createdAt/updatedAt 을 자동 채운다.
+            // 본 테스트의 관심사는 @IdClass 복합 키 매핑이다.
             val compositeKey = ProductFavoriteId("20030117", "30310009")
             val found = favoriteProductRepository.findById(compositeKey)
             assertThat(found).isPresent
             assertThat(found.get().employeeCode).isEqualTo("20030117")
             assertThat(found.get().productCode).isEqualTo("30310009")
-            assertThat(found.get().createdAt).isEqualTo(LocalDateTime.of(2026, 2, 23, 10, 0))
-            assertThat(found.get().updatedAt).isEqualTo(LocalDateTime.of(2026, 2, 23, 10, 0))
+            assertThat(found.get().createdAt).isNotNull()
+            assertThat(found.get().updatedAt).isNotNull()
         }
 
         @Test
