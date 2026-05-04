@@ -115,13 +115,13 @@ class ClientOrderControllerTest {
                 .andExpect(jsonPath("$.message").value("조회 성공"))
                 .andExpect(jsonPath("$.data.content").isArray)
                 .andExpect(jsonPath("$.data.content.length()").value(2))
-                .andExpect(jsonPath("$.data.content[0].sap_order_number").value("SO001"))
-                .andExpect(jsonPath("$.data.content[0].client_id").value(clientId))
-                .andExpect(jsonPath("$.data.content[0].client_name").value("거래처A"))
-                .andExpect(jsonPath("$.data.content[0].total_amount").value(500000))
-                .andExpect(jsonPath("$.data.content[1].sap_order_number").value("SO002"))
-                .andExpect(jsonPath("$.data.content[1].total_amount").value(300000))
-                .andExpect(jsonPath("$.data.total_elements").value(2))
+                .andExpect(jsonPath("$.data.content[0].sapOrderNumber").value("SO001"))
+                .andExpect(jsonPath("$.data.content[0].clientId").value(clientId))
+                .andExpect(jsonPath("$.data.content[0].clientName").value("거래처A"))
+                .andExpect(jsonPath("$.data.content[0].totalAmount").value(500000))
+                .andExpect(jsonPath("$.data.content[1].sapOrderNumber").value("SO002"))
+                .andExpect(jsonPath("$.data.content[1].totalAmount").value(300000))
+                .andExpect(jsonPath("$.data.totalElements").value(2))
                 .andExpect(jsonPath("$.data.number").value(0))
                 .andExpect(jsonPath("$.data.size").value(20))
         }
@@ -161,7 +161,7 @@ class ClientOrderControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content.length()").value(1))
-                .andExpect(jsonPath("$.data.content[0].sap_order_number").value("SO003"))
+                .andExpect(jsonPath("$.data.content[0].sapOrderNumber").value("SO003"))
         }
 
         @Test
@@ -203,7 +203,7 @@ class ClientOrderControllerTest {
                 .andExpect(jsonPath("$.data.content.length()").value(1))
                 .andExpect(jsonPath("$.data.number").value(page))
                 .andExpect(jsonPath("$.data.size").value(size))
-                .andExpect(jsonPath("$.data.total_elements").value(25))
+                .andExpect(jsonPath("$.data.totalElements").value(25))
         }
 
         @Test
@@ -232,7 +232,7 @@ class ClientOrderControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content").isArray)
                 .andExpect(jsonPath("$.data.content.length()").value(0))
-                .andExpect(jsonPath("$.data.total_elements").value(0))
+                .andExpect(jsonPath("$.data.totalElements").value(0))
         }
 
         @Test
@@ -354,24 +354,24 @@ class ClientOrderControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("조회 성공"))
-                .andExpect(jsonPath("$.data.sap_order_number").value(sapOrderNumber))
-                .andExpect(jsonPath("$.data.client_id").value(100))
-                .andExpect(jsonPath("$.data.client_name").value("거래처A"))
-                .andExpect(jsonPath("$.data.client_deadline_time").value("12:00"))
-                .andExpect(jsonPath("$.data.order_date").value("2024-03-10"))
-                .andExpect(jsonPath("$.data.delivery_date").value("2024-03-15"))
-                .andExpect(jsonPath("$.data.total_approved_amount").value(500000))
-                .andExpect(jsonPath("$.data.ordered_item_count").value(3))
-                .andExpect(jsonPath("$.data.ordered_items").isArray)
-                .andExpect(jsonPath("$.data.ordered_items.length()").value(3))
-                .andExpect(jsonPath("$.data.ordered_items[0].product_code").value("P001"))
-                .andExpect(jsonPath("$.data.ordered_items[0].product_name").value("제품1"))
-                .andExpect(jsonPath("$.data.ordered_items[0].delivered_quantity").value("10"))
-                .andExpect(jsonPath("$.data.ordered_items[0].delivery_status").value("배송완료"))
-                .andExpect(jsonPath("$.data.ordered_items[1].product_code").value("P002"))
-                .andExpect(jsonPath("$.data.ordered_items[1].delivery_status").value("배송중"))
-                .andExpect(jsonPath("$.data.ordered_items[2].product_code").value("P003"))
-                .andExpect(jsonPath("$.data.ordered_items[2].delivery_status").value("배송대기"))
+                .andExpect(jsonPath("$.data.sapOrderNumber").value(sapOrderNumber))
+                .andExpect(jsonPath("$.data.clientId").value(100))
+                .andExpect(jsonPath("$.data.clientName").value("거래처A"))
+                .andExpect(jsonPath("$.data.clientDeadlineTime").value("12:00"))
+                .andExpect(jsonPath("$.data.orderDate").value("2024-03-10"))
+                .andExpect(jsonPath("$.data.deliveryDate").value("2024-03-15"))
+                .andExpect(jsonPath("$.data.totalApprovedAmount").value(500000))
+                .andExpect(jsonPath("$.data.orderedItemCount").value(3))
+                .andExpect(jsonPath("$.data.orderedItems").isArray)
+                .andExpect(jsonPath("$.data.orderedItems.length()").value(3))
+                .andExpect(jsonPath("$.data.orderedItems[0].productCode").value("P001"))
+                .andExpect(jsonPath("$.data.orderedItems[0].productName").value("제품1"))
+                .andExpect(jsonPath("$.data.orderedItems[0].deliveredQuantity").value("10"))
+                .andExpect(jsonPath("$.data.orderedItems[0].deliveryStatus").value("배송완료"))
+                .andExpect(jsonPath("$.data.orderedItems[1].productCode").value("P002"))
+                .andExpect(jsonPath("$.data.orderedItems[1].deliveryStatus").value("배송중"))
+                .andExpect(jsonPath("$.data.orderedItems[2].productCode").value("P003"))
+                .andExpect(jsonPath("$.data.orderedItems[2].deliveryStatus").value("배송대기"))
         }
 
         @Test
@@ -411,8 +411,8 @@ class ClientOrderControllerTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.sap_order_number").value(sapOrderNumber))
-                .andExpect(jsonPath("$.data.client_deadline_time").isEmpty)
+                .andExpect(jsonPath("$.data.sapOrderNumber").value(sapOrderNumber))
+                .andExpect(jsonPath("$.data.clientDeadlineTime").isEmpty)
         }
 
         @Test

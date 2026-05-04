@@ -23,9 +23,9 @@ class LeaderAccountModel {
       id: json['id'] as int,
       name: json['name'] as String?,
       address1: json['address1'] as String?,
-      branchCode: json['branch_code'] as String?,
-      accountGroup: json['account_group'] as String?,
-      accountType: json['account_type'] as String?,
+      branchCode: json['branchCode'] as String?,
+      accountGroup: json['accountGroup'] as String?,
+      accountType: json['accountType'] as String?,
     );
   }
 

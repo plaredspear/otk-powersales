@@ -17,18 +17,18 @@ class AuthTokenModel {
   /// snake_case JSON에서 파싱
   factory AuthTokenModel.fromJson(Map<String, dynamic> json) {
     return AuthTokenModel(
-      accessToken: json['access_token'] as String,
-      refreshToken: json['refresh_token'] as String,
-      expiresIn: json['expires_in'] as int,
+      accessToken: json['accessToken'] as String,
+      refreshToken: json['refreshToken'] as String,
+      expiresIn: json['expiresIn'] as int,
     );
   }
 
   /// snake_case JSON으로 직렬화
   Map<String, dynamic> toJson() {
     return {
-      'access_token': accessToken,
-      'refresh_token': refreshToken,
-      'expires_in': expiresIn,
+      'accessToken': accessToken,
+      'refreshToken': refreshToken,
+      'expiresIn': expiresIn,
     };
   }
 

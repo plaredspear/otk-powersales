@@ -1,62 +1,6 @@
 import client from './client';
+import type { ApiResponse } from './types';
 
-// --- Raw API response interfaces (snake_case from backend) ---
-
-interface ApiResponse<T> {
-  success: boolean;
-  data: T | null;
-  message?: string;
-  error?: { code: string; message: string };
-}
-
-interface TeamMemberRaw {
-  employee_id: number;
-  employee_code: string;
-  name: string;
-}
-
-interface TeamScheduleAccountRaw {
-  account_id: number;
-  external_key: string;
-  name: string;
-}
-
-interface BranchRaw {
-  branch_code: string;
-  branch_name: string;
-}
-
-interface TeamScheduleRaw {
-  id: number;
-  employee_code: string;
-  employee_name: string;
-  working_date: string;
-  working_type: string;
-  working_category1: string | null;
-  working_category2: string | null;
-  working_category3: string | null;
-  account_id: number | null;
-  account_name: string | null;
-  account_external_key: string | null;
-  is_clock_in: boolean;
-}
-
-interface DailySummaryRaw {
-  date: string;
-  display_expected: number;
-  display_actual: number;
-  promotion_expected: number;
-  promotion_actual: number;
-  annual_leave: number;
-  compensatory_leave: number;
-}
-
-interface MonthlyScheduleWithSummaryRaw {
-  schedules: TeamScheduleRaw[];
-  daily_summary: DailySummaryRaw[];
-}
-
-// --- Frontend interfaces (camelCase) ---
 
 export interface TeamMember {
   employeeId: number;
@@ -106,99 +50,46 @@ export interface MonthlyScheduleWithSummary {
 }
 
 export interface TeamScheduleUpdateRequest {
-  working_date: string;
-  working_type: string;
-  working_category1?: string;
-  working_category2?: string;
-  working_category3?: string;
-  account_id?: number;
+  workingDate: string;
+  workingType: string;
+  workingCategory1?: string;
+  workingCategory2?: string;
+  workingCategory3?: string;
+  accountId?: number;
 }
 
-// --- Mappers ---
-
-function mapMembers(raw: TeamMemberRaw[]): TeamMember[] {
-  return raw.map((m) => ({
-    employeeId: m.employee_id,
-    employeeCode: m.employee_code,
-    name: m.name,
-  }));
-}
-
-function mapAccounts(raw: TeamScheduleAccountRaw[]): TeamScheduleAccount[] {
-  return raw.map((a) => ({
-    accountId: a.account_id,
-    externalKey: a.external_key,
-    name: a.name,
-  }));
-}
-
-function mapBranches(raw: BranchRaw[]): Branch[] {
-  return raw.map((b) => ({
-    branchCode: b.branch_code,
-    branchName: b.branch_name,
-  }));
-}
-
-function mapSchedules(raw: TeamScheduleRaw[]): TeamSchedule[] {
-  return raw.map((s) => ({
-    id: s.id,
-    employeeCode: s.employee_code,
-    employeeName: s.employee_name,
-    workingDate: s.working_date,
-    workingType: s.working_type,
-    workingCategory1: s.working_category1,
-    workingCategory2: s.working_category2,
-    workingCategory3: s.working_category3,
-    accountId: s.account_id,
-    accountName: s.account_name,
-    accountExternalKey: s.account_external_key,
-    isClockIn: s.is_clock_in,
-  }));
-}
-
-function mapSummaries(raw: DailySummaryRaw[]): DailySummary[] {
-  return raw.map((d) => ({
-    date: d.date,
-    displayExpected: d.display_expected,
-    displayActual: d.display_actual,
-    promotionExpected: d.promotion_expected,
-    promotionActual: d.promotion_actual,
-    annualLeave: d.annual_leave,
-    compensatoryLeave: d.compensatory_leave,
-  }));
-}
 
 // --- API functions ---
 
 export async function fetchTeamMembers(): Promise<TeamMember[]> {
-  const res = await client.get<ApiResponse<TeamMemberRaw[]>>(
+  const res = await client.get<ApiResponse<TeamMember[]>>(
     '/api/v1/admin/team-schedule/members',
   );
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.message || '팀원 목록 조회에 실패했습니다');
   }
-  return mapMembers(res.data.data);
+  return res.data.data;
 }
 
 export async function fetchTeamScheduleAccounts(branchCode: string): Promise<TeamScheduleAccount[]> {
-  const res = await client.get<ApiResponse<TeamScheduleAccountRaw[]>>(
+  const res = await client.get<ApiResponse<TeamScheduleAccount[]>>(
     '/api/v1/admin/team-schedule/accounts',
     { params: { branchCode } },
   );
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.message || '거래처 목록 조회에 실패했습니다');
   }
-  return mapAccounts(res.data.data);
+  return res.data.data;
 }
 
 export async function fetchTeamScheduleBranches(): Promise<Branch[]> {
-  const res = await client.get<ApiResponse<BranchRaw[]>>(
+  const res = await client.get<ApiResponse<Branch[]>>(
     '/api/v1/admin/team-schedule/branches',
   );
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.message || '지점 목록 조회에 실패했습니다');
   }
-  return mapBranches(res.data.data);
+  return res.data.data;
 }
 
 export async function fetchTeamSchedules(params: {
@@ -207,7 +98,7 @@ export async function fetchTeamSchedules(params: {
   employeeIds: number[];
   accountIds: number[];
 }): Promise<MonthlyScheduleWithSummary> {
-  const res = await client.get<ApiResponse<MonthlyScheduleWithSummaryRaw>>(
+  const res = await client.get<ApiResponse<MonthlyScheduleWithSummary>>(
     '/api/v1/admin/team-schedule',
     {
       params: {
@@ -222,8 +113,8 @@ export async function fetchTeamSchedules(params: {
     throw new Error(res.data.message || '팀 일정 조회에 실패했습니다');
   }
   return {
-    schedules: mapSchedules(res.data.data.schedules),
-    dailySummary: mapSummaries(res.data.data.daily_summary),
+    schedules: res.data.data.schedules,
+    dailySummary: res.data.data.dailySummary,
   };
 }
 

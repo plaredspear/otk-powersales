@@ -16,8 +16,8 @@ class SafetyCheckTodayStatusModel {
   factory SafetyCheckTodayStatusModel.fromJson(Map<String, dynamic> json) {
     return SafetyCheckTodayStatusModel(
       completed: json['completed'] as bool,
-      submittedAt: json['submitted_at'] != null
-          ? DateTime.parse(json['submitted_at'] as String)
+      submittedAt: json['submittedAt'] != null
+          ? DateTime.parse(json['submittedAt'] as String)
           : null,
     );
   }
@@ -26,7 +26,7 @@ class SafetyCheckTodayStatusModel {
   Map<String, dynamic> toJson() {
     return {
       'completed': completed,
-      'submitted_at': submittedAt?.toIso8601String(),
+      'submittedAt': submittedAt?.toIso8601String(),
     };
   }
 

@@ -95,7 +95,7 @@ export default function NoticeFormPage() {
       category: values.category,
       content: values.content,
       branch: values.category === 'BRANCH' && values.branch ? values.branch.label : null,
-      branch_code: values.category === 'BRANCH' && values.branch ? values.branch.value : null,
+      branchCode: values.category === 'BRANCH' && values.branch ? values.branch.value : null,
     };
 
     try {

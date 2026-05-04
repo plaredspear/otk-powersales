@@ -110,17 +110,17 @@ class AuthInterceptor extends Interceptor {
 
       final response = await _dio.post(
         '/api/v1/mobile/auth/refresh',
-        data: {'refresh_token': refreshToken},
+        data: {'refreshToken': refreshToken},
       );
 
       final data = response.data['data'] as Map<String, dynamic>;
-      final newAccessToken = data['access_token'] as String;
+      final newAccessToken = data['accessToken'] as String;
       await _localDataSource.saveAccessToken(newAccessToken);
 
       // refresh_token도 갱신되면 저장
-      if (data.containsKey('refresh_token')) {
+      if (data.containsKey('refreshToken')) {
         await _localDataSource.saveRefreshToken(
-          data['refresh_token'] as String,
+          data['refreshToken'] as String,
         );
       }
 

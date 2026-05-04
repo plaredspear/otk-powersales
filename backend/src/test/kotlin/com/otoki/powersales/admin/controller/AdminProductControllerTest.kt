@@ -104,16 +104,16 @@ class AdminProductControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content").isArray)
-                .andExpect(jsonPath("$.data.content[0].product_code").value("P001"))
+                .andExpect(jsonPath("$.data.content[0].productCode").value("P001"))
                 .andExpect(jsonPath("$.data.content[0].name").value("진라면 매운맛"))
                 .andExpect(jsonPath("$.data.content[0].category1").value("면류"))
-                .andExpect(jsonPath("$.data.content[0].standard_price").value(850.0))
-                .andExpect(jsonPath("$.data.content[0].product_status").value("판매중"))
-                .andExpect(jsonPath("$.data.content[0].launch_date").value("2020-01-15"))
+                .andExpect(jsonPath("$.data.content[0].standardPrice").value(850.0))
+                .andExpect(jsonPath("$.data.content[0].productStatus").value("판매중"))
+                .andExpect(jsonPath("$.data.content[0].launchDate").value("2020-01-15"))
                 .andExpect(jsonPath("$.data.page").value(0))
                 .andExpect(jsonPath("$.data.size").value(20))
-                .andExpect(jsonPath("$.data.total_elements").value(1))
-                .andExpect(jsonPath("$.data.total_pages").value(1))
+                .andExpect(jsonPath("$.data.totalElements").value(1))
+                .andExpect(jsonPath("$.data.totalPages").value(1))
         }
 
         @Test
@@ -160,7 +160,7 @@ class AdminProductControllerTest {
             mockMvc.perform(get("/api/v1/admin/products"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.content").isEmpty)
-                .andExpect(jsonPath("$.data.total_elements").value(0))
+                .andExpect(jsonPath("$.data.totalElements").value(0))
         }
     }
 

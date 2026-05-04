@@ -63,8 +63,8 @@ class ProductExpirationListNotifier extends StateNotifier<ProductExpirationListS
       final accountsMap = <String, String>{};
       for (final account in accountsList) {
         final accountMap = account as Map<String, dynamic>;
-        final code = accountMap['account_code'] as String;
-        final name = accountMap['account_name'] as String;
+        final code = accountMap['accountCode'] as String;
+        final name = accountMap['accountName'] as String;
         accountsMap[code] = name;
       }
       state = state.copyWith(accounts: accountsMap, isAccountsLoading: false);

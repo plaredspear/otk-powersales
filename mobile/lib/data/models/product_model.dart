@@ -27,28 +27,28 @@ class ProductModel {
   /// snake_case JSON에서 파싱
   factory ProductModel.fromJson(Map<String, dynamic> json) {
     return ProductModel(
-      productId: json['product_id'] as String,
-      productName: json['product_name'] as String,
-      productCode: json['product_code'] as String,
+      productId: json['productId'] as String,
+      productName: json['productName'] as String,
+      productCode: json['productCode'] as String,
       barcode: json['barcode'] as String,
-      storageType: json['storage_type'] as String,
-      shelfLife: json['shelf_life'] as String,
-      categoryMid: json['category_mid'] as String?,
-      categorySub: json['category_sub'] as String?,
+      storageType: json['storageType'] as String,
+      shelfLife: json['shelfLife'] as String,
+      categoryMid: json['categoryMid'] as String?,
+      categorySub: json['categorySub'] as String?,
     );
   }
 
   /// snake_case JSON으로 직렬화
   Map<String, dynamic> toJson() {
     return {
-      'product_id': productId,
-      'product_name': productName,
-      'product_code': productCode,
+      'productId': productId,
+      'productName': productName,
+      'productCode': productCode,
       'barcode': barcode,
-      'storage_type': storageType,
-      'shelf_life': shelfLife,
-      'category_mid': categoryMid,
-      'category_sub': categorySub,
+      'storageType': storageType,
+      'shelfLife': shelfLife,
+      'categoryMid': categoryMid,
+      'categorySub': categorySub,
     };
   }
 

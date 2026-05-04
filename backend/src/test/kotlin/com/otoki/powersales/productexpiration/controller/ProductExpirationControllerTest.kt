@@ -111,7 +111,7 @@ class ProductExpirationControllerTest {
                 .andExpect(jsonPath("$.data").isArray)
                 .andExpect(jsonPath("$.data.length()").value(2))
                 .andExpect(jsonPath("$.data[0].seq").value(1))
-                .andExpect(jsonPath("$.data[0].product_code").value("30310009"))
+                .andExpect(jsonPath("$.data[0].productCode").value("30310009"))
         }
 
         @Test
@@ -128,7 +128,7 @@ class ProductExpirationControllerTest {
                     .param("toDate", "2026-03-31")
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.data[0].account_code").value("1025172"))
+                .andExpect(jsonPath("$.data[0].accountCode").value("1025172"))
         }
 
         @Test
@@ -160,12 +160,12 @@ class ProductExpirationControllerTest {
 
             val requestJson = """
                 {
-                    "account_code": "1025172",
-                    "account_name": "(유)경산식품",
-                    "product_code": "30310009",
-                    "product_name": "고등어김치&무조림(캔)280G",
-                    "expiration_date": "2026-03-10",
-                    "alarm_date": "2026-03-09"
+                    "accountCode": "1025172",
+                    "accountName": "(유)경산식품",
+                    "productCode": "30310009",
+                    "productName": "고등어김치&무조림(캔)280G",
+                    "expirationDate": "2026-03-10",
+                    "alarmDate": "2026-03-09"
                 }
             """.trimIndent()
 
@@ -176,7 +176,7 @@ class ProductExpirationControllerTest {
             )
                 .andExpect(status().isCreated)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.product_code").value("30310009"))
+                .andExpect(jsonPath("$.data.productCode").value("30310009"))
         }
 
         @Test
@@ -184,10 +184,10 @@ class ProductExpirationControllerTest {
         fun create_missingField() {
             val requestJson = """
                 {
-                    "account_code": "1025172",
-                    "product_code": "30310009",
-                    "expiration_date": "2026-03-10",
-                    "alarm_date": "2026-03-09"
+                    "accountCode": "1025172",
+                    "productCode": "30310009",
+                    "expirationDate": "2026-03-10",
+                    "alarmDate": "2026-03-09"
                 }
             """.trimIndent()
 
@@ -208,12 +208,12 @@ class ProductExpirationControllerTest {
 
             val requestJson = """
                 {
-                    "account_code": "1025172",
-                    "account_name": "(유)경산식품",
-                    "product_code": "30310009",
-                    "product_name": "제품명",
-                    "expiration_date": "2026-03-10",
-                    "alarm_date": "2026-03-10"
+                    "accountCode": "1025172",
+                    "accountName": "(유)경산식품",
+                    "productCode": "30310009",
+                    "productName": "제품명",
+                    "expirationDate": "2026-03-10",
+                    "alarmDate": "2026-03-10"
                 }
             """.trimIndent()
 
@@ -239,8 +239,8 @@ class ProductExpirationControllerTest {
 
             val requestJson = """
                 {
-                    "expiration_date": "2026-04-10",
-                    "alarm_date": "2026-04-09",
+                    "expirationDate": "2026-04-10",
+                    "alarmDate": "2026-04-09",
                     "description": "수정됨"
                 }
             """.trimIndent()
@@ -252,7 +252,7 @@ class ProductExpirationControllerTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.expiration_date").value("2026-04-10"))
+                .andExpect(jsonPath("$.data.expirationDate").value("2026-04-10"))
         }
 
         @Test
@@ -263,8 +263,8 @@ class ProductExpirationControllerTest {
 
             val requestJson = """
                 {
-                    "expiration_date": "2026-04-10",
-                    "alarm_date": "2026-04-09"
+                    "expirationDate": "2026-04-10",
+                    "alarmDate": "2026-04-09"
                 }
             """.trimIndent()
 
@@ -322,7 +322,7 @@ class ProductExpirationControllerTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.deleted_count").value(3))
+                .andExpect(jsonPath("$.data.deletedCount").value(3))
                 .andExpect(jsonPath("$.message").value("3건의 유통기한이 삭제되었습니다"))
         }
 

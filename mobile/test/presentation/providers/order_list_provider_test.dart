@@ -24,14 +24,14 @@ Dio _createMockDio() {
             'success': true,
             'data': {
               'accounts': [
-                {'account_id': 1, 'account_name': '천사푸드', 'account_code': 'S001', 'address': '', 'representative_name': ''},
-                {'account_id': 2, 'account_name': '(유)경산식품', 'account_code': 'S002', 'address': '', 'representative_name': ''},
-                {'account_id': 3, 'account_name': '대한식품유통', 'account_code': 'S003', 'address': '', 'representative_name': ''},
-                {'account_id': 4, 'account_name': '행복마트', 'account_code': 'S004', 'address': '', 'representative_name': ''},
-                {'account_id': 5, 'account_name': '명품식자재', 'account_code': 'S005', 'address': '', 'representative_name': ''},
-                {'account_id': 6, 'account_name': '서울종합식품', 'account_code': 'S006', 'address': '', 'representative_name': ''},
-                {'account_id': 7, 'account_name': '그린유통', 'account_code': 'S007', 'address': '', 'representative_name': ''},
-                {'account_id': 8, 'account_name': '삼성식품', 'account_code': 'S008', 'address': '', 'representative_name': ''},
+                {'accountId': 1, 'accountName': '천사푸드', 'accountCode': 'S001', 'address': '', 'representativeName': ''},
+                {'accountId': 2, 'accountName': '(유)경산식품', 'accountCode': 'S002', 'address': '', 'representativeName': ''},
+                {'accountId': 3, 'accountName': '대한식품유통', 'accountCode': 'S003', 'address': '', 'representativeName': ''},
+                {'accountId': 4, 'accountName': '행복마트', 'accountCode': 'S004', 'address': '', 'representativeName': ''},
+                {'accountId': 5, 'accountName': '명품식자재', 'accountCode': 'S005', 'address': '', 'representativeName': ''},
+                {'accountId': 6, 'accountName': '서울종합식품', 'accountCode': 'S006', 'address': '', 'representativeName': ''},
+                {'accountId': 7, 'accountName': '그린유통', 'accountCode': 'S007', 'address': '', 'representativeName': ''},
+                {'accountId': 8, 'accountName': '삼성식품', 'accountCode': 'S008', 'address': '', 'representativeName': ''},
               ]
             }
           },

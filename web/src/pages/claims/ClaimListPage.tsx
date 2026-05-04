@@ -39,11 +39,11 @@ export default function ClaimListPage() {
 
   // 검색 시 적용되는 파라미터 (검색 버튼 클릭 시 갱신)
   const [searchParams, setSearchParams] = useState({
-    start_date: dayjs().subtract(30, 'day').format('YYYY-MM-DD'),
-    end_date: dayjs().format('YYYY-MM-DD'),
+    startDate: dayjs().subtract(30, 'day').format('YYYY-MM-DD'),
+    endDate: dayjs().format('YYYY-MM-DD'),
     status: undefined as string | undefined,
-    employee_name: undefined as string | undefined,
-    store_name: undefined as string | undefined,
+    employeeName: undefined as string | undefined,
+    storeName: undefined as string | undefined,
     page: 0,
     size: PAGE_SIZE,
   });
@@ -54,11 +54,11 @@ export default function ClaimListPage() {
   const handleSearch = () => {
     setPage(0);
     setSearchParams({
-      start_date: dateRange[0].format('YYYY-MM-DD'),
-      end_date: dateRange[1].format('YYYY-MM-DD'),
+      startDate: dateRange[0].format('YYYY-MM-DD'),
+      endDate: dateRange[1].format('YYYY-MM-DD'),
       status: status || undefined,
-      employee_name: employeeName || undefined,
-      store_name: storeName || undefined,
+      employeeName: employeeName || undefined,
+      storeName: storeName || undefined,
       page: 0,
       size: PAGE_SIZE,
     });

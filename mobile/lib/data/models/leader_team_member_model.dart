@@ -19,10 +19,10 @@ class LeaderTeamMemberModel {
   factory LeaderTeamMemberModel.fromJson(Map<String, dynamic> json) {
     return LeaderTeamMemberModel(
       id: json['id'] as int,
-      employeeCode: json['employee_code'] as String,
+      employeeCode: json['employeeCode'] as String,
       name: json['name'] as String,
       status: json['status'] as String?,
-      costCenterCode: json['cost_center_code'] as String?,
+      costCenterCode: json['costCenterCode'] as String?,
     );
   }
 

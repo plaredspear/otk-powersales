@@ -1,5 +1,7 @@
 package com.otoki.powersales.sap.inbound.dto.attendance
 
+import tools.jackson.databind.PropertyNamingStrategies
+import tools.jackson.databind.annotation.JsonNaming
 import com.otoki.powersales.sap.inbound.dto.sales.ChunkResult
 import com.otoki.powersales.sap.inbound.dto.sales.FailureItem
 
@@ -11,7 +13,10 @@ import com.otoki.powersales.sap.inbound.dto.sales.FailureItem
  * `scheduleConversion` (Spec #553): `attend_info` INSERT 후 연차류 코드를 `team_member_schedule`
  * 일정으로 변환한 결과 카운트. 변환 호출이 단 한 번도 발생하지 않은 경우(예: 모든 청크 commit 실패)
  * `null` 가능, 변환은 호출되었으나 실제 변환 0건이면 모든 카운트 0 인 객체.
+ *
+ * SAP 호환 보존을 위해 RESULT_DETAIL 내부 키는 SnakeCase 로 직렬화된다 (Spec #580 P1-B).
  */
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
 data class AttendInfoDetail(
     val successCount: Int,
     val failureCount: Int,

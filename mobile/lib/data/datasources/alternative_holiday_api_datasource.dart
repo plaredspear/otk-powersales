@@ -15,8 +15,8 @@ class AlternativeHolidayApiDataSource {
     final response = await _dio.post(
       '/api/v1/mobile/alternative-holidays',
       data: {
-        'actual_work_date': actualWorkDate,
-        'target_alt_holiday_date': targetAltHolidayDate,
+        'actualWorkDate': actualWorkDate,
+        'targetAltHolidayDate': targetAltHolidayDate,
       },
     );
     return AlternativeHolidayModel.fromJson(

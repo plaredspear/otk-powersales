@@ -21,22 +21,22 @@ class ValidationErrorModel {
   /// snake_case JSON에서 파싱
   factory ValidationErrorModel.fromJson(Map<String, dynamic> json) {
     return ValidationErrorModel(
-      errorType: json['error_type'] as String,
+      errorType: json['errorType'] as String,
       message: json['message'] as String,
-      minOrderQuantity: json['min_order_quantity'] as int?,
-      supplyQuantity: json['supply_quantity'] as int?,
-      dcQuantity: json['dc_quantity'] as int?,
+      minOrderQuantity: json['minOrderQuantity'] as int?,
+      supplyQuantity: json['supplyQuantity'] as int?,
+      dcQuantity: json['dcQuantity'] as int?,
     );
   }
 
   /// snake_case JSON으로 직렬화
   Map<String, dynamic> toJson() {
     return {
-      'error_type': errorType,
+      'errorType': errorType,
       'message': message,
-      'min_order_quantity': minOrderQuantity,
-      'supply_quantity': supplyQuantity,
-      'dc_quantity': dcQuantity,
+      'minOrderQuantity': minOrderQuantity,
+      'supplyQuantity': supplyQuantity,
+      'dcQuantity': dcQuantity,
     };
   }
 
@@ -91,10 +91,10 @@ class ValidationErrorModel {
 ///   "valid": false,
 ///   "errors": [
 ///     {
-///       "product_code": "01234567",
-///       "error_type": "MIN_ORDER_QUANTITY",
+///       "productCode": "01234567",
+///       "errorType": "MIN_ORDER_QUANTITY",
 ///       "message": "최소 주문 수량은 10박스입니다",
-///       "min_order_quantity": 10
+///       "minOrderQuantity": 10
 ///     }
 ///   ]
 /// }
@@ -180,13 +180,13 @@ class ValidationErrorWithProductModel {
 
   factory ValidationErrorWithProductModel.fromJson(Map<String, dynamic> json) {
     return ValidationErrorWithProductModel(
-      productCode: json['product_code'] as String,
+      productCode: json['productCode'] as String,
       error: ValidationErrorModel(
-        errorType: json['error_type'] as String,
+        errorType: json['errorType'] as String,
         message: json['message'] as String,
-        minOrderQuantity: json['min_order_quantity'] as int?,
-        supplyQuantity: json['supply_quantity'] as int?,
-        dcQuantity: json['dc_quantity'] as int?,
+        minOrderQuantity: json['minOrderQuantity'] as int?,
+        supplyQuantity: json['supplyQuantity'] as int?,
+        dcQuantity: json['dcQuantity'] as int?,
       ),
     );
   }
@@ -217,8 +217,8 @@ class ValidationErrorWithProductModel {
 /// {
 ///   "success": true,
 ///   "data": {
-///     "order_id": 123,
-///     "order_request_number": "OP00000074",
+///     "orderId": 123,
+///     "orderRequestNumber": "OP00000074",
 ///     "status": "PENDING"
 ///   }
 /// }
@@ -242,8 +242,8 @@ class OrderSubmitResultModel {
         : json;
 
     return OrderSubmitResultModel(
-      orderId: data['order_id'] as int,
-      orderRequestNumber: data['order_request_number'] as String,
+      orderId: data['orderId'] as int,
+      orderRequestNumber: data['orderRequestNumber'] as String,
       status: data['status'] as String,
     );
   }

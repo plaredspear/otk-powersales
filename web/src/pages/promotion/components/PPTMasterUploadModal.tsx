@@ -44,7 +44,7 @@ export default function PPTMasterUploadModal({ open, onClose }: Props) {
   const formatExcelDate = (value: unknown): string => {
     if (typeof value === 'number') {
       // Excel serial date number
-      const date = XLSX.SSF.parse_date_code(value);
+      const date = XLSX.SSF.parseDateCode(value);
       return `${date.y}-${String(date.m).padStart(2, '0')}-${String(date.d).padStart(2, '0')}`;
     }
     if (typeof value === 'string') {
@@ -79,11 +79,11 @@ export default function PPTMasterUploadModal({ open, onClose }: Props) {
 
       const items: ParsedRow[] = rows.map((row, index) => ({
         _rowIndex: index + 1,
-        employee_code: String(row['사번'] ?? ''),
-        account_code: String(row['거래처코드'] ?? ''),
-        team_type: String(row['전문행사조'] ?? ''),
-        start_date: formatExcelDate(row['시작일']),
-        end_date: row['종료일'] ? formatExcelDate(row['종료일']) : null,
+        employeeCode: String(row['사번'] ?? ''),
+        accountCode: String(row['거래처코드'] ?? ''),
+        teamType: String(row['전문행사조'] ?? ''),
+        startDate: formatExcelDate(row['시작일']),
+        endDate: row['종료일'] ? formatExcelDate(row['종료일']) : null,
       }));
 
       setParsedItems(items);

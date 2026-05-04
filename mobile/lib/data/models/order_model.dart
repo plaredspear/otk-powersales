@@ -30,14 +30,14 @@ class OrderModel {
   factory OrderModel.fromJson(Map<String, dynamic> json) {
     return OrderModel(
       id: json['id'] as int,
-      orderRequestNumber: json['order_request_number'] as String,
-      clientId: json['client_id'] as int,
-      clientName: json['client_name'] as String,
-      orderDate: json['order_date'] as String,
-      deliveryDate: json['delivery_date'] as String,
-      totalAmount: json['total_amount'] as int,
-      approvalStatus: json['approval_status'] as String,
-      isClosed: json['is_closed'] as bool,
+      orderRequestNumber: json['orderRequestNumber'] as String,
+      clientId: json['clientId'] as int,
+      clientName: json['clientName'] as String,
+      orderDate: json['orderDate'] as String,
+      deliveryDate: json['deliveryDate'] as String,
+      totalAmount: json['totalAmount'] as int,
+      approvalStatus: json['approvalStatus'] as String,
+      isClosed: json['isClosed'] as bool,
     );
   }
 
@@ -45,14 +45,14 @@ class OrderModel {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'order_request_number': orderRequestNumber,
-      'client_id': clientId,
-      'client_name': clientName,
-      'order_date': orderDate,
-      'delivery_date': deliveryDate,
-      'total_amount': totalAmount,
-      'approval_status': approvalStatus,
-      'is_closed': isClosed,
+      'orderRequestNumber': orderRequestNumber,
+      'clientId': clientId,
+      'clientName': clientName,
+      'orderDate': orderDate,
+      'deliveryDate': deliveryDate,
+      'totalAmount': totalAmount,
+      'approvalStatus': approvalStatus,
+      'isClosed': isClosed,
     };
   }
 

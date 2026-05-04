@@ -94,12 +94,12 @@ class AdminEmployeePermissionControllerTest {
             mockMvc.perform(get("/api/v1/admin/employees/2/permissions"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.employee_id").value(2))
+                .andExpect(jsonPath("$.data.employeeId").value(2))
                 .andExpect(jsonPath("$.data.name").value("홍길동"))
-                .andExpect(jsonPath("$.data.role_permissions[0]").value("DASHBOARD_READ"))
-                .andExpect(jsonPath("$.data.user_permissions[0].permission").value("SCHEDULE_WRITE"))
-                .andExpect(jsonPath("$.data.user_permissions[0].granted_by_name").value("관리자김"))
-                .andExpect(jsonPath("$.data.effective_permissions").isArray)
+                .andExpect(jsonPath("$.data.rolePermissions[0]").value("DASHBOARD_READ"))
+                .andExpect(jsonPath("$.data.userPermissions[0].permission").value("SCHEDULE_WRITE"))
+                .andExpect(jsonPath("$.data.userPermissions[0].grantedByName").value("관리자김"))
+                .andExpect(jsonPath("$.data.effectivePermissions").isArray)
         }
 
         @Test
@@ -152,7 +152,7 @@ class AdminEmployeePermissionControllerTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.effective_permissions").isArray)
+                .andExpect(jsonPath("$.data.effectivePermissions").isArray)
         }
 
         @Test
@@ -216,10 +216,10 @@ class AdminEmployeePermissionControllerTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.previous_role").value("BRANCH_MANAGER"))
-                .andExpect(jsonPath("$.data.previous_role_label").value("지점장"))
-                .andExpect(jsonPath("$.data.new_role").value("SALES_MANAGER"))
-                .andExpect(jsonPath("$.data.new_role_label").value("영업부장"))
+                .andExpect(jsonPath("$.data.previousRole").value("BRANCH_MANAGER"))
+                .andExpect(jsonPath("$.data.previousRoleLabel").value("지점장"))
+                .andExpect(jsonPath("$.data.newRole").value("SALES_MANAGER"))
+                .andExpect(jsonPath("$.data.newRoleLabel").value("영업부장"))
         }
     }
 }

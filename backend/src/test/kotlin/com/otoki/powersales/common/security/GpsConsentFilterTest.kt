@@ -1,6 +1,5 @@
 package com.otoki.powersales.common.security
 
-import tools.jackson.databind.PropertyNamingStrategies
 import tools.jackson.databind.json.JsonMapper
 import com.otoki.powersales.auth.entity.UserRole
 import jakarta.servlet.FilterChain
@@ -31,9 +30,7 @@ class GpsConsentFilterTest {
 
     @BeforeEach
     fun setUp() {
-        val objectMapper = JsonMapper.builder()
-            .propertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
-            .build()
+        val objectMapper = JsonMapper.builder().build()
         filter = GpsConsentFilter(objectMapper)
         request = MockHttpServletRequest()
         response = MockHttpServletResponse()

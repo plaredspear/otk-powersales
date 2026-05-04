@@ -41,8 +41,8 @@ class SafetyCheckApiDataSource implements SafetyCheckRemoteDataSource {
     final response = await _dio.post(
       '/api/v1/mobile/safety-check/submit',
       data: {
-        'start_time': startTime.toIso8601String(),
-        'complete_time': completeTime.toIso8601String(),
+        'startTime': startTime.toIso8601String(),
+        'completeTime': completeTime.toIso8601String(),
         'equipments': equipments,
         'precautions': precautions ?? [],
       },

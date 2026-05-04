@@ -12,8 +12,8 @@ class SafetyCheckSubmitResultModel {
 
   factory SafetyCheckSubmitResultModel.fromJson(Map<String, dynamic> json) {
     return SafetyCheckSubmitResultModel(
-      submittedAt: DateTime.parse(json['submitted_at'] as String),
-      safetyCheckCompleted: json['safety_check_completed'] as bool,
+      submittedAt: DateTime.parse(json['submittedAt'] as String),
+      safetyCheckCompleted: json['safetyCheckCompleted'] as bool,
     );
   }
 

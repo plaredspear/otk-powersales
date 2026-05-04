@@ -89,10 +89,10 @@ class AdminMonthlyIntegrationControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.year").value(2026))
                 .andExpect(jsonPath("$.data.month").value(3))
-                .andExpect(jsonPath("$.data.total_count").value(1))
-                .andExpect(jsonPath("$.data.items[0].branch_name").value("서울1지점"))
-                .andExpect(jsonPath("$.data.items[0].employee_code").value("200001"))
-                .andExpect(jsonPath("$.data.items[0].total_input_count").value(22))
+                .andExpect(jsonPath("$.data.totalCount").value(1))
+                .andExpect(jsonPath("$.data.items[0].branchName").value("서울1지점"))
+                .andExpect(jsonPath("$.data.items[0].employeeCode").value("200001"))
+                .andExpect(jsonPath("$.data.items[0].totalInputCount").value(22))
         }
 
         @Test
@@ -177,8 +177,8 @@ class AdminMonthlyIntegrationControllerTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.items[0].branch_name").value("서울1지점"))
-                .andExpect(jsonPath("$.data.items[0].current_month_total").value(25.5))
+                .andExpect(jsonPath("$.data.items[0].branchName").value("서울1지점"))
+                .andExpect(jsonPath("$.data.items[0].currentMonthTotal").value(25.5))
         }
     }
 }

@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:56638",
+    "url" : "http://localhost:56532",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -2699,10 +2699,10 @@
       "SortObject" : {
         "type" : "object",
         "properties" : {
-          "unsorted" : {
+          "sorted" : {
             "type" : "boolean"
           },
-          "sorted" : {
+          "unsorted" : {
             "type" : "boolean"
           },
           "empty" : {
@@ -2928,12 +2928,6 @@
       "MonthlyScheduleResponse" : {
         "type" : "object",
         "properties" : {
-          "work_days" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/WorkDayDto"
-            }
-          },
           "year" : {
             "type" : "integer",
             "format" : "int32"
@@ -2941,6 +2935,12 @@
           "month" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "workDays" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/WorkDayDto"
+            }
           },
           "annualLeaveCount" : {
             "type" : "integer",
@@ -2955,11 +2955,11 @@
       "WorkDayDto" : {
         "type" : "object",
         "properties" : {
-          "has_work" : {
-            "type" : "boolean"
-          },
           "date" : {
             "type" : "string"
+          },
+          "hasWork" : {
+            "type" : "boolean"
           },
           "workingType" : {
             "type" : [ "string", "null" ]
@@ -2998,23 +2998,23 @@
       "DailyScheduleResponse" : {
         "type" : "object",
         "properties" : {
-          "day_of_week" : {
-            "type" : "string"
-          },
-          "member_name" : {
-            "type" : "string"
-          },
-          "employee_code" : {
-            "type" : "string"
-          },
-          "report_progress" : {
-            "$ref" : "#/components/schemas/ReportProgressDto"
-          },
           "date" : {
+            "type" : "string"
+          },
+          "dayOfWeek" : {
+            "type" : "string"
+          },
+          "memberName" : {
+            "type" : "string"
+          },
+          "employeeCode" : {
             "type" : "string"
           },
           "workingType" : {
             "type" : [ "string", "null" ]
+          },
+          "reportProgress" : {
+            "$ref" : "#/components/schemas/ReportProgressDto"
           },
           "accounts" : {
             "type" : "array",
@@ -3027,24 +3027,21 @@
       "DisplayWorkScheduleItemDto" : {
         "type" : "object",
         "properties" : {
-          "account_id" : {
+          "accountId" : {
             "type" : "integer",
             "format" : "int64"
           },
-          "account_name" : {
+          "accountName" : {
             "type" : "string"
           },
-          "work_type_1" : {
+          "workType1" : {
             "type" : "string"
           },
-          "work_type_2" : {
+          "workType2" : {
             "type" : "string"
           },
-          "work_type_3" : {
+          "workType3" : {
             "type" : "string"
-          },
-          "is_registered" : {
-            "type" : "boolean"
           },
           "registered" : {
             "type" : "boolean"
@@ -3054,9 +3051,6 @@
       "ReportProgressDto" : {
         "type" : "object",
         "properties" : {
-          "work_type" : {
-            "type" : "string"
-          },
           "completed" : {
             "type" : "integer",
             "format" : "int32"
@@ -3064,6 +3058,9 @@
           "total" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "workType" : {
+            "type" : "string"
           }
         }
       },

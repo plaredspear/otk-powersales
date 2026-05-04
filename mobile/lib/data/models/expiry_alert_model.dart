@@ -18,19 +18,19 @@ class ExpiryAlertModel {
 
   factory ExpiryAlertModel.fromJson(Map<String, dynamic> json) {
     return ExpiryAlertModel(
-      branchName: json['branch_name'] as String,
-      employeeName: json['employee_name'] as String,
-      employeeCode: json['employee_code'] as String,
-      expiryCount: json['expiry_count'] as int,
+      branchName: json['branchName'] as String,
+      employeeName: json['employeeName'] as String,
+      employeeCode: json['employeeCode'] as String,
+      expiryCount: json['expiryCount'] as int,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'branch_name': branchName,
-      'employee_name': employeeName,
-      'employee_code': employeeCode,
-      'expiry_count': expiryCount,
+      'branchName': branchName,
+      'employeeName': employeeName,
+      'employeeCode': employeeCode,
+      'expiryCount': expiryCount,
     };
   }
 

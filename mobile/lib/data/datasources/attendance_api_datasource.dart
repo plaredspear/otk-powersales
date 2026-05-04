@@ -36,10 +36,10 @@ class AttendanceApiDataSource {
 
     return AccountListResult(
       accounts: accounts,
-      totalCount: data['total_count'] as int,
-      registeredCount: data['registered_count'] as int,
-      currentDate: data['current_date'] as String,
-      safetyCheckCompleted: data['safety_check_completed'] as bool? ?? true,
+      totalCount: data['totalCount'] as int,
+      registeredCount: data['registeredCount'] as int,
+      currentDate: data['currentDate'] as String,
+      safetyCheckCompleted: data['safetyCheckCompleted'] as bool? ?? true,
     );
   }
 
@@ -59,9 +59,9 @@ class AttendanceApiDataSource {
     };
 
     if (displayWorkScheduleId != null) {
-      body['display_work_schedule_id'] = displayWorkScheduleId;
+      body['displayWorkScheduleId'] = displayWorkScheduleId;
     } else {
-      body['schedule_id'] = scheduleId;
+      body['scheduleId'] = scheduleId;
     }
 
     final response = await _dio.post(
@@ -78,7 +78,7 @@ class AttendanceApiDataSource {
     final response = await _dio.get('/api/v1/mobile/attendance/status');
 
     final data = response.data['data'] as Map<String, dynamic>;
-    final statusListJson = data['status_list'] as List<dynamic>;
+    final statusListJson = data['statusList'] as List<dynamic>;
     final statusList = statusListJson
         .map((json) =>
             AttendanceStatusModel.fromJson(json as Map<String, dynamic>)
@@ -86,10 +86,10 @@ class AttendanceApiDataSource {
         .toList();
 
     return AttendanceStatusResult(
-      totalCount: data['total_count'] as int,
-      registeredCount: data['registered_count'] as int,
+      totalCount: data['totalCount'] as int,
+      registeredCount: data['registeredCount'] as int,
       statusList: statusList,
-      currentDate: data['current_date'] as String,
+      currentDate: data['currentDate'] as String,
     );
   }
 }

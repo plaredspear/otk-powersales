@@ -150,14 +150,14 @@ export default function PromotionFormPage() {
 
   const handleSubmit = async (values: FormValues) => {
     const payload: PromotionFormData = {
-      promotion_type_id: values.promotionTypeId,
-      account_id: values.accountId,
-      start_date: values.startDate.format('YYYY-MM-DD'),
-      end_date: values.endDate.format('YYYY-MM-DD'),
-      primary_product_id: values.primaryProductId,
-      other_product: values.otherProduct || null,
+      promotionTypeId: values.promotionTypeId,
+      accountId: values.accountId,
+      startDate: values.startDate.format('YYYY-MM-DD'),
+      endDate: values.endDate.format('YYYY-MM-DD'),
+      primaryProductId: values.primaryProductId,
+      otherProduct: values.otherProduct || null,
       message: values.message || null,
-      stand_location: values.standLocation,
+      standLocation: values.standLocation,
       remark: values.remark || null,
     };
 

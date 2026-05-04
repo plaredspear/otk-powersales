@@ -15,7 +15,7 @@ class MyAccountListResponse {
     final stores = storesJson
         .map((e) => MyAccountModel.fromJson(e as Map<String, dynamic>))
         .toList();
-    final totalCount = json['total_count'] as int;
+    final totalCount = json['totalCount'] as int;
 
     return MyAccountListResponse(
       stores: stores,

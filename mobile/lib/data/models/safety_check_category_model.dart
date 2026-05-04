@@ -21,9 +21,9 @@ class SafetyCheckCategoryModel {
 
   factory SafetyCheckCategoryModel.fromJson(Map<String, dynamic> json) {
     return SafetyCheckCategoryModel(
-      questionNum: json['question_num'] as int,
+      questionNum: json['questionNum'] as int,
       title: json['title'] as String,
-      inputType: json['input_type'] as String,
+      inputType: json['inputType'] as String,
       required: json['required'] as bool,
       options: (json['options'] as List<dynamic>?)
           ?.map((e) => e as String)

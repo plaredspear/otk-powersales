@@ -17,9 +17,9 @@ class SafetyCheckStatusModel {
   factory SafetyCheckStatusModel.fromJson(Map<String, dynamic> json) {
     return SafetyCheckStatusModel(
       date: json['date'] as String,
-      totalCount: json['total_count'] as int,
-      submittedCount: json['submitted_count'] as int,
-      notSubmittedCount: json['not_submitted_count'] as int,
+      totalCount: json['totalCount'] as int,
+      submittedCount: json['submittedCount'] as int,
+      notSubmittedCount: json['notSubmittedCount'] as int,
       members: (json['members'] as List<dynamic>)
           .map((e) => MemberStatusModel.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -59,19 +59,19 @@ class MemberStatusModel {
   factory MemberStatusModel.fromJson(Map<String, dynamic> json) {
     return MemberStatusModel(
       id: json['id'] as int,
-      employeeCode: json['employee_code'] as String,
-      employeeName: json['employee_name'] as String,
-      accountName: json['account_name'] as String?,
+      employeeCode: json['employeeCode'] as String,
+      employeeName: json['employeeName'] as String,
+      accountName: json['accountName'] as String?,
       submitted: json['submitted'] as bool,
-      submittedAt: json['submitted_at'] as String?,
+      submittedAt: json['submittedAt'] as String?,
       equipments: (json['equipments'] as List<dynamic>)
           .map((e) => EquipmentStatusModel.fromJson(e as Map<String, dynamic>))
           .toList(),
-      yesCount: json['yes_count'] as int,
-      noCount: json['no_count'] as int,
+      yesCount: json['yesCount'] as int,
+      noCount: json['noCount'] as int,
       precautions: json['precautions'] as String?,
-      precautionCount: json['precaution_count'] as int,
-      workReportStatus: json['work_report_status'] as String?,
+      precautionCount: json['precautionCount'] as int,
+      workReportStatus: json['workReportStatus'] as String?,
     );
   }
 }
@@ -89,7 +89,7 @@ class EquipmentStatusModel {
 
   factory EquipmentStatusModel.fromJson(Map<String, dynamic> json) {
     return EquipmentStatusModel(
-      seqNum: json['seq_num'] as int,
+      seqNum: json['seqNum'] as int,
       label: json['label'] as String,
       answer: json['answer'] as String,
     );

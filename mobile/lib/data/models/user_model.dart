@@ -22,9 +22,9 @@ class UserModel {
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
       id: json['id'] as int,
-      employeeCode: json['employee_code'] as String,
+      employeeCode: json['employeeCode'] as String,
       name: json['name'] as String,
-      orgName: json['org_name'] as String?,
+      orgName: json['orgName'] as String?,
       role: json['role'] as String,
     );
   }
@@ -33,9 +33,9 @@ class UserModel {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'employee_code': employeeCode,
+      'employeeCode': employeeCode,
       'name': name,
-      'org_name': orgName,
+      'orgName': orgName,
       'role': role,
     };
   }

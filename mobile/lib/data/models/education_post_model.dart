@@ -18,7 +18,7 @@ class EducationPostModel {
     return EducationPostModel(
       id: json['id'] as int,
       title: json['title'] as String,
-      createdAt: json['created_at'] as String,
+      createdAt: json['createdAt'] as String,
     );
   }
 
@@ -26,7 +26,7 @@ class EducationPostModel {
     return {
       'id': id,
       'title': title,
-      'created_at': createdAt,
+      'createdAt': createdAt,
     };
   }
 
@@ -89,9 +89,9 @@ class EducationPostPageModel {
       content: (json['content'] as List<dynamic>)
           .map((item) => EducationPostModel.fromJson(item as Map<String, dynamic>))
           .toList(),
-      totalCount: json['total_count'] as int,
-      totalPages: json['total_pages'] as int,
-      currentPage: json['current_page'] as int,
+      totalCount: json['totalCount'] as int,
+      totalPages: json['totalPages'] as int,
+      currentPage: json['currentPage'] as int,
       size: json['size'] as int,
     );
   }
@@ -99,9 +99,9 @@ class EducationPostPageModel {
   Map<String, dynamic> toJson() {
     return {
       'content': content.map((post) => post.toJson()).toList(),
-      'total_count': totalCount,
-      'total_pages': totalPages,
-      'current_page': currentPage,
+      'totalCount': totalCount,
+      'totalPages': totalPages,
+      'currentPage': currentPage,
       'size': size,
     };
   }

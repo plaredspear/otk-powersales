@@ -18,8 +18,8 @@ class MonthlyScheduleDayModel {
   factory MonthlyScheduleDayModel.fromJson(Map<String, dynamic> json) {
     return MonthlyScheduleDayModel(
       date: DateTime.parse(json['date'] as String),
-      hasWork: json['has_work'] as bool,
-      workingType: json['working_type'] as String?,
+      hasWork: json['hasWork'] as bool,
+      workingType: json['workingType'] as String?,
     );
   }
 
@@ -27,8 +27,8 @@ class MonthlyScheduleDayModel {
   Map<String, dynamic> toJson() {
     return {
       'date': date.toIso8601String().split('T')[0], // YYYY-MM-DD 형식
-      'has_work': hasWork,
-      'working_type': workingType,
+      'hasWork': hasWork,
+      'workingType': workingType,
     };
   }
 

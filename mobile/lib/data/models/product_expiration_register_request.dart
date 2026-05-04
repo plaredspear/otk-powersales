@@ -25,12 +25,12 @@ class ProductExpirationRegisterRequest {
   /// snake_case JSON으로 직렬화
   Map<String, dynamic> toJson() {
     return {
-      'account_code': accountCode,
-      'account_name': accountName,
-      'product_code': productCode,
-      'product_name': productName,
-      'expiration_date': expirationDate,
-      'alarm_date': alarmDate,
+      'accountCode': accountCode,
+      'accountName': accountName,
+      'productCode': productCode,
+      'productName': productName,
+      'expirationDate': expirationDate,
+      'alarmDate': alarmDate,
       'description': description,
     };
   }

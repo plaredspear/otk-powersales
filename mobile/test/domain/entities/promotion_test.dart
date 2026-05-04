@@ -31,18 +31,18 @@ void main() {
       // Given
       final json = {
         'id': 2,
-        'promotion_number': 'P-2025-002',
-        'promotion_name': null,
-        'promotion_type_name': null,
-        'account_name': null,
-        'start_date': '2025-03-01',
-        'end_date': '2025-03-15',
+        'promotionNumber': 'P-2025-002',
+        'promotionName': null,
+        'promotionTypeName': null,
+        'accountName': null,
+        'startDate': '2025-03-01',
+        'endDate': '2025-03-15',
         'category': null,
-        'stand_location': null,
-        'target_amount': null,
-        'actual_amount': null,
-        'is_closed': true,
-        'my_schedule_date': null,
+        'standLocation': null,
+        'targetAmount': null,
+        'actualAmount': null,
+        'isClosed': true,
+        'myScheduleDate': null,
       };
 
       // When
@@ -128,7 +128,7 @@ void main() {
 
       test('targetAmount가 0이면 null 반환', () {
         final json = Map<String, dynamic>.from(_sampleDetailJson);
-        json['target_amount'] = 0;
+        json['targetAmount'] = 0;
 
         final detail = PromotionDetail.fromJson(json);
         expect(detail.achievementRate, isNull);
@@ -136,7 +136,7 @@ void main() {
 
       test('targetAmount가 null이면 null 반환', () {
         final json = Map<String, dynamic>.from(_sampleDetailJson);
-        json['target_amount'] = null;
+        json['targetAmount'] = null;
 
         final detail = PromotionDetail.fromJson(json);
         expect(detail.achievementRate, isNull);
@@ -144,8 +144,8 @@ void main() {
 
       test('actualAmount가 null이면 0으로 계산', () {
         final json = Map<String, dynamic>.from(_sampleDetailJson);
-        json['actual_amount'] = null;
-        json['target_amount'] = 1000000;
+        json['actualAmount'] = null;
+        json['targetAmount'] = 1000000;
 
         final detail = PromotionDetail.fromJson(json);
         expect(detail.achievementRate, 0.0);
@@ -161,13 +161,13 @@ void main() {
       // Given
       final json = {
         'id': 100,
-        'employee_name': null,
-        'schedule_date': null,
-        'work_status': null,
-        'work_type3': null,
-        'professional_promotion_team': null,
-        'target_amount': null,
-        'actual_amount': null,
+        'employeeName': null,
+        'scheduleDate': null,
+        'workStatus': null,
+        'workType3': null,
+        'professionalPromotionTeam': null,
+        'targetAmount': null,
+        'actualAmount': null,
       };
 
       // When
@@ -236,69 +236,69 @@ void main() {
 
 final _sampleItemJson = <String, dynamic>{
   'id': 1,
-  'promotion_number': 'P-2025-001',
-  'promotion_name': '이마트 죽전점 행사',
-  'promotion_type_name': '시식행사',
-  'account_name': '이마트 죽전점',
-  'start_date': '2025-03-01',
-  'end_date': '2025-03-15',
+  'promotionNumber': 'P-2025-001',
+  'promotionName': '이마트 죽전점 행사',
+  'promotionTypeName': '시식행사',
+  'accountName': '이마트 죽전점',
+  'startDate': '2025-03-01',
+  'endDate': '2025-03-15',
   'category': '라면',
-  'stand_location': '1층 중앙',
-  'target_amount': 5000000,
-  'actual_amount': 3500000,
-  'is_closed': false,
-  'my_schedule_date': '2025-03-10',
+  'standLocation': '1층 중앙',
+  'targetAmount': 5000000,
+  'actualAmount': 3500000,
+  'isClosed': false,
+  'myScheduleDate': '2025-03-10',
 };
 
 final _sampleEmployeeJson = <String, dynamic>{
   'id': 1,
-  'employee_name': '김철수',
-  'schedule_date': '2025-03-10',
-  'work_status': '출근',
-  'work_type3': '시식',
-  'professional_promotion_team': 'A팀',
-  'target_amount': 500000,
-  'actual_amount': 350000,
+  'employeeName': '김철수',
+  'scheduleDate': '2025-03-10',
+  'workStatus': '출근',
+  'workType3': '시식',
+  'professionalPromotionTeam': 'A팀',
+  'targetAmount': 500000,
+  'actualAmount': 350000,
 };
 
 final _sampleDetailJson = <String, dynamic>{
   'id': 10,
-  'promotion_number': 'P-2025-010',
-  'promotion_name': '홈플러스 수지점 시식행사',
-  'promotion_type_name': '시식행사',
-  'account_name': '홈플러스 수지점',
-  'start_date': '2025-03-01',
-  'end_date': '2025-03-15',
+  'promotionNumber': 'P-2025-010',
+  'promotionName': '홈플러스 수지점 시식행사',
+  'promotionTypeName': '시식행사',
+  'accountName': '홈플러스 수지점',
+  'startDate': '2025-03-01',
+  'endDate': '2025-03-15',
   'category': '라면',
-  'stand_location': '1층 중앙',
-  'target_amount': 4800000,
-  'actual_amount': 3200000,
-  'is_closed': false,
-  'primary_product_name': '진라면',
-  'other_product': '참깨라면',
+  'standLocation': '1층 중앙',
+  'targetAmount': 4800000,
+  'actualAmount': 3200000,
+  'isClosed': false,
+  'primaryProductName': '진라면',
+  'otherProduct': '참깨라면',
   'message': '행사 진행 중',
-  'product_type': '라면류',
+  'productType': '라면류',
   'remark': '비고 사항',
   'employees': [
     {
       'id': 1,
-      'employee_name': '김철수',
-      'schedule_date': '2025-03-10',
-      'work_status': '출근',
-      'work_type3': '시식',
-      'professional_promotion_team': 'A팀',
-      'target_amount': 500000,
-      'actual_amount': 350000,
+      'employeeName': '김철수',
+      'scheduleDate': '2025-03-10',
+      'workStatus': '출근',
+      'workType3': '시식',
+      'professionalPromotionTeam': 'A팀',
+      'targetAmount': 500000,
+      'actualAmount': 350000,
     },
     {
       'id': 2,
-      'employee_name': '이영희',
-      'schedule_date': '2025-03-11',
-      'work_status': '출근',
-      'work_type3': '판매',
-      'professional_promotion_team': 'B팀',
-      'target_amount': 600000,
-      'actual_amount': 480000,
+      'employeeName': '이영희',
+      'scheduleDate': '2025-03-11',
+      'workStatus': '출근',
+      'workType3': '판매',
+      'professionalPromotionTeam': 'B팀',
+      'targetAmount': 600000,
+      'actualAmount': 480000,
     },
   ],
 };

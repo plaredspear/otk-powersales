@@ -116,14 +116,14 @@ class MonthlySalesControllerTest {
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
-            .andExpect(jsonPath("$.data.customer_id").value("C001"))
-            .andExpect(jsonPath("$.data.customer_name").value("GS리테일"))
-            .andExpect(jsonPath("$.data.year_month").value("202602"))
-            .andExpect(jsonPath("$.data.target_amount").value(28900000))
-            .andExpect(jsonPath("$.data.achieved_amount").value(30089000))
-            .andExpect(jsonPath("$.data.category_sales[0].category").value("상온"))
-            .andExpect(jsonPath("$.data.year_comparison.current_year").value(30089000))
-            .andExpect(jsonPath("$.data.monthly_average.current_year_average").value(28500000))
+            .andExpect(jsonPath("$.data.customerId").value("C001"))
+            .andExpect(jsonPath("$.data.customerName").value("GS리테일"))
+            .andExpect(jsonPath("$.data.yearMonth").value("202602"))
+            .andExpect(jsonPath("$.data.targetAmount").value(28900000))
+            .andExpect(jsonPath("$.data.achievedAmount").value(30089000))
+            .andExpect(jsonPath("$.data.categorySales[0].category").value("상온"))
+            .andExpect(jsonPath("$.data.yearComparison.currentYear").value(30089000))
+            .andExpect(jsonPath("$.data.monthlyAverage.currentYearAverage").value(28500000))
     }
 
     @Test
@@ -174,6 +174,6 @@ class MonthlySalesControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
         )
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.data.customer_id").value("ALL"))
+            .andExpect(jsonPath("$.data.customerId").value("ALL"))
     }
 }

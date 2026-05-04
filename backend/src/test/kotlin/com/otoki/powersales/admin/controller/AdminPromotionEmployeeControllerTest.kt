@@ -74,9 +74,9 @@ class AdminPromotionEmployeeControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data[0].id").value(1))
-                .andExpect(jsonPath("$.data[0].employee_code").value("20030117"))
-                .andExpect(jsonPath("$.data[0].employee_name").value("김여사"))
-                .andExpect(jsonPath("$.data[0].work_status").value("근무"))
+                .andExpect(jsonPath("$.data[0].employeeCode").value("20030117"))
+                .andExpect(jsonPath("$.data[0].employeeName").value("김여사"))
+                .andExpect(jsonPath("$.data[0].workStatus").value("근무"))
         }
 
         @Test
@@ -105,8 +105,8 @@ class AdminPromotionEmployeeControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1))
-                .andExpect(jsonPath("$.data.created_at").exists())
-                .andExpect(jsonPath("$.data.updated_at").exists())
+                .andExpect(jsonPath("$.data.createdAt").exists())
+                .andExpect(jsonPath("$.data.updatedAt").exists())
         }
 
         @Test
@@ -139,7 +139,7 @@ class AdminPromotionEmployeeControllerTest {
                 .andExpect(status().isCreated)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1))
-                .andExpect(jsonPath("$.data.promo_close_by_tm").value(false))
+                .andExpect(jsonPath("$.data.promoCloseByTm").value(false))
         }
 
         @Test
@@ -177,7 +177,7 @@ class AdminPromotionEmployeeControllerTest {
             val response = createDetailResponse()
             whenever(adminPromotionEmployeeService.createEmployee(eq(10L), any())).thenReturn(response)
 
-            val partialJson = """{"schedule_date":"2026-03-15"}"""
+            val partialJson = """{"scheduleDate":"2026-03-15"}"""
 
             mockMvc.perform(
                 post("/api/v1/admin/promotions/10/employees")

@@ -84,8 +84,8 @@ class AdminAlternativeHolidayControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
-                .andExpect(jsonPath("$.data[0].employee_code").value("12345678"))
-                .andExpect(jsonPath("$.data[0].org_name").value("서울1팀"))
+                .andExpect(jsonPath("$.data[0].employeeCode").value("12345678"))
+                .andExpect(jsonPath("$.data[0].orgName").value("서울1팀"))
                 .andExpect(jsonPath("$.data[0].status").value("신규"))
         }
     }
@@ -122,7 +122,7 @@ class AdminAlternativeHolidayControllerTest {
             whenever(adminAlternativeHolidayService.createAlternativeHoliday(any(), eq(1L)))
                 .thenThrow(AltHolidayConfirmDateIsHolidayException())
 
-            val json = """{"employee_code": "12345678", "actual_work_date": "2026-03-07", "target_alt_holiday_date": "2026-01-01"}"""
+            val json = """{"employeeCode": "12345678", "actualWorkDate": "2026-03-07", "targetAltHolidayDate": "2026-01-01"}"""
             mockMvc.perform(
                 post("/api/v1/admin/alternative-holidays")
                     .contentType(MediaType.APPLICATION_JSON).content(json)
@@ -134,7 +134,7 @@ class AdminAlternativeHolidayControllerTest {
         @Test
         @DisplayName("실패 - 사번 누락")
         fun create_missingEmployeeNumber() {
-            val json = """{"employee_code": "", "actual_work_date": "2026-03-07", "target_alt_holiday_date": "2026-03-09"}"""
+            val json = """{"employeeCode": "", "actualWorkDate": "2026-03-07", "targetAltHolidayDate": "2026-03-09"}"""
             mockMvc.perform(
                 post("/api/v1/admin/alternative-holidays")
                     .contentType(MediaType.APPLICATION_JSON).content(json)
@@ -155,14 +155,14 @@ class AdminAlternativeHolidayControllerTest {
             )
             whenever(adminAlternativeHolidayService.approveAlternativeHoliday(eq(1L), any())).thenReturn(response)
 
-            val json = """{"confirm_alt_holiday_date": "2026-03-09"}"""
+            val json = """{"confirmAltHolidayDate": "2026-03-09"}"""
             mockMvc.perform(
                 post("/api/v1/admin/alternative-holidays/1/approve")
                     .contentType(MediaType.APPLICATION_JSON).content(json)
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.status").value("승인"))
-                .andExpect(jsonPath("$.data.confirm_alt_holiday_date").value("2026-03-09"))
+                .andExpect(jsonPath("$.data.confirmAltHolidayDate").value("2026-03-09"))
         }
 
         @Test
@@ -204,7 +204,7 @@ class AdminAlternativeHolidayControllerTest {
         @Test
         @DisplayName("실패 - 사유 누락")
         fun reject_noReason() {
-            val json = """{"change_reason": ""}"""
+            val json = """{"changeReason": ""}"""
             mockMvc.perform(
                 post("/api/v1/admin/alternative-holidays/1/reject")
                     .contentType(MediaType.APPLICATION_JSON).content(json)
@@ -218,7 +218,7 @@ class AdminAlternativeHolidayControllerTest {
             whenever(adminAlternativeHolidayService.rejectAlternativeHoliday(eq(99999L), any()))
                 .thenThrow(AltHolidayNotFoundException())
 
-            val json = """{"change_reason": "테스트"}"""
+            val json = """{"changeReason": "테스트"}"""
             mockMvc.perform(
                 post("/api/v1/admin/alternative-holidays/99999/reject")
                     .contentType(MediaType.APPLICATION_JSON).content(json)

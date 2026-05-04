@@ -94,7 +94,7 @@ void main() {
     );
   });
 
-  testWidgets('leader_view', (tester) async {
+  testWidgets('leaderView', (tester) async {
     await tester.pumpWidget(wrap(buildCard(
       userRole: 'LEADER',
       totalCount: 3,

@@ -1,7 +1,6 @@
 package com.otoki.powersales.admin.security
 
 import tools.jackson.databind.ObjectMapper
-import tools.jackson.databind.PropertyNamingStrategies
 import tools.jackson.databind.json.JsonMapper
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.scope.AdminEmployeeHolder
@@ -52,9 +51,7 @@ class AdminAuthorityFilterTest {
 
     @BeforeEach
     fun setUp() {
-        objectMapper = JsonMapper.builder()
-            .propertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
-            .build()
+        objectMapper = JsonMapper.builder().build()
         adminEmployeeHolder = AdminEmployeeHolder()
         dataScopeHolder = DataScopeHolder()
         filter = AdminAuthorityFilter(employeeRepository, objectMapper, adminDataScopeService, adminEmployeeHolder, dataScopeHolder, requestMappingHandlerMapping, adminPermissionResolver)

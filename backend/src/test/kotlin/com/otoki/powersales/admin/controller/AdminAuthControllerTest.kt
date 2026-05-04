@@ -72,24 +72,24 @@ class AdminAuthControllerTest {
             mockMvc.perform(
                 post("/api/v1/admin/auth/login")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content("""{"employee_code": "00000001", "password": "1234"}""")
+                    .content("""{"employeeCode": "00000001", "password": "1234"}""")
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("관리자 로그인 성공"))
                 .andExpect(jsonPath("$.data.user.id").value(1))
-                .andExpect(jsonPath("$.data.user.employee_code").value("00000001"))
+                .andExpect(jsonPath("$.data.user.employeeCode").value("00000001"))
                 .andExpect(jsonPath("$.data.user.name").value("홍길동"))
-                .andExpect(jsonPath("$.data.user.org_name").value("서울지점"))
+                .andExpect(jsonPath("$.data.user.orgName").value("서울지점"))
                 .andExpect(jsonPath("$.data.user.role").value("LEADER"))
-                .andExpect(jsonPath("$.data.user.role_label").value("조장"))
-                .andExpect(jsonPath("$.data.user.cost_center_code").value("CC001"))
+                .andExpect(jsonPath("$.data.user.roleLabel").value("조장"))
+                .andExpect(jsonPath("$.data.user.costCenterCode").value("CC001"))
                 .andExpect(jsonPath("$.data.user.permissions").isArray)
                 .andExpect(jsonPath("$.data.user.permissions.length()").value(8))
                 .andExpect(jsonPath("$.data.user.permissions[0]").value("DASHBOARD_READ"))
-                .andExpect(jsonPath("$.data.token.access_token").value("access-token"))
-                .andExpect(jsonPath("$.data.token.refresh_token").value("refresh-token"))
-                .andExpect(jsonPath("$.data.token.expires_in").value(3600))
+                .andExpect(jsonPath("$.data.token.accessToken").value("access-token"))
+                .andExpect(jsonPath("$.data.token.refreshToken").value("refresh-token"))
+                .andExpect(jsonPath("$.data.token.expiresIn").value(3600))
         }
 
         @Test
@@ -102,7 +102,7 @@ class AdminAuthControllerTest {
             mockMvc.perform(
                 post("/api/v1/admin/auth/login")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content("""{"employee_code": "00000001", "password": "wrong"}""")
+                    .content("""{"employeeCode": "00000001", "password": "wrong"}""")
             )
                 .andExpect(status().isUnauthorized)
                 .andExpect(jsonPath("$.success").value(false))
@@ -119,7 +119,7 @@ class AdminAuthControllerTest {
             mockMvc.perform(
                 post("/api/v1/admin/auth/login")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content("""{"employee_code": "00000002", "password": "1234"}""")
+                    .content("""{"employeeCode": "00000002", "password": "1234"}""")
             )
                 .andExpect(status().isForbidden)
                 .andExpect(jsonPath("$.success").value(false))
@@ -133,7 +133,7 @@ class AdminAuthControllerTest {
             mockMvc.perform(
                 post("/api/v1/admin/auth/login")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content("""{"employee_code": "abc", "password": "1234"}""")
+                    .content("""{"employeeCode": "abc", "password": "1234"}""")
             )
                 .andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.success").value(false))
@@ -157,14 +157,14 @@ class AdminAuthControllerTest {
             mockMvc.perform(
                 post("/api/v1/admin/auth/refresh")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content("""{"refresh_token": "valid-refresh-token"}""")
+                    .content("""{"refreshToken": "valid-refresh-token"}""")
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("토큰 갱신 성공"))
-                .andExpect(jsonPath("$.data.access_token").value("new-access-token"))
-                .andExpect(jsonPath("$.data.refresh_token").value("new-refresh-token"))
-                .andExpect(jsonPath("$.data.expires_in").value(3600))
+                .andExpect(jsonPath("$.data.accessToken").value("new-access-token"))
+                .andExpect(jsonPath("$.data.refreshToken").value("new-refresh-token"))
+                .andExpect(jsonPath("$.data.expiresIn").value(3600))
         }
     }
 }

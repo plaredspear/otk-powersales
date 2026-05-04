@@ -90,11 +90,11 @@ class AdminPermissionMatrixControllerTest {
                 .andExpect(jsonPath("$.data.roles").isArray)
                 .andExpect(jsonPath("$.data.roles.length()").value(2))
                 .andExpect(jsonPath("$.data.roles[0].role").value("LEADER"))
-                .andExpect(jsonPath("$.data.roles[0].role_label").value("조장"))
+                .andExpect(jsonPath("$.data.roles[0].roleLabel").value("조장"))
                 .andExpect(jsonPath("$.data.roles[0].permissions[0]").value("DASHBOARD_READ"))
-                .andExpect(jsonPath("$.data.current_user.role").value("LEADER"))
-                .andExpect(jsonPath("$.data.current_user.role_label").value("조장"))
-                .andExpect(jsonPath("$.data.current_user.permissions").isArray)
+                .andExpect(jsonPath("$.data.currentUser.role").value("LEADER"))
+                .andExpect(jsonPath("$.data.currentUser.roleLabel").value("조장"))
+                .andExpect(jsonPath("$.data.currentUser.permissions").isArray)
         }
     }
 }

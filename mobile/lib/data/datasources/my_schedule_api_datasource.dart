@@ -25,7 +25,7 @@ class MyScheduleApiDataSource implements MyScheduleRemoteDataSource {
     );
 
     final data = response.data['data'] as Map<String, dynamic>;
-    final workDays = data['work_days'] as List<dynamic>? ?? [];
+    final workDays = data['workDays'] as List<dynamic>? ?? [];
     return workDays
         .map((json) =>
             MonthlyScheduleDayModel.fromJson(json as Map<String, dynamic>))

@@ -275,14 +275,14 @@ export default function PromotionDetailPage() {
     }
 
     const data: PromotionFormData = {
-      promotion_type_id: detailForm.promotionTypeId ?? promotion.promotionTypeId ?? 0,
-      account_id: detailForm.accountId,
-      start_date: detailForm.startDate,
-      end_date: detailForm.endDate,
-      primary_product_id: productForm.primaryProductId,
-      other_product: productForm.otherProduct,
+      promotionTypeId: detailForm.promotionTypeId ?? promotion.promotionTypeId ?? 0,
+      accountId: detailForm.accountId,
+      startDate: detailForm.startDate,
+      endDate: detailForm.endDate,
+      primaryProductId: productForm.primaryProductId,
+      otherProduct: productForm.otherProduct,
       message: detailForm.message,
-      stand_location: detailForm.standLocation ?? '',
+      standLocation: detailForm.standLocation ?? '',
       remark: productForm.remark,
     };
 
@@ -326,15 +326,15 @@ export default function PromotionDetailPage() {
         const lastRow = sourceRows[sourceRows.length - 1];
         const body: PromotionEmployeeFormData = {};
 
-        if (lastRow.employeeId != null) body.employee_id = lastRow.employeeId;
+        if (lastRow.employeeId != null) body.employeeId = lastRow.employeeId;
         if (lastRow.scheduleDate != null) {
-          body.schedule_date = dayjs(lastRow.scheduleDate).add(1, 'day').format('YYYY-MM-DD');
+          body.scheduleDate = dayjs(lastRow.scheduleDate).add(1, 'day').format('YYYY-MM-DD');
         }
-        if (lastRow.workStatus != null) body.work_status = lastRow.workStatus;
-        if (lastRow.workType1 != null) body.work_type1 = lastRow.workType1;
-        if (lastRow.workType3 != null) body.work_type3 = lastRow.workType3;
+        if (lastRow.workStatus != null) body.workStatus = lastRow.workStatus;
+        if (lastRow.workType1 != null) body.workType1 = lastRow.workType1;
+        if (lastRow.workType3 != null) body.workType3 = lastRow.workType3;
         if (lastRow.professionalPromotionTeam != null) {
-          body.professional_promotion_team = lastRow.professionalPromotionTeam;
+          body.professionalPromotionTeam = lastRow.professionalPromotionTeam;
         }
 
         if (Object.keys(body).length > 0) data = body;
@@ -447,21 +447,21 @@ export default function PromotionDetailPage() {
       if (isDirty) {
         changed.push({
           id: row.id,
-          employee_id: row.employeeId ?? null,
-          schedule_date: row.scheduleDate ?? '',
-          work_status: row.workStatus ?? '',
-          work_type1: row.workType1 ?? '',
-          work_type3: row.workType3 || null,
-          work_type4: row.workType4,
-          professional_promotion_team: row.professionalPromotionTeam,
-          base_price: row.basePrice,
-          daily_target_count: row.dailyTargetCount,
-          primary_product_amount: row.primaryProductAmount,
-          primary_sales_quantity: row.primarySalesQuantity,
-          other_sales_amount: row.otherSalesAmount,
-          other_sales_quantity: row.otherSalesQuantity,
-          s3_image_unique_key: row.s3ImageUniqueKey,
-          promo_close_by_tm: row.promoCloseByTm,
+          employeeId: row.employeeId ?? null,
+          scheduleDate: row.scheduleDate ?? '',
+          workStatus: row.workStatus ?? '',
+          workType1: row.workType1 ?? '',
+          workType3: row.workType3 || null,
+          workType4: row.workType4,
+          professionalPromotionTeam: row.professionalPromotionTeam,
+          basePrice: row.basePrice,
+          dailyTargetCount: row.dailyTargetCount,
+          primaryProductAmount: row.primaryProductAmount,
+          primarySalesQuantity: row.primarySalesQuantity,
+          otherSalesAmount: row.otherSalesAmount,
+          otherSalesQuantity: row.otherSalesQuantity,
+          s3ImageUniqueKey: row.s3ImageUniqueKey,
+          promoCloseByTm: row.promoCloseByTm,
         });
       }
     }
@@ -513,15 +513,15 @@ export default function PromotionDetailPage() {
       if (!orig || !orig.scheduleId) continue; // 미확정 → 스킵
 
       const changedFields: string[] = [];
-      if (item.employee_id !== orig.employeeId) changedFields.push('행사사원');
-      if (item.schedule_date !== (orig.scheduleDate ?? '')) changedFields.push('투입일');
-      if (item.work_type3 !== orig.workType3) changedFields.push('근무유형3');
+      if (item.employeeId !== orig.employeeId) changedFields.push('행사사원');
+      if (item.scheduleDate !== (orig.scheduleDate ?? '')) changedFields.push('투입일');
+      if (item.workType3 !== orig.workType3) changedFields.push('근무유형3');
 
       if (changedFields.length === 0) continue; // 핵심 필드 변경 없음
 
       // 전문행사조만 변경된 경우 스킵
       const onlyProfTeamChanged =
-        item.professional_promotion_team !== orig.professionalPromotionTeam &&
+        item.professionalPromotionTeam !== orig.professionalPromotionTeam &&
         changedFields.length === 0;
       if (onlyProfTeamChanged) continue;
 
@@ -553,7 +553,7 @@ export default function PromotionDetailPage() {
         const msgs = new Map<number, string>();
 
         for (const itemErr of err.errors) {
-          const batchItem = changedItems[itemErr.item_index];
+          const batchItem = changedItems[itemErr.itemIndex];
           if (batchItem) {
             errorIds.add(batchItem.id);
             msgs.set(batchItem.id, itemErr.message);
@@ -572,7 +572,7 @@ export default function PromotionDetailPage() {
           description: (
             <ul style={{ margin: 0, paddingLeft: 16 }}>
               {displayErrors.map((itemErr, idx) => {
-                const rowNum = itemErr.item_index + 1;
+                const rowNum = itemErr.itemIndex + 1;
                 return <li key={idx}>행 {rowNum}: {itemErr.message}</li>;
               })}
               {remaining > 0 && <li>외 {remaining}건</li>}

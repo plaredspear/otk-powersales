@@ -145,12 +145,12 @@ export default function PromotionScheduleBulkUpdateModal({
           : '고정';
 
       return {
-        schedule_id: schedule.scheduleId,
-        account_id: state.changeAccount && state.accountId != null ? state.accountId : schedule.accountId,
-        working_date: state.changeWorkingDate && state.workingDate ? state.workingDate : schedule.workingDate,
-        working_category1: cat1,
-        working_category3: cat3,
-        working_category4: state.changeCategory4 ? (state.workingCategory4 || null) : schedule.workingCategory4,
+        scheduleId: schedule.scheduleId,
+        accountId: state.changeAccount && state.accountId != null ? state.accountId : schedule.accountId,
+        workingDate: state.changeWorkingDate && state.workingDate ? state.workingDate : schedule.workingDate,
+        workingCategory1: cat1,
+        workingCategory3: cat3,
+        workingCategory4: state.changeCategory4 ? (state.workingCategory4 || null) : schedule.workingCategory4,
       };
     });
 

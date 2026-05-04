@@ -20,20 +20,20 @@ class ClientOrderModel {
   /// snake_case JSON에서 파싱
   factory ClientOrderModel.fromJson(Map<String, dynamic> json) {
     return ClientOrderModel(
-      sapOrderNumber: json['sap_order_number'] as String,
-      clientId: json['client_id'] as int,
-      clientName: json['client_name'] as String,
-      totalAmount: json['total_amount'] as int,
+      sapOrderNumber: json['sapOrderNumber'] as String,
+      clientId: json['clientId'] as int,
+      clientName: json['clientName'] as String,
+      totalAmount: json['totalAmount'] as int,
     );
   }
 
   /// snake_case JSON으로 직렬화
   Map<String, dynamic> toJson() {
     return {
-      'sap_order_number': sapOrderNumber,
-      'client_id': clientId,
-      'client_name': clientName,
-      'total_amount': totalAmount,
+      'sapOrderNumber': sapOrderNumber,
+      'clientId': clientId,
+      'clientName': clientName,
+      'totalAmount': totalAmount,
     };
   }
 
@@ -96,19 +96,19 @@ class ClientOrderItemModel {
 
   factory ClientOrderItemModel.fromJson(Map<String, dynamic> json) {
     return ClientOrderItemModel(
-      productCode: json['product_code'] as String,
-      productName: json['product_name'] as String,
-      deliveredQuantity: json['delivered_quantity'] as String,
-      deliveryStatus: json['delivery_status'] as String,
+      productCode: json['productCode'] as String,
+      productName: json['productName'] as String,
+      deliveredQuantity: json['deliveredQuantity'] as String,
+      deliveryStatus: json['deliveryStatus'] as String,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'product_code': productCode,
-      'product_name': productName,
-      'delivered_quantity': deliveredQuantity,
-      'delivery_status': deliveryStatus,
+      'productCode': productCode,
+      'productName': productName,
+      'deliveredQuantity': deliveredQuantity,
+      'deliveryStatus': deliveryStatus,
     };
   }
 
@@ -183,17 +183,17 @@ class ClientOrderDetailModel {
     final data = json.containsKey('data')
         ? json['data'] as Map<String, dynamic>
         : json;
-    final itemsJson = data['ordered_items'] as List<dynamic>? ?? [];
+    final itemsJson = data['orderedItems'] as List<dynamic>? ?? [];
 
     return ClientOrderDetailModel(
-      sapOrderNumber: data['sap_order_number'] as String,
-      clientId: data['client_id'] as int,
-      clientName: data['client_name'] as String,
-      clientDeadlineTime: data['client_deadline_time'] as String?,
-      orderDate: data['order_date'] as String,
-      deliveryDate: data['delivery_date'] as String,
-      totalApprovedAmount: data['total_approved_amount'] as int,
-      orderedItemCount: data['ordered_item_count'] as int,
+      sapOrderNumber: data['sapOrderNumber'] as String,
+      clientId: data['clientId'] as int,
+      clientName: data['clientName'] as String,
+      clientDeadlineTime: data['clientDeadlineTime'] as String?,
+      orderDate: data['orderDate'] as String,
+      deliveryDate: data['deliveryDate'] as String,
+      totalApprovedAmount: data['totalApprovedAmount'] as int,
+      orderedItemCount: data['orderedItemCount'] as int,
       orderedItems: itemsJson
           .map((e) =>
               ClientOrderItemModel.fromJson(e as Map<String, dynamic>))
@@ -203,15 +203,15 @@ class ClientOrderDetailModel {
 
   Map<String, dynamic> toJson() {
     return {
-      'sap_order_number': sapOrderNumber,
-      'client_id': clientId,
-      'client_name': clientName,
-      'client_deadline_time': clientDeadlineTime,
-      'order_date': orderDate,
-      'delivery_date': deliveryDate,
-      'total_approved_amount': totalApprovedAmount,
-      'ordered_item_count': orderedItemCount,
-      'ordered_items': orderedItems.map((e) => e.toJson()).toList(),
+      'sapOrderNumber': sapOrderNumber,
+      'clientId': clientId,
+      'clientName': clientName,
+      'clientDeadlineTime': clientDeadlineTime,
+      'orderDate': orderDate,
+      'deliveryDate': deliveryDate,
+      'totalApprovedAmount': totalApprovedAmount,
+      'orderedItemCount': orderedItemCount,
+      'orderedItems': orderedItems.map((e) => e.toJson()).toList(),
     };
   }
 
@@ -319,8 +319,8 @@ class ClientOrderListResponseModel {
 
     return ClientOrderListResponseModel(
       content: content,
-      totalElements: data['total_elements'] as int,
-      totalPages: data['total_pages'] as int,
+      totalElements: data['totalElements'] as int,
+      totalPages: data['totalPages'] as int,
       number: data['number'] as int,
       size: data['size'] as int,
       first: data['first'] as bool,

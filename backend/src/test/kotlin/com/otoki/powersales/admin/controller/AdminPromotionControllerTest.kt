@@ -77,11 +77,11 @@ class AdminPromotionControllerTest {
             mockMvc.perform(get("/api/v1/admin/promotions/form-meta"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.promotion_types[0].id").value(1))
-                .andExpect(jsonPath("$.data.promotion_types[0].name").value("시식"))
-                .andExpect(jsonPath("$.data.stand_locations[0].value").value("FROZEN_EVENT"))
-                .andExpect(jsonPath("$.data.stand_locations[0].name").value("냉동행사장"))
-                .andExpect(jsonPath("$.data.stand_locations[1].value").value("ISLAND"))
+                .andExpect(jsonPath("$.data.promotionTypes[0].id").value(1))
+                .andExpect(jsonPath("$.data.promotionTypes[0].name").value("시식"))
+                .andExpect(jsonPath("$.data.standLocations[0].value").value("FROZEN_EVENT"))
+                .andExpect(jsonPath("$.data.standLocations[0].name").value("냉동행사장"))
+                .andExpect(jsonPath("$.data.standLocations[1].value").value("ISLAND"))
         }
     }
 
@@ -124,14 +124,14 @@ class AdminPromotionControllerTest {
             mockMvc.perform(get("/api/v1/admin/promotions"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.content[0].promotion_number").value("PM00000001"))
-                .andExpect(jsonPath("$.data.content[0].promotion_type_id").value(1))
-                .andExpect(jsonPath("$.data.content[0].promotion_type_name").value("시식"))
-                .andExpect(jsonPath("$.data.content[0].actual_amount").value(3200000))
+                .andExpect(jsonPath("$.data.content[0].promotionNumber").value("PM00000001"))
+                .andExpect(jsonPath("$.data.content[0].promotionTypeId").value(1))
+                .andExpect(jsonPath("$.data.content[0].promotionTypeName").value("시식"))
+                .andExpect(jsonPath("$.data.content[0].actualAmount").value(3200000))
                 .andExpect(jsonPath("$.data.content[0].category").value("라면"))
-                .andExpect(jsonPath("$.data.content[0].branch_name").value("강남지점"))
-                .andExpect(jsonPath("$.data.content[0].is_closed").value(false))
-                .andExpect(jsonPath("$.data.total_elements").value(1))
+                .andExpect(jsonPath("$.data.content[0].branchName").value("강남지점"))
+                .andExpect(jsonPath("$.data.content[0].isClosed").value(false))
+                .andExpect(jsonPath("$.data.totalElements").value(1))
         }
 
         @Test
@@ -148,7 +148,7 @@ class AdminPromotionControllerTest {
             mockMvc.perform(get("/api/v1/admin/promotions"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.content").isEmpty)
-                .andExpect(jsonPath("$.data.total_elements").value(0))
+                .andExpect(jsonPath("$.data.totalElements").value(0))
         }
     }
 
@@ -165,12 +165,12 @@ class AdminPromotionControllerTest {
             mockMvc.perform(get("/api/v1/admin/promotions/1"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.promotion_number").value("PM00000001"))
-                .andExpect(jsonPath("$.data.promotion_type_id").value(1))
-                .andExpect(jsonPath("$.data.promotion_type_name").value("시식"))
-                .andExpect(jsonPath("$.data.account_name").value("GS25 역삼점"))
-                .andExpect(jsonPath("$.data.primary_product_name").value("진라면 매운맛 120g"))
-                .andExpect(jsonPath("$.data.actual_amount").value(3200000))
+                .andExpect(jsonPath("$.data.promotionNumber").value("PM00000001"))
+                .andExpect(jsonPath("$.data.promotionTypeId").value(1))
+                .andExpect(jsonPath("$.data.promotionTypeName").value("시식"))
+                .andExpect(jsonPath("$.data.accountName").value("GS25 역삼점"))
+                .andExpect(jsonPath("$.data.primaryProductName").value("진라면 매운맛 120g"))
+                .andExpect(jsonPath("$.data.actualAmount").value(3200000))
                 .andExpect(jsonPath("$.data.category").value("라면"))
         }
 
@@ -214,8 +214,8 @@ class AdminPromotionControllerTest {
             )
                 .andExpect(status().isCreated)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.promotion_number").value("PM00000001"))
-                .andExpect(jsonPath("$.data.cost_center_code").value("1101"))
+                .andExpect(jsonPath("$.data.promotionNumber").value("PM00000001"))
+                .andExpect(jsonPath("$.data.costCenterCode").value("1101"))
         }
 
         @Test
@@ -223,11 +223,11 @@ class AdminPromotionControllerTest {
         fun createPromotion_missingPrimaryProductId() {
             val json = """
                 {
-                    "promotion_type_id": 1,
-                    "account_id": 100,
-                    "start_date": "2026-03-10",
-                    "end_date": "2026-03-20",
-                    "stand_location": "매장 입구"
+                    "promotionTypeId": 1,
+                    "accountId": 100,
+                    "startDate": "2026-03-10",
+                    "endDate": "2026-03-20",
+                    "standLocation": "매장 입구"
                 }
             """.trimIndent()
 
@@ -245,12 +245,12 @@ class AdminPromotionControllerTest {
         fun createPromotion_nullPrimaryProductId() {
             val json = """
                 {
-                    "promotion_type_id": 1,
-                    "account_id": 100,
-                    "start_date": "2026-03-10",
-                    "end_date": "2026-03-20",
-                    "primary_product_id": null,
-                    "stand_location": "매장 입구"
+                    "promotionTypeId": 1,
+                    "accountId": 100,
+                    "startDate": "2026-03-10",
+                    "endDate": "2026-03-20",
+                    "primaryProductId": null,
+                    "standLocation": "매장 입구"
                 }
             """.trimIndent()
 
@@ -268,10 +268,10 @@ class AdminPromotionControllerTest {
         fun createPromotion_missingPromotionTypeId() {
             val json = """
                 {
-                    "account_id": 100,
-                    "start_date": "2026-03-10",
-                    "end_date": "2026-03-20",
-                    "stand_location": "매장 입구"
+                    "accountId": 100,
+                    "startDate": "2026-03-10",
+                    "endDate": "2026-03-20",
+                    "standLocation": "매장 입구"
                 }
             """.trimIndent()
 
@@ -289,10 +289,10 @@ class AdminPromotionControllerTest {
         fun createPromotion_missingStandLocation() {
             val json = """
                 {
-                    "promotion_type_id": 1,
-                    "account_id": 100,
-                    "start_date": "2026-03-10",
-                    "end_date": "2026-03-20"
+                    "promotionTypeId": 1,
+                    "accountId": 100,
+                    "startDate": "2026-03-10",
+                    "endDate": "2026-03-20"
                 }
             """.trimIndent()
 
@@ -310,11 +310,11 @@ class AdminPromotionControllerTest {
         fun createPromotion_emptyStandLocation() {
             val json = """
                 {
-                    "promotion_type_id": 1,
-                    "account_id": 100,
-                    "start_date": "2026-03-10",
-                    "end_date": "2026-03-20",
-                    "stand_location": ""
+                    "promotionTypeId": 1,
+                    "accountId": 100,
+                    "startDate": "2026-03-10",
+                    "endDate": "2026-03-20",
+                    "standLocation": ""
                 }
             """.trimIndent()
 
@@ -332,11 +332,11 @@ class AdminPromotionControllerTest {
         fun createPromotion_blankStandLocation() {
             val json = """
                 {
-                    "promotion_type_id": 1,
-                    "account_id": 100,
-                    "start_date": "2026-03-10",
-                    "end_date": "2026-03-20",
-                    "stand_location": "   "
+                    "promotionTypeId": 1,
+                    "accountId": 100,
+                    "startDate": "2026-03-10",
+                    "endDate": "2026-03-20",
+                    "standLocation": "   "
                 }
             """.trimIndent()
 
@@ -412,7 +412,7 @@ class AdminPromotionControllerTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.promotion_name").value("수정된 행사명"))
+                .andExpect(jsonPath("$.data.promotionName").value("수정된 행사명"))
         }
 
         @Test
@@ -420,11 +420,11 @@ class AdminPromotionControllerTest {
         fun updatePromotion_missingPrimaryProductId() {
             val json = """
                 {
-                    "promotion_type_id": 1,
-                    "account_id": 100,
-                    "start_date": "2026-03-10",
-                    "end_date": "2026-03-20",
-                    "stand_location": "매장 입구"
+                    "promotionTypeId": 1,
+                    "accountId": 100,
+                    "startDate": "2026-03-10",
+                    "endDate": "2026-03-20",
+                    "standLocation": "매장 입구"
                 }
             """.trimIndent()
 
@@ -442,10 +442,10 @@ class AdminPromotionControllerTest {
         fun updatePromotion_missingPromotionTypeId() {
             val json = """
                 {
-                    "account_id": 100,
-                    "start_date": "2026-03-10",
-                    "end_date": "2026-03-20",
-                    "stand_location": "매장 입구"
+                    "accountId": 100,
+                    "startDate": "2026-03-10",
+                    "endDate": "2026-03-20",
+                    "standLocation": "매장 입구"
                 }
             """.trimIndent()
 
@@ -463,10 +463,10 @@ class AdminPromotionControllerTest {
         fun updatePromotion_missingStandLocation() {
             val json = """
                 {
-                    "promotion_type_id": 1,
-                    "account_id": 100,
-                    "start_date": "2026-03-10",
-                    "end_date": "2026-03-20"
+                    "promotionTypeId": 1,
+                    "accountId": 100,
+                    "startDate": "2026-03-10",
+                    "endDate": "2026-03-20"
                 }
             """.trimIndent()
 

@@ -40,7 +40,7 @@ export default function PromotionTypesPage() {
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
-      const payload = { name: values.name, display_order: values.displayOrder };
+      const payload = { name: values.name, displayOrder: values.displayOrder };
 
       if (editingItem) {
         await updateMutation.mutateAsync({ id: editingItem.id, data: payload });

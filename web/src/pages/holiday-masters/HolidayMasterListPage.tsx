@@ -51,7 +51,7 @@ export default function HolidayMasterListPage() {
     try {
       const values = await form.validateFields();
       const payload = {
-        holiday_date: values.holidayDate.format('YYYY-MM-DD'),
+        holidayDate: values.holidayDate.format('YYYY-MM-DD'),
         name: values.name,
         type: values.type,
       };

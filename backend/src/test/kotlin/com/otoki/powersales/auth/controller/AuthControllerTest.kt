@@ -111,15 +111,15 @@ class AuthControllerTest {
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.message").value("로그인 성공"))
             .andExpect(jsonPath("$.data.user.id").value(1))
-            .andExpect(jsonPath("$.data.user.employee_code").value("12345678"))
+            .andExpect(jsonPath("$.data.user.employeeCode").value("12345678"))
             .andExpect(jsonPath("$.data.user.name").value("홍길동"))
-            .andExpect(jsonPath("$.data.user.org_name").value("서울지점"))
+            .andExpect(jsonPath("$.data.user.orgName").value("서울지점"))
             .andExpect(jsonPath("$.data.user.role").value("WOMAN"))
-            .andExpect(jsonPath("$.data.token.access_token").value("access-token"))
-            .andExpect(jsonPath("$.data.token.refresh_token").value("refresh-token"))
-            .andExpect(jsonPath("$.data.token.expires_in").value(3600))
-            .andExpect(jsonPath("$.data.requires_password_change").value(false))
-            .andExpect(jsonPath("$.data.requires_gps_consent").value(false))
+            .andExpect(jsonPath("$.data.token.accessToken").value("access-token"))
+            .andExpect(jsonPath("$.data.token.refreshToken").value("refresh-token"))
+            .andExpect(jsonPath("$.data.token.expiresIn").value(3600))
+            .andExpect(jsonPath("$.data.requiresPasswordChange").value(false))
+            .andExpect(jsonPath("$.data.requiresGpsConsent").value(false))
     }
 
     @Test
@@ -139,11 +139,11 @@ class AuthControllerTest {
         mockMvc.perform(
             post("/api/v1/mobile/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"employee_code": "87654321", "password": "otg1"}""")
+                .content("""{"employeeCode": "87654321", "password": "otg1"}""")
         )
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.data.requires_password_change").value(true))
-            .andExpect(jsonPath("$.data.requires_gps_consent").value(true))
+            .andExpect(jsonPath("$.data.requiresPasswordChange").value(true))
+            .andExpect(jsonPath("$.data.requiresGpsConsent").value(true))
     }
 
     @Test
@@ -156,7 +156,7 @@ class AuthControllerTest {
         mockMvc.perform(
             post("/api/v1/mobile/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"employee_code": "99999999", "password": "password123"}""")
+                .content("""{"employeeCode": "99999999", "password": "password123"}""")
         )
             .andExpect(status().isUnauthorized)
             .andExpect(jsonPath("$.success").value(false))
@@ -170,7 +170,7 @@ class AuthControllerTest {
         mockMvc.perform(
             post("/api/v1/mobile/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"employee_code": "", "password": "password123"}""")
+                .content("""{"employeeCode": "", "password": "password123"}""")
         )
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.success").value(false))
@@ -184,7 +184,7 @@ class AuthControllerTest {
         mockMvc.perform(
             post("/api/v1/mobile/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"employee_code": "123456", "password": "password123"}""")
+                .content("""{"employeeCode": "123456", "password": "password123"}""")
         )
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.success").value(false))
@@ -199,7 +199,7 @@ class AuthControllerTest {
         mockMvc.perform(
             post("/api/v1/mobile/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"employee_code": "12345678", "password": "123"}""")
+                .content("""{"employeeCode": "12345678", "password": "123"}""")
         )
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.success").value(false))
@@ -225,14 +225,14 @@ class AuthControllerTest {
         mockMvc.perform(
             post("/api/v1/mobile/auth/refresh")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"refresh_token": "valid-refresh-token"}""")
+                .content("""{"refreshToken": "valid-refresh-token"}""")
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.message").value("토큰 갱신 성공"))
-            .andExpect(jsonPath("$.data.access_token").value("new-access-token"))
-            .andExpect(jsonPath("$.data.refresh_token").value("new-refresh-token"))
-            .andExpect(jsonPath("$.data.expires_in").value(3600))
+            .andExpect(jsonPath("$.data.accessToken").value("new-access-token"))
+            .andExpect(jsonPath("$.data.refreshToken").value("new-refresh-token"))
+            .andExpect(jsonPath("$.data.expiresIn").value(3600))
     }
 
     @Test
@@ -246,7 +246,7 @@ class AuthControllerTest {
         mockMvc.perform(
             post("/api/v1/mobile/auth/refresh")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"refresh_token": "reused-refresh-token"}""")
+                .content("""{"refreshToken": "reused-refresh-token"}""")
         )
             .andExpect(status().isUnauthorized)
             .andExpect(jsonPath("$.success").value(false))
@@ -264,7 +264,7 @@ class AuthControllerTest {
         mockMvc.perform(
             post("/api/v1/mobile/auth/refresh")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"refresh_token": "tampered-token"}""")
+                .content("""{"refreshToken": "tampered-token"}""")
         )
             .andExpect(status().isUnauthorized)
             .andExpect(jsonPath("$.error.code").value("INVALID_TOKEN"))
@@ -277,7 +277,7 @@ class AuthControllerTest {
         mockMvc.perform(
             post("/api/v1/mobile/auth/refresh")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"refresh_token": ""}""")
+                .content("""{"refreshToken": ""}""")
         )
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.success").value(false))
@@ -296,7 +296,7 @@ class AuthControllerTest {
         mockMvc.perform(
             post("/api/v1/mobile/auth/change-password")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"current_password": "oldPass", "new_password": "newPass1"}""")
+                .content("""{"currentPassword": "oldPass", "newPassword": "newPass1"}""")
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
@@ -314,7 +314,7 @@ class AuthControllerTest {
         mockMvc.perform(
             post("/api/v1/mobile/auth/change-password")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"current_password": "wrongPass", "new_password": "newPass1"}""")
+                .content("""{"currentPassword": "wrongPass", "newPassword": "newPass1"}""")
         )
             .andExpect(status().isUnauthorized)
             .andExpect(jsonPath("$.success").value(false))
@@ -328,7 +328,7 @@ class AuthControllerTest {
         mockMvc.perform(
             post("/api/v1/mobile/auth/change-password")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"current_password": "oldPass123", "new_password": "12"}""")
+                .content("""{"currentPassword": "oldPass123", "newPassword": "12"}""")
         )
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.success").value(false))
@@ -429,7 +429,7 @@ class AuthControllerTest {
         mockMvc.perform(get("/api/v1/mobile/auth/gps-consent/terms"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
-            .andExpect(jsonPath("$.data.agreement_number").value("AGR-2025-001"))
+            .andExpect(jsonPath("$.data.agreementNumber").value("AGR-2025-001"))
             .andExpect(jsonPath("$.data.contents").value("약관 본문 텍스트"))
     }
 
@@ -457,7 +457,7 @@ class AuthControllerTest {
         // When & Then
         mockMvc.perform(get("/api/v1/mobile/auth/gps-consent/status"))
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.data.requires_gps_consent").value(true))
+            .andExpect(jsonPath("$.data.requiresGpsConsent").value(true))
     }
 
     @Test
@@ -470,7 +470,7 @@ class AuthControllerTest {
         // When & Then
         mockMvc.perform(get("/api/v1/mobile/auth/gps-consent/status"))
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.data.requires_gps_consent").value(false))
+            .andExpect(jsonPath("$.data.requiresGpsConsent").value(false))
     }
 
     // ========== GPS Consent Record Tests ==========
@@ -486,13 +486,13 @@ class AuthControllerTest {
         mockMvc.perform(
             post("/api/v1/mobile/auth/gps-consent")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"agreement_number": "AGR-2025-001"}""")
+                .content("""{"agreementNumber": "AGR-2025-001"}""")
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.message").value("GPS 사용 동의가 기록되었습니다"))
-            .andExpect(jsonPath("$.data.access_token").value("new-token"))
-            .andExpect(jsonPath("$.data.expires_in").value(3600))
+            .andExpect(jsonPath("$.data.accessToken").value("new-token"))
+            .andExpect(jsonPath("$.data.expiresIn").value(3600))
     }
 
     @Test
@@ -506,6 +506,6 @@ class AuthControllerTest {
         mockMvc.perform(post("/api/v1/mobile/auth/gps-consent"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
-            .andExpect(jsonPath("$.data.access_token").value("new-token"))
+            .andExpect(jsonPath("$.data.accessToken").value("new-token"))
     }
 }

@@ -21,11 +21,11 @@ class AttendanceStatusModel {
   /// snake_case JSON에서 파싱
   factory AttendanceStatusModel.fromJson(Map<String, dynamic> json) {
     return AttendanceStatusModel(
-      scheduleId: json['schedule_id'] as int,
-      accountName: json['account_name'] as String,
-      workCategory: json['work_category'] as String,
+      scheduleId: json['scheduleId'] as int,
+      accountName: json['accountName'] as String,
+      workCategory: json['workCategory'] as String,
       status: json['status'] as String,
-      workType: json['work_type'] as String?,
+      workType: json['workType'] as String?,
     );
   }
 

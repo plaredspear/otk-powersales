@@ -23,12 +23,12 @@ class AttendanceResultModel {
   /// snake_case JSON에서 파싱
   factory AttendanceResultModel.fromJson(Map<String, dynamic> json) {
     return AttendanceResultModel(
-      scheduleId: json['schedule_id'] as int,
-      accountName: json['account_name'] as String,
-      workType: json['work_type'] as String,
-      distanceKm: (json['distance_km'] as num).toDouble(),
-      totalCount: json['total_count'] as int,
-      registeredCount: json['registered_count'] as int,
+      scheduleId: json['scheduleId'] as int,
+      accountName: json['accountName'] as String,
+      workType: json['workType'] as String,
+      distanceKm: (json['distanceKm'] as num).toDouble(),
+      totalCount: json['totalCount'] as int,
+      registeredCount: json['registeredCount'] as int,
     );
   }
 

@@ -93,9 +93,9 @@ class AdminEducationControllerTest {
             mockMvc.perform(get("/api/v1/admin/education/posts"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.content[0].edu_id").value("edu20260309100000"))
-                .andExpect(jsonPath("$.data.content[0].attachment_count").value(3))
-                .andExpect(jsonPath("$.data.total_count").value(1))
+                .andExpect(jsonPath("$.data.content[0].eduId").value("edu20260309100000"))
+                .andExpect(jsonPath("$.data.content[0].attachmentCount").value(3))
+                .andExpect(jsonPath("$.data.totalCount").value(1))
         }
 
         @Test
@@ -158,7 +158,7 @@ class AdminEducationControllerTest {
             mockMvc.perform(get("/api/v1/admin/education/posts/edu20260309100000"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.id").value("edu20260309100000"))
-                .andExpect(jsonPath("$.data.attachments[0].file_name").value("교육자료.pdf"))
+                .andExpect(jsonPath("$.data.attachments[0].fileName").value("교육자료.pdf"))
         }
 
         @Test
@@ -203,8 +203,8 @@ class AdminEducationControllerTest {
             )
                 .andExpect(status().isCreated)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.edu_id").value("edu20260309100000"))
-                .andExpect(jsonPath("$.data.edu_title").value("테스트 교육"))
+                .andExpect(jsonPath("$.data.eduId").value("edu20260309100000"))
+                .andExpect(jsonPath("$.data.eduTitle").value("테스트 교육"))
         }
 
         @Test
@@ -236,7 +236,7 @@ class AdminEducationControllerTest {
                     .param("category", "c00004")
             )
                 .andExpect(status().isCreated)
-                .andExpect(jsonPath("$.data.attachments[0].file_key").value("uuid.pdf"))
+                .andExpect(jsonPath("$.data.attachments[0].fileKey").value("uuid.pdf"))
         }
 
         @Test
@@ -302,8 +302,8 @@ class AdminEducationControllerTest {
                     .param("category", "c00001")
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.data.edu_title").value("수정됨"))
-                .andExpect(jsonPath("$.data.upd_date").value("2026-03-09T14:00:00"))
+                .andExpect(jsonPath("$.data.eduTitle").value("수정됨"))
+                .andExpect(jsonPath("$.data.updDate").value("2026-03-09T14:00:00"))
         }
     }
 
@@ -349,9 +349,9 @@ class AdminEducationControllerTest {
 
             mockMvc.perform(get("/api/v1/admin/education/categories"))
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.data[0].edu_code").value("c00001"))
-                .andExpect(jsonPath("$.data[0].edu_code_nm").value("시식매뉴얼"))
-                .andExpect(jsonPath("$.data[1].edu_code").value("c00002"))
+                .andExpect(jsonPath("$.data[0].eduCode").value("c00001"))
+                .andExpect(jsonPath("$.data[0].eduCodeNm").value("시식매뉴얼"))
+                .andExpect(jsonPath("$.data[1].eduCode").value("c00002"))
         }
     }
 }

@@ -30,33 +30,33 @@ class ScheduleModel {
 
   factory ScheduleModel.fromJson(Map<String, dynamic> json) {
     return ScheduleModel(
-      scheduleId: json['schedule_id'] as int,
-      displayWorkScheduleId: json['display_work_schedule_id'] as int?,
-      employeeName: json['employee_name'] as String,
-      employeeCode: json['employee_code'] as String,
-      accountName: json['account_name'] as String?,
-      accountId: json['account_id'] as int?,
-      workCategory: json['work_category'] as String,
-      workType: json['work_type'] as String?,
-      isCommuteRegistered: json['is_commute_registered'] as bool,
-      commuteRegisteredAt: json['commute_registered_at'] != null
-          ? DateTime.parse(json['commute_registered_at'] as String)
+      scheduleId: json['scheduleId'] as int,
+      displayWorkScheduleId: json['displayWorkScheduleId'] as int?,
+      employeeName: json['employeeName'] as String,
+      employeeCode: json['employeeCode'] as String,
+      accountName: json['accountName'] as String?,
+      accountId: json['accountId'] as int?,
+      workCategory: json['workCategory'] as String,
+      workType: json['workType'] as String?,
+      isCommuteRegistered: json['isCommuteRegistered'] as bool,
+      commuteRegisteredAt: json['commuteRegisteredAt'] != null
+          ? DateTime.parse(json['commuteRegisteredAt'] as String)
           : null,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'schedule_id': scheduleId,
-      'display_work_schedule_id': displayWorkScheduleId,
-      'employee_name': employeeName,
-      'employee_code': employeeCode,
-      'account_name': accountName,
-      'account_id': accountId,
-      'work_category': workCategory,
-      'work_type': workType,
-      'is_commute_registered': isCommuteRegistered,
-      'commute_registered_at': commuteRegisteredAt?.toIso8601String(),
+      'scheduleId': scheduleId,
+      'displayWorkScheduleId': displayWorkScheduleId,
+      'employeeName': employeeName,
+      'employeeCode': employeeCode,
+      'accountName': accountName,
+      'accountId': accountId,
+      'workCategory': workCategory,
+      'workType': workType,
+      'isCommuteRegistered': isCommuteRegistered,
+      'commuteRegisteredAt': commuteRegisteredAt?.toIso8601String(),
     };
   }
 

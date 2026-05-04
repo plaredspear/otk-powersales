@@ -1,10 +1,5 @@
 import client from './client';
-
-interface ApiResponse<T> {
-  success: boolean;
-  data: T | null;
-  message?: string;
-}
+import type { ApiResponse } from './types';
 
 export interface PermissionDetail {
   code: string;
@@ -20,13 +15,13 @@ export interface RolePermissions {
 export interface CurrentUserPermission {
   role: string;
   permissions: string[];
-  can_manage_permissions: boolean;
+  canManagePermissions: boolean;
 }
 
 export interface PermissionMatrixData {
   permissions: PermissionDetail[];
   roles: RolePermissions[];
-  current_user: CurrentUserPermission;
+  currentUser: CurrentUserPermission;
 }
 
 export interface UpdateRolePermissionsRequest {

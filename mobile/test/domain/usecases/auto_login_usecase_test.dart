@@ -59,7 +59,7 @@ class MockAuthRepository implements AuthRepository {
   Future<GpsConsentRecordResult> recordGpsConsent({String? agreementNumber}) async {
     recordGpsConsentCalled = true;
     if (exceptionToThrow != null) throw exceptionToThrow!;
-    return const GpsConsentRecordResult(accessToken: 'mock_token', expiresIn: 3600);
+    return const GpsConsentRecordResult(accessToken: 'mockToken', expiresIn: 3600);
   }
 }
 
@@ -75,9 +75,9 @@ void main() {
 
     test('유효한 refreshToken으로 AuthToken 반환', () async {
       // Arrange
-      const testRefreshToken = 'mock_refresh_token_123';
+      const testRefreshToken = 'mockRefreshToken123';
       const expectedToken = AuthToken(
-        accessToken: 'new_access_token',
+        accessToken: 'newAccessToken',
         refreshToken: testRefreshToken,
         expiresIn: 3600,
       );
@@ -90,7 +90,7 @@ void main() {
 
       // Assert
       expect(result, equals(expectedToken));
-      expect(result.accessToken, equals('new_access_token'));
+      expect(result.accessToken, equals('newAccessToken'));
       expect(result.refreshToken, equals(testRefreshToken));
       expect(mockRepository.lastRefreshToken, equals(testRefreshToken));
     });
@@ -115,7 +115,7 @@ void main() {
 
       // Act & Assert
       expect(
-        () => autoLoginUseCase.call(refreshToken: 'invalid_token'),
+        () => autoLoginUseCase.call(refreshToken: 'invalidToken'),
         throwsA(
           isA<Exception>().having(
             (e) => e.toString(),
@@ -128,9 +128,9 @@ void main() {
 
     test('Repository에 올바른 파라미터가 전달되는지 확인', () async {
       // Arrange
-      const testRefreshToken = 'test_refresh_token_xyz';
+      const testRefreshToken = 'testRefreshTokenXyz';
       const expectedToken = AuthToken(
-        accessToken: 'new_access_token',
+        accessToken: 'newAccessToken',
         refreshToken: testRefreshToken,
         expiresIn: 3600,
       );

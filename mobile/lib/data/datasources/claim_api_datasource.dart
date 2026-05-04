@@ -29,8 +29,8 @@ class ClaimApiDataSource implements ClaimRemoteDataSource {
     String? endDate,
   }) async {
     final queryParameters = <String, dynamic>{};
-    if (startDate != null) queryParameters['start_date'] = startDate;
-    if (endDate != null) queryParameters['end_date'] = endDate;
+    if (startDate != null) queryParameters['startDate'] = startDate;
+    if (endDate != null) queryParameters['endDate'] = endDate;
 
     final response = await _dio.get(
       '/api/v1/mobile/claims',

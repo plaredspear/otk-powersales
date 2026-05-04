@@ -103,12 +103,12 @@ class AdminPromotionScheduleControllerTest {
             mockMvc.perform(get("/api/v1/admin/promotions/$promotionId/schedules"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.promotion_id").value(100))
-                .andExpect(jsonPath("$.data.promotion_name").value("5월 라면 행사"))
-                .andExpect(jsonPath("$.data.total_member_count").value(1))
-                .andExpect(jsonPath("$.data.total_schedule_count").value(1))
-                .andExpect(jsonPath("$.data.members[0].employee_number").value("20030001"))
-                .andExpect(jsonPath("$.data.members[0].schedules[0].account_code").value("SAP001"))
+                .andExpect(jsonPath("$.data.promotionId").value(100))
+                .andExpect(jsonPath("$.data.promotionName").value("5월 라면 행사"))
+                .andExpect(jsonPath("$.data.totalMemberCount").value(1))
+                .andExpect(jsonPath("$.data.totalScheduleCount").value(1))
+                .andExpect(jsonPath("$.data.members[0].employeeNumber").value("20030001"))
+                .andExpect(jsonPath("$.data.members[0].schedules[0].accountCode").value("SAP001"))
         }
     }
 
@@ -126,18 +126,18 @@ class AdminPromotionScheduleControllerTest {
                 {
                   "items": [
                     {
-                      "schedule_id": 1001,
-                      "account_id": 301,
-                      "working_date": "2026-05-02",
-                      "working_category1": "행사",
-                      "working_category3": "고정"
+                      "scheduleId": 1001,
+                      "accountId": 301,
+                      "workingDate": "2026-05-02",
+                      "workingCategory1": "행사",
+                      "workingCategory3": "고정"
                     },
                     {
-                      "schedule_id": 1002,
-                      "account_id": 302,
-                      "working_date": "2026-05-03",
-                      "working_category1": "행사",
-                      "working_category3": "순회"
+                      "scheduleId": 1002,
+                      "accountId": 302,
+                      "workingDate": "2026-05-03",
+                      "workingCategory1": "행사",
+                      "workingCategory3": "순회"
                     }
                   ]
                 }
@@ -150,8 +150,8 @@ class AdminPromotionScheduleControllerTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.updated_count").value(2))
-                .andExpect(jsonPath("$.data.schedule_ids[0]").value(1001))
+                .andExpect(jsonPath("$.data.updatedCount").value(2))
+                .andExpect(jsonPath("$.data.scheduleIds[0]").value(1001))
         }
 
         @Test
@@ -177,7 +177,7 @@ class AdminPromotionScheduleControllerTest {
             val body = """
                 {
                   "items": [
-                    {"schedule_id": 1001, "account_id": 301, "working_date": "2026-05-02", "working_category1": "행사", "working_category3": "고정"}
+                    {"scheduleId": 1001, "accountId": 301, "workingDate": "2026-05-02", "workingCategory1": "행사", "workingCategory3": "고정"}
                   ]
                 }
             """.trimIndent()
@@ -202,7 +202,7 @@ class AdminPromotionScheduleControllerTest {
             whenever(adminPromotionScheduleService.bulkDelete(eq(promotionId), any()))
                 .thenReturn(PromotionScheduleBulkDeleteResponse(deletedCount = 3))
 
-            val body = """{"schedule_ids": [1001, 1002, 1003]}"""
+            val body = """{"scheduleIds": [1001, 1002, 1003]}"""
 
             mockMvc.perform(
                 delete("/api/v1/admin/promotions/$promotionId/schedules/bulk")
@@ -211,7 +211,7 @@ class AdminPromotionScheduleControllerTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.deleted_count").value(3))
+                .andExpect(jsonPath("$.data.deletedCount").value(3))
         }
 
         @Test
@@ -220,7 +220,7 @@ class AdminPromotionScheduleControllerTest {
             whenever(adminPromotionScheduleService.bulkDelete(eq(promotionId), any()))
                 .thenThrow(PromotionScheduleNotFoundPartialException(listOf(1003L, 1005L)))
 
-            val body = """{"schedule_ids": [1001, 1003, 1005]}"""
+            val body = """{"scheduleIds": [1001, 1003, 1005]}"""
 
             mockMvc.perform(
                 delete("/api/v1/admin/promotions/$promotionId/schedules/bulk")
@@ -229,8 +229,8 @@ class AdminPromotionScheduleControllerTest {
             )
                 .andExpect(status().isNotFound)
                 .andExpect(jsonPath("$.error.code").value("SCHEDULE_NOT_FOUND_PARTIAL"))
-                .andExpect(jsonPath("$.error.details.missing_ids[0]").value(1003))
-                .andExpect(jsonPath("$.error.details.missing_ids[1]").value(1005))
+                .andExpect(jsonPath("$.error.details.missingIds[0]").value(1003))
+                .andExpect(jsonPath("$.error.details.missingIds[1]").value(1005))
         }
     }
 }

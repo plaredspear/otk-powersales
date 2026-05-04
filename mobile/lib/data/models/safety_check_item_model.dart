@@ -12,7 +12,7 @@ class SafetyCheckItemModel {
 
   factory SafetyCheckItemModel.fromJson(Map<String, dynamic> json) {
     return SafetyCheckItemModel(
-      seqNum: json['seq_num'] as int,
+      seqNum: json['seqNum'] as int,
       contents: json['contents'] as String,
     );
   }

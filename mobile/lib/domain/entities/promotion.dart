@@ -33,18 +33,18 @@ class PromotionItem {
   factory PromotionItem.fromJson(Map<String, dynamic> json) {
     return PromotionItem(
       id: json['id'] as int,
-      promotionNumber: json['promotion_number'] as String,
-      promotionName: json['promotion_name'] as String?,
-      promotionTypeName: json['promotion_type_name'] as String?,
-      accountName: json['account_name'] as String?,
-      startDate: json['start_date'] as String,
-      endDate: json['end_date'] as String,
+      promotionNumber: json['promotionNumber'] as String,
+      promotionName: json['promotionName'] as String?,
+      promotionTypeName: json['promotionTypeName'] as String?,
+      accountName: json['accountName'] as String?,
+      startDate: json['startDate'] as String,
+      endDate: json['endDate'] as String,
       category: json['category'] as String?,
-      standLocation: json['stand_location'] as String?,
-      targetAmount: json['target_amount'] as int?,
-      actualAmount: json['actual_amount'] as int?,
-      isClosed: json['is_closed'] as bool,
-      myScheduleDate: json['my_schedule_date'] as String?,
+      standLocation: json['standLocation'] as String?,
+      targetAmount: json['targetAmount'] as int?,
+      actualAmount: json['actualAmount'] as int?,
+      isClosed: json['isClosed'] as bool,
+      myScheduleDate: json['myScheduleDate'] as String?,
     );
   }
 
@@ -102,21 +102,21 @@ class PromotionDetail {
     final employeesJson = json['employees'] as List<dynamic>? ?? [];
     return PromotionDetail(
       id: json['id'] as int,
-      promotionNumber: json['promotion_number'] as String,
-      promotionName: json['promotion_name'] as String?,
-      promotionTypeName: json['promotion_type_name'] as String?,
-      accountName: json['account_name'] as String?,
-      startDate: json['start_date'] as String,
-      endDate: json['end_date'] as String,
+      promotionNumber: json['promotionNumber'] as String,
+      promotionName: json['promotionName'] as String?,
+      promotionTypeName: json['promotionTypeName'] as String?,
+      accountName: json['accountName'] as String?,
+      startDate: json['startDate'] as String,
+      endDate: json['endDate'] as String,
       category: json['category'] as String?,
-      standLocation: json['stand_location'] as String?,
-      targetAmount: json['target_amount'] as int?,
-      actualAmount: json['actual_amount'] as int?,
-      isClosed: json['is_closed'] as bool,
-      primaryProductName: json['primary_product_name'] as String?,
-      otherProduct: json['other_product'] as String?,
+      standLocation: json['standLocation'] as String?,
+      targetAmount: json['targetAmount'] as int?,
+      actualAmount: json['actualAmount'] as int?,
+      isClosed: json['isClosed'] as bool,
+      primaryProductName: json['primaryProductName'] as String?,
+      otherProduct: json['otherProduct'] as String?,
       message: json['message'] as String?,
-      productType: json['product_type'] as String?,
+      productType: json['productType'] as String?,
       remark: json['remark'] as String?,
       employees: employeesJson
           .map((e) => PromotionEmployee.fromJson(e as Map<String, dynamic>))
@@ -156,14 +156,14 @@ class PromotionEmployee {
   factory PromotionEmployee.fromJson(Map<String, dynamic> json) {
     return PromotionEmployee(
       id: json['id'] as int,
-      employeeName: json['employee_name'] as String?,
-      scheduleDate: json['schedule_date'] as String?,
-      workStatus: json['work_status'] as String?,
-      workType3: json['work_type3'] as String?,
+      employeeName: json['employeeName'] as String?,
+      scheduleDate: json['scheduleDate'] as String?,
+      workStatus: json['workStatus'] as String?,
+      workType3: json['workType3'] as String?,
       professionalPromotionTeam:
-          json['professional_promotion_team'] as String?,
-      targetAmount: json['target_amount'] as int?,
-      actualAmount: json['actual_amount'] as int?,
+          json['professionalPromotionTeam'] as String?,
+      targetAmount: json['targetAmount'] as int?,
+      actualAmount: json['actualAmount'] as int?,
     );
   }
 }

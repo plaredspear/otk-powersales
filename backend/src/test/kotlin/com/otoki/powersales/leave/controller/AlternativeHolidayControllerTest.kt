@@ -86,8 +86,8 @@ class AlternativeHolidayControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1))
                 .andExpect(jsonPath("$.data.status").value("신규"))
-                .andExpect(jsonPath("$.data.actual_work_date").value("2026-03-07"))
-                .andExpect(jsonPath("$.data.target_alt_holiday_date").value("2026-03-09"))
+                .andExpect(jsonPath("$.data.actualWorkDate").value("2026-03-07"))
+                .andExpect(jsonPath("$.data.targetAltHolidayDate").value("2026-03-09"))
         }
 
         @Test
@@ -133,7 +133,7 @@ class AlternativeHolidayControllerTest {
         @Test
         @DisplayName("실패 - 필수 필드 누락")
         fun create_missingFields() {
-            val invalidJson = """{"actual_work_date": null}"""
+            val invalidJson = """{"actualWorkDate": null}"""
 
             mockMvc.perform(
                 post("/api/v1/mobile/alternative-holidays")
@@ -174,7 +174,7 @@ class AlternativeHolidayControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data[0].id").value(1))
                 .andExpect(jsonPath("$.data[0].status").value("승인"))
-                .andExpect(jsonPath("$.data[0].confirm_alt_holiday_date").value("2026-03-09"))
+                .andExpect(jsonPath("$.data[0].confirmAltHolidayDate").value("2026-03-09"))
         }
 
         @Test

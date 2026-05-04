@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:56638",
+    "url" : "http://localhost:56532",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -3777,10 +3777,10 @@
           "remark" : {
             "type" : [ "string", "null" ]
           },
-          "deleted" : {
+          "closed" : {
             "type" : "boolean"
           },
-          "closed" : {
+          "deleted" : {
             "type" : "boolean"
           }
         }
@@ -4127,7 +4127,7 @@
             "type" : "string",
             "format" : "date-time"
           },
-          "d_day" : {
+          "dday" : {
             "type" : "integer",
             "format" : "int32"
           }
@@ -4996,7 +4996,7 @@
       "PromotionConfirmResponse" : {
         "type" : "object",
         "properties" : {
-          "upserted_schedules" : {
+          "upsertedSchedules" : {
             "type" : "integer",
             "format" : "int32"
           },
@@ -5329,11 +5329,13 @@
           },
           "password" : {
             "type" : "string",
-            "minLength" : 1
+            "maxLength" : 64,
+            "minLength" : 8
           },
           "passwordConfirm" : {
             "type" : "string",
-            "minLength" : 1
+            "maxLength" : 64,
+            "minLength" : 8
           },
           "workEmail" : {
             "type" : [ "string", "null" ],
@@ -6401,10 +6403,10 @@
       "SortObject" : {
         "type" : "object",
         "properties" : {
-          "unsorted" : {
+          "sorted" : {
             "type" : "boolean"
           },
-          "sorted" : {
+          "unsorted" : {
             "type" : "boolean"
           },
           "empty" : {
@@ -6625,10 +6627,10 @@
           "remark" : {
             "type" : [ "string", "null" ]
           },
-          "deleted" : {
+          "closed" : {
             "type" : "boolean"
           },
-          "closed" : {
+          "deleted" : {
             "type" : "boolean"
           }
         }

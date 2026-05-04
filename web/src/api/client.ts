@@ -109,10 +109,10 @@ client.interceptors.response.use(
 
     try {
       const data = await refreshToken(storedRefreshToken);
-      localStorage.setItem('accessToken', data.access_token);
-      localStorage.setItem('refreshToken', data.refresh_token);
-      processQueue(null, data.access_token);
-      originalRequest.headers.Authorization = `Bearer ${data.access_token}`;
+      localStorage.setItem('accessToken', data.accessToken);
+      localStorage.setItem('refreshToken', data.refreshToken);
+      processQueue(null, data.accessToken);
+      originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
       return client(originalRequest);
     } catch (refreshError) {
       processQueue(refreshError, null);

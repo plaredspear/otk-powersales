@@ -38,8 +38,8 @@ class OrderListResponseModel {
 
     return OrderListResponseModel(
       content: content,
-      totalElements: data['total_elements'] as int,
-      totalPages: data['total_pages'] as int,
+      totalElements: data['totalElements'] as int,
+      totalPages: data['totalPages'] as int,
       number: data['number'] as int,
       size: data['size'] as int,
       first: data['first'] as bool,

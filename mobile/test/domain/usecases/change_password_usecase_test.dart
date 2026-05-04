@@ -59,7 +59,7 @@ class MockAuthRepository implements AuthRepository {
   Future<GpsConsentRecordResult> recordGpsConsent({String? agreementNumber}) async {
     recordGpsConsentCalled = true;
     if (exceptionToThrow != null) throw exceptionToThrow!;
-    return const GpsConsentRecordResult(accessToken: 'mock_token', expiresIn: 3600);
+    return const GpsConsentRecordResult(accessToken: 'mockToken', expiresIn: 3600);
   }
 }
 
@@ -180,7 +180,7 @@ void main() {
       // Act & Assert
       expect(
         () => changePasswordUseCase.call(
-          currentPassword: 'wrong_password',
+          currentPassword: 'wrongPassword',
           newPassword: 'newpass5678',
         ),
         throwsA(

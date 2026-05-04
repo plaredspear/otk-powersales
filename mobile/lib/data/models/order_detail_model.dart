@@ -19,21 +19,21 @@ class OrderedItemModel {
 
   factory OrderedItemModel.fromJson(Map<String, dynamic> json) {
     return OrderedItemModel(
-      productCode: json['product_code'] as String,
-      productName: json['product_name'] as String,
-      totalQuantityBoxes: (json['total_quantity_boxes'] as num).toDouble(),
-      totalQuantityPieces: json['total_quantity_pieces'] as int,
-      isCancelled: json['is_cancelled'] as bool,
+      productCode: json['productCode'] as String,
+      productName: json['productName'] as String,
+      totalQuantityBoxes: (json['totalQuantityBoxes'] as num).toDouble(),
+      totalQuantityPieces: json['totalQuantityPieces'] as int,
+      isCancelled: json['isCancelled'] as bool,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'product_code': productCode,
-      'product_name': productName,
-      'total_quantity_boxes': totalQuantityBoxes,
-      'total_quantity_pieces': totalQuantityPieces,
-      'is_cancelled': isCancelled,
+      'productCode': productCode,
+      'productName': productName,
+      'totalQuantityBoxes': totalQuantityBoxes,
+      'totalQuantityPieces': totalQuantityPieces,
+      'isCancelled': isCancelled,
     };
   }
 
@@ -74,19 +74,19 @@ class ProcessingItemModel {
 
   factory ProcessingItemModel.fromJson(Map<String, dynamic> json) {
     return ProcessingItemModel(
-      productCode: json['product_code'] as String,
-      productName: json['product_name'] as String,
-      deliveredQuantity: json['delivered_quantity'] as String,
-      deliveryStatus: json['delivery_status'] as String,
+      productCode: json['productCode'] as String,
+      productName: json['productName'] as String,
+      deliveredQuantity: json['deliveredQuantity'] as String,
+      deliveryStatus: json['deliveryStatus'] as String,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'product_code': productCode,
-      'product_name': productName,
-      'delivered_quantity': deliveredQuantity,
-      'delivery_status': deliveryStatus,
+      'productCode': productCode,
+      'productName': productName,
+      'deliveredQuantity': deliveredQuantity,
+      'deliveryStatus': deliveryStatus,
     };
   }
 
@@ -112,7 +112,7 @@ class OrderProcessingStatusModel {
 
   factory OrderProcessingStatusModel.fromJson(Map<String, dynamic> json) {
     return OrderProcessingStatusModel(
-      sapOrderNumber: json['sap_order_number'] as String,
+      sapOrderNumber: json['sapOrderNumber'] as String,
       items: (json['items'] as List<dynamic>)
           .map((e) => ProcessingItemModel.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -121,7 +121,7 @@ class OrderProcessingStatusModel {
 
   Map<String, dynamic> toJson() {
     return {
-      'sap_order_number': sapOrderNumber,
+      'sapOrderNumber': sapOrderNumber,
       'items': items.map((e) => e.toJson()).toList(),
     };
   }
@@ -150,19 +150,19 @@ class RejectedItemModel {
 
   factory RejectedItemModel.fromJson(Map<String, dynamic> json) {
     return RejectedItemModel(
-      productCode: json['product_code'] as String,
-      productName: json['product_name'] as String,
-      orderQuantityBoxes: json['order_quantity_boxes'] as int,
-      rejectionReason: json['rejection_reason'] as String,
+      productCode: json['productCode'] as String,
+      productName: json['productName'] as String,
+      orderQuantityBoxes: json['orderQuantityBoxes'] as int,
+      rejectionReason: json['rejectionReason'] as String,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'product_code': productCode,
-      'product_name': productName,
-      'order_quantity_boxes': orderQuantityBoxes,
-      'rejection_reason': rejectionReason,
+      'productCode': productCode,
+      'productName': productName,
+      'orderQuantityBoxes': orderQuantityBoxes,
+      'rejectionReason': rejectionReason,
     };
   }
 
@@ -220,28 +220,28 @@ class OrderDetailModel {
         ? json['data'] as Map<String, dynamic>
         : json;
 
-    final orderedItemsJson = data['ordered_items'] as List<dynamic>? ?? [];
-    final rejectedItemsJson = data['rejected_items'] as List<dynamic>?;
+    final orderedItemsJson = data['orderedItems'] as List<dynamic>? ?? [];
+    final rejectedItemsJson = data['rejectedItems'] as List<dynamic>?;
 
     return OrderDetailModel(
       id: data['id'] as int,
-      orderRequestNumber: data['order_request_number'] as String,
-      clientId: data['client_id'] as int,
-      clientName: data['client_name'] as String,
-      clientDeadlineTime: data['client_deadline_time'] as String?,
-      orderDate: data['order_date'] as String,
-      deliveryDate: data['delivery_date'] as String,
-      totalAmount: data['total_amount'] as int,
-      totalApprovedAmount: data['total_approved_amount'] as int?,
-      approvalStatus: data['approval_status'] as String,
-      isClosed: data['is_closed'] as bool,
-      orderedItemCount: data['ordered_item_count'] as int,
+      orderRequestNumber: data['orderRequestNumber'] as String,
+      clientId: data['clientId'] as int,
+      clientName: data['clientName'] as String,
+      clientDeadlineTime: data['clientDeadlineTime'] as String?,
+      orderDate: data['orderDate'] as String,
+      deliveryDate: data['deliveryDate'] as String,
+      totalAmount: data['totalAmount'] as int,
+      totalApprovedAmount: data['totalApprovedAmount'] as int?,
+      approvalStatus: data['approvalStatus'] as String,
+      isClosed: data['isClosed'] as bool,
+      orderedItemCount: data['orderedItemCount'] as int,
       orderedItems: orderedItemsJson
           .map((e) => OrderedItemModel.fromJson(e as Map<String, dynamic>))
           .toList(),
-      orderProcessingStatus: data['order_processing_status'] != null
+      orderProcessingStatus: data['orderProcessingStatus'] != null
           ? OrderProcessingStatusModel.fromJson(
-              data['order_processing_status'] as Map<String, dynamic>)
+              data['orderProcessingStatus'] as Map<String, dynamic>)
           : null,
       rejectedItems: rejectedItemsJson != null
           ? rejectedItemsJson
@@ -256,20 +256,20 @@ class OrderDetailModel {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'order_request_number': orderRequestNumber,
-      'client_id': clientId,
-      'client_name': clientName,
-      'client_deadline_time': clientDeadlineTime,
-      'order_date': orderDate,
-      'delivery_date': deliveryDate,
-      'total_amount': totalAmount,
-      'total_approved_amount': totalApprovedAmount,
-      'approval_status': approvalStatus,
-      'is_closed': isClosed,
-      'ordered_item_count': orderedItemCount,
-      'ordered_items': orderedItems.map((e) => e.toJson()).toList(),
-      'order_processing_status': orderProcessingStatus?.toJson(),
-      'rejected_items': rejectedItems?.map((e) => e.toJson()).toList(),
+      'orderRequestNumber': orderRequestNumber,
+      'clientId': clientId,
+      'clientName': clientName,
+      'clientDeadlineTime': clientDeadlineTime,
+      'orderDate': orderDate,
+      'deliveryDate': deliveryDate,
+      'totalAmount': totalAmount,
+      'totalApprovedAmount': totalApprovedAmount,
+      'approvalStatus': approvalStatus,
+      'isClosed': isClosed,
+      'orderedItemCount': orderedItemCount,
+      'orderedItems': orderedItems.map((e) => e.toJson()).toList(),
+      'orderProcessingStatus': orderProcessingStatus?.toJson(),
+      'rejectedItems': rejectedItems?.map((e) => e.toJson()).toList(),
     };
   }
 

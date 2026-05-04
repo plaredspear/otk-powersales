@@ -103,11 +103,11 @@ class AdminEmployeeRegisterControllerTest {
             )
                 .andExpect(status().isCreated)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.employee_code").value("ADMIN-001"))
+                .andExpect(jsonPath("$.data.employeeCode").value("ADMIN-001"))
                 .andExpect(jsonPath("$.data.role").value("SYSTEM_ADMIN"))
                 .andExpect(jsonPath("$.data.origin").value("MANUAL"))
-                .andExpect(jsonPath("$.data.app_login_active").value(false))
-                .andExpect(jsonPath("$.data.password_change_required").value(true))
+                .andExpect(jsonPath("$.data.appLoginActive").value(false))
+                .andExpect(jsonPath("$.data.passwordChangeRequired").value(true))
         }
 
         @Test
@@ -131,9 +131,9 @@ class AdminEmployeeRegisterControllerTest {
         fun missingName() {
             val invalidJson = """
                 {
-                  "employee_code": "ADMIN-001",
+                  "employeeCode": "ADMIN-001",
                   "password": "Admin@2026!",
-                  "password_confirm": "Admin@2026!"
+                  "passwordConfirm": "Admin@2026!"
                 }
             """.trimIndent()
 

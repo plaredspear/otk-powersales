@@ -109,16 +109,16 @@ class AccountControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("내 거래처 목록 조회 성공"))
-                .andExpect(jsonPath("$.data.total_count").value(2))
+                .andExpect(jsonPath("$.data.totalCount").value(2))
                 .andExpect(jsonPath("$.data.stores").isArray)
                 .andExpect(jsonPath("$.data.stores.length()").value(2))
-                .andExpect(jsonPath("$.data.stores[0].account_id").value(1))
-                .andExpect(jsonPath("$.data.stores[0].account_name").value("경산농협"))
-                .andExpect(jsonPath("$.data.stores[0].account_code").value("STORE001"))
+                .andExpect(jsonPath("$.data.stores[0].accountId").value(1))
+                .andExpect(jsonPath("$.data.stores[0].accountName").value("경산농협"))
+                .andExpect(jsonPath("$.data.stores[0].accountCode").value("STORE001"))
                 .andExpect(jsonPath("$.data.stores[0].address").value("경북 경산시 중앙로 123"))
-                .andExpect(jsonPath("$.data.stores[0].address_detail").value("1층"))
-                .andExpect(jsonPath("$.data.stores[0].representative_name").value("김영수"))
-                .andExpect(jsonPath("$.data.stores[0].phone_number").value("053-123-4567"))
+                .andExpect(jsonPath("$.data.stores[0].addressDetail").value("1층"))
+                .andExpect(jsonPath("$.data.stores[0].representativeName").value("김영수"))
+                .andExpect(jsonPath("$.data.stores[0].phoneNumber").value("053-123-4567"))
         }
 
         @Test
@@ -150,8 +150,8 @@ class AccountControllerTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.total_count").value(1))
-                .andExpect(jsonPath("$.data.stores[0].account_name").value("경산농협"))
+                .andExpect(jsonPath("$.data.totalCount").value(1))
+                .andExpect(jsonPath("$.data.stores[0].accountName").value("경산농협"))
         }
 
         @Test
@@ -169,7 +169,7 @@ class AccountControllerTest {
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.data.total_count").value(0))
+                .andExpect(jsonPath("$.data.totalCount").value(0))
                 .andExpect(jsonPath("$.data.stores").isArray)
                 .andExpect(jsonPath("$.data.stores.length()").value(0))
         }

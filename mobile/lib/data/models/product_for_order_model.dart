@@ -31,32 +31,32 @@ class ProductForOrderModel {
   /// snake_case JSON에서 파싱
   factory ProductForOrderModel.fromJson(Map<String, dynamic> json) {
     return ProductForOrderModel(
-      productCode: json['product_code'] as String,
-      productName: json['product_name'] as String,
+      productCode: json['productCode'] as String,
+      productName: json['productName'] as String,
       barcode: json['barcode'] as String,
-      storageType: json['storage_type'] as String,
-      shelfLife: json['shelf_life'] as String,
-      unitPrice: json['unit_price'] as int,
-      boxSize: json['box_size'] as int,
-      isFavorite: json['is_favorite'] as bool,
-      categoryMid: json['category_mid'] as String?,
-      categorySub: json['category_sub'] as String?,
+      storageType: json['storageType'] as String,
+      shelfLife: json['shelfLife'] as String,
+      unitPrice: json['unitPrice'] as int,
+      boxSize: json['boxSize'] as int,
+      isFavorite: json['isFavorite'] as bool,
+      categoryMid: json['categoryMid'] as String?,
+      categorySub: json['categorySub'] as String?,
     );
   }
 
   /// snake_case JSON으로 직렬화
   Map<String, dynamic> toJson() {
     return {
-      'product_code': productCode,
-      'product_name': productName,
+      'productCode': productCode,
+      'productName': productName,
       'barcode': barcode,
-      'storage_type': storageType,
-      'shelf_life': shelfLife,
-      'unit_price': unitPrice,
-      'box_size': boxSize,
-      'is_favorite': isFavorite,
-      'category_mid': categoryMid,
-      'category_sub': categorySub,
+      'storageType': storageType,
+      'shelfLife': shelfLife,
+      'unitPrice': unitPrice,
+      'boxSize': boxSize,
+      'isFavorite': isFavorite,
+      'categoryMid': categoryMid,
+      'categorySub': categorySub,
     };
   }
 

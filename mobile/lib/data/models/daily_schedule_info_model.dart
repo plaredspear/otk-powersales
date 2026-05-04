@@ -17,7 +17,7 @@ class ReportProgressModel {
     return ReportProgressModel(
       completed: json['completed'] as int,
       total: json['total'] as int,
-      workType: json['work_type'] as String,
+      workType: json['workType'] as String,
     );
   }
 
@@ -25,7 +25,7 @@ class ReportProgressModel {
     return {
       'completed': completed,
       'total': total,
-      'work_type': workType,
+      'workType': workType,
     };
   }
 
@@ -78,23 +78,23 @@ class ScheduleAccountDetailModel {
 
   factory ScheduleAccountDetailModel.fromJson(Map<String, dynamic> json) {
     return ScheduleAccountDetailModel(
-      accountId: json['account_id'] as int,
-      accountName: json['account_name'] as String,
-      workType1: json['work_type_1'] as String,
-      workType2: json['work_type_2'] as String,
-      workType3: json['work_type_3'] as String,
-      isRegistered: json['is_registered'] as bool,
+      accountId: json['accountId'] as int,
+      accountName: json['accountName'] as String,
+      workType1: json['workType1'] as String,
+      workType2: json['workType2'] as String,
+      workType3: json['workType3'] as String,
+      isRegistered: json['isRegistered'] as bool,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'account_id': accountId,
-      'account_name': accountName,
-      'work_type_1': workType1,
-      'work_type_2': workType2,
-      'work_type_3': workType3,
-      'is_registered': isRegistered,
+      'accountId': accountId,
+      'accountName': accountName,
+      'workType1': workType1,
+      'workType2': workType2,
+      'workType3': workType3,
+      'isRegistered': isRegistered,
     };
   }
 
@@ -171,12 +171,12 @@ class DailyScheduleInfoModel {
   factory DailyScheduleInfoModel.fromJson(Map<String, dynamic> json) {
     return DailyScheduleInfoModel(
       date: json['date'] as String,
-      dayOfWeek: json['day_of_week'] as String,
-      memberName: json['member_name'] as String,
-      employeeCode: json['employee_code'] as String,
-      workingType: json['working_type'] as String?,
+      dayOfWeek: json['dayOfWeek'] as String,
+      memberName: json['memberName'] as String,
+      employeeCode: json['employeeCode'] as String,
+      workingType: json['workingType'] as String?,
       reportProgress: ReportProgressModel.fromJson(
-        json['report_progress'] as Map<String, dynamic>,
+        json['reportProgress'] as Map<String, dynamic>,
       ),
       accounts: (json['accounts'] as List<dynamic>)
           .map((account) => ScheduleAccountDetailModel.fromJson(
@@ -190,11 +190,11 @@ class DailyScheduleInfoModel {
   Map<String, dynamic> toJson() {
     return {
       'date': date,
-      'day_of_week': dayOfWeek,
-      'member_name': memberName,
-      'employee_code': employeeCode,
-      'working_type': workingType,
-      'report_progress': reportProgress.toJson(),
+      'dayOfWeek': dayOfWeek,
+      'memberName': memberName,
+      'employeeCode': employeeCode,
+      'workingType': workingType,
+      'reportProgress': reportProgress.toJson(),
       'accounts': accounts.map((account) => account.toJson()).toList(),
     };
   }

@@ -21,12 +21,12 @@ class LeaderScheduleCreateResponseModel {
   factory LeaderScheduleCreateResponseModel.fromJson(
       Map<String, dynamic> json) {
     return LeaderScheduleCreateResponseModel(
-      scheduleId: json['schedule_id'] as int,
-      targetEmployeeId: json['target_employee_id'] as int,
-      workingDate: json['working_date'] as String,
-      workingType: json['working_type'] as String,
-      workingCategory3: json['working_category3'] as String,
-      proxyRegisteredBy: json['proxy_registered_by'] as int,
+      scheduleId: json['scheduleId'] as int,
+      targetEmployeeId: json['targetEmployeeId'] as int,
+      workingDate: json['workingDate'] as String,
+      workingType: json['workingType'] as String,
+      workingCategory3: json['workingCategory3'] as String,
+      proxyRegisteredBy: json['proxyRegisteredBy'] as int,
     );
   }
 

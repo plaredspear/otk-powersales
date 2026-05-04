@@ -38,8 +38,8 @@ class PromotionApiDataSource {
         .map((e) => PromotionItem.fromJson(e as Map<String, dynamic>))
         .toList();
 
-    final totalElements = data['total_elements'] as int;
-    final totalPages = data['total_pages'] as int;
+    final totalElements = data['totalElements'] as int;
+    final totalPages = data['totalPages'] as int;
     final currentPage = data['page'] as int;
 
     return PromotionListResult(

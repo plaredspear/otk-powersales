@@ -32,15 +32,15 @@ class ProductExpirationItemModel {
   factory ProductExpirationItemModel.fromJson(Map<String, dynamic> json) {
     return ProductExpirationItemModel(
       seq: json['seq'] as int,
-      productCode: json['product_code'] as String,
-      productName: json['product_name'] as String,
-      accountCode: json['account_code'] as String,
-      accountName: json['account_name'] as String,
-      expirationDate: json['expiration_date'] as String,
-      alarmDate: json['alarm_date'] as String,
-      dDay: json['d_day'] as int,
+      productCode: json['productCode'] as String,
+      productName: json['productName'] as String,
+      accountCode: json['accountCode'] as String,
+      accountName: json['accountName'] as String,
+      expirationDate: json['expirationDate'] as String,
+      alarmDate: json['alarmDate'] as String,
+      dDay: json['dDay'] as int,
       description: json['description'] as String? ?? '',
-      isExpired: json['is_expired'] as bool,
+      isExpired: json['isExpired'] as bool,
     );
   }
 
@@ -48,15 +48,15 @@ class ProductExpirationItemModel {
   Map<String, dynamic> toJson() {
     return {
       'seq': seq,
-      'product_code': productCode,
-      'product_name': productName,
-      'account_code': accountCode,
-      'account_name': accountName,
-      'expiration_date': expirationDate,
-      'alarm_date': alarmDate,
-      'd_day': dDay,
+      'productCode': productCode,
+      'productName': productName,
+      'accountCode': accountCode,
+      'accountName': accountName,
+      'expirationDate': expirationDate,
+      'alarmDate': alarmDate,
+      'dDay': dDay,
       'description': description,
-      'is_expired': isExpired,
+      'isExpired': isExpired,
     };
   }
 

@@ -86,9 +86,9 @@ class AdminTeamScheduleControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
                 .andExpect(jsonPath("$.data.length()").value(2))
-                .andExpect(jsonPath("$.data[0].employee_code").value("20030001"))
+                .andExpect(jsonPath("$.data[0].employeeCode").value("20030001"))
                 .andExpect(jsonPath("$.data[0].name").value("홍길동"))
-                .andExpect(jsonPath("$.data[1].employee_code").value("20030002"))
+                .andExpect(jsonPath("$.data[1].employeeCode").value("20030002"))
                 .andExpect(jsonPath("$.data[1].name").value("김영희"))
         }
     }
@@ -111,8 +111,8 @@ class AdminTeamScheduleControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
                 .andExpect(jsonPath("$.data.length()").value(2))
-                .andExpect(jsonPath("$.data[0].account_id").value(1001))
-                .andExpect(jsonPath("$.data[0].external_key").value("EXT001"))
+                .andExpect(jsonPath("$.data[0].accountId").value(1001))
+                .andExpect(jsonPath("$.data[0].externalKey").value("EXT001"))
                 .andExpect(jsonPath("$.data[0].name").value("이마트 강남점"))
         }
 
@@ -132,7 +132,7 @@ class AdminTeamScheduleControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
                 .andExpect(jsonPath("$.data.length()").value(1))
-                .andExpect(jsonPath("$.data[0].account_id").value(1003))
+                .andExpect(jsonPath("$.data[0].accountId").value(1003))
                 .andExpect(jsonPath("$.data[0].name").value("롯데마트 서울역점"))
         }
     }
@@ -155,10 +155,10 @@ class AdminTeamScheduleControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
                 .andExpect(jsonPath("$.data.length()").value(2))
-                .andExpect(jsonPath("$.data[0].branch_code").value("1234"))
-                .andExpect(jsonPath("$.data[0].branch_name").value("서울지점"))
-                .andExpect(jsonPath("$.data[1].branch_code").value("5678"))
-                .andExpect(jsonPath("$.data[1].branch_name").value("부산지점"))
+                .andExpect(jsonPath("$.data[0].branchCode").value("1234"))
+                .andExpect(jsonPath("$.data[0].branchName").value("서울지점"))
+                .andExpect(jsonPath("$.data[1].branchCode").value("5678"))
+                .andExpect(jsonPath("$.data[1].branchName").value("부산지점"))
         }
     }
 
@@ -214,22 +214,22 @@ class AdminTeamScheduleControllerTest {
                 .andExpect(jsonPath("$.data.schedules").isArray)
                 .andExpect(jsonPath("$.data.schedules.length()").value(1))
                 .andExpect(jsonPath("$.data.schedules[0].id").value(1))
-                .andExpect(jsonPath("$.data.schedules[0].employee_code").value("20030001"))
-                .andExpect(jsonPath("$.data.schedules[0].employee_name").value("홍길동"))
-                .andExpect(jsonPath("$.data.schedules[0].working_date").value("2026-03-15"))
-                .andExpect(jsonPath("$.data.schedules[0].working_type").value("진열"))
-                .andExpect(jsonPath("$.data.schedules[0].is_clock_in").value(true))
-                .andExpect(jsonPath("$.data.schedules[0].account_id").value(1001))
-                .andExpect(jsonPath("$.data.schedules[0].account_name").value("이마트 강남점"))
-                .andExpect(jsonPath("$.data.daily_summary").isArray)
-                .andExpect(jsonPath("$.data.daily_summary.length()").value(1))
-                .andExpect(jsonPath("$.data.daily_summary[0].date").value("2026-03-15"))
-                .andExpect(jsonPath("$.data.daily_summary[0].display_expected").value(5))
-                .andExpect(jsonPath("$.data.daily_summary[0].display_actual").value(3))
-                .andExpect(jsonPath("$.data.daily_summary[0].promotion_expected").value(2))
-                .andExpect(jsonPath("$.data.daily_summary[0].promotion_actual").value(1))
-                .andExpect(jsonPath("$.data.daily_summary[0].annual_leave").value(1))
-                .andExpect(jsonPath("$.data.daily_summary[0].compensatory_leave").value(0))
+                .andExpect(jsonPath("$.data.schedules[0].employeeCode").value("20030001"))
+                .andExpect(jsonPath("$.data.schedules[0].employeeName").value("홍길동"))
+                .andExpect(jsonPath("$.data.schedules[0].workingDate").value("2026-03-15"))
+                .andExpect(jsonPath("$.data.schedules[0].workingType").value("진열"))
+                .andExpect(jsonPath("$.data.schedules[0].isClockIn").value(true))
+                .andExpect(jsonPath("$.data.schedules[0].accountId").value(1001))
+                .andExpect(jsonPath("$.data.schedules[0].accountName").value("이마트 강남점"))
+                .andExpect(jsonPath("$.data.dailySummary").isArray)
+                .andExpect(jsonPath("$.data.dailySummary.length()").value(1))
+                .andExpect(jsonPath("$.data.dailySummary[0].date").value("2026-03-15"))
+                .andExpect(jsonPath("$.data.dailySummary[0].displayExpected").value(5))
+                .andExpect(jsonPath("$.data.dailySummary[0].displayActual").value(3))
+                .andExpect(jsonPath("$.data.dailySummary[0].promotionExpected").value(2))
+                .andExpect(jsonPath("$.data.dailySummary[0].promotionActual").value(1))
+                .andExpect(jsonPath("$.data.dailySummary[0].annualLeave").value(1))
+                .andExpect(jsonPath("$.data.dailySummary[0].compensatoryLeave").value(0))
         }
 
         @Test
@@ -254,8 +254,8 @@ class AdminTeamScheduleControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.schedules").isArray)
                 .andExpect(jsonPath("$.data.schedules.length()").value(0))
-                .andExpect(jsonPath("$.data.daily_summary").isArray)
-                .andExpect(jsonPath("$.data.daily_summary.length()").value(0))
+                .andExpect(jsonPath("$.data.dailySummary").isArray)
+                .andExpect(jsonPath("$.data.dailySummary.length()").value(0))
         }
     }
 

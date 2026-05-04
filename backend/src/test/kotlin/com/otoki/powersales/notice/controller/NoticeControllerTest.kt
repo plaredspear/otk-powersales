@@ -98,13 +98,13 @@ class NoticeControllerTest {
                 .andExpect(jsonPath("$.data.content").isArray)
                 .andExpect(jsonPath("$.data.content[0].id").value(42))
                 .andExpect(jsonPath("$.data.content[0].category").value("COMPANY"))
-                .andExpect(jsonPath("$.data.content[0].category_name").value("회사공지"))
+                .andExpect(jsonPath("$.data.content[0].categoryName").value("회사공지"))
                 .andExpect(jsonPath("$.data.content[0].title").value("전체공지 제목"))
-                .andExpect(jsonPath("$.data.content[0].created_at").value("2026-02-28T10:30:00"))
+                .andExpect(jsonPath("$.data.content[0].createdAt").value("2026-02-28T10:30:00"))
                 .andExpect(jsonPath("$.data.content[1].id").value(41))
-                .andExpect(jsonPath("$.data.total_count").value(5))
-                .andExpect(jsonPath("$.data.total_pages").value(1))
-                .andExpect(jsonPath("$.data.current_page").value(1))
+                .andExpect(jsonPath("$.data.totalCount").value(5))
+                .andExpect(jsonPath("$.data.totalPages").value(1))
+                .andExpect(jsonPath("$.data.currentPage").value(1))
                 .andExpect(jsonPath("$.data.size").value(10))
         }
 
@@ -135,7 +135,7 @@ class NoticeControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.content").isArray)
                 .andExpect(jsonPath("$.data.content[0].title").value("영업 목표"))
-                .andExpect(jsonPath("$.data.total_count").value(1))
+                .andExpect(jsonPath("$.data.totalCount").value(1))
         }
 
         @Test
@@ -158,7 +158,7 @@ class NoticeControllerTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.content").isEmpty)
-                .andExpect(jsonPath("$.data.total_count").value(0))
+                .andExpect(jsonPath("$.data.totalCount").value(0))
         }
 
         @Test
@@ -212,14 +212,14 @@ class NoticeControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(42))
                 .andExpect(jsonPath("$.data.category").value("COMPANY"))
-                .andExpect(jsonPath("$.data.category_name").value("회사공지"))
+                .andExpect(jsonPath("$.data.categoryName").value("회사공지"))
                 .andExpect(jsonPath("$.data.title").value("테스트 공지"))
                 .andExpect(jsonPath("$.data.content").value("본문 내용입니다."))
-                .andExpect(jsonPath("$.data.created_at").value("2026-02-28T10:30:00"))
+                .andExpect(jsonPath("$.data.createdAt").value("2026-02-28T10:30:00"))
                 .andExpect(jsonPath("$.data.images").isArray)
                 .andExpect(jsonPath("$.data.images[0].id").value(101))
                 .andExpect(jsonPath("$.data.images[0].url").value("https://bucket.s3.ap-northeast-2.amazonaws.com/img.jpg"))
-                .andExpect(jsonPath("$.data.images[0].sort_order").value(0))
+                .andExpect(jsonPath("$.data.images[0].sortOrder").value(0))
         }
 
         @Test
