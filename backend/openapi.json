@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:55705",
+    "url" : "http://localhost:49638",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -1602,6 +1602,42 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseProductExpirationBatchDeleteResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/order-requests" : {
+      "post" : {
+        "tags" : [ "order-request-controller" ],
+        "operationId" : "createOrderRequest",
+        "parameters" : [ {
+          "name" : "Idempotency-Key",
+          "in" : "header",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/OrderRequestCreateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseOrderRequestCreateResponse"
                 }
               }
             }
@@ -5063,12 +5099,12 @@
           "description" : {
             "type" : [ "string", "null" ]
           },
+          "expired" : {
+            "type" : "boolean"
+          },
           "dday" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "expired" : {
-            "type" : "boolean"
           }
         }
       },
@@ -7929,6 +7965,119 @@
           }
         }
       },
+      "OrderRequestCreateLine" : {
+        "type" : "object",
+        "properties" : {
+          "lineNumber" : {
+            "type" : "integer",
+            "format" : "int32",
+            "minimum" : 0
+          },
+          "productCode" : {
+            "type" : "string",
+            "maxLength" : 20,
+            "minLength" : 1
+          },
+          "quantity" : {
+            "type" : "number",
+            "minimum" : 0
+          },
+          "unit" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "quantityPieces" : {
+            "type" : "integer",
+            "format" : "int32",
+            "minimum" : 1
+          },
+          "quantityBoxes" : {
+            "type" : "number",
+            "minimum" : 0
+          }
+        },
+        "required" : [ "lineNumber", "productCode", "quantity", "quantityBoxes", "quantityPieces", "unit" ]
+      },
+      "OrderRequestCreateRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientRequestId" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 64,
+            "minLength" : 0
+          },
+          "accountId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "minimum" : 1
+          },
+          "deliveryDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "totalAmount" : {
+            "type" : "integer",
+            "format" : "int64",
+            "minimum" : 1
+          },
+          "lines" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/OrderRequestCreateLine"
+            },
+            "minItems" : 1
+          }
+        },
+        "required" : [ "accountId", "deliveryDate", "lines", "totalAmount" ]
+      },
+      "ApiResponseOrderRequestCreateResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/OrderRequestCreateResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "OrderRequestCreateResponse" : {
+        "type" : "object",
+        "properties" : {
+          "orderRequestId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "orderRequestNumber" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "DRAFT", "SENT", "APPROVED", "SEND_FAILED", "CANCELED" ]
+          },
+          "totalAmount" : {
+            "type" : "number"
+          }
+        }
+      },
       "LeaderScheduleCreateRequest" : {
         "type" : "object",
         "properties" : {
@@ -10202,11 +10351,9 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "first" : {
             "type" : "boolean"
@@ -10214,9 +10361,11 @@
           "last" : {
             "type" : "boolean"
           },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "size" : {
             "type" : "integer",
@@ -10240,13 +10389,6 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
-          "pageNumber" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "unpaged" : {
-            "type" : "boolean"
-          },
           "pageSize" : {
             "type" : "integer",
             "format" : "int32"
@@ -10256,6 +10398,13 @@
           },
           "paged" : {
             "type" : "boolean"
+          },
+          "unpaged" : {
+            "type" : "boolean"
+          },
+          "pageNumber" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "offset" : {
             "type" : "integer",
@@ -12330,11 +12479,9 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "first" : {
             "type" : "boolean"
@@ -12342,9 +12489,11 @@
           "last" : {
             "type" : "boolean"
           },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "size" : {
             "type" : "integer",

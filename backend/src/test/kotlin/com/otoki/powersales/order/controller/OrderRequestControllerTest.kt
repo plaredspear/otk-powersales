@@ -47,6 +47,9 @@ class OrderRequestControllerTest {
     private lateinit var orderRequestService: OrderRequestService
 
     @MockitoBean
+    private lateinit var orderRequestCreateService: com.otoki.powersales.order.service.OrderRequestCreateService
+
+    @MockitoBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
     @MockitoBean

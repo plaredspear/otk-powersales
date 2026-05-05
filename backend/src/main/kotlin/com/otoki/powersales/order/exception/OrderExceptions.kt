@@ -84,3 +84,50 @@ class ProductNotInOrderException(productCodes: List<String>) : BusinessException
     message = "해당 주문에 포함되지 않은 제품입니다: ${productCodes.joinToString(", ")}",
     httpStatus = HttpStatus.BAD_REQUEST
 )
+
+// ───── Spec #592 — 주문 등록 예외 ─────
+
+/**
+ * 본인 담당 거래처가 아닌 경우 (`account.employee_id != JWT 사번`).
+ */
+class OrderAccountForbiddenException : BusinessException(
+    errorCode = "ORD_ACCOUNT_FORBIDDEN",
+    message = "본인 담당 거래처가 아닙니다",
+    httpStatus = HttpStatus.FORBIDDEN
+)
+
+/**
+ * 여신 한도 초과 (서버 재검증 시 `creditBalance < totalAmount`).
+ */
+class OrderLoanExceededException(creditBalance: java.math.BigDecimal, totalAmount: java.math.BigDecimal) : BusinessException(
+    errorCode = "ORD_LOAN_EXCEEDED",
+    message = "여신 한도를 초과했습니다 (한도: $creditBalance / 요청: $totalAmount)",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+/**
+ * 공급제한 초과 (`InventorySearch.SupplyLimitQTY < quantityPieces`).
+ */
+class OrderProductRestrictedException(productCode: String, limit: Int, requested: Int) : BusinessException(
+    errorCode = "ORD_PRODUCT_RESTRICTED",
+    message = "공급제한을 초과한 제품이 있습니다 (productCode: $productCode, limit: $limit, requested: $requested)",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+/**
+ * 단위 환산 정합 위반 또는 unit enum 위반.
+ */
+class OrderInvalidUnitException(detail: String) : BusinessException(
+    errorCode = "ORD_INVALID_UNIT",
+    message = detail,
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+/**
+ * 입력값 형식 검증 위반 (라인 누락 / 음수 / 미래 일자 / 제품 마스터 미등록 등).
+ */
+class OrderInvalidRequestException(detail: String) : BusinessException(
+    errorCode = "ORD_INVALID_REQUEST",
+    message = detail,
+    httpStatus = HttpStatus.BAD_REQUEST
+)
