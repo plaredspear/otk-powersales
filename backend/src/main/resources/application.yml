@@ -127,6 +127,15 @@ sap:
     attendance:
       chunk-size: 1000
       max-rows: 50000
+  outbound:
+    base-url: ${SAP_OUTBOUND_BASE_URL:}
+    username: ${SAP_OUTBOUND_USERNAME:}
+    password: ${SAP_OUTBOUND_PASSWORD:}
+    connect-timeout-ms: ${SAP_OUTBOUND_CONNECT_TIMEOUT_MS:5000}
+    read-timeout-ms: ${SAP_OUTBOUND_READ_TIMEOUT_MS:120000}
+    retry:
+      max-attempts: ${SAP_OUTBOUND_RETRY_MAX_ATTEMPTS:3}
+      delay-ms: ${SAP_OUTBOUND_RETRY_DELAY_MS:1000}
 
 springdoc:
   swagger-ui:
@@ -162,6 +171,17 @@ app:
 
   attendance:
     gps-threshold-meters: ${ATTENDANCE_GPS_THRESHOLD_METERS:500}
+
+  # ---------------------------------------------------------------------------
+  # SAP outbound — 출근/진열 마스터 daily batch (Spec #588)
+  # cron 표현식과 page-size 는 Part 별로 독립. 인증/baseUrl/timeout 은 #534 의
+  # `sap.outbound.*` 환경변수를 그대로 재사용한다.
+  # ---------------------------------------------------------------------------
+  sap:
+    outbound:
+      attendance:
+        cron: ${APP_SAP_OUTBOUND_ATTENDANCE_CRON:0 0 1 * * *}
+        page-size: ${APP_SAP_OUTBOUND_ATTENDANCE_PAGE_SIZE:100}
 
 server:
   port: ${SERVER_PORT:8080}

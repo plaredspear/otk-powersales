@@ -1,5 +1,6 @@
 package com.otoki.powersales.sap.inbound.service
 
+import com.otoki.powersales.sap.SapConstants
 import com.otoki.powersales.sap.auth.audit.SapInboundAudit
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditEventType
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
@@ -52,7 +53,7 @@ class SapEmployeeMasterService(
         val statusCodeMap: Map<String, String> = systemCodeMasterRepository
             .findByGroupCodeIn(listOf(STATUS_GROUP_CODE))
             .asSequence()
-            .filter { it.companyCode == STATUS_COMPANY_CODE }
+            .filter { it.companyCode == SapConstants.OTOKI_COMPANY_CODE }
             .mapNotNull { entry ->
                 val name = entry.detailCodeName ?: return@mapNotNull null
                 entry.detailCode to name
@@ -201,7 +202,6 @@ class SapEmployeeMasterService(
 
     companion object {
         private const val STATUS_GROUP_CODE = "H10010"
-        private const val STATUS_COMPANY_CODE = "1000"
         private const val EMPTY_DATE = "00000000"
         private const val REASON_MAX_LENGTH = 1000
         private val DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd")
