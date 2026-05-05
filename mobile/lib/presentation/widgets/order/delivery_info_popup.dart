@@ -21,23 +21,27 @@ class DeliveryInfoPopup extends StatelessWidget {
 
   Color _getStatusColor(DeliveryStatus status) {
     switch (status) {
-      case DeliveryStatus.waiting:
+      case DeliveryStatus.pending:
         return AppColors.textSecondary;
       case DeliveryStatus.shipping:
         return AppColors.warning;
       case DeliveryStatus.delivered:
         return AppColors.success;
+      case DeliveryStatus.outOfStock:
+        return AppColors.error;
     }
   }
 
   String _getStatusMessage(DeliveryStatus status) {
     switch (status) {
-      case DeliveryStatus.waiting:
+      case DeliveryStatus.pending:
         return '배송 대기 중입니다.';
       case DeliveryStatus.shipping:
         return '배송이 진행 중입니다.';
       case DeliveryStatus.delivered:
         return '배송이 완료되었습니다.';
+      case DeliveryStatus.outOfStock:
+        return '결품으로 인해 배송할 수 없습니다.';
     }
   }
 

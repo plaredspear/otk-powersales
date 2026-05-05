@@ -163,7 +163,12 @@ class OrderRequestApiDataSource implements OrderRequestRemoteDataSource {
   @override
   Future<ClientOrderDetailModel> getClientOrderDetail({
     required String sapOrderNumber,
-  }) {
-    throw UnimplementedError('별도 스펙에서 구현');
+  }) async {
+    final response = await _dio.get(
+      '/api/v1/mobile/client-orders/$sapOrderNumber',
+    );
+    return ClientOrderDetailModel.fromJson(
+      response.data as Map<String, dynamic>,
+    );
   }
 }

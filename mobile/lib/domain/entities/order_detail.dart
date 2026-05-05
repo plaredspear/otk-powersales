@@ -2,11 +2,14 @@ import 'order_request.dart';
 
 /// 배송 상태 열거형
 ///
-/// 주문 처리 현황에서 각 제품의 배송 상태를 나타냅니다.
+/// 주문 처리 현황 + 거래처 출하 상세에서 각 제품의 배송 상태를 나타냅니다.
+/// 백엔드 권위: heroku 의 한글 4종 (`'대기'`/`'배송중'`/`'배송 완료'`/`'결품'`) 과 1:1 대응.
+/// 응답은 영문 코드(`PENDING`/`SHIPPING`/`DELIVERED`/`OUT_OF_STOCK`)로 직렬화됩니다.
 enum DeliveryStatus {
-  waiting('대기', 'WAITING'),
+  pending('대기', 'PENDING'),
   shipping('배송중', 'SHIPPING'),
-  delivered('배송완료', 'DELIVERED');
+  delivered('배송 완료', 'DELIVERED'),
+  outOfStock('결품', 'OUT_OF_STOCK');
 
   const DeliveryStatus(this.displayName, this.code);
 
@@ -16,11 +19,11 @@ enum DeliveryStatus {
   /// API 코드 값
   final String code;
 
-  /// API 코드에서 DeliveryStatus로 변환
+  /// API 코드에서 DeliveryStatus로 변환. 미정의 코드는 안전 기본값 [pending] 으로 fallback.
   static DeliveryStatus fromCode(String code) {
     return DeliveryStatus.values.firstWhere(
       (status) => status.code == code,
-      orElse: () => DeliveryStatus.waiting,
+      orElse: () => DeliveryStatus.pending,
     );
   }
 
