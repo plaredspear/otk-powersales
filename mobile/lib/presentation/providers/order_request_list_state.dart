@@ -1,29 +1,33 @@
 import '../../domain/entities/order_request.dart';
 
-/// 주문 목록 화면 상태
+/// 본인 주문요청 목록 화면 상태 (클라이언트 슬라이스 패턴).
 ///
-/// 필터 조건, 정렬, 페이지네이션, 로딩/에러 상태를 포함합니다.
+/// 백엔드에서 받은 전체 배열은 [allOrderRequests] 에 보관하고,
+/// 사용자가 선택한 [currentPage] 에 해당하는 슬라이스만 [pagedItems] getter 로 반환한다.
 class OrderRequestListState {
+  /// 페이지당 행 수
+  static const int defaultPageSize = 20;
+
   /// 로딩 상태
   final bool isLoading;
-
-  /// 추가 페이지 로딩 상태
-  final bool isLoadingMore;
 
   /// 에러 메시지
   final String? errorMessage;
 
-  /// 주문 목록
-  final List<OrderRequest> orders;
+  /// 백엔드에서 받은 전체 주문요청 배열 (페이징 없음)
+  final List<OrderRequest> allOrderRequests;
 
-  /// 전체 결과 수
-  final int totalElements;
-
-  /// 현재 페이지 번호
+  /// 현재 페이지 (0-indexed)
   final int currentPage;
 
-  /// 마지막 페이지 여부
-  final bool isLastPage;
+  /// 페이지당 행 수
+  final int pageSize;
+
+  /// 결과가 응답 라인 수 상한(2000건)에 도달해 잘렸는지 여부
+  final bool truncated;
+
+  /// 서버 조회 시각
+  final DateTime? fetchedAt;
 
   /// 검색 실행 여부 (빈 결과 vs 초기 상태 구분)
   final bool hasSearched;
@@ -36,7 +40,7 @@ class OrderRequestListState {
   /// 선택된 거래처명 (드롭다운 표시용)
   final String? selectedClientName;
 
-  /// 선택된 승인상태 (null이면 전체)
+  /// 선택된 주문요청 상태 코드 (null이면 전체)
   final String? selectedStatus;
 
   /// 납기일 시작 (YYYY-MM-DD)
@@ -57,12 +61,12 @@ class OrderRequestListState {
 
   const OrderRequestListState({
     this.isLoading = false,
-    this.isLoadingMore = false,
     this.errorMessage,
-    this.orders = const [],
-    this.totalElements = 0,
+    this.allOrderRequests = const [],
     this.currentPage = 0,
-    this.isLastPage = false,
+    this.pageSize = defaultPageSize,
+    this.truncated = false,
+    this.fetchedAt,
     this.hasSearched = false,
     this.selectedClientId,
     this.selectedClientName,
@@ -90,38 +94,25 @@ class OrderRequestListState {
   }
 
   /// 로딩 상태로 전환
-  OrderRequestListState toLoading() {
-    return copyWith(
-      isLoading: true,
-      errorMessage: null,
-    );
-  }
-
-  /// 추가 로딩 상태로 전환
-  OrderRequestListState toLoadingMore() {
-    return copyWith(
-      isLoadingMore: true,
-      errorMessage: null,
-    );
-  }
+  OrderRequestListState toLoading() => copyWith(isLoading: true, errorMessage: null);
 
   /// 에러 상태로 전환
-  OrderRequestListState toError(String message) {
-    return copyWith(
-      isLoading: false,
-      isLoadingMore: false,
-      errorMessage: message,
-    );
-  }
+  OrderRequestListState toError(String message) =>
+      copyWith(isLoading: false, errorMessage: message);
+
+  /// 현재 페이지에 해당하는 슬라이스
+  List<OrderRequest> get pagedItems =>
+      allOrderRequests.skip(currentPage * pageSize).take(pageSize).toList();
+
+  /// 전체 페이지 수
+  int get totalPages =>
+      allOrderRequests.isEmpty ? 0 : (allOrderRequests.length / pageSize).ceil();
 
   /// 검색 결과가 있는지 여부
-  bool get hasResults => orders.isNotEmpty;
+  bool get hasResults => allOrderRequests.isNotEmpty;
 
   /// 검색 결과가 없는지 (검색 후)
-  bool get isEmpty => hasSearched && orders.isEmpty;
-
-  /// 다음 페이지가 있는지 여부
-  bool get hasNextPage => !isLastPage;
+  bool get isEmpty => hasSearched && allOrderRequests.isEmpty;
 
   /// 필터가 적용되어 있는지 여부
   bool get hasActiveFilter =>
@@ -129,12 +120,12 @@ class OrderRequestListState {
 
   OrderRequestListState copyWith({
     bool? isLoading,
-    bool? isLoadingMore,
     String? errorMessage,
-    List<OrderRequest>? orders,
-    int? totalElements,
+    List<OrderRequest>? allOrderRequests,
     int? currentPage,
-    bool? isLastPage,
+    int? pageSize,
+    bool? truncated,
+    DateTime? fetchedAt,
     bool? hasSearched,
     int? selectedClientId,
     String? selectedClientName,
@@ -149,12 +140,12 @@ class OrderRequestListState {
   }) {
     return OrderRequestListState(
       isLoading: isLoading ?? this.isLoading,
-      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       errorMessage: errorMessage,
-      orders: orders ?? this.orders,
-      totalElements: totalElements ?? this.totalElements,
+      allOrderRequests: allOrderRequests ?? this.allOrderRequests,
       currentPage: currentPage ?? this.currentPage,
-      isLastPage: isLastPage ?? this.isLastPage,
+      pageSize: pageSize ?? this.pageSize,
+      truncated: truncated ?? this.truncated,
+      fetchedAt: fetchedAt ?? this.fetchedAt,
       hasSearched: hasSearched ?? this.hasSearched,
       selectedClientId:
           clearClientFilter ? null : (selectedClientId ?? this.selectedClientId),

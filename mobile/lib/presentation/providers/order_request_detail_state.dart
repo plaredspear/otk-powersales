@@ -49,14 +49,14 @@ class OrderRequestDetailState {
   /// 마감전 + 전송실패 아님 + 전체 취소 아님
   bool get showCancelButton =>
       isBeforeClose &&
-      orderDetail!.approvalStatus != ApprovalStatus.sendFailed &&
+      orderDetail!.orderRequestStatus != OrderRequestStatus.sendFailed &&
       !orderDetail!.allItemsCancelled;
 
   /// 재전송 버튼 표시 여부
   /// 마감전 + 전송실패 상태
   bool get showResendButton =>
       isBeforeClose &&
-      orderDetail!.approvalStatus == ApprovalStatus.sendFailed;
+      orderDetail!.orderRequestStatus == OrderRequestStatus.sendFailed;
 
   /// 로딩 상태로 전환
   OrderRequestDetailState toLoading() {

@@ -33,15 +33,11 @@ class OrderListPage extends ConsumerStatefulWidget {
 class _OrderListPageState extends ConsumerState<OrderListPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-
-    // 스크롤 리스너 (무한 스크롤)
-    _scrollController.addListener(_onScroll);
 
     // 페이지 진입 시 초기 데이터 로딩
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -53,17 +49,7 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
   @override
   void dispose() {
     _tabController.dispose();
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
     super.dispose();
-  }
-
-  /// 스크롤 하단 도달 시 다음 페이지 로드
-  void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200) {
-      ref.read(orderRequestListProvider.notifier).loadNextPage();
-    }
   }
 
   /// 주문 카드 탭 → 주문 상세 화면으로 이동
@@ -196,7 +182,7 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            '주문 현황 (${state.totalElements})',
+            '주문 현황 (${state.allOrderRequests.length})',
             style: AppTypography.headlineSmall,
           ),
           InkWell(
@@ -296,25 +282,31 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
       return const Center(child: CircularProgressIndicator());
     }
 
-    // 주문 카드 리스트 (무한 스크롤)
-    return ListView.builder(
-      controller: _scrollController,
-      itemCount: state.orders.length + (state.isLoadingMore ? 1 : 0),
-      itemBuilder: (context, index) {
-        // 로딩 인디케이터 (마지막 아이템)
-        if (index == state.orders.length) {
-          return const Padding(
-            padding: EdgeInsets.all(AppSpacing.lg),
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
-
-        final order = state.orders[index];
-        return OrderRequestCard(
-          order: order,
-          onTap: () => _onOrderTap(order),
-        );
-      },
+    // 주문 카드 리스트 + 페이지네이터 (클라이언트 슬라이스)
+    final pagedItems = state.pagedItems;
+    return Column(
+      children: [
+        Expanded(
+          child: ListView.builder(
+            itemCount: pagedItems.length,
+            itemBuilder: (context, index) {
+              final order = pagedItems[index];
+              return OrderRequestCard(
+                order: order,
+                onTap: () => _onOrderTap(order),
+              );
+            },
+          ),
+        ),
+        if (state.totalPages > 1)
+          PageNavigator(
+            currentPage: state.currentPage,
+            totalPages: state.totalPages,
+            onPageChanged: (page) {
+              ref.read(orderRequestListProvider.notifier).goToPage(page);
+            },
+          ),
+      ],
     );
   }
 

@@ -189,7 +189,7 @@ class OrderRequestDetailModel {
   final String deliveryDate;
   final int totalAmount;
   final int? totalApprovedAmount;
-  final String approvalStatus;
+  final String orderRequestStatus;
   final bool isClosed;
   final int orderedItemCount;
   final List<OrderedItemModel> orderedItems;
@@ -206,7 +206,7 @@ class OrderRequestDetailModel {
     required this.deliveryDate,
     required this.totalAmount,
     this.totalApprovedAmount,
-    required this.approvalStatus,
+    required this.orderRequestStatus,
     required this.isClosed,
     required this.orderedItemCount,
     required this.orderedItems,
@@ -233,7 +233,7 @@ class OrderRequestDetailModel {
       deliveryDate: data['deliveryDate'] as String,
       totalAmount: data['totalAmount'] as int,
       totalApprovedAmount: data['totalApprovedAmount'] as int?,
-      approvalStatus: data['approvalStatus'] as String,
+      orderRequestStatus: data['orderRequestStatus'] as String,
       isClosed: data['isClosed'] as bool,
       orderedItemCount: data['orderedItemCount'] as int,
       orderedItems: orderedItemsJson
@@ -264,7 +264,7 @@ class OrderRequestDetailModel {
       'deliveryDate': deliveryDate,
       'totalAmount': totalAmount,
       'totalApprovedAmount': totalApprovedAmount,
-      'approvalStatus': approvalStatus,
+      'orderRequestStatus': orderRequestStatus,
       'isClosed': isClosed,
       'orderedItemCount': orderedItemCount,
       'orderedItems': orderedItems.map((e) => e.toJson()).toList(),
@@ -285,7 +285,7 @@ class OrderRequestDetailModel {
       deliveryDate: DateTime.parse(deliveryDate),
       totalAmount: totalAmount,
       totalApprovedAmount: totalApprovedAmount,
-      approvalStatus: ApprovalStatus.fromCode(approvalStatus),
+      orderRequestStatus: OrderRequestStatus.fromCode(orderRequestStatus),
       isClosed: isClosed,
       orderedItemCount: orderedItemCount,
       orderedItems: orderedItems.map((e) => e.toEntity()).toList(),

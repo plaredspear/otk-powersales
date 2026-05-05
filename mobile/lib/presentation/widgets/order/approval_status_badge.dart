@@ -8,11 +8,11 @@ import '../../../domain/entities/order_request.dart';
 ///
 /// 주문의 승인상태를 색상 뱃지로 표시합니다.
 /// 승인완료(녹색), 승인상태(노란색), 전송실패(빨간색), 재전송(주황색)
-class ApprovalStatusBadge extends StatelessWidget {
+class OrderRequestStatusBadge extends StatelessWidget {
   /// 승인상태
-  final ApprovalStatus status;
+  final OrderRequestStatus status;
 
-  const ApprovalStatusBadge({
+  const OrderRequestStatusBadge({
     super.key,
     required this.status,
   });

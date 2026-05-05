@@ -26,7 +26,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
       orderDate: DateTime(2026, 2, 5),
       deliveryDate: DateTime(2026, 2, 8),
       totalAmount: 612000000,
-      approvalStatus: ApprovalStatus.approved,
+      orderRequestStatus: OrderRequestStatus.approved,
       isClosed: true,
     ),
     OrderRequest(
@@ -37,7 +37,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
       orderDate: DateTime(2026, 2, 4),
       deliveryDate: DateTime(2026, 2, 7),
       totalAmount: 245000000,
-      approvalStatus: ApprovalStatus.approved,
+      orderRequestStatus: OrderRequestStatus.approved,
       isClosed: true,
     ),
     OrderRequest(
@@ -48,7 +48,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
       orderDate: DateTime(2026, 2, 4),
       deliveryDate: DateTime(2026, 2, 7),
       totalAmount: 180500000,
-      approvalStatus: ApprovalStatus.pending,
+      orderRequestStatus: OrderRequestStatus.sent,
       isClosed: false,
     ),
     OrderRequest(
@@ -59,7 +59,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
       orderDate: DateTime(2026, 2, 3),
       deliveryDate: DateTime(2026, 2, 6),
       totalAmount: 95000000,
-      approvalStatus: ApprovalStatus.sendFailed,
+      orderRequestStatus: OrderRequestStatus.sendFailed,
       isClosed: false,
     ),
     OrderRequest(
@@ -70,7 +70,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
       orderDate: DateTime(2026, 2, 3),
       deliveryDate: DateTime(2026, 2, 6),
       totalAmount: 320000000,
-      approvalStatus: ApprovalStatus.resend,
+      orderRequestStatus: OrderRequestStatus.sendFailed,
       isClosed: false,
     ),
     OrderRequest(
@@ -81,7 +81,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
       orderDate: DateTime(2026, 2, 2),
       deliveryDate: DateTime(2026, 2, 5),
       totalAmount: 150000000,
-      approvalStatus: ApprovalStatus.approved,
+      orderRequestStatus: OrderRequestStatus.approved,
       isClosed: true,
     ),
     OrderRequest(
@@ -92,7 +92,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
       orderDate: DateTime(2026, 2, 1),
       deliveryDate: DateTime(2026, 2, 4),
       totalAmount: 89000000,
-      approvalStatus: ApprovalStatus.approved,
+      orderRequestStatus: OrderRequestStatus.approved,
       isClosed: true,
     ),
     OrderRequest(
@@ -103,7 +103,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
       orderDate: DateTime(2026, 1, 31),
       deliveryDate: DateTime(2026, 2, 3),
       totalAmount: 450000000,
-      approvalStatus: ApprovalStatus.approved,
+      orderRequestStatus: OrderRequestStatus.approved,
       isClosed: true,
     ),
     OrderRequest(
@@ -114,7 +114,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
       orderDate: DateTime(2026, 1, 30),
       deliveryDate: DateTime(2026, 2, 2),
       totalAmount: 275000000,
-      approvalStatus: ApprovalStatus.pending,
+      orderRequestStatus: OrderRequestStatus.sent,
       isClosed: false,
     ),
     OrderRequest(
@@ -125,7 +125,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
       orderDate: DateTime(2026, 1, 29),
       deliveryDate: DateTime(2026, 2, 1),
       totalAmount: 128000000,
-      approvalStatus: ApprovalStatus.approved,
+      orderRequestStatus: OrderRequestStatus.approved,
       isClosed: true,
     ),
     OrderRequest(
@@ -136,7 +136,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
       orderDate: DateTime(2026, 1, 28),
       deliveryDate: DateTime(2026, 1, 31),
       totalAmount: 67000000,
-      approvalStatus: ApprovalStatus.approved,
+      orderRequestStatus: OrderRequestStatus.approved,
       isClosed: true,
     ),
     OrderRequest(
@@ -147,7 +147,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
       orderDate: DateTime(2026, 1, 27),
       deliveryDate: DateTime(2026, 1, 30),
       totalAmount: 530000000,
-      approvalStatus: ApprovalStatus.approved,
+      orderRequestStatus: OrderRequestStatus.approved,
       isClosed: true,
     ),
     OrderRequest(
@@ -158,7 +158,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
       orderDate: DateTime(2026, 1, 26),
       deliveryDate: DateTime(2026, 1, 29),
       totalAmount: 198000000,
-      approvalStatus: ApprovalStatus.sendFailed,
+      orderRequestStatus: OrderRequestStatus.sendFailed,
       isClosed: false,
     ),
     OrderRequest(
@@ -169,7 +169,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
       orderDate: DateTime(2026, 1, 25),
       deliveryDate: DateTime(2026, 1, 28),
       totalAmount: 412000000,
-      approvalStatus: ApprovalStatus.approved,
+      orderRequestStatus: OrderRequestStatus.approved,
       isClosed: true,
     ),
     OrderRequest(
@@ -180,7 +180,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
       orderDate: DateTime(2026, 1, 24),
       deliveryDate: DateTime(2026, 1, 27),
       totalAmount: 88000000,
-      approvalStatus: ApprovalStatus.resend,
+      orderRequestStatus: OrderRequestStatus.sendFailed,
       isClosed: false,
     ),
     OrderRequest(
@@ -191,7 +191,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
       orderDate: DateTime(2026, 1, 23),
       deliveryDate: DateTime(2026, 1, 26),
       totalAmount: 345000000,
-      approvalStatus: ApprovalStatus.approved,
+      orderRequestStatus: OrderRequestStatus.approved,
       isClosed: true,
     ),
     OrderRequest(
@@ -202,7 +202,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
       orderDate: DateTime(2026, 1, 22),
       deliveryDate: DateTime(2026, 1, 25),
       totalAmount: 156000000,
-      approvalStatus: ApprovalStatus.approved,
+      orderRequestStatus: OrderRequestStatus.approved,
       isClosed: true,
     ),
     OrderRequest(
@@ -213,7 +213,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
       orderDate: DateTime(2026, 1, 21),
       deliveryDate: DateTime(2026, 1, 24),
       totalAmount: 720000000,
-      approvalStatus: ApprovalStatus.approved,
+      orderRequestStatus: OrderRequestStatus.approved,
       isClosed: true,
     ),
     OrderRequest(
@@ -224,7 +224,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
       orderDate: DateTime(2026, 1, 20),
       deliveryDate: DateTime(2026, 1, 23),
       totalAmount: 43000000,
-      approvalStatus: ApprovalStatus.pending,
+      orderRequestStatus: OrderRequestStatus.sent,
       isClosed: false,
     ),
     OrderRequest(
@@ -235,7 +235,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
       orderDate: DateTime(2026, 1, 19),
       deliveryDate: DateTime(2026, 1, 22),
       totalAmount: 267000000,
-      approvalStatus: ApprovalStatus.approved,
+      orderRequestStatus: OrderRequestStatus.approved,
       isClosed: true,
     ),
     OrderRequest(
@@ -246,7 +246,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
       orderDate: DateTime(2026, 1, 18),
       deliveryDate: DateTime(2026, 1, 21),
       totalAmount: 183000000,
-      approvalStatus: ApprovalStatus.approved,
+      orderRequestStatus: OrderRequestStatus.approved,
       isClosed: true,
     ),
     OrderRequest(
@@ -257,7 +257,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
       orderDate: DateTime(2026, 1, 17),
       deliveryDate: DateTime(2026, 1, 20),
       totalAmount: 510000000,
-      approvalStatus: ApprovalStatus.approved,
+      orderRequestStatus: OrderRequestStatus.approved,
       isClosed: true,
     ),
     OrderRequest(
@@ -268,7 +268,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
       orderDate: DateTime(2026, 1, 16),
       deliveryDate: DateTime(2026, 1, 19),
       totalAmount: 92000000,
-      approvalStatus: ApprovalStatus.sendFailed,
+      orderRequestStatus: OrderRequestStatus.sendFailed,
       isClosed: false,
     ),
     OrderRequest(
@@ -279,7 +279,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
       orderDate: DateTime(2026, 1, 15),
       deliveryDate: DateTime(2026, 1, 18),
       totalAmount: 378000000,
-      approvalStatus: ApprovalStatus.approved,
+      orderRequestStatus: OrderRequestStatus.approved,
       isClosed: true,
     ),
     OrderRequest(
@@ -290,7 +290,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
       orderDate: DateTime(2026, 1, 14),
       deliveryDate: DateTime(2026, 1, 17),
       totalAmount: 145000000,
-      approvalStatus: ApprovalStatus.approved,
+      orderRequestStatus: OrderRequestStatus.approved,
       isClosed: true,
     ),
   ];
@@ -318,8 +318,6 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
     String? deliveryDateTo,
     String sortBy = 'orderDate',
     String sortDir = 'DESC',
-    int page = 0,
-    int size = 20,
   }) async {
     await _simulateDelay();
 
@@ -334,7 +332,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
     // 상태 필터
     if (status != null && status.isNotEmpty) {
       filtered = filtered
-          .where((o) => o.approvalStatus.code == status)
+          .where((o) => o.orderRequestStatus.code == status)
           .toList();
     }
 
@@ -375,24 +373,12 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
       return sortDir == 'ASC' ? compare : -compare;
     });
 
-    // 페이지네이션
-    final totalElements = filtered.length;
-    final totalPages = (totalElements / size).ceil();
-    final startIndex = page * size;
-    final endIndex = min(startIndex + size, totalElements);
-
-    final pagedOrders = startIndex < totalElements
-        ? filtered.sublist(startIndex, endIndex)
-        : <OrderRequest>[];
-
+    // 페이징 없이 전체 반환 (클라이언트 슬라이스 정책)
     return OrderRequestListResult(
-      orders: List.unmodifiable(pagedOrders),
-      totalElements: totalElements,
-      totalPages: totalPages == 0 ? 1 : totalPages,
-      currentPage: page,
-      pageSize: size,
-      isFirst: page == 0,
-      isLast: page >= totalPages - 1 || totalPages == 0,
+      orders: List.unmodifiable(filtered),
+      total: filtered.length,
+      truncated: false,
+      fetchedAt: DateTime.now(),
     );
   }
 
@@ -520,7 +506,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
       deliveryDate: order.deliveryDate,
       totalAmount: order.totalAmount,
       totalApprovedAmount: order.isClosed ? (order.totalAmount * 0.85).toInt() : null,
-      approvalStatus: order.approvalStatus,
+      orderRequestStatus: order.orderRequestStatus,
       isClosed: order.isClosed,
       orderedItemCount: orderedItems.length,
       orderedItems: orderedItems,
@@ -538,7 +524,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
       orElse: () => throw Exception('ORDER_NOT_FOUND'),
     );
 
-    if (order.approvalStatus != ApprovalStatus.sendFailed) {
+    if (order.orderRequestStatus != OrderRequestStatus.sendFailed) {
       throw Exception('INVALID_STATUS');
     }
 

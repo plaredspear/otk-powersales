@@ -24,14 +24,10 @@ class OrderRequestApiDataSource implements OrderRequestRemoteDataSource {
     String? deliveryDateTo,
     String sortBy = 'orderDate',
     String sortDir = 'DESC',
-    int page = 0,
-    int size = 20,
   }) async {
     final queryParameters = <String, dynamic>{
       'sortBy': sortBy,
       'sortDir': sortDir,
-      'page': page,
-      'size': size,
     };
 
     if (clientId != null) queryParameters['clientId'] = clientId;
@@ -44,7 +40,7 @@ class OrderRequestApiDataSource implements OrderRequestRemoteDataSource {
     }
 
     final response = await _dio.get(
-      '/api/v1/mobile/me/orders',
+      '/api/v1/mobile/me/order-requests',
       queryParameters: queryParameters,
     );
 

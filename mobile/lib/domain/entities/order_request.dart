@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 
-/// 승인 상태 열거형
+/// 주문요청 상태 열거형 (5단계 라이프사이클).
 ///
-/// 주문의 승인 상태를 나타내며, 각 상태별 화면 표시 텍스트와 색상을 포함합니다.
-enum ApprovalStatus {
+/// SF `DKRetail__RequestStatus__c` 매핑 + 신규 시스템 자체 상태.
+/// 라이프사이클: DRAFT → SENT → APPROVED 또는 SEND_FAILED → (사용자 취소 시) CANCELED
+enum OrderRequestStatus {
+  draft('임시저장', 'DRAFT', Colors.grey),
+  sent('전송', 'SENT', Colors.blue),
   approved('승인완료', 'APPROVED', Colors.green),
-  pending('승인상태', 'PENDING', Colors.amber),
   sendFailed('전송실패', 'SEND_FAILED', Colors.red),
-  resend('재전송', 'RESEND', Colors.orange);
+  canceled('주문취소', 'CANCELED', Colors.brown);
 
-  const ApprovalStatus(this.displayName, this.code, this.color);
+  const OrderRequestStatus(this.displayName, this.code, this.color);
 
   /// 화면에 표시되는 이름
   final String displayName;
@@ -20,16 +22,16 @@ enum ApprovalStatus {
   /// 뱃지 색상
   final Color color;
 
-  /// API 코드에서 ApprovalStatus로 변환
-  static ApprovalStatus fromCode(String code) {
-    return ApprovalStatus.values.firstWhere(
+  /// API 코드에서 OrderRequestStatus로 변환
+  static OrderRequestStatus fromCode(String code) {
+    return OrderRequestStatus.values.firstWhere(
       (status) => status.code == code,
-      orElse: () => ApprovalStatus.pending,
+      orElse: () => OrderRequestStatus.draft,
     );
   }
 
   String toJson() => code;
-  static ApprovalStatus fromJson(String json) => fromCode(json);
+  static OrderRequestStatus fromJson(String json) => fromCode(json);
 }
 
 /// 주문 정렬 타입 열거형
@@ -81,7 +83,7 @@ class OrderRequest {
   final int totalAmount;
 
   /// 승인상태
-  final ApprovalStatus approvalStatus;
+  final OrderRequestStatus orderRequestStatus;
 
   /// 마감 여부
   final bool isClosed;
@@ -94,7 +96,7 @@ class OrderRequest {
     required this.orderDate,
     required this.deliveryDate,
     required this.totalAmount,
-    required this.approvalStatus,
+    required this.orderRequestStatus,
     required this.isClosed,
   });
 
@@ -106,7 +108,7 @@ class OrderRequest {
     DateTime? orderDate,
     DateTime? deliveryDate,
     int? totalAmount,
-    ApprovalStatus? approvalStatus,
+    OrderRequestStatus? orderRequestStatus,
     bool? isClosed,
   }) {
     return OrderRequest(
@@ -117,7 +119,7 @@ class OrderRequest {
       orderDate: orderDate ?? this.orderDate,
       deliveryDate: deliveryDate ?? this.deliveryDate,
       totalAmount: totalAmount ?? this.totalAmount,
-      approvalStatus: approvalStatus ?? this.approvalStatus,
+      orderRequestStatus: orderRequestStatus ?? this.orderRequestStatus,
       isClosed: isClosed ?? this.isClosed,
     );
   }
@@ -131,7 +133,7 @@ class OrderRequest {
       'orderDate': orderDate.toIso8601String(),
       'deliveryDate': deliveryDate.toIso8601String(),
       'totalAmount': totalAmount,
-      'approvalStatus': approvalStatus.code,
+      'orderRequestStatus': orderRequestStatus.code,
       'isClosed': isClosed,
     };
   }
@@ -145,7 +147,7 @@ class OrderRequest {
       orderDate: DateTime.parse(json['orderDate'] as String),
       deliveryDate: DateTime.parse(json['deliveryDate'] as String),
       totalAmount: json['totalAmount'] as int,
-      approvalStatus: ApprovalStatus.fromCode(json['approvalStatus'] as String),
+      orderRequestStatus: OrderRequestStatus.fromCode(json['orderRequestStatus'] as String),
       isClosed: json['isClosed'] as bool,
     );
   }
@@ -161,7 +163,7 @@ class OrderRequest {
         other.orderDate == orderDate &&
         other.deliveryDate == deliveryDate &&
         other.totalAmount == totalAmount &&
-        other.approvalStatus == approvalStatus &&
+        other.orderRequestStatus == orderRequestStatus &&
         other.isClosed == isClosed;
   }
 
@@ -175,7 +177,7 @@ class OrderRequest {
       orderDate,
       deliveryDate,
       totalAmount,
-      approvalStatus,
+      orderRequestStatus,
       isClosed,
     );
   }
@@ -185,7 +187,7 @@ class OrderRequest {
     return 'OrderRequest(id: $id, orderRequestNumber: $orderRequestNumber, '
         'clientId: $clientId, clientName: $clientName, '
         'orderDate: $orderDate, deliveryDate: $deliveryDate, '
-        'totalAmount: $totalAmount, approvalStatus: $approvalStatus, '
+        'totalAmount: $totalAmount, orderRequestStatus: $orderRequestStatus, '
         'isClosed: $isClosed)';
   }
 }

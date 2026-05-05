@@ -392,7 +392,7 @@ class OrderDetail {
   final int? totalApprovedAmount;
 
   /// 승인상태
-  final ApprovalStatus approvalStatus;
+  final OrderRequestStatus orderRequestStatus;
 
   /// 마감 여부
   final bool isClosed;
@@ -419,7 +419,7 @@ class OrderDetail {
     required this.deliveryDate,
     required this.totalAmount,
     this.totalApprovedAmount,
-    required this.approvalStatus,
+    required this.orderRequestStatus,
     required this.isClosed,
     required this.orderedItemCount,
     required this.orderedItems,
@@ -445,7 +445,7 @@ class OrderDetail {
     DateTime? deliveryDate,
     int? totalAmount,
     int? totalApprovedAmount,
-    ApprovalStatus? approvalStatus,
+    OrderRequestStatus? orderRequestStatus,
     bool? isClosed,
     int? orderedItemCount,
     List<OrderedItem>? orderedItems,
@@ -462,7 +462,7 @@ class OrderDetail {
       deliveryDate: deliveryDate ?? this.deliveryDate,
       totalAmount: totalAmount ?? this.totalAmount,
       totalApprovedAmount: totalApprovedAmount ?? this.totalApprovedAmount,
-      approvalStatus: approvalStatus ?? this.approvalStatus,
+      orderRequestStatus: orderRequestStatus ?? this.orderRequestStatus,
       isClosed: isClosed ?? this.isClosed,
       orderedItemCount: orderedItemCount ?? this.orderedItemCount,
       orderedItems: orderedItems ?? this.orderedItems,
@@ -483,7 +483,7 @@ class OrderDetail {
       'deliveryDate': deliveryDate.toIso8601String(),
       'totalAmount': totalAmount,
       'totalApprovedAmount': totalApprovedAmount,
-      'approvalStatus': approvalStatus.code,
+      'orderRequestStatus': orderRequestStatus.code,
       'isClosed': isClosed,
       'orderedItemCount': orderedItemCount,
       'orderedItems': orderedItems.map((e) => e.toJson()).toList(),
@@ -503,8 +503,8 @@ class OrderDetail {
       deliveryDate: DateTime.parse(json['deliveryDate'] as String),
       totalAmount: json['totalAmount'] as int,
       totalApprovedAmount: json['totalApprovedAmount'] as int?,
-      approvalStatus:
-          ApprovalStatus.fromCode(json['approvalStatus'] as String),
+      orderRequestStatus:
+          OrderRequestStatus.fromCode(json['orderRequestStatus'] as String),
       isClosed: json['isClosed'] as bool,
       orderedItemCount: json['orderedItemCount'] as int,
       orderedItems: (json['orderedItems'] as List<dynamic>)
@@ -535,7 +535,7 @@ class OrderDetail {
     if (other.deliveryDate != deliveryDate) return false;
     if (other.totalAmount != totalAmount) return false;
     if (other.totalApprovedAmount != totalApprovedAmount) return false;
-    if (other.approvalStatus != approvalStatus) return false;
+    if (other.orderRequestStatus != orderRequestStatus) return false;
     if (other.isClosed != isClosed) return false;
     if (other.orderedItemCount != orderedItemCount) return false;
     if (other.orderedItems.length != orderedItems.length) return false;
@@ -565,7 +565,7 @@ class OrderDetail {
       deliveryDate,
       totalAmount,
       totalApprovedAmount,
-      approvalStatus,
+      orderRequestStatus,
       isClosed,
       orderedItemCount,
       Object.hashAll(orderedItems),
