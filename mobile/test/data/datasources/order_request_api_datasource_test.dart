@@ -17,12 +17,12 @@ void main() {
       test('정상 API 응답 시 OrderRequestListResponseModel 반환', () async {
         dio.interceptors.add(InterceptorsWrapper(
           onRequest: (options, handler) {
-            if (options.path == '/api/v1/mobile/me/orders') {
+            if (options.path == '/api/v1/mobile/me/order-requests') {
               handler.resolve(Response(
                 data: {
                   'success': true,
                   'data': {
-                    'content': [
+                    'items': [
                       {
                         'id': 1,
                         'orderRequestNumber': 'OP20260301',
@@ -31,16 +31,13 @@ void main() {
                         'orderDate': '2026-03-01',
                         'deliveryDate': '2026-03-05',
                         'totalAmount': 1500000,
-                        'approvalStatus': 'APPROVED',
+                        'orderRequestStatus': 'APPROVED',
                         'isClosed': false,
                       }
                     ],
-                    'totalElements': 1,
-                    'totalPages': 1,
-                    'number': 0,
-                    'size': 20,
-                    'first': true,
-                    'last': true,
+                    'total': 1,
+                    'truncated': false,
+                    'fetchedAt': '2026-03-01T10:30:00+09:00',
                   },
                   'message': '내 주문 목록 조회 성공',
                 },
@@ -56,15 +53,14 @@ void main() {
         final result = await dataSource.getMyOrderRequests();
 
         expect(result, isA<OrderRequestListResponseModel>());
-        expect(result.content.length, 1);
-        expect(result.content[0].id, 1);
-        expect(result.content[0].orderRequestNumber, 'OP20260301');
-        expect(result.content[0].clientId, 42);
-        expect(result.content[0].clientName, '홈플러스 강남점');
-        expect(result.totalElements, 1);
-        expect(result.totalPages, 1);
-        expect(result.first, true);
-        expect(result.last, true);
+        expect(result.items.length, 1);
+        expect(result.items[0].id, 1);
+        expect(result.items[0].orderRequestNumber, 'OP20260301');
+        expect(result.items[0].clientId, 42);
+        expect(result.items[0].clientName, '홈플러스 강남점');
+        expect(result.total, 1);
+        expect(result.truncated, false);
+        expect(result.fetchedAt, DateTime.parse('2026-03-01T10:30:00+09:00'));
       });
 
       test('clientId, status 지정 시 queryParameters에 포함', () async {
@@ -72,19 +68,16 @@ void main() {
 
         dio.interceptors.add(InterceptorsWrapper(
           onRequest: (options, handler) {
-            if (options.path == '/api/v1/mobile/me/orders') {
+            if (options.path == '/api/v1/mobile/me/order-requests') {
               capturedParams = options.queryParameters;
               handler.resolve(Response(
                 data: {
                   'success': true,
                   'data': {
-                    'content': [],
-                    'totalElements': 0,
-                    'totalPages': 0,
-                    'number': 0,
-                    'size': 20,
-                    'first': true,
-                    'last': true,
+                    'items': [],
+                    'total': 0,
+                    'truncated': false,
+                    'fetchedAt': '2026-03-01T10:30:00+09:00',
                   },
                 },
                 statusCode: 200,
@@ -110,24 +103,21 @@ void main() {
         expect(capturedParams!['deliveryDateTo'], '2026-03-07');
       });
 
-      test('clientId null 시 queryParameters에 미포함', () async {
+      test('필수 외 파라미터 미지정 + page/size 미전송 검증', () async {
         Map<String, dynamic>? capturedParams;
 
         dio.interceptors.add(InterceptorsWrapper(
           onRequest: (options, handler) {
-            if (options.path == '/api/v1/mobile/me/orders') {
+            if (options.path == '/api/v1/mobile/me/order-requests') {
               capturedParams = options.queryParameters;
               handler.resolve(Response(
                 data: {
                   'success': true,
                   'data': {
-                    'content': [],
-                    'totalElements': 0,
-                    'totalPages': 0,
-                    'number': 0,
-                    'size': 20,
-                    'first': true,
-                    'last': true,
+                    'items': [],
+                    'total': 0,
+                    'truncated': false,
+                    'fetchedAt': '2026-03-01T10:30:00+09:00',
                   },
                 },
                 statusCode: 200,
@@ -146,10 +136,11 @@ void main() {
         expect(capturedParams!.containsKey('status'), false);
         expect(capturedParams!.containsKey('deliveryDateFrom'), false);
         expect(capturedParams!.containsKey('deliveryDateTo'), false);
+        // 페이징 파라미터는 클라이언트 슬라이스 정책으로 송신 안 함
+        expect(capturedParams!.containsKey('page'), false);
+        expect(capturedParams!.containsKey('size'), false);
         expect(capturedParams!['sortBy'], 'orderDate');
         expect(capturedParams!['sortDir'], 'DESC');
-        expect(capturedParams!['page'], 0);
-        expect(capturedParams!['size'], 20);
       });
 
       test('서버 500 응답 시 DioException 발생', () async {

@@ -5,8 +5,6 @@ import '../../core/network/dio_provider.dart';
 import '../../core/utils/error_utils.dart';
 import '../../data/datasources/order_request_api_datasource.dart';
 import '../../data/datasources/order_request_local_datasource.dart';
-import '../../data/datasources/order_request_remote_datasource.dart';
-import '../../data/models/my_account_model.dart';
 import '../../data/repositories/order_request_repository_impl.dart';
 import '../../domain/entities/order_request.dart';
 import '../../domain/repositories/order_request_repository.dart';
@@ -26,33 +24,30 @@ final orderRequestRepositoryProvider = Provider<OrderRequestRepository>((ref) {
   );
 });
 
-/// GetMyOrders UseCase Provider
-final getMyOrdersUseCaseProvider = Provider<GetMyOrders>((ref) {
+/// GetMyOrderRequests UseCase Provider
+final getMyOrderRequestsUseCaseProvider = Provider<GetMyOrderRequests>((ref) {
   final repository = ref.watch(orderRequestRepositoryProvider);
-  return GetMyOrders(repository);
+  return GetMyOrderRequests(repository);
 });
 
 // --- OrderRequestListNotifier ---
 
-/// 주문 목록 상태 관리 Notifier
+/// 본인 주문요청 목록 상태 관리 Notifier (클라이언트 슬라이스 패턴).
 ///
-/// 필터링, 정렬, 페이지네이션(무한 스크롤), 검색 기능을 관리합니다.
+/// API 1회 호출 → 전체 배열 보관 → 페이지 클릭 시 슬라이스 재계산.
 class OrderRequestListNotifier extends StateNotifier<OrderRequestListState> {
-  final GetMyOrders _getMyOrders;
+  final GetMyOrderRequests _getMyOrderRequests;
   final Dio _dio;
 
   OrderRequestListNotifier({
-    required GetMyOrders getMyOrderRequests,
+    required GetMyOrderRequests getMyOrderRequests,
     required Dio dio,
-  })  : _getMyOrders = getMyOrderRequests,
+  })  : _getMyOrderRequests = getMyOrderRequests,
         _dio = dio,
         super(OrderRequestListState.initial());
 
-  /// 초기 데이터 로딩
-  ///
-  /// 거래처 목록 API 로딩 + 기본 필터로 주문 목록 조회
+  /// 초기 데이터 로딩 — 거래처 목록 + 첫 fetch.
   Future<void> initialize() async {
-    // GET /api/v1/mobile/accounts/my 에서 거래처 목록 로딩
     try {
       final response = await _dio.get('/api/v1/mobile/accounts/my');
       final data = response.data['data'] as Map<String, dynamic>;
@@ -65,78 +60,44 @@ class OrderRequestListNotifier extends StateNotifier<OrderRequestListState> {
       }
       state = state.copyWith(clients: clientMap);
     } catch (e) {
-      // 거래처 목록 로드 실패: 빈 맵으로 설정 (드롭다운은 빈 상태)
       state = state.copyWith(clients: const {});
     }
 
-    // 기본 필터로 주문 목록 조회
     await searchOrders();
   }
 
-  /// 주문 목록 검색 실행
-  ///
-  /// 현재 필터 조건으로 첫 페이지부터 검색합니다.
+  /// 주문요청 목록 검색 — 1회 fetch + currentPage 0 리셋.
   Future<void> searchOrders() async {
     state = state.toLoading();
 
     try {
-      final result = await _getMyOrders.call(
+      final result = await _getMyOrderRequests.call(
         clientId: state.selectedClientId,
         status: state.selectedStatus,
         deliveryDateFrom: state.deliveryDateFrom,
         deliveryDateTo: state.deliveryDateTo,
         sortBy: state.sortType.sortBy,
         sortDir: state.sortType.sortDir,
-        page: 0,
       );
 
       state = state.copyWith(
         isLoading: false,
-        orders: result.orders,
-        totalElements: result.totalElements,
+        allOrderRequests: result.orders,
+        truncated: result.truncated,
+        fetchedAt: result.fetchedAt,
         currentPage: 0,
-        isLastPage: result.isLast,
         hasSearched: true,
         errorMessage: null,
       );
     } catch (e) {
-      state = state.toError(
-        extractErrorMessage(e),
-      );
+      state = state.toError(extractErrorMessage(e));
     }
   }
 
-  /// 다음 페이지 로드 (무한 스크롤)
-  Future<void> loadNextPage() async {
-    if (state.isLoading || state.isLoadingMore || state.isLastPage) return;
-
-    state = state.toLoadingMore();
-
-    try {
-      final nextPage = state.currentPage + 1;
-      final result = await _getMyOrders.call(
-        clientId: state.selectedClientId,
-        status: state.selectedStatus,
-        deliveryDateFrom: state.deliveryDateFrom,
-        deliveryDateTo: state.deliveryDateTo,
-        sortBy: state.sortType.sortBy,
-        sortDir: state.sortType.sortDir,
-        page: nextPage,
-      );
-
-      state = state.copyWith(
-        isLoadingMore: false,
-        orders: [...state.orders, ...result.orders],
-        totalElements: result.totalElements,
-        currentPage: nextPage,
-        isLastPage: result.isLast,
-        errorMessage: null,
-      );
-    } catch (e) {
-      state = state.toError(
-        extractErrorMessage(e),
-      );
-    }
+  /// 페이지 이동 (추가 API 호출 없음 — 클라이언트 슬라이스).
+  void goToPage(int page) {
+    if (page < 0 || page >= state.totalPages) return;
+    state = state.copyWith(currentPage: page);
   }
 
   /// 거래처 필터 변경
@@ -172,9 +133,7 @@ class OrderRequestListNotifier extends StateNotifier<OrderRequestListState> {
     }
   }
 
-  /// 정렬 변경
-  ///
-  /// 정렬 옵션을 변경하고 현재 필터 조건을 유지한 채 재조회합니다.
+  /// 정렬 변경 (재조회).
   Future<void> updateSortType(OrderSortType sortType) async {
     state = state.copyWith(sortType: sortType);
     await searchOrders();
@@ -186,10 +145,10 @@ class OrderRequestListNotifier extends StateNotifier<OrderRequestListState> {
   }
 }
 
-/// OrderList StateNotifier Provider
+/// OrderRequestList StateNotifier Provider
 final orderRequestListProvider =
     StateNotifierProvider<OrderRequestListNotifier, OrderRequestListState>((ref) {
-  final useCase = ref.watch(getMyOrdersUseCaseProvider);
+  final useCase = ref.watch(getMyOrderRequestsUseCaseProvider);
   final dio = ref.watch(dioProvider);
 
   return OrderRequestListNotifier(

@@ -6,44 +6,35 @@ import '../models/order_draft_model.dart';
 import '../models/product_for_order_model.dart';
 import '../models/validation_result_model.dart';
 
-/// 주문 API 응답 데이터를 담는 모델
+/// 주문요청 목록 응답 모델 (클라이언트 슬라이스 패턴).
 ///
-/// 페이지네이션을 포함한 주문 목록 응답을 파싱합니다.
+/// 백엔드는 페이징 없이 전체 배열 + 메타를 반환하고, 모바일이 받아서 슬라이스한다.
 class OrderRequestListResponseModel {
-  final List<OrderRequestModel> content;
-  final int totalElements;
-  final int totalPages;
-  final int number;
-  final int size;
-  final bool first;
-  final bool last;
+  final List<OrderRequestModel> items;
+  final int total;
+  final bool truncated;
+  final DateTime fetchedAt;
 
   const OrderRequestListResponseModel({
-    required this.content,
-    required this.totalElements,
-    required this.totalPages,
-    required this.number,
-    required this.size,
-    required this.first,
-    required this.last,
+    required this.items,
+    required this.total,
+    required this.truncated,
+    required this.fetchedAt,
   });
 
   /// API 응답 JSON에서 파싱
   factory OrderRequestListResponseModel.fromJson(Map<String, dynamic> json) {
     final data = json['data'] as Map<String, dynamic>;
-    final contentJson = data['content'] as List<dynamic>? ?? [];
-    final content = contentJson
+    final itemsJson = data['items'] as List<dynamic>? ?? [];
+    final items = itemsJson
         .map((e) => OrderRequestModel.fromJson(e as Map<String, dynamic>))
         .toList();
 
     return OrderRequestListResponseModel(
-      content: content,
-      totalElements: data['totalElements'] as int,
-      totalPages: data['totalPages'] as int,
-      number: data['number'] as int,
-      size: data['size'] as int,
-      first: data['first'] as bool,
-      last: data['last'] as bool,
+      items: items,
+      total: data['total'] as int,
+      truncated: data['truncated'] as bool,
+      fetchedAt: DateTime.parse(data['fetchedAt'] as String),
     );
   }
 }
@@ -52,9 +43,9 @@ class OrderRequestListResponseModel {
 ///
 /// 주문 관련 API 호출을 추상화합니다.
 abstract class OrderRequestRemoteDataSource {
-  /// GET /api/v1/mobile/me/orders
+  /// GET /api/v1/mobile/me/order-requests
   ///
-  /// 내 주문 목록을 조회합니다.
+  /// 내 주문요청 목록을 조회합니다 (페이징 없음 — 클라이언트 슬라이스).
   Future<OrderRequestListResponseModel> getMyOrderRequests({
     int? clientId,
     String? status,
@@ -62,21 +53,19 @@ abstract class OrderRequestRemoteDataSource {
     String? deliveryDateTo,
     String sortBy = 'orderDate',
     String sortDir = 'DESC',
-    int page = 0,
-    int size = 20,
   });
 
-  /// GET /api/v1/mobile/me/orders/{orderId}
+  /// GET /api/v1/mobile/me/order-requests/{orderId}
   ///
-  /// 주문 상세 정보를 조회합니다.
+  /// 주문요청 상세 정보를 조회합니다.
   Future<OrderRequestDetailModel> getOrderRequestDetail({required int orderId});
 
-  /// POST /api/v1/mobile/me/orders/{orderId}/resend
+  /// POST /api/v1/mobile/me/order-requests/{orderId}/resend
   ///
-  /// 전송실패 주문을 재전송합니다.
+  /// 전송실패 주문요청을 재전송합니다.
   Future<void> resendOrderRequest({required int orderId});
 
-  /// POST /api/v1/mobile/me/orders/{orderId}/cancel
+  /// POST /api/v1/mobile/me/order-requests/{orderId}/cancel
   ///
   /// 선택한 제품의 주문을 취소합니다.
   Future<OrderCancelResponseModel> cancelOrderRequest({

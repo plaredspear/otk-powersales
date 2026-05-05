@@ -6,54 +6,36 @@ import '../entities/order_draft.dart';
 import '../entities/product_for_order.dart';
 import '../entities/validation_error.dart';
 
-/// 주문 목록 조회 결과 값 객체
+/// 본인 주문요청 목록 조회 결과 값 객체 (클라이언트 슬라이스 패턴).
 ///
-/// 페이지네이션 정보를 포함한 주문 목록 결과를 담는 도메인 레벨 값 객체입니다.
+/// 백엔드는 페이징 없이 전체 배열 + 메타를 반환한다.
 class OrderRequestListResult {
-  /// 주문 목록
+  /// 검색 조건에 매칭된 모든 주문요청 (페이징 없음)
   final List<OrderRequest> orders;
 
-  /// 전체 결과 수
-  final int totalElements;
+  /// orders.length — 클라이언트 페이지 계산용
+  final int total;
 
-  /// 전체 페이지 수
-  final int totalPages;
+  /// 결과가 응답 라인 수 상한(2000건)에 도달해 잘렸는지 여부
+  final bool truncated;
 
-  /// 현재 페이지 번호 (0부터 시작)
-  final int currentPage;
-
-  /// 페이지 크기
-  final int pageSize;
-
-  /// 첫 번째 페이지 여부
-  final bool isFirst;
-
-  /// 마지막 페이지 여부
-  final bool isLast;
+  /// 서버 조회 시각
+  final DateTime fetchedAt;
 
   const OrderRequestListResult({
     required this.orders,
-    required this.totalElements,
-    required this.totalPages,
-    required this.currentPage,
-    required this.pageSize,
-    required this.isFirst,
-    required this.isLast,
+    required this.total,
+    required this.truncated,
+    required this.fetchedAt,
   });
-
-  /// 다음 페이지가 있는지 여부
-  bool get hasNextPage => !isLast;
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! OrderRequestListResult) return false;
-    if (other.totalElements != totalElements) return false;
-    if (other.totalPages != totalPages) return false;
-    if (other.currentPage != currentPage) return false;
-    if (other.pageSize != pageSize) return false;
-    if (other.isFirst != isFirst) return false;
-    if (other.isLast != isLast) return false;
+    if (other.total != total) return false;
+    if (other.truncated != truncated) return false;
+    if (other.fetchedAt != fetchedAt) return false;
     if (other.orders.length != orders.length) return false;
     for (var i = 0; i < orders.length; i++) {
       if (other.orders[i] != orders[i]) return false;
@@ -62,25 +44,11 @@ class OrderRequestListResult {
   }
 
   @override
-  int get hashCode {
-    return Object.hash(
-      Object.hashAll(orders),
-      totalElements,
-      totalPages,
-      currentPage,
-      pageSize,
-      isFirst,
-      isLast,
-    );
-  }
+  int get hashCode => Object.hash(Object.hashAll(orders), total, truncated, fetchedAt);
 
   @override
-  String toString() {
-    return 'OrderRequestListResult(orders: ${orders.length}, '
-        'totalElements: $totalElements, totalPages: $totalPages, '
-        'currentPage: $currentPage, pageSize: $pageSize, '
-        'isFirst: $isFirst, isLast: $isLast)';
-  }
+  String toString() => 'OrderRequestListResult(orders: ${orders.length}, '
+      'total: $total, truncated: $truncated, fetchedAt: $fetchedAt)';
 }
 
 /// 주문 Repository 인터페이스
@@ -88,18 +56,14 @@ class OrderRequestListResult {
 /// 주문 관련 데이터 접근을 추상화합니다.
 /// 구현체는 Mock Repository 또는 실제 API Repository가 될 수 있습니다.
 abstract class OrderRequestRepository {
-  /// 내 주문 목록 조회
+  /// 본인 주문요청 목록 조회 (페이징 없음 — 클라이언트 슬라이스).
   ///
   /// [clientId]: 거래처 ID (미입력 시 전체)
-  /// [status]: 승인상태 코드 (미입력 시 전체)
-  /// [deliveryDateFrom]: 납기일 시작 (YYYY-MM-DD)
-  /// [deliveryDateTo]: 납기일 종료 (YYYY-MM-DD)
+  /// [status]: 주문요청 상태 코드 (미입력 시 전체)
+  /// [deliveryDateFrom]: 납기일 시작 (YYYY-MM-DD, 필수)
+  /// [deliveryDateTo]: 납기일 종료 (YYYY-MM-DD, 필수, 7일 한도)
   /// [sortBy]: 정렬 기준 (기본: orderDate)
   /// [sortDir]: 정렬 방향 (기본: DESC)
-  /// [page]: 페이지 번호 (0부터 시작)
-  /// [size]: 페이지 크기 (기본: 20)
-  ///
-  /// Returns: 페이지네이션 정보를 포함한 주문 목록
   Future<OrderRequestListResult> getMyOrderRequests({
     int? clientId,
     String? status,
@@ -107,8 +71,6 @@ abstract class OrderRequestRepository {
     String? deliveryDateTo,
     String sortBy = 'orderDate',
     String sortDir = 'DESC',
-    int page = 0,
-    int size = 20,
   });
 
   /// 주문 상세 조회

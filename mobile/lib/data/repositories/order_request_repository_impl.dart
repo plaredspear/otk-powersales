@@ -34,8 +34,6 @@ class OrderRequestRepositoryImpl implements OrderRequestRepository {
     String? deliveryDateTo,
     String sortBy = 'orderDate',
     String sortDir = 'DESC',
-    int page = 0,
-    int size = 20,
   }) async {
     final response = await _remoteDataSource.getMyOrderRequests(
       clientId: clientId,
@@ -44,22 +42,15 @@ class OrderRequestRepositoryImpl implements OrderRequestRepository {
       deliveryDateTo: deliveryDateTo,
       sortBy: sortBy,
       sortDir: sortDir,
-      page: page,
-      size: size,
     );
 
-    final orders = response.content
-        .map((model) => model.toEntity())
-        .toList();
+    final orders = response.items.map((model) => model.toEntity()).toList();
 
     return OrderRequestListResult(
       orders: orders,
-      totalElements: response.totalElements,
-      totalPages: response.totalPages,
-      currentPage: response.number,
-      pageSize: response.size,
-      isFirst: response.first,
-      isLast: response.last,
+      total: response.total,
+      truncated: response.truncated,
+      fetchedAt: response.fetchedAt,
     );
   }
 

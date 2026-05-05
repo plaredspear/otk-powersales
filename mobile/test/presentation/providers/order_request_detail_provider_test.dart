@@ -18,7 +18,7 @@ OrderDetail _createOrderDetail({
   DateTime? deliveryDate,
   int totalAmount = 100000,
   int? totalApprovedAmount,
-  ApprovalStatus approvalStatus = ApprovalStatus.approved,
+  OrderRequestStatus orderRequestStatus = OrderRequestStatus.approved,
   bool isClosed = false,
   int orderedItemCount = 2,
   List<OrderedItem>? orderedItems,
@@ -35,7 +35,7 @@ OrderDetail _createOrderDetail({
     deliveryDate: deliveryDate ?? DateTime(2026, 1, 16),
     totalAmount: totalAmount,
     totalApprovedAmount: totalApprovedAmount,
-    approvalStatus: approvalStatus,
+    orderRequestStatus: orderRequestStatus,
     isClosed: isClosed,
     orderedItemCount: orderedItemCount,
     orderedItems: orderedItems ?? [],
@@ -163,7 +163,7 @@ void main() {
       final stateShowCancel = OrderRequestDetailState(
         orderDetail: _createOrderDetail(
           isClosed: false,
-          approvalStatus: ApprovalStatus.approved,
+          orderRequestStatus: OrderRequestStatus.approved,
           orderedItems: [
             const OrderedItem(
               productCode: 'P001',
@@ -180,7 +180,7 @@ void main() {
       final stateSendFailed = OrderRequestDetailState(
         orderDetail: _createOrderDetail(
           isClosed: false,
-          approvalStatus: ApprovalStatus.sendFailed,
+          orderRequestStatus: OrderRequestStatus.sendFailed,
         ),
       );
 
@@ -188,7 +188,7 @@ void main() {
       final stateAllCancelled = OrderRequestDetailState(
         orderDetail: _createOrderDetail(
           isClosed: false,
-          approvalStatus: ApprovalStatus.approved,
+          orderRequestStatus: OrderRequestStatus.approved,
           orderedItems: [
             const OrderedItem(
               productCode: 'P001',
@@ -205,7 +205,7 @@ void main() {
       final stateClosed = OrderRequestDetailState(
         orderDetail: _createOrderDetail(
           isClosed: true,
-          approvalStatus: ApprovalStatus.approved,
+          orderRequestStatus: OrderRequestStatus.approved,
         ),
       );
 
@@ -220,7 +220,7 @@ void main() {
       final stateShowResend = OrderRequestDetailState(
         orderDetail: _createOrderDetail(
           isClosed: false,
-          approvalStatus: ApprovalStatus.sendFailed,
+          orderRequestStatus: OrderRequestStatus.sendFailed,
         ),
       );
 
@@ -228,7 +228,7 @@ void main() {
       final stateNotSendFailed = OrderRequestDetailState(
         orderDetail: _createOrderDetail(
           isClosed: false,
-          approvalStatus: ApprovalStatus.approved,
+          orderRequestStatus: OrderRequestStatus.approved,
         ),
       );
 
@@ -236,7 +236,7 @@ void main() {
       final stateClosed = OrderRequestDetailState(
         orderDetail: _createOrderDetail(
           isClosed: true,
-          approvalStatus: ApprovalStatus.sendFailed,
+          orderRequestStatus: OrderRequestStatus.sendFailed,
         ),
       );
 
@@ -321,8 +321,8 @@ void main() {
 
       expect(notifier.state.orderDetail, isNotNull);
       expect(notifier.state.orderDetail!.id, 4);
-      expect(notifier.state.orderDetail!.approvalStatus,
-          ApprovalStatus.sendFailed);
+      expect(notifier.state.orderDetail!.orderRequestStatus,
+          OrderRequestStatus.sendFailed);
       expect(notifier.state.orderDetail!.isClosed, false);
       expect(notifier.state.showResendButton, true);
     });
@@ -331,8 +331,8 @@ void main() {
         () async {
       // First load the sendFailed order
       await notifier.loadOrderDetail(orderId: 4);
-      expect(notifier.state.orderDetail!.approvalStatus,
-          ApprovalStatus.sendFailed);
+      expect(notifier.state.orderDetail!.orderRequestStatus,
+          OrderRequestStatus.sendFailed);
 
       // Resend the order
       final result = await notifier.resendOrderRequest(orderId: 4);
@@ -349,8 +349,8 @@ void main() {
         () async {
       // Load a normal order (not sendFailed)
       await notifier.loadOrderDetail(orderId: 1);
-      expect(notifier.state.orderDetail!.approvalStatus,
-          isNot(ApprovalStatus.sendFailed));
+      expect(notifier.state.orderDetail!.orderRequestStatus,
+          isNot(OrderRequestStatus.sendFailed));
 
       // Try to resend
       final result = await notifier.resendOrderRequest(orderId: 1);
@@ -393,8 +393,8 @@ void main() {
       // Step 1: Load sendFailed order
       await notifier.loadOrderDetail(orderId: 4);
       expect(notifier.state.orderDetail, isNotNull);
-      expect(notifier.state.orderDetail!.approvalStatus,
-          ApprovalStatus.sendFailed);
+      expect(notifier.state.orderDetail!.orderRequestStatus,
+          OrderRequestStatus.sendFailed);
       expect(notifier.state.showResendButton, true);
 
       // Step 2: Toggle items expansion

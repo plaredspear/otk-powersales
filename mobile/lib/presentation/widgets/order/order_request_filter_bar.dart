@@ -188,7 +188,7 @@ class OrderRequestFilterBar extends StatelessWidget {
                 ),
               ),
             ),
-            ...ApprovalStatus.values.map((status) {
+            ...OrderRequestStatus.values.map((status) {
               return DropdownMenuItem<String?>(
                 value: status.code,
                 child: Text(
