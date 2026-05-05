@@ -97,6 +97,15 @@ class TeamMemberSchedule(
     @Column(name = "promotion_employee_sfid", length = 18)
     val promotionEmployeeSfid: String? = null,
 
+    /**
+     * 진열 마스터(`DKRetail__DisplayWorkScheduleMaster__c`) 연결 sfid (Spec #587 P1-B).
+     * 진열 출근 시 마스터의 sfid 를 그대로 카피. 마이그레이션 후 display_work_schedule_id 가 채워진다.
+     */
+    @SFField("DisplayWorkScheduleMaster__c")
+    @HCColumn("displayworkschedulemaster__c")
+    @Column(name = "display_work_schedule_sfid", length = 18)
+    val displayWorkScheduleSfid: String? = null,
+
     @SFField("CommuteReportDateTime__c")
     @HCColumn("commutereportdatetime__c")
     @Column(name = "commute_report_datetime")
@@ -228,6 +237,14 @@ class TeamMemberSchedule(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "promotion_employee_id")
     var promotionEmployee: PromotionEmployee? = null,
+
+    /**
+     * 진열 마스터 (Spec #587 P1-B). 진열 출근 케이스에서 채워진다.
+     * FK 제약은 본 스펙 비범위 (spec.md §6.2 — 후속 스펙에서 추가 예정).
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "display_work_schedule_id")
+    var displayWorkSchedule: DisplayWorkSchedule? = null,
 
 ) : BaseEntity() {
     fun updateForPromotion(

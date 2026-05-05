@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:50848",
+    "url" : "http://localhost:59839",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -1908,6 +1908,22 @@
           },
           "gpsSkipReason" : {
             "type" : [ "string", "null" ]
+          },
+          "attendanceType" : {
+            "type" : "string",
+            "enum" : [ "REGULAR", "DISPLAY" ]
+          },
+          "displayWorkScheduleId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "scheduleStartDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "scheduleEndDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
           }
         }
       },

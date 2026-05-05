@@ -11,6 +11,7 @@ import com.otoki.powersales.schedule.config.AttendanceProperties
 import com.otoki.powersales.schedule.dto.response.AttendanceRegisterResponse
 import com.otoki.powersales.schedule.dto.response.AttendanceStatusItem
 import com.otoki.powersales.schedule.dto.response.AttendanceStatusResponse
+import com.otoki.powersales.schedule.entity.AttendanceType
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.schedule.exception.*
@@ -193,14 +194,20 @@ class AttendanceService(
         }
 
         // 2. 스케줄 결정 (기존 방식 vs 진열마스터 기반 동적 생성)
-        val (teamMemberSchedule, newlyCreated) = if (scheduleId != null) {
+        val resolved = if (scheduleId != null) {
             resolveByScheduleId(scheduleId)
         } else {
             resolveByDisplayWorkSchedule(displayWorkScheduleId!!, employee, today)
         }
+        val teamMemberSchedule = resolved.schedule
+        val newlyCreated = resolved.newlyCreated
+        val displayMaster = resolved.displayMaster
 
-        // 3. 중복 등록 검증
+        // 3. 중복 등록 검증 — 진열 분기는 ATT_DISPLAY_DUPLICATE (Spec #587 P1-B Q6), 그 외는 기존 ALREADY_REGISTERED
         if (teamMemberSchedule.commuteLogId != null) {
+            if (displayMaster != null) {
+                throw DisplayAttendanceDuplicateException()
+            }
             throw AlreadyRegisteredException()
         }
 
@@ -290,7 +297,12 @@ class AttendanceService(
             totalCount = totalCount,
             registeredCount = registeredCount,
             gpsSkipped = exemptResult.skipped, // Spec #586: ABC 면제 정책 적용 여부
-            gpsSkipReason = exemptResult.reason
+            gpsSkipReason = exemptResult.reason,
+            // Spec #587 P1-B §1.6: 진열 분기는 DISPLAY + 마스터 메타, 그 외는 REGULAR
+            attendanceType = if (displayMaster != null) AttendanceType.DISPLAY else AttendanceType.REGULAR,
+            displayWorkScheduleId = displayMaster?.id,
+            scheduleStartDate = displayMaster?.startDate,
+            scheduleEndDate = displayMaster?.endDate,
         )
     }
 
@@ -325,33 +337,49 @@ class AttendanceService(
     }
 
     /**
-     * 기존 방식: scheduleId로 TeamMemberSchedule 직접 조회
-     * @return (TeamMemberSchedule, newlyCreated=false)
+     * 분기 결정 결과.
+     * - `displayMaster`: 진열 분기일 때만 NOT NULL (응답 페이로드 + 분기 식별 용도, Spec #587 P1-B §1.6)
      */
-    private fun resolveByScheduleId(scheduleId: Long): Pair<TeamMemberSchedule, Boolean> {
+    private data class ResolveResult(
+        val schedule: TeamMemberSchedule,
+        val newlyCreated: Boolean,
+        val displayMaster: DisplayWorkSchedule? = null,
+    )
+
+    /**
+     * 기존 방식: scheduleId로 TeamMemberSchedule 직접 조회
+     */
+    private fun resolveByScheduleId(scheduleId: Long): ResolveResult {
         val tms = teamMemberScheduleRepository.findById(scheduleId)
             .orElseThrow { TeamMemberScheduleNotFoundException() }
-        return tms to false
+        return ResolveResult(schedule = tms, newlyCreated = false)
     }
 
     /**
-     * 진열마스터 기반: DisplayWorkSchedule 검증 후 TeamMemberSchedule 동적 생성/조회
-     * @return (TeamMemberSchedule, newlyCreated)
+     * 진열마스터 기반 (Spec #587 P1-B §1.2): DisplayWorkSchedule 검증 후 TeamMemberSchedule 동적 생성/조회.
+     * 검증 순서: 마스터 존재 → 본인 할당 → 일자 범위 → 중복 (working_category3) → 재사용 / 새 row INSERT.
      */
     private fun resolveByDisplayWorkSchedule(
         displayWorkScheduleId: Long,
         employee: com.otoki.powersales.employee.entity.Employee,
         today: LocalDate
-    ): Pair<TeamMemberSchedule, Boolean> {
+    ): ResolveResult {
+        // step 1: 마스터 존재 (ATT_DISPLAY_SCHEDULE_NOT_FOUND)
         val master = displayWorkScheduleRepository.findById(displayWorkScheduleId)
             .orElseThrow { DisplayScheduleNotFoundException() }
-
         if (master.isDeleted == true) {
             throw DisplayScheduleNotFoundException()
         }
         if (master.confirmed != true) {
             throw DisplayScheduleNotConfirmedException()
         }
+
+        // step 2: 본인 할당 검증 (ATT_DISPLAY_SCHEDULE_NOT_ASSIGNED) — Spec #587 P1-B Q4 보안 강화
+        if (master.employee?.id != employee.id) {
+            throw DisplayScheduleNotAssignedException()
+        }
+
+        // step 3: 일자 범위 검증 (ATT_DISPLAY_SCHEDULE_DATE_OUT_OF_RANGE)
         val startDate = master.startDate
         val endDate = master.endDate
         if (startDate != null && today.isBefore(startDate)) {
@@ -360,20 +388,26 @@ class AttendanceService(
         if (endDate != null && today.isAfter(endDate)) {
             throw DisplayScheduleOutOfRangeException()
         }
-        // startDate가 null이면 기간 조건 없는 것으로 간주
 
         val account = master.account ?: throw DisplayScheduleNotFoundException()
 
-        // 중복 생성 방지: 동일 사원+거래처+오늘 여사원일정이 이미 존재하면 재사용
+        // step 4: 중복 검증 — 동일 사원+거래처+오늘 일정이 있으면 그 row 재사용 (기존 정책 유지).
+        // 단, 다른 거래처에서 동일 working_category3 로 이미 등록된 일정이 있으면 거부 (Spec #587 P1-B Q6).
         val existing = teamMemberScheduleRepository.findByEmployeeAndAccountAndWorkingDate(employee, account, today)
+        val masterTypeOfWork3 = master.typeOfWork3
+        if (existing == null && !masterTypeOfWork3.isNullOrBlank()) {
+            val duplicateInOtherAccount = teamMemberScheduleRepository
+                .existsByEmployeeAndWorkingDateAndWorkingCategory3(employee, today, masterTypeOfWork3)
+            if (duplicateInOtherAccount) {
+                throw DisplayAttendanceDuplicateException()
+            }
+        }
         if (existing != null) {
-            return existing to false
+            return ResolveResult(schedule = existing, newlyCreated = false, displayMaster = master)
         }
 
-        // 조장 조회
+        // step 5: 새 TMS row INSERT — 마스터→TMS 메타 카피 (Spec #587 P1-B §1.3)
         val teamLeader = findTeamLeader(employee.costCenterCode)
-
-        // 새 TeamMemberSchedule 생성
         val newSchedule = TeamMemberSchedule(
             employee = employee,
             account = account,
@@ -382,10 +416,11 @@ class AttendanceService(
             workingCategory1 = "진열",
             workingCategory2 = mapTypeOfWork5ToCategory2(master.typeOfWork5),
             workingCategory3 = master.typeOfWork3,
-            teamLeader = teamLeader
+            teamLeader = teamLeader,
+            displayWorkSchedule = master,
         )
         val saved = teamMemberScheduleRepository.save(newSchedule)
-        return saved to true
+        return ResolveResult(schedule = saved, newlyCreated = true, displayMaster = master)
     }
 
     /**

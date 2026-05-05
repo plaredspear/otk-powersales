@@ -16,6 +16,9 @@ import com.otoki.powersales.schedule.exception.AttendanceTimeExceededException
 import com.otoki.powersales.schedule.exception.AlreadyRegisteredException
 import com.otoki.powersales.schedule.exception.AttendanceTargetConflictException
 import com.otoki.powersales.schedule.exception.AttendanceTargetRequiredException
+import com.otoki.powersales.schedule.entity.AttendanceType
+import com.otoki.powersales.schedule.exception.DisplayAttendanceDuplicateException
+import com.otoki.powersales.schedule.exception.DisplayScheduleNotAssignedException
 import com.otoki.powersales.schedule.exception.DisplayScheduleNotConfirmedException
 import com.otoki.powersales.schedule.exception.DisplayScheduleNotFoundException
 import com.otoki.powersales.schedule.exception.DisplayScheduleOutOfRangeException
@@ -1737,6 +1740,160 @@ class AttendanceServiceTest {
             assertThatThrownBy {
                 attendanceService.register(userId, 10L, 100L, nearUserLat, nearUserLon, null)
             }.isInstanceOf(AttendanceTargetConflictException::class.java)
+        }
+
+        // ========== Spec #587 P1-B 신규 시나리오 ==========
+
+        @Test
+        @DisplayName("Spec #587 T1 — 진열 출근 정상: 응답에 attendanceType=DISPLAY + 마스터 메타(start/end) 포함")
+        fun register_byDisplayWorkSchedule_responsePayload_containsDisplayMetadata() {
+            // Given
+            val userId = 1L
+            val displayWorkScheduleId = 100L
+            val today = LocalDate.now()
+            val startDate = today.minusDays(10)
+            val endDate = today.plusDays(20)
+
+            val employee = createEmployee(id = userId, sfid = "USR001", costCenterCode = "CC001")
+            val master = createDisplayWorkSchedule(
+                id = displayWorkScheduleId,
+                confirmed = true,
+                startDate = startDate,
+                endDate = endDate,
+                typeOfWork3 = "고정",
+                typeOfWork5 = "상시",
+                employeeId = userId,
+                accountId = 8938,
+                accountName = "테스트 거래처",
+                accountLatitude = accountLat.toString(),
+                accountLongitude = accountLon.toString(),
+                accountAbcTypeCode = "2110"
+            )
+            val newTms = createTeamMemberSchedule(
+                id = 50L, sfid = null, employeeId = userId, accountId = 8938,
+                workingType = "근무", workingCategory1 = "진열", workingCategory3 = "고정",
+                accountAbcTypeCode = "2110",
+                accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(displayWorkScheduleRepository.findById(displayWorkScheduleId)).thenReturn(Optional.of(master))
+            whenever(teamMemberScheduleRepository.findByEmployeeAndAccountAndWorkingDate(eq(employee), any(), eq(today))).thenReturn(null)
+            whenever(teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingCategory3(eq(employee), eq(today), eq("고정"))).thenReturn(false)
+            whenever(employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("CC001"), UserRole.LEADER)).thenReturn(emptyList())
+            whenever(teamMemberScheduleRepository.save(any<TeamMemberSchedule>())).thenReturn(newTms)
+            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.empty())
+            doReturn(OroraWorkReportResult("200", "SUCCESS"))
+                .whenever(ororaApiService).sendWorkReport(any())
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(listOf(newTms))
+
+            // When
+            val result = attendanceService.register(userId, null, displayWorkScheduleId, nearUserLat, nearUserLon, null)
+
+            // Then
+            assertThat(result.attendanceType).isEqualTo(AttendanceType.DISPLAY)
+            assertThat(result.displayWorkScheduleId).isEqualTo(displayWorkScheduleId)
+            assertThat(result.scheduleStartDate).isEqualTo(startDate)
+            assertThat(result.scheduleEndDate).isEqualTo(endDate)
+        }
+
+        @Test
+        @DisplayName("Spec #587 T3 — 본인 할당 안 됨: 마스터의 employee.id != currentEmployeeId -> DisplayScheduleNotAssignedException")
+        fun register_byDisplayWorkSchedule_notAssignedToCurrentUser_throwsException() {
+            // Given
+            val userId = 1L
+            val otherUserId = 2L
+            val displayWorkScheduleId = 100L
+            val today = LocalDate.now()
+
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val master = createDisplayWorkSchedule(
+                id = displayWorkScheduleId,
+                confirmed = true,
+                startDate = today.minusDays(10),
+                endDate = today.plusDays(10),
+                employeeId = otherUserId, // 타인 할당
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(displayWorkScheduleRepository.findById(displayWorkScheduleId)).thenReturn(Optional.of(master))
+
+            // When & Then
+            assertThatThrownBy {
+                attendanceService.register(userId, null, displayWorkScheduleId, nearUserLat, nearUserLon, null)
+            }.isInstanceOf(DisplayScheduleNotAssignedException::class.java)
+
+            verify(teamMemberScheduleRepository, never()).save(any<TeamMemberSchedule>())
+        }
+
+        @Test
+        @DisplayName("Spec #587 T7 — 동일 (사원, today, working_category3) 다른 거래처에 일정 존재 -> DisplayAttendanceDuplicateException")
+        fun register_byDisplayWorkSchedule_duplicateWorkingCategory3_throwsException() {
+            // Given
+            val userId = 1L
+            val displayWorkScheduleId = 100L
+            val today = LocalDate.now()
+
+            val employee = createEmployee(id = userId, sfid = "USR001", costCenterCode = "CC001")
+            val master = createDisplayWorkSchedule(
+                id = displayWorkScheduleId,
+                confirmed = true,
+                startDate = today.minusDays(10),
+                endDate = today.plusDays(10),
+                typeOfWork3 = "고정",
+                employeeId = userId,
+                accountId = 8938,
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(displayWorkScheduleRepository.findById(displayWorkScheduleId)).thenReturn(Optional.of(master))
+            // 동일 사원+거래처+오늘은 없음 → step 4-1 통과
+            whenever(teamMemberScheduleRepository.findByEmployeeAndAccountAndWorkingDate(eq(employee), any(), eq(today))).thenReturn(null)
+            // 다른 거래처에 동일 working_category3=고정 일정 존재 → step 4-2 차단
+            whenever(teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingCategory3(eq(employee), eq(today), eq("고정"))).thenReturn(true)
+
+            // When & Then
+            assertThatThrownBy {
+                attendanceService.register(userId, null, displayWorkScheduleId, nearUserLat, nearUserLon, null)
+            }.isInstanceOf(DisplayAttendanceDuplicateException::class.java)
+
+            verify(teamMemberScheduleRepository, never()).save(any<TeamMemberSchedule>())
+        }
+
+        @Test
+        @DisplayName("Spec #587 T9/T12 — scheduleId 일반 경로 응답: attendanceType=REGULAR + display 메타 미포함")
+        fun register_byScheduleId_responsePayload_isRegular() {
+            // Given
+            val userId = 1L
+            val scheduleId = 10L
+            val today = LocalDate.now()
+            val employee = createEmployee(id = userId, sfid = "USR001")
+
+            val tms = createTeamMemberSchedule(
+                id = scheduleId, sfid = "SCH010", employeeId = userId, accountId = 8938,
+                accountAbcTypeCode = "2110",
+                accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(tms))
+            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.empty())
+            doReturn(OroraWorkReportResult("200", "SUCCESS"))
+                .whenever(ororaApiService).sendWorkReport(any())
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(listOf(tms))
+
+            // When
+            val result = attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
+
+            // Then
+            assertThat(result.attendanceType).isEqualTo(AttendanceType.REGULAR)
+            assertThat(result.displayWorkScheduleId).isNull()
+            assertThat(result.scheduleStartDate).isNull()
+            assertThat(result.scheduleEndDate).isNull()
         }
     }
 

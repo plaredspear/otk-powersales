@@ -55,6 +55,15 @@ class AttendanceLog(
     @Column(name = "reason", length = 255)
     val reason: String? = null,
 
+    /**
+     * 출근 종류 (Spec #587).
+     * REGULAR: 일반 / DISPLAY: 진열 마스터 연계.
+     * DB 체크 제약 없음 — 본 enum 으로만 검증 (backend-conventions.md "Enum 컬럼 정책").
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "attendance_type", nullable = false, length = 20)
+    val attendanceType: AttendanceType = AttendanceType.REGULAR,
+
     // -- Relations --
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "employee_id", insertable = false, updatable = false)

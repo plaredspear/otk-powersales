@@ -82,10 +82,10 @@ class AttendanceTargetConflictException : BusinessException(
 )
 
 /**
- * 진열마스터 미존재
+ * 진열마스터 미존재 (Spec #587 P1-B — `ATT_DISPLAY_SCHEDULE_NOT_FOUND`)
  */
 class DisplayScheduleNotFoundException : BusinessException(
-    errorCode = "DISPLAY_SCHEDULE_NOT_FOUND",
+    errorCode = "ATT_DISPLAY_SCHEDULE_NOT_FOUND",
     message = "존재하지 않는 진열마스터입니다",
     httpStatus = HttpStatus.NOT_FOUND
 )
@@ -100,12 +100,32 @@ class DisplayScheduleNotConfirmedException : BusinessException(
 )
 
 /**
- * 오늘이 마스터 기간 범위 밖
+ * 오늘이 마스터 기간 범위 밖 (Spec #587 P1-B — `ATT_DISPLAY_SCHEDULE_DATE_OUT_OF_RANGE`)
  */
 class DisplayScheduleOutOfRangeException : BusinessException(
-    errorCode = "DISPLAY_SCHEDULE_OUT_OF_RANGE",
+    errorCode = "ATT_DISPLAY_SCHEDULE_DATE_OUT_OF_RANGE",
     message = "진열마스터의 유효 기간이 아닙니다",
     httpStatus = HttpStatus.BAD_REQUEST
+)
+
+/**
+ * 진열마스터 본인 할당 아님 (Spec #587 P1-B §1.2 step 2).
+ * `display_work_schedule.employee_id != currentEmployeeId`.
+ */
+class DisplayScheduleNotAssignedException : BusinessException(
+    errorCode = "ATT_DISPLAY_SCHEDULE_NOT_ASSIGNED",
+    message = "본인에게 할당된 진열마스터가 아닙니다",
+    httpStatus = HttpStatus.FORBIDDEN
+)
+
+/**
+ * 진열 출근 중복 (Spec #587 P1-B §1.2 step 4 / Q6).
+ * 동일 `(employee_id, working_date, working_category3)` 조합으로 이미 출근 등록됨.
+ */
+class DisplayAttendanceDuplicateException : BusinessException(
+    errorCode = "ATT_DISPLAY_DUPLICATE",
+    message = "동일한 근무유형으로 이미 출근 등록된 일자입니다",
+    httpStatus = HttpStatus.CONFLICT
 )
 
 /**

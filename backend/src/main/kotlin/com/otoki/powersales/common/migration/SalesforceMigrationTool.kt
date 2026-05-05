@@ -53,7 +53,7 @@ import com.otoki.powersales.schedule.entity.AttendanceLog
  * │  제외   │ ProductBarcode__c                           │ product_barcode             │ ProductBarcode          │ —                                                             │ Heroku 경유 마이그레이션      │
  * │  제외   │ DKRetail__Notice__c                         │ notice                      │ Notice                  │ —                                                             │ Heroku 경유 마이그레이션      │
  * │  제외   │ DKRetail__DisplayWorkScheduleMaster__c      │ display_work_schedule       │ DisplayWorkSchedule     │ —                                                             │ Heroku 경유 마이그레이션      │
- * │  제외   │ DKRetail__TeamMemberSchedule__c             │ team_member_schedule        │ TeamMemberSchedule      │ —                                                             │ Heroku 경유 마이그레이션      │
+ * │  제외   │ DKRetail__TeamMemberSchedule__c             │ team_member_schedule        │ TeamMemberSchedule      │ —                                                             │ Heroku 경유 마이그레이션, V21: display_work_schedule_id FK 추가 (Spec #587 P1-B) │
  * │  제외   │ Theme__c                                    │ inspection_theme            │ InspectionTheme         │ —                                                             │ Heroku 경유 마이그레이션      │
  * │  제외   │ AgreementWord__c                            │ agreement_word              │ AgreementWord           │ —                                                             │ Heroku 경유 마이그레이션      │
  * │  제외   │ PushMessage__c                              │ push_message                │ PushMessage             │ —                                                             │ Heroku 경유 마이그레이션      │
