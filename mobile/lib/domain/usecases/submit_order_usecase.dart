@@ -1,13 +1,13 @@
 import '../entities/order_draft.dart';
 import '../entities/validation_error.dart';
-import '../repositories/order_repository.dart';
+import '../repositories/order_request_repository.dart';
 
 /// 주문서 전송 UseCase
 ///
 /// 주문서를 승인요청합니다.
 /// 전송 성공 시 임시저장 데이터를 자동 삭제합니다.
 class SubmitOrder {
-  final OrderRepository _repository;
+  final OrderRequestRepository _repository;
 
   SubmitOrder(this._repository);
 

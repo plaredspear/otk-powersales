@@ -1,33 +1,33 @@
 import '../../domain/entities/client_order.dart';
-import '../../domain/entities/order.dart';
+import '../../domain/entities/order_request.dart';
 import '../../domain/entities/order_cancel.dart';
 import '../../domain/entities/order_detail.dart';
 import '../../domain/entities/order_draft.dart';
 import '../../domain/entities/product_for_order.dart';
 import '../../domain/entities/validation_error.dart';
-import '../../domain/repositories/order_repository.dart';
-import '../datasources/order_local_datasource.dart';
-import '../datasources/order_remote_datasource.dart';
+import '../../domain/repositories/order_request_repository.dart';
+import '../datasources/order_request_local_datasource.dart';
+import '../datasources/order_request_remote_datasource.dart';
 import '../models/order_cancel_model.dart';
 import '../models/order_draft_model.dart';
 
 /// 주문 Repository 구현체
 ///
-/// OrderRemoteDataSource를 사용하여 API를 호출하고,
-/// OrderLocalDataSource를 사용하여 로컬 임시저장을 관리합니다.
+/// OrderRequestRemoteDataSource를 사용하여 API를 호출하고,
+/// OrderRequestLocalDataSource를 사용하여 로컬 임시저장을 관리합니다.
 /// 응답 데이터를 도메인 엔티티로 변환합니다.
-class OrderRepositoryImpl implements OrderRepository {
-  final OrderRemoteDataSource _remoteDataSource;
-  final OrderLocalDataSource _localDataSource;
+class OrderRequestRepositoryImpl implements OrderRequestRepository {
+  final OrderRequestRemoteDataSource _remoteDataSource;
+  final OrderRequestLocalDataSource _localDataSource;
 
-  OrderRepositoryImpl({
-    required OrderRemoteDataSource remoteDataSource,
-    required OrderLocalDataSource localDataSource,
+  OrderRequestRepositoryImpl({
+    required OrderRequestRemoteDataSource remoteDataSource,
+    required OrderRequestLocalDataSource localDataSource,
   })  : _remoteDataSource = remoteDataSource,
         _localDataSource = localDataSource;
 
   @override
-  Future<OrderListResult> getMyOrders({
+  Future<OrderRequestListResult> getMyOrderRequests({
     int? clientId,
     String? status,
     String? deliveryDateFrom,
@@ -37,7 +37,7 @@ class OrderRepositoryImpl implements OrderRepository {
     int page = 0,
     int size = 20,
   }) async {
-    final response = await _remoteDataSource.getMyOrders(
+    final response = await _remoteDataSource.getMyOrderRequests(
       clientId: clientId,
       status: status,
       deliveryDateFrom: deliveryDateFrom,
@@ -52,7 +52,7 @@ class OrderRepositoryImpl implements OrderRepository {
         .map((model) => model.toEntity())
         .toList();
 
-    return OrderListResult(
+    return OrderRequestListResult(
       orders: orders,
       totalElements: response.totalElements,
       totalPages: response.totalPages,
@@ -64,25 +64,25 @@ class OrderRepositoryImpl implements OrderRepository {
   }
 
   @override
-  Future<OrderDetail> getOrderDetail({required int orderId}) async {
-    final response = await _remoteDataSource.getOrderDetail(orderId: orderId);
+  Future<OrderDetail> getOrderRequestDetail({required int orderId}) async {
+    final response = await _remoteDataSource.getOrderRequestDetail(orderId: orderId);
     return response.toEntity();
   }
 
   @override
-  Future<void> resendOrder({required int orderId}) async {
-    await _remoteDataSource.resendOrder(orderId: orderId);
+  Future<void> resendOrderRequest({required int orderId}) async {
+    await _remoteDataSource.resendOrderRequest(orderId: orderId);
   }
 
   @override
-  Future<OrderCancelResult> cancelOrder({
+  Future<OrderCancelResult> cancelOrderRequest({
     required int orderId,
     required List<String> productCodes,
   }) async {
     final requestModel = OrderCancelRequestModel(
       productCodes: productCodes,
     );
-    final response = await _remoteDataSource.cancelOrder(
+    final response = await _remoteDataSource.cancelOrderRequest(
       orderId: orderId,
       request: requestModel,
     );

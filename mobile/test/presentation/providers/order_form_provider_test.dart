@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/domain/entities/client_order.dart';
-import 'package:mobile/domain/entities/order.dart';
+import 'package:mobile/domain/entities/order_request.dart';
 import 'package:mobile/domain/entities/order_cancel.dart';
 import 'package:mobile/domain/entities/order_detail.dart';
 import 'package:mobile/domain/entities/order_draft.dart';
 import 'package:mobile/domain/entities/product_for_order.dart';
 import 'package:mobile/domain/entities/validation_error.dart';
-import 'package:mobile/domain/repositories/order_repository.dart';
+import 'package:mobile/domain/repositories/order_request_repository.dart';
 import 'package:mobile/domain/usecases/delete_draft_order_usecase.dart';
 import 'package:mobile/domain/usecases/get_credit_balance_usecase.dart';
 import 'package:mobile/domain/usecases/load_draft_order_usecase.dart';
@@ -19,7 +19,7 @@ import 'package:mobile/presentation/providers/order_form_state.dart';
 
 void main() {
   group('OrderFormNotifier', () {
-    late FakeOrderRepository fakeRepo;
+    late FakeOrderRequestRepository fakeRepo;
     late OrderFormNotifier notifier;
 
     OrderFormNotifier createNotifier() {
@@ -35,7 +35,7 @@ void main() {
     }
 
     setUp(() {
-      fakeRepo = FakeOrderRepository();
+      fakeRepo = FakeOrderRequestRepository();
       notifier = createNotifier();
     });
 
@@ -600,7 +600,7 @@ void main() {
 
 // --- Fake Repository ---
 
-class FakeOrderRepository implements OrderRepository {
+class FakeOrderRequestRepository implements OrderRequestRepository {
   // --- Controllable returns ---
   int creditBalanceToReturn = 50000000;
   OrderDraft? draftToReturn;
@@ -676,7 +676,7 @@ class FakeOrderRepository implements OrderRepository {
 
   // --- Non-F22 methods - stub ---
   @override
-  Future<OrderListResult> getMyOrders({
+  Future<OrderRequestListResult> getMyOrderRequests({
     int? clientId,
     String? status,
     String? deliveryDateFrom,
@@ -689,15 +689,15 @@ class FakeOrderRepository implements OrderRepository {
       throw UnimplementedError();
 
   @override
-  Future<OrderDetail> getOrderDetail({required int orderId}) async =>
+  Future<OrderDetail> getOrderRequestDetail({required int orderId}) async =>
       throw UnimplementedError();
 
   @override
-  Future<void> resendOrder({required int orderId}) async =>
+  Future<void> resendOrderRequest({required int orderId}) async =>
       throw UnimplementedError();
 
   @override
-  Future<OrderCancelResult> cancelOrder({
+  Future<OrderCancelResult> cancelOrderRequest({
     required int orderId,
     required List<String> productCodes,
   }) async =>

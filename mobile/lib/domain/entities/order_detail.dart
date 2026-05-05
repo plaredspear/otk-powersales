@@ -1,4 +1,4 @@
-import 'order.dart';
+import 'order_request.dart';
 
 /// 배송 상태 열거형
 ///

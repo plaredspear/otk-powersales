@@ -1,10 +1,10 @@
-import '../repositories/order_repository.dart';
+import '../repositories/order_request_repository.dart';
 
 /// 내 주문 목록 조회 UseCase
 ///
 /// 필터 조건과 정렬, 페이지네이션을 적용하여 내 주문 목록을 조회합니다.
 class GetMyOrders {
-  final OrderRepository _repository;
+  final OrderRequestRepository _repository;
 
   GetMyOrders(this._repository);
 
@@ -18,7 +18,7 @@ class GetMyOrders {
   /// [sortDir]: 정렬 방향 (기본: DESC)
   /// [page]: 페이지 번호 (0부터 시작)
   /// [size]: 페이지 크기 (기본: 20)
-  Future<OrderListResult> call({
+  Future<OrderRequestListResult> call({
     int? clientId,
     String? status,
     String? deliveryDateFrom,
@@ -28,7 +28,7 @@ class GetMyOrders {
     int page = 0,
     int size = 20,
   }) async {
-    return await _repository.getMyOrders(
+    return await _repository.getMyOrderRequests(
       clientId: clientId,
       status: status,
       deliveryDateFrom: deliveryDateFrom,

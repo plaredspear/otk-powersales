@@ -1,9 +1,9 @@
-import '../../domain/entities/order.dart';
+import '../../domain/entities/order_request.dart';
 
 /// 주문 목록 화면 상태
 ///
 /// 필터 조건, 정렬, 페이지네이션, 로딩/에러 상태를 포함합니다.
-class OrderListState {
+class OrderRequestListState {
   /// 로딩 상태
   final bool isLoading;
 
@@ -14,7 +14,7 @@ class OrderListState {
   final String? errorMessage;
 
   /// 주문 목록
-  final List<Order> orders;
+  final List<OrderRequest> orders;
 
   /// 전체 결과 수
   final int totalElements;
@@ -55,7 +55,7 @@ class OrderListState {
   /// 거래처 목록 (id -> name)
   final Map<int, String> clients;
 
-  const OrderListState({
+  const OrderRequestListState({
     this.isLoading = false,
     this.isLoadingMore = false,
     this.errorMessage,
@@ -74,7 +74,7 @@ class OrderListState {
   });
 
   /// 초기 상태
-  factory OrderListState.initial() {
+  factory OrderRequestListState.initial() {
     // 기본 납기일: 오늘 ~ 오늘+7일 (old_source 기준)
     final now = DateTime.now();
     final sevenDaysLater = now.add(const Duration(days: 7));
@@ -83,14 +83,14 @@ class OrderListState {
     final toStr =
         '${sevenDaysLater.year}-${sevenDaysLater.month.toString().padLeft(2, '0')}-${sevenDaysLater.day.toString().padLeft(2, '0')}';
 
-    return OrderListState(
+    return OrderRequestListState(
       deliveryDateFrom: fromStr,
       deliveryDateTo: toStr,
     );
   }
 
   /// 로딩 상태로 전환
-  OrderListState toLoading() {
+  OrderRequestListState toLoading() {
     return copyWith(
       isLoading: true,
       errorMessage: null,
@@ -98,7 +98,7 @@ class OrderListState {
   }
 
   /// 추가 로딩 상태로 전환
-  OrderListState toLoadingMore() {
+  OrderRequestListState toLoadingMore() {
     return copyWith(
       isLoadingMore: true,
       errorMessage: null,
@@ -106,7 +106,7 @@ class OrderListState {
   }
 
   /// 에러 상태로 전환
-  OrderListState toError(String message) {
+  OrderRequestListState toError(String message) {
     return copyWith(
       isLoading: false,
       isLoadingMore: false,
@@ -127,11 +127,11 @@ class OrderListState {
   bool get hasActiveFilter =>
       selectedClientId != null || selectedStatus != null;
 
-  OrderListState copyWith({
+  OrderRequestListState copyWith({
     bool? isLoading,
     bool? isLoadingMore,
     String? errorMessage,
-    List<Order>? orders,
+    List<OrderRequest>? orders,
     int? totalElements,
     int? currentPage,
     bool? isLastPage,
@@ -147,7 +147,7 @@ class OrderListState {
     bool clearStatusFilter = false,
     bool clearDateFilter = false,
   }) {
-    return OrderListState(
+    return OrderRequestListState(
       isLoading: isLoading ?? this.isLoading,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       errorMessage: errorMessage,

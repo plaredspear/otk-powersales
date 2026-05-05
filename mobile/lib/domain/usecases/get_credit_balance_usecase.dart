@@ -1,10 +1,10 @@
-import '../repositories/order_repository.dart';
+import '../repositories/order_request_repository.dart';
 
 /// 거래처 여신 잔액 조회 UseCase
 ///
 /// 선택된 거래처의 여신 잔액을 조회합니다.
 class GetCreditBalance {
-  final OrderRepository _repository;
+  final OrderRequestRepository _repository;
 
   GetCreditBalance(this._repository);
 

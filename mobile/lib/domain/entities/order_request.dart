@@ -55,10 +55,10 @@ enum OrderSortType {
   final String sortDir;
 }
 
-/// 주문 엔티티
+/// 주문요청 엔티티
 ///
-/// 주문현황 목록에 표시되는 주문 정보를 담는 도메인 엔티티입니다.
-class Order {
+/// 주문현황 목록에 표시되는 주문요청 정보를 담는 도메인 엔티티입니다.
+class OrderRequest {
   /// 주문 고유 ID
   final int id;
 
@@ -86,7 +86,7 @@ class Order {
   /// 마감 여부
   final bool isClosed;
 
-  const Order({
+  const OrderRequest({
     required this.id,
     required this.orderRequestNumber,
     required this.clientId,
@@ -98,7 +98,7 @@ class Order {
     required this.isClosed,
   });
 
-  Order copyWith({
+  OrderRequest copyWith({
     int? id,
     String? orderRequestNumber,
     int? clientId,
@@ -109,7 +109,7 @@ class Order {
     ApprovalStatus? approvalStatus,
     bool? isClosed,
   }) {
-    return Order(
+    return OrderRequest(
       id: id ?? this.id,
       orderRequestNumber: orderRequestNumber ?? this.orderRequestNumber,
       clientId: clientId ?? this.clientId,
@@ -136,8 +136,8 @@ class Order {
     };
   }
 
-  factory Order.fromJson(Map<String, dynamic> json) {
-    return Order(
+  factory OrderRequest.fromJson(Map<String, dynamic> json) {
+    return OrderRequest(
       id: json['id'] as int,
       orderRequestNumber: json['orderRequestNumber'] as String,
       clientId: json['clientId'] as int,
@@ -153,7 +153,7 @@ class Order {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is Order &&
+    return other is OrderRequest &&
         other.id == id &&
         other.orderRequestNumber == orderRequestNumber &&
         other.clientId == clientId &&
@@ -182,7 +182,7 @@ class Order {
 
   @override
   String toString() {
-    return 'Order(id: $id, orderRequestNumber: $orderRequestNumber, '
+    return 'OrderRequest(id: $id, orderRequestNumber: $orderRequestNumber, '
         'clientId: $clientId, clientName: $clientName, '
         'orderDate: $orderDate, deliveryDate: $deliveryDate, '
         'totalAmount: $totalAmount, approvalStatus: $approvalStatus, '

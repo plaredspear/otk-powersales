@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../../helpers/fake_order_repository.dart';
+import '../../helpers/fake_order_request_repository.dart';
 import 'package:mobile/domain/entities/order_draft.dart';
 import 'package:mobile/domain/entities/product_for_order.dart';
 import 'package:mobile/domain/entities/validation_error.dart';
@@ -15,7 +15,7 @@ import 'package:mobile/domain/usecases/search_products_for_order_usecase.dart';
 import 'package:mobile/domain/usecases/update_order_usecase.dart';
 
 void main() {
-  late FakeOrderRepository repository;
+  late FakeOrderRequestRepository repository;
   late GetCreditBalance getCreditBalance;
   late GetFavoriteProducts getFavoriteProducts;
   late SearchProductsForOrder searchProductsForOrder;
@@ -28,7 +28,7 @@ void main() {
   late RemoveFromFavorites removeFromFavorites;
 
   setUp(() {
-    repository = FakeOrderRepository();
+    repository = FakeOrderRequestRepository();
     getCreditBalance = GetCreditBalance(repository);
     getFavoriteProducts = GetFavoriteProducts(repository);
     searchProductsForOrder = SearchProductsForOrder(repository);

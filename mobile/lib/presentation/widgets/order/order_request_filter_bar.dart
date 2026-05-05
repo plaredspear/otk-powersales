@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../domain/entities/order.dart';
+import '../../../domain/entities/order_request.dart';
 
 /// 주문 필터 바 위젯
 ///
 /// 거래처 드롭다운, 상태 드롭다운, 납기일 범위, 검색 버튼을 포함합니다.
-class OrderFilterBar extends StatelessWidget {
+class OrderRequestFilterBar extends StatelessWidget {
   /// 거래처 목록 (id -> name)
   final Map<int, String> clients;
 
@@ -36,7 +36,7 @@ class OrderFilterBar extends StatelessWidget {
   /// 검색 버튼 콜백
   final VoidCallback onSearch;
 
-  const OrderFilterBar({
+  const OrderRequestFilterBar({
     super.key,
     required this.clients,
     this.selectedClientId,

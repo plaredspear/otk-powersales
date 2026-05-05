@@ -1,11 +1,11 @@
 import '../entities/product_for_order.dart';
-import '../repositories/order_repository.dart';
+import '../repositories/order_request_repository.dart';
 
 /// 바코드로 제품 조회 UseCase
 ///
 /// 바코드 문자열로 제품을 조회합니다.
 class GetProductByBarcode {
-  final OrderRepository _repository;
+  final OrderRequestRepository _repository;
 
   GetProductByBarcode(this._repository);
 

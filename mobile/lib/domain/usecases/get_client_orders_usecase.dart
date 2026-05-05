@@ -1,12 +1,12 @@
 import '../entities/client_order.dart';
-import '../repositories/order_repository.dart';
+import '../repositories/order_request_repository.dart';
 
 /// 거래처별 주문 목록 조회 UseCase
 ///
 /// 선택한 거래처 + 납기일을 기반으로 거래처별 주문 목록을 조회합니다.
 /// 페이지네이션을 지원하며, 페이지 번호 버튼 방식으로 페이지를 이동합니다.
 class GetClientOrdersUseCase {
-  final OrderRepository _repository;
+  final OrderRequestRepository _repository;
 
   GetClientOrdersUseCase(this._repository);
 

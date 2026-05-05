@@ -3,24 +3,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/network/dio_provider.dart';
 import '../../core/utils/error_utils.dart';
-import '../../data/datasources/order_api_datasource.dart';
-import '../../data/datasources/order_local_datasource.dart';
-import '../../data/datasources/order_remote_datasource.dart';
+import '../../data/datasources/order_request_api_datasource.dart';
+import '../../data/datasources/order_request_local_datasource.dart';
+import '../../data/datasources/order_request_remote_datasource.dart';
 import '../../data/models/my_account_model.dart';
-import '../../data/repositories/order_repository_impl.dart';
-import '../../domain/entities/order.dart';
-import '../../domain/repositories/order_repository.dart';
-import '../../domain/usecases/get_my_orders.dart';
-import 'order_list_state.dart';
+import '../../data/repositories/order_request_repository_impl.dart';
+import '../../domain/entities/order_request.dart';
+import '../../domain/repositories/order_request_repository.dart';
+import '../../domain/usecases/get_my_order_requests.dart';
+import 'order_request_list_state.dart';
 
 // --- Dependency Providers ---
 
-/// Order Repository Provider
-final orderRepositoryProvider = Provider<OrderRepository>((ref) {
+/// OrderRequest Repository Provider
+final orderRequestRepositoryProvider = Provider<OrderRequestRepository>((ref) {
   final dio = ref.watch(dioProvider);
-  final remoteDataSource = OrderApiDataSource(dio);
-  final localDataSource = OrderLocalDataSource();
-  return OrderRepositoryImpl(
+  final remoteDataSource = OrderRequestApiDataSource(dio);
+  final localDataSource = OrderRequestLocalDataSource();
+  return OrderRequestRepositoryImpl(
     remoteDataSource: remoteDataSource,
     localDataSource: localDataSource,
   );
@@ -28,25 +28,25 @@ final orderRepositoryProvider = Provider<OrderRepository>((ref) {
 
 /// GetMyOrders UseCase Provider
 final getMyOrdersUseCaseProvider = Provider<GetMyOrders>((ref) {
-  final repository = ref.watch(orderRepositoryProvider);
+  final repository = ref.watch(orderRequestRepositoryProvider);
   return GetMyOrders(repository);
 });
 
-// --- OrderListNotifier ---
+// --- OrderRequestListNotifier ---
 
 /// 주문 목록 상태 관리 Notifier
 ///
 /// 필터링, 정렬, 페이지네이션(무한 스크롤), 검색 기능을 관리합니다.
-class OrderListNotifier extends StateNotifier<OrderListState> {
+class OrderRequestListNotifier extends StateNotifier<OrderRequestListState> {
   final GetMyOrders _getMyOrders;
   final Dio _dio;
 
-  OrderListNotifier({
-    required GetMyOrders getMyOrders,
+  OrderRequestListNotifier({
+    required GetMyOrders getMyOrderRequests,
     required Dio dio,
-  })  : _getMyOrders = getMyOrders,
+  })  : _getMyOrders = getMyOrderRequests,
         _dio = dio,
-        super(OrderListState.initial());
+        super(OrderRequestListState.initial());
 
   /// 초기 데이터 로딩
   ///
@@ -187,13 +187,13 @@ class OrderListNotifier extends StateNotifier<OrderListState> {
 }
 
 /// OrderList StateNotifier Provider
-final orderListProvider =
-    StateNotifierProvider<OrderListNotifier, OrderListState>((ref) {
+final orderRequestListProvider =
+    StateNotifierProvider<OrderRequestListNotifier, OrderRequestListState>((ref) {
   final useCase = ref.watch(getMyOrdersUseCaseProvider);
   final dio = ref.watch(dioProvider);
 
-  return OrderListNotifier(
-    getMyOrders: useCase,
+  return OrderRequestListNotifier(
+    getMyOrderRequests: useCase,
     dio: dio,
   );
 });

@@ -1,10 +1,10 @@
-import '../repositories/order_repository.dart';
+import '../repositories/order_request_repository.dart';
 
 /// 즐겨찾기 추가 UseCase
 ///
 /// 제품을 즐겨찾기에 추가합니다.
 class AddToFavorites {
-  final OrderRepository _repository;
+  final OrderRequestRepository _repository;
 
   AddToFavorites(this._repository);
 

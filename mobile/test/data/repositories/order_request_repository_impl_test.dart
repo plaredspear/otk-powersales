@@ -1,33 +1,33 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mobile/data/datasources/order_local_datasource.dart';
-import 'package:mobile/data/datasources/order_remote_datasource.dart';
+import 'package:mobile/data/datasources/order_request_local_datasource.dart';
+import 'package:mobile/data/datasources/order_request_remote_datasource.dart';
 import 'package:mobile/data/models/client_order_model.dart';
 import 'package:mobile/data/models/order_cancel_model.dart';
-import 'package:mobile/data/models/order_detail_model.dart';
+import 'package:mobile/data/models/order_request_detail_model.dart';
 import 'package:mobile/data/models/order_draft_model.dart';
-import 'package:mobile/data/models/order_model.dart';
+import 'package:mobile/data/models/order_request_model.dart';
 import 'package:mobile/data/models/product_for_order_model.dart';
 import 'package:mobile/data/models/validation_result_model.dart';
-import 'package:mobile/data/repositories/order_repository_impl.dart';
+import 'package:mobile/data/repositories/order_request_repository_impl.dart';
 import 'package:mobile/domain/entities/order_draft.dart';
 import 'package:mobile/domain/entities/product_for_order.dart';
 import 'package:mobile/domain/entities/validation_error.dart';
 
 void main() {
-  late OrderRepositoryImpl repository;
+  late OrderRequestRepositoryImpl repository;
   late FakeOrderRemoteDataSource fakeRemoteDataSource;
   late FakeOrderLocalDataSource fakeLocalDataSource;
 
   setUp(() {
     fakeRemoteDataSource = FakeOrderRemoteDataSource();
     fakeLocalDataSource = FakeOrderLocalDataSource();
-    repository = OrderRepositoryImpl(
+    repository = OrderRequestRepositoryImpl(
       remoteDataSource: fakeRemoteDataSource,
       localDataSource: fakeLocalDataSource,
     );
   });
 
-  group('OrderRepositoryImpl - F22 주문서 작성 기능', () {
+  group('OrderRequestRepositoryImpl - F22 주문서 작성 기능', () {
     test('여신 잔액 조회: remote datasource를 호출하고 잔액을 반환한다', () async {
       // Given: remote datasource가 50,000,000원을 반환하도록 설정
       fakeRemoteDataSource.creditBalanceToReturn = 50000000;
@@ -283,9 +283,9 @@ void main() {
 
 /// FakeOrderRemoteDataSource
 ///
-/// OrderRemoteDataSource 인터페이스를 구현한 테스트용 가짜 객체입니다.
+/// OrderRequestRemoteDataSource 인터페이스를 구현한 테스트용 가짜 객체입니다.
 /// mockito를 사용하지 않고 수동으로 작성한 fake입니다.
-class FakeOrderRemoteDataSource implements OrderRemoteDataSource {
+class FakeOrderRemoteDataSource implements OrderRequestRemoteDataSource {
   // getCreditBalance
   int getCreditBalanceCalls = 0;
   int? lastCreditBalanceClientId;
@@ -424,7 +424,7 @@ class FakeOrderRemoteDataSource implements OrderRemoteDataSource {
   // ─── 기존 메서드들 (F22와 무관, UnimplementedError 던짐) ─────────
 
   @override
-  Future<OrderListResponseModel> getMyOrders({
+  Future<OrderRequestListResponseModel> getMyOrderRequests({
     int? clientId,
     String? status,
     String? deliveryDateFrom,
@@ -438,17 +438,17 @@ class FakeOrderRemoteDataSource implements OrderRemoteDataSource {
   }
 
   @override
-  Future<OrderDetailModel> getOrderDetail({required int orderId}) {
+  Future<OrderRequestDetailModel> getOrderRequestDetail({required int orderId}) {
     throw UnimplementedError();
   }
 
   @override
-  Future<void> resendOrder({required int orderId}) {
+  Future<void> resendOrderRequest({required int orderId}) {
     throw UnimplementedError();
   }
 
   @override
-  Future<OrderCancelResponseModel> cancelOrder({
+  Future<OrderCancelResponseModel> cancelOrderRequest({
     required int orderId,
     required OrderCancelRequestModel request,
   }) {
@@ -475,9 +475,9 @@ class FakeOrderRemoteDataSource implements OrderRemoteDataSource {
 
 /// FakeOrderLocalDataSource
 ///
-/// OrderLocalDataSource 인터페이스를 구현한 테스트용 가짜 객체입니다.
+/// OrderRequestLocalDataSource 인터페이스를 구현한 테스트용 가짜 객체입니다.
 /// 실제로는 concrete class이지만 Dart에서는 implements로 구현 가능합니다.
-class FakeOrderLocalDataSource implements OrderLocalDataSource {
+class FakeOrderLocalDataSource implements OrderRequestLocalDataSource {
   Map<String, dynamic>? savedDraft;
   Map<String, dynamic>? draftToReturn;
   int deleteDraftCalls = 0;

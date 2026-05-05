@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../../helpers/fake_order_repository.dart';
-import 'package:mobile/domain/entities/order.dart';
+import '../../helpers/fake_order_request_repository.dart';
+import 'package:mobile/domain/entities/order_request.dart';
 import 'package:mobile/domain/entities/order_detail.dart';
-import 'package:mobile/domain/usecases/get_order_detail.dart';
-import 'package:mobile/domain/usecases/resend_order.dart';
-import 'package:mobile/presentation/providers/order_detail_provider.dart';
-import 'package:mobile/presentation/providers/order_detail_state.dart';
+import 'package:mobile/domain/usecases/get_order_request_detail.dart';
+import 'package:mobile/domain/usecases/resend_order_request.dart';
+import 'package:mobile/presentation/providers/order_request_detail_provider.dart';
+import 'package:mobile/presentation/providers/order_request_detail_state.dart';
 
 /// 테스트용 OrderDetail 생성 헬퍼
 OrderDetail _createOrderDetail({
@@ -45,9 +45,9 @@ OrderDetail _createOrderDetail({
 }
 
 void main() {
-  group('OrderDetailState', () {
+  group('OrderRequestDetailState', () {
     test('initial state has correct defaults', () {
-      final state = OrderDetailState.initial();
+      final state = OrderRequestDetailState.initial();
 
       expect(state.orderDetail, isNull);
       expect(state.isLoading, false);
@@ -57,7 +57,7 @@ void main() {
     });
 
     test('toLoading sets isLoading true and clears error', () {
-      final state = const OrderDetailState(
+      final state = const OrderRequestDetailState(
         isLoading: false,
         errorMessage: 'Some error',
       );
@@ -69,7 +69,7 @@ void main() {
     });
 
     test('toError sets error message and clears loading', () {
-      final state = const OrderDetailState(
+      final state = const OrderRequestDetailState(
         isLoading: true,
         isResending: true,
       );
@@ -84,7 +84,7 @@ void main() {
     test('copyWith works correctly', () {
       final orderDetail = _createOrderDetail();
 
-      final state = OrderDetailState.initial();
+      final state = OrderRequestDetailState.initial();
       final newState = state.copyWith(
         orderDetail: orderDetail,
         isLoading: true,
@@ -101,7 +101,7 @@ void main() {
     });
 
     test('copyWith with clearError removes error message', () {
-      final state = const OrderDetailState(errorMessage: 'Some error');
+      final state = const OrderRequestDetailState(errorMessage: 'Some error');
 
       final newState = state.copyWith(clearError: true);
 
@@ -110,15 +110,15 @@ void main() {
 
     test('hasData is true when orderDetail is not null', () {
       final stateWithData =
-          OrderDetailState(orderDetail: _createOrderDetail());
-      final stateWithoutData = OrderDetailState.initial();
+          OrderRequestDetailState(orderDetail: _createOrderDetail());
+      final stateWithoutData = OrderRequestDetailState.initial();
 
       expect(stateWithData.hasData, true);
       expect(stateWithoutData.hasData, false);
     });
 
     test('isBeforeClose is true when isClosed is false', () {
-      final state = OrderDetailState(
+      final state = OrderRequestDetailState(
         orderDetail: _createOrderDetail(isClosed: false),
       );
 
@@ -127,7 +127,7 @@ void main() {
     });
 
     test('isAfterClose is true when isClosed is true', () {
-      final state = OrderDetailState(
+      final state = OrderRequestDetailState(
         orderDetail: _createOrderDetail(isClosed: true),
       );
 
@@ -136,7 +136,7 @@ void main() {
     });
 
     test('hasRejectedItems is true when closed and has rejected items', () {
-      final stateWithRejected = OrderDetailState(
+      final stateWithRejected = OrderRequestDetailState(
         orderDetail: _createOrderDetail(
           isClosed: true,
           rejectedItems: [
@@ -150,7 +150,7 @@ void main() {
         ),
       );
 
-      final stateWithoutRejected = OrderDetailState(
+      final stateWithoutRejected = OrderRequestDetailState(
         orderDetail: _createOrderDetail(isClosed: true),
       );
 
@@ -160,7 +160,7 @@ void main() {
 
     test('showCancelButton logic works correctly', () {
       // Should show: before close + not sendFailed + not all cancelled
-      final stateShowCancel = OrderDetailState(
+      final stateShowCancel = OrderRequestDetailState(
         orderDetail: _createOrderDetail(
           isClosed: false,
           approvalStatus: ApprovalStatus.approved,
@@ -177,7 +177,7 @@ void main() {
       );
 
       // Should not show: sendFailed status
-      final stateSendFailed = OrderDetailState(
+      final stateSendFailed = OrderRequestDetailState(
         orderDetail: _createOrderDetail(
           isClosed: false,
           approvalStatus: ApprovalStatus.sendFailed,
@@ -185,7 +185,7 @@ void main() {
       );
 
       // Should not show: all items cancelled
-      final stateAllCancelled = OrderDetailState(
+      final stateAllCancelled = OrderRequestDetailState(
         orderDetail: _createOrderDetail(
           isClosed: false,
           approvalStatus: ApprovalStatus.approved,
@@ -202,7 +202,7 @@ void main() {
       );
 
       // Should not show: after close
-      final stateClosed = OrderDetailState(
+      final stateClosed = OrderRequestDetailState(
         orderDetail: _createOrderDetail(
           isClosed: true,
           approvalStatus: ApprovalStatus.approved,
@@ -217,7 +217,7 @@ void main() {
 
     test('showResendButton logic works correctly', () {
       // Should show: before close + sendFailed
-      final stateShowResend = OrderDetailState(
+      final stateShowResend = OrderRequestDetailState(
         orderDetail: _createOrderDetail(
           isClosed: false,
           approvalStatus: ApprovalStatus.sendFailed,
@@ -225,7 +225,7 @@ void main() {
       );
 
       // Should not show: not sendFailed
-      final stateNotSendFailed = OrderDetailState(
+      final stateNotSendFailed = OrderRequestDetailState(
         orderDetail: _createOrderDetail(
           isClosed: false,
           approvalStatus: ApprovalStatus.approved,
@@ -233,7 +233,7 @@ void main() {
       );
 
       // Should not show: after close
-      final stateClosed = OrderDetailState(
+      final stateClosed = OrderRequestDetailState(
         orderDetail: _createOrderDetail(
           isClosed: true,
           approvalStatus: ApprovalStatus.sendFailed,
@@ -246,17 +246,17 @@ void main() {
     });
   });
 
-  group('OrderDetailNotifier', () {
-    late FakeOrderRepository mockRepository;
-    late OrderDetailNotifier notifier;
+  group('OrderRequestDetailNotifier', () {
+    late FakeOrderRequestRepository mockRepository;
+    late OrderRequestDetailNotifier notifier;
 
     setUp(() {
-      mockRepository = FakeOrderRepository();
-      final getOrderDetail = GetOrderDetail(mockRepository);
-      final resendOrder = ResendOrder(mockRepository);
-      notifier = OrderDetailNotifier(
-        getOrderDetail: getOrderDetail,
-        resendOrder: resendOrder,
+      mockRepository = FakeOrderRequestRepository();
+      final getOrderRequestDetail = GetOrderDetail(mockRepository);
+      final resendOrderRequest = ResendOrder(mockRepository);
+      notifier = OrderRequestDetailNotifier(
+        getOrderRequestDetail: getOrderRequestDetail,
+        resendOrderRequest: resendOrderRequest,
       );
     });
 
@@ -327,7 +327,7 @@ void main() {
       expect(notifier.state.showResendButton, true);
     });
 
-    test('resendOrder succeeds for sendFailed order and refreshes detail',
+    test('resendOrderRequest succeeds for sendFailed order and refreshes detail',
         () async {
       // First load the sendFailed order
       await notifier.loadOrderDetail(orderId: 4);
@@ -335,7 +335,7 @@ void main() {
           ApprovalStatus.sendFailed);
 
       // Resend the order
-      final result = await notifier.resendOrder(orderId: 4);
+      final result = await notifier.resendOrderRequest(orderId: 4);
 
       expect(result, true);
       expect(notifier.state.isResending, false);
@@ -345,7 +345,7 @@ void main() {
       expect(notifier.state.orderDetail!.id, 4);
     });
 
-    test('resendOrder fails for non-sendFailed order and sets error',
+    test('resendOrderRequest fails for non-sendFailed order and sets error',
         () async {
       // Load a normal order (not sendFailed)
       await notifier.loadOrderDetail(orderId: 1);
@@ -353,7 +353,7 @@ void main() {
           isNot(ApprovalStatus.sendFailed));
 
       // Try to resend
-      final result = await notifier.resendOrder(orderId: 1);
+      final result = await notifier.resendOrderRequest(orderId: 1);
 
       expect(result, false);
       expect(notifier.state.isResending, false);
@@ -361,9 +361,9 @@ void main() {
       expect(notifier.state.errorMessage, contains('INVALID_STATUS'));
     });
 
-    test('resendOrder returns false on error', () async {
+    test('resendOrderRequest returns false on error', () async {
       // Try to resend non-existent order
-      final result = await notifier.resendOrder(orderId: 9999);
+      final result = await notifier.resendOrderRequest(orderId: 9999);
 
       expect(result, false);
       expect(notifier.state.errorMessage, isNotNull);
@@ -403,7 +403,7 @@ void main() {
       expect(notifier.state.isItemsExpanded, true);
 
       // Step 3: Resend the order
-      final resendResult = await notifier.resendOrder(orderId: 4);
+      final resendResult = await notifier.resendOrderRequest(orderId: 4);
       expect(resendResult, true);
       expect(notifier.state.errorMessage, isNull);
 

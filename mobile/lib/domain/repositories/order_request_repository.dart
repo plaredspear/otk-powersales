@@ -1,5 +1,5 @@
 import '../entities/client_order.dart';
-import '../entities/order.dart';
+import '../entities/order_request.dart';
 import '../entities/order_cancel.dart';
 import '../entities/order_detail.dart';
 import '../entities/order_draft.dart';
@@ -9,9 +9,9 @@ import '../entities/validation_error.dart';
 /// 주문 목록 조회 결과 값 객체
 ///
 /// 페이지네이션 정보를 포함한 주문 목록 결과를 담는 도메인 레벨 값 객체입니다.
-class OrderListResult {
+class OrderRequestListResult {
   /// 주문 목록
-  final List<Order> orders;
+  final List<OrderRequest> orders;
 
   /// 전체 결과 수
   final int totalElements;
@@ -31,7 +31,7 @@ class OrderListResult {
   /// 마지막 페이지 여부
   final bool isLast;
 
-  const OrderListResult({
+  const OrderRequestListResult({
     required this.orders,
     required this.totalElements,
     required this.totalPages,
@@ -47,7 +47,7 @@ class OrderListResult {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    if (other is! OrderListResult) return false;
+    if (other is! OrderRequestListResult) return false;
     if (other.totalElements != totalElements) return false;
     if (other.totalPages != totalPages) return false;
     if (other.currentPage != currentPage) return false;
@@ -76,7 +76,7 @@ class OrderListResult {
 
   @override
   String toString() {
-    return 'OrderListResult(orders: ${orders.length}, '
+    return 'OrderRequestListResult(orders: ${orders.length}, '
         'totalElements: $totalElements, totalPages: $totalPages, '
         'currentPage: $currentPage, pageSize: $pageSize, '
         'isFirst: $isFirst, isLast: $isLast)';
@@ -87,7 +87,7 @@ class OrderListResult {
 ///
 /// 주문 관련 데이터 접근을 추상화합니다.
 /// 구현체는 Mock Repository 또는 실제 API Repository가 될 수 있습니다.
-abstract class OrderRepository {
+abstract class OrderRequestRepository {
   /// 내 주문 목록 조회
   ///
   /// [clientId]: 거래처 ID (미입력 시 전체)
@@ -100,7 +100,7 @@ abstract class OrderRepository {
   /// [size]: 페이지 크기 (기본: 20)
   ///
   /// Returns: 페이지네이션 정보를 포함한 주문 목록
-  Future<OrderListResult> getMyOrders({
+  Future<OrderRequestListResult> getMyOrderRequests({
     int? clientId,
     String? status,
     String? deliveryDateFrom,
@@ -116,13 +116,13 @@ abstract class OrderRepository {
   /// [orderId]: 주문 고유 ID
   ///
   /// Returns: 주문 상세 정보 (주문정보 + 제품목록 + 처리현황 + 반려제품)
-  Future<OrderDetail> getOrderDetail({required int orderId});
+  Future<OrderDetail> getOrderRequestDetail({required int orderId});
 
   /// 주문 재전송
   ///
   /// [orderId]: 재전송할 주문 ID
   /// 전송실패 상태의 주문을 재전송합니다.
-  Future<void> resendOrder({required int orderId});
+  Future<void> resendOrderRequest({required int orderId});
 
   /// 주문 취소
   ///
@@ -130,7 +130,7 @@ abstract class OrderRepository {
   /// [productCodes]: 취소할 제품코드 목록
   ///
   /// Returns: 취소 결과 (취소된 제품 수, 취소된 제품코드 목록)
-  Future<OrderCancelResult> cancelOrder({
+  Future<OrderCancelResult> cancelOrderRequest({
     required int orderId,
     required List<String> productCodes,
   });

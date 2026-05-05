@@ -1,12 +1,12 @@
 import '../entities/order_draft.dart';
 import '../entities/validation_error.dart';
-import '../repositories/order_repository.dart';
+import '../repositories/order_request_repository.dart';
 
 /// 주문서 유효성 검증 UseCase
 ///
 /// 주문서의 필수 입력 및 서버 유효성 검증을 수행합니다.
 class ValidateOrder {
-  final OrderRepository _repository;
+  final OrderRequestRepository _repository;
 
   ValidateOrder(this._repository);
 

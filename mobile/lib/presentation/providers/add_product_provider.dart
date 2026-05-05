@@ -8,34 +8,34 @@ import '../../domain/usecases/get_favorite_products_usecase.dart';
 import '../../domain/usecases/remove_from_favorites_usecase.dart';
 import '../../domain/usecases/search_products_for_order_usecase.dart';
 import 'add_product_state.dart';
-import 'order_list_provider.dart';
+import 'order_request_list_provider.dart';
 
 // --- Dependency Providers ---
 
 /// GetFavoriteProducts UseCase Provider
 final getFavoriteProductsUseCaseProvider =
     Provider<GetFavoriteProducts>((ref) {
-  final repository = ref.watch(orderRepositoryProvider);
+  final repository = ref.watch(orderRequestRepositoryProvider);
   return GetFavoriteProducts(repository);
 });
 
 /// SearchProductsForOrder UseCase Provider
 final searchProductsForOrderUseCaseProvider =
     Provider<SearchProductsForOrder>((ref) {
-  final repository = ref.watch(orderRepositoryProvider);
+  final repository = ref.watch(orderRequestRepositoryProvider);
   return SearchProductsForOrder(repository);
 });
 
 /// AddToFavorites UseCase Provider
 final addToFavoritesUseCaseProvider = Provider<AddToFavorites>((ref) {
-  final repository = ref.watch(orderRepositoryProvider);
+  final repository = ref.watch(orderRequestRepositoryProvider);
   return AddToFavorites(repository);
 });
 
 /// RemoveFromFavorites UseCase Provider
 final removeFromFavoritesUseCaseProvider =
     Provider<RemoveFromFavorites>((ref) {
-  final repository = ref.watch(orderRepositoryProvider);
+  final repository = ref.watch(orderRequestRepositoryProvider);
   return RemoveFromFavorites(repository);
 });
 

@@ -4,7 +4,7 @@ import 'package:hive/hive.dart';
 /// 주문 로컬 데이터소스
 ///
 /// Hive로 주문서 임시저장 기능을 제공합니다.
-class OrderLocalDataSource {
+class OrderRequestLocalDataSource {
   // Hive box and keys
   static const String _orderDraftBoxName = 'order_draft_box';
   static const String _draftDataKey = 'draft_data';

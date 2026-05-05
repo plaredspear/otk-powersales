@@ -3,14 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/usecases/get_client_order_detail_usecase.dart';
 import 'client_order_detail_state.dart';
-import 'order_list_provider.dart';
+import 'order_request_list_provider.dart';
 
 // --- Dependency Providers ---
 
 /// GetClientOrderDetail UseCase Provider
 final getClientOrderDetailUseCaseProvider =
     Provider<GetClientOrderDetailUseCase>((ref) {
-  final repository = ref.watch(orderRepositoryProvider);
+  final repository = ref.watch(orderRequestRepositoryProvider);
   return GetClientOrderDetailUseCase(repository);
 });
 
