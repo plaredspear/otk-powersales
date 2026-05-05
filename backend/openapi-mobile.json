@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:49301",
+    "url" : "http://localhost:55705",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -828,6 +828,70 @@
         }
       }
     },
+    "/api/v1/mobile/me/order-requests" : {
+      "get" : {
+        "tags" : [ "order-request-controller" ],
+        "operationId" : "getMyOrderRequests",
+        "parameters" : [ {
+          "name" : "clientId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "status",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "deliveryDateFrom",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "deliveryDateTo",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "sortBy",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "sortDir",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseOrderRequestListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/mobile/leader/team-members" : {
       "get" : {
         "tags" : [ "leader-schedule-controller" ],
@@ -987,6 +1051,32 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseEducationPostDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/client-orders/{sapOrderNumber}" : {
+      "get" : {
+        "tags" : [ "client-order-controller" ],
+        "operationId" : "getClientOrderDetail",
+        "parameters" : [ {
+          "name" : "sapOrderNumber",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseClientOrderDetailResponse"
                 }
               }
             }
@@ -1258,12 +1348,12 @@
           "description" : {
             "type" : [ "string", "null" ]
           },
-          "expired" : {
-            "type" : "boolean"
-          },
           "dday" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "expired" : {
+            "type" : "boolean"
           }
         }
       },
@@ -2685,6 +2775,12 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
+          },
           "first" : {
             "type" : "boolean"
           },
@@ -2694,12 +2790,6 @@
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
           },
           "size" : {
             "type" : "integer",
@@ -2723,6 +2813,10 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
+          "pageNumber" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "unpaged" : {
             "type" : "boolean"
           },
@@ -2735,10 +2829,6 @@
           },
           "paged" : {
             "type" : "boolean"
-          },
-          "pageNumber" : {
-            "type" : "integer",
-            "format" : "int32"
           },
           "offset" : {
             "type" : "integer",
@@ -2775,10 +2865,10 @@
       "SortObject" : {
         "type" : "object",
         "properties" : {
-          "sorted" : {
+          "unsorted" : {
             "type" : "boolean"
           },
-          "unsorted" : {
+          "sorted" : {
             "type" : "boolean"
           },
           "empty" : {
@@ -3137,6 +3227,93 @@
           },
           "workType" : {
             "type" : "string"
+          }
+        }
+      },
+      "ApiResponseOrderRequestListResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/OrderRequestListResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "OrderRequestListResponse" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/OrderRequestSummaryResponse"
+            }
+          },
+          "total" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "truncated" : {
+            "type" : "boolean"
+          },
+          "fetchedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "OrderRequestSummaryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "orderRequestNumber" : {
+            "type" : "string"
+          },
+          "clientId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "clientName" : {
+            "type" : "string"
+          },
+          "orderDate" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "deliveryDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "totalAmount" : {
+            "type" : "number"
+          },
+          "orderRequestStatus" : {
+            "type" : "string"
+          },
+          "closed" : {
+            "type" : "boolean"
           }
         }
       },
@@ -3581,6 +3758,92 @@
             "items" : {
               "$ref" : "#/components/schemas/EducationAttachmentResponse"
             }
+          }
+        }
+      },
+      "ApiResponseClientOrderDetailResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ClientOrderDetailResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "ClientOrderDetailResponse" : {
+        "type" : "object",
+        "properties" : {
+          "sapOrderNumber" : {
+            "type" : "string"
+          },
+          "sapAccountCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "sapAccountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "clientDeadlineTime" : {
+            "type" : [ "string", "null" ]
+          },
+          "orderDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "deliveryDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "totalApprovedAmount" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "orderedItemCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "orderedItems" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ClientOrderItemResponse"
+            }
+          }
+        }
+      },
+      "ClientOrderItemResponse" : {
+        "type" : "object",
+        "properties" : {
+          "productCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "productName" : {
+            "type" : [ "string", "null" ]
+          },
+          "deliveredQuantity" : {
+            "type" : "string"
+          },
+          "deliveryStatus" : {
+            "type" : "string",
+            "enum" : [ "PENDING", "SHIPPING", "DELIVERED", "OUT_OF_STOCK" ]
           }
         }
       },

@@ -21,12 +21,14 @@ class ClientOrderItemTable extends StatelessWidget {
 
   Color _getStatusColor(DeliveryStatus status) {
     switch (status) {
-      case DeliveryStatus.waiting:
+      case DeliveryStatus.pending:
         return AppColors.textSecondary;
       case DeliveryStatus.shipping:
         return AppColors.warning;
       case DeliveryStatus.delivered:
         return AppColors.success;
+      case DeliveryStatus.outOfStock:
+        return AppColors.error;
     }
   }
 

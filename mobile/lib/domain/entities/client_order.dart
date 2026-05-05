@@ -177,23 +177,23 @@ class ClientOrderDetail {
   /// SAP 주문번호
   final String sapOrderNumber;
 
-  /// 거래처 ID
-  final int clientId;
+  /// SAP 거래처 코드 (응답 노출, 화면 표시 안 함)
+  final String? sapAccountCode;
 
-  /// 거래처명
-  final String clientName;
+  /// SAP 거래처명 (화면 "거래처" 라벨)
+  final String? sapAccountName;
 
   /// 거래처 마감시간 (HH:mm) - nullable
   final String? clientDeadlineTime;
 
   /// 주문일
-  final DateTime orderDate;
+  final DateTime? orderDate;
 
   /// 납기일
-  final DateTime deliveryDate;
+  final DateTime? deliveryDate;
 
   /// 총 승인 금액 (원)
-  final int totalApprovedAmount;
+  final int? totalApprovedAmount;
 
   /// 주문한 제품 수
   final int orderedItemCount;
@@ -203,20 +203,20 @@ class ClientOrderDetail {
 
   const ClientOrderDetail({
     required this.sapOrderNumber,
-    required this.clientId,
-    required this.clientName,
+    this.sapAccountCode,
+    this.sapAccountName,
     this.clientDeadlineTime,
-    required this.orderDate,
-    required this.deliveryDate,
-    required this.totalApprovedAmount,
+    this.orderDate,
+    this.deliveryDate,
+    this.totalApprovedAmount,
     required this.orderedItemCount,
     required this.orderedItems,
   });
 
   ClientOrderDetail copyWith({
     String? sapOrderNumber,
-    int? clientId,
-    String? clientName,
+    String? sapAccountCode,
+    String? sapAccountName,
     String? clientDeadlineTime,
     DateTime? orderDate,
     DateTime? deliveryDate,
@@ -226,8 +226,8 @@ class ClientOrderDetail {
   }) {
     return ClientOrderDetail(
       sapOrderNumber: sapOrderNumber ?? this.sapOrderNumber,
-      clientId: clientId ?? this.clientId,
-      clientName: clientName ?? this.clientName,
+      sapAccountCode: sapAccountCode ?? this.sapAccountCode,
+      sapAccountName: sapAccountName ?? this.sapAccountName,
       clientDeadlineTime: clientDeadlineTime ?? this.clientDeadlineTime,
       orderDate: orderDate ?? this.orderDate,
       deliveryDate: deliveryDate ?? this.deliveryDate,
@@ -240,11 +240,11 @@ class ClientOrderDetail {
   Map<String, dynamic> toJson() {
     return {
       'sapOrderNumber': sapOrderNumber,
-      'clientId': clientId,
-      'clientName': clientName,
+      'sapAccountCode': sapAccountCode,
+      'sapAccountName': sapAccountName,
       'clientDeadlineTime': clientDeadlineTime,
-      'orderDate': orderDate.toIso8601String(),
-      'deliveryDate': deliveryDate.toIso8601String(),
+      'orderDate': orderDate?.toIso8601String(),
+      'deliveryDate': deliveryDate?.toIso8601String(),
       'totalApprovedAmount': totalApprovedAmount,
       'orderedItemCount': orderedItemCount,
       'orderedItems': orderedItems.map((e) => e.toJson()).toList(),
@@ -254,12 +254,16 @@ class ClientOrderDetail {
   factory ClientOrderDetail.fromJson(Map<String, dynamic> json) {
     return ClientOrderDetail(
       sapOrderNumber: json['sapOrderNumber'] as String,
-      clientId: json['clientId'] as int,
-      clientName: json['clientName'] as String,
+      sapAccountCode: json['sapAccountCode'] as String?,
+      sapAccountName: json['sapAccountName'] as String?,
       clientDeadlineTime: json['clientDeadlineTime'] as String?,
-      orderDate: DateTime.parse(json['orderDate'] as String),
-      deliveryDate: DateTime.parse(json['deliveryDate'] as String),
-      totalApprovedAmount: json['totalApprovedAmount'] as int,
+      orderDate: json['orderDate'] != null
+          ? DateTime.parse(json['orderDate'] as String)
+          : null,
+      deliveryDate: json['deliveryDate'] != null
+          ? DateTime.parse(json['deliveryDate'] as String)
+          : null,
+      totalApprovedAmount: json['totalApprovedAmount'] as int?,
       orderedItemCount: json['orderedItemCount'] as int,
       orderedItems: (json['orderedItems'] as List<dynamic>)
           .map((e) => ClientOrderItem.fromJson(e as Map<String, dynamic>))
@@ -272,8 +276,8 @@ class ClientOrderDetail {
     if (identical(this, other)) return true;
     if (other is! ClientOrderDetail) return false;
     if (other.sapOrderNumber != sapOrderNumber) return false;
-    if (other.clientId != clientId) return false;
-    if (other.clientName != clientName) return false;
+    if (other.sapAccountCode != sapAccountCode) return false;
+    if (other.sapAccountName != sapAccountName) return false;
     if (other.clientDeadlineTime != clientDeadlineTime) return false;
     if (other.orderDate != orderDate) return false;
     if (other.deliveryDate != deliveryDate) return false;
@@ -290,8 +294,8 @@ class ClientOrderDetail {
   int get hashCode {
     return Object.hash(
       sapOrderNumber,
-      clientId,
-      clientName,
+      sapAccountCode,
+      sapAccountName,
       clientDeadlineTime,
       orderDate,
       deliveryDate,
@@ -304,7 +308,7 @@ class ClientOrderDetail {
   @override
   String toString() {
     return 'ClientOrderDetail(sapOrderNumber: $sapOrderNumber, '
-        'clientName: $clientName, '
+        'sapAccountName: $sapAccountName, '
         'orderedItemCount: $orderedItemCount)';
   }
 }

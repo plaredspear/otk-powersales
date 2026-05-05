@@ -436,7 +436,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
 
     final items = _getMockOrderedItems(order.id);
     final statuses = [
-      DeliveryStatus.waiting,
+      DeliveryStatus.pending,
       DeliveryStatus.shipping,
       DeliveryStatus.delivered,
     ];
@@ -1096,7 +1096,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
     ];
 
     final statuses = [
-      DeliveryStatus.waiting,
+      DeliveryStatus.pending,
       DeliveryStatus.shipping,
       DeliveryStatus.delivered,
     ];
@@ -1118,8 +1118,8 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
 
     return ClientOrderDetail(
       sapOrderNumber: order.sapOrderNumber,
-      clientId: order.clientId,
-      clientName: order.clientName,
+      sapAccountCode: order.clientId.toString().padLeft(10, '0'),
+      sapAccountName: order.clientName,
       clientDeadlineTime: _mockDeadlineTimes[order.clientId],
       orderDate: DateTime(2026, 2, 14),
       deliveryDate: DateTime(2026, 2, 19),

@@ -1,54 +1,34 @@
-/* OrderItem 엔티티 비활성화로 ClientOrderService 사용 불가 — 전체 주석 처리
 package com.otoki.powersales.order.controller
 
 import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.order.dto.response.ClientOrderSummaryResponse
 import com.otoki.powersales.common.security.UserPrincipal
-import com.otoki.powersales.order.service.ClientOrderService
-import org.springframework.data.domain.Page
-import org.springframework.format.annotation.DateTimeFormat
+import com.otoki.powersales.order.dto.response.ClientOrderDetailResponse
+import com.otoki.powersales.order.service.ClientOrderQueryService
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
-import org.springframework.web.bind.annotation.*
-import java.time.LocalDate
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
 
 /**
- * 거래처별 주문 API Controller (F28)
+ * 거래처별 출하 주문 API Controller (Spec #593).
+ *
+ * 레거시: Heroku `OrderController#orderDetail(type=client)` → SF `IF_REST_MOBILE_ClientOrderDetail`.
+ * 신규: `erp_order` / `erp_order_product` 테이블 직접 조회 (#561 적재 데이터).
  */
 @RestController
 @RequestMapping("/api/v1/mobile/client-orders")
 class ClientOrderController(
-    private val clientOrderService: ClientOrderService
+    private val clientOrderQueryService: ClientOrderQueryService
 ) {
 
-    /**
-     * 거래처별 주문 목록 조회
-     * GET /api/v1/mobile/client-orders?clientId=123&deliveryDate=2026-02-10&page=0&size=20
-     *
-     * @param principal 인증된 사용자 정보
-     * @param clientId 거래처 ID (필수)
-     * @param deliveryDate 납기일 (선택, 기본: 오늘)
-     * @param page 페이지 번호 (선택, 기본: 0)
-     * @param size 페이지 크기 (선택, 기본: 20)
-     */
-    @GetMapping
-    fun getClientOrders(
+    @GetMapping("/{sapOrderNumber}")
+    fun getClientOrderDetail(
         @AuthenticationPrincipal principal: UserPrincipal,
-        @RequestParam clientId: Long,
-        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) deliveryDate: LocalDate?,
-        @RequestParam(required = false) page: Int?,
-        @RequestParam(required = false) size: Int?
-    ): ResponseEntity<ApiResponse<Page<ClientOrderSummaryResponse>>> {
-        val result = clientOrderService.getClientOrders(
-            userId = principal.userId,
-            clientId = clientId,
-            deliveryDate = deliveryDate,
-            page = page,
-            size = size
-        )
-        return ResponseEntity.ok(ApiResponse.success(result, "조회 성공"))
+        @PathVariable sapOrderNumber: String
+    ): ResponseEntity<ApiResponse<ClientOrderDetailResponse>> {
+        val response = clientOrderQueryService.getClientOrderDetail(principal.userId, sapOrderNumber)
+        return ResponseEntity.ok(ApiResponse.success(response, "조회 성공"))
     }
-
-    // TODO: Spec #XXX에서 활성화 — GET /api/v1/mobile/client-orders/{sapOrderNumber} (거래처별 주문 상세)
 }
-*/

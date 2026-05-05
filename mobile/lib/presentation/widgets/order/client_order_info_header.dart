@@ -16,14 +16,23 @@ class ClientOrderInfoHeader extends StatelessWidget {
     required this.detail,
   });
 
-  String _formatDate(DateTime date) {
+  String _formatDate(DateTime? date) {
+    if (date == null) return '-';
     const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
     final weekday = weekdays[date.weekday - 1];
     return '${DateFormat('yyyy-MM-dd').format(date)} ($weekday)';
   }
 
-  String _formatAmount(int amount) {
+  String _formatAmount(int? amount) {
+    if (amount == null) return '-';
     return '${NumberFormat('#,###').format(amount)}원';
+  }
+
+  String _formatClient(ClientOrderDetail detail) {
+    final name = detail.sapAccountName ?? '-';
+    final deadline = detail.clientDeadlineTime;
+    if (deadline == null) return name;
+    return '$name ($deadline 마감)';
   }
 
   @override
@@ -66,9 +75,7 @@ class ClientOrderInfoHeader extends StatelessWidget {
               ),
               Expanded(
                 child: Text(
-                  detail.clientDeadlineTime != null
-                      ? '${detail.clientName} (${detail.clientDeadlineTime} 마감)'
-                      : detail.clientName,
+                  _formatClient(detail),
                   style: AppTypography.bodyMedium,
                 ),
               ),

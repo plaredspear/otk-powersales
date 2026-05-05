@@ -60,8 +60,8 @@ void main() {
       final detail = state.orderDetail!;
 
       expect(detail.sapOrderNumber, '300011396');
-      expect(detail.clientId, 2);
-      expect(detail.clientName, isNotEmpty);
+      expect(detail.sapAccountCode, isNotEmpty);
+      expect(detail.sapAccountName, isNotEmpty);
     });
 
     test('loadDetail() includes ordered items', () async {
@@ -112,7 +112,7 @@ void main() {
       final firstState = container.read(clientOrderDetailProvider);
       final firstDetail = firstState.orderDetail!;
       expect(firstDetail.sapOrderNumber, '300011396');
-      expect(firstDetail.clientId, 2);
+      expect(firstDetail.sapAccountCode, isNotEmpty);
       expect(firstState.hasData, true);
       expect(firstState.isLoading, false);
       expect(firstState.errorMessage, isNull);
