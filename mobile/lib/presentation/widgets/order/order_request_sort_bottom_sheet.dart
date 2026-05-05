@@ -3,19 +3,19 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../domain/entities/order.dart';
+import '../../../domain/entities/order_request.dart';
 
 /// 주문 정렬 BottomSheet 위젯
 ///
 /// 6가지 정렬 옵션을 목록으로 표시하며, 현재 선택된 옵션에 체크 표시합니다.
-class OrderSortBottomSheet extends StatelessWidget {
+class OrderRequestSortBottomSheet extends StatelessWidget {
   /// 현재 선택된 정렬 타입
   final OrderSortType currentSortType;
 
   /// 정렬 선택 콜백
   final ValueChanged<OrderSortType> onSortChanged;
 
-  const OrderSortBottomSheet({
+  const OrderRequestSortBottomSheet({
     super.key,
     required this.currentSortType,
     required this.onSortChanged,
@@ -34,7 +34,7 @@ class OrderSortBottomSheet extends StatelessWidget {
           top: Radius.circular(AppSpacing.radiusXl),
         ),
       ),
-      builder: (sheetContext) => OrderSortBottomSheet(
+      builder: (sheetContext) => OrderRequestSortBottomSheet(
         currentSortType: currentSortType,
         onSortChanged: (sortType) {
           Navigator.of(sheetContext).pop();

@@ -5,13 +5,13 @@ import '../../core/network/dio_provider.dart';
 import '../../core/utils/error_utils.dart';
 import '../../domain/usecases/get_client_orders_usecase.dart';
 import 'client_order_list_state.dart';
-import 'order_list_provider.dart';
+import 'order_request_list_provider.dart';
 
 // --- Dependency Providers ---
 
 /// GetClientOrders UseCase Provider
 final getClientOrdersUseCaseProvider = Provider<GetClientOrdersUseCase>((ref) {
-  final repository = ref.watch(orderRepositoryProvider);
+  final repository = ref.watch(orderRequestRepositoryProvider);
   return GetClientOrdersUseCase(repository);
 });
 

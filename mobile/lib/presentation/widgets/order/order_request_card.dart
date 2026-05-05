@@ -4,21 +4,21 @@ import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../domain/entities/order.dart';
+import '../../../domain/entities/order_request.dart';
 import 'approval_status_badge.dart';
 
 /// 주문 카드 위젯
 ///
 /// 주문 요청번호, 거래처명, 주문일, 납기일, 총 주문금액, 승인상태 뱃지를 표시합니다.
 /// 카드를 탭하면 주문 상세 화면으로 이동합니다.
-class OrderCard extends StatelessWidget {
+class OrderRequestCard extends StatelessWidget {
   /// 주문 정보
-  final Order order;
+  final OrderRequest order;
 
   /// 카드 탭 콜백
   final VoidCallback? onTap;
 
-  const OrderCard({
+  const OrderRequestCard({
     super.key,
     required this.order,
     this.onTap,

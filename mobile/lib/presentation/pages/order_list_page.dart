@@ -6,16 +6,16 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../domain/entities/client_order.dart';
-import '../../domain/entities/order.dart';
+import '../../domain/entities/order_request.dart';
 import '../providers/client_order_list_provider.dart';
 import '../providers/client_order_list_state.dart';
-import '../providers/order_list_provider.dart';
-import '../providers/order_list_state.dart';
+import '../providers/order_request_list_provider.dart';
+import '../providers/order_request_list_state.dart';
 import '../widgets/order/client_order_card.dart';
 import '../widgets/order/client_order_filter_bar.dart';
-import '../widgets/order/order_card.dart';
-import '../widgets/order/order_filter_bar.dart';
-import '../widgets/order/order_sort_bottom_sheet.dart';
+import '../widgets/order/order_request_card.dart';
+import '../widgets/order/order_request_filter_bar.dart';
+import '../widgets/order/order_request_sort_bottom_sheet.dart';
 import '../widgets/order/page_navigator.dart';
 
 /// 주문 현황 페이지
@@ -45,7 +45,7 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
 
     // 페이지 진입 시 초기 데이터 로딩
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(orderListProvider.notifier).initialize();
+      ref.read(orderRequestListProvider.notifier).initialize();
       ref.read(clientOrderListProvider.notifier).initialize();
     });
   }
@@ -62,12 +62,12 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
   void _onScroll() {
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
-      ref.read(orderListProvider.notifier).loadNextPage();
+      ref.read(orderRequestListProvider.notifier).loadNextPage();
     }
   }
 
   /// 주문 카드 탭 → 주문 상세 화면으로 이동
-  void _onOrderTap(Order order) {
+  void _onOrderTap(OrderRequest order) {
     AppRouter.navigateTo(
       context,
       AppRouter.orderDetail,
@@ -82,22 +82,22 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
 
   /// 정렬 버튼 탭
   void _onSortTap() {
-    final state = ref.read(orderListProvider);
-    OrderSortBottomSheet.show(
+    final state = ref.read(orderRequestListProvider);
+    OrderRequestSortBottomSheet.show(
       context,
       currentSortType: state.sortType,
       onSortChanged: (sortType) {
-        ref.read(orderListProvider.notifier).updateSortType(sortType);
+        ref.read(orderRequestListProvider.notifier).updateSortType(sortType);
       },
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(orderListProvider);
+    final state = ref.watch(orderRequestListProvider);
 
     // 에러 메시지 리스닝
-    ref.listen(orderListProvider, (previous, next) {
+    ref.listen(orderRequestListProvider, (previous, next) {
       if (next.errorMessage != null && previous?.errorMessage == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -105,7 +105,7 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
             duration: const Duration(seconds: 2),
           ),
         );
-        ref.read(orderListProvider.notifier).clearError();
+        ref.read(orderRequestListProvider.notifier).clearError();
       }
     });
 
@@ -148,11 +148,11 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
   }
 
   /// 내 주문 탭 콘텐츠
-  Widget _buildMyOrdersTab(OrderListState state) {
+  Widget _buildMyOrdersTab(OrderRequestListState state) {
     return Column(
       children: [
         // 필터 바
-        OrderFilterBar(
+        OrderRequestFilterBar(
           clients: state.clients,
           selectedClientId: state.selectedClientId,
           selectedStatus: state.selectedStatus,
@@ -160,19 +160,19 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
           deliveryDateTo: state.deliveryDateTo,
           onClientChanged: (clientId, clientName) {
             ref
-                .read(orderListProvider.notifier)
+                .read(orderRequestListProvider.notifier)
                 .updateClientFilter(clientId, clientName);
           },
           onStatusChanged: (status) {
-            ref.read(orderListProvider.notifier).updateStatusFilter(status);
+            ref.read(orderRequestListProvider.notifier).updateStatusFilter(status);
           },
           onDateRangeChanged: (from, to) {
             ref
-                .read(orderListProvider.notifier)
+                .read(orderRequestListProvider.notifier)
                 .updateDeliveryDateRange(from, to);
           },
           onSearch: () {
-            ref.read(orderListProvider.notifier).searchOrders();
+            ref.read(orderRequestListProvider.notifier).searchOrders();
           },
         ),
         // 결과 헤더 (건수 + 정렬)
@@ -186,7 +186,7 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
   }
 
   /// 결과 헤더 (건수 + 정렬 버튼)
-  Widget _buildResultHeader(OrderListState state) {
+  Widget _buildResultHeader(OrderRequestListState state) {
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
@@ -232,7 +232,7 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
   }
 
   /// 주문 목록 (로딩/에러/빈목록/데이터)
-  Widget _buildOrderList(OrderListState state) {
+  Widget _buildOrderList(OrderRequestListState state) {
     // 로딩 상태
     if (state.isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -259,7 +259,7 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
             const SizedBox(height: AppSpacing.lg),
             ElevatedButton(
               onPressed: () {
-                ref.read(orderListProvider.notifier).searchOrders();
+                ref.read(orderRequestListProvider.notifier).searchOrders();
               },
               child: const Text('재시도'),
             ),
@@ -310,7 +310,7 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
         }
 
         final order = state.orders[index];
-        return OrderCard(
+        return OrderRequestCard(
           order: order,
           onTap: () => _onOrderTap(order),
         );

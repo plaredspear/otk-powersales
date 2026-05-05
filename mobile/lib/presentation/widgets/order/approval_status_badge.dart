@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../domain/entities/order.dart';
+import '../../../domain/entities/order_request.dart';
 
 /// 승인상태 뱃지 위젯
 ///

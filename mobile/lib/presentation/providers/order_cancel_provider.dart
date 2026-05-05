@@ -3,13 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/order_detail.dart';
 import '../../domain/usecases/cancel_order_usecase.dart';
 import 'order_cancel_state.dart';
-import 'order_list_provider.dart';
+import 'order_request_list_provider.dart';
 
 // --- Dependency Providers ---
 
 /// CancelOrderUseCase Provider
 final cancelOrderUseCaseProvider = Provider<CancelOrderUseCase>((ref) {
-  final repository = ref.watch(orderRepositoryProvider);
+  final repository = ref.watch(orderRequestRepositoryProvider);
   return CancelOrderUseCase(repository);
 });
 
@@ -22,10 +22,10 @@ class OrderCancelNotifier extends StateNotifier<OrderCancelState> {
   final CancelOrderUseCase _cancelOrder;
 
   OrderCancelNotifier({
-    required CancelOrderUseCase cancelOrder,
+    required CancelOrderUseCase cancelOrderRequest,
     required int orderId,
     required List<OrderedItem> allItems,
-  })  : _cancelOrder = cancelOrder,
+  })  : _cancelOrder = cancelOrderRequest,
         super(OrderCancelState.initial(
           orderId: orderId,
           allItems: allItems,
@@ -60,7 +60,7 @@ class OrderCancelNotifier extends StateNotifier<OrderCancelState> {
   ///
   /// 선택된 제품들의 주문을 취소합니다.
   /// Returns: 성공 여부
-  Future<bool> cancelOrder() async {
+  Future<bool> cancelOrderRequest() async {
     if (!state.canCancel) return false;
 
     state = state.toLoading();
@@ -124,10 +124,10 @@ class OrderCancelNotifier extends StateNotifier<OrderCancelState> {
 final orderCancelProvider = StateNotifierProvider.autoDispose
     .family<OrderCancelNotifier, OrderCancelState, OrderCancelParams>(
   (ref, params) {
-    final cancelOrder = ref.watch(cancelOrderUseCaseProvider);
+    final cancelOrderRequest = ref.watch(cancelOrderUseCaseProvider);
 
     return OrderCancelNotifier(
-      cancelOrder: cancelOrder,
+      cancelOrderRequest: cancelOrderRequest,
       orderId: params.orderId,
       allItems: params.allItems,
     );

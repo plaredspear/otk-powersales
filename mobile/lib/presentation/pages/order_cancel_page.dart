@@ -266,7 +266,7 @@ class OrderCancelPage extends ConsumerWidget {
     if (confirmed != true) return;
 
     // 주문 취소 실행
-    await ref.read(orderCancelProvider(params).notifier).cancelOrder();
+    await ref.read(orderCancelProvider(params).notifier).cancelOrderRequest();
   }
 }
 

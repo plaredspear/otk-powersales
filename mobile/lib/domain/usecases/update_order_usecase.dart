@@ -1,12 +1,12 @@
 import '../entities/order_draft.dart';
 import '../entities/validation_error.dart';
-import '../repositories/order_repository.dart';
+import '../repositories/order_request_repository.dart';
 
 /// 주문서 수정 UseCase
 ///
 /// 기존 주문서를 수정합니다.
 class UpdateOrder {
-  final OrderRepository _repository;
+  final OrderRequestRepository _repository;
 
   UpdateOrder(this._repository);
 

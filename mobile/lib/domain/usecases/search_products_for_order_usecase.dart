@@ -1,11 +1,11 @@
 import '../entities/product_for_order.dart';
-import '../repositories/order_repository.dart';
+import '../repositories/order_request_repository.dart';
 
 /// 주문용 제품 검색 UseCase
 ///
 /// 중분류/소분류/제품명/제품코드로 제품을 검색합니다.
 class SearchProductsForOrder {
-  final OrderRepository _repository;
+  final OrderRequestRepository _repository;
 
   SearchProductsForOrder(this._repository);
 

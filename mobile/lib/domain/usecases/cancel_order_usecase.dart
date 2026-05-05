@@ -1,11 +1,11 @@
 import '../entities/order_cancel.dart';
-import '../repositories/order_repository.dart';
+import '../repositories/order_request_repository.dart';
 
 /// 주문 취소 UseCase
 ///
 /// 선택한 제품의 주문을 취소합니다.
 class CancelOrderUseCase {
-  final OrderRepository _repository;
+  final OrderRequestRepository _repository;
 
   CancelOrderUseCase(this._repository);
 
@@ -23,7 +23,7 @@ class CancelOrderUseCase {
     if (productCodes.isEmpty) {
       throw ArgumentError('취소할 제품을 선택해주세요');
     }
-    return _repository.cancelOrder(
+    return _repository.cancelOrderRequest(
       orderId: orderId,
       productCodes: productCodes,
     );

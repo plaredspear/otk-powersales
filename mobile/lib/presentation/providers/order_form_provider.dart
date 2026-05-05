@@ -11,49 +11,49 @@ import '../../domain/usecases/submit_order_usecase.dart';
 import '../../domain/usecases/update_order_usecase.dart';
 import '../../domain/usecases/validate_order_usecase.dart';
 import 'order_form_state.dart';
-import 'order_list_provider.dart';
+import 'order_request_list_provider.dart';
 
 // --- Dependency Providers ---
 
 /// GetCreditBalance UseCase Provider
 final getCreditBalanceUseCaseProvider = Provider<GetCreditBalance>((ref) {
-  final repository = ref.watch(orderRepositoryProvider);
+  final repository = ref.watch(orderRequestRepositoryProvider);
   return GetCreditBalance(repository);
 });
 
 /// LoadDraftOrder UseCase Provider
 final loadDraftOrderUseCaseProvider = Provider<LoadDraftOrder>((ref) {
-  final repository = ref.watch(orderRepositoryProvider);
+  final repository = ref.watch(orderRequestRepositoryProvider);
   return LoadDraftOrder(repository);
 });
 
 /// SaveDraftOrder UseCase Provider
 final saveDraftOrderUseCaseProvider = Provider<SaveDraftOrder>((ref) {
-  final repository = ref.watch(orderRepositoryProvider);
+  final repository = ref.watch(orderRequestRepositoryProvider);
   return SaveDraftOrder(repository);
 });
 
 /// DeleteDraftOrder UseCase Provider
 final deleteDraftOrderUseCaseProvider = Provider<DeleteDraftOrder>((ref) {
-  final repository = ref.watch(orderRepositoryProvider);
+  final repository = ref.watch(orderRequestRepositoryProvider);
   return DeleteDraftOrder(repository);
 });
 
 /// ValidateOrder UseCase Provider
 final validateOrderUseCaseProvider = Provider<ValidateOrder>((ref) {
-  final repository = ref.watch(orderRepositoryProvider);
+  final repository = ref.watch(orderRequestRepositoryProvider);
   return ValidateOrder(repository);
 });
 
 /// SubmitOrder UseCase Provider
 final submitOrderUseCaseProvider = Provider<SubmitOrder>((ref) {
-  final repository = ref.watch(orderRepositoryProvider);
+  final repository = ref.watch(orderRequestRepositoryProvider);
   return SubmitOrder(repository);
 });
 
 /// UpdateOrder UseCase Provider
 final updateOrderUseCaseProvider = Provider<UpdateOrder>((ref) {
-  final repository = ref.watch(orderRepositoryProvider);
+  final repository = ref.watch(orderRequestRepositoryProvider);
   return UpdateOrder(repository);
 });
 

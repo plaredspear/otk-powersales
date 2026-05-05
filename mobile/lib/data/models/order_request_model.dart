@@ -1,9 +1,9 @@
-import '../../domain/entities/order.dart';
+import '../../domain/entities/order_request.dart';
 
 /// 주문 API 모델 (DTO)
 ///
-/// Backend API의 snake_case JSON을 파싱하여 Order 엔티티로 변환합니다.
-class OrderModel {
+/// Backend API의 snake_case JSON을 파싱하여 OrderRequest 엔티티로 변환합니다.
+class OrderRequestModel {
   final int id;
   final String orderRequestNumber;
   final int clientId;
@@ -14,7 +14,7 @@ class OrderModel {
   final String approvalStatus;
   final bool isClosed;
 
-  const OrderModel({
+  const OrderRequestModel({
     required this.id,
     required this.orderRequestNumber,
     required this.clientId,
@@ -27,8 +27,8 @@ class OrderModel {
   });
 
   /// snake_case JSON에서 파싱
-  factory OrderModel.fromJson(Map<String, dynamic> json) {
-    return OrderModel(
+  factory OrderRequestModel.fromJson(Map<String, dynamic> json) {
+    return OrderRequestModel(
       id: json['id'] as int,
       orderRequestNumber: json['orderRequestNumber'] as String,
       clientId: json['clientId'] as int,
@@ -57,8 +57,8 @@ class OrderModel {
   }
 
   /// Domain Entity로 변환
-  Order toEntity() {
-    return Order(
+  OrderRequest toEntity() {
+    return OrderRequest(
       id: id,
       orderRequestNumber: orderRequestNumber,
       clientId: clientId,
@@ -72,8 +72,8 @@ class OrderModel {
   }
 
   /// Domain Entity에서 생성
-  factory OrderModel.fromEntity(Order entity) {
-    return OrderModel(
+  factory OrderRequestModel.fromEntity(OrderRequest entity) {
+    return OrderRequestModel(
       id: entity.id,
       orderRequestNumber: entity.orderRequestNumber,
       clientId: entity.clientId,
@@ -89,7 +89,7 @@ class OrderModel {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is OrderModel &&
+    return other is OrderRequestModel &&
         other.id == id &&
         other.orderRequestNumber == orderRequestNumber &&
         other.clientId == clientId &&
@@ -118,7 +118,7 @@ class OrderModel {
 
   @override
   String toString() {
-    return 'OrderModel(id: $id, orderRequestNumber: $orderRequestNumber, '
+    return 'OrderRequestModel(id: $id, orderRequestNumber: $orderRequestNumber, '
         'clientId: $clientId, clientName: $clientName, '
         'orderDate: $orderDate, deliveryDate: $deliveryDate, '
         'totalAmount: $totalAmount, approvalStatus: $approvalStatus, '

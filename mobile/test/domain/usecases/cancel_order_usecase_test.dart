@@ -1,16 +1,16 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/domain/entities/client_order.dart';
-import 'package:mobile/domain/entities/order.dart';
+import 'package:mobile/domain/entities/order_request.dart';
 import 'package:mobile/domain/entities/order_cancel.dart';
 import 'package:mobile/domain/entities/order_detail.dart';
 import 'package:mobile/domain/entities/order_draft.dart';
 import 'package:mobile/domain/entities/product_for_order.dart';
 import 'package:mobile/domain/entities/validation_error.dart';
-import 'package:mobile/domain/repositories/order_repository.dart';
+import 'package:mobile/domain/repositories/order_request_repository.dart';
 import 'package:mobile/domain/usecases/cancel_order_usecase.dart';
 
-/// Mock OrderRepository for testing CancelOrderUseCase
-class _MockOrderRepository implements OrderRepository {
+/// Mock OrderRequestRepository for testing CancelOrderUseCase
+class _MockOrderRepository implements OrderRequestRepository {
   Object? errorToThrow;
   bool cancelOrderCalled = false;
 
@@ -25,7 +25,7 @@ class _MockOrderRepository implements OrderRepository {
   );
 
   @override
-  Future<OrderCancelResult> cancelOrder({
+  Future<OrderCancelResult> cancelOrderRequest({
     required int orderId,
     required List<String> productCodes,
   }) async {
@@ -41,7 +41,7 @@ class _MockOrderRepository implements OrderRepository {
   }
 
   @override
-  Future<OrderListResult> getMyOrders({
+  Future<OrderRequestListResult> getMyOrderRequests({
     int? clientId,
     String? status,
     String? deliveryDateFrom,
@@ -51,17 +51,17 @@ class _MockOrderRepository implements OrderRepository {
     int page = 0,
     int size = 20,
   }) {
-    throw UnimplementedError('getMyOrders not implemented in mock');
+    throw UnimplementedError('getMyOrderRequests not implemented in mock');
   }
 
   @override
-  Future<OrderDetail> getOrderDetail({required int orderId}) {
-    throw UnimplementedError('getOrderDetail not implemented in mock');
+  Future<OrderDetail> getOrderRequestDetail({required int orderId}) {
+    throw UnimplementedError('getOrderRequestDetail not implemented in mock');
   }
 
   @override
-  Future<void> resendOrder({required int orderId}) {
-    throw UnimplementedError('resendOrder not implemented in mock');
+  Future<void> resendOrderRequest({required int orderId}) {
+    throw UnimplementedError('resendOrderRequest not implemented in mock');
   }
 
   @override

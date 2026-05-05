@@ -1,10 +1,10 @@
-import '../../domain/entities/order.dart';
+import '../../domain/entities/order_request.dart';
 import '../../domain/entities/order_detail.dart';
 
 /// 주문 상세 화면 상태
 ///
 /// 주문 상세 데이터, 로딩/에러 상태, UI 상호작용 상태를 포함합니다.
-class OrderDetailState {
+class OrderRequestDetailState {
   /// 주문 상세 데이터
   final OrderDetail? orderDetail;
 
@@ -20,7 +20,7 @@ class OrderDetailState {
   /// 마감후 제품 목록 펼침 상태
   final bool isItemsExpanded;
 
-  const OrderDetailState({
+  const OrderRequestDetailState({
     this.orderDetail,
     this.isLoading = false,
     this.isResending = false,
@@ -29,8 +29,8 @@ class OrderDetailState {
   });
 
   /// 초기 상태
-  factory OrderDetailState.initial() {
-    return const OrderDetailState();
+  factory OrderRequestDetailState.initial() {
+    return const OrderRequestDetailState();
   }
 
   /// 데이터가 로드되었는지 여부
@@ -59,7 +59,7 @@ class OrderDetailState {
       orderDetail!.approvalStatus == ApprovalStatus.sendFailed;
 
   /// 로딩 상태로 전환
-  OrderDetailState toLoading() {
+  OrderRequestDetailState toLoading() {
     return copyWith(
       isLoading: true,
       clearError: true,
@@ -67,7 +67,7 @@ class OrderDetailState {
   }
 
   /// 에러 상태로 전환
-  OrderDetailState toError(String message) {
+  OrderRequestDetailState toError(String message) {
     return copyWith(
       isLoading: false,
       isResending: false,
@@ -75,7 +75,7 @@ class OrderDetailState {
     );
   }
 
-  OrderDetailState copyWith({
+  OrderRequestDetailState copyWith({
     OrderDetail? orderDetail,
     bool? isLoading,
     bool? isResending,
@@ -83,7 +83,7 @@ class OrderDetailState {
     bool? isItemsExpanded,
     bool clearError = false,
   }) {
-    return OrderDetailState(
+    return OrderRequestDetailState(
       orderDetail: orderDetail ?? this.orderDetail,
       isLoading: isLoading ?? this.isLoading,
       isResending: isResending ?? this.isResending,

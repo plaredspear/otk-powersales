@@ -3,16 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/network/dio_provider.dart';
 import 'package:mobile/domain/entities/client_order.dart';
-import 'package:mobile/domain/entities/order.dart';
+import 'package:mobile/domain/entities/order_request.dart';
 import 'package:mobile/domain/entities/order_cancel.dart';
 import 'package:mobile/domain/entities/order_detail.dart';
 import 'package:mobile/domain/entities/order_draft.dart';
 import 'package:mobile/domain/entities/product_for_order.dart';
 import 'package:mobile/domain/entities/validation_error.dart';
-import 'package:mobile/domain/repositories/order_repository.dart';
-import 'package:mobile/presentation/providers/order_list_provider.dart';
+import 'package:mobile/domain/repositories/order_request_repository.dart';
+import 'package:mobile/presentation/providers/order_request_list_provider.dart';
 
-import '../../helpers/fake_order_repository.dart';
+import '../../helpers/fake_order_request_repository.dart';
 
 Dio _createMockDio() {
   final dio = Dio(BaseOptions(baseUrl: 'http://localhost'));
@@ -47,15 +47,15 @@ Dio _createMockDio() {
 }
 
 void main() {
-  group('OrderListNotifier', () {
+  group('OrderRequestListNotifier', () {
     late ProviderContainer container;
-    late FakeOrderRepository fakeRepository;
+    late FakeOrderRequestRepository fakeRepository;
 
     setUp(() {
-      fakeRepository = FakeOrderRepository();
+      fakeRepository = FakeOrderRequestRepository();
       container = ProviderContainer(
         overrides: [
-          orderRepositoryProvider.overrideWithValue(fakeRepository),
+          orderRequestRepositoryProvider.overrideWithValue(fakeRepository),
           dioProvider.overrideWithValue(_createMockDio()),
         ],
       );
@@ -66,7 +66,7 @@ void main() {
     });
 
     test('initial state has correct defaults', () {
-      final state = container.read(orderListProvider);
+      final state = container.read(orderRequestListProvider);
 
       expect(state.orders, isEmpty);
       expect(state.clients, isEmpty);
@@ -86,13 +86,13 @@ void main() {
     });
 
     test('initialize() loads clients and orders', () async {
-      final notifier = container.read(orderListProvider.notifier);
+      final notifier = container.read(orderRequestListProvider.notifier);
 
       // Clear date filter so mock data matches (mock dates are in Jan-Feb 2026)
       notifier.updateDeliveryDateRange(null, null);
       await notifier.initialize();
 
-      final state = container.read(orderListProvider);
+      final state = container.read(orderRequestListProvider);
       expect(state.clients, isNotEmpty);
       expect(state.clients.length, 8); // mockClients has 8 clients
       expect(state.orders, isNotEmpty);
@@ -102,13 +102,13 @@ void main() {
     });
 
     test('searchOrders() loads first page and sets hasSearched true', () async {
-      final notifier = container.read(orderListProvider.notifier);
+      final notifier = container.read(orderRequestListProvider.notifier);
 
       // Clear date filter to get all orders
       notifier.updateDeliveryDateRange(null, null);
       await notifier.searchOrders();
 
-      final state = container.read(orderListProvider);
+      final state = container.read(orderRequestListProvider);
       expect(state.orders, isNotEmpty);
       expect(state.hasSearched, true);
       expect(state.currentPage, 0);
@@ -118,7 +118,7 @@ void main() {
     });
 
     test('searchOrders() with client filter', () async {
-      final notifier = container.read(orderListProvider.notifier);
+      final notifier = container.read(orderRequestListProvider.notifier);
 
       // Initialize to get clients
       await notifier.initialize();
@@ -129,7 +129,7 @@ void main() {
       notifier.updateDeliveryDateRange(null, null);
       await notifier.searchOrders();
 
-      final state = container.read(orderListProvider);
+      final state = container.read(orderRequestListProvider);
       expect(state.selectedClientId, 1);
       expect(state.selectedClientName, '천사푸드');
       expect(state.orders, isNotEmpty);
@@ -142,7 +142,7 @@ void main() {
     });
 
     test('searchOrders() with status filter', () async {
-      final notifier = container.read(orderListProvider.notifier);
+      final notifier = container.read(orderRequestListProvider.notifier);
 
       // Update status filter to APPROVED
       notifier.updateStatusFilter('APPROVED');
@@ -150,7 +150,7 @@ void main() {
       notifier.updateDeliveryDateRange(null, null);
       await notifier.searchOrders();
 
-      final state = container.read(orderListProvider);
+      final state = container.read(orderRequestListProvider);
       expect(state.selectedStatus, 'APPROVED');
       expect(state.orders, isNotEmpty);
 
@@ -161,13 +161,13 @@ void main() {
     });
 
     test('searchOrders() with delivery date filter', () async {
-      final notifier = container.read(orderListProvider.notifier);
+      final notifier = container.read(orderRequestListProvider.notifier);
 
       // Update delivery date range
       notifier.updateDeliveryDateRange('2026-01-15', '2026-02-08');
       await notifier.searchOrders();
 
-      final state = container.read(orderListProvider);
+      final state = container.read(orderRequestListProvider);
       expect(state.deliveryDateFrom, '2026-01-15');
       expect(state.deliveryDateTo, '2026-02-08');
       expect(state.orders, isNotEmpty);
@@ -179,26 +179,26 @@ void main() {
               !order.deliveryDate.isAfter(DateTime(2026, 2, 8)),
           true,
           reason:
-              'Order ${order.id} deliveryDate ${order.deliveryDate} out of range',
+              'OrderRequest ${order.id} deliveryDate ${order.deliveryDate} out of range',
         );
       }
     });
 
     test('loadNextPage() appends results and updates page number', () async {
-      final notifier = container.read(orderListProvider.notifier);
+      final notifier = container.read(orderRequestListProvider.notifier);
 
       // Clear date filter and search with small page to ensure pagination
       notifier.updateDeliveryDateRange(null, null);
       await notifier.searchOrders();
 
-      final firstPageState = container.read(orderListProvider);
+      final firstPageState = container.read(orderRequestListProvider);
       final firstPageOrdersCount = firstPageState.orders.length;
 
       // Only try if there is a next page
       if (!firstPageState.isLastPage) {
         await notifier.loadNextPage();
 
-        final state = container.read(orderListProvider);
+        final state = container.read(orderRequestListProvider);
         expect(state.currentPage, 1);
         expect(state.orders.length, greaterThan(firstPageOrdersCount));
         expect(state.isLoadingMore, false);
@@ -207,36 +207,36 @@ void main() {
     });
 
     test('loadNextPage() skips if already loading', () async {
-      final notifier = container.read(orderListProvider.notifier);
+      final notifier = container.read(orderRequestListProvider.notifier);
 
       // Clear date filter and initialize
       notifier.updateDeliveryDateRange(null, null);
       await notifier.searchOrders();
 
-      final stateBefore = container.read(orderListProvider);
+      final stateBefore = container.read(orderRequestListProvider);
 
       // Manually set loading state
-      container.read(orderListProvider.notifier).state =
+      container.read(orderRequestListProvider.notifier).state =
           stateBefore.toLoading();
 
       // Try to load next page while loading
       await notifier.loadNextPage();
 
       // State should still be in loading state, page should not change
-      final state = container.read(orderListProvider);
+      final state = container.read(orderRequestListProvider);
       expect(state.currentPage, 0);
     });
 
     test('loadNextPage() skips if last page', () async {
-      final notifier = container.read(orderListProvider.notifier);
+      final notifier = container.read(orderRequestListProvider.notifier);
 
       // Clear date filter and initialize
       notifier.updateDeliveryDateRange(null, null);
       await notifier.searchOrders();
 
       // Manually set to last page
-      final stateBefore = container.read(orderListProvider);
-      container.read(orderListProvider.notifier).state =
+      final stateBefore = container.read(orderRequestListProvider);
+      container.read(orderRequestListProvider.notifier).state =
           stateBefore.copyWith(isLastPage: true);
 
       final ordersCountBefore = stateBefore.orders.length;
@@ -244,23 +244,23 @@ void main() {
       // Try to load next page when already last page
       await notifier.loadNextPage();
 
-      final state = container.read(orderListProvider);
+      final state = container.read(orderRequestListProvider);
       expect(state.orders.length, ordersCountBefore);
       expect(state.isLastPage, true);
     });
 
     test('updateClientFilter() sets client filter', () {
-      final notifier = container.read(orderListProvider.notifier);
+      final notifier = container.read(orderRequestListProvider.notifier);
 
       notifier.updateClientFilter(100, '테스트 거래처');
 
-      final state = container.read(orderListProvider);
+      final state = container.read(orderRequestListProvider);
       expect(state.selectedClientId, 100);
       expect(state.selectedClientName, '테스트 거래처');
     });
 
     test('updateClientFilter() clears client filter when null', () {
-      final notifier = container.read(orderListProvider.notifier);
+      final notifier = container.read(orderRequestListProvider.notifier);
 
       // Set filter first
       notifier.updateClientFilter(100, '테스트 거래처');
@@ -268,22 +268,22 @@ void main() {
       // Clear filter
       notifier.updateClientFilter(null, null);
 
-      final state = container.read(orderListProvider);
+      final state = container.read(orderRequestListProvider);
       expect(state.selectedClientId, isNull);
       expect(state.selectedClientName, isNull);
     });
 
     test('updateStatusFilter() sets status filter', () {
-      final notifier = container.read(orderListProvider.notifier);
+      final notifier = container.read(orderRequestListProvider.notifier);
 
       notifier.updateStatusFilter('APPROVED');
 
-      final state = container.read(orderListProvider);
+      final state = container.read(orderRequestListProvider);
       expect(state.selectedStatus, 'APPROVED');
     });
 
     test('updateStatusFilter() clears status filter when null', () {
-      final notifier = container.read(orderListProvider.notifier);
+      final notifier = container.read(orderRequestListProvider.notifier);
 
       // Set filter first
       notifier.updateStatusFilter('APPROVED');
@@ -291,22 +291,22 @@ void main() {
       // Clear filter
       notifier.updateStatusFilter(null);
 
-      final state = container.read(orderListProvider);
+      final state = container.read(orderRequestListProvider);
       expect(state.selectedStatus, isNull);
     });
 
     test('updateDeliveryDateRange() sets date range', () {
-      final notifier = container.read(orderListProvider.notifier);
+      final notifier = container.read(orderRequestListProvider.notifier);
 
       notifier.updateDeliveryDateRange('2026-01-01', '2026-01-31');
 
-      final state = container.read(orderListProvider);
+      final state = container.read(orderRequestListProvider);
       expect(state.deliveryDateFrom, '2026-01-01');
       expect(state.deliveryDateTo, '2026-01-31');
     });
 
     test('updateSortType() changes sort and re-searches', () async {
-      final notifier = container.read(orderListProvider.notifier);
+      final notifier = container.read(orderRequestListProvider.notifier);
 
       // Clear date filter and initialize
       notifier.updateDeliveryDateRange(null, null);
@@ -315,7 +315,7 @@ void main() {
       // Change sort type
       await notifier.updateSortType(OrderSortType.amountHigh);
 
-      final state = container.read(orderListProvider);
+      final state = container.read(orderRequestListProvider);
       expect(state.sortType, OrderSortType.amountHigh);
       expect(state.orders, isNotEmpty);
       expect(state.hasSearched, true);
@@ -327,24 +327,24 @@ void main() {
           state.orders[i].totalAmount >= state.orders[i + 1].totalAmount,
           true,
           reason:
-              'Order ${state.orders[i].id} amount ${state.orders[i].totalAmount} should be >= ${state.orders[i + 1].totalAmount}',
+              'OrderRequest ${state.orders[i].id} amount ${state.orders[i].totalAmount} should be >= ${state.orders[i + 1].totalAmount}',
         );
       }
     });
 
     test('clearError() clears error message', () {
-      final notifier = container.read(orderListProvider.notifier);
+      final notifier = container.read(orderRequestListProvider.notifier);
 
       // Manually set error state
-      container.read(orderListProvider.notifier).state =
-          container.read(orderListProvider).toError('Test error');
+      container.read(orderRequestListProvider.notifier).state =
+          container.read(orderRequestListProvider).toError('Test error');
 
-      expect(container.read(orderListProvider).errorMessage, 'Test error');
+      expect(container.read(orderRequestListProvider).errorMessage, 'Test error');
 
       // Clear error
       notifier.clearError();
 
-      final state = container.read(orderListProvider);
+      final state = container.read(orderRequestListProvider);
       expect(state.errorMessage, isNull);
     });
 
@@ -354,16 +354,16 @@ void main() {
 
       final errorContainer = ProviderContainer(
         overrides: [
-          orderRepositoryProvider.overrideWithValue(errorRepository),
+          orderRequestRepositoryProvider.overrideWithValue(errorRepository),
           dioProvider.overrideWithValue(_createMockDio()),
         ],
       );
 
-      final notifier = errorContainer.read(orderListProvider.notifier);
+      final notifier = errorContainer.read(orderRequestListProvider.notifier);
 
       await notifier.searchOrders();
 
-      final state = errorContainer.read(orderListProvider);
+      final state = errorContainer.read(orderRequestListProvider);
       expect(state.errorMessage, isNotNull);
       expect(state.errorMessage, 'Failed to fetch orders');
       expect(state.isLoading, false);
@@ -373,12 +373,12 @@ void main() {
 
     test('full workflow: initialize → filter → search → sort → clear',
         () async {
-      final notifier = container.read(orderListProvider.notifier);
+      final notifier = container.read(orderRequestListProvider.notifier);
 
       // Step 1: Initialize (clear date filter so mock data matches)
       notifier.updateDeliveryDateRange(null, null);
       await notifier.initialize();
-      var state = container.read(orderListProvider);
+      var state = container.read(orderRequestListProvider);
       expect(state.clients, isNotEmpty);
       expect(state.orders, isNotEmpty);
       expect(state.hasSearched, true);
@@ -390,7 +390,7 @@ void main() {
 
       // Step 3: Search with filters
       await notifier.searchOrders();
-      state = container.read(orderListProvider);
+      state = container.read(orderRequestListProvider);
       expect(state.selectedClientId, 1);
       expect(state.selectedStatus, 'APPROVED');
       expect(state.deliveryDateFrom, '2026-01-01');
@@ -404,7 +404,7 @@ void main() {
 
       // Step 4: Change sort
       await notifier.updateSortType(OrderSortType.oldestDelivery);
-      state = container.read(orderListProvider);
+      state = container.read(orderRequestListProvider);
       expect(state.sortType, OrderSortType.oldestDelivery);
       expect(state.currentPage, 0); // Should reset to first page
 
@@ -412,7 +412,7 @@ void main() {
       notifier.updateClientFilter(null, null);
       notifier.updateStatusFilter(null);
 
-      state = container.read(orderListProvider);
+      state = container.read(orderRequestListProvider);
       expect(state.selectedClientId, isNull);
       expect(state.selectedStatus, isNull);
     });
@@ -420,9 +420,9 @@ void main() {
 }
 
 /// Mock repository that always throws an error for testing error handling
-class _ErrorOrderRepository implements OrderRepository {
+class _ErrorOrderRepository implements OrderRequestRepository {
   @override
-  Future<OrderListResult> getMyOrders({
+  Future<OrderRequestListResult> getMyOrderRequests({
     int? clientId,
     String? status,
     String? deliveryDateFrom,
@@ -436,17 +436,17 @@ class _ErrorOrderRepository implements OrderRepository {
   }
 
   @override
-  Future<OrderDetail> getOrderDetail({required int orderId}) {
+  Future<OrderDetail> getOrderRequestDetail({required int orderId}) {
     throw UnimplementedError();
   }
 
   @override
-  Future<void> resendOrder({required int orderId}) {
+  Future<void> resendOrderRequest({required int orderId}) {
     throw UnimplementedError();
   }
 
   @override
-  Future<OrderCancelResult> cancelOrder({
+  Future<OrderCancelResult> cancelOrderRequest({
     required int orderId,
     required List<String> productCodes,
   }) {

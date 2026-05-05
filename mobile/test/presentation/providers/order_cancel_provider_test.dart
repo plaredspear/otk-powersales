@@ -1,17 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/domain/entities/client_order.dart';
-import 'package:mobile/domain/entities/order.dart';
+import 'package:mobile/domain/entities/order_request.dart';
 import 'package:mobile/domain/entities/order_cancel.dart';
 import 'package:mobile/domain/entities/order_detail.dart';
 import 'package:mobile/domain/entities/order_draft.dart';
 import 'package:mobile/domain/entities/product_for_order.dart';
 import 'package:mobile/domain/entities/validation_error.dart';
-import 'package:mobile/domain/repositories/order_repository.dart';
+import 'package:mobile/domain/repositories/order_request_repository.dart';
 import 'package:mobile/domain/usecases/cancel_order_usecase.dart';
 import 'package:mobile/presentation/providers/order_cancel_provider.dart';
 import 'package:mobile/presentation/providers/order_cancel_state.dart';
-import 'package:mobile/presentation/providers/order_list_provider.dart';
+import 'package:mobile/presentation/providers/order_request_list_provider.dart';
 
 // --- Test Data ---
 
@@ -41,7 +41,7 @@ final _cancelledItem = OrderedItem(
 
 // --- Mock Repository ---
 
-class _MockOrderRepository implements OrderRepository {
+class _MockOrderRepository implements OrderRequestRepository {
   OrderCancelResult? cancelResult;
   Exception? errorToThrow;
   int cancelCallCount = 0;
@@ -49,7 +49,7 @@ class _MockOrderRepository implements OrderRepository {
   List<String>? lastProductCodes;
 
   @override
-  Future<OrderCancelResult> cancelOrder({
+  Future<OrderCancelResult> cancelOrderRequest({
     required int orderId,
     required List<String> productCodes,
   }) async {
@@ -67,7 +67,7 @@ class _MockOrderRepository implements OrderRepository {
   }
 
   @override
-  Future<OrderListResult> getMyOrders({
+  Future<OrderRequestListResult> getMyOrderRequests({
     int? clientId,
     String? status,
     String? deliveryDateFrom,
@@ -81,12 +81,12 @@ class _MockOrderRepository implements OrderRepository {
   }
 
   @override
-  Future<OrderDetail> getOrderDetail({required int orderId}) {
+  Future<OrderDetail> getOrderRequestDetail({required int orderId}) {
     throw UnimplementedError();
   }
 
   @override
-  Future<void> resendOrder({required int orderId}) {
+  Future<void> resendOrderRequest({required int orderId}) {
     throw UnimplementedError();
   }
 
@@ -190,7 +190,7 @@ void main() {
 
       container = ProviderContainer(
         overrides: [
-          orderRepositoryProvider.overrideWithValue(mockRepository),
+          orderRequestRepositoryProvider.overrideWithValue(mockRepository),
         ],
       );
     });
@@ -275,21 +275,21 @@ void main() {
       expect(state.isAllSelected, true);
     });
 
-    test('cancelOrder returns false when canCancel is false', () async {
+    test('cancelOrderRequest returns false when canCancel is false', () async {
       final notifier = container.read(orderCancelProvider(params).notifier);
 
       // No products selected → canCancel is false
-      final result = await notifier.cancelOrder();
+      final result = await notifier.cancelOrderRequest();
 
       expect(result, false);
       expect(mockRepository.cancelCallCount, 0);
     });
 
-    test('cancelOrder succeeds with selected products', () async {
+    test('cancelOrderRequest succeeds with selected products', () async {
       final notifier = container.read(orderCancelProvider(params).notifier);
 
       notifier.toggleProduct('01101123');
-      final result = await notifier.cancelOrder();
+      final result = await notifier.cancelOrderRequest();
 
       final state = container.read(orderCancelProvider(params));
       expect(result, true);
@@ -300,13 +300,13 @@ void main() {
       expect(mockRepository.lastProductCodes, ['01101123']);
     });
 
-    test('cancelOrder handles ALREADY_CANCELLED error', () async {
+    test('cancelOrderRequest handles ALREADY_CANCELLED error', () async {
       mockRepository.errorToThrow = Exception('ALREADY_CANCELLED');
 
       final notifier = container.read(orderCancelProvider(params).notifier);
       notifier.toggleProduct('01101123');
 
-      final result = await notifier.cancelOrder();
+      final result = await notifier.cancelOrderRequest();
 
       final state = container.read(orderCancelProvider(params));
       expect(result, false);
@@ -315,104 +315,104 @@ void main() {
       expect(state.errorMessage, '이미 취소된 제품이 포함되어 있습니다');
     });
 
-    test('cancelOrder handles ORDER_ALREADY_CLOSED error', () async {
+    test('cancelOrderRequest handles ORDER_ALREADY_CLOSED error', () async {
       mockRepository.errorToThrow = Exception('ORDER_ALREADY_CLOSED');
 
       final notifier = container.read(orderCancelProvider(params).notifier);
       notifier.toggleProduct('01101123');
 
-      final result = await notifier.cancelOrder();
+      final result = await notifier.cancelOrderRequest();
 
       final state = container.read(orderCancelProvider(params));
       expect(result, false);
       expect(state.errorMessage, '마감된 주문은 취소할 수 없습니다');
     });
 
-    test('cancelOrder handles ORDER_NOT_FOUND error', () async {
+    test('cancelOrderRequest handles ORDER_NOT_FOUND error', () async {
       mockRepository.errorToThrow = Exception('ORDER_NOT_FOUND');
 
       final notifier = container.read(orderCancelProvider(params).notifier);
       notifier.toggleProduct('01101123');
 
-      final result = await notifier.cancelOrder();
+      final result = await notifier.cancelOrderRequest();
 
       final state = container.read(orderCancelProvider(params));
       expect(result, false);
       expect(state.errorMessage, '주문을 찾을 수 없습니다');
     });
 
-    test('cancelOrder handles INVALID_PARAMETER error', () async {
+    test('cancelOrderRequest handles INVALID_PARAMETER error', () async {
       mockRepository.errorToThrow = Exception('INVALID_PARAMETER');
 
       final notifier = container.read(orderCancelProvider(params).notifier);
       notifier.toggleProduct('01101123');
 
-      final result = await notifier.cancelOrder();
+      final result = await notifier.cancelOrderRequest();
 
       final state = container.read(orderCancelProvider(params));
       expect(result, false);
       expect(state.errorMessage, '취소할 제품을 선택해주세요');
     });
 
-    test('cancelOrder handles UNAUTHORIZED error', () async {
+    test('cancelOrderRequest handles UNAUTHORIZED error', () async {
       mockRepository.errorToThrow = Exception('UNAUTHORIZED');
 
       final notifier = container.read(orderCancelProvider(params).notifier);
       notifier.toggleProduct('01101123');
 
-      final result = await notifier.cancelOrder();
+      final result = await notifier.cancelOrderRequest();
 
       final state = container.read(orderCancelProvider(params));
       expect(result, false);
       expect(state.errorMessage, '인증이 만료되었습니다. 다시 로그인해주세요');
     });
 
-    test('cancelOrder handles FORBIDDEN error', () async {
+    test('cancelOrderRequest handles FORBIDDEN error', () async {
       mockRepository.errorToThrow = Exception('FORBIDDEN');
 
       final notifier = container.read(orderCancelProvider(params).notifier);
       notifier.toggleProduct('01101123');
 
-      final result = await notifier.cancelOrder();
+      final result = await notifier.cancelOrderRequest();
 
       final state = container.read(orderCancelProvider(params));
       expect(result, false);
       expect(state.errorMessage, '접근 권한이 없습니다');
     });
 
-    test('cancelOrder handles SERVER_ERROR error', () async {
+    test('cancelOrderRequest handles SERVER_ERROR error', () async {
       mockRepository.errorToThrow = Exception('SERVER_ERROR');
 
       final notifier = container.read(orderCancelProvider(params).notifier);
       notifier.toggleProduct('01101123');
 
-      final result = await notifier.cancelOrder();
+      final result = await notifier.cancelOrderRequest();
 
       final state = container.read(orderCancelProvider(params));
       expect(result, false);
       expect(state.errorMessage, '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요');
     });
 
-    test('cancelOrder handles network error', () async {
+    test('cancelOrderRequest handles network error', () async {
       mockRepository.errorToThrow = Exception('네트워크 연결 오류');
 
       final notifier = container.read(orderCancelProvider(params).notifier);
       notifier.toggleProduct('01101123');
 
-      final result = await notifier.cancelOrder();
+      final result = await notifier.cancelOrderRequest();
 
       final state = container.read(orderCancelProvider(params));
       expect(result, false);
       expect(state.errorMessage, '네트워크 연결을 확인해주세요');
     });
 
-    test('cancelOrder handles unknown error', () async {
+    test('cancelOrderRequest handles unknown error', () async {
       mockRepository.errorToThrow = Exception('Unknown error');
 
       final notifier = container.read(orderCancelProvider(params).notifier);
       notifier.toggleProduct('01101123');
 
-      final result = await notifier.cancelOrder();
+      final result = await notifier.cancelOrderRequest();
 
       final state = container.read(orderCancelProvider(params));
       expect(result, false);
@@ -444,7 +444,7 @@ void main() {
       expect(state.canCancel, true);
 
       // Step 2: Cancel
-      final result = await notifier.cancelOrder();
+      final result = await notifier.cancelOrderRequest();
 
       // Step 3: Verify
       state = container.read(orderCancelProvider(params));

@@ -1,4 +1,4 @@
-import '../../domain/entities/order.dart';
+import '../../domain/entities/order_request.dart';
 import '../../domain/entities/order_detail.dart';
 
 /// 주문한 제품 API 모델 (DTO)
@@ -179,7 +179,7 @@ class RejectedItemModel {
 /// 주문 상세 API 모델 (DTO)
 ///
 /// Backend API의 snake_case JSON을 파싱하여 OrderDetail 엔티티로 변환합니다.
-class OrderDetailModel {
+class OrderRequestDetailModel {
   final int id;
   final String orderRequestNumber;
   final int clientId;
@@ -196,7 +196,7 @@ class OrderDetailModel {
   final OrderProcessingStatusModel? orderProcessingStatus;
   final List<RejectedItemModel>? rejectedItems;
 
-  const OrderDetailModel({
+  const OrderRequestDetailModel({
     required this.id,
     required this.orderRequestNumber,
     required this.clientId,
@@ -215,7 +215,7 @@ class OrderDetailModel {
   });
 
   /// snake_case JSON에서 파싱
-  factory OrderDetailModel.fromJson(Map<String, dynamic> json) {
+  factory OrderRequestDetailModel.fromJson(Map<String, dynamic> json) {
     final data = json.containsKey('data')
         ? json['data'] as Map<String, dynamic>
         : json;
@@ -223,7 +223,7 @@ class OrderDetailModel {
     final orderedItemsJson = data['orderedItems'] as List<dynamic>? ?? [];
     final rejectedItemsJson = data['rejectedItems'] as List<dynamic>?;
 
-    return OrderDetailModel(
+    return OrderRequestDetailModel(
       id: data['id'] as int,
       orderRequestNumber: data['orderRequestNumber'] as String,
       clientId: data['clientId'] as int,
@@ -297,7 +297,7 @@ class OrderDetailModel {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is OrderDetailModel &&
+    return other is OrderRequestDetailModel &&
         other.id == id &&
         other.orderRequestNumber == orderRequestNumber;
   }
@@ -307,7 +307,7 @@ class OrderDetailModel {
 
   @override
   String toString() {
-    return 'OrderDetailModel(id: $id, orderRequestNumber: $orderRequestNumber, '
+    return 'OrderRequestDetailModel(id: $id, orderRequestNumber: $orderRequestNumber, '
         'clientName: $clientName, isClosed: $isClosed)';
   }
 }

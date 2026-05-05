@@ -1,27 +1,27 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import '../../helpers/fake_order_repository.dart';
+import '../../helpers/fake_order_request_repository.dart';
 import 'package:mobile/domain/entities/client_order.dart';
-import 'package:mobile/domain/entities/order.dart';
+import 'package:mobile/domain/entities/order_request.dart';
 import 'package:mobile/domain/entities/order_cancel.dart';
 import 'package:mobile/domain/entities/order_detail.dart';
 import 'package:mobile/domain/entities/order_draft.dart';
 import 'package:mobile/domain/entities/product_for_order.dart';
 import 'package:mobile/domain/entities/validation_error.dart';
-import 'package:mobile/domain/repositories/order_repository.dart';
+import 'package:mobile/domain/repositories/order_request_repository.dart';
 import 'package:mobile/presentation/providers/client_order_detail_provider.dart';
-import 'package:mobile/presentation/providers/order_list_provider.dart';
+import 'package:mobile/presentation/providers/order_request_list_provider.dart';
 
 void main() {
   group('ClientOrderDetailNotifier', () {
     late ProviderContainer container;
-    late FakeOrderRepository mockRepository;
+    late FakeOrderRequestRepository mockRepository;
 
     setUp(() {
-      mockRepository = FakeOrderRepository();
+      mockRepository = FakeOrderRequestRepository();
       container = ProviderContainer(
         overrides: [
-          orderRepositoryProvider.overrideWithValue(mockRepository),
+          orderRequestRepositoryProvider.overrideWithValue(mockRepository),
         ],
       );
     });
@@ -122,7 +122,7 @@ void main() {
       final errorRepository = _ErrorOrderRepository();
       final errorContainer = ProviderContainer(
         overrides: [
-          orderRepositoryProvider.overrideWithValue(errorRepository),
+          orderRequestRepositoryProvider.overrideWithValue(errorRepository),
         ],
       );
 
@@ -172,9 +172,9 @@ void main() {
 }
 
 /// Mock repository that throws exception on getClientOrderDetail
-class _ErrorOrderRepository implements OrderRepository {
+class _ErrorOrderRepository implements OrderRequestRepository {
   @override
-  Future<OrderListResult> getMyOrders({
+  Future<OrderRequestListResult> getMyOrderRequests({
     int? clientId,
     String? status,
     String? deliveryDateFrom,
@@ -188,17 +188,17 @@ class _ErrorOrderRepository implements OrderRepository {
   }
 
   @override
-  Future<OrderDetail> getOrderDetail({required int orderId}) {
+  Future<OrderDetail> getOrderRequestDetail({required int orderId}) {
     throw UnimplementedError();
   }
 
   @override
-  Future<void> resendOrder({required int orderId}) {
+  Future<void> resendOrderRequest({required int orderId}) {
     throw UnimplementedError();
   }
 
   @override
-  Future<OrderCancelResult> cancelOrder({
+  Future<OrderCancelResult> cancelOrderRequest({
     required int orderId,
     required List<String> productCodes,
   }) {

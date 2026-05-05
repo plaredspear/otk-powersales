@@ -1,20 +1,20 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mobile/data/datasources/order_api_datasource.dart';
-import 'package:mobile/data/datasources/order_remote_datasource.dart';
+import 'package:mobile/data/datasources/order_request_api_datasource.dart';
+import 'package:mobile/data/datasources/order_request_remote_datasource.dart';
 
 void main() {
-  group('OrderApiDataSource', () {
-    late OrderApiDataSource dataSource;
+  group('OrderRequestApiDataSource', () {
+    late OrderRequestApiDataSource dataSource;
     late Dio dio;
 
     setUp(() {
       dio = Dio(BaseOptions(baseUrl: 'http://localhost'));
-      dataSource = OrderApiDataSource(dio);
+      dataSource = OrderRequestApiDataSource(dio);
     });
 
-    group('getMyOrders', () {
-      test('정상 API 응답 시 OrderListResponseModel 반환', () async {
+    group('getMyOrderRequests', () {
+      test('정상 API 응답 시 OrderRequestListResponseModel 반환', () async {
         dio.interceptors.add(InterceptorsWrapper(
           onRequest: (options, handler) {
             if (options.path == '/api/v1/mobile/me/orders') {
@@ -53,9 +53,9 @@ void main() {
           },
         ));
 
-        final result = await dataSource.getMyOrders();
+        final result = await dataSource.getMyOrderRequests();
 
-        expect(result, isA<OrderListResponseModel>());
+        expect(result, isA<OrderRequestListResponseModel>());
         expect(result.content.length, 1);
         expect(result.content[0].id, 1);
         expect(result.content[0].orderRequestNumber, 'OP20260301');
@@ -96,7 +96,7 @@ void main() {
           },
         ));
 
-        await dataSource.getMyOrders(
+        await dataSource.getMyOrderRequests(
           clientId: 42,
           status: 'APPROVED',
           deliveryDateFrom: '2026-03-01',
@@ -139,7 +139,7 @@ void main() {
           },
         ));
 
-        await dataSource.getMyOrders();
+        await dataSource.getMyOrderRequests();
 
         expect(capturedParams, isNotNull);
         expect(capturedParams!.containsKey('clientId'), false);
@@ -168,7 +168,7 @@ void main() {
         ));
 
         expect(
-          () => dataSource.getMyOrders(),
+          () => dataSource.getMyOrderRequests(),
           throwsA(isA<DioException>()),
         );
       });
@@ -258,16 +258,16 @@ void main() {
     });
 
     group('미구현 메서드', () {
-      test('getOrderDetail은 UnimplementedError 발생', () {
+      test('getOrderRequestDetail은 UnimplementedError 발생', () {
         expect(
-          () => dataSource.getOrderDetail(orderId: 1),
+          () => dataSource.getOrderRequestDetail(orderId: 1),
           throwsA(isA<UnimplementedError>()),
         );
       });
 
-      test('resendOrder는 UnimplementedError 발생', () {
+      test('resendOrderRequest는 UnimplementedError 발생', () {
         expect(
-          () => dataSource.resendOrder(orderId: 1),
+          () => dataSource.resendOrderRequest(orderId: 1),
           throwsA(isA<UnimplementedError>()),
         );
       });

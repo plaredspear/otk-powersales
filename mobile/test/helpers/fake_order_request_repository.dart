@@ -1,24 +1,24 @@
 import 'dart:math';
 
 import 'package:mobile/domain/entities/client_order.dart';
-import 'package:mobile/domain/entities/order.dart';
+import 'package:mobile/domain/entities/order_request.dart';
 import 'package:mobile/domain/entities/order_cancel.dart';
 import 'package:mobile/domain/entities/order_detail.dart';
 import 'package:mobile/domain/entities/order_draft.dart';
 import 'package:mobile/domain/entities/product_for_order.dart';
 import 'package:mobile/domain/entities/validation_error.dart';
-import 'package:mobile/domain/repositories/order_repository.dart';
+import 'package:mobile/domain/repositories/order_request_repository.dart';
 
 /// 테스트용 주문 Fake Repository
-class FakeOrderRepository implements OrderRepository {
+class FakeOrderRequestRepository implements OrderRequestRepository {
   /// 네트워크 지연 시뮬레이션 (300ms)
   Future<void> _simulateDelay() async {
     await Future.delayed(const Duration(milliseconds: 300));
   }
 
   /// Mock 주문 데이터
-  static final List<Order> _mockOrders = [
-    Order(
+  static final List<OrderRequest> _mockOrders = [
+    OrderRequest(
       id: 1,
       orderRequestNumber: 'OP00000074',
       clientId: 1,
@@ -29,7 +29,7 @@ class FakeOrderRepository implements OrderRepository {
       approvalStatus: ApprovalStatus.approved,
       isClosed: true,
     ),
-    Order(
+    OrderRequest(
       id: 2,
       orderRequestNumber: 'OP00000073',
       clientId: 2,
@@ -40,7 +40,7 @@ class FakeOrderRepository implements OrderRepository {
       approvalStatus: ApprovalStatus.approved,
       isClosed: true,
     ),
-    Order(
+    OrderRequest(
       id: 3,
       orderRequestNumber: 'OP00000072',
       clientId: 3,
@@ -51,7 +51,7 @@ class FakeOrderRepository implements OrderRepository {
       approvalStatus: ApprovalStatus.pending,
       isClosed: false,
     ),
-    Order(
+    OrderRequest(
       id: 4,
       orderRequestNumber: 'OP00000071',
       clientId: 1,
@@ -62,7 +62,7 @@ class FakeOrderRepository implements OrderRepository {
       approvalStatus: ApprovalStatus.sendFailed,
       isClosed: false,
     ),
-    Order(
+    OrderRequest(
       id: 5,
       orderRequestNumber: 'OP00000070',
       clientId: 4,
@@ -73,7 +73,7 @@ class FakeOrderRepository implements OrderRepository {
       approvalStatus: ApprovalStatus.resend,
       isClosed: false,
     ),
-    Order(
+    OrderRequest(
       id: 6,
       orderRequestNumber: 'OP00000069',
       clientId: 5,
@@ -84,7 +84,7 @@ class FakeOrderRepository implements OrderRepository {
       approvalStatus: ApprovalStatus.approved,
       isClosed: true,
     ),
-    Order(
+    OrderRequest(
       id: 7,
       orderRequestNumber: 'OP00000068',
       clientId: 2,
@@ -95,7 +95,7 @@ class FakeOrderRepository implements OrderRepository {
       approvalStatus: ApprovalStatus.approved,
       isClosed: true,
     ),
-    Order(
+    OrderRequest(
       id: 8,
       orderRequestNumber: 'OP00000067',
       clientId: 6,
@@ -106,7 +106,7 @@ class FakeOrderRepository implements OrderRepository {
       approvalStatus: ApprovalStatus.approved,
       isClosed: true,
     ),
-    Order(
+    OrderRequest(
       id: 9,
       orderRequestNumber: 'OP00000066',
       clientId: 3,
@@ -117,7 +117,7 @@ class FakeOrderRepository implements OrderRepository {
       approvalStatus: ApprovalStatus.pending,
       isClosed: false,
     ),
-    Order(
+    OrderRequest(
       id: 10,
       orderRequestNumber: 'OP00000065',
       clientId: 4,
@@ -128,7 +128,7 @@ class FakeOrderRepository implements OrderRepository {
       approvalStatus: ApprovalStatus.approved,
       isClosed: true,
     ),
-    Order(
+    OrderRequest(
       id: 11,
       orderRequestNumber: 'OP00000064',
       clientId: 7,
@@ -139,7 +139,7 @@ class FakeOrderRepository implements OrderRepository {
       approvalStatus: ApprovalStatus.approved,
       isClosed: true,
     ),
-    Order(
+    OrderRequest(
       id: 12,
       orderRequestNumber: 'OP00000063',
       clientId: 1,
@@ -150,7 +150,7 @@ class FakeOrderRepository implements OrderRepository {
       approvalStatus: ApprovalStatus.approved,
       isClosed: true,
     ),
-    Order(
+    OrderRequest(
       id: 13,
       orderRequestNumber: 'OP00000062',
       clientId: 5,
@@ -161,7 +161,7 @@ class FakeOrderRepository implements OrderRepository {
       approvalStatus: ApprovalStatus.sendFailed,
       isClosed: false,
     ),
-    Order(
+    OrderRequest(
       id: 14,
       orderRequestNumber: 'OP00000061',
       clientId: 8,
@@ -172,7 +172,7 @@ class FakeOrderRepository implements OrderRepository {
       approvalStatus: ApprovalStatus.approved,
       isClosed: true,
     ),
-    Order(
+    OrderRequest(
       id: 15,
       orderRequestNumber: 'OP00000060',
       clientId: 6,
@@ -183,7 +183,7 @@ class FakeOrderRepository implements OrderRepository {
       approvalStatus: ApprovalStatus.resend,
       isClosed: false,
     ),
-    Order(
+    OrderRequest(
       id: 16,
       orderRequestNumber: 'OP00000059',
       clientId: 2,
@@ -194,7 +194,7 @@ class FakeOrderRepository implements OrderRepository {
       approvalStatus: ApprovalStatus.approved,
       isClosed: true,
     ),
-    Order(
+    OrderRequest(
       id: 17,
       orderRequestNumber: 'OP00000058',
       clientId: 7,
@@ -205,7 +205,7 @@ class FakeOrderRepository implements OrderRepository {
       approvalStatus: ApprovalStatus.approved,
       isClosed: true,
     ),
-    Order(
+    OrderRequest(
       id: 18,
       orderRequestNumber: 'OP00000057',
       clientId: 3,
@@ -216,7 +216,7 @@ class FakeOrderRepository implements OrderRepository {
       approvalStatus: ApprovalStatus.approved,
       isClosed: true,
     ),
-    Order(
+    OrderRequest(
       id: 19,
       orderRequestNumber: 'OP00000056',
       clientId: 8,
@@ -227,7 +227,7 @@ class FakeOrderRepository implements OrderRepository {
       approvalStatus: ApprovalStatus.pending,
       isClosed: false,
     ),
-    Order(
+    OrderRequest(
       id: 20,
       orderRequestNumber: 'OP00000055',
       clientId: 4,
@@ -238,7 +238,7 @@ class FakeOrderRepository implements OrderRepository {
       approvalStatus: ApprovalStatus.approved,
       isClosed: true,
     ),
-    Order(
+    OrderRequest(
       id: 21,
       orderRequestNumber: 'OP00000054',
       clientId: 1,
@@ -249,7 +249,7 @@ class FakeOrderRepository implements OrderRepository {
       approvalStatus: ApprovalStatus.approved,
       isClosed: true,
     ),
-    Order(
+    OrderRequest(
       id: 22,
       orderRequestNumber: 'OP00000053',
       clientId: 5,
@@ -260,7 +260,7 @@ class FakeOrderRepository implements OrderRepository {
       approvalStatus: ApprovalStatus.approved,
       isClosed: true,
     ),
-    Order(
+    OrderRequest(
       id: 23,
       orderRequestNumber: 'OP00000052',
       clientId: 6,
@@ -271,7 +271,7 @@ class FakeOrderRepository implements OrderRepository {
       approvalStatus: ApprovalStatus.sendFailed,
       isClosed: false,
     ),
-    Order(
+    OrderRequest(
       id: 24,
       orderRequestNumber: 'OP00000051',
       clientId: 7,
@@ -282,7 +282,7 @@ class FakeOrderRepository implements OrderRepository {
       approvalStatus: ApprovalStatus.approved,
       isClosed: true,
     ),
-    Order(
+    OrderRequest(
       id: 25,
       orderRequestNumber: 'OP00000050',
       clientId: 8,
@@ -311,7 +311,7 @@ class FakeOrderRepository implements OrderRepository {
   Map<int, String> get mockClients => Map.unmodifiable(_mockClients);
 
   @override
-  Future<OrderListResult> getMyOrders({
+  Future<OrderRequestListResult> getMyOrderRequests({
     int? clientId,
     String? status,
     String? deliveryDateFrom,
@@ -324,7 +324,7 @@ class FakeOrderRepository implements OrderRepository {
     await _simulateDelay();
 
     // 필터링
-    var filtered = List<Order>.from(_mockOrders);
+    var filtered = List<OrderRequest>.from(_mockOrders);
 
     // 거래처 필터
     if (clientId != null) {
@@ -383,9 +383,9 @@ class FakeOrderRepository implements OrderRepository {
 
     final pagedOrders = startIndex < totalElements
         ? filtered.sublist(startIndex, endIndex)
-        : <Order>[];
+        : <OrderRequest>[];
 
-    return OrderListResult(
+    return OrderRequestListResult(
       orders: List.unmodifiable(pagedOrders),
       totalElements: totalElements,
       totalPages: totalPages == 0 ? 1 : totalPages,
@@ -445,7 +445,7 @@ class FakeOrderRepository implements OrderRepository {
   }
 
   /// Mock 주문 처리 현황 (마감후 주문에만 적용)
-  static OrderProcessingStatus? _getMockProcessingStatus(Order order) {
+  static OrderProcessingStatus? _getMockProcessingStatus(OrderRequest order) {
     if (!order.isClosed) return null;
 
     final items = _getMockOrderedItems(order.id);
@@ -473,7 +473,7 @@ class FakeOrderRepository implements OrderRepository {
   }
 
   /// Mock 반려 제품 (특정 주문에만 적용)
-  static List<RejectedItem>? _getMockRejectedItems(Order order) {
+  static List<RejectedItem>? _getMockRejectedItems(OrderRequest order) {
     // id 1, 7 주문만 반려 제품 있음 (마감 완료된 주문 중 일부)
     if (!order.isClosed || (order.id != 1 && order.id != 7)) return null;
 
@@ -498,7 +498,7 @@ class FakeOrderRepository implements OrderRepository {
   }
 
   @override
-  Future<OrderDetail> getOrderDetail({required int orderId}) async {
+  Future<OrderDetail> getOrderRequestDetail({required int orderId}) async {
     await _simulateDelay();
 
     final order = _mockOrders.firstWhere(
@@ -530,7 +530,7 @@ class FakeOrderRepository implements OrderRepository {
   }
 
   @override
-  Future<void> resendOrder({required int orderId}) async {
+  Future<void> resendOrderRequest({required int orderId}) async {
     await _simulateDelay();
 
     final order = _mockOrders.firstWhere(
@@ -547,7 +547,7 @@ class FakeOrderRepository implements OrderRepository {
   }
 
   @override
-  Future<OrderCancelResult> cancelOrder({
+  Future<OrderCancelResult> cancelOrderRequest({
     required int orderId,
     required List<String> productCodes,
   }) async {

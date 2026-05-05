@@ -2,22 +2,22 @@ import 'package:dio/dio.dart';
 
 import '../models/client_order_model.dart';
 import '../models/order_cancel_model.dart';
-import '../models/order_detail_model.dart';
+import '../models/order_request_detail_model.dart';
 import '../models/order_draft_model.dart';
 import '../models/product_for_order_model.dart';
 import '../models/validation_result_model.dart';
-import 'order_remote_datasource.dart';
+import 'order_request_remote_datasource.dart';
 
 /// 주문 API 데이터소스 구현체
 ///
 /// Dio HTTP 클라이언트를 사용하여 실제 Backend API와 통신합니다.
-class OrderApiDataSource implements OrderRemoteDataSource {
+class OrderRequestApiDataSource implements OrderRequestRemoteDataSource {
   final Dio _dio;
 
-  OrderApiDataSource(this._dio);
+  OrderRequestApiDataSource(this._dio);
 
   @override
-  Future<OrderListResponseModel> getMyOrders({
+  Future<OrderRequestListResponseModel> getMyOrderRequests({
     int? clientId,
     String? status,
     String? deliveryDateFrom,
@@ -48,7 +48,7 @@ class OrderApiDataSource implements OrderRemoteDataSource {
       queryParameters: queryParameters,
     );
 
-    return OrderListResponseModel.fromJson(
+    return OrderRequestListResponseModel.fromJson(
       response.data as Map<String, dynamic>,
     );
   }
@@ -81,17 +81,17 @@ class OrderApiDataSource implements OrderRemoteDataSource {
   }
 
   @override
-  Future<OrderDetailModel> getOrderDetail({required int orderId}) {
+  Future<OrderRequestDetailModel> getOrderRequestDetail({required int orderId}) {
     throw UnimplementedError('별도 스펙에서 구현');
   }
 
   @override
-  Future<void> resendOrder({required int orderId}) {
+  Future<void> resendOrderRequest({required int orderId}) {
     throw UnimplementedError('별도 스펙에서 구현');
   }
 
   @override
-  Future<OrderCancelResponseModel> cancelOrder({
+  Future<OrderCancelResponseModel> cancelOrderRequest({
     required int orderId,
     required OrderCancelRequestModel request,
   }) {

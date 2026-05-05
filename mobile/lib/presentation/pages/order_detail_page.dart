@@ -7,8 +7,8 @@ import 'order_cancel_page.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../domain/entities/order_detail.dart';
-import '../providers/order_detail_provider.dart';
-import '../providers/order_detail_state.dart';
+import '../providers/order_request_detail_provider.dart';
+import '../providers/order_request_detail_state.dart';
 import '../widgets/order/delivery_info_popup.dart';
 import '../widgets/order/order_action_buttons.dart';
 import '../widgets/order/order_info_header.dart';
@@ -36,10 +36,10 @@ class OrderDetailPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(orderDetailProvider(orderId));
+    final state = ref.watch(orderRequestDetailProvider(orderId));
 
     // 에러 메시지 리스닝
-    ref.listen(orderDetailProvider(orderId), (previous, next) {
+    ref.listen(orderRequestDetailProvider(orderId), (previous, next) {
       if (next.errorMessage != null && previous?.errorMessage == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -47,7 +47,7 @@ class OrderDetailPage extends ConsumerWidget {
             duration: const Duration(seconds: 2),
           ),
         );
-        ref.read(orderDetailProvider(orderId).notifier).clearError();
+        ref.read(orderRequestDetailProvider(orderId).notifier).clearError();
       }
     });
 
@@ -66,7 +66,7 @@ class OrderDetailPage extends ConsumerWidget {
   Widget _buildBody(
     BuildContext context,
     WidgetRef ref,
-    OrderDetailState state,
+    OrderRequestDetailState state,
   ) {
     // 로딩 상태
     if (state.isLoading && !state.hasData) {
@@ -96,7 +96,7 @@ class OrderDetailPage extends ConsumerWidget {
             ElevatedButton(
               onPressed: () {
                 ref
-                    .read(orderDetailProvider(orderId).notifier)
+                    .read(orderRequestDetailProvider(orderId).notifier)
                     .loadOrderDetail(orderId: orderId);
               },
               child: const Text('재시도'),
@@ -116,7 +116,7 @@ class OrderDetailPage extends ConsumerWidget {
     return RefreshIndicator(
       onRefresh: () async {
         await ref
-            .read(orderDetailProvider(orderId).notifier)
+            .read(orderRequestDetailProvider(orderId).notifier)
             .loadOrderDetail(orderId: orderId);
       },
       child: SingleChildScrollView(
@@ -158,7 +158,7 @@ class OrderDetailPage extends ConsumerWidget {
                 isExpanded: state.isItemsExpanded,
                 onToggle: () {
                   ref
-                      .read(orderDetailProvider(orderId).notifier)
+                      .read(orderRequestDetailProvider(orderId).notifier)
                       .toggleItemsExpanded();
                 },
               ),
@@ -189,7 +189,7 @@ class OrderDetailPage extends ConsumerWidget {
 
   /// 주문 취소 버튼 탭
   Future<void> _onCancelOrder(BuildContext context, WidgetRef ref) async {
-    final state = ref.read(orderDetailProvider(orderId));
+    final state = ref.read(orderRequestDetailProvider(orderId));
     final detail = state.orderDetail;
     if (detail == null) return;
 
@@ -205,7 +205,7 @@ class OrderDetailPage extends ConsumerWidget {
     // 취소 성공 시 상세 화면 새로고침
     if (result == true && context.mounted) {
       ref
-          .read(orderDetailProvider(orderId).notifier)
+          .read(orderRequestDetailProvider(orderId).notifier)
           .loadOrderDetail(orderId: orderId);
     }
   }
@@ -213,8 +213,8 @@ class OrderDetailPage extends ConsumerWidget {
   /// 주문 재전송 버튼 탭
   Future<void> _onResendOrder(BuildContext context, WidgetRef ref) async {
     final success = await ref
-        .read(orderDetailProvider(orderId).notifier)
-        .resendOrder(orderId: orderId);
+        .read(orderRequestDetailProvider(orderId).notifier)
+        .resendOrderRequest(orderId: orderId);
 
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
