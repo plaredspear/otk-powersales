@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:49638",
+    "url" : "http://localhost:51526",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -1087,6 +1087,32 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseEducationPostDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/clients/{externalKey}/loan-inquiry" : {
+      "get" : {
+        "tags" : [ "loan-inquiry-controller" ],
+        "operationId" : "getLoanInquiry",
+        "parameters" : [ {
+          "name" : "externalKey",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseLoanInquiryResponse"
                 }
               }
             }
@@ -2972,12 +2998,12 @@
           "paged" : {
             "type" : "boolean"
           },
-          "unpaged" : {
-            "type" : "boolean"
-          },
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "unpaged" : {
+            "type" : "boolean"
           },
           "offset" : {
             "type" : "integer",
@@ -3014,10 +3040,10 @@
       "SortObject" : {
         "type" : "object",
         "properties" : {
-          "unsorted" : {
+          "sorted" : {
             "type" : "boolean"
           },
-          "sorted" : {
+          "unsorted" : {
             "type" : "boolean"
           },
           "empty" : {
@@ -3907,6 +3933,56 @@
             "items" : {
               "$ref" : "#/components/schemas/EducationAttachmentResponse"
             }
+          }
+        }
+      },
+      "ApiResponseLoanInquiryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/LoanInquiryResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "LoanInquiryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "externalKey" : {
+            "type" : "string"
+          },
+          "totalCredit" : {
+            "type" : [ "number", "null" ]
+          },
+          "creditBalance" : {
+            "type" : [ "number", "null" ]
+          },
+          "currency" : {
+            "type" : [ "string", "null" ]
+          },
+          "dataAsOf" : {
+            "type" : "string",
+            "format" : "date-time"
           }
         }
       },

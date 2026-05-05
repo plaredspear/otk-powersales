@@ -26,4 +26,7 @@ object SapConstants {
 
     /** [SapOutbox.domainType] 값 — 주문 등록. */
     const val SAP_DOMAIN_ORDER_REQUEST_REGISTER: String = "ORDER_REQUEST_REGISTER"
+
+    /** 거래처 여신 한도 조회 interfaceId (Spec #594). 레거시 `IF_REST_SAP_LoanInquiry` 등가. */
+    const val SAP_INTERFACE_LOAN_INQUIRY: String = "LoanInquiry"
 }
