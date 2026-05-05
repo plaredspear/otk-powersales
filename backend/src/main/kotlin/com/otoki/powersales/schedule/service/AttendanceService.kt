@@ -151,24 +151,35 @@ class AttendanceService(
     /**
      * 출근 등록
      *
-     * scheduleId 또는 displayWorkScheduleId 중 하나를 전달받아 처리:
-     * - scheduleId: 기존 방식 (TeamMemberSchedule 직접 조회)
-     * - displayWorkScheduleId: 진열마스터 기반으로 TeamMemberSchedule 동적 생성 후 출근 처리
+     * scheduleId / displayWorkScheduleId / eventScheduleId 중 하나를 전달받아 처리:
+     * - scheduleId: 기존 방식 (TeamMemberSchedule 직접 조회 — 일반/사전 배정 일정)
+     * - displayWorkScheduleId: 진열마스터 기반으로 TeamMemberSchedule 동적 생성 후 출근 처리 (Spec #587 P1-B)
+     * - eventScheduleId: 행사 분기 — 사전 배정된 TMS row UPDATE (Spec #587 P2-B)
+     *
+     * 분기 우선순위/배타: displayWorkScheduleId + eventScheduleId 동시 → ATT_DUAL_BRANCH.
+     * scheduleId 와 displayWorkScheduleId/eventScheduleId 동시 → ATT_TARGET_CONFLICT.
      */
     @Transactional
     fun register(
         userId: Long,
         scheduleId: Long?,
         displayWorkScheduleId: Long?,
+        eventScheduleId: Long?,
         latitude: Double,
         longitude: Double,
         workType: String?
     ): AttendanceRegisterResponse {
-        // 상호 배타 검증
-        if (scheduleId == null && displayWorkScheduleId == null) {
+        // Spec #587 P2-B §1.1 — 진열/행사 동시 입력 거부
+        if (displayWorkScheduleId != null && eventScheduleId != null) {
+            throw AttendanceDualBranchException()
+        }
+
+        // 상호 배타 검증 — scheduleId 와 다른 분기 식별자 동시는 기존 conflict
+        val nonNullCount = listOf(scheduleId, displayWorkScheduleId, eventScheduleId).count { it != null }
+        if (nonNullCount == 0) {
             throw AttendanceTargetRequiredException()
         }
-        if (scheduleId != null && displayWorkScheduleId != null) {
+        if (scheduleId != null && (displayWorkScheduleId != null || eventScheduleId != null)) {
             throw AttendanceTargetConflictException()
         }
 
@@ -193,22 +204,24 @@ class AttendanceService(
             throw SafetyCheckRequiredException()
         }
 
-        // 2. 스케줄 결정 (기존 방식 vs 진열마스터 기반 동적 생성)
-        val resolved = if (scheduleId != null) {
-            resolveByScheduleId(scheduleId)
-        } else {
-            resolveByDisplayWorkSchedule(displayWorkScheduleId!!, employee, today)
+        // 2. 스케줄 결정 — scheduleId / displayWorkScheduleId / eventScheduleId 분기
+        val resolved = when {
+            scheduleId != null -> resolveByScheduleId(scheduleId)
+            displayWorkScheduleId != null -> resolveByDisplayWorkSchedule(displayWorkScheduleId, employee, today)
+            else -> resolveByEventSchedule(eventScheduleId!!, employee, today)
         }
         val teamMemberSchedule = resolved.schedule
         val newlyCreated = resolved.newlyCreated
         val displayMaster = resolved.displayMaster
+        val isEventBranch = resolved.isEventBranch
 
-        // 3. 중복 등록 검증 — 진열 분기는 ATT_DISPLAY_DUPLICATE (Spec #587 P1-B Q6), 그 외는 기존 ALREADY_REGISTERED
+        // 3. 중복 등록 검증 — 분기별 적절한 예외 throw
         if (teamMemberSchedule.commuteLogId != null) {
-            if (displayMaster != null) {
-                throw DisplayAttendanceDuplicateException()
+            when {
+                displayMaster != null -> throw DisplayAttendanceDuplicateException()
+                isEventBranch -> throw EventAttendanceDuplicateException()
+                else -> throw AlreadyRegisteredException()
             }
-            throw AlreadyRegisteredException()
         }
 
         // 4. 거래처 정보 조회 + 면제 평가 (Spec #586) → 미면제 시 GPS 거리 검증 (Spec #585)
@@ -289,6 +302,13 @@ class AttendanceService(
         val totalCount = todayTeamMemberSchedules.size
         val registeredCount = todayTeamMemberSchedules.count { it.commuteLogId != null || it.id == teamMemberSchedule.id }
 
+        // Spec #587 §1.6/§1.5 — 분기별 attendanceType 결정 + 응답 필드 채움
+        val attendanceType = when {
+            displayMaster != null -> AttendanceType.DISPLAY
+            isEventBranch -> AttendanceType.EVENT
+            else -> AttendanceType.REGULAR
+        }
+
         return AttendanceRegisterResponse(
             scheduleId = teamMemberSchedule.id,
             accountName = account?.name ?: "",
@@ -298,11 +318,15 @@ class AttendanceService(
             registeredCount = registeredCount,
             gpsSkipped = exemptResult.skipped, // Spec #586: ABC 면제 정책 적용 여부
             gpsSkipReason = exemptResult.reason,
-            // Spec #587 P1-B §1.6: 진열 분기는 DISPLAY + 마스터 메타, 그 외는 REGULAR
-            attendanceType = if (displayMaster != null) AttendanceType.DISPLAY else AttendanceType.REGULAR,
+            attendanceType = attendanceType,
+            // 진열 분기 메타 (Spec #587 P1-B §1.6)
             displayWorkScheduleId = displayMaster?.id,
             scheduleStartDate = displayMaster?.startDate,
             scheduleEndDate = displayMaster?.endDate,
+            // 행사 분기 메타 (Spec #587 P2-B §1.5)
+            eventScheduleId = if (isEventBranch) teamMemberSchedule.id else null,
+            scheduleWorkingDate = if (isEventBranch) teamMemberSchedule.workingDate else null,
+            promotionEmployeeId = if (isEventBranch) teamMemberSchedule.promotionEmployee?.id else null,
         )
     }
 
@@ -338,12 +362,14 @@ class AttendanceService(
 
     /**
      * 분기 결정 결과.
-     * - `displayMaster`: 진열 분기일 때만 NOT NULL (응답 페이로드 + 분기 식별 용도, Spec #587 P1-B §1.6)
+     * - `displayMaster`: 진열 분기일 때만 NOT NULL (Spec #587 P1-B §1.6)
+     * - `isEventBranch`: 행사 분기일 때만 true (Spec #587 P2-B §1.5)
      */
     private data class ResolveResult(
         val schedule: TeamMemberSchedule,
         val newlyCreated: Boolean,
         val displayMaster: DisplayWorkSchedule? = null,
+        val isEventBranch: Boolean = false,
     )
 
     /**
@@ -421,6 +447,36 @@ class AttendanceService(
         )
         val saved = teamMemberScheduleRepository.save(newSchedule)
         return ResolveResult(schedule = saved, newlyCreated = true, displayMaster = master)
+    }
+
+    /**
+     * 행사 분기 (Spec #587 P2-B §1.2): 사전 배정된 TMS row 를 직접 조회하고 본인/일자/미출근 검증을 수행한다.
+     * 검증 순서: 일정 존재 → 본인 할당 → 일자 일치 → 미출근 (commute_log_id IS NULL).
+     * 미출근 검증은 step 3 의 공통 commuteLogId 가드에서 수행 (분기별 적절한 예외 throw).
+     */
+    private fun resolveByEventSchedule(
+        eventScheduleId: Long,
+        employee: com.otoki.powersales.employee.entity.Employee,
+        today: LocalDate
+    ): ResolveResult {
+        // step 1: TMS 존재 + is_deleted=false (ATT_EVENT_SCHEDULE_NOT_FOUND)
+        val tms = teamMemberScheduleRepository.findById(eventScheduleId)
+            .orElseThrow { EventScheduleNotFoundException() }
+        if (tms.isDeleted == true) {
+            throw EventScheduleNotFoundException()
+        }
+
+        // step 2: 본인 할당 (ATT_EVENT_SCHEDULE_NOT_ASSIGNED)
+        if (tms.employee?.id != employee.id) {
+            throw EventScheduleNotAssignedException()
+        }
+
+        // step 3: 일자 일치 (ATT_EVENT_SCHEDULE_DATE_MISMATCH)
+        if (tms.workingDate != today) {
+            throw EventScheduleDateMismatchException()
+        }
+
+        return ResolveResult(schedule = tms, newlyCreated = false, isEventBranch = true)
     }
 
     /**

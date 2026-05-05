@@ -94,7 +94,7 @@ class AttendanceControllerTest {
 
             whenever(
                 attendanceService.register(
-                    eq(1L), eq(10L), eq(null), eq(35.1234), eq(129.0567), eq("ROOM_TEMP")
+                    eq(1L), eq(10L), eq(null), eq(null), eq(35.1234), eq(129.0567), eq("ROOM_TEMP")
                 )
             ).thenReturn(mockResponse)
 
@@ -130,7 +130,7 @@ class AttendanceControllerTest {
             // Given
             whenever(
                 attendanceService.register(
-                    eq(1L), eq(10L), eq(null), eq(35.1234), eq(129.0567), anyOrNull()
+                    eq(1L), eq(10L), eq(null), eq(null), eq(35.1234), eq(129.0567), anyOrNull()
                 )
             ).thenThrow(SafetyCheckRequiredException())
 
@@ -159,7 +159,7 @@ class AttendanceControllerTest {
             // Given
             whenever(
                 attendanceService.register(
-                    eq(1L), eq(10L), eq(null), eq(35.1234), eq(129.0567), anyOrNull()
+                    eq(1L), eq(10L), eq(null), eq(null), eq(35.1234), eq(129.0567), anyOrNull()
                 )
             ).thenThrow(DistanceExceededException())
 
@@ -188,7 +188,7 @@ class AttendanceControllerTest {
             // Given
             whenever(
                 attendanceService.register(
-                    eq(1L), eq(10L), eq(null), eq(35.1234), eq(129.0567), anyOrNull()
+                    eq(1L), eq(10L), eq(null), eq(null), eq(35.1234), eq(129.0567), anyOrNull()
                 )
             ).thenThrow(AccountCoordsMissingException())
 
@@ -217,7 +217,7 @@ class AttendanceControllerTest {
             // Given
             whenever(
                 attendanceService.register(
-                    eq(1L), eq(10L), eq(null), eq(91.0), eq(129.0567), anyOrNull()
+                    eq(1L), eq(10L), eq(null), eq(null), eq(91.0), eq(129.0567), anyOrNull()
                 )
             ).thenThrow(InvalidCoordsException())
 
@@ -246,7 +246,7 @@ class AttendanceControllerTest {
             // Given - 둘 다 누락 → 서비스에서 AttendanceTargetRequiredException
             whenever(
                 attendanceService.register(
-                    eq(1L), eq(null), eq(null), eq(35.1234), eq(129.0567), anyOrNull()
+                    eq(1L), eq(null), eq(null), eq(null), eq(35.1234), eq(129.0567), anyOrNull()
                 )
             ).thenThrow(AttendanceTargetRequiredException())
 
@@ -274,7 +274,7 @@ class AttendanceControllerTest {
             // Given
             whenever(
                 attendanceService.register(
-                    eq(1L), eq(10L), eq(null), eq(35.1234), eq(129.0567), anyOrNull()
+                    eq(1L), eq(10L), eq(null), eq(null), eq(35.1234), eq(129.0567), anyOrNull()
                 )
             ).thenThrow(AlreadyRegisteredException())
 
@@ -303,7 +303,7 @@ class AttendanceControllerTest {
             // Given
             whenever(
                 attendanceService.register(
-                    eq(1L), eq(10L), eq(null), eq(35.1234), eq(129.0567), anyOrNull()
+                    eq(1L), eq(10L), eq(null), eq(null), eq(35.1234), eq(129.0567), anyOrNull()
                 )
             ).thenThrow(AttendanceTimeExceededException())
 
@@ -332,7 +332,7 @@ class AttendanceControllerTest {
             // Given
             whenever(
                 attendanceService.register(
-                    eq(1L), eq(99999L), eq(null), eq(35.1234), eq(129.0567), anyOrNull()
+                    eq(1L), eq(99999L), eq(null), eq(null), eq(35.1234), eq(129.0567), anyOrNull()
                 )
             ).thenThrow(TeamMemberScheduleNotFoundException())
 

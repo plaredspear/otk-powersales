@@ -129,6 +129,56 @@ class DisplayAttendanceDuplicateException : BusinessException(
 )
 
 /**
+ * 행사 일정 미존재 (Spec #587 P2-B §1.2 step 1).
+ * `eventScheduleId` 로 지정된 TMS row 가 존재하지 않거나 is_deleted=true.
+ */
+class EventScheduleNotFoundException : BusinessException(
+    errorCode = "ATT_EVENT_SCHEDULE_NOT_FOUND",
+    message = "존재하지 않는 행사 일정입니다",
+    httpStatus = HttpStatus.NOT_FOUND
+)
+
+/**
+ * 행사 일정 본인 할당 아님 (Spec #587 P2-B §1.2 step 2 / Q4 보안 강화).
+ * `team_member_schedule.employee_id != currentEmployeeId`.
+ */
+class EventScheduleNotAssignedException : BusinessException(
+    errorCode = "ATT_EVENT_SCHEDULE_NOT_ASSIGNED",
+    message = "본인에게 할당된 행사 일정이 아닙니다",
+    httpStatus = HttpStatus.FORBIDDEN
+)
+
+/**
+ * 행사 일정 일자 불일치 (Spec #587 P2-B §1.2 step 3 / Q4).
+ * `team_member_schedule.working_date != LocalDate.now()`.
+ */
+class EventScheduleDateMismatchException : BusinessException(
+    errorCode = "ATT_EVENT_SCHEDULE_DATE_MISMATCH",
+    message = "오늘 일자의 행사 일정만 출근 등록할 수 있습니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+/**
+ * 행사 출근 중복 (Spec #587 P2-B §1.2 step 4).
+ * 이미 `commute_log_id` 가 채워진 일정에 다시 출근 등록 시도.
+ */
+class EventAttendanceDuplicateException : BusinessException(
+    errorCode = "ATT_EVENT_DUPLICATE",
+    message = "이미 출근 등록된 행사 일정입니다",
+    httpStatus = HttpStatus.CONFLICT
+)
+
+/**
+ * 진열/행사 분기 동시 입력 (Spec #587 P2-B §1.1).
+ * `displayWorkScheduleId` 와 `eventScheduleId` 가 동시에 전달됨.
+ */
+class AttendanceDualBranchException : BusinessException(
+    errorCode = "ATT_DUAL_BRANCH",
+    message = "진열과 행사 분기를 동시에 지정할 수 없습니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+/**
  * 출근등록 마감 시간(17:00) 초과
  */
 class AttendanceTimeExceededException : BusinessException(
