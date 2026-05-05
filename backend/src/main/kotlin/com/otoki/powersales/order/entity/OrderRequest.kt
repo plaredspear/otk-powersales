@@ -52,6 +52,13 @@ class OrderRequest(
     @Column(name = "order_request_number", nullable = false, unique = true, length = 80)
     val orderRequestNumber: String,
 
+    /**
+     * 모바일 등록 멱등키 (Spec #592). 동일 키 재요청 시 1차 row 의 응답을 그대로 반환.
+     * `idx_order_request_client_request_id_unique` partial unique 인덱스 (`WHERE NOT NULL`).
+     */
+    @Column(name = "client_request_id", length = 64)
+    val clientRequestId: String? = null,
+
     @HCColumn("dkretail__employeeid__c")
     @Column(name = "employee_sfid", length = 18)
     val employeeSfid: String? = null,

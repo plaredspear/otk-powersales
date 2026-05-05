@@ -20,4 +20,10 @@ object SapConstants {
 
     /** 진열 마스터 daily batch interfaceId (P2). 레거시 `IF_REST_SAP_TeamMemberMasterSchedule` 등가. */
     const val SAP_INTERFACE_DISPLAY_MASTER: String = "TeamMemberMasterSchedule"
+
+    /** 주문 등록 outbox interfaceId (Spec #592). 레거시 `IF_REST_SAP_OrderRequestRegist` 등가. */
+    const val SAP_INTERFACE_ORDER_REQUEST_REGIST: String = "IF_REST_SAP_OrderRequestRegist"
+
+    /** [SapOutbox.domainType] 값 — 주문 등록. */
+    const val SAP_DOMAIN_ORDER_REQUEST_REGISTER: String = "ORDER_REQUEST_REGISTER"
 }
