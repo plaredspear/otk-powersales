@@ -47,6 +47,7 @@ class AttendanceController(
             userId = principal.userId,
             scheduleId = request.scheduleId,
             displayWorkScheduleId = request.displayWorkScheduleId,
+            eventScheduleId = request.eventScheduleId,
             latitude = request.latitude!!,
             longitude = request.longitude!!,
             workType = request.workType

@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:59839",
+    "url" : "http://localhost:49301",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -8197,6 +8197,10 @@
             "type" : [ "integer", "null" ],
             "format" : "int64"
           },
+          "eventScheduleId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
           "latitude" : {
             "type" : [ "number", "null" ],
             "format" : "double"
@@ -8273,7 +8277,7 @@
           },
           "attendanceType" : {
             "type" : "string",
-            "enum" : [ "REGULAR", "DISPLAY" ]
+            "enum" : [ "REGULAR", "DISPLAY", "EVENT" ]
           },
           "displayWorkScheduleId" : {
             "type" : [ "integer", "null" ],
@@ -8286,6 +8290,18 @@
           "scheduleEndDate" : {
             "type" : [ "string", "null" ],
             "format" : "date"
+          },
+          "eventScheduleId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "scheduleWorkingDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "promotionEmployeeId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
           }
         }
       },
@@ -10134,6 +10150,9 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
+          "unpaged" : {
+            "type" : "boolean"
+          },
           "pageSize" : {
             "type" : "integer",
             "format" : "int32"
@@ -10147,9 +10166,6 @@
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "unpaged" : {
-            "type" : "boolean"
           },
           "offset" : {
             "type" : "integer",

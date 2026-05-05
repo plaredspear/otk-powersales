@@ -23,6 +23,13 @@ data class AttendanceRegisterRequest(
     @field:Positive(message = "진열마스터 ID는 양수여야 합니다")
     val displayWorkScheduleId: Long? = null,
 
+    /**
+     * 행사 일정 ID (Spec #587 P2-B). 사전 배정된 TeamMemberSchedule.id.
+     * displayWorkScheduleId 와 동시 전달 시 ATT_DUAL_BRANCH 에러.
+     */
+    @field:Positive(message = "행사 일정 ID는 양수여야 합니다")
+    val eventScheduleId: Long? = null,
+
     @field:NotNull(message = "위도는 필수입니다")
     val latitude: Double?,
 

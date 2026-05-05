@@ -17,11 +17,16 @@ import com.otoki.powersales.schedule.exception.AlreadyRegisteredException
 import com.otoki.powersales.schedule.exception.AttendanceTargetConflictException
 import com.otoki.powersales.schedule.exception.AttendanceTargetRequiredException
 import com.otoki.powersales.schedule.entity.AttendanceType
+import com.otoki.powersales.schedule.exception.AttendanceDualBranchException
 import com.otoki.powersales.schedule.exception.DisplayAttendanceDuplicateException
 import com.otoki.powersales.schedule.exception.DisplayScheduleNotAssignedException
 import com.otoki.powersales.schedule.exception.DisplayScheduleNotConfirmedException
 import com.otoki.powersales.schedule.exception.DisplayScheduleNotFoundException
 import com.otoki.powersales.schedule.exception.DisplayScheduleOutOfRangeException
+import com.otoki.powersales.schedule.exception.EventAttendanceDuplicateException
+import com.otoki.powersales.schedule.exception.EventScheduleDateMismatchException
+import com.otoki.powersales.schedule.exception.EventScheduleNotAssignedException
+import com.otoki.powersales.schedule.exception.EventScheduleNotFoundException
 import com.otoki.powersales.schedule.exception.DistanceExceededException
 import com.otoki.powersales.schedule.exception.InvalidCoordsException
 import com.otoki.powersales.schedule.exception.SafetyCheckRequiredException
@@ -748,7 +753,7 @@ class AttendanceServiceTest {
                 .thenReturn(listOf(teamMemberSchedule))
 
             // When
-            val result = attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
+            val result = attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
 
             // Then
             assertThat(result.scheduleId).isEqualTo(scheduleId)
@@ -772,7 +777,7 @@ class AttendanceServiceTest {
 
             // When & Then
             assertThatThrownBy {
-                attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
+                attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
             }.isInstanceOf(SafetyCheckRequiredException::class.java)
         }
 
@@ -798,7 +803,7 @@ class AttendanceServiceTest {
 
             // When & Then
             assertThatThrownBy {
-                attendanceService.register(userId, scheduleId, null, farUserLat, farUserLon, null)
+                attendanceService.register(userId, scheduleId, null, null, farUserLat, farUserLon, null)
             }.isInstanceOf(DistanceExceededException::class.java)
         }
 
@@ -832,7 +837,7 @@ class AttendanceServiceTest {
             val farLon = 127.0276
 
             // When
-            val result = attendanceService.register(userId, scheduleId, null, farLat, farLon, null)
+            val result = attendanceService.register(userId, scheduleId, null, null, farLat, farLon, null)
 
             // Then
             assertThat(result.scheduleId).isEqualTo(scheduleId)
@@ -873,7 +878,7 @@ class AttendanceServiceTest {
             val veryFarLon = 127.0276
 
             // When
-            val result = attendanceService.register(userId, scheduleId, null, veryFarLat, veryFarLon, null)
+            val result = attendanceService.register(userId, scheduleId, null, null, veryFarLat, veryFarLon, null)
 
             // Then
             assertThat(result.scheduleId).isEqualTo(scheduleId)
@@ -910,7 +915,7 @@ class AttendanceServiceTest {
                 .thenReturn(listOf(teamMemberSchedule))
 
             // When — 좌표 누락이지만 면제 코드이므로 ATT_ACCOUNT_COORDS_MISSING 미발생
-            val result = attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
+            val result = attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
 
             // Then
             assertThat(result.scheduleId).isEqualTo(scheduleId)
@@ -944,7 +949,7 @@ class AttendanceServiceTest {
                 .thenReturn(listOf(teamMemberSchedule))
 
             // When
-            val result = attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
+            val result = attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
 
             // Then
             assertThat(result.gpsSkipped).isTrue()
@@ -977,7 +982,7 @@ class AttendanceServiceTest {
                 .thenReturn(listOf(teamMemberSchedule))
 
             // When
-            val result = attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
+            val result = attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
 
             // Then
             assertThat(result.gpsSkipped).isFalse()
@@ -1006,7 +1011,7 @@ class AttendanceServiceTest {
 
             // When & Then
             assertThatThrownBy {
-                attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
+                attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
             }.isInstanceOf(AccountCoordsMissingException::class.java)
         }
 
@@ -1032,7 +1037,7 @@ class AttendanceServiceTest {
 
             // When & Then
             assertThatThrownBy {
-                attendanceService.register(userId, scheduleId, null, farUserLat, farUserLon, null)
+                attendanceService.register(userId, scheduleId, null, null, farUserLat, farUserLon, null)
             }.isInstanceOf(DistanceExceededException::class.java)
         }
 
@@ -1056,7 +1061,7 @@ class AttendanceServiceTest {
 
             // When & Then
             assertThatThrownBy {
-                attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
+                attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
             }.isInstanceOf(AlreadyRegisteredException::class.java)
         }
 
@@ -1075,7 +1080,7 @@ class AttendanceServiceTest {
 
             // When & Then
             assertThatThrownBy {
-                attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
+                attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
             }.isInstanceOf(TeamMemberScheduleNotFoundException::class.java)
         }
 
@@ -1088,7 +1093,7 @@ class AttendanceServiceTest {
 
             // When & Then
             assertThatThrownBy {
-                attendanceService.register(userId, 10L, null, nearUserLat, nearUserLon, null)
+                attendanceService.register(userId, 10L, null, null, nearUserLat, nearUserLon, null)
             }.isInstanceOf(EmployeeNotFoundException::class.java)
         }
 
@@ -1106,7 +1111,7 @@ class AttendanceServiceTest {
 
             // When & Then
             assertThatThrownBy {
-                attendanceService.register(userId, 10L, null, nearUserLat, nearUserLon, null)
+                attendanceService.register(userId, 10L, null, null, nearUserLat, nearUserLon, null)
             }.isInstanceOf(AttendanceDayOffConflictException::class.java)
 
             // 안전점검 검증까지 도달하지 않아야 한다
@@ -1141,7 +1146,7 @@ class AttendanceServiceTest {
                 .thenReturn(listOf(teamMemberSchedule))
 
             // When
-            val result = attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
+            val result = attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
 
             // Then
             assertThat(result.scheduleId).isEqualTo(scheduleId)
@@ -1173,7 +1178,7 @@ class AttendanceServiceTest {
                 .thenReturn(listOf(teamMemberSchedule))
 
             // When
-            val result = attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, "냉장")
+            val result = attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, "냉장")
 
             // Then
             assertThat(result.workType).isEqualTo("냉장")
@@ -1212,7 +1217,7 @@ class AttendanceServiceTest {
                 .thenReturn(allTeamMemberSchedules)
 
             // When
-            val result = attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
+            val result = attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
 
             // Then
             assertThat(result.totalCount).isEqualTo(3)
@@ -1232,7 +1237,7 @@ class AttendanceServiceTest {
 
             // When & Then
             assertThatThrownBy {
-                attendanceService.register(1L, 10L, null, nearUserLat, nearUserLon, null)
+                attendanceService.register(1L, 10L, null, null, nearUserLat, nearUserLon, null)
             }.isInstanceOf(AttendanceTimeExceededException::class.java)
         }
 
@@ -1248,7 +1253,7 @@ class AttendanceServiceTest {
 
             // When & Then
             assertThatThrownBy {
-                attendanceService.register(1L, 10L, null, nearUserLat, nearUserLon, null)
+                attendanceService.register(1L, 10L, null, null, nearUserLat, nearUserLon, null)
             }.isInstanceOf(AttendanceTimeExceededException::class.java)
         }
 
@@ -1271,7 +1276,7 @@ class AttendanceServiceTest {
 
             // When & Then — 시간은 통과하고 안전점검 예외 발생 (시간 이후 로직까지 도달 확인)
             assertThatThrownBy {
-                attendanceService.register(userId, 10L, null, nearUserLat, nearUserLon, null)
+                attendanceService.register(userId, 10L, null, null, nearUserLat, nearUserLon, null)
             }.isInstanceOf(SafetyCheckRequiredException::class.java)
         }
 
@@ -1299,7 +1304,7 @@ class AttendanceServiceTest {
 
             // When & Then
             val ex = assertThatThrownBy {
-                attendanceService.register(userId, scheduleId, null, farUserLat, farUserLon, null)
+                attendanceService.register(userId, scheduleId, null, null, farUserLat, farUserLon, null)
             }.isInstanceOf(DistanceExceededException::class.java)
             // 에러코드 검증
             assertThat(DistanceExceededException().errorCode).isEqualTo("ATT_GPS_DISTANCE_EXCEEDED")
@@ -1333,7 +1338,7 @@ class AttendanceServiceTest {
                 .thenReturn(listOf(teamMemberSchedule))
 
             // When
-            val result = attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
+            val result = attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
 
             // Then
             assertThat(result.scheduleId).isEqualTo(scheduleId)
@@ -1362,7 +1367,7 @@ class AttendanceServiceTest {
 
             // When & Then
             assertThatThrownBy {
-                attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
+                attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
             }.isInstanceOf(AccountCoordsMissingException::class.java)
         }
 
@@ -1388,7 +1393,7 @@ class AttendanceServiceTest {
 
             // When & Then
             assertThatThrownBy {
-                attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
+                attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
             }.isInstanceOf(AccountCoordsMissingException::class.java)
         }
 
@@ -1414,7 +1419,7 @@ class AttendanceServiceTest {
 
             // When & Then
             assertThatThrownBy {
-                attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
+                attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
             }.isInstanceOf(AccountCoordsMissingException::class.java)
         }
 
@@ -1440,7 +1445,7 @@ class AttendanceServiceTest {
 
             // When & Then
             assertThatThrownBy {
-                attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
+                attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
             }.isInstanceOf(AccountCoordsMissingException::class.java)
         }
 
@@ -1466,7 +1471,7 @@ class AttendanceServiceTest {
 
             // When & Then
             assertThatThrownBy {
-                attendanceService.register(userId, scheduleId, null, 91.0, nearUserLon, null)
+                attendanceService.register(userId, scheduleId, null, null, 91.0, nearUserLon, null)
             }.isInstanceOf(InvalidCoordsException::class.java)
         }
 
@@ -1498,7 +1503,7 @@ class AttendanceServiceTest {
                 .thenReturn(listOf(teamMemberSchedule))
 
             // When
-            val result = attendanceService.register(userId, scheduleId, null, farUserLat, farUserLon, null)
+            val result = attendanceService.register(userId, scheduleId, null, null, farUserLat, farUserLon, null)
 
             // Then
             assertThat(result.scheduleId).isEqualTo(scheduleId)
@@ -1575,7 +1580,7 @@ class AttendanceServiceTest {
                 .thenReturn(listOf(newTms))
 
             // When
-            val result = attendanceService.register(userId, null, displayWorkScheduleId, nearUserLat, nearUserLon, null)
+            val result = attendanceService.register(userId, null, displayWorkScheduleId, null, nearUserLat, nearUserLon, null)
 
             // Then
             assertThat(result.accountName).isEqualTo("테스트 거래처")
@@ -1637,7 +1642,7 @@ class AttendanceServiceTest {
                 .thenReturn(listOf(existingTms))
 
             // When
-            val result = attendanceService.register(userId, null, displayWorkScheduleId, nearUserLat, nearUserLon, null)
+            val result = attendanceService.register(userId, null, displayWorkScheduleId, null, nearUserLat, nearUserLon, null)
 
             // Then
             assertThat(result.scheduleId).isEqualTo(50L)
@@ -1660,7 +1665,7 @@ class AttendanceServiceTest {
 
             // When & Then
             assertThatThrownBy {
-                attendanceService.register(userId, null, displayWorkScheduleId, nearUserLat, nearUserLon, null)
+                attendanceService.register(userId, null, displayWorkScheduleId, null, nearUserLat, nearUserLon, null)
             }.isInstanceOf(DisplayScheduleNotFoundException::class.java)
         }
 
@@ -1686,7 +1691,7 @@ class AttendanceServiceTest {
 
             // When & Then
             assertThatThrownBy {
-                attendanceService.register(userId, null, displayWorkScheduleId, nearUserLat, nearUserLon, null)
+                attendanceService.register(userId, null, displayWorkScheduleId, null, nearUserLat, nearUserLon, null)
             }.isInstanceOf(DisplayScheduleNotConfirmedException::class.java)
         }
 
@@ -1712,7 +1717,7 @@ class AttendanceServiceTest {
 
             // When & Then
             assertThatThrownBy {
-                attendanceService.register(userId, null, displayWorkScheduleId, nearUserLat, nearUserLon, null)
+                attendanceService.register(userId, null, displayWorkScheduleId, null, nearUserLat, nearUserLon, null)
             }.isInstanceOf(DisplayScheduleOutOfRangeException::class.java)
         }
 
@@ -1725,7 +1730,7 @@ class AttendanceServiceTest {
 
             // When & Then
             assertThatThrownBy {
-                attendanceService.register(userId, null, null, nearUserLat, nearUserLon, null)
+                attendanceService.register(userId, null, null, null, nearUserLat, nearUserLon, null)
             }.isInstanceOf(AttendanceTargetRequiredException::class.java)
         }
 
@@ -1738,7 +1743,7 @@ class AttendanceServiceTest {
 
             // When & Then
             assertThatThrownBy {
-                attendanceService.register(userId, 10L, 100L, nearUserLat, nearUserLon, null)
+                attendanceService.register(userId, 10L, 100L, null, nearUserLat, nearUserLon, null)
             }.isInstanceOf(AttendanceTargetConflictException::class.java)
         }
 
@@ -1789,7 +1794,7 @@ class AttendanceServiceTest {
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(listOf(newTms))
 
             // When
-            val result = attendanceService.register(userId, null, displayWorkScheduleId, nearUserLat, nearUserLon, null)
+            val result = attendanceService.register(userId, null, displayWorkScheduleId, null, nearUserLat, nearUserLon, null)
 
             // Then
             assertThat(result.attendanceType).isEqualTo(AttendanceType.DISPLAY)
@@ -1822,7 +1827,7 @@ class AttendanceServiceTest {
 
             // When & Then
             assertThatThrownBy {
-                attendanceService.register(userId, null, displayWorkScheduleId, nearUserLat, nearUserLon, null)
+                attendanceService.register(userId, null, displayWorkScheduleId, null, nearUserLat, nearUserLon, null)
             }.isInstanceOf(DisplayScheduleNotAssignedException::class.java)
 
             verify(teamMemberScheduleRepository, never()).save(any<TeamMemberSchedule>())
@@ -1857,7 +1862,7 @@ class AttendanceServiceTest {
 
             // When & Then
             assertThatThrownBy {
-                attendanceService.register(userId, null, displayWorkScheduleId, nearUserLat, nearUserLon, null)
+                attendanceService.register(userId, null, displayWorkScheduleId, null, nearUserLat, nearUserLon, null)
             }.isInstanceOf(DisplayAttendanceDuplicateException::class.java)
 
             verify(teamMemberScheduleRepository, never()).save(any<TeamMemberSchedule>())
@@ -1887,13 +1892,157 @@ class AttendanceServiceTest {
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(listOf(tms))
 
             // When
-            val result = attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
+            val result = attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
 
             // Then
             assertThat(result.attendanceType).isEqualTo(AttendanceType.REGULAR)
             assertThat(result.displayWorkScheduleId).isNull()
             assertThat(result.scheduleStartDate).isNull()
             assertThat(result.scheduleEndDate).isNull()
+        }
+    }
+
+    // ========== register - 행사 일정 기반 (Spec #587 P2-B) Tests ==========
+
+    @Nested
+    @DisplayName("register - 행사 일정 기반 출근 등록 (Spec #587 P2-B)")
+    inner class RegisterByEventScheduleTests {
+
+        private val accountLat = 37.4979
+        private val accountLon = 127.0276
+        private val nearUserLat = 37.4995
+        private val nearUserLon = 127.0300
+
+        @Test
+        @DisplayName("Spec #587 P2-B T1 — 행사 출근 정상: 응답에 attendanceType=EVENT + 행사 메타 포함")
+        fun register_byEventSchedule_success() {
+            // Given
+            val userId = 1L
+            val eventScheduleId = 789L
+            val today = LocalDate.now()
+
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val tms = createTeamMemberSchedule(
+                id = eventScheduleId, sfid = "SCH789", employeeId = userId, accountId = 8938,
+                workingDate = today, commuteLogId = null, accountAbcTypeCode = "2110",
+                accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(teamMemberScheduleRepository.findById(eventScheduleId)).thenReturn(Optional.of(tms))
+            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.empty())
+            doReturn(OroraWorkReportResult("200", "SUCCESS"))
+                .whenever(ororaApiService).sendWorkReport(any())
+            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(listOf(tms))
+
+            // When
+            val result = attendanceService.register(userId, null, null, eventScheduleId, nearUserLat, nearUserLon, null)
+
+            // Then
+            assertThat(result.attendanceType).isEqualTo(AttendanceType.EVENT)
+            assertThat(result.eventScheduleId).isEqualTo(eventScheduleId)
+            assertThat(result.scheduleWorkingDate).isEqualTo(today)
+            assertThat(result.displayWorkScheduleId).isNull()
+            assertThat(result.scheduleStartDate).isNull()
+        }
+
+        @Test
+        @DisplayName("Spec #587 P2-B T2 — 일정 미존재: eventScheduleId 로 TMS 조회 실패 -> EventScheduleNotFoundException")
+        fun register_byEventSchedule_notFound_throwsException() {
+            // Given
+            val userId = 1L
+            val eventScheduleId = 999999L
+            val today = LocalDate.now()
+            val employee = createEmployee(id = userId, sfid = "USR001")
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(teamMemberScheduleRepository.findById(eventScheduleId)).thenReturn(Optional.empty())
+
+            // When & Then
+            assertThatThrownBy {
+                attendanceService.register(userId, null, null, eventScheduleId, nearUserLat, nearUserLon, null)
+            }.isInstanceOf(EventScheduleNotFoundException::class.java)
+        }
+
+        @Test
+        @DisplayName("Spec #587 P2-B T3 — 타인 일정: TMS.employee.id != currentEmployeeId -> EventScheduleNotAssignedException")
+        fun register_byEventSchedule_notAssigned_throwsException() {
+            // Given
+            val userId = 1L
+            val otherUserId = 2L
+            val eventScheduleId = 789L
+            val today = LocalDate.now()
+
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val tms = createTeamMemberSchedule(
+                id = eventScheduleId, employeeId = otherUserId, accountId = 8938, workingDate = today
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(teamMemberScheduleRepository.findById(eventScheduleId)).thenReturn(Optional.of(tms))
+
+            // When & Then
+            assertThatThrownBy {
+                attendanceService.register(userId, null, null, eventScheduleId, nearUserLat, nearUserLon, null)
+            }.isInstanceOf(EventScheduleNotAssignedException::class.java)
+        }
+
+        @Test
+        @DisplayName("Spec #587 P2-B T4 — 일자 불일치: TMS.working_date != today -> EventScheduleDateMismatchException")
+        fun register_byEventSchedule_dateMismatch_throwsException() {
+            // Given
+            val userId = 1L
+            val eventScheduleId = 789L
+            val today = LocalDate.now()
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val tms = createTeamMemberSchedule(
+                id = eventScheduleId, employeeId = userId, accountId = 8938,
+                workingDate = today.plusDays(1), // 미래 일자
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(teamMemberScheduleRepository.findById(eventScheduleId)).thenReturn(Optional.of(tms))
+
+            // When & Then
+            assertThatThrownBy {
+                attendanceService.register(userId, null, null, eventScheduleId, nearUserLat, nearUserLon, null)
+            }.isInstanceOf(EventScheduleDateMismatchException::class.java)
+        }
+
+        @Test
+        @DisplayName("Spec #587 P2-B T5 — 이미 출근 등록: TMS.commuteLogId NOT NULL -> EventAttendanceDuplicateException")
+        fun register_byEventSchedule_alreadyRegistered_throwsException() {
+            // Given
+            val userId = 1L
+            val eventScheduleId = 789L
+            val today = LocalDate.now()
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val tms = createTeamMemberSchedule(
+                id = eventScheduleId, employeeId = userId, accountId = 8938,
+                workingDate = today, commuteLogId = "OK"
+            )
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
+            whenever(teamMemberScheduleRepository.findById(eventScheduleId)).thenReturn(Optional.of(tms))
+
+            // When & Then
+            assertThatThrownBy {
+                attendanceService.register(userId, null, null, eventScheduleId, nearUserLat, nearUserLon, null)
+            }.isInstanceOf(EventAttendanceDuplicateException::class.java)
+        }
+
+        @Test
+        @DisplayName("Spec #587 P2-B T6 — 동시 입력: displayWorkScheduleId + eventScheduleId 둘 다 -> AttendanceDualBranchException")
+        fun register_byEventSchedule_dualBranch_throwsException() {
+            // When & Then — 분기 가드는 employeeRepository 조회 전에 throw
+            assertThatThrownBy {
+                attendanceService.register(1L, null, 100L, 789L, nearUserLat, nearUserLon, null)
+            }.isInstanceOf(AttendanceDualBranchException::class.java)
         }
     }
 
@@ -1948,7 +2097,7 @@ class AttendanceServiceTest {
                 .thenReturn(listOf(teamMemberSchedule))
 
             // When
-            attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
+            attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
 
             // Then - completeWorkYn 업데이트 검증
             assertThat(safetyCheck.completeWorkYn).isEqualTo("Y")
@@ -2001,7 +2150,7 @@ class AttendanceServiceTest {
                 .thenReturn(listOf(teamMemberSchedule))
 
             // When
-            val result = attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
+            val result = attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
 
             // Then - 출근등록 성공
             assertThat(result.scheduleId).isEqualTo(scheduleId)
@@ -2049,7 +2198,7 @@ class AttendanceServiceTest {
                 .thenReturn(listOf(teamMemberSchedule))
 
             // When - 에러 없이 성공
-            val result = attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
+            val result = attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
 
             // Then
             assertThat(result.scheduleId).isEqualTo(scheduleId)
@@ -2110,7 +2259,7 @@ class AttendanceServiceTest {
                 .thenReturn(listOf(teamMemberSchedule))
 
             // When
-            attendanceService.register(userId, scheduleId, null, nearUserLat, nearUserLon, null)
+            attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
 
             // Then - null → null 변환 검증
             verify(teamMemberScheduleRepository).updateSafetyCheckData(
