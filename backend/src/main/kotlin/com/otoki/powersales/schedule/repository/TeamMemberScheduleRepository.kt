@@ -35,4 +35,14 @@ interface TeamMemberScheduleRepository : JpaRepository<TeamMemberSchedule, Long>
     fun existsByEmployeeAndAccountAndWorkingDateBetween(employee: Employee, account: Account, startDate: LocalDate, endDate: LocalDate): Boolean
 
     fun findByEmployeeAndAccountAndWorkingDate(employee: Employee, account: Account, workingDate: LocalDate): TeamMemberSchedule?
+
+    /**
+     * Spec #587 P1-B §1.2 step 4 — 동일 `(employee, working_date, working_category3)` 조합 중복 검증.
+     * 진열 출근 시 다른 거래처라도 같은 근무유형(고정/격고/순회)으로 이미 일정이 있으면 거부.
+     */
+    fun existsByEmployeeAndWorkingDateAndWorkingCategory3(
+        employee: Employee,
+        workingDate: LocalDate,
+        workingCategory3: String
+    ): Boolean
 }

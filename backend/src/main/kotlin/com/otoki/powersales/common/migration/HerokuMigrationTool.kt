@@ -62,9 +62,10 @@ import kotlin.collections.iterator
  * │  YES    │ displayworkschedulemaster__c       │ display_work_schedule       │ DisplayWorkSchedule     │ account__c → account.sfid, fullname__c → employee.sfid,       │ UPDATE: account_id, employee_id │
  * │         │                                    │                             │                         │   ownerid → (owner_sfid 저장만)                               │                    │
  * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
- * │  YES    │ dkretail__teammemberschedule__c    │ team_member_schedule        │ TeamMemberSchedule      │ accountid__c → account.sfid, dkretail__employeeid__c →         │ UPDATE: account_id, employee_id, team_leader_id │
- * │         │                                    │                             │                         │   employee.sfid, teamleadersfid__c → employee.sfid,           │ (promotion_employee_id 는 SF 전용 → SalesforceMigrationTool 단계) │
- * │         │                                    │                             │                         │   dkretail__promotionempid__c → promotion_employee.sfid (SF)  │                    │
+ * │  YES    │ dkretail__teammemberschedule__c    │ team_member_schedule        │ TeamMemberSchedule      │ accountid__c → account.sfid, dkretail__employeeid__c →         │ UPDATE: account_id, employee_id, team_leader_id, │
+ * │         │                                    │                             │                         │   employee.sfid, teamleadersfid__c → employee.sfid,           │   display_work_schedule_id │
+ * │         │                                    │                             │                         │   dkretail__promotionempid__c → promotion_employee.sfid (SF), │ (promotion_employee_id 는 SF 전용 → SalesforceMigrationTool 단계) │
+ * │         │                                    │                             │                         │   displayworkschedulemaster__c → display_work_schedule.sfid   │                    │
  * │  YES    │ safetycheck__workschedule__member  │ safety_check_submission     │ SafetyCheckSubmission   │ employeeid__c → employee.sfid, masterId →                     │ FK: employee_id(inline), display_work_schedule_id/team_member_schedule_id(post-UPDATE) │
  * │         │                                    │                             │                         │   displayworkschedulemaster__c.sfid, eventmasterid → sfid     │                    │
  * │  YES    │ education_mng                      │ education_post              │ EducationPost           │ empcode__c → employee.employee_code                           │ UPDATE: employee_id │
@@ -341,6 +342,18 @@ object HerokuMigrationTool {
                             "WHERE t.team_leader_sfid = e.sfid"
                     )
                     println("[teamMemberSchedule] team_leader_id UPDATE 완료: ${updated}건")
+                }
+
+                // TeamMemberSchedule: display_work_schedule_sfid → display_work_schedule_id 역참조 UPDATE (Spec #587 P1-B)
+                println("[teamMemberSchedule] display_work_schedule_sfid → display_work_schedule_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.team_member_schedule t " +
+                            "SET display_work_schedule_id = d.display_work_schedule_id " +
+                            "FROM $TARGET_SCHEMA.display_work_schedule d " +
+                            "WHERE t.display_work_schedule_sfid = d.sfid"
+                    )
+                    println("[teamMemberSchedule] display_work_schedule_id UPDATE 완료: ${updated}건")
                 }
 
                 // TeamMemberSchedule.promotion_employee_id (FK to promotion_employee.promotion_employee_id) 는

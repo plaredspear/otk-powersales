@@ -56,7 +56,8 @@ class SFSchemaUtilsTest {
         fun getSFMapping_teamMemberSchedule() {
             val mapping = SFSchemaUtils.getSFMapping(TeamMemberSchedule::class.java)
 
-            assertThat(mapping).hasSize(32)
+            assertThat(mapping).hasSize(33)
+            assertThat(mapping["DisplayWorkScheduleMaster__c"]).isEqualTo("display_work_schedule_sfid")
             assertThat(mapping["DKRetail__EmployeeId__c"]).isEqualTo("employee_sfid")
             assertThat(mapping["Name"]).isEqualTo("name")
             assertThat(mapping["DKRetail__WorkingDate__c"]).isEqualTo("working_date")
@@ -169,7 +170,8 @@ class SFSchemaUtilsTest {
         fun getHCMapping_teamMemberSchedule() {
             val mapping = SFSchemaUtils.getHCMapping(TeamMemberSchedule::class.java)
 
-            assertThat(mapping).hasSize(35)
+            assertThat(mapping).hasSize(36)
+            assertThat(mapping["displayworkschedulemaster__c"]).isEqualTo("display_work_schedule_sfid")
             assertThat(mapping["id"]).isNull()
             assertThat(mapping["sfid"]).isEqualTo("sfid")
             assertThat(mapping["name"]).isEqualTo("name")
