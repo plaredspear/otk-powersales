@@ -182,6 +182,9 @@ app:
       attendance:
         cron: ${APP_SAP_OUTBOUND_ATTENDANCE_CRON:0 0 1 * * *}
         page-size: ${APP_SAP_OUTBOUND_ATTENDANCE_PAGE_SIZE:100}
+      display:
+        cron: ${APP_SAP_OUTBOUND_DISPLAY_CRON:0 0 1 * * *}
+        page-size: ${APP_SAP_OUTBOUND_DISPLAY_PAGE_SIZE:100}
 
 server:
   port: ${SERVER_PORT:8080}
