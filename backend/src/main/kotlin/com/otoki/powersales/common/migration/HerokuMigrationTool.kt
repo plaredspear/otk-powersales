@@ -16,6 +16,8 @@ import com.otoki.powersales.draft.entity.TmpOrderProduct
 import com.otoki.powersales.draft.entity.TmpPromotion
 import com.otoki.powersales.draft.entity.TmpSuggest
 import com.otoki.powersales.inspection.entity.InspectionTheme
+import com.otoki.powersales.order.entity.OrderRequest
+import com.otoki.powersales.order.entity.OrderRequestProduct
 import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFSchemaUtils
 import com.otoki.powersales.safetycheck.entity.SafetyCheckItem
@@ -177,6 +179,8 @@ object HerokuMigrationTool {
         EntityRegistration("tmpOrderProduct", TmpOrderProduct::class.java),
         EntityRegistration("tmpPromotion", TmpPromotion::class.java),
         EntityRegistration("tmpSuggest", TmpSuggest::class.java),
+        EntityRegistration("orderRequest", OrderRequest::class.java),
+        EntityRegistration("orderRequestProduct", OrderRequestProduct::class.java),
     )
 
     private const val HEROKU_SCHEMA = "salesforce2"
@@ -754,6 +758,42 @@ object HerokuMigrationTool {
                             "WHERE ts.account_code = a.external_key"
                     )
                     println("[tmpSuggest] account_id UPDATE 완료: ${updated}건")
+                }
+
+                // OrderRequest: account_sfid → account_id 역참조 UPDATE (Spec #591 P1-B)
+                println("[orderRequest] account_sfid → account_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.order_request t " +
+                            "SET account_id = a.account_id " +
+                            "FROM $TARGET_SCHEMA.account a " +
+                            "WHERE t.account_sfid = a.sfid"
+                    )
+                    println("[orderRequest] account_id UPDATE 완료: ${updated}건")
+                }
+
+                // OrderRequest: employee_sfid → employee_id 역참조 UPDATE (Spec #591 P1-B)
+                println("[orderRequest] employee_sfid → employee_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.order_request t " +
+                            "SET employee_id = e.employee_id " +
+                            "FROM $TARGET_SCHEMA.employee e " +
+                            "WHERE t.employee_sfid = e.sfid"
+                    )
+                    println("[orderRequest] employee_id UPDATE 완료: ${updated}건")
+                }
+
+                // OrderRequestProduct: order_request_sfid → order_request_id 역참조 UPDATE (Spec #591 P1-B)
+                println("[orderRequestProduct] order_request_sfid → order_request_id UPDATE 중...")
+                targetConn.createStatement().use { stmt ->
+                    val updated = stmt.executeUpdate(
+                        "UPDATE $TARGET_SCHEMA.order_request_product t " +
+                            "SET order_request_id = m.order_request_id " +
+                            "FROM $TARGET_SCHEMA.order_request m " +
+                            "WHERE t.order_request_sfid = m.sfid"
+                    )
+                    println("[orderRequestProduct] order_request_id UPDATE 완료: ${updated}건")
                 }
 
             }

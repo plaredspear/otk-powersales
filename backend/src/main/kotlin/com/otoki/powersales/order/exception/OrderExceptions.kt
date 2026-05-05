@@ -8,7 +8,7 @@ import org.springframework.http.HttpStatus
  * 잘못된 주문 파라미터
  */
 class InvalidOrderParameterException(detail: String) : BusinessException(
-    errorCode = "INVALID_PARAMETER",
+    errorCode = "ORD_INVALID_PARAM",
     message = detail,
     httpStatus = HttpStatus.BAD_REQUEST
 )
@@ -17,9 +17,18 @@ class InvalidOrderParameterException(detail: String) : BusinessException(
  * 잘못된 납기일 범위
  */
 class InvalidDateRangeException : BusinessException(
-    errorCode = "INVALID_DATE_RANGE",
+    errorCode = "ORD_INVALID_DATE_RANGE",
     message = "납기일 종료일은 시작일 이후여야 합니다",
     httpStatus = HttpStatus.BAD_REQUEST
+)
+
+/**
+ * 납기일 기간이 7일 한도를 초과한 경우 (레거시 동등 안전장치).
+ */
+class OrderDateRangeTooWideException : BusinessException(
+    errorCode = "ORD_DATE_RANGE_TOO_WIDE",
+    message = "기간은 최대 7일까지 검색할 수 있습니다.",
+    httpStatus = HttpStatus.BAD_REQUEST,
 )
 
 /**
