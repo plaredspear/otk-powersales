@@ -6,4 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository
 interface ErpOrderProductRepository : JpaRepository<ErpOrderProduct, Long> {
 
     fun findByExternalKey(externalKey: String): ErpOrderProduct?
+
+    fun findBySapOrderNumberOrderByLineNumberAsc(sapOrderNumber: String): List<ErpOrderProduct>
 }
