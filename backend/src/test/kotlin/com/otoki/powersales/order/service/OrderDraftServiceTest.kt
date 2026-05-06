@@ -1,438 +1,257 @@
-/*
 package com.otoki.powersales.order.service
 
-import com.otoki.powersales.dto.request.DraftItemRequest
-import com.otoki.powersales.order.dto.request.OrderDraftRequest
-import com.otoki.powersales.entity.*
+import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.draft.entity.TmpOrder
+import com.otoki.powersales.draft.entity.TmpOrderProduct
+import com.otoki.powersales.draft.repository.TmpOrderRepository
 import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.product.entity.Product
-import com.otoki.powersales.common.entity.*
-import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.product.entity.Product
-import com.otoki.powersales.exception.ClientNotFoundException
-import com.otoki.powersales.exception.DraftNotFoundException
-import com.otoki.powersales.exception.InvalidDeliveryDateException
-import com.otoki.powersales.exception.ProductNotFoundException
-import com.otoki.powersales.order.repository.OrderDraftRepository
-import com.otoki.powersales.product.repository.ProductRepository
-import com.otoki.powersales.repository.StoreRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.order.dto.request.OrderDraftLineRequest
+import com.otoki.powersales.order.dto.request.OrderDraftRequest
+import com.otoki.powersales.order.exception.OrderDraftAccountForbiddenException
+import com.otoki.powersales.order.exception.OrderDraftInvalidRequestException
+import com.otoki.powersales.product.entity.Product
+import com.otoki.powersales.product.repository.ProductRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.util.*
+import org.mockito.quality.Strictness
+import java.math.BigDecimal
+import java.util.Optional
 
 @ExtendWith(MockitoExtension::class)
-@DisplayName("OrderDraftService 테스트")
+@MockitoSettings(strictness = Strictness.LENIENT)
+@DisplayName("OrderDraftService 테스트 (#596)")
 class OrderDraftServiceTest {
 
-    @Mock
-    private lateinit var orderDraftRepository: OrderDraftRepository
+    @Mock private lateinit var tmpOrderRepository: TmpOrderRepository
+    @Mock private lateinit var accountRepository: AccountRepository
+    @Mock private lateinit var employeeRepository: EmployeeRepository
+    @Mock private lateinit var productRepository: ProductRepository
+    @InjectMocks private lateinit var service: OrderDraftService
 
-    @Mock
-    private lateinit var productRepository: ProductRepository
+    private val userId = 1L
+    private val accountId = 5678L
+    private val employeeCode = "20030117"
 
-    @Mock
-    private lateinit var storeRepository: StoreRepository
+    private fun employee(code: String = employeeCode) = Employee(
+        id = userId,
+        employeeCode = code,
+        name = "홍길동",
+    )
 
-    @Mock
-    private lateinit var employeeRepository: EmployeeRepository
+    private fun account(empCode: String? = employeeCode) = Account(
+        id = accountId.toInt(),
+        name = "테스트거래처",
+        externalKey = "EK001",
+        employeeCode = empCode,
+    )
 
-    @InjectMocks
-    private lateinit var orderDraftService: OrderDraftService
+    private fun line(
+        lineNumber: Int = 10,
+        productCode: String = "P001",
+        unit: String = "BOX",
+        quantity: BigDecimal = BigDecimal("10"),
+    ) = OrderDraftLineRequest(
+        lineNumber = lineNumber,
+        productCode = productCode,
+        unit = unit,
+        quantity = quantity,
+        quantityPieces = 100,
+        quantityBoxes = BigDecimal("10"),
+        unitPrice = BigDecimal("12345"),
+        amount = BigDecimal("123450"),
+    )
 
-    // --- Helper methods ---
+    private fun req(lines: List<OrderDraftLineRequest> = listOf(line())) = OrderDraftRequest(
+        accountId = accountId,
+        totalAmount = 123450,
+        lines = lines,
+    )
 
-    private fun createTestEmployee(id: Long = 1L): Employee {
-        return Employee(
-            id = id,
-            employeeCode = "20010585",
-            password = "encodedPassword",
-            name = "홍길동",
-            orgName = "서울지점"
-        )
+    /** 리플렉션으로 ID 강제 설정 (테스트 전용 — IDENTITY 시뮬레이션). */
+    private fun setId(o: TmpOrder, id: Long) {
+        val field = TmpOrder::class.java.getDeclaredField("id").apply { isAccessible = true }
+        field.setLong(o, id)
     }
 
-    private fun createTestStore(id: Long = 1L): Store {
-        return Store(
-            id = id,
-            storeCode = "ST001",
-            storeName = "롯데마트 응암점",
-            address = "서울시 은평구",
-            representativeName = "김대표",
-            phoneNumber = "02-1234-5678",
-            creditLimit = 100000000L,
-            usedCredit = 45000000L
-        )
-    }
+    @Nested
+    @DisplayName("save - 등록 (UPSERT)")
+    inner class SaveTests {
 
-    private fun createTestProduct(
-        productCode: String = "01101123",
-        piecesPerBox: Int = 50,
-        minOrderUnit: Int = 1,
-        supplyQuantity: Int = 100,
-        dcQuantity: Int = 50,
-        unitPrice: Long = 5000
-    ): Product {
-        return Product(
-            id = 1L,
-            productId = productCode,
-            productName = "갈릭 아이올리소스 240g",
-            productCode = productCode,
-            barcode = "8801045570716",
-            storageType = "냉장",
-            piecesPerBox = piecesPerBox,
-            minOrderUnit = minOrderUnit,
-            supplyQuantity = supplyQuantity,
-            dcQuantity = dcQuantity,
-            unitPrice = unitPrice
-        )
-    }
-
-    private fun createTestOrderDraft(
-        user: Employee,
-        store: Store,
-        deliveryDate: LocalDate = LocalDate.now().plusDays(1),
-        totalAmount: Long = 0
-    ): OrderDraft {
-        return OrderDraft(
-            id = 1L,
-            user = user,
-            store = store,
-            deliveryDate = deliveryDate,
-            totalAmount = totalAmount
-        )
-    }
-
-    private fun createTestOrderDraftItem(
-        orderDraft: OrderDraft,
-        product: Product,
-        boxQuantity: Int = 5,
-        pieceQuantity: Int = 10
-    ): OrderDraftItem {
-        val amount = (boxQuantity.toLong() * product.piecesPerBox + pieceQuantity) * product.unitPrice
-        return OrderDraftItem(
-            id = 1L,
-            orderDraft = orderDraft,
-            productCode = product.productCode,
-            productName = product.productName,
-            boxQuantity = boxQuantity,
-            pieceQuantity = pieceQuantity,
-            unitPrice = product.unitPrice,
-            amount = amount,
-            piecesPerBox = product.piecesPerBox,
-            minOrderUnit = product.minOrderUnit,
-            supplyQuantity = product.supplyQuantity,
-            dcQuantity = product.dcQuantity
-        )
-    }
-
-    // --- getMyDraft tests ---
-
-    @Test
-    @DisplayName("getMyDraft - 임시저장된 주문이 존재하면 OrderDraftResponse를 반환한다")
-    fun getMyDraft_whenDraftExists_returnsOrderDraftResponse() {
-        // given
-        val userId = 1L
-        val user = createTestEmployee(userId)
-        val store = createTestStore()
-        val product = createTestProduct()
-        val draft = createTestOrderDraft(user, store, totalAmount = 1300000L)
-        val draftItem = createTestOrderDraftItem(draft, product, boxQuantity = 5, pieceQuantity = 10)
-        draft.items.add(draftItem)
-
-        whenever(orderDraftRepository.findByUserIdWithItems(userId)).thenReturn(draft)
-
-        // when
-        val result = orderDraftService.getMyDraft(userId)
-
-        // then
-        assertThat(result).isNotNull
-        assertThat(result!!.clientId).isEqualTo(store.id)
-        assertThat(result.clientName).isEqualTo("롯데마트 응암점")
-        assertThat(result.deliveryDate).isEqualTo(draft.deliveryDate.toString())
-        assertThat(result.totalAmount).isEqualTo(1300000L)
-        assertThat(result.items).hasSize(1)
-        assertThat(result.items[0].productCode).isEqualTo("01101123")
-        assertThat(result.items[0].boxQuantity).isEqualTo(5)
-        assertThat(result.items[0].pieceQuantity).isEqualTo(10)
-        // amount = (5 * 50 + 10) * 5000 = 260 * 5000 = 1,300,000
-        assertThat(result.items[0].amount).isEqualTo(1300000L)
-        assertThat(result.items[0].piecesPerBox).isEqualTo(50)
-
-        verify(orderDraftRepository).findByUserIdWithItems(userId)
-    }
-
-    @Test
-    @DisplayName("getMyDraft - 임시저장된 주문이 없으면 null을 반환한다")
-    fun getMyDraft_whenNoDraft_returnsNull() {
-        // given
-        val userId = 1L
-        whenever(orderDraftRepository.findByUserIdWithItems(userId)).thenReturn(null)
-
-        // when
-        val result = orderDraftService.getMyDraft(userId)
-
-        // then
-        assertThat(result).isNull()
-        verify(orderDraftRepository).findByUserIdWithItems(userId)
-    }
-
-    // --- saveDraft tests ---
-
-    @Test
-    @DisplayName("saveDraft - 새로운 임시저장을 성공적으로 저장한다")
-    fun saveDraft_success_savesNewDraft() {
-        // given
-        val userId = 1L
-        val clientId = 1L
-        val tomorrow = LocalDate.now().plusDays(1)
-        val user = createTestEmployee(userId)
-        val store = createTestStore(clientId)
-        val product = createTestProduct()
-
-        val request = OrderDraftRequest(
-            clientId = clientId,
-            deliveryDate = tomorrow.toString(),
-            items = listOf(
-                DraftItemRequest(productCode = "01101123", boxQuantity = 5, pieceQuantity = 10)
+        @Test
+        @DisplayName("H1 - 신규 등록 (기존 임시저장 없음) → tmp_order 1행 + 라인 1행")
+        fun newSave() {
+            whenever(employeeRepository.findById(eq(userId))).thenReturn(Optional.of(employee()))
+            whenever(accountRepository.findById(eq(accountId.toInt()))).thenReturn(Optional.of(account()))
+            whenever(tmpOrderRepository.findByEmployeeIdForUpdate(userId)).thenReturn(null)
+            whenever(productRepository.findByProductCodeIn(any())).thenReturn(
+                listOf(Product(id = 99L, productCode = "P001", name = "진라면")),
             )
-        )
+            whenever(tmpOrderRepository.save(any<TmpOrder>())).thenAnswer { inv ->
+                val o = inv.arguments[0] as TmpOrder
+                setId(o, 99L)
+                o
+            }
 
-        whenever(storeRepository.findById(clientId)).thenReturn(Optional.of(store))
-        whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(user))
-        whenever(productRepository.findByProductCodeIn(listOf("01101123"))).thenReturn(listOf(product))
-        whenever(orderDraftRepository.save(any<OrderDraft>())).thenAnswer { it.arguments[0] as OrderDraft }
+            val response = service.save(userId, req())
 
-        // when
-        val result = orderDraftService.saveDraft(userId, request)
-
-        // then
-        assertThat(result).isNotNull
-        assertThat(result.savedAt).isNotBlank()
-
-        verify(orderDraftRepository).deleteByUserId(userId)
-        verify(storeRepository).findById(clientId)
-        verify(employeeRepository).findById(userId)
-        verify(productRepository).findByProductCodeIn(listOf("01101123"))
-        verify(orderDraftRepository).save(any<OrderDraft>())
-    }
-
-    @Test
-    @DisplayName("saveDraft - 기존 임시저장을 덮어쓴다 (deleteByUserId 호출 확인)")
-    fun saveDraft_overwritesExistingDraft() {
-        // given
-        val userId = 1L
-        val clientId = 1L
-        val tomorrow = LocalDate.now().plusDays(1)
-        val user = createTestEmployee(userId)
-        val store = createTestStore(clientId)
-        val product = createTestProduct()
-
-        val request = OrderDraftRequest(
-            clientId = clientId,
-            deliveryDate = tomorrow.toString(),
-            items = listOf(
-                DraftItemRequest(productCode = "01101123", boxQuantity = 3, pieceQuantity = 20)
-            )
-        )
-
-        whenever(storeRepository.findById(clientId)).thenReturn(Optional.of(store))
-        whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(user))
-        whenever(productRepository.findByProductCodeIn(listOf("01101123"))).thenReturn(listOf(product))
-        whenever(orderDraftRepository.save(any<OrderDraft>())).thenAnswer { it.arguments[0] as OrderDraft }
-
-        // when
-        val result = orderDraftService.saveDraft(userId, request)
-
-        // then
-        assertThat(result).isNotNull
-        verify(orderDraftRepository).deleteByUserId(userId)
-        verify(orderDraftRepository).save(any<OrderDraft>())
-    }
-
-    @Test
-    @DisplayName("saveDraft - 거래처를 찾을 수 없으면 ClientNotFoundException을 발생시킨다")
-    fun saveDraft_whenClientNotFound_throwsClientNotFoundException() {
-        // given
-        val userId = 1L
-        val clientId = 999L
-        val tomorrow = LocalDate.now().plusDays(1)
-
-        val request = OrderDraftRequest(
-            clientId = clientId,
-            deliveryDate = tomorrow.toString(),
-            items = listOf(
-                DraftItemRequest(productCode = "01101123", boxQuantity = 5, pieceQuantity = 10)
-            )
-        )
-
-        whenever(storeRepository.findById(clientId)).thenReturn(Optional.empty())
-
-        // when & then
-        assertThatThrownBy { orderDraftService.saveDraft(userId, request) }
-            .isInstanceOf(ClientNotFoundException::class.java)
-    }
-
-    @Test
-    @DisplayName("saveDraft - 제품을 찾을 수 없으면 ProductNotFoundException을 발생시킨다")
-    fun saveDraft_whenProductNotFound_throwsProductNotFoundException() {
-        // given
-        val userId = 1L
-        val clientId = 1L
-        val tomorrow = LocalDate.now().plusDays(1)
-        val user = createTestEmployee(userId)
-        val store = createTestStore(clientId)
-        val product = createTestProduct("01101123")
-
-        val request = OrderDraftRequest(
-            clientId = clientId,
-            deliveryDate = tomorrow.toString(),
-            items = listOf(
-                DraftItemRequest(productCode = "01101123", boxQuantity = 5, pieceQuantity = 10),
-                DraftItemRequest(productCode = "INVALID99", boxQuantity = 2, pieceQuantity = 5)
-            )
-        )
-
-        whenever(storeRepository.findById(clientId)).thenReturn(Optional.of(store))
-        whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(user))
-        whenever(productRepository.findByProductCodeIn(listOf("01101123", "INVALID99")))
-            .thenReturn(listOf(product))
-
-        // when & then
-        assertThatThrownBy { orderDraftService.saveDraft(userId, request) }
-            .isInstanceOf(ProductNotFoundException::class.java)
-            .hasMessageContaining("INVALID99")
-    }
-
-    @Test
-    @DisplayName("saveDraft - 잘못된 납기일 형식이면 InvalidDeliveryDateException을 발생시킨다")
-    fun saveDraft_whenInvalidDateFormat_throwsInvalidDeliveryDateException() {
-        // given
-        val userId = 1L
-        val clientId = 1L
-
-        val request = OrderDraftRequest(
-            clientId = clientId,
-            deliveryDate = "invalid-date",
-            items = listOf(
-                DraftItemRequest(productCode = "01101123", boxQuantity = 5, pieceQuantity = 10)
-            )
-        )
-
-        // 날짜 파싱이 거래처 확인보다 먼저 실행되므로 storeRepository mock 불필요
-
-        // when & then
-        assertThatThrownBy { orderDraftService.saveDraft(userId, request) }
-            .isInstanceOf(InvalidDeliveryDateException::class.java)
-    }
-
-    @Test
-    @DisplayName("saveDraft - 납기일이 과거이면 InvalidDeliveryDateException을 발생시킨다")
-    fun saveDraft_whenPastDate_throwsInvalidDeliveryDateException() {
-        // given
-        val userId = 1L
-        val clientId = 1L
-        val yesterday = LocalDate.now().minusDays(1)
-
-        val request = OrderDraftRequest(
-            clientId = clientId,
-            deliveryDate = yesterday.toString(),
-            items = listOf(
-                DraftItemRequest(productCode = "01101123", boxQuantity = 5, pieceQuantity = 10)
-            )
-        )
-
-        // 날짜 검증이 거래처 확인보다 먼저 실행되므로 storeRepository mock 불필요
-
-        // when & then
-        assertThatThrownBy { orderDraftService.saveDraft(userId, request) }
-            .isInstanceOf(InvalidDeliveryDateException::class.java)
-    }
-
-    @Test
-    @DisplayName("saveDraft - 금액 계산이 정확하다: (5*50+10)*5000 = 1,300,000")
-    fun saveDraft_calculatesAmountCorrectly() {
-        // given
-        val userId = 1L
-        val clientId = 1L
-        val tomorrow = LocalDate.now().plusDays(1)
-        val user = createTestEmployee(userId)
-        val store = createTestStore(clientId)
-        val product = createTestProduct(piecesPerBox = 50, unitPrice = 5000)
-
-        val request = OrderDraftRequest(
-            clientId = clientId,
-            deliveryDate = tomorrow.toString(),
-            items = listOf(
-                DraftItemRequest(productCode = "01101123", boxQuantity = 5, pieceQuantity = 10)
-            )
-        )
-
-        whenever(storeRepository.findById(clientId)).thenReturn(Optional.of(store))
-        whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(user))
-        whenever(productRepository.findByProductCodeIn(listOf("01101123"))).thenReturn(listOf(product))
-
-        // ArgumentCaptor 대신 answer로 저장된 OrderDraft를 캡처
-        var capturedDraft: OrderDraft? = null
-        whenever(orderDraftRepository.save(any<OrderDraft>())).thenAnswer {
-            capturedDraft = it.arguments[0] as OrderDraft
-            capturedDraft!!
+            assertThat(response.draftId).isEqualTo(99L)
+            verify(tmpOrderRepository, never()).delete(any<TmpOrder>())
+            verify(tmpOrderRepository).save(any<TmpOrder>())
         }
 
-        // when
-        orderDraftService.saveDraft(userId, request)
+        @Test
+        @DisplayName("H2 - 덮어쓰기 등록 (기존 임시저장 있음) → 기존 삭제 후 새 IDENTITY")
+        fun overwriteSave() {
+            val existing = TmpOrder(id = 10L, employeeId = userId)
+            whenever(employeeRepository.findById(eq(userId))).thenReturn(Optional.of(employee()))
+            whenever(accountRepository.findById(eq(accountId.toInt()))).thenReturn(Optional.of(account()))
+            whenever(tmpOrderRepository.findByEmployeeIdForUpdate(userId)).thenReturn(existing)
+            whenever(productRepository.findByProductCodeIn(any())).thenReturn(emptyList())
+            whenever(tmpOrderRepository.save(any<TmpOrder>())).thenAnswer { inv ->
+                val o = inv.arguments[0] as TmpOrder
+                setId(o, 11L)
+                o
+            }
 
-        // then
-        assertThat(capturedDraft).isNotNull
-        assertThat(capturedDraft!!.totalAmount).isEqualTo(1300000L)
-        assertThat(capturedDraft!!.items).hasSize(1)
-        assertThat(capturedDraft!!.items[0].amount).isEqualTo(1300000L)
+            val response = service.save(userId, req())
+
+            assertThat(response.draftId).isEqualTo(11L)
+            assertThat(response.draftId).isNotEqualTo(10L) // 새 IDENTITY
+            verify(tmpOrderRepository).delete(eq(existing))
+            verify(tmpOrderRepository).save(any<TmpOrder>())
+        }
+
+        @Test
+        @DisplayName("E1 - 본인 담당 거래처 아님 → ORD_DRAFT_ACCOUNT_FORBIDDEN")
+        fun notMyAccount() {
+            whenever(employeeRepository.findById(eq(userId))).thenReturn(Optional.of(employee()))
+            whenever(accountRepository.findById(eq(accountId.toInt())))
+                .thenReturn(Optional.of(account(empCode = "OTHER")))
+
+            assertThatThrownBy { service.save(userId, req()) }
+                .isInstanceOf(OrderDraftAccountForbiddenException::class.java)
+
+            verify(tmpOrderRepository, never()).save(any<TmpOrder>())
+        }
+
+        @Test
+        @DisplayName("E1 - 거래처 employeeCode 가 null → ORD_DRAFT_ACCOUNT_FORBIDDEN")
+        fun nullAccountEmpCode() {
+            whenever(employeeRepository.findById(eq(userId))).thenReturn(Optional.of(employee()))
+            whenever(accountRepository.findById(eq(accountId.toInt())))
+                .thenReturn(Optional.of(account(empCode = null)))
+
+            assertThatThrownBy { service.save(userId, req()) }
+                .isInstanceOf(OrderDraftAccountForbiddenException::class.java)
+        }
+
+        @Test
+        @DisplayName("E3 - 단위 잘못된 값 → ORD_DRAFT_INVALID_REQUEST")
+        fun invalidUnit() {
+            val request = req(lines = listOf(line(unit = "CASE")))
+            assertThatThrownBy { service.save(userId, request) }
+                .isInstanceOf(OrderDraftInvalidRequestException::class.java)
+        }
+
+        @Test
+        @DisplayName("E2 - 동일 요청 내 lineNumber 중복 → ORD_DRAFT_INVALID_REQUEST")
+        fun duplicateLineNumber() {
+            val request = req(
+                lines = listOf(line(lineNumber = 1, productCode = "P1"), line(lineNumber = 1, productCode = "P2")),
+            )
+            assertThatThrownBy { service.save(userId, request) }
+                .isInstanceOf(OrderDraftInvalidRequestException::class.java)
+        }
     }
 
-    // --- deleteDraft tests ---
+    @Nested
+    @DisplayName("findByUserId - 조회")
+    inner class FindTests {
 
-    @Test
-    @DisplayName("deleteDraft - 임시저장 주문을 성공적으로 삭제한다")
-    fun deleteDraft_success() {
-        // given
-        val userId = 1L
-        val user = createTestEmployee(userId)
-        val store = createTestStore()
-        val draft = createTestOrderDraft(user, store)
+        @Test
+        @DisplayName("H4 - 임시저장 없음 → null")
+        fun notFound() {
+            whenever(tmpOrderRepository.findByEmployeeId(userId)).thenReturn(null)
+            val response = service.findByUserId(userId)
+            assertThat(response).isNull()
+        }
 
-        whenever(orderDraftRepository.findByUserIdWithItems(userId)).thenReturn(draft)
+        @Test
+        @DisplayName("H3 - 임시저장 있음 → 헤더+라인 매핑")
+        fun foundWithLines() {
+            val draft = TmpOrder(
+                id = 99L,
+                tmpEmployeeCode = employeeCode,
+                tmpAccountCode = "EK001",
+                tmpTotalAmount = "1234567",
+                accountId = accountId,
+                employeeId = userId,
+            )
+            val product = TmpOrderProduct(
+                id = 1L,
+                tmpProductCode = "P001",
+                employeeId = userId,
+                productId = 99L,
+                tmpOrder = draft,
+                lineNumber = 10,
+                unit = "BOX",
+                quantity = BigDecimal("10"),
+                quantityPieces = 100,
+                quantityBoxes = BigDecimal("10"),
+                unitPrice = BigDecimal("12345"),
+                amount = BigDecimal("123450"),
+            )
+            draft.products += product
+            whenever(tmpOrderRepository.findByEmployeeId(userId)).thenReturn(draft)
+            whenever(accountRepository.findById(eq(accountId.toInt()))).thenReturn(Optional.of(account()))
+            whenever(productRepository.findByProductCodeIn(eq(listOf("P001")))).thenReturn(
+                listOf(Product(id = 99L, productCode = "P001", name = "진라면")),
+            )
 
-        // when
-        orderDraftService.deleteDraft(userId)
+            val response = service.findByUserId(userId)
 
-        // then
-        verify(orderDraftRepository).findByUserIdWithItems(userId)
-        verify(orderDraftRepository).delete(draft)
+            assertThat(response).isNotNull
+            assertThat(response!!.draftId).isEqualTo(99L)
+            assertThat(response.accountId).isEqualTo(accountId)
+            assertThat(response.accountName).isEqualTo("테스트거래처")
+            assertThat(response.accountExternalKey).isEqualTo("EK001")
+            assertThat(response.totalAmount).isEqualTo(1234567L)
+            assertThat(response.lines).hasSize(1)
+            assertThat(response.lines[0].productCode).isEqualTo("P001")
+            assertThat(response.lines[0].productName).isEqualTo("진라면")
+            assertThat(response.lines[0].unit).isEqualTo("BOX")
+            assertThat(response.lines[0].quantity).isEqualByComparingTo("10")
+        }
     }
 
-    @Test
-    @DisplayName("deleteDraft - 임시저장 주문이 없으면 DraftNotFoundException을 발생시킨다")
-    fun deleteDraft_whenNoDraft_throwsDraftNotFoundException() {
-        // given
-        val userId = 1L
-        whenever(orderDraftRepository.findByUserIdWithItems(userId)).thenReturn(null)
+    @Nested
+    @DisplayName("deleteByEmployeeId - 멱등 삭제")
+    inner class DeleteTests {
 
-        // when & then
-        assertThatThrownBy { orderDraftService.deleteDraft(userId) }
-            .isInstanceOf(DraftNotFoundException::class.java)
+        @Test
+        @DisplayName("H5/H6 - 있어도 없어도 호출 가능 (멱등)")
+        fun deleteIdempotent() {
+            whenever(tmpOrderRepository.deleteByEmployeeId(userId)).thenReturn(1L)
+            service.deleteByEmployeeId(userId)
+            verify(tmpOrderRepository).deleteByEmployeeId(userId)
 
-        verify(orderDraftRepository).findByUserIdWithItems(userId)
+            whenever(tmpOrderRepository.deleteByEmployeeId(userId)).thenReturn(0L)
+            service.deleteByEmployeeId(userId)
+        }
     }
 }
-*/

@@ -54,6 +54,7 @@ class OrderRequestCreateServiceTest {
     @Mock private lateinit var inventorySearchClient: SapInventorySearchClient
     @Mock private lateinit var loanInquiryClient: SapLoanInquiryClient
     @Mock private lateinit var orderRequestRegisterSender: OrderRequestRegisterSender
+    @Mock private lateinit var orderDraftService: OrderDraftService
     @Mock private lateinit var entityManager: EntityManager
     @Mock private lateinit var nativeQuery: Query
     @InjectMocks private lateinit var service: OrderRequestCreateService
