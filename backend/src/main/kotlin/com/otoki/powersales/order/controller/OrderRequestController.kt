@@ -2,10 +2,13 @@ package com.otoki.powersales.order.controller
 
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.order.dto.request.OrderCancelRequest
 import com.otoki.powersales.order.dto.request.OrderRequestCreateRequest
+import com.otoki.powersales.order.dto.response.OrderCancelResponse
 import com.otoki.powersales.order.dto.response.OrderRequestCreateResponse
 import com.otoki.powersales.order.dto.response.OrderRequestDetailResponse
 import com.otoki.powersales.order.dto.response.OrderRequestListResponse
+import com.otoki.powersales.order.service.OrderCancelService
 import com.otoki.powersales.order.service.OrderRequestCreateService
 import com.otoki.powersales.order.service.OrderRequestService
 import jakarta.validation.Valid
@@ -28,6 +31,7 @@ import java.time.LocalDate
 class OrderRequestController(
     private val orderRequestService: OrderRequestService,
     private val orderRequestCreateService: OrderRequestCreateService,
+    private val orderCancelService: OrderCancelService,
 ) {
 
     /**
@@ -69,6 +73,22 @@ class OrderRequestController(
     ): ResponseEntity<ApiResponse<OrderRequestDetailResponse>> {
         val response = orderRequestService.getOrderRequestDetail(orderRequestId, principal.userId)
         return ResponseEntity.ok(ApiResponse.success(response, "조회 성공"))
+    }
+
+    /**
+     * POST /api/v1/mobile/me/order-requests/{orderRequestId}/cancel — 본인 주문 취소 (Spec #597).
+     *
+     * `orderProductIds` 빈 배열이면 전체 라인 취소, 그 외는 부분 취소 (라인 PK 배열).
+     */
+    @PostMapping("/me/order-requests/{orderRequestId}/cancel")
+    fun cancelOrderRequest(
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @PathVariable orderRequestId: Long,
+        @RequestBody(required = false) request: OrderCancelRequest?,
+    ): ResponseEntity<ApiResponse<OrderCancelResponse>> {
+        val orderProductIds = request?.orderProductIds.orEmpty()
+        val response = orderCancelService.cancel(orderRequestId, principal.userId, orderProductIds)
+        return ResponseEntity.ok(ApiResponse.success(response, "주문이 취소되었습니다"))
     }
 
     /**

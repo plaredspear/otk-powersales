@@ -1,14 +1,11 @@
-/*
 package com.otoki.powersales.order.dto.request
 
-import jakarta.validation.constraints.NotBlank
-import jakarta.validation.constraints.NotEmpty
-
-/ **
- * 주문 취소 요청 DTO
- * /
+/**
+ * 주문 취소 요청 DTO (Spec #597).
+ *
+ * `orderProductIds` 가 빈 배열이면 해당 주문의 모든 라인을 취소 (전체 취소).
+ * 일부 라인 PK 만 포함되면 부분 취소 (레거시 `view.jsp:131-140` 동등).
+ */
 data class OrderCancelRequest(
-    @field:NotEmpty(message = "취소할 제품을 선택해주세요")
-    val productCodes: List<@NotBlank(message = "제품코드는 비어있을 수 없습니다") String>
+    val orderProductIds: List<Long> = emptyList(),
 )
-*/

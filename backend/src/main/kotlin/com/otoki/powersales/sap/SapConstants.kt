@@ -32,4 +32,7 @@ object SapConstants {
 
     /** 본인 주문요청 상세 조회 interfaceId (Spec #595). 레거시 `IF_REST_SAP_OrderRequestDetail` 등가. */
     const val SAP_INTERFACE_ORDER_REQUEST_DETAIL: String = "OrderRequestDetail"
+
+    /** 주문 취소 동기 callout interfaceId (Spec #597). 레거시 `IF_REST_SAP_OrderChange` 등가. */
+    const val SAP_INTERFACE_ORDER_REQUEST_CANCEL: String = "OrderChange"
 }
