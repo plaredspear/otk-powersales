@@ -29,4 +29,7 @@ object SapConstants {
 
     /** 거래처 여신 한도 조회 interfaceId (Spec #594). 레거시 `IF_REST_SAP_LoanInquiry` 등가. */
     const val SAP_INTERFACE_LOAN_INQUIRY: String = "LoanInquiry"
+
+    /** 본인 주문요청 상세 조회 interfaceId (Spec #595). 레거시 `IF_REST_SAP_OrderRequestDetail` 등가. */
+    const val SAP_INTERFACE_ORDER_REQUEST_DETAIL: String = "OrderRequestDetail"
 }

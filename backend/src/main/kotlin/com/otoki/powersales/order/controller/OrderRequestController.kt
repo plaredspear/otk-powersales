@@ -4,6 +4,7 @@ import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.common.security.UserPrincipal
 import com.otoki.powersales.order.dto.request.OrderRequestCreateRequest
 import com.otoki.powersales.order.dto.response.OrderRequestCreateResponse
+import com.otoki.powersales.order.dto.response.OrderRequestDetailResponse
 import com.otoki.powersales.order.dto.response.OrderRequestListResponse
 import com.otoki.powersales.order.service.OrderRequestCreateService
 import com.otoki.powersales.order.service.OrderRequestService
@@ -13,6 +14,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
@@ -54,6 +56,18 @@ class OrderRequestController(
             sortBy = sortBy,
             sortDir = sortDir,
         )
+        return ResponseEntity.ok(ApiResponse.success(response, "조회 성공"))
+    }
+
+    /**
+     * GET /api/v1/mobile/me/order-requests/{orderRequestId} — 본인 주문요청 상세 조회 (Spec #595).
+     */
+    @GetMapping("/me/order-requests/{orderRequestId}")
+    fun getOrderRequestDetail(
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @PathVariable orderRequestId: Long,
+    ): ResponseEntity<ApiResponse<OrderRequestDetailResponse>> {
+        val response = orderRequestService.getOrderRequestDetail(orderRequestId, principal.userId)
         return ResponseEntity.ok(ApiResponse.success(response, "조회 성공"))
     }
 

@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:51526",
+    "url" : "http://localhost:63751",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -3659,6 +3659,33 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseOrderRequestListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/me/order-requests/{orderRequestId}" : {
+      "get" : {
+        "tags" : [ "order-request-controller" ],
+        "operationId" : "getOrderRequestDetail",
+        "parameters" : [ {
+          "name" : "orderRequestId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseOrderRequestDetailResponse"
                 }
               }
             }
@@ -8247,7 +8274,7 @@
           "employeeCode" : {
             "type" : "string",
             "minLength" : 1,
-            "pattern" : "^\\d{8}$"
+            "pattern" : "^(\\d{8}|ADMIN-[A-Za-z0-9_-]{1,30})$"
           },
           "password" : {
             "type" : "string",
@@ -10377,15 +10404,15 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "pageable" : {
             "$ref" : "#/components/schemas/PageableObject"
@@ -10415,6 +10442,9 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
+          "unpaged" : {
+            "type" : "boolean"
+          },
           "pageSize" : {
             "type" : "integer",
             "format" : "int32"
@@ -10428,9 +10458,6 @@
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "unpaged" : {
-            "type" : "boolean"
           },
           "offset" : {
             "type" : "integer",
@@ -10916,6 +10943,185 @@
           },
           "closed" : {
             "type" : "boolean"
+          }
+        }
+      },
+      "ApiResponseOrderRequestDetailResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/OrderRequestDetailResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "OrderProcessingStatusResponse" : {
+        "type" : "object",
+        "properties" : {
+          "sapOrderNumber" : {
+            "type" : "string"
+          },
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ProcessingItemResponse"
+            }
+          }
+        }
+      },
+      "OrderRequestDetailResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "orderRequestNumber" : {
+            "type" : "string"
+          },
+          "clientId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "clientName" : {
+            "type" : "string"
+          },
+          "clientDeadlineTime" : {
+            "type" : [ "string", "null" ]
+          },
+          "orderDate" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "deliveryDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "totalAmount" : {
+            "type" : "number"
+          },
+          "totalApprovedAmount" : {
+            "type" : "number"
+          },
+          "orderRequestStatus" : {
+            "type" : "string",
+            "enum" : [ "DRAFT", "SENT", "APPROVED", "SEND_FAILED", "CANCELED" ]
+          },
+          "orderedItemCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "orderedItems" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/OrderedItemResponse"
+            }
+          },
+          "orderProcessingStatusList" : {
+            "type" : [ "array", "null" ],
+            "items" : {
+              "$ref" : "#/components/schemas/OrderProcessingStatusResponse"
+            }
+          },
+          "rejectedItems" : {
+            "type" : [ "array", "null" ],
+            "items" : {
+              "$ref" : "#/components/schemas/RejectedItemResponse"
+            }
+          },
+          "closed" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "OrderedItemResponse" : {
+        "type" : "object",
+        "properties" : {
+          "productCode" : {
+            "type" : "string"
+          },
+          "productName" : {
+            "type" : "string"
+          },
+          "totalQuantityBoxes" : {
+            "type" : "number"
+          },
+          "totalQuantityPieces" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "cancelled" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "ProcessingItemResponse" : {
+        "type" : "object",
+        "properties" : {
+          "productCode" : {
+            "type" : "string"
+          },
+          "productName" : {
+            "type" : "string"
+          },
+          "deliveredQuantity" : {
+            "type" : "string"
+          },
+          "deliveryStatus" : {
+            "type" : "string",
+            "enum" : [ "PENDING", "SHIPPING", "DELIVERED", "OUT_OF_STOCK" ]
+          },
+          "driverName" : {
+            "type" : [ "string", "null" ]
+          },
+          "vehicle" : {
+            "type" : [ "string", "null" ]
+          },
+          "driverPhone" : {
+            "type" : [ "string", "null" ]
+          },
+          "scheduleTime" : {
+            "type" : [ "string", "null" ]
+          },
+          "completeTime" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "RejectedItemResponse" : {
+        "type" : "object",
+        "properties" : {
+          "productCode" : {
+            "type" : "string"
+          },
+          "productName" : {
+            "type" : "string"
+          },
+          "orderQuantityBoxes" : {
+            "type" : "number"
+          },
+          "rejectionReason" : {
+            "type" : "string"
           }
         }
       },
@@ -12555,15 +12761,15 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "pageable" : {
             "$ref" : "#/components/schemas/PageableObject"

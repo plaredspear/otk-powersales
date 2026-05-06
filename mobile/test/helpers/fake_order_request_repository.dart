@@ -430,8 +430,9 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
     });
   }
 
-  /// Mock 주문 처리 현황 (마감후 주문에만 적용)
-  static OrderProcessingStatus? _getMockProcessingStatus(OrderRequest order) {
+  /// Mock 주문 처리 현황 (마감후 주문에만 적용) — Spec #595 Q1 옵션 2 정합으로 배열 반환.
+  static List<OrderProcessingStatus>? _getMockProcessingStatusList(
+      OrderRequest order) {
     if (!order.isClosed) return null;
 
     final items = _getMockOrderedItems(order.id);
@@ -442,20 +443,22 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
     ];
     final random = Random(order.id);
 
-    return OrderProcessingStatus(
-      sapOrderNumber: '030001${3650 + order.id}',
-      items: items.map((item) {
-        final statusIndex = random.nextInt(3);
-        final deliveredQty =
-            statusIndex == 2 ? '${item.totalQuantityPieces} EA' : '0 EA';
-        return ProcessingItem(
-          productCode: item.productCode,
-          productName: item.productName,
-          deliveredQuantity: deliveredQty,
-          deliveryStatus: statuses[statusIndex],
-        );
-      }).toList(),
-    );
+    return [
+      OrderProcessingStatus(
+        sapOrderNumber: '030001${3650 + order.id}',
+        items: items.map((item) {
+          final statusIndex = random.nextInt(3);
+          final deliveredQty =
+              statusIndex == 2 ? '${item.totalQuantityPieces} EA' : '0 EA';
+          return ProcessingItem(
+            productCode: item.productCode,
+            productName: item.productName,
+            deliveredQuantity: deliveredQty,
+            deliveryStatus: statuses[statusIndex],
+          );
+        }).toList(),
+      ),
+    ];
   }
 
   /// Mock 반려 제품 (특정 주문에만 적용)
@@ -493,7 +496,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
     );
 
     final orderedItems = _getMockOrderedItems(orderId);
-    final processingStatus = _getMockProcessingStatus(order);
+    final processingStatusList = _getMockProcessingStatusList(order);
     final rejectedItems = _getMockRejectedItems(order);
 
     return OrderDetail(
@@ -510,7 +513,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
       isClosed: order.isClosed,
       orderedItemCount: orderedItems.length,
       orderedItems: orderedItems,
-      orderProcessingStatus: processingStatus,
+      orderProcessingStatusList: processingStatusList,
       rejectedItems: rejectedItems,
     );
   }

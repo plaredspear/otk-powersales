@@ -58,18 +58,31 @@ class OrderedItemModel {
   }
 }
 
-/// 처리 항목 API 모델 (DTO)
+/// 처리 항목 API 모델 (DTO).
+///
+/// 차량/기사 5필드 (Q5) — `SHIPPING`/`DELIVERED` 라인 탭 팝업용. 서버가 빈 문자열 또는
+/// `'000000'` sentinel 을 `null` 로 매핑한 결과를 그대로 수신한다.
 class ProcessingItemModel {
   final String productCode;
   final String productName;
   final String deliveredQuantity;
   final String deliveryStatus;
+  final String? driverName;
+  final String? vehicle;
+  final String? driverPhone;
+  final String? scheduleTime;
+  final String? completeTime;
 
   const ProcessingItemModel({
     required this.productCode,
     required this.productName,
     required this.deliveredQuantity,
     required this.deliveryStatus,
+    this.driverName,
+    this.vehicle,
+    this.driverPhone,
+    this.scheduleTime,
+    this.completeTime,
   });
 
   factory ProcessingItemModel.fromJson(Map<String, dynamic> json) {
@@ -78,6 +91,11 @@ class ProcessingItemModel {
       productName: json['productName'] as String,
       deliveredQuantity: json['deliveredQuantity'] as String,
       deliveryStatus: json['deliveryStatus'] as String,
+      driverName: json['driverName'] as String?,
+      vehicle: json['vehicle'] as String?,
+      driverPhone: json['driverPhone'] as String?,
+      scheduleTime: json['scheduleTime'] as String?,
+      completeTime: json['completeTime'] as String?,
     );
   }
 
@@ -87,6 +105,11 @@ class ProcessingItemModel {
       'productName': productName,
       'deliveredQuantity': deliveredQuantity,
       'deliveryStatus': deliveryStatus,
+      'driverName': driverName,
+      'vehicle': vehicle,
+      'driverPhone': driverPhone,
+      'scheduleTime': scheduleTime,
+      'completeTime': completeTime,
     };
   }
 
@@ -96,6 +119,11 @@ class ProcessingItemModel {
       productName: productName,
       deliveredQuantity: deliveredQuantity,
       deliveryStatus: DeliveryStatus.fromCode(deliveryStatus),
+      driverName: driverName,
+      vehicle: vehicle,
+      driverPhone: driverPhone,
+      scheduleTime: scheduleTime,
+      completeTime: completeTime,
     );
   }
 }
@@ -193,7 +221,9 @@ class OrderRequestDetailModel {
   final bool isClosed;
   final int orderedItemCount;
   final List<OrderedItemModel> orderedItems;
-  final OrderProcessingStatusModel? orderProcessingStatus;
+
+  /// SAP 주문번호별 그룹 배열 (Spec #595 Q1 옵션 2). SAP 호출 실패 또는 마감 전 시 null.
+  final List<OrderProcessingStatusModel>? orderProcessingStatusList;
   final List<RejectedItemModel>? rejectedItems;
 
   const OrderRequestDetailModel({
@@ -210,7 +240,7 @@ class OrderRequestDetailModel {
     required this.isClosed,
     required this.orderedItemCount,
     required this.orderedItems,
-    this.orderProcessingStatus,
+    this.orderProcessingStatusList,
     this.rejectedItems,
   });
 
@@ -222,6 +252,8 @@ class OrderRequestDetailModel {
 
     final orderedItemsJson = data['orderedItems'] as List<dynamic>? ?? [];
     final rejectedItemsJson = data['rejectedItems'] as List<dynamic>?;
+    final processingListJson =
+        data['orderProcessingStatusList'] as List<dynamic>?;
 
     return OrderRequestDetailModel(
       id: data['id'] as int,
@@ -239,9 +271,11 @@ class OrderRequestDetailModel {
       orderedItems: orderedItemsJson
           .map((e) => OrderedItemModel.fromJson(e as Map<String, dynamic>))
           .toList(),
-      orderProcessingStatus: data['orderProcessingStatus'] != null
-          ? OrderProcessingStatusModel.fromJson(
-              data['orderProcessingStatus'] as Map<String, dynamic>)
+      orderProcessingStatusList: processingListJson != null
+          ? processingListJson
+              .map((e) => OrderProcessingStatusModel.fromJson(
+                  e as Map<String, dynamic>))
+              .toList()
           : null,
       rejectedItems: rejectedItemsJson != null
           ? rejectedItemsJson
@@ -268,7 +302,8 @@ class OrderRequestDetailModel {
       'isClosed': isClosed,
       'orderedItemCount': orderedItemCount,
       'orderedItems': orderedItems.map((e) => e.toJson()).toList(),
-      'orderProcessingStatus': orderProcessingStatus?.toJson(),
+      'orderProcessingStatusList':
+          orderProcessingStatusList?.map((e) => e.toJson()).toList(),
       'rejectedItems': rejectedItems?.map((e) => e.toJson()).toList(),
     };
   }
@@ -289,7 +324,8 @@ class OrderRequestDetailModel {
       isClosed: isClosed,
       orderedItemCount: orderedItemCount,
       orderedItems: orderedItems.map((e) => e.toEntity()).toList(),
-      orderProcessingStatus: orderProcessingStatus?.toEntity(),
+      orderProcessingStatusList:
+          orderProcessingStatusList?.map((e) => e.toEntity()).toList(),
       rejectedItems: rejectedItems?.map((e) => e.toEntity()).toList(),
     );
   }
