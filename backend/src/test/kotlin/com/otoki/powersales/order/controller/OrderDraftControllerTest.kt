@@ -1,29 +1,23 @@
-/*
 package com.otoki.powersales.order.controller
 
-import tools.jackson.databind.ObjectMapper
-import com.otoki.powersales.dto.request.DraftItemRequest
-import com.otoki.powersales.order.dto.request.OrderDraftRequest
-import com.otoki.powersales.dto.response.DraftItemResponse
-import com.otoki.powersales.dto.response.DraftSavedResponse
-import com.otoki.powersales.order.dto.response.OrderDraftResponse
+import com.otoki.powersales.admin.security.AdminAuthorityFilter
 import com.otoki.powersales.auth.entity.UserRole
-import com.otoki.powersales.exception.ClientNotFoundException
-import com.otoki.powersales.exception.DraftNotFoundException
-import com.otoki.powersales.exception.InvalidDeliveryDateException
-import com.otoki.powersales.exception.ProductNotFoundException
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
-import com.otoki.powersales.admin.security.AdminAuthorityFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.order.dto.response.OrderDraftDetailResponse
+import com.otoki.powersales.order.dto.response.OrderDraftLineResponse
+import com.otoki.powersales.order.dto.response.OrderDraftSaveResponse
+import com.otoki.powersales.order.exception.OrderDraftAccountForbiddenException
+import com.otoki.powersales.order.exception.OrderDraftInvalidRequestException
 import com.otoki.powersales.order.service.OrderDraftService
+import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
@@ -33,21 +27,21 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import java.math.BigDecimal
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 @WebMvcTest(OrderDraftController::class)
 @AutoConfigureMockMvc(addFilters = false)
-@DisplayName("OrderDraftController 테스트")
+@DisplayName("OrderDraftController 테스트 (#596)")
 class OrderDraftControllerTest {
 
     @Autowired
     private lateinit var mockMvc: MockMvc
-
-    @Autowired
-    private lateinit var objectMapper: ObjectMapper
 
     @MockitoBean
     private lateinit var orderDraftService: OrderDraftService
@@ -56,280 +50,166 @@ class OrderDraftControllerTest {
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
     @MockitoBean
-    private lateinit var sapInboundAuditService: SapInboundAuditService
+    private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
     @MockitoBean
-    private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-    @MockitoBean private lateinit var adminAuthorityFilter: AdminAuthorityFilter
+    private lateinit var adminAuthorityFilter: AdminAuthorityFilter
 
     @MockitoBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
-    private lateinit var testPrincipal: UserPrincipal
+    @MockitoBean
+    private lateinit var sapInboundAuditService: SapInboundAuditService
+
+    private val testPrincipal = UserPrincipal(userId = 1L, role = UserRole.WOMAN)
 
     @BeforeEach
     fun setUp() {
-        testPrincipal = UserPrincipal(userId = 1L, role = UserRole.WOMAN)
-        val authentication = UsernamePasswordAuthenticationToken(
-            testPrincipal, null, testPrincipal.authorities
-        )
-        SecurityContextHolder.getContext().authentication = authentication
+        SecurityContextHolder.getContext().authentication =
+            UsernamePasswordAuthenticationToken(testPrincipal, null, testPrincipal.authorities)
     }
 
-    @Test
-    @DisplayName("GET /api/v1/mobile/me/orders/draft - 임시저장 조회 성공 (데이터 존재)")
-    fun getDraft_WhenDraftExists_ReturnsSuccess() {
-        // given
-        val savedAt = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-        val draftResponse = OrderDraftResponse(
-            clientId = 100L,
-            clientName = "테스트 거래처",
-            deliveryDate = "2026-02-15",
-            items = listOf(
-                DraftItemResponse(
-                    productCode = "P001",
-                    productName = "테스트 상품",
-                    boxQuantity = 5,
-                    pieceQuantity = 3,
-                    unitPrice = 10000L,
-                    amount = 53000L,
-                    piecesPerBox = 10,
-                    minOrderUnit = 1,
-                    supplyQuantity = 53,
-                    dcQuantity = 0
-                )
-            ),
-            totalAmount = 53000L,
-            savedAt = savedAt
-        )
+    @Nested
+    @DisplayName("POST /api/v1/mobile/orders/draft - 등록")
+    inner class SaveTests {
 
-        whenever(orderDraftService.getMyDraft(eq(1L))).thenReturn(draftResponse)
-
-        // when & then (Jackson SNAKE_CASE 설정 적용)
-        mockMvc.perform(
-            get("/api/v1/mobile/me/orders/draft")
-                .contentType(MediaType.APPLICATION_JSON)
-        )
-            .andExpect(status().isOk)
-            .andExpect(jsonPath("$.success").value(true))
-            .andExpect(jsonPath("$.data").exists())
-            .andExpect(jsonPath("$.data.clientId").value(100))
-            .andExpect(jsonPath("$.data.clientName").value("테스트 거래처"))
-            .andExpect(jsonPath("$.data.deliveryDate").value("2026-02-15"))
-            .andExpect(jsonPath("$.data.items").isArray)
-            .andExpect(jsonPath("$.data.items[0].productCode").value("P001"))
-            .andExpect(jsonPath("$.data.items[0].productName").value("테스트 상품"))
-            .andExpect(jsonPath("$.data.items[0].boxQuantity").value(5))
-            .andExpect(jsonPath("$.data.items[0].pieceQuantity").value(3))
-            .andExpect(jsonPath("$.data.items[0].unitPrice").value(10000))
-            .andExpect(jsonPath("$.data.items[0].amount").value(53000))
-            .andExpect(jsonPath("$.data.totalAmount").value(53000))
-            .andExpect(jsonPath("$.data.savedAt").value(savedAt))
-    }
-
-    @Test
-    @DisplayName("GET /api/v1/mobile/me/orders/draft - 임시저장 조회 성공 (데이터 없음)")
-    fun getDraft_WhenNoDraft_ReturnsNullData() {
-        // given
-        whenever(orderDraftService.getMyDraft(eq(1L))).thenReturn(null)
-
-        // when & then
-        mockMvc.perform(
-            get("/api/v1/mobile/me/orders/draft")
-                .contentType(MediaType.APPLICATION_JSON)
-        )
-            .andExpect(status().isOk)
-            .andExpect(jsonPath("$.success").value(true))
-            .andExpect(jsonPath("$.data").isEmpty)
-    }
-
-    @Test
-    @DisplayName("POST /api/v1/mobile/me/orders/draft - 임시저장 생성 성공")
-    fun saveDraft_WithValidRequest_ReturnsSuccess() {
-        // given
-        val savedAt = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-        // Jackson SNAKE_CASE이므로 objectMapper로 직렬화 시 snake_case로 변환됨
-        val request = OrderDraftRequest(
-            clientId = 100L,
-            deliveryDate = "2026-02-15",
-            items = listOf(
-                DraftItemRequest(
-                    productCode = "P001",
-                    boxQuantity = 5,
-                    pieceQuantity = 3
-                )
-            )
-        )
-        val response = DraftSavedResponse(savedAt = savedAt)
-
-        whenever(orderDraftService.saveDraft(eq(1L), any())).thenReturn(response)
-
-        // when & then
-        mockMvc.perform(
-            post("/api/v1/mobile/me/orders/draft")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request))
-        )
-            .andExpect(status().isOk)
-            .andExpect(jsonPath("$.success").value(true))
-            .andExpect(jsonPath("$.data.savedAt").value(savedAt))
-    }
-
-    @Test
-    @DisplayName("POST /api/v1/mobile/me/orders/draft - clientId 누락 시 검증 실패")
-    fun saveDraft_WithMissingClientId_ReturnsValidationError() {
-        // given - snake_case JSON으로 직접 구성
-        val invalidJson = """
+        private val validBody = """
             {
-                "clientId": null,
-                "deliveryDate": "2026-02-15",
-                "items": [{"productCode": "P001", "boxQuantity": 5, "pieceQuantity": 3}]
+              "accountId": 5678,
+              "totalAmount": 1234567,
+              "lines": [
+                {
+                  "lineNumber": 10, "productCode": "P001", "unit": "BOX",
+                  "quantity": 10, "quantityPieces": 100, "quantityBoxes": 10,
+                  "unitPrice": 12345, "amount": 1234500
+                }
+              ]
             }
         """.trimIndent()
 
-        // when & then
-        mockMvc.perform(
-            post("/api/v1/mobile/me/orders/draft")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(invalidJson)
-        )
-            .andExpect(status().isBadRequest)
-            .andExpect(jsonPath("$.success").value(false))
-            .andExpect(jsonPath("$.error").exists())
-    }
-
-    @Test
-    @DisplayName("POST /api/v1/mobile/me/orders/draft - items 비어있을 때 검증 실패")
-    fun saveDraft_WithEmptyItems_ReturnsValidationError() {
-        // given
-        val invalidJson = """
-            {
-                "clientId": 100,
-                "deliveryDate": "2026-02-15",
-                "items": []
-            }
-        """.trimIndent()
-
-        // when & then
-        mockMvc.perform(
-            post("/api/v1/mobile/me/orders/draft")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(invalidJson)
-        )
-            .andExpect(status().isBadRequest)
-            .andExpect(jsonPath("$.success").value(false))
-            .andExpect(jsonPath("$.error").exists())
-    }
-
-    @Test
-    @DisplayName("POST /api/v1/mobile/me/orders/draft - 거래처 미존재 시 404 반환")
-    fun saveDraft_WithNonExistentClient_ReturnsNotFound() {
-        // given
-        val request = OrderDraftRequest(
-            clientId = 999L,
-            deliveryDate = "2026-02-15",
-            items = listOf(
-                DraftItemRequest(productCode = "P001", boxQuantity = 5, pieceQuantity = 3)
+        @Test
+        @DisplayName("H1 - 정상 등록 → 200 + draftId")
+        fun success() {
+            whenever(orderDraftService.save(any(), any())).thenReturn(
+                OrderDraftSaveResponse(draftId = 99L, savedAt = LocalDateTime.of(2026, 5, 4, 10, 0)),
             )
-        )
 
-        whenever(orderDraftService.saveDraft(eq(1L), any()))
-            .thenThrow(ClientNotFoundException())
-
-        // when & then
-        mockMvc.perform(
-            post("/api/v1/mobile/me/orders/draft")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request))
-        )
-            .andExpect(status().isNotFound)
-            .andExpect(jsonPath("$.success").value(false))
-            .andExpect(jsonPath("$.error.code").value("CLIENT_NOT_FOUND"))
-            .andExpect(jsonPath("$.error.message").exists())
-    }
-
-    @Test
-    @DisplayName("POST /api/v1/mobile/me/orders/draft - 상품 미존재 시 404 반환")
-    fun saveDraft_WithNonExistentProduct_ReturnsNotFound() {
-        // given
-        val request = OrderDraftRequest(
-            clientId = 100L,
-            deliveryDate = "2026-02-15",
-            items = listOf(
-                DraftItemRequest(productCode = "INVALID", boxQuantity = 5, pieceQuantity = 3)
+            mockMvc.perform(
+                post("/api/v1/mobile/orders/draft")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(validBody),
             )
-        )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.draftId").value(99))
+                .andExpect(jsonPath("$.message").value("임시저장이 완료되었습니다"))
+        }
 
-        whenever(orderDraftService.saveDraft(eq(1L), any()))
-            .thenThrow(ProductNotFoundException("INVALID"))
+        @Test
+        @DisplayName("E2 - lines 누락 → 400")
+        fun emptyLines() {
+            val body = """
+                { "accountId": 5678, "totalAmount": 0, "lines": [] }
+            """.trimIndent()
 
-        // when & then
-        mockMvc.perform(
-            post("/api/v1/mobile/me/orders/draft")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request))
-        )
-            .andExpect(status().isNotFound)
-            .andExpect(jsonPath("$.success").value(false))
-            .andExpect(jsonPath("$.error.code").value("PRODUCT_NOT_FOUND"))
-            .andExpect(jsonPath("$.error.message").exists())
-    }
-
-    @Test
-    @DisplayName("POST /api/v1/mobile/me/orders/draft - 잘못된 배송일자 시 400 반환")
-    fun saveDraft_WithInvalidDeliveryDate_ReturnsBadRequest() {
-        // given
-        val request = OrderDraftRequest(
-            clientId = 100L,
-            deliveryDate = "2026-01-01",
-            items = listOf(
-                DraftItemRequest(productCode = "P001", boxQuantity = 5, pieceQuantity = 3)
+            mockMvc.perform(
+                post("/api/v1/mobile/orders/draft")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(body),
             )
-        )
+                .andExpect(status().isBadRequest)
+        }
 
-        whenever(orderDraftService.saveDraft(eq(1L), any()))
-            .thenThrow(InvalidDeliveryDateException())
+        @Test
+        @DisplayName("E1 - 본인 외 거래처 → 403 ORD_DRAFT_ACCOUNT_FORBIDDEN")
+        fun forbidden() {
+            whenever(orderDraftService.save(any(), any()))
+                .thenThrow(OrderDraftAccountForbiddenException())
 
-        // when & then
-        mockMvc.perform(
-            post("/api/v1/mobile/me/orders/draft")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request))
-        )
-            .andExpect(status().isBadRequest)
-            .andExpect(jsonPath("$.success").value(false))
-            .andExpect(jsonPath("$.error.code").value("INVALID_DATE"))
-            .andExpect(jsonPath("$.error.message").exists())
+            mockMvc.perform(
+                post("/api/v1/mobile/orders/draft")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(validBody),
+            )
+                .andExpect(status().isForbidden)
+                .andExpect(jsonPath("$.error.code").value("ORD_DRAFT_ACCOUNT_FORBIDDEN"))
+        }
+
+        @Test
+        @DisplayName("E3 - 단위 잘못 (Service 예외) → 400 ORD_DRAFT_INVALID_REQUEST")
+        fun invalidUnit() {
+            whenever(orderDraftService.save(any(), any()))
+                .thenThrow(OrderDraftInvalidRequestException("단위 오류"))
+
+            mockMvc.perform(
+                post("/api/v1/mobile/orders/draft")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(validBody),
+            )
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.error.code").value("ORD_DRAFT_INVALID_REQUEST"))
+        }
     }
 
-    @Test
-    @DisplayName("DELETE /api/v1/mobile/me/orders/draft - 임시저장 삭제 성공")
-    fun deleteDraft_WhenDraftExists_ReturnsSuccess() {
-        // when & then
-        mockMvc.perform(
-            delete("/api/v1/mobile/me/orders/draft")
-                .contentType(MediaType.APPLICATION_JSON)
-        )
-            .andExpect(status().isOk)
-            .andExpect(jsonPath("$.success").value(true))
+    @Nested
+    @DisplayName("GET /api/v1/mobile/orders/draft - 조회")
+    inner class GetTests {
+
+        @Test
+        @DisplayName("H4 - 임시저장 없음 → 200 + data:null")
+        fun empty() {
+            whenever(orderDraftService.findByUserId(any())).thenReturn(null)
+
+            mockMvc.perform(get("/api/v1/mobile/orders/draft"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+        }
+
+        @Test
+        @DisplayName("H3 - 임시저장 있음 → 200 + 헤더+라인")
+        fun found() {
+            val response = OrderDraftDetailResponse(
+                draftId = 99L,
+                accountId = 5678L,
+                accountName = "홍길동상회",
+                accountExternalKey = "EK001",
+                totalAmount = 1234567,
+                savedAt = LocalDateTime.of(2026, 5, 4, 10, 0),
+                lines = listOf(
+                    OrderDraftLineResponse(
+                        lineNumber = 10,
+                        productCode = "P001",
+                        productName = "진라면",
+                        unit = "BOX",
+                        quantity = BigDecimal("10"),
+                        quantityPieces = 100,
+                        quantityBoxes = BigDecimal("10"),
+                        unitPrice = BigDecimal("12345"),
+                        amount = BigDecimal("1234500"),
+                    ),
+                ),
+            )
+            whenever(orderDraftService.findByUserId(any())).thenReturn(response)
+
+            mockMvc.perform(get("/api/v1/mobile/orders/draft"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data.draftId").value(99))
+                .andExpect(jsonPath("$.data.accountName").value("홍길동상회"))
+                .andExpect(jsonPath("$.data.totalAmount").value(1234567))
+                .andExpect(jsonPath("$.data.lines[0].productCode").value("P001"))
+                .andExpect(jsonPath("$.data.lines[0].unit").value("BOX"))
+        }
     }
 
-    @Test
-    @DisplayName("DELETE /api/v1/mobile/me/orders/draft - 임시저장 미존재 시 404 반환")
-    fun deleteDraft_WhenNoDraft_ReturnsNotFound() {
-        // given
-        whenever(orderDraftService.deleteDraft(eq(1L)))
-            .thenThrow(DraftNotFoundException())
+    @Nested
+    @DisplayName("DELETE /api/v1/mobile/orders/draft - 삭제 (멱등)")
+    inner class DeleteTests {
 
-        // when & then
-        mockMvc.perform(
-            delete("/api/v1/mobile/me/orders/draft")
-                .contentType(MediaType.APPLICATION_JSON)
-        )
-            .andExpect(status().isNotFound)
-            .andExpect(jsonPath("$.success").value(false))
-            .andExpect(jsonPath("$.error.code").value("DRAFT_NOT_FOUND"))
-            .andExpect(jsonPath("$.error.message").exists())
+        @Test
+        @DisplayName("H5/H6 - 있어도 없어도 204")
+        fun noContent() {
+            mockMvc.perform(delete("/api/v1/mobile/orders/draft"))
+                .andExpect(status().isNoContent)
+        }
     }
 }
-*/

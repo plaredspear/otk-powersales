@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:63751",
+    "url" : "http://localhost:58993",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -1605,6 +1605,59 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/orders/draft" : {
+      "get" : {
+        "tags" : [ "order-draft-controller" ],
+        "operationId" : "get",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseOrderDraftDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "order-draft-controller" ],
+        "operationId" : "save",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/OrderDraftRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseOrderDraftSaveResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "order-draft-controller" ],
+        "operationId" : "delete_1",
+        "responses" : {
+          "200" : {
+            "description" : "OK"
           }
         }
       }
@@ -8018,6 +8071,112 @@
           }
         }
       },
+      "OrderDraftLineRequest" : {
+        "type" : "object",
+        "properties" : {
+          "lineNumber" : {
+            "type" : "integer",
+            "format" : "int32",
+            "minimum" : 0
+          },
+          "productCode" : {
+            "type" : "string",
+            "maxLength" : 20,
+            "minLength" : 1
+          },
+          "unit" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "quantity" : {
+            "type" : "number",
+            "minimum" : 0.01
+          },
+          "quantityPieces" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "minimum" : 0
+          },
+          "quantityBoxes" : {
+            "type" : [ "number", "null" ],
+            "minimum" : 0
+          },
+          "unitPrice" : {
+            "type" : [ "number", "null" ],
+            "minimum" : 0
+          },
+          "amount" : {
+            "type" : [ "number", "null" ],
+            "minimum" : 0
+          }
+        },
+        "required" : [ "productCode", "unit" ]
+      },
+      "OrderDraftRequest" : {
+        "type" : "object",
+        "properties" : {
+          "accountId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "minimum" : 1
+          },
+          "totalAmount" : {
+            "type" : "integer",
+            "format" : "int64",
+            "minimum" : 0
+          },
+          "lines" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/OrderDraftLineRequest"
+            },
+            "minItems" : 1
+          }
+        },
+        "required" : [ "lines" ]
+      },
+      "ApiResponseOrderDraftSaveResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/OrderDraftSaveResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "OrderDraftSaveResponse" : {
+        "type" : "object",
+        "properties" : {
+          "draftId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "savedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
       "OrderRequestCreateLine" : {
         "type" : "object",
         "properties" : {
@@ -10404,15 +10563,15 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
-          },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
           },
           "pageable" : {
             "$ref" : "#/components/schemas/PageableObject"
@@ -10442,9 +10601,6 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
-          "unpaged" : {
-            "type" : "boolean"
-          },
           "pageSize" : {
             "type" : "integer",
             "format" : "int32"
@@ -10458,6 +10614,9 @@
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "unpaged" : {
+            "type" : "boolean"
           },
           "offset" : {
             "type" : "integer",
@@ -10530,6 +10689,102 @@
           "timestamp" : {
             "type" : "string",
             "format" : "date-time"
+          }
+        }
+      },
+      "ApiResponseOrderDraftDetailResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/OrderDraftDetailResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "OrderDraftDetailResponse" : {
+        "type" : "object",
+        "properties" : {
+          "draftId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "accountId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "accountName" : {
+            "type" : "string"
+          },
+          "accountExternalKey" : {
+            "type" : [ "string", "null" ]
+          },
+          "totalAmount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "savedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "lines" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/OrderDraftLineResponse"
+            }
+          }
+        }
+      },
+      "OrderDraftLineResponse" : {
+        "type" : "object",
+        "properties" : {
+          "lineNumber" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "productCode" : {
+            "type" : "string"
+          },
+          "productName" : {
+            "type" : [ "string", "null" ]
+          },
+          "unit" : {
+            "type" : "string"
+          },
+          "quantity" : {
+            "type" : "number"
+          },
+          "quantityPieces" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "quantityBoxes" : {
+            "type" : [ "number", "null" ]
+          },
+          "unitPrice" : {
+            "type" : [ "number", "null" ]
+          },
+          "amount" : {
+            "type" : [ "number", "null" ]
           }
         }
       },
@@ -12761,15 +13016,15 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
-          },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
           },
           "pageable" : {
             "$ref" : "#/components/schemas/PageableObject"

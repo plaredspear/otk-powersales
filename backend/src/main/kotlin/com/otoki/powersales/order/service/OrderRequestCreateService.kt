@@ -51,6 +51,7 @@ class OrderRequestCreateService(
     private val inventorySearchClient: SapInventorySearchClient,
     private val loanInquiryClient: SapLoanInquiryClient,
     private val orderRequestRegisterSender: OrderRequestRegisterSender,
+    private val orderDraftService: OrderDraftService,
     private val entityManager: EntityManager,
 ) {
 
@@ -130,6 +131,9 @@ class OrderRequestCreateService(
 
         // 7. sap_outbox 적재
         orderRequestRegisterSender.enqueue(savedHeader, savedLines)
+
+        // 8. 임시저장 자동 삭제 (Spec #596 Q4 — 레거시 버그 보강).
+        orderDraftService.deleteByEmployeeId(userId)
 
         return OrderRequestCreateResponse.from(savedHeader)
     }

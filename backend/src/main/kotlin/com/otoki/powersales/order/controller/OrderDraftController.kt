@@ -1,61 +1,57 @@
-/*
 package com.otoki.powersales.order.controller
 
 import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.order.dto.request.OrderDraftRequest
-import com.otoki.powersales.dto.response.DraftSavedResponse
-import com.otoki.powersales.order.dto.response.OrderDraftResponse
 import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.order.dto.request.OrderDraftRequest
+import com.otoki.powersales.order.dto.response.OrderDraftDetailResponse
+import com.otoki.powersales.order.dto.response.OrderDraftSaveResponse
 import com.otoki.powersales.order.service.OrderDraftService
 import jakarta.validation.Valid
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
 
-/ **
- * 임시저장 주문서 API Controller
- * /
+/**
+ * 주문 임시저장 (Draft) API — Spec #596.
+ *
+ * - `POST /api/v1/mobile/orders/draft` — 등록 (UPSERT, 사번당 1건).
+ * - `GET /api/v1/mobile/orders/draft` — 본인 임시저장 단건 조회 (없으면 `data: null`).
+ * - `DELETE /api/v1/mobile/orders/draft` — 본인 임시저장 삭제 (없어도 204 멱등).
+ */
 @RestController
-@RequestMapping("/api/v1/mobile/me/orders/draft")
+@RequestMapping("/api/v1/mobile/orders/draft")
 class OrderDraftController(
-    private val orderDraftService: OrderDraftService
+    private val orderDraftService: OrderDraftService,
 ) {
 
-    / **
-     * 임시저장 주문서 조회
-     * GET /api/v1/mobile/me/orders/draft
-     * /
-    @GetMapping
-    fun getMyDraft(
-        @AuthenticationPrincipal principal: UserPrincipal
-    ): ResponseEntity<ApiResponse<OrderDraftResponse?>> {
-        val result = orderDraftService.getMyDraft(userId = principal.userId)
-        return ResponseEntity.ok(ApiResponse.success(result, "조회 성공"))
-    }
-
-    / **
-     * 주문서 임시저장
-     * POST /api/v1/mobile/me/orders/draft
-     * /
     @PostMapping
-    fun saveDraft(
+    fun save(
         @AuthenticationPrincipal principal: UserPrincipal,
-        @Valid @RequestBody request: OrderDraftRequest
-    ): ResponseEntity<ApiResponse<DraftSavedResponse>> {
-        val result = orderDraftService.saveDraft(userId = principal.userId, request = request)
-        return ResponseEntity.ok(ApiResponse.success(result, "임시 저장되었습니다"))
+        @Valid @RequestBody request: OrderDraftRequest,
+    ): ResponseEntity<ApiResponse<OrderDraftSaveResponse>> {
+        val response = orderDraftService.save(principal.userId, request)
+        return ResponseEntity.ok(ApiResponse.success(response, "임시저장이 완료되었습니다"))
     }
 
-    / **
-     * 임시저장 주문서 삭제
-     * DELETE /api/v1/mobile/me/orders/draft
-     * /
+    @GetMapping
+    fun get(
+        @AuthenticationPrincipal principal: UserPrincipal,
+    ): ResponseEntity<ApiResponse<OrderDraftDetailResponse?>> {
+        val response = orderDraftService.findByUserId(principal.userId)
+        return ResponseEntity.ok(ApiResponse.success(response, "조회 성공"))
+    }
+
     @DeleteMapping
-    fun deleteDraft(
-        @AuthenticationPrincipal principal: UserPrincipal
-    ): ResponseEntity<ApiResponse<Any?>> {
-        orderDraftService.deleteDraft(userId = principal.userId)
-        return ResponseEntity.ok(ApiResponse.success(null as Any?, "임시 저장 주문서가 삭제되었습니다"))
+    fun delete(
+        @AuthenticationPrincipal principal: UserPrincipal,
+    ): ResponseEntity<Void> {
+        orderDraftService.deleteByEmployeeId(principal.userId)
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build()
     }
 }
-*/

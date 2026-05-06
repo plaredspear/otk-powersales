@@ -1,174 +1,169 @@
-/*
 package com.otoki.powersales.order.service
 
-import com.otoki.powersales.order.dto.request.OrderDraftRequest
-import com.otoki.powersales.dto.response.DraftSavedResponse
-import com.otoki.powersales.order.dto.response.OrderDraftResponse
-import com.otoki.powersales.order.entity.OrderDraft
-import com.otoki.powersales.order.entity.OrderDraftItem
-import com.otoki.powersales.exception.ClientNotFoundException
-import com.otoki.powersales.exception.DraftNotFoundException
-import com.otoki.powersales.exception.InvalidDeliveryDateException
-import com.otoki.powersales.exception.ProductNotFoundException
-import com.otoki.powersales.order.repository.OrderDraftRepository
-import com.otoki.powersales.product.repository.ProductRepository
-import com.otoki.powersales.repository.AccountRepository
+import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.draft.entity.TmpOrder
+import com.otoki.powersales.draft.entity.TmpOrderProduct
+import com.otoki.powersales.draft.repository.TmpOrderRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.order.dto.request.OrderDraftRequest
+import com.otoki.powersales.order.dto.response.OrderDraftDetailResponse
+import com.otoki.powersales.order.dto.response.OrderDraftLineResponse
+import com.otoki.powersales.order.dto.response.OrderDraftSaveResponse
+import com.otoki.powersales.order.exception.OrderDraftAccountForbiddenException
+import com.otoki.powersales.order.exception.OrderDraftInvalidRequestException
+import com.otoki.powersales.product.repository.ProductRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-import java.time.format.DateTimeParseException
 
-/ **
- * 임시저장 주문서 Service
- * /
+/**
+ * 주문 임시저장 (Draft) 서비스 — Spec #596.
+ *
+ * - **사번당 1건 정책 (Q2)**: DB UNIQUE(`employee_id`) 강제. UPSERT 시 row lock 직렬화 (§2.5).
+ * - **트랜잭션 보강 (Q9)**: 등록/삭제 모두 단일 `@Transactional`. 레거시 부분 적재 결함 보강.
+ * - **납기일 미보관 (Q8)**: `tmp_order` 에 컬럼 부재. 사용자가 복원 시 폼에서 재입력.
+ * - **정식 등록 후 자동 삭제 (Q4)**: `OrderRequestCreateService` 가 본 서비스의
+ *   [deleteByEmployeeId] 를 호출 (#592 트랜잭션 내).
+ */
 @Service
 @Transactional(readOnly = true)
 class OrderDraftService(
-    private val orderDraftRepository: OrderDraftRepository,
-    private val productRepository: ProductRepository,
+    private val tmpOrderRepository: TmpOrderRepository,
     private val accountRepository: AccountRepository,
-    private val employeeRepository: EmployeeRepository
+    private val employeeRepository: EmployeeRepository,
+    private val productRepository: ProductRepository,
 ) {
 
-    / **
-     * 임시저장 주문서 조회
-     *
-     * @param userId 로그인 사용자 ID
-     * @return 임시저장 주문서 (없으면 null)
-     * /
-    fun getMyDraft(userId: Long): OrderDraftResponse? {
-        val draft = orderDraftRepository.findByUserIdWithItems(userId) ?: return null
-        return OrderDraftResponse.from(draft)
-    }
+    private val allowedUnits = setOf("BOX", "EA")
 
-    / **
-     * 주문서 임시저장
-     * 기존 임시저장 데이터가 있으면 삭제하고, 새로 생성한다.
+    /**
+     * 임시저장 등록 — UPSERT.
      *
-     * @param userId 로그인 사용자 ID
-     * @param request 임시저장 요청 데이터
-     * @return 저장 결과
-     * /
+     * §2.5 동시성 정책: pessimistic row lock 으로 직렬화. UNIQUE 충돌 발생 안 함.
+     */
     @Transactional
-    fun saveDraft(userId: Long, request: OrderDraftRequest): DraftSavedResponse {
-        val clientId = request.clientId!!
-        val deliveryDateStr = request.deliveryDate!!
-        val items = request.items!!
+    fun save(userId: Long, request: OrderDraftRequest): OrderDraftSaveResponse {
+        validateRequest(request)
 
-        // 1. 납기일 파싱 및 검증
-        val deliveryDate = parseDeliveryDate(deliveryDateStr)
-        if (!deliveryDate.isAfter(LocalDate.now())) {
-            throw InvalidDeliveryDateException()
-        }
-
-        // 2. 거래처 확인
-        val account = accountRepository.findById(clientId)
-            .orElseThrow { ClientNotFoundException() }
-
-        // 3. 사용자 확인
         val employee = employeeRepository.findById(userId)
-            .orElseThrow { IllegalStateException("사용자를 찾을 수 없습니다") }
+            .orElseThrow { OrderDraftAccountForbiddenException() }
+        val account = accountRepository.findById(request.accountId.toInt())
+            .orElseThrow { OrderDraftInvalidRequestException("거래처를 찾을 수 없습니다") }
 
-        // 4. 제품 목록 일괄 조회
-        val productCodes = items.map { it.productCode!! }
-        val products = productRepository.findByProductCodeIn(productCodes)
-        val productMap = products.associateBy { it.productCode }
-
-        // 5. 존재하지 않는 제품 확인
-        val missingProducts = productCodes.filter { it !in productMap }
-        if (missingProducts.isNotEmpty()) {
-            throw ProductNotFoundException(missingProducts.first())
+        if (account.employeeCode.isNullOrBlank() || account.employeeCode != employee.employeeCode) {
+            throw OrderDraftAccountForbiddenException()
         }
 
-        // 6. 기존 임시저장 삭제
-        orderDraftRepository.deleteByUserId(userId)
+        // §2.5 row lock — 동일 사번 동시 등록 직렬화. 기존 row 가 있으면 잠금, 없으면 첫 INSERT 가 UNIQUE 보장.
+        val existing = tmpOrderRepository.findByEmployeeIdForUpdate(userId)
+        if (existing != null) {
+            tmpOrderRepository.delete(existing)
+            tmpOrderRepository.flush()
+        }
 
-        // 7. 금액 계산 및 OrderDraft 생성
-        var totalAmount = 0L
-        val draftItems = mutableListOf<OrderDraftItem>()
-
-        val draft = OrderDraft(
-            user = employee,
-            account = account,
-            deliveryDate = deliveryDate,
-            totalAmount = 0 // 아래에서 계산 후 업데이트
+        val draft = TmpOrder(
+            tmpEmployeeCode = employee.employeeCode,
+            tmpAccountCode = account.externalKey,
+            tmpOrderDate = LocalDate.now(),
+            tmpTotalAmount = request.totalAmount.toString(),
+            accountId = request.accountId,
+            employeeId = userId,
         )
 
-        for (itemReq in items) {
-            val product = productMap[itemReq.productCode!!]!!
-            val boxQty = itemReq.boxQuantity!!
-            val pieceQty = itemReq.pieceQuantity!!
-            val amount = (boxQty.toLong() * product.piecesPerBox + pieceQty) * product.unitPrice
-            totalAmount += amount
-
-            val draftItem = OrderDraftItem(
-                orderDraft = draft,
-                productCode = product.productCode,
-                productName = product.productName,
-                boxQuantity = boxQty,
-                pieceQuantity = pieceQty,
-                unitPrice = product.unitPrice,
-                amount = amount,
-                piecesPerBox = product.piecesPerBox,
-                minOrderUnit = product.minOrderUnit,
-                supplyQuantity = product.supplyQuantity,
-                dcQuantity = product.dcQuantity
+        // 제품 마스터 일괄 조회 — productId 채움 (Heroku 호환). 미존재 시 null 허용 (검증은 정식 등록 시).
+        val productIds = productRepository.findByProductCodeIn(request.lines.map { it.productCode })
+            .associateBy({ it.productCode }, { it.id })
+        request.lines.forEach { line ->
+            val productId = productIds[line.productCode]
+            val product = TmpOrderProduct(
+                tmpEmployeeCode = employee.employeeCode,
+                tmpProductCode = line.productCode,
+                tmpBoxCnt = line.quantityBoxes?.toPlainString(),
+                tmpEaCnt = line.quantityPieces?.toString(),
+                tmpTotalCnt = line.quantity.toPlainString(),
+                employeeId = userId,
+                productId = productId,
+                tmpOrder = draft,
+                lineNumber = line.lineNumber,
+                unit = line.unit,
+                quantity = line.quantity,
+                quantityPieces = line.quantityPieces,
+                quantityBoxes = line.quantityBoxes,
+                unitPrice = line.unitPrice,
+                amount = line.amount,
             )
-            draftItems.add(draftItem)
+            draft.products += product
         }
 
-        // 8. totalAmount가 있는 새 OrderDraft 생성 (val이므로 재생성)
-        val draftWithTotal = OrderDraft(
-            user = employee,
-            account = account,
-            deliveryDate = deliveryDate,
-            totalAmount = totalAmount
-        )
-        for (item in draftItems) {
-            val itemWithDraft = OrderDraftItem(
-                orderDraft = draftWithTotal,
-                productCode = item.productCode,
-                productName = item.productName,
-                boxQuantity = item.boxQuantity,
-                pieceQuantity = item.pieceQuantity,
-                unitPrice = item.unitPrice,
-                amount = item.amount,
-                piecesPerBox = item.piecesPerBox,
-                minOrderUnit = item.minOrderUnit,
-                supplyQuantity = item.supplyQuantity,
-                dcQuantity = item.dcQuantity
-            )
-            draftWithTotal.items.add(itemWithDraft)
-        }
+        val saved = tmpOrderRepository.save(draft)
+        return OrderDraftSaveResponse(draftId = saved.id, savedAt = LocalDateTime.now())
+    }
 
-        val saved = orderDraftRepository.save(draftWithTotal)
-
-        return DraftSavedResponse(
-            savedAt = saved.createdAt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+    /**
+     * 임시저장 조회 — 본인 사번 기준 단건 (없으면 null).
+     */
+    fun findByUserId(userId: Long): OrderDraftDetailResponse? {
+        val draft = tmpOrderRepository.findByEmployeeId(userId) ?: return null
+        val account = draft.accountId?.let { accountRepository.findById(it.toInt()).orElse(null) }
+        val productCodes = draft.products.mapNotNull { it.tmpProductCode }.distinct()
+        val productNames = productRepository.findByProductCodeIn(productCodes)
+            .associate { (it.productCode ?: "") to it.name }
+        val lines = draft.products
+            .sortedBy { it.lineNumber ?: Int.MAX_VALUE }
+            .map { line ->
+                val name = line.tmpProductCode?.let { productNames[it] }
+                OrderDraftLineResponse(
+                    lineNumber = line.lineNumber ?: 0,
+                    productCode = line.tmpProductCode.orEmpty(),
+                    productName = name,
+                    unit = line.unit ?: inferUnit(line),
+                    quantity = line.quantity ?: java.math.BigDecimal.ZERO,
+                    quantityPieces = line.quantityPieces,
+                    quantityBoxes = line.quantityBoxes,
+                    unitPrice = line.unitPrice,
+                    amount = line.amount,
+                )
+            }
+        return OrderDraftDetailResponse(
+            draftId = draft.id,
+            accountId = draft.accountId ?: 0,
+            accountName = account?.name.orEmpty(),
+            accountExternalKey = account?.externalKey,
+            totalAmount = draft.tmpTotalAmount?.toLongOrNull() ?: 0L,
+            savedAt = draft.updatedAt,
+            lines = lines,
         )
     }
 
-    / **
-     * 임시저장 주문서 삭제
-     *
-     * @param userId 로그인 사용자 ID
-     * /
+    /**
+     * 임시저장 삭제 — 본인 사번 기준. 없어도 멱등 (예외 없음).
+     */
     @Transactional
-    fun deleteDraft(userId: Long) {
-        val draft = orderDraftRepository.findByUserIdWithItems(userId)
-            ?: throw DraftNotFoundException()
-        orderDraftRepository.delete(draft)
+    fun deleteByEmployeeId(employeeId: Long) {
+        tmpOrderRepository.deleteByEmployeeId(employeeId)
     }
 
-    private fun parseDeliveryDate(dateStr: String): LocalDate {
-        return try {
-            LocalDate.parse(dateStr, DateTimeFormatter.ISO_LOCAL_DATE)
-        } catch (e: DateTimeParseException) {
-            throw InvalidDeliveryDateException()
+    private fun validateRequest(request: OrderDraftRequest) {
+        val lineNumbers = request.lines.map { it.lineNumber }
+        if (lineNumbers.distinct().size != lineNumbers.size) {
+            throw OrderDraftInvalidRequestException("동일 요청 내 lineNumber 가 중복되었습니다")
         }
+        request.lines.forEach { line ->
+            if (line.unit !in allowedUnits) {
+                throw OrderDraftInvalidRequestException(
+                    "unit 은 ${allowedUnits} 중 하나여야 합니다 (productCode: ${line.productCode})",
+                )
+            }
+        }
+    }
+
+    /**
+     * 신규 컬럼이 비어 있는 레거시(Heroku) row 의 단위 추정 (`box_cnt` ≠ 0 → BOX, 그 외 EA).
+     * 본 스펙 신규 등록은 항상 `unit` 을 채우므로 이 경로는 마이그레이션 잔존 데이터 호환용.
+     */
+    private fun inferUnit(line: TmpOrderProduct): String {
+        val boxNonZero = line.tmpBoxCnt?.toBigDecimalOrNull()?.signum() ?: 0
+        return if (boxNonZero > 0) "BOX" else "EA"
     }
 }
-*/
