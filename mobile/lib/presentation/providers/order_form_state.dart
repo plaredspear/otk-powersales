@@ -1,3 +1,4 @@
+import '../../data/models/order_form/order_draft_response_model.dart';
 import '../../domain/entities/order_draft.dart';
 import '../../domain/entities/validation_error.dart';
 
@@ -48,6 +49,12 @@ class OrderFormState {
   /// 거래처 PK — `submitOrderRequest` 페이로드 `accountId`.
   final int? selectedAccountId;
 
+  /// 거래처 ID → SAP externalKey 병행 매핑 (P2-M 거래처 선택 시 lookup).
+  final Map<int, String> clientExternalKeys;
+
+  /// `getOrderDraft` 응답 임시 보관 — 사용자가 다이얼로그 "예"/"아니오" 선택 후 사용.
+  final OrderDraftResponseModel? pendingDraft;
+
   const OrderFormState({
     required this.orderDraft,
     this.clients = const {},
@@ -62,6 +69,8 @@ class OrderFormState {
     this.draftId,
     this.selectedExternalKey,
     this.selectedAccountId,
+    this.clientExternalKeys = const {},
+    this.pendingDraft,
   });
 
   /// 초기 상태
@@ -137,6 +146,8 @@ class OrderFormState {
     int? draftId,
     String? selectedExternalKey,
     int? selectedAccountId,
+    Map<int, String>? clientExternalKeys,
+    OrderDraftResponseModel? pendingDraft,
     bool clearError = false,
     bool clearSuccess = false,
     bool clearValidationErrors = false,
@@ -145,6 +156,7 @@ class OrderFormState {
     bool clearDraftId = false,
     bool clearSelectedExternalKey = false,
     bool clearSelectedAccountId = false,
+    bool clearPendingDraft = false,
   }) {
     return OrderFormState(
       orderDraft: orderDraft ?? this.orderDraft,
@@ -170,6 +182,9 @@ class OrderFormState {
       selectedAccountId: clearSelectedAccountId
           ? null
           : (selectedAccountId ?? this.selectedAccountId),
+      clientExternalKeys: clientExternalKeys ?? this.clientExternalKeys,
+      pendingDraft:
+          clearPendingDraft ? null : (pendingDraft ?? this.pendingDraft),
     );
   }
 }
