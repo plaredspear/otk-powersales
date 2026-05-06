@@ -138,7 +138,28 @@ class AdminAuthControllerTest {
                 .andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"))
-                .andExpect(jsonPath("$.error.message", containsString("사번은 8자리")))
+                .andExpect(jsonPath("$.error.message", containsString("사번은 8자리 숫자 또는 'ADMIN-'")))
+        }
+
+        @Test
+        @DisplayName("성공 - ADMIN- prefix 사번 (예: ADMIN-LOCAL-001) 도 validation 통과")
+        fun adminLogin_acceptAdminPrefixCode() {
+            // Given
+            val mockResponse = AdminLoginResponse(
+                user = AdminUserInfo(2L, "ADMIN-LOCAL-001", "시스템관리자(로컬)", "본사 IT팀", "SYSTEM_ADMIN", "시스템관리자", null, listOf("MANAGE_PERMISSIONS")),
+                token = AdminTokenInfo("access-token", "refresh-token", 3600)
+            )
+            whenever(authService.adminLogin(any())).thenReturn(mockResponse)
+
+            // When & Then
+            mockMvc.perform(
+                post("/api/v1/admin/auth/login")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"employeeCode": "ADMIN-LOCAL-001", "password": "1234"}""")
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.user.employeeCode").value("ADMIN-LOCAL-001"))
         }
     }
 

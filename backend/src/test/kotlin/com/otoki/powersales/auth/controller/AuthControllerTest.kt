@@ -195,7 +195,7 @@ class AuthControllerTest {
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"))
-            .andExpect(jsonPath("$.error.message", containsString("사번은 8자리")))
+            .andExpect(jsonPath("$.error.message", containsString("사번은 8자리 숫자 또는 'ADMIN-'")))
     }
 
     @Test
