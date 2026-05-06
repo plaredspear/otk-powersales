@@ -34,6 +34,14 @@ class ProductForOrder {
   /// 소분류 카테고리
   final String? categorySub;
 
+  /// 제품 유형 (Spec #598 P3-M §2.1 — 차단 룰).
+  /// `'EXCLUSIVE'` 면 전용상품으로 추가 차단. 그 외는 통과. 레거시 `producttype__c=='2'` 매핑.
+  final String? productType;
+
+  /// 시식·증정용 여부 (Spec #598 P3-M §2.1 — 차단 룰).
+  /// `'TASTING_GIFT'` 면 시식·증정으로 추가 차단. 레거시 `tastegift__c='x'/'X'` 매핑.
+  final String? tasteGiftType;
+
   const ProductForOrder({
     required this.productCode,
     required this.productName,
@@ -45,7 +53,15 @@ class ProductForOrder {
     required this.isFavorite,
     this.categoryMid,
     this.categorySub,
+    this.productType,
+    this.tasteGiftType,
   });
+
+  /// 전용상품 여부 (`productType == 'EXCLUSIVE'`).
+  bool get isExclusive => productType == 'EXCLUSIVE';
+
+  /// 시식·증정용 여부 (`tasteGiftType == 'TASTING_GIFT'`).
+  bool get isTastingGift => tasteGiftType == 'TASTING_GIFT';
 
   /// 보관 조건 아이콘 이모지
   String get storageTypeIcon {
@@ -72,6 +88,8 @@ class ProductForOrder {
     bool? isFavorite,
     String? categoryMid,
     String? categorySub,
+    String? productType,
+    String? tasteGiftType,
   }) {
     return ProductForOrder(
       productCode: productCode ?? this.productCode,
@@ -84,6 +102,8 @@ class ProductForOrder {
       isFavorite: isFavorite ?? this.isFavorite,
       categoryMid: categoryMid ?? this.categoryMid,
       categorySub: categorySub ?? this.categorySub,
+      productType: productType ?? this.productType,
+      tasteGiftType: tasteGiftType ?? this.tasteGiftType,
     );
   }
 

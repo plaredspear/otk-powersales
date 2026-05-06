@@ -8,6 +8,7 @@ import '../providers/order_form_state.dart';
 import '../widgets/order_form/client_selector.dart';
 import '../widgets/order_form/credit_balance_display.dart';
 import '../widgets/order_form/delivery_date_picker.dart';
+import '../widgets/order_form/delivery_date_warning_dialog.dart';
 import '../widgets/order_form/draft_banner.dart';
 import '../widgets/order_form/draft_delete_dialog.dart';
 import '../widgets/order_form/draft_restore_dialog.dart';
@@ -105,6 +106,22 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
         });
       } else if (next == false) {
         _restoreDialogShown = false;
+      }
+    });
+
+    // (I) 납기일 +10일 다이얼로그 트리거 (Spec #598 P3-M §2.6).
+    ref.listen<bool>(
+        orderFormProvider.select((s) => s.requiresDeliveryDateConfirm),
+        (prev, next) {
+      if (next == true) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          DeliveryDateWarningDialog.show(
+            context,
+            onConfirm: () => notifier.confirmDeliveryDateAndSubmit(),
+            onCancel: () => notifier.cancelDeliveryDateConfirm(),
+          );
+        });
       }
     });
 
@@ -207,7 +224,10 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
                       scrollController: _scrollController,
                     ),
                     const SizedBox(height: AppSpacing.lg),
-                    TotalAmountDisplay(totalAmount: state.totalAmount),
+                    TotalAmountDisplay(
+                      totalAmount: state.totalAmount,
+                      creditBalance: state.creditBalance,
+                    ),
                     const SizedBox(height: AppSpacing.lg),
                     OrderFormActionButtons(
                       onDelete: () => DraftDeleteDialog.show(

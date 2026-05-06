@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/presentation/widgets/order_form/delivery_date_warning_dialog.dart';
 import 'package:mobile/presentation/widgets/order_form/draft_delete_dialog.dart';
 import 'package:mobile/presentation/widgets/order_form/draft_restore_dialog.dart';
 import 'package:mobile/presentation/widgets/order_form/exit_confirm_dialog.dart';
@@ -49,6 +50,32 @@ void main() {
       expect(find.text('취소'), findsOneWidget);
       expect(find.text('삭제'), findsOneWidget);
       expect(DraftDeleteDialog.contentText, '임시저장 데이터를 삭제하시겠습니까?');
+    });
+
+    testWidgets('D4 — DeliveryDateWarningDialog 워딩 (P3-M I)', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(home: Builder(builder: (context) {
+          return ElevatedButton(
+            onPressed: () => DeliveryDateWarningDialog.show(
+              context,
+              onConfirm: () {},
+              onCancel: () {},
+            ),
+            child: const Text('open'),
+          );
+        })),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pump();
+
+      expect(find.text(DeliveryDateWarningDialog.titleText), findsOneWidget);
+      expect(find.text(DeliveryDateWarningDialog.contentText), findsOneWidget);
+      expect(find.text('아니오'), findsOneWidget);
+      expect(find.text('예'), findsOneWidget);
+      expect(
+        DeliveryDateWarningDialog.contentText,
+        '납기일자가 주문일자로부터 10일 이상입니다.\n그래도 주문을 진행하시겠습니까?',
+      );
     });
 
     testWidgets('D3 — ExitConfirmDialog 워딩', (tester) async {

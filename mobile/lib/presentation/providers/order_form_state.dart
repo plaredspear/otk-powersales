@@ -55,6 +55,11 @@ class OrderFormState {
   /// `getOrderDraft` 응답 임시 보관 — 사용자가 다이얼로그 "예"/"아니오" 선택 후 사용.
   final OrderDraftResponseModel? pendingDraft;
 
+  /// 납기일 +10일 (Spec #598 P3-M (I)) 다이얼로그 표시 트리거.
+  /// validateAndSubmitOrder 가 (A)~(H) 통과 + (I) 충족 시 true 로 set.
+  /// UI 가 listener 로 다이얼로그 표시 후 confirmDeliveryDateAndSubmit 또는 cancelDeliveryDateConfirm 호출.
+  final bool requiresDeliveryDateConfirm;
+
   const OrderFormState({
     required this.orderDraft,
     this.clients = const {},
@@ -71,6 +76,7 @@ class OrderFormState {
     this.selectedAccountId,
     this.clientExternalKeys = const {},
     this.pendingDraft,
+    this.requiresDeliveryDateConfirm = false,
   });
 
   /// 초기 상태
@@ -148,6 +154,7 @@ class OrderFormState {
     int? selectedAccountId,
     Map<int, String>? clientExternalKeys,
     OrderDraftResponseModel? pendingDraft,
+    bool? requiresDeliveryDateConfirm,
     bool clearError = false,
     bool clearSuccess = false,
     bool clearValidationErrors = false,
@@ -157,6 +164,7 @@ class OrderFormState {
     bool clearSelectedExternalKey = false,
     bool clearSelectedAccountId = false,
     bool clearPendingDraft = false,
+    bool clearRequiresDeliveryDateConfirm = false,
   }) {
     return OrderFormState(
       orderDraft: orderDraft ?? this.orderDraft,
@@ -185,6 +193,9 @@ class OrderFormState {
       clientExternalKeys: clientExternalKeys ?? this.clientExternalKeys,
       pendingDraft:
           clearPendingDraft ? null : (pendingDraft ?? this.pendingDraft),
+      requiresDeliveryDateConfirm: clearRequiresDeliveryDateConfirm
+          ? false
+          : (requiresDeliveryDateConfirm ?? this.requiresDeliveryDateConfirm),
     );
   }
 }
