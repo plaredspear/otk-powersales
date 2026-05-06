@@ -1,21 +1,19 @@
 import '../../core/utils/error_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../core/network/dio_provider.dart';
 import '../../data/datasources/order_form_api_datasource.dart';
+import '../../data/models/order_form/order_draft_request_model.dart';
 import '../../data/repositories/order_form_repository_impl.dart';
 import '../../domain/entities/order_draft.dart';
 import '../../domain/entities/validation_error.dart';
 import '../../domain/repositories/order_form_repository.dart';
-import '../../domain/usecases/delete_draft_order_usecase.dart';
-import '../../domain/usecases/get_credit_balance_usecase.dart';
-import '../../domain/usecases/load_draft_order_usecase.dart';
 import '../../domain/usecases/order_form/delete_order_draft.dart';
 import '../../domain/usecases/order_form/get_loan_inquiry.dart';
 import '../../domain/usecases/order_form/get_order_draft.dart';
 import '../../domain/usecases/order_form/save_order_draft.dart';
 import '../../domain/usecases/order_form/submit_order_request.dart';
-import '../../domain/usecases/save_draft_order_usecase.dart';
 import '../../domain/usecases/submit_order_usecase.dart';
 import '../../domain/usecases/update_order_usecase.dart';
 import '../../domain/usecases/validate_order_usecase.dart';
@@ -23,30 +21,6 @@ import 'order_form_state.dart';
 import 'order_request_list_provider.dart';
 
 // --- Dependency Providers ---
-
-/// GetCreditBalance UseCase Provider
-final getCreditBalanceUseCaseProvider = Provider<GetCreditBalance>((ref) {
-  final repository = ref.watch(orderRequestRepositoryProvider);
-  return GetCreditBalance(repository);
-});
-
-/// LoadDraftOrder UseCase Provider
-final loadDraftOrderUseCaseProvider = Provider<LoadDraftOrder>((ref) {
-  final repository = ref.watch(orderRequestRepositoryProvider);
-  return LoadDraftOrder(repository);
-});
-
-/// SaveDraftOrder UseCase Provider
-final saveDraftOrderUseCaseProvider = Provider<SaveDraftOrder>((ref) {
-  final repository = ref.watch(orderRequestRepositoryProvider);
-  return SaveDraftOrder(repository);
-});
-
-/// DeleteDraftOrder UseCase Provider
-final deleteDraftOrderUseCaseProvider = Provider<DeleteDraftOrder>((ref) {
-  final repository = ref.watch(orderRequestRepositoryProvider);
-  return DeleteDraftOrder(repository);
-});
 
 /// ValidateOrder UseCase Provider
 final validateOrderUseCaseProvider = Provider<ValidateOrder>((ref) {
@@ -112,123 +86,205 @@ final submitOrderRequestUseCaseProvider = Provider<SubmitOrderRequest>((ref) {
 /// 주문서 작성 상태 관리 Notifier
 ///
 /// 주문서 작성, 임시저장, 유효성 검증, 승인요청 기능을 관리합니다.
+/// Spec #598 P2-M — 임시저장/거래처/여신 흐름은 신규 백엔드 (#594/#596) 실 API 사용.
+/// 제품 추가/검증/등록 흐름은 기존 mock 유지 (P3-M 에서 전환 예정).
 class OrderFormNotifier extends StateNotifier<OrderFormState> {
-  final GetCreditBalance _getCreditBalance;
-  final LoadDraftOrder _loadDraftOrder;
-  final SaveDraftOrder _saveDraftOrder;
-  final DeleteDraftOrder _deleteDraftOrder;
+  final GetLoanInquiry _getLoanInquiry;
+  final GetOrderDraft _getOrderDraft;
+  final SaveOrderDraft _saveOrderDraft;
+  final DeleteOrderDraft _deleteOrderDraft;
   final ValidateOrder _validateOrder;
   final SubmitOrder _submitOrder;
   final UpdateOrder _updateOrder;
+  final Uuid _uuid;
 
   OrderFormNotifier({
-    required GetCreditBalance getCreditBalance,
-    required LoadDraftOrder loadDraftOrder,
-    required SaveDraftOrder saveDraftOrder,
-    required DeleteDraftOrder deleteDraftOrder,
+    required GetLoanInquiry getLoanInquiry,
+    required GetOrderDraft getOrderDraft,
+    required SaveOrderDraft saveOrderDraft,
+    required DeleteOrderDraft deleteOrderDraft,
     required ValidateOrder validateOrder,
     required SubmitOrder submitOrder,
     required UpdateOrder updateOrder,
-  })  : _getCreditBalance = getCreditBalance,
-        _loadDraftOrder = loadDraftOrder,
-        _saveDraftOrder = saveDraftOrder,
-        _deleteDraftOrder = deleteDraftOrder,
+    Uuid? uuid,
+  })  : _getLoanInquiry = getLoanInquiry,
+        _getOrderDraft = getOrderDraft,
+        _saveOrderDraft = saveOrderDraft,
+        _deleteOrderDraft = deleteOrderDraft,
         _validateOrder = validateOrder,
         _submitOrder = submitOrder,
         _updateOrder = updateOrder,
+        _uuid = uuid ?? const Uuid(),
         super(OrderFormState.initial());
 
-  /// 초기화
+  /// 초기화 (Spec #598 P2-M §2.1).
   ///
   /// [orderId]: 수정할 주문 ID (있으면 수정 모드)
-  /// [clients]: 거래처 목록
+  /// [clients]: 거래처 ID → 이름
+  /// [clientExternalKeys]: 거래처 ID → SAP externalKey (`getLoanInquiry` 호출용)
   Future<void> initialize({
     int? orderId,
     Map<int, String>? clients,
+    Map<int, String>? clientExternalKeys,
   }) async {
-    // 거래처 목록 설정
-    if (clients != null) {
-      state = state.copyWith(clients: clients);
-    }
+    // 신규 폼 — UUID v4 멱등키 발급 (P1-M state 필드)
+    final newClientRequestId = orderId == null ? _uuid.v4() : null;
 
-    // 수정 모드 (향후 구현: 기존 주문 불러오기)
+    state = state.copyWith(
+      clients: clients ?? state.clients,
+      clientExternalKeys: clientExternalKeys ?? state.clientExternalKeys,
+      clientRequestId: newClientRequestId,
+    );
+
+    // 수정 모드 (향후 구현)
     if (orderId != null) {
-      // TODO: 기존 주문 불러오기 로직 추가
       return;
     }
 
     // 신규 작성 모드: 임시저장 데이터 확인
     try {
-      final draft = await _loadDraftOrder.call();
+      final draft = await _getOrderDraft.call();
       if (draft != null) {
-        state = state.copyWith(hasDraft: true);
-      }
-    } catch (e) {
-      // 임시저장 불러오기 실패는 무시 (초기화 계속 진행)
-    }
-  }
-
-  /// 임시저장 주문서 불러오기
-  Future<void> loadDraftOrder() async {
-    state = state.toLoading();
-
-    try {
-      final draft = await _loadDraftOrder.call();
-      if (draft != null) {
+        // 임시 보관 — 다이얼로그 사용자 선택 후 acceptDraft / declineDraft 에서 활용
         state = state.copyWith(
-          isLoading: false,
-          orderDraft: draft,
-          hasDraft: false,
-          clearError: true,
+          hasDraft: true,
+          pendingDraft: draft,
         );
       } else {
-        state = state.toError('불러올 임시저장 데이터가 없습니다.');
+        state = state.copyWith(hasDraft: false, clearPendingDraft: true);
       }
     } catch (e) {
-      state = state.toError(
-        extractErrorMessage(e),
+      // 임시저장 조회 실패는 SnackBar 만 노출, 빈 폼으로 진입
+      state = state.copyWith(
+        hasDraft: false,
+        clearPendingDraft: true,
+        errorMessage: '임시저장 조회 중 오류가 발생했습니다.',
       );
     }
   }
 
-  /// 새 주문서 초기화
+  /// 임시저장 다이얼로그 [예] — 폼 채움 + 여신 호출 (Spec #598 P2-M §2.2).
+  Future<void> acceptDraft() async {
+    final pending = state.pendingDraft;
+    if (pending == null) return;
+
+    final items = pending.lines
+        .map((l) => OrderDraftItem(
+              productCode: l.productCode,
+              productName: l.productName,
+              quantityBoxes: l.quantityBoxes ?? 0,
+              quantityPieces: l.quantityPieces ?? 0,
+              unitPrice: (l.unitPrice ?? 0).toInt(),
+              boxSize: 1,
+              totalPrice: (l.amount ?? 0).toInt(),
+            ))
+        .toList();
+
+    final filledDraft = OrderDraft(
+      clientId: pending.accountId,
+      clientName: pending.accountName,
+      deliveryDate: pending.deliveryDate != null
+          ? DateTime.tryParse(pending.deliveryDate!)
+          : null,
+      items: items,
+      totalAmount: pending.totalAmount,
+      isDraft: true,
+      lastModified: DateTime.now(),
+    );
+
+    state = state.copyWith(
+      orderDraft: filledDraft,
+      hasDraft: false,
+      draftId: pending.draftId,
+      selectedAccountId: pending.accountId,
+      selectedExternalKey: pending.accountExternalKey,
+      clearPendingDraft: true,
+    );
+
+    if (pending.accountExternalKey.isNotEmpty) {
+      await _fetchLoanInquiry(pending.accountExternalKey);
+    }
+  }
+
+  /// 임시저장 다이얼로그 [아니오] — DELETE + 빈 폼 (Spec #598 P2-M §2.2).
+  Future<void> declineDraft() async {
+    try {
+      await _deleteOrderDraft.call();
+      state = state.copyWith(
+        hasDraft: false,
+        clearPendingDraft: true,
+        clearDraftId: true,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        errorMessage: '삭제 중 오류가 발생했습니다.',
+      );
+    }
+  }
+
+  /// 새 주문서 초기화 (DraftBanner [새로 작성] — 다이얼로그 [아니오] 와 동일 효과).
   void initializeNewOrder() {
     state = state.copyWith(
       orderDraft: OrderDraft.empty(),
       hasDraft: false,
+      clearPendingDraft: true,
       clearValidationErrors: true,
       clearError: true,
       clearSuccess: true,
     );
   }
 
-  /// 거래처 선택
-  void selectClient(int clientId, String clientName) {
+  /// 거래처 선택 (Spec #598 P2-M §2.3).
+  void selectClient(int clientId, String clientName, [String? externalKey]) {
+    final resolvedExternalKey = externalKey ?? state.clientExternalKeys[clientId];
+
     state = state.copyWith(
       orderDraft: state.orderDraft.copyWith(
         clientId: clientId,
         clientName: clientName,
       ),
+      selectedAccountId: clientId,
+      selectedExternalKey: resolvedExternalKey,
     );
-    fetchCreditBalance(clientId);
+
+    if (resolvedExternalKey != null && resolvedExternalKey.isNotEmpty) {
+      _fetchLoanInquiry(resolvedExternalKey);
+    }
   }
 
-  /// 여신 잔액 조회
-  Future<void> fetchCreditBalance(int clientId) async {
-    state = state.toLoading();
+  /// 여신 잔액 조회 (Spec #598 P2-M §2.3) — 내부 헬퍼.
+  Future<void> _fetchLoanInquiry(String externalKey) async {
+    // creditBalance 를 null 로 클리어해 스피너 표시 유도
+    state = state.copyWith(
+      orderDraft: state.orderDraft.copyWith(creditBalance: null),
+      isLoading: true,
+      clearError: true,
+    );
 
     try {
-      final creditBalance = await _getCreditBalance.call(clientId: clientId);
+      final response = await _getLoanInquiry.call(externalKey: externalKey);
       state = state.copyWith(
         isLoading: false,
-        orderDraft: state.orderDraft.copyWith(creditBalance: creditBalance),
-        clearError: true,
+        orderDraft: state.orderDraft.copyWith(
+          creditBalance: response.creditBalance,
+        ),
       );
     } catch (e) {
-      state = state.toError(
-        extractErrorMessage(e),
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: _mapLoanInquiryError(e),
       );
     }
+  }
+
+  String _mapLoanInquiryError(Object error) {
+    final message = extractErrorMessage(error).toLowerCase();
+    if (message.contains('html') ||
+        message.contains('unavailable') ||
+        message.contains('연결')) {
+      return 'SAP 시스템 연결에 실패했습니다.';
+    }
+    return '여신 조회 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
   }
 
   /// 납기일 설정
@@ -408,7 +464,7 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
     }
   }
 
-  /// 임시저장
+  /// 임시저장 등록 (Spec #598 P2-M §2.4).
   Future<void> saveDraft() async {
     state = state.copyWith(
       isSubmitting: true,
@@ -416,32 +472,83 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
       clearSuccess: true,
     );
 
-    try {
-      await _saveDraftOrder.call(orderDraft: state.orderDraft);
-
+    final accountId = state.selectedAccountId;
+    if (accountId == null) {
       state = state.copyWith(
         isSubmitting: false,
-        successMessage: '임시저장되었습니다.',
+        errorMessage: '거래처를 선택해주세요.',
+      );
+      return;
+    }
+
+    final request = OrderDraftRequestModel(
+      accountId: accountId,
+      deliveryDate: state.orderDraft.deliveryDate?.toIso8601String().substring(0, 10),
+      totalAmount: state.totalAmount,
+      lines: state.orderDraft.items.map((item) {
+        return OrderDraftRequestLineModel(
+          lineNumber: state.orderDraft.items.indexOf(item) + 1,
+          productCode: item.productCode,
+          unit: item.quantityBoxes > 0 ? 'BOX' : 'EA',
+          quantity: item.quantityBoxes > 0
+              ? item.quantityBoxes
+              : item.quantityPieces.toDouble(),
+          quantityPieces: item.quantityPieces,
+          quantityBoxes: item.quantityBoxes,
+          unitPrice: item.unitPrice.toDouble(),
+          amount: item.totalPrice.toDouble(),
+        );
+      }).toList(),
+    );
+
+    try {
+      final saved = await _saveOrderDraft.call(request: request);
+      state = state.copyWith(
+        isSubmitting: false,
+        successMessage: '임시저장이 완료되었습니다.',
+        draftId: saved.draftId,
         clearError: true,
       );
     } catch (e) {
       state = state.copyWith(
         isSubmitting: false,
-        errorMessage: extractErrorMessage(e),
+        errorMessage: _mapDraftSaveError(e),
       );
     }
   }
 
-  /// 임시저장 데이터 삭제
-  Future<void> deleteOrder() async {
+  String _mapDraftSaveError(Object error) {
+    final message = extractErrorMessage(error);
+    if (message.contains('ORD_DRAFT_ACCOUNT_FORBIDDEN') ||
+        message.contains('FORBIDDEN')) {
+      return '본인 담당 거래처가 아닙니다.';
+    }
+    if (message.contains('ORD_DRAFT_INVALID_REQUEST')) {
+      return message;
+    }
+    return '오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+  }
+
+  /// 임시저장 삭제 (Spec #598 P2-M §2.5) — 현 페이지 유지 + 빈 폼 (Q11).
+  Future<void> deleteDraft() async {
     try {
-      await _deleteDraftOrder.call();
-      state = OrderFormState.initial();
+      await _deleteOrderDraft.call();
+      state = OrderFormState.initial().copyWith(
+        clientRequestId: _uuid.v4(),
+        clients: state.clients,
+        clientExternalKeys: state.clientExternalKeys,
+        successMessage: '삭제되었습니다.',
+      );
     } catch (e) {
-      state = state.toError(
-        extractErrorMessage(e),
+      state = state.copyWith(
+        errorMessage: '삭제 중 오류가 발생했습니다.',
       );
     }
+  }
+
+  /// 페이지 이탈 시 폼 폐기 (Spec #598 P2-M §2.6 [그냥 나가기]).
+  void discardForm() {
+    state = OrderFormState.initial();
   }
 
   /// 에러 초기화
@@ -473,10 +580,10 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
 final orderFormProvider =
     StateNotifierProvider<OrderFormNotifier, OrderFormState>((ref) {
   return OrderFormNotifier(
-    getCreditBalance: ref.watch(getCreditBalanceUseCaseProvider),
-    loadDraftOrder: ref.watch(loadDraftOrderUseCaseProvider),
-    saveDraftOrder: ref.watch(saveDraftOrderUseCaseProvider),
-    deleteDraftOrder: ref.watch(deleteDraftOrderUseCaseProvider),
+    getLoanInquiry: ref.watch(getLoanInquiryUseCaseProvider),
+    getOrderDraft: ref.watch(getOrderDraftUseCaseProvider),
+    saveOrderDraft: ref.watch(saveOrderDraftUseCaseProvider),
+    deleteOrderDraft: ref.watch(deleteOrderDraftUseCaseProvider),
     validateOrder: ref.watch(validateOrderUseCaseProvider),
     submitOrder: ref.watch(submitOrderUseCaseProvider),
     updateOrder: ref.watch(updateOrderUseCaseProvider),

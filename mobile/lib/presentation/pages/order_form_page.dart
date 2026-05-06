@@ -5,10 +5,13 @@ import '../../core/theme/app_spacing.dart';
 import '../../app_router.dart';
 import '../providers/order_form_provider.dart';
 import '../providers/order_form_state.dart';
-import '../widgets/order_form/draft_banner.dart';
 import '../widgets/order_form/client_selector.dart';
 import '../widgets/order_form/credit_balance_display.dart';
 import '../widgets/order_form/delivery_date_picker.dart';
+import '../widgets/order_form/draft_banner.dart';
+import '../widgets/order_form/draft_delete_dialog.dart';
+import '../widgets/order_form/draft_restore_dialog.dart';
+import '../widgets/order_form/exit_confirm_dialog.dart';
 import '../widgets/order_form/product_list_section.dart';
 import '../widgets/order_form/total_amount_display.dart';
 import '../widgets/order_form/order_form_action_buttons.dart';
@@ -25,6 +28,7 @@ class OrderFormPage extends ConsumerStatefulWidget {
 
 class _OrderFormPageState extends ConsumerState<OrderFormPage> {
   late ScrollController _scrollController;
+  bool _restoreDialogShown = false;
 
   @override
   void initState() {
@@ -60,33 +64,24 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
     }
   }
 
-  void _showDeleteConfirmDialog(
-    BuildContext context,
-    OrderFormNotifier notifier,
-  ) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('주문서 삭제'),
-        content: const Text('주문서를 삭제하시겠습니까?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('취소'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              notifier.deleteOrder();
-              AppRouter.navigateToAndReplace(context, AppRouter.orderList);
-            },
-            child: Text(
-              '삭제',
-              style: TextStyle(color: AppColors.error),
-            ),
-          ),
-        ],
-      ),
+  /// 페이지 이탈 시 호출. 라인/거래처 입력 있으면 다이얼로그.
+  void _handlePopAttempt(BuildContext context, OrderFormNotifier notifier) {
+    ExitConfirmDialog.show(
+      context,
+      onDiscard: () {
+        notifier.discardForm();
+        Navigator.of(context).pop();
+      },
+      onSaveDraft: () async {
+        await notifier.saveDraft();
+        if (!mounted) return;
+        // saveDraft 성공/실패 여부는 successMessage/errorMessage 로 listener 가 SnackBar 표시.
+        // 성공 시에는 자동 pop, 실패 시에는 페이지 유지 (사용자 재시도 가능).
+        final latest = ref.read(orderFormProvider);
+        if (latest.successMessage != null) {
+          Navigator.of(context).pop();
+        }
+      },
     );
   }
 
@@ -94,6 +89,24 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(orderFormProvider);
     final notifier = ref.read(orderFormProvider.notifier);
+
+    // hasDraft 가 true 가 되는 순간 자동 다이얼로그 노출 (1회만).
+    ref.listen<bool>(orderFormProvider.select((s) => s.hasDraft),
+        (prev, next) {
+      if (next == true && !_restoreDialogShown) {
+        _restoreDialogShown = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          DraftRestoreDialog.show(
+            context,
+            onAccept: () => notifier.acceptDraft(),
+            onDecline: () => notifier.declineDraft(),
+          );
+        });
+      } else if (next == false) {
+        _restoreDialogShown = false;
+      }
+    });
 
     // Listen for success/error messages
     ref.listen<OrderFormState>(orderFormProvider, (prev, next) {
@@ -120,80 +133,97 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
       }
     });
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => AppRouter.goBack(context),
+    final canPopFreely =
+        state.orderDraft.items.isEmpty && state.selectedAccountId == null;
+
+    return PopScope(
+      canPop: canPopFreely,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _handlePopAttempt(context, notifier);
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.of(context).maybePop(),
+          ),
+          title: Text(state.isEditMode ? '주문서 수정' : '주문서 작성'),
+          centerTitle: true,
         ),
-        title: Text(state.isEditMode ? '주문서 수정' : '주문서 작성'),
-        centerTitle: true,
-      ),
-      body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              controller: _scrollController,
-              padding: AppSpacing.screenAll,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (state.hasDraft)
-                    DraftBanner(
-                      onLoadDraft: () => notifier.loadDraftOrder(),
-                      onNewOrder: () => notifier.initializeNewOrder(),
+        body: state.isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
+                controller: _scrollController,
+                padding: AppSpacing.screenAll,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (state.hasDraft)
+                      DraftBanner(
+                        onLoadDraft: () => notifier.acceptDraft(),
+                        onNewOrder: () => notifier.declineDraft(),
+                      ),
+                    if (state.hasDraft) const SizedBox(height: AppSpacing.lg),
+                    ClientSelector(
+                      clients: state.clients,
+                      selectedClientId: state.selectedClientId,
+                      onClientSelected: (clientId) {
+                        final name = state.clients[clientId] ?? '';
+                        final externalKey =
+                            state.clientExternalKeys[clientId] ?? '';
+                        notifier.selectClient(clientId, name, externalKey);
+                      },
                     ),
-                  if (state.hasDraft) const SizedBox(height: AppSpacing.lg),
-                  ClientSelector(
-                    clients: state.clients,
-                    selectedClientId: state.selectedClientId,
-                    onClientSelected: (clientId) {
-                      final name = state.clients[clientId] ?? '';
-                      notifier.selectClient(clientId, name);
-                    },
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  CreditBalanceDisplay(
-                    creditBalance: state.creditBalance,
-                    isLoading: state.isLoading,
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  DeliveryDatePicker(
-                    selectedDate: state.deliveryDate,
-                    onTap: () =>
-                        _showDatePicker(context, notifier, state.deliveryDate),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  ProductListSection(
-                    items: state.items,
-                    validationErrors: state.validationErrors,
-                    allItemsSelected: state.allItemsSelected,
-                    onToggleSelection: notifier.toggleProductSelection,
-                    onToggleSelectAll: notifier.toggleSelectAllProducts,
-                    onAddProduct: () {
-                      AddProductBottomSheet.show(context);
-                    },
-                    onBarcodeScan: () {
-                      // TODO: 바코드 스캔 기능 (향후 구현)
-                    },
-                    onRemoveSelected: notifier.removeSelectedProducts,
-                    onQuantityChanged: notifier.updateProductQuantity,
-                    scrollController: _scrollController,
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  TotalAmountDisplay(totalAmount: state.totalAmount),
-                  const SizedBox(height: AppSpacing.lg),
-                  OrderFormActionButtons(
-                    onDelete: () =>
-                        _showDeleteConfirmDialog(context, notifier),
-                    onSaveDraft: () => notifier.saveDraft(),
-                    onSubmit: () => notifier.validateAndSubmitOrder(),
-                    isSubmitting: state.isSubmitting,
-                    hasItems: state.hasItems,
-                  ),
-                  const SizedBox(height: AppSpacing.xxxl),
-                ],
+                    const SizedBox(height: AppSpacing.lg),
+                    CreditBalanceDisplay(
+                      creditBalance: state.creditBalance,
+                      isLoading: state.isLoading,
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    DeliveryDatePicker(
+                      selectedDate: state.deliveryDate,
+                      onTap: () => _showDatePicker(
+                        context,
+                        notifier,
+                        state.deliveryDate,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    ProductListSection(
+                      items: state.items,
+                      validationErrors: state.validationErrors,
+                      allItemsSelected: state.allItemsSelected,
+                      onToggleSelection: notifier.toggleProductSelection,
+                      onToggleSelectAll: notifier.toggleSelectAllProducts,
+                      onAddProduct: () {
+                        AddProductBottomSheet.show(context);
+                      },
+                      onBarcodeScan: () {
+                        // TODO: 바코드 스캔 기능 (향후 구현)
+                      },
+                      onRemoveSelected: notifier.removeSelectedProducts,
+                      onQuantityChanged: notifier.updateProductQuantity,
+                      scrollController: _scrollController,
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    TotalAmountDisplay(totalAmount: state.totalAmount),
+                    const SizedBox(height: AppSpacing.lg),
+                    OrderFormActionButtons(
+                      onDelete: () => DraftDeleteDialog.show(
+                        context,
+                        onConfirm: () => notifier.deleteDraft(),
+                      ),
+                      onSaveDraft: () => notifier.saveDraft(),
+                      onSubmit: () => notifier.validateAndSubmitOrder(),
+                      isSubmitting: state.isSubmitting,
+                      hasItems: state.hasItems,
+                    ),
+                    const SizedBox(height: AppSpacing.xxxl),
+                  ],
+                ),
               ),
-            ),
+      ),
     );
   }
 }
