@@ -101,7 +101,7 @@ class LocalDataInitializer(
      * Spec #579: Web Admin 수동 등록 SYSTEM_ADMIN 부트스트랩 시드.
      *
      * 등록 API (`POST /api/v1/admin/employees`) 의 호출자 권한 (`UserRole.MANAGE_PERMISSIONS`)
-     * 을 충족하는 첫 SYSTEM_ADMIN 계정을 생성한다. spec §1.2 정책에 따라 다음을 적용한다:
+     * 을 충족하는 SYSTEM_ADMIN 계정을 생성한다. spec §1.2 정책에 따라 다음을 적용한다:
      * - `ADMIN-` prefix 사번
      * - `origin = MANUAL` (SAP 인바운드 갱신 보호 대상)
      * - `appLoginActive = false` (Web Admin 만 허용)
@@ -109,27 +109,36 @@ class LocalDataInitializer(
      *   `costCenterCode`)는 null
      */
     private fun seedSystemAdmin() {
-        val code = "ADMIN-99999999"
-        if (employeeRepository.existsByEmployeeCode(code)) return
+        val encodedPassword = passwordEncoder.encode("a1234!@#$")!!
 
-        val infoExists = employeeInfoExists(code)
-        val encodedPassword = passwordEncoder.encode("1234")!!
-        val employee = Employee(
-            employeeCode = code,
-            name = "시스템개발자",
-            orgName = "시스템개발자조직",
-            password = encodedPassword,
-            passwordChangeRequired = false
-        ).apply {
-            role = UserRole.SYSTEM_ADMIN
-            origin = EmployeeOrigin.MANUAL
-            appLoginActive = false
+        data class SeedSystemAdmin(val code: String, val name: String, val orgName: String)
+
+        val seeds = listOf(
+            SeedSystemAdmin("ADMIN-99999999", "시스템개발자", "시스템개발자조직"),
+            SeedSystemAdmin("ADMIN-99990001", "시스템개발자2", "시스템개발자조직")
+        )
+
+        for (seed in seeds) {
+            if (employeeRepository.existsByEmployeeCode(seed.code)) continue
+
+            val infoExists = employeeInfoExists(seed.code)
+            val employee = Employee(
+                employeeCode = seed.code,
+                name = seed.name,
+                orgName = seed.orgName,
+                password = encodedPassword,
+                passwordChangeRequired = false
+            ).apply {
+                role = UserRole.SYSTEM_ADMIN
+                origin = EmployeeOrigin.MANUAL
+                appLoginActive = false
+            }
+            if (infoExists) {
+                employee.employeeInfo = null
+            }
+            employeeRepository.save(employee)
+            log.info("시드 SYSTEM_ADMIN 계정 생성 완료: employeeCode={}", seed.code)
         }
-        if (infoExists) {
-            employee.employeeInfo = null
-        }
-        employeeRepository.save(employee)
-        log.info("시드 SYSTEM_ADMIN 계정 생성 완료: employeeCode={}", code)
     }
 
     private fun seedAgreementWord() {
