@@ -5,8 +5,10 @@ import 'package:uuid/uuid.dart';
 import '../../core/network/dio_provider.dart';
 import '../../data/datasources/order_form_api_datasource.dart';
 import '../../data/models/order_form/order_draft_request_model.dart';
+import '../../data/models/order_form/order_request_payload_model.dart';
 import '../../data/repositories/order_form_repository_impl.dart';
 import '../../domain/entities/order_draft.dart';
+import '../../domain/entities/product_for_order.dart';
 import '../../domain/entities/validation_error.dart';
 import '../../domain/repositories/order_form_repository.dart';
 import '../../domain/usecases/order_form/delete_order_draft.dart';
@@ -14,31 +16,7 @@ import '../../domain/usecases/order_form/get_loan_inquiry.dart';
 import '../../domain/usecases/order_form/get_order_draft.dart';
 import '../../domain/usecases/order_form/save_order_draft.dart';
 import '../../domain/usecases/order_form/submit_order_request.dart';
-import '../../domain/usecases/submit_order_usecase.dart';
-import '../../domain/usecases/update_order_usecase.dart';
-import '../../domain/usecases/validate_order_usecase.dart';
 import 'order_form_state.dart';
-import 'order_request_list_provider.dart';
-
-// --- Dependency Providers ---
-
-/// ValidateOrder UseCase Provider
-final validateOrderUseCaseProvider = Provider<ValidateOrder>((ref) {
-  final repository = ref.watch(orderRequestRepositoryProvider);
-  return ValidateOrder(repository);
-});
-
-/// SubmitOrder UseCase Provider
-final submitOrderUseCaseProvider = Provider<SubmitOrder>((ref) {
-  final repository = ref.watch(orderRequestRepositoryProvider);
-  return SubmitOrder(repository);
-});
-
-/// UpdateOrder UseCase Provider
-final updateOrderUseCaseProvider = Provider<UpdateOrder>((ref) {
-  final repository = ref.watch(orderRequestRepositoryProvider);
-  return UpdateOrder(repository);
-});
 
 // --- Spec #598 P1-M: 신규 백엔드 연결 Provider ──────────────────────
 // (P2-M / P3-M 가 OrderFormNotifier 메서드에서 활용. P1-M 단독 머지 시점에는
@@ -86,16 +64,13 @@ final submitOrderRequestUseCaseProvider = Provider<SubmitOrderRequest>((ref) {
 /// 주문서 작성 상태 관리 Notifier
 ///
 /// 주문서 작성, 임시저장, 유효성 검증, 승인요청 기능을 관리합니다.
-/// Spec #598 P2-M — 임시저장/거래처/여신 흐름은 신규 백엔드 (#594/#596) 실 API 사용.
-/// 제품 추가/검증/등록 흐름은 기존 mock 유지 (P3-M 에서 전환 예정).
+/// Spec #598 P2-M / P3-M — 모든 흐름이 신규 백엔드 (#594/#596/#592) 실 API 사용.
 class OrderFormNotifier extends StateNotifier<OrderFormState> {
   final GetLoanInquiry _getLoanInquiry;
   final GetOrderDraft _getOrderDraft;
   final SaveOrderDraft _saveOrderDraft;
   final DeleteOrderDraft _deleteOrderDraft;
-  final ValidateOrder _validateOrder;
-  final SubmitOrder _submitOrder;
-  final UpdateOrder _updateOrder;
+  final SubmitOrderRequest _submitOrderRequest;
   final Uuid _uuid;
 
   OrderFormNotifier({
@@ -103,17 +78,13 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
     required GetOrderDraft getOrderDraft,
     required SaveOrderDraft saveOrderDraft,
     required DeleteOrderDraft deleteOrderDraft,
-    required ValidateOrder validateOrder,
-    required SubmitOrder submitOrder,
-    required UpdateOrder updateOrder,
+    required SubmitOrderRequest submitOrderRequest,
     Uuid? uuid,
   })  : _getLoanInquiry = getLoanInquiry,
         _getOrderDraft = getOrderDraft,
         _saveOrderDraft = saveOrderDraft,
         _deleteOrderDraft = deleteOrderDraft,
-        _validateOrder = validateOrder,
-        _submitOrder = submitOrder,
-        _updateOrder = updateOrder,
+        _submitOrderRequest = submitOrderRequest,
         _uuid = uuid ?? const Uuid(),
         super(OrderFormState.initial());
 
@@ -294,16 +265,57 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
     );
   }
 
-  /// 제품 추가
+  /// 제품 추가 (Spec #598 P3-M §2.1) — 차단 룰 3종 적용 후 라인 추가.
+  ///
+  /// Returns true 면 라인 추가됨, false 면 차단 (errorMessage 가 SnackBar 로 표시).
+  bool addProductLine(ProductForOrder product) {
+    // (1) 전용상품 차단
+    if (product.isExclusive) {
+      state = state.copyWith(errorMessage: '전용상품은 추가할 수 없습니다.');
+      return false;
+    }
+    // (2) 시식·증정용 차단
+    if (product.isTastingGift) {
+      state = state.copyWith(errorMessage: '시식/증정용 상품은 추가할 수 없습니다.');
+      return false;
+    }
+    // (3) 중복 차단
+    final isDuplicate = state.orderDraft.items
+        .any((existing) => existing.productCode == product.productCode);
+    if (isDuplicate) {
+      state = state.copyWith(errorMessage: '이미 추가된 제품입니다.');
+      return false;
+    }
+
+    final newItem = OrderDraftItem(
+      productCode: product.productCode,
+      productName: product.productName,
+      quantityBoxes: 0,
+      quantityPieces: 0,
+      unitPrice: product.unitPrice,
+      boxSize: product.boxSize,
+      totalPrice: 0,
+    );
+    final updatedItems = [...state.orderDraft.items, newItem];
+    final totalAmount = updatedItems.fold(0, (sum, i) => sum + i.totalPrice);
+
+    state = state.copyWith(
+      orderDraft: state.orderDraft.copyWith(
+        items: updatedItems,
+        totalAmount: totalAmount,
+      ),
+    );
+    return true;
+  }
+
+  /// 제품 추가 (Legacy — OrderDraftItem 직접 전달, 회귀 호환).
   void addProductToOrder(OrderDraftItem item) {
-    // 중복 체크 (productCode 기준)
     final isDuplicate = state.orderDraft.items
         .any((existing) => existing.productCode == item.productCode);
     if (isDuplicate) {
       return;
     }
 
-    // 제품 추가
     final updatedItems = [...state.orderDraft.items, item];
     final totalAmount = updatedItems.fold(0, (sum, i) => sum + i.totalPrice);
 
@@ -405,63 +417,177 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
     );
   }
 
-  /// 유효성 검증 및 주문서 전송
+  /// 유효성 검증 (A)~(I) + 주문서 전송 (Spec #598 P3-M §2.6 / §2.7).
+  ///
+  /// (I) 납기일 +10일 케이스에서는 [requiresDeliveryDateConfirm] 가 true 가 되어
+  /// 사용자가 다이얼로그 [예] 클릭 시 [confirmDeliveryDateAndSubmit] 호출하여 진행.
   Future<void> validateAndSubmitOrder() async {
+    final blocker = _runBlockingValidations();
+    if (blocker != null) {
+      state = state.copyWith(errorMessage: blocker);
+      return;
+    }
+
+    // (I) 납기일 +10일
+    if (_isDeliveryFarOff()) {
+      state = state.copyWith(requiresDeliveryDateConfirm: true);
+      return;
+    }
+
+    await _submitOrderInternal();
+  }
+
+  /// (I) +10일 다이얼로그에서 [예] 선택 시 호출.
+  Future<void> confirmDeliveryDateAndSubmit() async {
+    state = state.copyWith(clearRequiresDeliveryDateConfirm: true);
+    await _submitOrderInternal();
+  }
+
+  /// (I) +10일 다이얼로그에서 [아니오] 선택 시 호출 (혹은 닫힘).
+  void cancelDeliveryDateConfirm() {
+    state = state.copyWith(clearRequiresDeliveryDateConfirm: true);
+  }
+
+  /// 검증 (A)~(H) — 차단되면 SnackBar 메시지를 반환.
+  String? _runBlockingValidations() {
+    // (A) 거래처 미선택
+    if (state.selectedAccountId == null) {
+      return '거래처를 선택해 주세요';
+    }
+    // (B) 납기일 미선택
+    if (state.deliveryDate == null) {
+      return '납기일을 선택해 주세요';
+    }
+    // (C) 라인 productCode 중복 (방어)
+    final codes = state.orderDraft.items.map((e) => e.productCode).toList();
+    if (codes.toSet().length != codes.length) {
+      return '중복된 제품이 있습니다. 라인을 정리해주세요';
+    }
+    // (D) 납기일 < 오늘 (방어)
+    final today = DateTime.now();
+    final todayDate = DateTime(today.year, today.month, today.day);
+    if (state.deliveryDate!.isBefore(todayDate)) {
+      return '납기일은 오늘 이후여야 합니다.';
+    }
+    // (E) 라인 0개
+    if (state.orderDraft.items.isEmpty) {
+      return '주문할 제품을 추가해주세요';
+    }
+    // (F) 라인 100개 초과
+    if (state.orderDraft.items.length > 100) {
+      return '제품은 100개 이하로 추가해주세요';
+    }
+    // (G) 여신 한도 초과 / 조회 중
+    final creditBalance = state.creditBalance;
+    if (creditBalance == null && state.selectedExternalKey != null) {
+      return '여신 조회 중입니다. 잠시 후 다시 시도해주세요';
+    }
+    if (creditBalance != null && state.totalAmount > creditBalance) {
+      return null; // 버튼 disabled 로 도달 자체 차단 — SnackBar 표시 안 함
+    }
+    // (H) 라인 총EA <= 0
+    final zeroLine = state.orderDraft.items.firstWhere(
+      (e) => e.quantityPieces <= 0,
+      orElse: () => const OrderDraftItem(
+        productCode: '',
+        productName: '',
+        quantityBoxes: 0,
+        quantityPieces: 1,
+        unitPrice: 0,
+        boxSize: 1,
+        totalPrice: 0,
+      ),
+    );
+    if (zeroLine.productCode.isNotEmpty) {
+      return '수량이 0인 라인이 있습니다.';
+    }
+    return null;
+  }
+
+  /// (I) 납기일 ≥ 주문일+10일 룰.
+  bool _isDeliveryFarOff() {
+    final delivery = state.deliveryDate;
+    if (delivery == null) return false;
+    final today = DateTime.now();
+    final todayDate = DateTime(today.year, today.month, today.day);
+    return delivery.difference(todayDate).inDays >= 10;
+  }
+
+  Future<void> _submitOrderInternal() async {
     state = state.copyWith(
       isSubmitting: true,
       clearError: true,
       clearSuccess: true,
     );
 
-    try {
-      // 유효성 검증
-      final validationResult = await _validateOrder.call(
-        orderDraft: state.orderDraft,
-      );
-
-      if (!validationResult.isValid) {
-        // 유효성 에러 적용
-        final updatedItems = state.orderDraft.items.map((item) {
-          final error = validationResult.errors[item.productCode];
-          if (error != null) {
-            return item.copyWith(validationError: error);
-          }
-          return item;
-        }).toList();
-
-        // 폼 레벨 에러가 있으면 에러 메시지 설정
-        final formError = validationResult.errors['_form'];
-        final errorMessage = formError?.message ?? '유효성 검증 실패';
-
-        state = state.copyWith(
-          isSubmitting: false,
-          orderDraft: state.orderDraft.copyWith(items: updatedItems),
-          validationErrors: validationResult.errors,
-          errorMessage: errorMessage,
+    final payload = OrderRequestPayloadModel(
+      clientRequestId: state.clientRequestId,
+      accountId: state.selectedAccountId!,
+      deliveryDate:
+          state.deliveryDate!.toIso8601String().substring(0, 10),
+      totalAmount: state.totalAmount,
+      lines: state.orderDraft.items.asMap().entries.map((entry) {
+        final index = entry.key;
+        final item = entry.value;
+        final unit = item.quantityBoxes > 0 ? 'BOX' : 'EA';
+        return OrderRequestLineModel(
+          lineNumber: index + 1,
+          productCode: item.productCode,
+          quantity: unit == 'BOX'
+              ? item.quantityBoxes
+              : item.quantityPieces.toDouble(),
+          unit: unit,
+          quantityPieces: item.quantityPieces,
+          quantityBoxes: item.quantityBoxes,
         );
-        return;
-      }
+      }).toList(),
+    );
 
-      // 주문서 전송 (수정 모드 or 신규 작성)
-      final result = state.isEditMode
-          ? await _updateOrder.call(
-              orderId: state.orderDraft.id!,
-              orderDraft: state.orderDraft,
-            )
-          : await _submitOrder.call(orderDraft: state.orderDraft);
-
+    try {
+      final response = await _submitOrderRequest.call(payload: payload);
       state = state.copyWith(
         isSubmitting: false,
-        submitResult: result,
-        successMessage: '주문서가 성공적으로 전송되었습니다.',
+        submitResult: OrderSubmitResult(
+          orderId: response.orderRequestId,
+          orderRequestNumber: response.orderRequestNumber,
+          status: response.status,
+        ),
+        successMessage: '주문이 접수되었습니다.',
         clearError: true,
+        clearClientRequestId: true,
       );
     } catch (e) {
       state = state.copyWith(
         isSubmitting: false,
-        errorMessage: extractErrorMessage(e),
+        errorMessage: _mapSubmitError(e),
       );
     }
+  }
+
+  String _mapSubmitError(Object error) {
+    final raw = extractErrorMessage(error);
+    if (raw.contains('ORD_LOAN_EXCEEDED') || raw.contains('여신 한도')) {
+      return raw;
+    }
+    if (raw.contains('ORD_PRODUCT_RESTRICTED') || raw.contains('공급제한')) {
+      return raw;
+    }
+    if (raw.contains('ORD_INVALID_UNIT')) {
+      return raw;
+    }
+    if (raw.contains('ORD_INVALID_REQUEST')) {
+      return raw;
+    }
+    if (raw.contains('ORD_ACCOUNT_FORBIDDEN') || raw.contains('FORBIDDEN')) {
+      return '본인 담당 거래처가 아닙니다.';
+    }
+    if (raw.contains('LOAN_SAP_UNAVAILABLE') || raw.contains('UNAVAILABLE')) {
+      return 'SAP 연결 실패. 잠시 후 다시 시도해주세요.';
+    }
+    if (raw.contains('LOAN_SAP_ERROR') || raw.contains('SAP')) {
+      return 'SAP 일시 오류. 잠시 후 다시 시도해주세요.';
+    }
+    return '오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
   }
 
   /// 임시저장 등록 (Spec #598 P2-M §2.4).
@@ -584,8 +710,6 @@ final orderFormProvider =
     getOrderDraft: ref.watch(getOrderDraftUseCaseProvider),
     saveOrderDraft: ref.watch(saveOrderDraftUseCaseProvider),
     deleteOrderDraft: ref.watch(deleteOrderDraftUseCaseProvider),
-    validateOrder: ref.watch(validateOrderUseCaseProvider),
-    submitOrder: ref.watch(submitOrderUseCaseProvider),
-    updateOrder: ref.watch(updateOrderUseCaseProvider),
+    submitOrderRequest: ref.watch(submitOrderRequestUseCaseProvider),
   );
 });

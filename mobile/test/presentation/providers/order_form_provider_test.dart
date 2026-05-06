@@ -1,21 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/data/models/order_form/loan_inquiry_response_model.dart';
 import 'package:mobile/data/models/order_form/order_draft_response_model.dart';
-import 'package:mobile/domain/entities/client_order.dart';
-import 'package:mobile/domain/entities/order_request.dart';
-import 'package:mobile/domain/entities/order_cancel.dart';
-import 'package:mobile/domain/entities/order_detail.dart';
 import 'package:mobile/domain/entities/order_draft.dart';
 import 'package:mobile/domain/entities/product_for_order.dart';
-import 'package:mobile/domain/entities/validation_error.dart';
-import 'package:mobile/domain/repositories/order_request_repository.dart';
 import 'package:mobile/domain/usecases/order_form/delete_order_draft.dart';
 import 'package:mobile/domain/usecases/order_form/get_loan_inquiry.dart';
 import 'package:mobile/domain/usecases/order_form/get_order_draft.dart';
 import 'package:mobile/domain/usecases/order_form/save_order_draft.dart';
-import 'package:mobile/domain/usecases/submit_order_usecase.dart';
-import 'package:mobile/domain/usecases/update_order_usecase.dart';
-import 'package:mobile/domain/usecases/validate_order_usecase.dart';
+import 'package:mobile/domain/usecases/order_form/submit_order_request.dart';
 import 'package:mobile/presentation/providers/order_form_provider.dart';
 import 'package:uuid/data.dart';
 import 'package:uuid/uuid.dart';
@@ -32,8 +24,7 @@ class _FixedUuid extends Uuid {
 }
 
 void main() {
-  group('OrderFormNotifier (Spec #598 P2-M)', () {
-    late FakeOrderRequestRepository legacyRepo;
+  group('OrderFormNotifier (Spec #598 P2-M / P3-M)', () {
     late FakeOrderFormRepository formRepo;
     late OrderFormNotifier notifier;
 
@@ -43,15 +34,12 @@ void main() {
         getOrderDraft: GetOrderDraft(formRepo),
         saveOrderDraft: SaveOrderDraft(formRepo),
         deleteOrderDraft: DeleteOrderDraft(formRepo),
-        validateOrder: ValidateOrder(legacyRepo),
-        submitOrder: SubmitOrder(legacyRepo),
-        updateOrder: UpdateOrder(legacyRepo),
+        submitOrderRequest: SubmitOrderRequest(formRepo),
         uuid: _FixedUuid('11111111-1111-4111-8111-111111111111'),
       );
     }
 
     setUp(() {
-      legacyRepo = FakeOrderRequestRepository();
       formRepo = FakeOrderFormRepository();
       notifier = createNotifier();
     });
@@ -270,29 +258,237 @@ void main() {
       });
     });
 
-    group('validateAndSubmitOrder (mock 유지)', () {
-      test('유효성 통과 시 submitResult 갱신', () async {
-        legacyRepo.validationResultToReturn =
-            const ValidationResult(isValid: true);
-        legacyRepo.submitResultToReturn = const OrderSubmitResult(
-          orderId: 1,
-          orderRequestNumber: 'OP-1',
-          status: 'PENDING',
+    // ─── Spec #598 P3-M: addProductLine 차단 룰 3종 ────────────────────
+
+    group('addProductLine (#598 P3-M §2.1)', () {
+      test('E9 — 전용상품 차단', () {
+        final result = notifier.addProductLine(_product('P001', exclusive: true));
+        expect(result, false);
+        expect(notifier.state.errorMessage, '전용상품은 추가할 수 없습니다.');
+        expect(notifier.state.orderDraft.items, isEmpty);
+      });
+
+      test('E10 — 시식·증정 차단', () {
+        final result = notifier.addProductLine(_product('P002', tasting: true));
+        expect(result, false);
+        expect(notifier.state.errorMessage, '시식/증정용 상품은 추가할 수 없습니다.');
+      });
+
+      test('E11 — 중복 차단', () {
+        notifier.addProductLine(_product('P003'));
+        final result = notifier.addProductLine(_product('P003'));
+        expect(result, false);
+        expect(notifier.state.errorMessage, '이미 추가된 제품입니다.');
+        expect(notifier.state.orderDraft.items, hasLength(1));
+      });
+
+      test('통과 — 라인 추가', () {
+        final result = notifier.addProductLine(_product('P004'));
+        expect(result, true);
+        expect(notifier.state.orderDraft.items, hasLength(1));
+        expect(notifier.state.orderDraft.items[0].productCode, 'P004');
+      });
+    });
+
+    // ─── Spec #598 P3-M: validateAndSubmitOrder 검증 (A)~(I) ───────────
+
+    group('validateAndSubmitOrder (#598 P3-M §2.6)', () {
+      void seedValidState() {
+        notifier.state = notifier.state.copyWith(
+          selectedAccountId: 5678,
+          selectedExternalKey: 'EK001',
+          orderDraft: notifier.state.orderDraft.copyWith(
+            clientId: 5678,
+            deliveryDate: DateTime.now().add(const Duration(days: 3)),
+            items: [_item('P001', boxes: 5, pieces: 100)],
+            totalAmount: 1000,
+          ),
         );
+      }
+
+      test('E1 (A) — 거래처 미선택 → SnackBar', () async {
         notifier.state = notifier.state.copyWith(
           orderDraft: notifier.state.orderDraft.copyWith(
-            clientId: 100,
-            deliveryDate: DateTime(2026, 5, 8),
-            items: [_item('P001')],
+            deliveryDate: DateTime.now().add(const Duration(days: 3)),
+            items: [_item('P001', boxes: 1, pieces: 20)],
           ),
+        );
+        await notifier.validateAndSubmitOrder();
+        expect(notifier.state.errorMessage, '거래처를 선택해 주세요');
+        expect(formRepo.submitOrderRequestCount, 0);
+      });
+
+      test('E2 (B) — 납기일 미선택 → SnackBar', () async {
+        notifier.state = notifier.state.copyWith(
+          selectedAccountId: 5678,
+          orderDraft: notifier.state.orderDraft.copyWith(
+            items: [_item('P001', boxes: 1, pieces: 20)],
+          ),
+        );
+        await notifier.validateAndSubmitOrder();
+        expect(notifier.state.errorMessage, '납기일을 선택해 주세요');
+      });
+
+      test('E3 (E) — 라인 0개 → SnackBar', () async {
+        notifier.state = notifier.state.copyWith(
+          selectedAccountId: 5678,
+          orderDraft: notifier.state.orderDraft.copyWith(
+            deliveryDate: DateTime.now().add(const Duration(days: 3)),
+          ),
+        );
+        await notifier.validateAndSubmitOrder();
+        expect(notifier.state.errorMessage, '주문할 제품을 추가해주세요');
+      });
+
+      test('E4 (F) — 라인 101개 → SnackBar', () async {
+        notifier.state = notifier.state.copyWith(
+          selectedAccountId: 5678,
+          orderDraft: notifier.state.orderDraft.copyWith(
+            deliveryDate: DateTime.now().add(const Duration(days: 3)),
+            items: List.generate(101, (i) => _item('P${i.toString().padLeft(3, '0')}', boxes: 1, pieces: 20)),
+          ),
+        );
+        await notifier.validateAndSubmitOrder();
+        expect(notifier.state.errorMessage, '제품은 100개 이하로 추가해주세요');
+      });
+
+      test('E6 (G) — 여신 호출 중 (creditBalance null + externalKey 있음)', () async {
+        seedValidState();
+        notifier.state = notifier.state.copyWith(
+          orderDraft: notifier.state.orderDraft.copyWith(creditBalance: null),
+        );
+        await notifier.validateAndSubmitOrder();
+        expect(notifier.state.errorMessage, '여신 조회 중입니다. 잠시 후 다시 시도해주세요');
+      });
+
+      test('E7 (H) — 라인 총EA = 0 → SnackBar', () async {
+        notifier.state = notifier.state.copyWith(
+          selectedAccountId: 5678,
+          selectedExternalKey: 'EK001',
+          orderDraft: notifier.state.orderDraft.copyWith(
+            clientId: 5678,
+            deliveryDate: DateTime.now().add(const Duration(days: 3)),
+            creditBalance: 1000000,
+            items: [_item('P001', boxes: 0, pieces: 0)],
+          ),
+        );
+        await notifier.validateAndSubmitOrder();
+        expect(notifier.state.errorMessage, '수량이 0인 라인이 있습니다.');
+      });
+
+      test('I — 납기일 +10일 → requiresDeliveryDateConfirm = true', () async {
+        notifier.state = notifier.state.copyWith(
+          selectedAccountId: 5678,
+          selectedExternalKey: 'EK001',
+          orderDraft: notifier.state.orderDraft.copyWith(
+            clientId: 5678,
+            deliveryDate: DateTime.now().add(const Duration(days: 11)),
+            creditBalance: 1000000,
+            items: [_item('P001', boxes: 1, pieces: 20)],
+            totalAmount: 1000,
+          ),
+        );
+        await notifier.validateAndSubmitOrder();
+        expect(notifier.state.requiresDeliveryDateConfirm, true);
+        expect(formRepo.submitOrderRequestCount, 0);
+      });
+
+      test('H4 — 검증 통과 → 등록 200 OK + clientRequestId 폐기', () async {
+        seedValidState();
+        notifier.state = notifier.state.copyWith(
+          orderDraft: notifier.state.orderDraft.copyWith(creditBalance: 1000000),
+          clientRequestId: 'idemp-123',
         );
 
         await notifier.validateAndSubmitOrder();
 
+        expect(formRepo.submitOrderRequestCount, 1);
+        expect(formRepo.lastSubmittedPayload!.clientRequestId, 'idemp-123');
+        expect(formRepo.lastSubmittedPayload!.accountId, 5678);
+        expect(notifier.state.successMessage, '주문이 접수되었습니다.');
+        expect(notifier.state.clientRequestId, isNull);
         expect(notifier.state.submitResult, isNotNull);
+      });
+
+      test('confirmDeliveryDateAndSubmit — +10일 다이얼로그 [예] 후 등록', () async {
+        notifier.state = notifier.state.copyWith(
+          selectedAccountId: 5678,
+          selectedExternalKey: 'EK001',
+          orderDraft: notifier.state.orderDraft.copyWith(
+            clientId: 5678,
+            deliveryDate: DateTime.now().add(const Duration(days: 11)),
+            creditBalance: 1000000,
+            items: [_item('P001', boxes: 1, pieces: 20)],
+            totalAmount: 1000,
+          ),
+          requiresDeliveryDateConfirm: true,
+        );
+
+        await notifier.confirmDeliveryDateAndSubmit();
+
+        expect(formRepo.submitOrderRequestCount, 1);
+        expect(notifier.state.requiresDeliveryDateConfirm, false);
+        expect(notifier.state.successMessage, '주문이 접수되었습니다.');
+      });
+
+      test('cancelDeliveryDateConfirm — [아니오] 시 등록 안 함', () {
+        notifier.state = notifier.state.copyWith(
+          requiresDeliveryDateConfirm: true,
+        );
+
+        notifier.cancelDeliveryDateConfirm();
+
+        expect(notifier.state.requiresDeliveryDateConfirm, false);
+        expect(formRepo.submitOrderRequestCount, 0);
+      });
+
+      test('E12 — 등록 ORD_LOAN_EXCEEDED → API message 패스스루 + clientRequestId 유지', () async {
+        seedValidState();
+        notifier.state = notifier.state.copyWith(
+          orderDraft: notifier.state.orderDraft.copyWith(creditBalance: 1000000),
+          clientRequestId: 'idemp-123',
+        );
+        formRepo.exceptionToThrow =
+            Exception('ORD_LOAN_EXCEEDED: 여신 한도를 초과했습니다 (한도: 1000)');
+
+        await notifier.validateAndSubmitOrder();
+
+        expect(notifier.state.errorMessage, contains('ORD_LOAN_EXCEEDED'));
+        expect(notifier.state.clientRequestId, 'idemp-123');
+      });
+
+      test('E16 — 403 ORD_ACCOUNT_FORBIDDEN → 한국어 SnackBar', () async {
+        seedValidState();
+        notifier.state = notifier.state.copyWith(
+          orderDraft: notifier.state.orderDraft.copyWith(creditBalance: 1000000),
+        );
+        formRepo.exceptionToThrow = Exception('ORD_ACCOUNT_FORBIDDEN');
+
+        await notifier.validateAndSubmitOrder();
+
+        expect(notifier.state.errorMessage, '본인 담당 거래처가 아닙니다.');
       });
     });
   });
+}
+
+ProductForOrder _product(
+  String code, {
+  bool exclusive = false,
+  bool tasting = false,
+}) {
+  return ProductForOrder(
+    productCode: code,
+    productName: 'P-$code',
+    barcode: '8800000$code',
+    storageType: '상온',
+    shelfLife: '12개월',
+    unitPrice: 1000,
+    boxSize: 20,
+    isFavorite: false,
+    productType: exclusive ? 'EXCLUSIVE' : null,
+    tasteGiftType: tasting ? 'TASTING_GIFT' : null,
+  );
 }
 
 OrderDraftResponseModel _draftResponse() => const OrderDraftResponseModel(
@@ -318,136 +514,20 @@ OrderDraftResponseModel _draftResponse() => const OrderDraftResponseModel(
       ],
     );
 
-OrderDraftItem _item(String productCode, {int total = 1234}) {
+OrderDraftItem _item(
+  String productCode, {
+  int total = 1234,
+  double boxes = 1,
+  int pieces = 0,
+}) {
   return OrderDraftItem(
     productCode: productCode,
     productName: 'P-$productCode',
-    quantityBoxes: 1,
-    quantityPieces: 0,
+    quantityBoxes: boxes,
+    quantityPieces: pieces,
     unitPrice: 1234,
-    boxSize: 1,
+    boxSize: 20,
     totalPrice: total,
   );
 }
 
-// --- Fake Repository (kept from previous version, used for validate/submit/update only) ---
-
-class FakeOrderRequestRepository implements OrderRequestRepository {
-  ValidationResult validationResultToReturn = const ValidationResult(isValid: true);
-  OrderSubmitResult submitResultToReturn = const OrderSubmitResult(
-    orderId: 1,
-    orderRequestNumber: 'OP00000001',
-    status: 'PENDING',
-  );
-  bool shouldThrow = false;
-  bool shouldThrowOnSubmit = false;
-  String errorMessage = '테스트 에러';
-
-  bool submitOrderCalled = false;
-  bool updateOrderCalled = false;
-  int? lastUpdatedOrderId;
-
-  @override
-  Future<int> getCreditBalance({required int clientId}) async => throw UnimplementedError();
-
-  @override
-  Future<OrderDraft?> loadDraftOrder() async => throw UnimplementedError();
-
-  @override
-  Future<void> saveDraftOrder({required OrderDraft orderDraft}) async => throw UnimplementedError();
-
-  @override
-  Future<void> deleteDraftOrder() async {
-    // SubmitOrder 유스케이스가 호출하므로 no-op (테스트 외 흐름).
-  }
-
-  @override
-  Future<ValidationResult> validateOrder({required OrderDraft orderDraft}) async {
-    if (shouldThrow) throw Exception(errorMessage);
-    return validationResultToReturn;
-  }
-
-  @override
-  Future<OrderSubmitResult> submitOrder({required OrderDraft orderDraft}) async {
-    if (shouldThrowOnSubmit) throw Exception(errorMessage);
-    submitOrderCalled = true;
-    return submitResultToReturn;
-  }
-
-  @override
-  Future<OrderSubmitResult> updateOrder({
-    required int orderId,
-    required OrderDraft orderDraft,
-  }) async {
-    if (shouldThrow) throw Exception(errorMessage);
-    updateOrderCalled = true;
-    lastUpdatedOrderId = orderId;
-    return submitResultToReturn;
-  }
-
-  // unused stubs
-  @override
-  Future<OrderRequestListResult> getMyOrderRequests({
-    int? clientId,
-    String? status,
-    String? deliveryDateFrom,
-    String? deliveryDateTo,
-    String sortBy = 'orderDate',
-    String sortDir = 'DESC',
-  }) async =>
-      throw UnimplementedError();
-
-  @override
-  Future<OrderDetail> getOrderRequestDetail({required int orderId}) async =>
-      throw UnimplementedError();
-
-  @override
-  Future<void> resendOrderRequest({required int orderId}) async =>
-      throw UnimplementedError();
-
-  @override
-  Future<OrderCancelResult> cancelOrderRequest({
-    required int orderId,
-    required List<String> productCodes,
-  }) async =>
-      throw UnimplementedError();
-
-  @override
-  Future<List<ProductForOrder>> getFavoriteProducts() async =>
-      throw UnimplementedError();
-
-  @override
-  Future<List<ProductForOrder>> searchProductsForOrder({
-    required String query,
-    String? categoryMid,
-    String? categorySub,
-  }) async =>
-      throw UnimplementedError();
-
-  @override
-  Future<ProductForOrder> getProductByBarcode({required String barcode}) async =>
-      throw UnimplementedError();
-
-  @override
-  Future<void> addToFavorites({required String productCode}) async =>
-      throw UnimplementedError();
-
-  @override
-  Future<void> removeFromFavorites({required String productCode}) async =>
-      throw UnimplementedError();
-
-  @override
-  Future<ClientOrderListResult> getClientOrders({
-    required int clientId,
-    String? deliveryDate,
-    int page = 0,
-    int size = 20,
-  }) async =>
-      throw UnimplementedError();
-
-  @override
-  Future<ClientOrderDetail> getClientOrderDetail({
-    required String sapOrderNumber,
-  }) async =>
-      throw UnimplementedError();
-}

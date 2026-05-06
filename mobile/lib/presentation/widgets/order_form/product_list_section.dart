@@ -67,6 +67,14 @@ class ProductListSection extends StatelessWidget {
             const Spacer(),
           ],
         ),
+        const SizedBox(height: AppSpacing.xs),
+        // Spec #598 P3-M §2.4 — 100개 안내 (회색, 단순 안내)
+        Text(
+          'ⓘ 제품은 100개 이하로 추가해주세요',
+          style: AppTypography.bodySmall.copyWith(
+            color: AppColors.textSecondary,
+          ),
+        ),
         const SizedBox(height: AppSpacing.md),
         ListView.builder(
           controller: scrollController,
