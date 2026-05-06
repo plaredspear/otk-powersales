@@ -6,10 +6,17 @@ import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
 import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.order.dto.response.CancelledLineResponse
+import com.otoki.powersales.order.dto.response.OrderCancelResponse
 import com.otoki.powersales.order.dto.response.OrderRequestListResponse
 import com.otoki.powersales.order.dto.response.OrderRequestSummaryResponse
+import com.otoki.powersales.order.entity.OrderRequestStatus
 import com.otoki.powersales.order.exception.InvalidOrderParameterException
+import com.otoki.powersales.order.exception.OrderCancelDeadlinePassedException
+import com.otoki.powersales.order.exception.OrderCancelInvalidStatusException
+import com.otoki.powersales.order.exception.OrderCancelSapFailedException
 import com.otoki.powersales.order.exception.OrderDateRangeTooWideException
+import com.otoki.powersales.order.service.OrderCancelService
 import com.otoki.powersales.order.service.OrderRequestService
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import org.junit.jupiter.api.BeforeEach
@@ -25,8 +32,10 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.test.context.bean.override.mockito.MockitoBean
+import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.math.BigDecimal
@@ -48,6 +57,9 @@ class OrderRequestControllerTest {
 
     @MockitoBean
     private lateinit var orderRequestCreateService: com.otoki.powersales.order.service.OrderRequestCreateService
+
+    @MockitoBean
+    private lateinit var orderCancelService: OrderCancelService
 
     @MockitoBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
@@ -238,6 +250,98 @@ class OrderRequestControllerTest {
             mockMvc.perform(get("/api/v1/mobile/me/order-requests/99999"))
                 .andExpect(status().isNotFound)
                 .andExpect(jsonPath("$.error.code").value("ORDER_NOT_FOUND"))
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/v1/mobile/me/order-requests/{id}/cancel - 주문 취소 (#597)")
+    inner class CancelOrderRequestTests {
+
+        @Test
+        @DisplayName("성공 - 빈 본문(전체 취소) → 200")
+        fun successFullCancel() {
+            whenever(orderCancelService.cancel(any(), any(), any()))
+                .thenReturn(
+                    OrderCancelResponse(
+                        orderRequestId = 12345L,
+                        orderRequestNumber = "ORD-20260504-12345",
+                        orderRequestStatus = OrderRequestStatus.CANCELED,
+                        cancelledLines = listOf(
+                            CancelledLineResponse(
+                                orderProductId = 101L,
+                                lineNumber = 10,
+                                productCode = "P001",
+                                cancelledAt = LocalDateTime.of(2026, 5, 4, 13, 25),
+                            ),
+                        ),
+                    ),
+                )
+
+            mockMvc.perform(post("/api/v1/mobile/me/order-requests/12345/cancel"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.orderRequestId").value(12345))
+                .andExpect(jsonPath("$.data.orderRequestStatus").value("CANCELED"))
+                .andExpect(jsonPath("$.data.cancelledLines[0].orderProductId").value(101))
+                .andExpect(jsonPath("$.data.cancelledLines[0].productCode").value("P001"))
+        }
+
+        @Test
+        @DisplayName("성공 - 부분 취소(orderProductIds) → 200")
+        fun successPartialCancel() {
+            whenever(orderCancelService.cancel(any(), any(), any()))
+                .thenReturn(
+                    OrderCancelResponse(
+                        orderRequestId = 12345L,
+                        orderRequestNumber = "ORD-20260504-12345",
+                        orderRequestStatus = OrderRequestStatus.APPROVED,
+                        cancelledLines = listOf(
+                            CancelledLineResponse(101L, 10, "P001", LocalDateTime.of(2026, 5, 4, 13, 25)),
+                        ),
+                    ),
+                )
+
+            mockMvc.perform(
+                post("/api/v1/mobile/me/order-requests/12345/cancel")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"orderProductIds":[101]}"""),
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data.orderRequestStatus").value("APPROVED"))
+                .andExpect(jsonPath("$.data.cancelledLines.length()").value(1))
+        }
+
+        @Test
+        @DisplayName("실패 - 마감 시각 초과 → 400 ORD_CANCEL_DEADLINE_PASSED")
+        fun deadlinePassed() {
+            whenever(orderCancelService.cancel(any(), any(), any()))
+                .thenThrow(OrderCancelDeadlinePassedException())
+
+            mockMvc.perform(post("/api/v1/mobile/me/order-requests/12345/cancel"))
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.error.code").value("ORD_CANCEL_DEADLINE_PASSED"))
+        }
+
+        @Test
+        @DisplayName("실패 - 잘못된 상태 → 400 ORD_CANCEL_INVALID_STATUS")
+        fun invalidStatus() {
+            whenever(orderCancelService.cancel(any(), any(), any()))
+                .thenThrow(OrderCancelInvalidStatusException("DRAFT"))
+
+            mockMvc.perform(post("/api/v1/mobile/me/order-requests/12345/cancel"))
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.error.code").value("ORD_CANCEL_INVALID_STATUS"))
+        }
+
+        @Test
+        @DisplayName("실패 - SAP 송신 실패 → 502 ORD_CANCEL_SAP_FAILED")
+        fun sapFailed() {
+            whenever(orderCancelService.cancel(any(), any(), any()))
+                .thenThrow(OrderCancelSapFailedException("SAP error"))
+
+            mockMvc.perform(post("/api/v1/mobile/me/order-requests/12345/cancel"))
+                .andExpect(status().isBadGateway)
+                .andExpect(jsonPath("$.error.code").value("ORD_CANCEL_SAP_FAILED"))
         }
     }
 }

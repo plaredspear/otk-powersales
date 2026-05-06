@@ -46,6 +46,7 @@ class OrderRequestCreatePostTest {
 
     @MockitoBean private lateinit var orderRequestService: OrderRequestService
     @MockitoBean private lateinit var orderRequestCreateService: OrderRequestCreateService
+    @MockitoBean private lateinit var orderCancelService: com.otoki.powersales.order.service.OrderCancelService
     @MockitoBean private lateinit var jwtTokenProvider: JwtTokenProvider
     @MockitoBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
     @MockitoBean private lateinit var adminAuthorityFilter: AdminAuthorityFilter
