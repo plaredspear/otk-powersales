@@ -109,15 +109,15 @@ class LocalDataInitializer(
      *   `costCenterCode`)는 null
      */
     private fun seedSystemAdmin() {
-        val code = "ADMIN-LOCAL-001"
+        val code = "ADMIN-99999999"
         if (employeeRepository.existsByEmployeeCode(code)) return
 
         val infoExists = employeeInfoExists(code)
         val encodedPassword = passwordEncoder.encode("1234")!!
         val employee = Employee(
             employeeCode = code,
-            name = "시스템관리자(로컬)",
-            orgName = "본사 IT팀",
+            name = "시스템개발자",
+            orgName = "시스템개발자조직",
             password = encodedPassword,
             passwordChangeRequired = false
         ).apply {
