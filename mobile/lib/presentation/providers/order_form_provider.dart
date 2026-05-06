@@ -1,11 +1,20 @@
 import '../../core/utils/error_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/network/dio_provider.dart';
+import '../../data/datasources/order_form_api_datasource.dart';
+import '../../data/repositories/order_form_repository_impl.dart';
 import '../../domain/entities/order_draft.dart';
 import '../../domain/entities/validation_error.dart';
+import '../../domain/repositories/order_form_repository.dart';
 import '../../domain/usecases/delete_draft_order_usecase.dart';
 import '../../domain/usecases/get_credit_balance_usecase.dart';
 import '../../domain/usecases/load_draft_order_usecase.dart';
+import '../../domain/usecases/order_form/delete_order_draft.dart';
+import '../../domain/usecases/order_form/get_loan_inquiry.dart';
+import '../../domain/usecases/order_form/get_order_draft.dart';
+import '../../domain/usecases/order_form/save_order_draft.dart';
+import '../../domain/usecases/order_form/submit_order_request.dart';
 import '../../domain/usecases/save_draft_order_usecase.dart';
 import '../../domain/usecases/submit_order_usecase.dart';
 import '../../domain/usecases/update_order_usecase.dart';
@@ -55,6 +64,47 @@ final submitOrderUseCaseProvider = Provider<SubmitOrder>((ref) {
 final updateOrderUseCaseProvider = Provider<UpdateOrder>((ref) {
   final repository = ref.watch(orderRequestRepositoryProvider);
   return UpdateOrder(repository);
+});
+
+// --- Spec #598 P1-M: 신규 백엔드 연결 Provider ──────────────────────
+// (P2-M / P3-M 가 OrderFormNotifier 메서드에서 활용. P1-M 단독 머지 시점에는
+// 정의만 추가하고 Notifier 동작은 mock 그대로 유지)
+
+/// 주문서 작성 화면 API DataSource Provider (#598 P1-M).
+final orderFormApiDataSourceProvider = Provider<OrderFormApiDataSource>((ref) {
+  return OrderFormApiDataSource(ref.watch(dioProvider));
+});
+
+/// 주문서 작성 화면 Repository Provider (#598 P1-M).
+final orderFormRepositoryProvider = Provider<OrderFormRepository>((ref) {
+  return OrderFormRepositoryImpl(
+    dataSource: ref.watch(orderFormApiDataSourceProvider),
+  );
+});
+
+/// `getLoanInquiry` UseCase Provider (#594 호출).
+final getLoanInquiryUseCaseProvider = Provider<GetLoanInquiry>((ref) {
+  return GetLoanInquiry(ref.watch(orderFormRepositoryProvider));
+});
+
+/// `getOrderDraft` UseCase Provider (#596 GET).
+final getOrderDraftUseCaseProvider = Provider<GetOrderDraft>((ref) {
+  return GetOrderDraft(ref.watch(orderFormRepositoryProvider));
+});
+
+/// `saveOrderDraft` UseCase Provider (#596 POST).
+final saveOrderDraftUseCaseProvider = Provider<SaveOrderDraft>((ref) {
+  return SaveOrderDraft(ref.watch(orderFormRepositoryProvider));
+});
+
+/// `deleteOrderDraft` UseCase Provider (#596 DELETE).
+final deleteOrderDraftUseCaseProvider = Provider<DeleteOrderDraft>((ref) {
+  return DeleteOrderDraft(ref.watch(orderFormRepositoryProvider));
+});
+
+/// `submitOrderRequest` UseCase Provider (#592 POST + clientRequestId).
+final submitOrderRequestUseCaseProvider = Provider<SubmitOrderRequest>((ref) {
+  return SubmitOrderRequest(ref.watch(orderFormRepositoryProvider));
 });
 
 // --- OrderFormNotifier ---

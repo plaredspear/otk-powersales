@@ -32,6 +32,22 @@ class OrderFormState {
   /// 전송 결과 (성공 시)
   final OrderSubmitResult? submitResult;
 
+  // ─── Spec #598 P1-M: 신규 백엔드 연결 필드 ─────────────────────────
+  // (P2-M / P3-M 가 활용 — P1-M 단독 머지 시점에는 화면 동작 변경 없음)
+
+  /// 멱등키 (UUID v4) — 신규 폼 진입 시 발급, 등록 200 OK 후 폐기.
+  /// `OrderFormRepository.submitOrderRequest` 호출 시 헤더 `Idempotency-Key` 또는 본문 `clientRequestId` 로 송신.
+  final String? clientRequestId;
+
+  /// 임시저장 PK (`tmp_order.tmp_order_id`) — 임시저장 삭제 시 사용.
+  final int? draftId;
+
+  /// 거래처 SAP 코드 (Account.externalKey) — `getLoanInquiry` 호출 입력.
+  final String? selectedExternalKey;
+
+  /// 거래처 PK — `submitOrderRequest` 페이로드 `accountId`.
+  final int? selectedAccountId;
+
   const OrderFormState({
     required this.orderDraft,
     this.clients = const {},
@@ -42,6 +58,10 @@ class OrderFormState {
     this.successMessage,
     this.validationErrors = const {},
     this.submitResult,
+    this.clientRequestId,
+    this.draftId,
+    this.selectedExternalKey,
+    this.selectedAccountId,
   });
 
   /// 초기 상태
@@ -113,10 +133,18 @@ class OrderFormState {
     String? successMessage,
     Map<String, ValidationError>? validationErrors,
     OrderSubmitResult? submitResult,
+    String? clientRequestId,
+    int? draftId,
+    String? selectedExternalKey,
+    int? selectedAccountId,
     bool clearError = false,
     bool clearSuccess = false,
     bool clearValidationErrors = false,
     bool clearSubmitResult = false,
+    bool clearClientRequestId = false,
+    bool clearDraftId = false,
+    bool clearSelectedExternalKey = false,
+    bool clearSelectedAccountId = false,
   }) {
     return OrderFormState(
       orderDraft: orderDraft ?? this.orderDraft,
@@ -132,6 +160,16 @@ class OrderFormState {
           : (validationErrors ?? this.validationErrors),
       submitResult:
           clearSubmitResult ? null : (submitResult ?? this.submitResult),
+      clientRequestId: clearClientRequestId
+          ? null
+          : (clientRequestId ?? this.clientRequestId),
+      draftId: clearDraftId ? null : (draftId ?? this.draftId),
+      selectedExternalKey: clearSelectedExternalKey
+          ? null
+          : (selectedExternalKey ?? this.selectedExternalKey),
+      selectedAccountId: clearSelectedAccountId
+          ? null
+          : (selectedAccountId ?? this.selectedAccountId),
     );
   }
 }
