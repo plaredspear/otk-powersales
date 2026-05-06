@@ -154,4 +154,90 @@ class OrderRequestControllerTest {
                 .andExpect(jsonPath("$.error.code").value("ORD_INVALID_PARAM"))
         }
     }
+
+    @Nested
+    @DisplayName("GET /api/v1/mobile/me/order-requests/{orderRequestId} - 상세 조회 (#595)")
+    inner class GetOrderRequestDetailTests {
+
+        @Test
+        @DisplayName("성공 - 정상 응답")
+        fun success() {
+            val response = com.otoki.powersales.order.dto.response.OrderRequestDetailResponse(
+                id = 12345L,
+                orderRequestNumber = "OR-0001234",
+                clientId = 5678L,
+                clientName = "홍길동상회",
+                clientDeadlineTime = "13:50",
+                orderDate = LocalDateTime.of(2026, 5, 4, 10, 0),
+                deliveryDate = LocalDate.of(2026, 5, 6),
+                totalAmount = BigDecimal("1234567.00"),
+                totalApprovedAmount = BigDecimal("1200000.00"),
+                orderRequestStatus = com.otoki.powersales.order.entity.OrderRequestStatus.APPROVED,
+                isClosed = true,
+                orderedItemCount = 1,
+                orderedItems = listOf(
+                    com.otoki.powersales.order.dto.response.OrderedItemResponse(
+                        productCode = "1000023",
+                        productName = "진라면 매운맛",
+                        totalQuantityBoxes = BigDecimal("10"),
+                        totalQuantityPieces = 300,
+                        isCancelled = false,
+                    ),
+                ),
+                orderProcessingStatusList = listOf(
+                    com.otoki.powersales.order.dto.response.OrderProcessingStatusResponse(
+                        sapOrderNumber = "0300004993",
+                        items = listOf(
+                            com.otoki.powersales.order.dto.response.ProcessingItemResponse(
+                                productCode = "1000023",
+                                productName = "진라면 매운맛",
+                                deliveredQuantity = "10 BOX (300 EA)",
+                                deliveryStatus = com.otoki.powersales.order.entity.DeliveryStatus.DELIVERED,
+                                driverName = "홍길동",
+                                vehicle = "12가3456",
+                                driverPhone = "010-1234-5678",
+                                scheduleTime = "12:00",
+                                completeTime = "14:30",
+                            ),
+                        ),
+                    ),
+                ),
+                rejectedItems = null,
+            )
+            whenever(orderRequestService.getOrderRequestDetail(any(), any())).thenReturn(response)
+
+            mockMvc.perform(get("/api/v1/mobile/me/order-requests/12345"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(12345))
+                .andExpect(jsonPath("$.data.orderRequestNumber").value("OR-0001234"))
+                .andExpect(jsonPath("$.data.isClosed").value(true))
+                .andExpect(jsonPath("$.data.orderProcessingStatusList[0].sapOrderNumber").value("0300004993"))
+                .andExpect(jsonPath("$.data.orderProcessingStatusList[0].items[0].deliveryStatus").value("DELIVERED"))
+                .andExpect(jsonPath("$.data.orderProcessingStatusList[0].items[0].driverName").value("홍길동"))
+                .andExpect(jsonPath("$.data.orderProcessingStatusList[0].items[0].scheduleTime").value("12:00"))
+        }
+
+        @Test
+        @DisplayName("실패 - 본인 외 접근 -> 403")
+        fun forbidden() {
+            whenever(orderRequestService.getOrderRequestDetail(any(), any()))
+                .thenThrow(com.otoki.powersales.order.exception.ForbiddenOrderAccessException())
+
+            mockMvc.perform(get("/api/v1/mobile/me/order-requests/12345"))
+                .andExpect(status().isForbidden)
+                .andExpect(jsonPath("$.error.code").value("FORBIDDEN"))
+        }
+
+        @Test
+        @DisplayName("실패 - 미존재 ID -> 404")
+        fun notFound() {
+            whenever(orderRequestService.getOrderRequestDetail(any(), any()))
+                .thenThrow(com.otoki.powersales.order.exception.OrderNotFoundException())
+
+            mockMvc.perform(get("/api/v1/mobile/me/order-requests/99999"))
+                .andExpect(status().isNotFound)
+                .andExpect(jsonPath("$.error.code").value("ORDER_NOT_FOUND"))
+        }
+    }
 }

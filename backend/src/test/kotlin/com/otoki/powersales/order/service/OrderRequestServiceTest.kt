@@ -34,6 +34,14 @@ class OrderRequestServiceTest {
     @Mock
     private lateinit var orderRequestRepository: OrderRequestRepository
 
+    @Mock
+    private lateinit var orderRequestProductRepository: com.otoki.powersales.order.repository.OrderRequestProductRepository
+
+    @Mock
+    private lateinit var orderRequestDetailSapSender: com.otoki.powersales.sap.outbound.sender.OrderRequestDetailSapSender
+
+    private val orderRequestDetailMapper = com.otoki.powersales.order.service.OrderRequestDetailMapper()
+
     private val fixedClock: Clock = Clock.fixed(
         LocalDateTime.of(2026, 5, 5, 10, 0).atZone(ZoneId.of("Asia/Seoul")).toInstant(),
         ZoneId.of("Asia/Seoul"),
@@ -43,7 +51,13 @@ class OrderRequestServiceTest {
 
     @org.junit.jupiter.api.BeforeEach
     fun setUp() {
-        service = OrderRequestService(orderRequestRepository, fixedClock)
+        service = OrderRequestService(
+            orderRequestRepository,
+            orderRequestProductRepository,
+            orderRequestDetailSapSender,
+            orderRequestDetailMapper,
+            fixedClock,
+        )
     }
 
     @Nested
@@ -253,6 +267,89 @@ class OrderRequestServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("getOrderRequestDetail - 본인 주문요청 상세 (#595)")
+    inner class GetOrderRequestDetailTests {
+
+        @Test
+        @DisplayName("실패 — orderRequestId 가 0 이하 → ORD_INVALID_PARAM")
+        fun invalidId() {
+            assertThatThrownBy { service.getOrderRequestDetail(0L, userId = 1L) }
+                .isInstanceOf(InvalidOrderParameterException::class.java)
+        }
+
+        @Test
+        @DisplayName("실패 — 미존재 ID → ORD_NOT_FOUND")
+        fun notFound() {
+            whenever(orderRequestRepository.findById(eq(999L))).thenReturn(java.util.Optional.empty())
+            assertThatThrownBy { service.getOrderRequestDetail(999L, userId = 1L) }
+                .isInstanceOf(com.otoki.powersales.order.exception.OrderNotFoundException::class.java)
+        }
+
+        @Test
+        @DisplayName("실패 — 본인 외 접근 → ORD_FORBIDDEN")
+        fun forbidden() {
+            val other = createOrderRequestWithEmployeeId(employeeId = 99L)
+            whenever(orderRequestRepository.findById(eq(100L))).thenReturn(java.util.Optional.of(other))
+            assertThatThrownBy { service.getOrderRequestDetail(100L, userId = 1L) }
+                .isInstanceOf(com.otoki.powersales.order.exception.ForbiddenOrderAccessException::class.java)
+        }
+
+        @Test
+        @DisplayName("성공 — SAP 정상 + 마감 후 → orderProcessingStatusList 길이 1")
+        fun successWithSapAfterClose() {
+            val orderRequest = createOrderRequestWithEmployeeId(employeeId = 1L, deliveryDate = LocalDate.of(2026, 5, 4))
+            whenever(orderRequestRepository.findById(eq(100L))).thenReturn(java.util.Optional.of(orderRequest))
+            whenever(orderRequestProductRepository.findByOrderRequest_IdOrderByLineNumberAsc(100L))
+                .thenReturn(listOf(buildCrmProduct("1000023", "진라면", 30, orderRequest)))
+            whenever(orderRequestDetailSapSender.fetchDetail(any())).thenReturn(
+                listOf(buildSapLine("1000023", "0300004993", "143000")),
+            )
+
+            val response = service.getOrderRequestDetail(100L, userId = 1L)
+
+            assertThat(response.isClosed).isTrue()
+            assertThat(response.orderProcessingStatusList).hasSize(1)
+            assertThat(response.orderProcessingStatusList!![0].sapOrderNumber).isEqualTo("0300004993")
+            assertThat(response.orderedItems).hasSize(1)
+            assertThat(response.orderedItems[0].productCode).isEqualTo("1000023")
+        }
+
+        @Test
+        @DisplayName("성공 — 마감 전(isClosed=false) → orderProcessingStatusList = null (Q6, SAP 호출은 수행)")
+        fun beforeCloseListNull() {
+            val orderRequest = createOrderRequestWithEmployeeId(employeeId = 1L, deliveryDate = LocalDate.of(2026, 5, 10))
+            whenever(orderRequestRepository.findById(eq(100L))).thenReturn(java.util.Optional.of(orderRequest))
+            whenever(orderRequestProductRepository.findByOrderRequest_IdOrderByLineNumberAsc(100L))
+                .thenReturn(listOf(buildCrmProduct("1000023", "진라면", 30, orderRequest)))
+            whenever(orderRequestDetailSapSender.fetchDetail(any())).thenReturn(
+                listOf(buildSapLine("1000023", "0300004993", "143000")),
+            )
+
+            val response = service.getOrderRequestDetail(100L, userId = 1L)
+
+            assertThat(response.isClosed).isFalse()
+            assertThat(response.orderProcessingStatusList).isNull()
+            // SAP 호출은 수행되었어야 함
+            org.mockito.kotlin.verify(orderRequestDetailSapSender).fetchDetail(any())
+        }
+
+        @Test
+        @DisplayName("성공 — SAP null 반환 → orderProcessingStatusList = null, rejectedItems = null, 200 유지")
+        fun sapFailureFallback() {
+            val orderRequest = createOrderRequestWithEmployeeId(employeeId = 1L, deliveryDate = LocalDate.of(2026, 5, 4))
+            whenever(orderRequestRepository.findById(eq(100L))).thenReturn(java.util.Optional.of(orderRequest))
+            whenever(orderRequestProductRepository.findByOrderRequest_IdOrderByLineNumberAsc(100L))
+                .thenReturn(emptyList())
+            whenever(orderRequestDetailSapSender.fetchDetail(any())).thenReturn(null)
+
+            val response = service.getOrderRequestDetail(100L, userId = 1L)
+
+            assertThat(response.orderProcessingStatusList).isNull()
+            assertThat(response.rejectedItems).isNull()
+        }
+    }
+
     private fun createOrderRequest(
         id: Long = 1L,
         accountId: Int = 1,
@@ -271,4 +368,68 @@ class OrderRequestServiceTest {
             account = account,
         )
     }
+
+    private fun createOrderRequestWithEmployeeId(
+        employeeId: Long,
+        deliveryDate: LocalDate = LocalDate.of(2026, 5, 6),
+    ): OrderRequest {
+        val account = Account(id = 5, name = "ABC")
+        val employee = Employee(id = employeeId, employeeCode = "20030117", name = "Test")
+        return OrderRequest(
+            id = 100L,
+            orderRequestNumber = "OR-0000100",
+            orderDate = LocalDateTime.of(2026, 5, 4, 10, 0),
+            deliveryDate = deliveryDate,
+            totalAmount = BigDecimal("1234567.00"),
+            orderRequestStatus = OrderRequestStatus.APPROVED,
+            employee = employee,
+            account = account,
+        )
+    }
+
+    private fun buildCrmProduct(
+        productCode: String,
+        productName: String,
+        piecesPerBox: Int,
+        orderRequest: OrderRequest,
+    ): com.otoki.powersales.order.entity.OrderRequestProduct =
+        com.otoki.powersales.order.entity.OrderRequestProduct(
+            id = 1L,
+            lineNumber = 1,
+            productCode = productCode,
+            productName = productName,
+            quantityBoxes = BigDecimal("10"),
+            quantityPieces = 0,
+            unit = "BOX",
+            unitPrice = BigDecimal.ZERO,
+            amount = BigDecimal.ZERO,
+            piecesPerBox = piecesPerBox,
+            orderRequest = orderRequest,
+        )
+
+    private fun buildSapLine(
+        productCode: String,
+        sapOrderNumber: String,
+        completeTime: String,
+    ): com.otoki.powersales.sap.outbound.sender.SapOrderRequestDetailLine =
+        com.otoki.powersales.sap.outbound.sender.SapOrderRequestDetailLine(
+            lineNumber = "00001",
+            productCode = productCode,
+            productName = "name",
+            lineItemStatus = "OK",
+            totalQuantity = "10",
+            unit = "BOX",
+            sapOrderNumber = sapOrderNumber,
+            orderSalesAmount = "120000",
+            deliveryRequestDate = "20260506",
+            orderDate = "20260504",
+            shippingDriverName = "홍길동",
+            shippingVehicle = "12가3456",
+            shippingDriverPhone = "010-1234-5678",
+            shippingScheduleTime = "120000",
+            shippingCompleteTime = completeTime,
+            totalQuantityBox = "10",
+            shippingQuantityBox = "10",
+            defaultReason = "",
+        )
 }

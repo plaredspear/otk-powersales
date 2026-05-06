@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:51526",
+    "url" : "http://localhost:63751",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -5642,7 +5642,7 @@
           "employeeCode" : {
             "type" : "string",
             "minLength" : 1,
-            "pattern" : "^\\d{8}$"
+            "pattern" : "^(\\d{8}|ADMIN-[A-Za-z0-9_-]{1,30})$"
           },
           "password" : {
             "type" : "string",
@@ -6450,15 +6450,15 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "pageable" : {
             "$ref" : "#/components/schemas/PageableObject"
@@ -6488,6 +6488,9 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
+          "unpaged" : {
+            "type" : "boolean"
+          },
           "pageSize" : {
             "type" : "integer",
             "format" : "int32"
@@ -6501,9 +6504,6 @@
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "unpaged" : {
-            "type" : "boolean"
           },
           "offset" : {
             "type" : "integer",

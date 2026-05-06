@@ -1,14 +1,21 @@
 package com.otoki.powersales.order.service
 
 import com.otoki.powersales.common.util.TimeZones
+import com.otoki.powersales.order.dto.response.OrderRequestDetailResponse
 import com.otoki.powersales.order.dto.response.OrderRequestListResponse
 import com.otoki.powersales.order.dto.response.OrderRequestSummaryResponse
+import com.otoki.powersales.order.dto.response.OrderedItemResponse
 import com.otoki.powersales.order.entity.OrderRequestStatus
+import com.otoki.powersales.order.exception.ForbiddenOrderAccessException
 import com.otoki.powersales.order.exception.InvalidDateRangeException
 import com.otoki.powersales.order.exception.InvalidOrderParameterException
 import com.otoki.powersales.order.exception.OrderDateRangeTooWideException
+import com.otoki.powersales.order.exception.OrderNotFoundException
+import com.otoki.powersales.order.repository.OrderRequestProductRepository
 import com.otoki.powersales.order.repository.OrderRequestRepository
+import com.otoki.powersales.sap.outbound.sender.OrderRequestDetailSapSender
 import org.slf4j.LoggerFactory
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
@@ -21,6 +28,9 @@ import java.time.OffsetDateTime
 @Transactional(readOnly = true)
 class OrderRequestService(
     private val orderRequestRepository: OrderRequestRepository,
+    private val orderRequestProductRepository: OrderRequestProductRepository,
+    private val orderRequestDetailSapSender: OrderRequestDetailSapSender,
+    private val orderRequestDetailMapper: OrderRequestDetailMapper,
     private val clock: Clock = Clock.system(TimeZones.SEOUL_ZONE),
 ) {
 
@@ -95,6 +105,65 @@ class OrderRequestService(
             total = items.size,
             truncated = truncated,
             fetchedAt = fetchedAt,
+        )
+    }
+
+    /**
+     * 본인 주문요청 상세 조회 (Spec #595 P1-B).
+     *
+     * 처리 흐름:
+     * 1. `OrderRequest` 조회 → 미존재 시 `OrderNotFoundException`.
+     * 2. 권한 게이트 — `OrderRequest.employee.id != userId` 시 `ForbiddenOrderAccessException` (레거시 강화).
+     * 3. `OrderRequestProduct` 라인 조회 (CRM).
+     * 4. 마감 여부 계산.
+     * 5. SAP 동기 호출 — 마감 여부 무관 항상 수행.
+     * 6. SAP 응답 + CRM 라인 결합 → `orderProcessingStatusList[]` + `rejectedItems[]` 빌드.
+     * 7. 마감 전(`isClosed = false`) 시 `orderProcessingStatusList = null` 강제 (Q6 — 레거시 동등).
+     */
+    fun getOrderRequestDetail(orderRequestId: Long, userId: Long): OrderRequestDetailResponse {
+        if (orderRequestId < 1) {
+            throw InvalidOrderParameterException("orderRequestId 는 1 이상이어야 합니다.")
+        }
+
+        val orderRequest = orderRequestRepository.findByIdOrNull(orderRequestId)
+            ?: throw OrderNotFoundException()
+
+        if (orderRequest.employee.id != userId) {
+            throw ForbiddenOrderAccessException()
+        }
+
+        val crmProducts = orderRequestProductRepository
+            .findByOrderRequest_IdOrderByLineNumberAsc(orderRequestId)
+        val crmProductsByCode = crmProducts.associateBy { it.productCode }
+
+        val isClosed = calculateIsClosed(orderRequest.deliveryDate, orderRequest.clientDeadlineTime)
+
+        val sapLines = orderRequestDetailSapSender.fetchDetail(orderRequest.orderRequestNumber)
+
+        val mapped = if (sapLines == null) {
+            null
+        } else {
+            orderRequestDetailMapper.map(
+                requestNumber = orderRequest.orderRequestNumber,
+                sapLines = sapLines,
+                crmProductsByCode = crmProductsByCode,
+            )
+        }
+
+        val processingGroups = mapped?.processingGroups?.takeIf { it.isNotEmpty() }
+        val rejectedItems = mapped?.rejectedItems?.takeIf { it.isNotEmpty() }
+
+        // 마감 전 — 그룹 응답 매핑 생략 (Q6, 레거시 동등). SAP 호출은 이미 수행.
+        val finalProcessingGroups = if (isClosed) processingGroups else null
+
+        val orderedItems = crmProducts.map { OrderedItemResponse.from(it) }
+
+        return OrderRequestDetailResponse.of(
+            orderRequest = orderRequest,
+            isClosed = isClosed,
+            orderedItems = orderedItems,
+            orderProcessingStatusList = finalProcessingGroups,
+            rejectedItems = rejectedItems,
         )
     }
 
