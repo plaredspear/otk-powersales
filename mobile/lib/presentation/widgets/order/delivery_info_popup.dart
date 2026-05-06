@@ -68,6 +68,28 @@ class DeliveryInfoPopup extends StatelessWidget {
             processingItem.deliveryStatus.displayName,
             valueColor: _getStatusColor(processingItem.deliveryStatus),
           ),
+          // 차량/기사 정보 (Spec #595 Q5) — SHIPPING/DELIVERED 라인의 운영 추적 정보.
+          // 빈 값(`null`) 인 필드는 표시 생략.
+          if (processingItem.vehicle != null) ...[
+            SizedBox(height: AppSpacing.md),
+            _buildInfoRow('차량번호', processingItem.vehicle!),
+          ],
+          if (processingItem.driverName != null) ...[
+            SizedBox(height: AppSpacing.md),
+            _buildInfoRow('기사명', processingItem.driverName!),
+          ],
+          if (processingItem.driverPhone != null) ...[
+            SizedBox(height: AppSpacing.md),
+            _buildInfoRow('연락처', processingItem.driverPhone!),
+          ],
+          if (processingItem.scheduleTime != null) ...[
+            SizedBox(height: AppSpacing.md),
+            _buildInfoRow('배송 예정', processingItem.scheduleTime!),
+          ],
+          if (processingItem.completeTime != null) ...[
+            SizedBox(height: AppSpacing.md),
+            _buildInfoRow('배송 완료', processingItem.completeTime!),
+          ],
           SizedBox(height: AppSpacing.lg),
           Container(
             width: double.infinity,

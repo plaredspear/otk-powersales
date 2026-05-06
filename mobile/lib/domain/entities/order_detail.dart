@@ -127,7 +127,9 @@ class OrderedItem {
 
 /// 처리 항목 엔티티
 ///
-/// 주문 처리 현황의 개별 항목 (SAP 주문번호 하위의 제품별 처리 상태)
+/// 주문 처리 현황의 개별 항목 (SAP 주문번호 하위의 제품별 처리 상태).
+/// 차량/기사 5필드 (`driverName/vehicle/driverPhone/scheduleTime/completeTime`) 는
+/// `SHIPPING`/`DELIVERED` 라인 탭 → 팝업 표시용 (Spec #595 P2-M, Q5).
 class ProcessingItem {
   /// 제품 코드
   final String productCode;
@@ -135,30 +137,68 @@ class ProcessingItem {
   /// 제품명
   final String productName;
 
-  /// 납품 수량 (예: "0 EA")
+  /// 납품 수량 (예: "10 BOX (300 EA)")
   final String deliveredQuantity;
 
   /// 배송 상태
   final DeliveryStatus deliveryStatus;
+
+  /// 기사명 (배송중/배송완료 라인 팝업용)
+  final String? driverName;
+
+  /// 차량번호 (배송중/배송완료 라인 팝업용)
+  final String? vehicle;
+
+  /// 기사 연락처 (배송중/배송완료 라인 팝업용)
+  final String? driverPhone;
+
+  /// 배송 예정 시각 (`HH:mm`) — `'000000'` sentinel 또는 빈 값은 null
+  final String? scheduleTime;
+
+  /// 배송 완료 시각 (`HH:mm`) — `'000000'` sentinel 또는 빈 값은 null
+  final String? completeTime;
 
   const ProcessingItem({
     required this.productCode,
     required this.productName,
     required this.deliveredQuantity,
     required this.deliveryStatus,
+    this.driverName,
+    this.vehicle,
+    this.driverPhone,
+    this.scheduleTime,
+    this.completeTime,
   });
+
+  /// 차량/기사 5필드 모두 null 인지 여부 (탭 무반응 판단용).
+  bool get hasNoDeliveryDetail =>
+      driverName == null &&
+      vehicle == null &&
+      driverPhone == null &&
+      scheduleTime == null &&
+      completeTime == null;
 
   ProcessingItem copyWith({
     String? productCode,
     String? productName,
     String? deliveredQuantity,
     DeliveryStatus? deliveryStatus,
+    String? driverName,
+    String? vehicle,
+    String? driverPhone,
+    String? scheduleTime,
+    String? completeTime,
   }) {
     return ProcessingItem(
       productCode: productCode ?? this.productCode,
       productName: productName ?? this.productName,
       deliveredQuantity: deliveredQuantity ?? this.deliveredQuantity,
       deliveryStatus: deliveryStatus ?? this.deliveryStatus,
+      driverName: driverName ?? this.driverName,
+      vehicle: vehicle ?? this.vehicle,
+      driverPhone: driverPhone ?? this.driverPhone,
+      scheduleTime: scheduleTime ?? this.scheduleTime,
+      completeTime: completeTime ?? this.completeTime,
     );
   }
 
@@ -168,6 +208,11 @@ class ProcessingItem {
       'productName': productName,
       'deliveredQuantity': deliveredQuantity,
       'deliveryStatus': deliveryStatus.code,
+      'driverName': driverName,
+      'vehicle': vehicle,
+      'driverPhone': driverPhone,
+      'scheduleTime': scheduleTime,
+      'completeTime': completeTime,
     };
   }
 
@@ -178,6 +223,11 @@ class ProcessingItem {
       deliveredQuantity: json['deliveredQuantity'] as String,
       deliveryStatus:
           DeliveryStatus.fromCode(json['deliveryStatus'] as String),
+      driverName: json['driverName'] as String?,
+      vehicle: json['vehicle'] as String?,
+      driverPhone: json['driverPhone'] as String?,
+      scheduleTime: json['scheduleTime'] as String?,
+      completeTime: json['completeTime'] as String?,
     );
   }
 
@@ -188,7 +238,12 @@ class ProcessingItem {
         other.productCode == productCode &&
         other.productName == productName &&
         other.deliveredQuantity == deliveredQuantity &&
-        other.deliveryStatus == deliveryStatus;
+        other.deliveryStatus == deliveryStatus &&
+        other.driverName == driverName &&
+        other.vehicle == vehicle &&
+        other.driverPhone == driverPhone &&
+        other.scheduleTime == scheduleTime &&
+        other.completeTime == completeTime;
   }
 
   @override
@@ -198,6 +253,11 @@ class ProcessingItem {
       productName,
       deliveredQuantity,
       deliveryStatus,
+      driverName,
+      vehicle,
+      driverPhone,
+      scheduleTime,
+      completeTime,
     );
   }
 
@@ -406,8 +466,12 @@ class OrderDetail {
   /// 주문한 제품 목록
   final List<OrderedItem> orderedItems;
 
-  /// 주문 처리 현황 (마감후에만)
-  final OrderProcessingStatus? orderProcessingStatus;
+  /// 주문 처리 현황 — SAP 주문번호별 그룹 배열 (Spec #595 P2-M).
+  ///
+  /// - 마감 전(`isClosed == false`) 시 백엔드가 `null` 반환 (Q6).
+  /// - SAP 호출 실패 시 `null`.
+  /// - 다중 SAP 주문 분할 케이스에서 N개 그룹 (Q1 옵션 2).
+  final List<OrderProcessingStatus>? orderProcessingStatusList;
 
   /// 반려 제품 목록 (마감후, 반려 존재 시)
   final List<RejectedItem>? rejectedItems;
@@ -426,7 +490,7 @@ class OrderDetail {
     required this.isClosed,
     required this.orderedItemCount,
     required this.orderedItems,
-    this.orderProcessingStatus,
+    this.orderProcessingStatusList,
     this.rejectedItems,
   });
 
@@ -452,7 +516,7 @@ class OrderDetail {
     bool? isClosed,
     int? orderedItemCount,
     List<OrderedItem>? orderedItems,
-    OrderProcessingStatus? orderProcessingStatus,
+    List<OrderProcessingStatus>? orderProcessingStatusList,
     List<RejectedItem>? rejectedItems,
   }) {
     return OrderDetail(
@@ -469,8 +533,8 @@ class OrderDetail {
       isClosed: isClosed ?? this.isClosed,
       orderedItemCount: orderedItemCount ?? this.orderedItemCount,
       orderedItems: orderedItems ?? this.orderedItems,
-      orderProcessingStatus:
-          orderProcessingStatus ?? this.orderProcessingStatus,
+      orderProcessingStatusList:
+          orderProcessingStatusList ?? this.orderProcessingStatusList,
       rejectedItems: rejectedItems ?? this.rejectedItems,
     );
   }
@@ -490,7 +554,8 @@ class OrderDetail {
       'isClosed': isClosed,
       'orderedItemCount': orderedItemCount,
       'orderedItems': orderedItems.map((e) => e.toJson()).toList(),
-      'orderProcessingStatus': orderProcessingStatus?.toJson(),
+      'orderProcessingStatusList':
+          orderProcessingStatusList?.map((e) => e.toJson()).toList(),
       'rejectedItems': rejectedItems?.map((e) => e.toJson()).toList(),
     };
   }
@@ -513,9 +578,11 @@ class OrderDetail {
       orderedItems: (json['orderedItems'] as List<dynamic>)
           .map((e) => OrderedItem.fromJson(e as Map<String, dynamic>))
           .toList(),
-      orderProcessingStatus: json['orderProcessingStatus'] != null
-          ? OrderProcessingStatus.fromJson(
-              json['orderProcessingStatus'] as Map<String, dynamic>)
+      orderProcessingStatusList: json['orderProcessingStatusList'] != null
+          ? (json['orderProcessingStatusList'] as List<dynamic>)
+              .map((e) =>
+                  OrderProcessingStatus.fromJson(e as Map<String, dynamic>))
+              .toList()
           : null,
       rejectedItems: json['rejectedItems'] != null
           ? (json['rejectedItems'] as List<dynamic>)
@@ -545,7 +612,18 @@ class OrderDetail {
     for (var i = 0; i < orderedItems.length; i++) {
       if (other.orderedItems[i] != orderedItems[i]) return false;
     }
-    if (other.orderProcessingStatus != orderProcessingStatus) return false;
+    if (other.orderProcessingStatusList?.length !=
+        orderProcessingStatusList?.length) {
+      return false;
+    }
+    if (orderProcessingStatusList != null) {
+      for (var i = 0; i < orderProcessingStatusList!.length; i++) {
+        if (other.orderProcessingStatusList![i] !=
+            orderProcessingStatusList![i]) {
+          return false;
+        }
+      }
+    }
     if (other.hasRejectedItems != hasRejectedItems) return false;
     if (hasRejectedItems) {
       if (other.rejectedItems!.length != rejectedItems!.length) return false;
@@ -572,7 +650,9 @@ class OrderDetail {
       isClosed,
       orderedItemCount,
       Object.hashAll(orderedItems),
-      orderProcessingStatus,
+      orderProcessingStatusList != null
+          ? Object.hashAll(orderProcessingStatusList!)
+          : null,
       rejectedItems != null ? Object.hashAll(rejectedItems!) : null,
     );
   }

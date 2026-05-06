@@ -22,7 +22,7 @@ OrderDetail _createOrderDetail({
   bool isClosed = false,
   int orderedItemCount = 2,
   List<OrderedItem>? orderedItems,
-  OrderProcessingStatus? orderProcessingStatus,
+  List<OrderProcessingStatus>? orderProcessingStatusList,
   List<RejectedItem>? rejectedItems,
 }) {
   return OrderDetail(
@@ -39,7 +39,7 @@ OrderDetail _createOrderDetail({
     isClosed: isClosed,
     orderedItemCount: orderedItemCount,
     orderedItems: orderedItems ?? [],
-    orderProcessingStatus: orderProcessingStatus,
+    orderProcessingStatusList: orderProcessingStatusList,
     rejectedItems: rejectedItems,
   );
 }
@@ -301,7 +301,9 @@ void main() {
       expect(notifier.state.orderDetail, isNotNull);
       expect(notifier.state.orderDetail!.id, 6);
       expect(notifier.state.orderDetail!.isClosed, true);
-      expect(notifier.state.orderDetail!.orderProcessingStatus, isNotNull);
+      expect(notifier.state.orderDetail!.orderProcessingStatusList, isNotNull);
+      expect(notifier.state.orderDetail!.orderProcessingStatusList!.isNotEmpty,
+          true);
       expect(notifier.state.isAfterClose, true);
     });
 

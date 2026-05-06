@@ -171,12 +171,10 @@ class OrderDetailPage extends ConsumerWidget {
                 const SizedBox(height: AppSpacing.lg),
               ],
 
-              // 주문 처리 현황 (마감후)
-              if (detail.orderProcessingStatus != null)
-                OrderProcessingStatusSection(
-                  processingStatus: detail.orderProcessingStatus,
-                  onItemTap: (item) => _onProcessingItemTap(context, item),
-                ),
+              // 주문 처리 현황 (마감후) — SAP 주문번호별 그룹 N개 (Spec #595 Q1 옵션 2)
+              if (detail.orderProcessingStatusList != null &&
+                  detail.orderProcessingStatusList!.isNotEmpty)
+                ..._buildProcessingStatusSections(context, detail),
             ],
 
             // 하단 여백
@@ -230,8 +228,31 @@ class OrderDetailPage extends ConsumerWidget {
     }
   }
 
-  /// 처리 현황 항목 탭 (배송중/배송완료)
+  /// SAP 주문번호별 그룹 위젯 N개 + 그룹 간 spacing (Spec #595 P2-M).
+  List<Widget> _buildProcessingStatusSections(
+    BuildContext context,
+    OrderDetail detail,
+  ) {
+    final sections = <Widget>[];
+    final groups = detail.orderProcessingStatusList!;
+    for (var i = 0; i < groups.length; i++) {
+      if (i > 0) {
+        sections.add(const SizedBox(height: AppSpacing.md));
+      }
+      sections.add(
+        OrderProcessingStatusSection(
+          processingStatus: groups[i],
+          onItemTap: (item) => _onProcessingItemTap(context, item),
+        ),
+      );
+    }
+    return sections;
+  }
+
+  /// 처리 현황 항목 탭 (배송중/배송완료).
+  /// 차량/기사 5필드 모두 null 인 라인은 팝업 미표시 (Spec #595 Q5).
   void _onProcessingItemTap(BuildContext context, ProcessingItem item) {
+    if (item.hasNoDeliveryDetail) return;
     DeliveryInfoPopup.show(context, item: item);
   }
 }
