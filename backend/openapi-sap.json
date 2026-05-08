@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:58993",
+    "url" : "http://localhost:57415",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -137,6 +137,14 @@
       "post" : {
         "tags" : [ "sap-token-controller" ],
         "operationId" : "issueTokenForm",
+        "parameters" : [ {
+          "name" : "Authorization",
+          "in" : "header",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
         "requestBody" : {
           "content" : {
             "application/x-www-form-urlencoded" : {

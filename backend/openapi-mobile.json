@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:58993",
+    "url" : "http://localhost:57415",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -279,6 +279,42 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseOrderRequestCreateResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/me/order-requests/{orderRequestId}/cancel" : {
+      "post" : {
+        "tags" : [ "order-request-controller" ],
+        "operationId" : "cancelOrderRequest",
+        "parameters" : [ {
+          "name" : "orderRequestId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/OrderCancelRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseOrderCancelResponse"
                 }
               }
             }
@@ -1888,6 +1924,89 @@
           }
         }
       },
+      "OrderCancelRequest" : {
+        "type" : "object",
+        "properties" : {
+          "orderProductIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int64"
+            }
+          }
+        }
+      },
+      "ApiResponseOrderCancelResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/OrderCancelResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "CancelledLineResponse" : {
+        "type" : "object",
+        "properties" : {
+          "orderProductId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "lineNumber" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "productCode" : {
+            "type" : "string"
+          },
+          "cancelledAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          }
+        }
+      },
+      "OrderCancelResponse" : {
+        "type" : "object",
+        "properties" : {
+          "orderRequestId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "orderRequestNumber" : {
+            "type" : "string"
+          },
+          "orderRequestStatus" : {
+            "type" : "string",
+            "enum" : [ "DRAFT", "SENT", "APPROVED", "SEND_FAILED", "CANCELED" ]
+          },
+          "cancelledLines" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/CancelledLineResponse"
+            }
+          }
+        }
+      },
       "LeaderScheduleCreateRequest" : {
         "type" : "object",
         "properties" : {
@@ -3174,6 +3293,9 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
+          "unpaged" : {
+            "type" : "boolean"
+          },
           "pageSize" : {
             "type" : "integer",
             "format" : "int32"
@@ -3187,9 +3309,6 @@
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "unpaged" : {
-            "type" : "boolean"
           },
           "offset" : {
             "type" : "integer",
