@@ -69,6 +69,7 @@ class DisplayWorkSchedule(
     @Column(name = "type_of_work3", length = 255)
     val typeOfWork3: String? = null,
 
+    @SFField("TypeOfWork4__c")
     @Column(name = "type_of_work4", length = 20)
     val typeOfWork4: String? = null,
 

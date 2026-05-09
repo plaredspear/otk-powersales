@@ -93,11 +93,11 @@ class SFSchemaUtilsTest {
         }
 
         @Test
-        @DisplayName("DisplayWorkSchedule 엔티티 - 12개 SF Field 매핑 반환")
+        @DisplayName("DisplayWorkSchedule 엔티티 - 13개 SF Field 매핑 반환 (Spec #608: 누락 매핑 1개 보강)")
         fun getSFMapping_displayWorkSchedule() {
             val mapping = SFSchemaUtils.getSFMapping(DisplayWorkSchedule::class.java)
 
-            assertThat(mapping).hasSize(12)
+            assertThat(mapping).hasSize(13)
             assertThat(mapping["Account__c"]).isEqualTo("account_sfid")
             assertThat(mapping["FullName__c"]).isEqualTo("employee_sfid")
             assertThat(mapping["StartDate__c"]).isEqualTo("start_date")
