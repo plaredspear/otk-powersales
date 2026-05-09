@@ -402,7 +402,6 @@ class AuthService(
         )
 
         employee.recordGpsConsent(terms.name)
-        employeeRepository.save(employee)
 
         val accessToken = jwtTokenProvider.createAccessToken(employee.id, employee.role ?: UserRole.WOMAN, true)
 
