@@ -19,11 +19,11 @@ class SFSchemaUtilsTest {
     inner class GetSFMappingTests {
 
         @Test
-        @DisplayName("Account 엔티티 - 22개 SF Field 매핑 반환")
+        @DisplayName("Account 엔티티 - 62개 SF Field 매핑 반환 (Spec #602: 22 기존 + 16 SAP 보존 + 24 신규)")
         fun getSFMapping_account() {
             val mapping = SFSchemaUtils.getSFMapping(Account::class.java)
 
-            assertThat(mapping).hasSize(22)
+            assertThat(mapping).hasSize(62)
             assertThat(mapping["ABCType__c"]).isEqualTo("abc_type")
             assertThat(mapping["Name"]).isEqualTo("name")
             assertThat(mapping["Industry"]).isEqualTo("industry")

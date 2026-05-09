@@ -5,6 +5,7 @@ import com.otoki.powersales.sap.auth.audit.SapInboundAuditEventType
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.sap.auth.util.ClientIpResolver
 import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.account.entity.AccountType
 import com.otoki.powersales.organization.entity.Organization
 import com.otoki.powersales.sap.inbound.dto.account.AccountMasterDetail
 import com.otoki.powersales.sap.inbound.dto.account.ClientMasterRequestItem
@@ -143,7 +144,7 @@ class SapClientMasterService(
     }
 
     private fun applyMutableFields(account: Account, item: ClientMasterRequestItem, matchedOrg: Organization?) {
-        account.accountType = item.accountType
+        account.accountType = AccountType.fromDisplayNameOrNull(item.accountType)
         account.accountStatusName = item.accountStatusName
         account.accountGroup = item.accountGroup
         account.phone = item.phone
