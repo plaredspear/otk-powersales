@@ -43,11 +43,30 @@ class UploadFile(
     @Column(name = "size", length = 50)
     val fileSize: String? = null,
 
-    @Column(name = "parent_type", nullable = false, length = 30)
+    @SFField("Object__c")
+    @HCColumn("object__c")
+    @Column(name = "parent_type", nullable = false, length = 40)
     val parentType: String = "UNKNOWN",
 
     @Column(name = "parent_id")
     val parentId: Long? = null,
+
+    // --- Spec #616: SF 누락 비수식 3개 도입 ---
+
+    @SFField("Url__c")
+    @HCColumn("url__c")
+    @Column(name = "url", length = 500)
+    val url: String? = null,
+
+    @SFField("UploadKbn__c")
+    @HCColumn("uploadkbn__c")
+    @Column(name = "upload_kbn", length = 200)
+    val uploadKbn: String? = null,
+
+    @SFField("FileId__c")
+    @HCColumn("fileid__c")
+    @Column(name = "file_id", length = 100)
+    val fileId: String? = null,
 
     @HCColumn("isdeleted")
     @Column(name = "is_deleted")
