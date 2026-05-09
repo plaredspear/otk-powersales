@@ -434,7 +434,7 @@ class AdminMonthlyIntegrationServiceTest {
                 HolidayMaster(
                     holidayDate = LocalDate.of(2026, 4, 1),
                     name = "테스트공휴일",
-                    type = "법정공휴일",
+                    type = "공휴일",
                     year = 2026
                 )
             ))
@@ -454,7 +454,7 @@ class AdminMonthlyIntegrationServiceTest {
                 HolidayMaster(
                     holidayDate = LocalDate.of(2026, 4, 4),
                     name = "토요일공휴일",
-                    type = "법정공휴일",
+                    type = "공휴일",
                     year = 2026
                 )
             ))
