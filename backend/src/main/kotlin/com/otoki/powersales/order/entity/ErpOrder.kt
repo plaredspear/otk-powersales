@@ -61,5 +61,9 @@ class ErpOrder(
 
     @SFField("OrderType_NM__c")
     @Column(name = "order_type_nm", length = 50)
-    var orderTypeNm: String? = null
+    var orderTypeNm: String? = null,
+
+    @SFField("AccountId__c")
+    @Column(name = "account_sfid", length = 18)
+    var accountSfid: String? = null
 ) : BaseEntity()

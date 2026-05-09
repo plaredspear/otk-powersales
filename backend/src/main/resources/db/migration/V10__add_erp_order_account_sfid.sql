@@ -1,0 +1,1 @@
+ALTER TABLE erp_order ADD COLUMN IF NOT EXISTS account_sfid VARCHAR(18);
