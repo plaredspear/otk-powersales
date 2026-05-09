@@ -121,6 +121,7 @@ class TeamMemberSchedule(
     @Column(name = "traversal_flag", length = 255)
     val traversalFlag: String? = null,
 
+    @SFField("isworkreport__c")
     @HCColumn("isworkreport__c")
     @Column(name = "is_work_report", length = 1300)
     val isWorkReport: String? = null,
@@ -208,6 +209,36 @@ class TeamMemberSchedule(
     @HCColumn("isdeleted")
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
+
+    // -- Spec #609: SF 누락 컬럼 7개 신규 도입 (Q1 옵션 1) --
+
+    @SFField("HRCode__c")
+    @Column(name = "hr_code", length = 40)
+    var hrCode: String? = null,
+
+    @SFField("DKRetail__PromotionEmpIdExt__c")
+    @Column(name = "promotion_emp_id_ext", length = 40)
+    var promotionEmpIdExt: String? = null,
+
+    @SFField("SecondWorkType__c")
+    @Column(name = "second_work_type", length = 40)
+    var secondWorkType: String? = null,
+
+    @SFField("WorkingCategory5__c")
+    @Column(name = "working_category5", length = 40)
+    var workingCategory5: String? = null,
+
+    @SFField("ref_accountName__c")
+    @Column(name = "ref_account_name", length = 255)
+    var refAccountName: String? = null,
+
+    @SFField("MonthlyFemaleEmployeeIntegrationSchedule__c")
+    @Column(name = "monthly_female_employee_integration_schedule_sfid", length = 18)
+    var monthlyFemaleEmployeeIntegrationScheduleSfid: String? = null,
+
+    @SFField("ProfessionalPromotionTeam__c")
+    @Column(name = "professional_promotion_team", length = 100)
+    var professionalPromotionTeam: String? = null,
 
     /**
      * 대리 등록자(조장) employee_id. 조장이 본인 팀원의 일정을 대리 등록할 때 audit trail 용도로 저장.
