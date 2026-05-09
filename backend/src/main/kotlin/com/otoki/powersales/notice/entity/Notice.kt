@@ -28,6 +28,11 @@ class Notice(
     @Column(name = "name", length = 80)
     var name: String? = null,
 
+    @SFField("Title__c")
+    @HCColumn("title__c")
+    @Column(name = "title", length = 255)
+    var title: String? = null,
+
     @SFField("EmployeeId__c")
     @HCColumn("employeeid__c")
     @Column(name = "employee_sfid", length = 18)
@@ -49,6 +54,7 @@ class Notice(
     @Column(name = "contents", columnDefinition = "TEXT")
     var contents: String? = null,
 
+    @SFField("DKRetail__EduCategory__c")
     @HCColumn("dkretail__educategory__c")
     @Column(name = "edu_category", length = 255)
     val eduCategory: String? = null,
