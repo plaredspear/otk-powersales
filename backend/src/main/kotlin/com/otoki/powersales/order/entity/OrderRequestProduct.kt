@@ -105,6 +105,26 @@ class OrderRequestProduct(
     @Column(name = "cancelled_by", length = 8)
     var cancelledBy: String? = null,
 
+    @SFField("Status__c")
+    @Column(name = "status", length = 255)
+    val status: String? = null,
+
+    @SFField("DKRetail__ProductId__c")
+    @Column(name = "product_sfid", length = 18)
+    val productSfid: String? = null,
+
+    @SFField("DKRetail__Box__c")
+    @Column(name = "box", precision = 18, scale = 0)
+    val box: BigDecimal? = null,
+
+    @SFField("DKRetail__Piece__c")
+    @Column(name = "piece", precision = 18, scale = 0)
+    val piece: BigDecimal? = null,
+
+    @SFField("DKRetail__BoxQuantity__c")
+    @Column(name = "box_quantity", precision = 15, scale = 3)
+    val boxQuantity: BigDecimal? = null,
+
     @HCColumn("sfid")
     @Column(name = "sfid", length = 18)
     val sfid: String? = null,
