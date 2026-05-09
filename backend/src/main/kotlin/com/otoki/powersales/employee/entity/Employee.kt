@@ -96,9 +96,11 @@ class Employee(
     @Column(name = "home_phone", length = 255)
     var homePhone: String? = null,
 
+    @SFField("DKRetail__WorkEmail__c")
     @Column(name = "work_email", length = 100)
     var workEmail: String? = null,
 
+    @SFField("DKRetail__Email__c")
     @Column(name = "email", length = 100)
     var email: String? = null,
 
@@ -126,6 +128,7 @@ class Employee(
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 
+    @SFField("ProfessionalPromotionTeam__c")
     @Convert(converter = ProfessionalPromotionTeamTypeConverter::class)
     @Column(name = "professional_promotion_team", length = 50)
     var professionalPromotionTeam: ProfessionalPromotionTeamType? = null,
@@ -169,6 +172,40 @@ class Employee(
     @SFField("DKRetail__CRM_WorkStartDate__c")
     @Column(name = "crm_work_start_date")
     var crmWorkStartDate: LocalDate? = null,
+
+    // -- Spec #607: SF 누락 컬럼 9개 신규 도입 --
+
+    @SFField("DKRetail__CostCenterCode__c")
+    @Column(name = "dk_cost_center_code", length = 3)
+    var dkCostCenterCode: String? = null,
+
+    @SFField("DKRetail__LocationCode__c")
+    @Column(name = "location_code", length = 100)
+    var locationCode: String? = null,
+
+    @SFField("DKRetail__TotalAnnualLeave__c")
+    @Column(name = "total_annual_leave", precision = 18, scale = 0)
+    var totalAnnualLeave: java.math.BigDecimal? = null,
+
+    @SFField("DKRetail__UsedAnnualLeave__c")
+    @Column(name = "used_annual_leave", precision = 18, scale = 0)
+    var usedAnnualLeave: java.math.BigDecimal? = null,
+
+    @SFField("DKRetail__ManagerId__c")
+    @Column(name = "manager_sfid", length = 18)
+    var managerSfid: String? = null,
+
+    @SFField("PostponedAppointment__c")
+    @Column(name = "postponed_appointment_sfid", length = 18)
+    var postponedAppointmentSfid: String? = null,
+
+    @SFField("LockingFlag__c")
+    @Column(name = "locking_flag")
+    var lockingFlag: Boolean? = null,
+
+    @SFField("prnflag__c")
+    @Column(name = "prn_flag", length = 100)
+    var prnFlag: String? = null,
 
     @Enumerated(EnumType.STRING)
     @Column(name = "origin", nullable = false, length = 20)
