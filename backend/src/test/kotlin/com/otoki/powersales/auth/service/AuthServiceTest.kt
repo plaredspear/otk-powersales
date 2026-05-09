@@ -580,18 +580,15 @@ class AuthServiceTest {
             whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
                 .thenReturn(Optional.of(activeTerms))
             whenever(agreementHistoryRepository.save(any<AgreementHistory>())).thenAnswer { it.arguments[0] }
-            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.arguments[0] }
             whenever(jwtTokenProvider.createAccessToken(eq(userId), any<UserRole>(), eq(true), any())).thenReturn("new-token")
             whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
             // When
             val response = authService.recordGpsConsent(userId)
 
-            // Then
-            verify(employeeRepository).save(employeeCaptor.capture())
-            val savedEmployee = employeeCaptor.value
-            assertThat(savedEmployee.agreementFlag).isTrue()
-            assertThat(savedEmployee.lastAgreementNumber).isEqualTo("AGR-2026-001")
+            // Then — 영속 entity 의 필드 변경은 dirty checking 으로 commit 시 자동 UPDATE
+            assertThat(employee.agreementFlag).isTrue()
+            assertThat(employee.lastAgreementNumber).isEqualTo("AGR-2026-001")
             assertThat(response.accessToken).isEqualTo("new-token")
             assertThat(response.expiresIn).isEqualTo(3600)
 
@@ -618,16 +615,14 @@ class AuthServiceTest {
             whenever(agreementWordRepository.findByNameAndIsDeletedFalse("AGR-CUSTOM"))
                 .thenReturn(Optional.of(namedTerms))
             whenever(agreementHistoryRepository.save(any<AgreementHistory>())).thenAnswer { it.arguments[0] }
-            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.arguments[0] }
             whenever(jwtTokenProvider.createAccessToken(eq(userId), any<UserRole>(), eq(true), any())).thenReturn("new-token")
             whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
             // When
             authService.recordGpsConsent(userId, request)
 
-            // Then
-            verify(employeeRepository).save(employeeCaptor.capture())
-            assertThat(employeeCaptor.value.lastAgreementNumber).isEqualTo("AGR-CUSTOM")
+            // Then — 영속 entity 의 필드 변경은 dirty checking 으로 commit 시 자동 UPDATE
+            assertThat(employee.lastAgreementNumber).isEqualTo("AGR-CUSTOM")
 
             val historyCaptor = ArgumentCaptor.forClass(AgreementHistory::class.java)
             verify(agreementHistoryRepository).save(historyCaptor.capture())
@@ -705,7 +700,6 @@ class AuthServiceTest {
                 whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
                     .thenReturn(Optional.of(activeTerms))
                 whenever(agreementHistoryRepository.save(any<AgreementHistory>())).thenAnswer { it.arguments[0] }
-                whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.arguments[0] }
                 whenever(jwtTokenProvider.createAccessToken(eq(userId), any<UserRole>(), eq(true), any())).thenReturn("token")
                 whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
@@ -731,7 +725,6 @@ class AuthServiceTest {
                 whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
                     .thenReturn(Optional.of(activeTerms))
                 whenever(agreementHistoryRepository.save(any<AgreementHistory>())).thenAnswer { it.arguments[0] }
-                whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.arguments[0] }
                 whenever(jwtTokenProvider.createAccessToken(eq(userId), any<UserRole>(), eq(true), any())).thenReturn("token")
                 whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
 
@@ -758,7 +751,6 @@ class AuthServiceTest {
                 whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
                     .thenReturn(Optional.of(activeTerms))
                 whenever(agreementHistoryRepository.save(any<AgreementHistory>())).thenAnswer { it.arguments[0] }
-                whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.arguments[0] }
                 whenever(jwtTokenProvider.createAccessToken(eq(userId), any<UserRole>(), eq(true), any())).thenReturn("token")
                 whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
                 whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
