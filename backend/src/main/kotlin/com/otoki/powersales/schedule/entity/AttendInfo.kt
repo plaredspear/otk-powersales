@@ -18,6 +18,7 @@ class AttendInfo(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "attend_info_id")
     val id: Long = 0,
 
     @SFField("EmployeeCode__c")
