@@ -42,6 +42,28 @@ class PushMessage(
     @Column(name = "schedule_date")
     val scheduleDate: LocalDateTime? = null,
 
+    // --- Spec #615: SF 누락 비수식 4개 도입 ---
+
+    @SFField("EmployeeId__c")
+    @HCColumn("employeeid__c")
+    @Column(name = "employee_sfid", length = 18)
+    val employeeSfid: String? = null,
+
+    @SFField("Branch__c")
+    @HCColumn("branch__c")
+    @Column(name = "branch", length = 100)
+    val branch: String? = null,
+
+    @SFField("BranchCode__c")
+    @HCColumn("branchcode__c")
+    @Column(name = "branch_code", length = 40)
+    val branchCode: String? = null,
+
+    @SFField("SObjectRecordId__c")
+    @HCColumn("sobjectrecordid__c")
+    @Column(name = "s_object_record_id", length = 50)
+    val sObjectRecordId: String? = null,
+
     @HCColumn("isdeleted")
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
