@@ -31,11 +31,11 @@ class SFSchemaUtilsTest {
         }
 
         @Test
-        @DisplayName("User 엔티티 - 13개 SF Field 매핑 반환")
+        @DisplayName("Employee 엔티티 - 36개 SF Field 매핑 반환 (Spec #607: 25 기존 + 3 누락 매핑 + 8 신규)")
         fun getSFMapping_user() {
             val mapping = SFSchemaUtils.getSFMapping(Employee::class.java)
 
-            assertThat(mapping).hasSize(25)
+            assertThat(mapping).hasSize(36)
             assertThat(mapping["DKRetail__EmpCode__c"]).isEqualTo("employee_code")
             assertThat(mapping["Name"]).isEqualTo("name")
             assertThat(mapping["DKRetail__Birthdate__c"]).isEqualTo("birth_date")
