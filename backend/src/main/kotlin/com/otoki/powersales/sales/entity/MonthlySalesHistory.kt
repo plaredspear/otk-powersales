@@ -2,10 +2,13 @@ package com.otoki.powersales.sales.entity
 
 import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.HCTable
+import com.otoki.powersales.common.salesforce.SFField
+import com.otoki.powersales.common.salesforce.SFObject
 import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
 import java.math.BigDecimal
+import java.time.LocalDate
 import java.time.LocalDateTime
 import com.otoki.powersales.common.entity.AuditedEntity
 import com.otoki.powersales.account.entity.Account
@@ -15,6 +18,7 @@ import com.otoki.powersales.account.entity.Account
  */
 @Entity
 @Table(name = "monthly_sales_history")
+@SFObject("MonthlySalesHistory__c")
 @HCTable("monthlysaleshistory__c")
 class MonthlySalesHistory(
 
@@ -27,74 +31,92 @@ class MonthlySalesHistory(
     @Column(name = "sfid", length = 18)
     val sfid: String? = null,
 
+    @SFField("Name")
     @HCColumn("name")
     @Column(name = "name", length = 80)
     val name: String? = null,
 
+    @SFField("Account_ExternalKey__c")
     @HCColumn("account_externalkey__c")
     @Column(name = "account_external_key", length = 1300)
     var accountExternalKey: String? = null,
 
+    @SFField("Account_BranchName__c")
     @HCColumn("account_branchname__c")
     @Column(name = "account_branch_name", length = 1300)
     val accountBranchName: String? = null,
 
+    @SFField("Account_Type__c")
     @HCColumn("account_type__c")
     @Column(name = "account_type", length = 1300)
     val accountType: String? = null,
 
+    @SFField("SalesYear__c")
     @HCColumn("salesyear__c")
     @Column(name = "sales_year", length = 255)
     var salesYear: String? = null,
 
+    @SFField("SalesMonth__c")
     @HCColumn("salesmonth__c")
     @Column(name = "sales_month", length = 255)
     var salesMonth: String? = null,
 
+    @SFField("fm_year__c")
     @HCColumn("fm_year__c")
     @Column(name = "fm_year")
     val fmYear: Double? = null,
 
+    @SFField("fm_month__c")
     @HCColumn("fm_month__c")
     @Column(name = "fm_month")
     val fmMonth: Double? = null,
 
+    @SFField("TargetMonthResults__c")
     @HCColumn("targetmonthresults__c")
     @Column(name = "target_month_results")
     val targetMonthResults: Double? = null,
 
+    @SFField("LastMonthResults__c")
     @HCColumn("lastmonthresults__c")
     @Column(name = "last_month_results")
     val lastMonthResults: Double? = null,
 
+    @SFField("LastMonthTargetFomula__c")
     @HCColumn("lastmonthtargetfomula__c")
     @Column(name = "last_month_target_formula")
     val lastMonthTargetFormula: Double? = null,
 
+    @SFField("LastMonthTargetAchievedRatio__c")
     @HCColumn("lastmonthtargetachievedratio__c")
     @Column(name = "last_month_target_achieved_ratio")
     val lastMonthTargetAchievedRatio: Double? = null,
 
+    @SFField("ShipClosingAmount__c")
     @HCColumn("shipclosingamount__c")
     @Column(name = "ship_closing_amount")
     var shipClosingAmount: Double? = null,
 
+    @SFField("ABCClosingAmount1__c")
     @HCColumn("abcclosingamount1__c")
     @Column(name = "abc_closing_amount1")
     var abcClosingAmount1: Double? = null,
 
+    @SFField("ABCClosingAmount2__c")
     @HCColumn("abcclosingamount2__c")
     @Column(name = "abc_closing_amount2")
     var abcClosingAmount2: Double? = null,
 
+    @SFField("ABCClosingAmount3__c")
     @HCColumn("abcclosingamount3__c")
     @Column(name = "abc_closing_amount3")
     var abcClosingAmount3: Double? = null,
 
+    @SFField("AmbientPurpose__c")
     @HCColumn("ambientpurpose__c")
     @Column(name = "ambient_purpose")
     val ambientPurpose: Double? = null,
 
+    @SFField("FridgePurpose__c")
     @HCColumn("fridgepurpose__c")
     @Column(name = "fridge_purpose")
     val fridgePurpose: Double? = null,
@@ -103,6 +125,7 @@ class MonthlySalesHistory(
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 
+    @SFField("Externalkey__c")
     @Column(name = "external_key", unique = true, length = 30)
     var externalkeyC: String? = null,
 
@@ -110,8 +133,79 @@ class MonthlySalesHistory(
     var rlsalesC: Double? = null,
 
     // Spec #575: SAP TotalLedgerAmount 보존 (누적 합산 로직은 D1 결정으로 별도 스펙 분리)
+    @SFField("TotalLedgerAmount__c")
     @Column(name = "total_ledger_amount", precision = 18, scale = 4)
     var totalLedgerAmount: BigDecimal? = null,
+
+    // -- Spec #601: SF 누락 컬럼 신규 도입 --
+
+    @SFField("AccountId__c")
+    @Column(name = "account_sfid", length = 18)
+    var accountSfid: String? = null,
+
+    @SFField("SAPAccountCode__c")
+    @Column(name = "sap_account_code", length = 100)
+    var sapAccountCode: String? = null,
+
+    @SFField("SalesDate__c")
+    @Column(name = "sales_date")
+    var salesDate: LocalDate? = null,
+
+    @SFField("LastMonthlySalesHistory__c")
+    @Column(name = "last_monthly_sales_history_sfid", length = 18)
+    var lastMonthlySalesHistorySfid: String? = null,
+
+    @SFField("Confirm__c")
+    @Column(name = "is_confirmed")
+    var isConfirmed: Boolean? = null,
+
+    @SFField("HQReviews__c")
+    @Column(name = "hq_review_sfid", length = 18)
+    var hqReviewSfid: String? = null,
+
+    @SFField("Remark__c")
+    @Column(name = "remark", columnDefinition = "TEXT")
+    var remark: String? = null,
+
+    @SFField("ShipClosingAmountNH__c")
+    @Column(name = "ship_closing_amount_nh")
+    var shipClosingAmountNh: Double? = null,
+
+    @SFField("ShipClosingAmount1__c")
+    @Column(name = "ship_closing_amount1")
+    var shipClosingAmount1: Double? = null,
+
+    @SFField("ShipClosingAmount2__c")
+    @Column(name = "ship_closing_amount2")
+    var shipClosingAmount2: Double? = null,
+
+    @SFField("ShipClosingAmount3__c")
+    @Column(name = "ship_closing_amount3")
+    var shipClosingAmount3: Double? = null,
+
+    @SFField("ShipClosingAmount4__c")
+    @Column(name = "ship_closing_amount4")
+    var shipClosingAmount4: Double? = null,
+
+    @SFField("ShipClosingSumAmount__c")
+    @Column(name = "ship_closing_sum_amount")
+    var shipClosingSumAmount: Double? = null,
+
+    @SFField("ABCClosingAmount4__c")
+    @Column(name = "abc_closing_amount4")
+    var abcClosingAmount4: Double? = null,
+
+    @SFField("ABCClosingSumAmount__c")
+    @Column(name = "abc_closing_sum_amount")
+    var abcClosingSumAmount: Double? = null,
+
+    @SFField("LastMonthTargetByHand__c")
+    @Column(name = "last_month_target_by_hand")
+    var lastMonthTargetByHand: Double? = null,
+
+    @SFField("ThisMonthTarget__c")
+    @Column(name = "this_month_target")
+    var thisMonthTarget: Double? = null,
 
     @HCColumn("createddate")
     @CreatedDate
