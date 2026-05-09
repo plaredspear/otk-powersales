@@ -55,9 +55,15 @@ class ProductBarcode(
     @Column(name = "product_id")
     var productId: Long? = null,
 
+    @SFField("Product__c")
     @HCColumn("product__c")
     @Column(name = "product_sfid", length = 18)
     var productSfid: String? = null,
+
+    @SFField("ProductCode__c")
+    @HCColumn("productcode__c")
+    @Column(name = "product_code", length = 255)
+    var productCode: String? = null,
 
     @SFField("CustomKey__c")
     @Column(name = "custom_key", unique = true, length = 255)
