@@ -73,7 +73,7 @@ class AdminHolidayMasterServiceTest {
             val request = HolidayMasterCreateRequest(
                 holidayDate = LocalDate.of(2026, 8, 17),
                 name = "임시공휴일",
-                type = "임시공휴일"
+                type = "기타"
             )
             whenever(holidayMasterRepository.existsByHolidayDate(request.holidayDate)).thenReturn(false)
             whenever(holidayMasterRepository.save(any<HolidayMaster>())).thenAnswer { it.getArgument<HolidayMaster>(0) }
@@ -81,7 +81,7 @@ class AdminHolidayMasterServiceTest {
             val result = adminHolidayMasterService.createHolidayMaster(request)
 
             assertThat(result.name).isEqualTo("임시공휴일")
-            assertThat(result.type).isEqualTo("임시공휴일")
+            assertThat(result.type).isEqualTo("기타")
             assertThat(result.holidayDate).isEqualTo(LocalDate.of(2026, 8, 17))
         }
 
@@ -91,7 +91,7 @@ class AdminHolidayMasterServiceTest {
             val request = HolidayMasterCreateRequest(
                 holidayDate = LocalDate.of(2026, 1, 1),
                 name = "신정",
-                type = "법정공휴일"
+                type = "공휴일"
             )
             whenever(holidayMasterRepository.existsByHolidayDate(request.holidayDate)).thenReturn(true)
 
@@ -104,8 +104,8 @@ class AdminHolidayMasterServiceTest {
         fun createHolidayMaster_invalidType() {
             val request = HolidayMasterCreateRequest(
                 holidayDate = LocalDate.of(2026, 8, 17),
-                name = "기타",
-                type = "기타"
+                name = "잘못된공휴일",
+                type = "잘못된유형"
             )
 
             assertThatThrownBy { adminHolidayMasterService.createHolidayMaster(request) }
@@ -124,7 +124,7 @@ class AdminHolidayMasterServiceTest {
             val request = HolidayMasterUpdateRequest(
                 holidayDate = LocalDate.of(2026, 1, 1),
                 name = "신정(수정)",
-                type = "법정공휴일"
+                type = "공휴일"
             )
             whenever(holidayMasterRepository.findById(1L)).thenReturn(Optional.of(existing))
             whenever(holidayMasterRepository.existsByHolidayDateAndIdNot(request.holidayDate, 1L)).thenReturn(false)
@@ -140,7 +140,7 @@ class AdminHolidayMasterServiceTest {
             val request = HolidayMasterUpdateRequest(
                 holidayDate = LocalDate.of(2026, 1, 1),
                 name = "신정",
-                type = "법정공휴일"
+                type = "공휴일"
             )
             whenever(holidayMasterRepository.findById(99999L)).thenReturn(Optional.empty())
 
@@ -155,7 +155,7 @@ class AdminHolidayMasterServiceTest {
             val request = HolidayMasterUpdateRequest(
                 holidayDate = LocalDate.of(2026, 3, 1),
                 name = "신정",
-                type = "법정공휴일"
+                type = "공휴일"
             )
             whenever(holidayMasterRepository.findById(1L)).thenReturn(Optional.of(existing))
             whenever(holidayMasterRepository.existsByHolidayDateAndIdNot(request.holidayDate, 1L)).thenReturn(true)
@@ -171,7 +171,7 @@ class AdminHolidayMasterServiceTest {
             val request = HolidayMasterUpdateRequest(
                 holidayDate = LocalDate.of(2026, 1, 1),
                 name = "신정",
-                type = "기타"
+                type = "잘못된유형"
             )
             whenever(holidayMasterRepository.findById(1L)).thenReturn(Optional.of(existing))
 
@@ -207,7 +207,7 @@ class AdminHolidayMasterServiceTest {
         id: Long = 1L,
         holidayDate: LocalDate = LocalDate.of(2026, 1, 1),
         name: String = "신정",
-        type: String = "법정공휴일"
+        type: String = "공휴일"
     ): HolidayMaster = HolidayMaster(
         id = id,
         holidayDate = holidayDate,

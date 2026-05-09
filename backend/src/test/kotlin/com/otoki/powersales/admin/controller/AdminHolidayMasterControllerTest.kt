@@ -74,8 +74,8 @@ class AdminHolidayMasterControllerTest {
         @DisplayName("성공 - 연도별 공휴일 목록 반환")
         fun getHolidayMasters_success() {
             val holidays = listOf(
-                HolidayMasterResponse(id = 1, holidayDate = LocalDate.of(2026, 1, 1), name = "신정", type = "법정공휴일"),
-                HolidayMasterResponse(id = 2, holidayDate = LocalDate.of(2026, 3, 1), name = "삼일절", type = "법정공휴일")
+                HolidayMasterResponse(id = 1, holidayDate = LocalDate.of(2026, 1, 1), name = "신정", type = "공휴일"),
+                HolidayMasterResponse(id = 2, holidayDate = LocalDate.of(2026, 3, 1), name = "삼일절", type = "공휴일")
             )
             whenever(adminHolidayMasterService.getHolidayMasters(2026)).thenReturn(holidays)
 
@@ -99,9 +99,9 @@ class AdminHolidayMasterControllerTest {
             val request = HolidayMasterCreateRequest(
                 holidayDate = LocalDate.of(2026, 8, 17),
                 name = "임시공휴일",
-                type = "임시공휴일"
+                type = "기타"
             )
-            val response = HolidayMasterResponse(id = 16, holidayDate = LocalDate.of(2026, 8, 17), name = "임시공휴일", type = "임시공휴일")
+            val response = HolidayMasterResponse(id = 16, holidayDate = LocalDate.of(2026, 8, 17), name = "임시공휴일", type = "기타")
             whenever(adminHolidayMasterService.createHolidayMaster(any())).thenReturn(response)
 
             mockMvc.perform(
@@ -121,7 +121,7 @@ class AdminHolidayMasterControllerTest {
             whenever(adminHolidayMasterService.createHolidayMaster(any()))
                 .thenThrow(HolidayDateDuplicateException())
 
-            val json = """{"holidayDate": "2026-01-01", "name": "신정", "type": "법정공휴일"}"""
+            val json = """{"holidayDate": "2026-01-01", "name": "신정", "type": "공휴일"}"""
             mockMvc.perform(
                 post("/api/v1/admin/holiday-masters")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -150,7 +150,7 @@ class AdminHolidayMasterControllerTest {
         @Test
         @DisplayName("실패 - name 누락")
         fun create_missingName() {
-            val json = """{"holidayDate": "2026-08-17", "name": "", "type": "임시공휴일"}"""
+            val json = """{"holidayDate": "2026-08-17", "name": "", "type": "기타"}"""
             mockMvc.perform(
                 post("/api/v1/admin/holiday-masters")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -167,13 +167,13 @@ class AdminHolidayMasterControllerTest {
         @Test
         @DisplayName("성공 - 공휴일 수정")
         fun update_success() {
-            val response = HolidayMasterResponse(id = 1, holidayDate = LocalDate.of(2026, 1, 1), name = "신정(수정)", type = "법정공휴일")
+            val response = HolidayMasterResponse(id = 1, holidayDate = LocalDate.of(2026, 1, 1), name = "신정(수정)", type = "공휴일")
             whenever(adminHolidayMasterService.updateHolidayMaster(eq(1L), any())).thenReturn(response)
 
             val request = HolidayMasterUpdateRequest(
                 holidayDate = LocalDate.of(2026, 1, 1),
                 name = "신정(수정)",
-                type = "법정공휴일"
+                type = "공휴일"
             )
             mockMvc.perform(
                 put("/api/v1/admin/holiday-masters/1")
@@ -191,7 +191,7 @@ class AdminHolidayMasterControllerTest {
             whenever(adminHolidayMasterService.updateHolidayMaster(eq(99999L), any()))
                 .thenThrow(HolidayNotFoundException())
 
-            val json = """{"holidayDate": "2026-01-01", "name": "신정", "type": "법정공휴일"}"""
+            val json = """{"holidayDate": "2026-01-01", "name": "신정", "type": "공휴일"}"""
             mockMvc.perform(
                 put("/api/v1/admin/holiday-masters/99999")
                     .contentType(MediaType.APPLICATION_JSON)

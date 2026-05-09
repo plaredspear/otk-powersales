@@ -56,8 +56,8 @@ class HolidayMasterServiceTest {
         @DisplayName("기간 내 공휴일 반환")
         fun getHolidaysByDateRange_success() {
             val holidays = listOf(
-                HolidayMaster(id = 1, holidayDate = LocalDate.of(2026, 1, 1), name = "신정", type = "법정공휴일", year = 2026),
-                HolidayMaster(id = 2, holidayDate = LocalDate.of(2026, 1, 28), name = "설날 연휴", type = "법정공휴일", year = 2026)
+                HolidayMaster(id = 1, holidayDate = LocalDate.of(2026, 1, 1), name = "신정", type = "공휴일", year = 2026),
+                HolidayMaster(id = 2, holidayDate = LocalDate.of(2026, 1, 28), name = "설날 연휴", type = "공휴일", year = 2026)
             )
             whenever(holidayMasterRepository.findByHolidayDateBetween(
                 LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31)

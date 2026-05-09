@@ -11,7 +11,7 @@ class HolidayDateDuplicateException : BusinessException(
 
 class InvalidHolidayTypeException : BusinessException(
     errorCode = "INVALID_HOLIDAY_TYPE",
-    message = "유효하지 않은 공휴일 유형입니다. 허용 값: 법정공휴일, 대체공휴일, 임시공휴일",
+    message = "유효하지 않은 공휴일 유형입니다. 허용 값: 공휴일, 주말, 기타",
     httpStatus = HttpStatus.BAD_REQUEST
 )
 
