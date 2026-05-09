@@ -26,6 +26,7 @@ class ErpOrderProduct(
     @Column(name = "line_number", nullable = false, length = 10)
     val lineNumber: String,
 
+    @SFField("ExternalKey__c")
     @Column(name = "external_key", nullable = false, length = 50)
     val externalKey: String,
 
@@ -61,6 +62,7 @@ class ErpOrderProduct(
     @Column(name = "default_reason", length = 100)
     var defaultReason: String? = null,
 
+    @SFField("LineItemStatus__c")
     @Column(name = "line_item_status", length = 20)
     var lineItemStatus: String? = null,
 
@@ -92,6 +94,7 @@ class ErpOrderProduct(
     @Column(name = "shipping_quantity_box")
     var shippingQuantityBox: Double? = null,
 
+    @SFField("ShippingQuantity__c")
     @Column(name = "shipping_quantity")
     var shippingQuantity: Double? = null,
 
@@ -117,5 +120,11 @@ class ErpOrderProduct(
 
     @SFField("ReleaseAmount__c")
     @Column(name = "release_amount")
-    var releaseAmount: Double? = null
+    var releaseAmount: Double? = null,
+
+    // -- Spec #611: SF 누락 컬럼 신규 도입 (Q1 옵션 1) --
+
+    @SFField("BoxQuantity__c")
+    @Column(name = "box_quantity", precision = 18, scale = 0)
+    var boxQuantity: java.math.BigDecimal? = null
 ) : BaseEntity()
