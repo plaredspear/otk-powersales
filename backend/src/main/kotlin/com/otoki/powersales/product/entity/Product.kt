@@ -208,8 +208,41 @@ class Product(
     @Column(name = "product_barcode", length = 50)
     var productBarcode: String? = null,
 
+    @SFField("Pallet__c")
     @Column(name = "pallet", precision = 18, scale = 4)
-    var pallet: BigDecimal? = null
+    var pallet: BigDecimal? = null,
+
+    // --- Spec #613: SF 누락 비수식 6개 도입 ---
+
+    @SFField("DKRetail__Barcode__c")
+    @HCColumn("dkretail__barcode__c")
+    @Column(name = "barcode", length = 100)
+    var barcode: String? = null,
+
+    @SFField("manufacture__c")
+    @HCColumn("manufacture__c")
+    @Column(name = "manufacture", length = 100)
+    var manufacture: String? = null,
+
+    @SFField("manufacture_detail__c")
+    @HCColumn("manufacture_detail__c")
+    @Column(name = "manufacture_detail", length = 255)
+    var manufactureDetail: String? = null,
+
+    @SFField("Claim_Management__c")
+    @HCColumn("claim_management__c")
+    @Column(name = "claim_management", length = 100)
+    var claimManagement: String? = null,
+
+    @SFField("New_Product__c")
+    @HCColumn("new_product__c")
+    @Column(name = "new_product_sfid", length = 18)
+    var newProductSfid: String? = null,
+
+    @SFField("StoreCondition__c")
+    @HCColumn("storecondition__c")
+    @Column(name = "store_condition_text", length = 255)
+    var storeConditionText: String? = null
 
     /* --- 주석 처리: V1에 없는 기존 필드 ---
     productId: V1에 없음 (sfid로 대체)
