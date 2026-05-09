@@ -59,10 +59,12 @@ class OrderRequest(
     @Column(name = "client_request_id", length = 64)
     val clientRequestId: String? = null,
 
+    @SFField("DKRetail__EmployeeId__c")
     @HCColumn("dkretail__employeeid__c")
     @Column(name = "employee_sfid", length = 18)
     val employeeSfid: String? = null,
 
+    @SFField("DKRetail__AccountId__c")
     @HCColumn("dkretail__accountid__c")
     @Column(name = "account_sfid", length = 18)
     val accountSfid: String? = null,
