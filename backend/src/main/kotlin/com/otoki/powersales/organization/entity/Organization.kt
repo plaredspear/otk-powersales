@@ -83,5 +83,10 @@ class Organization(
     @SFField("OrgNameLevel5__c")
     @Comment("HR 조직명(5레벨)")
     @Column(name = "org_nm5", length = 100)
-    val orgNameLevel5: String? = null
+    val orgNameLevel5: String? = null,
+
+    @SFField("ExternalKey__c")
+    @Comment("외부 ID — SF 측 외부 ID(텍스트(100), 고유). Q1 옵션 2: UNIQUE 제약 미부착(정합 검증 후속)")
+    @Column(name = "external_key", length = 100)
+    val externalKey: String? = null
 ) : BaseEntity()
