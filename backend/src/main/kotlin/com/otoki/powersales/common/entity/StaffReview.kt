@@ -8,6 +8,7 @@ import com.otoki.powersales.employee.entity.Employee
 import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
+import java.time.LocalDate
 import java.time.LocalDateTime
 /**
  * 직원 평가 Entity
@@ -110,6 +111,31 @@ class StaffReview(
     @HCColumn("educationalevaluation__c")
     @Column(name = "education_evaluation_score")
     val educationEvaluationScore: Double? = null,
+
+    @SFField("DKRetail_WorkingCategory1__c")
+    @HCColumn("dkretail_workingcategory1__c")
+    @Column(name = "working_category1", length = 255)
+    val workingCategory1: String? = null,
+
+    @SFField("DKRetail_WorkingCategory2__c")
+    @HCColumn("dkretail_workingcategory2__c")
+    @Column(name = "working_category2", length = 255)
+    val workingCategory2: String? = null,
+
+    @SFField("DKRetail_WorkingCategory3__c")
+    @HCColumn("dkretail_workingcategory3__c")
+    @Column(name = "working_category3", length = 255)
+    val workingCategory3: String? = null,
+
+    @SFField("JobCode__c")
+    @HCColumn("jobcode__c")
+    @Column(name = "job_code", length = 20)
+    val jobCode: String? = null,
+
+    @SFField("FirstDayofMonth__c")
+    @HCColumn("firstdayofmonth__c")
+    @Column(name = "first_day_of_month")
+    val firstDayOfMonth: LocalDate? = null,
 
     @HCColumn("isdeleted")
     @Column(name = "is_deleted")
