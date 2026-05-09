@@ -102,6 +102,14 @@ class PromotionEmployee(
     @Column(name = "s3_image_unique_key", length = 255)
     var s3ImageUniqueKey: String? = null,
 
+    @SFField("Description__c")
+    @Column(name = "description", length = 50)
+    var description: String? = null,
+
+    @SFField("WorkType2__c")
+    @Column(name = "work_type2", length = 255)
+    var workType2: String? = null,
+
 ) : BaseEntity() {
 
     @ManyToOne(fetch = FetchType.LAZY)
