@@ -5,6 +5,7 @@ import { useAccounts } from '@/hooks/account/useAccounts';
 import { usePermission } from '@/hooks/usePermission';
 import type { Account } from '@/api/account';
 import AdminAccountCreateModal from './admin/accounts/AdminAccountCreateModal';
+import AccountDeleteAction from './admin/accounts/components/AccountDeleteAction';
 
 const ABC_TYPE_TAG: Record<string, string> = {
   대형마트: 'blue',
@@ -41,6 +42,7 @@ export default function AccountPage() {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const { hasPermission } = usePermission();
   const canCreateAccount = hasPermission('ACCOUNT_WRITE');
+  const canDeleteAccount = hasPermission('ACCOUNT_DELETE');
 
   const { data, isLoading, isError, error, refetch } = useAccounts({
     keyword,
@@ -74,6 +76,17 @@ export default function AccountPage() {
       render: (val: string | null) =>
         val ? <Tag color={STATUS_TAG[val] ?? undefined}>{val}</Tag> : '-',
     },
+    ...(canDeleteAccount
+      ? [
+          {
+            title: '관리',
+            key: 'actions',
+            width: 90,
+            align: 'center' as const,
+            render: (_: unknown, account: Account) => <AccountDeleteAction account={account} />,
+          },
+        ]
+      : []),
   ];
 
   if (isError) {
@@ -128,7 +141,7 @@ export default function AccountPage() {
       </Space>
 
       <Table
-        rowKey="externalKey"
+        rowKey="id"
         columns={columns}
         dataSource={data?.content}
         loading={isLoading}
