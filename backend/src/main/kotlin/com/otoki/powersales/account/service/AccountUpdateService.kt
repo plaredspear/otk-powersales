@@ -134,7 +134,6 @@ class AccountUpdateService(
         request.description?.let { account.description = it }
         request.website?.let { account.website = it }
         request.fax?.let { account.fax = it }
-        request.businessNumber?.let { account.businessNumber = it }
         request.closingTime1?.let { account.closingTime1 = it }
         request.closingTime2?.let { account.closingTime2 = it }
         request.closingTime3?.let { account.closingTime3 = it }

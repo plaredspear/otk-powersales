@@ -306,7 +306,6 @@ class AdminAccountControllerTest {
                 website = null,
                 industry = null,
                 description = null,
-                businessNumber = null,
                 businessLicenseNumber = null,
                 businessType = null,
                 businessCategory = null,

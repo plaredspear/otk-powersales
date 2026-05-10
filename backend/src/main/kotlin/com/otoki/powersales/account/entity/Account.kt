@@ -180,7 +180,8 @@ class Account(
     @Column(name = "business_category", length = 50)
     var businessCategory: String? = null,
 
-    @Column(name = "business_license_number", length = 50)
+    @SFField("Sic")
+    @Column(name = "business_license_number", length = 80)
     var businessLicenseNumber: String? = null,
 
     @SFField("Email__c")
@@ -293,10 +294,6 @@ class Account(
     @SFField("Fax")
     @Column(name = "fax", length = 40)
     var fax: String? = null,
-
-    @SFField("Sic")
-    @Column(name = "business_number", length = 20)
-    var businessNumber: String? = null,
 
     @SFField("AnnualRevenue")
     @Column(name = "annual_revenue", precision = 18, scale = 0)
