@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:49424",
+    "url" : "http://localhost:54827",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -1740,6 +1740,34 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseNoticeMutationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/naver-geocode/test" : {
+      "post" : {
+        "tags" : [ "admin-naver-geocode-controller" ],
+        "operationId" : "test",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NaverGeocodeTestRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseNaverGeocodeTestResponse"
                 }
               }
             }
@@ -5349,6 +5377,81 @@
         },
         "required" : [ "category", "content", "title" ]
       },
+      "NaverGeocodeTestRequest" : {
+        "type" : "object",
+        "properties" : {
+          "address" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 1
+          }
+        },
+        "required" : [ "address" ]
+      },
+      "ApiResponseNaverGeocodeTestResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/NaverGeocodeTestResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "NaverGeocodeTestResponse" : {
+        "type" : "object",
+        "properties" : {
+          "input" : {
+            "type" : "string"
+          },
+          "matchedCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "results" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Result"
+            }
+          }
+        }
+      },
+      "Result" : {
+        "type" : "object",
+        "properties" : {
+          "roadAddress" : {
+            "type" : [ "string", "null" ]
+          },
+          "jibunAddress" : {
+            "type" : [ "string", "null" ]
+          },
+          "longitude" : {
+            "type" : [ "string", "null" ]
+          },
+          "latitude" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
       "HolidayMasterCreateRequest" : {
         "type" : "object",
         "properties" : {
@@ -6442,13 +6545,13 @@
       "PageScheduleListItemDto" : {
         "type" : "object",
         "properties" : {
-          "totalElements" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
           "totalPages" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -6488,6 +6591,13 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
+          "pageNumber" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "unpaged" : {
+            "type" : "boolean"
+          },
           "pageSize" : {
             "type" : "integer",
             "format" : "int32"
@@ -6496,13 +6606,6 @@
             "$ref" : "#/components/schemas/SortObject"
           },
           "paged" : {
-            "type" : "boolean"
-          },
-          "pageNumber" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "unpaged" : {
             "type" : "boolean"
           },
           "offset" : {

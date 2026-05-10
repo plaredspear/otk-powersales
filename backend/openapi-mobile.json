@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:49424",
+    "url" : "http://localhost:54827",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -3247,13 +3247,13 @@
       "PageProductDto" : {
         "type" : "object",
         "properties" : {
-          "totalElements" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
           "totalPages" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -3293,6 +3293,13 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
+          "pageNumber" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "unpaged" : {
+            "type" : "boolean"
+          },
           "pageSize" : {
             "type" : "integer",
             "format" : "int32"
@@ -3301,13 +3308,6 @@
             "$ref" : "#/components/schemas/SortObject"
           },
           "paged" : {
-            "type" : "boolean"
-          },
-          "pageNumber" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "unpaged" : {
             "type" : "boolean"
           },
           "offset" : {
