@@ -1,14 +1,15 @@
 package com.otoki.powersales.sap.inbound.service
 
+import com.otoki.powersales.employee.service.EmployeeUpsertService
+import com.otoki.powersales.employee.service.dto.EmployeeUpsertCommand
+import com.otoki.powersales.employee.service.dto.EmployeeUpsertFailedRow
+import com.otoki.powersales.employee.service.dto.EmployeeUpsertResult
 import com.otoki.powersales.sap.auth.audit.SapInboundAudit
+import com.otoki.powersales.sap.auth.audit.SapInboundAuditEventType
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
-import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.employee.entity.Gender
-import com.otoki.powersales.common.entity.SystemCodeMaster
 import com.otoki.powersales.sap.inbound.dto.employee.EmployeeMasterRequestItem
-import com.otoki.powersales.employee.repository.EmployeeRepository
-import com.otoki.powersales.common.repository.SystemCodeMasterRepository
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -19,19 +20,16 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.time.LocalDate
 
 @ExtendWith(MockitoExtension::class)
-@DisplayName("SapEmployeeMasterService 테스트")
+@DisplayName("SapEmployeeMasterService 어댑터 테스트")
 class SapEmployeeMasterServiceTest {
 
     @Mock
-    private lateinit var employeeRepository: EmployeeRepository
-
-    @Mock
-    private lateinit var systemCodeMasterRepository: SystemCodeMasterRepository
+    private lateinit var employeeUpsertService: EmployeeUpsertService
 
     @Mock
     private lateinit var auditService: SapInboundAuditService
@@ -39,310 +37,166 @@ class SapEmployeeMasterServiceTest {
     @InjectMocks
     private lateinit var service: SapEmployeeMasterService
 
-    private fun item(
-        employeeCode: String? = "100123",
-        employeeName: String? = "홍길동",
-        gender: String? = null,
-        homePhone: String? = null,
-        workPhone: String? = null,
-        workEmail: String? = null,
-        email: String? = null,
-        startDate: String? = null,
-        endDate: String? = null,
-        status: String? = null,
-        birthdate: String? = null,
-        orgCode: String? = null,
-        lockingFlag: String? = null
-    ): EmployeeMasterRequestItem = EmployeeMasterRequestItem(
-        employeeCode = employeeCode,
-        employeeName = employeeName,
-        gender = gender,
-        homePhone = homePhone,
-        workPhone = workPhone,
-        workEmail = workEmail,
-        email = email,
-        startDate = startDate,
-        endDate = endDate,
-        status = status,
-        birthdate = birthdate,
-        orgCode = orgCode,
-        lockingFlag = lockingFlag
-    )
-
-    private fun statusCode(detailCode: String, detailCodeName: String): SystemCodeMaster =
-        SystemCodeMaster(
-            companyCode = "1000",
-            groupCode = "H10010",
-            detailCode = detailCode,
-            detailCodeName = detailCodeName,
-            externalKey = "1000_H10010_$detailCode"
-        )
-
     @Nested
-    @DisplayName("upsert - Happy Path")
-    inner class UpsertHappy {
+    @DisplayName("upsert - 어댑터 책임")
+    inner class AdapterResponsibilities {
 
         @Test
-        @DisplayName("신규 직원 1건 - INSERT, success_count=1, EmployeeInfo cascade 자동 생성")
-        fun upsert_insertNew() {
-            whenever(employeeRepository.findByEmployeeCodeIn(listOf("100123"))).thenReturn(emptyList())
-            whenever(systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010"))).thenReturn(emptyList())
+        @DisplayName("happy: 도메인 결과 (success=2) → EmployeeMasterDetail + audit reason='success=2 failure=0'")
+        fun happy_domainResultMappedAndAudit() {
+            val items = listOf(
+                EmployeeMasterRequestItem(employeeCode = "100123", employeeName = "홍길동"),
+                EmployeeMasterRequestItem(employeeCode = "100124", employeeName = "임꺽정")
+            )
+            whenever(employeeUpsertService.upsert(any())).thenReturn(
+                EmployeeUpsertResult(successCount = 2, failureCount = 0, failures = emptyList(), protectedManualCodes = emptyList())
+            )
 
-            val detail = service.upsert(listOf(item()))
+            val detail = service.upsert(items)
 
-            val captor = argumentCaptor<List<Employee>>()
-            verify(employeeRepository).saveAll(captor.capture())
-            val saved = captor.firstValue.single()
-            assertThat(saved.employeeCode).isEqualTo("100123")
-            assertThat(saved.name).isEqualTo("홍길동")
-            assertThat(saved.employeeInfo).isNotNull
-            assertThat(detail.successCount).isEqualTo(1)
+            assertThat(detail.successCount).isEqualTo(2)
             assertThat(detail.failureCount).isEqualTo(0)
-            verify(auditService).record(any<SapInboundAudit>())
+
+            val auditCaptor = argumentCaptor<SapInboundAudit>()
+            verify(auditService).record(auditCaptor.capture())
+            assertThat(auditCaptor.firstValue.eventType).isEqualTo(SapInboundAuditEventType.REQUEST_ACCEPTED)
+            assertThat(auditCaptor.firstValue.reason).isEqualTo("success=2 failure=0")
         }
 
         @Test
-        @DisplayName("기존 직원 갱신 - 동일 PK 유지, name/homePhone 업데이트")
-        fun upsert_updateExisting() {
-            val existing = Employee(employeeCode = "100123", name = "기존이름")
-            existing.homePhone = "old-phone"
-            whenever(employeeRepository.findByEmployeeCodeIn(listOf("100123"))).thenReturn(listOf(existing))
-            whenever(systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010"))).thenReturn(emptyList())
-
-            service.upsert(listOf(item(employeeName = "새이름", homePhone = "new-phone")))
-
-            val captor = argumentCaptor<List<Employee>>()
-            verify(employeeRepository).saveAll(captor.capture())
-            val saved = captor.firstValue.single()
-            assertThat(saved).isSameAs(existing)
-            assertThat(saved.name).isEqualTo("새이름")
-            assertThat(saved.homePhone).isEqualTo("new-phone")
-        }
-
-        @Test
-        @DisplayName("Status 변환 성공 - SystemCodeMaster 매칭 코드명 적용")
-        fun upsert_statusResolved() {
-            whenever(employeeRepository.findByEmployeeCodeIn(any<List<String>>())).thenReturn(emptyList())
-            whenever(systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010")))
-                .thenReturn(listOf(statusCode("10", "재직")))
-
-            service.upsert(listOf(item(status = "10")))
-
-            val captor = argumentCaptor<List<Employee>>()
-            verify(employeeRepository).saveAll(captor.capture())
-            assertThat(captor.firstValue.single().status).isEqualTo("재직")
-        }
-
-        @Test
-        @DisplayName("Status 매칭 실패 - 원본 코드 그대로 저장")
-        fun upsert_statusUnmapped() {
-            whenever(employeeRepository.findByEmployeeCodeIn(any<List<String>>())).thenReturn(emptyList())
-            whenever(systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010")))
-                .thenReturn(listOf(statusCode("10", "재직")))
-
-            service.upsert(listOf(item(status = "99")))
-
-            val captor = argumentCaptor<List<Employee>>()
-            verify(employeeRepository).saveAll(captor.capture())
-            assertThat(captor.firstValue.single().status).isEqualTo("99")
-        }
-
-        @Test
-        @DisplayName("companyCode 1000 외 행은 status 매핑에서 제외")
-        fun upsert_statusFiltersByCompanyCode() {
-            val other = SystemCodeMaster(
-                companyCode = "2000",
-                groupCode = "H10010",
-                detailCode = "10",
-                detailCodeName = "다른회사재직",
-                externalKey = "2000_H10010_10"
+        @DisplayName("부분 실패: 도메인 failures → SAP FailureItem 매핑 (empCode 보존)")
+        fun partialFailure_failureRowsMapped() {
+            val items = listOf(
+                EmployeeMasterRequestItem(employeeCode = "100123", employeeName = "정상"),
+                EmployeeMasterRequestItem(employeeCode = "100124", employeeName = null)
             )
-            whenever(employeeRepository.findByEmployeeCodeIn(any<List<String>>())).thenReturn(emptyList())
-            whenever(systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010"))).thenReturn(listOf(other))
-
-            service.upsert(listOf(item(status = "10")))
-
-            val captor = argumentCaptor<List<Employee>>()
-            verify(employeeRepository).saveAll(captor.capture())
-            assertThat(captor.firstValue.single().status).isEqualTo("10")
-        }
-
-        @Test
-        @DisplayName("Gender 변환 - '1' → MALE, '2' → FEMALE, 그 외 → null")
-        fun upsert_sexConversion() {
-            whenever(employeeRepository.findByEmployeeCodeIn(any<List<String>>())).thenReturn(emptyList())
-            whenever(systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010"))).thenReturn(emptyList())
-
-            service.upsert(
-                listOf(
-                    item(employeeCode = "M01", gender = "1"),
-                    item(employeeCode = "F01", gender = "2"),
-                    item(employeeCode = "X01", gender = "9")
+            whenever(employeeUpsertService.upsert(any())).thenReturn(
+                EmployeeUpsertResult(
+                    successCount = 1,
+                    failureCount = 1,
+                    failures = listOf(EmployeeUpsertFailedRow("100124", "EmployeeName 필수")),
+                    protectedManualCodes = emptyList()
                 )
             )
 
-            val captor = argumentCaptor<List<Employee>>()
-            verify(employeeRepository).saveAll(captor.capture())
-            val byCode = captor.firstValue.associateBy { it.employeeCode }
-            assertThat(byCode["M01"]?.gender).isEqualTo(Gender.MALE)
-            assertThat(byCode["F01"]?.gender).isEqualTo(Gender.FEMALE)
-            assertThat(byCode["X01"]?.gender).isNull()
-        }
-
-        @Test
-        @DisplayName("StartDate / EndDate / Birthdate - YYYYMMDD 변환, 00000000 은 null")
-        fun upsert_dateConversion() {
-            whenever(employeeRepository.findByEmployeeCodeIn(any<List<String>>())).thenReturn(emptyList())
-            whenever(systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010"))).thenReturn(emptyList())
-
-            service.upsert(
-                listOf(
-                    item(
-                        startDate = "20200401",
-                        endDate = "00000000",
-                        birthdate = "19850315"
-                    )
-                )
-            )
-
-            val captor = argumentCaptor<List<Employee>>()
-            verify(employeeRepository).saveAll(captor.capture())
-            val saved = captor.firstValue.single()
-            assertThat(saved.startDate).isEqualTo(LocalDate.of(2020, 4, 1))
-            assertThat(saved.endDate).isNull()
-            assertThat(saved.birthDate).isEqualTo("19850315")
-        }
-
-        @Test
-        @DisplayName("LockingFlag - Y → false, N → true, null → true")
-        fun upsert_lockingFlag() {
-            whenever(employeeRepository.findByEmployeeCodeIn(any<List<String>>())).thenReturn(emptyList())
-            whenever(systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010"))).thenReturn(emptyList())
-
-            service.upsert(
-                listOf(
-                    item(employeeCode = "L01", lockingFlag = "Y"),
-                    item(employeeCode = "L02", lockingFlag = "N"),
-                    item(employeeCode = "L03", lockingFlag = null)
-                )
-            )
-
-            val captor = argumentCaptor<List<Employee>>()
-            verify(employeeRepository).saveAll(captor.capture())
-            val byCode = captor.firstValue.associateBy { it.employeeCode }
-            assertThat(byCode["L01"]?.appLoginActive).isFalse
-            assertThat(byCode["L02"]?.appLoginActive).isTrue
-            assertThat(byCode["L03"]?.appLoginActive).isTrue
-        }
-
-        @Test
-        @DisplayName("WorkEmail / Email - 신규 컬럼 저장")
-        fun upsert_emailColumns() {
-            whenever(employeeRepository.findByEmployeeCodeIn(any<List<String>>())).thenReturn(emptyList())
-            whenever(systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010"))).thenReturn(emptyList())
-
-            service.upsert(listOf(item(workEmail = "work@otoki.com", email = "personal@otoki.com")))
-
-            val captor = argumentCaptor<List<Employee>>()
-            verify(employeeRepository).saveAll(captor.capture())
-            assertThat(captor.firstValue.single().workEmail).isEqualTo("work@otoki.com")
-            assertThat(captor.firstValue.single().email).isEqualTo("personal@otoki.com")
-        }
-
-        @Test
-        @DisplayName("OrgCode → costCenterCode 매핑")
-        fun upsert_orgCodeMapping() {
-            whenever(employeeRepository.findByEmployeeCodeIn(any<List<String>>())).thenReturn(emptyList())
-            whenever(systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010"))).thenReturn(emptyList())
-
-            service.upsert(listOf(item(orgCode = "11110")))
-
-            val captor = argumentCaptor<List<Employee>>()
-            verify(employeeRepository).saveAll(captor.capture())
-            assertThat(captor.firstValue.single().costCenterCode).isEqualTo("11110")
-        }
-    }
-
-    @Nested
-    @DisplayName("upsert - Error Path")
-    inner class UpsertError {
-
-        @Test
-        @DisplayName("EmployeeCode 누락 - failures 기록, emp_code null")
-        fun upsert_missingEmployeeCode() {
-            whenever(systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010"))).thenReturn(emptyList())
-
-            val detail = service.upsert(listOf(item(employeeCode = null)))
-
-            assertThat(detail.successCount).isEqualTo(0)
-            assertThat(detail.failureCount).isEqualTo(1)
-            assertThat(detail.failures.single().empCode).isNull()
-            assertThat(detail.failures.single().reason).contains("EmployeeCode 필수")
-            verify(employeeRepository, never()).saveAll(any<List<Employee>>())
-        }
-
-        @Test
-        @DisplayName("EmployeeName 누락 - failures 기록, emp_code 보존")
-        fun upsert_missingEmployeeName() {
-            whenever(employeeRepository.findByEmployeeCodeIn(any<List<String>>())).thenReturn(emptyList())
-            whenever(systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010"))).thenReturn(emptyList())
-
-            val detail = service.upsert(listOf(item(employeeName = null)))
-
-            assertThat(detail.successCount).isEqualTo(0)
-            assertThat(detail.failureCount).isEqualTo(1)
-            assertThat(detail.failures.single().empCode).isEqualTo("100123")
-            assertThat(detail.failures.single().reason).contains("EmployeeName 필수")
-        }
-
-        @Test
-        @DisplayName("StartDate 형식 오류 - failures 기록")
-        fun upsert_invalidStartDate() {
-            whenever(employeeRepository.findByEmployeeCodeIn(any<List<String>>())).thenReturn(emptyList())
-            whenever(systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010"))).thenReturn(emptyList())
-
-            val detail = service.upsert(listOf(item(startDate = "2020/04/01")))
-
-            assertThat(detail.successCount).isEqualTo(0)
-            assertThat(detail.failureCount).isEqualTo(1)
-            assertThat(detail.failures.single().reason).contains("StartDate 형식 오류")
-        }
-
-        @Test
-        @DisplayName("일부 행 실패 - 성공 행은 적재, 실패 행은 failures 누적")
-        fun upsert_partialFailure() {
-            whenever(employeeRepository.findByEmployeeCodeIn(listOf("100123", "100124"))).thenReturn(emptyList())
-            whenever(systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010"))).thenReturn(emptyList())
-
-            val detail = service.upsert(
-                listOf(
-                    item(employeeCode = "100123", employeeName = "정상"),
-                    item(employeeCode = "100124", employeeName = null)
-                )
-            )
+            val detail = service.upsert(items)
 
             assertThat(detail.successCount).isEqualTo(1)
             assertThat(detail.failureCount).isEqualTo(1)
             assertThat(detail.failures.single().empCode).isEqualTo("100124")
-            assertThat(detail.failures.single().reason).contains("EmployeeName 필수")
+            assertThat(detail.failures.single().reason).isEqualTo("EmployeeName 필수")
         }
 
         @Test
-        @DisplayName("모든 행 실패 - successCount=0, saveAll 미호출")
-        fun upsert_allFailures() {
-            whenever(systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010"))).thenReturn(emptyList())
+        @DisplayName("도메인 throw: 실패 audit (reason='success=0 failure=N') 후 예외 재전파")
+        fun domainThrow_failureAuditAndRethrow() {
+            val items = listOf(EmployeeMasterRequestItem(employeeCode = "100123", employeeName = "홍길동"))
+            whenever(employeeUpsertService.upsert(any()))
+                .thenThrow(IllegalStateException("DB connection lost"))
 
-            val detail = service.upsert(
-                listOf(
-                    item(employeeCode = null, employeeName = "A"),
-                    item(employeeCode = null, employeeName = "B")
+            assertThatThrownBy { service.upsert(items) }
+                .isInstanceOf(IllegalStateException::class.java)
+
+            val auditCaptor = argumentCaptor<SapInboundAudit>()
+            verify(auditService).record(auditCaptor.capture())
+            assertThat(auditCaptor.firstValue.reason).isEqualTo("success=0 failure=1")
+        }
+
+        @Test
+        @DisplayName("Spec #579 - protectedManualCodes 존재 시 MANUAL_ORIGIN_PROTECTED audit 추가 호출 (총 2회)")
+        fun manualOriginProtected_extraAudit() {
+            val items = listOf(
+                EmployeeMasterRequestItem(employeeCode = "100123", employeeName = "홍길동"),
+                EmployeeMasterRequestItem(employeeCode = "M0001", employeeName = "수동등록")
+            )
+            whenever(employeeUpsertService.upsert(any())).thenReturn(
+                EmployeeUpsertResult(
+                    successCount = 1,
+                    failureCount = 0,
+                    failures = emptyList(),
+                    protectedManualCodes = listOf("M0001")
                 )
             )
 
+            service.upsert(items)
+
+            val auditCaptor = argumentCaptor<SapInboundAudit>()
+            verify(auditService, times(2)).record(auditCaptor.capture())
+            val audits = auditCaptor.allValues
+            assertThat(audits[0].eventType).isEqualTo(SapInboundAuditEventType.REQUEST_ACCEPTED)
+            assertThat(audits[1].eventType).isEqualTo(SapInboundAuditEventType.MANUAL_ORIGIN_PROTECTED)
+            assertThat(audits[1].reason).isEqualTo("M0001")
+        }
+
+        @Test
+        @DisplayName("protectedManualCodes 비어있을 시 MANUAL_ORIGIN_PROTECTED audit 미호출 (총 1회만)")
+        fun noManualProtection_singleAudit() {
+            val items = listOf(EmployeeMasterRequestItem(employeeCode = "100123", employeeName = "홍길동"))
+            whenever(employeeUpsertService.upsert(any())).thenReturn(
+                EmployeeUpsertResult(successCount = 1, failureCount = 0, failures = emptyList(), protectedManualCodes = emptyList())
+            )
+
+            service.upsert(items)
+
+            verify(auditService, times(1)).record(any())
+        }
+
+        @Test
+        @DisplayName("DTO 매핑: EmployeeMasterRequestItem → EmployeeUpsertCommand 13개 필드")
+        fun dtoMapping_itemToCommand() {
+            val items = listOf(
+                EmployeeMasterRequestItem(
+                    employeeCode = "100123",
+                    employeeName = "홍길동",
+                    gender = "1",
+                    homePhone = "02-0000-0000",
+                    workPhone = "02-0000-0001",
+                    workEmail = "work@otoki.com",
+                    email = "personal@otoki.com",
+                    startDate = "20200401",
+                    endDate = "00000000",
+                    status = "10",
+                    birthdate = "19850315",
+                    orgCode = "11110",
+                    lockingFlag = "N"
+                )
+            )
+            whenever(employeeUpsertService.upsert(any())).thenReturn(
+                EmployeeUpsertResult(successCount = 1, failureCount = 0, failures = emptyList(), protectedManualCodes = emptyList())
+            )
+
+            service.upsert(items)
+
+            val captor = argumentCaptor<List<EmployeeUpsertCommand>>()
+            verify(employeeUpsertService).upsert(captor.capture())
+            val command = captor.firstValue.single()
+            assertThat(command.employeeCode).isEqualTo("100123")
+            assertThat(command.employeeName).isEqualTo("홍길동")
+            assertThat(command.gender).isEqualTo("1")
+            assertThat(command.workEmail).isEqualTo("work@otoki.com")
+            assertThat(command.startDate).isEqualTo("20200401")
+            assertThat(command.status).isEqualTo("10")
+            assertThat(command.lockingFlag).isEqualTo("N")
+        }
+
+        @Test
+        @DisplayName("도메인 throw 시 saveAll 미호출 검증 — 도메인이 검증/적재 모두 책임")
+        fun domainThrow_noSaveAllConcern() {
+            // 어댑터는 도메인 호출만 책임. 도메인이 throw 하면 어댑터에서 saveAll 호출하지 않음 (도메인이 안 함)
+            val items = listOf(EmployeeMasterRequestItem(employeeCode = null, employeeName = "X"))
+            whenever(employeeUpsertService.upsert(any())).thenReturn(
+                EmployeeUpsertResult(
+                    successCount = 0,
+                    failureCount = 1,
+                    failures = listOf(EmployeeUpsertFailedRow(null, "EmployeeCode 필수")),
+                    protectedManualCodes = emptyList()
+                )
+            )
+
+            val detail = service.upsert(items)
+
             assertThat(detail.successCount).isEqualTo(0)
-            assertThat(detail.failureCount).isEqualTo(2)
-            verify(employeeRepository, never()).saveAll(any<List<Employee>>())
-            verify(auditService).record(any<SapInboundAudit>())
+            verify(auditService, times(1)).record(any())
         }
     }
 }

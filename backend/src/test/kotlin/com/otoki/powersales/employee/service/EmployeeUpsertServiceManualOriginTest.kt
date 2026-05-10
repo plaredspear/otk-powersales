@@ -1,13 +1,10 @@
-package com.otoki.powersales.sap.inbound.service
+package com.otoki.powersales.employee.service
 
 import com.otoki.powersales.common.repository.SystemCodeMasterRepository
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.entity.EmployeeOrigin
 import com.otoki.powersales.employee.repository.EmployeeRepository
-import com.otoki.powersales.sap.auth.audit.SapInboundAudit
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditEventType
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
-import com.otoki.powersales.sap.inbound.dto.employee.EmployeeMasterRequestItem
+import com.otoki.powersales.employee.service.dto.EmployeeUpsertCommand
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -23,11 +20,14 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 /**
- * Spec #579 — SAP 인바운드 직원 마스터 upsert 가 origin=MANUAL 직원을 보호하는지 검증.
+ * Spec #579 — EmployeeUpsertService 가 origin=MANUAL 직원을 보호하는지 검증.
+ *
+ * 어댑터 ↔ 도메인 분리(#635 P2-B) 후 보호 로직은 도메인 서비스로 이전. 어댑터 측 audit 트리거 검증은
+ * [com.otoki.powersales.sap.inbound.service.SapEmployeeMasterServiceTest] 의 `manualOriginProtected_extraAudit` 케이스 참조.
  */
 @ExtendWith(MockitoExtension::class)
-@DisplayName("SapEmployeeMasterService - MANUAL 보호 테스트")
-class SapEmployeeMasterServiceManualOriginTest {
+@DisplayName("EmployeeUpsertService - MANUAL 보호 테스트")
+class EmployeeUpsertServiceManualOriginTest {
 
     @Mock
     private lateinit var employeeRepository: EmployeeRepository
@@ -35,17 +35,14 @@ class SapEmployeeMasterServiceManualOriginTest {
     @Mock
     private lateinit var systemCodeMasterRepository: SystemCodeMasterRepository
 
-    @Mock
-    private lateinit var auditService: SapInboundAuditService
-
     @InjectMocks
-    private lateinit var service: SapEmployeeMasterService
+    private lateinit var service: EmployeeUpsertService
 
-    private fun item(
+    private fun command(
         employeeCode: String = "ADMIN-001",
         employeeName: String = "신규이름",
         lockingFlag: String? = null
-    ) = EmployeeMasterRequestItem(
+    ) = EmployeeUpsertCommand(
         employeeCode = employeeCode,
         employeeName = employeeName,
         gender = null,
@@ -76,19 +73,20 @@ class SapEmployeeMasterServiceManualOriginTest {
                 .thenReturn(listOf(manualEmployee))
             whenever(systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010"))).thenReturn(emptyList())
 
-            val detail = service.upsert(listOf(item(lockingFlag = "Y")))
+            val result = service.upsert(listOf(command(lockingFlag = "Y")))
 
             assertThat(manualEmployee.name).isEqualTo("기존관리자")
             assertThat(manualEmployee.appLoginActive).isFalse
-            assertThat(detail.successCount).isEqualTo(0)
-            assertThat(detail.failureCount).isEqualTo(0)
-            assertThat(detail.failures).isEmpty()
+            assertThat(result.successCount).isEqualTo(0)
+            assertThat(result.failureCount).isEqualTo(0)
+            assertThat(result.failures).isEmpty()
+            assertThat(result.protectedManualCodes).containsExactly("ADMIN-001")
             verify(employeeRepository, never()).saveAll(any<List<Employee>>())
         }
 
         @Test
-        @DisplayName("MANUAL 보호 발생 - audit MANUAL_ORIGIN_PROTECTED 1건 + 보호 사번 reason 포함")
-        fun manualOriginAuditRecorded() {
+        @DisplayName("MANUAL 보호 발생 - protectedManualCodes 에 사번 1건 누적")
+        fun manualOriginCodeRecorded() {
             val manualEmployee = Employee(employeeCode = "ADMIN-001", name = "기존관리자").apply {
                 origin = EmployeeOrigin.MANUAL
             }
@@ -96,14 +94,9 @@ class SapEmployeeMasterServiceManualOriginTest {
                 .thenReturn(listOf(manualEmployee))
             whenever(systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010"))).thenReturn(emptyList())
 
-            service.upsert(listOf(item()))
+            val result = service.upsert(listOf(command()))
 
-            val captor = argumentCaptor<SapInboundAudit>()
-            verify(auditService, org.mockito.Mockito.atLeastOnce()).record(captor.capture())
-            val protectedAudit = captor.allValues
-                .single { it.eventType == SapInboundAuditEventType.MANUAL_ORIGIN_PROTECTED }
-            assertThat(protectedAudit.receivedCount).isEqualTo(1)
-            assertThat(protectedAudit.reason).isEqualTo("ADMIN-001")
+            assertThat(result.protectedManualCodes).containsExactly("ADMIN-001")
         }
 
         @Test
@@ -115,12 +108,12 @@ class SapEmployeeMasterServiceManualOriginTest {
             whenever(employeeRepository.findByEmployeeCodeIn(listOf("E001"))).thenReturn(listOf(sapEmployee))
             whenever(systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010"))).thenReturn(emptyList())
 
-            val detail = service.upsert(
-                listOf(item(employeeCode = "E001", employeeName = "변경된이름"))
+            val result = service.upsert(
+                listOf(command(employeeCode = "E001", employeeName = "변경된이름"))
             )
 
             assertThat(sapEmployee.name).isEqualTo("변경된이름")
-            assertThat(detail.successCount).isEqualTo(1)
+            assertThat(result.successCount).isEqualTo(1)
             verify(employeeRepository).saveAll(any<List<Employee>>())
         }
 
@@ -130,7 +123,7 @@ class SapEmployeeMasterServiceManualOriginTest {
             whenever(employeeRepository.findByEmployeeCodeIn(listOf("E999"))).thenReturn(emptyList())
             whenever(systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010"))).thenReturn(emptyList())
 
-            service.upsert(listOf(item(employeeCode = "E999")))
+            service.upsert(listOf(command(employeeCode = "E999")))
 
             val captor = argumentCaptor<List<Employee>>()
             verify(employeeRepository).saveAll(captor.capture())
@@ -139,7 +132,7 @@ class SapEmployeeMasterServiceManualOriginTest {
         }
 
         @Test
-        @DisplayName("응답 형식 불변 - 정상 1건 + MANUAL 1건 + 검증실패 1건 -> success=1, failure=1")
+        @DisplayName("응답 형식 불변 - 정상 1건 + MANUAL 1건 + 검증실패 1건 -> success=1, failure=1, protected=1")
         fun responseShapeUnchanged() {
             val manualEmployee = Employee(employeeCode = "ADMIN-001", name = "관리자").apply {
                 origin = EmployeeOrigin.MANUAL
@@ -151,17 +144,18 @@ class SapEmployeeMasterServiceManualOriginTest {
                 .thenReturn(listOf(manualEmployee, sapEmployee))
             whenever(systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010"))).thenReturn(emptyList())
 
-            val detail = service.upsert(
+            val result = service.upsert(
                 listOf(
-                    item(employeeCode = "E001", employeeName = "변경된"),
-                    item(employeeCode = "ADMIN-001", employeeName = "공격이름"),
-                    item(employeeCode = "E002", employeeName = "")
+                    command(employeeCode = "E001", employeeName = "변경된"),
+                    command(employeeCode = "ADMIN-001", employeeName = "공격이름"),
+                    command(employeeCode = "E002", employeeName = "")
                 )
             )
 
-            assertThat(detail.successCount).isEqualTo(1)
-            assertThat(detail.failureCount).isEqualTo(1)
-            assertThat(detail.failures.single().empCode).isEqualTo("E002")
+            assertThat(result.successCount).isEqualTo(1)
+            assertThat(result.failureCount).isEqualTo(1)
+            assertThat(result.failures.single().identifier).isEqualTo("E002")
+            assertThat(result.protectedManualCodes).containsExactly("ADMIN-001")
         }
     }
 }

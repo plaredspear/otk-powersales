@@ -4,128 +4,83 @@ import com.otoki.powersales.sap.auth.audit.SapInboundAudit
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditEventType
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.sap.auth.util.ClientIpResolver
-import com.otoki.powersales.schedule.entity.Appointment
 import com.otoki.powersales.sap.inbound.dto.appointment.AppointmentDetail
 import com.otoki.powersales.sap.inbound.dto.appointment.AppointmentRequestItem
 import com.otoki.powersales.sap.inbound.dto.sales.FailureItem
-import com.otoki.powersales.schedule.repository.AppointmentRepository
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.schedule.service.AppointmentInsertService
+import com.otoki.powersales.schedule.service.dto.AppointmentInsertCommand
+import com.otoki.powersales.schedule.service.dto.AppointmentInsertResult
 import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.time.format.DateTimeParseException
 
 /**
- * SAP 인사발령 인바운드 INSERT 서비스. (Spec #562)
+ * SAP 인사발령 인바운드 어댑터. (Spec #562 / 어댑터-도메인 분리: #635 P2-B)
  *
- * 레거시 `IF_REST_SAP_Appointment` 와 동등한 INSERT only 모델 (옵션 C). idempotency 미보장
- * — 멱등성 강화는 후속 스펙 #567 에서 다룬다.
+ * 책임:
+ * - SAP 페이로드 [AppointmentRequestItem] → 도메인 커맨드 [AppointmentInsertCommand] 매핑
+ * - 도메인 서비스 [AppointmentInsertService.insert] 호출 (INSERT only, 멱등성 미보장)
+ * - 도메인 결과 [AppointmentInsertResult] → SAP 응답 [AppointmentDetail] 매핑
+ * - 후처리 트리거 [AppointmentUserProfileUpdater.updateUserProfiles] 호출 (적재 commit 후, 실패 시 적재는 유지 + 로그)
+ * - [SapInboundAuditService] 감사 기록
  *
- * - 모든 행의 EmployeeCode 집합으로 [Employee.empCode] 1회 조회 → `empCodeExist` 매핑
- * - 행마다 필수 필드 (EmployeeCode, JobCode, AppointDate) 검증 + AppointDate YYYYMMDD 형식 검증
- * - INSERT 후 [AppointmentUserProfileUpdater.updateUserProfiles] 자동 트리거 (D4 결정, 레거시 동작 유지)
+ * 트랜잭션은 도메인 측이 관리하며 어댑터는 `@Transactional` 을 부착하지 않는다 (audit 가 commit 후 기록되어야 함).
  */
 @Service
 class SapAppointmentService(
-    private val appointmentRepository: AppointmentRepository,
-    private val employeeRepository: EmployeeRepository,
+    private val appointmentInsertService: AppointmentInsertService,
     private val appointmentUserProfileUpdater: AppointmentUserProfileUpdater,
     private val auditService: SapInboundAuditService
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
-    @Transactional
     fun insert(items: List<AppointmentRequestItem>): AppointmentDetail {
-        val empCodes = items.mapNotNull { it.employeeCode?.takeIf { c -> c.isNotBlank() } }.distinct()
-        val existingEmpCodes: Set<String> = if (empCodes.isEmpty()) {
-            emptySet()
-        } else {
-            employeeRepository.findByEmployeeCodeIn(empCodes)
-                .map { it.employeeCode }
-                .toHashSet()
+        val commands = items.map { it.toCommand() }
+        val result = try {
+            appointmentInsertService.insert(commands)
+        } catch (ex: RuntimeException) {
+            recordAccepted(items.size, success = 0, failure = commands.size)
+            throw ex
         }
 
-        val failures = mutableListOf<FailureItem>()
-        val toSave = mutableListOf<Appointment>()
-
-        items.forEach { item ->
-            val employeeCode = item.employeeCode?.takeIf { it.isNotBlank() }
-            val jobCode = item.jobCode?.takeIf { it.isNotBlank() }
-            val appointDate = item.appointDate?.takeIf { it.isNotBlank() }
-
-            if (employeeCode == null) {
-                failures += FailureItem(null, "EmployeeCode 필수")
-                return@forEach
-            }
-            if (jobCode == null) {
-                failures += FailureItem(employeeCode, "JobCode 필수")
-                return@forEach
-            }
-            if (appointDate == null) {
-                failures += FailureItem(employeeCode, "AppointDate 필수")
-                return@forEach
-            }
-            if (!isValidYyyymmdd(appointDate)) {
-                failures += FailureItem(employeeCode + appointDate, "AppointDate YYYYMMDD 형식 오류: $appointDate")
-                return@forEach
-            }
-
-            toSave += Appointment(
-                employeeCode = employeeCode,
-                empCodeExist = employeeCode in existingEmpCodes,
-                afterOrgCode = item.afterOrgCode,
-                afterOrgName = item.afterOrgName,
-                jikchak = item.jikchak,
-                jikwee = item.jikwee,
-                jikgub = item.jikgub,
-                workType = item.workType,
-                manageType = item.manageType,
-                jobCode = jobCode,
-                workArea = item.workArea,
-                jikjong = item.jikjong,
-                appointDate = appointDate,
-                jobName = item.jobName,
-                ordDetailCode = item.ordDetailCode,
-                ordDetailNode = item.ordDetailNode
-            )
-        }
-
-        val saved = if (toSave.isNotEmpty()) {
-            appointmentRepository.saveAll(toSave).toList()
-        } else {
-            emptyList()
-        }
-
-        if (saved.isNotEmpty()) {
+        if (result.savedAppointments.isNotEmpty()) {
             try {
-                appointmentUserProfileUpdater.updateUserProfiles(saved)
+                appointmentUserProfileUpdater.updateUserProfiles(result.savedAppointments)
             } catch (ex: Exception) {
                 log.warn("AppointmentUserProfileUpdater 실패 (적재는 유지): {}", ex.message, ex)
             }
         }
 
-        recordAccepted(items.size, saved.size, failures.size)
+        recordAccepted(items.size, success = result.successCount, failure = result.failureCount)
 
         return AppointmentDetail(
-            successCount = saved.size,
-            failureCount = failures.size,
-            failures = failures
+            successCount = result.successCount,
+            failureCount = result.failureCount,
+            failures = result.failures.map { FailureItem(it.identifier, it.reason) }
         )
     }
 
-    private fun isValidYyyymmdd(value: String): Boolean = try {
-        LocalDate.parse(value, DATE_FORMAT)
-        true
-    } catch (_: DateTimeParseException) {
-        false
-    }
+    private fun AppointmentRequestItem.toCommand(): AppointmentInsertCommand = AppointmentInsertCommand(
+        employeeCode = employeeCode,
+        afterOrgCode = afterOrgCode,
+        afterOrgName = afterOrgName,
+        jikchak = jikchak,
+        jikwee = jikwee,
+        jikgub = jikgub,
+        workType = workType,
+        manageType = manageType,
+        jobCode = jobCode,
+        workArea = workArea,
+        jikjong = jikjong,
+        appointDate = appointDate,
+        jobName = jobName,
+        ordDetailCode = ordDetailCode,
+        ordDetailNode = ordDetailNode
+    )
 
     private fun recordAccepted(received: Int, success: Int, failure: Int) {
         val request = currentRequest()
@@ -149,9 +104,5 @@ class SapAppointmentService(
     private fun currentRequest(): HttpServletRequest? {
         val attrs = RequestContextHolder.getRequestAttributes() as? ServletRequestAttributes
         return attrs?.request
-    }
-
-    companion object {
-        private val DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
     }
 }
