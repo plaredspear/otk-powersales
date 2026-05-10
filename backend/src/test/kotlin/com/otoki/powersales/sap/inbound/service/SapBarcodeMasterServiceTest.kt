@@ -1,13 +1,15 @@
 package com.otoki.powersales.sap.inbound.service
 
+import com.otoki.powersales.product.service.ProductBarcodeUpsertService
+import com.otoki.powersales.product.service.dto.ProductBarcodeUpsertCommand
+import com.otoki.powersales.product.service.dto.ProductBarcodeUpsertFailedRow
+import com.otoki.powersales.product.service.dto.ProductBarcodeUpsertResult
 import com.otoki.powersales.sap.auth.audit.SapInboundAudit
+import com.otoki.powersales.sap.auth.audit.SapInboundAuditEventType
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
-import com.otoki.powersales.product.entity.Product
-import com.otoki.powersales.product.entity.ProductBarcode
 import com.otoki.powersales.sap.inbound.dto.product.BarcodeMasterRequestItem
-import com.otoki.powersales.product.repository.ProductBarcodeRepository
-import com.otoki.powersales.product.repository.ProductRepository
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -17,19 +19,15 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 @ExtendWith(MockitoExtension::class)
-@DisplayName("SapBarcodeMasterService 테스트")
+@DisplayName("SapBarcodeMasterService 어댑터 테스트")
 class SapBarcodeMasterServiceTest {
 
     @Mock
-    private lateinit var productBarcodeRepository: ProductBarcodeRepository
-
-    @Mock
-    private lateinit var productRepository: ProductRepository
+    private lateinit var productBarcodeUpsertService: ProductBarcodeUpsertService
 
     @Mock
     private lateinit var auditService: SapInboundAuditService
@@ -37,88 +35,108 @@ class SapBarcodeMasterServiceTest {
     @InjectMocks
     private lateinit var service: SapBarcodeMasterService
 
-    private fun item(
-        productCode: String? = "100100",
-        productName: String? = "진라면 매운맛 5입",
-        productUnit: String? = "EA",
-        productSequence: String? = "001",
-        productBarcode: String? = "8801045123456"
-    ): BarcodeMasterRequestItem = BarcodeMasterRequestItem(
-        productCode = productCode,
-        productName = productName,
-        productUnit = productUnit,
-        productSequence = productSequence,
-        productBarcode = productBarcode
-    )
-
     @Nested
-    @DisplayName("upsert - Happy Path")
-    inner class UpsertHappy {
+    @DisplayName("upsert - 어댑터 책임")
+    inner class AdapterResponsibilities {
 
         @Test
-        @DisplayName("신규 1건 - INSERT, FK 매핑, name=ProductUnit")
-        fun upsert_insertNew() {
-            val product = Product(id = 7L, productCode = "100100", name = "진라면 매운맛 5입")
-            whenever(productRepository.findByProductCodeIn(listOf("100100"))).thenReturn(listOf(product))
-            whenever(productBarcodeRepository.findByCustomKey("100100EA001")).thenReturn(null)
+        @DisplayName("happy: 도메인 결과 (success=1, failure=0) → ProductMasterDetail + audit")
+        fun happy_domainResultMappedAndAudit() {
+            val items = listOf(
+                BarcodeMasterRequestItem(
+                    productCode = "100100",
+                    productName = "진라면 매운맛 5입",
+                    productUnit = "EA",
+                    productSequence = "001",
+                    productBarcode = "8801045123456"
+                )
+            )
+            whenever(productBarcodeUpsertService.upsert(any())).thenReturn(
+                ProductBarcodeUpsertResult(successCount = 1, failureCount = 0, failures = emptyList())
+            )
 
-            val detail = service.upsert(listOf(item()))
+            val detail = service.upsert(items)
 
-            val captor = argumentCaptor<List<ProductBarcode>>()
-            verify(productBarcodeRepository).saveAll(captor.capture())
-            val saved = captor.firstValue.single()
-            assertThat(saved.customKey).isEqualTo("100100EA001")
-            assertThat(saved.name).isEqualTo("EA")
-            assertThat(saved.unit).isEqualTo("EA")
-            assertThat(saved.barcode).isEqualTo("8801045123456")
-            assertThat(saved.sortOrder).isEqualTo("001")
-            assertThat(saved.productId).isEqualTo(7L)
             assertThat(detail.successCount).isEqualTo(1)
-            verify(auditService).record(any<SapInboundAudit>())
+            assertThat(detail.failureCount).isEqualTo(0)
+
+            val auditCaptor = argumentCaptor<SapInboundAudit>()
+            verify(auditService).record(auditCaptor.capture())
+            assertThat(auditCaptor.firstValue.eventType).isEqualTo(SapInboundAuditEventType.REQUEST_ACCEPTED)
+            assertThat(auditCaptor.firstValue.receivedCount).isEqualTo(1)
+            assertThat(auditCaptor.firstValue.reason).isEqualTo("success=1 failure=0")
         }
 
         @Test
-        @DisplayName("기존 customKey - UPDATE, barcode 변경")
-        fun upsert_updateExisting() {
-            val product = Product(id = 7L, productCode = "100100", name = "진라면 매운맛 5입")
-            val existing = ProductBarcode(customKey = "100100EA001", barcode = "old-barcode")
-            whenever(productRepository.findByProductCodeIn(listOf("100100"))).thenReturn(listOf(product))
-            whenever(productBarcodeRepository.findByCustomKey("100100EA001")).thenReturn(existing)
+        @DisplayName("부분 실패: 도메인 failures → SAP FailureItem 으로 1:1 매핑")
+        fun partialFailure_failureRowsMapped() {
+            val items = listOf(
+                BarcodeMasterRequestItem(productCode = "100100", productUnit = "EA", productSequence = "001", productBarcode = "111"),
+                BarcodeMasterRequestItem(productCode = "999999", productUnit = "EA", productSequence = "001", productBarcode = "222")
+            )
+            whenever(productBarcodeUpsertService.upsert(any())).thenReturn(
+                ProductBarcodeUpsertResult(
+                    successCount = 1,
+                    failureCount = 1,
+                    failures = listOf(ProductBarcodeUpsertFailedRow("999999EA001", "product_code not found: 999999"))
+                )
+            )
 
-            service.upsert(listOf(item(productBarcode = "new-barcode")))
+            val detail = service.upsert(items)
 
-            val captor = argumentCaptor<List<ProductBarcode>>()
-            verify(productBarcodeRepository).saveAll(captor.capture())
-            val saved = captor.firstValue.single()
-            assertThat(saved).isSameAs(existing)
-            assertThat(saved.barcode).isEqualTo("new-barcode")
-        }
-    }
-
-    @Nested
-    @DisplayName("upsert - Error Path")
-    inner class UpsertError {
-
-        @Test
-        @DisplayName("Product 매칭 실패 - failures, 적재 스킵")
-        fun upsert_productNotFound() {
-            whenever(productRepository.findByProductCodeIn(listOf("999999"))).thenReturn(emptyList())
-
-            val detail = service.upsert(listOf(item(productCode = "999999")))
-
-            assertThat(detail.successCount).isEqualTo(0)
+            assertThat(detail.successCount).isEqualTo(1)
             assertThat(detail.failureCount).isEqualTo(1)
-            assertThat(detail.failures.single().reason).contains("product_code not found")
-            verify(productBarcodeRepository, never()).saveAll(any<List<ProductBarcode>>())
+            assertThat(detail.failures.single().identifier).isEqualTo("999999EA001")
+            assertThat(detail.failures.single().reason).isEqualTo("product_code not found: 999999")
+
+            val auditCaptor = argumentCaptor<SapInboundAudit>()
+            verify(auditService).record(auditCaptor.capture())
+            assertThat(auditCaptor.firstValue.reason).isEqualTo("success=1 failure=1")
         }
 
         @Test
-        @DisplayName("ProductCode 누락 - failures")
-        fun upsert_missingProductCode() {
-            val detail = service.upsert(listOf(item(productCode = null)))
+        @DisplayName("도메인 throw: 실패 audit 후 예외 재전파")
+        fun domainThrow_failureAuditAndRethrow() {
+            val items = listOf(
+                BarcodeMasterRequestItem(productCode = "100100", productUnit = "EA", productSequence = "001", productBarcode = "111")
+            )
+            whenever(productBarcodeUpsertService.upsert(any()))
+                .thenThrow(IllegalStateException("DB connection lost"))
 
-            assertThat(detail.failureCount).isEqualTo(1)
-            assertThat(detail.failures.single().reason).contains("ProductCode 필수")
+            assertThatThrownBy { service.upsert(items) }
+                .isInstanceOf(IllegalStateException::class.java)
+
+            val auditCaptor = argumentCaptor<SapInboundAudit>()
+            verify(auditService).record(auditCaptor.capture())
+            assertThat(auditCaptor.firstValue.reason).isEqualTo("success=0 failure=1")
+        }
+
+        @Test
+        @DisplayName("DTO 매핑: BarcodeMasterRequestItem → ProductBarcodeUpsertCommand 필드 매핑")
+        fun dtoMapping_itemToCommand() {
+            val items = listOf(
+                BarcodeMasterRequestItem(
+                    productCode = "100100",
+                    productName = "진라면",
+                    productUnit = "EA",
+                    productSequence = "001",
+                    productBarcode = "8801045123456"
+                )
+            )
+            whenever(productBarcodeUpsertService.upsert(any())).thenReturn(
+                ProductBarcodeUpsertResult(successCount = 1, failureCount = 0, failures = emptyList())
+            )
+
+            service.upsert(items)
+
+            val captor = argumentCaptor<List<ProductBarcodeUpsertCommand>>()
+            verify(productBarcodeUpsertService).upsert(captor.capture())
+            val command = captor.firstValue.single()
+            assertThat(command.productCode).isEqualTo("100100")
+            assertThat(command.productName).isEqualTo("진라면")
+            assertThat(command.productUnit).isEqualTo("EA")
+            assertThat(command.productSequence).isEqualTo("001")
+            assertThat(command.productBarcode).isEqualTo("8801045123456")
         }
     }
 }
