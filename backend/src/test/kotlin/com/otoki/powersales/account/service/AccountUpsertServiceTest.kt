@@ -410,4 +410,100 @@ class AccountUpsertServiceTest {
             assertThat(result.failures.single().identifier).isEqualTo("B")
         }
     }
+
+    @Nested
+    @DisplayName("Spec #644 - Owner FK 매핑")
+    inner class UpsertOwnerFk {
+
+        @Test
+        @DisplayName("O1 정상 owner 매핑 - account.owner = 매칭 Employee")
+        fun upsert_ownerMapped() {
+            val employee = Employee(employeeCode = "12345", name = "홍길동")
+            whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
+            whenever(employeeRepository.findByEmployeeCodeIn(listOf("12345"))).thenReturn(listOf(employee))
+            whenever(organizationRepository.findAll()).thenReturn(emptyList())
+
+            val result = service.upsert(listOf(command(employeeCode = "12345")))
+
+            assertThat(result.successCount).isEqualTo(1)
+            assertThat(result.failureCount).isEqualTo(0)
+            val captor = argumentCaptor<List<Account>>()
+            verify(accountRepository).saveAll(captor.capture())
+            assertThat(captor.firstValue.single().owner).isSameAs(employee)
+        }
+
+        @Test
+        @DisplayName("O2 Employee 미존재 - 행 차단, owner 매핑 도달 안 함")
+        fun upsert_employeeMissing_blocksRow() {
+            whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
+            whenever(employeeRepository.findByEmployeeCodeIn(listOf("99999"))).thenReturn(emptyList())
+            whenever(organizationRepository.findAll()).thenReturn(emptyList())
+
+            val result = service.upsert(listOf(command(employeeCode = "99999")))
+
+            assertThat(result.successCount).isEqualTo(0)
+            assertThat(result.failureCount).isEqualTo(1)
+            assertThat(result.failures.single().reason).contains("employee_code not found: 99999")
+            verify(accountRepository, never()).saveAll(any<List<Account>>())
+        }
+
+        @Test
+        @DisplayName("O3 employeeCode blank/null - account.owner = null 통과")
+        fun upsert_employeeCodeBlank_ownerNull() {
+            whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
+            whenever(organizationRepository.findAll()).thenReturn(emptyList())
+
+            val result = service.upsert(listOf(command(employeeCode = null)))
+
+            assertThat(result.successCount).isEqualTo(1)
+            assertThat(result.failureCount).isEqualTo(0)
+            val captor = argumentCaptor<List<Account>>()
+            verify(accountRepository).saveAll(captor.capture())
+            assertThat(captor.firstValue.single().owner).isNull()
+        }
+
+        @Test
+        @DisplayName("O4 비활성 Employee - 활성 필터 미적용, owner 매핑 통과")
+        fun upsert_inactiveEmployee_stillMapped() {
+            val inactive = Employee(employeeCode = "12345", name = "홍길동", isDeleted = true)
+            whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
+            whenever(employeeRepository.findByEmployeeCodeIn(listOf("12345"))).thenReturn(listOf(inactive))
+            whenever(organizationRepository.findAll()).thenReturn(emptyList())
+
+            val result = service.upsert(listOf(command(employeeCode = "12345")))
+
+            assertThat(result.successCount).isEqualTo(1)
+            val captor = argumentCaptor<List<Account>>()
+            verify(accountRepository).saveAll(captor.capture())
+            assertThat(captor.firstValue.single().owner).isSameAs(inactive)
+        }
+
+        @Test
+        @DisplayName("O5 다건 + 일부 owner miss - 통과 행만 owner set, 실패 행 failures 누적")
+        fun upsert_partialOwnerMiss() {
+            val employee = Employee(employeeCode = "12345", name = "홍길동")
+            whenever(accountRepository.findByExternalKeyIn(listOf("A", "B", "C"))).thenReturn(emptyList())
+            whenever(employeeRepository.findByEmployeeCodeIn(listOf("12345", "99999")))
+                .thenReturn(listOf(employee))
+            whenever(organizationRepository.findAll()).thenReturn(emptyList())
+
+            val result = service.upsert(
+                listOf(
+                    command(externalKey = "A", employeeCode = "12345"),
+                    command(externalKey = "B", employeeCode = "99999"),
+                    command(externalKey = "C", employeeCode = null)
+                )
+            )
+
+            assertThat(result.successCount).isEqualTo(2)
+            assertThat(result.failureCount).isEqualTo(1)
+            assertThat(result.failures.single().identifier).isEqualTo("B")
+            val captor = argumentCaptor<List<Account>>()
+            verify(accountRepository).saveAll(captor.capture())
+            val saved = captor.firstValue
+            assertThat(saved).hasSize(2)
+            assertThat(saved.first { it.externalKey == "A" }.owner).isSameAs(employee)
+            assertThat(saved.first { it.externalKey == "C" }.owner).isNull()
+        }
+    }
 }
