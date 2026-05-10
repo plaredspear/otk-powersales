@@ -19,7 +19,7 @@ export interface Product {
   category1: string | null;
   category2: string | null;
   category3: string | null;
-  standardPrice: number | null;
+  standardUnitPrice: number | null;
   unit: string | null;
   storageCondition: string | null;
   productStatus: string | null;
