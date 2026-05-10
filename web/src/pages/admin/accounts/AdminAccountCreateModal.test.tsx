@@ -93,7 +93,9 @@ describe('AdminAccountCreateModal (Spec #640 P2-W)', () => {
     });
   });
 
-  it('W1 정상 입력 + 등록 클릭 → mutation 호출 + body 정합', async () => {
+  // userEvent.type 한글 입력 + Select 검색 + Form validation + mutation 처리 누적으로 전체
+  // 테스트 실행 시 기본 5초 timeout 을 초과 (단독 실행은 통과). 명시적 10초 부여.
+  it('W1 정상 입력 + 등록 클릭 → mutation 호출 + body 정합', { timeout: 10000 }, async () => {
     mockedCreate.mockResolvedValue({
       id: 1234,
       name: '(신규) 강남점',
