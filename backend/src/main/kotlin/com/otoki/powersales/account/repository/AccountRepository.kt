@@ -2,11 +2,30 @@ package com.otoki.powersales.account.repository
 
 import com.otoki.powersales.account.entity.Account
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Query
+import org.springframework.data.repository.query.Param
 
 /**
  * 거래처 마스터 Repository
  */
 interface AccountRepository : JpaRepository<Account, Int>, AccountRepositoryCustom {
+
+    /**
+     * 동일 [name] + 활성(미삭제) 거래처 존재 여부.
+     *
+     * `is_deleted` 가 nullable Boolean 이므로 `IS NULL` 과 `= false` 두 케이스 모두 활성으로 간주.
+     * (Spring Data 메서드명 표기로는 "NULL OR false" 표현이 어려워 native query 로 명시)
+     *
+     * Spec #640 — 관리자 웹 신규 거래처 등록 동일명 중복 검증.
+     * 레거시 `AccountTriggerHandler.cls:69-72` 의 `SELECT COUNT(Name) FROM Account WHERE Name = :a.Name`
+     * 와 의미 동등 (SF Account 의 `IsDeleted=false` 는 SOQL 기본 필터, Heroku Connect 잔재 NULL row 도 활성 간주).
+     */
+    @Query(
+        value = "SELECT EXISTS(SELECT 1 FROM account WHERE name = :name AND (is_deleted IS NULL OR is_deleted = FALSE))",
+        nativeQuery = true
+    )
+    fun existsActiveByName(@Param("name") name: String): Boolean
+
 
     /**
      * 거래처 외부키(SAP 코드)로 조회

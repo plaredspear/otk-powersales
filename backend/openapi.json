@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:54827",
+    "url" : "http://localhost:60096",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -3307,6 +3307,102 @@
         }
       }
     },
+    "/api/v1/admin/accounts" : {
+      "get" : {
+        "tags" : [ "admin-account-controller" ],
+        "operationId" : "getAccounts",
+        "parameters" : [ {
+          "name" : "keyword",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "maxLength" : 50,
+            "minLength" : 1
+          }
+        }, {
+          "name" : "abcType",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "branchCode",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "accountStatusName",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0,
+            "minimum" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 20,
+            "maximum" : 100,
+            "minimum" : 1
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAccountListResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "admin-account-controller" ],
+        "operationId" : "createAccount",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AdminAccountCreateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAdminAccountCreateResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/schedule/unconfirm" : {
       "patch" : {
         "tags" : [ "admin-schedule-controller" ],
@@ -3839,7 +3935,7 @@
     "/api/v1/mobile/leader/accounts" : {
       "get" : {
         "tags" : [ "leader-schedule-controller" ],
-        "operationId" : "getAccounts",
+        "operationId" : "getAccounts_1",
         "parameters" : [ {
           "name" : "keyword",
           "in" : "query",
@@ -4243,7 +4339,7 @@
     "/api/v1/admin/team-schedule/accounts" : {
       "get" : {
         "tags" : [ "admin-team-schedule-controller" ],
-        "operationId" : "getAccounts_1",
+        "operationId" : "getAccounts_2",
         "parameters" : [ {
           "name" : "branchCode",
           "in" : "query",
@@ -5059,76 +5155,6 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseListEmployeeAnnualLeaveDto"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/admin/accounts" : {
-      "get" : {
-        "tags" : [ "admin-account-controller" ],
-        "operationId" : "getAccounts_2",
-        "parameters" : [ {
-          "name" : "keyword",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string",
-            "maxLength" : 50,
-            "minLength" : 1
-          }
-        }, {
-          "name" : "abcType",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "branchCode",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "accountStatusName",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "page",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int32",
-            "default" : 0,
-            "minimum" : 0
-          }
-        }, {
-          "name" : "size",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int32",
-            "default" : 20,
-            "maximum" : 100,
-            "minimum" : 1
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseAccountListResponse"
                 }
               }
             }
@@ -10065,6 +10091,75 @@
           }
         }
       },
+      "AdminAccountCreateRequest" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "maxLength" : 255,
+            "minLength" : 0
+          },
+          "employeeCode" : {
+            "type" : "string",
+            "maxLength" : 20,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "employeeCode", "name" ]
+      },
+      "AdminAccountCreateResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "accountGroup" : {
+            "type" : "string"
+          },
+          "employeeCode" : {
+            "type" : "string"
+          },
+          "branchCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "branchName" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "ApiResponseAdminAccountCreateResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AdminAccountCreateResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
       "ScheduleBatchConfirmRequest" : {
         "type" : "object",
         "properties" : {
@@ -10785,13 +10880,13 @@
       "PageProductDto" : {
         "type" : "object",
         "properties" : {
-          "totalPages" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
           "totalElements" : {
             "type" : "integer",
             "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -10835,9 +10930,6 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "unpaged" : {
-            "type" : "boolean"
-          },
           "pageSize" : {
             "type" : "integer",
             "format" : "int32"
@@ -10846,6 +10938,9 @@
             "$ref" : "#/components/schemas/SortObject"
           },
           "paged" : {
+            "type" : "boolean"
+          },
+          "unpaged" : {
             "type" : "boolean"
           },
           "offset" : {
@@ -13238,13 +13333,13 @@
       "PageScheduleListItemDto" : {
         "type" : "object",
         "properties" : {
-          "totalPages" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
           "totalElements" : {
             "type" : "integer",
             "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "numberOfElements" : {
             "type" : "integer",
