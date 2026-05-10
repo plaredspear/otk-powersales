@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { Alert, Button, Input, Select, Table, Tag } from 'antd';
+import { Alert, Button, Input, Select, Space, Table, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useAccounts } from '@/hooks/account/useAccounts';
+import { usePermission } from '@/hooks/usePermission';
 import type { Account } from '@/api/account';
+import AdminAccountCreateModal from './admin/accounts/AdminAccountCreateModal';
 
 const ABC_TYPE_TAG: Record<string, string> = {
   대형마트: 'blue',
@@ -36,6 +38,9 @@ export default function AccountPage() {
   const [accountStatusName, setAccountStatusName] = useState<string | undefined>();
   const [keyword, setKeyword] = useState<string | undefined>();
   const [page, setPage] = useState(0);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const { hasPermission } = usePermission();
+  const canCreateAccount = hasPermission('ACCOUNT_WRITE');
 
   const { data, isLoading, isError, error, refetch } = useAccounts({
     keyword,
@@ -87,33 +92,40 @@ export default function AccountPage() {
   return (
     <div style={{ padding: 16 }}>
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-        <Select
-          style={{ width: 140 }}
-          value={abcType ?? ''}
-          options={ABC_TYPE_OPTIONS}
-          onChange={(val) => { setAbcType(val || undefined); setPage(0); }}
-        />
-        <Input
-          placeholder="지점코드"
-          allowClear
-          style={{ width: 140 }}
-          value={branchCode ?? ''}
-          onChange={(e) => { setBranchCode(e.target.value || undefined); setPage(0); }}
-        />
-        <Select
-          style={{ width: 140 }}
-          value={accountStatusName ?? ''}
-          options={STATUS_OPTIONS}
-          onChange={(val) => { setAccountStatusName(val || undefined); setPage(0); }}
-        />
-        <Input.Search
-          placeholder="거래처코드 또는 거래처명 검색"
-          allowClear
-          style={{ width: 280 }}
-          onSearch={(val) => { setKeyword(val || undefined); setPage(0); }}
-        />
-      </div>
+      <Space style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap' }}>
+        <Space wrap>
+          <Select
+            style={{ width: 140 }}
+            value={abcType ?? ''}
+            options={ABC_TYPE_OPTIONS}
+            onChange={(val) => { setAbcType(val || undefined); setPage(0); }}
+          />
+          <Input
+            placeholder="지점코드"
+            allowClear
+            style={{ width: 140 }}
+            value={branchCode ?? ''}
+            onChange={(e) => { setBranchCode(e.target.value || undefined); setPage(0); }}
+          />
+          <Select
+            style={{ width: 140 }}
+            value={accountStatusName ?? ''}
+            options={STATUS_OPTIONS}
+            onChange={(val) => { setAccountStatusName(val || undefined); setPage(0); }}
+          />
+          <Input.Search
+            placeholder="거래처코드 또는 거래처명 검색"
+            allowClear
+            style={{ width: 280 }}
+            onSearch={(val) => { setKeyword(val || undefined); setPage(0); }}
+          />
+        </Space>
+        {canCreateAccount && (
+          <Button type="primary" onClick={() => setCreateModalOpen(true)}>
+            신규 등록
+          </Button>
+        )}
+      </Space>
 
       <Table
         rowKey="externalKey"
@@ -129,6 +141,11 @@ export default function AccountPage() {
           showTotal: (total) => `총 ${total}건`,
           onChange: (p) => setPage(p - 1),
         }}
+      />
+
+      <AdminAccountCreateModal
+        open={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
       />
     </div>
   );
