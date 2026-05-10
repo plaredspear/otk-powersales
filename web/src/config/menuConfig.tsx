@@ -8,6 +8,7 @@ import {
   SearchOutlined,
   NotificationOutlined,
   SettingOutlined,
+  ToolOutlined,
 } from '@ant-design/icons';
 
 export interface MenuItem {
@@ -99,6 +100,13 @@ export const menuRoute: MenuRoute = {
       icon: <SettingOutlined />,
       children: [
         { path: '/settings/permissions', name: '권한 관리' },
+      ],
+    },
+    {
+      name: '운영 도구',
+      icon: <ToolOutlined />,
+      children: [
+        { path: '/admin/tools/naver-geocode', name: 'Naver Geocode 변환 테스트', requiredPermission: 'NAVER_GEOCODE_TEST' },
       ],
     },
   ],
