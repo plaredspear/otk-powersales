@@ -4,15 +4,15 @@ import com.otoki.powersales.sap.auth.audit.SapInboundAudit
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditEventType
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.sap.auth.util.ClientIpResolver
-import com.otoki.powersales.schedule.entity.AttendInfo
-import com.otoki.powersales.schedule.entity.AttendType
 import com.otoki.powersales.sap.inbound.dto.attendance.AttendInfoDetail
 import com.otoki.powersales.sap.inbound.dto.attendance.AttendInfoRequestItem
 import com.otoki.powersales.sap.inbound.dto.attendance.ScheduleConversionSummary
 import com.otoki.powersales.sap.inbound.dto.sales.ChunkResult
 import com.otoki.powersales.sap.inbound.dto.sales.FailureItem
 import com.otoki.powersales.sap.inbound.exception.SapPayloadTooLargeException
-import com.otoki.powersales.schedule.repository.AttendInfoRepository
+import com.otoki.powersales.schedule.entity.AttendInfo
+import com.otoki.powersales.schedule.service.AttendInfoInsertService
+import com.otoki.powersales.schedule.service.dto.AttendInfoInsertCommand
 import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -20,25 +20,27 @@ import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.time.format.DateTimeParseException
 
 /**
- * SAP 출근 정보 인바운드 INSERT 서비스. (Spec #562)
+ * SAP 출근 정보 인바운드 어댑터. (Spec #562 + #553 / 어댑터-도메인 분리: #635 P2-B)
  *
- * 레거시 `IF_REST_SAP_AttendInfo` 와 동등한 INSERT only 모델 (옵션 C).
+ * 책임:
+ * - SAP 페이로드 size 한도 검증 ([SapPayloadTooLargeException])
+ * - 청크 분할 + 청크 단위 [ChunkedUpsertHelper] 트랜잭션 격리
+ * - 청크별로 페이로드 → 도메인 커맨드 [AttendInfoInsertCommand] 매핑 후 [AttendInfoInsertService.insert] 호출
+ * - 도메인 적재 결과 → 청크 status / failure 집계
+ * - 청크 commit 후 [AttendInfoToScheduleConverter] 호출 (Schedule 변환 트리거)
+ * - [SapInboundAuditService] 감사 기록 — 본 어댑터는 audit 을 3종 기록한다:
+ *   1. `REQUEST_ACCEPTED` (success/failure/chunks 집계)
+ *   2. `SCHEDULE_CONVERSION` (변환 성공 시 합산 결과)
+ *   3. `SCHEDULE_CONVERSION_FAILED` (변환 실패 청크별 사유)
  *
- * - 한 호출에 대량 데이터 가능성 → [chunkSize] 단위 청크 분할
- * - 청크 단위 [ChunkedUpsertHelper] 의 REQUIRES_NEW 트랜잭션 처리
- * - AttendType 룩업 ([AttendType.fromCode]) 실패 시 원본 코드 그대로 저장 (D3 결정)
- *
- * Spec #553: 청크 INSERT 커밋 후, 연차류 코드를 [AttendInfoToScheduleConverter] 로
- * `team_member_schedule` 일정으로 변환한다. 변환 실패는 INSERT 롤백을 유발하지 않는다.
+ * 트랜잭션 경계는 [ChunkedUpsertHelper] (`REQUIRES_NEW`) 가 청크 단위로 부여한다.
+ * 후처리 (`AttendInfoToScheduleConverter`) 도 어댑터 책임 — 도메인이 SAP 인입 후처리에 결합되지 않도록.
  */
 @Service
 class SapAttendInfoService(
-    private val attendInfoRepository: AttendInfoRepository,
+    private val attendInfoInsertService: AttendInfoInsertService,
     private val chunkedUpsertHelper: ChunkedUpsertHelper,
     private val auditService: SapInboundAuditService,
     private val scheduleConverter: AttendInfoToScheduleConverter,
@@ -64,7 +66,15 @@ class SapAttendInfoService(
         chunks.forEachIndexed { idx, chunk ->
             val savedThisChunk = mutableListOf<AttendInfo>()
             try {
-                val result = chunkedUpsertHelper.processChunk(chunk) { rows -> processChunkRows(rows, savedThisChunk) }
+                val result = chunkedUpsertHelper.processChunk(chunk) { rows ->
+                    val commands = rows.map { it.toCommand() }
+                    val domainResult = attendInfoInsertService.insert(commands)
+                    savedThisChunk += domainResult.savedAttendInfos
+                    ChunkProcessResult(
+                        successCount = domainResult.successCount,
+                        failures = domainResult.failures.map { FailureItem(it.identifier, it.reason) }
+                    )
+                }
                 allFailures += result.failures
                 totalSuccess += result.successCount
                 val status = when {
@@ -108,74 +118,18 @@ class SapAttendInfoService(
         )
     }
 
-    private fun processChunkRows(
-        rows: List<AttendInfoRequestItem>,
-        savedSink: MutableList<AttendInfo>
-    ): ChunkProcessResult {
-        val failures = mutableListOf<FailureItem>()
-        val toSave = mutableListOf<AttendInfo>()
-
-        rows.forEach { item ->
-            val employeeCode = item.employeeCode?.takeIf { it.isNotBlank() }
-            val startDate = item.startDate?.takeIf { it.isNotBlank() }
-            val endDate = item.endDate?.takeIf { it.isNotBlank() }
-            val attendType = item.attendType?.takeIf { it.isNotBlank() }
-
-            if (employeeCode == null) {
-                failures += FailureItem(null, "EmployeeCode 필수")
-                return@forEach
-            }
-            if (startDate == null) {
-                failures += FailureItem(employeeCode, "StartDate 필수")
-                return@forEach
-            }
-            if (endDate == null) {
-                failures += FailureItem(employeeCode, "EndDate 필수")
-                return@forEach
-            }
-            if (attendType == null) {
-                failures += FailureItem(employeeCode, "AttendType 필수")
-                return@forEach
-            }
-            if (!isValidYyyymmdd(startDate)) {
-                failures += FailureItem(employeeCode + startDate, "StartDate YYYYMMDD 형식 오류: $startDate")
-                return@forEach
-            }
-            if (!isValidYyyymmdd(endDate)) {
-                failures += FailureItem(employeeCode + endDate, "EndDate YYYYMMDD 형식 오류: $endDate")
-                return@forEach
-            }
-
-            // AttendType 룩업: 매칭 실패 시 원본 코드 그대로 저장 (D3 결정, 거부하지 않음)
-            AttendType.fromCode(attendType)
-
-            toSave += AttendInfo(
-                employeeCode = employeeCode,
-                startDate = startDate,
-                endDate = endDate,
-                attendType = attendType,
-                status = item.status
-            )
-        }
-
-        if (toSave.isNotEmpty()) {
-            savedSink += attendInfoRepository.saveAll(toSave)
-        }
-
-        return ChunkProcessResult(toSave.size, failures)
-    }
+    private fun AttendInfoRequestItem.toCommand(): AttendInfoInsertCommand = AttendInfoInsertCommand(
+        employeeCode = employeeCode,
+        startDate = startDate,
+        endDate = endDate,
+        attendType = attendType,
+        status = status
+    )
 
     private fun identifier(item: AttendInfoRequestItem): String? {
         val ec = item.employeeCode?.takeIf { it.isNotBlank() } ?: return null
         val sd = item.startDate?.takeIf { it.isNotBlank() } ?: return ec
         return ec + sd
-    }
-
-    private fun isValidYyyymmdd(value: String): Boolean = try {
-        LocalDate.parse(value, DATE_FORMAT)
-        true
-    } catch (_: DateTimeParseException) {
-        false
     }
 
     private fun recordAccepted(received: Int, success: Int, failure: Int, chunks: Int) {
@@ -237,9 +191,5 @@ class SapAttendInfoService(
     private fun currentRequest(): HttpServletRequest? {
         val attrs = RequestContextHolder.getRequestAttributes() as? ServletRequestAttributes
         return attrs?.request
-    }
-
-    companion object {
-        private val DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
     }
 }
