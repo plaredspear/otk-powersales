@@ -5,6 +5,7 @@ import { useAccounts } from '@/hooks/account/useAccounts';
 import { usePermission } from '@/hooks/usePermission';
 import type { Account } from '@/api/account';
 import AdminAccountCreateModal from './admin/accounts/AdminAccountCreateModal';
+import AdminAccountUpdateModal from './admin/accounts/AdminAccountUpdateModal';
 import AccountDeleteAction from './admin/accounts/components/AccountDeleteAction';
 
 const ABC_TYPE_TAG: Record<string, string> = {
@@ -40,9 +41,12 @@ export default function AccountPage() {
   const [keyword, setKeyword] = useState<string | undefined>();
   const [page, setPage] = useState(0);
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const { hasPermission } = usePermission();
   const canCreateAccount = hasPermission('ACCOUNT_WRITE');
+  const canUpdateAccount = hasPermission('ACCOUNT_WRITE');
   const canDeleteAccount = hasPermission('ACCOUNT_DELETE');
+  const showActionsColumn = canUpdateAccount || canDeleteAccount;
 
   const { data, isLoading, isError, error, refetch } = useAccounts({
     keyword,
@@ -76,14 +80,23 @@ export default function AccountPage() {
       render: (val: string | null) =>
         val ? <Tag color={STATUS_TAG[val] ?? undefined}>{val}</Tag> : '-',
     },
-    ...(canDeleteAccount
+    ...(showActionsColumn
       ? [
           {
             title: '관리',
             key: 'actions',
-            width: 90,
+            width: 160,
             align: 'center' as const,
-            render: (_: unknown, account: Account) => <AccountDeleteAction account={account} />,
+            render: (_: unknown, account: Account) => (
+              <Space size={4}>
+                {canUpdateAccount && (
+                  <Button size="small" onClick={() => setEditingAccount(account)}>
+                    수정
+                  </Button>
+                )}
+                {canDeleteAccount && <AccountDeleteAction account={account} />}
+              </Space>
+            ),
           },
         ]
       : []),
@@ -159,6 +172,11 @@ export default function AccountPage() {
       <AdminAccountCreateModal
         open={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
+      />
+      <AdminAccountUpdateModal
+        open={editingAccount !== null}
+        account={editingAccount}
+        onClose={() => setEditingAccount(null)}
       />
     </div>
   );
