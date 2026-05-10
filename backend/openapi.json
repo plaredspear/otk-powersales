@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:60549",
+    "url" : "http://localhost:50848",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -2830,6 +2830,49 @@
         }
       }
     },
+    "/api/v1/admin/notices/{noticeId}/images" : {
+      "post" : {
+        "tags" : [ "admin-notice-controller" ],
+        "operationId" : "uploadNoticeImage",
+        "parameters" : [ {
+          "name" : "noticeId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "image" : {
+                    "type" : "string",
+                    "format" : "binary"
+                  }
+                },
+                "required" : [ "image" ]
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseNoticeImageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/naver-geocode/test" : {
       "post" : {
         "tags" : [ "admin-naver-geocode-controller" ],
@@ -3362,6 +3405,34 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseAlternativeHolidayApproveResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/agreement-words" : {
+      "post" : {
+        "tags" : [ "admin-agreement-word-controller" ],
+        "operationId" : "createAgreementWord",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AdminAgreementWordCreateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAdminAgreementWordCreateResponse"
                 }
               }
             }
@@ -5224,6 +5295,24 @@
         }
       }
     },
+    "/api/v1/admin/agreement-words/active" : {
+      "get" : {
+        "tags" : [ "admin-agreement-word-controller" ],
+        "operationId" : "getActiveAgreementWord",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAdminAgreementWordActiveResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/health" : {
       "get" : {
         "tags" : [ "health-controller" ],
@@ -5248,6 +5337,41 @@
         "operationId" : "deleteSchedule_1",
         "parameters" : [ {
           "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseObject"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/notices/{noticeId}/images/{imageId}" : {
+      "delete" : {
+        "tags" : [ "admin-notice-controller" ],
+        "operationId" : "deleteNoticeImage",
+        "parameters" : [ {
+          "name" : "noticeId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "imageId",
           "in" : "path",
           "required" : true,
           "schema" : {
@@ -5365,12 +5489,12 @@
           "description" : {
             "type" : [ "string", "null" ]
           },
-          "expired" : {
-            "type" : "boolean"
-          },
           "dday" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "expired" : {
+            "type" : "boolean"
           }
         }
       },
@@ -5914,10 +6038,10 @@
           "remark" : {
             "type" : [ "string", "null" ]
           },
-          "closed" : {
+          "deleted" : {
             "type" : "boolean"
           },
-          "deleted" : {
+          "closed" : {
             "type" : "boolean"
           }
         }
@@ -10011,6 +10135,51 @@
         },
         "required" : [ "category", "content", "title" ]
       },
+      "ApiResponseNoticeImageResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/NoticeImageResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "NoticeImageResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "url" : {
+            "type" : "string"
+          },
+          "sortOrder" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
       "NaverGeocodeTestRequest" : {
         "type" : "object",
         "properties" : {
@@ -10512,6 +10681,89 @@
           "data" : {
             "oneOf" : [ {
               "$ref" : "#/components/schemas/AlternativeHolidayApproveResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "AdminAgreementWordCreateRequest" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0
+          },
+          "contents" : {
+            "type" : "string",
+            "maxLength" : 8000,
+            "minLength" : 0
+          },
+          "afterActiveDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "active" : {
+            "type" : "boolean"
+          },
+          "activeDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          }
+        },
+        "required" : [ "afterActiveDate", "contents", "name" ]
+      },
+      "AdminAgreementWordCreateResponse" : {
+        "type" : "object",
+        "properties" : {
+          "agreementWordId" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "afterActiveDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "active" : {
+            "type" : "boolean"
+          },
+          "activeDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "ApiResponseAdminAgreementWordCreateResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AdminAgreementWordCreateResponse"
             }, {
               "type" : "null"
             } ]
@@ -11329,21 +11581,21 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
-          },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
           },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "size" : {
             "type" : "integer",
@@ -11367,18 +11619,18 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
-          "paged" : {
-            "type" : "boolean"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "unpaged" : {
             "type" : "boolean"
           },
           "pageSize" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
+          },
+          "paged" : {
+            "type" : "boolean"
           },
           "pageNumber" : {
             "type" : "integer",
@@ -11419,10 +11671,10 @@
       "SortObject" : {
         "type" : "object",
         "properties" : {
-          "sorted" : {
+          "unsorted" : {
             "type" : "boolean"
           },
-          "unsorted" : {
+          "sorted" : {
             "type" : "boolean"
           },
           "empty" : {
@@ -11657,22 +11909,6 @@
           "timestamp" : {
             "type" : "string",
             "format" : "date-time"
-          }
-        }
-      },
-      "NoticeImageResponse" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "url" : {
-            "type" : "string"
-          },
-          "sortOrder" : {
-            "type" : "integer",
-            "format" : "int32"
           }
         }
       },
@@ -13782,21 +14018,21 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
-          },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
           },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "size" : {
             "type" : "integer",
@@ -13952,10 +14188,10 @@
           "remark" : {
             "type" : [ "string", "null" ]
           },
-          "closed" : {
+          "deleted" : {
             "type" : "boolean"
           },
-          "deleted" : {
+          "closed" : {
             "type" : "boolean"
           }
         }
@@ -15753,6 +15989,58 @@
             "items" : {
               "$ref" : "#/components/schemas/AlternativeHolidayListItem"
             }
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "AdminAgreementWordActiveResponse" : {
+        "type" : "object",
+        "properties" : {
+          "agreementWordId" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "contents" : {
+            "type" : "string"
+          },
+          "activeDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "afterActiveDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          }
+        }
+      },
+      "ApiResponseAdminAgreementWordActiveResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AdminAgreementWordActiveResponse"
+            }, {
+              "type" : "null"
+            } ]
           },
           "error" : {
             "oneOf" : [ {

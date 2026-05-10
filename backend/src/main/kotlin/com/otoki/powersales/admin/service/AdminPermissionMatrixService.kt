@@ -26,7 +26,9 @@ class AdminPermissionMatrixService(
         AdminPermission.PROMOTION_WRITE to ("행사 생성/수정" to listOf("여사원 배치 > 진열스케줄마스터", "행사 등록/수정/확정/삭제")),
         AdminPermission.SAFETY_CHECK_READ to ("안전점검 조회" to listOf("안전점검")),
         AdminPermission.SCHEDULE_READ to ("일정 조회" to listOf("여사원 일정관리", "여사원관리 > 월별 통합일정", "여사원관리 > 근무형태별 인원현황")),
-        AdminPermission.SCHEDULE_WRITE to ("일정 생성/수정" to listOf("여사원 배치 > 진열스케줄마스터 일정 확정"))
+        AdminPermission.SCHEDULE_WRITE to ("일정 생성/수정" to listOf("여사원 배치 > 진열스케줄마스터 일정 확정")),
+        AdminPermission.AGREEMENT_READ to ("동의 약관 조회" to listOf("관리자 > 동의 약관 등록")),
+        AdminPermission.AGREEMENT_WRITE to ("동의 약관 등록" to listOf("관리자 > 동의 약관 등록"))
     )
 
     fun getMatrix(userId: Long): PermissionMatrixResponse {
