@@ -1,6 +1,11 @@
 package com.otoki.powersales.account.dto.response
 
 import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.account.entity.AccountType
+import com.otoki.powersales.account.entity.FreezerType
+import java.math.BigDecimal
+import java.time.LocalDate
+import java.time.LocalTime
 
 data class AccountListResponse(
     val content: List<AccountListItem>,
@@ -61,6 +66,115 @@ data class AdminAccountCreateResponse(
             employeeCode = account.employeeCode ?: "",
             branchCode = account.branchCode,
             branchName = account.branchName
+        )
+    }
+}
+
+/**
+ * 관리자 웹 거래처 수정 응답 DTO. (Spec #643)
+ *
+ * 갱신 후 entity 의 수정 가능 필드 + 시스템 필드 일부(`id`/`accountGroup`) 노출.
+ * SAP 동기 키 (`external_key`/`werk*`/`sales_dept_*`/`division_*` 등) 와 좌표(`latitude`/`longitude`) 는
+ * 응답에서도 제외 — 클라이언트는 별도 상세 조회 endpoint 활용.
+ *
+ * #640 [AdminAccountCreateResponse] 와 별도 (필드 범위 차이 — 본 응답은 수정 가능 일반 필드 광범위 포함).
+ */
+data class AdminAccountUpdateResponse(
+    val id: Int,
+    val name: String?,
+    val accountGroup: String?,
+    val employeeCode: String?,
+    val branchCode: String?,
+    val branchName: String?,
+    val address1: String?,
+    val address2: String?,
+    val zipCode: String?,
+    val phone: String?,
+    val mobilePhone: String?,
+    val representative: String?,
+    val email: String?,
+    val fax: String?,
+    val website: String?,
+    val industry: String?,
+    val description: String?,
+    val businessNumber: String?,
+    val businessLicenseNumber: String?,
+    val businessType: String?,
+    val businessCategory: String?,
+    val abcType: String?,
+    val abcTypeCode: String?,
+    val accountType: AccountType?,
+    val accountStatusName: String?,
+    val accountStatusCode: String?,
+    val accountNumber: String?,
+    val site: String?,
+    val accountSource: String?,
+    val mapCoordinate: String?,
+    val parentSfid: String?,
+    val rating: String?,
+    val ownership: String?,
+    val freezerInstalled: Boolean?,
+    val freezerType: FreezerType?,
+    val firstInstalled: LocalDate?,
+    val orderEndTime: LocalTime?,
+    val closingTime1: String?,
+    val closingTime2: String?,
+    val closingTime3: String?,
+    val remainingCredit: BigDecimal?,
+    val totalCredit: BigDecimal?,
+    val annualRevenue: BigDecimal?,
+    val numberOfEmployees: Int?,
+    val consignmentAcc: String?,
+    val distribution: String?
+) {
+    companion object {
+        fun from(account: Account): AdminAccountUpdateResponse = AdminAccountUpdateResponse(
+            id = account.id,
+            name = account.name,
+            accountGroup = account.accountGroup,
+            employeeCode = account.employeeCode,
+            branchCode = account.branchCode,
+            branchName = account.branchName,
+            address1 = account.address1,
+            address2 = account.address2,
+            zipCode = account.zipCode,
+            phone = account.phone,
+            mobilePhone = account.mobilePhone,
+            representative = account.representative,
+            email = account.email,
+            fax = account.fax,
+            website = account.website,
+            industry = account.industry,
+            description = account.description,
+            businessNumber = account.businessNumber,
+            businessLicenseNumber = account.businessLicenseNumber,
+            businessType = account.businessType,
+            businessCategory = account.businessCategory,
+            abcType = account.abcType,
+            abcTypeCode = account.abcTypeCode,
+            accountType = account.accountType,
+            accountStatusName = account.accountStatusName,
+            accountStatusCode = account.accountStatusCode,
+            accountNumber = account.accountNumber,
+            site = account.site,
+            accountSource = account.accountSource,
+            mapCoordinate = account.mapCoordinate,
+            parentSfid = account.parentSfid,
+            rating = account.rating,
+            ownership = account.ownership,
+            freezerInstalled = account.freezerInstalled,
+            freezerType = account.freezerType,
+            firstInstalled = account.firstInstalled,
+            orderEndTime = account.orderEndTime,
+            closingTime1 = account.closingTime1,
+            closingTime2 = account.closingTime2,
+            closingTime3 = account.closingTime3,
+            remainingCredit = account.remainingCredit,
+            totalCredit = account.totalCredit,
+            annualRevenue = account.annualRevenue,
+            numberOfEmployees = account.numberOfEmployees,
+            consignmentAcc = account.consignmentAcc,
+            distribution = account.distribution
         )
     }
 }

@@ -1,15 +1,19 @@
 package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.account.dto.request.AdminAccountCreateRequest
+import com.otoki.powersales.account.dto.request.AdminAccountUpdateRequest
 import com.otoki.powersales.account.dto.response.AccountListItem
 import com.otoki.powersales.account.dto.response.AccountListResponse
 import com.otoki.powersales.account.dto.response.AdminAccountCreateResponse
+import com.otoki.powersales.account.dto.response.AdminAccountUpdateResponse
 import com.otoki.powersales.account.exception.AccountDeleteBlockedSapSyncedException
 import com.otoki.powersales.account.exception.AccountNameDuplicateException
 import com.otoki.powersales.account.exception.AccountNamePrefixRequiredException
+import com.otoki.powersales.account.exception.AccountNamePrefixRequiredForUpdateException
 import com.otoki.powersales.account.exception.AccountNotFoundException
 import com.otoki.powersales.account.service.AccountCreateService
 import com.otoki.powersales.account.service.AccountDeleteService
+import com.otoki.powersales.account.service.AccountUpdateService
 import com.otoki.powersales.account.service.AdminAccountService
 import com.otoki.powersales.admin.scope.DataScopeHolder
 import com.otoki.powersales.admin.security.AdminAuthorityFilter
@@ -39,6 +43,7 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
@@ -58,6 +63,9 @@ class AdminAccountControllerTest {
 
     @MockitoBean
     private lateinit var accountCreateService: AccountCreateService
+
+    @MockitoBean
+    private lateinit var accountUpdateService: AccountUpdateService
 
     @MockitoBean
     private lateinit var accountDeleteService: AccountDeleteService
@@ -265,6 +273,137 @@ class AdminAccountControllerTest {
                 .andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.error.code").value("ACCOUNT_NAME_PREFIX_REQUIRED"))
                 .andExpect(jsonPath("$.error.message").value("신규 거래처 등록은 ((신규)/(기타)) 중 1개를 필수로 입력하셔야 합니다."))
+        }
+    }
+
+    @Nested
+    @DisplayName("PUT /api/v1/admin/accounts/{id} - 거래처 수정 (Spec #643)")
+    inner class UpdateAccount {
+
+        @Test
+        @DisplayName("C1 성공 - 정상 수정 (200 OK + camelCase 응답 + ApiResponse wrapper + data.id 정합)")
+        fun updateAccount_success() {
+            val request = AdminAccountUpdateRequest(
+                name = "(신규) 강남점 신호 수정",
+                address1 = "서울특별시 강남구 테헤란로 100",
+                phone = "02-1234-5678"
+            )
+            val response = AdminAccountUpdateResponse(
+                id = 1234,
+                name = "(신규) 강남점 신호 수정",
+                accountGroup = "9999",
+                employeeCode = "100123",
+                branchCode = "C001",
+                branchName = "강남지점",
+                address1 = "서울특별시 강남구 테헤란로 100",
+                address2 = null,
+                zipCode = null,
+                phone = "02-1234-5678",
+                mobilePhone = null,
+                representative = null,
+                email = null,
+                fax = null,
+                website = null,
+                industry = null,
+                description = null,
+                businessNumber = null,
+                businessLicenseNumber = null,
+                businessType = null,
+                businessCategory = null,
+                abcType = "A",
+                abcTypeCode = null,
+                accountType = null,
+                accountStatusName = null,
+                accountStatusCode = null,
+                accountNumber = null,
+                site = null,
+                accountSource = null,
+                mapCoordinate = null,
+                parentSfid = null,
+                rating = null,
+                ownership = null,
+                freezerInstalled = null,
+                freezerType = null,
+                firstInstalled = null,
+                orderEndTime = null,
+                closingTime1 = "18:00",
+                closingTime2 = null,
+                closingTime3 = null,
+                remainingCredit = null,
+                totalCredit = null,
+                annualRevenue = null,
+                numberOfEmployees = null,
+                consignmentAcc = null,
+                distribution = null
+            )
+            whenever(accountUpdateService.update(eq(1234), any(), any())).thenReturn(response)
+
+            mockMvc.perform(
+                put("/api/v1/admin/accounts/{id}", 1234)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(1234))
+                .andExpect(jsonPath("$.data.name").value("(신규) 강남점 신호 수정"))
+                .andExpect(jsonPath("$.data.accountGroup").value("9999"))
+                .andExpect(jsonPath("$.data.employeeCode").value("100123"))
+                .andExpect(jsonPath("$.data.branchCode").value("C001"))
+                .andExpect(jsonPath("$.data.branchName").value("강남지점"))
+                .andExpect(jsonPath("$.data.address1").value("서울특별시 강남구 테헤란로 100"))
+                .andExpect(jsonPath("$.data.phone").value("02-1234-5678"))
+                .andExpect(jsonPath("$.data.abcType").value("A"))
+                .andExpect(jsonPath("$.data.closingTime1").value("18:00"))
+                .andExpect(jsonPath("$.message").value("거래처 수정 성공"))
+        }
+
+        @Test
+        @DisplayName("C2 실패 - 비존재 id → 404 ACCOUNT_NOT_FOUND + 메시지에 id 포함")
+        fun updateAccount_notFound() {
+            org.mockito.kotlin.doThrow(AccountNotFoundException(9999))
+                .whenever(accountUpdateService).update(eq(9999), any(), any())
+
+            mockMvc.perform(
+                put("/api/v1/admin/accounts/{id}", 9999)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"name":"(신규) 무효"}""")
+            )
+                .andExpect(status().isNotFound)
+                .andExpect(jsonPath("$.error.code").value("ACCOUNT_NOT_FOUND"))
+                .andExpect(jsonPath("$.error.message").value("거래처를 찾을 수 없습니다: 9999"))
+        }
+
+        @Test
+        @DisplayName("C3 실패 - prefix 위반 → 400 ACCOUNT_NAME_PREFIX_REQUIRED + 메시지 '거래처 수정은 ...'")
+        fun updateAccount_prefixMissing() {
+            org.mockito.kotlin.doThrow(AccountNamePrefixRequiredForUpdateException("(신규)/(기타)"))
+                .whenever(accountUpdateService).update(eq(1234), any(), any())
+
+            mockMvc.perform(
+                put("/api/v1/admin/accounts/{id}", 1234)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"name":"강남점"}""")
+            )
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.error.code").value("ACCOUNT_NAME_PREFIX_REQUIRED"))
+                .andExpect(jsonPath("$.error.message").value("거래처 수정은 ((신규)/(기타)) 중 1개를 필수로 입력하셔야 합니다."))
+        }
+
+        @Test
+        @DisplayName("C4 실패 - 동일명 중복 → 409 ACCOUNT_NAME_DUPLICATE")
+        fun updateAccount_duplicate() {
+            org.mockito.kotlin.doThrow(AccountNameDuplicateException())
+                .whenever(accountUpdateService).update(eq(1234), any(), any())
+
+            mockMvc.perform(
+                put("/api/v1/admin/accounts/{id}", 1234)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"name":"(신규) 다른지점"}""")
+            )
+                .andExpect(status().isConflict)
+                .andExpect(jsonPath("$.error.code").value("ACCOUNT_NAME_DUPLICATE"))
+                .andExpect(jsonPath("$.error.message").value("동일한 이름의 거래처가 이미 존재합니다."))
         }
     }
 
