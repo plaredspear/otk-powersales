@@ -99,12 +99,12 @@ class Account(
     @SFField("Latitude__c")
     @HCColumn("latitude__c")
     @Column(name = "latitude", length = 100)
-    val latitude: String? = null,
+    var latitude: String? = null,
 
     @SFField("Longitude__c")
     @HCColumn("longitude__c")
     @Column(name = "longitude", length = 100)
-    val longitude: String? = null,
+    var longitude: String? = null,
 
     @SFField("ClosingTime1__c")
     @HCColumn("closingtime1__c")

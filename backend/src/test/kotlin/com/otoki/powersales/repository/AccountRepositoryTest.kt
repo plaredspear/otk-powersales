@@ -230,6 +230,66 @@ class AccountRepositoryTest {
         }
     }
 
+    @Nested
+    @DisplayName("findCoordinatesMissingAccounts 테스트 (#637 — Naver Geocode batch)")
+    inner class FindCoordinatesMissingAccountsTests {
+
+        @Test
+        @DisplayName("좌표 미수신 + 거래 상태 거래처만 조회")
+        fun findCoordinatesMissingAccounts_filtersByConditions() {
+            // Given — 다양한 조건의 거래처 7건
+            // (1) 좌표 모두 null + 조건 충족 → 포함
+            persistAccount(externalKey = "EXT-1", latitude = null, longitude = null, accountStatusName = "거래")
+            // (2) latitude 만 null + 조건 충족 → 포함
+            persistAccount(externalKey = "EXT-2", latitude = null, longitude = "127.1", accountStatusName = "거래")
+            // (3) 좌표 둘 다 set → 제외
+            persistAccount(externalKey = "EXT-3", latitude = "37.5", longitude = "127.1", accountStatusName = "거래")
+            // (4) address1 null → 제외
+            persistAccount(externalKey = "EXT-4", latitude = null, longitude = null, address1 = null, accountStatusName = "거래")
+            // (5) externalKey null → 제외
+            persistAccount(externalKey = null, latitude = null, longitude = null, accountStatusName = "거래")
+            // (6) 거래 상태 아님 → 제외
+            persistAccount(externalKey = "EXT-6", latitude = null, longitude = null, accountStatusName = "휴면")
+            // (7) longitude 만 null + 거래 → 포함
+            persistAccount(externalKey = "EXT-7", latitude = "37.5", longitude = null, accountStatusName = "거래")
+
+            // When
+            val result = accountRepository.findCoordinatesMissingAccounts(limit = 100)
+
+            // Then — (1) (2) (7) 만 매칭 (3건)
+            assertThat(result).hasSize(3)
+            assertThat(result.map { it.externalKey }).containsExactlyInAnyOrder("EXT-1", "EXT-2", "EXT-7")
+        }
+
+        @Test
+        @DisplayName("LIMIT 정확히 적용")
+        fun findCoordinatesMissingAccounts_appliesLimit() {
+            // Given — 5건 모두 매칭 조건
+            (1..5).forEach { idx ->
+                persistAccount(externalKey = "EXT-LIMIT-$idx", latitude = null, longitude = null, accountStatusName = "거래")
+            }
+
+            // When
+            val result = accountRepository.findCoordinatesMissingAccounts(limit = 3)
+
+            // Then
+            assertThat(result).hasSize(3)
+        }
+
+        @Test
+        @DisplayName("매칭 거래처 0건 — 빈 리스트 반환")
+        fun findCoordinatesMissingAccounts_emptyResult() {
+            // Given
+            persistAccount(externalKey = "EXT-FULL", latitude = "37.5", longitude = "127.1", accountStatusName = "거래")
+
+            // When
+            val result = accountRepository.findCoordinatesMissingAccounts(limit = 100)
+
+            // Then
+            assertThat(result).isEmpty()
+        }
+    }
+
     // ========== Helpers ==========
 
     private fun createAccount(
@@ -246,5 +306,25 @@ class AccountRepositoryTest {
             representative = representative,
             phone = phone
         )
+    }
+
+    private fun persistAccount(
+        externalKey: String?,
+        latitude: String? = null,
+        longitude: String? = null,
+        address1: String? = "부산시 테스트구",
+        accountStatusName: String? = "거래"
+    ): Account {
+        val account = Account(
+            name = "거래처-${externalKey ?: "NULL"}",
+            externalKey = externalKey,
+            address1 = address1,
+            latitude = latitude,
+            longitude = longitude,
+            accountStatusName = accountStatusName
+        )
+        val saved = testEntityManager.persistAndFlush(account)
+        testEntityManager.clear()
+        return saved
     }
 }
