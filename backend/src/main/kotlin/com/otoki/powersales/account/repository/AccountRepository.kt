@@ -26,6 +26,19 @@ interface AccountRepository : JpaRepository<Account, Int>, AccountRepositoryCust
     )
     fun existsActiveByName(@Param("name") name: String): Boolean
 
+    /**
+     * 활성(미삭제) 거래처 단건 조회.
+     *
+     * `is_deleted` 가 nullable Boolean 이므로 `IS NULL` 과 `= false` 두 케이스 모두 활성으로 간주.
+     * (Spring Data 메서드명 `findByIdAndIsDeletedNot` 으로는 NULL row 가 누락됨 — `existsActiveByName` 패턴 일관)
+     *
+     * Spec #642 — 관리자 웹 거래처 삭제 진입 시 단건 조회.
+     */
+    @Query(
+        value = "SELECT * FROM account WHERE account_id = :id AND (is_deleted IS NULL OR is_deleted = FALSE)",
+        nativeQuery = true
+    )
+    fun findActiveById(@Param("id") id: Int): Account?
 
     /**
      * 거래처 외부키(SAP 코드)로 조회

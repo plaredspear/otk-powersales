@@ -21,6 +21,7 @@ class AdminPermissionMatrixService(
         AdminPermission.DASHBOARD_READ to ("대시보드 조회" to listOf("대시보드")),
         AdminPermission.EMPLOYEE_READ to ("사원 조회" to listOf("사원 > 여사원 현황")),
         AdminPermission.ACCOUNT_READ to ("거래처 조회" to listOf("SAP 데이터 > 거래처")),
+        AdminPermission.ACCOUNT_DELETE to ("거래처 삭제" to listOf("SAP 데이터 > 거래처")),
         AdminPermission.PROMOTION_READ to ("행사 조회" to listOf("여사원 배치 > 행사마스터", "전문행사조")),
         AdminPermission.PROMOTION_WRITE to ("행사 생성/수정" to listOf("여사원 배치 > 진열스케줄마스터", "행사 등록/수정/확정/삭제")),
         AdminPermission.SAFETY_CHECK_READ to ("안전점검 조회" to listOf("안전점검")),

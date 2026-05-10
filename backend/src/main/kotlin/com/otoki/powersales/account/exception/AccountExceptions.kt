@@ -4,15 +4,27 @@ import com.otoki.powersales.common.exception.BusinessException
 import org.springframework.http.HttpStatus
 
 /**
- * 거래처(Account) 도메인 예외 모음. (Spec #640)
+ * 거래처(Account) 도메인 예외 모음. (Spec #640, #642)
  *
- * 본 파일은 관리자 웹 신규 거래처 등록(`POST /api/v1/admin/accounts`) 흐름의 검증 실패 케이스를 다룬다.
- * 후속 거래처 수정/삭제 스펙(#642/#643) 도입 시 동일 파일에 추가한다.
+ * - #640: 관리자 웹 신규 거래처 등록(`POST /api/v1/admin/accounts`) 흐름의 검증 실패 케이스
+ * - #642: 관리자 웹 거래처 삭제(`DELETE /api/v1/admin/accounts/{id}`) 흐름의 차단/조회 실패 케이스
  */
 class AccountNameBlankException : BusinessException(
     errorCode = "ACCOUNT_NAME_BLANK",
     message = "거래처명은 필수입니다.",
     httpStatus = HttpStatus.BAD_REQUEST
+)
+
+class AccountNotFoundException : BusinessException(
+    errorCode = "ACCOUNT_NOT_FOUND",
+    message = "거래처를 찾을 수 없습니다.",
+    httpStatus = HttpStatus.NOT_FOUND
+)
+
+class AccountDeleteBlockedSapSyncedException : BusinessException(
+    errorCode = "ACCOUNT_DELETE_BLOCKED_SAP_SYNCED",
+    message = "거래처 코드가 있는 거래처는 삭제할 수 없습니다.",
+    httpStatus = HttpStatus.CONFLICT
 )
 
 class AccountNamePrefixRequiredException(allowedPrefixList: String) : BusinessException(
