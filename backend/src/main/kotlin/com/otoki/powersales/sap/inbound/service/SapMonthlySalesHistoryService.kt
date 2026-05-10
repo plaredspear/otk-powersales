@@ -2,35 +2,29 @@ package com.otoki.powersales.sap.inbound.service
 
 import com.otoki.powersales.sales.service.MonthlySalesHistoryUpsertService
 import com.otoki.powersales.sales.service.dto.MonthlySalesHistoryUpsertCommand
-import com.otoki.powersales.sales.service.dto.MonthlySalesHistoryUpsertResult
-import com.otoki.powersales.sap.auth.audit.SapInboundAudit
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditEventType
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
-import com.otoki.powersales.sap.auth.util.ClientIpResolver
+import com.otoki.powersales.sap.auth.audit.SapInboundAccepted
 import com.otoki.powersales.sap.inbound.dto.sales.ChunkResult
 import com.otoki.powersales.sap.inbound.dto.sales.FailureItem
 import com.otoki.powersales.sap.inbound.dto.sales.MonthlySalesHistoryRequestItem
 import com.otoki.powersales.sap.inbound.dto.sales.SalesHistoryDetail
 import com.otoki.powersales.sap.inbound.exception.SapPayloadTooLargeException
-import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
-import org.springframework.web.context.request.RequestContextHolder
-import org.springframework.web.context.request.ServletRequestAttributes
 
 /**
- * SAP 월 매출 이력 인바운드 어댑터. (Spec #560 / 어댑터-도메인 분리: #635 P1-B)
+ * SAP 월 매출 이력 인바운드 어댑터. (Spec #560 / 어댑터-도메인 분리: #635 P1-B / audit AOP 통합: #639)
  *
  * 책임:
  * - SAP 페이로드 size 한도 검증 ([SapPayloadTooLargeException])
  * - 청크 분할 + 청크 단위 [ChunkedUpsertHelper] 트랜잭션 격리
  * - 청크별로 페이로드 → 도메인 커맨드 [MonthlySalesHistoryUpsertCommand] 매핑 후
  *   [MonthlySalesHistoryUpsertService.upsert] 호출
- * - 도메인 결과 [MonthlySalesHistoryUpsertResult] → 청크 status / failure 집계
+ * - 도메인 결과 → 청크 status / failure 집계
  * - 청크 commit 실패 시 청크 전체 failed 처리
- * - [SapInboundAuditService] 감사 기록 (chunks 수 포함)
+ *
+ * `REQUEST_ACCEPTED` audit 기록 (chunks 수 포함) 은 [com.otoki.powersales.sap.auth.audit.SapInboundAuditAspect]
+ * 가 `@SapInboundAccepted` annotation 을 트리거로 공통 처리 (#639).
  *
  * 트랜잭션 경계는 [ChunkedUpsertHelper] (`REQUIRES_NEW`) 가 청크 단위로 부여한다.
  */
@@ -38,13 +32,13 @@ import org.springframework.web.context.request.ServletRequestAttributes
 class SapMonthlySalesHistoryService(
     private val monthlySalesHistoryUpsertService: MonthlySalesHistoryUpsertService,
     private val chunkedUpsertHelper: ChunkedUpsertHelper,
-    private val auditService: SapInboundAuditService,
     @Value("\${sap.inbound.sales.chunk-size:1000}") private val chunkSize: Int,
     @Value("\${sap.inbound.sales.max-rows:50000}") private val maxRows: Int
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
+    @SapInboundAccepted("items", reasonTemplate = "success={success} failure={failure} chunks={chunks}")
     fun upsert(items: List<MonthlySalesHistoryRequestItem>): SalesHistoryDetail {
         if (items.size > maxRows) {
             throw SapPayloadTooLargeException(maxRows, items.size)
@@ -84,7 +78,6 @@ class SapMonthlySalesHistoryService(
             }
         }
 
-        recordAccepted(items.size, totalSuccess, allFailures.size, chunks.size)
         return SalesHistoryDetail(
             successCount = totalSuccess,
             failureCount = allFailures.size,
@@ -109,29 +102,5 @@ class SapMonthlySalesHistoryService(
         val ac = item.sapAccountCode?.takeIf { it.isNotBlank() } ?: return null
         val ym = item.salesYearMonth?.takeIf { it.isNotBlank() } ?: return null
         return ac + ym
-    }
-
-    private fun recordAccepted(received: Int, success: Int, failure: Int, chunks: Int) {
-        val request = currentRequest()
-        val endpoint = request?.requestURI ?: ""
-        val httpMethod = request?.method
-        val clientIp = request?.let { ClientIpResolver.resolve(it) } ?: ""
-        val clientId = SecurityContextHolder.getContext().authentication?.name
-        auditService.record(
-            SapInboundAudit(
-                eventType = SapInboundAuditEventType.REQUEST_ACCEPTED,
-                clientId = clientId,
-                endpoint = endpoint,
-                httpMethod = httpMethod,
-                clientIp = clientIp,
-                receivedCount = received,
-                reason = "success=$success failure=$failure chunks=$chunks"
-            )
-        )
-    }
-
-    private fun currentRequest(): HttpServletRequest? {
-        val attrs = RequestContextHolder.getRequestAttributes() as? ServletRequestAttributes
-        return attrs?.request
     }
 }

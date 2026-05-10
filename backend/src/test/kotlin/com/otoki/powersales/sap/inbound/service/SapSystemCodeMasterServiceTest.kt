@@ -4,9 +4,6 @@ import com.otoki.powersales.common.service.SystemCodeMasterUpsertService
 import com.otoki.powersales.common.service.dto.SystemCodeMasterUpsertCommand
 import com.otoki.powersales.common.service.dto.SystemCodeMasterUpsertFailedRow
 import com.otoki.powersales.common.service.dto.SystemCodeMasterUpsertResult
-import com.otoki.powersales.sap.auth.audit.SapInboundAudit
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditEventType
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.sap.inbound.dto.product.SystemCodeMasterRequestItem
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -22,15 +19,16 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
+/**
+ * Spec #639: REQUEST_ACCEPTED audit 검증은 SapInboundAuditAspectTest 가 책임.
+ * 본 테스트는 어댑터의 도메인 호출 / DTO 매핑 / 응답 매핑만 검증.
+ */
 @ExtendWith(MockitoExtension::class)
 @DisplayName("SapSystemCodeMasterService 어댑터 테스트")
 class SapSystemCodeMasterServiceTest {
 
     @Mock
     private lateinit var systemCodeMasterUpsertService: SystemCodeMasterUpsertService
-
-    @Mock
-    private lateinit var auditService: SapInboundAuditService
 
     @InjectMocks
     private lateinit var service: SapSystemCodeMasterService
@@ -40,8 +38,8 @@ class SapSystemCodeMasterServiceTest {
     inner class AdapterResponsibilities {
 
         @Test
-        @DisplayName("happy: 도메인 결과 → ProductMasterDetail + audit reason='success=1 failure=0'")
-        fun happy_domainResultMappedAndAudit() {
+        @DisplayName("happy: 도메인 결과 → ProductMasterDetail")
+        fun happy_domainResultMapped() {
             whenever(systemCodeMasterUpsertService.upsert(any())).thenReturn(
                 SystemCodeMasterUpsertResult(successCount = 1, failureCount = 0, failures = emptyList())
             )
@@ -59,11 +57,6 @@ class SapSystemCodeMasterServiceTest {
 
             assertThat(detail.successCount).isEqualTo(1)
             assertThat(detail.failureCount).isEqualTo(0)
-
-            val auditCaptor = argumentCaptor<SapInboundAudit>()
-            verify(auditService).record(auditCaptor.capture())
-            assertThat(auditCaptor.firstValue.eventType).isEqualTo(SapInboundAuditEventType.REQUEST_ACCEPTED)
-            assertThat(auditCaptor.firstValue.reason).isEqualTo("success=1 failure=0")
         }
 
         @Test
@@ -86,8 +79,8 @@ class SapSystemCodeMasterServiceTest {
         }
 
         @Test
-        @DisplayName("도메인 throw: 실패 audit 후 예외 재전파")
-        fun domainThrow_failureAuditAndRethrow() {
+        @DisplayName("도메인 throw: 어댑터는 catch 하지 않고 그대로 재전파 (audit 은 Aspect 책임)")
+        fun domainThrow_propagated() {
             whenever(systemCodeMasterUpsertService.upsert(any()))
                 .thenThrow(IllegalStateException("DB connection lost"))
 
@@ -96,10 +89,6 @@ class SapSystemCodeMasterServiceTest {
                     listOf(SystemCodeMasterRequestItem(companyCode = "1000", groupCode = "H10010", detailCode = "10"))
                 )
             }.isInstanceOf(IllegalStateException::class.java)
-
-            val auditCaptor = argumentCaptor<SapInboundAudit>()
-            verify(auditService).record(auditCaptor.capture())
-            assertThat(auditCaptor.firstValue.reason).isEqualTo("success=0 failure=1")
         }
 
         @Test

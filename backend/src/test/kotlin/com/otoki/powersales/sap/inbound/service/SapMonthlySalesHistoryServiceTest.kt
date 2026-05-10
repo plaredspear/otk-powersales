@@ -4,9 +4,6 @@ import com.otoki.powersales.sales.service.MonthlySalesHistoryUpsertService
 import com.otoki.powersales.sales.service.dto.MonthlySalesHistoryUpsertCommand
 import com.otoki.powersales.sales.service.dto.MonthlySalesHistoryUpsertFailedRow
 import com.otoki.powersales.sales.service.dto.MonthlySalesHistoryUpsertResult
-import com.otoki.powersales.sap.auth.audit.SapInboundAudit
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditEventType
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.sap.inbound.dto.sales.ChunkResult
 import com.otoki.powersales.sap.inbound.dto.sales.MonthlySalesHistoryRequestItem
 import com.otoki.powersales.sap.inbound.exception.SapPayloadTooLargeException
@@ -25,15 +22,16 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
+/**
+ * Spec #639: REQUEST_ACCEPTED audit 검증은 SapInboundAuditAspectTest 가 책임.
+ * 본 테스트는 어댑터의 도메인 호출 / DTO 매핑 / 청크 분할 / 응답 매핑만 검증.
+ */
 @ExtendWith(MockitoExtension::class)
 @DisplayName("SapMonthlySalesHistoryService 어댑터 테스트")
 class SapMonthlySalesHistoryServiceTest {
 
     @Mock
     private lateinit var monthlySalesHistoryUpsertService: MonthlySalesHistoryUpsertService
-
-    @Mock
-    private lateinit var auditService: SapInboundAuditService
 
     private lateinit var service: SapMonthlySalesHistoryService
 
@@ -43,7 +41,6 @@ class SapMonthlySalesHistoryServiceTest {
         service = SapMonthlySalesHistoryService(
             monthlySalesHistoryUpsertService = monthlySalesHistoryUpsertService,
             chunkedUpsertHelper = helper,
-            auditService = auditService,
             chunkSize = 1000,
             maxRows = 50
         )
@@ -62,7 +59,7 @@ class SapMonthlySalesHistoryServiceTest {
     inner class AdapterResponsibilities {
 
         @Test
-        @DisplayName("happy: 단일 청크, 도메인 결과 → SalesHistoryDetail + chunk SUCCESS + audit chunks=1")
+        @DisplayName("happy: 단일 청크, 도메인 결과 → SalesHistoryDetail + chunk SUCCESS")
         fun happy_singleChunkSuccess() {
             whenever(monthlySalesHistoryUpsertService.upsert(any())).thenReturn(
                 MonthlySalesHistoryUpsertResult(successCount = 1, failureCount = 0, failures = emptyList())
@@ -72,11 +69,7 @@ class SapMonthlySalesHistoryServiceTest {
 
             assertThat(detail.successCount).isEqualTo(1)
             assertThat(detail.chunks.single().status).isEqualTo(ChunkResult.STATUS_SUCCESS)
-
-            val auditCaptor = argumentCaptor<SapInboundAudit>()
-            verify(auditService).record(auditCaptor.capture())
-            assertThat(auditCaptor.firstValue.eventType).isEqualTo(SapInboundAuditEventType.REQUEST_ACCEPTED)
-            assertThat(auditCaptor.firstValue.reason).isEqualTo("success=1 failure=0 chunks=1")
+            assertThat(detail.chunkCount).isEqualTo(1)
         }
 
         @Test

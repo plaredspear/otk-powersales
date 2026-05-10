@@ -4,9 +4,6 @@ import com.otoki.powersales.product.service.ProductBarcodeUpsertService
 import com.otoki.powersales.product.service.dto.ProductBarcodeUpsertCommand
 import com.otoki.powersales.product.service.dto.ProductBarcodeUpsertFailedRow
 import com.otoki.powersales.product.service.dto.ProductBarcodeUpsertResult
-import com.otoki.powersales.sap.auth.audit.SapInboundAudit
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditEventType
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.sap.inbound.dto.product.BarcodeMasterRequestItem
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -22,15 +19,16 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
+/**
+ * Spec #639: REQUEST_ACCEPTED audit 검증은 SapInboundAuditAspectTest 가 책임.
+ * 본 테스트는 어댑터의 도메인 호출 / DTO 매핑 / 응답 매핑만 검증.
+ */
 @ExtendWith(MockitoExtension::class)
 @DisplayName("SapBarcodeMasterService 어댑터 테스트")
 class SapBarcodeMasterServiceTest {
 
     @Mock
     private lateinit var productBarcodeUpsertService: ProductBarcodeUpsertService
-
-    @Mock
-    private lateinit var auditService: SapInboundAuditService
 
     @InjectMocks
     private lateinit var service: SapBarcodeMasterService
@@ -40,8 +38,8 @@ class SapBarcodeMasterServiceTest {
     inner class AdapterResponsibilities {
 
         @Test
-        @DisplayName("happy: 도메인 결과 (success=1, failure=0) → ProductMasterDetail + audit")
-        fun happy_domainResultMappedAndAudit() {
+        @DisplayName("happy: 도메인 결과 (success=1, failure=0) → ProductMasterDetail")
+        fun happy_domainResultMapped() {
             val items = listOf(
                 BarcodeMasterRequestItem(
                     productCode = "100100",
@@ -59,12 +57,6 @@ class SapBarcodeMasterServiceTest {
 
             assertThat(detail.successCount).isEqualTo(1)
             assertThat(detail.failureCount).isEqualTo(0)
-
-            val auditCaptor = argumentCaptor<SapInboundAudit>()
-            verify(auditService).record(auditCaptor.capture())
-            assertThat(auditCaptor.firstValue.eventType).isEqualTo(SapInboundAuditEventType.REQUEST_ACCEPTED)
-            assertThat(auditCaptor.firstValue.receivedCount).isEqualTo(1)
-            assertThat(auditCaptor.firstValue.reason).isEqualTo("success=1 failure=0")
         }
 
         @Test
@@ -88,15 +80,11 @@ class SapBarcodeMasterServiceTest {
             assertThat(detail.failureCount).isEqualTo(1)
             assertThat(detail.failures.single().identifier).isEqualTo("999999EA001")
             assertThat(detail.failures.single().reason).isEqualTo("product_code not found: 999999")
-
-            val auditCaptor = argumentCaptor<SapInboundAudit>()
-            verify(auditService).record(auditCaptor.capture())
-            assertThat(auditCaptor.firstValue.reason).isEqualTo("success=1 failure=1")
         }
 
         @Test
-        @DisplayName("도메인 throw: 실패 audit 후 예외 재전파")
-        fun domainThrow_failureAuditAndRethrow() {
+        @DisplayName("도메인 throw: 어댑터는 catch 하지 않고 그대로 재전파 (audit 은 Aspect 책임)")
+        fun domainThrow_propagated() {
             val items = listOf(
                 BarcodeMasterRequestItem(productCode = "100100", productUnit = "EA", productSequence = "001", productBarcode = "111")
             )
@@ -105,10 +93,6 @@ class SapBarcodeMasterServiceTest {
 
             assertThatThrownBy { service.upsert(items) }
                 .isInstanceOf(IllegalStateException::class.java)
-
-            val auditCaptor = argumentCaptor<SapInboundAudit>()
-            verify(auditService).record(auditCaptor.capture())
-            assertThat(auditCaptor.firstValue.reason).isEqualTo("success=0 failure=1")
         }
 
         @Test

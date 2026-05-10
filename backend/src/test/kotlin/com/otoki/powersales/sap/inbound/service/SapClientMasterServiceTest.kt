@@ -4,9 +4,6 @@ import com.otoki.powersales.account.service.AccountUpsertService
 import com.otoki.powersales.account.service.dto.AccountUpsertCommand
 import com.otoki.powersales.account.service.dto.AccountUpsertFailedRow
 import com.otoki.powersales.account.service.dto.AccountUpsertResult
-import com.otoki.powersales.sap.auth.audit.SapInboundAudit
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditEventType
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.sap.inbound.dto.account.ClientMasterRequestItem
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -22,15 +19,16 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
+/**
+ * Spec #639: REQUEST_ACCEPTED audit 검증은 SapInboundAuditAspectTest 가 책임.
+ * 본 테스트는 어댑터의 도메인 호출 / DTO 매핑 / 응답 매핑만 검증.
+ */
 @ExtendWith(MockitoExtension::class)
 @DisplayName("SapClientMasterService 어댑터 테스트")
 class SapClientMasterServiceTest {
 
     @Mock
     private lateinit var accountUpsertService: AccountUpsertService
-
-    @Mock
-    private lateinit var auditService: SapInboundAuditService
 
     @InjectMocks
     private lateinit var service: SapClientMasterService
@@ -40,8 +38,8 @@ class SapClientMasterServiceTest {
     inner class AdapterResponsibilities {
 
         @Test
-        @DisplayName("happy: 도메인 결과 (success=2, failure=0) → AccountMasterDetail + audit reason='success=2 failure=0'")
-        fun happy_domainResultMappedAndAudit() {
+        @DisplayName("happy: 도메인 결과 (success=2, failure=0) → AccountMasterDetail")
+        fun happy_domainResultMapped() {
             val items = listOf(
                 ClientMasterRequestItem(sapAccountCode = "A", name = "거래처A"),
                 ClientMasterRequestItem(sapAccountCode = "B", name = "거래처B")
@@ -55,13 +53,6 @@ class SapClientMasterServiceTest {
             assertThat(detail.successCount).isEqualTo(2)
             assertThat(detail.failureCount).isEqualTo(0)
             assertThat(detail.failures).isEmpty()
-
-            val auditCaptor = argumentCaptor<SapInboundAudit>()
-            verify(auditService).record(auditCaptor.capture())
-            val audit = auditCaptor.firstValue
-            assertThat(audit.eventType).isEqualTo(SapInboundAuditEventType.REQUEST_ACCEPTED)
-            assertThat(audit.receivedCount).isEqualTo(2)
-            assertThat(audit.reason).isEqualTo("success=2 failure=0")
         }
 
         @Test
@@ -86,15 +77,11 @@ class SapClientMasterServiceTest {
             assertThat(detail.failures).hasSize(1)
             assertThat(detail.failures.single().identifier).isEqualTo("B")
             assertThat(detail.failures.single().reason).isEqualTo("Name 필수")
-
-            val auditCaptor = argumentCaptor<SapInboundAudit>()
-            verify(auditService).record(auditCaptor.capture())
-            assertThat(auditCaptor.firstValue.reason).isEqualTo("success=1 failure=1")
         }
 
         @Test
-        @DisplayName("도메인 throw: 실패 audit (reason='success=0 failure=<received>') 후 예외 재전파")
-        fun domainThrow_failureAuditAndRethrow() {
+        @DisplayName("도메인 throw: 어댑터는 catch 하지 않고 그대로 재전파 (audit 은 Aspect 책임)")
+        fun domainThrow_propagated() {
             val items = listOf(
                 ClientMasterRequestItem(sapAccountCode = "A", name = "거래처A"),
                 ClientMasterRequestItem(sapAccountCode = "B", name = "거래처B")
@@ -105,13 +92,6 @@ class SapClientMasterServiceTest {
             assertThatThrownBy { service.upsert(items) }
                 .isInstanceOf(IllegalStateException::class.java)
                 .hasMessage("DB connection lost")
-
-            val auditCaptor = argumentCaptor<SapInboundAudit>()
-            verify(auditService).record(auditCaptor.capture())
-            val audit = auditCaptor.firstValue
-            assertThat(audit.eventType).isEqualTo(SapInboundAuditEventType.REQUEST_ACCEPTED)
-            assertThat(audit.receivedCount).isEqualTo(2)
-            assertThat(audit.reason).isEqualTo("success=0 failure=2")
         }
 
         @Test

@@ -30,6 +30,10 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
+/**
+ * Spec #639: REQUEST_ACCEPTED audit 검증은 SapInboundAuditAspectTest 가 책임.
+ * 본 테스트는 어댑터의 도메인 호출 / DTO 매핑 / 청크 분할 / SCHEDULE_CONVERSION audit (어댑터 잔류) 만 검증.
+ */
 @ExtendWith(MockitoExtension::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("SapAttendInfoService 어댑터 테스트")
@@ -103,7 +107,7 @@ class SapAttendInfoServiceTest {
     inner class AdapterResponsibilities {
 
         @Test
-        @DisplayName("happy: 단일 청크, 도메인 결과 + 변환 호출 + audit 2회 (REQUEST_ACCEPTED + SCHEDULE_CONVERSION)")
+        @DisplayName("happy: 단일 청크, 도메인 결과 + 변환 호출 + SCHEDULE_CONVERSION audit 1회")
         fun happy_singleChunkSuccess() {
             mockDomainSuccess(listOf(savedAttend()))
 
@@ -112,17 +116,15 @@ class SapAttendInfoServiceTest {
             assertThat(detail.successCount).isEqualTo(1)
             assertThat(detail.chunks.single().status).isEqualTo(ChunkResult.STATUS_SUCCESS)
             assertThat(detail.scheduleConversion).isEqualTo(ScheduleConversionSummary.ZERO)
+            assertThat(detail.chunkCount).isEqualTo(1)
 
             val auditCaptor = argumentCaptor<SapInboundAudit>()
-            verify(auditService, times(2)).record(auditCaptor.capture())
-            assertThat(auditCaptor.allValues.map { it.eventType }).containsExactly(
-                SapInboundAuditEventType.REQUEST_ACCEPTED,
-                SapInboundAuditEventType.SCHEDULE_CONVERSION
-            )
+            verify(auditService, times(1)).record(auditCaptor.capture())
+            assertThat(auditCaptor.firstValue.eventType).isEqualTo(SapInboundAuditEventType.SCHEDULE_CONVERSION)
         }
 
         @Test
-        @DisplayName("청크 분할: 5건 / chunkSize=3 → 2 chunks (3+2), 도메인 호출 2회, 변환 2회")
+        @DisplayName("청크 분할: 5건 / chunkSize=3 → 2 chunks (3+2), 도메인 호출 2회, 변환 2회, SCHEDULE_CONVERSION audit 1회 (집계)")
         fun chunkSplit_callsDomainAndConverterPerChunk() {
             val items = (1..5).map { item(startDate = "2026042$it", endDate = "2026042$it") }
             mockDomainSuccess(listOf(savedAttend()))
@@ -133,15 +135,11 @@ class SapAttendInfoServiceTest {
             assertThat(detail.chunks).hasSize(2)
             verify(attendInfoInsertService, times(2)).insert(any())
             verify(scheduleConverter, times(2)).convert(any<List<AttendInfo>>())
-
-            val auditCaptor = argumentCaptor<SapInboundAudit>()
-            verify(auditService, times(2)).record(auditCaptor.capture())
-            val acceptedAudit = auditCaptor.allValues.first { it.eventType == SapInboundAuditEventType.REQUEST_ACCEPTED }
-            assertThat(acceptedAudit.reason).contains("chunks=2")
+            verify(auditService, times(1)).record(any())
         }
 
         @Test
-        @DisplayName("savedAttendInfos 비어있을 시 변환 호출 없음, audit 1회 (REQUEST_ACCEPTED 만)")
+        @DisplayName("savedAttendInfos 비어있을 시 변환 호출 없음, audit 0회")
         fun emptySaved_noConverterCall() {
             whenever(attendInfoInsertService.insert(any())).thenReturn(
                 AttendInfoInsertResult(
@@ -156,11 +154,11 @@ class SapAttendInfoServiceTest {
 
             assertThat(detail.scheduleConversion).isNull()
             verify(scheduleConverter, never()).convert(any<List<AttendInfo>>())
-            verify(auditService, times(1)).record(any())
+            verify(auditService, never()).record(any())
         }
 
         @Test
-        @DisplayName("변환 실패: SCHEDULE_CONVERSION_FAILED audit + REQUEST_ACCEPTED audit (총 2회), INSERT 결과는 유지")
+        @DisplayName("변환 실패: SCHEDULE_CONVERSION_FAILED audit 1회, INSERT 결과는 유지")
         fun conversionFailure_auditFailedAndKeepInsert() {
             mockDomainSuccess(listOf(savedAttend()))
             whenever(scheduleConverter.convert(any<List<AttendInfo>>()))
@@ -171,14 +169,9 @@ class SapAttendInfoServiceTest {
             assertThat(detail.successCount).isEqualTo(1)
             assertThat(detail.scheduleConversion).isEqualTo(ScheduleConversionSummary.ZERO)
             val auditCaptor = argumentCaptor<SapInboundAudit>()
-            verify(auditService, times(2)).record(auditCaptor.capture())
-            assertThat(auditCaptor.allValues.map { it.eventType }).containsExactly(
-                SapInboundAuditEventType.SCHEDULE_CONVERSION_FAILED,
-                SapInboundAuditEventType.REQUEST_ACCEPTED
-            )
-            assertThat(
-                auditCaptor.allValues.first { it.eventType == SapInboundAuditEventType.SCHEDULE_CONVERSION_FAILED }.reason
-            ).contains("DB error")
+            verify(auditService, times(1)).record(auditCaptor.capture())
+            assertThat(auditCaptor.firstValue.eventType).isEqualTo(SapInboundAuditEventType.SCHEDULE_CONVERSION_FAILED)
+            assertThat(auditCaptor.firstValue.reason).contains("DB error")
         }
 
         @Test
@@ -231,7 +224,7 @@ class SapAttendInfoServiceTest {
         }
 
         @Test
-        @DisplayName("청크 commit 실패: throw → chunk FAILED, 변환 호출 없음")
+        @DisplayName("청크 commit 실패: throw → chunk FAILED, 변환 호출 없음, audit 0회")
         fun chunkCommitFailure() {
             whenever(attendInfoInsertService.insert(any()))
                 .thenThrow(RuntimeException("DB connection lost"))
@@ -241,6 +234,7 @@ class SapAttendInfoServiceTest {
             assertThat(detail.chunks.single().status).isEqualTo(ChunkResult.STATUS_FAILED)
             assertThat(detail.failureCount).isEqualTo(1)
             verify(scheduleConverter, never()).convert(any<List<AttendInfo>>())
+            verify(auditService, never()).record(any())
         }
 
         @Test

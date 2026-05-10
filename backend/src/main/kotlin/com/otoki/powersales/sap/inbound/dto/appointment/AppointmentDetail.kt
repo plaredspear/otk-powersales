@@ -1,8 +1,9 @@
 package com.otoki.powersales.sap.inbound.dto.appointment
 
+import com.otoki.powersales.sap.inbound.dto.SapInboundUpsertResult
+import com.otoki.powersales.sap.inbound.dto.sales.FailureItem
 import tools.jackson.databind.PropertyNamingStrategies
 import tools.jackson.databind.annotation.JsonNaming
-import com.otoki.powersales.sap.inbound.dto.sales.FailureItem
 
 /**
  * SAP 인사발령 인바운드 응답의 RESULT_DETAIL 페이로드. (Spec #562)
@@ -13,7 +14,7 @@ import com.otoki.powersales.sap.inbound.dto.sales.FailureItem
  */
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
 data class AppointmentDetail(
-    val successCount: Int,
-    val failureCount: Int,
+    override val successCount: Int,
+    override val failureCount: Int,
     val failures: List<FailureItem>
-)
+) : SapInboundUpsertResult
