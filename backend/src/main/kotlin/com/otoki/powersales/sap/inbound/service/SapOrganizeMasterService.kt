@@ -1,40 +1,38 @@
 package com.otoki.powersales.sap.inbound.service
 
+import com.otoki.powersales.organization.service.OrganizationReplaceService
+import com.otoki.powersales.organization.service.dto.OrganizationReplaceCommand
 import com.otoki.powersales.sap.auth.sanity.SapDestructiveEndpoint
 import com.otoki.powersales.sap.inbound.dto.organize.OrganizeMasterDetail
 import com.otoki.powersales.sap.inbound.dto.organize.OrganizeMasterRequestItem
 import com.otoki.powersales.sap.inbound.exception.SapInvalidPayloadException
-import com.otoki.powersales.organization.repository.OrganizationRepository
-import jakarta.persistence.EntityManager
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
 
+/**
+ * SAP 조직 마스터 인바운드 어댑터. (Spec #556 / 어댑터-도메인 분리: #635 P3-B)
+ *
+ * 책임:
+ * - 페이로드 형식 검증 ([validateItems]) — 행 전체 null 거부
+ * - SAP 페이로드 [OrganizeMasterRequestItem] → 도메인 커맨드 [OrganizationReplaceCommand] 매핑
+ * - 도메인 서비스 [OrganizationReplaceService.replaceAll] 호출 (파괴적 전체 교체)
+ * - 도메인 결과 [com.otoki.powersales.organization.service.dto.OrganizationReplaceResult] → SAP 응답 [OrganizeMasterDetail] 매핑
+ * - `@SapDestructiveEndpoint(threshold = 20)` AOP 어노테이션 잔류 — sanity check (받은 건수 0 / ±20% 변동) 는 본 어댑터 메서드 진입 전 처리
+ *
+ * 트랜잭션은 도메인 측이 관리하며 어댑터는 `@Transactional` 을 부착하지 않는다.
+ * advisory lock 도 도메인 서비스 내부로 이동 (도메인 무결성 책임).
+ */
 @Service
 class SapOrganizeMasterService(
-    private val organizationRepository: OrganizationRepository,
-    private val entityManager: EntityManager
+    private val organizationReplaceService: OrganizationReplaceService
 ) {
 
-    /**
-     * SAP 조직 마스터 전량 교체.
-     *
-     * 1. 트랜잭션 advisory lock 획득 (동일 인터페이스 동시 호출 직렬화)
-     * 2. 행 전체 null 검증 (실패 시 INVALID_PAYLOAD)
-     * 3. 기존 Organization 전체 삭제
-     * 4. 신규 Organization 일괄 INSERT
-     *
-     * sanity check (받은 건수 0 / ±20% 변동) 는 [SapDestructiveEndpoint] AOP 가 트랜잭션 진입 전에 처리.
-     */
-    @Transactional
     @SapDestructiveEndpoint(threshold = 20, countArgName = "items")
     fun replaceAll(items: List<OrganizeMasterRequestItem>): OrganizeMasterDetail {
-        acquireOrganizationLock()
         validateItems(items)
-        organizationRepository.deleteAllInBatch()
-        organizationRepository.flush()
-        val saved = organizationRepository.saveAll(items.map { it.toEntity() })
+        val commands = items.map { it.toCommand() }
+        val result = organizationReplaceService.replaceAll(commands)
         return OrganizeMasterDetail(
-            successCount = saved.count(),
+            successCount = result.replacedCount,
             failureCount = 0,
             failures = emptyList()
         )
@@ -48,14 +46,18 @@ class SapOrganizeMasterService(
         }
     }
 
-    private fun acquireOrganizationLock() {
-        entityManager.createNativeQuery("SELECT pg_advisory_xact_lock(:key)")
-            .setParameter("key", ORGANIZATION_LOCK_KEY)
-            .singleResult
-    }
-
-    companion object {
-        // pg_advisory_xact_lock 키. 스펙 #556 에서 결정 (D2): Organization 테이블 식별자 1개로 고정.
-        private const val ORGANIZATION_LOCK_KEY: Long = 5560001L
-    }
+    private fun OrganizeMasterRequestItem.toCommand(): OrganizationReplaceCommand = OrganizationReplaceCommand(
+        ccCd2 = ccCd2,
+        orgCd2 = orgCd2,
+        orgNm2 = orgNm2,
+        ccCd3 = ccCd3,
+        orgCd3 = orgCd3,
+        orgNm3 = orgNm3,
+        ccCd4 = ccCd4,
+        orgCd4 = orgCd4,
+        orgNm4 = orgNm4,
+        ccCd5 = ccCd5,
+        orgCd5 = orgCd5,
+        orgNm5 = orgNm5
+    )
 }
