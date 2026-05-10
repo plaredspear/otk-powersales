@@ -60,4 +60,21 @@ class AccountRepositoryCustomImpl(
             countQuery.fetchOne() ?: 0L
         }
     }
+
+    override fun findCoordinatesMissingAccounts(limit: Int): List<Account> {
+        return queryFactory
+            .selectFrom(account)
+            .where(
+                account.latitude.isNull.or(account.longitude.isNull),
+                account.address1.isNotNull,
+                account.externalKey.isNotNull,
+                account.accountStatusName.eq(ACCOUNT_STATUS_ACTIVE)
+            )
+            .limit(limit.toLong())
+            .fetch()
+    }
+
+    companion object {
+        private const val ACCOUNT_STATUS_ACTIVE = "거래"
+    }
 }
