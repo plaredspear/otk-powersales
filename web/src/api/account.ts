@@ -77,3 +77,22 @@ export async function createAdminAccount(
   }
   return res.data.data;
 }
+
+// --- 거래처 삭제 (Spec #642 P2-W) ---
+
+/**
+ * 관리자 웹 거래처 삭제 (Spec #642 P1-B 엔드포인트 호출).
+ *
+ * Backend `DELETE /api/v1/admin/accounts/{id}` (`ACCOUNT_DELETE` 권한 필요).
+ * - 200 OK: 삭제 성공 (`is_deleted=true` soft-delete)
+ * - 409 ACCOUNT_DELETE_BLOCKED_SAP_SYNCED: SAP 동기 거래처(`external_key IS NOT NULL`) 차단
+ * - 404 ACCOUNT_NOT_FOUND: 미존재 또는 이미 삭제됨
+ *
+ * 에러는 axios 가 throw — 호출 측에서 `error.response.data.error.code` 분기.
+ */
+export async function deleteAdminAccount(id: number): Promise<void> {
+  const res = await client.delete<ApiResponse<null>>(`/api/v1/admin/accounts/${id}`);
+  if (!res.data.success) {
+    throw new Error(res.data.message || '거래처 삭제에 실패했습니다');
+  }
+}
