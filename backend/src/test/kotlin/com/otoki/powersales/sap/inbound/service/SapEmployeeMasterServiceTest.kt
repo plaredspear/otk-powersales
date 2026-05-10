@@ -24,6 +24,10 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
+/**
+ * Spec #639: REQUEST_ACCEPTED audit 검증은 SapInboundAuditAspectTest 가 책임.
+ * 본 테스트는 어댑터의 도메인 호출 / DTO 매핑 / MANUAL_ORIGIN_PROTECTED audit (어댑터 잔류) 만 검증.
+ */
 @ExtendWith(MockitoExtension::class)
 @DisplayName("SapEmployeeMasterService 어댑터 테스트")
 class SapEmployeeMasterServiceTest {
@@ -42,8 +46,8 @@ class SapEmployeeMasterServiceTest {
     inner class AdapterResponsibilities {
 
         @Test
-        @DisplayName("happy: 도메인 결과 (success=2) → EmployeeMasterDetail + audit reason='success=2 failure=0'")
-        fun happy_domainResultMappedAndAudit() {
+        @DisplayName("happy: 도메인 결과 (success=2) → EmployeeMasterDetail, MANUAL_ORIGIN_PROTECTED 미호출 (audit 0회)")
+        fun happy_domainResultMapped() {
             val items = listOf(
                 EmployeeMasterRequestItem(employeeCode = "100123", employeeName = "홍길동"),
                 EmployeeMasterRequestItem(employeeCode = "100124", employeeName = "임꺽정")
@@ -56,11 +60,7 @@ class SapEmployeeMasterServiceTest {
 
             assertThat(detail.successCount).isEqualTo(2)
             assertThat(detail.failureCount).isEqualTo(0)
-
-            val auditCaptor = argumentCaptor<SapInboundAudit>()
-            verify(auditService).record(auditCaptor.capture())
-            assertThat(auditCaptor.firstValue.eventType).isEqualTo(SapInboundAuditEventType.REQUEST_ACCEPTED)
-            assertThat(auditCaptor.firstValue.reason).isEqualTo("success=2 failure=0")
+            verify(auditService, never()).record(any())
         }
 
         @Test
@@ -88,22 +88,18 @@ class SapEmployeeMasterServiceTest {
         }
 
         @Test
-        @DisplayName("도메인 throw: 실패 audit (reason='success=0 failure=N') 후 예외 재전파")
-        fun domainThrow_failureAuditAndRethrow() {
+        @DisplayName("도메인 throw: 어댑터는 catch 하지 않고 그대로 재전파 (audit 은 Aspect 책임)")
+        fun domainThrow_propagated() {
             val items = listOf(EmployeeMasterRequestItem(employeeCode = "100123", employeeName = "홍길동"))
             whenever(employeeUpsertService.upsert(any()))
                 .thenThrow(IllegalStateException("DB connection lost"))
 
             assertThatThrownBy { service.upsert(items) }
                 .isInstanceOf(IllegalStateException::class.java)
-
-            val auditCaptor = argumentCaptor<SapInboundAudit>()
-            verify(auditService).record(auditCaptor.capture())
-            assertThat(auditCaptor.firstValue.reason).isEqualTo("success=0 failure=1")
         }
 
         @Test
-        @DisplayName("Spec #579 - protectedManualCodes 존재 시 MANUAL_ORIGIN_PROTECTED audit 추가 호출 (총 2회)")
+        @DisplayName("Spec #579 - protectedManualCodes 존재 시 MANUAL_ORIGIN_PROTECTED audit 호출 (1회)")
         fun manualOriginProtected_extraAudit() {
             val items = listOf(
                 EmployeeMasterRequestItem(employeeCode = "100123", employeeName = "홍길동"),
@@ -121,24 +117,10 @@ class SapEmployeeMasterServiceTest {
             service.upsert(items)
 
             val auditCaptor = argumentCaptor<SapInboundAudit>()
-            verify(auditService, times(2)).record(auditCaptor.capture())
-            val audits = auditCaptor.allValues
-            assertThat(audits[0].eventType).isEqualTo(SapInboundAuditEventType.REQUEST_ACCEPTED)
-            assertThat(audits[1].eventType).isEqualTo(SapInboundAuditEventType.MANUAL_ORIGIN_PROTECTED)
-            assertThat(audits[1].reason).isEqualTo("M0001")
-        }
-
-        @Test
-        @DisplayName("protectedManualCodes 비어있을 시 MANUAL_ORIGIN_PROTECTED audit 미호출 (총 1회만)")
-        fun noManualProtection_singleAudit() {
-            val items = listOf(EmployeeMasterRequestItem(employeeCode = "100123", employeeName = "홍길동"))
-            whenever(employeeUpsertService.upsert(any())).thenReturn(
-                EmployeeUpsertResult(successCount = 1, failureCount = 0, failures = emptyList(), protectedManualCodes = emptyList())
-            )
-
-            service.upsert(items)
-
-            verify(auditService, times(1)).record(any())
+            verify(auditService, times(1)).record(auditCaptor.capture())
+            val audit = auditCaptor.firstValue
+            assertThat(audit.eventType).isEqualTo(SapInboundAuditEventType.MANUAL_ORIGIN_PROTECTED)
+            assertThat(audit.reason).isEqualTo("M0001")
         }
 
         @Test
@@ -177,26 +159,6 @@ class SapEmployeeMasterServiceTest {
             assertThat(command.startDate).isEqualTo("20200401")
             assertThat(command.status).isEqualTo("10")
             assertThat(command.lockingFlag).isEqualTo("N")
-        }
-
-        @Test
-        @DisplayName("도메인 throw 시 saveAll 미호출 검증 — 도메인이 검증/적재 모두 책임")
-        fun domainThrow_noSaveAllConcern() {
-            // 어댑터는 도메인 호출만 책임. 도메인이 throw 하면 어댑터에서 saveAll 호출하지 않음 (도메인이 안 함)
-            val items = listOf(EmployeeMasterRequestItem(employeeCode = null, employeeName = "X"))
-            whenever(employeeUpsertService.upsert(any())).thenReturn(
-                EmployeeUpsertResult(
-                    successCount = 0,
-                    failureCount = 1,
-                    failures = listOf(EmployeeUpsertFailedRow(null, "EmployeeCode 필수")),
-                    protectedManualCodes = emptyList()
-                )
-            )
-
-            val detail = service.upsert(items)
-
-            assertThat(detail.successCount).isEqualTo(0)
-            verify(auditService, times(1)).record(any())
         }
     }
 }

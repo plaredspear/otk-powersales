@@ -1,8 +1,5 @@
 package com.otoki.powersales.sap.inbound.service
 
-import com.otoki.powersales.sap.auth.audit.SapInboundAudit
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditEventType
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.sap.inbound.dto.appointment.AppointmentRequestItem
 import com.otoki.powersales.schedule.entity.Appointment
 import com.otoki.powersales.schedule.service.AppointmentInsertService
@@ -33,9 +30,6 @@ class SapAppointmentServiceTest {
 
     @Mock
     private lateinit var appointmentUserProfileUpdater: AppointmentUserProfileUpdater
-
-    @Mock
-    private lateinit var auditService: SapInboundAuditService
 
     @InjectMocks
     private lateinit var service: SapAppointmentService
@@ -70,8 +64,8 @@ class SapAppointmentServiceTest {
     inner class AdapterResponsibilities {
 
         @Test
-        @DisplayName("happy: 도메인 적재 결과 → 후처리 호출 + audit reason='success=1 failure=0'")
-        fun happy_domainSavedThenUpdaterAndAudit() {
+        @DisplayName("happy: 도메인 적재 결과 → 후처리 호출")
+        fun happy_domainSavedThenUpdater() {
             val saved = listOf(savedAppointment())
             whenever(appointmentInsertService.insert(any())).thenReturn(
                 AppointmentInsertResult(
@@ -86,11 +80,6 @@ class SapAppointmentServiceTest {
 
             assertThat(detail.successCount).isEqualTo(1)
             verify(appointmentUserProfileUpdater).updateUserProfiles(saved)
-
-            val auditCaptor = argumentCaptor<SapInboundAudit>()
-            verify(auditService).record(auditCaptor.capture())
-            assertThat(auditCaptor.firstValue.eventType).isEqualTo(SapInboundAuditEventType.REQUEST_ACCEPTED)
-            assertThat(auditCaptor.firstValue.reason).isEqualTo("success=1 failure=0")
         }
 
         @Test
@@ -151,17 +140,14 @@ class SapAppointmentServiceTest {
         }
 
         @Test
-        @DisplayName("도메인 throw: 실패 audit 후 예외 재전파, 후처리 호출 없음")
-        fun domainThrow_failureAuditAndRethrow() {
+        @DisplayName("도메인 throw: 어댑터는 catch 하지 않고 그대로 재전파, 후처리 호출 없음 (audit 은 Aspect 책임)")
+        fun domainThrow_propagated_noUpdater() {
             whenever(appointmentInsertService.insert(any()))
                 .thenThrow(IllegalStateException("DB connection lost"))
 
             assertThatThrownBy { service.insert(listOf(item())) }
                 .isInstanceOf(IllegalStateException::class.java)
 
-            val auditCaptor = argumentCaptor<SapInboundAudit>()
-            verify(auditService).record(auditCaptor.capture())
-            assertThat(auditCaptor.firstValue.reason).isEqualTo("success=0 failure=1")
             verify(appointmentUserProfileUpdater, never()).updateUserProfiles(any<List<Appointment>>())
         }
 

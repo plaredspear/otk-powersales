@@ -4,9 +4,6 @@ import com.otoki.powersales.order.service.ErpOrderUpsertService
 import com.otoki.powersales.order.service.dto.ErpOrderUpsertCommand
 import com.otoki.powersales.order.service.dto.ErpOrderUpsertFailedRow
 import com.otoki.powersales.order.service.dto.ErpOrderUpsertResult
-import com.otoki.powersales.sap.auth.audit.SapInboundAudit
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditEventType
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.sap.inbound.dto.order.ErpOrderItemDetail
 import com.otoki.powersales.sap.inbound.dto.order.ErpOrderRequestItem
 import org.assertj.core.api.Assertions.assertThat
@@ -23,15 +20,16 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
+/**
+ * Spec #639: REQUEST_ACCEPTED audit 검증은 SapInboundAuditAspectTest 가 책임.
+ * 본 테스트는 어댑터의 도메인 호출 / DTO 매핑 / 응답 매핑만 검증.
+ */
 @ExtendWith(MockitoExtension::class)
 @DisplayName("SapErpOrderService 어댑터 테스트")
 class SapErpOrderServiceTest {
 
     @Mock
     private lateinit var erpOrderUpsertService: ErpOrderUpsertService
-
-    @Mock
-    private lateinit var auditService: SapInboundAuditService
 
     @InjectMocks
     private lateinit var service: SapErpOrderService
@@ -67,8 +65,8 @@ class SapErpOrderServiceTest {
     inner class AdapterResponsibilities {
 
         @Test
-        @DisplayName("happy: 도메인 결과 (header=1, line=1, failures=0) → ErpOrderDetail successCount=1 + audit")
-        fun happy_domainResultMappedAndAudit() {
+        @DisplayName("happy: 도메인 결과 (header=1, line=1, failures=0) → ErpOrderDetail successCount=1")
+        fun happy_domainResultMapped() {
             whenever(erpOrderUpsertService.upsert(any())).thenReturn(
                 ErpOrderUpsertResult(headerSuccessCount = 1, lineSuccessCount = 1, failures = emptyList())
             )
@@ -77,11 +75,6 @@ class SapErpOrderServiceTest {
 
             assertThat(detail.successCount).isEqualTo(1)
             assertThat(detail.failureCount).isEqualTo(0)
-
-            val auditCaptor = argumentCaptor<SapInboundAudit>()
-            verify(auditService).record(auditCaptor.capture())
-            assertThat(auditCaptor.firstValue.eventType).isEqualTo(SapInboundAuditEventType.REQUEST_ACCEPTED)
-            assertThat(auditCaptor.firstValue.reason).isEqualTo("success=1 failure=0")
         }
 
         @Test
@@ -109,17 +102,13 @@ class SapErpOrderServiceTest {
         }
 
         @Test
-        @DisplayName("도메인 throw (라인 ConstraintViolation 시뮬): 실패 audit 후 예외 재전파")
-        fun domainThrow_failureAuditAndRethrow() {
+        @DisplayName("도메인 throw (라인 ConstraintViolation 시뮬): 어댑터는 catch 하지 않고 그대로 재전파")
+        fun domainThrow_propagated() {
             whenever(erpOrderUpsertService.upsert(any()))
                 .thenThrow(IllegalStateException("constraint violation"))
 
             assertThatThrownBy { service.upsert(listOf(header())) }
                 .isInstanceOf(IllegalStateException::class.java)
-
-            val auditCaptor = argumentCaptor<SapInboundAudit>()
-            verify(auditService).record(auditCaptor.capture())
-            assertThat(auditCaptor.firstValue.reason).isEqualTo("success=0 failure=1")
         }
 
         @Test

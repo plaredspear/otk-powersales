@@ -1,5 +1,6 @@
 package com.otoki.powersales.sap.inbound.dto.employee
 
+import com.otoki.powersales.sap.inbound.dto.SapInboundUpsertResult
 import tools.jackson.databind.PropertyNamingStrategies
 import tools.jackson.databind.annotation.JsonNaming
 
@@ -10,10 +11,10 @@ import tools.jackson.databind.annotation.JsonNaming
  */
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
 data class EmployeeMasterDetail(
-    val successCount: Int,
-    val failureCount: Int,
+    override val successCount: Int,
+    override val failureCount: Int,
     val failures: List<FailureItem>
-)
+) : SapInboundUpsertResult
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
 data class FailureItem(

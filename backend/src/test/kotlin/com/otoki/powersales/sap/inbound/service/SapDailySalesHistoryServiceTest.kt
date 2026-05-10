@@ -4,9 +4,6 @@ import com.otoki.powersales.sales.service.DailySalesHistoryUpsertService
 import com.otoki.powersales.sales.service.dto.DailySalesHistoryUpsertCommand
 import com.otoki.powersales.sales.service.dto.DailySalesHistoryUpsertFailedRow
 import com.otoki.powersales.sales.service.dto.DailySalesHistoryUpsertResult
-import com.otoki.powersales.sap.auth.audit.SapInboundAudit
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditEventType
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.sap.inbound.dto.sales.ChunkResult
 import com.otoki.powersales.sap.inbound.dto.sales.DailySalesHistoryRequestItem
 import com.otoki.powersales.sap.inbound.exception.SapPayloadTooLargeException
@@ -25,15 +22,16 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
+/**
+ * Spec #639: REQUEST_ACCEPTED audit 검증은 SapInboundAuditAspectTest 가 책임.
+ * 본 테스트는 어댑터의 도메인 호출 / DTO 매핑 / 청크 분할 / 응답 매핑만 검증.
+ */
 @ExtendWith(MockitoExtension::class)
 @DisplayName("SapDailySalesHistoryService 어댑터 테스트")
 class SapDailySalesHistoryServiceTest {
 
     @Mock
     private lateinit var dailySalesHistoryUpsertService: DailySalesHistoryUpsertService
-
-    @Mock
-    private lateinit var auditService: SapInboundAuditService
 
     private lateinit var service: SapDailySalesHistoryService
 
@@ -44,7 +42,6 @@ class SapDailySalesHistoryServiceTest {
         service = SapDailySalesHistoryService(
             dailySalesHistoryUpsertService = dailySalesHistoryUpsertService,
             chunkedUpsertHelper = helper,
-            auditService = auditService,
             chunkSize = 3,
             maxRows = 100
         )
@@ -75,15 +72,10 @@ class SapDailySalesHistoryServiceTest {
             assertThat(detail.failureCount).isEqualTo(0)
             assertThat(detail.chunks).hasSize(1)
             assertThat(detail.chunks.single().status).isEqualTo(ChunkResult.STATUS_SUCCESS)
-
-            val auditCaptor = argumentCaptor<SapInboundAudit>()
-            verify(auditService).record(auditCaptor.capture())
-            assertThat(auditCaptor.firstValue.eventType).isEqualTo(SapInboundAuditEventType.REQUEST_ACCEPTED)
-            assertThat(auditCaptor.firstValue.reason).isEqualTo("success=1 failure=0 chunks=1")
         }
 
         @Test
-        @DisplayName("청크 분할: 5건 / chunkSize=3 → 2 chunks (3+2), 도메인 호출 2회, audit chunks=2")
+        @DisplayName("청크 분할: 5건 / chunkSize=3 → 2 chunks (3+2), 도메인 호출 2회")
         fun chunkSplit_callsDomainPerChunk() {
             val items = (1..5).map { item(salesDate = "2026042$it") }
             whenever(dailySalesHistoryUpsertService.upsert(any())).thenAnswer { invocation ->
@@ -100,10 +92,7 @@ class SapDailySalesHistoryServiceTest {
             assertThat(detail.chunks[1].count).isEqualTo(2)
             assertThat(detail.chunks).allMatch { it.status == ChunkResult.STATUS_SUCCESS }
             verify(dailySalesHistoryUpsertService, org.mockito.kotlin.times(2)).upsert(any())
-
-            val auditCaptor = argumentCaptor<SapInboundAudit>()
-            verify(auditService).record(auditCaptor.capture())
-            assertThat(auditCaptor.firstValue.reason).isEqualTo("success=5 failure=0 chunks=2")
+            assertThat(detail.chunkCount).isEqualTo(2)
         }
 
         @Test

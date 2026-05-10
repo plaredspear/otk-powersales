@@ -1,9 +1,11 @@
 package com.otoki.powersales.sap.inbound.dto.attendance
 
-import tools.jackson.databind.PropertyNamingStrategies
-import tools.jackson.databind.annotation.JsonNaming
+import com.fasterxml.jackson.annotation.JsonIgnore
+import com.otoki.powersales.sap.inbound.dto.SapInboundChunkedResult
 import com.otoki.powersales.sap.inbound.dto.sales.ChunkResult
 import com.otoki.powersales.sap.inbound.dto.sales.FailureItem
+import tools.jackson.databind.PropertyNamingStrategies
+import tools.jackson.databind.annotation.JsonNaming
 
 /**
  * SAP 출근 정보 인바운드 응답의 RESULT_DETAIL 페이로드. (Spec #562, #553)
@@ -15,12 +17,19 @@ import com.otoki.powersales.sap.inbound.dto.sales.FailureItem
  * `null` 가능, 변환은 호출되었으나 실제 변환 0건이면 모든 카운트 0 인 객체.
  *
  * SAP 호환 보존을 위해 RESULT_DETAIL 내부 키는 SnakeCase 로 직렬화된다 (Spec #580 P1-B).
+ *
+ * Spec #639: [SapInboundChunkedResult] 구현 — `chunkCount` 는 `chunks.size` 에서 파생되며
+ * 외부 응답 JSON 에는 포함되지 않는다 (`@get:JsonIgnore` — 본 필드는 [com.otoki.powersales.sap.auth.audit.SapInboundAuditAspect]
+ * 의 audit reason 추출 전용).
  */
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
 data class AttendInfoDetail(
-    val successCount: Int,
-    val failureCount: Int,
+    override val successCount: Int,
+    override val failureCount: Int,
     val failures: List<FailureItem>,
     val chunks: List<ChunkResult>,
     val scheduleConversion: ScheduleConversionSummary? = null
-)
+) : SapInboundChunkedResult {
+    @get:JsonIgnore
+    override val chunkCount: Int get() = chunks.size
+}

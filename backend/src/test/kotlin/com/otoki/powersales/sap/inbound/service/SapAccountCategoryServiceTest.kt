@@ -4,9 +4,6 @@ import com.otoki.powersales.account.service.AccountCategoryUpsertService
 import com.otoki.powersales.account.service.dto.AccountCategoryUpsertCommand
 import com.otoki.powersales.account.service.dto.AccountCategoryUpsertFailedRow
 import com.otoki.powersales.account.service.dto.AccountCategoryUpsertResult
-import com.otoki.powersales.sap.auth.audit.SapInboundAudit
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditEventType
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.sap.inbound.dto.account.AccountCategoryRequestItem
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -22,15 +19,16 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
+/**
+ * Spec #639: REQUEST_ACCEPTED audit 검증은 SapInboundAuditAspectTest 가 책임.
+ * 본 테스트는 어댑터의 도메인 호출 / DTO 매핑 / 응답 매핑만 검증.
+ */
 @ExtendWith(MockitoExtension::class)
 @DisplayName("SapAccountCategoryService 어댑터 테스트")
 class SapAccountCategoryServiceTest {
 
     @Mock
     private lateinit var accountCategoryUpsertService: AccountCategoryUpsertService
-
-    @Mock
-    private lateinit var auditService: SapInboundAuditService
 
     @InjectMocks
     private lateinit var service: SapAccountCategoryService
@@ -40,8 +38,8 @@ class SapAccountCategoryServiceTest {
     inner class AdapterResponsibilities {
 
         @Test
-        @DisplayName("happy: 도메인 결과 (success=2, failure=0) → AccountMasterDetail + audit reason='success=2 failure=0'")
-        fun happy_domainResultMappedAndAudit() {
+        @DisplayName("happy: 도메인 결과 (success=2, failure=0) → AccountMasterDetail")
+        fun happy_domainResultMapped() {
             val items = listOf(
                 AccountCategoryRequestItem(accountCode = "Z001", name = "일반거래처"),
                 AccountCategoryRequestItem(accountCode = "Z002", name = "위탁거래처")
@@ -55,13 +53,6 @@ class SapAccountCategoryServiceTest {
             assertThat(detail.successCount).isEqualTo(2)
             assertThat(detail.failureCount).isEqualTo(0)
             assertThat(detail.failures).isEmpty()
-
-            val auditCaptor = argumentCaptor<SapInboundAudit>()
-            verify(auditService).record(auditCaptor.capture())
-            val audit = auditCaptor.firstValue
-            assertThat(audit.eventType).isEqualTo(SapInboundAuditEventType.REQUEST_ACCEPTED)
-            assertThat(audit.receivedCount).isEqualTo(2)
-            assertThat(audit.reason).isEqualTo("success=2 failure=0")
         }
 
         @Test
@@ -86,15 +77,11 @@ class SapAccountCategoryServiceTest {
             assertThat(detail.failures).hasSize(1)
             assertThat(detail.failures.single().identifier).isEqualTo("Z002")
             assertThat(detail.failures.single().reason).isEqualTo("Name 필수")
-
-            val auditCaptor = argumentCaptor<SapInboundAudit>()
-            verify(auditService).record(auditCaptor.capture())
-            assertThat(auditCaptor.firstValue.reason).isEqualTo("success=1 failure=1")
         }
 
         @Test
-        @DisplayName("도메인 throw: 실패 audit (reason='success=0 failure=<received>') 후 예외 재전파")
-        fun domainThrow_failureAuditAndRethrow() {
+        @DisplayName("도메인 throw: 어댑터는 catch 하지 않고 그대로 재전파 (audit 은 Aspect 책임)")
+        fun domainThrow_propagated() {
             val items = listOf(
                 AccountCategoryRequestItem(accountCode = "Z001", name = "일반"),
                 AccountCategoryRequestItem(accountCode = "Z002", name = "위탁")
@@ -105,12 +92,6 @@ class SapAccountCategoryServiceTest {
             assertThatThrownBy { service.upsert(items) }
                 .isInstanceOf(IllegalStateException::class.java)
                 .hasMessage("DB connection lost")
-
-            val auditCaptor = argumentCaptor<SapInboundAudit>()
-            verify(auditService).record(auditCaptor.capture())
-            val audit = auditCaptor.firstValue
-            assertThat(audit.receivedCount).isEqualTo(2)
-            assertThat(audit.reason).isEqualTo("success=0 failure=2")
         }
 
         @Test
