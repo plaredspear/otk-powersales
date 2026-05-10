@@ -4,9 +4,12 @@ import com.otoki.powersales.account.dto.request.AdminAccountCreateRequest
 import com.otoki.powersales.account.dto.response.AccountListItem
 import com.otoki.powersales.account.dto.response.AccountListResponse
 import com.otoki.powersales.account.dto.response.AdminAccountCreateResponse
+import com.otoki.powersales.account.exception.AccountDeleteBlockedSapSyncedException
 import com.otoki.powersales.account.exception.AccountNameDuplicateException
 import com.otoki.powersales.account.exception.AccountNamePrefixRequiredException
+import com.otoki.powersales.account.exception.AccountNotFoundException
 import com.otoki.powersales.account.service.AccountCreateService
+import com.otoki.powersales.account.service.AccountDeleteService
 import com.otoki.powersales.account.service.AdminAccountService
 import com.otoki.powersales.admin.scope.DataScopeHolder
 import com.otoki.powersales.admin.security.AdminAuthorityFilter
@@ -33,6 +36,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -54,6 +58,9 @@ class AdminAccountControllerTest {
 
     @MockitoBean
     private lateinit var accountCreateService: AccountCreateService
+
+    @MockitoBean
+    private lateinit var accountDeleteService: AccountDeleteService
 
     @MockitoBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
@@ -258,6 +265,55 @@ class AdminAccountControllerTest {
                 .andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.error.code").value("ACCOUNT_NAME_PREFIX_REQUIRED"))
                 .andExpect(jsonPath("$.error.message").value("신규 거래처 등록은 ((신규)/(기타)) 중 1개를 필수로 입력하셔야 합니다."))
+        }
+    }
+
+    @Nested
+    @DisplayName("DELETE /api/v1/admin/accounts/{id} - 거래처 삭제 (Spec #642)")
+    inner class DeleteAccount {
+
+        @Test
+        @DisplayName("C1 성공 - 정상 삭제 (200 OK + camelCase 응답)")
+        fun deleteAccount_success() {
+            mockMvc.perform(delete("/api/v1/admin/accounts/{id}", 1234))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("거래처 삭제 성공"))
+        }
+
+        @Test
+        @DisplayName("C4 실패 - SAP 동기 거래처 삭제 시도 → 409 ACCOUNT_DELETE_BLOCKED_SAP_SYNCED")
+        fun deleteAccount_sapSyncedBlocked() {
+            org.mockito.kotlin.doThrow(AccountDeleteBlockedSapSyncedException())
+                .whenever(accountDeleteService).delete(eq(1234))
+
+            mockMvc.perform(delete("/api/v1/admin/accounts/{id}", 1234))
+                .andExpect(status().isConflict)
+                .andExpect(jsonPath("$.error.code").value("ACCOUNT_DELETE_BLOCKED_SAP_SYNCED"))
+                .andExpect(jsonPath("$.error.message").value("거래처 코드가 있는 거래처는 삭제할 수 없습니다."))
+        }
+
+        @Test
+        @DisplayName("C5 실패 - 존재하지 않는 id → 404 ACCOUNT_NOT_FOUND")
+        fun deleteAccount_notFound() {
+            org.mockito.kotlin.doThrow(AccountNotFoundException())
+                .whenever(accountDeleteService).delete(eq(9999))
+
+            mockMvc.perform(delete("/api/v1/admin/accounts/{id}", 9999))
+                .andExpect(status().isNotFound)
+                .andExpect(jsonPath("$.error.code").value("ACCOUNT_NOT_FOUND"))
+                .andExpect(jsonPath("$.error.message").value("거래처를 찾을 수 없습니다."))
+        }
+
+        @Test
+        @DisplayName("C6 실패 - 이미 삭제된 id 재요청 → 404 ACCOUNT_NOT_FOUND (멱등)")
+        fun deleteAccount_alreadyDeletedIdempotent() {
+            org.mockito.kotlin.doThrow(AccountNotFoundException())
+                .whenever(accountDeleteService).delete(eq(1234))
+
+            mockMvc.perform(delete("/api/v1/admin/accounts/{id}", 1234))
+                .andExpect(status().isNotFound)
+                .andExpect(jsonPath("$.error.code").value("ACCOUNT_NOT_FOUND"))
         }
     }
 }

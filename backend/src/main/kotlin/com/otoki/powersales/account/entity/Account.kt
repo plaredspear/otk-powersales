@@ -143,7 +143,7 @@ class Account(
 
     @HCColumn("isdeleted")
     @Column(name = "is_deleted")
-    val isDeleted: Boolean? = null,
+    var isDeleted: Boolean? = null,
 
     // --- Spec #142: SAP 거래처 마스터 동기화 추가 컬럼 ---
     // Spec #602: SF Type picklist 매핑 + AccountType enum 도입 (Q5/Q5-1: DB 한국어 원본 + @Convert)

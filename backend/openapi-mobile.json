@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:60096",
+    "url" : "http://localhost:56847",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -3259,17 +3259,17 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
-          },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
           },
           "size" : {
             "type" : "integer",
@@ -3293,19 +3293,19 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
-          "pageNumber" : {
-            "type" : "integer",
-            "format" : "int32"
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "pageSize" : {
             "type" : "integer",
             "format" : "int32"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "paged" : {
             "type" : "boolean"
+          },
+          "pageNumber" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "unpaged" : {
             "type" : "boolean"
@@ -3345,10 +3345,10 @@
       "SortObject" : {
         "type" : "object",
         "properties" : {
-          "sorted" : {
+          "unsorted" : {
             "type" : "boolean"
           },
-          "unsorted" : {
+          "sorted" : {
             "type" : "boolean"
           },
           "empty" : {
