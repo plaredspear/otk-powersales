@@ -43,7 +43,7 @@ export default function PasswordResetModal({ employee, open, onClose }: Password
       cancelText="취소"
       okButtonProps={{ danger: true }}
       confirmLoading={mutation.isPending}
-      destroyOnClose
+      destroyOnHidden
     >
       <Paragraph>다음 사원의 비밀번호를 임시 비밀번호로 초기화합니다.</Paragraph>
       <Paragraph>

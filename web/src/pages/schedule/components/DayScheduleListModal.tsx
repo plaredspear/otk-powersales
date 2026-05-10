@@ -80,7 +80,7 @@ export function DayScheduleListModal({
       onCancel={onClose}
       footer={null}
       width={800}
-      destroyOnClose
+      destroyOnHidden
     >
       {daySchedules.length === 0 ? (
         <Empty description="등록된 일정이 없습니다" />
