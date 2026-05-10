@@ -42,3 +42,38 @@ export async function fetchAccounts(params: FetchAccountsParams): Promise<Accoun
   }
   return res.data.data;
 }
+
+// --- 신규 거래처 등록 (Spec #640 P2-W) ---
+
+export interface AdminAccountCreateRequest {
+  name: string;
+  employeeCode: string;
+}
+
+export interface AdminAccountCreateResponseData {
+  id: number;
+  name: string;
+  accountGroup: string;
+  employeeCode: string;
+  branchCode: string | null;
+  branchName: string | null;
+}
+
+/**
+ * 관리자 웹 신규 거래처 등록 (Spec #640 P1-B 엔드포인트 호출).
+ *
+ * Backend `POST /api/v1/admin/accounts` (`ACCOUNT_WRITE` 권한 필요).
+ * 에러는 axios 가 throw — 호출 측에서 `error.response.data.error.code` 분기.
+ */
+export async function createAdminAccount(
+  payload: AdminAccountCreateRequest,
+): Promise<AdminAccountCreateResponseData> {
+  const res = await client.post<ApiResponse<AdminAccountCreateResponseData>>(
+    '/api/v1/admin/accounts',
+    payload,
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '거래처 등록에 실패했습니다');
+  }
+  return res.data.data;
+}
