@@ -115,12 +115,19 @@ class AccountUpsertMapper {
         account.salesDeptCostCenter = command.salesDeptCode
         account.divisionCostCenter = command.divisionCode
 
-        // 지점 코드/명: Organization 매칭 시 OrgCode/OrgName 의 deepest non-blank 값을 우선 사용,
-        // 매칭 실패 시 페이로드 raw 값을 그대로 저장한다 (레거시 폴백 동작과 동일).
+        // 지점/사업부/영업부 코드: Organization 매칭 시 OrgCode 의 deepest non-blank 값(Level5 → 4 → 3)을 적재.
+        // 매칭 실패 시 distinction:
+        //  - branchCode: 페이로드 raw fallback (spec #641 §7-A.8 의도된 deviation — 레거시는 set 안 함, 신규는 trace 정밀도 향상 목적 raw 보존).
+        //  - divisionCode / salesDeptCode: NULL 유지 (페이로드 raw 는 별도 컬럼 divisionCostCenter / salesDeptCostCenter 에 보존되므로 중복 적재 회피).
+        // branchName: Organization 매칭 시 OrgName 우선 + 매칭 실패 시 페이로드 raw fallback (spec #641 §7-A.8 박제 — 레거시는 페이로드 raw 만 set Org 매칭 결과로 덮어쓰지 않음, 신규는 OrgName 우선 + raw fallback).
+        // branchCostCenter: 페이로드 raw 보존 (Org 매칭 무관) — 레거시 IF_REST_SAP_ClientMasterReceive.cls:138 정합 (acc.BranchCostCenter__c = obj.BranchCode raw).
+        account.divisionCode = matchedOrg?.let { firstNonBlank(it.orgCodeLevel5, it.orgCodeLevel4, it.orgCodeLevel3) }
+        account.salesDeptCode = matchedOrg?.let { firstNonBlank(it.orgCodeLevel5, it.orgCodeLevel4, it.orgCodeLevel3) }
         account.branchCode = matchedOrg?.let { firstNonBlank(it.orgCodeLevel5, it.orgCodeLevel4, it.orgCodeLevel3) }
             ?: command.branchCode?.takeIf { it.isNotBlank() }
         account.branchName = matchedOrg?.let { firstNonBlank(it.orgNameLevel5, it.orgNameLevel4, it.orgNameLevel3) }
             ?: command.branchName?.takeIf { it.isNotBlank() }
+        account.branchCostCenter = command.branchCode?.takeIf { it.isNotBlank() }
     }
 
     private fun firstNonBlank(vararg values: String?): String? =
