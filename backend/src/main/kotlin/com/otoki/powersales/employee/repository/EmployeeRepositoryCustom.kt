@@ -29,4 +29,13 @@ interface EmployeeRepositoryCustom {
         role: UserRole?,
         pageable: Pageable
     ): Page<Employee>
+
+    /**
+     * 동의 플래그 활성 사원 일괄 false 갱신 (스펙 #654 / GPS 재동의 cycle batch — Q2 좁히기).
+     *
+     * 레거시 매핑: `AgreementWordBatch.cls:64-72` cascade reset.
+     * 신규 차이: legacy 의 전 사원 SOQL → `WHERE agreement_flag=true` 좁히기. legacy `cls:70` 들여쓰기 버그 자연 회피.
+     * 반환값: 영향받은 row 수 (운영 로그용).
+     */
+    fun resetAgreementFlagForActiveConsents(): Long
 }

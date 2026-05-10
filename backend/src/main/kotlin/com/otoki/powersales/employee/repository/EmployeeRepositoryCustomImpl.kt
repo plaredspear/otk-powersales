@@ -141,4 +141,12 @@ class EmployeeRepositoryCustomImpl(
             countQuery.fetchOne() ?: 0L
         }
     }
+
+    override fun resetAgreementFlagForActiveConsents(): Long {
+        return queryFactory
+            .update(employee)
+            .set(employee.agreementFlag, false)
+            .where(employee.agreementFlag.isTrue)
+            .execute()
+    }
 }
