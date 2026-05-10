@@ -30,6 +30,20 @@ class FileStorageService(
 	}
 
 	/**
+	 * 공지사항 첨부 이미지 업로드. 신규 객체는 S3 키 형식(`uploads/notice/<yyyy>/<mm>/<dd>/<uuid>.<ext>`)으로 저장된다.
+	 */
+	fun uploadNoticeImage(file: MultipartFile, noticeId: Long): String {
+		validateNotEmpty(file)
+		val result = storageService.upload(
+			domain = "notice",
+			originalName = file.originalFilename ?: "unknown",
+			bytes = file.bytes,
+			contentType = file.contentType ?: throw InvalidFileException("파일 타입을 확인할 수 없습니다")
+		)
+		return result.key
+	}
+
+	/**
 	 * 교육 자료 파일 업로드. 신규 객체는 S3 키 형식(`uploads/education/<yyyy>/<mm>/<dd>/<uuid>.<ext>`)으로 저장된다.
 	 */
 	fun uploadEducationFile(file: MultipartFile, eduId: String): String {

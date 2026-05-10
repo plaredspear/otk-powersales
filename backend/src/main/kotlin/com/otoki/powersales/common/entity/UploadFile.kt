@@ -70,7 +70,7 @@ class UploadFile(
 
     @HCColumn("isdeleted")
     @Column(name = "is_deleted")
-    val isDeleted: Boolean? = null,
+    var isDeleted: Boolean? = null,
 
     @HCColumn("createddate")
     @CreatedDate

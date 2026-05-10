@@ -15,11 +15,14 @@ import com.otoki.powersales.notice.dto.response.CategoryOption
 import com.otoki.powersales.notice.dto.response.NoticeFormMetaResponse
 import com.otoki.powersales.notice.dto.response.NoticeMutationResponse
 import com.otoki.powersales.notice.dto.response.NoticePostDetailResponse
+import com.otoki.powersales.notice.dto.response.NoticeImageResponse
 import com.otoki.powersales.notice.dto.response.NoticePostListResponse
 import com.otoki.powersales.notice.dto.response.NoticePostSummaryResponse
 import com.otoki.powersales.notice.exception.BranchRequiredException
+import com.otoki.powersales.notice.exception.InvalidImageIdException
 import com.otoki.powersales.notice.exception.InvalidNoticeCategoryException
 import com.otoki.powersales.notice.exception.NoticePostNotFoundException
+import org.springframework.mock.web.MockMultipartFile
 import com.otoki.powersales.notice.service.NoticeService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -335,6 +338,69 @@ class AdminNoticeControllerTest {
             mockMvc.perform(delete("/api/v1/admin/notices/999"))
                 .andExpect(status().isNotFound)
                 .andExpect(jsonPath("$.error.code").value("NOTICE_NOT_FOUND"))
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/v1/admin/notices/{noticeId}/images - 첨부 업로드")
+    inner class UploadNoticeImage {
+
+        @Test
+        @DisplayName("성공 - multipart 파일 업로드 + 201 + NoticeImageResponse 반환")
+        fun uploadNoticeImage_success() {
+            val response = NoticeImageResponse(
+                id = 555L,
+                url = "https://test-bucket.s3.ap-northeast-2.amazonaws.com/uploads/notice/2026/05/11/abc.png",
+                sortOrder = 0
+            )
+            whenever(noticeService.uploadNoticeImage(eq(42L), any())).thenReturn(response)
+
+            val file = MockMultipartFile("image", "photo.png", "image/png", ByteArray(2048))
+
+            mockMvc.perform(
+                multipart("/api/v1/admin/notices/42/images").file(file)
+            )
+                .andExpect(status().isCreated)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(555))
+                .andExpect(jsonPath("$.data.url").value("https://test-bucket.s3.ap-northeast-2.amazonaws.com/uploads/notice/2026/05/11/abc.png"))
+                .andExpect(jsonPath("$.data.sortOrder").value(0))
+        }
+
+        @Test
+        @DisplayName("실패 - 미존재 공지")
+        fun uploadNoticeImage_noticeNotFound() {
+            whenever(noticeService.uploadNoticeImage(eq(999L), any())).thenThrow(NoticePostNotFoundException())
+
+            val file = MockMultipartFile("image", "photo.png", "image/png", ByteArray(100))
+
+            mockMvc.perform(multipart("/api/v1/admin/notices/999/images").file(file))
+                .andExpect(status().isNotFound)
+                .andExpect(jsonPath("$.error.code").value("NOTICE_NOT_FOUND"))
+        }
+    }
+
+    @Nested
+    @DisplayName("DELETE /api/v1/admin/notices/{noticeId}/images/{imageId} - 첨부 삭제")
+    inner class DeleteNoticeImage {
+
+        @Test
+        @DisplayName("성공 - 첨부 삭제 + 200 + 메시지 반환")
+        fun deleteNoticeImage_success() {
+            mockMvc.perform(delete("/api/v1/admin/notices/42/images/200"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("첨부 이미지가 삭제되었습니다"))
+        }
+
+        @Test
+        @DisplayName("실패 - imageId 미존재 또는 parent 불일치")
+        fun deleteNoticeImage_invalidImageId() {
+            whenever(noticeService.deleteNoticeImage(42L, 999L)).thenThrow(InvalidImageIdException())
+
+            mockMvc.perform(delete("/api/v1/admin/notices/42/images/999"))
+                .andExpect(status().isNotFound)
+                .andExpect(jsonPath("$.error.code").value("INVALID_IMAGE_ID"))
         }
     }
 }
