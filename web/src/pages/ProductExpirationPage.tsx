@@ -485,7 +485,7 @@ function CreateModal({
       open={open}
       onCancel={handleCancel}
       footer={null}
-      destroyOnClose
+      destroyOnHidden
     >
       <Form form={form} layout="vertical" onFinish={handleFinish}>
         <Form.Item name="employeeCode" label="사원" rules={[{ required: true, message: '사원을 선택해주세요' }]}>
@@ -598,7 +598,7 @@ function EditModal({
       open={open}
       onCancel={onClose}
       footer={null}
-      destroyOnClose
+      destroyOnHidden
     >
       {record && (
         <Form

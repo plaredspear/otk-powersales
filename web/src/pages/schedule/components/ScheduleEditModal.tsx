@@ -144,7 +144,7 @@ export function ScheduleEditModal({
       title={readOnly ? '일정 상세' : '일정 수정'}
       open={open}
       onCancel={onClose}
-      destroyOnClose
+      destroyOnHidden
       footer={
         readOnly ? (
           <Button onClick={onClose}>닫기</Button>

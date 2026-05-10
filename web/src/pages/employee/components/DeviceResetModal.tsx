@@ -40,7 +40,7 @@ export default function DeviceResetModal({ employee, open, onClose }: DeviceRese
       cancelText="취소"
       okButtonProps={{ danger: true }}
       confirmLoading={mutation.isPending}
-      destroyOnClose
+      destroyOnHidden
     >
       <Paragraph>다음 사원의 단말 바인딩을 초기화합니다.</Paragraph>
       <Paragraph>
