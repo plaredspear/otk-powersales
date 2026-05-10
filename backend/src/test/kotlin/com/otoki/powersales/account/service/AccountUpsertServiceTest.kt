@@ -412,6 +412,137 @@ class AccountUpsertServiceTest {
     }
 
     @Nested
+    @DisplayName("Spec #646 - Org Code 트리오 매핑 (divisionCode/salesDeptCode/branchCostCenter)")
+    inner class UpsertOrgCodeTrio {
+
+        @Test
+        @DisplayName("O1 Org Level5 매칭 - divisionCode/salesDeptCode/branchCode 모두 ORG5, branchCostCenter=raw")
+        fun upsert_orgCodeTrio_level5Match() {
+            val org = organization(
+                cc5 = "BR001",
+                oc3 = "ORG3", oc4 = "ORG4", oc5 = "ORG5",
+                on3 = "사업부", on4 = "영업팀", on5 = "지점"
+            )
+            whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
+            whenever(organizationRepository.findAll()).thenReturn(listOf(org))
+
+            service.upsert(
+                listOf(
+                    command(
+                        branchCode = "BR001",
+                        divisionCode = "DIV1",
+                        salesDeptCode = "SD1"
+                    )
+                )
+            )
+
+            val captor = argumentCaptor<List<Account>>()
+            verify(accountRepository).saveAll(captor.capture())
+            val saved = captor.firstValue.single()
+            assertThat(saved.divisionCode).isEqualTo("ORG5")
+            assertThat(saved.salesDeptCode).isEqualTo("ORG5")
+            assertThat(saved.branchCode).isEqualTo("ORG5")
+            assertThat(saved.branchCostCenter).isEqualTo("BR001")
+            assertThat(saved.divisionCostCenter).isEqualTo("DIV1")
+            assertThat(saved.salesDeptCostCenter).isEqualTo("SD1")
+        }
+
+        @Test
+        @DisplayName("O2 Org Level4 매칭 (Level5 blank) - 트리오 모두 ORG4")
+        fun upsert_orgCodeTrio_level4Match() {
+            val org = organization(
+                cc5 = "BR001",
+                oc3 = "ORG3", oc4 = "ORG4", oc5 = "",
+                on3 = "사업부", on4 = "영업팀", on5 = ""
+            )
+            whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
+            whenever(organizationRepository.findAll()).thenReturn(listOf(org))
+
+            service.upsert(
+                listOf(
+                    command(
+                        branchCode = "BR001",
+                        divisionCode = "DIV1",
+                        salesDeptCode = "SD1"
+                    )
+                )
+            )
+
+            val captor = argumentCaptor<List<Account>>()
+            verify(accountRepository).saveAll(captor.capture())
+            val saved = captor.firstValue.single()
+            assertThat(saved.divisionCode).isEqualTo("ORG4")
+            assertThat(saved.salesDeptCode).isEqualTo("ORG4")
+            assertThat(saved.branchCode).isEqualTo("ORG4")
+            assertThat(saved.branchCostCenter).isEqualTo("BR001")
+        }
+
+        @Test
+        @DisplayName("O3 Org Level3 매칭 (Level5/4 blank) - 트리오 모두 ORG3")
+        fun upsert_orgCodeTrio_level3Match() {
+            val org = organization(
+                cc5 = "BR001",
+                oc3 = "ORG3", oc4 = "", oc5 = "",
+                on3 = "사업부", on4 = "", on5 = ""
+            )
+            whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
+            whenever(organizationRepository.findAll()).thenReturn(listOf(org))
+
+            service.upsert(
+                listOf(
+                    command(
+                        branchCode = "BR001",
+                        divisionCode = "DIV1",
+                        salesDeptCode = "SD1"
+                    )
+                )
+            )
+
+            val captor = argumentCaptor<List<Account>>()
+            verify(accountRepository).saveAll(captor.capture())
+            val saved = captor.firstValue.single()
+            assertThat(saved.divisionCode).isEqualTo("ORG3")
+            assertThat(saved.salesDeptCode).isEqualTo("ORG3")
+            assertThat(saved.branchCode).isEqualTo("ORG3")
+            assertThat(saved.branchCostCenter).isEqualTo("BR001")
+        }
+
+        @Test
+        @DisplayName("O4 Org 미매칭 - divisionCode/salesDeptCode=null, branchCode=raw, branchCostCenter=raw")
+        fun upsert_orgCodeTrio_noMatch() {
+            whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
+            whenever(organizationRepository.findAll()).thenReturn(emptyList())
+
+            service.upsert(listOf(command(branchCode = "BR999")))
+
+            val captor = argumentCaptor<List<Account>>()
+            verify(accountRepository).saveAll(captor.capture())
+            val saved = captor.firstValue.single()
+            assertThat(saved.divisionCode).isNull()
+            assertThat(saved.salesDeptCode).isNull()
+            assertThat(saved.branchCode).isEqualTo("BR999")
+            assertThat(saved.branchCostCenter).isEqualTo("BR999")
+        }
+
+        @Test
+        @DisplayName("O5 branchCode 빈값 - 트리오 + branchCode + branchCostCenter 모두 null")
+        fun upsert_orgCodeTrio_blankBranchCode() {
+            whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
+            whenever(organizationRepository.findAll()).thenReturn(emptyList())
+
+            service.upsert(listOf(command(branchCode = "")))
+
+            val captor = argumentCaptor<List<Account>>()
+            verify(accountRepository).saveAll(captor.capture())
+            val saved = captor.firstValue.single()
+            assertThat(saved.branchCode).isNull()
+            assertThat(saved.branchCostCenter).isNull()
+            assertThat(saved.divisionCode).isNull()
+            assertThat(saved.salesDeptCode).isNull()
+        }
+    }
+
+    @Nested
     @DisplayName("Spec #644 - Owner FK 매핑")
     inner class UpsertOwnerFk {
 
