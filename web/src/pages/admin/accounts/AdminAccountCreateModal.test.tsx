@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AxiosError, AxiosHeaders } from 'axios';
@@ -147,10 +147,12 @@ describe('AdminAccountCreateModal (Spec #640 P2-W)', () => {
     await userEvent.type(screen.getByPlaceholderText('(신규) 강남점'), '강남점');
     await userEvent.click(screen.getByRole('button', { name: '등록' }));
 
-    await waitFor(() =>
-      expect(screen.getByText(/거래처명에 \(신규\) \/ \(기타\) 중 1개를 포함해 주세요\./)).toBeInTheDocument(),
-    );
-    expect(mockedCreate).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(screen.getByText(/거래처명에 \(신규\) \/ \(기타\) 중 1개를 포함해 주세요\./)).toBeInTheDocument();
+      expect(mockedCreate).not.toHaveBeenCalled();
+    });
+    // antd Form validate reject 후 ItemHolder state update flush 대기 (#643 W3/W4 동일)
+    await act(async () => {});
   });
 
   it('W4 employeeCode 미선택 — 등록 버튼 disabled', () => {

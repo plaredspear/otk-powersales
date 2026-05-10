@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AxiosError, AxiosHeaders } from 'axios';
@@ -215,10 +215,13 @@ describe('AdminAccountUpdateModal (Spec #643 P2-W)', () => {
 
     await userEvent.click(screen.getByRole('button', { name: '저장' }));
 
-    await waitFor(() =>
-      expect(screen.getByText('거래처명을 입력해 주세요.')).toBeInTheDocument(),
-    );
-    expect(mockedUpdate).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(screen.getByText('거래처명을 입력해 주세요.')).toBeInTheDocument();
+      expect(mockedUpdate).not.toHaveBeenCalled();
+    });
+    // antd Form validate reject 후 ItemHolder 의 후속 state update (errors map) flush 대기 —
+    // 이 act flush 가 없으면 테스트 종료 시점에 unwrapped state update 경고 발생.
+    await act(async () => {});
   });
 
   it('W4 name prefix 미포함 → Form validator 에러 메시지', async () => {
@@ -230,10 +233,12 @@ describe('AdminAccountUpdateModal (Spec #643 P2-W)', () => {
 
     await userEvent.click(screen.getByRole('button', { name: '저장' }));
 
-    await waitFor(() =>
-      expect(screen.getByText(/거래처명에 \(신규\) \/ \(기타\) 중 1개를 포함해 주세요\./)).toBeInTheDocument(),
-    );
-    expect(mockedUpdate).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(screen.getByText(/거래처명에 \(신규\) \/ \(기타\) 중 1개를 포함해 주세요\./)).toBeInTheDocument();
+      expect(mockedUpdate).not.toHaveBeenCalled();
+    });
+    // antd Form validate reject 후 ItemHolder state update flush 대기 (W3 동일)
+    await act(async () => {});
   });
 
   it('W6 Backend 409 ACCOUNT_NAME_DUPLICATE → notification + 인라인 에러', async () => {
