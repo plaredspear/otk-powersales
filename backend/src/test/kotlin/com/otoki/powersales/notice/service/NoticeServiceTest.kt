@@ -1,20 +1,25 @@
 package com.otoki.powersales.notice.service
 
+import com.otoki.powersales.common.entity.UploadFile
+import com.otoki.powersales.common.repository.UploadFileRepository
+import com.otoki.powersales.common.service.FileStorageService
+import com.otoki.powersales.common.storage.StorageService
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.notice.dto.request.NoticeCreateRequest
 import com.otoki.powersales.notice.dto.request.NoticeUpdateRequest
 import com.otoki.powersales.notice.entity.Notice
 import com.otoki.powersales.notice.entity.NoticeCategory
-import com.otoki.powersales.common.entity.UploadFile
 import com.otoki.powersales.notice.exception.BranchRequiredException
+import com.otoki.powersales.notice.exception.InvalidImageIdException
 import com.otoki.powersales.notice.exception.InvalidNoticeCategoryException
 import com.otoki.powersales.notice.exception.InvalidNoticeIdException
 import com.otoki.powersales.notice.exception.NoticePostNotFoundException
 import com.otoki.powersales.notice.repository.NoticeRepository
-import com.otoki.powersales.common.repository.UploadFileRepository
 import com.otoki.powersales.organization.entity.Organization
 import com.otoki.powersales.organization.repository.OrganizationRepository
+import org.springframework.mock.web.MockMultipartFile
+import org.springframework.web.multipart.MultipartFile
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -48,11 +53,25 @@ class NoticeServiceTest {
     @Mock
     private lateinit var organizationRepository: OrganizationRepository
 
+    @Mock
+    private lateinit var fileStorageService: FileStorageService
+
+    @Mock
+    private lateinit var storageService: StorageService
+
     private lateinit var noticeService: NoticeService
 
     @BeforeEach
     fun setUp() {
-        noticeService = NoticeService(noticeRepository, uploadFileRepository, employeeRepository, organizationRepository, "test-bucket")
+        noticeService = NoticeService(
+            noticeRepository,
+            uploadFileRepository,
+            employeeRepository,
+            organizationRepository,
+            fileStorageService,
+            storageService,
+            "test-bucket"
+        )
     }
 
     @Nested
@@ -697,6 +716,129 @@ class NoticeServiceTest {
 
             assertThat(result.categories).hasSize(3)
             assertThat(result.branches).isEmpty()
+        }
+    }
+
+    @Nested
+    @DisplayName("uploadNoticeImage - 첨부 이미지 업로드")
+    inner class UploadNoticeImageTests {
+
+        private fun mockImage(name: String = "photo.png", contentType: String = "image/png", bytes: ByteArray = ByteArray(2048)): MultipartFile =
+            MockMultipartFile("image", name, contentType, bytes)
+
+        @Test
+        @DisplayName("정상 업로드 - 활성 공지 + 유효 파일 -> NoticeImageResponse 반환 + UploadFile 적재")
+        fun uploadNoticeImage_success() {
+            // Given
+            val notice = createNotice(id = 100L, category = NoticeCategory.COMPANY)
+            whenever(noticeRepository.findById(100L)).thenReturn(Optional.of(notice))
+            whenever(fileStorageService.uploadNoticeImage(any(), eq(100L)))
+                .thenReturn("uploads/notice/2026/05/11/abc-uuid.png")
+            whenever(uploadFileRepository.save(any<UploadFile>())).thenAnswer {
+                val arg = it.getArgument<UploadFile>(0)
+                UploadFile(
+                    id = 555L,
+                    name = arg.name,
+                    uniqueKey = arg.uniqueKey,
+                    fileSize = arg.fileSize,
+                    parentType = arg.parentType,
+                    parentId = arg.parentId,
+                    isDeleted = arg.isDeleted
+                )
+            }
+
+            // When
+            val result = noticeService.uploadNoticeImage(100L, mockImage())
+
+            // Then
+            assertThat(result.id).isEqualTo(555L)
+            assertThat(result.url).isEqualTo("https://test-bucket.s3.ap-northeast-2.amazonaws.com/uploads/notice/2026/05/11/abc-uuid.png")
+            assertThat(result.sortOrder).isEqualTo(0)
+        }
+
+        @Test
+        @DisplayName("0 이하 noticeId -> InvalidNoticeIdException")
+        fun uploadNoticeImage_invalidId() {
+            assertThatThrownBy { noticeService.uploadNoticeImage(0L, mockImage()) }
+                .isInstanceOf(InvalidNoticeIdException::class.java)
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 공지 -> NoticePostNotFoundException")
+        fun uploadNoticeImage_noticeNotFound() {
+            whenever(noticeRepository.findById(999L)).thenReturn(Optional.empty())
+
+            assertThatThrownBy { noticeService.uploadNoticeImage(999L, mockImage()) }
+                .isInstanceOf(NoticePostNotFoundException::class.java)
+        }
+
+        @Test
+        @DisplayName("삭제된 공지 -> NoticePostNotFoundException")
+        fun uploadNoticeImage_deletedNotice() {
+            val notice = createNotice(id = 50L, isDeleted = true)
+            whenever(noticeRepository.findById(50L)).thenReturn(Optional.of(notice))
+
+            assertThatThrownBy { noticeService.uploadNoticeImage(50L, mockImage()) }
+                .isInstanceOf(NoticePostNotFoundException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("deleteNoticeImage - 첨부 이미지 삭제")
+    inner class DeleteNoticeImageTests {
+
+        @Test
+        @DisplayName("정상 삭제 - parent 일치 -> S3 DELETE + soft-delete")
+        fun deleteNoticeImage_success() {
+            // Given
+            val uploadFile = createUploadFile(id = 200L, uniqueKey = "uploads/notice/2026/05/11/abc.png", parentId = 42L)
+            whenever(
+                uploadFileRepository.findByIdAndParentTypeAndParentIdAndIsDeletedFalse(200L, "NOTICE", 42L)
+            ).thenReturn(uploadFile)
+
+            // When
+            noticeService.deleteNoticeImage(42L, 200L)
+
+            // Then
+            assertThat(uploadFile.isDeleted).isTrue()
+        }
+
+        @Test
+        @DisplayName("0 이하 noticeId -> InvalidNoticeIdException")
+        fun deleteNoticeImage_invalidNoticeId() {
+            assertThatThrownBy { noticeService.deleteNoticeImage(0L, 1L) }
+                .isInstanceOf(InvalidNoticeIdException::class.java)
+        }
+
+        @Test
+        @DisplayName("0 이하 imageId -> InvalidImageIdException")
+        fun deleteNoticeImage_invalidImageId() {
+            assertThatThrownBy { noticeService.deleteNoticeImage(1L, 0L) }
+                .isInstanceOf(InvalidImageIdException::class.java)
+        }
+
+        @Test
+        @DisplayName("imageId 미존재 또는 parent 불일치 -> InvalidImageIdException")
+        fun deleteNoticeImage_notFoundOrMismatch() {
+            whenever(
+                uploadFileRepository.findByIdAndParentTypeAndParentIdAndIsDeletedFalse(999L, "NOTICE", 42L)
+            ).thenReturn(null)
+
+            assertThatThrownBy { noticeService.deleteNoticeImage(42L, 999L) }
+                .isInstanceOf(InvalidImageIdException::class.java)
+        }
+
+        @Test
+        @DisplayName("uniqueKey 빈값 - S3 DELETE 호출 생략 + soft-delete만 수행")
+        fun deleteNoticeImage_blankUniqueKey() {
+            val uploadFile = createUploadFile(id = 200L, uniqueKey = "", parentId = 42L)
+            whenever(
+                uploadFileRepository.findByIdAndParentTypeAndParentIdAndIsDeletedFalse(200L, "NOTICE", 42L)
+            ).thenReturn(uploadFile)
+
+            noticeService.deleteNoticeImage(42L, 200L)
+
+            assertThat(uploadFile.isDeleted).isTrue()
         }
     }
 

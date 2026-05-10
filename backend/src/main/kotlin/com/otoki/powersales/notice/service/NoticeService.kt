@@ -1,6 +1,10 @@
 package com.otoki.powersales.notice.service
 
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
+import com.otoki.powersales.common.entity.UploadFile
+import com.otoki.powersales.common.repository.UploadFileRepository
+import com.otoki.powersales.common.service.FileStorageService
+import com.otoki.powersales.common.storage.StorageService
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.notice.dto.request.NoticeCreateRequest
 import com.otoki.powersales.notice.dto.request.NoticeUpdateRequest
@@ -15,17 +19,17 @@ import com.otoki.powersales.notice.dto.response.NoticePostSummaryResponse
 import com.otoki.powersales.notice.entity.Notice
 import com.otoki.powersales.notice.entity.NoticeCategory
 import com.otoki.powersales.notice.exception.BranchRequiredException
+import com.otoki.powersales.notice.exception.InvalidImageIdException
 import com.otoki.powersales.notice.exception.InvalidNoticeCategoryException
 import com.otoki.powersales.notice.exception.InvalidNoticeIdException
 import com.otoki.powersales.notice.exception.NoticePostNotFoundException
 import com.otoki.powersales.notice.repository.NoticeRepository
-import com.otoki.powersales.common.repository.UploadFileRepository
 import com.otoki.powersales.organization.repository.OrganizationRepository
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDateTime
+import org.springframework.web.multipart.MultipartFile
 import java.time.format.DateTimeFormatter
 
 @Service
@@ -35,6 +39,8 @@ class NoticeService(
     private val uploadFileRepository: UploadFileRepository,
     private val employeeRepository: EmployeeRepository,
     private val organizationRepository: OrganizationRepository,
+    private val fileStorageService: FileStorageService,
+    private val storageService: StorageService,
     @Value("\${app.aws.s3.bucket:otoki-bucket}")
     private val s3BucketName: String
 ) {
@@ -172,6 +178,85 @@ class NoticeService(
         noticeRepository.save(notice)
     }
 
+    /**
+     * 공지사항 첨부 이미지 업로드 — multipart 파일 → S3 PUT + UploadFile 행 INSERT.
+     *
+     * ## 레거시 매핑
+     * - SF Apex: `S3_FileUploadController.cls#sizeCheck` + `#putImg` + `#insertUploadFileRecord`
+     * - SF Aura: `S3FileUpload.cmp` + `S3FileUploadHelper.js#putAction`
+     * - flow-legacy: `flow-legacy-notice-attachment.yaml` step 6~9
+     * - origin spec: #656
+     *
+     * ## 레거시 동작 요약
+     * 1. 입력: parent fileId(ContentDocumentId) + parent recId + parent obj + fileName
+     * 2. sizeCheck — ContentVersion.ContentSize > 5,300,000 byte (5.3MB) 시 ContentDocument 즉시 DELETE + return false → toast
+     * 3. putImg — ContentVersion.VersionData read → AWS_S3 callout PUT (key=timestamp+한글 인코딩 파일명, acl=public-read, Content-type 분기 PNG/JPG/빈 문자열)
+     * 4. insertUploadFileRecord — UploadFile__c{Name, Size__c (B/KB/MB 분기), UniqueKey__c, RecordId__c (텍스트), Object__c, FileId__c=ContentDocumentId} 적재 (Url__c/UploadKbn__c=NULL)
+     * 5. @future deleteContentVersionRecord — ContentDocument cascade delete (R8 race 위험)
+     *
+     * ## 신규 차이
+     * - MAX_FILE_BYTES: 5.3MB → 20MB. 참조: legacy-deviation.md §6 외부 연동
+     * - S3 키 형식: timestamp+한글 파일명 → `uploads/notice/<YYYY>/<MM>/<DD>/<UUID>.<ext>`. 참조: legacy-deviation.md §6 외부 연동
+     * - parentId Long lookup: RecordId__c String → parent_id Long FK. 참조: Spec #616
+     * - ContentDocument/ContentVersion 자체 부재 — Tech stack 차이로 자연 소멸 (R8 race 위험 없음)
+     * - Content-type whitelist 명시적 (StorageConstants.ALLOWED_CONTENT_TYPES) — 레거시 빈 문자열 fallthrough(R15) 제거
+     * - 응답 sortOrder=0 고정 (단일 업로드 응답). 다건 read 시 createdAt 기준 재계산 — `getNoticeDetail` 동일 정책
+     */
+    @Transactional
+    fun uploadNoticeImage(noticeId: Long, file: MultipartFile): NoticeImageResponse {
+        if (noticeId <= 0) throw InvalidNoticeIdException()
+        findActiveNotice(noticeId)
+
+        val key = fileStorageService.uploadNoticeImage(file, noticeId)
+
+        val uploadFile = UploadFile(
+            name = file.originalFilename,
+            uniqueKey = key,
+            fileSize = formatFileSize(file.size),
+            parentType = "NOTICE",
+            parentId = noticeId,
+            isDeleted = false
+        )
+        val saved = uploadFileRepository.save(uploadFile)
+
+        return NoticeImageResponse(
+            id = saved.id,
+            url = "https://${s3BucketName}.s3.ap-northeast-2.amazonaws.com/${saved.uniqueKey}",
+            sortOrder = 0
+        )
+    }
+
+    /**
+     * 공지사항 첨부 이미지 삭제 — S3 DELETE + UploadFile soft-delete.
+     *
+     * ## 레거시 매핑
+     * - SF Apex: `S3_FileUploadController.cls#deleteImg` + `#deleteUploadFileRecord`
+     * - flow-legacy: `flow-legacy-notice-attachment.yaml` step 10
+     * - origin spec: #656
+     *
+     * ## 레거시 동작 요약
+     * 1. 입력: fileName + fileDummy(timestamp+finalName) + fileId(ContentDocumentId)
+     * 2. AWS_S3 callout DELETE — 204 응답 시 다음 단계, 비-204 응답은 silent (R14)
+     * 3. deleteUploadFileRecord — UploadFile__c WHERE UniqueKey__c=:dummy AND Name=:name (LIMIT 1 부재 — R6) → DML hard delete
+     *
+     * ## 신규 차이
+     * - hard-delete → soft-delete (`is_deleted=true`). 이유: R14 silent failure 자동 보강 + audit 추적성 확보
+     * - S3 DELETE idempotent 보장 (NoSuchKeyException swallow) — 비-204 silent 잔재 제거
+     * - parent 정합 가드 추가 (`parent_type='NOTICE' AND parent_id=noticeId`) — R6 LIMIT 1 부재 위험 회피
+     */
+    @Transactional
+    fun deleteNoticeImage(noticeId: Long, imageId: Long) {
+        if (noticeId <= 0) throw InvalidNoticeIdException()
+        if (imageId <= 0) throw InvalidImageIdException()
+
+        val uploadFile = uploadFileRepository
+            .findByIdAndParentTypeAndParentIdAndIsDeletedFalse(imageId, "NOTICE", noticeId)
+            ?: throw InvalidImageIdException()
+
+        uploadFile.uniqueKey?.takeIf { it.isNotBlank() }?.let { storageService.delete(it) }
+        uploadFile.isDeleted = true
+    }
+
     fun getNoticeFormMeta(): NoticeFormMetaResponse {
         val categories = NoticeCategory.entries.map {
             CategoryOption(code = it.apiCode, name = it.displayName)
@@ -218,6 +303,15 @@ class NoticeService(
             if (branch.isNullOrBlank() || branchCode.isNullOrBlank()) {
                 throw BranchRequiredException()
             }
+        }
+    }
+
+    private fun formatFileSize(bytes: Long): String {
+        return when {
+            bytes < 1024L -> "$bytes B"
+            bytes < 1024L * 1024L -> "${bytes / 1024L} KB"
+            bytes < 1024L * 1024L * 1024L -> "${bytes / (1024L * 1024L)} MB"
+            else -> "${bytes / (1024L * 1024L * 1024L)} GB"
         }
     }
 }

@@ -36,3 +36,12 @@ class BranchRequiredException : BusinessException(
     message = "지점공지는 지점 정보가 필요합니다",
     httpStatus = HttpStatus.BAD_REQUEST
 )
+
+/**
+ * 유효하지 않은 첨부 이미지 ID — imageId 미존재 또는 parent 불일치
+ */
+class InvalidImageIdException : BusinessException(
+    errorCode = "INVALID_IMAGE_ID",
+    message = "유효하지 않은 이미지 ID입니다",
+    httpStatus = HttpStatus.NOT_FOUND
+)
