@@ -4,10 +4,11 @@ import com.otoki.powersales.common.exception.BusinessException
 import org.springframework.http.HttpStatus
 
 /**
- * 거래처(Account) 도메인 예외 모음. (Spec #640, #642)
+ * 거래처(Account) 도메인 예외 모음. (Spec #640, #642, #643)
  *
  * - #640: 관리자 웹 신규 거래처 등록(`POST /api/v1/admin/accounts`) 흐름의 검증 실패 케이스
  * - #642: 관리자 웹 거래처 삭제(`DELETE /api/v1/admin/accounts/{id}`) 흐름의 차단/조회 실패 케이스
+ * - #643: 관리자 웹 거래처 수정(`PUT /api/v1/admin/accounts/{id}`) 흐름의 검증 실패 / 조회 실패 / prefix 위반 케이스
  */
 class AccountNameBlankException : BusinessException(
     errorCode = "ACCOUNT_NAME_BLANK",
@@ -15,9 +16,17 @@ class AccountNameBlankException : BusinessException(
     httpStatus = HttpStatus.BAD_REQUEST
 )
 
-class AccountNotFoundException : BusinessException(
+/**
+ * 거래처 미존재 / soft-delete 처리된 거래처 조회 예외.
+ *
+ * - #642 (delete): id 미명시 호출 — `AccountNotFoundException()` → 메시지 "거래처를 찾을 수 없습니다."
+ * - #643 (update): id 명시 호출 — `AccountNotFoundException(id)` → 메시지 "거래처를 찾을 수 없습니다: {id}"
+ *
+ * errorCode 는 `ACCOUNT_NOT_FOUND` 동일 — id 노출은 메시지 디테일만 분기.
+ */
+class AccountNotFoundException(id: Int? = null) : BusinessException(
     errorCode = "ACCOUNT_NOT_FOUND",
-    message = "거래처를 찾을 수 없습니다.",
+    message = if (id != null) "거래처를 찾을 수 없습니다: $id" else "거래처를 찾을 수 없습니다.",
     httpStatus = HttpStatus.NOT_FOUND
 )
 
@@ -30,6 +39,18 @@ class AccountDeleteBlockedSapSyncedException : BusinessException(
 class AccountNamePrefixRequiredException(allowedPrefixList: String) : BusinessException(
     errorCode = "ACCOUNT_NAME_PREFIX_REQUIRED",
     message = "신규 거래처 등록은 ($allowedPrefixList) 중 1개를 필수로 입력하셔야 합니다.",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+/**
+ * 거래처 수정 시 prefix 화이트리스트 위반 예외 (#643).
+ *
+ * #640 의 [AccountNamePrefixRequiredException] 와 errorCode 는 동일하나, 사용자 안내 메시지를
+ * "거래처 수정은 ..." 으로 분기 (등록/수정 흐름 명시). 기존 #640 호출부 영향 0.
+ */
+class AccountNamePrefixRequiredForUpdateException(allowedPrefixList: String) : BusinessException(
+    errorCode = "ACCOUNT_NAME_PREFIX_REQUIRED",
+    message = "거래처 수정은 ($allowedPrefixList) 중 1개를 필수로 입력하셔야 합니다.",
     httpStatus = HttpStatus.BAD_REQUEST
 )
 
