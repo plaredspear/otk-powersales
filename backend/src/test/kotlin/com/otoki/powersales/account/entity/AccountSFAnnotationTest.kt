@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test
  *
  * 검증 분류:
  *   - AC1: 클래스 `@SFObject` 무변경
- *   - AC2: `@SFField` 매핑 키셋 (63개 — 22 기존 + 16 SAP 보존 + 24 신규 + 1 Spec #644 OwnerId)
+ *   - AC2: `@SFField` 매핑 키셋 (63개 — 22 기존 + 17 SAP 보존 + 23 신규 + 1 Spec #644 OwnerId)
  *   - AC3: PK / FK 미부착
  *   - AC5: 기존 `@HCColumn` 매핑 보존
  *   - AC8: parent_sfid `@SFField("ParentId")` 부착
@@ -47,7 +47,7 @@ class AccountSFAnnotationTest {
         private val mapping = SFSchemaUtils.getSFMapping(Account::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 63 (22 기존 + 16 SAP 보존 + 24 신규 + 1 Spec #644 OwnerId)")
+        @DisplayName("매핑 키 수 = 63 (22 기존 + 17 SAP 보존 + 23 신규 + 1 Spec #644 OwnerId)")
         fun mappingKeySize() {
             assertThat(mapping).hasSize(63)
         }
@@ -80,7 +80,7 @@ class AccountSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("§6.2 — SAP 보존 16개 필드 신규 부착")
+        @DisplayName("§6.2 — SAP 보존 17개 필드 신규 부착")
         fun section62SapPreserved() {
             assertThat(mapping["Type"]).isEqualTo("account_type")
             assertThat(mapping["AccountStatusName__c"]).isEqualTo("account_status_name")
@@ -89,6 +89,7 @@ class AccountSFAnnotationTest {
             assertThat(mapping["AccountStatusCode__c"]).isEqualTo("account_status_code")
             assertThat(mapping["BusinessType__c"]).isEqualTo("business_type")
             assertThat(mapping["BusinessCategory__c"]).isEqualTo("business_category")
+            assertThat(mapping["Sic"]).isEqualTo("business_license_number")
             assertThat(mapping["Email__c"]).isEqualTo("email")
             assertThat(mapping["DivisionName__c"]).isEqualTo("division_name")
             assertThat(mapping["SalesDeptName__c"]).isEqualTo("sales_dept_name")
@@ -101,7 +102,7 @@ class AccountSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("§6.3 — 신규 24개 필드 매핑 (Q1 옵션 1 + Q4 추가)")
+        @DisplayName("§6.3 — 신규 23개 필드 매핑 (Q1 옵션 1 + Q4 추가)")
         fun section63NewFields() {
             assertThat(mapping["AccountNumber"]).isEqualTo("account_number")
             assertThat(mapping["Site"]).isEqualTo("site")
@@ -121,7 +122,6 @@ class AccountSFAnnotationTest {
             assertThat(mapping["Description"]).isEqualTo("description")
             assertThat(mapping["Website"]).isEqualTo("website")
             assertThat(mapping["Fax"]).isEqualTo("fax")
-            assertThat(mapping["Sic"]).isEqualTo("business_number")
             assertThat(mapping["AnnualRevenue"]).isEqualTo("annual_revenue")
             assertThat(mapping["NumberOfEmployees"]).isEqualTo("number_of_employees")
             assertThat(mapping["ParentId"]).isEqualTo("parent_sfid")
@@ -177,16 +177,17 @@ class AccountSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("신규 24개 컬럼 + SAP 보존 16개 컬럼에 @HCColumn 미부착")
+        @DisplayName("신규 23개 컬럼 + SAP 보존 17개 컬럼에 @HCColumn 미부착")
         fun newColumnsHaveNoHcColumn() {
             assertThat(hcMapping.values).doesNotContain(
-                // SAP 보존 16개
+                // SAP 보존 17개
                 "account_status_name",
                 "employee_code",
                 "distribution",
                 "account_status_code",
                 "business_type",
                 "business_category",
+                "business_license_number",
                 "email",
                 "division_name",
                 "sales_dept_name",
@@ -197,7 +198,7 @@ class AccountSFAnnotationTest {
                 "sales_dept_cost_center",
                 "division_cost_center",
                 // account_type 은 SAP 보존 (Spec #142 도입 시 @HCColumn 미부착)
-                // 신규 24개
+                // 신규 23개
                 "account_number",
                 "site",
                 "account_source",
@@ -216,7 +217,6 @@ class AccountSFAnnotationTest {
                 "description",
                 "website",
                 "fax",
-                "business_number",
                 "annual_revenue",
                 "number_of_employees",
                 "parent_sfid",

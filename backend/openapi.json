@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:59890",
+    "url" : "http://localhost:63313",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -6928,11 +6928,6 @@
             "maxLength" : 40,
             "minLength" : 0
           },
-          "businessNumber" : {
-            "type" : [ "string", "null" ],
-            "maxLength" : 20,
-            "minLength" : 0
-          },
           "closingTime1" : {
             "type" : [ "string", "null" ],
             "maxLength" : 50,
@@ -7005,7 +7000,7 @@
           },
           "businessLicenseNumber" : {
             "type" : [ "string", "null" ],
-            "maxLength" : 50,
+            "maxLength" : 80,
             "minLength" : 0
           },
           "consignmentAcc" : {
@@ -7129,9 +7124,6 @@
             "type" : [ "string", "null" ]
           },
           "description" : {
-            "type" : [ "string", "null" ]
-          },
-          "businessNumber" : {
             "type" : [ "string", "null" ]
           },
           "businessLicenseNumber" : {
@@ -10673,6 +10665,9 @@
             "minLength" : 1,
             "pattern" : "^\\d{6}$"
           },
+          "previousYearMonth" : {
+            "type" : "string"
+          },
           "year" : {
             "type" : "integer",
             "format" : "int32"
@@ -10680,9 +10675,6 @@
           "month" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "previousYearMonth" : {
-            "type" : "string"
           }
         },
         "required" : [ "yearMonth" ]
@@ -11337,20 +11329,6 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "size" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "content" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/ProductDto"
-            }
-          },
-          "number" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
@@ -11367,6 +11345,20 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ProductDto"
+            }
+          },
+          "number" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "empty" : {
             "type" : "boolean"
           }
@@ -11375,9 +11367,8 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
-          "offset" : {
-            "type" : "integer",
-            "format" : "int64"
+          "unpaged" : {
+            "type" : "boolean"
           },
           "pageSize" : {
             "type" : "integer",
@@ -11393,8 +11384,9 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "unpaged" : {
-            "type" : "boolean"
+          "offset" : {
+            "type" : "integer",
+            "format" : "int64"
           }
         }
       },
@@ -11427,13 +11419,13 @@
       "SortObject" : {
         "type" : "object",
         "properties" : {
-          "empty" : {
+          "sorted" : {
             "type" : "boolean"
           },
           "unsorted" : {
             "type" : "boolean"
           },
-          "sorted" : {
+          "empty" : {
             "type" : "boolean"
           }
         }
@@ -13790,20 +13782,6 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "size" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "content" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/ScheduleListItemDto"
-            }
-          },
-          "number" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
@@ -13819,6 +13797,20 @@
           },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ScheduleListItemDto"
+            }
+          },
+          "number" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "empty" : {
             "type" : "boolean"

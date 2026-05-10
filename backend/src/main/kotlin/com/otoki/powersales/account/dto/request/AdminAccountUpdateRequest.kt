@@ -64,9 +64,6 @@ data class AdminAccountUpdateRequest(
     @field:Size(max = 40, message = "팩스는 40자 이하여야 합니다.")
     val fax: String? = null,
 
-    @field:Size(max = 20, message = "사업자번호는 20자 이하여야 합니다.")
-    val businessNumber: String? = null,
-
     @field:Size(max = 50, message = "영업시간1은 50자 이하여야 합니다.")
     val closingTime1: String? = null,
 
@@ -109,7 +106,7 @@ data class AdminAccountUpdateRequest(
     @field:Size(max = 50, message = "업종 분류는 50자 이하여야 합니다.")
     val businessCategory: String? = null,
 
-    @field:Size(max = 50, message = "사업자등록번호는 50자 이하여야 합니다.")
+    @field:Size(max = 80, message = "사업자등록번호는 80자 이하여야 합니다.")
     val businessLicenseNumber: String? = null,
 
     @field:Size(max = 1, message = "위탁 거래처 여부는 1자 이하여야 합니다.")
