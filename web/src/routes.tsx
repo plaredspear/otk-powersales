@@ -43,6 +43,7 @@ const PermissionMatrixPage = lazy(() => import('@/pages/settings/PermissionMatri
 const ProductExpirationPage = lazy(() => import('@/pages/ProductExpirationPage'));
 const EmployeePermissionPage = lazy(() => import('@/pages/settings/EmployeePermissionPage'));
 const AdminAccountRegisterPage = lazy(() => import('@/pages/settings/AdminAccountRegisterPage'));
+const NaverGeocodeTestPage = lazy(() => import('@/pages/admin/NaverGeocodeTestPage'));
 
 // eslint-disable-next-line react-refresh/only-export-components
 function LazyWrapper({ children }: { children: React.ReactNode }) {
@@ -150,6 +151,12 @@ export const router = createBrowserRouter(
               element: <PermissionRoute requiredPermission="ACCOUNT_READ" />,
               children: [
                 { path: '/account', element: <LazyWrapper><AccountPage /></LazyWrapper> },
+              ],
+            },
+            {
+              element: <PermissionRoute requiredPermission="NAVER_GEOCODE_TEST" />,
+              children: [
+                { path: '/admin/tools/naver-geocode', element: <LazyWrapper><NaverGeocodeTestPage /></LazyWrapper> },
               ],
             },
             { path: '*', element: <Navigate to="/" replace /> },
