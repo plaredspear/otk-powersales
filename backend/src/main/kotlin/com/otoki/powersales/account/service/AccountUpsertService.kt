@@ -6,7 +6,6 @@ import com.otoki.powersales.account.service.dto.AccountUpsertCommand
 import com.otoki.powersales.account.service.dto.AccountUpsertFailedRow
 import com.otoki.powersales.account.service.dto.AccountUpsertResult
 import com.otoki.powersales.employee.repository.EmployeeRepository
-import com.otoki.powersales.organization.entity.Organization
 import com.otoki.powersales.organization.repository.OrganizationRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -20,9 +19,9 @@ import org.springframework.transaction.annotation.Transactional
  *
  * ## 레거시 동작 요약
  * 1. 입력: `List<AccountUpsertCommand>` (외부 키 [AccountUpsertCommand.externalKey] = SAP 거래처 코드).
- * 2. 캐시 빌드: [AccountRepository.findByExternalKeyIn] / [EmployeeRepository.findByEmployeeCodeIn] / [OrganizationRepository.findAll].
+ * 2. 캐시 빌드: [AccountRepository.findByExternalKeyIn] / [EmployeeRepository.findByEmployeeCodeIn] / [OrganizationLookup.build].
  * 3. 행 단위 검증 (try/catch): 필수값(`externalKey`/`name`) → `employeeCode` 존재 검증 → `consignmentAcc` 화이트리스트(`Y`/`N`/`""`) →
- *    Organization 폴백 lookup(`branchCode` → `salesDeptCode` → `divisionCode`) → [AccountUpsertMapper] 로 신규 생성 또는 기존 갱신.
+ *    [OrganizationLookup.match] 폴백 lookup → [AccountUpsertMapper] 로 신규 생성 또는 기존 갱신.
  * 4. 외부 호출: [AccountRepository.saveAll] (성공 행만 일괄). 행 검증 실패는 [AccountUpsertResult.failures] 누적, 트랜잭션 롤백하지 않음.
  *
  * ## 신규 차이 — 동등 (생략)
@@ -57,7 +56,7 @@ class AccountUpsertService(
                 .toSet()
         }
 
-        val orgCache = buildOrganizationCache()
+        val orgLookup = OrganizationLookup.build(organizationRepository)
 
         val failures = mutableListOf<AccountUpsertFailedRow>()
         val toSave = mutableListOf<Account>()
@@ -65,21 +64,21 @@ class AccountUpsertService(
         commands.forEach { command ->
             try {
                 val externalKey = command.externalKey?.takeIf { it.isNotBlank() }
-                    ?: throw IllegalArgumentException("SAPAccountCode 필수")
+                    ?: throw IllegalArgumentException(Reasons.EXTERNAL_KEY_REQUIRED)
                 val name = command.name?.takeIf { it.isNotBlank() }
-                    ?: throw IllegalArgumentException("Name 필수")
+                    ?: throw IllegalArgumentException(Reasons.NAME_REQUIRED)
 
                 if (!command.employeeCode.isNullOrBlank() && command.employeeCode !in employeeCodeSet) {
-                    failures += AccountUpsertFailedRow(externalKey, "employee_code not found: ${command.employeeCode}")
+                    failures += AccountUpsertFailedRow(externalKey, Reasons.employeeNotFound(command.employeeCode))
                     return@forEach
                 }
 
                 if (command.consignmentAcc != null && command.consignmentAcc !in CONSIGNMENT_ACC_ALLOWED) {
-                    failures += AccountUpsertFailedRow(externalKey, "ConsignmentAcc 형식 오류: ${command.consignmentAcc}")
+                    failures += AccountUpsertFailedRow(externalKey, Reasons.consignmentAccInvalid(command.consignmentAcc))
                     return@forEach
                 }
 
-                val matchedOrg = lookupOrganization(command, orgCache)
+                val matchedOrg = orgLookup.match(command)
                 val account = accountCache[externalKey]?.also { mapper.update(it, name, command, matchedOrg) }
                     ?: mapper.newAccount(externalKey, name, command, matchedOrg)
                         .also { accountCache[externalKey] = it }
@@ -100,31 +99,15 @@ class AccountUpsertService(
         )
     }
 
-    private fun buildOrganizationCache(): Map<String, Organization> {
-        val cache = mutableMapOf<String, Organization>()
-        organizationRepository.findAll().forEach { org ->
-            val key = sequenceOf(
-                org.costCenterLevel5,
-                org.costCenterLevel4,
-                org.costCenterLevel3
-            ).firstOrNull { !it.isNullOrBlank() } ?: return@forEach
-            cache.putIfAbsent(key, org)
-        }
-        return cache
-    }
-
-    private fun lookupOrganization(command: AccountUpsertCommand, cache: Map<String, Organization>): Organization? {
-        val branch = command.branchCode?.takeIf { it.isNotBlank() }
-        if (branch != null) cache[branch]?.let { return it }
-        val salesDept = command.salesDeptCode?.takeIf { it.isNotBlank() }
-        if (salesDept != null) cache[salesDept]?.let { return it }
-        val division = command.divisionCode?.takeIf { it.isNotBlank() }
-        if (division != null) cache[division]?.let { return it }
-        return null
-    }
-
     companion object {
         // Spec #575: ConsignmentAcc 허용 값. null 은 미입력 → 검증 스킵.
         private val CONSIGNMENT_ACC_ALLOWED = setOf("Y", "N", "")
+
+        private object Reasons {
+            const val EXTERNAL_KEY_REQUIRED = "SAPAccountCode 필수"
+            const val NAME_REQUIRED = "Name 필수"
+            fun employeeNotFound(code: String) = "employee_code not found: $code"
+            fun consignmentAccInvalid(value: String) = "ConsignmentAcc 형식 오류: $value"
+        }
     }
 }
