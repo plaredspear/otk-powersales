@@ -7,6 +7,7 @@ import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.common.entity.BaseEntity
+import com.otoki.powersales.employee.entity.Employee
 import jakarta.persistence.*
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -315,5 +316,18 @@ class Account(
 
     @SFField("Ownership")
     @Column(name = "ownership", length = 20)
-    var ownership: String? = null
+    var ownership: String? = null,
+
+    // -- Spec #644: Owner 차원 — DisplayWorkSchedule 풀 패턴 정합 --
+    // owner_sfid: Heroku Connect sync / HerokuMigrationTool 가 채우는 buffer (application 미적재).
+    // owner: application 이 SAP 인바운드 시 set 하는 Employee FK.
+
+    @SFField("OwnerId")
+    @HCColumn("ownerid")
+    @Column(name = "owner_sfid", length = 18)
+    var ownerSfid: String? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id")
+    var owner: Employee? = null
 ) : BaseEntity()

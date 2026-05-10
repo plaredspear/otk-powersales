@@ -3,6 +3,7 @@ package com.otoki.powersales.account.service
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.account.entity.AccountType
 import com.otoki.powersales.account.service.dto.AccountUpsertCommand
+import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.organization.entity.Organization
 import org.springframework.stereotype.Component
 
@@ -23,10 +24,11 @@ class AccountUpsertMapper {
         externalKey: String,
         name: String,
         command: AccountUpsertCommand,
-        matchedOrg: Organization?
+        matchedOrg: Organization?,
+        matchedEmployee: Employee?
     ): Account {
         val account = Account(externalKey = externalKey, name = name)
-        applyMutableFields(account, command, matchedOrg)
+        applyMutableFields(account, command, matchedOrg, matchedEmployee)
         return account
     }
 
@@ -37,19 +39,27 @@ class AccountUpsertMapper {
         account: Account,
         name: String,
         command: AccountUpsertCommand,
-        matchedOrg: Organization?
+        matchedOrg: Organization?,
+        matchedEmployee: Employee?
     ) {
         account.name = name
-        applyMutableFields(account, command, matchedOrg)
+        applyMutableFields(account, command, matchedOrg, matchedEmployee)
     }
 
-    private fun applyMutableFields(account: Account, command: AccountUpsertCommand, matchedOrg: Organization?) {
+    private fun applyMutableFields(
+        account: Account,
+        command: AccountUpsertCommand,
+        matchedOrg: Organization?,
+        matchedEmployee: Employee?
+    ) {
         applyTypeAndStatus(account, command)
         applyBusinessInfo(account, command)
         applyContactInfo(account, command)
         applyAddressAndSchedule(account, command)
         applyWerkFields(account, command)
         applyOrganizationAndCostCenter(account, command, matchedOrg)
+        // Spec #644: Owner FK — application 적재. owner_sfid 는 HC sync / HerokuMigrationTool 책임이라 미적재.
+        account.owner = matchedEmployee
     }
 
     private fun applyTypeAndStatus(account: Account, command: AccountUpsertCommand) {

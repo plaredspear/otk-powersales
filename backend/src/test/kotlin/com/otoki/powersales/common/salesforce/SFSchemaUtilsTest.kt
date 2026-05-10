@@ -19,11 +19,11 @@ class SFSchemaUtilsTest {
     inner class GetSFMappingTests {
 
         @Test
-        @DisplayName("Account 엔티티 - 62개 SF Field 매핑 반환 (Spec #602: 22 기존 + 16 SAP 보존 + 24 신규)")
+        @DisplayName("Account 엔티티 - 63개 SF Field 매핑 반환 (Spec #602: 22 기존 + 16 SAP 보존 + 24 신규 + Spec #644: 1 OwnerId)")
         fun getSFMapping_account() {
             val mapping = SFSchemaUtils.getSFMapping(Account::class.java)
 
-            assertThat(mapping).hasSize(62)
+            assertThat(mapping).hasSize(63)
             assertThat(mapping["ABCType__c"]).isEqualTo("abc_type")
             assertThat(mapping["Name"]).isEqualTo("name")
             assertThat(mapping["Industry"]).isEqualTo("industry")
@@ -132,14 +132,15 @@ class SFSchemaUtilsTest {
     inner class GetHCMappingTests {
 
         @Test
-        @DisplayName("Account 엔티티 - 24개 HC Column 매핑 반환")
+        @DisplayName("Account 엔티티 - 25개 HC Column 매핑 반환 (Spec #644: ownerid 추가)")
         fun getHCMapping_account() {
             val mapping = SFSchemaUtils.getHCMapping(Account::class.java)
 
-            assertThat(mapping).hasSize(24)
+            assertThat(mapping).hasSize(25)
             assertThat(mapping["sfid"]).isEqualTo("sfid")
             assertThat(mapping["isdeleted"]).isEqualTo("is_deleted")
             assertThat(mapping["name"]).isEqualTo("name")
+            assertThat(mapping["ownerid"]).isEqualTo("owner_sfid")
         }
 
         @Test

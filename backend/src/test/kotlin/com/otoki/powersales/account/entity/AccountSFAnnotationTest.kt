@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test
  *
  * 검증 분류:
  *   - AC1: 클래스 `@SFObject` 무변경
- *   - AC2: `@SFField` 매핑 키셋 (62개 — 22 기존 + 16 SAP 보존 + 24 신규)
+ *   - AC2: `@SFField` 매핑 키셋 (63개 — 22 기존 + 16 SAP 보존 + 24 신규 + 1 Spec #644 OwnerId)
  *   - AC3: PK / FK 미부착
  *   - AC5: 기존 `@HCColumn` 매핑 보존
  *   - AC8: parent_sfid `@SFField("ParentId")` 부착
@@ -47,9 +47,9 @@ class AccountSFAnnotationTest {
         private val mapping = SFSchemaUtils.getSFMapping(Account::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 62 (22 기존 + 16 SAP 보존 + 24 신규)")
+        @DisplayName("매핑 키 수 = 63 (22 기존 + 16 SAP 보존 + 24 신규 + 1 Spec #644 OwnerId)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(62)
+            assertThat(mapping).hasSize(63)
         }
 
         @Test
@@ -163,7 +163,7 @@ class AccountSFAnnotationTest {
         private val hcMapping = SFSchemaUtils.getHCMapping(Account::class.java)
 
         @Test
-        @DisplayName("기존 @HCColumn 매핑 무변경 (sfid + 22개 매핑 + isdeleted = 24개)")
+        @DisplayName("기존 @HCColumn 매핑 무변경 (sfid + 22개 매핑 + isdeleted + Spec #644 ownerid = 25개)")
         fun hcMappingUnchanged() {
             assertThat(hcMapping["sfid"]).isEqualTo("sfid")
             assertThat(hcMapping["name"]).isEqualTo("name")
@@ -172,7 +172,8 @@ class AccountSFAnnotationTest {
             assertThat(hcMapping["industry"]).isEqualTo("industry")
             assertThat(hcMapping["werk1_tx__c"]).isEqualTo("werk1_tx")
             assertThat(hcMapping["isdeleted"]).isEqualTo("is_deleted")
-            assertThat(hcMapping).hasSize(24)
+            assertThat(hcMapping["ownerid"]).isEqualTo("owner_sfid")
+            assertThat(hcMapping).hasSize(25)
         }
 
         @Test
