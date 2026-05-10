@@ -158,9 +158,7 @@ describe('AdminAccountUpdateModal (Spec #643 P2-W)', () => {
     });
   });
 
-  // userEvent.type 한글 입력 + Form validation + mutation 처리 등이 누적되어 전체 테스트 실행 시
-  // 기본 5초 timeout 을 초과하는 케이스가 있어 명시적 10초 부여 (기존 #640 W1 동일 패턴 — 같은 정정).
-  it('W1 변경된 필드만 PUT body 에 포함 — name + phone 변경', { timeout: 10000 }, async () => {
+  it('W1 변경된 필드만 PUT body 에 포함 — name + phone 변경', async () => {
     mockedUpdate.mockResolvedValue(baseResponse);
     const onClose = vi.fn();
     const onSuccess = vi.fn();
