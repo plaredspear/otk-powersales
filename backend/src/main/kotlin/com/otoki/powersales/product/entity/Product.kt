@@ -122,12 +122,7 @@ class Product(
     @SFField("DKRetail__StandardUnitPrice__c")
     @HCColumn("dkretail__standardunitprice__c")
     @Column(name = "standard_unit_price")
-    val standardUnitPrice: Double? = null,
-
-    @SFField("StandardPrice__c")
-    @HCColumn("standardprice__c")
-    @Column(name = "standard_price")
-    var standardPrice: Double? = null,
+    var standardUnitPrice: Double? = null,
 
     @SFField("SuperTax__c")
     @HCColumn("supertax__c")

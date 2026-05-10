@@ -81,7 +81,7 @@ class AdminProductControllerTest {
                         category1 = "면류",
                         category2 = "라면",
                         category3 = "봉지면",
-                        standardPrice = 850.0,
+                        standardUnitPrice = 850.0,
                         unit = "EA",
                         storageCondition = "실온",
                         productStatus = "판매중",
@@ -107,7 +107,7 @@ class AdminProductControllerTest {
                 .andExpect(jsonPath("$.data.content[0].productCode").value("P001"))
                 .andExpect(jsonPath("$.data.content[0].name").value("진라면 매운맛"))
                 .andExpect(jsonPath("$.data.content[0].category1").value("면류"))
-                .andExpect(jsonPath("$.data.content[0].standardPrice").value(850.0))
+                .andExpect(jsonPath("$.data.content[0].standardUnitPrice").value(850.0))
                 .andExpect(jsonPath("$.data.content[0].productStatus").value("판매중"))
                 .andExpect(jsonPath("$.data.content[0].launchDate").value("2020-01-15"))
                 .andExpect(jsonPath("$.data.page").value(0))
