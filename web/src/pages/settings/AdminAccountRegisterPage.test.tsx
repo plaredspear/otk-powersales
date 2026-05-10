@@ -84,7 +84,9 @@ describe('AdminAccountRegisterPage', () => {
     expect(screen.queryByRole('combobox', { name: /권한/ })).not.toBeInTheDocument();
   });
 
-  it('등록 중 로딩 상태 — mutation 진행 중 등록 버튼이 loading 표시', async () => {
+  // userEvent.type 다회 입력 (사번/이름/비밀번호/확인) 누적으로 전체 테스트 실행 시 기본 5초
+  // timeout 초과. 명시적 10초 부여 (#643 P2-W AccountUpdateModal/AccountCreateModal W1 동일 패턴).
+  it('등록 중 로딩 상태 — mutation 진행 중 등록 버튼이 loading 표시', { timeout: 10000 }, async () => {
     let resolveRegister: ((value: unknown) => void) | undefined;
     mockedRegister.mockImplementationOnce(
       () =>
