@@ -1,94 +1,65 @@
 package com.otoki.powersales.sap.inbound.service
 
+import com.otoki.powersales.common.service.SystemCodeMasterUpsertService
+import com.otoki.powersales.common.service.dto.SystemCodeMasterUpsertCommand
+import com.otoki.powersales.common.service.dto.SystemCodeMasterUpsertResult
 import com.otoki.powersales.sap.auth.audit.SapInboundAudit
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditEventType
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.sap.auth.util.ClientIpResolver
-import com.otoki.powersales.common.entity.SystemCodeMaster
 import com.otoki.powersales.sap.inbound.dto.product.FailureItem
 import com.otoki.powersales.sap.inbound.dto.product.ProductMasterDetail
 import com.otoki.powersales.sap.inbound.dto.product.SystemCodeMasterRequestItem
-import com.otoki.powersales.common.repository.SystemCodeMasterRepository
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
 
 /**
- * SAP 시스템 공통 코드 마스터 인바운드 UPSERT 서비스. (Spec #559)
+ * SAP 시스템 공통 코드 마스터 인바운드 어댑터. (Spec #559 / 어댑터-도메인 분리: #635 P1-B)
  *
- * - UPSERT 키: [SystemCodeMaster.externalKey] = `CompanyCode + ';' + GroupCode + ';' + DetailCode`
- * - 부분 실패 허용 (행 단위 검증 후 saveAll 일괄)
+ * 책임:
+ * - SAP 페이로드 [SystemCodeMasterRequestItem] → 도메인 커맨드 [SystemCodeMasterUpsertCommand] 매핑
+ * - 도메인 서비스 [SystemCodeMasterUpsertService.upsert] 호출
+ * - 도메인 결과 [SystemCodeMasterUpsertResult] → SAP 응답 [ProductMasterDetail] 매핑
+ * - [SapInboundAuditService] 감사 기록
+ *
+ * 트랜잭션은 도메인 측이 관리하며 어댑터는 `@Transactional` 을 부착하지 않는다.
+ * UPSERT 키 / 부분 실패 시멘틱은 [SystemCodeMasterUpsertService] KDoc 참조.
  */
 @Service
 class SapSystemCodeMasterService(
-    private val systemCodeMasterRepository: SystemCodeMasterRepository,
+    private val systemCodeMasterUpsertService: SystemCodeMasterUpsertService,
     private val auditService: SapInboundAuditService
 ) {
 
-    @Transactional
     fun upsert(items: List<SystemCodeMasterRequestItem>): ProductMasterDetail {
-        val failures = mutableListOf<FailureItem>()
-        val toSave = mutableListOf<SystemCodeMaster>()
-        val keyCache = mutableMapOf<String, SystemCodeMaster>()
-
-        items.forEach { item ->
-            val companyCode = item.companyCode?.takeIf { it.isNotBlank() }
-            val groupCode = item.groupCode?.takeIf { it.isNotBlank() }
-            val detailCode = item.detailCode?.takeIf { it.isNotBlank() }
-
-            if (companyCode == null) {
-                failures += FailureItem(null, "CompanyCode 필수")
-                return@forEach
-            }
-            if (groupCode == null) {
-                failures += FailureItem(null, "GroupCode 필수")
-                return@forEach
-            }
-            if (detailCode == null) {
-                failures += FailureItem(null, "DetailCode 필수")
-                return@forEach
-            }
-
-            val externalKey = "$companyCode;$groupCode;$detailCode"
-            val existing = keyCache[externalKey]
-                ?: systemCodeMasterRepository.findByExternalKey(externalKey)?.also { keyCache[externalKey] = it }
-
-            val entity = if (existing == null) {
-                SystemCodeMaster(
-                    companyCode = companyCode,
-                    groupCode = groupCode,
-                    detailCode = detailCode,
-                    externalKey = externalKey,
-                    groupCodeName = item.groupCodeName,
-                    detailCodeName = item.detailCodeName,
-                    seq = item.seq
-                ).also { keyCache[externalKey] = it }
-            } else {
-                existing.companyCode = companyCode
-                existing.groupCode = groupCode
-                existing.detailCode = detailCode
-                existing.groupCodeName = item.groupCodeName
-                existing.detailCodeName = item.detailCodeName
-                existing.seq = item.seq
-                existing
-            }
-            toSave += entity
+        val commands = items.map { it.toCommand() }
+        val result = try {
+            systemCodeMasterUpsertService.upsert(commands)
+        } catch (ex: RuntimeException) {
+            recordAccepted(items.size, success = 0, failure = commands.size)
+            throw ex
         }
 
-        if (toSave.isNotEmpty()) {
-            systemCodeMasterRepository.saveAll(toSave)
-        }
-
-        recordAccepted(items.size, toSave.size, failures.size)
+        recordAccepted(items.size, success = result.successCount, failure = result.failureCount)
         return ProductMasterDetail(
-            successCount = toSave.size,
-            failureCount = failures.size,
-            failures = failures
+            successCount = result.successCount,
+            failureCount = result.failureCount,
+            failures = result.failures.map { FailureItem(it.identifier, it.reason) }
         )
     }
+
+    private fun SystemCodeMasterRequestItem.toCommand(): SystemCodeMasterUpsertCommand =
+        SystemCodeMasterUpsertCommand(
+            companyCode = companyCode,
+            groupCode = groupCode,
+            detailCode = detailCode,
+            groupCodeName = groupCodeName,
+            detailCodeName = detailCodeName,
+            seq = seq
+        )
 
     private fun recordAccepted(received: Int, success: Int, failure: Int) {
         val request = currentRequest()

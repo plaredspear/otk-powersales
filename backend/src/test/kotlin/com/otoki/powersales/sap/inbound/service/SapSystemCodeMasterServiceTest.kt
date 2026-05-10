@@ -1,11 +1,15 @@
 package com.otoki.powersales.sap.inbound.service
 
+import com.otoki.powersales.common.service.SystemCodeMasterUpsertService
+import com.otoki.powersales.common.service.dto.SystemCodeMasterUpsertCommand
+import com.otoki.powersales.common.service.dto.SystemCodeMasterUpsertFailedRow
+import com.otoki.powersales.common.service.dto.SystemCodeMasterUpsertResult
 import com.otoki.powersales.sap.auth.audit.SapInboundAudit
+import com.otoki.powersales.sap.auth.audit.SapInboundAuditEventType
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
-import com.otoki.powersales.common.entity.SystemCodeMaster
 import com.otoki.powersales.sap.inbound.dto.product.SystemCodeMasterRequestItem
-import com.otoki.powersales.common.repository.SystemCodeMasterRepository
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -15,16 +19,15 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 @ExtendWith(MockitoExtension::class)
-@DisplayName("SapSystemCodeMasterService 테스트")
+@DisplayName("SapSystemCodeMasterService 어댑터 테스트")
 class SapSystemCodeMasterServiceTest {
 
     @Mock
-    private lateinit var systemCodeMasterRepository: SystemCodeMasterRepository
+    private lateinit var systemCodeMasterUpsertService: SystemCodeMasterUpsertService
 
     @Mock
     private lateinit var auditService: SapInboundAuditService
@@ -33,13 +36,15 @@ class SapSystemCodeMasterServiceTest {
     private lateinit var service: SapSystemCodeMasterService
 
     @Nested
-    @DisplayName("upsert - Happy Path")
-    inner class UpsertHappy {
+    @DisplayName("upsert - 어댑터 책임")
+    inner class AdapterResponsibilities {
 
         @Test
-        @DisplayName("신규 - INSERT, externalKey = company;group;detail")
-        fun upsert_insertNew() {
-            whenever(systemCodeMasterRepository.findByExternalKey("1000;H10010;10")).thenReturn(null)
+        @DisplayName("happy: 도메인 결과 → ProductMasterDetail + audit reason='success=1 failure=0'")
+        fun happy_domainResultMappedAndAudit() {
+            whenever(systemCodeMasterUpsertService.upsert(any())).thenReturn(
+                SystemCodeMasterUpsertResult(successCount = 1, failureCount = 0, failures = emptyList())
+            )
 
             val detail = service.upsert(
                 listOf(
@@ -47,94 +52,84 @@ class SapSystemCodeMasterServiceTest {
                         companyCode = "1000",
                         groupCode = "H10010",
                         detailCode = "10",
-                        groupCodeName = "직원 상태",
-                        detailCodeName = "재직",
-                        seq = "1"
+                        detailCodeName = "재직"
                     )
                 )
             )
 
-            val captor = argumentCaptor<List<SystemCodeMaster>>()
-            verify(systemCodeMasterRepository).saveAll(captor.capture())
-            val saved = captor.firstValue.single()
-            assertThat(saved.externalKey).isEqualTo("1000;H10010;10")
-            assertThat(saved.companyCode).isEqualTo("1000")
-            assertThat(saved.groupCode).isEqualTo("H10010")
-            assertThat(saved.detailCode).isEqualTo("10")
-            assertThat(saved.detailCodeName).isEqualTo("재직")
             assertThat(detail.successCount).isEqualTo(1)
-            verify(auditService).record(any<SapInboundAudit>())
+            assertThat(detail.failureCount).isEqualTo(0)
+
+            val auditCaptor = argumentCaptor<SapInboundAudit>()
+            verify(auditService).record(auditCaptor.capture())
+            assertThat(auditCaptor.firstValue.eventType).isEqualTo(SapInboundAuditEventType.REQUEST_ACCEPTED)
+            assertThat(auditCaptor.firstValue.reason).isEqualTo("success=1 failure=0")
         }
 
         @Test
-        @DisplayName("기존 갱신 - DetailCodeName 변경")
-        fun upsert_updateExisting() {
-            val existing = SystemCodeMaster(
-                companyCode = "1000",
-                groupCode = "H10010",
-                detailCode = "10",
-                externalKey = "1000;H10010;10",
-                detailCodeName = "기존이름"
-            )
-            whenever(systemCodeMasterRepository.findByExternalKey("1000;H10010;10")).thenReturn(existing)
-
-            service.upsert(
-                listOf(
-                    SystemCodeMasterRequestItem(
-                        companyCode = "1000",
-                        groupCode = "H10010",
-                        detailCode = "10",
-                        detailCodeName = "신규이름"
-                    )
+        @DisplayName("부분 실패: 도메인 failures → SAP FailureItem 매핑")
+        fun partialFailure_failureRowsMapped() {
+            whenever(systemCodeMasterUpsertService.upsert(any())).thenReturn(
+                SystemCodeMasterUpsertResult(
+                    successCount = 0,
+                    failureCount = 1,
+                    failures = listOf(SystemCodeMasterUpsertFailedRow(null, "GroupCode 필수"))
                 )
             )
 
-            val captor = argumentCaptor<List<SystemCodeMaster>>()
-            verify(systemCodeMasterRepository).saveAll(captor.capture())
-            val saved = captor.firstValue.single()
-            assertThat(saved).isSameAs(existing)
-            assertThat(saved.detailCodeName).isEqualTo("신규이름")
-        }
-    }
-
-    @Nested
-    @DisplayName("upsert - Error Path")
-    inner class UpsertError {
-
-        @Test
-        @DisplayName("GroupCode 누락 - failures")
-        fun upsert_missingGroupCode() {
             val detail = service.upsert(
-                listOf(
-                    SystemCodeMasterRequestItem(
-                        companyCode = "1000",
-                        groupCode = null,
-                        detailCode = "10"
-                    )
-                )
+                listOf(SystemCodeMasterRequestItem(companyCode = "1000", groupCode = null, detailCode = "10"))
             )
 
-            assertThat(detail.successCount).isEqualTo(0)
             assertThat(detail.failureCount).isEqualTo(1)
             assertThat(detail.failures.single().reason).contains("GroupCode 필수")
-            verify(systemCodeMasterRepository, never()).saveAll(any<List<SystemCodeMaster>>())
         }
 
         @Test
-        @DisplayName("CompanyCode 누락 - failures")
-        fun upsert_missingCompanyCode() {
-            val detail = service.upsert(
-                listOf(
-                    SystemCodeMasterRequestItem(
-                        companyCode = null,
-                        groupCode = "H10010",
-                        detailCode = "10"
-                    )
+        @DisplayName("도메인 throw: 실패 audit 후 예외 재전파")
+        fun domainThrow_failureAuditAndRethrow() {
+            whenever(systemCodeMasterUpsertService.upsert(any()))
+                .thenThrow(IllegalStateException("DB connection lost"))
+
+            assertThatThrownBy {
+                service.upsert(
+                    listOf(SystemCodeMasterRequestItem(companyCode = "1000", groupCode = "H10010", detailCode = "10"))
+                )
+            }.isInstanceOf(IllegalStateException::class.java)
+
+            val auditCaptor = argumentCaptor<SapInboundAudit>()
+            verify(auditService).record(auditCaptor.capture())
+            assertThat(auditCaptor.firstValue.reason).isEqualTo("success=0 failure=1")
+        }
+
+        @Test
+        @DisplayName("DTO 매핑: SystemCodeMasterRequestItem → SystemCodeMasterUpsertCommand")
+        fun dtoMapping_itemToCommand() {
+            whenever(systemCodeMasterUpsertService.upsert(any())).thenReturn(
+                SystemCodeMasterUpsertResult(successCount = 1, failureCount = 0, failures = emptyList())
+            )
+            val items = listOf(
+                SystemCodeMasterRequestItem(
+                    companyCode = "1000",
+                    groupCode = "H10010",
+                    detailCode = "10",
+                    groupCodeName = "직원 상태",
+                    detailCodeName = "재직",
+                    seq = "1"
                 )
             )
 
-            assertThat(detail.failureCount).isEqualTo(1)
-            assertThat(detail.failures.single().reason).contains("CompanyCode 필수")
+            service.upsert(items)
+
+            val captor = argumentCaptor<List<SystemCodeMasterUpsertCommand>>()
+            verify(systemCodeMasterUpsertService).upsert(captor.capture())
+            val command = captor.firstValue.single()
+            assertThat(command.companyCode).isEqualTo("1000")
+            assertThat(command.groupCode).isEqualTo("H10010")
+            assertThat(command.detailCode).isEqualTo("10")
+            assertThat(command.groupCodeName).isEqualTo("직원 상태")
+            assertThat(command.detailCodeName).isEqualTo("재직")
+            assertThat(command.seq).isEqualTo("1")
         }
     }
 }

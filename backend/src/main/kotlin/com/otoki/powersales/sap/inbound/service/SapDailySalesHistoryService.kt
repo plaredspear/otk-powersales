@@ -1,16 +1,17 @@
 package com.otoki.powersales.sap.inbound.service
 
+import com.otoki.powersales.sales.service.DailySalesHistoryUpsertService
+import com.otoki.powersales.sales.service.dto.DailySalesHistoryUpsertCommand
+import com.otoki.powersales.sales.service.dto.DailySalesHistoryUpsertResult
 import com.otoki.powersales.sap.auth.audit.SapInboundAudit
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditEventType
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.sap.auth.util.ClientIpResolver
-import com.otoki.powersales.sales.entity.DailySalesHistory
 import com.otoki.powersales.sap.inbound.dto.sales.ChunkResult
 import com.otoki.powersales.sap.inbound.dto.sales.DailySalesHistoryRequestItem
 import com.otoki.powersales.sap.inbound.dto.sales.FailureItem
 import com.otoki.powersales.sap.inbound.dto.sales.SalesHistoryDetail
 import com.otoki.powersales.sap.inbound.exception.SapPayloadTooLargeException
-import com.otoki.powersales.sales.repository.DailySalesHistoryRepository
 import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -18,20 +19,25 @@ import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.time.format.DateTimeParseException
 
 /**
- * SAP 일 매출 이력 인바운드 UPSERT 서비스. (Spec #560)
+ * SAP 일 매출 이력 인바운드 어댑터. (Spec #560 / 어댑터-도메인 분리: #635 P1-B)
  *
- * - UPSERT 키: [DailySalesHistory.externalKey] = SAPAccountCode + SalesDate (YYYYMMDD)
- * - 청크 단위 분할 + 청크별 [ChunkedUpsertHelper] 가 REQUIRES_NEW 트랜잭션 처리
- * - 청크 commit 실패 시 그 청크 전체 failed, 다른 청크는 처리 진행
+ * 책임:
+ * - SAP 페이로드 size 한도 검증 ([SapPayloadTooLargeException])
+ * - 청크 분할 ([items.chunked]) + 청크 단위 [ChunkedUpsertHelper] 트랜잭션 격리
+ * - 청크별로 페이로드 → 도메인 커맨드 [DailySalesHistoryUpsertCommand] 매핑 후
+ *   [DailySalesHistoryUpsertService.upsert] 호출
+ * - 도메인 결과 [DailySalesHistoryUpsertResult] → 청크 status / failure 집계
+ * - 청크 commit 실패 시 청크 전체 failed 처리
+ * - [SapInboundAuditService] 감사 기록 (chunks 수 포함)
+ *
+ * 트랜잭션 경계는 [ChunkedUpsertHelper] (`REQUIRES_NEW`) 가 청크 단위로 부여한다.
+ * 어댑터 자체는 `@Transactional` 을 부착하지 않으며 (audit 가 commit 후 기록되어야 함), 도메인 서비스도 helper 의 트랜잭션 안에서 호출된다.
  */
 @Service
 class SapDailySalesHistoryService(
-    private val dailySalesHistoryRepository: DailySalesHistoryRepository,
+    private val dailySalesHistoryUpsertService: DailySalesHistoryUpsertService,
     private val chunkedUpsertHelper: ChunkedUpsertHelper,
     private val auditService: SapInboundAuditService,
     @Value("\${sap.inbound.sales.chunk-size:1000}") private val chunkSize: Int,
@@ -52,7 +58,14 @@ class SapDailySalesHistoryService(
 
         chunks.forEachIndexed { idx, chunk ->
             try {
-                val result = chunkedUpsertHelper.processChunk(chunk) { rows -> processChunkRows(rows) }
+                val result = chunkedUpsertHelper.processChunk(chunk) { rows ->
+                    val commands = rows.map { it.toCommand() }
+                    val domainResult = dailySalesHistoryUpsertService.upsert(commands)
+                    ChunkProcessResult(
+                        successCount = domainResult.successCount,
+                        failures = domainResult.failures.map { FailureItem(it.identifier, it.reason) }
+                    )
+                }
                 allFailures += result.failures
                 totalSuccess += result.successCount
                 val status = when {
@@ -81,91 +94,23 @@ class SapDailySalesHistoryService(
         )
     }
 
-    private fun processChunkRows(rows: List<DailySalesHistoryRequestItem>): ChunkProcessResult {
-        val externalKeys = rows.mapNotNull { externalKey(it) }
-        val cache: MutableMap<String, DailySalesHistory> = if (externalKeys.isEmpty()) {
-            mutableMapOf()
-        } else {
-            dailySalesHistoryRepository.findByExternalKeyIn(externalKeys.distinct())
-                .associateBy { it.externalKey }
-                .toMutableMap()
-        }
-
-        val failures = mutableListOf<FailureItem>()
-        val toSave = mutableListOf<DailySalesHistory>()
-
-        rows.forEach { item ->
-            val sapAccountCode = item.sapAccountCode?.takeIf { it.isNotBlank() }
-            val salesDate = item.salesDate?.takeIf { it.isNotBlank() }
-            if (sapAccountCode == null) {
-                failures += FailureItem(null, "SAPAccountCode 필수")
-                return@forEach
-            }
-            if (salesDate == null) {
-                failures += FailureItem(sapAccountCode, "SalesDate 필수")
-                return@forEach
-            }
-            if (!isValidYyyymmdd(salesDate)) {
-                failures += FailureItem(sapAccountCode + salesDate, "SalesDate 형식 오류: $salesDate")
-                return@forEach
-            }
-
-            val parsed = try {
-                arrayOf(
-                    parseAmount(item.erpSalesAmount1),
-                    parseAmount(item.erpSalesAmount2),
-                    parseAmount(item.erpSalesAmount3),
-                    parseAmount(item.erpDistributionAmount1),
-                    parseAmount(item.erpDistributionAmount2),
-                    parseAmount(item.erpDistributionAmount3),
-                    parseAmount(item.ledgerAmount)
-                )
-            } catch (ex: NumberFormatException) {
-                failures += FailureItem(sapAccountCode + salesDate, "금액 변환 실패: ${ex.message}")
-                return@forEach
-            }
-
-            val key = sapAccountCode + salesDate
-            val entity = cache[key]?.also { applyAmounts(it, parsed) }
-                ?: DailySalesHistory(
-                    sapAccountCode = sapAccountCode,
-                    salesDate = salesDate,
-                    externalKey = key
-                ).also {
-                    applyAmounts(it, parsed)
-                    cache[key] = it
-                }
-            toSave += entity
-        }
-
-        if (toSave.isNotEmpty()) {
-            dailySalesHistoryRepository.saveAll(toSave)
-        }
-
-        return ChunkProcessResult(toSave.size, failures)
-    }
-
-    private fun applyAmounts(entity: DailySalesHistory, amounts: Array<Double>) {
-        entity.erpSalesAmount1 = amounts[0]
-        entity.erpSalesAmount2 = amounts[1]
-        entity.erpSalesAmount3 = amounts[2]
-        entity.erpDistributionAmount1 = amounts[3]
-        entity.erpDistributionAmount2 = amounts[4]
-        entity.erpDistributionAmount3 = amounts[5]
-        entity.ledgerAmount = amounts[6]
-    }
+    private fun DailySalesHistoryRequestItem.toCommand(): DailySalesHistoryUpsertCommand =
+        DailySalesHistoryUpsertCommand(
+            sapAccountCode = sapAccountCode,
+            salesDate = salesDate,
+            erpSalesAmount1 = erpSalesAmount1,
+            erpSalesAmount2 = erpSalesAmount2,
+            erpSalesAmount3 = erpSalesAmount3,
+            erpDistributionAmount1 = erpDistributionAmount1,
+            erpDistributionAmount2 = erpDistributionAmount2,
+            erpDistributionAmount3 = erpDistributionAmount3,
+            ledgerAmount = ledgerAmount
+        )
 
     private fun externalKey(item: DailySalesHistoryRequestItem): String? {
         val ac = item.sapAccountCode?.takeIf { it.isNotBlank() } ?: return null
         val sd = item.salesDate?.takeIf { it.isNotBlank() } ?: return null
         return ac + sd
-    }
-
-    private fun isValidYyyymmdd(value: String): Boolean = try {
-        LocalDate.parse(value, DATE_FORMAT)
-        true
-    } catch (_: DateTimeParseException) {
-        false
     }
 
     private fun recordAccepted(received: Int, success: Int, failure: Int, chunks: Int) {
@@ -190,16 +135,5 @@ class SapDailySalesHistoryService(
     private fun currentRequest(): HttpServletRequest? {
         val attrs = RequestContextHolder.getRequestAttributes() as? ServletRequestAttributes
         return attrs?.request
-    }
-
-    companion object {
-        private val DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
-
-        @Throws(NumberFormatException::class)
-        fun parseAmount(value: String?): Double {
-            val trimmed = value?.trim()
-            if (trimmed.isNullOrEmpty() || trimmed == "0") return 0.0
-            return trimmed.toDouble()
-        }
     }
 }

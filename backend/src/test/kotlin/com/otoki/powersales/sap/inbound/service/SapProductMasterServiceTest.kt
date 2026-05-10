@@ -1,11 +1,15 @@
 package com.otoki.powersales.sap.inbound.service
 
+import com.otoki.powersales.product.service.ProductUpsertService
+import com.otoki.powersales.product.service.dto.ProductUpsertCommand
+import com.otoki.powersales.product.service.dto.ProductUpsertFailedRow
+import com.otoki.powersales.product.service.dto.ProductUpsertResult
 import com.otoki.powersales.sap.auth.audit.SapInboundAudit
+import com.otoki.powersales.sap.auth.audit.SapInboundAuditEventType
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
-import com.otoki.powersales.product.entity.Product
 import com.otoki.powersales.sap.inbound.dto.product.ProductMasterRequestItem
-import com.otoki.powersales.product.repository.ProductRepository
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -15,18 +19,15 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.math.BigDecimal
-import java.time.LocalDate
 
 @ExtendWith(MockitoExtension::class)
-@DisplayName("SapProductMasterService 테스트")
+@DisplayName("SapProductMasterService 어댑터 테스트")
 class SapProductMasterServiceTest {
 
     @Mock
-    private lateinit var productRepository: ProductRepository
+    private lateinit var productUpsertService: ProductUpsertService
 
     @Mock
     private lateinit var auditService: SapInboundAuditService
@@ -34,197 +35,100 @@ class SapProductMasterServiceTest {
     @InjectMocks
     private lateinit var service: SapProductMasterService
 
-    private fun item(
-        productCode: String? = "100100",
-        productName: String? = "진라면 매운맛 5입",
-        standardPrice: String? = null,
-        boxReceivingQuantity: String? = null,
-        superTax: String? = null,
-        launchDate: String? = null,
-        productStatus: String? = null,
-        unit: String? = null,
-        category1: String? = null,
-        storeCondition: String? = null,
-        logisticsBarCode: String? = null,
-        productBarcode: String? = null,
-        pallet: String? = null
-    ): ProductMasterRequestItem = ProductMasterRequestItem(
-        productCode = productCode,
-        productName = productName,
-        standardPrice = standardPrice,
-        boxReceivingQuantity = boxReceivingQuantity,
-        superTax = superTax,
-        launchDate = launchDate,
-        productStatus = productStatus,
-        unit = unit,
-        category1 = category1,
-        storeCondition = storeCondition,
-        logisticsBarCode = logisticsBarCode,
-        productBarcode = productBarcode,
-        pallet = pallet
-    )
-
     @Nested
-    @DisplayName("upsert - Happy Path")
-    inner class UpsertHappy {
+    @DisplayName("upsert - 어댑터 책임")
+    inner class AdapterResponsibilities {
 
         @Test
-        @DisplayName("신규 1건 - INSERT, success_count=1")
-        fun upsert_insertNew() {
-            whenever(productRepository.findByProductCodeIn(listOf("100100"))).thenReturn(emptyList())
-
-            val detail = service.upsert(
-                listOf(item(standardPrice = "4500", launchDate = "20200101"))
+        @DisplayName("happy: 도메인 결과 매핑 + audit reason='success=N failure=0'")
+        fun happy_domainResultMappedAndAudit() {
+            val items = listOf(
+                ProductMasterRequestItem(productCode = "100100", productName = "진라면", standardPrice = "4500")
+            )
+            whenever(productUpsertService.upsert(any())).thenReturn(
+                ProductUpsertResult(successCount = 1, failureCount = 0, failures = emptyList())
             )
 
-            val captor = argumentCaptor<List<Product>>()
-            verify(productRepository).saveAll(captor.capture())
-            val saved = captor.firstValue.single()
-            assertThat(saved.productCode).isEqualTo("100100")
-            assertThat(saved.name).isEqualTo("진라면 매운맛 5입")
-            assertThat(saved.standardPrice).isEqualTo(4500.0)
-            assertThat(saved.launchDate).isEqualTo(LocalDate.of(2020, 1, 1))
-            assertThat(saved.superTax).isEqualTo(0.0)
+            val detail = service.upsert(items)
+
             assertThat(detail.successCount).isEqualTo(1)
             assertThat(detail.failureCount).isEqualTo(0)
-            verify(auditService).record(any<SapInboundAudit>())
+
+            val auditCaptor = argumentCaptor<SapInboundAudit>()
+            verify(auditService).record(auditCaptor.capture())
+            assertThat(auditCaptor.firstValue.eventType).isEqualTo(SapInboundAuditEventType.REQUEST_ACCEPTED)
+            assertThat(auditCaptor.firstValue.receivedCount).isEqualTo(1)
+            assertThat(auditCaptor.firstValue.reason).isEqualTo("success=1 failure=0")
         }
 
         @Test
-        @DisplayName("기존 갱신 - 동일 productCode, mutable 필드만 갱신")
-        fun upsert_updateExisting() {
-            val existing = Product(productCode = "100100", name = "기존명")
-            existing.standardPrice = 1000.0
-            whenever(productRepository.findByProductCodeIn(listOf("100100"))).thenReturn(listOf(existing))
+        @DisplayName("부분 실패: 도메인 failures → SAP FailureItem 매핑")
+        fun partialFailure_failureRowsMapped() {
+            val items = listOf(
+                ProductMasterRequestItem(productCode = "100100", productName = "진라면"),
+                ProductMasterRequestItem(productCode = "100200", productName = "안성탕면", standardPrice = "abc")
+            )
+            whenever(productUpsertService.upsert(any())).thenReturn(
+                ProductUpsertResult(
+                    successCount = 1,
+                    failureCount = 1,
+                    failures = listOf(ProductUpsertFailedRow("100200", "StandardPrice 변환 실패: abc"))
+                )
+            )
 
-            service.upsert(listOf(item(productName = "신규명", standardPrice = "5000")))
+            val detail = service.upsert(items)
 
-            val captor = argumentCaptor<List<Product>>()
-            verify(productRepository).saveAll(captor.capture())
-            val saved = captor.firstValue.single()
-            assertThat(saved).isSameAs(existing)
-            assertThat(saved.name).isEqualTo("신규명")
-            assertThat(saved.standardPrice).isEqualTo(5000.0)
-        }
-
-        @Test
-        @DisplayName("LaunchDate 00000000 - launchDate=null")
-        fun upsert_launchDateZero() {
-            whenever(productRepository.findByProductCodeIn(listOf("100100"))).thenReturn(emptyList())
-
-            val detail = service.upsert(listOf(item(launchDate = "00000000")))
-
-            val captor = argumentCaptor<List<Product>>()
-            verify(productRepository).saveAll(captor.capture())
-            assertThat(captor.firstValue.single().launchDate).isNull()
             assertThat(detail.successCount).isEqualTo(1)
-        }
-
-        @Test
-        @DisplayName("StoreCondition 매핑 - storageCondition 컬럼에 저장")
-        fun upsert_storeConditionMapping() {
-            whenever(productRepository.findByProductCodeIn(listOf("100100"))).thenReturn(emptyList())
-
-            service.upsert(listOf(item(storeCondition = "냉장보관")))
-
-            val captor = argumentCaptor<List<Product>>()
-            verify(productRepository).saveAll(captor.capture())
-            assertThat(captor.firstValue.single().storageCondition).isEqualTo("냉장보관")
-        }
-
-        // Spec #575
-
-        @Test
-        @DisplayName("Spec #575 - ProductBarcode + Pallet 정상 매핑")
-        fun upsert_legacyFieldsMapped() {
-            whenever(productRepository.findByProductCodeIn(listOf("100100"))).thenReturn(emptyList())
-
-            service.upsert(listOf(item(productBarcode = "8801007123456", pallet = "100")))
-
-            val captor = argumentCaptor<List<Product>>()
-            verify(productRepository).saveAll(captor.capture())
-            val saved = captor.firstValue.single()
-            assertThat(saved.productBarcode).isEqualTo("8801007123456")
-            assertThat(saved.pallet).isEqualByComparingTo(BigDecimal("100"))
-        }
-
-        @Test
-        @DisplayName("Spec #575 - Pallet blank → 0")
-        fun upsert_palletBlank() {
-            whenever(productRepository.findByProductCodeIn(listOf("100100"))).thenReturn(emptyList())
-
-            service.upsert(listOf(item(pallet = "")))
-
-            val captor = argumentCaptor<List<Product>>()
-            verify(productRepository).saveAll(captor.capture())
-            assertThat(captor.firstValue.single().pallet).isEqualByComparingTo(BigDecimal.ZERO)
-        }
-
-        @Test
-        @DisplayName("Spec #575 - Pallet null (필드 미포함) → 0")
-        fun upsert_palletNull() {
-            whenever(productRepository.findByProductCodeIn(listOf("100100"))).thenReturn(emptyList())
-
-            service.upsert(listOf(item(pallet = null)))
-
-            val captor = argumentCaptor<List<Product>>()
-            verify(productRepository).saveAll(captor.capture())
-            assertThat(captor.firstValue.single().pallet).isEqualByComparingTo(BigDecimal.ZERO)
-        }
-    }
-
-    @Nested
-    @DisplayName("upsert - Error Path")
-    inner class UpsertError {
-
-        @Test
-        @DisplayName("ProductCode 누락 - failures, 적재 스킵")
-        fun upsert_missingProductCode() {
-            val detail = service.upsert(listOf(item(productCode = null)))
-
-            assertThat(detail.successCount).isEqualTo(0)
             assertThat(detail.failureCount).isEqualTo(1)
-            assertThat(detail.failures.single().identifier).isNull()
-            assertThat(detail.failures.single().reason).contains("ProductCode 필수")
-            verify(productRepository, never()).saveAll(any<List<Product>>())
+            assertThat(detail.failures.single().identifier).isEqualTo("100200")
+            assertThat(detail.failures.single().reason).isEqualTo("StandardPrice 변환 실패: abc")
         }
 
         @Test
-        @DisplayName("StandardPrice 변환 실패 - failures, 적재 스킵")
-        fun upsert_invalidStandardPrice() {
-            whenever(productRepository.findByProductCodeIn(listOf("100100"))).thenReturn(emptyList())
+        @DisplayName("도메인 throw: 실패 audit 후 예외 재전파")
+        fun domainThrow_failureAuditAndRethrow() {
+            val items = listOf(ProductMasterRequestItem(productCode = "100100", productName = "진라면"))
+            whenever(productUpsertService.upsert(any()))
+                .thenThrow(IllegalStateException("DB connection lost"))
 
-            val detail = service.upsert(listOf(item(standardPrice = "abc")))
+            assertThatThrownBy { service.upsert(items) }
+                .isInstanceOf(IllegalStateException::class.java)
 
-            assertThat(detail.successCount).isEqualTo(0)
-            assertThat(detail.failureCount).isEqualTo(1)
-            assertThat(detail.failures.single().identifier).isEqualTo("100100")
-            assertThat(detail.failures.single().reason).contains("StandardPrice 변환 실패")
+            val auditCaptor = argumentCaptor<SapInboundAudit>()
+            verify(auditService).record(auditCaptor.capture())
+            assertThat(auditCaptor.firstValue.reason).isEqualTo("success=0 failure=1")
         }
 
         @Test
-        @DisplayName("ProductName 누락 - failures")
-        fun upsert_missingProductName() {
-            whenever(productRepository.findByProductCodeIn(listOf("100100"))).thenReturn(emptyList())
+        @DisplayName("DTO 매핑: ProductMasterRequestItem → ProductUpsertCommand 필드 매핑")
+        fun dtoMapping_itemToCommand() {
+            val items = listOf(
+                ProductMasterRequestItem(
+                    productCode = "100100",
+                    productName = "진라면",
+                    standardPrice = "4500",
+                    launchDate = "20200101",
+                    storeCondition = "냉장보관",
+                    productBarcode = "8801007123456",
+                    pallet = "100"
+                )
+            )
+            whenever(productUpsertService.upsert(any())).thenReturn(
+                ProductUpsertResult(successCount = 1, failureCount = 0, failures = emptyList())
+            )
 
-            val detail = service.upsert(listOf(item(productName = null)))
+            service.upsert(items)
 
-            assertThat(detail.failureCount).isEqualTo(1)
-            assertThat(detail.failures.single().reason).contains("ProductName 필수")
-        }
-
-        @Test
-        @DisplayName("Spec #575 - Pallet 비숫자 → 행 단위 부분 실패")
-        fun upsert_palletInvalid() {
-            whenever(productRepository.findByProductCodeIn(listOf("100100"))).thenReturn(emptyList())
-
-            val detail = service.upsert(listOf(item(pallet = "abc")))
-
-            assertThat(detail.successCount).isEqualTo(0)
-            assertThat(detail.failureCount).isEqualTo(1)
-            assertThat(detail.failures.single().identifier).isEqualTo("100100")
-            assertThat(detail.failures.single().reason).contains("Pallet 형식 오류: abc")
-            verify(productRepository, never()).saveAll(any<List<Product>>())
+            val captor = argumentCaptor<List<ProductUpsertCommand>>()
+            verify(productUpsertService).upsert(captor.capture())
+            val command = captor.firstValue.single()
+            assertThat(command.productCode).isEqualTo("100100")
+            assertThat(command.productName).isEqualTo("진라면")
+            assertThat(command.standardPrice).isEqualTo("4500")
+            assertThat(command.launchDate).isEqualTo("20200101")
+            assertThat(command.storeCondition).isEqualTo("냉장보관")
+            assertThat(command.productBarcode).isEqualTo("8801007123456")
+            assertThat(command.pallet).isEqualTo("100")
         }
     }
 }

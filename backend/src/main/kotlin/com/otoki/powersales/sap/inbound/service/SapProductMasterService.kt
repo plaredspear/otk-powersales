@@ -1,208 +1,80 @@
 package com.otoki.powersales.sap.inbound.service
 
+import com.otoki.powersales.product.service.ProductUpsertService
+import com.otoki.powersales.product.service.dto.ProductUpsertCommand
+import com.otoki.powersales.product.service.dto.ProductUpsertResult
 import com.otoki.powersales.sap.auth.audit.SapInboundAudit
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditEventType
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.sap.auth.util.ClientIpResolver
-import com.otoki.powersales.product.entity.Product
 import com.otoki.powersales.sap.inbound.dto.product.FailureItem
 import com.otoki.powersales.sap.inbound.dto.product.ProductMasterDetail
 import com.otoki.powersales.sap.inbound.dto.product.ProductMasterRequestItem
-import com.otoki.powersales.product.repository.ProductRepository
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
-import java.math.BigDecimal
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.time.format.DateTimeParseException
 
 /**
- * SAP 제품 마스터 인바운드 UPSERT 서비스. (Spec #559, Spec #575)
+ * SAP 제품 마스터 인바운드 어댑터. (Spec #559, #575 / 어댑터-도메인 분리: #635 P1-B)
  *
- * - UPSERT 키: [Product.productCode]
- * - 부분 실패 허용 (행 단위 검증 후 saveAll 일괄)
- * - StoreCondition 페이로드는 엔티티 [Product.storageCondition] 에 매핑 (D1)
- * - StandardPrice 는 [Product.standardPrice] 에 매핑 (var, mutable)
- * - Spec #575: ProductBarcode → [Product.productBarcode], Pallet → [Product.pallet]
- *   (Pallet 은 null/blank/"0" → 0.0, 비숫자 → 행 단위 부분 실패)
+ * 책임:
+ * - SAP 페이로드 [ProductMasterRequestItem] → 도메인 커맨드 [ProductUpsertCommand] 매핑
+ * - 도메인 서비스 [ProductUpsertService.upsert] 호출
+ * - 도메인 결과 [ProductUpsertResult] → SAP 응답 [ProductMasterDetail] 매핑
+ * - [SapInboundAuditService] 감사 기록
+ *
+ * 트랜잭션은 도메인 측이 관리하며 어댑터는 `@Transactional` 을 부착하지 않는다.
+ * UPSERT 키 / 변환 정책 / 부분 실패 시멘틱은 [ProductUpsertService] KDoc 참조.
  */
 @Service
 class SapProductMasterService(
-    private val productRepository: ProductRepository,
+    private val productUpsertService: ProductUpsertService,
     private val auditService: SapInboundAuditService
 ) {
 
-    @Transactional
     fun upsert(items: List<ProductMasterRequestItem>): ProductMasterDetail {
-        val productCodes = items.mapNotNull { it.productCode?.takeIf { code -> code.isNotBlank() } }
-        val cache: MutableMap<String, Product> = if (productCodes.isEmpty()) {
-            mutableMapOf()
-        } else {
-            productRepository.findByProductCodeIn(productCodes.distinct())
-                .mapNotNull { p -> p.productCode?.let { it to p } }
-                .toMap()
-                .toMutableMap()
+        val commands = items.map { it.toCommand() }
+        val result = try {
+            productUpsertService.upsert(commands)
+        } catch (ex: RuntimeException) {
+            recordAccepted(items.size, success = 0, failure = commands.size)
+            throw ex
         }
 
-        val failures = mutableListOf<FailureItem>()
-        val toSave = mutableListOf<Product>()
-
-        items.forEach { item ->
-            val productCode = item.productCode?.takeIf { it.isNotBlank() }
-            if (productCode == null) {
-                failures += FailureItem(null, "ProductCode 필수")
-                return@forEach
-            }
-            val productName = item.productName?.takeIf { it.isNotBlank() }
-            if (productName == null) {
-                failures += FailureItem(productCode, "ProductName 필수")
-                return@forEach
-            }
-
-            val standardPrice = parseDouble(item.standardPrice, allowBlankAsNull = true)
-            if (standardPrice.isFailure) {
-                failures += FailureItem(productCode, "StandardPrice 변환 실패: ${item.standardPrice}")
-                return@forEach
-            }
-            val boxQty = parseDouble(item.boxReceivingQuantity, allowBlankAsNull = true)
-            if (boxQty.isFailure) {
-                failures += FailureItem(productCode, "BoxReceivingQuantity 변환 실패: ${item.boxReceivingQuantity}")
-                return@forEach
-            }
-            val superTax = parseDouble(item.superTax, allowBlankAsZero = true)
-            if (superTax.isFailure) {
-                failures += FailureItem(productCode, "SuperTax 변환 실패: ${item.superTax}")
-                return@forEach
-            }
-            val launchDate = parseLaunchDate(item.launchDate)
-            if (launchDate.isFailure) {
-                failures += FailureItem(productCode, "LaunchDate 형식 오류: ${item.launchDate}")
-                return@forEach
-            }
-            // Spec #575: Pallet 변환. null/blank/"0" → 0.0. 비숫자 → 행 단위 부분 실패.
-            val pallet = parseDouble(item.pallet, allowBlankAsZero = true)
-            if (pallet.isFailure) {
-                failures += FailureItem(productCode, "Pallet 형식 오류: ${item.pallet}")
-                return@forEach
-            }
-
-            val entity = cache[productCode]
-                ?.also { applyToEntity(it, item, productName, standardPrice.value, boxQty.value, superTax.value, launchDate.value, pallet.value) }
-                ?: createProduct(productCode, productName, item, standardPrice.value, boxQty.value, superTax.value, launchDate.value, pallet.value)
-                    .also { cache[productCode] = it }
-            toSave += entity
-        }
-
-        if (toSave.isNotEmpty()) {
-            productRepository.saveAll(toSave)
-        }
-
-        recordAccepted(items.size, toSave.size, failures.size)
+        recordAccepted(items.size, success = result.successCount, failure = result.failureCount)
         return ProductMasterDetail(
-            successCount = toSave.size,
-            failureCount = failures.size,
-            failures = failures
+            successCount = result.successCount,
+            failureCount = result.failureCount,
+            failures = result.failures.map { FailureItem(it.identifier, it.reason) }
         )
     }
 
-    private fun createProduct(
-        productCode: String,
-        productName: String,
-        item: ProductMasterRequestItem,
-        standardPrice: Double?,
-        boxQty: Double?,
-        superTax: Double?,
-        launchDate: LocalDate?,
-        pallet: Double?
-    ): Product {
-        val product = Product(productCode = productCode, name = productName)
-        applyMutableFields(product, item, standardPrice, boxQty, superTax, launchDate, pallet)
-        return product
-    }
-
-    private fun applyToEntity(
-        product: Product,
-        item: ProductMasterRequestItem,
-        productName: String,
-        standardPrice: Double?,
-        boxQty: Double?,
-        superTax: Double?,
-        launchDate: LocalDate?,
-        pallet: Double?
-    ) {
-        product.name = productName
-        applyMutableFields(product, item, standardPrice, boxQty, superTax, launchDate, pallet)
-    }
-
-    private fun applyMutableFields(
-        product: Product,
-        item: ProductMasterRequestItem,
-        standardPrice: Double?,
-        boxQty: Double?,
-        superTax: Double?,
-        launchDate: LocalDate?,
-        pallet: Double?
-    ) {
-        product.productStatus = item.productStatus
-        product.productType = item.productType
-        product.category1 = item.category1
-        product.category2 = item.category2
-        product.category3 = item.category3
-        product.categoryCode1 = item.categoryCode1
-        product.categoryCode2 = item.categoryCode2
-        product.categoryCode3 = item.categoryCode3
-        product.unit = item.unit
-        product.shelfLife = item.shelfLife
-        product.shelfLifeUnit = item.shelfLifeUnit
-        product.tasteGift = item.tasteGift
-        product.logisticsBarcode = item.logisticsBarCode
-        product.storageCondition = item.storeCondition
-        product.standardPrice = standardPrice
-        product.boxReceivingQuantity = boxQty
-        product.superTax = superTax ?: 0.0
-        product.launchDate = launchDate
-        // Spec #575
-        product.productBarcode = item.productBarcode
-        product.pallet = pallet?.let { BigDecimal.valueOf(it) }
-    }
-
-    private data class ParseResult<T>(val value: T?, val isFailure: Boolean)
-
-    private fun parseDouble(
-        value: String?,
-        allowBlankAsNull: Boolean = false,
-        allowBlankAsZero: Boolean = false
-    ): ParseResult<Double> {
-        val trimmed = value?.trim()
-        if (trimmed.isNullOrEmpty()) {
-            return when {
-                allowBlankAsZero -> ParseResult(0.0, false)
-                allowBlankAsNull -> ParseResult(null, false)
-                else -> ParseResult(null, true)
-            }
-        }
-        return try {
-            ParseResult(trimmed.toDouble(), false)
-        } catch (_: NumberFormatException) {
-            ParseResult(null, true)
-        }
-    }
-
-    private fun parseLaunchDate(value: String?): ParseResult<LocalDate> {
-        val trimmed = value?.trim()
-        if (trimmed.isNullOrEmpty() || trimmed == "00000000") {
-            return ParseResult(null, false)
-        }
-        return try {
-            ParseResult(LocalDate.parse(trimmed, DATE_FORMAT), false)
-        } catch (_: DateTimeParseException) {
-            ParseResult(null, true)
-        }
-    }
+    private fun ProductMasterRequestItem.toCommand(): ProductUpsertCommand = ProductUpsertCommand(
+        productCode = productCode,
+        productName = productName,
+        productBarcode = productBarcode,
+        logisticsBarCode = logisticsBarCode,
+        categoryCode1 = categoryCode1,
+        category1 = category1,
+        categoryCode2 = categoryCode2,
+        category2 = category2,
+        categoryCode3 = categoryCode3,
+        category3 = category3,
+        productStatus = productStatus,
+        standardPrice = standardPrice,
+        unit = unit,
+        boxReceivingQuantity = boxReceivingQuantity,
+        shelfLife = shelfLife,
+        shelfLifeUnit = shelfLifeUnit,
+        launchDate = launchDate,
+        storeCondition = storeCondition,
+        productType = productType,
+        superTax = superTax,
+        tasteGift = tasteGift,
+        pallet = pallet
+    )
 
     private fun recordAccepted(received: Int, success: Int, failure: Int) {
         val request = currentRequest()
@@ -226,9 +98,5 @@ class SapProductMasterService(
     private fun currentRequest(): HttpServletRequest? {
         val attrs = RequestContextHolder.getRequestAttributes() as? ServletRequestAttributes
         return attrs?.request
-    }
-
-    companion object {
-        private val DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
     }
 }

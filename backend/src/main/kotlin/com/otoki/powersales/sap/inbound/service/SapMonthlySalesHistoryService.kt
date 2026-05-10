@@ -1,16 +1,17 @@
 package com.otoki.powersales.sap.inbound.service
 
+import com.otoki.powersales.sales.service.MonthlySalesHistoryUpsertService
+import com.otoki.powersales.sales.service.dto.MonthlySalesHistoryUpsertCommand
+import com.otoki.powersales.sales.service.dto.MonthlySalesHistoryUpsertResult
 import com.otoki.powersales.sap.auth.audit.SapInboundAudit
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditEventType
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.sap.auth.util.ClientIpResolver
-import com.otoki.powersales.sales.entity.MonthlySalesHistory
 import com.otoki.powersales.sap.inbound.dto.sales.ChunkResult
 import com.otoki.powersales.sap.inbound.dto.sales.FailureItem
 import com.otoki.powersales.sap.inbound.dto.sales.MonthlySalesHistoryRequestItem
 import com.otoki.powersales.sap.inbound.dto.sales.SalesHistoryDetail
 import com.otoki.powersales.sap.inbound.exception.SapPayloadTooLargeException
-import com.otoki.powersales.sales.repository.MonthlySalesHistoryRepository
 import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -18,18 +19,24 @@ import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
-import java.math.BigDecimal
 
 /**
- * SAP 월 매출 이력 인바운드 UPSERT 서비스. (Spec #560)
+ * SAP 월 매출 이력 인바운드 어댑터. (Spec #560 / 어댑터-도메인 분리: #635 P1-B)
  *
- * - UPSERT 키: [MonthlySalesHistory.externalkeyC] = SAPAccountCode + SalesYearMonth (YYYYMM)
- * - SalesYearMonth substring(0,4) → salesYear, substring(4,6) → salesMonth
- * - 청크 단위 분할 + [ChunkedUpsertHelper] REQUIRES_NEW 트랜잭션
+ * 책임:
+ * - SAP 페이로드 size 한도 검증 ([SapPayloadTooLargeException])
+ * - 청크 분할 + 청크 단위 [ChunkedUpsertHelper] 트랜잭션 격리
+ * - 청크별로 페이로드 → 도메인 커맨드 [MonthlySalesHistoryUpsertCommand] 매핑 후
+ *   [MonthlySalesHistoryUpsertService.upsert] 호출
+ * - 도메인 결과 [MonthlySalesHistoryUpsertResult] → 청크 status / failure 집계
+ * - 청크 commit 실패 시 청크 전체 failed 처리
+ * - [SapInboundAuditService] 감사 기록 (chunks 수 포함)
+ *
+ * 트랜잭션 경계는 [ChunkedUpsertHelper] (`REQUIRES_NEW`) 가 청크 단위로 부여한다.
  */
 @Service
 class SapMonthlySalesHistoryService(
-    private val monthlySalesHistoryRepository: MonthlySalesHistoryRepository,
+    private val monthlySalesHistoryUpsertService: MonthlySalesHistoryUpsertService,
     private val chunkedUpsertHelper: ChunkedUpsertHelper,
     private val auditService: SapInboundAuditService,
     @Value("\${sap.inbound.sales.chunk-size:1000}") private val chunkSize: Int,
@@ -50,7 +57,14 @@ class SapMonthlySalesHistoryService(
 
         chunks.forEachIndexed { idx, chunk ->
             try {
-                val result = chunkedUpsertHelper.processChunk(chunk) { rows -> processChunkRows(rows) }
+                val result = chunkedUpsertHelper.processChunk(chunk) { rows ->
+                    val commands = rows.map { it.toCommand() }
+                    val domainResult = monthlySalesHistoryUpsertService.upsert(commands)
+                    ChunkProcessResult(
+                        successCount = domainResult.successCount,
+                        failures = domainResult.failures.map { FailureItem(it.identifier, it.reason) }
+                    )
+                }
                 allFailures += result.failures
                 totalSuccess += result.successCount
                 val status = when {
@@ -79,84 +93,17 @@ class SapMonthlySalesHistoryService(
         )
     }
 
-    private fun processChunkRows(rows: List<MonthlySalesHistoryRequestItem>): ChunkProcessResult {
-        val externalKeys = rows.mapNotNull { externalKey(it) }
-        val cache: MutableMap<String, MonthlySalesHistory> = if (externalKeys.isEmpty()) {
-            mutableMapOf()
-        } else {
-            monthlySalesHistoryRepository.findByExternalkeyCIn(externalKeys.distinct())
-                .mapNotNull { e -> e.externalkeyC?.let { it to e } }
-                .toMap()
-                .toMutableMap()
-        }
-
-        val failures = mutableListOf<FailureItem>()
-        val toSave = mutableListOf<MonthlySalesHistory>()
-
-        rows.forEach { item ->
-            val sapAccountCode = item.sapAccountCode?.takeIf { it.isNotBlank() }
-            val salesYearMonth = item.salesYearMonth?.takeIf { it.isNotBlank() }
-            if (sapAccountCode == null) {
-                failures += FailureItem(null, "SAPAccountCode 필수")
-                return@forEach
-            }
-            if (salesYearMonth == null) {
-                failures += FailureItem(sapAccountCode, "SalesYearMonth 필수")
-                return@forEach
-            }
-            if (salesYearMonth.length != 6 || !salesYearMonth.all { it.isDigit() }) {
-                failures += FailureItem(sapAccountCode + salesYearMonth, "SalesYearMonth 형식 오류: $salesYearMonth")
-                return@forEach
-            }
-            val month = salesYearMonth.substring(4, 6).toInt()
-            if (month < 1 || month > 12) {
-                failures += FailureItem(sapAccountCode + salesYearMonth, "SalesYearMonth 월 범위 오류: $salesYearMonth")
-                return@forEach
-            }
-
-            val parsed = try {
-                arrayOf(
-                    parseAmount(item.abcClosingAmount1),
-                    parseAmount(item.abcClosingAmount2),
-                    parseAmount(item.abcClosingAmount3),
-                    parseAmount(item.totalLedgerAmount),
-                    parseAmount(item.shipClosingAmount),
-                    parseAmount(item.rlsales)
-                )
-            } catch (ex: NumberFormatException) {
-                failures += FailureItem(sapAccountCode + salesYearMonth, "금액 변환 실패: ${ex.message}")
-                return@forEach
-            }
-
-            val key = sapAccountCode + salesYearMonth
-            val salesYear = salesYearMonth.substring(0, 4)
-            val salesMonth = salesYearMonth.substring(4, 6)
-
-            val entity = cache[key]?.also { applyFields(it, salesYear, salesMonth, parsed) }
-                ?: MonthlySalesHistory(externalkeyC = key).also {
-                    applyFields(it, salesYear, salesMonth, parsed)
-                    cache[key] = it
-                }
-            toSave += entity
-        }
-
-        if (toSave.isNotEmpty()) {
-            monthlySalesHistoryRepository.saveAll(toSave)
-        }
-
-        return ChunkProcessResult(toSave.size, failures)
-    }
-
-    private fun applyFields(entity: MonthlySalesHistory, salesYear: String, salesMonth: String, amounts: Array<Double>) {
-        entity.salesYear = salesYear
-        entity.salesMonth = salesMonth
-        entity.abcClosingAmount1 = amounts[0]
-        entity.abcClosingAmount2 = amounts[1]
-        entity.abcClosingAmount3 = amounts[2]
-        entity.totalLedgerAmount = BigDecimal.valueOf(amounts[3]) // Spec #575: SAP TotalLedgerAmount 보존
-        entity.shipClosingAmount = amounts[4]
-        entity.rlsalesC = amounts[5]
-    }
+    private fun MonthlySalesHistoryRequestItem.toCommand(): MonthlySalesHistoryUpsertCommand =
+        MonthlySalesHistoryUpsertCommand(
+            sapAccountCode = sapAccountCode,
+            salesYearMonth = salesYearMonth,
+            abcClosingAmount1 = abcClosingAmount1,
+            abcClosingAmount2 = abcClosingAmount2,
+            abcClosingAmount3 = abcClosingAmount3,
+            totalLedgerAmount = totalLedgerAmount,
+            shipClosingAmount = shipClosingAmount,
+            rlsales = rlsales
+        )
 
     private fun externalKey(item: MonthlySalesHistoryRequestItem): String? {
         val ac = item.sapAccountCode?.takeIf { it.isNotBlank() } ?: return null
@@ -186,14 +133,5 @@ class SapMonthlySalesHistoryService(
     private fun currentRequest(): HttpServletRequest? {
         val attrs = RequestContextHolder.getRequestAttributes() as? ServletRequestAttributes
         return attrs?.request
-    }
-
-    companion object {
-        @Throws(NumberFormatException::class)
-        fun parseAmount(value: String?): Double {
-            val trimmed = value?.trim()
-            if (trimmed.isNullOrEmpty() || trimmed == "0") return 0.0
-            return trimmed.toDouble()
-        }
     }
 }
