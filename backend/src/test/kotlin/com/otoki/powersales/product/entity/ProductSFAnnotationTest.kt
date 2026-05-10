@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test
  *
  * 검증 분류:
  *   - AC1: 클래스 `@SFObject` 무변경
- *   - AC2: `@SFField` 매핑 키셋 (41개 — 34 기존 + 1 매핑 추가 + 6 신규)
+ *   - AC2: `@SFField` 매핑 키셋 (40개 — 33 기존 + 1 매핑 추가 + 6 신규. spec #650 으로 `StandardPrice__c` 매핑 제거)
  *   - AC3: PK 미부착
  */
 @DisplayName("Product SF 어노테이션 검증 (Spec #613)")
@@ -35,15 +35,15 @@ class ProductSFAnnotationTest {
     }
 
     @Nested
-    @DisplayName("AC2 — @SFField 매핑 키셋 (41개)")
+    @DisplayName("AC2 — @SFField 매핑 키셋 (40개)")
     inner class SfFieldMapping {
 
         private val mapping = SFSchemaUtils.getSFMapping(Product::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 41 (34 기존 + 1 매핑 추가 + 6 신규)")
+        @DisplayName("매핑 키 수 = 40 (33 기존 + 1 매핑 추가 + 6 신규. spec #650 으로 StandardPrice__c 제거)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(41)
+            assertThat(mapping).hasSize(40)
         }
 
         @Test

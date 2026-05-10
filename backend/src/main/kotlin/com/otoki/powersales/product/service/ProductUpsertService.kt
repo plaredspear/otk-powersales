@@ -162,7 +162,7 @@ class ProductUpsertService(
         product.tasteGift = command.tasteGift
         product.logisticsBarcode = command.logisticsBarCode
         product.storageCondition = command.storeCondition
-        product.standardPrice = standardPrice
+        product.standardUnitPrice = standardPrice
         product.boxReceivingQuantity = boxQty
         product.superTax = superTax ?: 0.0
         product.launchDate = launchDate

@@ -77,8 +77,8 @@ export default function ProductPage() {
     { title: '카테고리2', dataIndex: 'category2', width: 100, render: (val: string | null) => val ?? '-' },
     { title: '카테고리3', dataIndex: 'category3', width: 100, render: (val: string | null) => val ?? '-' },
     {
-      title: '표준가격',
-      dataIndex: 'standardPrice',
+      title: '표준가(원)',
+      dataIndex: 'standardUnitPrice',
       width: 100,
       align: 'right',
       render: (val: number | null) => (val != null ? val.toLocaleString() : '-'),
