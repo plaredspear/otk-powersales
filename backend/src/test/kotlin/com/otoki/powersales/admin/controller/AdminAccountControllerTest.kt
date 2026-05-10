@@ -1,31 +1,40 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.admin.scope.DataScopeHolder
-import com.otoki.powersales.admin.security.AdminAuthorityFilter
+import com.otoki.powersales.account.dto.request.AdminAccountCreateRequest
 import com.otoki.powersales.account.dto.response.AccountListItem
 import com.otoki.powersales.account.dto.response.AccountListResponse
+import com.otoki.powersales.account.dto.response.AdminAccountCreateResponse
+import com.otoki.powersales.account.exception.AccountNameDuplicateException
+import com.otoki.powersales.account.exception.AccountNamePrefixRequiredException
+import com.otoki.powersales.account.service.AccountCreateService
 import com.otoki.powersales.account.service.AdminAccountService
+import com.otoki.powersales.admin.scope.DataScopeHolder
+import com.otoki.powersales.admin.security.AdminAuthorityFilter
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.common.security.UserPrincipal
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
+import tools.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
+import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
@@ -37,8 +46,14 @@ class AdminAccountControllerTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
 
+    @Autowired
+    private lateinit var objectMapper: ObjectMapper
+
     @MockitoBean
     private lateinit var adminAccountService: AdminAccountService
+
+    @MockitoBean
+    private lateinit var accountCreateService: AccountCreateService
 
     @MockitoBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
@@ -161,6 +176,88 @@ class AdminAccountControllerTest {
                 .andExpect(jsonPath("$.data.content").isEmpty)
                 .andExpect(jsonPath("$.data.totalElements").value(0))
                 .andExpect(jsonPath("$.data.totalPages").value(0))
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/v1/admin/accounts - 신규 거래처 등록 (Spec #640)")
+    inner class CreateAccount {
+
+        @Test
+        @DisplayName("C1 성공 - 정상 등록 (201 Created + camelCase 응답)")
+        fun createAccount_success() {
+            val request = AdminAccountCreateRequest(name = "(신규) 강남점", employeeCode = "100123")
+            val response = AdminAccountCreateResponse(
+                id = 1234,
+                name = "(신규) 강남점",
+                accountGroup = "9999",
+                employeeCode = "100123",
+                branchCode = "C001",
+                branchName = "강남지점"
+            )
+            whenever(accountCreateService.create(any())).thenReturn(response)
+
+            mockMvc.perform(
+                post("/api/v1/admin/accounts")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+                .andExpect(status().isCreated)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(1234))
+                .andExpect(jsonPath("$.data.name").value("(신규) 강남점"))
+                .andExpect(jsonPath("$.data.accountGroup").value("9999"))
+                .andExpect(jsonPath("$.data.employeeCode").value("100123"))
+                .andExpect(jsonPath("$.data.branchCode").value("C001"))
+                .andExpect(jsonPath("$.data.branchName").value("강남지점"))
+                .andExpect(jsonPath("$.message").value("거래처 등록 성공"))
+        }
+
+        @Test
+        @DisplayName("C4 실패 - name blank → 400 (validation)")
+        fun createAccount_nameBlank() {
+            val rawJson = """{"name":"","employeeCode":"100123"}"""
+
+            mockMvc.perform(
+                post("/api/v1/admin/accounts")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(rawJson)
+            )
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.success").value(false))
+        }
+
+        @Test
+        @DisplayName("C5 실패 - 동일명 등록 시도 → 409 ACCOUNT_NAME_DUPLICATE")
+        fun createAccount_duplicate() {
+            val request = AdminAccountCreateRequest(name = "(신규) 강남점", employeeCode = "100123")
+            whenever(accountCreateService.create(any())).thenThrow(AccountNameDuplicateException())
+
+            mockMvc.perform(
+                post("/api/v1/admin/accounts")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+                .andExpect(status().isConflict)
+                .andExpect(jsonPath("$.error.code").value("ACCOUNT_NAME_DUPLICATE"))
+                .andExpect(jsonPath("$.error.message").value("동일한 이름의 거래처가 이미 존재합니다."))
+        }
+
+        @Test
+        @DisplayName("C6 실패 - prefix 미포함 → 400 ACCOUNT_NAME_PREFIX_REQUIRED + 메시지 정합")
+        fun createAccount_prefixMissing() {
+            val request = AdminAccountCreateRequest(name = "강남점", employeeCode = "100123")
+            whenever(accountCreateService.create(any()))
+                .thenThrow(AccountNamePrefixRequiredException("(신규)/(기타)"))
+
+            mockMvc.perform(
+                post("/api/v1/admin/accounts")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.error.code").value("ACCOUNT_NAME_PREFIX_REQUIRED"))
+                .andExpect(jsonPath("$.error.message").value("신규 거래처 등록은 ((신규)/(기타)) 중 1개를 필수로 입력하셔야 합니다."))
         }
     }
 }

@@ -37,3 +37,30 @@ data class AccountListItem(
         )
     }
 }
+
+/**
+ * 관리자 웹 신규 거래처 등록 응답 DTO. (Spec #640)
+ *
+ * `account_group` 은 자동 set `'9999'` 고정. `branch_code` 는 Employee.cost_center_code 직접 사용으로
+ * 등록 시점에 항상 비-NULL. `branch_name` 은 Organization 매칭 결과의 deepest non-blank,
+ * 매칭 실패 시 NULL.
+ */
+data class AdminAccountCreateResponse(
+    val id: Int,
+    val name: String,
+    val accountGroup: String,
+    val employeeCode: String,
+    val branchCode: String?,
+    val branchName: String?
+) {
+    companion object {
+        fun from(account: Account): AdminAccountCreateResponse = AdminAccountCreateResponse(
+            id = account.id,
+            name = account.name ?: "",
+            accountGroup = account.accountGroup ?: "",
+            employeeCode = account.employeeCode ?: "",
+            branchCode = account.branchCode,
+            branchName = account.branchName
+        )
+    }
+}
