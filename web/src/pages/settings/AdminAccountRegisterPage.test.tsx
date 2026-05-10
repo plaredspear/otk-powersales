@@ -62,10 +62,12 @@ describe('AdminAccountRegisterPage', () => {
     navigateMock.mockReset();
   });
 
-  it('정상 렌더링 — 사번 prefix(ADMIN-) addonBefore 표시 및 안내 문구 표시 + 사번 입력란 autoFocus', () => {
+  it('정상 렌더링 — 사번 prefix(ADMIN-) Space.Compact 표시 및 안내 문구 표시 + 사번 입력란 autoFocus', () => {
     renderPage();
     expect(screen.getByText('시스템 관리자 등록')).toBeInTheDocument();
-    expect(screen.getByText('ADMIN-')).toBeInTheDocument();
+    // prefix 는 disabled Input 의 value 로 표시되므로 getByDisplayValue 로 검증
+    // (이전 addonBefore 는 textNode 였으나 Space.Compact 패턴은 disabled Input value)
+    expect(screen.getByDisplayValue('ADMIN-')).toBeInTheDocument();
     expect(
       screen.getByText(/SAP 인바운드로 동기화되지 않는 시스템 관리자 계정/),
     ).toBeInTheDocument();

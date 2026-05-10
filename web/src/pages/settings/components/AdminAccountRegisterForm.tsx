@@ -1,14 +1,49 @@
+import { forwardRef } from 'react';
 import { Alert, Button, Form, Input, Space } from 'antd';
-import type { FormInstance } from 'antd';
+import type { FormInstance, InputRef, InputProps } from 'antd';
 
 /**
  * 시스템 관리자 수동 등록 폼 (Spec #579).
  *
- * - 사번은 `addonBefore="ADMIN-"` 으로 prefix 시각 분리, 사용자는 본문만 입력.
+ * - 사번은 `Space.Compact` 로 prefix(ADMIN-) 시각 분리, 사용자는 본문만 입력.
+ *   (이전: `addonBefore`. antd 의 deprecation 안내에 따라 `Space.Compact` 패턴으로 정정.)
  * - 비밀번호 정책 클라이언트 검증: 8~64자 + 영문/숫자/특수문자 중 2종 이상 + 동일 문자 4회 반복 금지.
  * - 폼 제출 책임은 부모(`onSubmit`) 위임. 부모가 mutation 호출과 navigate를 담당한다.
  * - 사번 본문(`employeeCodeBody`) 은 폼 내부 상태이며, 부모에는 `ADMIN-{본문}` 합쳐진 `employeeCode` 만 전달한다.
  */
+
+/**
+ * `Space.Compact` 로 prefix Input(disabled) + 본문 Input 을 시각적으로 결합한 입력 컴포넌트.
+ *
+ * Form.Item 의 자동 value/onChange 바인딩이 단일 element 에만 적용되므로, 본문 Input 으로
+ * props 를 전달(forwardRef)하여 binding 을 보존한다.
+ */
+interface PrefixedInputProps extends Omit<InputProps, 'addonBefore' | 'prefix'> {
+  prefix: string;
+  prefixWidth?: number;
+}
+
+const PrefixedInput = forwardRef<InputRef, PrefixedInputProps>(
+  ({ prefix, prefixWidth = 88, style, ...rest }, ref) => (
+    <Space.Compact style={{ width: '100%', ...style }}>
+      <Input
+        value={prefix}
+        disabled
+        style={{
+          width: prefixWidth,
+          flex: `0 0 ${prefixWidth}px`,
+          textAlign: 'center',
+          backgroundColor: 'rgba(0, 0, 0, 0.02)',
+          color: 'rgba(0, 0, 0, 0.88)',
+          cursor: 'default',
+        }}
+        tabIndex={-1}
+      />
+      <Input ref={ref} {...rest} />
+    </Space.Compact>
+  ),
+);
+PrefixedInput.displayName = 'PrefixedInput';
 
 export interface AdminAccountRegisterFormValues {
   employeeCode: string;
@@ -121,7 +156,7 @@ export default function AdminAccountRegisterForm({ form, isSubmitting, onSubmit,
         ]}
         extra="ADMIN-{사번 본문} 형식. 본문은 영문/숫자/하이픈/언더스코어 1~30자 (사번 전체 7~36자)"
       >
-        <Input addonBefore="ADMIN-" placeholder="예: 001" maxLength={30} autoFocus />
+        <PrefixedInput prefix="ADMIN-" placeholder="예: 001" maxLength={30} autoFocus />
       </Form.Item>
 
       <Form.Item
