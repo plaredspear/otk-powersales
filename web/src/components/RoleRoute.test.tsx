@@ -37,7 +37,10 @@ function setRole(role: UserRole | null) {
 
 function renderWithRoute() {
   return render(
-    <MemoryRouter initialEntries={['/protected']}>
+    <MemoryRouter
+      initialEntries={['/protected']}
+      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+    >
       <Routes>
         <Route element={<RoleRoute allowedRoles={['SYSTEM_ADMIN']} />}>
           <Route path="/protected" element={<TestProtected />} />
