@@ -11,4 +11,6 @@ interface OrganizationRepositoryCustom {
     ): List<Organization>
 
     fun expandCostCenterCodes(costCenterCodes: List<String>): List<String>
+
+    fun findFirstByAnyOrgCodeLevel(orgCode: String): Organization?
 }

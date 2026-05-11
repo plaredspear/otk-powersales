@@ -64,6 +64,19 @@ class OrganizationRepositoryCustomImpl(
             .fetch()
     }
 
+    override fun findFirstByAnyOrgCodeLevel(orgCode: String): Organization? {
+        return queryFactory
+            .selectFrom(organization)
+            .where(
+                organization.orgCodeLevel2.eq(orgCode)
+                    .or(organization.orgCodeLevel3.eq(orgCode))
+                    .or(organization.orgCodeLevel4.eq(orgCode))
+                    .or(organization.orgCodeLevel5.eq(orgCode))
+            )
+            .limit(1)
+            .fetchFirst()
+    }
+
     override fun expandCostCenterCodes(costCenterCodes: List<String>): List<String> {
         if (costCenterCodes.isEmpty()) return emptyList()
 
