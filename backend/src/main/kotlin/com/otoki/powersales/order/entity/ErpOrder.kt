@@ -15,6 +15,9 @@ class ErpOrder(
     @Column(name = "erp_order_id")
     val id: Long = 0,
 
+    @Column(name = "sfid", length = 18)
+    val sfid: String? = null,
+
     @SFField("Name")
     @Column(name = "sap_order_number", nullable = false, unique = true, length = 20)
     val sapOrderNumber: String,

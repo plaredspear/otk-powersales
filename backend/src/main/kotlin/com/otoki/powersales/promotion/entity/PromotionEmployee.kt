@@ -18,6 +18,9 @@ class PromotionEmployee(
     @Column(name = "promotion_employee_id")
     val id: Long = 0,
 
+    @Column(name = "sfid", length = 18)
+    val sfid: String? = null,
+
     @Column(name = "promotion_id", nullable = false)
     val promotionId: Long,
 

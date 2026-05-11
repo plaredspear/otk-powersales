@@ -15,6 +15,9 @@ class ErpOrderProduct(
     @Column(name = "erp_order_product_id")
     val id: Long = 0,
 
+    @Column(name = "sfid", length = 18)
+    val sfid: String? = null,
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "erp_order_id", nullable = false)
     var erpOrder: ErpOrder,

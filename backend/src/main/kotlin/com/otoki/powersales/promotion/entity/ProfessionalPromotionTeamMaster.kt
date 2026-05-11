@@ -19,6 +19,9 @@ class ProfessionalPromotionTeamMaster(
     @Column(name = "professional_promotion_team_master_id")
     val id: Long = 0,
 
+    @Column(name = "sfid", length = 18)
+    val sfid: String? = null,
+
     @Column(name = "employee_id", nullable = false)
     val employeeId: Long,
 

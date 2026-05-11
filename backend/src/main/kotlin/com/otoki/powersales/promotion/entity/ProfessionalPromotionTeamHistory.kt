@@ -17,6 +17,9 @@ class ProfessionalPromotionTeamHistory(
     @Column(name = "professional_promotion_team_history_id")
     val id: Long = 0,
 
+    @Column(name = "sfid", length = 18)
+    val sfid: String? = null,
+
     @Column(name = "employee_id", nullable = false)
     val employeeId: Long,
 

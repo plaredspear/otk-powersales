@@ -17,6 +17,9 @@ class AlternativeHoliday(
     @Column(name = "alternative_holiday_id")
     val id: Long = 0,
 
+    @Column(name = "sfid", length = 18)
+    val sfid: String? = null,
+
     @Column(name = "employee_id", nullable = false)
     val employeeId: Long,
 

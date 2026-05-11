@@ -21,6 +21,9 @@ class AttendInfo(
     @Column(name = "attend_info_id")
     val id: Long = 0,
 
+    @Column(name = "sfid", length = 18)
+    val sfid: String? = null,
+
     @SFField("EmployeeCode__c")
     @Column(name = "employee_code", nullable = false, length = 20)
     val employeeCode: String,

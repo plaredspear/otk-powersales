@@ -18,6 +18,9 @@ class Promotion(
     @Column(name = "promotion_id")
     val id: Long = 0,
 
+    @Column(name = "sfid", length = 18)
+    val sfid: String? = null,
+
     @SFField("Name")
     @Column(name = "promotion_number", nullable = false, unique = true, length = 20)
     val promotionNumber: String,

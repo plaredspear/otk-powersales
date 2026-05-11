@@ -25,6 +25,9 @@ class Organization(
     @Column(name = "organization_id")
     val id: Long = 0,
 
+    @Column(name = "sfid", length = 18)
+    val sfid: String? = null,
+
     @SFField("CostCenterLevel2__c")
     @Comment("COST CENTER 코드(2레벨)")
     @Column(name = "cc_cd2", length = 100)

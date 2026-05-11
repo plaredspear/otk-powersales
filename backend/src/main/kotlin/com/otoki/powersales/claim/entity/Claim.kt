@@ -29,6 +29,9 @@ class Claim(
     @Column(name = "claim_id")
     val id: Long = 0,
 
+    @Column(name = "sfid", length = 18)
+    val sfid: String? = null,
+
     @SFField("DKRetail__EmployeeId__c")
     @Column(name = "employee_sfid", length = 18)
     val employeeSfid: String? = null,
