@@ -3,8 +3,12 @@ package com.otoki.powersales.schedule.repository
 import com.otoki.powersales.account.entity.QAccount.Companion.account
 import com.otoki.powersales.employee.entity.QEmployee.Companion.employee
 import com.otoki.powersales.employee.entity.QEmployeeInfo.Companion.employeeInfo
+import com.otoki.powersales.schedule.entity.AttendanceType
+import com.otoki.powersales.schedule.entity.QAttendanceLog.Companion.attendanceLog
 import com.otoki.powersales.schedule.entity.QTeamMemberSchedule.Companion.teamMemberSchedule
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
+import com.otoki.powersales.schedule.sap.AttendanceSapPayloadRow
+import com.querydsl.core.types.Projections
 import com.querydsl.core.types.dsl.BooleanExpression
 import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.transaction.annotation.Transactional
@@ -261,6 +265,44 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             )
             .fetch()
             .size
+    }
+
+    override fun findRegularAttendancesForSapPaged(
+        today: LocalDate,
+        yesterday: LocalDate,
+        limit: Int,
+        offset: Int
+    ): List<AttendanceSapPayloadRow> {
+        return queryFactory
+            .select(
+                Projections.constructor(
+                    AttendanceSapPayloadRow::class.java,
+                    attendanceLog.id,
+                    teamMemberSchedule.workingDate,
+                    employee.employeeCode,
+                    account.externalKey,
+                    teamMemberSchedule.workingCategory1,
+                    teamMemberSchedule.workingCategory2,
+                    teamMemberSchedule.workingCategory3,
+                    attendanceLog.secondWorkType
+                )
+            )
+            .from(teamMemberSchedule)
+            .join(attendanceLog).on(
+                teamMemberSchedule.commuteLogId.eq(attendanceLog.sfid)
+                    .or(teamMemberSchedule.commuteLogId.eq(attendanceLog.id.stringValue()))
+            )
+            .join(employee).on(employee.id.eq(attendanceLog.employeeId))
+            .join(account).on(account.id.eq(attendanceLog.accountId))
+            .where(
+                attendanceLog.attendanceType.eq(AttendanceType.REGULAR),
+                teamMemberSchedule.workingType.eq(WORKING_TYPE_WORK),
+                teamMemberSchedule.workingDate.`in`(today, yesterday)
+            )
+            .orderBy(attendanceLog.id.asc())
+            .offset(offset.toLong())
+            .limit(limit.toLong())
+            .fetch()
     }
 
     private fun isNotDeleted(): BooleanExpression {

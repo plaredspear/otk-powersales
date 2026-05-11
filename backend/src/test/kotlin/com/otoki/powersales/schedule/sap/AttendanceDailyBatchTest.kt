@@ -2,6 +2,7 @@ package com.otoki.powersales.schedule.sap
 
 import com.otoki.powersales.common.jobrun.ScheduledJobRunner
 import com.otoki.powersales.sap.outbound.sender.AttendanceSapSender
+import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -19,7 +20,7 @@ import java.time.LocalDate
 @DisplayName("AttendanceDailyBatch — daily SAP outbound 배치 (#588 P1-B)")
 class AttendanceDailyBatchTest {
 
-    private val repository: AttendanceSapBatchRepository = mock()
+    private val repository: TeamMemberScheduleRepository = mock()
     private val sender: AttendanceSapSender = mock()
     private val payloadFactory = AttendancePayloadFactory()
     private val runner: ScheduledJobRunner = mock()
@@ -43,9 +44,9 @@ class AttendanceDailyBatchTest {
     fun execute_pagesArePushedSequentially() {
         val today = LocalDate.of(2026, 5, 4)
         val yesterday = today.minusDays(1)
-        whenever(repository.findRegularAttendances(eq(today), eq(yesterday), eq(pageSize), eq(0))).thenReturn(rows(100, today))
-        whenever(repository.findRegularAttendances(eq(today), eq(yesterday), eq(pageSize), eq(pageSize))).thenReturn(rows(100, today))
-        whenever(repository.findRegularAttendances(eq(today), eq(yesterday), eq(pageSize), eq(2 * pageSize))).thenReturn(rows(50, today))
+        whenever(repository.findRegularAttendancesForSapPaged(eq(today), eq(yesterday), eq(pageSize), eq(0))).thenReturn(rows(100, today))
+        whenever(repository.findRegularAttendancesForSapPaged(eq(today), eq(yesterday), eq(pageSize), eq(pageSize))).thenReturn(rows(100, today))
+        whenever(repository.findRegularAttendancesForSapPaged(eq(today), eq(yesterday), eq(pageSize), eq(2 * pageSize))).thenReturn(rows(50, today))
         whenever(sender.sendPage(any())).thenReturn(true)
 
         batch.execute(today)
@@ -59,7 +60,7 @@ class AttendanceDailyBatchTest {
     @DisplayName("빈 결과 — sender 호출 없음")
     fun execute_emptyResultSkipsSender() {
         val today = LocalDate.of(2026, 5, 4)
-        whenever(repository.findRegularAttendances(any(), any(), any(), any())).thenReturn(emptyList())
+        whenever(repository.findRegularAttendancesForSapPaged(any(), any(), any(), any())).thenReturn(emptyList())
 
         batch.execute(today)
 
@@ -70,9 +71,9 @@ class AttendanceDailyBatchTest {
     @DisplayName("페이지 실패 시 다음 페이지 진행 — 두 번째 페이지가 실패해도 1, 3 페이지는 전송 시도")
     fun execute_failedPageDoesNotStopBatch() {
         val today = LocalDate.of(2026, 5, 4)
-        whenever(repository.findRegularAttendances(any(), any(), eq(pageSize), eq(0))).thenReturn(rows(100, today))
-        whenever(repository.findRegularAttendances(any(), any(), eq(pageSize), eq(pageSize))).thenReturn(rows(100, today))
-        whenever(repository.findRegularAttendances(any(), any(), eq(pageSize), eq(2 * pageSize))).thenReturn(rows(50, today))
+        whenever(repository.findRegularAttendancesForSapPaged(any(), any(), eq(pageSize), eq(0))).thenReturn(rows(100, today))
+        whenever(repository.findRegularAttendancesForSapPaged(any(), any(), eq(pageSize), eq(pageSize))).thenReturn(rows(100, today))
+        whenever(repository.findRegularAttendancesForSapPaged(any(), any(), eq(pageSize), eq(2 * pageSize))).thenReturn(rows(50, today))
         whenever(sender.sendPage(any())).thenReturn(true, false, true)
 
         batch.execute(today)

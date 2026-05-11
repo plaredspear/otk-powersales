@@ -3,6 +3,7 @@ package com.otoki.powersales.schedule.sap
 import com.otoki.powersales.common.jobrun.ScheduledJobRunContext
 import com.otoki.powersales.common.jobrun.ScheduledJobRunner
 import com.otoki.powersales.sap.outbound.sender.AttendanceSapSender
+import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -21,7 +22,7 @@ import java.time.LocalDate
  */
 @Component
 class AttendanceDailyBatch(
-    private val repository: AttendanceSapBatchRepository,
+    private val repository: TeamMemberScheduleRepository,
     private val payloadFactory: AttendancePayloadFactory,
     private val sender: AttendanceSapSender,
     private val scheduledJobRunner: ScheduledJobRunner,
@@ -50,7 +51,7 @@ class AttendanceDailyBatch(
         var failedPages = 0
 
         while (true) {
-            val rows = repository.findRegularAttendances(
+            val rows = repository.findRegularAttendancesForSapPaged(
                 today = today,
                 yesterday = yesterday,
                 limit = pageSize,

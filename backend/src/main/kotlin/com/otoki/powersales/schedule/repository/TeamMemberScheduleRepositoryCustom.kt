@@ -1,6 +1,7 @@
 package com.otoki.powersales.schedule.repository
 
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
+import com.otoki.powersales.schedule.sap.AttendanceSapPayloadRow
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -51,4 +52,16 @@ interface TeamMemberScheduleRepositoryCustom {
     fun findWorkSchedulesByEmployeeAndAccountAndMonth(employeeId: Long, accountId: Int, from: LocalDate, to: LocalDate): List<TeamMemberSchedule>
 
     fun countWorkSchedulesByEmployeeAndDateAndWorkingType(employeeId: Long, workingDate: LocalDate): Int
+
+    /**
+     * 일반 출근(REGULAR) SAP daily batch 용 페이지 조회.
+     * `team_member_schedule` ⋈ `attendance_log` (commuteLogId = al.sfid OR al.id 의 문자열) + employee + account.
+     * 필터: attendanceType=REGULAR, workingType='근무', workingDate ∈ {today, yesterday}.
+     */
+    fun findRegularAttendancesForSapPaged(
+        today: LocalDate,
+        yesterday: LocalDate,
+        limit: Int,
+        offset: Int
+    ): List<AttendanceSapPayloadRow>
 }
