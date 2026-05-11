@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 /**
- * Spec #618 — Organization ↔ Salesforce `Organization__c` 매핑 검증 + ExternalKey 도입.
+ * Spec #618 — Organization ↔ Salesforce `Org__c` 매핑 검증 + ExternalKey 도입.
  *
  * 단일 권위: docs/plan/old_source_260408/salesforce_object/조직(Org__c).md
  *
@@ -28,11 +28,11 @@ class OrganizationSFAnnotationTest {
         private val mapping = SFSchemaUtils.getSFMapping(Organization::class.java)
 
         @Test
-        @DisplayName("@SFObject 값은 'Organization__c'")
+        @DisplayName("@SFObject 값은 'Org__c'")
         fun sfObjectValue() {
             val annotation = Organization::class.java.getAnnotation(SFObject::class.java)
             assertThat(annotation).isNotNull
-            assertThat(annotation.value).isEqualTo("Organization__c")
+            assertThat(annotation.value).isEqualTo("Org__c")
         }
 
         @Test

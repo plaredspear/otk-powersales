@@ -18,7 +18,7 @@ import org.hibernate.annotations.Comment
  */
 @Entity
 @Table(name = "organization")
-@SFObject("Organization__c")
+@SFObject("Org__c")
 class Organization(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
