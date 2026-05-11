@@ -55,4 +55,11 @@ interface DisplayWorkScheduleRepositoryCustom {
      * 복수 사원의 오늘 유효한 확정 진열마스터 조회
      */
     fun findConfirmedValidByEmployeeIdsAndDate(employeeIds: List<Long>, date: LocalDate): List<DisplayWorkSchedule>
+
+    /**
+     * DISPLAY SAP daily batch 용 페이지 조회.
+     * 조건: isDeleted!=true, confirmed=true, startDate<=date, (endDate>=date OR endDate IS NULL).
+     * employee/account fetchJoin, id 오름차순.
+     */
+    fun findValidForDisplayMasterSapPaged(date: LocalDate, limit: Int, offset: Int): List<DisplayWorkSchedule>
 }

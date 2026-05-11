@@ -3,6 +3,8 @@ package com.otoki.powersales.schedule.sap
 import com.otoki.powersales.common.jobrun.ScheduledJobRunContext
 import com.otoki.powersales.common.jobrun.ScheduledJobRunner
 import com.otoki.powersales.sap.outbound.sender.DisplayMasterSapSender
+import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
+import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -20,7 +22,7 @@ import java.time.LocalDate
  */
 @Component
 class DisplayMasterDailyBatch(
-    private val repository: DisplayMasterRepository,
+    private val repository: DisplayWorkScheduleRepository,
     private val payloadFactory: DisplayMasterPayloadFactory,
     private val sender: DisplayMasterSapSender,
     private val scheduledJobRunner: ScheduledJobRunner,
@@ -48,19 +50,20 @@ class DisplayMasterDailyBatch(
         var failedPages = 0
 
         while (true) {
-            val rows = repository.findValidDisplayMasters(
-                today = today,
+            val entities = repository.findValidForDisplayMasterSapPaged(
+                date = today,
                 limit = pageSize,
                 offset = pageIndex * pageSize
             )
-            if (rows.isEmpty()) break
+            if (entities.isEmpty()) break
 
+            val rows = entities.map { it.toSapPayloadRow() }
             totalRows += rows.size
             val payload = payloadFactory.build(rows, today)
             val ok = sender.sendPage(payload)
             if (ok) sentPages++ else failedPages++
 
-            if (rows.size < pageSize) break
+            if (entities.size < pageSize) break
             pageIndex++
         }
 
@@ -78,6 +81,16 @@ class DisplayMasterDailyBatch(
             )
         )
     }
+
+    private fun DisplayWorkSchedule.toSapPayloadRow(): DisplayMasterSapPayloadRow =
+        DisplayMasterSapPayloadRow(
+            displayWorkScheduleId = id,
+            employeeCode = employee?.employeeCode,
+            accountExternalKey = account?.externalKey,
+            typeOfWork1 = typeOfWork1,
+            typeOfWork3 = typeOfWork3,
+            typeOfWork5 = typeOfWork5
+        )
 
     companion object {
         const val JOB_NAME = "display-master-sap-batch"

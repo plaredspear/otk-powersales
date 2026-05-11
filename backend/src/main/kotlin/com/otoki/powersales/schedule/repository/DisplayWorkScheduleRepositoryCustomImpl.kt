@@ -251,6 +251,28 @@ class DisplayWorkScheduleRepositoryCustomImpl(
             .fetch()
     }
 
+    override fun findValidForDisplayMasterSapPaged(
+        date: LocalDate,
+        limit: Int,
+        offset: Int
+    ): List<DisplayWorkSchedule> {
+        return queryFactory
+            .selectFrom(displayWorkSchedule)
+            .leftJoin(displayWorkSchedule.employee).fetchJoin()
+            .leftJoin(displayWorkSchedule.account).fetchJoin()
+            .where(
+                isNotDeleted(),
+                displayWorkSchedule.confirmed.eq(true),
+                displayWorkSchedule.startDate.loe(date),
+                displayWorkSchedule.endDate.goe(date)
+                    .or(displayWorkSchedule.endDate.isNull)
+            )
+            .orderBy(displayWorkSchedule.id.asc())
+            .offset(offset.toLong())
+            .limit(limit.toLong())
+            .fetch()
+    }
+
     private fun buildEmployeeCodeCondition(employeeCode: String?): BooleanExpression? {
         if (employeeCode.isNullOrBlank()) return null
         val matchingIds = JPAExpressions
