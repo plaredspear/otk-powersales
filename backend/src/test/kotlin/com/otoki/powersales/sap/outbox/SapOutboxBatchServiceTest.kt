@@ -5,7 +5,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -23,8 +22,8 @@ import java.util.Optional
 
 @ExtendWith(MockitoExtension::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-@DisplayName("SapOutboxWorker 테스트 (#592)")
-class SapOutboxWorkerTest {
+@DisplayName("SapOutboxBatchService 테스트 (#592 / #692)")
+class SapOutboxBatchServiceTest {
 
     @Mock private lateinit var outboxRepository: SapOutboxRepository
     @Mock private lateinit var interfaceRegistry: SapInterfaceRegistry
@@ -33,11 +32,11 @@ class SapOutboxWorkerTest {
     @Mock private lateinit var statusHandler: SapOutboxStatusHandler
 
     private val objectMapper = ObjectMapper()
-    private lateinit var worker: SapOutboxWorker
+    private lateinit var service: SapOutboxBatchService
 
     @BeforeEach
     fun setUp() {
-        worker = SapOutboxWorker(
+        service = SapOutboxBatchService(
             outboxRepository = outboxRepository,
             interfaceRegistry = interfaceRegistry,
             statusHandlerRegistry = statusHandlerRegistry,
@@ -62,7 +61,7 @@ class SapOutboxWorkerTest {
         whenever(interfaceRegistry.resolveEndpoint("UNKNOWN_IF")).thenReturn(null)
         whenever(statusHandlerRegistry.resolve("ORDER_REQUEST_REGISTER")).thenReturn(statusHandler)
 
-        val result = worker.execute()
+        val result = service.execute()
 
         assertThat(result.picked).isEqualTo(1)
         assertThat(result.failed).isEqualTo(1)
@@ -85,7 +84,7 @@ class SapOutboxWorkerTest {
         whenever(outboxRepository.findPendingOrRetry(any<PageRequest>())).thenReturn(listOf(outbox))
         whenever(outboxRepository.findById(1L)).thenReturn(Optional.of(outbox))
 
-        val result = worker.execute()
+        val result = service.execute()
 
         assertThat(result.picked).isEqualTo(1)
         assertThat(result.failed).isEqualTo(1)
@@ -97,7 +96,7 @@ class SapOutboxWorkerTest {
     fun noPendingRows() {
         whenever(outboxRepository.findPendingOrRetry(any<PageRequest>())).thenReturn(emptyList())
 
-        val result = worker.execute()
+        val result = service.execute()
 
         assertThat(result.picked).isEqualTo(0)
         assertThat(result.sent).isEqualTo(0)
@@ -160,7 +159,7 @@ class SapOutboxWorkerTest {
         whenever(interfaceRegistry.resolveEndpoint("UNKNOWN")).thenReturn(null)
         whenever(statusHandlerRegistry.resolve("ORDER_REQUEST_REGISTER")).thenReturn(statusHandler)
 
-        val ok = worker.processOne(1L)
+        val ok = service.processOne(1L)
 
         assertThat(ok).isFalse
         val captor = argumentCaptor<SapOutbox>()

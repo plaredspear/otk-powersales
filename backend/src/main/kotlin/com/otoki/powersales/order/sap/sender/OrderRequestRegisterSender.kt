@@ -16,7 +16,7 @@ import java.time.format.DateTimeFormatter
 /**
  * 주문 등록 SAP outbound sender (Spec #592).
  *
- * **직접 SAP 호출 안 함** — `sap_outbox` 적재만 책임. 실제 송신은 [com.otoki.powersales.sap.outbox.SapOutboxWorker] 가 수행.
+ * **직접 SAP 호출 안 함** — `sap_outbox` 적재만 책임. 실제 송신은 [com.otoki.powersales.sap.outbox.SapOutboxBatchService] 가 수행.
  *
  * 페이로드 형식: 레거시 `IF_REST_SAP_OrderRequestRegist` 동등 (spec.md §2.3).
  *

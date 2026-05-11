@@ -1,49 +1,29 @@
-package com.otoki.powersales.schedule.sap
+package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.common.jobrun.ScheduledJobRunContext
-import com.otoki.powersales.common.jobrun.ScheduledJobRunner
 import com.otoki.powersales.sap.outbound.sender.AttendanceSapSender
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
-import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
+import com.otoki.powersales.schedule.sap.AttendancePayloadFactory
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.scheduling.annotation.Scheduled
-import org.springframework.stereotype.Component
+import org.springframework.stereotype.Service
 import java.time.LocalDate
 
-/**
- * 일반 출근(REGULAR) daily SAP outbound batch (Spec #588 P1-B §1.2).
- *
- * - cron: `app.sap.outbound.attendance.cron` (기본 `0 0 1 * * *`)
- * - 페이지 단위 (`app.sap.outbound.attendance.page-size`, 기본 100) 로 SAP 송신
- * - ShedLock 으로 동시 실행 방지 (`attendance-sap-batch`)
- * - 페이지 실패 시 다음 페이지 진행 + 배치 종료 후 실패 페이지 수 로깅
- *   (재시도 없음 — 익일 batch 자연 멱등 의존, spec #588 §8 Q4)
- */
-@Component
-class AttendanceDailyBatch(
+@Service
+class AttendanceBatchService(
     private val repository: TeamMemberScheduleRepository,
     private val payloadFactory: AttendancePayloadFactory,
     private val sender: AttendanceSapSender,
-    private val scheduledJobRunner: ScheduledJobRunner,
-    @Value("\${app.sap.outbound.attendance.page-size:100}") private val pageSize: Int
+    @Value("\${app.sap.outbound.attendance.page-size:100}") private val pageSize: Int,
 ) {
 
-    private val log = LoggerFactory.getLogger(AttendanceDailyBatch::class.java)
+    private val log = LoggerFactory.getLogger(AttendanceBatchService::class.java)
 
-    @Scheduled(cron = "\${app.sap.outbound.attendance.cron:0 0 1 * * *}")
-    @SchedulerLock(
-        name = JOB_NAME,
-        lockAtMostFor = "PT10M",
-        lockAtLeastFor = "PT30S"
-    )
-    fun runDaily() {
-        scheduledJobRunner.run(JOB_NAME) { context ->
-            execute(LocalDate.now(), context)
-        }
+    fun runDaily(context: ScheduledJobRunContext? = null) {
+        runDaily(LocalDate.now(), context)
     }
 
-    internal fun execute(today: LocalDate, context: ScheduledJobRunContext? = null) {
+    internal fun runDaily(today: LocalDate, context: ScheduledJobRunContext? = null) {
         val yesterday = today.minusDays(1)
         var pageIndex = 0
         var totalRows = 0
@@ -81,9 +61,5 @@ class AttendanceDailyBatch(
                 "failedPages" to failedPages
             )
         )
-    }
-
-    companion object {
-        const val JOB_NAME = "attendance-sap-batch"
     }
 }

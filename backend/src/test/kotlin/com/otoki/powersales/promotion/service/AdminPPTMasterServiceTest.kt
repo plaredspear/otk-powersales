@@ -18,6 +18,7 @@ import com.otoki.powersales.promotion.service.AdminPPTMasterService
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -46,6 +47,17 @@ class AdminPPTMasterServiceTest {
     @Mock private lateinit var accountRepository: AccountRepository
     @Mock private lateinit var teamMemberScheduleRepository: TeamMemberScheduleRepository
     @InjectMocks private lateinit var service: AdminPPTMasterService
+
+    private lateinit var batchService: PPTMasterBatchService
+
+    @BeforeEach
+    fun setUpBatchService() {
+        batchService = PPTMasterBatchService(
+            pptMasterRepository = pptMasterRepository,
+            employeeRepository = employeeRepository,
+            adminPPTMasterService = service,
+        )
+    }
 
     private fun createEmployee(
         id: Long = 1L,
@@ -411,7 +423,7 @@ class AdminPPTMasterServiceTest {
             whenever(pptHistoryRepository.save(any<ProfessionalPromotionTeamHistory>()))
                 .thenAnswer { it.getArgument<ProfessionalPromotionTeamHistory>(0) }
 
-            service.syncValidMasters()
+            batchService.syncValidMasters()
 
             assertThat(employee.professionalPromotionTeam).isEqualTo(ProfessionalPromotionTeamType.RAMEN_SALE)
             verify(pptHistoryRepository).save(any())
@@ -436,7 +448,7 @@ class AdminPPTMasterServiceTest {
             whenever(pptHistoryRepository.save(any<ProfessionalPromotionTeamHistory>()))
                 .thenAnswer { it.getArgument<ProfessionalPromotionTeamHistory>(0) }
 
-            service.expireMasters()
+            batchService.expireMasters()
 
             assertThat(employee.professionalPromotionTeam).isEqualTo(ProfessionalPromotionTeamType.GENERAL)
         }
@@ -528,7 +540,7 @@ class AdminPPTMasterServiceTest {
             whenever(pptHistoryRepository.save(any<ProfessionalPromotionTeamHistory>()))
                 .thenAnswer { it.getArgument<ProfessionalPromotionTeamHistory>(0) }
 
-            service.syncValidMasters()
+            batchService.syncValidMasters()
 
             verify(teamMemberScheduleRepository).deleteFutureWorkSchedulesByEmployeeId(eq(1L), eq(today))
         }
@@ -547,7 +559,7 @@ class AdminPPTMasterServiceTest {
             whenever(pptHistoryRepository.save(any<ProfessionalPromotionTeamHistory>()))
                 .thenAnswer { it.getArgument<ProfessionalPromotionTeamHistory>(0) }
 
-            service.expireMasters()
+            batchService.expireMasters()
 
             verify(teamMemberScheduleRepository).deleteFutureWorkSchedulesByEmployeeId(eq(1L), eq(today))
         }

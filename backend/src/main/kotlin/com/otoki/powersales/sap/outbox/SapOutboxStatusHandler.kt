@@ -3,7 +3,7 @@ package com.otoki.powersales.sap.outbox
 /**
  * 도메인 상태 갱신 callback 인터페이스 (Spec #592).
  *
- * [SapOutboxWorker] 가 SAP 송신 완료/실패 시점에 도메인 상태(`order_request.order_request_status` 등) 를
+ * [SapOutboxBatchService] 가 SAP 송신 완료/실패 시점에 도메인 상태(`order_request.order_request_status` 등) 를
  * 전이시키기 위해 호출한다. 도메인별 구현체가 자기 도메인의 상태머신을 책임진다.
  *
  * `domainType` 값으로 dispatch 됨 (예: `'ORDER_REQUEST_REGISTER'`).

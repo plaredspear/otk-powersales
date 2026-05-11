@@ -1,8 +1,10 @@
-package com.otoki.powersales.schedule.sap
+package com.otoki.powersales.schedule.service
 
-import com.otoki.powersales.common.jobrun.ScheduledJobRunner
 import com.otoki.powersales.sap.outbound.sender.AttendanceSapSender
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
+import com.otoki.powersales.schedule.sap.AttendancePayloadFactory
+import com.otoki.powersales.schedule.sap.AttendanceSapPayload
+import com.otoki.powersales.schedule.sap.AttendanceSapPayloadRow
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -17,31 +19,29 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.LocalDate
 
-@DisplayName("AttendanceDailyBatch — daily SAP outbound 배치 (#588 P1-B)")
-class AttendanceDailyBatchTest {
+@DisplayName("AttendanceBatchService — daily SAP outbound 처리 (#588 P1-B / #692)")
+class AttendanceBatchServiceTest {
 
     private val repository: TeamMemberScheduleRepository = mock()
     private val sender: AttendanceSapSender = mock()
     private val payloadFactory = AttendancePayloadFactory()
-    private val runner: ScheduledJobRunner = mock()
 
     private val pageSize = 100
-    private lateinit var batch: AttendanceDailyBatch
+    private lateinit var service: AttendanceBatchService
 
     @BeforeEach
     fun setUp() {
-        batch = AttendanceDailyBatch(
+        service = AttendanceBatchService(
             repository = repository,
             payloadFactory = payloadFactory,
             sender = sender,
-            scheduledJobRunner = runner,
-            pageSize = pageSize
+            pageSize = pageSize,
         )
     }
 
     @Test
     @DisplayName("페이지 100건씩 분할 송신 — 250건 → SAP 호출 3회 (100/100/50)")
-    fun execute_pagesArePushedSequentially() {
+    fun runDaily_pagesArePushedSequentially() {
         val today = LocalDate.of(2026, 5, 4)
         val yesterday = today.minusDays(1)
         whenever(repository.findRegularAttendancesForSapPaged(eq(today), eq(yesterday), eq(pageSize), eq(0))).thenReturn(rows(100, today))
@@ -49,7 +49,7 @@ class AttendanceDailyBatchTest {
         whenever(repository.findRegularAttendancesForSapPaged(eq(today), eq(yesterday), eq(pageSize), eq(2 * pageSize))).thenReturn(rows(50, today))
         whenever(sender.sendPage(any())).thenReturn(true)
 
-        batch.execute(today)
+        service.runDaily(today)
 
         val captor = argumentCaptor<AttendanceSapPayload>()
         verify(sender, times(3)).sendPage(captor.capture())
@@ -58,25 +58,25 @@ class AttendanceDailyBatchTest {
 
     @Test
     @DisplayName("빈 결과 — sender 호출 없음")
-    fun execute_emptyResultSkipsSender() {
+    fun runDaily_emptyResultSkipsSender() {
         val today = LocalDate.of(2026, 5, 4)
         whenever(repository.findRegularAttendancesForSapPaged(any(), any(), any(), any())).thenReturn(emptyList())
 
-        batch.execute(today)
+        service.runDaily(today)
 
         verify(sender, never()).sendPage(any())
     }
 
     @Test
-    @DisplayName("페이지 실패 시 다음 페이지 진행 — 두 번째 페이지가 실패해도 1, 3 페이지는 전송 시도")
-    fun execute_failedPageDoesNotStopBatch() {
+    @DisplayName("페이지 실패 시 다음 페이지 진행 — 두 번째가 실패해도 1, 3 페이지 송신")
+    fun runDaily_failedPageDoesNotStopBatch() {
         val today = LocalDate.of(2026, 5, 4)
         whenever(repository.findRegularAttendancesForSapPaged(any(), any(), eq(pageSize), eq(0))).thenReturn(rows(100, today))
         whenever(repository.findRegularAttendancesForSapPaged(any(), any(), eq(pageSize), eq(pageSize))).thenReturn(rows(100, today))
         whenever(repository.findRegularAttendancesForSapPaged(any(), any(), eq(pageSize), eq(2 * pageSize))).thenReturn(rows(50, today))
         whenever(sender.sendPage(any())).thenReturn(true, false, true)
 
-        batch.execute(today)
+        service.runDaily(today)
 
         verify(sender, times(3)).sendPage(any())
     }
