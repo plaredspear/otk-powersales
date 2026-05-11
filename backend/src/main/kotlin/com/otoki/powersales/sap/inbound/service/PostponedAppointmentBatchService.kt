@@ -1,40 +1,29 @@
 package com.otoki.powersales.sap.inbound.service
 
 import com.otoki.powersales.common.jobrun.ScheduledJobRunContext
-import com.otoki.powersales.common.jobrun.ScheduledJobRunner
-import com.otoki.powersales.schedule.repository.AppointmentRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
-import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
+import com.otoki.powersales.schedule.repository.AppointmentRepository
 import org.slf4j.LoggerFactory
-import org.springframework.scheduling.annotation.Scheduled
-import org.springframework.stereotype.Component
+import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
 
-@Component
-class PostponedAppointmentScheduler(
+@Service
+class PostponedAppointmentBatchService(
     private val employeeRepository: EmployeeRepository,
     private val appointmentRepository: AppointmentRepository,
     private val appointmentUserProfileUpdater: AppointmentUserProfileUpdater,
-    private val scheduledJobRunner: ScheduledJobRunner,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
-    @Scheduled(cron = "0 0 0 * * *")
-    @SchedulerLock(
-        name = "sap.processPostponedAppointments",
-        lockAtMostFor = "PT30M",
-        lockAtLeastFor = "PT1M"
-    )
     @Transactional
-    fun processPostponedAppointments() {
-        scheduledJobRunner.run("sap.processPostponedAppointments") { context ->
-            processPostponedAppointments(LocalDate.now(), context)
-        }
+    fun process(context: ScheduledJobRunContext? = null) {
+        process(LocalDate.now(), context)
     }
 
-    internal fun processPostponedAppointments(today: LocalDate, context: ScheduledJobRunContext? = null) {
+    @Transactional
+    internal fun process(today: LocalDate, context: ScheduledJobRunContext? = null) {
         val employees = employeeRepository.findByCrmWorkStartDateIsNotNullAndCrmWorkStartDateLessThanEqual(today)
         if (employees.isEmpty()) {
             log.info("예약 발령 대상 없음")

@@ -288,43 +288,6 @@ class AdminPPTMasterService(
         return BulkConfirmResponse(createdCount = createdCount)
     }
 
-    // --- Batch methods (called by scheduled tasks) ---
-
-    @Transactional
-    fun syncValidMasters() {
-        val today = LocalDate.now()
-        val validMasters = pptMasterRepository.findValidMasters(today)
-
-        val employeeIds = validMasters.map { it.employeeId }.distinct()
-        val employeeMap = employeeRepository.findAllById(employeeIds).associateBy { it.id }
-
-        for (master in validMasters) {
-            val employee = employeeMap[master.employeeId] ?: continue
-            if (employee.professionalPromotionTeam != master.teamType) {
-                updateEmployeeTeam(employee, master.teamType)
-            }
-        }
-    }
-
-    @Transactional
-    fun expireMasters() {
-        val today = LocalDate.now()
-        val expiringMasters = pptMasterRepository.findExpiringMasters(today)
-
-        val employeeIds = expiringMasters.map { it.employeeId }.distinct()
-
-        for (employeeId in employeeIds) {
-            val remainingValid = pptMasterRepository.findValidMastersByEmployeeId(employeeId, today)
-                .filter { it.endDate == null || it.endDate!! > today }
-            if (remainingValid.isEmpty()) {
-                val employee = employeeRepository.findById(employeeId).orElse(null) ?: continue
-                if (employee.professionalPromotionTeam != DEFAULT_TEAM && employee.professionalPromotionTeam != null) {
-                    updateEmployeeTeam(employee, DEFAULT_TEAM)
-                }
-            }
-        }
-    }
-
     // --- Private helpers ---
 
     private fun findMasterById(id: Long): ProfessionalPromotionTeamMaster {
@@ -364,7 +327,7 @@ class AdminPPTMasterService(
         }
     }
 
-    private fun updateEmployeeTeam(employee: Employee, newTeamType: ProfessionalPromotionTeamType) {
+    internal fun updateEmployeeTeam(employee: Employee, newTeamType: ProfessionalPromotionTeamType) {
         val oldValue = employee.professionalPromotionTeam
         employee.professionalPromotionTeam = newTeamType
         employeeRepository.save(employee)

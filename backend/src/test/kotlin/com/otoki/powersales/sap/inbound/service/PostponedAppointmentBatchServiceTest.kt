@@ -1,11 +1,10 @@
 package com.otoki.powersales.sap.inbound.service
 
-import com.otoki.powersales.common.jobrun.ScheduledJobRunner
-import com.otoki.powersales.schedule.entity.Appointment
-import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.common.entity.SystemCodeMaster
-import com.otoki.powersales.schedule.repository.AppointmentRepository
+import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.schedule.entity.Appointment
+import com.otoki.powersales.schedule.repository.AppointmentRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -14,12 +13,13 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.LocalDate
 
 @ExtendWith(MockitoExtension::class)
-@DisplayName("PostponedAppointmentScheduler 테스트")
-class PostponedAppointmentSchedulerTest {
+@DisplayName("PostponedAppointmentBatchService 테스트 (#692)")
+class PostponedAppointmentBatchServiceTest {
 
     @Mock
     private lateinit var employeeRepository: EmployeeRepository
@@ -30,22 +30,19 @@ class PostponedAppointmentSchedulerTest {
     @Mock
     private lateinit var appointmentUserProfileUpdater: AppointmentUserProfileUpdater
 
-    @Mock
-    private lateinit var scheduledJobRunner: ScheduledJobRunner
-
-    private lateinit var scheduler: PostponedAppointmentScheduler
+    private lateinit var service: PostponedAppointmentBatchService
 
     private val today = LocalDate.of(2026, 3, 22)
 
     @BeforeEach
     fun setUp() {
-        scheduler = PostponedAppointmentScheduler(
-            employeeRepository, appointmentRepository, appointmentUserProfileUpdater, scheduledJobRunner
+        service = PostponedAppointmentBatchService(
+            employeeRepository, appointmentRepository, appointmentUserProfileUpdater
         )
     }
 
     @Nested
-    @DisplayName("processPostponedAppointments")
+    @DisplayName("process")
     inner class ProcessTests {
 
         @Test
@@ -54,7 +51,7 @@ class PostponedAppointmentSchedulerTest {
             whenever(employeeRepository.findByCrmWorkStartDateIsNotNullAndCrmWorkStartDateLessThanEqual(today))
                 .thenReturn(emptyList())
 
-            scheduler.processPostponedAppointments(today)
+            service.process(today)
         }
 
         @Test
@@ -71,9 +68,9 @@ class PostponedAppointmentSchedulerTest {
             whenever(appointmentRepository.findFirstByEmployeeCodeOrderByAppointDateDesc("100234"))
                 .thenReturn(appointment)
 
-            scheduler.processPostponedAppointments(today)
+            service.process(today)
 
-            org.mockito.kotlin.verify(appointmentUserProfileUpdater).applyImmediateAppointment(
+            verify(appointmentUserProfileUpdater).applyImmediateAppointment(
                 employee, appointment, today, codeMap
             )
         }
@@ -90,7 +87,7 @@ class PostponedAppointmentSchedulerTest {
             whenever(appointmentRepository.findFirstByEmployeeCodeOrderByAppointDateDesc("100234"))
                 .thenReturn(null)
 
-            scheduler.processPostponedAppointments(today)
+            service.process(today)
 
             assertThat(employee.crmWorkStartDate).isNull()
         }

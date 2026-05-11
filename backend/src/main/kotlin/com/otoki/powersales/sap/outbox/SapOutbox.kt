@@ -16,7 +16,7 @@ import java.time.LocalDateTime
  * 범용 SAP outbound 송신 큐 (Spec #592).
  *
  * 도메인 무관 — `domain_type` + `aggregate_id` + `interface_id` + `payload` poly 구조.
- * 향후 SAP outbound 신규 도메인이 동일 테이블 + 동일 워커([SapOutboxWorker])를 재사용한다.
+ * 향후 SAP outbound 신규 도메인이 동일 테이블 + 동일 워커([SapOutboxBatchService])를 재사용한다.
  *
  * **상태 전이** (Outbox 자체 status — 도메인 status 와 별도 차원):
  *  - `PENDING` (적재) → 워커 dispatch → `SENT` (송신 성공)

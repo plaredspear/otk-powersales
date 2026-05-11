@@ -1,0 +1,28 @@
+package com.otoki.powersales.batch
+
+import com.otoki.powersales.common.jobrun.ScheduledJobRunner
+import com.otoki.powersales.promotion.service.PPTMasterBatchService
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
+import org.springframework.context.annotation.Profile
+import org.springframework.scheduling.annotation.Scheduled
+import org.springframework.stereotype.Component
+
+@Component
+@Profile("!local")
+class PPTMasterExpireBatch(
+    private val pptMasterBatchService: PPTMasterBatchService,
+    private val scheduledJobRunner: ScheduledJobRunner,
+) {
+
+    @Scheduled(cron = "0 0 23 * * *")
+    @SchedulerLock(name = JOB_NAME, lockAtMostFor = "PT15M", lockAtLeastFor = "PT1M")
+    fun run() {
+        scheduledJobRunner.run(JOB_NAME) { ctx ->
+            pptMasterBatchService.expireMasters(ctx)
+        }
+    }
+
+    companion object {
+        const val JOB_NAME = "pptMaster.expire"
+    }
+}

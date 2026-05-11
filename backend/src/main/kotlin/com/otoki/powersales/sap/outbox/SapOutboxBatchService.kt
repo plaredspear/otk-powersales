@@ -1,24 +1,22 @@
 package com.otoki.powersales.sap.outbox
 
-import tools.jackson.databind.ObjectMapper
+import com.otoki.powersales.common.jobrun.ScheduledJobRunContext
 import com.otoki.powersales.sap.outbound.guard.SapResponseHtmlGuard
-import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageRequest
-import org.springframework.scheduling.annotation.Scheduled
-import org.springframework.stereotype.Component
+import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.client.HttpStatusCodeException
 import org.springframework.web.client.ResourceAccessException
 import org.springframework.web.client.RestClient
+import tools.jackson.databind.ObjectMapper
 
 /**
- * 도메인 무관 범용 SAP outbound 송신 워커 (Spec #592).
+ * 도메인 무관 범용 SAP outbound 송신 처리 (Spec #592). batch 진입점은 [com.otoki.powersales.batch.SapOutboxBatch].
  *
- * 30초 주기 폴링 — `WHERE status IN ('PENDING', 'RETRY') ORDER BY created_at`.
  * 각 row 의 `interface_id` 로 [SapInterfaceRegistry] 에서 endpoint 조회 후
  * `payload` 그대로 SAP REST Adapter 로 송신. 응답 본문 검증은 [SapResponseHtmlGuard] + `resultCode` 파싱.
  *
@@ -27,8 +25,8 @@ import org.springframework.web.client.RestClient
  *
  * **재시도 정책**: 송신 실패 시 [SapOutbox.MAX_RETRY_COUNT] 까지 `RETRY` 상태로 보관, 초과 시 `FAILED`.
  */
-@Component
-class SapOutboxWorker(
+@Service
+class SapOutboxBatchService(
     private val outboxRepository: SapOutboxRepository,
     private val interfaceRegistry: SapInterfaceRegistry,
     private val statusHandlerRegistry: SapOutboxStatusHandlerRegistry,
@@ -37,19 +35,9 @@ class SapOutboxWorker(
     @Value("\${app.sap.outbox.batch-size:100}") private val batchSize: Int,
 ) {
 
-    private val log = LoggerFactory.getLogger(SapOutboxWorker::class.java)
+    private val log = LoggerFactory.getLogger(SapOutboxBatchService::class.java)
 
-    @Scheduled(cron = "\${app.sap.outbox.cron:*/30 * * * * *}")
-    @SchedulerLock(name = JOB_NAME, lockAtMostFor = "PT5M", lockAtLeastFor = "PT10S")
-    fun runScheduled() {
-        try {
-            execute()
-        } catch (ex: Exception) {
-            log.error("SAP outbox 워커 실행 실패", ex)
-        }
-    }
-
-    fun execute(): WorkerResult {
+    fun execute(context: ScheduledJobRunContext? = null): WorkerResult {
         val rows = outboxRepository.findPendingOrRetry(PageRequest.of(0, batchSize))
         var sent = 0
         var failed = 0
@@ -60,6 +48,7 @@ class SapOutboxWorker(
         if (sent > 0 || failed > 0) {
             log.info("SAP outbox 워커 완료 sent=$sent failed=$failed total=${rows.size}")
         }
+        context?.metadata(mapOf("picked" to rows.size, "sent" to sent, "failed" to failed))
         return WorkerResult(picked = rows.size, sent = sent, failed = failed)
     }
 
@@ -140,8 +129,4 @@ class SapOutboxWorker(
     }
 
     data class WorkerResult(val picked: Int, val sent: Int, val failed: Int)
-
-    companion object {
-        const val JOB_NAME = "sap-outbox-worker"
-    }
 }

@@ -1,11 +1,12 @@
-package com.otoki.powersales.schedule.sap
+package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.account.entity.Account
-import com.otoki.powersales.common.jobrun.ScheduledJobRunner
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.sap.outbound.sender.DisplayMasterSapSender
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
+import com.otoki.powersales.schedule.sap.DisplayMasterPayloadFactory
+import com.otoki.powersales.schedule.sap.DisplayMasterSapPayload
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -20,38 +21,36 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.LocalDate
 
-@DisplayName("DisplayMasterDailyBatch — daily SAP outbound 배치 (#588 P2-B)")
-class DisplayMasterDailyBatchTest {
+@DisplayName("DisplayMasterBatchService — daily SAP outbound 처리 (#588 P2-B / #692)")
+class DisplayMasterBatchServiceTest {
 
     private val repository: DisplayWorkScheduleRepository = mock()
     private val sender: DisplayMasterSapSender = mock()
     private val payloadFactory = DisplayMasterPayloadFactory()
-    private val runner: ScheduledJobRunner = mock()
 
     private val pageSize = 100
-    private lateinit var batch: DisplayMasterDailyBatch
+    private lateinit var service: DisplayMasterBatchService
 
     @BeforeEach
     fun setUp() {
-        batch = DisplayMasterDailyBatch(
+        service = DisplayMasterBatchService(
             repository = repository,
             payloadFactory = payloadFactory,
             sender = sender,
-            scheduledJobRunner = runner,
-            pageSize = pageSize
+            pageSize = pageSize,
         )
     }
 
     @Test
     @DisplayName("페이지 100건씩 분할 송신 — 250건 → SAP 호출 3회 (100/100/50)")
-    fun execute_pagesArePushedSequentially() {
+    fun runDaily_pagesArePushedSequentially() {
         val today = LocalDate.of(2026, 5, 4)
         whenever(repository.findValidForDisplayMasterSapPaged(eq(today), eq(pageSize), eq(0))).thenReturn(entities(100))
         whenever(repository.findValidForDisplayMasterSapPaged(eq(today), eq(pageSize), eq(pageSize))).thenReturn(entities(100))
         whenever(repository.findValidForDisplayMasterSapPaged(eq(today), eq(pageSize), eq(2 * pageSize))).thenReturn(entities(50))
         whenever(sender.sendPage(any())).thenReturn(true)
 
-        batch.execute(today)
+        service.runDaily(today)
 
         val captor = argumentCaptor<DisplayMasterSapPayload>()
         verify(sender, times(3)).sendPage(captor.capture())
@@ -60,32 +59,32 @@ class DisplayMasterDailyBatchTest {
 
     @Test
     @DisplayName("빈 결과 — sender 호출 없음")
-    fun execute_emptyResultSkipsSender() {
+    fun runDaily_emptyResultSkipsSender() {
         val today = LocalDate.of(2026, 5, 4)
         whenever(repository.findValidForDisplayMasterSapPaged(any(), any(), any())).thenReturn(emptyList())
 
-        batch.execute(today)
+        service.runDaily(today)
 
         verify(sender, never()).sendPage(any())
     }
 
     @Test
-    @DisplayName("페이지 실패 시 다음 페이지 진행 — 두 번째가 실패해도 1, 3 페이지 송신")
-    fun execute_failedPageDoesNotStopBatch() {
+    @DisplayName("페이지 실패 시 다음 페이지 진행")
+    fun runDaily_failedPageDoesNotStopBatch() {
         val today = LocalDate.of(2026, 5, 4)
         whenever(repository.findValidForDisplayMasterSapPaged(any(), eq(pageSize), eq(0))).thenReturn(entities(100))
         whenever(repository.findValidForDisplayMasterSapPaged(any(), eq(pageSize), eq(pageSize))).thenReturn(entities(100))
         whenever(repository.findValidForDisplayMasterSapPaged(any(), eq(pageSize), eq(2 * pageSize))).thenReturn(entities(50))
         whenever(sender.sendPage(any())).thenReturn(true, false, true)
 
-        batch.execute(today)
+        service.runDaily(today)
 
         verify(sender, times(3)).sendPage(any())
     }
 
     @Test
-    @DisplayName("엔티티 → SAP payload row 매핑 — employee.employeeCode + account.externalKey + typeOfWork 1/3/5")
-    fun execute_mapsEntityFieldsToPayload() {
+    @DisplayName("엔티티 → SAP payload row 매핑")
+    fun runDaily_mapsEntityFieldsToPayload() {
         val today = LocalDate.of(2026, 5, 4)
         val entity = DisplayWorkSchedule(
             id = 7L,
@@ -98,7 +97,7 @@ class DisplayMasterDailyBatchTest {
         whenever(repository.findValidForDisplayMasterSapPaged(eq(today), eq(pageSize), eq(0))).thenReturn(listOf(entity))
         whenever(sender.sendPage(any())).thenReturn(true)
 
-        batch.execute(today)
+        service.runDaily(today)
 
         val captor = argumentCaptor<DisplayMasterSapPayload>()
         verify(sender, times(1)).sendPage(captor.capture())

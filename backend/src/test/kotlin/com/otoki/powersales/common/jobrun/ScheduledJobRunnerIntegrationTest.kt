@@ -19,7 +19,7 @@ import java.time.LocalDateTime
  * `ScheduledJobRunner` 통합 테스트 (스펙 #548 §9, 시각 타입 정렬 #564).
  *
  * - `@DataJpaTest` + H2 (PostgreSQL 호환 모드 미사용) 위에서 실제 INSERT/UPDATE 트랜잭션 검증.
- * - `@Import` 로 Runner / CleanupJob / QueryDslConfig 를 한정적으로 가져온다.
+ * - `@Import` 로 Runner / CleanupService / QueryDslConfig 를 한정적으로 가져온다.
  * - ObjectMapper 는 Spring Boot 가 자동 구성하지 않는 슬라이스라 명시 빈으로 등록.
  */
 @DataJpaTest
@@ -27,7 +27,7 @@ import java.time.LocalDateTime
 @ActiveProfiles("test")
 @Import(
     ScheduledJobRunner::class,
-    ScheduledJobRunCleanupJob::class,
+    ScheduledJobRunCleanupService::class,
     QueryDslConfig::class,
     ScheduledJobRunnerIntegrationTest.TestObjectMapperConfig::class,
 )
@@ -38,7 +38,7 @@ class ScheduledJobRunnerIntegrationTest {
     private lateinit var runner: ScheduledJobRunner
 
     @Autowired
-    private lateinit var cleanupJob: ScheduledJobRunCleanupJob
+    private lateinit var cleanupService: ScheduledJobRunCleanupService
 
     @Autowired
     private lateinit var repository: ScheduledJobRunRepository
@@ -146,7 +146,7 @@ class ScheduledJobRunnerIntegrationTest {
     }
 
     @Nested
-    @DisplayName("ScheduledJobRunCleanupJob - 보존 정책")
+    @DisplayName("ScheduledJobRunCleanup - 보존 정책")
     inner class CleanupTests {
 
         @Test
@@ -178,7 +178,9 @@ class ScheduledJobRunnerIntegrationTest {
             )
             assertThat(repository.count()).isEqualTo(6)
 
-            cleanupJob.cleanup()
+            runner.run("scheduledJobRun.cleanup") { ctx ->
+                cleanupService.cleanup(ctx)
+            }
 
             // 결과: 삭제 5건 + cleanup 자기 이력 1건 + 최근 row 1건 = 2건 남음
             val remaining = repository.findAll()
