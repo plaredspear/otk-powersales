@@ -1,8 +1,12 @@
 package com.otoki.powersales.account.dto.response
 
 import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.account.entity.AccountSource
 import com.otoki.powersales.account.entity.AccountType
 import com.otoki.powersales.account.entity.FreezerType
+import com.otoki.powersales.account.entity.Industry
+import com.otoki.powersales.account.entity.Ownership
+import com.otoki.powersales.account.entity.Rating
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalTime
@@ -95,7 +99,7 @@ data class AdminAccountUpdateResponse(
     val email: String?,
     val fax: String?,
     val website: String?,
-    val industry: String?,
+    val industry: Industry?,
     val description: String?,
     val businessLicenseNumber: String?,
     val businessType: String?,
@@ -107,11 +111,11 @@ data class AdminAccountUpdateResponse(
     val accountStatusCode: String?,
     val accountNumber: String?,
     val site: String?,
-    val accountSource: String?,
+    val accountSource: AccountSource?,
     val mapCoordinate: String?,
     val parentSfid: String?,
-    val rating: String?,
-    val ownership: String?,
+    val rating: Rating?,
+    val ownership: Ownership?,
     val freezerInstalled: Boolean?,
     val freezerType: FreezerType?,
     val firstInstalled: LocalDate?,

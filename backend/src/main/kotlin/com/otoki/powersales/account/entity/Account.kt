@@ -1,7 +1,11 @@
 package com.otoki.powersales.account.entity
 
+import com.otoki.powersales.account.entity.converter.AccountSourceConverter
 import com.otoki.powersales.account.entity.converter.AccountTypeConverter
 import com.otoki.powersales.account.entity.converter.FreezerTypeConverter
+import com.otoki.powersales.account.entity.converter.IndustryConverter
+import com.otoki.powersales.account.entity.converter.OwnershipConverter
+import com.otoki.powersales.account.entity.converter.RatingConverter
 import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
@@ -124,8 +128,9 @@ class Account(
 
     @SFField("Industry")
     @HCColumn("industry")
+    @Convert(converter = IndustryConverter::class)
     @Column(name = "industry", length = 255)
-    var industry: String? = null,
+    var industry: Industry? = null,
 
     @SFField("WERK1_TX__c")
     @HCColumn("werk1_tx__c")
@@ -232,8 +237,9 @@ class Account(
     var site: String? = null,
 
     @SFField("AccountSource")
+    @Convert(converter = AccountSourceConverter::class)
     @Column(name = "account_source", length = 40)
-    var accountSource: String? = null,
+    var accountSource: AccountSource? = null,
 
     @SFField("BranchCostCenter__c")
     @Column(name = "branch_cost_center", length = 50)
@@ -309,12 +315,14 @@ class Account(
     var parentSfid: String? = null,
 
     @SFField("Rating")
+    @Convert(converter = RatingConverter::class)
     @Column(name = "rating", length = 20)
-    var rating: String? = null,
+    var rating: Rating? = null,
 
     @SFField("Ownership")
+    @Convert(converter = OwnershipConverter::class)
     @Column(name = "ownership", length = 20)
-    var ownership: String? = null,
+    var ownership: Ownership? = null,
 
     // -- Spec #644: Owner 차원 — DisplayWorkSchedule 풀 패턴 정합 --
     // owner_sfid: Heroku Connect sync / HerokuMigrationTool 가 채우는 buffer (application 미적재).

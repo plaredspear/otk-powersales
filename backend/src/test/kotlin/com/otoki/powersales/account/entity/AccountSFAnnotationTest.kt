@@ -1,7 +1,11 @@
 package com.otoki.powersales.account.entity
 
+import com.otoki.powersales.account.entity.converter.AccountSourceConverter
 import com.otoki.powersales.account.entity.converter.AccountTypeConverter
 import com.otoki.powersales.account.entity.converter.FreezerTypeConverter
+import com.otoki.powersales.account.entity.converter.IndustryConverter
+import com.otoki.powersales.account.entity.converter.OwnershipConverter
+import com.otoki.powersales.account.entity.converter.RatingConverter
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.common.salesforce.SFSchemaUtils
@@ -27,6 +31,7 @@ import org.junit.jupiter.api.Test
  *   - AC8: parent_sfid `@SFField("ParentId")` 부착
  *   - AC9: AccountType / FreezerType enum + Converter 검증
  *   - AC10 (#703): Group A 신규 어노테이션 + Reference FK 검증
+ *   - AC11 (#703 §3-2): Industry / Ownership / Rating / AccountSource enum + Converter 검증
  */
 @DisplayName("Account SF 어노테이션 검증 (Spec #602 / #703)")
 class AccountSFAnnotationTest {
@@ -408,6 +413,139 @@ class AccountSFAnnotationTest {
             val convert = field.getAnnotation(Convert::class.java)
             assertThat(convert).isNotNull
             assertThat(convert.converter.java).isEqualTo(FreezerTypeConverter::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("AC11 (#703 §3-2) — Industry / Ownership / Rating / AccountSource enum + Converter")
+    inner class PicklistEnumSpec703 {
+
+        @Test
+        @DisplayName("Industry enum 32개 멤버 + 영어 displayName 보존")
+        fun industryEnumMembers() {
+            assertThat(Industry.entries).hasSize(32)
+            assertThat(Industry.AGRICULTURE.displayName).isEqualTo("Agriculture")
+            assertThat(Industry.FOOD_AND_BEVERAGE.displayName).isEqualTo("Food & Beverage")
+            assertThat(Industry.NOT_FOR_PROFIT.displayName).isEqualTo("Not For Profit")
+            assertThat(Industry.TELECOMMUNICATIONS.displayName).isEqualTo("Telecommunications")
+            assertThat(Industry.OTHER.displayName).isEqualTo("Other")
+        }
+
+        @Test
+        @DisplayName("Ownership enum 4개 멤버 + 영어 displayName")
+        fun ownershipEnumMembers() {
+            assertThat(Ownership.entries).hasSize(4)
+            assertThat(Ownership.PUBLIC.displayName).isEqualTo("Public")
+            assertThat(Ownership.PRIVATE.displayName).isEqualTo("Private")
+            assertThat(Ownership.SUBSIDIARY.displayName).isEqualTo("Subsidiary")
+            assertThat(Ownership.OTHER.displayName).isEqualTo("Other")
+        }
+
+        @Test
+        @DisplayName("Rating enum 3개 멤버 + 영어 displayName")
+        fun ratingEnumMembers() {
+            assertThat(Rating.entries).hasSize(3)
+            assertThat(Rating.HOT.displayName).isEqualTo("Hot")
+            assertThat(Rating.WARM.displayName).isEqualTo("Warm")
+            assertThat(Rating.COLD.displayName).isEqualTo("Cold")
+        }
+
+        @Test
+        @DisplayName("AccountSource enum 10개 멤버 + 영어 displayName")
+        fun accountSourceEnumMembers() {
+            assertThat(AccountSource.entries).hasSize(10)
+            assertThat(AccountSource.ADVERTISEMENT.displayName).isEqualTo("Advertisement")
+            assertThat(AccountSource.CUSTOMER_EVENT.displayName).isEqualTo("Customer Event")
+            assertThat(AccountSource.EMPLOYEE_REFERRAL.displayName).isEqualTo("Employee Referral")
+            assertThat(AccountSource.GOOGLE_ADWORDS.displayName).isEqualTo("Google AdWords")
+            assertThat(AccountSource.PURCHASED_LIST.displayName).isEqualTo("Purchased List")
+            assertThat(AccountSource.TRADE_SHOW.displayName).isEqualTo("Trade Show")
+        }
+
+        @Test
+        @DisplayName("IndustryConverter — enum ↔ 영어 String 양방향 변환")
+        fun industryConverter() {
+            val converter = IndustryConverter()
+            assertThat(converter.convertToDatabaseColumn(Industry.FOOD_AND_BEVERAGE)).isEqualTo("Food & Beverage")
+            assertThat(converter.convertToDatabaseColumn(null)).isNull()
+            assertThat(converter.convertToEntityAttribute("Food & Beverage")).isEqualTo(Industry.FOOD_AND_BEVERAGE)
+            assertThat(converter.convertToEntityAttribute("Not For Profit")).isEqualTo(Industry.NOT_FOR_PROFIT)
+            assertThat(converter.convertToEntityAttribute(null)).isNull()
+            assertThat(converter.convertToEntityAttribute("")).isNull()
+            assertThat(converter.convertToEntityAttribute("UNKNOWN_VALUE")).isNull()
+        }
+
+        @Test
+        @DisplayName("OwnershipConverter — enum ↔ 영어 String 양방향 변환")
+        fun ownershipConverter() {
+            val converter = OwnershipConverter()
+            assertThat(converter.convertToDatabaseColumn(Ownership.SUBSIDIARY)).isEqualTo("Subsidiary")
+            assertThat(converter.convertToDatabaseColumn(null)).isNull()
+            assertThat(converter.convertToEntityAttribute("Public")).isEqualTo(Ownership.PUBLIC)
+            assertThat(converter.convertToEntityAttribute(null)).isNull()
+            assertThat(converter.convertToEntityAttribute("UNKNOWN")).isNull()
+        }
+
+        @Test
+        @DisplayName("RatingConverter — enum ↔ 영어 String 양방향 변환")
+        fun ratingConverter() {
+            val converter = RatingConverter()
+            assertThat(converter.convertToDatabaseColumn(Rating.HOT)).isEqualTo("Hot")
+            assertThat(converter.convertToDatabaseColumn(null)).isNull()
+            assertThat(converter.convertToEntityAttribute("Cold")).isEqualTo(Rating.COLD)
+            assertThat(converter.convertToEntityAttribute(null)).isNull()
+            assertThat(converter.convertToEntityAttribute("UNKNOWN")).isNull()
+        }
+
+        @Test
+        @DisplayName("AccountSourceConverter — enum ↔ 영어 String 양방향 변환")
+        fun accountSourceConverter() {
+            val converter = AccountSourceConverter()
+            assertThat(converter.convertToDatabaseColumn(AccountSource.EMPLOYEE_REFERRAL)).isEqualTo("Employee Referral")
+            assertThat(converter.convertToDatabaseColumn(null)).isNull()
+            assertThat(converter.convertToEntityAttribute("Google AdWords")).isEqualTo(AccountSource.GOOGLE_ADWORDS)
+            assertThat(converter.convertToEntityAttribute(null)).isNull()
+            assertThat(converter.convertToEntityAttribute("UNKNOWN")).isNull()
+        }
+
+        @Test
+        @DisplayName("Account.industry 필드에 @Convert(IndustryConverter) 부착 + 타입 Industry")
+        fun industryFieldConverterAnnotation() {
+            val field = Account::class.java.getDeclaredField("industry")
+            assertThat(field.type).isEqualTo(Industry::class.java)
+            val convert = field.getAnnotation(Convert::class.java)
+            assertThat(convert).isNotNull
+            assertThat(convert.converter.java).isEqualTo(IndustryConverter::class.java)
+        }
+
+        @Test
+        @DisplayName("Account.ownership 필드에 @Convert(OwnershipConverter) 부착 + 타입 Ownership")
+        fun ownershipFieldConverterAnnotation() {
+            val field = Account::class.java.getDeclaredField("ownership")
+            assertThat(field.type).isEqualTo(Ownership::class.java)
+            val convert = field.getAnnotation(Convert::class.java)
+            assertThat(convert).isNotNull
+            assertThat(convert.converter.java).isEqualTo(OwnershipConverter::class.java)
+        }
+
+        @Test
+        @DisplayName("Account.rating 필드에 @Convert(RatingConverter) 부착 + 타입 Rating")
+        fun ratingFieldConverterAnnotation() {
+            val field = Account::class.java.getDeclaredField("rating")
+            assertThat(field.type).isEqualTo(Rating::class.java)
+            val convert = field.getAnnotation(Convert::class.java)
+            assertThat(convert).isNotNull
+            assertThat(convert.converter.java).isEqualTo(RatingConverter::class.java)
+        }
+
+        @Test
+        @DisplayName("Account.accountSource 필드에 @Convert(AccountSourceConverter) 부착 + 타입 AccountSource")
+        fun accountSourceFieldConverterAnnotation() {
+            val field = Account::class.java.getDeclaredField("accountSource")
+            assertThat(field.type).isEqualTo(AccountSource::class.java)
+            val convert = field.getAnnotation(Convert::class.java)
+            assertThat(convert).isNotNull
+            assertThat(convert.converter.java).isEqualTo(AccountSourceConverter::class.java)
         }
     }
 }
