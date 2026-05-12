@@ -16,7 +16,7 @@ import java.time.LocalDate
  */
 @Entity
 @Table(name = "display_work_schedule")
-@SFObject("DKRetail__DisplayWorkScheduleMaster__c")
+@SFObject("DisplayWorkScheduleMaster__c")
 @HCTable("displayworkschedulemaster__c")
 class DisplayWorkSchedule(
 
