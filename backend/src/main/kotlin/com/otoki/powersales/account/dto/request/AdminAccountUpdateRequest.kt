@@ -1,7 +1,11 @@
 package com.otoki.powersales.account.dto.request
 
+import com.otoki.powersales.account.entity.AccountSource
 import com.otoki.powersales.account.entity.AccountType
 import com.otoki.powersales.account.entity.FreezerType
+import com.otoki.powersales.account.entity.Industry
+import com.otoki.powersales.account.entity.Ownership
+import com.otoki.powersales.account.entity.Rating
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.Size
 import java.math.BigDecimal
@@ -53,8 +57,7 @@ data class AdminAccountUpdateRequest(
     @field:Size(max = 100, message = "우편번호는 100자 이하여야 합니다.")
     val zipCode: String? = null,
 
-    @field:Size(max = 255, message = "업종은 255자 이하여야 합니다.")
-    val industry: String? = null,
+    val industry: Industry? = null,
 
     val description: String? = null,
 
@@ -79,8 +82,7 @@ data class AdminAccountUpdateRequest(
     @field:Size(max = 80, message = "사이트는 80자 이하여야 합니다.")
     val site: String? = null,
 
-    @field:Size(max = 40, message = "거래처 출처는 40자 이하여야 합니다.")
-    val accountSource: String? = null,
+    val accountSource: AccountSource? = null,
 
     @field:Size(max = 40, message = "지도 좌표는 40자 이하여야 합니다.")
     val mapCoordinate: String? = null,
@@ -88,11 +90,9 @@ data class AdminAccountUpdateRequest(
     @field:Size(max = 18, message = "상위 거래처 sfid 는 18자 이하여야 합니다.")
     val parentSfid: String? = null,
 
-    @field:Size(max = 20, message = "등급은 20자 이하여야 합니다.")
-    val rating: String? = null,
+    val rating: Rating? = null,
 
-    @field:Size(max = 20, message = "소유 구분은 20자 이하여야 합니다.")
-    val ownership: String? = null,
+    val ownership: Ownership? = null,
 
     @field:Size(max = 40, message = "거래처 상태명은 40자 이하여야 합니다.")
     val accountStatusName: String? = null,

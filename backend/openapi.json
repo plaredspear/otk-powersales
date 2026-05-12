@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:50848",
+    "url" : "http://localhost:63756",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -7036,8 +7036,7 @@
           },
           "industry" : {
             "type" : [ "string", "null" ],
-            "maxLength" : 255,
-            "minLength" : 0
+            "enum" : [ "Agriculture", "Apparel", "Banking", "Biotechnology", "Chemicals", "Communications", "Construction", "Consulting", "Education", "Electronics", "Energy", "Engineering", "Entertainment", "Environmental", "Finance", "Food & Beverage", "Government", "Healthcare", "Hospitality", "Insurance", "Machinery", "Manufacturing", "Media", "Not For Profit", "Other", "Recreation", "Retail", "Shipping", "Technology", "Telecommunications", "Transportation", "Utilities" ]
           },
           "description" : {
             "type" : [ "string", "null" ]
@@ -7079,8 +7078,7 @@
           },
           "accountSource" : {
             "type" : [ "string", "null" ],
-            "maxLength" : 40,
-            "minLength" : 0
+            "enum" : [ "Advertisement", "Customer Event", "Employee Referral", "Google AdWords", "Other", "Partner", "Purchased List", "Trade Show", "Webinar", "Website" ]
           },
           "mapCoordinate" : {
             "type" : [ "string", "null" ],
@@ -7094,13 +7092,11 @@
           },
           "rating" : {
             "type" : [ "string", "null" ],
-            "maxLength" : 20,
-            "minLength" : 0
+            "enum" : [ "Hot", "Warm", "Cold" ]
           },
           "ownership" : {
             "type" : [ "string", "null" ],
-            "maxLength" : 20,
-            "minLength" : 0
+            "enum" : [ "Public", "Private", "Subsidiary", "Other" ]
           },
           "accountStatusName" : {
             "type" : [ "string", "null" ],
@@ -7245,7 +7241,8 @@
             "type" : [ "string", "null" ]
           },
           "industry" : {
-            "type" : [ "string", "null" ]
+            "type" : [ "string", "null" ],
+            "enum" : [ "Agriculture", "Apparel", "Banking", "Biotechnology", "Chemicals", "Communications", "Construction", "Consulting", "Education", "Electronics", "Energy", "Engineering", "Entertainment", "Environmental", "Finance", "Food & Beverage", "Government", "Healthcare", "Hospitality", "Insurance", "Machinery", "Manufacturing", "Media", "Not For Profit", "Other", "Recreation", "Retail", "Shipping", "Technology", "Telecommunications", "Transportation", "Utilities" ]
           },
           "description" : {
             "type" : [ "string", "null" ]
@@ -7282,7 +7279,8 @@
             "type" : [ "string", "null" ]
           },
           "accountSource" : {
-            "type" : [ "string", "null" ]
+            "type" : [ "string", "null" ],
+            "enum" : [ "Advertisement", "Customer Event", "Employee Referral", "Google AdWords", "Other", "Partner", "Purchased List", "Trade Show", "Webinar", "Website" ]
           },
           "mapCoordinate" : {
             "type" : [ "string", "null" ]
@@ -7291,10 +7289,12 @@
             "type" : [ "string", "null" ]
           },
           "rating" : {
-            "type" : [ "string", "null" ]
+            "type" : [ "string", "null" ],
+            "enum" : [ "Hot", "Warm", "Cold" ]
           },
           "ownership" : {
-            "type" : [ "string", "null" ]
+            "type" : [ "string", "null" ],
+            "enum" : [ "Public", "Private", "Subsidiary", "Other" ]
           },
           "freezerInstalled" : {
             "type" : [ "boolean", "null" ]
@@ -11587,15 +11587,15 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
-          },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
           },
           "size" : {
             "type" : "integer",
@@ -11619,6 +11619,10 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
+          "pageNumber" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "unpaged" : {
             "type" : "boolean"
           },
@@ -11631,10 +11635,6 @@
           },
           "paged" : {
             "type" : "boolean"
-          },
-          "pageNumber" : {
-            "type" : "integer",
-            "format" : "int32"
           },
           "offset" : {
             "type" : "integer",
@@ -14024,15 +14024,15 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
-          },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
           },
           "size" : {
             "type" : "integer",
