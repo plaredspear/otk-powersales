@@ -43,9 +43,9 @@ class EmployeeSFAnnotationTest {
         private val mapping = SFSchemaUtils.getSFMapping(Employee::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 36 (25 기존 + 3 누락 + 8 신규)")
+        @DisplayName("매핑 키 수 = 38 (25 기존 + 3 누락 + 8 신규 + BaseEntity 2)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(36)
+            assertThat(mapping).hasSize(38)
         }
 
         @Test

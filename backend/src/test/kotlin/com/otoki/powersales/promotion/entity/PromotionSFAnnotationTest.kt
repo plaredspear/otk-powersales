@@ -30,10 +30,10 @@ class PromotionSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("매핑 키 수 = 24 (도메인 21 + SF 표준 시스템 3)")
+        @DisplayName("매핑 키 수 = 26 (도메인 21 + SF 표준 시스템 3 + BaseEntity 2)")
         fun mappingKeySize() {
             val mapping = SFSchemaUtils.getSFMapping(Promotion::class.java)
-            assertThat(mapping).hasSize(24)
+            assertThat(mapping).hasSize(26)
         }
     }
 

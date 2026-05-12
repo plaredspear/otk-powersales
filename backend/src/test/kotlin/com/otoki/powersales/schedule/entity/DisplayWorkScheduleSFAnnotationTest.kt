@@ -26,11 +26,11 @@ class DisplayWorkScheduleSFAnnotationTest {
     inner class ClassAnnotation {
 
         @Test
-        @DisplayName("@SFObject 값은 'DKRetail__DisplayWorkScheduleMaster__c'")
+        @DisplayName("@SFObject 값은 'DisplayWorkScheduleMaster__c'")
         fun sfObjectValue() {
             val annotation = DisplayWorkSchedule::class.java.getAnnotation(SFObject::class.java)
             assertThat(annotation).isNotNull
-            assertThat(annotation.value).isEqualTo("DKRetail__DisplayWorkScheduleMaster__c")
+            assertThat(annotation.value).isEqualTo("DisplayWorkScheduleMaster__c")
         }
     }
 
@@ -41,9 +41,9 @@ class DisplayWorkScheduleSFAnnotationTest {
         private val mapping = SFSchemaUtils.getSFMapping(DisplayWorkSchedule::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 13 (12 기존 + 1 누락 매핑 보강)")
+        @DisplayName("매핑 키 수 = 15 (12 기존 + 1 누락 매핑 보강 + BaseEntity 2)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(13)
+            assertThat(mapping).hasSize(15)
         }
 
         @Test

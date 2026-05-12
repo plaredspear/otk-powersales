@@ -26,10 +26,10 @@ class AlternativeHolidaySFAnnotationTest {
         }
 
         @Test
-        @DisplayName("매핑 키 수 = 7")
+        @DisplayName("매핑 키 수 = 9 (7 + BaseEntity 2)")
         fun mappingKeySize() {
             val mapping = SFSchemaUtils.getSFMapping(AlternativeHoliday::class.java)
-            assertThat(mapping).hasSize(7)
+            assertThat(mapping).hasSize(9)
         }
     }
 
@@ -95,14 +95,15 @@ class AlternativeHolidaySFAnnotationTest {
         }
 
         @Test
-        @DisplayName("매핑 키셋 정확히 일치")
+        @DisplayName("매핑 키셋 정확히 일치 (Spec #703 — BaseEntity CreatedDate/LastModifiedDate 포함)")
         fun mappingKeysExact() {
             assertThat(mapping.keys)
                 .containsExactlyInAnyOrder(
                     "DKRetail__EmployeeId__c", "DKRetail__EmpName__c",
                     "DKRetail__ActualWorkDate__c", "DKRetail__TargetAltHolidayDate__c",
                     "DKRetail__ConfirmAltHolidayDate__c", "DKRetail__Status__c",
-                    "DKRetail__ChangeReason__c"
+                    "DKRetail__ChangeReason__c",
+                    "CreatedDate", "LastModifiedDate"
                 )
         }
     }

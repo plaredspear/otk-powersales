@@ -12,19 +12,23 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 /**
- * Spec #602 — Account ↔ Salesforce `Account` 어노테이션 부착 검증.
+ * Spec #602 / #703 — Account ↔ Salesforce `Account` 어노테이션 부착 검증.
  *
- * 단일 권위: docs/plan/old_source_260408/salesforce_object/거래처(Account).md
+ * 단일 권위:
+ *   - docs/plan/old_source_260408/salesforce_object/거래처(Account).md (#602)
+ *   - docs/plan/old_source_260408/sf-object-meta/README.md §6 (#703 정합 정책)
  *
  * 검증 분류:
  *   - AC1: 클래스 `@SFObject` 무변경
- *   - AC2: `@SFField` 매핑 키셋 (63개 — 22 기존 + 17 SAP 보존 + 23 신규 + 1 Spec #644 OwnerId)
+ *   - AC2: `@SFField` 매핑 키셋 (68개 — 22 기존 + 17 SAP 보존 + 23 신규 + 1 Spec #644 OwnerId
+ *          + 3 Spec #703 Group A (IsDeleted/CreatedById/LastModifiedById) + 2 BaseEntity (CreatedDate/LastModifiedDate))
  *   - AC3: PK / FK 미부착
- *   - AC5: 기존 `@HCColumn` 매핑 보존
+ *   - AC5: `@HCColumn` 매핑 (29개 — 25 기존 + 2 BaseEntity + 2 Spec #703 (createdbyid/lastmodifiedbyid))
  *   - AC8: parent_sfid `@SFField("ParentId")` 부착
  *   - AC9: AccountType / FreezerType enum + Converter 검증
+ *   - AC10 (#703): Group A 신규 어노테이션 + Reference FK 검증
  */
-@DisplayName("Account SF 어노테이션 검증 (Spec #602)")
+@DisplayName("Account SF 어노테이션 검증 (Spec #602 / #703)")
 class AccountSFAnnotationTest {
 
     @Nested
@@ -47,9 +51,9 @@ class AccountSFAnnotationTest {
         private val mapping = SFSchemaUtils.getSFMapping(Account::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 63 (22 기존 + 17 SAP 보존 + 23 신규 + 1 Spec #644 OwnerId)")
+        @DisplayName("매핑 키 수 = 68 (22 기존 + 17 SAP 보존 + 23 신규 + 1 Spec #644 OwnerId + 3 Spec #703 Group A + 2 BaseEntity)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(63)
+            assertThat(mapping).hasSize(68)
         }
 
         @Test
@@ -163,7 +167,7 @@ class AccountSFAnnotationTest {
         private val hcMapping = SFSchemaUtils.getHCMapping(Account::class.java)
 
         @Test
-        @DisplayName("기존 @HCColumn 매핑 무변경 (sfid + 22개 매핑 + isdeleted + Spec #644 ownerid = 25개)")
+        @DisplayName("@HCColumn 매핑 (sfid + 22개 매핑 + isdeleted + Spec #644 ownerid + Spec #703 createdbyid/lastmodifiedbyid + BaseEntity createddate/lastmodifieddate = 29개)")
         fun hcMappingUnchanged() {
             assertThat(hcMapping["sfid"]).isEqualTo("sfid")
             assertThat(hcMapping["name"]).isEqualTo("name")
@@ -173,7 +177,11 @@ class AccountSFAnnotationTest {
             assertThat(hcMapping["werk1_tx__c"]).isEqualTo("werk1_tx")
             assertThat(hcMapping["isdeleted"]).isEqualTo("is_deleted")
             assertThat(hcMapping["ownerid"]).isEqualTo("owner_sfid")
-            assertThat(hcMapping).hasSize(25)
+            assertThat(hcMapping["createdbyid"]).isEqualTo("created_by_sfid")
+            assertThat(hcMapping["lastmodifiedbyid"]).isEqualTo("last_modified_by_sfid")
+            assertThat(hcMapping["createddate"]).isEqualTo("created_at")
+            assertThat(hcMapping["lastmodifieddate"]).isEqualTo("updated_at")
+            assertThat(hcMapping).hasSize(29)
         }
 
         @Test
@@ -244,6 +252,80 @@ class AccountSFAnnotationTest {
         fun parentIdMapping() {
             val mapping = SFSchemaUtils.getSFMapping(Account::class.java)
             assertThat(mapping["ParentId"]).isEqualTo("parent_sfid")
+        }
+    }
+
+    @Nested
+    @DisplayName("AC10 (#703) — Group A 신규 어노테이션 + Reference FK")
+    inner class Spec703GroupAAndReference {
+
+        @Test
+        @DisplayName("is_deleted 필드에 @SFField(\"IsDeleted\") 신규 부착")
+        fun isDeletedHasSfField() {
+            val field = Account::class.java.getDeclaredField("isDeleted")
+            val annotation = field.getAnnotation(SFField::class.java)
+            assertThat(annotation).isNotNull
+            assertThat(annotation.value).isEqualTo("IsDeleted")
+        }
+
+        @Test
+        @DisplayName("created_by_sfid 필드 + @SFField(\"CreatedById\") + @HCColumn(\"createdbyid\") + length 18")
+        fun createdBySfidField() {
+            val field = Account::class.java.getDeclaredField("createdBySfid")
+            assertThat(field.type).isEqualTo(String::class.java)
+            val column = field.getAnnotation(jakarta.persistence.Column::class.java)
+            assertThat(column.name).isEqualTo("created_by_sfid")
+            assertThat(column.length).isEqualTo(18)
+            assertThat(field.getAnnotation(SFField::class.java).value).isEqualTo("CreatedById")
+            assertThat(field.getAnnotation(com.otoki.powersales.common.salesforce.HCColumn::class.java).value).isEqualTo("createdbyid")
+        }
+
+        @Test
+        @DisplayName("last_modified_by_sfid 필드 + @SFField(\"LastModifiedById\") + @HCColumn(\"lastmodifiedbyid\") + length 18")
+        fun lastModifiedBySfidField() {
+            val field = Account::class.java.getDeclaredField("lastModifiedBySfid")
+            assertThat(field.type).isEqualTo(String::class.java)
+            val column = field.getAnnotation(jakarta.persistence.Column::class.java)
+            assertThat(column.name).isEqualTo("last_modified_by_sfid")
+            assertThat(column.length).isEqualTo(18)
+            assertThat(field.getAnnotation(SFField::class.java).value).isEqualTo("LastModifiedById")
+            assertThat(field.getAnnotation(com.otoki.powersales.common.salesforce.HCColumn::class.java).value).isEqualTo("lastmodifiedbyid")
+        }
+
+        @Test
+        @DisplayName("createdBy FK (@ManyToOne + @JoinColumn(\"created_by_id\") → Employee)")
+        fun createdByFk() {
+            val field = Account::class.java.getDeclaredField("createdBy")
+            assertThat(field.type).isEqualTo(com.otoki.powersales.employee.entity.Employee::class.java)
+            assertThat(field.isAnnotationPresent(jakarta.persistence.ManyToOne::class.java)).isTrue()
+            assertThat(field.getAnnotation(jakarta.persistence.JoinColumn::class.java).name).isEqualTo("created_by_id")
+            assertThat(field.isAnnotationPresent(SFField::class.java)).isFalse()
+        }
+
+        @Test
+        @DisplayName("lastModifiedBy FK (@ManyToOne + @JoinColumn(\"last_modified_by_id\") → Employee)")
+        fun lastModifiedByFk() {
+            val field = Account::class.java.getDeclaredField("lastModifiedBy")
+            assertThat(field.type).isEqualTo(com.otoki.powersales.employee.entity.Employee::class.java)
+            assertThat(field.isAnnotationPresent(jakarta.persistence.ManyToOne::class.java)).isTrue()
+            assertThat(field.getAnnotation(jakarta.persistence.JoinColumn::class.java).name).isEqualTo("last_modified_by_id")
+        }
+
+        @Test
+        @DisplayName("parent FK (@ManyToOne + @JoinColumn(\"parent_id\") → Account self)")
+        fun parentFk() {
+            val field = Account::class.java.getDeclaredField("parent")
+            assertThat(field.type).isEqualTo(Account::class.java)
+            assertThat(field.isAnnotationPresent(jakarta.persistence.ManyToOne::class.java)).isTrue()
+            assertThat(field.getAnnotation(jakarta.persistence.JoinColumn::class.java).name).isEqualTo("parent_id")
+        }
+
+        @Test
+        @DisplayName("BaseEntity CreatedDate / LastModifiedDate 매핑이 Account 매핑 결과에 포함")
+        fun baseEntityMappingIncluded() {
+            val mapping = SFSchemaUtils.getSFMapping(Account::class.java)
+            assertThat(mapping["CreatedDate"]).isEqualTo("created_at")
+            assertThat(mapping["LastModifiedDate"]).isEqualTo("updated_at")
         }
     }
 

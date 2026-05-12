@@ -41,9 +41,9 @@ class ProductBarcodeSFAnnotationTest {
         private val mapping = SFSchemaUtils.getSFMapping(ProductBarcode::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 8 (6 기존 + 1 누락 보강 + 1 신규)")
+        @DisplayName("매핑 키 수 = 10 (6 기존 + 1 누락 보강 + 1 신규 + BaseEntity 2)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(8)
+            assertThat(mapping).hasSize(10)
         }
 
         @Test

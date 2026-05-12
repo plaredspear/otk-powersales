@@ -26,10 +26,10 @@ class AttendInfoSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("매핑 키 수 = 5")
+        @DisplayName("매핑 키 수 = 7 (5 + BaseEntity 2)")
         fun mappingKeySize() {
             val mapping = SFSchemaUtils.getSFMapping(AttendInfo::class.java)
-            assertThat(mapping).hasSize(5)
+            assertThat(mapping).hasSize(7)
         }
     }
 
@@ -79,12 +79,13 @@ class AttendInfoSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("매핑 키셋 정확히 일치")
+        @DisplayName("매핑 키셋 정확히 일치 (Spec #703 — BaseEntity CreatedDate/LastModifiedDate 포함)")
         fun mappingKeysExact() {
             assertThat(mapping.keys)
                 .containsExactlyInAnyOrder(
                     "EmployeeCode__c", "StartDate__c", "EndDate__c",
-                    "AttendType__c", "Status__c"
+                    "AttendType__c", "Status__c",
+                    "CreatedDate", "LastModifiedDate"
                 )
         }
     }

@@ -29,10 +29,10 @@ class AgreementHistorySFAnnotationTest {
         }
 
         @Test
-        @DisplayName("매핑 키 수 = 4")
+        @DisplayName("매핑 키 수 = 6 (4 + BaseEntity 2)")
         fun mappingKeySize() {
             val mapping = SFSchemaUtils.getSFMapping(AgreementHistory::class.java)
-            assertThat(mapping).hasSize(4)
+            assertThat(mapping).hasSize(6)
         }
     }
 

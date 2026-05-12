@@ -41,9 +41,9 @@ class TeamMemberScheduleSFAnnotationTest {
         private val mapping = SFSchemaUtils.getSFMapping(TeamMemberSchedule::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 41 (33 기존 + 1 누락 보강 + 7 신규)")
+        @DisplayName("매핑 키 수 = 43 (33 기존 + 1 누락 보강 + 7 신규 + BaseEntity 2)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(41)
+            assertThat(mapping).hasSize(43)
         }
 
         @Test

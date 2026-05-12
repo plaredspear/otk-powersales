@@ -142,6 +142,7 @@ class Account(
     @Column(name = "werk3_tx", length = 255)
     var werk3Tx: String? = null,
 
+    @SFField("IsDeleted")
     @HCColumn("isdeleted")
     @Column(name = "is_deleted")
     var isDeleted: Boolean? = null,
@@ -324,7 +325,35 @@ class Account(
     @Column(name = "owner_sfid", length = 18)
     var ownerSfid: String? = null,
 
+    // -- Spec #703: Group A (CreatedById / LastModifiedById) sfid + Employee FK --
+    // *_sfid: Heroku Connect sync 가 채우는 buffer (SF User Id).
+    // *_by: SalesforceMigrationTool 이 SF User → Employee 매핑으로 채우는 FK.
+
+    @SFField("CreatedById")
+    @HCColumn("createdbyid")
+    @Column(name = "created_by_sfid", length = 18)
+    var createdBySfid: String? = null,
+
+    @SFField("LastModifiedById")
+    @HCColumn("lastmodifiedbyid")
+    @Column(name = "last_modified_by_sfid", length = 18)
+    var lastModifiedBySfid: String? = null,
+
+    // -- Relations --
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id")
-    var owner: Employee? = null
+    var owner: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_id")
+    var createdBy: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "last_modified_by_id")
+    var lastModifiedBy: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_id")
+    var parent: Account? = null
 ) : BaseEntity()
