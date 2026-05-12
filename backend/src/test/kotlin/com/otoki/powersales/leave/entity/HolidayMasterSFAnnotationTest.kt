@@ -39,15 +39,15 @@ class HolidayMasterSFAnnotationTest {
     }
 
     @Nested
-    @DisplayName("AC2 — @SFField 매핑 키셋 (3개)")
+    @DisplayName("AC2 — @SFField 매핑 키셋 (5개: 3개 + BaseEntity CreatedDate/LastModifiedDate)")
     inner class SfFieldMapping {
 
         private val mapping = SFSchemaUtils.getSFMapping(HolidayMaster::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 3")
+        @DisplayName("매핑 키 수 = 5 (3 + BaseEntity 2)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(3)
+            assertThat(mapping).hasSize(5)
         }
 
         @Test
@@ -59,9 +59,12 @@ class HolidayMasterSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("매핑 키셋 정확히 일치 (불필요 키 부재 단언)")
+        @DisplayName("매핑 키셋 정확히 일치 (Spec #703 — BaseEntity CreatedDate/LastModifiedDate 포함)")
         fun mappingKeysExact() {
-            assertThat(mapping.keys).containsExactlyInAnyOrder("Name", "HolidayDate__c", "Type__c")
+            assertThat(mapping.keys).containsExactlyInAnyOrder(
+                "Name", "HolidayDate__c", "Type__c",
+                "CreatedDate", "LastModifiedDate"
+            )
         }
     }
 

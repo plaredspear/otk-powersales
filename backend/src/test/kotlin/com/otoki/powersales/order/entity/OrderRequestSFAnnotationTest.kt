@@ -43,9 +43,9 @@ class OrderRequestSFAnnotationTest {
         private val mapping = SFSchemaUtils.getSFMapping(OrderRequest::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 7 (5 기존 + 2 누락 보강)")
+        @DisplayName("매핑 키 수 = 9 (5 기존 + 2 누락 보강 + BaseEntity 2)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(7)
+            assertThat(mapping).hasSize(9)
         }
 
         @Test

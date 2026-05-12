@@ -36,9 +36,9 @@ class OrganizationSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("매핑 키 수 = 13 (기존 12 + 신규 1)")
+        @DisplayName("매핑 키 수 = 15 (기존 12 + 신규 1 + BaseEntity 2)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(13)
+            assertThat(mapping).hasSize(15)
         }
 
         @Test

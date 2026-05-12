@@ -41,9 +41,9 @@ class NoticeSFAnnotationTest {
         private val mapping = SFSchemaUtils.getSFMapping(Notice::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 9 (7 기존 + 1 누락 보강 + 1 신규)")
+        @DisplayName("매핑 키 수 = 11 (7 기존 + 1 누락 보강 + 1 신규 + BaseEntity 2)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(9)
+            assertThat(mapping).hasSize(11)
         }
 
         @Test
