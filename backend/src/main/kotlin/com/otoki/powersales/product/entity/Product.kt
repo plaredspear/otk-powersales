@@ -204,6 +204,7 @@ class Product(
     var productBarcode: String? = null,
 
     @SFField("Pallet__c")
+    @HCColumn("pallet__c")
     @Column(name = "pallet", precision = 18, scale = 4)
     var pallet: BigDecimal? = null,
 
@@ -237,7 +238,36 @@ class Product(
     @SFField("StoreCondition__c")
     @HCColumn("storecondition__c")
     @Column(name = "store_condition_text", length = 255)
-    var storeConditionText: String? = null
+    var storeConditionText: String? = null,
+
+    // -- Group A R-2: Owner / CreatedBy / LastModifiedBy --
+
+    @SFField("OwnerId")
+    @HCColumn("ownerid")
+    @Column(name = "owner_sfid", length = 18)
+    var ownerSfid: String? = null,
+
+    @SFField("CreatedById")
+    @HCColumn("createdbyid")
+    @Column(name = "created_by_sfid", length = 18)
+    var createdBySfid: String? = null,
+
+    @SFField("LastModifiedById")
+    @HCColumn("lastmodifiedbyid")
+    @Column(name = "last_modified_by_sfid", length = 18)
+    var lastModifiedBySfid: String? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id")
+    var owner: com.otoki.powersales.employee.entity.Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_id")
+    var createdBy: com.otoki.powersales.employee.entity.Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "last_modified_by_id")
+    var lastModifiedBy: com.otoki.powersales.employee.entity.Employee? = null
 
     /* --- 주석 처리: V1에 없는 기존 필드 ---
     productId: V1에 없음 (sfid로 대체)

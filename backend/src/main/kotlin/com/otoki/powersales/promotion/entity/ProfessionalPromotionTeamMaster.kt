@@ -1,6 +1,8 @@
 package com.otoki.powersales.promotion.entity
 
 import com.otoki.powersales.common.entity.BaseEntity
+import com.otoki.powersales.common.salesforce.HCColumn
+import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.account.entity.Account
@@ -12,6 +14,7 @@ import java.time.LocalDate
 @Entity
 @Table(name = "professional_promotion_team_master")
 @SFObject("ProfessionalPromotionTeamMaster__c")
+@HCTable("professionalpromotionteammaster__c")
 class ProfessionalPromotionTeamMaster(
 
     @Id
@@ -26,40 +29,68 @@ class ProfessionalPromotionTeamMaster(
     val employeeId: Long,
 
     @SFField("EmployeeNumber__c")
-    @Column(name = "employee_number", length = 20)
+    @HCColumn("employeenumber__c")
+    @Column(name = "employee_number", length = 1300)
     val employeeNumber: String? = null,
 
     @Column(name = "account_id", nullable = false)
     var accountId: Int,
 
     @SFField("Account__c")
+    @HCColumn("account__c")
     @Column(name = "account_sfid", length = 18)
     val accountSfid: String? = null,
 
+    @SFField("FullName__c")
+    @HCColumn("fullname__c")
+    @Column(name = "full_name_sfid", length = 18)
+    var fullNameSfid: String? = null,
+
     @SFField("ProfessionalPromotionTeam__c")
+    @HCColumn("professionalpromotionteam__c")
     @Convert(converter = ProfessionalPromotionTeamTypeConverter::class)
-    @Column(name = "team_type", nullable = false, length = 50)
+    @Column(name = "team_type", nullable = false, length = 255)
     var teamType: ProfessionalPromotionTeamType,
 
     @SFField("StartDate__c")
+    @HCColumn("startdate__c")
     @Column(name = "start_date", nullable = false)
     var startDate: LocalDate,
 
     @SFField("EndDate__c")
+    @HCColumn("enddate__c")
     @Column(name = "end_date")
     var endDate: LocalDate? = null,
 
     @SFField("Confirmed__c")
+    @HCColumn("confirmed__c")
     @Column(name = "is_confirmed", nullable = false)
     var isConfirmed: Boolean = false,
 
     @SFField("CostCenterCode__c")
-    @Column(name = "branch_code", length = 20)
+    @HCColumn("costcentercode__c")
+    @Column(name = "branch_code", length = 255)
     var branchCode: String? = null,
 
     @SFField("BranchName__c")
-    @Column(name = "branch_name", length = 50)
+    @HCColumn("branchname__c")
+    @Column(name = "branch_name", length = 1300)
     var branchName: String? = null,
+
+    @SFField("OwnerId")
+    @HCColumn("ownerid")
+    @Column(name = "owner_sfid", length = 18)
+    var ownerSfid: String? = null,
+
+    @SFField("CreatedById")
+    @HCColumn("createdbyid")
+    @Column(name = "created_by_sfid", length = 18)
+    var createdBySfid: String? = null,
+
+    @SFField("LastModifiedById")
+    @HCColumn("lastmodifiedbyid")
+    @Column(name = "last_modified_by_sfid", length = 18)
+    var lastModifiedBySfid: String? = null,
 
     // -- Relations --
 
@@ -69,7 +100,23 @@ class ProfessionalPromotionTeamMaster(
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "account_id", insertable = false, updatable = false)
-    val account: Account? = null
+    val account: Account? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "full_name_id")
+    var fullNameEmployee: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id")
+    var owner: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_id")
+    var createdBy: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "last_modified_by_id")
+    var lastModifiedBy: Employee? = null,
 
 ) : BaseEntity() {
 

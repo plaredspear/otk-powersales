@@ -29,10 +29,10 @@ class ProfessionalPromotionTeamMasterSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("매핑 키 수 = 10 (8 + BaseEntity 2)")
+        @DisplayName("매핑 키 수 = 14 (8 + BaseEntity 2 + Spec #728 FullName + R-2 3 = 4)")
         fun mappingKeySize() {
             val mapping = SFSchemaUtils.getSFMapping(ProfessionalPromotionTeamMaster::class.java)
-            assertThat(mapping).hasSize(10)
+            assertThat(mapping).hasSize(14)
         }
     }
 

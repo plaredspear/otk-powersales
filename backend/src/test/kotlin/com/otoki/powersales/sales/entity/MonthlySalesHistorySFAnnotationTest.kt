@@ -42,9 +42,9 @@ class MonthlySalesHistorySFAnnotationTest {
         private val mapping = SFSchemaUtils.getSFMapping(MonthlySalesHistory::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 37 (18 기존 + 2 SAP 보존 + 17 신규)")
+        @DisplayName("매핑 키 수 = 42 (Spec #729: 37 + R-2 Owner/CreatedBy/LastModifiedBy 3 + CreatedDate/LastModifiedDate 2)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(37)
+            assertThat(mapping).hasSize(42)
         }
 
         @Test
@@ -130,15 +130,14 @@ class MonthlySalesHistorySFAnnotationTest {
     }
 
     @Nested
-    @DisplayName("AC5 — @HCColumn 매핑 보존 (신규 컬럼은 SF 매핑만)")
+    @DisplayName("AC5 — @HCColumn 매핑 (Spec #729 — sf-align 으로 전체 HC 매핑 보강)")
     inner class HcColumnPreservation {
 
         private val hcMapping = SFSchemaUtils.getHCMapping(MonthlySalesHistory::class.java)
 
         @Test
-        @DisplayName("기존 @HCColumn 매핑이 작업 후에도 동일 (sfid + 18개 매칭 + isdeleted + createddate + systemmodstamp)")
+        @DisplayName("Spec #729 — HC 매핑 lastmodifieddate / lastmodifiedbyid 채택 (systemmodstamp 폐기)")
         fun hcMappingUnchanged() {
-            // 본 스펙은 SF 매핑만 추가. 기존 HC 매핑은 변경 없음.
             assertThat(hcMapping["sfid"]).isEqualTo("sfid")
             assertThat(hcMapping["name"]).isEqualTo("name")
             assertThat(hcMapping["account_externalkey__c"]).isEqualTo("account_external_key")
@@ -146,32 +145,21 @@ class MonthlySalesHistorySFAnnotationTest {
             assertThat(hcMapping["salesmonth__c"]).isEqualTo("sales_month")
             assertThat(hcMapping["isdeleted"]).isEqualTo("is_deleted")
             assertThat(hcMapping["createddate"]).isEqualTo("created_at")
-            assertThat(hcMapping["systemmodstamp"]).isEqualTo("updated_at")
+            assertThat(hcMapping["lastmodifieddate"]).isEqualTo("updated_at")
         }
 
         @Test
-        @DisplayName("신규 17개 컬럼에 @HCColumn 미부착")
-        fun newColumnsHaveNoHcColumn() {
-            // 신규 컬럼은 SF 매핑만 — HC 매핑 values 에 등장하면 안 됨
-            assertThat(hcMapping.values).doesNotContain(
-                "account_sfid",
-                "sap_account_code",
-                "sales_date",
-                "last_monthly_sales_history_sfid",
-                "is_confirmed",
-                "hq_review_sfid",
-                "remark",
-                "ship_closing_amount_nh",
-                "ship_closing_amount1",
-                "ship_closing_amount2",
-                "ship_closing_amount3",
-                "ship_closing_amount4",
-                "ship_closing_sum_amount",
-                "abc_closing_amount4",
-                "abc_closing_sum_amount",
-                "last_month_target_by_hand",
-                "this_month_target",
-            )
+        @DisplayName("Spec #729 — sf-align 으로 전체 HC 매핑 보강 (17개 신규 컬럼도 @HCColumn 부착)")
+        fun allColumnsHaveHcColumn() {
+            // Spec #729 정합: 모든 SF Custom 매핑 컬럼에 @HCColumn 부착 (한국어 → 영어 매핑 통일)
+            assertThat(hcMapping["accountid__c"]).isEqualTo("account_sfid")
+            assertThat(hcMapping["sapaccountcode__c"]).isEqualTo("sap_account_code")
+            assertThat(hcMapping["salesdate__c"]).isEqualTo("sales_date")
+            assertThat(hcMapping["lastmonthlysaleshistory__c"]).isEqualTo("last_monthly_sales_history_sfid")
+            assertThat(hcMapping["confirm__c"]).isEqualTo("is_confirmed")
+            assertThat(hcMapping["hqreviews__c"]).isEqualTo("hq_review_sfid")
+            assertThat(hcMapping["remark__c"]).isEqualTo("remark")
+            assertThat(hcMapping["thismonthtarget__c"]).isEqualTo("this_month_target")
         }
     }
 }

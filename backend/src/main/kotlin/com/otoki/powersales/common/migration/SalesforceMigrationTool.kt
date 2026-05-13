@@ -6,11 +6,13 @@ import com.otoki.powersales.common.entity.UploadFile
 import com.otoki.powersales.leave.entity.AlternativeHoliday
 import com.otoki.powersales.leave.entity.HolidayMaster
 import com.otoki.powersales.notice.entity.Notice
+import com.otoki.powersales.product.entity.Product
 import com.otoki.powersales.order.entity.ErpOrder
 import com.otoki.powersales.order.entity.ErpOrderProduct
 import com.otoki.powersales.order.entity.OrderRequest
 import com.otoki.powersales.order.entity.OrderRequestProduct
 import com.otoki.powersales.product.entity.ProductBarcode
+import com.otoki.powersales.sales.entity.MonthlySalesHistory
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamHistory
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamMaster
 import com.otoki.powersales.promotion.entity.Promotion
@@ -18,6 +20,7 @@ import com.otoki.powersales.promotion.entity.PromotionEmployee
 import com.otoki.powersales.schedule.entity.AttendInfo
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
+import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.organization.entity.Organization
 import com.otoki.powersales.schedule.entity.AttendanceLog
 
@@ -57,6 +60,7 @@ object SalesforceMigrationTool {
         // ── 마스터 데이터 ──
         EntityRegistration("organization", Organization::class.java),
         EntityRegistration("holidayMaster", HolidayMaster::class.java),
+        EntityRegistration("product", Product::class.java),
         EntityRegistration("productBarcode", ProductBarcode::class.java),
 
         // ── Employee 참조 ──
@@ -64,12 +68,14 @@ object SalesforceMigrationTool {
         EntityRegistration("alternativeHoliday", AlternativeHoliday::class.java),
         EntityRegistration("displayWorkSchedule", DisplayWorkSchedule::class.java),
         EntityRegistration("monthlyFemaleEmployeeIntegrationSchedule", MonthlyFemaleEmployeeIntegrationSchedule::class.java),
+        EntityRegistration("teamMemberSchedule", TeamMemberSchedule::class.java),
 
         // ── Promotion 관련 (account, product, team_member_schedule 선행 적재 필요) ──
         EntityRegistration("promotion", Promotion::class.java),
         EntityRegistration("promotionEmployee", PromotionEmployee::class.java),
         EntityRegistration("professionalPromotionTeamMaster", ProfessionalPromotionTeamMaster::class.java),
         EntityRegistration("professionalPromotionTeamHistory", ProfessionalPromotionTeamHistory::class.java),
+        EntityRegistration("monthlySalesHistory", MonthlySalesHistory::class.java),
 
         // ── Claim 관련 (Employee, Account 선행 적재 필요) ──
         EntityRegistration("claim", Claim::class.java),

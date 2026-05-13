@@ -54,11 +54,11 @@ class SFSchemaUtilsTest {
         }
 
         @Test
-        @DisplayName("TeamMemberSchedule 엔티티 - 43개 SF Field 매핑 반환 (Spec #609: 33 기존 + 1 누락 + 7 신규 + BaseEntity 2)")
+        @DisplayName("TeamMemberSchedule 엔티티 - 47개 SF Field 매핑 반환 (Spec #733: 43 + R-2 3 + CostCenterCode 1)")
         fun getSFMapping_teamMemberSchedule() {
             val mapping = SFSchemaUtils.getSFMapping(TeamMemberSchedule::class.java)
 
-            assertThat(mapping).hasSize(43)
+            assertThat(mapping).hasSize(47)
             assertThat(mapping["DisplayWorkScheduleMaster__c"]).isEqualTo("display_work_schedule_sfid")
             assertThat(mapping["DKRetail__EmployeeId__c"]).isEqualTo("employee_sfid")
             assertThat(mapping["Name"]).isEqualTo("name")
@@ -115,11 +115,11 @@ class SFSchemaUtilsTest {
         }
 
         @Test
-        @DisplayName("Product 엔티티 - 42개 SF Field 매핑 반환 (40 + BaseEntity 2)")
+        @DisplayName("Product 엔티티 - 45개 SF Field 매핑 반환 (Spec #723: 40 + BaseEntity 2 + R-2 3)")
         fun getSFMapping_product() {
             val mapping = SFSchemaUtils.getSFMapping(Product::class.java)
 
-            assertThat(mapping).hasSize(42)
+            assertThat(mapping).hasSize(45)
             assertThat(mapping["Name"]).isEqualTo("name")
             assertThat(mapping["DKRetail__ProductCode__c"]).isEqualTo("product_code")
             assertThat(mapping["DKRetail__StoreCondition__c"]).isEqualTo("storage_condition")
@@ -182,11 +182,11 @@ class SFSchemaUtilsTest {
         }
 
         @Test
-        @DisplayName("TeamMemberSchedule 엔티티 - 38개 HC Column 매핑 반환 (36 + BaseEntity 2)")
+        @DisplayName("TeamMemberSchedule 엔티티 - 49개 HC Column 매핑 반환 (Spec #733: 38 + 누락 보강 7 + CostCenterCode 1 + R-2 3)")
         fun getHCMapping_teamMemberSchedule() {
             val mapping = SFSchemaUtils.getHCMapping(TeamMemberSchedule::class.java)
 
-            assertThat(mapping).hasSize(38)
+            assertThat(mapping).hasSize(49)
             assertThat(mapping["displayworkschedulemaster__c"]).isEqualTo("display_work_schedule_sfid")
             assertThat(mapping["id"]).isNull()
             assertThat(mapping["sfid"]).isEqualTo("sfid")
@@ -239,11 +239,11 @@ class SFSchemaUtilsTest {
         }
 
         @Test
-        @DisplayName("Product 엔티티 - 43개 HC Column 매핑 반환 (41 + BaseEntity 2)")
+        @DisplayName("Product 엔티티 - 47개 HC Column 매핑 반환 (Spec #723: 41 + BaseEntity 2 + pallet 1 + R-2 3)")
         fun getHCMapping_product() {
             val mapping = SFSchemaUtils.getHCMapping(Product::class.java)
 
-            assertThat(mapping).hasSize(43)
+            assertThat(mapping).hasSize(47)
             assertThat(mapping["name"]).isEqualTo("name")
             assertThat(mapping["sfid"]).isEqualTo("sfid")
             assertThat(mapping["dkretail__productcode__c"]).isEqualTo("product_code")

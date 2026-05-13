@@ -41,9 +41,9 @@ class ProductSFAnnotationTest {
         private val mapping = SFSchemaUtils.getSFMapping(Product::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 42 (33 기존 + 1 매핑 추가 + 6 신규 + BaseEntity 2. spec #650 으로 StandardPrice__c 제거)")
+        @DisplayName("매핑 키 수 = 45 (42 + Spec #723 R-2 Owner/CreatedBy/LastModifiedBy 3)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(42)
+            assertThat(mapping).hasSize(45)
         }
 
         @Test

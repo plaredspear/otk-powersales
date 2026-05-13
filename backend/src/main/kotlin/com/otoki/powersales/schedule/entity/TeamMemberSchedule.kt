@@ -213,32 +213,44 @@ class TeamMemberSchedule(
     // -- Spec #609: SF 누락 컬럼 7개 신규 도입 (Q1 옵션 1) --
 
     @SFField("HRCode__c")
+    @HCColumn("hrcode__c")
     @Column(name = "hr_code", length = 40)
     var hrCode: String? = null,
 
     @SFField("DKRetail__PromotionEmpIdExt__c")
+    @HCColumn("dkretail__promotionempidext__c")
     @Column(name = "promotion_emp_id_ext", length = 40)
     var promotionEmpIdExt: String? = null,
 
     @SFField("SecondWorkType__c")
-    @Column(name = "second_work_type", length = 40)
+    @HCColumn("secondworktype__c")
+    @Column(name = "second_work_type", length = 255)
     var secondWorkType: String? = null,
 
     @SFField("WorkingCategory5__c")
-    @Column(name = "working_category5", length = 40)
+    @HCColumn("workingcategory5__c")
+    @Column(name = "working_category5", length = 255)
     var workingCategory5: String? = null,
 
     @SFField("ref_accountName__c")
+    @HCColumn("ref_accountname__c")
     @Column(name = "ref_account_name", length = 255)
     var refAccountName: String? = null,
 
     @SFField("MonthlyFemaleEmployeeIntegrationSchedule__c")
+    @HCColumn("monthlyfemaleemployeeintegrationschedule__c")
     @Column(name = "monthly_female_employee_integration_schedule_sfid", length = 18)
     var monthlyFemaleEmployeeIntegrationScheduleSfid: String? = null,
 
     @SFField("ProfessionalPromotionTeam__c")
+    @HCColumn("professionalpromotionteam__c")
     @Column(name = "professional_promotion_team", length = 100)
     var professionalPromotionTeam: String? = null,
+
+    @SFField("CostCenterCode__c")
+    @HCColumn("costcentercode__c")
+    @Column(name = "cost_center_code", length = 255)
+    var costCenterCode: String? = null,
 
     /**
      * 대리 등록자(조장) employee_id. 조장이 본인 팀원의 일정을 대리 등록할 때 audit trail 용도로 저장.
@@ -246,6 +258,23 @@ class TeamMemberSchedule(
      */
     @Column(name = "proxy_registered_by")
     val proxyRegisteredBy: Long? = null,
+
+    // -- Group A R-2: Owner / CreatedBy / LastModifiedBy --
+
+    @SFField("OwnerId")
+    @HCColumn("ownerid")
+    @Column(name = "owner_sfid", length = 18)
+    var ownerSfid: String? = null,
+
+    @SFField("CreatedById")
+    @HCColumn("createdbyid")
+    @Column(name = "created_by_sfid", length = 18)
+    var createdBySfid: String? = null,
+
+    @SFField("LastModifiedById")
+    @HCColumn("lastmodifiedbyid")
+    @Column(name = "last_modified_by_sfid", length = 18)
+    var lastModifiedBySfid: String? = null,
 
     // -- Relations --
 
@@ -276,6 +305,18 @@ class TeamMemberSchedule(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "display_work_schedule_id")
     var displayWorkSchedule: DisplayWorkSchedule? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id")
+    var owner: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_id")
+    var createdBy: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "last_modified_by_id")
+    var lastModifiedBy: Employee? = null,
 
 ) : BaseEntity() {
     fun updateForPromotion(
