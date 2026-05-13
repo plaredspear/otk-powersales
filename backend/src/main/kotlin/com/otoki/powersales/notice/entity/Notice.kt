@@ -54,10 +54,7 @@ class Notice(
     @Column(name = "contents", columnDefinition = "TEXT")
     var contents: String? = null,
 
-    @SFField("DKRetail__EduCategory__c")
-    @HCColumn("dkretail__educategory__c")
-    @Column(name = "edu_category", length = 255)
-    val eduCategory: String? = null,
+    // DKRetail__EduCategory__c (Label="사용안함") — Spec #745 Q2: E분류(사용안함) 컬럼 제거. 분석: 36 sobject 정합 분석 2026-05-13
 
     @SFField("DKRetail__Jeejum__c")
     @HCColumn("dkretail__jeejum__c")
