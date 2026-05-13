@@ -41,12 +41,12 @@ class UploadFile(
 
     @SFField("RecordId__c")
     @HCColumn("recordid__c")
-    @Column(name = "record_id", length = 18)
+    @Column(name = "record_id", length = 40)
     val recordId: String? = null,
 
     @SFField("Size__c")
     @HCColumn("size__c")
-    @Column(name = "size", length = 50)
+    @Column(name = "size", length = 100)
     val fileSize: String? = null,
 
     @SFField("Object__c")

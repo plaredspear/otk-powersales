@@ -38,11 +38,11 @@ data class ClaimCreateRequest(
 
     @field:NotNull(message = "불량 수량은 필수입니다")
     @field:Positive(message = "불량 수량은 양수여야 합니다")
-    val defectQuantity: Int?,
+    val defectQuantity: Long?,
 
     // 구매 정보 (선택)
     @field:Positive(message = "구매 금액은 양수여야 합니다")
-    val purchaseAmount: Int? = null,
+    val purchaseAmount: Long? = null,
 
     val purchaseMethodCode: String? = null,
 

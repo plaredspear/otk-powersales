@@ -20,7 +20,7 @@ class AccountCategoryMaster(
     val sfid: String? = null,
 
     @SFField("AccountCode__c")
-    @Column(name = "account_code", nullable = false, unique = true, length = 20)
+    @Column(name = "account_code", nullable = false, unique = true, length = 255)
     val accountCode: String,
 
     @SFField("Name")

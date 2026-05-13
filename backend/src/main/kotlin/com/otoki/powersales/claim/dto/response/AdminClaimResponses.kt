@@ -24,7 +24,7 @@ data class AdminClaimListItem(
     val categoryLabel: String?,
     val subcategoryValue: String?,
     val subcategoryLabel: String?,
-    val defectQuantity: Int?,
+    val defectQuantity: Long?,
     val status: String,
     val createdAt: LocalDateTime
 ) {
@@ -61,8 +61,8 @@ data class AdminClaimDetailResponse(
     val subcategoryValue: String?,
     val subcategoryLabel: String?,
     val defectDescription: String?,
-    val defectQuantity: Int?,
-    val purchaseAmount: Int?,
+    val defectQuantity: Long?,
+    val purchaseAmount: Long?,
     val purchaseMethodName: String?,
     val requestTypeName: String?,
     val status: String,

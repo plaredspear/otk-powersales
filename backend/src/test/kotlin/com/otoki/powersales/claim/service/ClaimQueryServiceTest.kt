@@ -184,7 +184,7 @@ class ClaimQueryServiceTest {
     private fun createClaim(
         id: Long = 1L,
         employeeId: Long = 1L,
-        purchaseAmount: Int? = 3500,
+        purchaseAmount: Long? = 3500L,
         purchaseMethodName: String? = "개인카드",
         requestTypeName: String? = "교환"
     ): Claim {
@@ -200,7 +200,7 @@ class ClaimQueryServiceTest {
             claimType1 = ClaimType1.A,
             claimType2 = ClaimType2.AB,
             defectDescription = "포장 파손으로 내용물 누유 확인",
-            defectQuantity = 3,
+            defectQuantity = 3L,
             purchaseAmount = purchaseAmount,
             purchaseMethodName = purchaseMethodName,
             requestTypeName = requestTypeName,
