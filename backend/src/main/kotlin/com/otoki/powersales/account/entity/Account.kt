@@ -152,12 +152,9 @@ class Account(
     @Column(name = "is_deleted")
     var isDeleted: Boolean? = null,
 
-    // --- Spec #142: SAP 거래처 마스터 동기화 추가 컬럼 ---
-    // Spec #602: SF Type picklist 매핑 + AccountType enum 도입 (Q5/Q5-1: DB 한국어 원본 + @Convert)
-
     @SFField("Type")
     @Convert(converter = AccountTypeConverter::class)
-    @Column(name = "account_type", length = 20)
+    @Column(name = "account_type", length = 255)
     var accountType: AccountType? = null,
 
     @SFField("AccountStatusName__c")
@@ -165,65 +162,63 @@ class Account(
     var accountStatusName: String? = null,
 
     @SFField("EmployeeCode__c")
-    @Column(name = "employee_code", length = 20)
+    @Column(name = "employee_code", length = 15)
     var employeeCode: String? = null,
 
     @SFField("Distribution__c")
-    @Column(name = "distribution", length = 1)
+    @Column(name = "distribution", length = 20)
     var distribution: String? = null,
 
-    // --- Spec #575: SAP 인바운드 레거시 필드 13개 보존 ---
-
     @SFField("AccountStatusCode__c")
-    @Column(name = "account_status_code", length = 20)
+    @Column(name = "account_status_code", length = 100)
     var accountStatusCode: String? = null,
 
     @SFField("BusinessType__c")
-    @Column(name = "business_type", length = 50)
+    @Column(name = "business_type", length = 100)
     var businessType: String? = null,
 
     @SFField("BusinessCategory__c")
-    @Column(name = "business_category", length = 50)
+    @Column(name = "business_category", length = 100)
     var businessCategory: String? = null,
 
     @SFField("Sic")
-    @Column(name = "business_license_number", length = 80)
+    @Column(name = "business_license_number", length = 20)
     var businessLicenseNumber: String? = null,
 
     @SFField("Email__c")
-    @Column(name = "email", length = 100)
+    @Column(name = "email", length = 241)
     var email: String? = null,
 
     @SFField("DivisionName__c")
-    @Column(name = "division_name", length = 50)
+    @Column(name = "division_name", length = 250)
     var divisionName: String? = null,
 
     @SFField("SalesDeptName__c")
-    @Column(name = "sales_dept_name", length = 50)
+    @Column(name = "sales_dept_name", length = 250)
     var salesDeptName: String? = null,
 
     @SFField("ConsignmentAcc__c")
-    @Column(name = "consignment_acc", length = 1)
+    @Column(name = "consignment_acc", length = 40)
     var consignmentAcc: String? = null,
 
     @SFField("WERK1__c")
-    @Column(name = "werk1", length = 20)
+    @Column(name = "werk1", length = 255)
     var werk1: String? = null,
 
     @SFField("WERK2__c")
-    @Column(name = "werk2", length = 20)
+    @Column(name = "werk2", length = 255)
     var werk2: String? = null,
 
     @SFField("WERK3__c")
-    @Column(name = "werk3", length = 20)
+    @Column(name = "werk3", length = 255)
     var werk3: String? = null,
 
     @SFField("SalesDeptCostCenter__c")
-    @Column(name = "sales_dept_cost_center", length = 20)
+    @Column(name = "sales_dept_cost_center", length = 50)
     var salesDeptCostCenter: String? = null,
 
     @SFField("DivisionCostCenter__c")
-    @Column(name = "division_cost_center", length = 20)
+    @Column(name = "division_cost_center", length = 50)
     var divisionCostCenter: String? = null,
 
     // -- Spec #602: SF 누락 컬럼 신규 도입 (Q1 옵션 1 + Q4 추가 → 총 24개) --
@@ -238,7 +233,7 @@ class Account(
 
     @SFField("AccountSource")
     @Convert(converter = AccountSourceConverter::class)
-    @Column(name = "account_source", length = 40)
+    @Column(name = "account_source", length = 255)
     var accountSource: AccountSource? = null,
 
     @SFField("BranchCostCenter__c")
@@ -267,7 +262,7 @@ class Account(
 
     @SFField("FreezerType__c")
     @Convert(converter = FreezerTypeConverter::class)
-    @Column(name = "freezer_type", length = 20)
+    @Column(name = "freezer_type", length = 255)
     var freezerType: FreezerType? = null,
 
     @SFField("Field1__c")
@@ -316,13 +311,17 @@ class Account(
 
     @SFField("Rating")
     @Convert(converter = RatingConverter::class)
-    @Column(name = "rating", length = 20)
+    @Column(name = "rating", length = 255)
     var rating: Rating? = null,
 
     @SFField("Ownership")
     @Convert(converter = OwnershipConverter::class)
-    @Column(name = "ownership", length = 20)
+    @Column(name = "ownership", length = 255)
     var ownership: Ownership? = null,
+
+    @SFField("IsPriorityRecord")
+    @Column(name = "is_priority_record")
+    var isPriorityRecord: Boolean? = null,
 
     // -- Spec #644: Owner 차원 — DisplayWorkSchedule 풀 패턴 정합 --
     // owner_sfid: Heroku Connect sync buffer 컬럼 (application 미적재).
