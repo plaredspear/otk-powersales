@@ -8,6 +8,8 @@ import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.product.entity.Product
+import com.otoki.powersales.promotion.entity.converter.ProductTemperatureTypeConverter
+import com.otoki.powersales.promotion.entity.converter.StandLocationConverter
 import jakarta.persistence.*
 import java.time.LocalDate
 
@@ -72,7 +74,8 @@ class Promotion(
     @SFField("DKRetail__StandLocation__c")
     @HCColumn("dkretail__standlocation__c")
     @Column(name = "stand_location", length = 255)
-    var standLocation: String? = null,
+    @Convert(converter = StandLocationConverter::class)
+    var standLocation: StandLocation? = null,
 
     @SFField("CostCenterCode__c")
     @HCColumn("costcentercode__c")
@@ -87,7 +90,8 @@ class Promotion(
     @SFField("DKRetail__ProductType__c")
     @HCColumn("dkretail__producttype__c")
     @Column(name = "product_type", length = 255)
-    var productType: String? = null,
+    @Convert(converter = ProductTemperatureTypeConverter::class)
+    var productType: ProductTemperatureType? = null,
 
     @SFField("DKRetail__AccId__c")
     @HCColumn("dkretail__accid__c")
@@ -173,8 +177,8 @@ class Promotion(
         primaryProductId: Long?,
         otherProduct: String?,
         message: String?,
-        standLocation: String?,
-        productType: String?,
+        standLocation: StandLocation?,
+        productType: ProductTemperatureType?,
         remark: String?
     ) {
         this.promotionTypeId = promotionTypeId

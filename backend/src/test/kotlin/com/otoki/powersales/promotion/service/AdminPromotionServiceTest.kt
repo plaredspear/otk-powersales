@@ -781,7 +781,7 @@ class AdminPromotionServiceTest {
         primaryProductId = primaryProductId,
         otherProduct = "너구리, 진짬뽕",
         message = "3월 라면 프로모션 진행",
-        standLocation = "매장 입구 좌측",
+        standLocation = StandLocation.END_CAP,
         costCenterCode = costCenterCode,
         isDeleted = isDeleted,
         remark = remark

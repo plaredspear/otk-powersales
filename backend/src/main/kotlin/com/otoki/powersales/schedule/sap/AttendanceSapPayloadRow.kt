@@ -1,5 +1,6 @@
 package com.otoki.powersales.schedule.sap
 
+import com.otoki.powersales.schedule.entity.SecondWorkType
 import java.time.LocalDate
 
 /**
@@ -16,5 +17,5 @@ data class AttendanceSapPayloadRow(
     val workingCategory1: String?,
     val workingCategory2: String?,
     val workingCategory3: String?,
-    val secondWorkType: String?
+    val secondWorkType: SecondWorkType?
 )

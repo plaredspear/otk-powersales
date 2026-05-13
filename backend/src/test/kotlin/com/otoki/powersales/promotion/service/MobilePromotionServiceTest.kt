@@ -4,6 +4,7 @@ import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.entity.PromotionEmployee
 import com.otoki.powersales.promotion.entity.PromotionType
+import com.otoki.powersales.promotion.entity.StandLocation
 import com.otoki.powersales.promotion.exception.PromotionForbiddenException
 import com.otoki.powersales.promotion.exception.PromotionInvalidParameterException
 import com.otoki.powersales.promotion.exception.PromotionNotFoundException
@@ -84,7 +85,7 @@ class MobilePromotionServiceTest {
         startDate: LocalDate = LocalDate.of(2026, 3, 1),
         endDate: LocalDate = LocalDate.of(2026, 3, 15),
         costCenterCode: String? = "1234",
-        standLocation: String? = null,
+        standLocation: StandLocation? = null,
         isClosed: Boolean = false,
         isDeleted: Boolean = false,
         primaryProductId: Long? = null,

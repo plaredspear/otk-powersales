@@ -4,6 +4,7 @@ import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.promotion.dto.request.PromotionCreateRequest
 import com.otoki.powersales.promotion.dto.response.*
 import com.otoki.powersales.admin.scope.DataScopeHolder
+import com.otoki.powersales.promotion.entity.ProductTemperatureType
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.entity.StandLocation
 import com.otoki.powersales.promotion.exception.*
@@ -138,9 +139,9 @@ class AdminPromotionService(
                 primaryProductId = request.primaryProductId,
                 otherProduct = request.otherProduct,
                 message = request.message,
-                standLocation = request.standLocation,
+                standLocation = StandLocation.fromDisplayNameOrNull(request.standLocation),
                 costCenterCode = costCenterCode,
-                productType = request.productType,
+                productType = ProductTemperatureType.fromDisplayNameOrNull(request.productType),
                 remark = request.remark
             )
         )
@@ -208,8 +209,8 @@ class AdminPromotionService(
             primaryProductId = request.primaryProductId,
             otherProduct = request.otherProduct,
             message = request.message,
-            standLocation = request.standLocation,
-            productType = request.productType,
+            standLocation = StandLocation.fromDisplayNameOrNull(request.standLocation),
+            productType = ProductTemperatureType.fromDisplayNameOrNull(request.productType),
             remark = request.remark
         )
 

@@ -1,5 +1,6 @@
 package com.otoki.powersales.schedule.sap
 
+import com.otoki.powersales.schedule.entity.SecondWorkType
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -50,17 +51,17 @@ class AttendancePayloadFactoryTest {
     @Test
     @DisplayName("WorkingCategory4 — today row 는 secondWorkType 이 있어도 null 출력")
     fun build_workingCategory4_todayIsAlwaysNull() {
-        val row = baseRow().copy(workingDate = today, secondWorkType = "지각")
+        val row = baseRow().copy(workingDate = today, secondWorkType = SecondWorkType.ROOM_TEMP)
         val payload = factory.build(listOf(row), today)
         assertThat(payload.request.single().WorkingCategory4).isNull()
     }
 
     @Test
-    @DisplayName("WorkingCategory4 — yesterday 보정 row 는 secondWorkType 그대로 전달")
+    @DisplayName("WorkingCategory4 — yesterday 보정 row 는 secondWorkType displayName 그대로 전달")
     fun build_workingCategory4_yesterdayCarriesSecondWorkType() {
-        val row = baseRow().copy(workingDate = yesterday, secondWorkType = "지각")
+        val row = baseRow().copy(workingDate = yesterday, secondWorkType = SecondWorkType.ROOM_TEMP)
         val payload = factory.build(listOf(row), today)
-        assertThat(payload.request.single().WorkingCategory4).isEqualTo("지각")
+        assertThat(payload.request.single().WorkingCategory4).isEqualTo("상온")
     }
 
     @Test
