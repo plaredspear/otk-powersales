@@ -1,5 +1,8 @@
 package com.otoki.powersales.promotion.service
 
+import com.otoki.powersales.common.entity.WorkingCategory1
+import com.otoki.powersales.common.entity.WorkingCategory3
+import com.otoki.powersales.common.entity.WorkingType
 import com.otoki.powersales.promotion.dto.request.BatchUpdatePromotionEmployeeItem
 import com.otoki.powersales.promotion.dto.request.BatchUpdatePromotionEmployeeRequest
 import com.otoki.powersales.promotion.dto.request.PromotionEmployeeRequest
@@ -31,8 +34,8 @@ class AdminPromotionEmployeeService(
         private val VALID_WORK_STATUSES = setOf("근무", "연차", "대휴")
         private val VALID_WORK_TYPE3 = setOf("고정", "격고", "순회")
         private const val BATCH_MAX_SIZE = 200
-        private const val DEFAULT_WORK_TYPE1 = "행사"
-        private const val DEFAULT_WORK_STATUS = "근무"
+        private val DEFAULT_WORK_TYPE1 = WorkingCategory1.EVENT
+        private val DEFAULT_WORK_STATUS = WorkingType.WORK
     }
 
     private data class ResolvedEmployee(val id: Long?, val name: String?, val employeeCode: String?)
@@ -63,9 +66,9 @@ class AdminPromotionEmployeeService(
                 promotionId = promotionId,
                 employeeId = resolved?.id ?: request.employeeId,
                 scheduleDate = request.scheduleDate,
-                workStatus = request.workStatus ?: DEFAULT_WORK_STATUS,
-                workType1 = request.workType1 ?: DEFAULT_WORK_TYPE1,
-                workType3 = request.workType3,
+                workStatus = request.workStatus?.let { WorkingType.fromDisplayNameOrNull(it) } ?: DEFAULT_WORK_STATUS,
+                workType1 = request.workType1?.let { WorkingCategory1.fromDisplayNameOrNull(it) } ?: DEFAULT_WORK_TYPE1,
+                workType3 = request.workType3?.let { WorkingCategory3.fromDisplayNameOrNull(it) },
                 basePrice = request.basePrice,
                 dailyTargetCount = request.dailyTargetCount,
                 targetAmount = calculateTargetAmount(request.basePrice, request.dailyTargetCount),
@@ -115,9 +118,9 @@ class AdminPromotionEmployeeService(
         pe.update(
             employeeId = resolved?.id,
             scheduleDate = request.scheduleDate,
-            workStatus = request.workStatus ?: pe.workStatus,
-            workType1 = request.workType1 ?: pe.workType1,
-            workType3 = normalizedWorkType3,
+            workStatus = request.workStatus?.let { WorkingType.fromDisplayNameOrNull(it) } ?: pe.workStatus,
+            workType1 = request.workType1?.let { WorkingCategory1.fromDisplayNameOrNull(it) } ?: pe.workType1,
+            workType3 = normalizedWorkType3?.let { WorkingCategory3.fromDisplayNameOrNull(it) },
             basePrice = request.basePrice,
             dailyTargetCount = request.dailyTargetCount,
             targetAmount = calculateTargetAmount(request.basePrice, request.dailyTargetCount),
@@ -197,9 +200,9 @@ class AdminPromotionEmployeeService(
             pe.update(
                 employeeId = resolved?.id,
                 scheduleDate = item.scheduleDate,
-                workStatus = item.workStatus ?: pe.workStatus ?: DEFAULT_WORK_STATUS,
-                workType1 = item.workType1 ?: pe.workType1 ?: DEFAULT_WORK_TYPE1,
-                workType3 = normalizedWorkType3,
+                workStatus = item.workStatus?.let { WorkingType.fromDisplayNameOrNull(it) } ?: pe.workStatus ?: DEFAULT_WORK_STATUS,
+                workType1 = item.workType1?.let { WorkingCategory1.fromDisplayNameOrNull(it) } ?: pe.workType1 ?: DEFAULT_WORK_TYPE1,
+                workType3 = normalizedWorkType3?.let { WorkingCategory3.fromDisplayNameOrNull(it) },
                 basePrice = item.basePrice,
                 dailyTargetCount = item.dailyTargetCount,
                 targetAmount = calculateTargetAmount(item.basePrice, item.dailyTargetCount),
@@ -308,7 +311,7 @@ class AdminPromotionEmployeeService(
             val resolvedForValidation = resolveEmployee(item.employeeId)
             val criticalChanged = pe.employeeId != (resolvedForValidation?.id ?: item.employeeId) ||
                 pe.scheduleDate != item.scheduleDate ||
-                pe.workType3 != normalizedWorkType3 ||
+                pe.workType3?.displayName != normalizedWorkType3 ||
                 pe.basePrice != item.basePrice ||
                 pe.dailyTargetCount != item.dailyTargetCount
 
@@ -368,7 +371,7 @@ class AdminPromotionEmployeeService(
 
         val criticalChanged = pe.employeeId != newEmployeeId ||
             pe.scheduleDate != scheduleDate ||
-            pe.workType3 != workType3 ||
+            pe.workType3?.displayName != workType3 ||
             pe.basePrice != basePrice ||
             pe.dailyTargetCount != dailyTargetCount
 
@@ -385,7 +388,7 @@ class AdminPromotionEmployeeService(
 
         val criticalChanged = pe.employeeId != newEmployeeId ||
             pe.scheduleDate != scheduleDate ||
-            pe.workType3 != workType3
+            pe.workType3?.displayName != workType3
 
         if (criticalChanged) {
             teamMemberScheduleRepository.deleteAllByIdIn(listOf(pe.teamMemberScheduleId!!))

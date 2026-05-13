@@ -83,7 +83,7 @@ class OrderRequestCreatePostTest {
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data.orderRequestId").value(12345L))
             .andExpect(jsonPath("$.data.orderRequestNumber").value("ORD-20260505-42"))
-            .andExpect(jsonPath("$.data.status").value("SENT"))
+            .andExpect(jsonPath("$.data.status").value("전송"))
     }
 
     @Test

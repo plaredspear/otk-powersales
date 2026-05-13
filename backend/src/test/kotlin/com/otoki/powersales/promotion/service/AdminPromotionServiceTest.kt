@@ -1,5 +1,8 @@
 package com.otoki.powersales.promotion.service
 
+import com.otoki.powersales.common.entity.WorkingCategory1
+import com.otoki.powersales.common.entity.WorkingCategory3
+import com.otoki.powersales.common.entity.WorkingType
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.admin.scope.DataScopeHolder
@@ -586,8 +589,8 @@ class AdminPromotionServiceTest {
 
             val pe = PromotionEmployee(
                 id = 5L, promotionId = 1L, employeeId = 1L,
-                scheduleDate = LocalDate.of(2026, 3, 15), workStatus = "근무",
-                workType1 = "시식", workType3 = "고정", teamMemberScheduleId = 100L
+                scheduleDate = LocalDate.of(2026, 3, 15), workStatus = WorkingType.WORK,
+                workType1 = WorkingCategory1.EVENT, workType3 = WorkingCategory3.FIXED, teamMemberScheduleId = 100L
             )
             whenever(promotionEmployeeRepository.findByPromotionId(1L)).thenReturn(listOf(pe))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>())).thenAnswer { it.getArgument<PromotionEmployee>(0) }
@@ -668,8 +671,8 @@ class AdminPromotionServiceTest {
 
             val pe = PromotionEmployee(
                 id = 5L, promotionId = 1L, employeeId = 1L,
-                scheduleDate = LocalDate.of(2026, 3, 15), workStatus = "근무",
-                workType1 = "시식", workType3 = "고정", teamMemberScheduleId = 100L
+                scheduleDate = LocalDate.of(2026, 3, 15), workStatus = WorkingType.WORK,
+                workType1 = WorkingCategory1.EVENT, workType3 = WorkingCategory3.FIXED, teamMemberScheduleId = 100L
             )
             whenever(promotionEmployeeRepository.findByPromotionId(1L)).thenReturn(listOf(pe))
 
@@ -702,8 +705,8 @@ class AdminPromotionServiceTest {
 
             val pe = PromotionEmployee(
                 id = 5L, promotionId = 1L, employeeId = 1L,
-                scheduleDate = LocalDate.of(2026, 3, 15), workStatus = "근무",
-                workType1 = "시식", workType3 = "고정", teamMemberScheduleId = 100L
+                scheduleDate = LocalDate.of(2026, 3, 15), workStatus = WorkingType.WORK,
+                workType1 = WorkingCategory1.EVENT, workType3 = WorkingCategory3.FIXED, teamMemberScheduleId = 100L
             )
             whenever(promotionEmployeeRepository.findByPromotionId(1L)).thenReturn(listOf(pe))
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }

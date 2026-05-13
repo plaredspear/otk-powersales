@@ -5,6 +5,10 @@ import com.otoki.powersales.claim.entity.converter.ClaimChannelConverter
 import com.otoki.powersales.claim.entity.converter.ClaimStatusConverter
 import com.otoki.powersales.claim.entity.converter.ClaimType1Converter
 import com.otoki.powersales.claim.entity.converter.ClaimType2Converter
+import com.otoki.powersales.claim.entity.converter.PurchaseMethodConverter
+import com.otoki.powersales.claim.entity.converter.RequestTypeSetConverter
+import com.otoki.powersales.claim.entity.sfpicklist.PurchaseMethod
+import com.otoki.powersales.claim.entity.sfpicklist.RequestType
 import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.SFField
@@ -100,15 +104,17 @@ class Claim(
     val purchaseAmount: Long? = null,
 
     @SFField("DKRetail__PurchaseMethod__c")
-    @Column(name = "purchase_method_code", length = 10)
-    val purchaseMethodCode: String? = null,
+    @Column(name = "purchase_method_code", length = 255)
+    @Convert(converter = PurchaseMethodConverter::class)
+    val purchaseMethodCode: PurchaseMethod? = null,
 
     @Column(name = "purchase_method_name", length = 50)
     val purchaseMethodName: String? = null,
 
     @SFField("DKRetail__RequestType__c")
-    @Column(name = "request_type_code", length = 10)
-    val requestTypeCode: String? = null,
+    @Column(name = "request_type_code", length = 4099)
+    @Convert(converter = RequestTypeSetConverter::class)
+    val requestTypeCode: Set<RequestType> = emptySet(),
 
     @Column(name = "request_type_name", length = 50)
     val requestTypeName: String? = null,

@@ -102,8 +102,8 @@ data class MobilePromotionEmployeeItem(
                 id = entity.id,
                 employeeName = employeeName,
                 scheduleDate = entity.scheduleDate,
-                workStatus = entity.workStatus,
-                workType3 = entity.workType3,
+                workStatus = entity.workStatus?.displayName,
+                workType3 = entity.workType3?.displayName,
                 targetAmount = entity.targetAmount,
                 actualAmount = entity.actualAmount
             )

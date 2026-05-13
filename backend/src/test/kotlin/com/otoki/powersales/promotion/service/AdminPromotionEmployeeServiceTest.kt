@@ -1,5 +1,8 @@
 package com.otoki.powersales.promotion.service
 
+import com.otoki.powersales.common.entity.WorkingCategory1
+import com.otoki.powersales.common.entity.WorkingCategory3
+import com.otoki.powersales.common.entity.WorkingType
 import com.otoki.powersales.promotion.dto.request.BatchUpdatePromotionEmployeeItem
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.promotion.dto.request.BatchUpdatePromotionEmployeeRequest
@@ -145,7 +148,8 @@ class AdminPromotionEmployeeServiceTest {
             stubRollup()
 
             val result = service.createEmployee(10L, createRequest(workStatus = "잘못된상태"))
-            assertThat(result.workStatus).isEqualTo("잘못된상태")
+            // 잘못된 enum 값은 fromDisplayNameOrNull 로 null 변환 → default("근무") 보정
+            assertThat(result.workStatus).isEqualTo("근무")
         }
 
         @Test
@@ -444,7 +448,7 @@ class AdminPromotionEmployeeServiceTest {
             stubRollup()
 
             // work_type1만 변경 (비핵심필드)
-            val result = service.updateEmployee(1L, 1L, createRequest(workType1 = "시음"))
+            val result = service.updateEmployee(1L, 1L, createRequest(workType1 = "행사"))
             assertThat(result).isNotNull()
         }
 
@@ -631,7 +635,7 @@ class AdminPromotionEmployeeServiceTest {
         @Test
         @DisplayName("workType1 null 수정 -> 기존 workType1 값 유지")
         fun updateEmployee_workType1Null_keepsExisting() {
-            val pe = createPe(workType1 = "시음")
+            val pe = createPe(workType1 = "행사")
             whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
 
@@ -641,7 +645,7 @@ class AdminPromotionEmployeeServiceTest {
             stubRollup()
 
             val result = service.updateEmployee(1L, 1L, createRequest(workType1 = null))
-            assertThat(result.workType1).isEqualTo("시음")
+            assertThat(result.workType1).isEqualTo("행사")
         }
 
         @Test
@@ -878,7 +882,7 @@ class AdminPromotionEmployeeServiceTest {
         @Test
         @DisplayName("일괄 수정 - workStatus/workType1 null -> 기존값 유지")
         fun batchUpdate_nullWorkStatusAndType1_keepsExisting() {
-            val pe = createPe(id = 1L, workStatus = "연차", workType1 = "시음")
+            val pe = createPe(id = 1L, workStatus = "연차", workType1 = "행사")
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
 
@@ -897,8 +901,8 @@ class AdminPromotionEmployeeServiceTest {
 
             val result = service.batchUpdateEmployees(10L, 1L, request)
             assertThat(result.updatedCount).isEqualTo(1)
-            assertThat(pe.workStatus).isEqualTo("연차")
-            assertThat(pe.workType1).isEqualTo("시음")
+            assertThat(pe.workStatus?.displayName).isEqualTo("연차")
+            assertThat(pe.workType1?.displayName).isEqualTo("행사")
         }
 
         @Test
@@ -1079,7 +1083,7 @@ class AdminPromotionEmployeeServiceTest {
             ))
 
             service.batchUpdateEmployees(10L, 1L, request)
-            assertThat(pe.workType1).isEqualTo("행사")
+            assertThat(pe.workType1?.displayName).isEqualTo("행사")
         }
 
         @Test
@@ -1103,7 +1107,7 @@ class AdminPromotionEmployeeServiceTest {
             ))
 
             service.batchUpdateEmployees(10L, 1L, request)
-            assertThat(pe.workStatus).isEqualTo("근무")
+            assertThat(pe.workStatus?.displayName).isEqualTo("근무")
         }
 
         @Test
@@ -1218,11 +1222,13 @@ class AdminPromotionEmployeeServiceTest {
     private fun createPe(
         id: Long = 1L, promotionId: Long = 10L, employeeId: Long? = 1L,
         scheduleDate: LocalDate = LocalDate.of(2026, 3, 15), teamMemberScheduleId: Long? = null,
-        promoCloseByTm: Boolean = false, workStatus: String? = "근무", workType1: String? = "시식"
+        promoCloseByTm: Boolean = false, workStatus: String? = "근무", workType1: String? = "행사"
     ) = PromotionEmployee(
         id = id, promotionId = promotionId, employeeId = employeeId,
         scheduleDate = scheduleDate,
-        workStatus = workStatus, workType1 = workType1, workType3 = "고정",
+        workStatus = workStatus?.let { WorkingType.fromDisplayName(it) },
+        workType1 = workType1?.let { WorkingCategory1.fromDisplayName(it) },
+        workType3 = WorkingCategory3.FIXED,
         basePrice = 1500, dailyTargetCount = 100,
         teamMemberScheduleId = teamMemberScheduleId, promoCloseByTm = promoCloseByTm
     ).also {
@@ -1236,7 +1242,7 @@ class AdminPromotionEmployeeServiceTest {
 
     private fun createBatchItem(
         id: Long = 1L, employeeId: Long? = 1L, scheduleDate: LocalDate = LocalDate.of(2026, 3, 15),
-        workStatus: String? = "근무", workType1: String? = "시식", workType3: String? = "고정",
+        workStatus: String? = "근무", workType1: String? = "행사", workType3: String? = "고정",
         basePrice: Long? = 1500, dailyTargetCount: Int? = 100,
         targetAmount: Long? = 0, actualAmount: Long? = 0,
         primaryProductAmount: Long? = null, otherSalesAmount: Long? = null
@@ -1250,7 +1256,7 @@ class AdminPromotionEmployeeServiceTest {
 
     private fun createRequest(
         employeeId: Long? = 1L, scheduleDate: LocalDate = LocalDate.of(2026, 3, 15),
-        workStatus: String? = "근무", workType1: String? = "시식", workType3: String? = "고정",
+        workStatus: String? = "근무", workType1: String? = "행사", workType3: String? = "고정",
         basePrice: Long? = 1500, dailyTargetCount: Int? = 100,
         targetAmount: Long? = 0, actualAmount: Long? = 0,
         primaryProductAmount: Long? = null, otherSalesAmount: Long? = null

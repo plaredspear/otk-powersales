@@ -169,7 +169,7 @@ class AdminPromotionConfirmServiceTest {
 
             val result = service.confirmPromotion(10L)
             assertThat(result.upsertedTeamMemberSchedules).isEqualTo(1)
-            assertThat(employees[0].workType1).isEqualTo("행사")
+            assertThat(employees[0].workType1?.displayName).isEqualTo("행사")
         }
 
         @Test
@@ -183,7 +183,7 @@ class AdminPromotionConfirmServiceTest {
 
             val result = service.confirmPromotion(10L)
             assertThat(result.upsertedTeamMemberSchedules).isEqualTo(1)
-            assertThat(employees[0].workStatus).isEqualTo("근무")
+            assertThat(employees[0].workStatus?.displayName).isEqualTo("근무")
         }
 
         @Test
@@ -197,8 +197,8 @@ class AdminPromotionConfirmServiceTest {
 
             val result = service.confirmPromotion(10L)
             assertThat(result.upsertedTeamMemberSchedules).isEqualTo(1)
-            assertThat(employees[0].workType1).isEqualTo("행사")
-            assertThat(employees[0].workStatus).isEqualTo("근무")
+            assertThat(employees[0].workType1?.displayName).isEqualTo("행사")
+            assertThat(employees[0].workStatus?.displayName).isEqualTo("근무")
         }
 
         @Test
@@ -212,8 +212,8 @@ class AdminPromotionConfirmServiceTest {
 
             val result = service.confirmPromotion(10L)
             assertThat(result.upsertedTeamMemberSchedules).isEqualTo(1)
-            assertThat(employees[0].workType1).isEqualTo("진열")
-            assertThat(employees[0].workStatus).isEqualTo("연차")
+            assertThat(employees[0].workType1?.displayName).isEqualTo("진열")
+            assertThat(employees[0].workStatus?.displayName).isEqualTo("연차")
         }
     }
 
@@ -532,15 +532,15 @@ class AdminPromotionConfirmServiceTest {
         scheduleDate: LocalDate = startDate,
         workStatus: String? = "근무",
         workType1: String? = "행사",
-        workType3: String = "고정"
+        workType3: String? = "고정"
     ): PromotionEmployee = PromotionEmployee(
         id = id,
         promotionId = promotionId,
         employeeId = employeeId,
         scheduleDate = scheduleDate,
-        workStatus = workStatus,
-        workType1 = workType1,
-        workType3 = workType3
+        workStatus = workStatus?.takeIf { it.isNotBlank() }?.let { WorkingType.fromDisplayName(it) },
+        workType1 = workType1?.takeIf { it.isNotBlank() }?.let { WorkingCategory1.fromDisplayName(it) },
+        workType3 = workType3?.takeIf { it.isNotBlank() }?.let { WorkingCategory3.fromDisplayName(it) }
     )
 
     private fun createAccount(

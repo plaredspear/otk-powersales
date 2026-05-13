@@ -1,5 +1,8 @@
 package com.otoki.powersales.promotion.service
 
+import com.otoki.powersales.common.entity.WorkingCategory1
+import com.otoki.powersales.common.entity.WorkingCategory3
+import com.otoki.powersales.common.entity.WorkingType
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.entity.PromotionEmployee
@@ -123,8 +126,8 @@ class MobilePromotionServiceTest {
         promotionId = promotionId,
         employeeId = employeeId,
         scheduleDate = scheduleDate,
-        workStatus = workStatus,
-        workType3 = workType3,
+        workStatus = workStatus?.let { WorkingType.fromDisplayName(it) },
+        workType3 = workType3?.let { WorkingCategory3.fromDisplayName(it) },
         targetAmount = targetAmount,
         actualAmount = actualAmount
     )

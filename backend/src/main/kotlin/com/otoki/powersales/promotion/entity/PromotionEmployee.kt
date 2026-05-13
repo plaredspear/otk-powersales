@@ -5,6 +5,14 @@ import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.common.entity.BaseEntity
+import com.otoki.powersales.common.entity.WorkingCategory1
+import com.otoki.powersales.common.entity.WorkingCategory2
+import com.otoki.powersales.common.entity.WorkingCategory3
+import com.otoki.powersales.common.entity.WorkingType
+import com.otoki.powersales.common.entity.converter.WorkingCategory1Converter
+import com.otoki.powersales.common.entity.converter.WorkingCategory2Converter
+import com.otoki.powersales.common.entity.converter.WorkingCategory3Converter
+import com.otoki.powersales.common.entity.converter.WorkingTypeConverter
 import com.otoki.powersales.employee.entity.Employee
 import jakarta.persistence.*
 import java.time.LocalDate
@@ -52,17 +60,20 @@ class PromotionEmployee(
     @SFField("DKRetail__WorkStatus__c")
     @HCColumn("dkretail__workstatus__c")
     @Column(name = "work_status", length = 255)
-    var workStatus: String? = null,
+    @Convert(converter = WorkingTypeConverter::class)
+    var workStatus: WorkingType? = null,
 
     @SFField("DKRetail__WorkType1__c")
     @HCColumn("dkretail__worktype1__c")
     @Column(name = "work_type1", length = 255)
-    var workType1: String? = null,
+    @Convert(converter = WorkingCategory1Converter::class)
+    var workType1: WorkingCategory1? = null,
 
     @SFField("DKRetail__WorkType3__c")
     @HCColumn("dkretail__worktype3__c")
     @Column(name = "work_type3", length = 255)
-    var workType3: String? = null,
+    @Convert(converter = WorkingCategory3Converter::class)
+    var workType3: WorkingCategory3? = null,
 
     @Column(name = "team_member_schedule_id")
     var teamMemberScheduleId: Long? = null,
@@ -131,7 +142,8 @@ class PromotionEmployee(
     @SFField("WorkType2__c")
     @HCColumn("worktype2__c")
     @Column(name = "work_type2", length = 255)
-    var workType2: String? = null,
+    @Convert(converter = WorkingCategory2Converter::class)
+    var workType2: WorkingCategory2? = null,
 
     @SFField("DKRetail__WorkType2__c")
     @HCColumn("dkretail__worktype2__c")
@@ -188,9 +200,9 @@ class PromotionEmployee(
     fun update(
         employeeId: Long?,
         scheduleDate: LocalDate?,
-        workStatus: String?,
-        workType1: String?,
-        workType3: String?,
+        workStatus: WorkingType?,
+        workType1: WorkingCategory1?,
+        workType3: WorkingCategory3?,
         basePrice: Long?,
         dailyTargetCount: Int?,
         targetAmount: Long?,

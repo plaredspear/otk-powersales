@@ -8,6 +8,7 @@ import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Employee
 import jakarta.persistence.Column
+import jakarta.persistence.Convert
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
 import jakarta.persistence.Enumerated
@@ -92,10 +93,10 @@ class OrderRequest(
     @Column(name = "total_approved_amount", nullable = false, precision = 16, scale = 2)
     var totalApprovedAmount: BigDecimal = BigDecimal.ZERO,
 
-    @Enumerated(EnumType.STRING)
     @SFField("DKRetail__RequestStatus__c")
     @HCColumn("dkretail__requeststatus__c")
-    @Column(name = "order_request_status", nullable = false, length = 20)
+    @Column(name = "order_request_status", nullable = false, length = 255)
+    @Convert(converter = OrderRequestStatusConverter::class)
     var orderRequestStatus: OrderRequestStatus = OrderRequestStatus.DRAFT,
 
     @Column(name = "is_closed", nullable = false)

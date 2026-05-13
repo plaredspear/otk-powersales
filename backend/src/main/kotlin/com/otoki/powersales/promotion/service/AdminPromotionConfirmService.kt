@@ -26,8 +26,8 @@ class AdminPromotionConfirmService(
 ) {
 
     companion object {
-        private const val DEFAULT_WORK_TYPE1 = "행사"
-        private const val DEFAULT_WORK_STATUS = "근무"
+        private val DEFAULT_WORK_TYPE1 = WorkingCategory1.EVENT
+        private val DEFAULT_WORK_STATUS = WorkingType.WORK
     }
 
     @Transactional
@@ -46,8 +46,8 @@ class AdminPromotionConfirmService(
         // 3.5. workType1/workStatus 기본값 보정
         var defaultsCorrected = false
         for (pe in employees) {
-            if (pe.workType1.isNullOrBlank()) { pe.workType1 = DEFAULT_WORK_TYPE1; defaultsCorrected = true }
-            if (pe.workStatus.isNullOrBlank()) { pe.workStatus = DEFAULT_WORK_STATUS; defaultsCorrected = true }
+            if (pe.workType1 == null) { pe.workType1 = DEFAULT_WORK_TYPE1; defaultsCorrected = true }
+            if (pe.workStatus == null) { pe.workStatus = DEFAULT_WORK_STATUS; defaultsCorrected = true }
         }
         if (defaultsCorrected) {
             promotionEmployeeRepository.saveAll(employees)
@@ -96,9 +96,9 @@ class AdminPromotionConfirmService(
                     employee = empEntity,
                     account = promotion.account,
                     workingDate = pe.scheduleDate!!,
-                    workingType = WorkingType.fromDisplayName(pe.workStatus!!),
-                    workingCategory1 = WorkingCategory1.fromDisplayName(pe.workType1!!),
-                    workingCategory3 = WorkingCategory3.fromDisplayName(pe.workType3!!),
+                    workingType = pe.workStatus!!,
+                    workingCategory1 = pe.workType1!!,
+                    workingCategory3 = pe.workType3!!,
                     workingCategory4 = null,
                     promotionEmployee = pe
                 )
@@ -108,9 +108,9 @@ class AdminPromotionConfirmService(
                     employee = empEntity,
                     account = promotion.account,
                     workingDate = pe.scheduleDate!!,
-                    workingType = WorkingType.fromDisplayName(pe.workStatus!!),
-                    workingCategory1 = WorkingCategory1.fromDisplayName(pe.workType1!!),
-                    workingCategory3 = WorkingCategory3.fromDisplayName(pe.workType3!!),
+                    workingType = pe.workStatus!!,
+                    workingCategory1 = pe.workType1!!,
+                    workingCategory3 = pe.workType3!!,
                     workingCategory4 = null,
                     promotionEmployee = pe
                 )
@@ -150,9 +150,9 @@ class AdminPromotionConfirmService(
             val missingFields = mutableListOf<String>()
             if (pe.employeeId == null) missingFields.add("행사사원")
             if (pe.scheduleDate == null) missingFields.add("투입일")
-            if (pe.workStatus.isNullOrBlank()) missingFields.add("근무상태")
-            if (pe.workType1.isNullOrBlank()) missingFields.add("근무유형1")
-            if (pe.workType3.isNullOrBlank()) missingFields.add("근무유형3")
+            if (pe.workStatus == null) missingFields.add("근무상태")
+            if (pe.workType1 == null) missingFields.add("근무유형1")
+            if (pe.workType3 == null) missingFields.add("근무유형3")
 
             if (missingFields.isNotEmpty()) {
                 val name = pe.employeeId?.let { resolveEmployeeName(it, userByIdMap) } ?: pe.id.toString()
@@ -206,7 +206,7 @@ class AdminPromotionConfirmService(
         for (pe in employees) {
             val key = EmpDateKey(pe.employeeId!!, pe.scheduleDate!!)
             newCounts.getOrPut(key) { mutableMapOf() }
-                .merge(pe.workType3!!, 1) { a, b -> a + b }
+                .merge(pe.workType3!!.displayName, 1) { a, b -> a + b }
         }
 
         // 모든 사원+날짜 조합 검증
@@ -270,7 +270,7 @@ class AdminPromotionConfirmService(
             }
 
             // PE가 연차/대휴인데 기존에 근무 스케줄이 있으면 충돌
-            if (pe.workStatus == "연차" || pe.workStatus == "대휴") {
+            if (pe.workStatus == WorkingType.ANNUAL_LEAVE || pe.workStatus == WorkingType.ALT_HOLIDAY) {
                 val hasWork = existing.any { it.workingType != WorkingType.ANNUAL_LEAVE && it.workingType != WorkingType.ALT_HOLIDAY }
                 if (hasWork) {
                     throw LeaveConflictException("${name}의 ${pe.scheduleDate}에 예정된 연차/대휴가 존재합니다")

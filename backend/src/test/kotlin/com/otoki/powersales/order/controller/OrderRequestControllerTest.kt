@@ -281,7 +281,7 @@ class OrderRequestControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.orderRequestId").value(12345))
-                .andExpect(jsonPath("$.data.orderRequestStatus").value("CANCELED"))
+                .andExpect(jsonPath("$.data.orderRequestStatus").value("주문취소"))
                 .andExpect(jsonPath("$.data.cancelledLines[0].orderProductId").value(101))
                 .andExpect(jsonPath("$.data.cancelledLines[0].productCode").value("P001"))
         }
@@ -307,7 +307,7 @@ class OrderRequestControllerTest {
                     .content("""{"orderProductIds":[101]}"""),
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.data.orderRequestStatus").value("APPROVED"))
+                .andExpect(jsonPath("$.data.orderRequestStatus").value("승인완료"))
                 .andExpect(jsonPath("$.data.cancelledLines.length()").value(1))
         }
 
