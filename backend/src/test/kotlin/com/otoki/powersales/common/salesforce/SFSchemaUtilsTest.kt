@@ -33,11 +33,11 @@ class SFSchemaUtilsTest {
         }
 
         @Test
-        @DisplayName("Employee 엔티티 - 38개 SF Field 매핑 반환 (Spec #607: 25 기존 + 3 누락 + 8 신규 + BaseEntity 2)")
+        @DisplayName("Employee 엔티티 - 44개 SF Field 매핑 반환 (Spec #607 38 + Spec #713 신규 6)")
         fun getSFMapping_user() {
             val mapping = SFSchemaUtils.getSFMapping(Employee::class.java)
 
-            assertThat(mapping).hasSize(38)
+            assertThat(mapping).hasSize(44)
             assertThat(mapping["DKRetail__EmpCode__c"]).isEqualTo("employee_code")
             assertThat(mapping["Name"]).isEqualTo("name")
             assertThat(mapping["DKRetail__Birthdate__c"]).isEqualTo("birth_date")
@@ -150,11 +150,11 @@ class SFSchemaUtilsTest {
         }
 
         @Test
-        @DisplayName("Employee 엔티티 - 17개 HC Column 매핑 반환 (15 + BaseEntity 2)")
+        @DisplayName("Employee 엔티티 - 25개 HC Column 매핑 반환 (15 기존 + 8 신규(#713) + BaseEntity 2)")
         fun getHCMapping_user() {
             val mapping = SFSchemaUtils.getHCMapping(Employee::class.java)
 
-            assertThat(mapping).hasSize(17)
+            assertThat(mapping).hasSize(25)
             assertThat(mapping["sfid"]).isEqualTo("sfid")
             assertThat(mapping["dkretail__empcode__c"]).isEqualTo("employee_code")
             assertThat(mapping["name"]).isEqualTo("name")
@@ -170,6 +170,15 @@ class SFSchemaUtilsTest {
             assertThat(mapping["dkretail__startdate__c"]).isEqualTo("start_date")
             assertThat(mapping["agreementflag__c"]).isEqualTo("agreement_flag")
             assertThat(mapping["isdeleted"]).isEqualTo("is_deleted")
+            // Spec #713 신규
+            assertThat(mapping["dkretail__sex__c"]).isEqualTo("gender")
+            assertThat(mapping["dkretail__managerid__c"]).isEqualTo("manager_sfid")
+            assertThat(mapping["postponedappointment__c"]).isEqualTo("postponed_appointment_sfid")
+            assertThat(mapping["officephone__c"]).isEqualTo("office_phone")
+            assertThat(mapping["dkretail__crm_worktype__c"]).isEqualTo("crm_work_type")
+            assertThat(mapping["ownerid"]).isEqualTo("owner_sfid")
+            assertThat(mapping["createdbyid"]).isEqualTo("created_by_sfid")
+            assertThat(mapping["lastmodifiedbyid"]).isEqualTo("last_modified_by_sfid")
         }
 
         @Test
