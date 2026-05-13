@@ -188,6 +188,11 @@ class OrderRequestProduct(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: Employee? = null,
+
+    // -- Spec #746 R-2 (DKRetail__ProductId__c FK 신설) --
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id")
+    var product: com.otoki.powersales.product.entity.Product? = null,
 ) : BaseEntity() {
 
     fun cancel(employeeId: String) {

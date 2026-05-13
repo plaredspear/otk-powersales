@@ -235,4 +235,14 @@ class MonthlySalesHistory(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: Employee? = null,
+
+    // -- Spec #746 R-2 (HQReviews__c FK 신설) --
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "hq_review_id")
+    var hqReview: com.otoki.powersales.common.entity.HqReview? = null,
+
+    // -- Spec #746 R-2 (LastMonthlySalesHistory__c self-reference FK 신설) --
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "last_monthly_sales_history_id")
+    var lastMonthlySalesHistory: MonthlySalesHistory? = null,
 ) : AuditedEntity()
