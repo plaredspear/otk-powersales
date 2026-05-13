@@ -43,7 +43,7 @@ class ProductBarcodeSFAnnotationTest {
         @Test
         @DisplayName("매핑 키 수 = 10 (6 기존 + 1 누락 보강 + 1 신규 + BaseEntity 2)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(10)
+            assertThat(mapping).hasSize(14)
         }
 
         @Test

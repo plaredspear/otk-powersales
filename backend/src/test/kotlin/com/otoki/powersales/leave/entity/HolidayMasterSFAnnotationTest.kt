@@ -3,6 +3,7 @@ package com.otoki.powersales.leave.entity
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.common.salesforce.SFSchemaUtils
+import com.otoki.powersales.leave.entity.HolidayType
 import jakarta.persistence.Column
 import jakarta.persistence.Id
 import org.assertj.core.api.Assertions.assertThat
@@ -39,15 +40,15 @@ class HolidayMasterSFAnnotationTest {
     }
 
     @Nested
-    @DisplayName("AC2 — @SFField 매핑 키셋 (5개: 3개 + BaseEntity CreatedDate/LastModifiedDate)")
+    @DisplayName("AC2 — @SFField 매핑 키셋 (8개: 3 도메인 + BaseEntity 2 + Group A R-2 sfid 3)")
     inner class SfFieldMapping {
 
         private val mapping = SFSchemaUtils.getSFMapping(HolidayMaster::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 5 (3 + BaseEntity 2)")
+        @DisplayName("매핑 키 수 = 8 (도메인 3 + BaseEntity 2 + Group A R-2 sfid 3)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(5)
+            assertThat(mapping).hasSize(8)
         }
 
         @Test
@@ -59,11 +60,12 @@ class HolidayMasterSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("매핑 키셋 정확히 일치 (Spec #703 — BaseEntity CreatedDate/LastModifiedDate 포함)")
+        @DisplayName("매핑 키셋 정확히 일치 (Spec #716 — Group A R-2 sfid 3개 + BaseEntity 2개 포함)")
         fun mappingKeysExact() {
             assertThat(mapping.keys).containsExactlyInAnyOrder(
                 "Name", "HolidayDate__c", "Type__c",
-                "CreatedDate", "LastModifiedDate"
+                "CreatedDate", "LastModifiedDate",
+                "OwnerId", "CreatedById", "LastModifiedById"
             )
         }
     }
@@ -128,19 +130,21 @@ class HolidayMasterSFAnnotationTest {
     }
 
     @Nested
-    @DisplayName("AC5 — VALID_TYPES 갱신 (Q1 옵션 2)")
-    inner class ValidTypesUpdate {
+    @DisplayName("AC5 — HolidayType enum (Spec #716: SF picklist 정합)")
+    inner class HolidayTypeEnum {
 
         @Test
-        @DisplayName("VALID_TYPES = [공휴일, 주말, 기타]")
-        fun validTypesValues() {
-            assertThat(HolidayMaster.VALID_TYPES).containsExactly("공휴일", "주말", "기타")
+        @DisplayName("HolidayType enum = [공휴일, 주말, 기타]")
+        fun holidayTypeValues() {
+            assertThat(HolidayType.entries.map { it.displayName })
+                .containsExactly("공휴일", "주말", "기타")
         }
 
         @Test
         @DisplayName("기존 값(법정공휴일/대체공휴일/임시공휴일) 부재 단언")
         fun oldValuesAbsent() {
-            assertThat(HolidayMaster.VALID_TYPES).doesNotContain("법정공휴일", "대체공휴일", "임시공휴일")
+            assertThat(HolidayType.entries.map { it.displayName })
+                .doesNotContain("법정공휴일", "대체공휴일", "임시공휴일")
         }
     }
 }

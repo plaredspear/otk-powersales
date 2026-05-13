@@ -29,7 +29,7 @@ class AlternativeHolidaySFAnnotationTest {
         @DisplayName("매핑 키 수 = 9 (7 + BaseEntity 2)")
         fun mappingKeySize() {
             val mapping = SFSchemaUtils.getSFMapping(AlternativeHoliday::class.java)
-            assertThat(mapping).hasSize(9)
+            assertThat(mapping).hasSize(12)
         }
     }
 
@@ -103,7 +103,8 @@ class AlternativeHolidaySFAnnotationTest {
                     "DKRetail__ActualWorkDate__c", "DKRetail__TargetAltHolidayDate__c",
                     "DKRetail__ConfirmAltHolidayDate__c", "DKRetail__Status__c",
                     "DKRetail__ChangeReason__c",
-                    "CreatedDate", "LastModifiedDate"
+                    "CreatedDate", "LastModifiedDate",
+                    "OwnerId", "CreatedById", "LastModifiedById"
                 )
         }
     }

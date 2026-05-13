@@ -14,7 +14,7 @@ data class HolidayMasterResponse(
             id = entity.id,
             holidayDate = entity.holidayDate,
             name = entity.name,
-            type = entity.type
+            type = entity.type.displayName
         )
     }
 }

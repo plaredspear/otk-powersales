@@ -2,14 +2,18 @@ package com.otoki.powersales.leave.entity
 
 import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.HCColumn
+import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
+import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.leave.entity.converter.HolidayTypeConverter
 import jakarta.persistence.*
 import java.time.LocalDate
 
 @Entity
 @Table(name = "holiday_master")
 @SFObject("HolidayMaster__c")
+@HCTable("holidaymaster__c")
 class HolidayMaster(
 
     @Id
@@ -22,30 +26,56 @@ class HolidayMaster(
     val sfid: String? = null,
 
     @SFField("HolidayDate__c")
+    @HCColumn("holidaydate__c")
     @Column(name = "holiday_date", nullable = false, unique = true)
     var holidayDate: LocalDate,
 
     @SFField("Name")
-    @Column(name = "name", nullable = false, length = 50)
+    @HCColumn("name")
+    @Column(name = "name", nullable = false, length = 80)
     var name: String,
 
     @SFField("Type__c")
-    @Column(name = "type", nullable = false, length = 20)
-    var type: String,
+    @HCColumn("type__c")
+    @Convert(converter = HolidayTypeConverter::class)
+    @Column(name = "type", nullable = false, length = 255)
+    var type: HolidayType,
 
     @Column(name = "year", nullable = false)
-    var year: Int
+    var year: Int,
+
+    @SFField("OwnerId")
+    @HCColumn("ownerid")
+    @Column(name = "owner_sfid", length = 18)
+    var ownerSfid: String? = null,
+
+    @SFField("CreatedById")
+    @HCColumn("createdbyid")
+    @Column(name = "created_by_sfid", length = 18)
+    var createdBySfid: String? = null,
+
+    @SFField("LastModifiedById")
+    @HCColumn("lastmodifiedbyid")
+    @Column(name = "last_modified_by_sfid", length = 18)
+    var lastModifiedBySfid: String? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id")
+    var owner: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_id")
+    var createdBy: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "last_modified_by_id")
+    var lastModifiedBy: Employee? = null
+
 ) : BaseEntity() {
-    fun update(holidayDate: LocalDate, name: String, type: String) {
+    fun update(holidayDate: LocalDate, name: String, type: HolidayType) {
         this.holidayDate = holidayDate
         this.name = name
         this.type = type
         this.year = holidayDate.year
-
-    }
-
-    companion object {
-        // Spec #604 Q1 옵션 2: SF `Type__c` picklist 값 직접 채택 (변환 매트릭스 없음)
-        val VALID_TYPES = listOf("공휴일", "주말", "기타")
     }
 }

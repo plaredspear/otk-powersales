@@ -3,6 +3,7 @@ package com.otoki.powersales.leave.service
 import com.otoki.powersales.leave.dto.request.HolidayMasterCreateRequest
 import com.otoki.powersales.leave.dto.request.HolidayMasterUpdateRequest
 import com.otoki.powersales.leave.entity.HolidayMaster
+import com.otoki.powersales.leave.entity.HolidayType
 import com.otoki.powersales.leave.exception.HolidayDateDuplicateException
 import com.otoki.powersales.leave.exception.HolidayNotFoundException
 import com.otoki.powersales.leave.exception.InvalidHolidayTypeException
@@ -207,7 +208,7 @@ class AdminHolidayMasterServiceTest {
         id: Long = 1L,
         holidayDate: LocalDate = LocalDate.of(2026, 1, 1),
         name: String = "신정",
-        type: String = "공휴일"
+        type: HolidayType = HolidayType.PUBLIC_HOLIDAY
     ): HolidayMaster = HolidayMaster(
         id = id,
         holidayDate = holidayDate,

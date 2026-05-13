@@ -4,6 +4,8 @@ import com.otoki.powersales.claim.entity.Claim
 import com.otoki.powersales.common.entity.AgreementHistory
 import com.otoki.powersales.common.entity.UploadFile
 import com.otoki.powersales.leave.entity.AlternativeHoliday
+import com.otoki.powersales.leave.entity.HolidayMaster
+import com.otoki.powersales.product.entity.ProductBarcode
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamHistory
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamMaster
 import com.otoki.powersales.promotion.entity.Promotion
@@ -47,6 +49,8 @@ object SalesforceMigrationTool {
     private val entities = listOf(
         // ── 마스터 데이터 ──
         EntityRegistration("organization", Organization::class.java),
+        EntityRegistration("holidayMaster", HolidayMaster::class.java),
+        EntityRegistration("productBarcode", ProductBarcode::class.java),
 
         // ── Employee 참조 ──
         EntityRegistration("attendInfo", AttendInfo::class.java),

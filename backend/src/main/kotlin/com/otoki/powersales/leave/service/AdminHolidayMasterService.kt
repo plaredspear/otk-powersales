@@ -4,6 +4,7 @@ import com.otoki.powersales.leave.dto.request.HolidayMasterCreateRequest
 import com.otoki.powersales.leave.dto.request.HolidayMasterUpdateRequest
 import com.otoki.powersales.leave.dto.response.HolidayMasterResponse
 import com.otoki.powersales.leave.entity.HolidayMaster
+import com.otoki.powersales.leave.entity.HolidayType
 import com.otoki.powersales.leave.exception.HolidayDateDuplicateException
 import com.otoki.powersales.leave.exception.HolidayNotFoundException
 import com.otoki.powersales.leave.exception.InvalidHolidayTypeException
@@ -24,7 +25,7 @@ class AdminHolidayMasterService(
 
     @Transactional
     fun createHolidayMaster(request: HolidayMasterCreateRequest): HolidayMasterResponse {
-        validateType(request.type)
+        val type = parseType(request.type)
 
         if (holidayMasterRepository.existsByHolidayDate(request.holidayDate)) {
             throw HolidayDateDuplicateException()
@@ -34,7 +35,7 @@ class AdminHolidayMasterService(
             HolidayMaster(
                 holidayDate = request.holidayDate,
                 name = request.name,
-                type = request.type,
+                type = type,
                 year = request.holidayDate.year
             )
         )
@@ -47,7 +48,7 @@ class AdminHolidayMasterService(
         val holidayMaster = holidayMasterRepository.findById(id)
             .orElseThrow { HolidayNotFoundException() }
 
-        validateType(request.type)
+        val type = parseType(request.type)
 
         if (holidayMasterRepository.existsByHolidayDateAndIdNot(request.holidayDate, id)) {
             throw HolidayDateDuplicateException()
@@ -56,7 +57,7 @@ class AdminHolidayMasterService(
         holidayMaster.update(
             holidayDate = request.holidayDate,
             name = request.name,
-            type = request.type
+            type = type
         )
 
         return HolidayMasterResponse.Companion.from(holidayMaster)
@@ -70,9 +71,6 @@ class AdminHolidayMasterService(
         holidayMasterRepository.delete(holidayMaster)
     }
 
-    private fun validateType(type: String) {
-        if (type !in HolidayMaster.Companion.VALID_TYPES) {
-            throw InvalidHolidayTypeException()
-        }
-    }
+    private fun parseType(value: String): HolidayType =
+        HolidayType.fromDisplayNameOrNull(value) ?: throw InvalidHolidayTypeException()
 }

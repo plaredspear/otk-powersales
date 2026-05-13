@@ -1,6 +1,7 @@
 package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.leave.entity.HolidayMaster
+import com.otoki.powersales.leave.entity.HolidayType
 import com.otoki.powersales.leave.repository.HolidayMasterRepository
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee
@@ -434,7 +435,7 @@ class AdminMonthlyIntegrationServiceTest {
                 HolidayMaster(
                     holidayDate = LocalDate.of(2026, 4, 1),
                     name = "테스트공휴일",
-                    type = "공휴일",
+                    type = HolidayType.PUBLIC_HOLIDAY,
                     year = 2026
                 )
             ))
@@ -454,7 +455,7 @@ class AdminMonthlyIntegrationServiceTest {
                 HolidayMaster(
                     holidayDate = LocalDate.of(2026, 4, 4),
                     name = "토요일공휴일",
-                    type = "공휴일",
+                    type = HolidayType.PUBLIC_HOLIDAY,
                     year = 2026
                 )
             ))

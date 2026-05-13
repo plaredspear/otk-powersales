@@ -1,6 +1,7 @@
 package com.otoki.powersales.leave.service
 
 import com.otoki.powersales.leave.entity.HolidayMaster
+import com.otoki.powersales.leave.entity.HolidayType
 import com.otoki.powersales.leave.repository.HolidayMasterRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
@@ -56,8 +57,8 @@ class HolidayMasterServiceTest {
         @DisplayName("기간 내 공휴일 반환")
         fun getHolidaysByDateRange_success() {
             val holidays = listOf(
-                HolidayMaster(id = 1, holidayDate = LocalDate.of(2026, 1, 1), name = "신정", type = "공휴일", year = 2026),
-                HolidayMaster(id = 2, holidayDate = LocalDate.of(2026, 1, 28), name = "설날 연휴", type = "공휴일", year = 2026)
+                HolidayMaster(id = 1, holidayDate = LocalDate.of(2026, 1, 1), name = "신정", type = HolidayType.PUBLIC_HOLIDAY, year = 2026),
+                HolidayMaster(id = 2, holidayDate = LocalDate.of(2026, 1, 28), name = "설날 연휴", type = HolidayType.PUBLIC_HOLIDAY, year = 2026)
             )
             whenever(holidayMasterRepository.findByHolidayDateBetween(
                 LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31)
