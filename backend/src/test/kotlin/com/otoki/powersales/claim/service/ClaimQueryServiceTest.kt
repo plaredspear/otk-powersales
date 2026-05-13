@@ -53,8 +53,8 @@ class ClaimQueryServiceTest {
 
             assertThat(result).hasSize(1)
             assertThat(result[0].claimId).isEqualTo(1L)
-            assertThat(result[0].status).isEqualTo("SUBMITTED")
-            assertThat(result[0].statusLabel).isEqualTo("접수")
+            assertThat(result[0].status).isEqualTo("DRAFT")
+            assertThat(result[0].statusLabel).isEqualTo("임시저장")
         }
 
         @Test
@@ -111,8 +111,8 @@ class ClaimQueryServiceTest {
             val result = claimQueryService.getClaimDetail(1L, 1L)
 
             assertThat(result.claimId).isEqualTo(1L)
-            assertThat(result.status).isEqualTo("SUBMITTED")
-            assertThat(result.statusLabel).isEqualTo("접수")
+            assertThat(result.status).isEqualTo("DRAFT")
+            assertThat(result.statusLabel).isEqualTo("임시저장")
             assertThat(result.dateType).isEqualTo("EXPIRY_DATE")
             assertThat(result.dateTypeLabel).isEqualTo("유통기한")
             assertThat(result.photos).hasSize(1)
@@ -212,9 +212,10 @@ class ClaimQueryServiceTest {
             purchaseAmount = purchaseAmount,
             purchaseMethodName = purchaseMethodName,
             requestTypeName = requestTypeName,
-            status = ClaimStatus.SUBMITTED,
+            status = ClaimStatus.DRAFT
+        ).apply {
             createdAt = LocalDateTime.of(2026, 4, 8, 10, 30, 0)
-        )
+        }
     }
 
     private fun createClaimPhoto(claim: Claim): ClaimPhoto {
