@@ -120,7 +120,7 @@ class AdminTeamScheduleServiceTest {
         accountName: String? = null,
         accountExternalKey: String? = null,
         teamLeaderId: Long? = 99L,
-        commuteLogId: String? = null
+        commuteLogSfid: String? = null
     ): TeamMemberSchedule = TeamMemberSchedule(
         id = id,
         employee = employeeId?.let {
@@ -143,7 +143,7 @@ class AdminTeamScheduleServiceTest {
             )
         },
         teamLeader = teamLeaderId?.let { Employee(id = it, employeeCode = "EMP$it", name = "팀장$it") },
-        commuteLogId = commuteLogId
+        commuteLogSfid = commuteLogSfid
     )
 
     // ========== getMembers ==========
@@ -249,9 +249,9 @@ class AdminTeamScheduleServiceTest {
             // Given
             val date = LocalDate.of(2026, 4, 1)
             val displaySchedule = createSchedule(id = 1L, employeeId = 1L, employeeCode = "20030001", employeeName = "홍길동", workingDate = date, workingType = "근무", workingCategory1 = "진열")
-            val displayWithCommute = createSchedule(id = 2L, workingDate = date, workingType = "근무", workingCategory1 = "진열", commuteLogId = "CL001")
+            val displayWithCommute = createSchedule(id = 2L, workingDate = date, workingType = "근무", workingCategory1 = "진열", commuteLogSfid = "CL001")
             val promotionSchedule = createSchedule(id = 3L, workingDate = date, workingType = "근무", workingCategory1 = "행사")
-            val promotionWithCommute = createSchedule(id = 4L, workingDate = date, workingType = "근무", workingCategory1 = "행사", commuteLogId = "CL002")
+            val promotionWithCommute = createSchedule(id = 4L, workingDate = date, workingType = "근무", workingCategory1 = "행사", commuteLogSfid = "CL002")
             val annualLeave = createSchedule(id = 5L, workingDate = date, workingType = "연차", workingCategory1 = null)
             val compensatoryLeave = createSchedule(id = 6L, workingDate = date, workingType = "대휴", workingCategory1 = null)
 
@@ -1200,7 +1200,7 @@ class AdminTeamScheduleServiceTest {
         fun deleteSchedule_workReportCompleted_forbidden() {
             // Given
             val leader = createEmployee(id = 10L, role = UserRole.LEADER)
-            val schedule = createSchedule(id = 100L, commuteLogId = "CL001")
+            val schedule = createSchedule(id = 100L, commuteLogSfid = "CL001")
 
             whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(leader)
             whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
@@ -1216,7 +1216,7 @@ class AdminTeamScheduleServiceTest {
         fun deleteSchedule_workReportCompleted_systemAdmin_success() {
             // Given
             val admin = createEmployee(id = 10L, role = UserRole.SYSTEM_ADMIN)
-            val schedule = createSchedule(id = 100L, commuteLogId = "CL001")
+            val schedule = createSchedule(id = 100L, commuteLogSfid = "CL001")
 
             whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(admin)
             whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
@@ -1233,7 +1233,7 @@ class AdminTeamScheduleServiceTest {
         fun deleteSchedule_noWorkReport_success() {
             // Given
             val leader = createEmployee(id = 10L, role = UserRole.LEADER)
-            val schedule = createSchedule(id = 100L, commuteLogId = null)
+            val schedule = createSchedule(id = 100L, commuteLogSfid = null)
 
             whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(leader)
             whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
@@ -1252,7 +1252,7 @@ class AdminTeamScheduleServiceTest {
         fun deleteSchedule_displayMasterLinked_forbidden() {
             // Given
             val leader = createEmployee(id = 10L, role = UserRole.LEADER)
-            val schedule = createSchedule(id = 100L, commuteLogId = null, workingCategory1 = "진열")
+            val schedule = createSchedule(id = 100L, commuteLogSfid = null, workingCategory1 = "진열")
 
             whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(leader)
             whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
@@ -1270,7 +1270,7 @@ class AdminTeamScheduleServiceTest {
         fun deleteSchedule_displayMasterLinked_systemAdmin_success() {
             // Given
             val admin = createEmployee(id = 10L, role = UserRole.SYSTEM_ADMIN)
-            val schedule = createSchedule(id = 100L, commuteLogId = null, workingCategory1 = "진열")
+            val schedule = createSchedule(id = 100L, commuteLogSfid = null, workingCategory1 = "진열")
 
             whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(admin)
             whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
@@ -1288,7 +1288,7 @@ class AdminTeamScheduleServiceTest {
         fun deleteSchedule_displayMasterLinked_salesSupport_success() {
             // Given
             val salesSupport = createEmployee(id = 10L, role = UserRole.SALES_SUPPORT)
-            val schedule = createSchedule(id = 100L, commuteLogId = null, workingCategory1 = "진열")
+            val schedule = createSchedule(id = 100L, commuteLogSfid = null, workingCategory1 = "진열")
 
             whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(salesSupport)
             whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))

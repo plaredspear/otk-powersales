@@ -10,7 +10,7 @@ import java.time.LocalDateTime
  * Orora WorkReport Mock 구현
  *
  * 실 Orora API 연동 전까지 사용하는 Mock.
- * 항상 성공 응답을 반환하고, TeamMemberSchedule의 commuteLogId + 안전점검 데이터를 직접 업데이트한다.
+ * 항상 성공 응답을 반환하고, TeamMemberSchedule의 commuteLogSfid + 안전점검 데이터를 직접 업데이트한다.
  * (실서비스에서는 Orora→Salesforce 동기화로 자동 반영)
  */
 @Service
@@ -22,7 +22,7 @@ class OroraApiServiceMock(
 
     @Transactional
     override fun sendWorkReport(request: OroraWorkReportRequest): OroraWorkReportResult {
-        // Mock: commuteLogId + 안전점검 데이터를 TeamMemberSchedule에 직접 업데이트 (Orora→SF 동기화 시뮬레이션)
+        // Mock: commuteLogSfid + 안전점검 데이터를 TeamMemberSchedule에 직접 업데이트 (Orora→SF 동기화 시뮬레이션)
         teamMemberScheduleRepository.updateCommuteLogId(request.scheduleId, "OK")
         teamMemberScheduleRepository.updateSafetyCheckData(
             id = request.scheduleId,

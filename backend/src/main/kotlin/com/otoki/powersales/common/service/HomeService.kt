@@ -40,7 +40,7 @@ class HomeService(
         /** 정렬 우선순위: 출근완료(0) → 임시배정(1) → 행사(2) → 진열(3) */
         private fun sortPriority(teamMemberSchedule: TeamMemberSchedule): Int {
             return when {
-                teamMemberSchedule.commuteLogId != null -> 0
+                teamMemberSchedule.commuteLogSfid != null -> 0
                 teamMemberSchedule.workingCategory2?.contains("임시") == true -> 1
                 teamMemberSchedule.workingCategory1 != "진열" -> 2
                 else -> 3
@@ -210,7 +210,7 @@ class HomeService(
             accountId = teamMemberSchedule.account?.id,
             workCategory = teamMemberSchedule.workingCategory1 ?: "",
             workType = teamMemberSchedule.workingType,
-            isCommuteRegistered = teamMemberSchedule.commuteLogId != null,
+            isCommuteRegistered = teamMemberSchedule.commuteLogSfid != null,
             commuteRegisteredAt = teamMemberSchedule.commuteReportDatetime
         )
     }

@@ -349,7 +349,7 @@ class HomeServiceTest {
                 accountId = 8938,
                 workingCategory1 = "진열",
                 workingCategory2 = null,
-                commuteLogId = null
+                commuteLogSfid = null
             )
             // 행사 (priority 2)
             val eventSchedule = createTeamMemberSchedule(
@@ -358,7 +358,7 @@ class HomeServiceTest {
                 accountId = 8939,
                 workingCategory1 = "행사",
                 workingCategory2 = null,
-                commuteLogId = null
+                commuteLogSfid = null
             )
             // 임시배정 (priority 1)
             val tempSchedule = createTeamMemberSchedule(
@@ -367,7 +367,7 @@ class HomeServiceTest {
                 accountId = 8940,
                 workingCategory1 = "진열",
                 workingCategory2 = "임시배정",
-                commuteLogId = null
+                commuteLogSfid = null
             )
             // 출근완료 (priority 0)
             val commuteSchedule = createTeamMemberSchedule(
@@ -376,7 +376,7 @@ class HomeServiceTest {
                 accountId = 8941,
                 workingCategory1 = "진열",
                 workingCategory2 = null,
-                commuteLogId = "CLG001"
+                commuteLogSfid = "CLG001"
             )
 
             // 의도적으로 역순 전달 (진열 -> 행사 -> 임시 -> 출근완료)
@@ -419,21 +419,21 @@ class HomeServiceTest {
                 employeeId = userId,
                 accountId = 8938,
                 workingCategory1 = "진열",
-                commuteLogId = null
+                commuteLogSfid = null
             )
             val eventSchedule = createTeamMemberSchedule(
                 id = 1L,
                 employeeId = userId,
                 accountId = 8939,
                 workingCategory1 = "행사",
-                commuteLogId = null
+                commuteLogSfid = null
             )
             val otherSchedule = createTeamMemberSchedule(
                 id = 2L,
                 employeeId = userId,
                 accountId = 8940,
                 workingCategory1 = "진열",
-                commuteLogId = null
+                commuteLogSfid = null
             )
 
             val teamMemberSchedules = listOf(displaySchedule, eventSchedule, otherSchedule)
@@ -468,9 +468,9 @@ class HomeServiceTest {
             val employee = createEmployee(id = userId, role = null)
 
             val teamMemberSchedules = listOf(
-                createTeamMemberSchedule(id = 1L, employeeId = userId, accountId = 8938, commuteLogId = "CLG001"),
-                createTeamMemberSchedule(id = 2L, employeeId = userId, accountId = 8939, commuteLogId = "CLG002"),
-                createTeamMemberSchedule(id = 3L, employeeId = userId, accountId = 8940, commuteLogId = null)
+                createTeamMemberSchedule(id = 1L, employeeId = userId, accountId = 8938, commuteLogSfid = "CLG001"),
+                createTeamMemberSchedule(id = 2L, employeeId = userId, accountId = 8939, commuteLogSfid = "CLG002"),
+                createTeamMemberSchedule(id = 3L, employeeId = userId, accountId = 8940, commuteLogSfid = null)
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
@@ -616,7 +616,7 @@ class HomeServiceTest {
         workingType: String? = "순회",
         workingCategory1: String? = "진열",
         workingCategory2: String? = null,
-        commuteLogId: String? = null,
+        commuteLogSfid: String? = null,
         commuteReportDatetime: LocalDateTime? = null
     ): TeamMemberSchedule {
         return TeamMemberSchedule(
@@ -628,7 +628,7 @@ class HomeServiceTest {
             workingType = workingType,
             workingCategory1 = workingCategory1,
             workingCategory2 = workingCategory2,
-            commuteLogId = commuteLogId,
+            commuteLogSfid = commuteLogSfid,
             commuteReportDatetime = commuteReportDatetime
         )
     }

@@ -20,10 +20,10 @@ open class TeamMemberScheduleRepositoryCustomImpl(
 ) : TeamMemberScheduleRepositoryCustom {
 
     @Transactional
-    override fun updateCommuteLogId(id: Long, commuteLogId: String) {
+    override fun updateCommuteLogId(id: Long, commuteLogSfid: String) {
         queryFactory
             .update(teamMemberSchedule)
-            .set(teamMemberSchedule.commuteLogId, commuteLogId)
+            .set(teamMemberSchedule.commuteLogSfid, commuteLogSfid)
             .where(teamMemberSchedule.id.eq(id))
             .execute()
     }
@@ -222,7 +222,7 @@ open class TeamMemberScheduleRepositoryCustomImpl(
                 teamMemberSchedule.employee.id.`in`(employeeIds),
                 teamMemberSchedule.workingDate.between(from, to),
                 teamMemberSchedule.workingType.eq(WORKING_TYPE_WORK),
-                teamMemberSchedule.commuteLogId.isNotNull,
+                teamMemberSchedule.commuteLogSfid.isNotNull,
                 teamMemberSchedule.account.isNotNull,
                 isNotDeleted()
             )
@@ -289,8 +289,8 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             )
             .from(teamMemberSchedule)
             .join(attendanceLog).on(
-                teamMemberSchedule.commuteLogId.eq(attendanceLog.sfid)
-                    .or(teamMemberSchedule.commuteLogId.eq(attendanceLog.id.stringValue()))
+                teamMemberSchedule.commuteLogSfid.eq(attendanceLog.sfid)
+                    .or(teamMemberSchedule.commuteLogSfid.eq(attendanceLog.id.stringValue()))
             )
             .join(employee).on(employee.id.eq(attendanceLog.employeeId))
             .join(account).on(account.id.eq(attendanceLog.accountId))

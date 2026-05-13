@@ -89,8 +89,8 @@ class TeamMemberSchedule(
 
     @SFField("DKRetail__CommuteLogId__c")
     @HCColumn("dkretail__commutelogid__c")
-    @Column(name = "commute_log_id", length = 18)
-    var commuteLogId: String? = null,
+    @Column(name = "commute_log_sfid", length = 18)
+    var commuteLogSfid: String? = null,
 
     @SFField("DKRetail__PromotionEmpId__c")
     @HCColumn("dkretail__promotionempid__c")
@@ -323,6 +323,11 @@ class TeamMemberSchedule(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "monthly_female_employee_integration_schedule_id")
     var monthlyFemaleEmployeeIntegrationSchedule: com.otoki.powersales.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule? = null,
+
+    // -- Spec #749 R-2 (DKRetail__CommuteLogId__c FK 신설 — AttendanceLog) --
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "attendance_log_id")
+    var attendanceLog: AttendanceLog? = null,
 
     // -- Spec #747 카테고리 A — D 분류 누락 (6건) --
     @SFField("DKRetail__ActualWorkDate__c")
