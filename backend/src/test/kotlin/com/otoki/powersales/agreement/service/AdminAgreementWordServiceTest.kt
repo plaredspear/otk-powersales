@@ -30,7 +30,7 @@ class AdminAgreementWordServiceTest {
     private val futureDate: LocalDate = LocalDate.now().plusMonths(6)
 
     private fun seedSavedEntity(
-        active: Boolean? = false,
+        active: Boolean = false,
         activeDate: LocalDate? = null,
         afterActiveDate: LocalDate? = futureDate,
         name: String = "AGR-2026-001",

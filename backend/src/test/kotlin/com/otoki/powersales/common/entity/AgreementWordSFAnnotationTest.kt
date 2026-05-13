@@ -29,10 +29,10 @@ class AgreementWordSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("매핑 키 수 = 10")
+        @DisplayName("매핑 키 수 = 11")
         fun mappingKeySize() {
             val mapping = SFSchemaUtils.getSFMapping(AgreementWord::class.java)
-            assertThat(mapping).hasSize(10)
+            assertThat(mapping).hasSize(11)
         }
     }
 
@@ -56,7 +56,7 @@ class AgreementWordSFAnnotationTest {
     }
 
     @Nested
-    @DisplayName("AC1 — @SFField 매핑 키셋 (10개)")
+    @DisplayName("AC1 — @SFField 매핑 키셋 (11개)")
     inner class SfFieldMapping {
 
         private val mapping = SFSchemaUtils.getSFMapping(AgreementWord::class.java)
@@ -79,6 +79,12 @@ class AgreementWordSFAnnotationTest {
             assertThat(mapping["OwnerId"]).isEqualTo("owner_sfid")
             assertThat(mapping["CreatedById"]).isEqualTo("created_by_sfid")
             assertThat(mapping["LastModifiedById"]).isEqualTo("last_modified_by_sfid")
+        }
+
+        @Test
+        @DisplayName("sf-meta-diff Q1 — LastModifiedDate → updated_at")
+        fun lastModifiedDateMapping() {
+            assertThat(mapping["LastModifiedDate"]).isEqualTo("updated_at")
         }
     }
 }

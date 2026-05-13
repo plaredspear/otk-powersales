@@ -23,8 +23,8 @@ class AgreementWord(
 
     @HCColumn("name")
     @SFField("Name")
-    @Column(name = "name", length = 80)
-    val name: String? = null,
+    @Column(name = "name", length = 80, nullable = false)
+    val name: String,
 
     @HCColumn("contents__c")
     @SFField("Contents__c")
@@ -33,8 +33,8 @@ class AgreementWord(
 
     @HCColumn("active__c")
     @SFField("Active__c")
-    @Column(name = "active")
-    var active: Boolean? = null,
+    @Column(name = "active", nullable = false)
+    var active: Boolean = false,
 
     @HCColumn("activedate__c")
     @SFField("ActiveDate__c")
@@ -63,8 +63,8 @@ class AgreementWord(
     @Column(name = "created_at", nullable = false, updatable = false)
     var createdAt: LocalDateTime = LocalDateTime.now(),
 
-    // systemmodstamp: HC sync buffer — @SFField 미부여 (README §6.3 유지 정책)
-    @HCColumn("systemmodstamp")
+    @SFField("LastModifiedDate")
+    @HCColumn("lastmodifieddate")
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
     var updatedAt: LocalDateTime = LocalDateTime.now(),

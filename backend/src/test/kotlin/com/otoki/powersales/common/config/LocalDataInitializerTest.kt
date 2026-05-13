@@ -125,7 +125,7 @@ class LocalDataInitializerTest {
 
     private fun stubOtherSeedsExist() {
         whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
-            .thenReturn(Optional.of(AgreementWord()))
+            .thenReturn(Optional.of(AgreementWord(name = "AGR-STUB-001")))
         whenever(organizationRepository.count()).thenReturn(1L)
         stubAllAccountsExist()
         whenever(promotionTypeRepository.count()).thenReturn(1L)
