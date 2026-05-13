@@ -29,10 +29,10 @@ class PromotionEmployeeSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("매핑 키 수 = 21 (기존 17 + 신규 2 + BaseEntity 2)")
+        @DisplayName("매핑 키 수 = 24 (기존 17 + 신규 2 + BaseEntity 2 + Spec #726 R-2 Owner/CreatedBy/LastModifiedBy 3)")
         fun mappingKeySize() {
             val mapping = SFSchemaUtils.getSFMapping(PromotionEmployee::class.java)
-            assertThat(mapping).hasSize(21)
+            assertThat(mapping).hasSize(24)
         }
     }
 

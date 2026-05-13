@@ -16,6 +16,8 @@ import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamMaster
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.entity.PromotionEmployee
 import com.otoki.powersales.schedule.entity.AttendInfo
+import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
+import com.otoki.powersales.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
 import com.otoki.powersales.organization.entity.Organization
 import com.otoki.powersales.schedule.entity.AttendanceLog
 
@@ -60,6 +62,8 @@ object SalesforceMigrationTool {
         // ── Employee 참조 ──
         EntityRegistration("attendInfo", AttendInfo::class.java),
         EntityRegistration("alternativeHoliday", AlternativeHoliday::class.java),
+        EntityRegistration("displayWorkSchedule", DisplayWorkSchedule::class.java),
+        EntityRegistration("monthlyFemaleEmployeeIntegrationSchedule", MonthlyFemaleEmployeeIntegrationSchedule::class.java),
 
         // ── Promotion 관련 (account, product, team_member_schedule 선행 적재 필요) ──
         EntityRegistration("promotion", Promotion::class.java),

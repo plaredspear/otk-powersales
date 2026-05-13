@@ -70,7 +70,8 @@ class DisplayWorkSchedule(
     val typeOfWork3: String? = null,
 
     @SFField("TypeOfWork4__c")
-    @Column(name = "type_of_work4", length = 20)
+    @HCColumn("typeofwork4__c")
+    @Column(name = "type_of_work4", length = 255)
     val typeOfWork4: String? = null,
 
     @SFField("TypeOfWork5__c")
@@ -83,11 +84,23 @@ class DisplayWorkSchedule(
     @Column(name = "owner_sfid", length = 18)
     val ownerSfid: String? = null,
 
+    @SFField("CreatedById")
+    @HCColumn("createdbyid")
+    @Column(name = "created_by_sfid", length = 18)
+    var createdBySfid: String? = null,
+
+    @SFField("LastModifiedById")
+    @HCColumn("lastmodifiedbyid")
+    @Column(name = "last_modified_by_sfid", length = 18)
+    var lastModifiedBySfid: String? = null,
+
     @SFField("CostCenterCode__c")
+    @HCColumn("costcentercode__c")
     @Column(name = "cost_center_code", length = 20)
     val costCenterCode: String? = null,
 
     @SFField("LastMonthRevenue__c")
+    @HCColumn("lastmonthrevenue__c")
     @Column(name = "last_month_revenue")
     val lastMonthRevenue: Long? = null,
 
@@ -108,5 +121,13 @@ class DisplayWorkSchedule(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id")
     val owner: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_id")
+    var createdBy: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "last_modified_by_id")
+    var lastModifiedBy: Employee? = null,
 
 ) : BaseEntity()

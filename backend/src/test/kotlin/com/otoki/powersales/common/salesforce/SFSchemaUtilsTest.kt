@@ -95,11 +95,11 @@ class SFSchemaUtilsTest {
         }
 
         @Test
-        @DisplayName("DisplayWorkSchedule 엔티티 - 15개 SF Field 매핑 반환 (Spec #608: 누락 매핑 1개 보강 + BaseEntity 2)")
+        @DisplayName("DisplayWorkSchedule 엔티티 - 17개 SF Field 매핑 반환 (Spec #732: 누락 매핑 1개 + BaseEntity 2 + R-2 CreatedBy/LastModifiedBy 2)")
         fun getSFMapping_displayWorkSchedule() {
             val mapping = SFSchemaUtils.getSFMapping(DisplayWorkSchedule::class.java)
 
-            assertThat(mapping).hasSize(15)
+            assertThat(mapping).hasSize(17)
             assertThat(mapping["Account__c"]).isEqualTo("account_sfid")
             assertThat(mapping["FullName__c"]).isEqualTo("employee_sfid")
             assertThat(mapping["StartDate__c"]).isEqualTo("start_date")
@@ -219,11 +219,11 @@ class SFSchemaUtilsTest {
         }
 
         @Test
-        @DisplayName("DisplayWorkSchedule 엔티티 - 14개 HC Column 매핑 반환 (12 + BaseEntity 2)")
+        @DisplayName("DisplayWorkSchedule 엔티티 - 19개 HC Column 매핑 반환 (Spec #732: 12 기존 + BaseEntity 2 + R-2 2 + 누락 보강 3)")
         fun getHCMapping_displayWorkSchedule() {
             val mapping = SFSchemaUtils.getHCMapping(DisplayWorkSchedule::class.java)
 
-            assertThat(mapping).hasSize(14)
+            assertThat(mapping).hasSize(19)
             assertThat(mapping["sfid"]).isEqualTo("sfid")
             assertThat(mapping["name"]).isEqualTo("name")
             assertThat(mapping["account__c"]).isEqualTo("account_sfid")

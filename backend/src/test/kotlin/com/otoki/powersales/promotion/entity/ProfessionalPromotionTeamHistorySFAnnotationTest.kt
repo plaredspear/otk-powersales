@@ -9,11 +9,12 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 /**
- * Spec #627 — ProfessionalPromotionTeamHistory ↔ Salesforce `ProfessionalPromotionTeamHistory__c` 어노테이션 검증.
+ * Spec #727 — ProfessionalPromotionTeamHistory ↔ Salesforce `ProfessionalPromotionTeamHistory__c` 어노테이션 검증.
  *
  * 단일 권위: docs/plan/old_source_260408/salesforce_object/전문행사조 이력(ProfessionalPromotionTeamHistory__c).md
+ * Group A + Reference R-2 + BaseEntity 상속 (Q1 옵션 1)
  */
-@DisplayName("ProfessionalPromotionTeamHistory SF 어노테이션 검증 (Spec #627)")
+@DisplayName("ProfessionalPromotionTeamHistory SF 어노테이션 검증 (Spec #727)")
 class ProfessionalPromotionTeamHistorySFAnnotationTest {
 
     @Nested
@@ -29,10 +30,10 @@ class ProfessionalPromotionTeamHistorySFAnnotationTest {
         }
 
         @Test
-        @DisplayName("매핑 키 수 = 4")
+        @DisplayName("매핑 키 수 = 9 (4 Custom + R-2 3 + BaseEntity 2)")
         fun mappingKeySize() {
             val mapping = SFSchemaUtils.getSFMapping(ProfessionalPromotionTeamHistory::class.java)
-            assertThat(mapping).hasSize(4)
+            assertThat(mapping).hasSize(9)
         }
     }
 
@@ -63,18 +64,29 @@ class ProfessionalPromotionTeamHistorySFAnnotationTest {
     }
 
     @Nested
-    @DisplayName("AC1 — @SFField 매핑 키셋 (4개)")
+    @DisplayName("AC1 — @SFField 매핑 키셋")
     inner class SfFieldMapping {
 
         private val mapping = SFSchemaUtils.getSFMapping(ProfessionalPromotionTeamHistory::class.java)
 
         @Test
-        @DisplayName("4개 SF API Name → 컬럼명 1:1")
+        @DisplayName("Custom 필드 → 컬럼명 1:1")
         fun mappingValues() {
             assertThat(mapping["EmployeeId__c"]).isEqualTo("employee_sfid")
             assertThat(mapping["oldValue__c"]).isEqualTo("old_value")
             assertThat(mapping["newValue__c"]).isEqualTo("new_value")
             assertThat(mapping["updateTime__c"]).isEqualTo("changed_at")
+        }
+
+        @Test
+        @DisplayName("매핑 키셋 정확히 일치 (Group A R-2 + BaseEntity 포함)")
+        fun mappingKeysExact() {
+            assertThat(mapping.keys)
+                .containsExactlyInAnyOrder(
+                    "EmployeeId__c", "oldValue__c", "newValue__c", "updateTime__c",
+                    "OwnerId", "CreatedById", "LastModifiedById",
+                    "CreatedDate", "LastModifiedDate"
+                )
         }
     }
 }

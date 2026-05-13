@@ -35,15 +35,22 @@ class DisplayWorkScheduleSFAnnotationTest {
     }
 
     @Nested
-    @DisplayName("AC2 — @SFField 매핑 키셋 (13개)")
+    @DisplayName("AC2 — @SFField 매핑 키셋 (Spec #732 — Group A R-2 추가)")
     inner class SfFieldMapping {
 
         private val mapping = SFSchemaUtils.getSFMapping(DisplayWorkSchedule::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 15 (12 기존 + 1 누락 매핑 보강 + BaseEntity 2)")
+        @DisplayName("매핑 키 수 = 17 (12 기존 + 1 누락 매핑 + BaseEntity 2 + Spec #732 R-2 CreatedBy/LastModifiedBy 2)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(15)
+            assertThat(mapping).hasSize(17)
+        }
+
+        @Test
+        @DisplayName("Spec #732 — Group A R-2 (CreatedById/LastModifiedById) 매핑 포함")
+        fun spec732R2Mapping() {
+            assertThat(mapping["CreatedById"]).isEqualTo("created_by_sfid")
+            assertThat(mapping["LastModifiedById"]).isEqualTo("last_modified_by_sfid")
         }
 
         @Test
