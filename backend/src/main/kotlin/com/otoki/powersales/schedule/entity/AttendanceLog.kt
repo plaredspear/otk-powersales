@@ -7,6 +7,7 @@ import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.schedule.entity.converter.SecondWorkTypeConverter
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
@@ -58,7 +59,8 @@ class AttendanceLog(
     @SFField("DKRetail__SecondWorkType__c")
     @HCColumn("dkretail__secondworktype__c")
     @Column(name = "second_work_type", length = 255)
-    val secondWorkType: String? = null,
+    @Convert(converter = SecondWorkTypeConverter::class)
+    val secondWorkType: SecondWorkType? = null,
 
     @SFField("DKRetail__Reason__c")
     @HCColumn("dkretail__reason__c")

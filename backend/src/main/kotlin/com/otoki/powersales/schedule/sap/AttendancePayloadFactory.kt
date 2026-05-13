@@ -32,7 +32,7 @@ class AttendancePayloadFactory {
             WorkingCategory1 = row.workingCategory1,
             WorkingCategory2 = row.workingCategory2,
             WorkingCategory3 = row.workingCategory3,
-            WorkingCategory4 = if (isYesterdayCorrection) row.secondWorkType else null
+            WorkingCategory4 = if (isYesterdayCorrection) row.secondWorkType?.displayName else null
         )
     }
 

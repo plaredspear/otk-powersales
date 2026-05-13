@@ -36,7 +36,7 @@ data class MobilePromotionListItem(
             accountName = accountName,
             startDate = promotion.startDate,
             endDate = promotion.endDate,
-            standLocation = promotion.standLocation,
+            standLocation = promotion.standLocation?.displayName,
             isClosed = promotion.isClosed,
             myScheduleDate = myScheduleDate
         )
@@ -78,8 +78,8 @@ data class MobilePromotionDetailResponse(
             primaryProductName = primaryProductName,
             otherProduct = promotion.otherProduct,
             message = promotion.message,
-            standLocation = promotion.standLocation,
-            productType = promotion.productType,
+            standLocation = promotion.standLocation?.displayName,
+            productType = promotion.productType?.displayName,
             isClosed = promotion.isClosed,
             remark = promotion.remark,
             employees = employees

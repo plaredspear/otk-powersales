@@ -41,7 +41,8 @@ class Notice(
     @SFField("DKRetail__Scope__c")
     @HCColumn("dkretail__scope__c")
     @Column(name = "scope", length = 255)
-    val scope: String? = null,
+    @Convert(converter = NoticeScopeConverter::class)
+    val scope: NoticeScope? = null,
 
     @SFField("DKRetail__Category__c")
     @HCColumn("dkretail__category__c")
