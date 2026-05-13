@@ -41,15 +41,15 @@ class NoticeSFAnnotationTest {
         private val mapping = SFSchemaUtils.getSFMapping(Notice::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 11 (7 기존 + 1 누락 보강 + 1 신규 + BaseEntity 2)")
+        @DisplayName("매핑 키 수 = 14 (EduCategory 제거 — Spec #745 Q2: E분류 컬럼 제거)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(15)
+            assertThat(mapping).hasSize(14)
         }
 
         @Test
-        @DisplayName("§6.2 — 누락 매핑 1개 신규 부착: DKRetail__EduCategory__c → edu_category")
-        fun section62MissingMapping() {
-            assertThat(mapping["DKRetail__EduCategory__c"]).isEqualTo("edu_category")
+        @DisplayName("§6.2 — DKRetail__EduCategory__c (Label=\"사용안함\") 매핑 제거")
+        fun section62EduCategoryRemoved() {
+            assertThat(mapping["DKRetail__EduCategory__c"]).isNull()
         }
 
         @Test
