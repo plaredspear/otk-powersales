@@ -50,7 +50,10 @@ class AlternativeHolidayRepositoryCustomImpl(
     }
 
     private fun buildStatusCondition(status: String?) =
-        status?.let { alternativeHoliday.status.eq(it) }
+        status?.let {
+            com.otoki.powersales.leave.entity.AltHolidayStatus.fromDisplayNameOrNull(it)
+                ?.let { altStatus -> alternativeHoliday.status.eq(altStatus) }
+        }
 
     private fun buildEmployeeNumberCondition(employeeCode: String?) =
         employeeCode?.let { employee.employeeCode.eq(it) }

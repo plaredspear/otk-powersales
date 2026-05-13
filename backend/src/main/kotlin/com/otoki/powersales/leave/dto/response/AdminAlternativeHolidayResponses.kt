@@ -1,5 +1,6 @@
 package com.otoki.powersales.leave.dto.response
 
+import com.otoki.powersales.leave.entity.AltHolidayStatus
 import com.otoki.powersales.leave.entity.AlternativeHoliday
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -12,7 +13,7 @@ data class AlternativeHolidayListItem(
     val actualWorkDate: LocalDate,
     val targetAltHolidayDate: LocalDate,
     val confirmAltHolidayDate: LocalDate?,
-    val status: String,
+    val status: AltHolidayStatus,
     val changeReason: String?,
     val createdBy: String,
     val createdAt: LocalDateTime
@@ -26,7 +27,7 @@ data class AlternativeHolidayCreateResponse(
         fun from(entity: AlternativeHoliday): AlternativeHolidayCreateResponse =
             AlternativeHolidayCreateResponse(
                 id = entity.id,
-                status = entity.status
+                status = entity.status.displayName
             )
     }
 }
@@ -40,7 +41,7 @@ data class AlternativeHolidayApproveResponse(
         fun from(entity: AlternativeHoliday): AlternativeHolidayApproveResponse =
             AlternativeHolidayApproveResponse(
                 id = entity.id,
-                status = entity.status,
+                status = entity.status.displayName,
                 confirmAltHolidayDate = entity.confirmAltHolidayDate
             )
     }
@@ -54,7 +55,7 @@ data class AlternativeHolidayRejectResponse(
         fun from(entity: AlternativeHoliday): AlternativeHolidayRejectResponse =
             AlternativeHolidayRejectResponse(
                 id = entity.id,
-                status = entity.status
+                status = entity.status.displayName
             )
     }
 }
