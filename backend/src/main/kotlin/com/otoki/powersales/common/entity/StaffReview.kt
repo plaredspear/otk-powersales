@@ -1,18 +1,19 @@
 package com.otoki.powersales.common.entity
 
+import com.otoki.powersales.common.entity.converter.WorkingCategory1Converter
+import com.otoki.powersales.common.entity.converter.WorkingCategory2Converter
+import com.otoki.powersales.common.entity.converter.WorkingCategory3Converter
 import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Employee
 import jakarta.persistence.*
-import org.springframework.data.annotation.CreatedDate
-import org.springframework.data.annotation.LastModifiedDate
 import java.time.LocalDate
-import java.time.LocalDateTime
+
 /**
  * 직원 평가 Entity
- * V1 스키마: staffreview__c (Heroku Connect 동기화)
+ * Salesforce StaffReview__c (사원평가) — Spec #711 SF Object 정합 (Group A + Reference R-2).
  */
 @Entity
 @Table(name = "staff_review")
@@ -114,18 +115,21 @@ class StaffReview(
 
     @SFField("DKRetail_WorkingCategory1__c")
     @HCColumn("dkretail_workingcategory1__c")
+    @Convert(converter = WorkingCategory1Converter::class)
     @Column(name = "working_category1", length = 255)
-    val workingCategory1: String? = null,
+    val workingCategory1: WorkingCategory1? = null,
 
     @SFField("DKRetail_WorkingCategory2__c")
     @HCColumn("dkretail_workingcategory2__c")
+    @Convert(converter = WorkingCategory2Converter::class)
     @Column(name = "working_category2", length = 255)
-    val workingCategory2: String? = null,
+    val workingCategory2: WorkingCategory2? = null,
 
     @SFField("DKRetail_WorkingCategory3__c")
     @HCColumn("dkretail_workingcategory3__c")
+    @Convert(converter = WorkingCategory3Converter::class)
     @Column(name = "working_category3", length = 255)
-    val workingCategory3: String? = null,
+    val workingCategory3: WorkingCategory3? = null,
 
     @SFField("JobCode__c")
     @HCColumn("jobcode__c")
@@ -137,22 +141,38 @@ class StaffReview(
     @Column(name = "first_day_of_month")
     val firstDayOfMonth: LocalDate? = null,
 
+    // -- Spec #711: Group A — IsDeleted --
+    @SFField("IsDeleted")
     @HCColumn("isdeleted")
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 
-    @HCColumn("createddate")
-    @CreatedDate
-    @Column(name = "created_at", nullable = false, updatable = false)
-    var createdAt: LocalDateTime = LocalDateTime.now(),
+    // -- Spec #711: Group A — CreatedById / LastModifiedById (R-2 패턴) --
+    // *_sfid: SF User Id buffer (Heroku Connect / SalesforceMigrationTool 이 채움).
+    // *_by: SalesforceMigrationTool 이 SF User → Employee 매핑으로 채우는 FK.
 
-    @HCColumn("systemmodstamp")
-    @LastModifiedDate
-    @Column(name = "updated_at", nullable = false)
-    var updatedAt: LocalDateTime = LocalDateTime.now(),
+    @SFField("CreatedById")
+    @HCColumn("createdbyid")
+    @Column(name = "created_by_sfid", length = 18)
+    var createdBySfid: String? = null,
+
+    @SFField("LastModifiedById")
+    @HCColumn("lastmodifiedbyid")
+    @Column(name = "last_modified_by_sfid", length = 18)
+    var lastModifiedBySfid: String? = null,
 
     // -- Relations --
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "employee_id", insertable = false, updatable = false)
-    val employee: Employee? = null
-) : AuditedEntity()
+    val employee: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_id")
+    var createdBy: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "last_modified_by_id")
+    var lastModifiedBy: Employee? = null
+
+) : BaseEntity()
