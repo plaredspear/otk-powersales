@@ -122,15 +122,16 @@ class ProductUpsertServiceTest {
         }
 
         @Test
-        @DisplayName("StoreCondition 매핑 - storageCondition 컬럼에 저장")
+        @DisplayName("StoreCondition 매핑 - storageCondition 컬럼에 enum 변환 저장")
         fun upsert_storeConditionMapping() {
             whenever(productRepository.findByProductCodeIn(listOf("100100"))).thenReturn(emptyList())
 
-            service.upsert(listOf(command(storeCondition = "냉장보관")))
+            service.upsert(listOf(command(storeCondition = "냉장")))
 
             val captor = argumentCaptor<List<Product>>()
             verify(productRepository).saveAll(captor.capture())
-            assertThat(captor.firstValue.single().storageCondition).isEqualTo("냉장보관")
+            assertThat(captor.firstValue.single().storageCondition)
+                .isEqualTo(com.otoki.powersales.product.entity.StorageCondition.REFRIGERATED)
         }
 
         @Test

@@ -255,7 +255,7 @@ class ProductRepositoryTest {
             name = productName,
             productCode = productCode,
             logisticsBarcode = logisticsBarcode,
-            storageCondition = "상온",
+            storageCondition = com.otoki.powersales.product.entity.StorageCondition.ROOM_TEMP,
             shelfLife = "7개월",
             category1 = category1,
             category2 = category2

@@ -228,7 +228,7 @@ class AdminProductServiceTest {
         category3 = category3,
         standardUnitPrice = standardUnitPrice,
         unit = unit,
-        storageCondition = storageCondition,
+        storageCondition = com.otoki.powersales.product.entity.StorageCondition.fromDisplayNameOrNull(storageCondition),
         productStatus = productStatus,
         launchDate = launchDate
     )

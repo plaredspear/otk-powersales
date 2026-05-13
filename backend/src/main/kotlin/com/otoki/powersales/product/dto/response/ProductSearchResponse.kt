@@ -20,7 +20,7 @@ data class ProductDto(
                 productCode = product.productCode,
                 productName = product.name,
                 logisticsBarcode = product.logisticsBarcode,
-                storageCondition = product.storageCondition,
+                storageCondition = product.storageCondition?.displayName,
                 shelfLife = product.shelfLife,
                 category1 = product.category1,
                 category2 = product.category2

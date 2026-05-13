@@ -33,7 +33,7 @@ data class ProductListItem(
             category3 = product.category3,
             standardUnitPrice = product.standardUnitPrice,
             unit = product.unit,
-            storageCondition = product.storageCondition,
+            storageCondition = product.storageCondition?.displayName,
             productStatus = product.productStatus,
             launchDate = product.launchDate?.toString()
         )
