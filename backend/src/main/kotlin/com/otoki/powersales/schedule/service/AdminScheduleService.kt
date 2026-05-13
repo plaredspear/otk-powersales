@@ -13,6 +13,10 @@ import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.organization.repository.OrganizationRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
+import com.otoki.powersales.schedule.entity.SecondWorkType
+import com.otoki.powersales.schedule.entity.TypeOfWork1
+import com.otoki.powersales.schedule.entity.TypeOfWork3
+import com.otoki.powersales.schedule.entity.TypeOfWork5
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import org.springframework.data.domain.Page
@@ -214,10 +218,10 @@ class AdminScheduleService(
             DisplayWorkSchedule(
                 employee = employeeMap[row.userId],
                 account = accountMap[row.accountId],
-                typeOfWork1 = "진열",
-                typeOfWork3 = row.typeOfWork3,
-                typeOfWork4 = row.typeOfWork4,
-                typeOfWork5 = row.typeOfWork5,
+                typeOfWork1 = TypeOfWork1.DISPLAY,
+                typeOfWork3 = TypeOfWork3.fromDisplayNameOrNull(row.typeOfWork3),
+                typeOfWork4 = SecondWorkType.fromDisplayNameOrNull(row.typeOfWork4),
+                typeOfWork5 = TypeOfWork5.fromDisplayNameOrNull(row.typeOfWork5),
                 startDate = row.startDate,
                 endDate = row.endDate,
                 confirmed = false,
@@ -263,9 +267,9 @@ class AdminScheduleService(
                 employeeName = schedule.employee?.name ?: "",
                 accountCode = schedule.account?.externalKey,
                 accountName = schedule.account?.name,
-                typeOfWork3 = schedule.typeOfWork3,
-                typeOfWork4 = schedule.typeOfWork4,
-                typeOfWork5 = schedule.typeOfWork5,
+                typeOfWork3 = schedule.typeOfWork3?.displayName,
+                typeOfWork4 = schedule.typeOfWork4?.displayName,
+                typeOfWork5 = schedule.typeOfWork5?.displayName,
                 startDate = schedule.startDate,
                 endDate = schedule.endDate,
                 confirmed = schedule.confirmed,

@@ -3,6 +3,8 @@ package com.otoki.powersales.schedule.service
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
+import com.otoki.powersales.schedule.entity.TypeOfWork3
+import com.otoki.powersales.schedule.entity.TypeOfWork5
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -424,8 +426,8 @@ class ScheduleUploadValidatorTest {
                     account = Account(id = 1),
                     startDate = LocalDate.of(2026, 3, 1),
                     endDate = LocalDate.of(2026, 5, 1),
-                    typeOfWork3 = "순회",
-                    typeOfWork5 = "상시"
+                    typeOfWork3 = TypeOfWork3.ROTATION,
+                    typeOfWork5 = TypeOfWork5.REGULAR
                 )
             )
             val rows = listOf(
@@ -472,8 +474,8 @@ class ScheduleUploadValidatorTest {
                     account = Account(id = 2),
                     startDate = LocalDate.of(2026, 3, 1),
                     endDate = LocalDate.of(2026, 5, 1),
-                    typeOfWork3 = "고정",
-                    typeOfWork5 = "상시"
+                    typeOfWork3 = TypeOfWork3.FIXED,
+                    typeOfWork5 = TypeOfWork5.REGULAR
                 )
             )
             val rows = listOf(
@@ -495,8 +497,8 @@ class ScheduleUploadValidatorTest {
         @DisplayName("격고 2개 존재 시 추가 불가 - 에러")
         fun c2_alternateLimit() {
             val existingSchedules = listOf(
-                DisplayWorkSchedule(employee = Employee(id = 1L, employeeCode = "20030001", name = "테스트"), account = Account(id = 101), startDate = LocalDate.of(2026, 3, 1), endDate = LocalDate.of(2026, 5, 1), typeOfWork3 = "격고", typeOfWork5 = "상시"),
-                DisplayWorkSchedule(employee = Employee(id = 1L, employeeCode = "20030001", name = "테스트"), account = Account(id = 102), startDate = LocalDate.of(2026, 3, 1), endDate = LocalDate.of(2026, 5, 1), typeOfWork3 = "격고", typeOfWork5 = "상시")
+                DisplayWorkSchedule(employee = Employee(id = 1L, employeeCode = "20030001", name = "테스트"), account = Account(id = 101), startDate = LocalDate.of(2026, 3, 1), endDate = LocalDate.of(2026, 5, 1), typeOfWork3 = TypeOfWork3.GAP, typeOfWork5 = TypeOfWork5.REGULAR),
+                DisplayWorkSchedule(employee = Employee(id = 1L, employeeCode = "20030001", name = "테스트"), account = Account(id = 102), startDate = LocalDate.of(2026, 3, 1), endDate = LocalDate.of(2026, 5, 1), typeOfWork3 = TypeOfWork3.GAP, typeOfWork5 = TypeOfWork5.REGULAR)
             )
             val rows = listOf(
                 createParsedRow(4, "20030001", "홍길동", "ACC001", null, "격고", "상온", "상시", "2026-04-01", "2026-04-30")
@@ -517,8 +519,8 @@ class ScheduleUploadValidatorTest {
         @DisplayName("순회+격고1 존재, 격고 추가 - 에러")
         fun c2a_patrolAndAlternateExist_alternateBlocked() {
             val existingSchedules = listOf(
-                DisplayWorkSchedule(employee = Employee(id = 1L, employeeCode = "20030001", name = "테스트"), account = Account(id = 101), startDate = LocalDate.of(2026, 3, 1), endDate = LocalDate.of(2026, 5, 1), typeOfWork3 = "순회", typeOfWork5 = "상시"),
-                DisplayWorkSchedule(employee = Employee(id = 1L, employeeCode = "20030001", name = "테스트"), account = Account(id = 102), startDate = LocalDate.of(2026, 3, 1), endDate = LocalDate.of(2026, 5, 1), typeOfWork3 = "격고", typeOfWork5 = "상시")
+                DisplayWorkSchedule(employee = Employee(id = 1L, employeeCode = "20030001", name = "테스트"), account = Account(id = 101), startDate = LocalDate.of(2026, 3, 1), endDate = LocalDate.of(2026, 5, 1), typeOfWork3 = TypeOfWork3.ROTATION, typeOfWork5 = TypeOfWork5.REGULAR),
+                DisplayWorkSchedule(employee = Employee(id = 1L, employeeCode = "20030001", name = "테스트"), account = Account(id = 102), startDate = LocalDate.of(2026, 3, 1), endDate = LocalDate.of(2026, 5, 1), typeOfWork3 = TypeOfWork3.GAP, typeOfWork5 = TypeOfWork5.REGULAR)
             )
             val rows = listOf(
                 createParsedRow(4, "20030001", "홍길동", "ACC001", null, "격고", "상온", "상시", "2026-04-01", "2026-04-30")
@@ -534,7 +536,7 @@ class ScheduleUploadValidatorTest {
         @DisplayName("순회만 존재, 격고 추가 - 성공")
         fun c2a_patrolOnly_alternateAllowed() {
             val existingSchedules = listOf(
-                DisplayWorkSchedule(employee = Employee(id = 1L, employeeCode = "20030001", name = "테스트"), account = Account(id = 101), startDate = LocalDate.of(2026, 3, 1), endDate = LocalDate.of(2026, 5, 1), typeOfWork3 = "순회", typeOfWork5 = "상시")
+                DisplayWorkSchedule(employee = Employee(id = 1L, employeeCode = "20030001", name = "테스트"), account = Account(id = 101), startDate = LocalDate.of(2026, 3, 1), endDate = LocalDate.of(2026, 5, 1), typeOfWork3 = TypeOfWork3.ROTATION, typeOfWork5 = TypeOfWork5.REGULAR)
             )
             val rows = listOf(
                 createParsedRow(4, "20030001", "홍길동", "ACC001", null, "격고", "상온", "상시", "2026-04-01", "2026-04-30")
@@ -549,7 +551,7 @@ class ScheduleUploadValidatorTest {
         @DisplayName("격고1만 존재(순회 없음), 격고 추가 - 성공 (격고 2건 이내)")
         fun c2a_alternateOnly_secondAlternateAllowed() {
             val existingSchedules = listOf(
-                DisplayWorkSchedule(employee = Employee(id = 1L, employeeCode = "20030001", name = "테스트"), account = Account(id = 101), startDate = LocalDate.of(2026, 3, 1), endDate = LocalDate.of(2026, 5, 1), typeOfWork3 = "격고", typeOfWork5 = "상시")
+                DisplayWorkSchedule(employee = Employee(id = 1L, employeeCode = "20030001", name = "테스트"), account = Account(id = 101), startDate = LocalDate.of(2026, 3, 1), endDate = LocalDate.of(2026, 5, 1), typeOfWork3 = TypeOfWork3.GAP, typeOfWork5 = TypeOfWork5.REGULAR)
             )
             val rows = listOf(
                 createParsedRow(4, "20030001", "홍길동", "ACC001", null, "격고", "상온", "상시", "2026-04-01", "2026-04-30")
@@ -588,7 +590,7 @@ class ScheduleUploadValidatorTest {
         @DisplayName("임시 1개 존재 시 추가 불가 - 에러")
         fun c3_tempLimit() {
             val existingSchedules = listOf(
-                DisplayWorkSchedule(employee = Employee(id = 1L, employeeCode = "20030001", name = "테스트"), account = Account(id = 101), startDate = LocalDate.of(2026, 3, 1), endDate = LocalDate.of(2026, 5, 1), typeOfWork3 = "순회", typeOfWork5 = "임시")
+                DisplayWorkSchedule(employee = Employee(id = 1L, employeeCode = "20030001", name = "테스트"), account = Account(id = 101), startDate = LocalDate.of(2026, 3, 1), endDate = LocalDate.of(2026, 5, 1), typeOfWork3 = TypeOfWork3.ROTATION, typeOfWork5 = TypeOfWork5.TEMPORARY)
             )
             val rows = listOf(
                 createParsedRow(4, "20030001", "홍길동", "ACC001", null, "순회", "상온", "임시", "2026-04-01", "2026-04-30")

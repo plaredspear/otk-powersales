@@ -128,7 +128,7 @@ class MyScheduleService(
             DisplayWorkScheduleItemDto(
                 accountId = 0L,  // V1: account(String sfid)로 변경됨, DTO Long 타입 유지
                 accountName = "",  // V1에서 accountName 삭제됨
-                workType1 = schedule.typeOfWork1 ?: "",
+                workType1 = schedule.typeOfWork1?.displayName ?: "",
                 workType2 = "",
                 workType3 = "",
                 isRegistered = false  // Phase2: attendance 비활성화
@@ -138,7 +138,7 @@ class MyScheduleService(
         // 보고 진행 상황 계산
         val completed = accountItems.count { it.isRegistered }
         val total = accountItems.size
-        val workType = schedules.firstOrNull()?.typeOfWork1 ?: ""
+        val workType = schedules.firstOrNull()?.typeOfWork1?.displayName ?: ""
 
         return DailyScheduleResponse(
             date = date.toString(),

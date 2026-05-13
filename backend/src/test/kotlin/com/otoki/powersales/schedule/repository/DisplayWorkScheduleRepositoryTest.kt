@@ -3,6 +3,7 @@ package com.otoki.powersales.schedule.repository
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
+import com.otoki.powersales.schedule.entity.TypeOfWork1
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -80,7 +81,7 @@ class DisplayWorkScheduleRepositoryTest {
     @DisplayName("findByEmployeeAndAccountAndStartDate - 스케줄 조회 성공")
     fun findByEmployeeAndAccountAndStartDate_found() {
         // Given
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, typeOfWork1 = "진열"))
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, typeOfWork1 = TypeOfWork1.DISPLAY))
         testEntityManager.clear()
 
         // When
@@ -88,7 +89,7 @@ class DisplayWorkScheduleRepositoryTest {
 
         // Then
         assertThat(result).isNotNull
-        assertThat(result!!.typeOfWork1).isEqualTo("진열")
+        assertThat(result!!.typeOfWork1).isEqualTo(TypeOfWork1.DISPLAY)
     }
 
     @Test
@@ -304,7 +305,7 @@ class DisplayWorkScheduleRepositoryTest {
 
     private fun createDisplayWorkSchedule(
         account: Account = testAccount1,
-        typeOfWork1: String = "진열",
+        typeOfWork1: TypeOfWork1? = TypeOfWork1.DISPLAY,
         startDate: LocalDate = today
     ): DisplayWorkSchedule {
         return DisplayWorkSchedule(

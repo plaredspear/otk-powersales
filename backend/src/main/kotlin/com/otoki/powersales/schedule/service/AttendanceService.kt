@@ -116,8 +116,8 @@ class AttendanceService(
                 accountName = accountName,
                 accountTypeCode = account.abcTypeCode,
                 workCategory = "진열",
-                workCategory2 = master.typeOfWork5,
-                workCategory3 = master.typeOfWork3,
+                workCategory2 = master.typeOfWork5?.displayName,
+                workCategory3 = master.typeOfWork3?.displayName,
                 address = account.address1,
                 latitude = account.latitude?.toDoubleOrNull(),
                 longitude = account.longitude?.toDoubleOrNull(),
@@ -420,7 +420,7 @@ class AttendanceService(
         // step 4: 중복 검증 — 동일 사원+거래처+오늘 일정이 있으면 그 row 재사용 (기존 정책 유지).
         // 단, 다른 거래처에서 동일 working_category3 로 이미 등록된 일정이 있으면 거부 (Spec #587 P1-B Q6).
         val existing = teamMemberScheduleRepository.findByEmployeeAndAccountAndWorkingDate(employee, account, today)
-        val masterTypeOfWork3 = master.typeOfWork3
+        val masterTypeOfWork3 = master.typeOfWork3?.displayName
         if (existing == null && !masterTypeOfWork3.isNullOrBlank()) {
             val duplicateInOtherAccount = teamMemberScheduleRepository
                 .existsByEmployeeAndWorkingDateAndWorkingCategory3(employee, today, masterTypeOfWork3)
@@ -440,8 +440,8 @@ class AttendanceService(
             workingDate = today,
             workingType = "근무",
             workingCategory1 = "진열",
-            workingCategory2 = mapTypeOfWork5ToCategory2(master.typeOfWork5),
-            workingCategory3 = master.typeOfWork3,
+            workingCategory2 = mapTypeOfWork5ToCategory2(master.typeOfWork5?.displayName),
+            workingCategory3 = master.typeOfWork3?.displayName,
             teamLeader = teamLeader,
             displayWorkSchedule = master,
         )

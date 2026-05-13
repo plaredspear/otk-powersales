@@ -261,9 +261,9 @@ class MyScheduleServiceTest {
             val date = LocalDate.of(2020, 8, 4)
             val mockUser = createMockEmployee(userId, "최금주", "20030117", sfid = "a0B000000012345")
             val mockSchedules = listOf(
-                createMockSchedule(typeOfWork1 = "진열", startDate = date),
-                createMockSchedule(typeOfWork1 = "진열", startDate = date),
-                createMockSchedule(typeOfWork1 = "진열", startDate = date)
+                createMockSchedule(typeOfWork1 = TypeOfWork1.DISPLAY, startDate = date),
+                createMockSchedule(typeOfWork1 = TypeOfWork1.DISPLAY, startDate = date),
+                createMockSchedule(typeOfWork1 = TypeOfWork1.DISPLAY, startDate = date)
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(mockUser))
@@ -402,7 +402,7 @@ class MyScheduleServiceTest {
 
     private fun createMockSchedule(
         id: Long = 0,
-        typeOfWork1: String = "진열",
+        typeOfWork1: TypeOfWork1? = TypeOfWork1.DISPLAY,
         startDate: LocalDate = LocalDate.now()
     ): DisplayWorkSchedule {
         return DisplayWorkSchedule(

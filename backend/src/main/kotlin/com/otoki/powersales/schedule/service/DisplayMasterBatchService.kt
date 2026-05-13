@@ -69,8 +69,8 @@ class DisplayMasterBatchService(
             displayWorkScheduleId = id,
             employeeCode = employee?.employeeCode,
             accountExternalKey = account?.externalKey,
-            typeOfWork1 = typeOfWork1,
-            typeOfWork3 = typeOfWork3,
-            typeOfWork5 = typeOfWork5
+            typeOfWork1 = typeOfWork1?.displayName,
+            typeOfWork3 = typeOfWork3?.displayName,
+            typeOfWork5 = typeOfWork5?.displayName
         )
 }
