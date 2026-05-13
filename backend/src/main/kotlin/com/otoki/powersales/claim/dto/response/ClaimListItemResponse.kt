@@ -12,7 +12,7 @@ data class ClaimListItemResponse(
     val categoryLabel: String?,
     val subcategoryValue: String?,
     val subcategoryLabel: String?,
-    val defectQuantity: Int?,
+    val defectQuantity: Long?,
     val status: String,
     val statusLabel: String,
     val createdAt: LocalDateTime

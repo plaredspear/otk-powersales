@@ -89,7 +89,7 @@ class MonthlySalesHistory(
 
     @SFField("Externalkey__c")
     @HCColumn("externalkey__c")
-    @Column(name = "external_key", unique = true, length = 30)
+    @Column(name = "external_key", unique = true, length = 40)
     var externalkeyC: String? = null,
 
     // SAP 인바운드 적재 전용 (amounts[5]) — SF 메타 미매핑이라 @SFField 부재. 현재 소비처 0건.

@@ -27,7 +27,7 @@ class Promotion(
 
     @SFField("Name")
     @HCColumn("name")
-    @Column(name = "promotion_number", nullable = false, unique = true, length = 20)
+    @Column(name = "promotion_number", nullable = false, unique = true, length = 80)
     val promotionNumber: String,
 
 

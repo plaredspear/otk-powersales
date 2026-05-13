@@ -183,7 +183,7 @@ class ClaimRepositoryTest {
             category = testCategory1,
             subcategory = testSubcategory1,
             defectDescription = "벌레가 발견되었습니다",
-            defectQuantity = 2,
+            defectQuantity = 2L,
             status = ClaimStatus.DRAFT
         )
 
@@ -214,7 +214,7 @@ class ClaimRepositoryTest {
                 category = testCategory1,
                 subcategory = testSubcategory1,
                 defectDescription = "벌레 발견",
-                defectQuantity = 1,
+                defectQuantity = 1L,
                 status = ClaimStatus.DRAFT
             )
         )
@@ -233,7 +233,7 @@ class ClaimRepositoryTest {
                 category = testCategory1,
                 subcategory = testSubcategory2,
                 defectDescription = "금속 발견",
-                defectQuantity = 1,
+                defectQuantity = 1L,
                 status = ClaimStatus.DRAFT
             )
         )
@@ -251,7 +251,7 @@ class ClaimRepositoryTest {
                 category = testCategory1,
                 subcategory = testSubcategory1,
                 defectDescription = "변질",
-                defectQuantity = 1,
+                defectQuantity = 1L,
                 status = ClaimStatus.DRAFT
             )
         )
@@ -281,7 +281,7 @@ class ClaimRepositoryTest {
                 category = testCategory1,
                 subcategory = testSubcategory1,
                 defectDescription = "벌레 발견",
-                defectQuantity = 1,
+                defectQuantity = 1L,
                 status = ClaimStatus.DRAFT
             )
         )
@@ -300,7 +300,7 @@ class ClaimRepositoryTest {
                 category = testCategory1,
                 subcategory = testSubcategory2,
                 defectDescription = "금속 발견",
-                defectQuantity = 1,
+                defectQuantity = 1L,
                 status = ClaimStatus.DRAFT
             )
         )
@@ -318,7 +318,7 @@ class ClaimRepositoryTest {
                 category = testCategory1,
                 subcategory = testSubcategory1,
                 defectDescription = "변질",
-                defectQuantity = 1,
+                defectQuantity = 1L,
                 status = ClaimStatus.DRAFT
             )
         )

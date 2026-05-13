@@ -60,7 +60,7 @@ class Claim(
     val accountName: String,
 
     @SFField("DKRetail__ProductCode__c")
-    @Column(name = "product_code", nullable = false, length = 20)
+    @Column(name = "product_code", nullable = false, length = 1300)
     val productCode: String,
 
     @Column(name = "product_name", nullable = false, length = 200)
@@ -88,16 +88,16 @@ class Claim(
     val claimType2: ClaimType2,
 
     @SFField("DKRetail__Description__c")
-    @Column(name = "defect_description", nullable = false, length = 1000)
+    @Column(name = "defect_description", nullable = false, length = 4000)
     val defectDescription: String,
 
     @SFField("DKRetail__Quantity__c")
     @Column(name = "defect_quantity", nullable = false)
-    val defectQuantity: Int,
+    val defectQuantity: Long,
 
     @SFField("DKRetail__Amount__c")
     @Column(name = "purchase_amount")
-    val purchaseAmount: Int? = null,
+    val purchaseAmount: Long? = null,
 
     @SFField("DKRetail__PurchaseMethod__c")
     @Column(name = "purchase_method_code", length = 10)

@@ -202,7 +202,7 @@ class ClaimServiceTest {
         categoryId = 1L,
         subcategoryId = 1L,
         defectDescription = "불량입니다",
-        defectQuantity = 1
+        defectQuantity = 1L
     )
 
     private fun createRequestWithPurchase() = ClaimCreateRequest(
@@ -213,8 +213,8 @@ class ClaimServiceTest {
         categoryId = 1L,
         subcategoryId = 1L,
         defectDescription = "불량입니다",
-        defectQuantity = 1,
-        purchaseAmount = 10000,
+        defectQuantity = 1L,
+        purchaseAmount = 10000L,
         purchaseMethodCode = "PM01"
     )
 
