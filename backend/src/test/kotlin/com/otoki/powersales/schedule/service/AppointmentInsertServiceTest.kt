@@ -18,6 +18,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.time.LocalDate
 
 @ExtendWith(MockitoExtension::class)
 @DisplayName("AppointmentInsertService 테스트")
@@ -82,7 +83,7 @@ class AppointmentInsertServiceTest {
             val saved = captor.firstValue.single()
             assertThat(saved.employeeCode).isEqualTo("100123")
             assertThat(saved.empCodeExist).isTrue()
-            assertThat(saved.appointDate).isEqualTo("20260401")
+            assertThat(saved.appointDate).isEqualTo(LocalDate.of(2026, 4, 1))
             assertThat(saved.afterOrgCode).isEqualTo("11110")
             assertThat(saved.jobCode).isEqualTo("J001")
             assertThat(result.successCount).isEqualTo(1)

@@ -12,7 +12,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 
 @Service
 @Transactional(readOnly = true)
@@ -35,7 +34,6 @@ class AppointmentUserProfileUpdater(
             "workType" to "H10050",
             "jobCode" to "H10060"
         )
-        private val DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd")
     }
 
     @Transactional
@@ -69,12 +67,7 @@ class AppointmentUserProfileUpdater(
                     continue
                 }
 
-                val appointDate = parseAppointDate(appointment.appointDate)
-                if (appointDate == null) {
-                    log.warn("발령일 파싱 실패: employeeCode={}, appointDate={}", appointment.employeeCode, appointment.appointDate)
-                    skippedCount++
-                    continue
-                }
+                val appointDate = appointment.appointDate
 
                 if (appointDate.isAfter(today)) {
                     applyReservedAppointment(employee, appointment, appointDate, codeMap)
@@ -166,14 +159,5 @@ class AppointmentUserProfileUpdater(
         val groupCodes = CODE_GROUP_MAP.values.toList()
         val codes = systemCodeMasterRepository.findByGroupCodeIn(groupCodes)
         return codes.associate { "${it.groupCode}:${it.detailCode}" to (it.detailCodeName ?: it.detailCode) }
-    }
-
-    internal fun parseAppointDate(appointDate: String?): LocalDate? {
-        if (appointDate == null) return null
-        return try {
-            LocalDate.parse(appointDate, DATE_FORMATTER)
-        } catch (e: Exception) {
-            null
-        }
     }
 }

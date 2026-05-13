@@ -71,7 +71,8 @@ class AppointmentInsertService(
                 failures += AppointmentInsertFailedRow(employeeCode, "AppointDate 필수")
                 return@forEach
             }
-            if (!isValidYyyymmdd(appointDate)) {
+            val parsedAppointDate = parseYyyymmdd(appointDate)
+            if (parsedAppointDate == null) {
                 failures += AppointmentInsertFailedRow(employeeCode + appointDate, "AppointDate YYYYMMDD 형식 오류: $appointDate")
                 return@forEach
             }
@@ -89,7 +90,7 @@ class AppointmentInsertService(
                 jobCode = jobCode,
                 workArea = command.workArea,
                 jikjong = command.jikjong,
-                appointDate = appointDate,
+                appointDate = parsedAppointDate,
                 jobName = command.jobName,
                 ordDetailCode = command.ordDetailCode,
                 ordDetailNode = command.ordDetailNode
@@ -110,11 +111,10 @@ class AppointmentInsertService(
         )
     }
 
-    private fun isValidYyyymmdd(value: String): Boolean = try {
+    private fun parseYyyymmdd(value: String): LocalDate? = try {
         LocalDate.parse(value, DATE_FORMAT)
-        true
     } catch (_: DateTimeParseException) {
-        false
+        null
     }
 
     companion object {

@@ -20,6 +20,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.time.LocalDate
 
 @ExtendWith(MockitoExtension::class)
 @DisplayName("SapAppointmentService 어댑터 테스트")
@@ -56,7 +57,7 @@ class SapAppointmentServiceTest {
         empCodeExist = true,
         afterOrgCode = "11110",
         jobCode = "J001",
-        appointDate = "20260401"
+        appointDate = LocalDate.of(2026, 4, 1)
     )
 
     @Nested

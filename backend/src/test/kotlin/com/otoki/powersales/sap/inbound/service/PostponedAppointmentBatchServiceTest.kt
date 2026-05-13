@@ -112,6 +112,6 @@ class PostponedAppointmentBatchServiceTest {
         afterOrgName = "테스트지점",
         jikchak = "D0052",
         jobCode = "A055",
-        appointDate = "20260320"
+        appointDate = LocalDate.of(2026, 3, 20)
     )
 }

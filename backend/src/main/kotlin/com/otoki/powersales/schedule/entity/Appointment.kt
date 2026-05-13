@@ -7,13 +7,14 @@ import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Employee
 import jakarta.persistence.*
+import java.time.LocalDate
 
 /**
  * 발령정보 Entity
  * Salesforce Appointment__c (발령정보) — Spec #736 SF Object 정합 (Group A R-2 + Custom 16 + 길이 정합).
  *
  * 컬럼명 mismatch (after_org_code ↔ OrgCode__c 등) 는 어노테이션만 매핑하고 컬럼명은 유지 (Q2 결정).
- * appoint_date 의 string ↔ date 타입 mismatch 는 SalesforceMigrationTool 의 date 변환에 위임 (Q3).
+ * appoint_date 는 SF `date` 타입과 자연 정합되도록 `LocalDate` + DB `DATE` 로 매핑 (Spec #736 Q3 결정 번복 — sf-meta-diff/Appointment__c.md §9 Q2 후속).
  */
 @Entity
 @Table(
@@ -103,8 +104,8 @@ class Appointment(
 
     @SFField("AppointmentDate__c")
     @HCColumn("appointmentdate__c")
-    @Column(name = "appoint_date", nullable = false, length = 8)
-    val appointDate: String,
+    @Column(name = "appoint_date", nullable = false)
+    val appointDate: LocalDate,
 
     @SFField("JobName__c")
     @HCColumn("jobname__c")
