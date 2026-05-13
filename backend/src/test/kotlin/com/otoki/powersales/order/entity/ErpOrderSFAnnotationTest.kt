@@ -38,7 +38,7 @@ class ErpOrderSFAnnotationTest {
         @Test
         @DisplayName("매핑 키 수 = 15 (기존 12 + AccountId__c 1 + BaseEntity 2)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(15)
+            assertThat(mapping).hasSize(18)
         }
 
         @Test

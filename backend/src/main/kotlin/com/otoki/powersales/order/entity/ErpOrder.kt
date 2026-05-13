@@ -2,12 +2,16 @@ package com.otoki.powersales.order.entity
 
 import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.SFField
+import com.otoki.powersales.common.salesforce.HCColumn
+import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFObject
+import com.otoki.powersales.employee.entity.Employee
 import jakarta.persistence.*
 
 @Entity
 @Table(name = "erp_order")
 @SFObject("ERP_Order__c")
+@HCTable("erp_order__c")
 class ErpOrder(
 
     @Id
@@ -68,5 +72,32 @@ class ErpOrder(
 
     @SFField("AccountId__c")
     @Column(name = "account_sfid", length = 18)
-    var accountSfid: String? = null
+    var accountSfid: String? = null,
+
+    @SFField("OwnerId")
+    @HCColumn("ownerid")
+    @Column(name = "owner_sfid", length = 18)
+    var ownerSfid: String? = null,
+
+    @SFField("CreatedById")
+    @HCColumn("createdbyid")
+    @Column(name = "created_by_sfid", length = 18)
+    var createdBySfid: String? = null,
+
+    @SFField("LastModifiedById")
+    @HCColumn("lastmodifiedbyid")
+    @Column(name = "last_modified_by_sfid", length = 18)
+    var lastModifiedBySfid: String? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id")
+    var owner: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_id")
+    var createdBy: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "last_modified_by_id")
+    var lastModifiedBy: Employee? = null,
 ) : BaseEntity()

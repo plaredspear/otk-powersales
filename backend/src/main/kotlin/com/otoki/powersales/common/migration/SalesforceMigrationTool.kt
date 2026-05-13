@@ -5,6 +5,11 @@ import com.otoki.powersales.common.entity.AgreementHistory
 import com.otoki.powersales.common.entity.UploadFile
 import com.otoki.powersales.leave.entity.AlternativeHoliday
 import com.otoki.powersales.leave.entity.HolidayMaster
+import com.otoki.powersales.notice.entity.Notice
+import com.otoki.powersales.order.entity.ErpOrder
+import com.otoki.powersales.order.entity.ErpOrderProduct
+import com.otoki.powersales.order.entity.OrderRequest
+import com.otoki.powersales.order.entity.OrderRequestProduct
 import com.otoki.powersales.product.entity.ProductBarcode
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamHistory
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamMaster
@@ -68,6 +73,13 @@ object SalesforceMigrationTool {
         // ── Agreement / Upload ──
         EntityRegistration("agreementHistory", AgreementHistory::class.java),
         EntityRegistration("uploadFile", UploadFile::class.java),
+
+        // ── Order / Notice ──
+        EntityRegistration("notice", Notice::class.java),
+        EntityRegistration("erpOrder", ErpOrder::class.java),
+        EntityRegistration("erpOrderProduct", ErpOrderProduct::class.java),
+        EntityRegistration("orderRequest", OrderRequest::class.java),
+        EntityRegistration("orderRequestProduct", OrderRequestProduct::class.java),
 
         // ── 출근현황 (Employee, Account 선행 적재 필요) ──
         EntityRegistration("attendanceLog", AttendanceLog::class.java),

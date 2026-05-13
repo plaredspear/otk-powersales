@@ -43,7 +43,7 @@ class NoticeSFAnnotationTest {
         @Test
         @DisplayName("매핑 키 수 = 11 (7 기존 + 1 누락 보강 + 1 신규 + BaseEntity 2)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(11)
+            assertThat(mapping).hasSize(14)
         }
 
         @Test

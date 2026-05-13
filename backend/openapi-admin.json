@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:52923",
+    "url" : "http://localhost:53216",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -4071,10 +4071,10 @@
           "remark" : {
             "type" : [ "string", "null" ]
           },
-          "deleted" : {
+          "closed" : {
             "type" : "boolean"
           },
-          "closed" : {
+          "deleted" : {
             "type" : "boolean"
           }
         }
@@ -7341,12 +7341,6 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
@@ -7356,6 +7350,12 @@
           },
           "last" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "size" : {
             "type" : "integer",
@@ -7379,22 +7379,22 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
+          },
           "pageSize" : {
             "type" : "integer",
             "format" : "int32"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "paged" : {
+            "type" : "boolean"
+          },
+          "unpaged" : {
             "type" : "boolean"
           },
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "unpaged" : {
-            "type" : "boolean"
           },
           "offset" : {
             "type" : "integer",
@@ -7453,10 +7453,10 @@
       "SortObject" : {
         "type" : "object",
         "properties" : {
-          "unsorted" : {
+          "sorted" : {
             "type" : "boolean"
           },
-          "sorted" : {
+          "unsorted" : {
             "type" : "boolean"
           },
           "empty" : {
@@ -7677,10 +7677,10 @@
           "remark" : {
             "type" : [ "string", "null" ]
           },
-          "deleted" : {
+          "closed" : {
             "type" : "boolean"
           },
-          "closed" : {
+          "deleted" : {
             "type" : "boolean"
           }
         }
