@@ -1,5 +1,6 @@
 package com.otoki.powersales.leave.service
 
+import com.otoki.powersales.common.entity.WorkingType
 import com.otoki.powersales.leave.dto.request.AlternativeHolidayApproveRequest
 import com.otoki.powersales.leave.dto.request.AlternativeHolidayCreateRequest
 import com.otoki.powersales.leave.dto.request.AlternativeHolidayRejectRequest
@@ -95,7 +96,7 @@ class AdminAlternativeHolidayService(
             TeamMemberSchedule(
                 employee = employee,
                 workingDate = confirmDate,
-                workingType = "대휴",
+                workingType = WorkingType.ALT_HOLIDAY,
                 altHoliday = altHoliday
             )
         )

@@ -2,6 +2,10 @@ package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.common.entity.WorkingCategory1
+import com.otoki.powersales.common.entity.WorkingCategory2
+import com.otoki.powersales.common.entity.WorkingCategory3
+import com.otoki.powersales.common.entity.WorkingType
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.employee.entity.Employee
@@ -47,8 +51,8 @@ class LeaderScheduleService(
     companion object {
         private const val EMPLOYEE_STATUS_ON_LEAVE = "휴직"
         private const val EMPLOYEE_STATUS_RETIRED = "퇴직"
-        private const val WORKING_TYPE_WORK = "근무"
-        private const val WORKING_CATEGORY2_DEDICATED = "전담"
+        private val WORKING_TYPE_WORK = WorkingType.WORK
+        private val WORKING_CATEGORY2_DEDICATED = WorkingCategory2.DEDICATED
         private val WORKING_CATEGORY3_ALLOWED = setOf("고정", "격고", "순회")
         private val LEADER_ACCOUNT_GROUPS = listOf("1000", "1010")
     }
@@ -98,7 +102,7 @@ class LeaderScheduleService(
             workingDate = workingDate,
             workingType = WORKING_TYPE_WORK,
             accountId = account.id,
-            workingCategory3 = request.workingCategory3
+            workingCategory3 = WorkingCategory3.fromDisplayNameOrNull(request.workingCategory3)
         )
 
         // step 10: 신규 엔티티 생성
@@ -107,9 +111,9 @@ class LeaderScheduleService(
             account = account,
             workingDate = workingDate,
             workingType = WORKING_TYPE_WORK,
-            workingCategory1 = request.workingCategory1,
+            workingCategory1 = WorkingCategory1.fromDisplayNameOrNull(request.workingCategory1),
             workingCategory2 = WORKING_CATEGORY2_DEDICATED,
-            workingCategory3 = request.workingCategory3,
+            workingCategory3 = WorkingCategory3.fromDisplayNameOrNull(request.workingCategory3),
             proxyRegisteredBy = registrant.id
         )
 
@@ -171,10 +175,10 @@ class LeaderScheduleService(
     }
 
     private fun validateRequestFields(request: LeaderScheduleCreateRequest) {
-        if (request.workingType != WORKING_TYPE_WORK) {
+        if (request.workingType != WORKING_TYPE_WORK.displayName) {
             throw LeaderScheduleInvalidWorkingTypeException()
         }
-        if (request.workingCategory2 != WORKING_CATEGORY2_DEDICATED) {
+        if (request.workingCategory2 != WORKING_CATEGORY2_DEDICATED.displayName) {
             throw LeaderScheduleInvalidWorkCategory2Exception()
         }
         if (request.workingCategory3 !in WORKING_CATEGORY3_ALLOWED) {

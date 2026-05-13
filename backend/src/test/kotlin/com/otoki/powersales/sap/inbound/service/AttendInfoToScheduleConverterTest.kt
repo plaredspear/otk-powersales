@@ -1,5 +1,9 @@
 package com.otoki.powersales.sap.inbound.service
 
+import com.otoki.powersales.common.entity.WorkingCategory1
+import com.otoki.powersales.common.entity.WorkingCategory2
+import com.otoki.powersales.common.entity.WorkingCategory3
+import com.otoki.powersales.common.entity.WorkingType
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.sap.inbound.dto.attendance.ScheduleConversionSummary
@@ -83,7 +87,7 @@ class AttendInfoToScheduleConverterTest {
                 .thenReturn(listOf(emp))
             whenever(
                 teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(
-                    eq(emp), any(), eq("연차")
+                    eq(emp), any(), eq(WorkingType.ANNUAL_LEAVE)
                 )
             ).thenReturn(false)
             whenever(teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>()))
@@ -107,7 +111,7 @@ class AttendInfoToScheduleConverterTest {
                 LocalDate.of(2026, 4, 28),
                 LocalDate.of(2026, 4, 29)
             )
-            assertThat(saved).allMatch { it.workingType == "연차" && it.employee == emp }
+            assertThat(saved).allMatch { it.workingType == WorkingType.ANNUAL_LEAVE && it.employee == emp }
         }
 
         @Test
@@ -116,13 +120,13 @@ class AttendInfoToScheduleConverterTest {
             val emp = employee()
             val existing = listOf<TeamMemberSchedule>(
                 TeamMemberSchedule().apply {
-                    workingDate = LocalDate.of(2026, 4, 27); workingType = "연차"; this.employee = emp
+                    workingDate = LocalDate.of(2026, 4, 27); workingType = WorkingType.ANNUAL_LEAVE; this.employee = emp
                 },
                 TeamMemberSchedule().apply {
-                    workingDate = LocalDate.of(2026, 4, 28); workingType = "연차"; this.employee = emp
+                    workingDate = LocalDate.of(2026, 4, 28); workingType = WorkingType.ANNUAL_LEAVE; this.employee = emp
                 },
                 TeamMemberSchedule().apply {
-                    workingDate = LocalDate.of(2026, 4, 29); workingType = "연차"; this.employee = emp
+                    workingDate = LocalDate.of(2026, 4, 29); workingType = WorkingType.ANNUAL_LEAVE; this.employee = emp
                 }
             )
             whenever(employeeRepository.findByEmployeeCodeIn(listOf("100123")))
@@ -132,7 +136,7 @@ class AttendInfoToScheduleConverterTest {
                     eq(emp),
                     eq(LocalDate.of(2026, 4, 27)),
                     eq(LocalDate.of(2026, 4, 29)),
-                    eq("연차")
+                    eq(WorkingType.ANNUAL_LEAVE)
                 )
             ).thenReturn(existing)
 
@@ -183,12 +187,12 @@ class AttendInfoToScheduleConverterTest {
                 .thenReturn(listOf(emp))
             whenever(
                 teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(
-                    eq(emp), eq(LocalDate.of(2026, 4, 27)), eq("연차")
+                    eq(emp), eq(LocalDate.of(2026, 4, 27)), eq(WorkingType.ANNUAL_LEAVE)
                 )
             ).thenReturn(true)
             whenever(
                 teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(
-                    eq(emp), eq(LocalDate.of(2026, 4, 28)), eq("연차")
+                    eq(emp), eq(LocalDate.of(2026, 4, 28)), eq(WorkingType.ANNUAL_LEAVE)
                 )
             ).thenReturn(false)
             whenever(teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>()))
@@ -246,14 +250,14 @@ class AttendInfoToScheduleConverterTest {
             val emp = employee(jobCode = "영업직")
             val existing = listOf(
                 TeamMemberSchedule().apply {
-                    workingDate = LocalDate.of(2026, 4, 27); workingType = "연차"; this.employee = emp
+                    workingDate = LocalDate.of(2026, 4, 27); workingType = WorkingType.ANNUAL_LEAVE; this.employee = emp
                 }
             )
             whenever(employeeRepository.findByEmployeeCodeIn(any()))
                 .thenReturn(listOf(emp))
             whenever(
                 teamMemberScheduleRepository.findAllByEmployeeAndWorkingDateBetweenAndWorkingType(
-                    eq(emp), any(), any(), eq("연차")
+                    eq(emp), any(), any(), eq(WorkingType.ANNUAL_LEAVE)
                 )
             ).thenReturn(existing)
 

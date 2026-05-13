@@ -1,6 +1,16 @@
 package com.otoki.powersales.schedule.entity
 
 import com.otoki.powersales.common.entity.BaseEntity
+import com.otoki.powersales.common.entity.WorkingCategory1
+import com.otoki.powersales.common.entity.WorkingCategory2
+import com.otoki.powersales.common.entity.WorkingCategory3
+import com.otoki.powersales.common.entity.WorkingCategory5
+import com.otoki.powersales.common.entity.WorkingType
+import com.otoki.powersales.common.entity.converter.WorkingCategory1Converter
+import com.otoki.powersales.common.entity.converter.WorkingCategory2Converter
+import com.otoki.powersales.common.entity.converter.WorkingCategory3Converter
+import com.otoki.powersales.common.entity.converter.WorkingCategory5Converter
+import com.otoki.powersales.common.entity.converter.WorkingTypeConverter
 import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
@@ -9,6 +19,7 @@ import com.otoki.powersales.leave.entity.AlternativeHoliday
 import com.otoki.powersales.promotion.entity.PromotionEmployee
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.schedule.entity.converter.SecondWorkTypeConverter
 import jakarta.persistence.*
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -50,22 +61,26 @@ class TeamMemberSchedule(
     @SFField("DKRetail__WorkingType__c")
     @HCColumn("dkretail__workingtype__c")
     @Column(name = "working_type", length = 255)
-    var workingType: String? = null,
+    @Convert(converter = WorkingTypeConverter::class)
+    var workingType: WorkingType? = null,
 
     @SFField("DKRetail__WorkingCategory1__c")
     @HCColumn("dkretail__workingcategory1__c")
     @Column(name = "working_category1", length = 255)
-    var workingCategory1: String? = null,
+    @Convert(converter = WorkingCategory1Converter::class)
+    var workingCategory1: WorkingCategory1? = null,
 
     @SFField("DKRetail__WorkingCategory2__c")
     @HCColumn("dkretail__workingcategory2__c")
     @Column(name = "working_category2", length = 255)
-    val workingCategory2: String? = null,
+    @Convert(converter = WorkingCategory2Converter::class)
+    val workingCategory2: WorkingCategory2? = null,
 
     @SFField("DKRetail__WorkingCategory3__c")
     @HCColumn("dkretail__workingcategory3__c")
     @Column(name = "working_category3", length = 255)
-    var workingCategory3: String? = null,
+    @Convert(converter = WorkingCategory3Converter::class)
+    var workingCategory3: WorkingCategory3? = null,
 
     @SFField("WorkingCategory4__c")
     @HCColumn("workingcategory4__c")
@@ -226,12 +241,14 @@ class TeamMemberSchedule(
     @SFField("SecondWorkType__c")
     @HCColumn("secondworktype__c")
     @Column(name = "second_work_type", length = 255)
-    var secondWorkType: String? = null,
+    @Convert(converter = SecondWorkTypeConverter::class)
+    var secondWorkType: SecondWorkType? = null,
 
     @SFField("WorkingCategory5__c")
     @HCColumn("workingcategory5__c")
     @Column(name = "working_category5", length = 255)
-    var workingCategory5: String? = null,
+    @Convert(converter = WorkingCategory5Converter::class)
+    var workingCategory5: WorkingCategory5? = null,
 
     @SFField("ref_accountName__c")
     @HCColumn("ref_accountname__c")
@@ -365,9 +382,9 @@ class TeamMemberSchedule(
         employee: Employee,
         account: Account,
         workingDate: LocalDate,
-        workingType: String,
-        workingCategory1: String,
-        workingCategory3: String,
+        workingType: WorkingType,
+        workingCategory1: WorkingCategory1,
+        workingCategory3: WorkingCategory3,
         workingCategory4: String?,
         promotionEmployee: PromotionEmployee
     ) {

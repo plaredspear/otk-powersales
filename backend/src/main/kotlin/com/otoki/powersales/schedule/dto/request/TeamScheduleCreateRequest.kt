@@ -1,6 +1,11 @@
 package com.otoki.powersales.schedule.dto.request
 
+import com.otoki.powersales.common.entity.WorkingCategory1
+import com.otoki.powersales.common.entity.WorkingCategory2
+import com.otoki.powersales.common.entity.WorkingCategory3
+import com.otoki.powersales.common.entity.WorkingType
 import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.NotNull
 
 data class TeamScheduleCreateRequest(
     @field:NotBlank(message = "사원 ID는 필수입니다")
@@ -9,11 +14,11 @@ data class TeamScheduleCreateRequest(
     @field:NotBlank(message = "근무일자는 필수입니다")
     val workingDate: String,
 
-    @field:NotBlank(message = "근무형태는 필수입니다")
-    val workingType: String,
+    @field:NotNull(message = "근무형태는 필수입니다")
+    val workingType: WorkingType,
 
-    val workingCategory1: String? = null,
-    val workingCategory2: String? = null,
-    val workingCategory3: String? = null,
+    val workingCategory1: WorkingCategory1? = null,
+    val workingCategory2: WorkingCategory2? = null,
+    val workingCategory3: WorkingCategory3? = null,
     val accountId: Int? = null
 )

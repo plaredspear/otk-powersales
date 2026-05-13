@@ -1,5 +1,7 @@
 package com.otoki.powersales.schedule.repository
 
+import com.otoki.powersales.common.entity.WorkingCategory3
+import com.otoki.powersales.common.entity.WorkingType
 import com.otoki.powersales.promotion.entity.PromotionEmployee
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee
@@ -20,7 +22,7 @@ interface TeamMemberScheduleRepository : JpaRepository<TeamMemberSchedule, Long>
 
     fun findByEmployeeInAndWorkingDateIn(employees: List<Employee>, workingDates: List<LocalDate>): List<TeamMemberSchedule>
 
-    fun existsByEmployeeAndWorkingDateAndWorkingType(employee: Employee, workingDate: LocalDate, workingType: String): Boolean
+    fun existsByEmployeeAndWorkingDateAndWorkingType(employee: Employee, workingDate: LocalDate, workingType: WorkingType): Boolean
 
     /**
      * Spec #553 - SAP attend_info Status='Y' 분기에서 동일 직원·기간·workingType 일정 일괄 삭제 대상 조회.
@@ -29,7 +31,7 @@ interface TeamMemberScheduleRepository : JpaRepository<TeamMemberSchedule, Long>
         employee: Employee,
         startDate: LocalDate,
         endDate: LocalDate,
-        workingType: String
+        workingType: WorkingType
     ): List<TeamMemberSchedule>
 
     fun existsByEmployeeAndAccountAndWorkingDateBetween(employee: Employee, account: Account, startDate: LocalDate, endDate: LocalDate): Boolean
@@ -43,6 +45,6 @@ interface TeamMemberScheduleRepository : JpaRepository<TeamMemberSchedule, Long>
     fun existsByEmployeeAndWorkingDateAndWorkingCategory3(
         employee: Employee,
         workingDate: LocalDate,
-        workingCategory3: String
+        workingCategory3: WorkingCategory3
     ): Boolean
 }

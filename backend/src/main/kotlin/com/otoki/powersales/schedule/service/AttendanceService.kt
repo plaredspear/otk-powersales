@@ -3,6 +3,10 @@ package com.otoki.powersales.schedule.service
 import com.otoki.powersales.common.dto.response.AccountInfo
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.common.dto.response.AccountListResponse
+import com.otoki.powersales.common.entity.WorkingCategory1
+import com.otoki.powersales.common.entity.WorkingCategory2
+import com.otoki.powersales.common.entity.WorkingCategory3
+import com.otoki.powersales.common.entity.WorkingType
 import com.otoki.powersales.common.util.GeoUtils
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
@@ -85,9 +89,9 @@ class AttendanceService(
                 accountId = tms.account?.id,
                 accountName = accountName,
                 accountTypeCode = account?.abcTypeCode,
-                workCategory = tms.workingCategory1 ?: "",
-                workCategory2 = tms.workingCategory2,
-                workCategory3 = tms.workingCategory3,
+                workCategory = tms.workingCategory1?.displayName ?: "",
+                workCategory2 = tms.workingCategory2?.displayName,
+                workCategory3 = tms.workingCategory3?.displayName,
                 address = account?.address1,
                 latitude = account?.latitude?.toDoubleOrNull(),
                 longitude = account?.longitude?.toDoubleOrNull(),
@@ -195,7 +199,7 @@ class AttendanceService(
         val today = LocalDate.now()
 
         // 0. 대휴 날짜 충돌 검증
-        if (teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(employee, today, "대휴")) {
+        if (teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(employee, today, WorkingType.ALT_HOLIDAY)) {
             throw AttendanceDayOffConflictException()
         }
 
@@ -312,7 +316,7 @@ class AttendanceService(
         return AttendanceRegisterResponse(
             scheduleId = teamMemberSchedule.id,
             accountName = account?.name ?: "",
-            workType = workType ?: teamMemberSchedule.workingType,
+            workType = workType ?: teamMemberSchedule.workingType?.displayName,
             distanceKm = 0.0, // Spec #585 Q4: 실제 거리는 응답에 노출하지 않음 (서버 로그에만 기록)
             totalCount = totalCount,
             registeredCount = registeredCount,
@@ -345,7 +349,7 @@ class AttendanceService(
             AttendanceStatusItem(
                 scheduleId = teamMemberSchedule.id,
                 accountName = teamMemberSchedule.account?.name ?: "",
-                workCategory = teamMemberSchedule.workingCategory1 ?: "",
+                workCategory = teamMemberSchedule.workingCategory1?.displayName ?: "",
                 status = if (teamMemberSchedule.commuteLogSfid != null) "REGISTERED" else "PENDING"
             )
         }
@@ -420,10 +424,12 @@ class AttendanceService(
         // step 4: 중복 검증 — 동일 사원+거래처+오늘 일정이 있으면 그 row 재사용 (기존 정책 유지).
         // 단, 다른 거래처에서 동일 working_category3 로 이미 등록된 일정이 있으면 거부 (Spec #587 P1-B Q6).
         val existing = teamMemberScheduleRepository.findByEmployeeAndAccountAndWorkingDate(employee, account, today)
-        val masterTypeOfWork3 = master.typeOfWork3?.displayName
-        if (existing == null && !masterTypeOfWork3.isNullOrBlank()) {
-            val duplicateInOtherAccount = teamMemberScheduleRepository
-                .existsByEmployeeAndWorkingDateAndWorkingCategory3(employee, today, masterTypeOfWork3)
+        val masterTypeOfWork3 = master.typeOfWork3
+        if (existing == null && masterTypeOfWork3 != null) {
+            // typeOfWork3 와 workingCategory3 는 picklist 옵션값(고정/격고/순회) 동일 — displayName 으로 변환 후 매칭
+            val workingCategory3 = WorkingCategory3.fromDisplayNameOrNull(masterTypeOfWork3.displayName)
+            val duplicateInOtherAccount = workingCategory3 != null && teamMemberScheduleRepository
+                .existsByEmployeeAndWorkingDateAndWorkingCategory3(employee, today, workingCategory3)
             if (duplicateInOtherAccount) {
                 throw DisplayAttendanceDuplicateException()
             }
@@ -438,10 +444,10 @@ class AttendanceService(
             employee = employee,
             account = account,
             workingDate = today,
-            workingType = "근무",
-            workingCategory1 = "진열",
-            workingCategory2 = mapTypeOfWork5ToCategory2(master.typeOfWork5?.displayName),
-            workingCategory3 = master.typeOfWork3?.displayName,
+            workingType = WorkingType.WORK,
+            workingCategory1 = WorkingCategory1.DISPLAY,
+            workingCategory2 = WorkingCategory2.fromDisplayNameOrNull(mapTypeOfWork5ToCategory2(master.typeOfWork5?.displayName)),
+            workingCategory3 = master.typeOfWork3?.displayName?.let { WorkingCategory3.fromDisplayNameOrNull(it) },
             teamLeader = teamLeader,
             displayWorkSchedule = master,
         )

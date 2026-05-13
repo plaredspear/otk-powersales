@@ -1,5 +1,6 @@
 package com.otoki.powersales.sap.inbound.service
 
+import com.otoki.powersales.common.entity.WorkingType
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.sap.inbound.dto.attendance.ScheduleConversionSummary
 import com.otoki.powersales.schedule.entity.AttendInfo
@@ -141,7 +142,7 @@ class AttendInfoToScheduleConverter(
         private const val STATUS_NEW = "N"
         private const val STATUS_DELETE = "Y"
         private val STATUS_TARGETS = setOf(STATUS_NEW, STATUS_DELETE)
-        private const val ANNUAL_LEAVE_TYPE = "연차"
+        private val ANNUAL_LEAVE_TYPE = WorkingType.ANNUAL_LEAVE
         private val TARGET_JOB_CODES = setOf("판촉직", "레이디직", "OSC직")
         private val DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
     }

@@ -1,5 +1,6 @@
 package com.otoki.powersales.leave.service
 
+import com.otoki.powersales.common.entity.WorkingType
 import com.otoki.powersales.leave.exception.*
 import com.otoki.powersales.leave.repository.AlternativeHolidayRepository
 import com.otoki.powersales.employee.entity.Employee
@@ -34,7 +35,7 @@ class AlternativeHolidayValidator(
 
     fun validateWorkScheduleExists(employee: Employee, actualWorkDate: LocalDate) {
         if (!teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(
-                employee, actualWorkDate, "근무"
+                employee, actualWorkDate, WorkingType.WORK
             )
         ) {
             throw AltHolidayNoWorkScheduleException()

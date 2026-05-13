@@ -3,6 +3,7 @@ package com.otoki.powersales.schedule.service
 import com.otoki.powersales.schedule.dto.response.*
 import com.otoki.powersales.common.dto.response.*
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
+import com.otoki.powersales.common.entity.WorkingType
 // import com.otoki.powersales.schedule.repository.AttendanceRepository  // Phase2: PG 대응 테이블 없음
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
@@ -57,11 +58,11 @@ class MyScheduleService(
             .findMonthlyByEmployeeIds(listOf(employee.id), startDate, endDate)
         val workingTypeByDate = memberSchedules
             .groupBy { it.workingDate }
-            .mapValues { (_, schedules) -> schedules.firstOrNull()?.workingType }
+            .mapValues { (_, schedules) -> schedules.firstOrNull()?.workingType?.displayName }
 
         // 연차/대휴 건수 카운트
-        val annualLeaveCount = memberSchedules.count { it.workingType == "연차" }
-        val substituteHolidayCount = memberSchedules.count { it.workingType == "대휴" }
+        val annualLeaveCount = memberSchedules.count { it.workingType == WorkingType.ANNUAL_LEAVE }
+        val substituteHolidayCount = memberSchedules.count { it.workingType == WorkingType.ALT_HOLIDAY }
 
         // 해당 월의 모든 날짜에 대해 근무 여부 판정
         val workDays = mutableListOf<WorkDayDto>()
@@ -103,13 +104,13 @@ class MyScheduleService(
         val workingType = memberSchedules.firstOrNull()?.workingType
 
         // 대휴/연차인 경우 거래처 목록 없이 반환
-        if (workingType == "대휴" || workingType == "연차") {
+        if (workingType == WorkingType.ALT_HOLIDAY || workingType == WorkingType.ANNUAL_LEAVE) {
             return DailyScheduleResponse(
                 date = date.toString(),
                 dayOfWeek = dayOfWeek,
                 memberName = employee.name,
                 employeeCode = employee.employeeCode,
-                workingType = workingType,
+                workingType = workingType.displayName,
                 reportProgress = ReportProgressDto(
                     completed = 0,
                     total = 0,

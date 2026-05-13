@@ -1,6 +1,7 @@
 package com.otoki.powersales.common.service
 
 import com.otoki.powersales.common.dto.response.HomeResponse
+import com.otoki.powersales.common.entity.WorkingCategory1
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
@@ -41,8 +42,8 @@ class HomeService(
         private fun sortPriority(teamMemberSchedule: TeamMemberSchedule): Int {
             return when {
                 teamMemberSchedule.commuteLogSfid != null -> 0
-                teamMemberSchedule.workingCategory2?.contains("임시") == true -> 1
-                teamMemberSchedule.workingCategory1 != "진열" -> 2
+                teamMemberSchedule.workingCategory2?.displayName?.contains("임시") == true -> 1
+                teamMemberSchedule.workingCategory1 != WorkingCategory1.DISPLAY -> 2
                 else -> 3
             }
         }
@@ -208,8 +209,8 @@ class HomeService(
             employeeCode = matchedEmployee?.employeeCode ?: "",
             accountName = teamMemberSchedule.account?.id?.let { accountMap[it] },
             accountId = teamMemberSchedule.account?.id,
-            workCategory = teamMemberSchedule.workingCategory1 ?: "",
-            workType = teamMemberSchedule.workingType,
+            workCategory = teamMemberSchedule.workingCategory1?.displayName ?: "",
+            workType = teamMemberSchedule.workingType?.displayName,
             isCommuteRegistered = teamMemberSchedule.commuteLogSfid != null,
             commuteRegisteredAt = teamMemberSchedule.commuteReportDatetime
         )

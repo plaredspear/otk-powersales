@@ -2,6 +2,10 @@ package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.admin.scope.AdminEmployeeHolder
 import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.common.entity.WorkingCategory1
+import com.otoki.powersales.common.entity.WorkingCategory2
+import com.otoki.powersales.common.entity.WorkingCategory3
+import com.otoki.powersales.common.entity.WorkingType
 import com.otoki.powersales.schedule.dto.request.TeamScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.request.TeamScheduleUpdateRequest
 import com.otoki.powersales.schedule.dto.response.*
@@ -91,8 +95,8 @@ class AdminTeamScheduleService(
         val dailySummaryDtos = uniqueSchedules
             .groupBy { it.workingDate }
             .map { (date, daySchedules) ->
-                val displaySchedules = daySchedules.filter { it.workingType == "근무" && it.workingCategory1 != "행사" }
-                val promotionSchedules = daySchedules.filter { it.workingType == "근무" && it.workingCategory1 == "행사" }
+                val displaySchedules = daySchedules.filter { it.workingType == WorkingType.WORK && it.workingCategory1 != WorkingCategory1.EVENT }
+                val promotionSchedules = daySchedules.filter { it.workingType == WorkingType.WORK && it.workingCategory1 == WorkingCategory1.EVENT }
 
                 DailySummaryDto(
                     date = date?.toString() ?: "",
@@ -100,8 +104,8 @@ class AdminTeamScheduleService(
                     displayActual = displaySchedules.count { it.commuteLogSfid != null },
                     promotionExpected = promotionSchedules.size,
                     promotionActual = promotionSchedules.count { it.commuteLogSfid != null },
-                    annualLeave = daySchedules.count { it.workingType == "연차" },
-                    compensatoryLeave = daySchedules.count { it.workingType == "대휴" }
+                    annualLeave = daySchedules.count { it.workingType == WorkingType.ANNUAL_LEAVE },
+                    compensatoryLeave = daySchedules.count { it.workingType == WorkingType.ALT_HOLIDAY }
                 )
             }
             .sortedBy { it.date }
@@ -116,13 +120,13 @@ class AdminTeamScheduleService(
 
         teamScheduleValidator.validateEmployeeStatus(employee)
 
-        if (request.workingType == "근무" && request.accountId == null) {
+        if (request.workingType == WorkingType.WORK && request.accountId == null) {
             throw TeamScheduleAccountRequiredException()
         }
 
         val workingDate = LocalDate.parse(request.workingDate, DateTimeFormatter.ISO_LOCAL_DATE)
 
-        if (request.workingType == "근무" && request.workingCategory1 == "진열") {
+        if (request.workingType == WorkingType.WORK && request.workingCategory1 == WorkingCategory1.DISPLAY) {
             teamScheduleValidator.validateScheduleConflict(employee.id, workingDate, request.workingCategory3, null)
         }
 
@@ -144,7 +148,7 @@ class AdminTeamScheduleService(
         )
         val saved = teamMemberScheduleRepository.save(schedule)
 
-        if (request.workingType == "근무" && account != null) {
+        if (request.workingType == WorkingType.WORK && account != null) {
             adminMonthlyIntegrationService.refreshIntegration(
                 employee.id, account.id, YearMonth.from(workingDate)
             )
@@ -166,7 +170,7 @@ class AdminTeamScheduleService(
             teamScheduleValidator.validateEmployeeStatus(employee)
         }
 
-        if (request.workingType == "근무" && request.accountId == null) {
+        if (request.workingType == WorkingType.WORK && request.accountId == null) {
             throw TeamScheduleAccountRequiredException()
         }
 
@@ -178,11 +182,11 @@ class AdminTeamScheduleService(
         val dateChanged = schedule.workingDate != newWorkingDate
         val category3Changed = schedule.workingCategory3 != request.workingCategory3
 
-        if (dateChanged && schedule.workingDate?.isBefore(LocalDate.now()) == true && schedule.workingCategory1 != "행사") {
+        if (dateChanged && schedule.workingDate?.isBefore(LocalDate.now()) == true && schedule.workingCategory1 != WorkingCategory1.EVENT) {
             throw TeamSchedulePastDateChangeException()
         }
 
-        if (request.workingType == "근무" && request.workingCategory1 == "진열" && (dateChanged || category3Changed)) {
+        if (request.workingType == WorkingType.WORK && request.workingCategory1 == WorkingCategory1.DISPLAY && (dateChanged || category3Changed)) {
             teamScheduleValidator.validateScheduleConflict(schedule.employee!!.id, newWorkingDate, request.workingCategory3, scheduleId)
         }
 
@@ -207,7 +211,7 @@ class AdminTeamScheduleService(
             if (oldWorkingDate != null && oldAccountId != null) {
                 refreshTargets.add(Triple(oldEmployeeId, oldAccountId, YearMonth.from(oldWorkingDate)))
             }
-            if (request.workingType == "근무" && newAccount != null) {
+            if (request.workingType == WorkingType.WORK && newAccount != null) {
                 refreshTargets.add(Triple(oldEmployeeId, newAccount.id, YearMonth.from(newWorkingDate)))
             }
 
@@ -239,7 +243,7 @@ class AdminTeamScheduleService(
 
         teamMemberScheduleRepository.delete(schedule)
 
-        if (employeeId != null && accountId != null && workingDate != null && schedule.workingType == "근무") {
+        if (employeeId != null && accountId != null && workingDate != null && schedule.workingType == WorkingType.WORK) {
             adminMonthlyIntegrationService.refreshIntegration(employeeId, accountId, YearMonth.from(workingDate))
         }
     }

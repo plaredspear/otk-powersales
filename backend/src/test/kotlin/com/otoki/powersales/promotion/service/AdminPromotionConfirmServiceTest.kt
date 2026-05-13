@@ -1,5 +1,9 @@
 package com.otoki.powersales.promotion.service
 
+import com.otoki.powersales.common.entity.WorkingCategory1
+import com.otoki.powersales.common.entity.WorkingCategory2
+import com.otoki.powersales.common.entity.WorkingCategory3
+import com.otoki.powersales.common.entity.WorkingType
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.entity.PromotionEmployee
 import com.otoki.powersales.promotion.exception.*
@@ -99,9 +103,9 @@ class AdminPromotionConfirmServiceTest {
                 employee = Employee(id = 1L, employeeCode = "EMP001", name = "테스트1"),
                 account = Account(id = 100),
                 workingDate = startDate,
-                workingType = "근무",
-                workingCategory1 = "행사",
-                workingCategory3 = "고정",
+                workingType = WorkingType.WORK,
+                workingCategory1 = WorkingCategory1.EVENT,
+                workingCategory3 = WorkingCategory3.FIXED,
                 promotionEmployee = PromotionEmployee(id = 1L, promotionId = 10L)
             )
 
@@ -350,8 +354,8 @@ class AdminPromotionConfirmServiceTest {
                 createPE(id = 1L, employeeId = 1L, scheduleDate = startDate, workType3 = "순회")
             )
             val existingTeamMemberSchedules = listOf(
-                createTeamMemberSchedule(employeeId = 1L, workingDate = startDate, workingCategory3 = "격고"),
-                createTeamMemberSchedule(employeeId = 1L, workingDate = startDate, workingCategory3 = "격고")
+                createTeamMemberSchedule(employeeId = 1L, workingDate = startDate, workingCategory3 = WorkingCategory3.ALTERNATE),
+                createTeamMemberSchedule(employeeId = 1L, workingDate = startDate, workingCategory3 = WorkingCategory3.ALTERNATE)
             )
             setupMocks(promotion, employees, existingTeamMemberSchedules = existingTeamMemberSchedules)
 
@@ -386,7 +390,7 @@ class AdminPromotionConfirmServiceTest {
                 createPE(id = 1L, employeeId = 1L, scheduleDate = startDate, workStatus = "근무", workType3 = "순회")
             )
             val existingTeamMemberSchedules = listOf(
-                createTeamMemberSchedule(employeeId = 1L, workingDate = startDate, workingType = "연차", workingCategory3 = "순회")
+                createTeamMemberSchedule(employeeId = 1L, workingDate = startDate, workingType = WorkingType.ANNUAL_LEAVE, workingCategory3 = WorkingCategory3.PATROL)
             )
             setupMocks(promotion, employees, existingTeamMemberSchedules = existingTeamMemberSchedules)
 
@@ -402,7 +406,7 @@ class AdminPromotionConfirmServiceTest {
                 createPE(id = 1L, employeeId = 1L, scheduleDate = startDate, workStatus = "연차", workType3 = "순회")
             )
             val existingTeamMemberSchedules = listOf(
-                createTeamMemberSchedule(employeeId = 1L, workingDate = startDate, workingType = "근무", workingCategory3 = "순회")
+                createTeamMemberSchedule(employeeId = 1L, workingDate = startDate, workingType = WorkingType.WORK, workingCategory3 = WorkingCategory3.PATROL)
             )
             setupMocks(promotion, employees, existingTeamMemberSchedules = existingTeamMemberSchedules)
 
@@ -423,7 +427,7 @@ class AdminPromotionConfirmServiceTest {
                 createPE(id = 1L, employeeId = 1L, scheduleDate = startDate, workType3 = "순회")
             )
             val existingTeamMemberSchedules = listOf(
-                createTeamMemberSchedule(employeeId = 1L, workingDate = startDate, accountId = 100, workingCategory3 = "순회")
+                createTeamMemberSchedule(employeeId = 1L, workingDate = startDate, accountId = 100, workingCategory3 = WorkingCategory3.PATROL)
             )
             setupMocks(promotion, employees, existingTeamMemberSchedules = existingTeamMemberSchedules)
 
@@ -563,8 +567,8 @@ class AdminPromotionConfirmServiceTest {
         id: Long = 0L,
         employeeId: Long = 1L,
         workingDate: LocalDate = startDate,
-        workingType: String = "근무",
-        workingCategory3: String = "고정",
+        workingType: WorkingType = WorkingType.WORK,
+        workingCategory3: WorkingCategory3 = WorkingCategory3.FIXED,
         accountId: Int? = 999,
         promotionEmployeeId: Long? = null
     ): TeamMemberSchedule = TeamMemberSchedule(

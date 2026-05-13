@@ -13,7 +13,9 @@ enum class WorkingCategory2(
     val displayName: String
 ) {
     DEDICATED("전담"),
-    DISPLAY_CONCURRENT("진열겸임");
+    DISPLAY_CONCURRENT("진열겸임"),
+    // SF picklist 옵션 외 — 레거시 운영 데이터(WorkingCategory5.TEMPORARY 매핑 — `mapTypeOfWork5ToCategory2`) 호환을 위해 enum 에 포함. SF org picklist 정비 필요.
+    TEMPORARY("임시");
 
     @JsonValue
     fun toJson(): String = displayName

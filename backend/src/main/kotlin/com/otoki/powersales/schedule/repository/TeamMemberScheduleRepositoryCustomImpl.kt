@@ -1,6 +1,7 @@
 package com.otoki.powersales.schedule.repository
 
 import com.otoki.powersales.account.entity.QAccount.Companion.account
+import com.otoki.powersales.common.entity.WorkingType
 import com.otoki.powersales.employee.entity.QEmployee.Companion.employee
 import com.otoki.powersales.employee.entity.QEmployeeInfo.Companion.employeeInfo
 import com.otoki.powersales.schedule.entity.AttendanceType
@@ -310,7 +311,7 @@ open class TeamMemberScheduleRepositoryCustomImpl(
     }
 
     companion object {
-        const val WORKING_TYPE_ANNUAL_LEAVE = "연차"
-        const val WORKING_TYPE_WORK = "근무"
+        val WORKING_TYPE_ANNUAL_LEAVE = WorkingType.ANNUAL_LEAVE
+        val WORKING_TYPE_WORK = WorkingType.WORK
     }
 }

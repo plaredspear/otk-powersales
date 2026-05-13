@@ -1,6 +1,8 @@
 package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.common.entity.WorkingCategory1
+import com.otoki.powersales.common.entity.WorkingCategory3
 import com.otoki.powersales.schedule.dto.request.PromotionScheduleBulkDeleteRequest
 import com.otoki.powersales.schedule.dto.request.PromotionScheduleBulkUpdateItem
 import com.otoki.powersales.schedule.dto.request.PromotionScheduleBulkUpdateRequest
@@ -89,8 +91,8 @@ class AdminPromotionScheduleService(
                         accountId = account.id,
                         accountCode = account.externalKey,
                         accountName = account.name ?: "",
-                        workingCategory1 = schedule.workingCategory1,
-                        workingCategory3 = schedule.workingCategory3,
+                        workingCategory1 = schedule.workingCategory1?.displayName,
+                        workingCategory3 = schedule.workingCategory3?.displayName,
                         workingCategory4 = schedule.workingCategory4
                     )
                 }
@@ -177,7 +179,7 @@ class AdminPromotionScheduleService(
             teamScheduleValidator.validateScheduleConflict(
                 employeeId = employeeId,
                 workingDate = item.workingDate!!,
-                workingCategory3 = item.workingCategory3,
+                workingCategory3 = WorkingCategory3.fromDisplayNameOrNull(item.workingCategory3),
                 excludeIds = excludeIds
             )
         }
@@ -187,8 +189,8 @@ class AdminPromotionScheduleService(
             val account = accounts[item.accountId]!!
             schedule.account = account
             schedule.workingDate = item.workingDate
-            schedule.workingCategory1 = item.workingCategory1
-            schedule.workingCategory3 = item.workingCategory3
+            schedule.workingCategory1 = WorkingCategory1.fromDisplayNameOrNull(item.workingCategory1)
+            schedule.workingCategory3 = WorkingCategory3.fromDisplayNameOrNull(item.workingCategory3)
             schedule.workingCategory4 = item.workingCategory4
         }
 
