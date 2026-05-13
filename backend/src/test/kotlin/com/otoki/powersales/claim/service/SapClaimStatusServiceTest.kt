@@ -2,9 +2,9 @@ package com.otoki.powersales.claim.service
 
 import com.otoki.powersales.claim.dto.sap.ClaimStatusRequestItem
 import com.otoki.powersales.claim.entity.Claim
-import com.otoki.powersales.claim.entity.ClaimCategory
 import com.otoki.powersales.claim.entity.ClaimDateType
-import com.otoki.powersales.claim.entity.ClaimSubcategory
+import com.otoki.powersales.claim.entity.ClaimType1
+import com.otoki.powersales.claim.entity.ClaimType2
 import com.otoki.powersales.claim.repository.ClaimRepository
 import com.otoki.powersales.sap.auth.audit.SapInboundAudit
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
@@ -38,9 +38,6 @@ class SapClaimStatusServiceTest {
     @InjectMocks
     private lateinit var service: SapClaimStatusService
 
-    private val category = ClaimCategory(name = "이물")
-    private val subcategory = ClaimSubcategory(category = category, name = "벌레")
-
     private fun claim(
         name: String?,
         actionStatus: String? = null
@@ -52,8 +49,8 @@ class SapClaimStatusServiceTest {
         productName = "진라면",
         dateType = ClaimDateType.EXPIRY_DATE,
         date = LocalDate.of(2026, 4, 28),
-        category = category,
-        subcategory = subcategory,
+        claimType1 = ClaimType1.B,
+        claimType2 = ClaimType2.BD,
         defectDescription = "변질",
         defectQuantity = 1,
         name = name,

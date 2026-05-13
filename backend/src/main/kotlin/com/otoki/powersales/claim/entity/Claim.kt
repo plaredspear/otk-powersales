@@ -3,6 +3,8 @@ package com.otoki.powersales.claim.entity
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.claim.entity.converter.ClaimChannelConverter
 import com.otoki.powersales.claim.entity.converter.ClaimStatusConverter
+import com.otoki.powersales.claim.entity.converter.ClaimType1Converter
+import com.otoki.powersales.claim.entity.converter.ClaimType2Converter
 import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.SFField
@@ -72,16 +74,18 @@ class Claim(
     @Column(name = "date", nullable = false)
     val date: LocalDate,
 
-    // Spec #606: FK 컬럼은 @SFField 미부착 (§2.4/§6.6 정책).
-    // SF picklist `DKRetail__ClaimType1__c`/`ClaimType2__c` 의 entity 매핑은
-    // 후속 별도 스펙 (마스터 정합) 에서 처리.
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id", nullable = false)
-    val category: ClaimCategory,
+    // Spec #743: SF picklist `DKRetail__ClaimType1__c`/`ClaimType2__c` 직접 enum 매핑.
+    // 기존 ClaimCategory/ClaimSubcategory FK 제거 (#741 옵션 C 적용).
+    // 계층 제약 (claimType2.parent == claimType1) 은 service-layer 에서 검증.
+    @SFField("DKRetail__ClaimType1__c")
+    @Convert(converter = ClaimType1Converter::class)
+    @Column(name = "claim_type1", nullable = false, length = 10)
+    val claimType1: ClaimType1,
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "subcategory_id", nullable = false)
-    val subcategory: ClaimSubcategory,
+    @SFField("DKRetail__ClaimType2__c")
+    @Convert(converter = ClaimType2Converter::class)
+    @Column(name = "claim_type2", nullable = false, length = 10)
+    val claimType2: ClaimType2,
 
     @SFField("DKRetail__Description__c")
     @Column(name = "defect_description", nullable = false, length = 1000)

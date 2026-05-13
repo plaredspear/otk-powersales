@@ -33,8 +33,6 @@ class AdminClaimRepositoryCustomImpl(
         val content = queryFactory
             .selectFrom(claim)
             .leftJoin(claim.employee, employee).fetchJoin()
-            .leftJoin(claim.category).fetchJoin()
-            .leftJoin(claim.subcategory).fetchJoin()
             .where(where)
             .orderBy(claim.createdAt.desc())
             .offset(pageable.offset)
