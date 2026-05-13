@@ -53,56 +53,6 @@ class BranchReviewTest {
     }
 
     @Test
-    @DisplayName("BranchReview 판촉 부문 - 합계 / 평균 필드 매핑")
-    fun createBranchReview_salesPromotionFields() {
-        // Given
-        val branchReview = BranchReview(
-            employeeEvaluationNumber = 12.0,
-            sumAttendance = 95.0,
-            sumTotalScore = 850.5,
-            attendanceAverage = 7.9,
-            sumTotalScoreAverage = 70.8,
-        )
-
-        // When
-        val persisted = testEntityManager.persistAndFlush(branchReview)
-        testEntityManager.clear()
-        val found = testEntityManager.find(BranchReview::class.java, persisted.id)!!
-
-        // Then
-        assertThat(found.employeeEvaluationNumber).isEqualTo(12.0)
-        assertThat(found.sumAttendance).isEqualTo(95.0)
-        assertThat(found.sumTotalScore).isEqualTo(850.5)
-        assertThat(found.attendanceAverage).isEqualTo(7.9)
-        assertThat(found.sumTotalScoreAverage).isEqualTo(70.8)
-    }
-
-    @Test
-    @DisplayName("BranchReview 레이디 부문 - 합계 / 평균 필드 매핑")
-    fun createBranchReview_ladyFields() {
-        // Given
-        val branchReview = BranchReview(
-            employeeEvaluationNumberLady = 8.0,
-            sumAttendanceLady = 60.0,
-            sumTotalScoreLady = 480.0,
-            attendanceAverageLady = 7.5,
-            sumTotalScoreAverageLady = 60.0,
-        )
-
-        // When
-        val persisted = testEntityManager.persistAndFlush(branchReview)
-        testEntityManager.clear()
-        val found = testEntityManager.find(BranchReview::class.java, persisted.id)!!
-
-        // Then
-        assertThat(found.employeeEvaluationNumberLady).isEqualTo(8.0)
-        assertThat(found.sumAttendanceLady).isEqualTo(60.0)
-        assertThat(found.sumTotalScoreLady).isEqualTo(480.0)
-        assertThat(found.attendanceAverageLady).isEqualTo(7.5)
-        assertThat(found.sumTotalScoreAverageLady).isEqualTo(60.0)
-    }
-
-    @Test
     @DisplayName("BranchReview Group A — IsDeleted + sfid 버퍼 매핑")
     fun createBranchReview_groupAFields() {
         // Given

@@ -9,19 +9,22 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 /**
- * Spec #735 — BranchReview ↔ Salesforce `BranchReview__c` SF Object 정합 검증.
+ * BranchReview ↔ Salesforce `BranchReview__c` SF Object 정합 검증.
  *
  * 단일 권위: Salesforce describe 메타 (`BranchReview__c`)
  *
+ * Roll-Up Summary 20 + Formula 18 (판촉/레이디 평가 인원 / 합계 / 평균) 은
+ * §6.7 정책에 따라 entity 매핑 부재 — 본 테스트의 검증 대상 아님.
+ *
  * 검증 분류:
  *   - AC1: 클래스 @SFObject
- *   - AC2: @SFField 매핑 키셋 (총 48개 — Custom 42 + Group A 4 + Standard 1 + BaseEntity 2 = 49, 그 중 Group A `IsDeleted`/OwnerId/CreatedById/LastModifiedById 4 + Custom 42 + Name 1 + BaseEntity 2)
- *   - AC3: Custom 42개 매핑
+ *   - AC2: @SFField 매핑 키셋 수 (9 = Name + 식별/시점 4 + Group A 4 매핑 + BaseEntity 2 - BaseEntity 2 중복 계산 보정)
+ *   - AC3: 식별 / 시점 매핑 (Name / BranchName__c / CostCenterCode__c / FirstDayofMonth__c / Confirmed__c)
  *   - AC4: Group A 매핑 (IsDeleted / OwnerId / CreatedById / LastModifiedById)
  *   - AC5: BaseEntity 매핑 (CreatedDate / LastModifiedDate)
  *   - AC6: PK / FK 미부착
  */
-@DisplayName("BranchReview SF 어노테이션 검증 (Spec #735)")
+@DisplayName("BranchReview SF 어노테이션 검증")
 class BranchReviewSFAnnotationTest {
 
     @Nested
@@ -44,15 +47,15 @@ class BranchReviewSFAnnotationTest {
         private val mapping = SFSchemaUtils.getSFMapping(BranchReview::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 49 (Name 1 + Custom 42 + Group A 4 + BaseEntity 2)")
+        @DisplayName("매핑 키 수 = 11 (Name 1 + 식별/시점 4 + Group A 4 + BaseEntity 2)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(49)
+            assertThat(mapping).hasSize(11)
         }
     }
 
     @Nested
-    @DisplayName("AC3 — Custom 42개 매핑 (식별/시점 4 + 판촉 19 + 레이디 19)")
-    inner class CustomFieldMappings {
+    @DisplayName("AC3 — 식별 / 시점 + Name 매핑 (5건)")
+    inner class IdentityAndTimeMappings {
 
         private val mapping = SFSchemaUtils.getSFMapping(BranchReview::class.java)
 
@@ -69,58 +72,6 @@ class BranchReviewSFAnnotationTest {
             assertThat(mapping["CostCenterCode__c"]).isEqualTo("cost_center_code")
             assertThat(mapping["FirstDayofMonth__c"]).isEqualTo("first_day_of_month")
             assertThat(mapping["Confirmed__c"]).isEqualTo("confirmed")
-        }
-
-        @Test
-        @DisplayName("판촉 부문 — 평가 인원 + 합계 9 + 평균 9")
-        fun salesPromotionFields() {
-            assertThat(mapping["EmployeeEvaluationNumber__c"]).isEqualTo("employee_evaluation_number")
-            // 합계 9
-            assertThat(mapping["SumAttendance__c"]).isEqualTo("sum_attendance")
-            assertThat(mapping["SumBusinessPartnerTies__c"]).isEqualTo("sum_business_partner_ties")
-            assertThat(mapping["SumClothesSatellite__c"]).isEqualTo("sum_clothes_satellite")
-            assertThat(mapping["SumDisplayManageEventGoals__c"]).isEqualTo("sum_display_manage_event_goals")
-            assertThat(mapping["SumEducationalEvaluation__c"]).isEqualTo("sum_educational_evaluation")
-            assertThat(mapping["SumInstructionsDefault__c"]).isEqualTo("sum_instructions_default")
-            assertThat(mapping["SumPriority_EventItemManage__c"]).isEqualTo("sum_priority_event_item_manage")
-            assertThat(mapping["SumProductManageCallment__c"]).isEqualTo("sum_product_manage_callment")
-            assertThat(mapping["SumTotalScore__c"]).isEqualTo("sum_total_score")
-            // 평균 9
-            assertThat(mapping["AttendanceAverage__c"]).isEqualTo("attendance_average")
-            assertThat(mapping["BusinessPartnerTiesAverage__c"]).isEqualTo("business_partner_ties_average")
-            assertThat(mapping["ClothesSatelliteAverage__c"]).isEqualTo("clothes_satellite_average")
-            assertThat(mapping["DisplayManageEventGoalsAverage__c"]).isEqualTo("display_manage_event_goals_average")
-            assertThat(mapping["EducationalEvaluationAverage__c"]).isEqualTo("educational_evaluation_average")
-            assertThat(mapping["InstructionsDefaultAverage__c"]).isEqualTo("instructions_default_average")
-            assertThat(mapping["Priority_EventItemManageAverage__c"]).isEqualTo("priority_event_item_manage_average")
-            assertThat(mapping["ProductManageCallmentAverage__c"]).isEqualTo("product_manage_callment_average")
-            assertThat(mapping["SumTotalScoreAverage__c"]).isEqualTo("sum_total_score_average")
-        }
-
-        @Test
-        @DisplayName("레이디 부문 — 평가 인원 + 합계 9 + 평균 9")
-        fun ladyFields() {
-            assertThat(mapping["EmployeeEvaluationNumber_lady__c"]).isEqualTo("employee_evaluation_number_lady")
-            // 합계 9
-            assertThat(mapping["SumAttendance_lady__c"]).isEqualTo("sum_attendance_lady")
-            assertThat(mapping["SumBusinessPartnerTies_lady__c"]).isEqualTo("sum_business_partner_ties_lady")
-            assertThat(mapping["SumClothesSatellite_lady__c"]).isEqualTo("sum_clothes_satellite_lady")
-            assertThat(mapping["SumDisplayManageEventGoals_lady__c"]).isEqualTo("sum_display_manage_event_goals_lady")
-            assertThat(mapping["SumEducationalEvaluation_lady__c"]).isEqualTo("sum_educational_evaluation_lady")
-            assertThat(mapping["SumInstructionsDefault_lady__c"]).isEqualTo("sum_instructions_default_lady")
-            assertThat(mapping["SumPriority_EventItemManage_lady__c"]).isEqualTo("sum_priority_event_item_manage_lady")
-            assertThat(mapping["SumProductManageCallment_lady__c"]).isEqualTo("sum_product_manage_callment_lady")
-            assertThat(mapping["SumTotalScore_lady__c"]).isEqualTo("sum_total_score_lady")
-            // 평균 9
-            assertThat(mapping["AttendanceAverage_lady__c"]).isEqualTo("attendance_average_lady")
-            assertThat(mapping["BusinessPartnerTiesAverage_lady__c"]).isEqualTo("business_partner_ties_average_lady")
-            assertThat(mapping["ClothesSatelliteAverage_lady__c"]).isEqualTo("clothes_satellite_average_lady")
-            assertThat(mapping["DisplayManageEventGoalsAverage_lady__c"]).isEqualTo("display_manage_event_goals_average_lady")
-            assertThat(mapping["EducationalEvaluationAverage_lady__c"]).isEqualTo("educational_evaluation_average_lady")
-            assertThat(mapping["InstructionsDefaultAverage_lady__c"]).isEqualTo("instructions_default_average_lady")
-            assertThat(mapping["Priority_EventItemManageAverage_lady__c"]).isEqualTo("priority_event_item_manage_average_lady")
-            assertThat(mapping["ProductManageCallmentAverage_lady__c"]).isEqualTo("product_manage_callment_average_lady")
-            assertThat(mapping["SumTotalScoreAverage_lady__c"]).isEqualTo("sum_total_score_average_lady")
         }
     }
 
@@ -175,8 +126,8 @@ class BranchReviewSFAnnotationTest {
     }
 
     @Nested
-    @DisplayName("AC6 — PK / FK 미부착")
-    inner class PkExclusion {
+    @DisplayName("AC6 — PK / FK 미부착 + Formula 컬럼 부재 (§6.7)")
+    inner class PkAndFormulaExclusion {
 
         @Test
         @DisplayName("PK(id) 필드에 @SFField 미부착")
@@ -194,6 +145,55 @@ class BranchReviewSFAnnotationTest {
                 "owner_id",
                 "created_by_id",
                 "last_modified_by_id"
+            )
+        }
+
+        @Test
+        @DisplayName("매핑 keys 에 Formula / Roll-Up Summary 38개 SF API Name 미등장 (§6.7)")
+        fun mappingKeysExcludeFormulaFields() {
+            val mapping = SFSchemaUtils.getSFMapping(BranchReview::class.java)
+            assertThat(mapping.keys).doesNotContain(
+                // 판촉 부문 Roll-Up Summary
+                "EmployeeEvaluationNumber__c",
+                "SumAttendance__c",
+                "SumBusinessPartnerTies__c",
+                "SumClothesSatellite__c",
+                "SumDisplayManageEventGoals__c",
+                "SumEducationalEvaluation__c",
+                "SumInstructionsDefault__c",
+                "SumPriority_EventItemManage__c",
+                "SumProductManageCallment__c",
+                "SumTotalScore__c",
+                // 판촉 부문 Formula (Average)
+                "AttendanceAverage__c",
+                "BusinessPartnerTiesAverage__c",
+                "ClothesSatelliteAverage__c",
+                "DisplayManageEventGoalsAverage__c",
+                "EducationalEvaluationAverage__c",
+                "InstructionsDefaultAverage__c",
+                "Priority_EventItemManageAverage__c",
+                "ProductManageCallmentAverage__c",
+                "SumTotalScoreAverage__c",
+                // 레이디 부문
+                "EmployeeEvaluationNumber_lady__c",
+                "SumAttendance_lady__c",
+                "SumBusinessPartnerTies_lady__c",
+                "SumClothesSatellite_lady__c",
+                "SumDisplayManageEventGoals_lady__c",
+                "SumEducationalEvaluation_lady__c",
+                "SumInstructionsDefault_lady__c",
+                "SumPriority_EventItemManage_lady__c",
+                "SumProductManageCallment_lady__c",
+                "SumTotalScore_lady__c",
+                "AttendanceAverage_lady__c",
+                "BusinessPartnerTiesAverage_lady__c",
+                "ClothesSatelliteAverage_lady__c",
+                "DisplayManageEventGoalsAverage_lady__c",
+                "EducationalEvaluationAverage_lady__c",
+                "InstructionsDefaultAverage_lady__c",
+                "Priority_EventItemManageAverage_lady__c",
+                "ProductManageCallmentAverage_lady__c",
+                "SumTotalScoreAverage_lady__c"
             )
         }
     }
