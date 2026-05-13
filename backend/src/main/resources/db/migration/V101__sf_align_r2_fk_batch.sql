@@ -13,8 +13,9 @@ CREATE INDEX IF NOT EXISTS idx_erp_order_account_id ON erp_order(account_id);
 
 -- 3. PromotionEmployee → TeamMemberSchedule (기존 team_member_schedule_id 컬럼 재사용; FK 관계만 JPA 매핑)
 -- 컬럼 자체는 이미 존재 — FK 제약만 추가
+-- PostgreSQL 은 ADD CONSTRAINT IF NOT EXISTS 미지원 — 첫 적용이므로 멱등 처리 불필요
 ALTER TABLE promotion_employee
-    ADD CONSTRAINT IF NOT EXISTS fk_promotion_employee_team_member_schedule
+    ADD CONSTRAINT fk_promotion_employee_team_member_schedule
     FOREIGN KEY (team_member_schedule_id) REFERENCES team_member_schedule(team_member_schedule_id);
 CREATE INDEX IF NOT EXISTS idx_promotion_employee_team_member_schedule_id ON promotion_employee(team_member_schedule_id);
 
