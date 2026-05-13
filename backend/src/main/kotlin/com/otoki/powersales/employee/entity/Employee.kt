@@ -210,10 +210,6 @@ class Employee(
     @Column(name = "locking_flag")
     var lockingFlag: Boolean? = null,
 
-    @SFField("prnflag__c")
-    @Column(name = "prn_flag", length = 100)
-    var prnFlag: String? = null,
-
     @Enumerated(EnumType.STRING)
     @Column(name = "origin", nullable = false, length = 20)
     var origin: EmployeeOrigin = EmployeeOrigin.SAP,

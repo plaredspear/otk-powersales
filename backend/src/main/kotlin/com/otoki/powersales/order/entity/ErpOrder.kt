@@ -74,11 +74,6 @@ class ErpOrder(
     @Column(name = "account_sfid", length = 18)
     var accountSfid: String? = null,
 
-    @SFField("OwnerId")
-    @HCColumn("ownerid")
-    @Column(name = "owner_sfid", length = 18)
-    var ownerSfid: String? = null,
-
     @SFField("CreatedById")
     @HCColumn("createdbyid")
     @Column(name = "created_by_sfid", length = 18)
@@ -93,10 +88,6 @@ class ErpOrder(
     @HCColumn("isdeleted")
     @Column(name = "is_deleted")
     var isDeleted: Boolean? = null,
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id")
-    var owner: Employee? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")

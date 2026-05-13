@@ -48,9 +48,9 @@ class EmployeeSFAnnotationTest {
         private val mapping = SFSchemaUtils.getSFMapping(Employee::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 44 (38 기존(#607) + 6 신규(#713) + BaseEntity 2 포함)")
+        @DisplayName("매핑 키 수 = 43 (prnflag__c prod 부재 제거 후)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(44)
+            assertThat(mapping).hasSize(43)
         }
 
         @Test
@@ -62,7 +62,7 @@ class EmployeeSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("§6.3 — 신규 8개 필드 매핑 (Q2 옵션 1: dkCostCenterCode 포함)")
+        @DisplayName("§6.3 — 신규 7개 필드 매핑 (Q2 옵션 1: dkCostCenterCode 포함)")
         fun section63NewFields() {
             assertThat(mapping["DKRetail__CostCenterCode__c"]).isEqualTo("dk_cost_center_code")
             assertThat(mapping["DKRetail__LocationCode__c"]).isEqualTo("location_code")
@@ -71,7 +71,6 @@ class EmployeeSFAnnotationTest {
             assertThat(mapping["DKRetail__ManagerId__c"]).isEqualTo("manager_sfid")
             assertThat(mapping["PostponedAppointment__c"]).isEqualTo("postponed_appointment_sfid")
             assertThat(mapping["LockingFlag__c"]).isEqualTo("locking_flag")
-            assertThat(mapping["prnflag__c"]).isEqualTo("prn_flag")
         }
 
         @Test

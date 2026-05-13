@@ -109,11 +109,6 @@ class OrderRequest(
     @Column(name = "sfid", length = 18)
     val sfid: String? = null,
 
-    // -- Spec #747 카테고리 A — 테스트용 자동번호 (D 분류) --
-    @SFField("RequestNumberTest__c")
-    @Column(name = "request_number_test", length = 30)
-    var requestNumberTest: String? = null,
-
     // -- Relations --
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -36,9 +36,9 @@ class ErpOrderSFAnnotationTest {
         private val mapping = SFSchemaUtils.getSFMapping(ErpOrder::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 15 (기존 12 + AccountId__c 1 + BaseEntity 2)")
+        @DisplayName("매핑 키 수 = 18 (OwnerId prod 부재 제거 후)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(19)
+            assertThat(mapping).hasSize(18)
         }
 
         @Test
