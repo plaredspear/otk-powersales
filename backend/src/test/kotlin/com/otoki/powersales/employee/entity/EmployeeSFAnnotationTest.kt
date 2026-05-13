@@ -4,23 +4,28 @@ import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.common.salesforce.SFSchemaUtils
+import com.otoki.powersales.employee.entity.converter.CrmWorkTypeConverter
+import com.otoki.powersales.employee.entity.converter.GenderConverter
+import jakarta.persistence.Convert
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 /**
- * Spec #607 — Employee ↔ Salesforce `DKRetail__Employee__c` 어노테이션 부착 검증.
+ * Spec #607 / #713 — Employee ↔ Salesforce `DKRetail__Employee__c` 어노테이션 부착 검증.
  *
- * 단일 권위: docs/plan/old_source_260408/salesforce_object/사원(DKRetail__Employee__c).md
+ * 단일 권위: docs/plan/old_source_260408/sf-object-meta/_raw/DKRetail__Employee__c.json
  *
  * 검증 분류:
  *   - AC1: 클래스 `@SFObject` 무변경
- *   - AC2: `@SFField` 매핑 키셋 (36개 — 25 기존 + 3 누락 매핑 + 8 신규)
+ *   - AC2: `@SFField` 매핑 키셋 (44개 — 38 기존 + 6 신규 (#713))
  *   - AC3: PK 미부착
  *   - AC5: Picklist 정합 (Gender ↔ 남/여, UserRole ↔ 조장/여사원/지점장)
+ *   - AC10 (#713): Group A 신규 어노테이션 + Reference FK 검증
+ *   - AC11 (#713): Gender GenderConverter + CrmWorkType enum + CrmWorkTypeConverter 검증
  */
-@DisplayName("Employee SF 어노테이션 검증 (Spec #607)")
+@DisplayName("Employee SF 어노테이션 검증 (Spec #607 / #713)")
 class EmployeeSFAnnotationTest {
 
     @Nested
@@ -43,9 +48,9 @@ class EmployeeSFAnnotationTest {
         private val mapping = SFSchemaUtils.getSFMapping(Employee::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 38 (25 기존 + 3 누락 + 8 신규 + BaseEntity 2)")
+        @DisplayName("매핑 키 수 = 44 (38 기존(#607) + 6 신규(#713) + BaseEntity 2 포함)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(38)
+            assertThat(mapping).hasSize(44)
         }
 
         @Test
@@ -129,6 +134,154 @@ class EmployeeSFAnnotationTest {
         @DisplayName("UserRole.fromKorean(\"AccountViewAll\") → UNKNOWN (운영 enum 미매핑 — 후속 별도 스펙)")
         fun userRoleAccountViewAllNotMapped() {
             assertThat(UserRole.fromKorean("AccountViewAll")).isEqualTo(UserRole.UNKNOWN)
+        }
+    }
+
+    @Nested
+    @DisplayName("AC10 (#713) — Group A 신규 어노테이션 + Reference FK 검증")
+    inner class Spec713GroupAAndReference {
+
+        @Test
+        @DisplayName("is_deleted 필드에 @SFField(\"IsDeleted\") 신규 부착")
+        fun isDeletedHasSfField() {
+            val field = Employee::class.java.getDeclaredField("isDeleted")
+            val annotation = field.getAnnotation(SFField::class.java)
+            assertThat(annotation).isNotNull
+            assertThat(annotation.value).isEqualTo("IsDeleted")
+        }
+
+        @Test
+        @DisplayName("owner_sfid 필드 + @SFField(\"OwnerId\") + @HCColumn(\"ownerid\") + length 18")
+        fun ownerSfidField() {
+            val field = Employee::class.java.getDeclaredField("ownerSfid")
+            assertThat(field.type).isEqualTo(String::class.java)
+            val column = field.getAnnotation(jakarta.persistence.Column::class.java)
+            assertThat(column.name).isEqualTo("owner_sfid")
+            assertThat(column.length).isEqualTo(18)
+            assertThat(field.getAnnotation(SFField::class.java).value).isEqualTo("OwnerId")
+            assertThat(field.getAnnotation(com.otoki.powersales.common.salesforce.HCColumn::class.java).value).isEqualTo("ownerid")
+        }
+
+        @Test
+        @DisplayName("created_by_sfid 필드 + @SFField(\"CreatedById\") + @HCColumn(\"createdbyid\") + length 18")
+        fun createdBySfidField() {
+            val field = Employee::class.java.getDeclaredField("createdBySfid")
+            assertThat(field.type).isEqualTo(String::class.java)
+            val column = field.getAnnotation(jakarta.persistence.Column::class.java)
+            assertThat(column.name).isEqualTo("created_by_sfid")
+            assertThat(column.length).isEqualTo(18)
+            assertThat(field.getAnnotation(SFField::class.java).value).isEqualTo("CreatedById")
+            assertThat(field.getAnnotation(com.otoki.powersales.common.salesforce.HCColumn::class.java).value).isEqualTo("createdbyid")
+        }
+
+        @Test
+        @DisplayName("last_modified_by_sfid 필드 + @SFField(\"LastModifiedById\") + @HCColumn(\"lastmodifiedbyid\") + length 18")
+        fun lastModifiedBySfidField() {
+            val field = Employee::class.java.getDeclaredField("lastModifiedBySfid")
+            assertThat(field.type).isEqualTo(String::class.java)
+            val column = field.getAnnotation(jakarta.persistence.Column::class.java)
+            assertThat(column.name).isEqualTo("last_modified_by_sfid")
+            assertThat(column.length).isEqualTo(18)
+            assertThat(field.getAnnotation(SFField::class.java).value).isEqualTo("LastModifiedById")
+            assertThat(field.getAnnotation(com.otoki.powersales.common.salesforce.HCColumn::class.java).value).isEqualTo("lastmodifiedbyid")
+        }
+
+        @Test
+        @DisplayName("owner FK (@ManyToOne + @JoinColumn(\"owner_id\") → Employee self, @SFField 미부착)")
+        fun ownerFk() {
+            val field = Employee::class.java.getDeclaredField("owner")
+            assertThat(field.type).isEqualTo(Employee::class.java)
+            assertThat(field.isAnnotationPresent(jakarta.persistence.ManyToOne::class.java)).isTrue()
+            assertThat(field.getAnnotation(jakarta.persistence.JoinColumn::class.java).name).isEqualTo("owner_id")
+            assertThat(field.isAnnotationPresent(SFField::class.java)).isFalse()
+        }
+
+        @Test
+        @DisplayName("createdBy FK (@ManyToOne + @JoinColumn(\"created_by_id\") → Employee)")
+        fun createdByFk() {
+            val field = Employee::class.java.getDeclaredField("createdBy")
+            assertThat(field.type).isEqualTo(Employee::class.java)
+            assertThat(field.isAnnotationPresent(jakarta.persistence.ManyToOne::class.java)).isTrue()
+            assertThat(field.getAnnotation(jakarta.persistence.JoinColumn::class.java).name).isEqualTo("created_by_id")
+        }
+
+        @Test
+        @DisplayName("lastModifiedBy FK (@ManyToOne + @JoinColumn(\"last_modified_by_id\") → Employee)")
+        fun lastModifiedByFk() {
+            val field = Employee::class.java.getDeclaredField("lastModifiedBy")
+            assertThat(field.type).isEqualTo(Employee::class.java)
+            assertThat(field.isAnnotationPresent(jakarta.persistence.ManyToOne::class.java)).isTrue()
+            assertThat(field.getAnnotation(jakarta.persistence.JoinColumn::class.java).name).isEqualTo("last_modified_by_id")
+        }
+
+        @Test
+        @DisplayName("manager FK (@ManyToOne + @JoinColumn(\"manager_id\") → Employee self)")
+        fun managerFk() {
+            val field = Employee::class.java.getDeclaredField("manager")
+            assertThat(field.type).isEqualTo(Employee::class.java)
+            assertThat(field.isAnnotationPresent(jakarta.persistence.ManyToOne::class.java)).isTrue()
+            assertThat(field.getAnnotation(jakarta.persistence.JoinColumn::class.java).name).isEqualTo("manager_id")
+        }
+    }
+
+    @Nested
+    @DisplayName("AC11 (#713) — Gender GenderConverter + CrmWorkType enum + CrmWorkTypeConverter")
+    inner class Spec713PicklistEnum {
+
+        @Test
+        @DisplayName("GenderConverter — SF 원본값(`남`/`여`) 양방향 변환 + backward compat(`MALE`/`FEMALE`)")
+        fun genderConverter() {
+            val converter = GenderConverter()
+            assertThat(converter.convertToDatabaseColumn(Gender.MALE)).isEqualTo("남")
+            assertThat(converter.convertToDatabaseColumn(Gender.FEMALE)).isEqualTo("여")
+            assertThat(converter.convertToDatabaseColumn(null)).isNull()
+            assertThat(converter.convertToEntityAttribute("남")).isEqualTo(Gender.MALE)
+            assertThat(converter.convertToEntityAttribute("여")).isEqualTo(Gender.FEMALE)
+            assertThat(converter.convertToEntityAttribute("MALE")).isEqualTo(Gender.MALE)
+            assertThat(converter.convertToEntityAttribute("FEMALE")).isEqualTo(Gender.FEMALE)
+            assertThat(converter.convertToEntityAttribute(null)).isNull()
+            assertThat(converter.convertToEntityAttribute("")).isNull()
+            assertThat(converter.convertToEntityAttribute("UNKNOWN")).isNull()
+        }
+
+        @Test
+        @DisplayName("CrmWorkType enum 1개 멤버 + SF 원본 displayName(`-`)")
+        fun crmWorkTypeEnum() {
+            assertThat(CrmWorkType.entries).hasSize(1)
+            assertThat(CrmWorkType.HYPHEN.displayName).isEqualTo("-")
+        }
+
+        @Test
+        @DisplayName("CrmWorkTypeConverter — enum ↔ SF 원본값('-') 양방향 변환")
+        fun crmWorkTypeConverter() {
+            val converter = CrmWorkTypeConverter()
+            assertThat(converter.convertToDatabaseColumn(CrmWorkType.HYPHEN)).isEqualTo("-")
+            assertThat(converter.convertToDatabaseColumn(null)).isNull()
+            assertThat(converter.convertToEntityAttribute("-")).isEqualTo(CrmWorkType.HYPHEN)
+            assertThat(converter.convertToEntityAttribute(null)).isNull()
+            assertThat(converter.convertToEntityAttribute("")).isNull()
+            assertThat(converter.convertToEntityAttribute("UNKNOWN")).isNull()
+        }
+
+        @Test
+        @DisplayName("Employee.gender 필드에 @Convert(GenderConverter) 부착 + @Enumerated 미부착")
+        fun genderFieldConverterAnnotation() {
+            val field = Employee::class.java.getDeclaredField("gender")
+            assertThat(field.type).isEqualTo(Gender::class.java)
+            val convert = field.getAnnotation(Convert::class.java)
+            assertThat(convert).isNotNull
+            assertThat(convert.converter.java).isEqualTo(GenderConverter::class.java)
+            assertThat(field.isAnnotationPresent(jakarta.persistence.Enumerated::class.java)).isFalse()
+        }
+
+        @Test
+        @DisplayName("Employee.crmWorkType 필드에 @Convert(CrmWorkTypeConverter) 부착 + 타입 CrmWorkType")
+        fun crmWorkTypeFieldConverterAnnotation() {
+            val field = Employee::class.java.getDeclaredField("crmWorkType")
+            assertThat(field.type).isEqualTo(CrmWorkType::class.java)
+            val convert = field.getAnnotation(Convert::class.java)
+            assertThat(convert).isNotNull
+            assertThat(convert.converter.java).isEqualTo(CrmWorkTypeConverter::class.java)
         }
     }
 }

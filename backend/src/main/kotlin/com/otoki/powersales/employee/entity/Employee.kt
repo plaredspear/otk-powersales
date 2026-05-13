@@ -5,6 +5,8 @@ import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
+import com.otoki.powersales.employee.entity.converter.CrmWorkTypeConverter
+import com.otoki.powersales.employee.entity.converter.GenderConverter
 import jakarta.persistence.*
 import org.hibernate.annotations.NotFound
 import org.hibernate.annotations.NotFoundAction
@@ -105,8 +107,10 @@ class Employee(
     var email: String? = null,
 
     // 외부 키는 `Sex` 이며 Salesforce/SAP 호환을 위해 유지한다 (Spec #565)
+    // Spec #713: @Enumerated → GenderConverter 전환 (SF 원본값 `남`/`여` 저장 + MALE/FEMALE backward compat)
     @SFField("DKRetail__Sex__c")
-    @Enumerated(EnumType.STRING)
+    @HCColumn("dkretail__sex__c")
+    @Convert(converter = GenderConverter::class)
     @Column(name = "gender", length = 10)
     var gender: Gender? = null,
 
@@ -124,6 +128,7 @@ class Employee(
     @Column(name = "agreement_flag")
     var agreementFlag: Boolean? = null,
 
+    @SFField("IsDeleted")
     @HCColumn("isdeleted")
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
@@ -192,10 +197,12 @@ class Employee(
     var usedAnnualLeave: java.math.BigDecimal? = null,
 
     @SFField("DKRetail__ManagerId__c")
+    @HCColumn("dkretail__managerid__c")
     @Column(name = "manager_sfid", length = 18)
     var managerSfid: String? = null,
 
     @SFField("PostponedAppointment__c")
+    @HCColumn("postponedappointment__c")
     @Column(name = "postponed_appointment_sfid", length = 18)
     var postponedAppointmentSfid: String? = null,
 
@@ -210,6 +217,56 @@ class Employee(
     @Enumerated(EnumType.STRING)
     @Column(name = "origin", nullable = false, length = 20)
     var origin: EmployeeOrigin = EmployeeOrigin.SAP,
+
+    // -- Spec #713: SF Object 정합 (Group A + Reference R-2) --
+
+    @SFField("OfficePhone__c")
+    @HCColumn("officephone__c")
+    @Column(name = "office_phone", length = 40)
+    var officePhone: String? = null,
+
+    @SFField("DKRetail__CRM_WorkType__c")
+    @HCColumn("dkretail__crm_worktype__c")
+    @Convert(converter = CrmWorkTypeConverter::class)
+    @Column(name = "crm_work_type", length = 255)
+    var crmWorkType: CrmWorkType? = null,
+
+    // Group A: OwnerId (→ Employee R-2)
+    // owner_sfid: sync buffer 컬럼 (SF User Id). owner: SalesforceMigrationTool 이 SF User → Employee 매핑으로 채우는 FK.
+    @SFField("OwnerId")
+    @HCColumn("ownerid")
+    @Column(name = "owner_sfid", length = 18)
+    var ownerSfid: String? = null,
+
+    // Group A: CreatedById / LastModifiedById (→ Employee R-2)
+    // *_sfid: sync buffer 컬럼 (SF User Id). *_by: SalesforceMigrationTool 이 SF User → Employee 매핑.
+    @SFField("CreatedById")
+    @HCColumn("createdbyid")
+    @Column(name = "created_by_sfid", length = 18)
+    var createdBySfid: String? = null,
+
+    @SFField("LastModifiedById")
+    @HCColumn("lastmodifiedbyid")
+    @Column(name = "last_modified_by_sfid", length = 18)
+    var lastModifiedBySfid: String? = null,
+
+    // -- Relations --
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id")
+    var owner: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_id")
+    var createdBy: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "last_modified_by_id")
+    var lastModifiedBy: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "manager_id")
+    var manager: Employee? = null,
 
     // --- Secondary Table (employee_info) 필드: constructor param only (JPA 미매핑) ---
 
