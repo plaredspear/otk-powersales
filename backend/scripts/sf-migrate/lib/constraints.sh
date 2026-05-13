@@ -2,6 +2,10 @@
 #
 # 대상 테이블의 FK + NOT NULL constraint 를 임시 DROP / 복원.
 #
+# 본 스크립트는 phase1-load.sh / phase2-link-fk.sh 가 호출한다. 단독 호출 시
+# 환경변수 (DEV_OTK_PWRS_DB_PASSWORD 및 PGHOST/PGPORT/PGUSER/PGDATABASE) 는
+# migrate.sh 의 상단 주석 참조.
+#
 # 사용:
 #   constraints.sh save   <restore_sql_path>  <table1> [table2 ...]
 #   constraints.sh drop   <table1> [table2 ...]

@@ -2,6 +2,10 @@
 #
 # Phase 1: SF → DB 적재 (entity-driven).
 #
+# 본 스크립트는 migrate.sh 가 호출한다. 단독 호출 시 환경변수
+# (SF_TARGET_ORG, DEV_OTK_PWRS_DB_PASSWORD, SF_MIGRATE_WORK_DIR 등) 는
+# migrate.sh 의 상단 주석 참조.
+#
 # 입력: 인자로 SObject API name 리스트.
 # 동작:
 #   1) entity-meta.py 로 모든 sobject 의 메타 수집 → 대상 테이블 목록 산출

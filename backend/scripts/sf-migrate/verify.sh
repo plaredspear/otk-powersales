@@ -5,6 +5,9 @@
 #   2) sfid NULL 잔존 = 0
 #   3) Orphan FK = 0 (target 이 범위 내일 때만 — 범위 외 FK 는 NULL 정상)
 #
+# 본 스크립트는 migrate.sh 가 호출한다. 단독 호출 시 환경변수
+# (DEV_OTK_PWRS_DB_PASSWORD 등) 는 migrate.sh 의 상단 주석 참조.
+#
 # 사용:
 #   verify.sh <SObject1> [SObject2 ...]
 #

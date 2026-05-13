@@ -2,6 +2,10 @@
 #
 # Phase 2: *_sfid → 참조 entity 의 sfid → 로컬 PK 로 FK UPDATE (entity-driven).
 #
+# 본 스크립트는 migrate.sh 가 호출한다. 단독 호출 시 환경변수
+# (DEV_OTK_PWRS_DB_PASSWORD, SF_MIGRATE_WORK_DIR 등) 는
+# migrate.sh 의 상단 주석 참조.
+#
 # 입력: SObject API name 인자 리스트.
 # 동작:
 #   - 각 sobject 의 entity-meta.py 결과에서 fk_mappings 배열 추출

@@ -2,6 +2,9 @@
 #
 # SF CLI 로 SObject 데이터를 CSV 로 추출 (row 수 자동 분기).
 #
+# 본 스크립트는 phase1-load.sh 가 호출한다. 단독 호출 시 환경변수
+# (SF_TARGET_ORG, SF_MIGRATE_BULK_THRESHOLD) 는 migrate.sh 의 상단 주석 참조.
+#
 # 사용:
 #   extract.sh <SF_api_name> <SOQL_query_string> <output_csv_path>
 #
