@@ -15,6 +15,14 @@
 #      (target table 이 DB 에 비어 있으면 자동 skip)
 #   5) constraint 복원
 #   6) sfid NULL 검증 (= 0 이어야 통과)
+#   7) text 컬럼 빈 문자열 검증 (정책 위반 알람 — 아래 NULL/빈 문자열 정책 참조)
+#
+# ── NULL / 빈 문자열 정책 ───────────────────────────────────────────────────
+#   SF CSV 의 빈 셀은 모두 PG NULL 로 적재한다 (\copy FORMAT csv 기본 동작).
+#   SF 측 NULL 과 빈 문자열은 CSV 단계에서 구분 불가능 — Apex 코드 조사 결과
+#   (2026-05-14) 둘을 다른 분기로 라우팅하는 사례 없어 동등 통일이 안전.
+#   적재 후 step 7 에서 text 컬럼 중 `''` 가 발견되면 WARN 출력 — 의외 케이스
+#   (예: post-load SQL 이 빈 문자열을 명시 입력) 진단용. 정책 위반은 아니다.
 #
 # ── 사용법 ──────────────────────────────────────────────────────────────────
 #   db-import.sh <SObject_API_Name> [csv_path]
@@ -196,12 +204,32 @@ echo "[db-import:$ENTITY_CLASS] FK UPDATE: $UPDATE_COUNT 건 실행, $SKIP_COUNT
 psql -v ON_ERROR_STOP=1 -q -f "$RESTORE_SQL"
 echo "[db-import:$ENTITY_CLASS] constraint 복원 완료"
 
-# ── 6) 검증 ──
+# ── 6) sfid NULL 검증 ──
 SFID_NULL=$(psql -At -c "SELECT COUNT(*) FROM ${SCHEMA}.${TABLE} WHERE sfid IS NULL;")
 echo "[db-import:$ENTITY_CLASS] sfid_null=$SFID_NULL"
 if [[ "$SFID_NULL" -ne 0 ]]; then
   echo "[FAIL] sfid NULL > 0" >&2
   exit 1
 fi
+
+# ── 7) 빈 문자열 검증 (NULL 통일 정책 — 발견 시 WARN, FAIL 아님) ──
+psql -v ON_ERROR_STOP=1 -q <<SQL
+DO \$\$
+DECLARE
+  rec record;
+  cnt bigint;
+BEGIN
+  FOR rec IN
+    SELECT column_name FROM information_schema.columns
+    WHERE table_schema = '${SCHEMA}' AND table_name = '${TABLE}'
+      AND data_type IN ('character varying', 'text', 'character')
+  LOOP
+    EXECUTE format('SELECT COUNT(*) FROM ${SCHEMA}.${TABLE} WHERE %I = ''''', rec.column_name) INTO cnt;
+    IF cnt > 0 THEN
+      RAISE WARNING '[db-import:${ENTITY_CLASS}] empty string in column %: % rows (NULL 통일 정책 위반 — 의외 케이스 점검)', rec.column_name, cnt;
+    END IF;
+  END LOOP;
+END \$\$;
+SQL
 
 echo "[OK] db-import 완료 — ${SCHEMA}.${TABLE} rows=$LOADED"

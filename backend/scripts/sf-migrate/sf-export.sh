@@ -13,10 +13,17 @@
 #   2) sf sobject describe 로 SF org 에 실존하는 필드 목록 조회
 #   3) (1) ∩ (2) 필드만 SOQL SELECT 절에 포함 — entity 정의에는 있으나 org 에는
 #      없는 필드 (예: sandbox 미생성) 자동 skip
-#   4) row 수 자동 분기:
-#        ≤5000 건 → sf data query (CSV)
-#        >5000 건 → sf data export bulk (Bulk API 2.0)
+#   4) sf data export bulk (Bulk API 2.0) 단일 채널로 추출 — row 수 무관 동일
+#      포맷 보장. sf data query 와의 quoting/공백 처리 미세 차이 회피.
 #   5) 헤더를 SF API name → DB 컬럼명으로 변환하여 출력
+#
+# ── NULL / 빈 문자열 정책 ───────────────────────────────────────────────────
+#   SF CLI CSV 는 NULL 과 빈 문자열을 모두 빈 셀로 출력하여 구분 불가능하다.
+#   본 도구는 양쪽을 PostgreSQL NULL 로 통일한다 (db-import.sh 의 \copy 가
+#   빈 셀을 NULL 로 적재). SF Apex 코드 조사 결과(2026-05-14) 두 값을 다른
+#   분기로 라우팅하는 사례 없음 — `!= null && != ''` 형태로 동등 취급. 단,
+#   SOQL `WHERE col != ''` 같은 패턴을 PG 로 직역 시 결과 집합이 달라지므로
+#   신규 쿼리는 `IS NOT NULL AND <> ''` 로 명시 변환할 것.
 #
 # ── 사용법 ──────────────────────────────────────────────────────────────────
 #   sf-export.sh <SObject_API_Name> [output_csv_path]
@@ -28,9 +35,6 @@
 #                                  사전 등록:  sf org login web --alias <alias>
 #                                  확인:       sf org list
 #                                  설정 예:    export SF_TARGET_ORG=otk-sbx
-#
-# ── 선택 환경변수 ───────────────────────────────────────────────────────────
-#   SF_MIGRATE_BULK_THRESHOLD      Bulk API 전환 row 임계 (기본: 5000)
 #
 # ── 실행 예시 ───────────────────────────────────────────────────────────────
 #   export SF_TARGET_ORG=otk-sbx
@@ -88,27 +92,14 @@ fi
 SF_FIELDS=$(echo "$FILTERED_META" | jq -r '[.fields[].sf] | join(", ")')
 SOQL="SELECT ${SF_FIELDS} FROM ${SOBJECT}"
 
-# ── 4) row 수 분기 ──
-THRESHOLD="${SF_MIGRATE_BULK_THRESHOLD:-5000}"
-COUNT_JSON=$(sf data query --query "SELECT COUNT() FROM ${SOBJECT}" --target-org "$SF_TARGET_ORG" --json)
-TOTAL=$(echo "$COUNT_JSON" | python3 -c 'import sys, json; print(json.load(sys.stdin)["result"]["totalSize"])')
-echo "[sf-export:$SOBJECT] totalSize=$TOTAL  threshold=$THRESHOLD"
-
+# ── 4) Bulk API 2.0 추출 ──
 RAW_CSV="${OUT_CSV%.csv}.raw.csv"
-if [[ "$TOTAL" -le "$THRESHOLD" ]]; then
-  sf data query \
-    --query "$SOQL" \
-    --target-org "$SF_TARGET_ORG" \
-    --result-format csv \
-    > "$RAW_CSV"
-else
-  sf data export bulk \
-    --query "$SOQL" \
-    --target-org "$SF_TARGET_ORG" \
-    --output-file "$RAW_CSV" \
-    --result-format csv \
-    --wait 30
-fi
+sf data export bulk \
+  --query "$SOQL" \
+  --target-org "$SF_TARGET_ORG" \
+  --output-file "$RAW_CSV" \
+  --result-format csv \
+  --wait 30
 
 # ── 5) 헤더 변환 (SF API name → DB 컬럼명) ──
 python3 - "$RAW_CSV" "$OUT_CSV" "$FILTERED_META" <<'PYEOF'
