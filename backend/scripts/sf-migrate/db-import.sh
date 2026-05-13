@@ -279,12 +279,14 @@ echo "  text 컬럼 ${COL_TOTAL}개 검사"
 
 COL_IDX=0
 EMPTY_COLS=0
+# EXISTS 사용 — 첫 1건 발견 시 즉시 종료 (정확한 카운트 대신 존재 여부만 확인).
+# 위반 발견 자체가 운영 가치 — 정확 카운트 필요 시 운영자가 별도 query 로 확인.
 while IFS= read -r col; do
   [[ -z "$col" ]] && continue
   COL_IDX=$((COL_IDX + 1))
-  CNT=$(psql -At -c "SELECT COUNT(*) FROM ${SCHEMA}.${TABLE} WHERE \"${col}\" = '';")
-  if [[ "$CNT" -gt 0 ]]; then
-    echo "  [${COL_IDX}/${COL_TOTAL}] WARN ${col}: ${CNT} rows (NULL 통일 정책 위반 — 점검)"
+  HAS_EMPTY=$(psql -At -c "SELECT EXISTS(SELECT 1 FROM ${SCHEMA}.${TABLE} WHERE \"${col}\" = '');")
+  if [[ "$HAS_EMPTY" == "t" ]]; then
+    echo "  [${COL_IDX}/${COL_TOTAL}] WARN ${col}: 빈 문자열 존재 (NULL 통일 정책 위반 — 점검)"
     EMPTY_COLS=$((EMPTY_COLS + 1))
   fi
   if (( COL_IDX % 10 == 0 )) && (( COL_IDX < COL_TOTAL )); then
