@@ -268,6 +268,13 @@ class Employee(
     @JoinColumn(name = "manager_id")
     var manager: Employee? = null,
 
+    // -- Spec #738: PostponedAppointment__c reference (R-2 패턴 FK 후처리) --
+    // postponed_appointment_sfid 는 V36 / #713 시점에 sfid 컨벤션으로 추가됨. 본 FK 는 그 sfid → appointment.appointment_id 매핑.
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "postponed_appointment_id")
+    var postponedAppointment: com.otoki.powersales.schedule.entity.Appointment? = null,
+
     // --- Secondary Table (employee_info) 필드: constructor param only (JPA 미매핑) ---
 
     password: String = "",
