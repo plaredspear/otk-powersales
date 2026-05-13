@@ -182,4 +182,13 @@ class MonthlyFemaleEmployeeIntegrationSchedule(
     @JoinColumn(name = "employee_input_criteria_master_id")
     var employeeInputCriteriaMaster: com.otoki.powersales.schedule.entity.EmployeeInputCriteriaMaster? = null,
 
+    // -- Spec #747 카테고리 A — D 분류 누락 --
+    @SFField("DateForReport__c")
+    @HCColumn("dateforreport__c")
+    @Column(name = "date_for_report")
+    var dateForReport: java.time.LocalDate? = null,
+
+    // Spec #747: Year_Month__c (SF len=1300) — 기존 entity 의 `month` 컬럼이 H2 reserved word 와 schema 재검증 시 충돌
+    // 발생 → 본 batch 보류. #750+ follow-up 으로 분리 검토 (기존 month 컬럼 quote 처리 + 신규 컬럼 추가).
+
 ) : BaseEntity()

@@ -91,4 +91,10 @@ class ProfessionalPromotionTeamHistory(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: Employee? = null,
+
+    // -- Spec #747 카테고리 A Q2 — history 보존 의미의 사원코드 캐시 --
+    @SFField("empCode__c")
+    @HCColumn("empcode__c")
+    @Column(name = "emp_code", length = 1300)
+    var empCode: String? = null,
 ) : BaseEntity()

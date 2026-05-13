@@ -131,4 +131,10 @@ class DisplayWorkSchedule(
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: Employee? = null,
 
+    // -- Spec #747 카테고리 A — D 분류 누락 (확인 알림) --
+    @SFField("ConfirmationAlert__c")
+    @HCColumn("confirmationalert__c")
+    @Column(name = "confirmation_alert", length = 1300)
+    var confirmationAlert: String? = null,
+
 ) : BaseEntity()

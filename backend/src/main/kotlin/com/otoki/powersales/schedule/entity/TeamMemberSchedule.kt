@@ -324,6 +324,37 @@ class TeamMemberSchedule(
     @JoinColumn(name = "monthly_female_employee_integration_schedule_id")
     var monthlyFemaleEmployeeIntegrationSchedule: com.otoki.powersales.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule? = null,
 
+    // -- Spec #747 카테고리 A — D 분류 누락 (6건) --
+    @SFField("DKRetail__ActualWorkDate__c")
+    @HCColumn("dkretail__actualworkdate__c")
+    @Column(name = "actual_work_date")
+    var actualWorkDate: java.time.LocalDate? = null,
+
+    @SFField("DKRetail__CommuteDate__c")
+    @HCColumn("dkretail__commutedate__c")
+    @Column(name = "commute_date")
+    var commuteDate: java.time.LocalDateTime? = null,
+
+    @SFField("DKRetail__ConfirmAltHolidayDate__c")
+    @HCColumn("dkretail__confirmaltholidaydate__c")
+    @Column(name = "confirm_alt_holiday_date")
+    var confirmAltHolidayDate: java.time.LocalDate? = null,
+
+    @SFField("DKRetail__Day__c")
+    @HCColumn("dkretail__day__c")
+    @Column(name = "dk_day")
+    var dkDay: Double? = null,
+
+    @SFField("DKRetail__Reason__c")
+    @HCColumn("dkretail__reason__c")
+    @Column(name = "reason", length = 1300)
+    var reason: String? = null,
+
+    @SFField("DKRetail__SecondWorkType__c")
+    @HCColumn("dkretail__secondworktype__c")
+    @Column(name = "second_work_type_text", length = 1300)
+    var secondWorkTypeText: String? = null,
+
 ) : BaseEntity() {
     fun updateForPromotion(
         employee: Employee,

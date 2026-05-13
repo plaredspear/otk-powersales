@@ -66,6 +66,12 @@ class Notice(
     @Column(name = "branch_code", length = 255)
     var branchCode: String? = null,
 
+    // -- Spec #747 카테고리 A — Notice 작성일 (도메인 핵심) --
+    @SFField("DKRetail__Date__c")
+    @HCColumn("dkretail__date__c")
+    @Column(name = "notice_date")
+    var noticeDate: java.time.LocalDate? = null,
+
     @SFField("IsDeleted")
     @HCColumn("isdeleted")
     @Column(name = "is_deleted")

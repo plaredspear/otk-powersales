@@ -180,6 +180,22 @@ class StaffReview(
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "branch_review_id")
-    var branchReview: BranchReview? = null
+    var branchReview: BranchReview? = null,
+
+    // -- Spec #747 카테고리 A — D 분류 누락 (도메인 핵심) --
+    @SFField("EmployeeType__c")
+    @HCColumn("employeetype__c")
+    @Column(name = "employee_type", length = 1300)
+    var employeeType: String? = null,
+
+    @SFField("EntryDate__c")
+    @HCColumn("entrydate__c")
+    @Column(name = "entry_date")
+    var entryDate: LocalDate? = null,
+
+    @SFField("Jikwee__c")
+    @HCColumn("jikwee__c")
+    @Column(name = "jikwee", length = 1300)
+    var jikwee: String? = null,
 
 ) : BaseEntity()

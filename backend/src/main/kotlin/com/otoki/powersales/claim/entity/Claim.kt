@@ -156,6 +156,20 @@ class Claim(
     @Column(name = "product_sfid", length = 18)
     var productSfid: String? = null,
 
+    // -- Spec #747 카테고리 A — 도메인 핵심 누락 D 분류 (SF len=1300 캐시) --
+
+    @SFField("DKRetail__Barcode__c")
+    @Column(name = "barcode", length = 1300)
+    var barcode: String? = null,
+
+    @SFField("DKRetail__Phone__c")
+    @Column(name = "phone", length = 1300)
+    var phone: String? = null,
+
+    @SFField("DKRetail__ProductStatus__c")
+    @Column(name = "product_status", length = 1300)
+    var productStatus: String? = null,
+
     @SFField("ReturnOrderNumber__c")
     @Column(name = "customer_delivery_date")
     var customerDeliveryDate: LocalDate? = null,

@@ -46,7 +46,7 @@ class StaffReviewSFAnnotationTest {
         @Test
         @DisplayName("매핑 키 수 = 26 (기존 21 + Group A 3 + BaseEntity 2)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(26)
+            assertThat(mapping).hasSize(29)
         }
 
         @Test

@@ -134,6 +134,27 @@ class Promotion(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: Employee? = null,
+
+    // -- Spec #747 카테고리 A — D 분류 누락 + Q5 ActualAmount 동명 둘 다 추가 --
+    @SFField("DKRetail__PromotionName__c")
+    @HCColumn("dkretail__promotionname__c")
+    @Column(name = "promotion_name", length = 1300)
+    var promotionName: String? = null,
+
+    @SFField("DKRetail__ActualAmount__c")
+    @HCColumn("dkretail__actualamount__c")
+    @Column(name = "dk_actual_amount")
+    var dkActualAmount: Double? = null,
+
+    @SFField("DKRetail__TargetAmount__c")
+    @HCColumn("dkretail__targetamount__c")
+    @Column(name = "dk_target_amount")
+    var dkTargetAmount: Double? = null,
+
+    @SFField("ActualAmount__c")
+    @HCColumn("actualamount__c")
+    @Column(name = "actual_amount")
+    var actualAmount: Double? = null,
 ) : BaseEntity() {
 
     @ManyToOne(fetch = FetchType.LAZY)

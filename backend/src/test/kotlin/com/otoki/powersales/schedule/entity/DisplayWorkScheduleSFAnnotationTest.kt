@@ -43,7 +43,7 @@ class DisplayWorkScheduleSFAnnotationTest {
         @Test
         @DisplayName("매핑 키 수 = 17 (12 기존 + 1 누락 매핑 + BaseEntity 2 + Spec #732 R-2 CreatedBy/LastModifiedBy 2)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(18)
+            assertThat(mapping).hasSize(19)
         }
 
         @Test

@@ -270,7 +270,18 @@ class Product(
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "new_product_id")
-    var newProduct: NewProduct? = null
+    var newProduct: NewProduct? = null,
+
+    // -- Spec #747 카테고리 A — D 분류 누락 --
+    @SFField("StandardPrice__c")
+    @HCColumn("standardprice__c")
+    @Column(name = "standard_price")
+    var standardPrice: Double? = null,
+
+    @SFField("BoxReceivingQuantity__c")
+    @HCColumn("boxreceivingquantity__c")
+    @Column(name = "legacy_box_receiving_quantity")
+    var legacyBoxReceivingQuantity: Double? = null,
 
     /* --- 주석 처리: V1에 없는 기존 필드 ---
     productId: V1에 없음 (sfid로 대체)

@@ -43,7 +43,7 @@ class TeamMemberScheduleSFAnnotationTest {
         @Test
         @DisplayName("매핑 키 수 = 47 (Spec #733: 43 + R-2 Owner/CreatedBy/LastModifiedBy 3 + CostCenterCode 1)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(48)
+            assertThat(mapping).hasSize(54)
         }
 
         @Test
