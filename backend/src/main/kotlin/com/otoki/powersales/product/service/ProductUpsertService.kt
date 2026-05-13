@@ -1,6 +1,8 @@
 package com.otoki.powersales.product.service
 
 import com.otoki.powersales.product.entity.Product
+import com.otoki.powersales.product.entity.ProductType
+import com.otoki.powersales.product.entity.StorageCondition
 import com.otoki.powersales.product.repository.ProductRepository
 import com.otoki.powersales.product.service.dto.ParseResult
 import com.otoki.powersales.product.service.dto.ProductUpsertCommand
@@ -149,7 +151,7 @@ class ProductUpsertService(
         pallet: Double?
     ) {
         product.productStatus = command.productStatus
-        product.productType = command.productType
+        product.productType = ProductType.fromDisplayNameOrNull(command.productType)
         product.category1 = command.category1
         product.category2 = command.category2
         product.category3 = command.category3
@@ -161,7 +163,7 @@ class ProductUpsertService(
         product.shelfLifeUnit = command.shelfLifeUnit
         product.tasteGift = command.tasteGift
         product.logisticsBarcode = command.logisticsBarCode
-        product.storageCondition = command.storeCondition
+        product.storageCondition = StorageCondition.fromDisplayNameOrNull(command.storeCondition)
         product.standardUnitPrice = standardPrice
         product.boxReceivingQuantity = boxQty
         product.superTax = superTax ?: 0.0

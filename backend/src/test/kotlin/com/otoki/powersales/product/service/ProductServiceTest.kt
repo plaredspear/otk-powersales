@@ -256,7 +256,7 @@ class ProductServiceTest {
         productName: String,
         productCode: String,
         barcode: String,
-        storageCondition: String = "상온",
+        storageCondition: String = "실온",
         shelfLife: String = "7개월",
         category1: String = "라면",
         category2: String = "봉지면"
@@ -265,7 +265,7 @@ class ProductServiceTest {
             name = productName,
             productCode = productCode,
             logisticsBarcode = barcode,
-            storageCondition = storageCondition,
+            storageCondition = com.otoki.powersales.product.entity.StorageCondition.fromDisplayNameOrNull(storageCondition),
             shelfLife = shelfLife,
             category1 = category1,
             category2 = category2

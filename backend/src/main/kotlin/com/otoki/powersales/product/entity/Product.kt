@@ -5,6 +5,8 @@ import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
+import com.otoki.powersales.product.entity.converter.ProductTypeConverter
+import com.otoki.powersales.product.entity.converter.StorageConditionConverter
 import jakarta.persistence.*
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -41,8 +43,9 @@ class Product(
 
     @SFField("DKRetail__ProductType__c")
     @HCColumn("dkretail__producttype__c")
+    @Convert(converter = ProductTypeConverter::class)
     @Column(name = "product_type", length = 255)
-    var productType: String? = null,
+    var productType: ProductType? = null,
 
     @SFField("DKRetail__ProductStatus__c")
     @HCColumn("dkretail__productstatus__c")
@@ -51,8 +54,9 @@ class Product(
 
     @SFField("DKRetail__StoreCondition__c")
     @HCColumn("dkretail__storecondition__c")
+    @Convert(converter = StorageConditionConverter::class)
     @Column(name = "storage_condition", length = 255)
-    var storageCondition: String? = null,
+    var storageCondition: StorageCondition? = null,
 
     @SFField("DKRetail__ShelfLife__c")
     @HCColumn("dkretail__shelflife__c")
