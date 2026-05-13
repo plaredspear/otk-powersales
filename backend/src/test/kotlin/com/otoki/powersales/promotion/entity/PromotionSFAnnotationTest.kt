@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test
 /**
  * Spec #625 — Promotion ↔ Salesforce `DKRetail__Promotion__c` 어노테이션 검증.
  *
- * 단일 권위: docs/plan/old_source_260408/salesforce_object/행사마스터(DKRetail__Promotion__c).md
+ * 단일 권위: Salesforce Object (`DKRetail__Promotion__c`)
  */
 @DisplayName("Promotion SF 어노테이션 검증 (Spec #625)")
 class PromotionSFAnnotationTest {

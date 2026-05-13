@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonValue
 /**
  * Salesforce `DKRetail__Claim__c.DKRetail__ClaimType2__c` (클레임 소분류) picklist enum.
  *
- * 권위 출처: `docs/plan/old_source_260408/sf-object-meta/_raw/DKRetail__Claim__c.json:1916-2087`
+ * 권위 출처: Salesforce describe 메타 (`DKRetail__Claim__c`):1916-2087`
  * (`dependentPicklist: true`, `controllerName: "DKRetail__ClaimType1__c"`, `restrictedPicklist: true`).
  *
  * Spec #743:

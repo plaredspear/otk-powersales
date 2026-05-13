@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test
 /**
  * Spec #604 — HolidayMaster ↔ Salesforce `HolidayMaster__c` 어노테이션 부착 검증.
  *
- * 단일 권위: docs/plan/old_source_260408/salesforce_object/휴무일마스터(HolidayMaster__c).md
+ * 단일 권위: Salesforce Object (`HolidayMaster__c`)
  *
  * 검증 분류:
  *   - AC1: 클래스 `@SFObject("HolidayMaster__c")` 신규 부착

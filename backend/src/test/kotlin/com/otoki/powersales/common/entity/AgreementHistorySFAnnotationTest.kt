@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test
 /**
  * Spec #629/#706 — AgreementHistory ↔ Salesforce `AgreementHistory__c` 어노테이션 검증.
  *
- * 단일 권위: docs/plan/old_source_260408/sf-object-meta/AgreementHistory__c.md
+ * 단일 권위: Salesforce Object 메타 (`AgreementHistory__c`)
  */
 @DisplayName("AgreementHistory SF 어노테이션 검증 (Spec #629/#706)")
 class AgreementHistorySFAnnotationTest {

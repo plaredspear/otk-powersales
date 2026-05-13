@@ -1,6 +1,6 @@
 -- Spec #605 — AccountCategoryMaster SF 어노테이션 정합 + sfid + use_search 컬럼 도입 + PK 컬럼명 정합.
 --
--- 단일 권위: docs/plan/old_source_260408/salesforce_object/거래처유형마스터(AccountCategoryMaster__c).md
+-- 단일 권위: Salesforce Object (`AccountCategoryMaster__c`)
 -- 정책 (스펙 §2.6 + §6):
 --   - PK 컬럼명: id → account_category_master_id (backend-conventions.md `{table_name}_id` 컨벤션)
 --   - sfid VARCHAR(18) NULL + partial unique index (Q1 옵션 1)

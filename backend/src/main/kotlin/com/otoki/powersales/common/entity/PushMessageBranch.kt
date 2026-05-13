@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonValue
 /**
  * Salesforce `PushMessage__c.Branch__c` (지점/팀) picklist enum.
  *
- * 단일 권위: docs/plan/old_source_260408/sf-object-meta/_raw/PushMessage__c.json picklistValues
+ * 단일 권위: Salesforce describe 메타 (`PushMessage__c`) picklistValues
  * Spec #709 §6 — 예외 없이 SF picklist 정의 그대로 enum 변환.
  */
 enum class PushMessageBranch(

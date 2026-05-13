@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test
 /**
  * Spec #611 — ErpOrderProduct ↔ Salesforce `ERP_OrderProduct__c` 어노테이션 부착 검증.
  *
- * 단일 권위: docs/plan/old_source_260408/salesforce_object/ERP주문상품(ERP_OrderProduct__c).md
+ * 단일 권위: Salesforce Object (`ERP_OrderProduct__c`)
  *
  * 검증 분류:
  *   - AC1: 클래스 `@SFObject` 무변경

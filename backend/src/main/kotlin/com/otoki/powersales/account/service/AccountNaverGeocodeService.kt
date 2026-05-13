@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional
  *
  * ## 레거시 매핑
  * - SF Apex: `Batch_AccountLatLong.cls#start` / `#execute` (force-app/main/default/classes/Batch_AccountLatLong.cls)
- * - flow-legacy: `docs/specs/.../637-account-naver-geocode-batch/flow-legacy-naver-geocode-batch.yaml`
+ * - flow-legacy: flow-legacy yaml (Spec #637)
  * - origin spec: #637
  *
  * ## 레거시 동작 요약

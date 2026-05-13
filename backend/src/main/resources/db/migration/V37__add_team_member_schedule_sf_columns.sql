@@ -1,6 +1,6 @@
 -- Spec #609 — TeamMemberSchedule SF 누락 컬럼 7개 신규 도입 (Q1 옵션 1).
 --
--- 단일 권위: docs/plan/old_source_260408/salesforce_object/여사원일정(DKRetail__TeamMemberSchedule__c).md
+-- 단일 권위: Salesforce Object (`DKRetail__TeamMemberSchedule__c`)
 -- 정책 (스펙 §6.3 + Q2 옵션 1):
 --   - DB 컬럼명: SF 한국어 라벨 의미 + snake_case 가독성 우선
 --   - Lookup 필드는 <관계명>_sfid (긴 이름 — entity 명 일관성 우선)

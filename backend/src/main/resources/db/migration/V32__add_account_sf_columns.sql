@@ -1,6 +1,6 @@
 -- Spec #602 — Account SF 누락 컬럼 24개 신규 도입.
 --
--- 단일 권위: docs/plan/old_source_260408/salesforce_object/거래처(Account).md
+-- 단일 권위: Salesforce Object (`Account`)
 -- 정책 (스펙 §6.3):
 --   - DB 컬럼명: SF API Name 직역 대신 한국어 라벨 의미 + snake_case 가독성 우선
 --   - Lookup 필드는 <관계명>_sfid 단순 명명 (Q3 결정)

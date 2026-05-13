@@ -1,5 +1,5 @@
 -- P0 hotfix: SF Object 정합 분석 결과 데이터 손실/오버플로우 위험 6건 즉시 정합
--- 근거: docs/plan/old_source_260408/sf-object-meta/README.md §6.6, §6.8
+-- 근거: SF Object 정합 정책 §6.6, §6.8
 -- 분석 시점: 2026-05-13 — 36개 sobject 정합 분석
 
 -- 1. Claim 도메인 — SF 절단 위험 + Int 오버플로우

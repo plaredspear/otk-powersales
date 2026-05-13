@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonValue
 /**
  * Salesforce `Account.Industry` (업종) picklist enum.
  *
- * 단일 권위: docs/plan/old_source_260408/sf-object-meta/Account.md (선택 목록 32개)
+ * 단일 권위: Salesforce Object 메타 (`Account`) (선택 목록 32개)
  *
  * Spec #703 §3-2 결정:
  *   - enum name 은 SF 옵션값의 Java 식별자 변환 (`&` → `AND`, 공백 → `_`, UPPER_SNAKE_CASE)

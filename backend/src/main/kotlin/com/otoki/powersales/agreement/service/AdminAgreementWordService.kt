@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional
  *
  * ## 레거시 매핑
  * - SF Apex: `AgreementWordTrigger.trigger:1-3` (beforeInsert) → `AgreementWordTriggerHandler.cls:33-56` (`AgreementWordBeforeInsert`)
- * - flow-legacy: `docs/specs/completed/655-agreement-word-native-create-audit/flow-legacy-native-create.yaml`
+ * - flow-legacy: flow-legacy yaml (Spec #655)
  * - origin spec: #658 (#655 audit 후속 인계)
  *
  * ## 레거시 동작 요약

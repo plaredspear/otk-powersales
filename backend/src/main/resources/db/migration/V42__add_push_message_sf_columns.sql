@@ -1,6 +1,6 @@
 -- Spec #615 — PushMessage SF 누락 비수식 4개 신규 도입 (Q1 옵션 1).
 --
--- 단일 권위: docs/plan/old_source_260408/salesforce_object/메시지(PushMessage__c).md
+-- 단일 권위: Salesforce Object (`PushMessage__c`)
 --
 -- 구현 결정:
 --   - s_object_record_id: VARCHAR(50) — SF SObjectRecordId__c 텍스트(50) 정합 (스펙 §6.2 추정 18 → SF 정합 50)

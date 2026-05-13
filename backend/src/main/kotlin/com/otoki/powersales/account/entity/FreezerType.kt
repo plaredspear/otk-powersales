@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonValue
 /**
  * Salesforce `Account.FreezerType__c` (냉장고종류) picklist enum.
  *
- * 단일 권위: docs/plan/old_source_260408/salesforce_object/거래처(Account).md (선택 목록 2개)
+ * 단일 권위: Salesforce Object (`Account`) (선택 목록 2개)
  *
  * Spec #602 Q5/Q5-1 결정:
  *   - enum name 은 영문 (컨벤션 보존)

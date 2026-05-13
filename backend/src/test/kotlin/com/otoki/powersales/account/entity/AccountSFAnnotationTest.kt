@@ -19,8 +19,8 @@ import org.junit.jupiter.api.Test
  * Spec #602 / #703 — Account ↔ Salesforce `Account` 어노테이션 부착 검증.
  *
  * 단일 권위:
- *   - docs/plan/old_source_260408/salesforce_object/거래처(Account).md (#602)
- *   - docs/plan/old_source_260408/sf-object-meta/README.md §6 (#703 정합 정책)
+ *   - Salesforce Object (`Account`) (#602)
+ *   - SF Object 정합 정책 §6 (#703 정합 정책)
  *
  * 검증 분류:
  *   - AC1: 클래스 `@SFObject` 무변경

@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test
 /**
  * Spec #737 — NewProduct ↔ Salesforce `NewProduct__c` SF Object 정합 검증.
  *
- * 단일 권위: docs/plan/old_source_260408/sf-object-meta/_raw/NewProduct__c.json
+ * 단일 권위: Salesforce describe 메타 (`NewProduct__c`)
  *
  * 검증 분류:
  *   - AC1: 클래스 @SFObject

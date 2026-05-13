@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test
 /**
  * Spec #712 — UploadFile ↔ Salesforce `UploadFile__c` SF Object 정합 검증.
  *
- * 단일 권위: docs/plan/old_source_260408/sf-object-meta/UploadFile__c.md
+ * 단일 권위: Salesforce Object 메타 (`UploadFile__c`)
  *
  * 검증 분류:
  *   - AC1: 클래스 @SFObject 무변경

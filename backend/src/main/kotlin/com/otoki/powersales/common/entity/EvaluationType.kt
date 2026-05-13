@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonValue
 /**
  * Salesforce `HQReview__c.EvaluationyType__c` (평가유형) picklist enum.
  *
- * 단일 권위: docs/plan/old_source_260408/sf-object-meta/_raw/HQReview__c.json picklistValues
+ * 단일 권위: Salesforce describe 메타 (`HQReview__c`) picklistValues
  * Spec #708 §6 — 예외 없이 SF picklist 정의 그대로 enum 변환.
  */
 enum class EvaluationType(

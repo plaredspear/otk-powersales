@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test
 /**
  * Spec #628 — ProfessionalPromotionTeamMaster ↔ Salesforce `ProfessionalPromotionTeamMaster__c` 어노테이션 검증.
  *
- * 단일 권위: docs/plan/old_source_260408/salesforce_object/전문행사조 마스터(ProfessionalPromotionTeamMaster__c).md
+ * 단일 권위: (외부 문서) 마스터(ProfessionalPromotionTeamMaster__c).md
  */
 @DisplayName("ProfessionalPromotionTeamMaster SF 어노테이션 검증 (Spec #628)")
 class ProfessionalPromotionTeamMasterSFAnnotationTest {

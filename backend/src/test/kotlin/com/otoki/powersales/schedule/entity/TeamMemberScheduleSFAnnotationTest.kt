@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test
 /**
  * Spec #609 — TeamMemberSchedule ↔ Salesforce `DKRetail__TeamMemberSchedule__c` 어노테이션 부착 검증.
  *
- * 단일 권위: docs/plan/old_source_260408/salesforce_object/여사원일정(DKRetail__TeamMemberSchedule__c).md
+ * 단일 권위: Salesforce Object (`DKRetail__TeamMemberSchedule__c`)
  *
  * 검증 분류:
  *   - AC1: 클래스 `@SFObject` 무변경

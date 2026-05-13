@@ -1,6 +1,6 @@
 -- Spec #606 — Claim SF 누락 컬럼 16개 신규 도입.
 --
--- 단일 권위: docs/plan/old_source_260408/salesforce_object/클레임(DKRetail__Claim__c).md
+-- 단일 권위: Salesforce Object (`DKRetail__Claim__c`)
 -- 정책 (스펙 §6.3):
 --   - DB 컬럼명: SF 한국어 라벨 의미 + snake_case 가독성 우선
 --   - Lookup 필드는 <관계명>_sfid (Q2 결정 — product_sfid)

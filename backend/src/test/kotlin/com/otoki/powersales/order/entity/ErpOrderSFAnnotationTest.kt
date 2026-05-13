@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test
 /**
  * Spec #624 — ErpOrder ↔ Salesforce `ERP_Order__c` 어노테이션 검증.
  *
- * 단일 권위: docs/plan/old_source_260408/salesforce_object/ERP 주문(ERP_Order__c).md
+ * 단일 권위: (외부 문서) 주문(ERP_Order__c).md
  */
 @DisplayName("ErpOrder SF 어노테이션 검증 (Spec #624)")
 class ErpOrderSFAnnotationTest {

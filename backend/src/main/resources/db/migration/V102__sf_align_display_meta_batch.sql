@@ -1,5 +1,5 @@
 -- Spec #747 STEP1 — 카테고리 A 도메인 핵심 누락 D 분류 일괄 추가.
--- 근거: docs/plan/old_source_260408/sf-object-meta/README.md §6.2 D 분류 자동 적용.
+-- 근거: SF Object 정합 정책 §6.2 D 분류 자동 적용.
 -- 분석: 36 sobject 정합 분석 2026-05-13
 -- Q1 검증: myAccount/Age/yearsOfService 는 calculated=true → §6.7 Formula 제외 (entity 미추가)
 -- Q4: 카테고리 B (Account/Employee 표시 redundancy 35건) 일괄 제외 — #747 deviation 박제

@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test
 /**
  * Spec #610 — OrderRequest ↔ Salesforce `DKRetail__OrderRequest__c` 어노테이션 부착 검증.
  *
- * 단일 권위: docs/plan/old_source_260408/salesforce_object/주문요청(DKRetail__OrderRequest__c).md
+ * 단일 권위: Salesforce Object (`DKRetail__OrderRequest__c`)
  *
  * 검증 분류:
  *   - AC1: 클래스 `@SFObject` 무변경

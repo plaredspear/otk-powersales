@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test
 /**
  * Spec #623 — OrderRequestProduct ↔ Salesforce `DKRetail__OrderRequestProduct__c` 어노테이션 검증.
  *
- * 단일 권위: docs/plan/old_source_260408/salesforce_object/주문요청제품(DKRetail__OrderRequestProduct__c).md
+ * 단일 권위: Salesforce Object (`DKRetail__OrderRequestProduct__c`)
  */
 @DisplayName("OrderRequestProduct SF 어노테이션 검증 (Spec #623)")
 class OrderRequestProductSFAnnotationTest {

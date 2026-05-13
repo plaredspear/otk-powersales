@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test
 /**
  * Spec #606 / #705 / #743 — Claim ↔ Salesforce `DKRetail__Claim__c` 어노테이션 부착 검증.
  *
- * 단일 권위: docs/plan/old_source_260408/sf-object-meta/DKRetail__Claim__c.md
+ * 단일 권위: Salesforce Object 메타 (`DKRetail__Claim__c`)
  *
  * 검증 분류:
  *   - AC1: 클래스 `@SFObject` 무변경

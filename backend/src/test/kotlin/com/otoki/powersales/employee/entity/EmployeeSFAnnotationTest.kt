@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test
 /**
  * Spec #607 / #713 — Employee ↔ Salesforce `DKRetail__Employee__c` 어노테이션 부착 검증.
  *
- * 단일 권위: docs/plan/old_source_260408/sf-object-meta/_raw/DKRetail__Employee__c.json
+ * 단일 권위: Salesforce describe 메타 (`DKRetail__Employee__c`)
  *
  * 검증 분류:
  *   - AC1: 클래스 `@SFObject` 무변경

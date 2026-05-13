@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonValue
 /**
  * Salesforce `StaffReview__c.DKRetail_WorkingCategory1__c` picklist enum.
  *
- * 단일 권위: docs/plan/old_source_260408/sf-object-meta/_raw/StaffReview__c.json picklistValues
+ * 단일 권위: Salesforce describe 메타 (`StaffReview__c`) picklistValues
  * Spec #711 §6 — 예외 없이 SF picklist 정의 그대로 enum 변환.
  */
 enum class WorkingCategory1(

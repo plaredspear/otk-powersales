@@ -12,7 +12,7 @@
 --   - 변환 대상 데이터 부재 → 단순 컬럼 drop + 신규 컬럼 NOT NULL 직접 추가
 --
 -- SF describe 권위 출처:
---   - docs/plan/old_source_260408/sf-object-meta/_raw/DKRetail__Claim__c.json (restrictedPicklist: true)
+--   - Salesforce describe 메타 (`DKRetail__Claim__c`) (restrictedPicklist: true)
 
 -- 1. claim 테이블의 FK 컬럼 + 인덱스 + 제약 제거
 ALTER TABLE powersales.claim DROP CONSTRAINT IF EXISTS claims_category_id_fkey;

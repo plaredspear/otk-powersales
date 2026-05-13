@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test
 /**
  * Spec #633 / #714 — InspectionTheme ↔ Salesforce `Theme__c` 어노테이션 검증.
  *
- * 단일 권위: docs/plan/old_source_260408/salesforce_object/현장점검_등록(Theme__c).md
+ * 단일 권위: Salesforce Object (`Theme__c`)
  *
  * 검증 분류:
  *   - AC1: @SFObject + 매핑 키셋

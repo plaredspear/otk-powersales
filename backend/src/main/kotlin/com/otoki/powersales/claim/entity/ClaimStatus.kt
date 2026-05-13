@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonValue
 /**
  * Salesforce `DKRetail__Claim__c.DKRetail__Status__c` (상태) picklist enum.
  *
- * 단일 권위: docs/plan/old_source_260408/sf-object-meta/DKRetail__Claim__c.md (선택 목록 3개)
+ * 단일 권위: Salesforce Object 메타 (`DKRetail__Claim__c`) (선택 목록 3개)
  *
  * Spec #705 Q4 결정:
  *   - SF 옵션값으로 정합 (DRAFT/SENT/SEND_FAILED) — 기존 ClaimStatus 4개 (SUBMITTED/IN_PROGRESS/RESOLVED/REJECTED) 폐기

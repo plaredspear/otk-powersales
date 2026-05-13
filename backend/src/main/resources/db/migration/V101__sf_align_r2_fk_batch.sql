@@ -1,5 +1,5 @@
 -- Spec #746 STEP1: Reference R-2 FK 7건 신설 (`<관계명>_sfid` + `<관계명>: <Entity>?` FK 둘 다).
--- 근거: docs/plan/old_source_260408/sf-object-meta/README.md §6.4 R-2 패턴.
+-- 근거: SF Object 정합 정책 §6.4 R-2 패턴.
 -- 분석: 36 sobject 정합 분석 2026-05-13
 -- 비범위: TeamMemberSchedule.commute_log_id 리네임 + AttendanceLog FK — #749 follow-up 으로 분리
 

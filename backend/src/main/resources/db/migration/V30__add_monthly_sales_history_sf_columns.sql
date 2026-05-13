@@ -1,6 +1,6 @@
 -- Spec #601 — MonthlySalesHistory SF 누락 컬럼 17개 신규 도입.
 --
--- 단일 권위: docs/plan/old_source_260408/salesforce_object/월별매출이력(MonthlySalesHistory__c).md
+-- 단일 권위: Salesforce Object (`MonthlySalesHistory__c`)
 -- DB 컬럼명 정책:
 --   - 시리즈성 컬럼은 SF API Name 패턴 직역 유지 (Q1 결정 — 기존 abc_closing_amount1~3 패턴 일관성)
 --   - 비시리즈는 한국어 라벨 의미 + snake_case 가독성

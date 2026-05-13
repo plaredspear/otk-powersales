@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test
 /**
  * Spec #618 — Organization ↔ Salesforce `Org__c` 매핑 검증 + ExternalKey 도입.
  *
- * 단일 권위: docs/plan/old_source_260408/salesforce_object/조직(Org__c).md
+ * 단일 권위: Salesforce Object (`Org__c`)
  *
  * 검증 분류:
  *   - AC1: 클래스 `@SFObject` + 매핑 키셋 (13개 — 기존 12 + 신규 1)

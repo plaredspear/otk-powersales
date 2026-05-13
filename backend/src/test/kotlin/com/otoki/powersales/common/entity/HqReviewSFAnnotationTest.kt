@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test
 /**
  * Spec #708 — HqReview ↔ Salesforce `HQReview__c` 어노테이션 검증.
  *
- * 단일 권위: docs/plan/old_source_260408/sf-object-meta/_raw/HQReview__c.json
+ * 단일 권위: Salesforce describe 메타 (`HQReview__c`)
  */
 @DisplayName("HqReview SF 어노테이션 검증 (Spec #708)")
 class HqReviewSFAnnotationTest {

@@ -1,6 +1,6 @@
 -- Spec #607 — Employee SF 누락 컬럼 8개 신규 도입.
 --
--- 단일 권위: docs/plan/old_source_260408/salesforce_object/사원(DKRetail__Employee__c).md
+-- 단일 권위: Salesforce Object (`DKRetail__Employee__c`)
 -- 정책 (스펙 §6.3):
 --   - dk_cost_center_code: 기존 cost_center_code(조직유형) 와 별개 (Q2 옵션 1 — DK_ prefix 회피 명명)
 --   - Lookup 필드는 <관계명>_sfid (manager_sfid, postponed_appointment_sfid)

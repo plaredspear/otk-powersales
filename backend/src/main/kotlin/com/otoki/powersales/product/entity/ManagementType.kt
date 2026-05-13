@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonValue
 /**
  * Salesforce `NewProduct__c.ManagementType__c` picklist enum (관리유형/제품 분류).
  *
- * 단일 권위: docs/plan/old_source_260408/sf-object-meta/_raw/NewProduct__c.json picklistValues (count=84)
+ * 단일 권위: Salesforce describe 메타 (`NewProduct__c`) picklistValues (count=84)
  * Spec #737 §3.5 — SF picklist 정의 그대로 enum 변환.
  *
  * enum 식별자는 영문 식별 명칭이며, displayName 이 SF 원본 한국어 옵션값.

@@ -22,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional
  *
  * ## 레거시 매핑
  * - SF Apex: `AccountTrigger.trigger:1-3` (beforeInsert) → `AccountTriggerHandler.cls:43-127` (`newAccount`)
- * - flow-legacy: `docs/specs/ready/640-admin-account-create/flow-legacy-native-account-create.yaml` (8 step)
+ * - flow-legacy: flow-legacy yaml (Spec #640) (8 step)
  * - origin spec: #640
  *
  * ## 레거시 동작 요약

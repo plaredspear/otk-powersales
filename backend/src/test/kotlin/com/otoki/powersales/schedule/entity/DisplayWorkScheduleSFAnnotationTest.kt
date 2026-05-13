@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test
 /**
  * Spec #608 — DisplayWorkSchedule ↔ Salesforce `DKRetail__DisplayWorkScheduleMaster__c` 어노테이션 부착 검증.
  *
- * 단일 권위: docs/plan/old_source_260408/salesforce_object/진열사원 스케줄 마스터(DisplayWorkScheduleMaster__c).md
+ * 단일 권위: (외부 문서) 스케줄 마스터(DisplayWorkScheduleMaster__c).md
  *
  * 검증 분류:
  *   - AC1: 클래스 `@SFObject` 무변경

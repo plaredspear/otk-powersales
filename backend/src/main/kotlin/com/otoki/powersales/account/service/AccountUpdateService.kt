@@ -21,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional
  *
  * ## 레거시 매핑
  * - SF Apex: `AccountTrigger.trigger:1-3` (beforeUpdate) → `AccountTriggerHandler.cls:22-33` (분기) → `AccountTriggerHandler.cls:129-155` (`editAccountName`)
- * - flow-legacy: `docs/specs/ready/643-admin-account-update/flow-legacy-native-account-update.yaml` (5 step)
+ * - flow-legacy: flow-legacy yaml (Spec #643) (5 step)
  * - origin spec: #643
  *
  * ## 레거시 동작 요약

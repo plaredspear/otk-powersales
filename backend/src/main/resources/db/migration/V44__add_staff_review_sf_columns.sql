@@ -1,6 +1,6 @@
 -- Spec #617 — StaffReview SF 누락 비수식 5개 신규 도입 (Q1 옵션 1, Q2 옵션 1).
 --
--- 단일 권위: docs/plan/old_source_260408/salesforce_object/사원평가(StaffReview__c).md
+-- 단일 권위: Salesforce Object (`StaffReview__c`)
 --
 -- 구현 결정:
 --   - working_category1/2/3: VARCHAR(255) — SF picklist + 기존 entity 컨벤션(team_member_schedule.working_category1/2/3) 정합 (스펙 §6.2 추정 40 → 절단 방지)

@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test
 /**
  * Spec #613 — Product ↔ Salesforce `DKRetail__Product__c` SF 누락 비수식 컬럼 도입 검증.
  *
- * 단일 권위: docs/plan/old_source_260408/salesforce_object/제품(DKRetail__Product__c).md
+ * 단일 권위: Salesforce Object (`DKRetail__Product__c`)
  *
  * 검증 분류:
  *   - AC1: 클래스 `@SFObject` 무변경

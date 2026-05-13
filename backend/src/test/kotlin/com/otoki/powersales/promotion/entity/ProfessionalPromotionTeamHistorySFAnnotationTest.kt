@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test
 /**
  * Spec #727 — ProfessionalPromotionTeamHistory ↔ Salesforce `ProfessionalPromotionTeamHistory__c` 어노테이션 검증.
  *
- * 단일 권위: docs/plan/old_source_260408/salesforce_object/전문행사조 이력(ProfessionalPromotionTeamHistory__c).md
+ * 단일 권위: (외부 문서) 이력(ProfessionalPromotionTeamHistory__c).md
  * Group A + Reference R-2 + BaseEntity 상속 (Q1 옵션 1)
  */
 @DisplayName("ProfessionalPromotionTeamHistory SF 어노테이션 검증 (Spec #727)")

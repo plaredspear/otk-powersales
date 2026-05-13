@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional
  *
  * ## 레거시 매핑
  * - SF Apex: `AccountTrigger.trigger:1-3` (beforeDelete) → `AccountTriggerHandler.cls:35-37` (`AccountDeleteCheck` 위임) → `AccountTriggerHandler.cls:157-162` (가드 본체)
- * - flow-legacy: `docs/specs/ready/642-admin-account-delete/flow-legacy-native-account-delete.yaml` (5 step)
+ * - flow-legacy: flow-legacy yaml (Spec #642) (5 step)
  * - origin spec: #642
  *
  * ## 레거시 동작 요약

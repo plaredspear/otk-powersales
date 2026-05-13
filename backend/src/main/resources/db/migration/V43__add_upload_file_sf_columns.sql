@@ -1,6 +1,6 @@
 -- Spec #616 — UploadFile SF 누락 비수식 3개 신규 도입 + parent_type 길이 SF 정합 (Q1/Q2 옵션 1).
 --
--- 단일 권위: docs/plan/old_source_260408/salesforce_object/업로드파일(UploadFile__c).md
+-- 단일 권위: Salesforce Object (`UploadFile__c`)
 --
 -- 구현 결정 (SF 정합 — 데이터 절단 방지):
 --   - upload_kbn: VARCHAR(200) — SF UploadKbn__c 텍스트(200) 정합 (스펙 §6.3 추정 40 → SF 정합 200)

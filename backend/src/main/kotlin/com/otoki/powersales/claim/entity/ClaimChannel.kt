@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonValue
 /**
  * Salesforce `DKRetail__Claim__c.DKRetail__Channel__c` (접수채널) picklist enum.
  *
- * 단일 권위: docs/plan/old_source_260408/salesforce_object/클레임(DKRetail__Claim__c).md (선택 목록 2개)
+ * 단일 권위: Salesforce Object (`DKRetail__Claim__c`) (선택 목록 2개)
  *
  * Spec #606 Q1 옵션 1 결정:
  *   - enum name 은 SF API 이름과 동일 (CRM, CAP) — DB 저장값과도 동일

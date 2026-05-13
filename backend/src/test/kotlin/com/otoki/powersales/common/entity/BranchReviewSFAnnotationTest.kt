@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test
 /**
  * Spec #735 — BranchReview ↔ Salesforce `BranchReview__c` SF Object 정합 검증.
  *
- * 단일 권위: docs/plan/old_source_260408/sf-object-meta/_raw/BranchReview__c.json
+ * 단일 권위: Salesforce describe 메타 (`BranchReview__c`)
  *
  * 검증 분류:
  *   - AC1: 클래스 @SFObject

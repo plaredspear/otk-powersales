@@ -15,7 +15,7 @@ import java.time.LocalDate
  * ## 레거시 매핑
  * - SF Apex: `AgreementWordBatch.cls` (start / execute / finish)
  * - SF Apex: `AgreementWordSchedule.cls` (cron Schedulable, `0 0 9 * * ? *`)
- * - flow-legacy: `docs/specs/completed/651-agreement-gps-consent-cycle-batch-audit/flow-legacy-cycle-batch.yaml`
+ * - flow-legacy: flow-legacy yaml (Spec #651)
  * - origin spec: #654 (#651 audit 후속 인계)
  *
  * ## 레거시 동작 요약
