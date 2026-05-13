@@ -1,15 +1,14 @@
 package com.otoki.powersales.inspection.entity
 
+import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
+import com.otoki.powersales.employee.entity.Employee
 import jakarta.persistence.*
-import org.springframework.data.annotation.CreatedDate
-import org.springframework.data.annotation.LastModifiedDate
 import java.time.LocalDate
-import java.time.LocalDateTime
-import com.otoki.powersales.common.entity.AuditedEntity
+
 /**
  * 현장 점검 테마 Entity
  * V1 스키마: theme__c
@@ -64,17 +63,42 @@ class InspectionTheme(
     @Column(name = "public_flag")
     val publicFlag: Boolean? = null,
 
+    @SFField("IsDeleted")
     @HCColumn("isdeleted")
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 
-    @HCColumn("createddate")
-    @CreatedDate
-    @Column(name = "created_at", nullable = false, updatable = false)
-    var createdAt: LocalDateTime = LocalDateTime.now(),
+    // -- Spec #714: OwnerId / CreatedById / LastModifiedById R-2 패턴 --
+    // *_sfid: Heroku Connect sync 가 채우는 buffer (SF User Id).
+    // *_id: SalesforceMigrationTool 이 SF User → Employee 매핑으로 채우는 FK.
 
-    @HCColumn("systemmodstamp")
-    @LastModifiedDate
-    @Column(name = "updated_at", nullable = false)
-    var updatedAt: LocalDateTime = LocalDateTime.now()
-) : AuditedEntity()
+    @SFField("OwnerId")
+    @HCColumn("ownerid")
+    @Column(name = "owner_sfid", length = 18)
+    var ownerSfid: String? = null,
+
+    @SFField("CreatedById")
+    @HCColumn("createdbyid")
+    @Column(name = "created_by_sfid", length = 18)
+    var createdBySfid: String? = null,
+
+    @SFField("LastModifiedById")
+    @HCColumn("lastmodifiedbyid")
+    @Column(name = "last_modified_by_sfid", length = 18)
+    var lastModifiedBySfid: String? = null,
+
+    // -- Relations --
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id")
+    var owner: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_id")
+    var createdBy: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "last_modified_by_id")
+    var lastModifiedBy: Employee? = null,
+
+) : BaseEntity()
