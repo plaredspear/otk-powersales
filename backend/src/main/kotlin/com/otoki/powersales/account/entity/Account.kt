@@ -325,7 +325,7 @@ class Account(
     var ownership: Ownership? = null,
 
     // -- Spec #644: Owner 차원 — DisplayWorkSchedule 풀 패턴 정합 --
-    // owner_sfid: Heroku Connect sync / HerokuMigrationTool 가 채우는 buffer (application 미적재).
+    // owner_sfid: Heroku Connect sync buffer 컬럼 (application 미적재).
     // owner: application 이 SAP 인바운드 시 set 하는 Employee FK.
 
     @SFField("OwnerId")

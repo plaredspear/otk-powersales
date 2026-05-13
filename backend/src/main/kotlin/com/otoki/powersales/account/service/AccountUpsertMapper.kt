@@ -58,7 +58,7 @@ class AccountUpsertMapper {
         applyAddressAndSchedule(account, command)
         applyWerkFields(account, command)
         applyOrganizationAndCostCenter(account, command, matchedOrg)
-        // Spec #644: Owner FK — application 적재. owner_sfid 는 HC sync / HerokuMigrationTool 책임이라 미적재.
+        // Spec #644: Owner FK — application 적재. owner_sfid 는 HC sync buffer 컬럼 (application 미적재).
         account.owner = matchedEmployee
     }
 

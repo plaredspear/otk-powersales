@@ -5,7 +5,7 @@
 --
 -- - owner_id: SAP 인바운드 시 application 이 set 하는 Employee FK.
 --   ON DELETE SET NULL — Employee 삭제 시 Account 행은 보존.
--- - owner_sfid: Heroku Connect sync / HerokuMigrationTool 가 채우는 buffer.
+-- - owner_sfid: sync buffer 컬럼 (SF API 마이그레이션 / 레거시 HC sync 잔재).
 --   FK 미부착 (SF User.Id 보존, application 검증 없음).
 
 ALTER TABLE powersales.account
