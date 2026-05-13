@@ -165,7 +165,36 @@ CSV_ROWS=$(($(wc -l < "$CSV_PATH") - 1))
 echo "  TRUNCATE → COPY (CSV rows=${CSV_ROWS})"
 SUB_START=$SECONDS
 psql -v ON_ERROR_STOP=1 -q -c "TRUNCATE TABLE ${SCHEMA}.${TABLE} RESTART IDENTITY CASCADE;"
-psql -v ON_ERROR_STOP=1 -c "\copy ${SCHEMA}.${TABLE}(${DB_COLS}) FROM '${CSV_PATH}' WITH (FORMAT csv, HEADER true)"
+
+# COPY (백그라운드 + pg_stat_progress_copy 폴링 — PG 14+ 에서만 진행률 표시)
+psql -v ON_ERROR_STOP=1 -c "\copy ${SCHEMA}.${TABLE}(${DB_COLS}) FROM '${CSV_PATH}' WITH (FORMAT csv, HEADER true)" &
+COPY_PID=$!
+
+(
+  RELID_SQL="SELECT tuples_processed FROM pg_stat_progress_copy WHERE relid = '${SCHEMA}.${TABLE}'::regclass LIMIT 1;"
+  while kill -0 "$COPY_PID" 2>/dev/null; do
+    sleep 5
+    PROCESSED=$(psql -At -c "$RELID_SQL" 2>/dev/null || echo "")
+    if [[ -n "$PROCESSED" ]]; then
+      if [[ "$CSV_ROWS" -gt 0 ]]; then
+        PCT=$(awk "BEGIN { printf \"%.1f\", ${PROCESSED}*100/${CSV_ROWS} }")
+        printf '  COPY 진행: %s / %s rows (%s%%, %ds)\n' "$PROCESSED" "$CSV_ROWS" "$PCT" "$((SECONDS - SUB_START))"
+      else
+        printf '  COPY 진행: %s rows (%ds)\n' "$PROCESSED" "$((SECONDS - SUB_START))"
+      fi
+    fi
+  done
+) &
+WATCHER_PID=$!
+
+COPY_EXIT=0
+wait "$COPY_PID" || COPY_EXIT=$?
+kill "$WATCHER_PID" 2>/dev/null || true
+wait "$WATCHER_PID" 2>/dev/null || true
+if [[ "$COPY_EXIT" -ne 0 ]]; then
+  echo "[FAIL] \\copy 실패 (exit=$COPY_EXIT)" >&2
+  exit "$COPY_EXIT"
+fi
 echo "  COPY 완료 ($((SECONDS - SUB_START))s)"
 
 POST_SQL="${SCRIPT_DIR}/post-load/${ENTITY_CLASS}.sql"
@@ -239,25 +268,30 @@ fi
 # ── 7) 빈 문자열 검증 (NULL 통일 정책 — 발견 시 WARN, FAIL 아님) ──
 step 7 "빈 문자열 검증 (text 컬럼 sequential scan)"
 SUB_START=$SECONDS
-psql -v ON_ERROR_STOP=1 -q <<SQL
-DO \$\$
-DECLARE
-  rec record;
-  cnt bigint;
-BEGIN
-  FOR rec IN
-    SELECT column_name FROM information_schema.columns
-    WHERE table_schema = '${SCHEMA}' AND table_name = '${TABLE}'
-      AND data_type IN ('character varying', 'text', 'character')
-  LOOP
-    EXECUTE format('SELECT COUNT(*) FROM ${SCHEMA}.${TABLE} WHERE %I = ''''', rec.column_name) INTO cnt;
-    IF cnt > 0 THEN
-      RAISE WARNING '[db-import:${ENTITY_CLASS}] empty string in column %: % rows (NULL 통일 정책 위반 — 의외 케이스 점검)', rec.column_name, cnt;
-    END IF;
-  END LOOP;
-END \$\$;
-SQL
-echo "  검증 완료 ($((SECONDS - SUB_START))s)"
+TEXT_COLS=$(psql -At -c "
+  SELECT column_name FROM information_schema.columns
+  WHERE table_schema = '${SCHEMA}' AND table_name = '${TABLE}'
+    AND data_type IN ('character varying', 'text', 'character')
+  ORDER BY ordinal_position;
+")
+COL_TOTAL=$(echo "$TEXT_COLS" | grep -c . || true)
+echo "  text 컬럼 ${COL_TOTAL}개 검사"
+
+COL_IDX=0
+EMPTY_COLS=0
+while IFS= read -r col; do
+  [[ -z "$col" ]] && continue
+  COL_IDX=$((COL_IDX + 1))
+  CNT=$(psql -At -c "SELECT COUNT(*) FROM ${SCHEMA}.${TABLE} WHERE \"${col}\" = '';")
+  if [[ "$CNT" -gt 0 ]]; then
+    echo "  [${COL_IDX}/${COL_TOTAL}] WARN ${col}: ${CNT} rows (NULL 통일 정책 위반 — 점검)"
+    EMPTY_COLS=$((EMPTY_COLS + 1))
+  fi
+  if (( COL_IDX % 10 == 0 )) && (( COL_IDX < COL_TOTAL )); then
+    echo "  [${COL_IDX}/${COL_TOTAL}] 검사 진행 중 ($((SECONDS - SUB_START))s)"
+  fi
+done <<< "$TEXT_COLS"
+echo "  검증 완료 ($((SECONDS - SUB_START))s) — ${EMPTY_COLS}/${COL_TOTAL} 컬럼에 빈 문자열 발견"
 
 echo "==============================================="
 echo "[OK] db-import 완료 (총 $((SECONDS - START_TIME))s) — ${SCHEMA}.${TABLE} rows=$LOADED"
