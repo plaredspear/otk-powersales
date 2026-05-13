@@ -1,57 +1,61 @@
 #!/usr/bin/env bash
 #
-# SF Object 데이터 마이그레이션 진입점 (Spec #744)
+# SF Object 데이터 마이그레이션 진입점 (Spec #744, entity-driven).
 #
 # Phase 1 (적재) → Phase 2 (FK 연결) → verify 순차 실행.
+# 입력은 SObject API name (예: Org__c). 도구가 backend/src/main/kotlin 에서
+# @SFObject("...") 부착 entity 를 자동 탐색하여 메타 (@SFField/@Column/@JoinColumn)
+# 를 추출하고 SOQL/매핑/FK 를 동적으로 구성한다.
 #
 # 사전 조건:
 #   - sf CLI 설치 + `sf org login web` 완료, 환경변수 SF_TARGET_ORG 설정
 #   - scripts/db-tunnel 으로 localhost:15432 터널 활성
 #   - 환경변수 DEV_OTK_PWRS_DB_PASSWORD 설정
+#   - python3 + jq 설치
 #
 # 사용법:
-#   migrate.sh                      # Phase1 + Phase2 + verify 전체
-#   migrate.sh --phase1-only
-#   migrate.sh --phase2-only
-#   migrate.sh --verify-only
-#   migrate.sh --only entity1,entity2
+#   migrate.sh <SObject_API_Name>             # 단일 sobject 전체 단계
+#   migrate.sh --all                          # 모든 @SFObject entity (의존성 순서 자동)
+#   migrate.sh <sobject> --phase1-only
+#   migrate.sh <sobject> --phase2-only
+#   migrate.sh <sobject> --verify-only
+#   migrate.sh --all --phase1-only            # 전체 entity Phase 1 만
 #
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export SF_MIGRATE_DIR="$SCRIPT_DIR"
+export SF_MIGRATE_META="$SCRIPT_DIR/lib/entity-meta.py"
 
 # ── 옵션 파싱 ──
 RUN_PHASE1=true
 RUN_PHASE2=true
 RUN_VERIFY=true
-ONLY_FILTER=""
+LIST_ALL=false
+SOBJECTS=()
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --phase1-only)  RUN_PHASE1=true;  RUN_PHASE2=false; RUN_VERIFY=false; shift ;;
     --phase2-only)  RUN_PHASE1=false; RUN_PHASE2=true;  RUN_VERIFY=false; shift ;;
     --verify-only)  RUN_PHASE1=false; RUN_PHASE2=false; RUN_VERIFY=true;  shift ;;
-    --only)         ONLY_FILTER="$2"; shift 2 ;;
+    --all)          LIST_ALL=true; shift ;;
     -h|--help)
       grep -E '^#( |$)' "$0" | sed 's/^# \{0,1\}//'
       exit 0
       ;;
-    *) echo "Unknown option: $1" >&2; exit 2 ;;
+    --*) echo "Unknown option: $1" >&2; exit 2 ;;
+    *) SOBJECTS+=("$1"); shift ;;
   esac
 done
 
-export SF_MIGRATE_ONLY="$ONLY_FILTER"
-
 # ── 사전 조건 검증 ──
-if ! command -v sf >/dev/null 2>&1; then
-  echo "ERROR: sf CLI 가 설치되어 있지 않습니다." >&2
-  exit 1
-fi
-if ! command -v psql >/dev/null 2>&1; then
-  echo "ERROR: psql 이 설치되어 있지 않습니다." >&2
-  exit 1
-fi
+for cmd in sf psql python3 jq; do
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    echo "ERROR: $cmd 가 설치되어 있지 않습니다." >&2
+    exit 1
+  fi
+done
 : "${SF_TARGET_ORG:?환경변수 SF_TARGET_ORG 가 설정되어 있지 않습니다.}"
 : "${DEV_OTK_PWRS_DB_PASSWORD:?환경변수 DEV_OTK_PWRS_DB_PASSWORD 가 설정되어 있지 않습니다.}"
 
@@ -61,6 +65,21 @@ export PGUSER="${PGUSER:-otoki_admin}"
 export PGDATABASE="${PGDATABASE:-otoki}"
 export PGPASSWORD="$DEV_OTK_PWRS_DB_PASSWORD"
 export PGOPTIONS="--search_path=powersales,public"
+
+# ── SObject 목록 결정 ──
+if $LIST_ALL; then
+  if [[ ${#SOBJECTS[@]} -gt 0 ]]; then
+    echo "ERROR: --all 과 SObject 명을 동시에 지정할 수 없습니다." >&2
+    exit 2
+  fi
+  mapfile -t SOBJECTS < <(python3 "$SF_MIGRATE_META" --list-all --tables-only)
+fi
+
+if [[ ${#SOBJECTS[@]} -eq 0 ]]; then
+  echo "ERROR: SObject API name 또는 --all 인자가 필요합니다." >&2
+  echo "       사용법: $0 <SObject_API_Name>" >&2
+  exit 2
+fi
 
 # ── 작업 디렉토리 ──
 TS="$(date +%Y%m%d-%H%M%S)"
@@ -77,19 +96,19 @@ trap cleanup EXIT
 
 echo "==============================================="
 echo " SF Migration  worker=$WORK_DIR  org=$SF_TARGET_ORG"
-echo " filter=${ONLY_FILTER:-(all)}"
+echo " sobjects (${#SOBJECTS[@]}): ${SOBJECTS[*]}"
 echo "==============================================="
 
 if $RUN_PHASE1; then
-  "$SCRIPT_DIR/phase1-load.sh"
+  "$SCRIPT_DIR/phase1-load.sh" "${SOBJECTS[@]}"
 fi
 
 if $RUN_PHASE2; then
-  "$SCRIPT_DIR/phase2-link-fk.sh"
+  "$SCRIPT_DIR/phase2-link-fk.sh" "${SOBJECTS[@]}"
 fi
 
 if $RUN_VERIFY; then
-  "$SCRIPT_DIR/verify.sh"
+  "$SCRIPT_DIR/verify.sh" "${SOBJECTS[@]}"
 fi
 
 echo "[OK] migrate.sh 완료"

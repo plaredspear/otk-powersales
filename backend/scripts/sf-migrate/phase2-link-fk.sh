@@ -1,42 +1,64 @@
 #!/usr/bin/env bash
 #
-# Phase 2: *_sfid 컬럼 → 참조 entity 의 sfid → 로컬 PK 로 FK UPDATE.
+# Phase 2: *_sfid → 참조 entity 의 sfid → 로컬 PK 로 FK UPDATE (entity-driven).
 #
-# FK 매핑 표기 (sobject-list.txt): <src_sfid>-><target>.sfid-><src_fk>
-#   여러 FK 는 ';' 로 구분.
+# 입력: SObject API name 인자 리스트.
+# 동작:
+#   - 각 sobject 의 entity-meta.py 결과에서 fk_mappings 배열 추출
+#   - 매핑 1건당 UPDATE 1개:
+#       UPDATE <schema>.<table> AS src
+#       SET <src_fk> = tgt.<target_pk>
+#       FROM <schema>.<target_table> AS tgt
+#       WHERE src.<src_sfid> = tgt.sfid;
+#   - target_table 의 PK 컬럼명은 pg_index/pg_attribute 동적 조회
+#   - target 테이블 이 본 실행 범위에 없으면 skip (orphan 으로 남음, verify 가 보고)
 #
-# Phase 2 마지막에 Phase 1 에서 백업한 restore.sql 로 constraint 복원.
+# 마지막에 Phase 1 백업 SQL 로 constraint 복원.
 #
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 : "${SF_MIGRATE_WORK_DIR:?상위에서 호출되어야 합니다}"
+: "${SF_MIGRATE_META:?entity-meta.py 경로 필요}"
+
+if [[ $# -eq 0 ]]; then
+  echo "ERROR: SObject API name 인자가 비어 있습니다." >&2
+  exit 1
+fi
+
+SOBJECTS=("$@")
+SCHEMA="powersales"
 
 echo ""
-echo "── [Phase 2] 시작 — FK 연결"
+echo "── [Phase 2] 시작 — FK 연결 대상 sobject (${#SOBJECTS[@]}): ${SOBJECTS[*]}"
+
+# 본 실행 범위에 포함된 table 목록 (FK target 가 범위 외이면 skip 판단용)
+declare -A TABLE_IN_SCOPE
+for sobj in "${SOBJECTS[@]}"; do
+  table=$(python3 "$SF_MIGRATE_META" "$sobj" | jq -r '.table')
+  TABLE_IN_SCOPE[$table]=1
+done
 
 UPDATE_COUNT=0
+SKIP_COUNT=0
 
-while IFS= read -r line; do
-  IFS='|' read -r ENTITY SF_API TABLE FK_MAP <<<"$line"
+for sobj in "${SOBJECTS[@]}"; do
+  meta=$(python3 "$SF_MIGRATE_META" "$sobj")
+  ENTITY_CLASS=$(echo "$meta" | jq -r '.entity_class')
+  TABLE=$(echo "$meta" | jq -r '.table')
+  FK_COUNT=$(echo "$meta" | jq '.fk_mappings | length')
 
-  if [[ -z "${FK_MAP:-}" || "${FK_MAP// }" == "" ]]; then
+  if [[ "$FK_COUNT" -eq 0 ]]; then
     continue
   fi
 
-  IFS=';' read -ra MAPS <<<"$FK_MAP"
-  for m in "${MAPS[@]}"; do
-    # 형식: <src_sfid>-><target>.sfid-><src_fk>
-    m_clean="$(echo "$m" | tr -d ' ')"
-    if [[ ! "$m_clean" =~ ^([a-zA-Z_]+)-\>([a-zA-Z_]+)\.sfid-\>([a-zA-Z_]+)$ ]]; then
-      echo "ERROR: FK 매핑 형식 오류 ($ENTITY): $m" >&2
-      exit 1
+  while IFS=$'\t' read -r SRC_SFID SRC_FK TARGET_TABLE TARGET_CLASS; do
+    if [[ -z "${TABLE_IN_SCOPE[$TARGET_TABLE]:-}" ]]; then
+      echo "[Phase 2:$ENTITY_CLASS] skip ${TABLE}.${SRC_FK} (target ${TARGET_TABLE} 가 범위 외)"
+      SKIP_COUNT=$((SKIP_COUNT + 1))
+      continue
     fi
-    SRC_SFID="${BASH_REMATCH[1]}"
-    TARGET_TABLE="${BASH_REMATCH[2]}"
-    SRC_FK="${BASH_REMATCH[3]}"
 
-    # target 테이블의 PK 컬럼명 동적 조회 (단일 컬럼 PK 가정 — IDENTITY)
     TARGET_PK=$(psql -At -c "
       SELECT a.attname
       FROM pg_index i
@@ -44,30 +66,28 @@ while IFS= read -r line; do
       JOIN pg_namespace n ON n.oid = c.relnamespace
       JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum = ANY(i.indkey)
       WHERE i.indisprimary
-        AND n.nspname = 'powersales'
+        AND n.nspname = '${SCHEMA}'
         AND c.relname = '${TARGET_TABLE}';
     ")
-
     if [[ -z "$TARGET_PK" ]]; then
-      echo "ERROR: target 테이블 ${TARGET_TABLE} 의 PK 를 찾을 수 없습니다." >&2
+      echo "ERROR: target ${TARGET_TABLE} 의 PK 를 찾을 수 없습니다." >&2
       exit 1
     fi
 
-    echo "[Phase 2:$ENTITY] ${TABLE}.${SRC_FK} ← ${TARGET_TABLE}.${TARGET_PK} (via ${SRC_SFID} → ${TARGET_TABLE}.sfid)"
+    echo "[Phase 2:$ENTITY_CLASS] ${TABLE}.${SRC_FK} ← ${TARGET_TABLE}.${TARGET_PK} (via ${SRC_SFID} → ${TARGET_TABLE}.sfid)"
 
-    UPDATE_RESULT=$(psql -v ON_ERROR_STOP=1 -At -c "
-      UPDATE powersales.${TABLE} AS src
+    psql -v ON_ERROR_STOP=1 -At -c "
+      UPDATE ${SCHEMA}.${TABLE} AS src
       SET ${SRC_FK} = tgt.${TARGET_PK}
-      FROM powersales.${TARGET_TABLE} AS tgt
+      FROM ${SCHEMA}.${TARGET_TABLE} AS tgt
       WHERE src.${SRC_SFID} = tgt.sfid;
-      SELECT 'updated';
-    ")
+    " > /dev/null
     UPDATE_COUNT=$((UPDATE_COUNT + 1))
-  done
-done < <("$SCRIPT_DIR/lib/parse-list.sh")
+  done < <(echo "$meta" | jq -r '.fk_mappings[] | [.src_sfid, .src_fk, .target_table, .target_class] | @tsv')
+done
 
 echo ""
-echo "[Phase 2] FK 매핑 처리 완료 ($UPDATE_COUNT 건)"
+echo "[Phase 2] FK UPDATE 처리: $UPDATE_COUNT 건 실행, $SKIP_COUNT 건 skip"
 
 # ── constraint 복원 ──
 RESTORE_SQL="${SF_MIGRATE_WORK_DIR}/restore.sql"

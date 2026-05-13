@@ -1,26 +1,46 @@
 #!/usr/bin/env bash
 #
-# 검증:
+# 검증 (entity-driven):
 #   1) 적재 행수 (수기 대조용 출력)
 #   2) sfid NULL 잔존 = 0
-#   3) Orphan FK = 0 (Phase 2 적용 후, *_sfid IS NOT NULL AND <fk_id> IS NULL)
+#   3) Orphan FK = 0 (target 이 범위 내일 때만 — 범위 외 FK 는 NULL 정상)
 #
-# exit 1 if any failure (sfid NULL > 0 or orphan > 0).
+# 사용:
+#   verify.sh <SObject1> [SObject2 ...]
+#
+# exit 1 if any failure.
 #
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+: "${SF_MIGRATE_META:?entity-meta.py 경로 필요}"
+
+if [[ $# -eq 0 ]]; then
+  echo "ERROR: SObject API name 인자가 비어 있습니다." >&2
+  exit 1
+fi
+
+SOBJECTS=("$@")
+SCHEMA="powersales"
+
+declare -A TABLE_IN_SCOPE
+for sobj in "${SOBJECTS[@]}"; do
+  table=$(python3 "$SF_MIGRATE_META" "$sobj" | jq -r '.table')
+  TABLE_IN_SCOPE[$table]=1
+done
 
 FAIL=0
 
 echo ""
 echo "── [Verify] 시작"
 
-while IFS= read -r line; do
-  IFS='|' read -r ENTITY SF_API TABLE FK_MAP <<<"$line"
+for sobj in "${SOBJECTS[@]}"; do
+  meta=$(python3 "$SF_MIGRATE_META" "$sobj")
+  ENTITY_CLASS=$(echo "$meta" | jq -r '.entity_class')
+  TABLE=$(echo "$meta" | jq -r '.table')
 
-  CNT=$(psql -At -c "SELECT COUNT(*) FROM powersales.${TABLE};")
-  SFID_NULL=$(psql -At -c "SELECT COUNT(*) FROM powersales.${TABLE} WHERE sfid IS NULL;")
+  CNT=$(psql -At -c "SELECT COUNT(*) FROM ${SCHEMA}.${TABLE};")
+  SFID_NULL=$(psql -At -c "SELECT COUNT(*) FROM ${SCHEMA}.${TABLE} WHERE sfid IS NULL;")
 
   printf "  %-30s rows=%-8s sfidNull=%s" "$TABLE" "$CNT" "$SFID_NULL"
 
@@ -29,30 +49,25 @@ while IFS= read -r line; do
     FAIL=1
   fi
 
-  if [[ -n "${FK_MAP:-}" && "${FK_MAP// }" != "" ]]; then
-    IFS=';' read -ra MAPS <<<"$FK_MAP"
-    for m in "${MAPS[@]}"; do
-      m_clean="$(echo "$m" | tr -d ' ')"
-      if [[ ! "$m_clean" =~ ^([a-zA-Z_]+)-\>([a-zA-Z_]+)\.sfid-\>([a-zA-Z_]+)$ ]]; then
-        continue
-      fi
-      SRC_SFID="${BASH_REMATCH[1]}"
-      SRC_FK="${BASH_REMATCH[3]}"
-
-      ORPHAN=$(psql -At -c "
-        SELECT COUNT(*) FROM powersales.${TABLE}
-        WHERE ${SRC_SFID} IS NOT NULL AND ${SRC_FK} IS NULL;
-      ")
-      printf "  orphan(%s)=%s" "$SRC_FK" "$ORPHAN"
-      if [[ "$ORPHAN" -ne 0 ]]; then
-        printf " [FAIL]"
-        FAIL=1
-      fi
-    done
-  fi
+  # FK 매핑 중 target 이 범위 내인 것만 orphan 체크
+  while IFS=$'\t' read -r SRC_SFID SRC_FK TARGET_TABLE; do
+    [[ -z "$SRC_SFID" ]] && continue
+    if [[ -z "${TABLE_IN_SCOPE[$TARGET_TABLE]:-}" ]]; then
+      continue
+    fi
+    ORPHAN=$(psql -At -c "
+      SELECT COUNT(*) FROM ${SCHEMA}.${TABLE}
+      WHERE ${SRC_SFID} IS NOT NULL AND ${SRC_FK} IS NULL;
+    ")
+    printf "  orphan(%s)=%s" "$SRC_FK" "$ORPHAN"
+    if [[ "$ORPHAN" -ne 0 ]]; then
+      printf " [FAIL]"
+      FAIL=1
+    fi
+  done < <(echo "$meta" | jq -r '.fk_mappings[] | [.src_sfid, .src_fk, .target_table] | @tsv')
 
   echo ""
-done < <("$SCRIPT_DIR/lib/parse-list.sh")
+done
 
 echo ""
 if [[ "$FAIL" -ne 0 ]]; then
