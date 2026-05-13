@@ -9,11 +9,11 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 /**
- * Spec #632 — HqReview ↔ Salesforce `HQReview__c` 어노테이션 검증.
+ * Spec #708 — HqReview ↔ Salesforce `HQReview__c` 어노테이션 검증.
  *
- * 단일 권위: docs/plan/old_source_260408/salesforce_object/본부평가(HQReview__c).md
+ * 단일 권위: docs/plan/old_source_260408/sf-object-meta/_raw/HQReview__c.json
  */
-@DisplayName("HqReview SF 어노테이션 검증 (Spec #632)")
+@DisplayName("HqReview SF 어노테이션 검증 (Spec #708)")
 class HqReviewSFAnnotationTest {
 
     @Nested
@@ -29,22 +29,22 @@ class HqReviewSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("매핑 키 수 = 7")
+        @DisplayName("매핑 키 수 = 13 (entity 11 + BaseEntity 2)")
         fun mappingKeySize() {
             val mapping = SFSchemaUtils.getSFMapping(HqReview::class.java)
-            assertThat(mapping).hasSize(7)
+            assertThat(mapping).hasSize(13)
         }
     }
 
     @Nested
-    @DisplayName("AC1 — @SFField 매핑 키셋 (7개)")
+    @DisplayName("AC1 — @SFField 매핑 키셋")
     inner class SfFieldMapping {
 
         private val mapping = SFSchemaUtils.getSFMapping(HqReview::class.java)
 
         @Test
-        @DisplayName("7개 SF API Name → 컬럼명 1:1")
-        fun mappingValues() {
+        @DisplayName("entity 커스텀 필드 7개 SF API Name → 컬럼명 1:1")
+        fun customFieldMappings() {
             assertThat(mapping["Name"]).isEqualTo("name")
             assertThat(mapping["BranchCode__c"]).isEqualTo("branch_code")
             assertThat(mapping["BranchName__c"]).isEqualTo("branch_name")
@@ -52,6 +52,22 @@ class HqReviewSFAnnotationTest {
             assertThat(mapping["EvaluationyType__c"]).isEqualTo("evaluation_type")
             assertThat(mapping["ABCTypeCode__c"]).isEqualTo("abc_type_code")
             assertThat(mapping["HR_Code_c__c"]).isEqualTo("hr_code")
+        }
+
+        @Test
+        @DisplayName("Group A — IsDeleted / OwnerId / CreatedById / LastModifiedById 매핑")
+        fun groupAMappings() {
+            assertThat(mapping["IsDeleted"]).isEqualTo("is_deleted")
+            assertThat(mapping["OwnerId"]).isEqualTo("owner_sfid")
+            assertThat(mapping["CreatedById"]).isEqualTo("created_by_sfid")
+            assertThat(mapping["LastModifiedById"]).isEqualTo("last_modified_by_sfid")
+        }
+
+        @Test
+        @DisplayName("BaseEntity — CreatedDate / LastModifiedDate 매핑")
+        fun baseEntityMappings() {
+            assertThat(mapping["CreatedDate"]).isEqualTo("created_at")
+            assertThat(mapping["LastModifiedDate"]).isEqualTo("updated_at")
         }
     }
 
