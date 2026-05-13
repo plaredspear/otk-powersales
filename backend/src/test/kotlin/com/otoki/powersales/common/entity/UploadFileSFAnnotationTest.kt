@@ -9,16 +9,17 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 /**
- * Spec #616 — UploadFile ↔ Salesforce `UploadFile__c` SF 누락 컬럼 도입 검증.
+ * Spec #712 — UploadFile ↔ Salesforce `UploadFile__c` SF Object 정합 검증.
  *
- * 단일 권위: docs/plan/old_source_260408/salesforce_object/업로드파일(UploadFile__c).md
+ * 단일 권위: docs/plan/old_source_260408/sf-object-meta/UploadFile__c.md
  *
  * 검증 분류:
- *   - AC1: 클래스 `@SFObject` 무변경
- *   - AC2: `@SFField` 매핑 키셋 (8개 — 4 기존 + 1 매핑 추가 + 3 신규)
+ *   - AC1: 클래스 @SFObject 무변경
+ *   - AC2: @SFField 매핑 키셋 (13개 — 기존 8 + Spec #712 신규 5)
  *   - AC3: PK 미부착 + parent_id (entity-only) 매핑 미부착
+ *   - AC4: Reference R-2 sfid 컬럼 (OwnerId / CreatedById / LastModifiedById)
  */
-@DisplayName("UploadFile SF 어노테이션 검증 (Spec #616)")
+@DisplayName("UploadFile SF 어노테이션 검증 (Spec #712)")
 class UploadFileSFAnnotationTest {
 
     @Nested
@@ -35,38 +36,38 @@ class UploadFileSFAnnotationTest {
     }
 
     @Nested
-    @DisplayName("AC2 — @SFField 매핑 키셋 (8개)")
+    @DisplayName("AC2 — @SFField 매핑 키셋 (13개)")
     inner class SfFieldMapping {
 
         private val mapping = SFSchemaUtils.getSFMapping(UploadFile::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 8 (4 기존 + 1 매핑 추가 + 3 신규)")
+        @DisplayName("매핑 키 수 = 13 (기존 8 + Spec #712 신규 5)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(8)
+            assertThat(mapping).hasSize(13)
         }
 
         @Test
-        @DisplayName("§6.2 — 누락 매핑 1개 신규 부착: Object__c → parent_type")
-        fun section62MissingMapping() {
+        @DisplayName("기존 8개 필드 매핑 무변경 (Spec #616)")
+        fun existingFields() {
+            assertThat(mapping["Name"]).isEqualTo("name")
+            assertThat(mapping["UniqueKey__c"]).isEqualTo("unique_key")
+            assertThat(mapping["RecordId__c"]).isEqualTo("record_id")
+            assertThat(mapping["Size__c"]).isEqualTo("size")
             assertThat(mapping["Object__c"]).isEqualTo("parent_type")
-        }
-
-        @Test
-        @DisplayName("§6.3 — 신규 3개 필드 매핑")
-        fun section63NewFields() {
             assertThat(mapping["Url__c"]).isEqualTo("url")
             assertThat(mapping["UploadKbn__c"]).isEqualTo("upload_kbn")
             assertThat(mapping["FileId__c"]).isEqualTo("file_id")
         }
 
         @Test
-        @DisplayName("§6.1 — 기존 OK 매핑 4개 무변경")
-        fun section61ExistingMappings() {
-            assertThat(mapping["Name"]).isEqualTo("name")
-            assertThat(mapping["UniqueKey__c"]).isEqualTo("unique_key")
-            assertThat(mapping["RecordId__c"]).isEqualTo("record_id")
-            assertThat(mapping["Size__c"]).isEqualTo("size")
+        @DisplayName("Spec #712 신규 5개 (Group A IsDeleted + CreatedDate + R-2 sfid)")
+        fun spec712NewFields() {
+            assertThat(mapping["IsDeleted"]).isEqualTo("is_deleted")
+            assertThat(mapping["CreatedDate"]).isEqualTo("created_at")
+            assertThat(mapping["OwnerId"]).isEqualTo("owner_sfid")
+            assertThat(mapping["CreatedById"]).isEqualTo("created_by_sfid")
+            assertThat(mapping["LastModifiedById"]).isEqualTo("last_modified_by_sfid")
         }
     }
 
@@ -93,6 +94,32 @@ class UploadFileSFAnnotationTest {
         fun mappingValuesExcludePkAndEntityOnly() {
             val mapping = SFSchemaUtils.getSFMapping(UploadFile::class.java)
             assertThat(mapping.values).doesNotContain("upload_file_id", "parent_id")
+        }
+    }
+
+    @Nested
+    @DisplayName("AC4 — Reference R-2 sfid 컬럼")
+    inner class ReferenceSfidColumns {
+
+        @Test
+        @DisplayName("owner_sfid 컬럼 — OwnerId 매핑")
+        fun ownerSfidMapping() {
+            val mapping = SFSchemaUtils.getSFMapping(UploadFile::class.java)
+            assertThat(mapping["OwnerId"]).isEqualTo("owner_sfid")
+        }
+
+        @Test
+        @DisplayName("created_by_sfid 컬럼 — CreatedById 매핑")
+        fun createdBySfidMapping() {
+            val mapping = SFSchemaUtils.getSFMapping(UploadFile::class.java)
+            assertThat(mapping["CreatedById"]).isEqualTo("created_by_sfid")
+        }
+
+        @Test
+        @DisplayName("last_modified_by_sfid 컬럼 — LastModifiedById 매핑")
+        fun lastModifiedBySfidMapping() {
+            val mapping = SFSchemaUtils.getSFMapping(UploadFile::class.java)
+            assertThat(mapping["LastModifiedById"]).isEqualTo("last_modified_by_sfid")
         }
     }
 }

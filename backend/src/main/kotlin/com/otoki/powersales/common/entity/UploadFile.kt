@@ -4,10 +4,16 @@ import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
+import com.otoki.powersales.employee.entity.Employee
 import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
 import java.time.LocalDateTime
+
+/**
+ * 업로드파일 Entity
+ * Salesforce UploadFile__c (업로드파일) — Spec #712 SF Object 정합 (Group A + Reference R-2).
+ */
 @Entity
 @Table(name = "upload_file")
 @SFObject("UploadFile__c")
@@ -68,17 +74,56 @@ class UploadFile(
     @Column(name = "file_id", length = 100)
     val fileId: String? = null,
 
+    // -- Spec #712: Group A — IsDeleted --
+    @SFField("IsDeleted")
     @HCColumn("isdeleted")
     @Column(name = "is_deleted")
     var isDeleted: Boolean? = null,
 
+    // BaseEntity 미상속 — 자체 timestamp 컬럼 (§6.3 CreatedDate 직접 부착)
+    @SFField("CreatedDate")
     @HCColumn("createddate")
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     var createdAt: LocalDateTime = LocalDateTime.now(),
 
+    // SystemModstamp: @HCColumn 유지, @SFField 부여 안 함 (§6.3 note)
     @HCColumn("systemmodstamp")
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
-    var updatedAt: LocalDateTime = LocalDateTime.now()
+    var updatedAt: LocalDateTime = LocalDateTime.now(),
+
+    // -- Spec #712: Group A — OwnerId / CreatedById / LastModifiedById (R-2 패턴) --
+    // *_sfid: SF User Id buffer (Heroku Connect / SalesforceMigrationTool 이 채움).
+    // *_id: SF User → Employee 매핑 결과 FK.
+
+    @SFField("OwnerId")
+    @HCColumn("ownerid")
+    @Column(name = "owner_sfid", length = 18)
+    var ownerSfid: String? = null,
+
+    @SFField("CreatedById")
+    @HCColumn("createdbyid")
+    @Column(name = "created_by_sfid", length = 18)
+    var createdBySfid: String? = null,
+
+    @SFField("LastModifiedById")
+    @HCColumn("lastmodifiedbyid")
+    @Column(name = "last_modified_by_sfid", length = 18)
+    var lastModifiedBySfid: String? = null,
+
+    // -- Relations --
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id")
+    var owner: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_id")
+    var createdBy: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "last_modified_by_id")
+    var lastModifiedBy: Employee? = null
+
 ) : AuditedEntity()
