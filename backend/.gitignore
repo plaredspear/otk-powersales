@@ -5,6 +5,9 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
+# SF migration 도구의 추출 CSV 산출물 (운영 데이터 포함 가능)
+scripts/sf-migrate/export/
+
 ### STS ###
 .apt_generated
 .classpath
