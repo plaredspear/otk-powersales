@@ -94,7 +94,7 @@ class AdminPPTMasterServiceTest {
         return ProfessionalPromotionTeamMaster(
             id = id, employeeId = employeeId, accountId = accountId,
             teamType = teamType, startDate = startDate, endDate = endDate,
-            isConfirmed = isConfirmed, branchCode = "1100", branchName = "서울지점"
+            isConfirmed = isConfirmed, branchCode = "1100"
         )
     }
 

@@ -83,30 +83,22 @@ class PromotionControllerTest {
                 MobilePromotionListItem(
                     id = 1L,
                     promotionNumber = "PM-2026-001",
-                    promotionName = "봄맞이 행사",
                     promotionTypeName = "시식",
                     accountName = "이마트 강남점",
                     startDate = LocalDate.of(2026, 3, 1),
                     endDate = LocalDate.of(2026, 3, 31),
-                    category = "식품",
                     standLocation = "1층 입구",
-                    targetAmount = 5000000L,
-                    actualAmount = 3200000L,
                     isClosed = false,
                     myScheduleDate = LocalDate.of(2026, 3, 15)
                 ),
                 MobilePromotionListItem(
                     id = 2L,
                     promotionNumber = "PM-2026-002",
-                    promotionName = "신제품 출시 행사",
                     promotionTypeName = "진열",
                     accountName = "홈플러스 잠실점",
                     startDate = LocalDate.of(2026, 3, 10),
                     endDate = LocalDate.of(2026, 3, 20),
-                    category = "생활용품",
                     standLocation = "2층 매대",
-                    targetAmount = 3000000L,
-                    actualAmount = 1500000L,
                     isClosed = false,
                     myScheduleDate = null
                 )
@@ -131,15 +123,11 @@ class PromotionControllerTest {
                 .andExpect(jsonPath("$.data.content.length()").value(2))
                 .andExpect(jsonPath("$.data.content[0].id").value(1))
                 .andExpect(jsonPath("$.data.content[0].promotionNumber").value("PM-2026-001"))
-                .andExpect(jsonPath("$.data.content[0].promotionName").value("봄맞이 행사"))
                 .andExpect(jsonPath("$.data.content[0].promotionTypeName").value("시식"))
                 .andExpect(jsonPath("$.data.content[0].accountName").value("이마트 강남점"))
                 .andExpect(jsonPath("$.data.content[0].startDate").value("2026-03-01"))
                 .andExpect(jsonPath("$.data.content[0].endDate").value("2026-03-31"))
-                .andExpect(jsonPath("$.data.content[0].category").value("식품"))
                 .andExpect(jsonPath("$.data.content[0].standLocation").value("1층 입구"))
-                .andExpect(jsonPath("$.data.content[0].targetAmount").value(5000000))
-                .andExpect(jsonPath("$.data.content[0].actualAmount").value(3200000))
                 .andExpect(jsonPath("$.data.content[0].isClosed").value(false))
                 .andExpect(jsonPath("$.data.content[0].myScheduleDate").value("2026-03-15"))
                 .andExpect(jsonPath("$.data.page").value(0))
@@ -183,15 +171,11 @@ class PromotionControllerTest {
                 MobilePromotionListItem(
                     id = 1L,
                     promotionNumber = "PM-2026-001",
-                    promotionName = "봄맞이 행사",
                     promotionTypeName = "시식",
                     accountName = "이마트 강남점",
                     startDate = LocalDate.of(2026, 3, 1),
                     endDate = LocalDate.of(2026, 3, 31),
-                    category = "식품",
                     standLocation = "1층 입구",
-                    targetAmount = 5000000L,
-                    actualAmount = 3200000L,
                     isClosed = false,
                     myScheduleDate = null
                 )
@@ -216,7 +200,6 @@ class PromotionControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content.length()").value(1))
-                .andExpect(jsonPath("$.data.content[0].promotionName").value("봄맞이 행사"))
                 .andExpect(jsonPath("$.data.totalElements").value(1))
         }
 
@@ -252,7 +235,6 @@ class PromotionControllerTest {
                     scheduleDate = LocalDate.of(2026, 3, 15),
                     workStatus = "근무",
                     workType3 = "고정",
-                    professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE,
                     targetAmount = 1000000L,
                     actualAmount = 800000L
                 ),
@@ -262,7 +244,6 @@ class PromotionControllerTest {
                     scheduleDate = LocalDate.of(2026, 3, 16),
                     workStatus = "근무",
                     workType3 = "순회",
-                    professionalPromotionTeam = null,
                     targetAmount = 500000L,
                     actualAmount = null
                 )
@@ -270,7 +251,6 @@ class PromotionControllerTest {
             val detail = MobilePromotionDetailResponse(
                 id = 1L,
                 promotionNumber = "PM-2026-001",
-                promotionName = "봄맞이 행사",
                 promotionTypeName = "시식",
                 accountId = 100,
                 accountName = "이마트 강남점",
@@ -280,10 +260,7 @@ class PromotionControllerTest {
                 otherProduct = "너구리",
                 message = "행사 안내 메시지",
                 standLocation = "1층 입구",
-                category = "식품",
                 productType = "라면",
-                targetAmount = 5000000L,
-                actualAmount = 3200000L,
                 isClosed = false,
                 remark = "비고 내용",
                 employees = employees
@@ -295,7 +272,6 @@ class PromotionControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1))
                 .andExpect(jsonPath("$.data.promotionNumber").value("PM-2026-001"))
-                .andExpect(jsonPath("$.data.promotionName").value("봄맞이 행사"))
                 .andExpect(jsonPath("$.data.promotionTypeName").value("시식"))
                 .andExpect(jsonPath("$.data.accountId").value(100))
                 .andExpect(jsonPath("$.data.accountName").value("이마트 강남점"))
@@ -305,10 +281,7 @@ class PromotionControllerTest {
                 .andExpect(jsonPath("$.data.otherProduct").value("너구리"))
                 .andExpect(jsonPath("$.data.message").value("행사 안내 메시지"))
                 .andExpect(jsonPath("$.data.standLocation").value("1층 입구"))
-                .andExpect(jsonPath("$.data.category").value("식품"))
                 .andExpect(jsonPath("$.data.productType").value("라면"))
-                .andExpect(jsonPath("$.data.targetAmount").value(5000000))
-                .andExpect(jsonPath("$.data.actualAmount").value(3200000))
                 .andExpect(jsonPath("$.data.isClosed").value(false))
                 .andExpect(jsonPath("$.data.remark").value("비고 내용"))
                 .andExpect(jsonPath("$.data.employees").isArray)
@@ -318,9 +291,6 @@ class PromotionControllerTest {
                 .andExpect(jsonPath("$.data.employees[0].scheduleDate").value("2026-03-15"))
                 .andExpect(jsonPath("$.data.employees[0].workStatus").value("근무"))
                 .andExpect(jsonPath("$.data.employees[0].workType3").value("고정"))
-                .andExpect(jsonPath("$.data.employees[0].professionalPromotionTeam").value("라면세일조"))
-                .andExpect(jsonPath("$.data.employees[0].targetAmount").value(1000000))
-                .andExpect(jsonPath("$.data.employees[0].actualAmount").value(800000))
                 .andExpect(jsonPath("$.data.employees[1].id").value(11))
                 .andExpect(jsonPath("$.data.employees[1].employeeName").value("김영희"))
         }

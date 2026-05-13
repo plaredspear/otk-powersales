@@ -37,21 +37,6 @@ class MonthlySalesHistory(
     @Column(name = "name", length = 80)
     val name: String? = null,
 
-    @SFField("Account_ExternalKey__c")
-    @HCColumn("account_externalkey__c")
-    @Column(name = "account_external_key", length = 1300)
-    var accountExternalKey: String? = null,
-
-    @SFField("Account_BranchName__c")
-    @HCColumn("account_branchname__c")
-    @Column(name = "account_branch_name", length = 1300)
-    val accountBranchName: String? = null,
-
-    @SFField("Account_Type__c")
-    @HCColumn("account_type__c")
-    @Column(name = "account_type", length = 1300)
-    val accountType: String? = null,
-
     @SFField("SalesYear__c")
     @HCColumn("salesyear__c")
     @Column(name = "sales_year", length = 255)
@@ -62,35 +47,10 @@ class MonthlySalesHistory(
     @Column(name = "sales_month", length = 255)
     var salesMonth: String? = null,
 
-    @SFField("fm_year__c")
-    @HCColumn("fm_year__c")
-    @Column(name = "fm_year")
-    val fmYear: Double? = null,
-
-    @SFField("fm_month__c")
-    @HCColumn("fm_month__c")
-    @Column(name = "fm_month")
-    val fmMonth: Double? = null,
-
-    @SFField("TargetMonthResults__c")
-    @HCColumn("targetmonthresults__c")
-    @Column(name = "target_month_results")
-    val targetMonthResults: Double? = null,
-
     @SFField("LastMonthResults__c")
     @HCColumn("lastmonthresults__c")
     @Column(name = "last_month_results")
     val lastMonthResults: Double? = null,
-
-    @SFField("LastMonthTargetFomula__c")
-    @HCColumn("lastmonthtargetfomula__c")
-    @Column(name = "last_month_target_formula")
-    val lastMonthTargetFormula: Double? = null,
-
-    @SFField("LastMonthTargetAchievedRatio__c")
-    @HCColumn("lastmonthtargetachievedratio__c")
-    @Column(name = "last_month_target_achieved_ratio")
-    val lastMonthTargetAchievedRatio: Double? = null,
 
     @SFField("ShipClosingAmount__c")
     @HCColumn("shipclosingamount__c")

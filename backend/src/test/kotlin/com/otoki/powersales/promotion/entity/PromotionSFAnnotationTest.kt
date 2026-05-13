@@ -30,10 +30,10 @@ class PromotionSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("매핑 키 수 = 26 (도메인 21 + SF 표준 시스템 3 + BaseEntity 2)")
+        @DisplayName("매핑 키 수 = 18 (Spec #740: Formula 8건 제거. 도메인 13 + SF 표준 시스템 3 + BaseEntity 2)")
         fun mappingKeySize() {
             val mapping = SFSchemaUtils.getSFMapping(Promotion::class.java)
-            assertThat(mapping).hasSize(26)
+            assertThat(mapping).hasSize(18)
         }
     }
 
@@ -57,16 +57,15 @@ class PromotionSFAnnotationTest {
     }
 
     @Nested
-    @DisplayName("AC1 — @SFField 매핑 키셋 (도메인 21개)")
+    @DisplayName("AC1 — @SFField 매핑 키셋 (도메인 13개, Spec #740: Formula 8건 제거)")
     inner class DomainSfFieldMapping {
 
         private val mapping = SFSchemaUtils.getSFMapping(Promotion::class.java)
 
         @Test
-        @DisplayName("도메인 21개 SF API Name → 컬럼명 1:1")
+        @DisplayName("도메인 13개 SF API Name → 컬럼명 1:1")
         fun domainMappingValues() {
             assertThat(mapping["Name"]).isEqualTo("promotion_number")
-            assertThat(mapping["DKRetail__PromotionName__c"]).isEqualTo("promotion_name")
             assertThat(mapping["DKRetail__PromotionType__c"]).isEqualTo("promotion_type_id")
             assertThat(mapping["AccId__c"]).isEqualTo("account_sfid")
             assertThat(mapping["DKRetail__StartDate__c"]).isEqualTo("start_date")
@@ -75,17 +74,10 @@ class PromotionSFAnnotationTest {
             assertThat(mapping["DKRetail__OtherProduct__c"]).isEqualTo("other_product")
             assertThat(mapping["DKRetail__Message__c"]).isEqualTo("message")
             assertThat(mapping["DKRetail__StandLocation__c"]).isEqualTo("stand_location")
-            assertThat(mapping["DKRetail__TargetAmount__c"]).isEqualTo("target_amount")
-            assertThat(mapping["DKRetail__ActualAmount__c"]).isEqualTo("actual_amount")
             assertThat(mapping["CostCenterCode__c"]).isEqualTo("cost_center_code")
             assertThat(mapping["DKRetail__Remark__c"]).isEqualTo("remark")
-            assertThat(mapping["BranchName__c"]).isEqualTo("branch_name")
-            assertThat(mapping["Category1__c"]).isEqualTo("category")
             assertThat(mapping["DKRetail__ProductType__c"]).isEqualTo("product_type")
             assertThat(mapping["DKRetail__AccId__c"]).isEqualTo("deprecated_acc_sfid")
-            assertThat(mapping["AccCode__c"]).isEqualTo("account_code")
-            assertThat(mapping["ActualAmount__c"]).isEqualTo("actual_amount_won")
-            assertThat(mapping["ProductCode__c"]).isEqualTo("product_code")
         }
     }
 

@@ -29,10 +29,10 @@ class PromotionEmployeeSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("매핑 키 수 = 24 (기존 17 + 신규 2 + BaseEntity 2 + Spec #726 R-2 Owner/CreatedBy/LastModifiedBy 3)")
+        @DisplayName("매핑 키 수 = 22 (Spec #740: WorkType4 + ProfessionalPromotionTeam Formula 2건 제거. 기존 15 + 신규 2 + BaseEntity 2 + R-2 3)")
         fun mappingKeySize() {
             val mapping = SFSchemaUtils.getSFMapping(PromotionEmployee::class.java)
-            assertThat(mapping).hasSize(24)
+            assertThat(mapping).hasSize(22)
         }
     }
 
@@ -56,21 +56,19 @@ class PromotionEmployeeSFAnnotationTest {
     }
 
     @Nested
-    @DisplayName("AC1 — @SFField 매핑 키셋 (기존 17개)")
+    @DisplayName("AC1 — @SFField 매핑 키셋 (기존 15개, Spec #740: WorkType4 + ProfessionalPromotionTeam 제거)")
     inner class ExistingSfFieldMapping {
 
         private val mapping = SFSchemaUtils.getSFMapping(PromotionEmployee::class.java)
 
         @Test
-        @DisplayName("기존 17개 SF API Name → 컬럼명 1:1")
+        @DisplayName("기존 15개 SF API Name → 컬럼명 1:1")
         fun existingMappingValues() {
             assertThat(mapping["DKRetail__PromotionId__c"]).isEqualTo("promotion_sfid")
             assertThat(mapping["DKRetail__ScheduleDate__c"]).isEqualTo("schedule_date")
             assertThat(mapping["DKRetail__WorkStatus__c"]).isEqualTo("work_status")
             assertThat(mapping["DKRetail__WorkType1__c"]).isEqualTo("work_type1")
             assertThat(mapping["DKRetail__WorkType3__c"]).isEqualTo("work_type3")
-            assertThat(mapping["WorkType4__c"]).isEqualTo("work_type4")
-            assertThat(mapping["ProfessionalPromotionTeam__c"]).isEqualTo("professional_promotion_team")
             assertThat(mapping["DKRetail__ScheduleId__c"]).isEqualTo("team_member_schedule_sfid")
             assertThat(mapping["PromoCloseByTm__c"]).isEqualTo("promo_close_by_tm")
             assertThat(mapping["DKRetail__BasePrice__c"]).isEqualTo("base_price")

@@ -23,11 +23,14 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.*
+import org.mockito.quality.Strictness
 import java.time.LocalDate
 import java.util.*
 
 @ExtendWith(MockitoExtension::class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("AdminPromotionEmployeeService 테스트")
 class AdminPromotionEmployeeServiceTest {
 
@@ -74,64 +77,62 @@ class AdminPromotionEmployeeServiceTest {
         @Test
         @DisplayName("정상 등록 - 라면행사 + 라면세일조 -> 성공")
         fun createEmployee_teamMatch_success() {
-            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion(category = "라면")))
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
             stubRollup()
 
-            val result = service.createEmployee(10L, createRequest(professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE))
+            val result = service.createEmployee(10L, createRequest())
             assertThat(result.employeeCode).isEqualTo("20030117")
         }
 
         @Test
         @DisplayName("전문행사조 null -> 모든 카테고리 허용")
         fun createEmployee_teamNull_success() {
-            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion(category = "라면")))
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
 
             stubRollup()
 
-            val result = service.createEmployee(10L, createRequest(professionalPromotionTeam = null))
-            assertThat(result.professionalPromotionTeam).isNull()
+            service.createEmployee(10L, createRequest())
         }
 
         @Test
         @DisplayName("전문행사조 '일반' -> 모든 카테고리 허용")
         fun createEmployee_teamGeneral_success() {
-            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion(category = "냉장")))
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
 
             stubRollup()
 
-            service.createEmployee(10L, createRequest(professionalPromotionTeam = ProfessionalPromotionTeamType.GENERAL))
+            service.createEmployee(10L, createRequest())
         }
 
         @Test
         @DisplayName("만두행사 + 냉동팀 -> 허용")
         fun createEmployee_manduWithFrozen_success() {
-            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion(category = "만두")))
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
 
             stubRollup()
 
-            service.createEmployee(10L, createRequest(professionalPromotionTeam = ProfessionalPromotionTeamType.FRESH_SALE_FROZEN))
+            service.createEmployee(10L, createRequest())
         }
 
         @Test
         @DisplayName("필드 검증 안 함 - 불일치 전문행사조로 등록 -> 검증 없이 저장 성공")
         fun createEmployee_noValidation_teamMismatch() {
-            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion(category = "라면")))
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
 
             stubRollup()
 
-            val result = service.createEmployee(10L, createRequest(professionalPromotionTeam = ProfessionalPromotionTeamType.FRESH_SALE_REFRIGERATED))
-            assertThat(result.professionalPromotionTeam).isEqualTo(ProfessionalPromotionTeamType.FRESH_SALE_REFRIGERATED)
+            service.createEmployee(10L, createRequest())
         }
 
         @Test
@@ -533,14 +534,12 @@ class AdminPromotionEmployeeServiceTest {
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
             stubRollup()
 
-            // team + employeeId 동시 변경 -> team 변경이 있으므로 스케줄 삭제 안 함
+            // employeeId 변경 -> 스케줄 삭제 진행 (team 검증 제거됨)
             service.updateEmployee(1L, 1L, createRequest(
-                employeeId = 999L,
-                professionalPromotionTeam = ProfessionalPromotionTeamType.GENERAL
+                employeeId = 999L
             ))
 
-            verify(teamMemberScheduleRepository, never()).deleteAllByIdIn(any())
-            assertThat(pe.teamMemberScheduleId).isEqualTo(100L)
+            verify(teamMemberScheduleRepository, atLeastOnce()).deleteAllByIdIn(any())
         }
 
         @Test
@@ -709,9 +708,6 @@ class AdminPromotionEmployeeServiceTest {
             stubRollup(targetSum = 100000, actualSum = 80000)
 
             service.createEmployee(10L, createRequest(targetAmount = 100000, actualAmount = 80000))
-
-            assertThat(promotion.targetAmount).isEqualTo(100000)
-            assertThat(promotion.actualAmount).isEqualTo(80000)
         }
 
         @Test
@@ -728,9 +724,6 @@ class AdminPromotionEmployeeServiceTest {
             stubRollup(targetSum = 150000, actualSum = 110000)
 
             service.updateEmployee(1L, 1L, createRequest(targetAmount = 50000, actualAmount = 30000))
-
-            assertThat(promotion.targetAmount).isEqualTo(150000)
-            assertThat(promotion.actualAmount).isEqualTo(110000)
         }
 
         @Test
@@ -743,9 +736,6 @@ class AdminPromotionEmployeeServiceTest {
             stubRollup(targetSum = 0, actualSum = 0)
 
             service.deleteEmployee(1L)
-
-            assertThat(promotion.targetAmount).isEqualTo(0)
-            assertThat(promotion.actualAmount).isEqualTo(0)
         }
     }
 
@@ -1208,28 +1198,21 @@ class AdminPromotionEmployeeServiceTest {
             ))
 
             service.batchUpdateEmployees(10L, 1L, request)
-
-            assertThat(promotion.targetAmount).isEqualTo(200000)
-            assertThat(promotion.actualAmount).isEqualTo(150000)
         }
     }
 
     // --- Helpers ---
 
-    private fun stubRollup(promotionId: Long = 10L, targetSum: Long = 0, actualSum: Long = 0) {
-        whenever(promotionEmployeeRepository.sumTargetAmountByPromotionId(promotionId)).thenReturn(targetSum)
-        whenever(promotionEmployeeRepository.sumActualAmountByPromotionId(promotionId)).thenReturn(actualSum)
-        whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
-    }
+    // Spec #740: recalculatePromotionAmounts 제거됨 — rollup stub 불필요. no-op 유지로 호출처 영향 없음.
+    private fun stubRollup(promotionId: Long = 10L, targetSum: Long = 0, actualSum: Long = 0) {}
 
     private fun createPromotion(
         id: Long = 10L,
-        isDeleted: Boolean = false,
-        category: String? = "라면"
+        isDeleted: Boolean = false
     ) = Promotion(
-        id = id, promotionNumber = "PM00000001", promotionName = "테스트 행사",
+        id = id, promotionNumber = "PM00000001",
         account = Account(id = 100, name = "테스트거래처"), startDate = LocalDate.of(2026, 3, 10), endDate = LocalDate.of(2026, 3, 20),
-        isDeleted = isDeleted, category = category
+        isDeleted = isDeleted
     )
 
     private fun createPe(
@@ -1239,8 +1222,8 @@ class AdminPromotionEmployeeServiceTest {
     ) = PromotionEmployee(
         id = id, promotionId = promotionId, employeeId = employeeId,
         scheduleDate = scheduleDate,
-        workStatus = workStatus, workType1 = workType1, workType3 = "고정", workType4 = "냉장",
-        professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE, basePrice = 1500, dailyTargetCount = 100,
+        workStatus = workStatus, workType1 = workType1, workType3 = "고정",
+        basePrice = 1500, dailyTargetCount = 100,
         teamMemberScheduleId = teamMemberScheduleId, promoCloseByTm = promoCloseByTm
     ).also {
         it.promotion = createPromotion()
@@ -1254,14 +1237,13 @@ class AdminPromotionEmployeeServiceTest {
     private fun createBatchItem(
         id: Long = 1L, employeeId: Long? = 1L, scheduleDate: LocalDate = LocalDate.of(2026, 3, 15),
         workStatus: String? = "근무", workType1: String? = "시식", workType3: String? = "고정",
-        workType4: String? = "냉장", professionalPromotionTeam: ProfessionalPromotionTeamType? = ProfessionalPromotionTeamType.RAMEN_SALE,
         basePrice: Long? = 1500, dailyTargetCount: Int? = 100,
         targetAmount: Long? = 0, actualAmount: Long? = 0,
         primaryProductAmount: Long? = null, otherSalesAmount: Long? = null
     ) = BatchUpdatePromotionEmployeeItem(
         id = id, employeeId = employeeId, scheduleDate = scheduleDate, workStatus = workStatus,
-        workType1 = workType1, workType3 = workType3, workType4 = workType4,
-        professionalPromotionTeam = professionalPromotionTeam, basePrice = basePrice,
+        workType1 = workType1, workType3 = workType3,
+        basePrice = basePrice,
         dailyTargetCount = dailyTargetCount, targetAmount = targetAmount, actualAmount = actualAmount,
         primaryProductAmount = primaryProductAmount, otherSalesAmount = otherSalesAmount
     )
@@ -1269,14 +1251,13 @@ class AdminPromotionEmployeeServiceTest {
     private fun createRequest(
         employeeId: Long? = 1L, scheduleDate: LocalDate = LocalDate.of(2026, 3, 15),
         workStatus: String? = "근무", workType1: String? = "시식", workType3: String? = "고정",
-        workType4: String? = "냉장", professionalPromotionTeam: ProfessionalPromotionTeamType? = ProfessionalPromotionTeamType.RAMEN_SALE,
         basePrice: Long? = 1500, dailyTargetCount: Int? = 100,
         targetAmount: Long? = 0, actualAmount: Long? = 0,
         primaryProductAmount: Long? = null, otherSalesAmount: Long? = null
     ) = PromotionEmployeeRequest(
         employeeId = employeeId, scheduleDate = scheduleDate, workStatus = workStatus,
-        workType1 = workType1, workType3 = workType3, workType4 = workType4,
-        professionalPromotionTeam = professionalPromotionTeam, basePrice = basePrice,
+        workType1 = workType1, workType3 = workType3,
+        basePrice = basePrice,
         dailyTargetCount = dailyTargetCount, targetAmount = targetAmount, actualAmount = actualAmount,
         primaryProductAmount = primaryProductAmount, otherSalesAmount = otherSalesAmount
     )

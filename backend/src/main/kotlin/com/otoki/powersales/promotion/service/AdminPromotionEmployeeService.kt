@@ -7,7 +7,6 @@ import com.otoki.powersales.promotion.dto.response.BatchItemError
 import com.otoki.powersales.promotion.dto.response.BatchUpdatePromotionEmployeeResponse
 import com.otoki.powersales.promotion.dto.response.PromotionEmployeeDetailResponse
 import com.otoki.powersales.promotion.dto.response.PromotionEmployeeListResponse
-import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.entity.PromotionEmployee
 import com.otoki.powersales.promotion.exception.*
@@ -34,23 +33,6 @@ class AdminPromotionEmployeeService(
         private const val BATCH_MAX_SIZE = 200
         private const val DEFAULT_WORK_TYPE1 = "행사"
         private const val DEFAULT_WORK_STATUS = "근무"
-
-        private val CATEGORY_ALLOWED_TEAMS: Map<String, Set<ProfessionalPromotionTeamType>> = mapOf(
-            "라면" to setOf(ProfessionalPromotionTeamType.RAMEN_SALE),
-            "냉장" to setOf(ProfessionalPromotionTeamType.FRESH_SALE_REFRIGERATED),
-            "냉동" to setOf(ProfessionalPromotionTeamType.FRESH_SALE_FROZEN),
-            "만두" to setOf(
-                ProfessionalPromotionTeamType.FRESH_SALE_DUMPLING,
-                ProfessionalPromotionTeamType.FRESH_SALE_FROZEN
-            )
-        )
-
-        private val CATEGORY_TEAM_MESSAGES: Map<String, String> = mapOf(
-            "라면" to "대표제품이 라면인 행사에는 전문행사조가 ${ProfessionalPromotionTeamType.RAMEN_SALE.displayName} 혹은 ${ProfessionalPromotionTeamType.GENERAL.displayName}인 사원만 배정 가능합니다",
-            "냉장" to "대표제품이 냉장인 행사에는 전문행사조가 ${ProfessionalPromotionTeamType.FRESH_SALE_REFRIGERATED.displayName} 혹은 ${ProfessionalPromotionTeamType.GENERAL.displayName}인 사원만 배정 가능합니다",
-            "냉동" to "대표제품이 냉동인 행사에는 전문행사조가 ${ProfessionalPromotionTeamType.FRESH_SALE_FROZEN.displayName} 혹은 ${ProfessionalPromotionTeamType.GENERAL.displayName}인 사원만 배정 가능합니다",
-            "만두" to "대표제품이 만두인 행사에는 전문행사조가 ${ProfessionalPromotionTeamType.FRESH_SALE_FROZEN.displayName}, ${ProfessionalPromotionTeamType.FRESH_SALE_DUMPLING.displayName} 혹은 ${ProfessionalPromotionTeamType.GENERAL.displayName}인 사원만 배정 가능합니다"
-        )
     }
 
     private data class ResolvedEmployee(val id: Long?, val name: String?, val employeeCode: String?)
@@ -84,8 +66,6 @@ class AdminPromotionEmployeeService(
                 workStatus = request.workStatus ?: DEFAULT_WORK_STATUS,
                 workType1 = request.workType1 ?: DEFAULT_WORK_TYPE1,
                 workType3 = request.workType3,
-                workType4 = request.workType4,
-                professionalPromotionTeam = request.professionalPromotionTeam,
                 basePrice = request.basePrice,
                 dailyTargetCount = request.dailyTargetCount,
                 targetAmount = calculateTargetAmount(request.basePrice, request.dailyTargetCount),
@@ -98,8 +78,6 @@ class AdminPromotionEmployeeService(
                 s3ImageUniqueKey = request.s3ImageUniqueKey
             )
         )
-
-        recalculatePromotionAmounts(promotionId)
 
         return PromotionEmployeeDetailResponse.from(pe, resolved?.name, resolved?.employeeCode)
     }
@@ -125,16 +103,13 @@ class AdminPromotionEmployeeService(
             request.basePrice, request.dailyTargetCount, employee.role == UserRole.BRANCH_MANAGER
         )
 
-        // 1-1: 전문행사조 매칭 검증
         val promotion = pe.promotion ?: throw PromotionNotFoundException()
         if (promotion.isDeleted) throw PromotionNotFoundException()
         validateScheduleDateRange(request.scheduleDate, promotion)
-        validateTeamCategory(promotion, request.professionalPromotionTeam)
 
         // 1-5: 핵심필드 변경 시 스케줄 삭제
         removeScheduleOnCriticalFieldChange(
-            pe, resolved?.id, request.scheduleDate, normalizedWorkType3,
-            request.professionalPromotionTeam
+            pe, resolved?.id, request.scheduleDate, normalizedWorkType3
         )
 
         pe.update(
@@ -143,8 +118,6 @@ class AdminPromotionEmployeeService(
             workStatus = request.workStatus ?: pe.workStatus,
             workType1 = request.workType1 ?: pe.workType1,
             workType3 = normalizedWorkType3,
-            workType4 = request.workType4,
-            professionalPromotionTeam = request.professionalPromotionTeam,
             basePrice = request.basePrice,
             dailyTargetCount = request.dailyTargetCount,
             targetAmount = calculateTargetAmount(request.basePrice, request.dailyTargetCount),
@@ -158,8 +131,6 @@ class AdminPromotionEmployeeService(
         )
 
         promotionEmployeeRepository.save(pe)
-
-        recalculatePromotionAmounts(pe.promotionId)
 
         return PromotionEmployeeDetailResponse.from(pe, resolved?.name, resolved?.employeeCode)
     }
@@ -220,8 +191,7 @@ class AdminPromotionEmployeeService(
             val resolved = resolveEmployee(item.employeeId)
 
             removeScheduleOnCriticalFieldChange(
-                pe, resolved?.id, item.scheduleDate, normalizedWorkType3,
-                item.professionalPromotionTeam
+                pe, resolved?.id, item.scheduleDate, normalizedWorkType3
             )
 
             pe.update(
@@ -230,8 +200,6 @@ class AdminPromotionEmployeeService(
                 workStatus = item.workStatus ?: pe.workStatus ?: DEFAULT_WORK_STATUS,
                 workType1 = item.workType1 ?: pe.workType1 ?: DEFAULT_WORK_TYPE1,
                 workType3 = normalizedWorkType3,
-                workType4 = item.workType4,
-                professionalPromotionTeam = item.professionalPromotionTeam,
                 basePrice = item.basePrice,
                 dailyTargetCount = item.dailyTargetCount,
                 targetAmount = calculateTargetAmount(item.basePrice, item.dailyTargetCount),
@@ -246,9 +214,6 @@ class AdminPromotionEmployeeService(
 
             promotionEmployeeRepository.save(pe)
         }
-
-        // 롤업 재계산 (1회)
-        recalculatePromotionAmounts(promotionId)
 
         // 전체 행사사원 목록 조회하여 응답
         val allEmployees = promotionEmployeeRepository.findWithEmployeeByPromotionId(promotionId)
@@ -279,8 +244,6 @@ class AdminPromotionEmployeeService(
 
         promotionEmployeeRepository.delete(pe)
         promotionEmployeeRepository.flush()
-
-        recalculatePromotionAmounts(promotionId)
     }
 
     // --- Private helpers ---
@@ -340,21 +303,6 @@ class AdminPromotionEmployeeService(
             return BatchItemError(index, item.employeeId, "INVALID_WORK_TYPE3", "근무유형3은 고정, 격고, 순회 중 하나여야 합니다")
         }
 
-        // 6. 전문행사조-카테고리 매칭
-        val team = item.professionalPromotionTeam
-        if (team != null && team != ProfessionalPromotionTeamType.GENERAL) {
-            val category = promotion.category
-            if (category != null) {
-                val allowedTeams = CATEGORY_ALLOWED_TEAMS[category]
-                if (allowedTeams != null && team !in allowedTeams) {
-                    return BatchItemError(
-                        index, item.employeeId, "TEAM_CATEGORY_MISMATCH",
-                        CATEGORY_TEAM_MESSAGES[category] ?: "전문행사조가 행사 카테고리와 일치하지 않습니다"
-                    )
-                }
-            }
-        }
-
         // 7. 마감 보호
         if (pe.teamMemberScheduleId != null && pe.promoCloseByTm) {
             val resolvedForValidation = resolveEmployee(item.employeeId)
@@ -407,18 +355,6 @@ class AdminPromotionEmployeeService(
         if (workType3 !in VALID_WORK_TYPE3) throw InvalidWorkType3Exception()
     }
 
-    private fun validateTeamCategory(promotion: Promotion, team: ProfessionalPromotionTeamType?) {
-        if (team == null || team == ProfessionalPromotionTeamType.GENERAL) return
-        val category = promotion.category ?: return
-        val allowedTeams = CATEGORY_ALLOWED_TEAMS[category] ?: return
-
-        if (team !in allowedTeams) {
-            throw TeamCategoryMismatchException(
-                CATEGORY_TEAM_MESSAGES[category] ?: "전문행사조가 행사 카테고리와 일치하지 않습니다"
-            )
-        }
-    }
-
     private fun validateClosedEmployeeModification(
         pe: PromotionEmployee,
         newEmployeeId: Long?,
@@ -443,11 +379,9 @@ class AdminPromotionEmployeeService(
         pe: PromotionEmployee,
         newEmployeeId: Long?,
         scheduleDate: java.time.LocalDate?,
-        workType3: String?,
-        professionalPromotionTeam: ProfessionalPromotionTeamType?
+        workType3: String?
     ) {
         if (pe.teamMemberScheduleId == null) return
-        if (pe.professionalPromotionTeam != professionalPromotionTeam) return
 
         val criticalChanged = pe.employeeId != newEmployeeId ||
             pe.scheduleDate != scheduleDate ||
@@ -457,15 +391,6 @@ class AdminPromotionEmployeeService(
             teamMemberScheduleRepository.deleteAllByIdIn(listOf(pe.teamMemberScheduleId!!))
             pe.teamMemberScheduleId = null
         }
-    }
-
-    private fun recalculatePromotionAmounts(promotionId: Long) {
-        val promotion = promotionRepository.findById(promotionId)
-            .orElseThrow { PromotionNotFoundException() }
-        val sumTarget = promotionEmployeeRepository.sumTargetAmountByPromotionId(promotionId)
-        val sumActual = promotionEmployeeRepository.sumActualAmountByPromotionId(promotionId)
-        promotion.updateAmounts(sumTarget, sumActual)
-        promotionRepository.save(promotion)
     }
 
 }

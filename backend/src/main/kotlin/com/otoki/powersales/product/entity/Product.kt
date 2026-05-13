@@ -64,11 +64,6 @@ class Product(
     @Column(name = "shelf_life_unit", length = 40)
     var shelfLifeUnit: String? = null,
 
-    @SFField("ShelfLifeFull__c")
-    @HCColumn("shelflifefull__c")
-    @Column(name = "shelf_life_full", length = 1300)
-    val shelfLifeFull: String? = null,
-
     @SFField("DKRetail__Category1__c")
     @HCColumn("dkretail__category1__c")
     @Column(name = "category1", length = 255)

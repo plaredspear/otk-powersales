@@ -1,6 +1,5 @@
 package com.otoki.powersales.promotion.service
 
-import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.entity.PromotionEmployee
@@ -80,16 +79,12 @@ class MobilePromotionServiceTest {
     private fun createPromotion(
         id: Long = 1L,
         promotionNumber: String = "PM00000001",
-        promotionName: String? = "테스트 행사",
         promotionTypeId: Long? = 1L,
         account: Account = createAccount(),
         startDate: LocalDate = LocalDate.of(2026, 3, 1),
         endDate: LocalDate = LocalDate.of(2026, 3, 15),
         costCenterCode: String? = "1234",
         standLocation: String? = null,
-        category: String? = null,
-        targetAmount: Long? = 1000000L,
-        actualAmount: Long? = 500000L,
         isClosed: Boolean = false,
         isDeleted: Boolean = false,
         primaryProductId: Long? = null,
@@ -99,16 +94,12 @@ class MobilePromotionServiceTest {
     ): Promotion = Promotion(
         id = id,
         promotionNumber = promotionNumber,
-        promotionName = promotionName,
         promotionTypeId = promotionTypeId,
         account = account,
         startDate = startDate,
         endDate = endDate,
         costCenterCode = costCenterCode,
         standLocation = standLocation,
-        category = category,
-        targetAmount = targetAmount,
-        actualAmount = actualAmount,
         isClosed = isClosed,
         isDeleted = isDeleted,
         primaryProductId = primaryProductId,
@@ -124,7 +115,6 @@ class MobilePromotionServiceTest {
         scheduleDate: LocalDate? = LocalDate.of(2026, 3, 5),
         workStatus: String? = null,
         workType3: String? = null,
-        professionalPromotionTeam: ProfessionalPromotionTeamType? = null,
         targetAmount: Long? = 0,
         actualAmount: Long? = 0
     ): PromotionEmployee = PromotionEmployee(
@@ -134,7 +124,6 @@ class MobilePromotionServiceTest {
         scheduleDate = scheduleDate,
         workStatus = workStatus,
         workType3 = workType3,
-        professionalPromotionTeam = professionalPromotionTeam,
         targetAmount = targetAmount,
         actualAmount = actualAmount
     )

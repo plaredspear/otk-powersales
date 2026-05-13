@@ -1,6 +1,5 @@
 package com.otoki.powersales.promotion.dto.response
 
-import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
 import com.otoki.powersales.promotion.entity.PromotionEmployee
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -15,8 +14,6 @@ data class PromotionEmployeeListResponse(
     val workStatus: String?,
     val workType1: String?,
     val workType3: String?,
-    val workType4: String?,
-    val professionalPromotionTeam: ProfessionalPromotionTeamType?,
     val teamMemberScheduleId: Long?,
     val promoCloseByTm: Boolean,
     val basePrice: Long?,
@@ -42,8 +39,6 @@ data class PromotionEmployeeListResponse(
                 workStatus = entity.workStatus,
                 workType1 = entity.workType1,
                 workType3 = entity.workType3,
-                workType4 = entity.workType4,
-                professionalPromotionTeam = entity.professionalPromotionTeam,
                 teamMemberScheduleId = entity.teamMemberScheduleId,
                 promoCloseByTm = entity.promoCloseByTm,
                 basePrice = entity.basePrice,
@@ -70,8 +65,6 @@ data class PromotionEmployeeDetailResponse(
     val workStatus: String?,
     val workType1: String?,
     val workType3: String?,
-    val workType4: String?,
-    val professionalPromotionTeam: ProfessionalPromotionTeamType?,
     val teamMemberScheduleId: Long?,
     val promoCloseByTm: Boolean,
     val basePrice: Long?,
@@ -99,8 +92,6 @@ data class PromotionEmployeeDetailResponse(
                 workStatus = entity.workStatus,
                 workType1 = entity.workType1,
                 workType3 = entity.workType3,
-                workType4 = entity.workType4,
-                professionalPromotionTeam = entity.professionalPromotionTeam,
                 teamMemberScheduleId = entity.teamMemberScheduleId,
                 promoCloseByTm = entity.promoCloseByTm,
                 basePrice = entity.basePrice,

@@ -28,11 +28,6 @@ class ProfessionalPromotionTeamMaster(
     @Column(name = "employee_id", nullable = false)
     val employeeId: Long,
 
-    @SFField("EmployeeNumber__c")
-    @HCColumn("employeenumber__c")
-    @Column(name = "employee_number", length = 1300)
-    val employeeNumber: String? = null,
-
     @Column(name = "account_id", nullable = false)
     var accountId: Int,
 
@@ -71,11 +66,6 @@ class ProfessionalPromotionTeamMaster(
     @HCColumn("costcentercode__c")
     @Column(name = "branch_code", length = 255)
     var branchCode: String? = null,
-
-    @SFField("BranchName__c")
-    @HCColumn("branchname__c")
-    @Column(name = "branch_name", length = 1300)
-    var branchName: String? = null,
 
     @SFField("OwnerId")
     @HCColumn("ownerid")

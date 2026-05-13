@@ -31,7 +31,6 @@ class PromotionRepositoryCustomImpl(
     override fun searchForAdmin(
         keyword: String?,
         promotionTypeId: Long?,
-        category: String?,
         startDate: String?,
         endDate: String?,
         branchCodes: List<String>?,
@@ -44,17 +43,12 @@ class PromotionRepositoryCustomImpl(
         if (!keyword.isNullOrBlank()) {
             val lowerPattern = "%${keyword.lowercase()}%"
             builder.and(
-                promotion.promotionName.lower().like(lowerPattern)
-                    .or(promotion.promotionNumber.lower().like(lowerPattern))
+                promotion.promotionNumber.lower().like(lowerPattern)
             )
         }
 
         if (promotionTypeId != null) {
             builder.and(promotion.promotionTypeId.eq(promotionTypeId))
-        }
-
-        if (!category.isNullOrBlank()) {
-            builder.and(promotion.category.eq(category))
         }
 
         if (!startDate.isNullOrBlank()) {
@@ -120,13 +114,12 @@ class PromotionRepositoryCustomImpl(
             builder.and(promotion.costCenterCode.eq(costCenterCode))
         }
 
-        // 키워드 검색 (행사명, 행사번호, 거래처명)
+        // 키워드 검색 (행사번호, 거래처명)
         val hasKeyword = !keyword.isNullOrBlank()
         if (hasKeyword) {
             val lowerPattern = "%${keyword!!.lowercase()}%"
             builder.and(
-                promotion.promotionName.lower().like(lowerPattern)
-                    .or(promotion.promotionNumber.lower().like(lowerPattern))
+                promotion.promotionNumber.lower().like(lowerPattern)
                     .or(account.name.lower().like(lowerPattern))
             )
         }

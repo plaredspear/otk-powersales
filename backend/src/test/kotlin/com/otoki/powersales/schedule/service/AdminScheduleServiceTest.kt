@@ -554,7 +554,6 @@ class AdminScheduleServiceTest {
             val salesHistory = MonthlySalesHistory(
                 id = 1,
                 account = account,
-                accountExternalKey = "EXT001",
                 lastMonthResults = 5000000.0
             )
 

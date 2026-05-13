@@ -146,7 +146,6 @@ class AlternativeHolidayServiceTest {
     ): AlternativeHoliday = AlternativeHoliday(
         id = id,
         employeeId = 1L,
-        employeeName = "홍길동",
         actualWorkDate = saturday,
         targetAltHolidayDate = monday,
         status = status,

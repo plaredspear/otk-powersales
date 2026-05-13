@@ -26,10 +26,10 @@ class AlternativeHolidaySFAnnotationTest {
         }
 
         @Test
-        @DisplayName("매핑 키 수 = 9 (7 + BaseEntity 2)")
+        @DisplayName("매핑 키 수 = 11 (Spec #740 EmpName 제거: 6 + BaseEntity 2 + R-2 3)")
         fun mappingKeySize() {
             val mapping = SFSchemaUtils.getSFMapping(AlternativeHoliday::class.java)
-            assertThat(mapping).hasSize(12)
+            assertThat(mapping).hasSize(11)
         }
     }
 
@@ -83,10 +83,9 @@ class AlternativeHolidaySFAnnotationTest {
         private val mapping = SFSchemaUtils.getSFMapping(AlternativeHoliday::class.java)
 
         @Test
-        @DisplayName("7개 SF API Name → 컬럼명 1:1")
+        @DisplayName("6개 SF API Name → 컬럼명 1:1 (Spec #740: EmpName Formula 제거)")
         fun mappingValues() {
             assertThat(mapping["DKRetail__EmployeeId__c"]).isEqualTo("employee_sfid")
-            assertThat(mapping["DKRetail__EmpName__c"]).isEqualTo("employee_name")
             assertThat(mapping["DKRetail__ActualWorkDate__c"]).isEqualTo("actual_work_date")
             assertThat(mapping["DKRetail__TargetAltHolidayDate__c"]).isEqualTo("target_alt_holiday_date")
             assertThat(mapping["DKRetail__ConfirmAltHolidayDate__c"]).isEqualTo("confirm_alt_holiday_date")
@@ -99,7 +98,7 @@ class AlternativeHolidaySFAnnotationTest {
         fun mappingKeysExact() {
             assertThat(mapping.keys)
                 .containsExactlyInAnyOrder(
-                    "DKRetail__EmployeeId__c", "DKRetail__EmpName__c",
+                    "DKRetail__EmployeeId__c",
                     "DKRetail__ActualWorkDate__c", "DKRetail__TargetAltHolidayDate__c",
                     "DKRetail__ConfirmAltHolidayDate__c", "DKRetail__Status__c",
                     "DKRetail__ChangeReason__c",

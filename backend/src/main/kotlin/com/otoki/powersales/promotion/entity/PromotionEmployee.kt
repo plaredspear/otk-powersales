@@ -6,7 +6,6 @@ import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.promotion.entity.converter.ProfessionalPromotionTeamTypeConverter
 import jakarta.persistence.*
 import java.time.LocalDate
 
@@ -54,17 +53,6 @@ class PromotionEmployee(
     @HCColumn("dkretail__worktype3__c")
     @Column(name = "work_type3", length = 255)
     var workType3: String? = null,
-
-    @SFField("WorkType4__c")
-    @HCColumn("worktype4__c")
-    @Column(name = "work_type4", length = 1300)
-    var workType4: String? = null,
-
-    @SFField("ProfessionalPromotionTeam__c")
-    @HCColumn("professionalpromotionteam__c")
-    @Convert(converter = ProfessionalPromotionTeamTypeConverter::class)
-    @Column(name = "professional_promotion_team", length = 1300)
-    var professionalPromotionTeam: ProfessionalPromotionTeamType? = null,
 
     @Column(name = "team_member_schedule_id")
     var teamMemberScheduleId: Long? = null,
@@ -178,8 +166,6 @@ class PromotionEmployee(
         workStatus: String?,
         workType1: String?,
         workType3: String?,
-        workType4: String?,
-        professionalPromotionTeam: ProfessionalPromotionTeamType?,
         basePrice: Long?,
         dailyTargetCount: Int?,
         targetAmount: Long?,
@@ -196,8 +182,6 @@ class PromotionEmployee(
         this.workStatus = workStatus
         this.workType1 = workType1
         this.workType3 = workType3
-        this.workType4 = workType4
-        this.professionalPromotionTeam = professionalPromotionTeam
         this.basePrice = basePrice
         this.dailyTargetCount = dailyTargetCount
         this.targetAmount = targetAmount

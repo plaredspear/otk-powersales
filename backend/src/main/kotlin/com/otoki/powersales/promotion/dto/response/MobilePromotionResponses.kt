@@ -1,6 +1,5 @@
 package com.otoki.powersales.promotion.dto.response
 
-import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.entity.PromotionEmployee
 import java.time.LocalDate
@@ -16,15 +15,11 @@ data class MobilePromotionListResponse(
 data class MobilePromotionListItem(
     val id: Long,
     val promotionNumber: String,
-    val promotionName: String?,
     val promotionTypeName: String?,
     val accountName: String?,
     val startDate: LocalDate,
     val endDate: LocalDate,
-    val category: String?,
     val standLocation: String?,
-    val targetAmount: Long?,
-    val actualAmount: Long?,
     val isClosed: Boolean,
     val myScheduleDate: LocalDate?
 ) {
@@ -37,15 +32,11 @@ data class MobilePromotionListItem(
         ): MobilePromotionListItem = MobilePromotionListItem(
             id = promotion.id,
             promotionNumber = promotion.promotionNumber,
-            promotionName = promotion.promotionName,
             promotionTypeName = promotionTypeName,
             accountName = accountName,
             startDate = promotion.startDate,
             endDate = promotion.endDate,
-            category = promotion.category,
             standLocation = promotion.standLocation,
-            targetAmount = promotion.targetAmount,
-            actualAmount = promotion.actualAmount,
             isClosed = promotion.isClosed,
             myScheduleDate = myScheduleDate
         )
@@ -55,7 +46,6 @@ data class MobilePromotionListItem(
 data class MobilePromotionDetailResponse(
     val id: Long,
     val promotionNumber: String,
-    val promotionName: String?,
     val promotionTypeName: String?,
     val accountId: Int,
     val accountName: String?,
@@ -65,10 +55,7 @@ data class MobilePromotionDetailResponse(
     val otherProduct: String?,
     val message: String?,
     val standLocation: String?,
-    val category: String?,
     val productType: String?,
-    val targetAmount: Long?,
-    val actualAmount: Long?,
     val isClosed: Boolean,
     val remark: String?,
     val employees: List<MobilePromotionEmployeeItem>
@@ -83,7 +70,6 @@ data class MobilePromotionDetailResponse(
         ): MobilePromotionDetailResponse = MobilePromotionDetailResponse(
             id = promotion.id,
             promotionNumber = promotion.promotionNumber,
-            promotionName = promotion.promotionName,
             promotionTypeName = promotionTypeName,
             accountId = promotion.account.id,
             accountName = accountName,
@@ -93,10 +79,7 @@ data class MobilePromotionDetailResponse(
             otherProduct = promotion.otherProduct,
             message = promotion.message,
             standLocation = promotion.standLocation,
-            category = promotion.category,
             productType = promotion.productType,
-            targetAmount = promotion.targetAmount,
-            actualAmount = promotion.actualAmount,
             isClosed = promotion.isClosed,
             remark = promotion.remark,
             employees = employees
@@ -110,7 +93,6 @@ data class MobilePromotionEmployeeItem(
     val scheduleDate: LocalDate?,
     val workStatus: String?,
     val workType3: String?,
-    val professionalPromotionTeam: ProfessionalPromotionTeamType?,
     val targetAmount: Long?,
     val actualAmount: Long?
 ) {
@@ -122,7 +104,6 @@ data class MobilePromotionEmployeeItem(
                 scheduleDate = entity.scheduleDate,
                 workStatus = entity.workStatus,
                 workType3 = entity.workType3,
-                professionalPromotionTeam = entity.professionalPromotionTeam,
                 targetAmount = entity.targetAmount,
                 actualAmount = entity.actualAmount
             )

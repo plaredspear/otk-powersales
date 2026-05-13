@@ -96,12 +96,12 @@ class AdminPromotionServiceTest {
             val pageable = PageRequest.of(0, 20, Sort.by("createdAt").descending())
             val page = PageImpl(listOf(promotion), pageable, 1)
             whenever(promotionRepository.searchForAdmin(
-                keyword = null, promotionTypeId = null, category = null,
+                keyword = null, promotionTypeId = null,
                 startDate = null, endDate = null, branchCodes = null, pageable = pageable
             )).thenReturn(page)
 
             val result = adminPromotionService.getPromotions(
-                keyword = null, promotionTypeId = null, category = null,
+                keyword = null, promotionTypeId = null,
                 startDate = null, endDate = null, page = 0, size = 20
             )
 
@@ -109,7 +109,6 @@ class AdminPromotionServiceTest {
             assertThat(result.content[0].promotionNumber).isEqualTo("PM00000001")
             assertThat(result.content[0].accountName).isEqualTo("GS25 역삼점")
             assertThat(result.content[0].promotionTypeName).isEqualTo("시식")
-            assertThat(result.content[0].category).isEqualTo("라면")
             assertThat(result.totalElements).isEqualTo(1)
         }
 
@@ -120,7 +119,7 @@ class AdminPromotionServiceTest {
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
             val result = adminPromotionService.getPromotions(
-                keyword = null, promotionTypeId = null, category = null,
+                keyword = null, promotionTypeId = null,
                 startDate = null, endDate = null, page = 0, size = 20
             )
 
@@ -152,7 +151,6 @@ class AdminPromotionServiceTest {
             assertThat(result.accountName).isEqualTo("GS25 역삼점")
             assertThat(result.primaryProductName).isEqualTo("진라면 매운맛 120g")
             assertThat(result.promotionTypeName).isEqualTo("시식")
-            assertThat(result.category).isEqualTo("라면")
         }
 
         @Test
@@ -219,37 +217,13 @@ class AdminPromotionServiceTest {
             val result = adminPromotionService.createPromotion(userId, request)
 
             assertThat(result.promotionNumber).isEqualTo("PM00000001")
-            assertThat(result.promotionName).isEqualTo("꿀배청 680G")
             assertThat(result.costCenterCode).isEqualTo("1101")
             assertThat(result.promotionTypeName).isEqualTo("시식")
-            assertThat(result.category).isEqualTo("라면")
 
         }
 
         @Test
-        @DisplayName("정상 생성 - 거래처 branchName 자동 파생")
-        fun createPromotion_branchNameFromAccount() {
-            val request = createRequest(promotionTypeId = 1L)
-            val account = createAccount(branchName = "서초21지점")
-            val product = createProduct(name = "진라면")
-            val employee = createEmployee(costCenterCode = "1101")
-            val promotionType = createPromotionType()
-
-            whenever(promotionTypeRepository.findById(1L)).thenReturn(Optional.of(promotionType))
-            whenever(accountRepository.findById(100)).thenReturn(Optional.of(account))
-            whenever(productRepository.findById(200L)).thenReturn(Optional.of(product))
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(1L)
-            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
-
-
-            val result = adminPromotionService.createPromotion(userId, request)
-
-            assertThat(result.branchName).isEqualTo("서초21지점")
-        }
-
-        @Test
-        @DisplayName("거래처 branchName null -> Promotion branchName도 null")
+        @DisplayName("거래처 branchName null -> 정상 생성")
         fun createPromotion_nullBranchName() {
             val request = createRequest(promotionTypeId = 1L)
             val account = createAccount(branchName = null)
@@ -265,9 +239,7 @@ class AdminPromotionServiceTest {
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
 
 
-            val result = adminPromotionService.createPromotion(userId, request)
-
-            assertThat(result.branchName).isNull()
+            adminPromotionService.createPromotion(userId, request)
         }
 
         @Test
@@ -458,9 +430,7 @@ class AdminPromotionServiceTest {
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
 
             val request = createRequest()
-            val result = adminPromotionService.updatePromotion(1L, userId, request)
-
-            assertThat(result.promotionName).isEqualTo("진라면 매운맛 120g")
+            adminPromotionService.updatePromotion(1L, userId, request)
         }
 
         @Test
@@ -480,9 +450,7 @@ class AdminPromotionServiceTest {
             whenever(promotionEmployeeRepository.findByPromotionId(1L)).thenReturn(emptyList())
 
             val request = createRequest(accountId = 200)
-            val result = adminPromotionService.updatePromotion(1L, userId, request)
-
-            assertThat(result.branchName).isEqualTo("서초21지점")
+            adminPromotionService.updatePromotion(1L, userId, request)
         }
 
         @Test
@@ -500,9 +468,7 @@ class AdminPromotionServiceTest {
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
 
             val request = createRequest(primaryProductId = 300L)
-            val result = adminPromotionService.updatePromotion(1L, userId, request)
-
-            assertThat(result.promotionName).isEqualTo("진라면 매운맛")
+            adminPromotionService.updatePromotion(1L, userId, request)
         }
 
         @Test
@@ -799,7 +765,6 @@ class AdminPromotionServiceTest {
     private fun createPromotion(
         id: Long = 1L,
         promotionNumber: String = "PM00000001",
-        promotionName: String? = "GS25 역삼점 3월 라면 행사",
         promotionTypeId: Long? = null,
         account: Account = createAccount(),
         primaryProductId: Long? = 200L,
@@ -809,7 +774,6 @@ class AdminPromotionServiceTest {
     ) = Promotion(
         id = id,
         promotionNumber = promotionNumber,
-        promotionName = promotionName,
         promotionTypeId = promotionTypeId,
         account = account,
         startDate = LocalDate.of(2026, 3, 10),
@@ -819,7 +783,6 @@ class AdminPromotionServiceTest {
         message = "3월 라면 프로모션 진행",
         standLocation = "매장 입구 좌측",
         costCenterCode = costCenterCode,
-        category = "라면",
         isDeleted = isDeleted,
         remark = remark
     )
@@ -875,7 +838,6 @@ class AdminPromotionServiceTest {
         otherProduct = otherProduct,
         message = "3월 라면 프로모션 진행",
         standLocation = standLocation,
-        category = "라면",
         remark = remark
     )
 }

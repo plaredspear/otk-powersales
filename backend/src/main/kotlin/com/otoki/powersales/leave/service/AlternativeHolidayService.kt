@@ -35,7 +35,6 @@ class AlternativeHolidayService(
         val altHoliday = alternativeHolidayRepository.save(
             AlternativeHoliday(
                 employeeId = employee.id,
-                employeeName = employee.name,
                 actualWorkDate = actualWorkDate,
                 targetAltHolidayDate = targetAltHolidayDate,
                 status = "신규",
