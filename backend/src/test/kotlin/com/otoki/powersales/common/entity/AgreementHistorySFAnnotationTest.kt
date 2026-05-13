@@ -9,11 +9,11 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 /**
- * Spec #629 — AgreementHistory ↔ Salesforce `AgreementHistory__c` 어노테이션 검증.
+ * Spec #629/#706 — AgreementHistory ↔ Salesforce `AgreementHistory__c` 어노테이션 검증.
  *
- * 단일 권위: docs/plan/old_source_260408/salesforce_object/동의이력(AgreementHistory__c).md
+ * 단일 권위: docs/plan/old_source_260408/sf-object-meta/AgreementHistory__c.md
  */
-@DisplayName("AgreementHistory SF 어노테이션 검증 (Spec #629)")
+@DisplayName("AgreementHistory SF 어노테이션 검증 (Spec #629/#706)")
 class AgreementHistorySFAnnotationTest {
 
     @Nested
@@ -29,15 +29,15 @@ class AgreementHistorySFAnnotationTest {
         }
 
         @Test
-        @DisplayName("매핑 키 수 = 6 (4 + BaseEntity 2)")
+        @DisplayName("매핑 키 수 = 11 (9 + BaseEntity 2)")
         fun mappingKeySize() {
             val mapping = SFSchemaUtils.getSFMapping(AgreementHistory::class.java)
-            assertThat(mapping).hasSize(6)
+            assertThat(mapping).hasSize(11)
         }
     }
 
     @Nested
-    @DisplayName("AC1 — PK·FK·entity-only 미부착")
+    @DisplayName("AC1 — PK·FK 미부착")
     inner class NonMappedFieldExclusion {
 
         @Test
@@ -62,13 +62,6 @@ class AgreementHistorySFAnnotationTest {
         }
 
         @Test
-        @DisplayName("entity-only(isDeleted) 필드에 @SFField 미부착")
-        fun isDeletedHasNoSfField() {
-            val field = AgreementHistory::class.java.getDeclaredField("isDeleted")
-            assertThat(field.isAnnotationPresent(SFField::class.java)).isFalse()
-        }
-
-        @Test
         @DisplayName("매핑 values 에 agreement_history_id 미등장")
         fun mappingValuesExcludePk() {
             val mapping = SFSchemaUtils.getSFMapping(AgreementHistory::class.java)
@@ -77,18 +70,41 @@ class AgreementHistorySFAnnotationTest {
     }
 
     @Nested
-    @DisplayName("AC1 — @SFField 매핑 키셋 (4개)")
+    @DisplayName("AC1 — @SFField 매핑 키셋 (9개)")
     inner class SfFieldMapping {
 
         private val mapping = SFSchemaUtils.getSFMapping(AgreementHistory::class.java)
 
         @Test
-        @DisplayName("4개 SF API Name → 컬럼명 1:1")
-        fun mappingValues() {
+        @DisplayName("기존 4개 SF API Name → 컬럼명 1:1")
+        fun existingMappingValues() {
             assertThat(mapping["AgreementFlag__c"]).isEqualTo("agreement_flag")
             assertThat(mapping["AgreementDate__c"]).isEqualTo("agreement_date")
             assertThat(mapping["AgreementWordId__c"]).isEqualTo("agreement_word_sfid")
             assertThat(mapping["EmployeeId__c"]).isEqualTo("employee_sfid")
+        }
+
+        @Test
+        @DisplayName("Spec #706 신규 5개: IsDeleted / Name / OwnerId / CreatedById / LastModifiedById")
+        fun spec706NewMappingValues() {
+            assertThat(mapping["IsDeleted"]).isEqualTo("is_deleted")
+            assertThat(mapping["Name"]).isEqualTo("name")
+            assertThat(mapping["OwnerId"]).isEqualTo("owner_sfid")
+            assertThat(mapping["CreatedById"]).isEqualTo("created_by_sfid")
+            assertThat(mapping["LastModifiedById"]).isEqualTo("last_modified_by_sfid")
+        }
+    }
+
+    @Nested
+    @DisplayName("AC2 — Spec #706 IsDeleted @SFField 부착")
+    inner class IsDeletedAnnotation {
+
+        @Test
+        @DisplayName("isDeleted 필드에 @SFField('IsDeleted') 부착")
+        fun isDeletedHasSfField() {
+            val field = AgreementHistory::class.java.getDeclaredField("isDeleted")
+            assertThat(field.isAnnotationPresent(SFField::class.java)).isTrue()
+            assertThat(field.getAnnotation(SFField::class.java).value).isEqualTo("IsDeleted")
         }
     }
 }

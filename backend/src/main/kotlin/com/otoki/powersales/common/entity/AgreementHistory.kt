@@ -1,5 +1,6 @@
 package com.otoki.powersales.common.entity
 
+import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Employee
@@ -41,8 +42,35 @@ class AgreementHistory(
     @Column(name = "agreement_word_sfid", length = 18)
     val agreementWordSfid: String? = null,
 
+    // -- Spec #706: Group A — IsDeleted --
+    @SFField("IsDeleted")
+    @HCColumn("isdeleted")
     @Column(name = "is_deleted", nullable = false)
-    val isDeleted: Boolean = false,
+    var isDeleted: Boolean = false,
+
+    // -- Spec #706: 표준 비-A 필드 (Name = 동의번호) --
+    @SFField("Name")
+    @Column(name = "name", length = 80)
+    var name: String? = null,
+
+    // -- Spec #706: Group A — OwnerId / CreatedById / LastModifiedById (R-2 패턴) --
+    // *_sfid: SF User Id buffer (SalesforceMigrationTool 이 채움).
+    // *_id / owner: SF User → Employee 매핑 결과 FK.
+
+    @SFField("OwnerId")
+    @HCColumn("ownerid")
+    @Column(name = "owner_sfid", length = 18)
+    var ownerSfid: String? = null,
+
+    @SFField("CreatedById")
+    @HCColumn("createdbyid")
+    @Column(name = "created_by_sfid", length = 18)
+    var createdBySfid: String? = null,
+
+    @SFField("LastModifiedById")
+    @HCColumn("lastmodifiedbyid")
+    @Column(name = "last_modified_by_sfid", length = 18)
+    var lastModifiedBySfid: String? = null,
 
     // -- Relations --
     @ManyToOne(fetch = FetchType.LAZY)
@@ -51,5 +79,18 @@ class AgreementHistory(
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "agreement_word_id", insertable = false, updatable = false)
-    val agreementWord: AgreementWord? = null
+    val agreementWord: AgreementWord? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id")
+    var owner: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_id")
+    var createdBy: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "last_modified_by_id")
+    var lastModifiedBy: Employee? = null
+
 ) : BaseEntity()
