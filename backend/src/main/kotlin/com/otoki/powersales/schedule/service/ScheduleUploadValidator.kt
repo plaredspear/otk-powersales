@@ -291,7 +291,7 @@ class ScheduleUploadValidator {
         // Extract typeOfWork3 and typeOfWork5 from existing records
         val existingTypes = existingInPeriod.map { record ->
             when (record) {
-                is DisplayWorkSchedule -> Pair(record.typeOfWork3, record.typeOfWork5)
+                is DisplayWorkSchedule -> Pair(record.typeOfWork3?.displayName, record.typeOfWork5?.displayName)
                 is ScheduleLike -> Pair(record.typeOfWork3, record.typeOfWork5)
                 else -> Pair(null, null)
             }

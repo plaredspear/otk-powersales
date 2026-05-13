@@ -16,6 +16,9 @@ import com.otoki.powersales.sales.repository.MonthlySalesHistoryRepository
 import com.otoki.powersales.organization.repository.OrganizationRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
+import com.otoki.powersales.schedule.entity.TypeOfWork1
+import com.otoki.powersales.schedule.entity.TypeOfWork3
+import com.otoki.powersales.schedule.entity.TypeOfWork5
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
@@ -406,7 +409,7 @@ class AdminScheduleServiceTest {
                 list.size == 1 &&
                     list[0].employee?.id == 1L &&
                     list[0].account?.id == 1 &&
-                    list[0].typeOfWork1 == "진열" &&
+                    list[0].typeOfWork1 == TypeOfWork1.DISPLAY &&
                     list[0].confirmed == false
             })
             verify(redisTemplate).delete("schedule:upload:$uploadId")
@@ -963,9 +966,9 @@ class AdminScheduleServiceTest {
         id = id,
         employee = employee ?: createEmployee(id = employeeId),
         account = account ?: createAccount(id = accountId),
-        typeOfWork1 = "진열",
-        typeOfWork3 = "고정",
-        typeOfWork5 = "상시",
+        typeOfWork1 = TypeOfWork1.DISPLAY,
+        typeOfWork3 = TypeOfWork3.FIXED,
+        typeOfWork5 = TypeOfWork5.REGULAR,
         startDate = LocalDate.of(2026, 4, 1),
         endDate = LocalDate.of(2026, 12, 31),
         confirmed = confirmed,

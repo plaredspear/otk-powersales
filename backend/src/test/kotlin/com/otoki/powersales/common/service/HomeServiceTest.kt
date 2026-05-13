@@ -12,6 +12,8 @@ import com.otoki.powersales.safetycheck.dto.response.SafetyCheckTodayResponse
 import com.otoki.powersales.safetycheck.service.SafetyCheckService
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
+import com.otoki.powersales.schedule.entity.TypeOfWork1
+import com.otoki.powersales.schedule.entity.TypeOfWork3
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.productexpiration.repository.ProductExpirationRepository
@@ -508,8 +510,8 @@ class HomeServiceTest {
                 id = 100L,
                 employeeId = userId,
                 accountId = 742,
-                typeOfWork1 = "진열",
-                typeOfWork3 = "순회"
+                typeOfWork1 = TypeOfWork1.DISPLAY,
+                typeOfWork3 = TypeOfWork3.ROTATION
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
@@ -637,8 +639,8 @@ class HomeServiceTest {
         id: Long = 0L,
         employeeId: Long? = null,
         accountId: Int? = null,
-        typeOfWork1: String = "진열",
-        typeOfWork3: String? = "순회",
+        typeOfWork1: TypeOfWork1? = TypeOfWork1.DISPLAY,
+        typeOfWork3: TypeOfWork3? = TypeOfWork3.ROTATION,
         startDate: LocalDate = LocalDate.now(),
         endDate: LocalDate? = null
     ): DisplayWorkSchedule {

@@ -232,8 +232,8 @@ class HomeService(
             employeeCode = matchedEmployee?.employeeCode ?: "",
             accountName = displayWorkSchedule.account?.id?.let { accountMap[it] },
             accountId = displayWorkSchedule.account?.id,
-            workCategory = displayWorkSchedule.typeOfWork1 ?: "진열",
-            workType = displayWorkSchedule.typeOfWork3,
+            workCategory = displayWorkSchedule.typeOfWork1?.displayName ?: "진열",
+            workType = displayWorkSchedule.typeOfWork3?.displayName,
             isCommuteRegistered = false,
             commuteRegisteredAt = null
         )

@@ -7,6 +7,10 @@ import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.schedule.entity.converter.SecondWorkTypeConverter
+import com.otoki.powersales.schedule.entity.converter.TypeOfWork1Converter
+import com.otoki.powersales.schedule.entity.converter.TypeOfWork3Converter
+import com.otoki.powersales.schedule.entity.converter.TypeOfWork5Converter
 import jakarta.persistence.*
 import java.time.LocalDate
 
@@ -62,22 +66,26 @@ class DisplayWorkSchedule(
     @SFField("TypeOfWork1__c")
     @HCColumn("typeofwork1__c")
     @Column(name = "type_of_work1", length = 255)
-    val typeOfWork1: String? = null,
+    @Convert(converter = TypeOfWork1Converter::class)
+    val typeOfWork1: TypeOfWork1? = null,
 
     @SFField("TypeOfWork3__c")
     @HCColumn("typeofwork3__c")
     @Column(name = "type_of_work3", length = 255)
-    val typeOfWork3: String? = null,
+    @Convert(converter = TypeOfWork3Converter::class)
+    val typeOfWork3: TypeOfWork3? = null,
 
     @SFField("TypeOfWork4__c")
     @HCColumn("typeofwork4__c")
     @Column(name = "type_of_work4", length = 255)
-    val typeOfWork4: String? = null,
+    @Convert(converter = SecondWorkTypeConverter::class)
+    val typeOfWork4: SecondWorkType? = null,
 
     @SFField("TypeOfWork5__c")
     @HCColumn("typeofwork5__c")
     @Column(name = "type_of_work5", length = 255)
-    val typeOfWork5: String? = null,
+    @Convert(converter = TypeOfWork5Converter::class)
+    val typeOfWork5: TypeOfWork5? = null,
 
     @SFField("OwnerId")
     @HCColumn("ownerid")

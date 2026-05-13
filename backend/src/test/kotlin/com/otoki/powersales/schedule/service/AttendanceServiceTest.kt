@@ -9,6 +9,8 @@ import com.otoki.powersales.safetycheck.entity.SafetyCheckSubmission
 import com.otoki.powersales.safetycheck.repository.SafetyCheckSubmissionRepository
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
+import com.otoki.powersales.schedule.entity.TypeOfWork3
+import com.otoki.powersales.schedule.entity.TypeOfWork5
 import com.otoki.powersales.schedule.config.AttendanceProperties
 import com.otoki.powersales.schedule.exception.AccountCoordsMissingException
 import com.otoki.powersales.schedule.exception.AttendanceDayOffConflictException
@@ -623,10 +625,10 @@ class AttendanceServiceTest {
             val masters = listOf(
                 createDisplayWorkSchedule(id = 100L, confirmed = true,
                     startDate = today.minusDays(10), endDate = today.plusDays(10),
-                    employeeId = userId, accountId = 9002, accountName = "마스터거래처A", typeOfWork5 = "상시"),
+                    employeeId = userId, accountId = 9002, accountName = "마스터거래처A", typeOfWork5 = TypeOfWork5.REGULAR),
                 createDisplayWorkSchedule(id = 101L, confirmed = true,
                     startDate = today.minusDays(5), endDate = today.plusDays(5),
-                    employeeId = userId, accountId = 9003, accountName = "마스터거래처B", typeOfWork5 = "상시")
+                    employeeId = userId, accountId = 9003, accountName = "마스터거래처B", typeOfWork5 = TypeOfWork5.REGULAR)
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
@@ -659,7 +661,7 @@ class AttendanceServiceTest {
             val masters = listOf(
                 createDisplayWorkSchedule(id = 100L, confirmed = true,
                     startDate = today.minusDays(10), endDate = today.plusDays(10),
-                    employeeId = userId, accountId = 9002, accountName = "마스터거래처", typeOfWork5 = "임시")
+                    employeeId = userId, accountId = 9002, accountName = "마스터거래처", typeOfWork5 = TypeOfWork5.TEMPORARY)
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
@@ -1545,8 +1547,8 @@ class AttendanceServiceTest {
                 confirmed = true,
                 startDate = today.minusDays(30),
                 endDate = today.plusDays(30),
-                typeOfWork3 = "고정",
-                typeOfWork5 = "상시",
+                typeOfWork3 = TypeOfWork3.FIXED,
+                typeOfWork5 = TypeOfWork5.REGULAR,
                 employeeId = userId,
                 accountId = 8938,
                 accountName = "테스트 거래처",
@@ -1765,8 +1767,8 @@ class AttendanceServiceTest {
                 confirmed = true,
                 startDate = startDate,
                 endDate = endDate,
-                typeOfWork3 = "고정",
-                typeOfWork5 = "상시",
+                typeOfWork3 = TypeOfWork3.FIXED,
+                typeOfWork5 = TypeOfWork5.REGULAR,
                 employeeId = userId,
                 accountId = 8938,
                 accountName = "테스트 거래처",
@@ -1847,7 +1849,7 @@ class AttendanceServiceTest {
                 confirmed = true,
                 startDate = today.minusDays(10),
                 endDate = today.plusDays(10),
-                typeOfWork3 = "고정",
+                typeOfWork3 = TypeOfWork3.FIXED,
                 employeeId = userId,
                 accountId = 8938,
             )
@@ -2532,8 +2534,8 @@ class AttendanceServiceTest {
         confirmed: Boolean? = true,
         startDate: LocalDate? = LocalDate.now().minusDays(30),
         endDate: LocalDate? = LocalDate.now().plusDays(30),
-        typeOfWork3: String? = "고정",
-        typeOfWork5: String? = "상시",
+        typeOfWork3: TypeOfWork3? = TypeOfWork3.FIXED,
+        typeOfWork5: TypeOfWork5? = TypeOfWork5.REGULAR,
         employeeId: Long? = 1L,
         accountId: Int? = 8938,
         accountName: String? = "테스트 거래처",

@@ -3,6 +3,7 @@ package com.otoki.powersales.schedule.repository
 import com.otoki.powersales.account.entity.QAccount.Companion.account
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.entity.QDisplayWorkSchedule.Companion.displayWorkSchedule
+import com.otoki.powersales.schedule.entity.TypeOfWork3
 import com.otoki.powersales.employee.entity.QEmployee.Companion.employee
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.dsl.BooleanExpression
@@ -293,8 +294,8 @@ class DisplayWorkScheduleRepositoryCustomImpl(
     }
 
     private fun buildTypeOfWork3Condition(typeOfWork3: String?): BooleanExpression? {
-        if (typeOfWork3.isNullOrBlank()) return null
-        return displayWorkSchedule.typeOfWork3.eq(typeOfWork3)
+        val enumValue = TypeOfWork3.fromDisplayNameOrNull(typeOfWork3) ?: return null
+        return displayWorkSchedule.typeOfWork3.eq(enumValue)
     }
 
     private fun buildStartDateFromCondition(startDateFrom: LocalDate?): BooleanExpression? {

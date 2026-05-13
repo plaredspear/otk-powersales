@@ -472,7 +472,7 @@ class AdminMonthlyIntegrationService(
                     !rec.workingDate!!.isBefore(dws.startDate) &&
                     !rec.workingDate!!.isAfter(dws.endDate)
             }
-            result[rec.id] = matching?.typeOfWork5
+            result[rec.id] = matching?.typeOfWork5?.displayName
         }
         return result
     }

@@ -4,6 +4,9 @@ import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.sap.outbound.sender.DisplayMasterSapSender
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
+import com.otoki.powersales.schedule.entity.TypeOfWork1
+import com.otoki.powersales.schedule.entity.TypeOfWork3
+import com.otoki.powersales.schedule.entity.TypeOfWork5
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.schedule.sap.DisplayMasterPayloadFactory
 import com.otoki.powersales.schedule.sap.DisplayMasterSapPayload
@@ -88,9 +91,9 @@ class DisplayMasterBatchServiceTest {
         val today = LocalDate.of(2026, 5, 4)
         val entity = DisplayWorkSchedule(
             id = 7L,
-            typeOfWork1 = "진열",
-            typeOfWork3 = "정상",
-            typeOfWork5 = "전문판촉팀",
+            typeOfWork1 = TypeOfWork1.DISPLAY,
+            typeOfWork3 = TypeOfWork3.FIXED,
+            typeOfWork5 = TypeOfWork5.REGULAR,
             employee = Employee(id = 1L, employeeCode = "EMP777", name = "홍길동"),
             account = Account(id = 1, externalKey = "ACC777")
         )
@@ -105,17 +108,17 @@ class DisplayMasterBatchServiceTest {
         assertThat(item.EmployeeCode).isEqualTo("EMP777")
         assertThat(item.SAPAccountCode).isEqualTo("ACC777")
         assertThat(item.WorkingCategory1).isEqualTo("진열")
-        assertThat(item.WorkingCategory3).isEqualTo("정상")
-        assertThat(item.WorkingCategory5).isEqualTo("전문판촉팀")
+        assertThat(item.WorkingCategory3).isEqualTo("고정")
+        assertThat(item.WorkingCategory5).isEqualTo("상시")
     }
 
     private fun entities(count: Int): List<DisplayWorkSchedule> =
         (1..count).map { idx ->
             DisplayWorkSchedule(
                 id = idx.toLong(),
-                typeOfWork1 = "진열",
-                typeOfWork3 = "정상",
-                typeOfWork5 = "전문판촉팀",
+                typeOfWork1 = TypeOfWork1.DISPLAY,
+                typeOfWork3 = TypeOfWork3.FIXED,
+                typeOfWork5 = TypeOfWork5.REGULAR,
                 employee = Employee(id = idx.toLong(), employeeCode = "EMP$idx", name = "사원$idx"),
                 account = Account(id = idx, externalKey = "ACC$idx")
             )
