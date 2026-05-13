@@ -75,7 +75,7 @@ class AppointmentUserProfileUpdaterTest {
                 jikchak = "D0052", jikwee = "W0010", jikgub = "G0030",
                 workType = "T0010", jobCode = "A055",
                 workArea = "서울", jikjong = "영업",
-                appointDate = "20260322", ordDetailNode = "전보"
+                appointDate = LocalDate.of(2026, 3, 22), ordDetailNode = "전보"
             )
 
             updater.updateUserProfiles(listOf(appointment), today)
@@ -105,7 +105,7 @@ class AppointmentUserProfileUpdaterTest {
             val appointment = createAppointment(
                 afterOrgCode = "1111", afterOrgName = "제2영업지점",
                 jikchak = "D0053", jobCode = "A049",
-                appointDate = "20260322", ordDetailNode = "전보"
+                appointDate = LocalDate.of(2026, 3, 22), ordDetailNode = "전보"
             )
 
             updater.updateUserProfiles(listOf(appointment), today)
@@ -124,7 +124,7 @@ class AppointmentUserProfileUpdaterTest {
             val appointment = createAppointment(
                 afterOrgCode = "1111", afterOrgName = "본사",
                 jikchak = "D0053", jobCode = "B001",
-                appointDate = "20260322"
+                appointDate = LocalDate.of(2026, 3, 22)
             )
 
             updater.updateUserProfiles(listOf(appointment), today)
@@ -145,7 +145,7 @@ class AppointmentUserProfileUpdaterTest {
             val appointment = createAppointment(
                 afterOrgCode = "1111", afterOrgName = "지점",
                 jikchak = "D0053", jobCode = "A055",
-                appointDate = "20260322", ordDetailNode = "승진"
+                appointDate = LocalDate.of(2026, 3, 22), ordDetailNode = "승진"
             )
 
             updater.updateUserProfiles(listOf(appointment), today)
@@ -228,7 +228,7 @@ class AppointmentUserProfileUpdaterTest {
             val appointment = createAppointment(
                 afterOrgCode = "1111", afterOrgName = "신규지점",
                 jikchak = "D0052", jobCode = "A055",
-                appointDate = "20260323"
+                appointDate = LocalDate.of(2026, 3, 23)
             )
 
             updater.updateUserProfiles(listOf(appointment), today)
@@ -334,43 +334,6 @@ class AppointmentUserProfileUpdaterTest {
             updater.updateUserProfiles(listOf(appointment), today)
         }
 
-        @Test
-        @DisplayName("appointDate 파싱 실패 -> skip")
-        fun skipOnInvalidDate() {
-            val employee = createEmployee()
-            whenever(employeeRepository.findByEmployeeCode("100234")).thenReturn(Optional.of(employee))
-
-            val appointment = createAppointment(
-                afterOrgCode = "1111", appointDate = "invalid"
-            )
-
-            updater.updateUserProfiles(listOf(appointment), today)
-            assertThat(employee.costCenterCode).isNull()
-        }
-    }
-
-    @Nested
-    @DisplayName("parseAppointDate")
-    inner class ParseAppointDateTests {
-
-        @Test
-        @DisplayName("유효한 날짜 파싱")
-        fun validDate() {
-            val result = updater.parseAppointDate("20260322")
-            assertThat(result).isEqualTo(LocalDate.of(2026, 3, 22))
-        }
-
-        @Test
-        @DisplayName("null 입력 -> null")
-        fun nullInput() {
-            assertThat(updater.parseAppointDate(null)).isNull()
-        }
-
-        @Test
-        @DisplayName("잘못된 형식 -> null")
-        fun invalidFormat() {
-            assertThat(updater.parseAppointDate("2026-03-22")).isNull()
-        }
     }
 
     private fun createEmployee(
@@ -404,7 +367,7 @@ class AppointmentUserProfileUpdaterTest {
         jobCode: String? = null,
         workArea: String? = null,
         jikjong: String? = null,
-        appointDate: String = "20260322",
+        appointDate: LocalDate = LocalDate.of(2026, 3, 22),
         ordDetailNode: String? = null
     ): Appointment = Appointment(
         employeeCode = employeeCode,
