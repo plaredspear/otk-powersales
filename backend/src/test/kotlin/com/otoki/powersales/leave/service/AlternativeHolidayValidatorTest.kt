@@ -129,7 +129,7 @@ class AlternativeHolidayValidatorTest {
         @DisplayName("중복 없음 -> 통과")
         fun noDuplicate() {
             whenever(alternativeHolidayRepository.existsByEmployeeIdAndActualWorkDateAndStatusNot(
-                1L, saturday, "반려"
+                1L, saturday, com.otoki.powersales.leave.entity.AltHolidayStatus.REJECTED
             )).thenReturn(false)
             assertThatCode { validator.validateNoDuplicate(1L, saturday) }
                 .doesNotThrowAnyException()
@@ -139,7 +139,7 @@ class AlternativeHolidayValidatorTest {
         @DisplayName("중복 존재 -> AltHolidayDuplicateException")
         fun duplicate() {
             whenever(alternativeHolidayRepository.existsByEmployeeIdAndActualWorkDateAndStatusNot(
-                1L, saturday, "반려"
+                1L, saturday, com.otoki.powersales.leave.entity.AltHolidayStatus.REJECTED
             )).thenReturn(true)
             assertThatThrownBy { validator.validateNoDuplicate(1L, saturday) }
                 .isInstanceOf(AltHolidayDuplicateException::class.java)

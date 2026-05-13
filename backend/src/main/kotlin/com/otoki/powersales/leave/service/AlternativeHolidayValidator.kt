@@ -43,7 +43,7 @@ class AlternativeHolidayValidator(
 
     fun validateNoDuplicate(employeeId: Long, actualWorkDate: LocalDate) {
         if (alternativeHolidayRepository.existsByEmployeeIdAndActualWorkDateAndStatusNot(
-                employeeId, actualWorkDate, "반려"
+                employeeId, actualWorkDate, com.otoki.powersales.leave.entity.AltHolidayStatus.REJECTED
             )
         ) {
             throw AltHolidayDuplicateException()

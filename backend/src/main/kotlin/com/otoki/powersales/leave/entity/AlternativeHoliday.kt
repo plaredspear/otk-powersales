@@ -6,6 +6,7 @@ import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.leave.entity.converter.AltHolidayStatusConverter
 import jakarta.persistence.*
 import java.time.LocalDate
 
@@ -54,8 +55,9 @@ class AlternativeHoliday(
 
     @SFField("DKRetail__Status__c")
     @HCColumn("dkretail__status__c")
+    @Convert(converter = AltHolidayStatusConverter::class)
     @Column(name = "status", nullable = false, length = 255)
-    var status: String = "신규",
+    var status: AltHolidayStatus = AltHolidayStatus.NEW,
 
     @SFField("DKRetail__ChangeReason__c")
     @HCColumn("dkretail__changereason__c")
@@ -110,7 +112,7 @@ class AlternativeHoliday(
 ) : BaseEntity() {
     fun approve(confirmDate: LocalDate, changeReason: String?) {
         this.confirmAltHolidayDate = confirmDate
-        this.status = "승인"
+        this.status = AltHolidayStatus.APPROVED
         if (changeReason != null) {
             this.changeReason = changeReason
         }
@@ -118,16 +120,12 @@ class AlternativeHoliday(
     }
 
     fun reject(reason: String) {
-        this.status = "반려"
+        this.status = AltHolidayStatus.REJECTED
         this.changeReason = reason
 
     }
 
     fun canTransition(): Boolean {
-        return status == "신규" || status == "조정"
-    }
-
-    companion object {
-        val VALID_STATUSES = listOf("신규", "승인", "반려", "조정")
+        return status == AltHolidayStatus.NEW || status == AltHolidayStatus.ADJUSTED
     }
 }

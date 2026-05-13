@@ -17,7 +17,7 @@ data class AlternativeHolidayCreateResponse(
                 id = entity.id,
                 actualWorkDate = entity.actualWorkDate,
                 targetAltHolidayDate = entity.targetAltHolidayDate,
-                status = entity.status,
+                status = entity.status.displayName,
                 createdAt = entity.createdAt
             )
     }
@@ -39,7 +39,7 @@ data class AlternativeHolidayListItemResponse(
                 actualWorkDate = entity.actualWorkDate,
                 targetAltHolidayDate = entity.targetAltHolidayDate,
                 confirmAltHolidayDate = entity.confirmAltHolidayDate,
-                status = entity.status,
+                status = entity.status.displayName,
                 changeReason = entity.changeReason,
                 createdAt = entity.createdAt
             )

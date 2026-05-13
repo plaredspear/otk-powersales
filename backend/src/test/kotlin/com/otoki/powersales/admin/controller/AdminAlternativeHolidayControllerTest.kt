@@ -68,7 +68,7 @@ class AdminAlternativeHolidayControllerTest {
                     id = 1, employeeCode = "12345678", employeeName = "홍길동", orgName = "서울1팀",
                     actualWorkDate = LocalDate.of(2026, 3, 7),
                     targetAltHolidayDate = LocalDate.of(2026, 3, 9),
-                    confirmAltHolidayDate = null, status = "신규", changeReason = null,
+                    confirmAltHolidayDate = null, status = com.otoki.powersales.leave.entity.AltHolidayStatus.NEW, changeReason = null,
                     createdBy = "admin01", createdAt = LocalDateTime.of(2026, 3, 8, 10, 0)
                 )
             )
