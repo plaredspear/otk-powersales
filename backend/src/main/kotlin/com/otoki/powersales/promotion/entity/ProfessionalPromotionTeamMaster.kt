@@ -118,6 +118,12 @@ class ProfessionalPromotionTeamMaster(
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: Employee? = null,
 
+    // -- Spec #747 카테고리 A — D 분류 누락 (퇴직일) --
+    @SFField("QuitDate__c")
+    @HCColumn("quitdate__c")
+    @Column(name = "quit_date")
+    var quitDate: java.time.LocalDate? = null,
+
 ) : BaseEntity() {
 
     fun update(

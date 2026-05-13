@@ -147,6 +147,11 @@ class ErpOrderProduct(
     @Column(name = "box_quantity", precision = 18, scale = 0)
     var boxQuantity: java.math.BigDecimal? = null,
 
+    // -- Spec #747 카테고리 A — D 분류 누락 --
+    @SFField("OrderDate__c")
+    @Column(name = "order_date")
+    var orderDate: java.time.LocalDate? = null,
+
     @SFField("OwnerId")
     @HCColumn("ownerid")
     @Column(name = "owner_sfid", length = 18)

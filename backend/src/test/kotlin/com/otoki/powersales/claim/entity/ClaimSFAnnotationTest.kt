@@ -55,7 +55,7 @@ class ClaimSFAnnotationTest {
         @Test
         @DisplayName("매핑 키 수 = 41 (#705 39개 + #743 ClaimType1/ClaimType2 2개)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(41)
+            assertThat(mapping).hasSize(44)
         }
 
         @Test

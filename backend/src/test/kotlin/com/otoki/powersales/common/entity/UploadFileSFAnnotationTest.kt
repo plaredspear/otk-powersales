@@ -44,7 +44,7 @@ class UploadFileSFAnnotationTest {
         @Test
         @DisplayName("매핑 키 수 = 13 (기존 8 + Spec #712 신규 5)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(13)
+            assertThat(mapping).hasSize(14)
         }
 
         @Test

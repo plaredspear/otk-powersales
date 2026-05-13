@@ -101,6 +101,12 @@ class AlternativeHoliday(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: Employee? = null,
+
+    // -- Spec #747 카테고리 A Q2 — history 보존 의미의 사원명 캐시 --
+    @SFField("DKRetail__EmpName__c")
+    @HCColumn("dkretail__empname__c")
+    @Column(name = "emp_name", length = 1300)
+    var empName: String? = null,
 ) : BaseEntity() {
     fun approve(confirmDate: LocalDate, changeReason: String?) {
         this.confirmAltHolidayDate = confirmDate
