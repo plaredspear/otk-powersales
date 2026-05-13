@@ -23,6 +23,7 @@ import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.organization.entity.Organization
+import com.otoki.powersales.schedule.entity.Appointment
 import com.otoki.powersales.schedule.entity.AttendanceLog
 
 /**
@@ -71,6 +72,7 @@ object SalesforceMigrationTool {
         EntityRegistration("monthlyFemaleEmployeeIntegrationSchedule", MonthlyFemaleEmployeeIntegrationSchedule::class.java),
         EntityRegistration("teamMemberSchedule", TeamMemberSchedule::class.java),
         EntityRegistration("branchReview", BranchReview::class.java),
+        EntityRegistration("appointment", Appointment::class.java),
 
         // ── Promotion 관련 (account, product, team_member_schedule 선행 적재 필요) ──
         EntityRegistration("promotion", Promotion::class.java),
