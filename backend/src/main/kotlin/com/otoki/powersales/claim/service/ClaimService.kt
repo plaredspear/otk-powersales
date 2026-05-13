@@ -149,7 +149,7 @@ class ClaimService(
             purchaseMethodName = purchaseMethodName,
             requestTypeCode = request.requestTypeCode,
             requestTypeName = requestTypeName,
-            status = ClaimStatus.SUBMITTED
+            status = ClaimStatus.DRAFT
         )
 
         val savedClaim = claimRepository.save(claim)

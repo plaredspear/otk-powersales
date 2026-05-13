@@ -184,7 +184,7 @@ class ClaimRepositoryTest {
             subcategory = testSubcategory1,
             defectDescription = "벌레가 발견되었습니다",
             defectQuantity = 2,
-            status = ClaimStatus.SUBMITTED
+            status = ClaimStatus.DRAFT
         )
 
         // When
@@ -195,7 +195,7 @@ class ClaimRepositoryTest {
         assertThat(saved.user.id).isEqualTo(testUser1.id)
         assertThat(saved.store.id).isEqualTo(testStore1.id)
         assertThat(saved.productCode).isEqualTo("PROD001")
-        assertThat(saved.status).isEqualTo(ClaimStatus.SUBMITTED)
+        assertThat(saved.status).isEqualTo(ClaimStatus.DRAFT)
     }
 
     @Test
@@ -215,7 +215,7 @@ class ClaimRepositoryTest {
                 subcategory = testSubcategory1,
                 defectDescription = "벌레 발견",
                 defectQuantity = 1,
-                status = ClaimStatus.SUBMITTED
+                status = ClaimStatus.DRAFT
             )
         )
 
@@ -234,7 +234,7 @@ class ClaimRepositoryTest {
                 subcategory = testSubcategory2,
                 defectDescription = "금속 발견",
                 defectQuantity = 1,
-                status = ClaimStatus.SUBMITTED
+                status = ClaimStatus.DRAFT
             )
         )
 
@@ -252,7 +252,7 @@ class ClaimRepositoryTest {
                 subcategory = testSubcategory1,
                 defectDescription = "변질",
                 defectQuantity = 1,
-                status = ClaimStatus.SUBMITTED
+                status = ClaimStatus.DRAFT
             )
         )
 
@@ -282,7 +282,7 @@ class ClaimRepositoryTest {
                 subcategory = testSubcategory1,
                 defectDescription = "벌레 발견",
                 defectQuantity = 1,
-                status = ClaimStatus.SUBMITTED
+                status = ClaimStatus.DRAFT
             )
         )
 
@@ -301,7 +301,7 @@ class ClaimRepositoryTest {
                 subcategory = testSubcategory2,
                 defectDescription = "금속 발견",
                 defectQuantity = 1,
-                status = ClaimStatus.SUBMITTED
+                status = ClaimStatus.DRAFT
             )
         )
 
@@ -319,7 +319,7 @@ class ClaimRepositoryTest {
                 subcategory = testSubcategory1,
                 defectDescription = "변질",
                 defectQuantity = 1,
-                status = ClaimStatus.SUBMITTED
+                status = ClaimStatus.DRAFT
             )
         )
 

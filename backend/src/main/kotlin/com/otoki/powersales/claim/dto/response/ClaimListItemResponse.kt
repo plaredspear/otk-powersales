@@ -25,7 +25,7 @@ data class ClaimListItemResponse(
             subcategoryName = claim.subcategory.name,
             defectQuantity = claim.defectQuantity,
             status = claim.status.name,
-            statusLabel = claim.status.label,
+            statusLabel = claim.status.displayName,
             createdAt = claim.createdAt
         )
     }

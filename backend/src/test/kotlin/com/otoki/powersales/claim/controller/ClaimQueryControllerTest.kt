@@ -79,8 +79,8 @@ class ClaimQueryControllerTest {
                     categoryName = "포장불량",
                     subcategoryName = "누수/누유",
                     defectQuantity = 3,
-                    status = "SUBMITTED",
-                    statusLabel = "접수",
+                    status = "DRAFT",
+                    statusLabel = "임시저장",
                     createdAt = LocalDateTime.of(2026, 4, 8, 10, 30, 0)
                 )
             )
@@ -92,8 +92,8 @@ class ClaimQueryControllerTest {
                 .andExpect(jsonPath("$.data").isArray)
                 .andExpect(jsonPath("$.data[0].claimId").value(1))
                 .andExpect(jsonPath("$.data[0].accountName").value("미광종합물류"))
-                .andExpect(jsonPath("$.data[0].status").value("SUBMITTED"))
-                .andExpect(jsonPath("$.data[0].statusLabel").value("접수"))
+                .andExpect(jsonPath("$.data[0].status").value("DRAFT"))
+                .andExpect(jsonPath("$.data[0].statusLabel").value("임시저장"))
         }
 
         @Test
@@ -165,8 +165,8 @@ class ClaimQueryControllerTest {
                 purchaseAmount = 3500,
                 purchaseMethodName = "개인카드",
                 requestTypeName = "교환",
-                status = "SUBMITTED",
-                statusLabel = "접수",
+                status = "DRAFT",
+                statusLabel = "임시저장",
                 createdAt = LocalDateTime.of(2026, 4, 8, 10, 30, 0),
                 photos = listOf(
                     ClaimPhotoItem(

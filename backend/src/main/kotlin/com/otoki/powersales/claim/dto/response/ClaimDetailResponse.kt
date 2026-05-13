@@ -42,7 +42,7 @@ data class ClaimDetailResponse(
             purchaseMethodName = claim.purchaseMethodName,
             requestTypeName = claim.requestTypeName,
             status = claim.status.name,
-            statusLabel = claim.status.label,
+            statusLabel = claim.status.displayName,
             createdAt = claim.createdAt,
             photos = photos.map { ClaimPhotoItem.from(it) }
         )

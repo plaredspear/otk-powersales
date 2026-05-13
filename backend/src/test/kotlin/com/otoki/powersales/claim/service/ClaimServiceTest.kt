@@ -316,7 +316,7 @@ class ClaimServiceTest {
         subcategory = subcategory,
         defectDescription = "불량입니다",
         defectQuantity = 1,
-        status = ClaimStatus.SUBMITTED
+        status = ClaimStatus.DRAFT
     )
 }
 */

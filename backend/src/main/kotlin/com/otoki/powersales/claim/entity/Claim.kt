@@ -1,10 +1,14 @@
 package com.otoki.powersales.claim.entity
 
+import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.claim.entity.converter.ClaimChannelConverter
+import com.otoki.powersales.claim.entity.converter.ClaimStatusConverter
+import com.otoki.powersales.common.entity.BaseEntity
+import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
-import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.product.entity.Product
 import jakarta.persistence.*
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -18,7 +22,7 @@ import java.time.LocalDateTime
     name = "claim",
     indexes = [
         Index(name = "idx_claim_employee_created", columnList = "employee_id,created_at"),
-        Index(name = "idx_claim_store", columnList = "store_id")
+        Index(name = "idx_claim_account", columnList = "account_id")
     ]
 )
 @SFObject("DKRetail__Claim__c")
@@ -47,7 +51,7 @@ class Claim(
     val employee: Employee,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "store_id", nullable = false)
+    @JoinColumn(name = "account_id", nullable = false)
     val account: Account,
 
     @Column(name = "store_name", nullable = false, length = 100)
@@ -105,13 +109,12 @@ class Claim(
     @Column(name = "request_type_name", length = 50)
     val requestTypeName: String? = null,
 
+    // Spec #705: SF Status picklist 정합 — DB 저장값 = SF 한국어 원본 (임시저장/전송완료/전송실패).
+    // 신규 application 신규 클레임 디폴트 = DRAFT (임시저장).
     @SFField("DKRetail__Status__c")
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = ClaimStatusConverter::class)
     @Column(name = "status", nullable = false, length = 20)
-    val status: ClaimStatus = ClaimStatus.SUBMITTED,
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    val createdAt: LocalDateTime = LocalDateTime.now(),
+    val status: ClaimStatus = ClaimStatus.DRAFT,
 
     // -- SAP 인바운드 갱신 컬럼 (Spec #561) --
 
@@ -208,5 +211,50 @@ class Claim(
 
     @SFField("DKRetail__ActionDate__c")
     @Column(name = "action_date")
-    var actionDate: LocalDateTime? = null
-)
+    var actionDate: LocalDateTime? = null,
+
+    // -- Spec #705: Group A — IsDeleted --
+
+    @SFField("IsDeleted")
+    @HCColumn("isdeleted")
+    @Column(name = "is_deleted", nullable = false)
+    var isDeleted: Boolean = false,
+
+    // -- Spec #705: Reference R-2 (OwnerId / CreatedById / LastModifiedById sfid + Employee FK) --
+    // *_sfid: Heroku Connect sync / SalesforceMigrationTool 이 채우는 buffer (SF User Id).
+    // *_by / owner: SF User → Employee 매핑 결과 FK.
+
+    @SFField("OwnerId")
+    @HCColumn("ownerid")
+    @Column(name = "owner_sfid", length = 18)
+    var ownerSfid: String? = null,
+
+    @SFField("CreatedById")
+    @HCColumn("createdbyid")
+    @Column(name = "created_by_sfid", length = 18)
+    var createdBySfid: String? = null,
+
+    @SFField("LastModifiedById")
+    @HCColumn("lastmodifiedbyid")
+    @Column(name = "last_modified_by_sfid", length = 18)
+    var lastModifiedBySfid: String? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id")
+    var owner: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_id")
+    var createdBy: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "last_modified_by_id")
+    var lastModifiedBy: Employee? = null,
+
+    // -- Spec #705: Reference R-2 (ProductId FK 신규 추가) --
+    // 기존 product_sfid 는 유지 (SF 식별자 buffer). product_code 는 SAP 제품 코드 (별도 식별자).
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id")
+    var product: Product? = null
+) : BaseEntity()

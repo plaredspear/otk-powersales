@@ -59,7 +59,7 @@ class AdminClaimServiceTest {
             assertThat(result.content[0].employeeName).isEqualTo("김영업")
             assertThat(result.content[0].employeeCode).isEqualTo("10023456")
             assertThat(result.content[0].storeName).isEqualTo("홍길동 슈퍼")
-            assertThat(result.content[0].status).isEqualTo("SUBMITTED")
+            assertThat(result.content[0].status).isEqualTo("DRAFT")
             assertThat(result.totalElements).isEqualTo(1L)
             assertThat(result.page).isEqualTo(0)
             assertThat(result.size).isEqualTo(20)
@@ -69,19 +69,19 @@ class AdminClaimServiceTest {
         @DisplayName("상태 필터 - 유효한 상태값으로 필터링 -> 필터 적용된 결과 반환")
         fun getClaims_withStatusFilter() {
             // Given
-            val claim = createClaim(status = ClaimStatus.RESOLVED)
+            val claim = createClaim(status = ClaimStatus.SENT)
             val page = PageImpl(listOf(claim), PageRequest.of(0, 20), 1)
             whenever(adminClaimRepository.findClaims(any(), any(), anyOrNull(), anyOrNull(), anyOrNull(), any())).thenReturn(page)
 
             // When
             val result = adminClaimService.getClaims(
                 LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31),
-                "RESOLVED", null, null, 0, 20
+                "SENT", null, null, 0, 20
             )
 
             // Then
             assertThat(result.content).hasSize(1)
-            assertThat(result.content[0].status).isEqualTo("RESOLVED")
+            assertThat(result.content[0].status).isEqualTo("SENT")
         }
 
         @Test
@@ -195,7 +195,7 @@ class AdminClaimServiceTest {
         id: Long = 1L,
         employee: Employee = createEmployee(),
         account: Account = createAccount(),
-        status: ClaimStatus = ClaimStatus.SUBMITTED
+        status: ClaimStatus = ClaimStatus.DRAFT
     ): Claim {
         val category = createCategory()
         return Claim(
@@ -214,9 +214,10 @@ class AdminClaimServiceTest {
             purchaseAmount = 4500,
             purchaseMethodName = "매장구매",
             requestTypeName = "교환",
-            status = status,
+            status = status
+        ).apply {
             createdAt = LocalDateTime.of(2026, 4, 1, 9, 30, 0)
-        )
+        }
     }
 
     private fun createClaimPhoto(

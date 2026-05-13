@@ -42,7 +42,7 @@ import com.otoki.powersales.schedule.entity.AttendanceLog
  * │         │                                             │                             │                         │   AgreementWordId__c → agreement_word.sfid                    │   UPDATE: employee_id, agreement_word_id │
  * │  NO     │ UploadFile__c                               │ upload_file                 │ UploadFile              │ RecordId__c → 다형성 sfid (여러 오브젝트 참조)                 │                               │
  * │         │ ── Claim 관련 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
- * │  NO     │ DKRetail__Claim__c                          │ claim                       │ Claim                   │ DKRetail__EmployeeId__c → employee.sfid,                      │ V88: sfid 컬럼 추가, employee_id/store_id FK │
+ * │  NO     │ DKRetail__Claim__c                          │ claim                       │ Claim                   │ DKRetail__EmployeeId__c → employee.sfid,                      │ V88: sfid 컬럼 추가, employee_id/account_id FK │
  * │         │                                             │                             │                         │   DKRetail__AccountId__c → account.sfid                       │                               │
  * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
  * ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤

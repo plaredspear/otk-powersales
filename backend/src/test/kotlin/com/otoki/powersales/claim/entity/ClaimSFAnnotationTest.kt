@@ -1,30 +1,33 @@
 package com.otoki.powersales.claim.entity
 
 import com.otoki.powersales.claim.entity.converter.ClaimChannelConverter
+import com.otoki.powersales.claim.entity.converter.ClaimStatusConverter
+import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.common.salesforce.SFSchemaUtils
 import jakarta.persistence.Convert
+import jakarta.persistence.JoinColumn
+import jakarta.persistence.ManyToOne
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 /**
- * Spec #606 — Claim ↔ Salesforce `DKRetail__Claim__c` 어노테이션 부착 검증.
+ * Spec #606 / #705 — Claim ↔ Salesforce `DKRetail__Claim__c` 어노테이션 부착 검증.
  *
- * 단일 권위: docs/plan/old_source_260408/salesforce_object/클레임(DKRetail__Claim__c).md
+ * 단일 권위: docs/plan/old_source_260408/sf-object-meta/DKRetail__Claim__c.md
  *
  * 검증 분류:
  *   - AC1: 클래스 `@SFObject` 무변경
- *   - AC2: `@SFField` 매핑 키셋 (33개 — 11 기존 OK 단순 컬럼 + 6 SAP inbound + 16 신규)
- *     * 기존 13개 중 FK 2개(category_id, subcategory_id) 는 §2.4/§6.6 정책으로 미부착 → 본 스펙 정합화
+ *   - AC2: `@SFField` 매핑 키셋 (#705: 33 + IsDeleted + OwnerId + CreatedById + LastModifiedById + BaseEntity 2 = 38)
  *   - AC3: PK / FK 미부착
- *   - AC5: 기존 enum 정합 검증 (ClaimStatus 만 — 다른 picklist 매핑은 entity 마스터로 후속 분리)
- *   - AC6: ClaimChannel enum 신규 + Converter
- *   - AC8: Picklist md cross-check
+ *   - AC5: ClaimStatus enum SF 정합 (DRAFT/SENT/SEND_FAILED + Converter) — #705 §6 Q4
+ *   - AC6: ClaimChannel enum + Converter
+ *   - AC7: Reference R-2 FK relation 검증 (owner / createdBy / lastModifiedBy / product) — #705 §4
  */
-@DisplayName("Claim SF 어노테이션 검증 (Spec #606)")
+@DisplayName("Claim SF 어노테이션 검증 (Spec #606 / #705)")
 class ClaimSFAnnotationTest {
 
     @Nested
@@ -47,9 +50,25 @@ class ClaimSFAnnotationTest {
         private val mapping = SFSchemaUtils.getSFMapping(Claim::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 33 (11 기존 + 6 SAP inbound + 16 신규)")
+        @DisplayName("매핑 키 수 = 39 (11 기존 + 6 SAP inbound + 16 신규 + #705: IsDeleted + Owner + Created + LastModified + BaseEntity 2)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(33)
+            assertThat(mapping).hasSize(39)
+        }
+
+        @Test
+        @DisplayName("#705 Group A + Reference R-2 매핑 (5개)")
+        fun spec705GroupA() {
+            assertThat(mapping["IsDeleted"]).isEqualTo("is_deleted")
+            assertThat(mapping["OwnerId"]).isEqualTo("owner_sfid")
+            assertThat(mapping["CreatedById"]).isEqualTo("created_by_sfid")
+            assertThat(mapping["LastModifiedById"]).isEqualTo("last_modified_by_sfid")
+        }
+
+        @Test
+        @DisplayName("#705 BaseEntity 상속 (CreatedDate / LastModifiedDate)")
+        fun spec705BaseEntity() {
+            assertThat(mapping["CreatedDate"]).isEqualTo("created_at")
+            assertThat(mapping["LastModifiedDate"]).isEqualTo("updated_at")
         }
 
         @Test
@@ -113,9 +132,9 @@ class ClaimSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("FK 필드(category, subcategory, employee, account)에 @SFField 미부착")
+        @DisplayName("FK 필드(category, subcategory, employee, account, owner, createdBy, lastModifiedBy, product)에 @SFField 미부착")
         fun fkHasNoSfField() {
-            listOf("category", "subcategory", "employee", "account").forEach { name ->
+            listOf("category", "subcategory", "employee", "account", "owner", "createdBy", "lastModifiedBy", "product").forEach { name ->
                 val field = Claim::class.java.getDeclaredField(name)
                 assertThat(field.isAnnotationPresent(SFField::class.java))
                     .withFailMessage("FK 필드 $name 에 @SFField 부착되어 있음 — §2.4/§6.6 정책 위반")
@@ -132,23 +151,96 @@ class ClaimSFAnnotationTest {
                 "category_id",
                 "subcategory_id",
                 "employee_id",
-                "store_id",
+                "account_id",
+                "owner_id",
+                "created_by_id",
+                "last_modified_by_id",
+                "product_id",
             )
         }
     }
 
     @Nested
-    @DisplayName("AC5 — 기존 enum 정합 검증 (ClaimStatus)")
-    inner class ExistingEnumConsistency {
+    @DisplayName("AC5 — ClaimStatus enum SF 정합 (#705 §6 Q4)")
+    inner class ClaimStatusEnumConsistency {
 
         @Test
-        @DisplayName("ClaimStatus.values() 는 4개 멤버 (SUBMITTED/IN_PROGRESS/RESOLVED/REJECTED)")
+        @DisplayName("ClaimStatus.values() = 3개 멤버 (DRAFT/SENT/SEND_FAILED + SF 한국어 displayName)")
         fun claimStatusMembers() {
-            // SF md `DKRetail__Status__c` picklist (3개 — 임시저장/전송완료/전송실패) 와는 도메인 차이.
-            // 본 스펙 Q1 옵션 1: 정합 검증 단언만, 멤버 변경은 후속 별도 스펙.
-            assertThat(ClaimStatus.entries).hasSize(4)
+            // SF `DKRetail__Status__c` picklist (3개 — 임시저장/전송완료/전송실패) 정합.
+            assertThat(ClaimStatus.entries).hasSize(3)
             assertThat(ClaimStatus.entries.map { it.name })
-                .containsExactlyInAnyOrder("SUBMITTED", "IN_PROGRESS", "RESOLVED", "REJECTED")
+                .containsExactlyInAnyOrder("DRAFT", "SENT", "SEND_FAILED")
+            assertThat(ClaimStatus.DRAFT.displayName).isEqualTo("임시저장")
+            assertThat(ClaimStatus.SENT.displayName).isEqualTo("전송완료")
+            assertThat(ClaimStatus.SEND_FAILED.displayName).isEqualTo("전송실패")
+        }
+
+        @Test
+        @DisplayName("ClaimStatusConverter — enum ↔ DB 한국어 displayName 양방향")
+        fun converter() {
+            val converter = ClaimStatusConverter()
+            assertThat(converter.convertToDatabaseColumn(ClaimStatus.DRAFT)).isEqualTo("임시저장")
+            assertThat(converter.convertToDatabaseColumn(ClaimStatus.SENT)).isEqualTo("전송완료")
+            assertThat(converter.convertToDatabaseColumn(ClaimStatus.SEND_FAILED)).isEqualTo("전송실패")
+            assertThat(converter.convertToDatabaseColumn(null)).isNull()
+            assertThat(converter.convertToEntityAttribute("임시저장")).isEqualTo(ClaimStatus.DRAFT)
+            assertThat(converter.convertToEntityAttribute("전송완료")).isEqualTo(ClaimStatus.SENT)
+            assertThat(converter.convertToEntityAttribute("전송실패")).isEqualTo(ClaimStatus.SEND_FAILED)
+            assertThat(converter.convertToEntityAttribute(null)).isNull()
+            assertThat(converter.convertToEntityAttribute("UNKNOWN")).isNull()
+        }
+
+        @Test
+        @DisplayName("Claim.status 필드 = @Convert(ClaimStatusConverter)")
+        fun statusFieldHasConvert() {
+            val field = Claim::class.java.getDeclaredField("status")
+            assertThat(field.type).isEqualTo(ClaimStatus::class.java)
+            val convert = field.getAnnotation(Convert::class.java)
+            assertThat(convert).isNotNull
+            assertThat(convert.converter.java).isEqualTo(ClaimStatusConverter::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("AC7 — Reference R-2 FK 검증 (#705 §4)")
+    inner class ReferenceR2 {
+
+        @Test
+        @DisplayName("owner / createdBy / lastModifiedBy / product 4개 FK 필드 + @ManyToOne + @JoinColumn")
+        fun referenceFks() {
+            mapOf(
+                "owner" to "owner_id",
+                "createdBy" to "created_by_id",
+                "lastModifiedBy" to "last_modified_by_id",
+                "product" to "product_id"
+            ).forEach { (fieldName, expectedColumn) ->
+                val field = Claim::class.java.getDeclaredField(fieldName)
+                assertThat(field.isAnnotationPresent(ManyToOne::class.java))
+                    .withFailMessage("$fieldName 에 @ManyToOne 미부착").isTrue()
+                val joinColumn = field.getAnnotation(JoinColumn::class.java)
+                assertThat(joinColumn).withFailMessage("$fieldName 에 @JoinColumn 미부착").isNotNull
+                assertThat(joinColumn.name).isEqualTo(expectedColumn)
+            }
+        }
+
+        @Test
+        @DisplayName("ownerSfid / createdBySfid / lastModifiedBySfid — @SFField + @HCColumn 부착")
+        fun sfidBuffers() {
+            mapOf(
+                "ownerSfid" to ("OwnerId" to "ownerid"),
+                "createdBySfid" to ("CreatedById" to "createdbyid"),
+                "lastModifiedBySfid" to ("LastModifiedById" to "lastmodifiedbyid")
+            ).forEach { (fieldName, expected) ->
+                val (sfName, hcName) = expected
+                val field = Claim::class.java.getDeclaredField(fieldName)
+                val sfField = field.getAnnotation(SFField::class.java)
+                val hcColumn = field.getAnnotation(HCColumn::class.java)
+                assertThat(sfField).withFailMessage("$fieldName 에 @SFField 미부착").isNotNull
+                assertThat(sfField.value).isEqualTo(sfName)
+                assertThat(hcColumn).withFailMessage("$fieldName 에 @HCColumn 미부착").isNotNull
+                assertThat(hcColumn.value).isEqualTo(hcName)
+            }
         }
     }
 
