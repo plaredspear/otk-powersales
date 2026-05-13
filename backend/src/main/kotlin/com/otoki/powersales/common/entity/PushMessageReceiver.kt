@@ -9,11 +9,14 @@ import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
 import java.time.LocalDateTime
+
 /**
  * 푸시 메시지 수신자 Entity
  * V1 스키마: push_message_receiver (V43 PK/컬럼명 정리)
+ * Spec #710 SF Object 정합 (Group A + Reference R-2)
  *
  * PushMessage N:1 관계 (PK 참조, DB FK 없음)
+ * BaseEntity 미상속 — CreatedDate/LastModifiedDate 자체 컬럼 처리.
  */
 @Entity
 @Table(name = "push_message_receiver")
@@ -30,35 +33,29 @@ class PushMessageReceiver(
     @Column(name = "sfid", length = 18)
     val sfid: String? = null,
 
-    @HCColumn("name")
     @SFField("Name")
+    @HCColumn("name")
     @Column(name = "name", length = 80)
     val name: String? = null,
 
     @Column(name = "employee_id")
     val employeeId: Long? = null,
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "employee_id", insertable = false, updatable = false, foreignKey = ForeignKey(ConstraintMode.NO_CONSTRAINT))
-    var employee: Employee? = null,
-
-    @HCColumn("employeeid__c")
     @SFField("EmployeeId__c")
+    @HCColumn("employeeid__c")
     @Column(name = "employee_sfid", length = 18)
     val employeeSfid: String? = null,
 
     @Column(name = "push_message_id")
     val pushMessageId: Int? = null,
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "push_message_id", insertable = false, updatable = false, foreignKey = ForeignKey(ConstraintMode.NO_CONSTRAINT))
-    var pushMessage: PushMessage? = null,
-
-    @HCColumn("messageid__c")
     @SFField("MessageId__c")
+    @HCColumn("messageid__c")
     @Column(name = "push_message_sfid", length = 18)
     val pushMessageSfid: String? = null,
 
+    // -- Spec #710: Group A — IsDeleted --
+    @SFField("IsDeleted")
     @HCColumn("isdeleted")
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
@@ -71,5 +68,38 @@ class PushMessageReceiver(
     @HCColumn("systemmodstamp")
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
-    var updatedAt: LocalDateTime = LocalDateTime.now()
+    var updatedAt: LocalDateTime = LocalDateTime.now(),
+
+    // -- Spec #710: Group A — CreatedById / LastModifiedById (R-2 패턴) --
+    // *_sfid: SF User Id buffer (Heroku Connect / SalesforceMigrationTool 이 채움).
+    // *_id: SF User → Employee 매핑 결과 FK.
+
+    @SFField("CreatedById")
+    @HCColumn("createdbyid")
+    @Column(name = "created_by_sfid", length = 18)
+    var createdBySfid: String? = null,
+
+    @SFField("LastModifiedById")
+    @HCColumn("lastmodifiedbyid")
+    @Column(name = "last_modified_by_sfid", length = 18)
+    var lastModifiedBySfid: String? = null,
+
+    // -- Relations --
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employee_id", insertable = false, updatable = false, foreignKey = ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    var employee: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "push_message_id", insertable = false, updatable = false, foreignKey = ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    var pushMessage: PushMessage? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_id")
+    var createdBy: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "last_modified_by_id")
+    var lastModifiedBy: Employee? = null
+
 ) : AuditedEntity()
