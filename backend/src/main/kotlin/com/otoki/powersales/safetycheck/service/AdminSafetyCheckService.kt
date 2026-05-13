@@ -1,6 +1,7 @@
 package com.otoki.powersales.safetycheck.service
 
 import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.common.entity.WorkingType
 import com.otoki.powersales.safetycheck.dto.response.EquipmentStatus
 import com.otoki.powersales.safetycheck.dto.response.MemberStatus
 import com.otoki.powersales.safetycheck.dto.response.SafetyCheckStatusResponse
@@ -55,7 +56,7 @@ class AdminSafetyCheckService(
         // 2. 스케줄 벌크 조회 + 근무 필터 + 사원당 1건 선택
         val schedules = teamMemberScheduleRepository
             .findByWorkingDateAndEmployeeIn(date, members)
-            .filter { it.workingType == "근무" && it.isDeleted != true }
+            .filter { it.workingType == WorkingType.WORK && it.isDeleted != true }
         val scheduleByEmployee = selectOneSchedulePerEmployee(schedules)
 
         if (scheduleByEmployee.isEmpty()) return emptyResponse(date)

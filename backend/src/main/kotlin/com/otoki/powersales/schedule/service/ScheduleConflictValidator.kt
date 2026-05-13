@@ -1,5 +1,7 @@
 package com.otoki.powersales.schedule.service
 
+import com.otoki.powersales.common.entity.WorkingCategory3
+import com.otoki.powersales.common.entity.WorkingType
 import com.otoki.powersales.schedule.exception.LeaderScheduleCategory3ConflictException
 import com.otoki.powersales.schedule.exception.LeaderScheduleCategory3LimitExceededException
 import com.otoki.powersales.schedule.exception.LeaderScheduleDuplicateLeaveException
@@ -20,12 +22,12 @@ class ScheduleConflictValidator(
 ) {
 
     companion object {
-        private const val WORKING_TYPE_WORK = "근무"
-        private const val WORKING_TYPE_ANNUAL_LEAVE = "연차"
-        private const val WORKING_TYPE_ALT_HOLIDAY = "대휴"
-        private const val CATEGORY3_FIXED = "고정"
-        private const val CATEGORY3_BIWEEKLY = "격고"
-        private const val CATEGORY3_ROTATING = "순회"
+        private val WORKING_TYPE_WORK = WorkingType.WORK
+        private val WORKING_TYPE_ANNUAL_LEAVE = WorkingType.ANNUAL_LEAVE
+        private val WORKING_TYPE_ALT_HOLIDAY = WorkingType.ALT_HOLIDAY
+        private val CATEGORY3_FIXED = WorkingCategory3.FIXED
+        private val CATEGORY3_BIWEEKLY = WorkingCategory3.ALTERNATE
+        private val CATEGORY3_ROTATING = WorkingCategory3.PATROL
     }
 
     /**
@@ -42,9 +44,9 @@ class ScheduleConflictValidator(
     fun validateConflicts(
         employeeId: Long,
         workingDate: LocalDate,
-        workingType: String,
+        workingType: WorkingType,
         accountId: Int?,
-        workingCategory3: String?
+        workingCategory3: WorkingCategory3?
     ) {
         val existing = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(employeeId, workingDate)
         if (existing.isEmpty()) return
@@ -91,6 +93,7 @@ class ScheduleConflictValidator(
                 // 규칙 #7: 같은 일자에 고정 1건 이상 존재
                 if (fixedCount >= 1) throw LeaderScheduleCategory3ConflictException()
             }
+            else -> Unit
         }
     }
 }

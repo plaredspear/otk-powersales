@@ -1,6 +1,8 @@
 package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.common.entity.WorkingCategory1
+import com.otoki.powersales.common.entity.WorkingCategory3
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.schedule.exception.TeamScheduleConflictException
@@ -33,7 +35,7 @@ class TeamScheduleValidator(
 
     fun validateDisplayMasterLink(currentEmployee: Employee, schedule: TeamMemberSchedule) {
         if (currentEmployee.role in UserRole.ADMIN_GRADE) return
-        if (schedule.workingCategory1 != "진열") return
+        if (schedule.workingCategory1 != WorkingCategory1.DISPLAY) return
 
         val employeeId = schedule.employee?.id ?: return
         val accountId = schedule.account?.id ?: return
@@ -47,7 +49,7 @@ class TeamScheduleValidator(
     fun validateScheduleConflict(
         employeeId: Long,
         workingDate: LocalDate,
-        workingCategory3: String?,
+        workingCategory3: WorkingCategory3?,
         excludeId: Long?
     ) {
         validateScheduleConflict(employeeId, workingDate, workingCategory3, excludeIds = excludeId?.let { setOf(it) } ?: emptySet())
@@ -60,7 +62,7 @@ class TeamScheduleValidator(
     fun validateScheduleConflict(
         employeeId: Long,
         workingDate: LocalDate,
-        workingCategory3: String?,
+        workingCategory3: WorkingCategory3?,
         excludeIds: Set<Long>
     ) {
         val existing = teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(employeeId, workingDate)
@@ -69,31 +71,32 @@ class TeamScheduleValidator(
         if (existing.isEmpty()) return
 
         when (workingCategory3) {
-            "고정" -> {
-                if (existing.any { it.workingCategory3 == "고정" }) {
+            WorkingCategory3.FIXED -> {
+                if (existing.any { it.workingCategory3 == WorkingCategory3.FIXED }) {
                     throw TeamScheduleConflictException("해당 날짜에 고정 일정이 이미 존재합니다")
                 }
                 if (existing.isNotEmpty()) {
                     throw TeamScheduleConflictException("다른 유형의 일정이 있는 날짜에 고정을 추가할 수 없습니다")
                 }
             }
-            "격고" -> {
-                if (existing.any { it.workingCategory3 == "고정" }) {
+            WorkingCategory3.ALTERNATE -> {
+                if (existing.any { it.workingCategory3 == WorkingCategory3.FIXED }) {
                     throw TeamScheduleConflictException("고정 일정이 있는 날짜에는 다른 유형을 추가할 수 없습니다")
                 }
-                val alternateCount = existing.count { it.workingCategory3 == "격고" }
+                val alternateCount = existing.count { it.workingCategory3 == WorkingCategory3.ALTERNATE }
                 if (alternateCount >= 2) {
                     throw TeamScheduleConflictException("해당 날짜에 격고 일정이 이미 2건 존재합니다")
                 }
-                if (existing.any { it.workingCategory3 == "순회" } && alternateCount >= 1) {
+                if (existing.any { it.workingCategory3 == WorkingCategory3.PATROL } && alternateCount >= 1) {
                     throw TeamScheduleConflictException("순회 일정이 존재하므로 격고는 1건만 등록 가능합니다")
                 }
             }
-            "순회" -> {
-                if (existing.any { it.workingCategory3 == "고정" }) {
+            WorkingCategory3.PATROL -> {
+                if (existing.any { it.workingCategory3 == WorkingCategory3.FIXED }) {
                     throw TeamScheduleConflictException("고정 일정이 있는 날짜에는 다른 유형을 추가할 수 없습니다")
                 }
             }
+            null -> Unit
         }
     }
 }

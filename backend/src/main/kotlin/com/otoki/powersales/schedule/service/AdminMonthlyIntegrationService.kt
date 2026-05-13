@@ -1,5 +1,6 @@
 package com.otoki.powersales.schedule.service
 
+import com.otoki.powersales.common.entity.WorkingCategory3
 import com.otoki.powersales.schedule.dto.response.*
 import com.otoki.powersales.common.exception.BusinessException
 import com.otoki.powersales.account.entity.Account
@@ -256,9 +257,9 @@ class AdminMonthlyIntegrationService(
                 employeeId, schedule.workingDate!!
             )
             val coefficient = when (schedule.workingCategory3) {
-                "고정" -> BigDecimal.ONE
-                "격고" -> BigDecimal("0.5")
-                "순회" -> if (accountCountOnDate > 0) {
+                WorkingCategory3.FIXED -> BigDecimal.ONE
+                WorkingCategory3.ALTERNATE -> BigDecimal("0.5")
+                WorkingCategory3.PATROL -> if (accountCountOnDate > 0) {
                     BigDecimal.ONE.divide(BigDecimal(accountCountOnDate), 4, RoundingMode.HALF_UP)
                 } else BigDecimal.ZERO
                 else -> BigDecimal.ONE
@@ -383,8 +384,8 @@ class AdminMonthlyIntegrationService(
             GroupKey(
                 employeeId = rec.employee!!.id,
                 accountId = rec.account!!.id,
-                workingCategory1 = rec.workingCategory1,
-                workingCategory3 = rec.workingCategory3,
+                workingCategory1 = rec.workingCategory1?.displayName,
+                workingCategory3 = rec.workingCategory3?.displayName,
                 workingCategory4 = rec.workingCategory4,
                 workingCategory5 = category5Map[rec.id]
             )

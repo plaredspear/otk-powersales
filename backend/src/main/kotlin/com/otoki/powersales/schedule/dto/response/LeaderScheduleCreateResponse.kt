@@ -21,9 +21,9 @@ data class LeaderScheduleCreateResponse(
                     ?: error("TeamMemberSchedule.employee 가 비어 있습니다"),
                 workingDate = entity.workingDate?.toString()
                     ?: error("TeamMemberSchedule.workingDate 가 비어 있습니다"),
-                workingType = entity.workingType
+                workingType = entity.workingType?.displayName
                     ?: error("TeamMemberSchedule.workingType 이 비어 있습니다"),
-                workingCategory3 = entity.workingCategory3
+                workingCategory3 = entity.workingCategory3?.displayName
                     ?: error("TeamMemberSchedule.workingCategory3 이 비어 있습니다"),
                 proxyRegisteredBy = entity.proxyRegisteredBy
                     ?: error("TeamMemberSchedule.proxyRegisteredBy 가 비어 있습니다")

@@ -1,5 +1,9 @@
 package com.otoki.powersales.leave.service
 
+import com.otoki.powersales.common.entity.WorkingCategory1
+import com.otoki.powersales.common.entity.WorkingCategory2
+import com.otoki.powersales.common.entity.WorkingCategory3
+import com.otoki.powersales.common.entity.WorkingType
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.leave.service.AdminAnnualLeaveService
@@ -47,7 +51,7 @@ class AdminAnnualLeaveServiceTest {
         employeeName: String? = null,
         employeeOrgName: String? = null,
         workingDate: LocalDate? = LocalDate.of(2026, 3, 5),
-        workingType: String? = "연차"
+        workingType: WorkingType? = WorkingType.ANNUAL_LEAVE
     ) = TeamMemberSchedule(
         id = id,
         employee = employeeId?.let {

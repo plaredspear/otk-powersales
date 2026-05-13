@@ -1,5 +1,8 @@
 package com.otoki.powersales.promotion.service
 
+import com.otoki.powersales.common.entity.WorkingCategory1
+import com.otoki.powersales.common.entity.WorkingCategory3
+import com.otoki.powersales.common.entity.WorkingType
 import com.otoki.powersales.promotion.dto.response.PromotionConfirmResponse
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.entity.PromotionEmployee
@@ -93,9 +96,9 @@ class AdminPromotionConfirmService(
                     employee = empEntity,
                     account = promotion.account,
                     workingDate = pe.scheduleDate!!,
-                    workingType = pe.workStatus!!,
-                    workingCategory1 = pe.workType1!!,
-                    workingCategory3 = pe.workType3!!,
+                    workingType = WorkingType.fromDisplayName(pe.workStatus!!),
+                    workingCategory1 = WorkingCategory1.fromDisplayName(pe.workType1!!),
+                    workingCategory3 = WorkingCategory3.fromDisplayName(pe.workType3!!),
                     workingCategory4 = null,
                     promotionEmployee = pe
                 )
@@ -105,9 +108,9 @@ class AdminPromotionConfirmService(
                     employee = empEntity,
                     account = promotion.account,
                     workingDate = pe.scheduleDate!!,
-                    workingType = pe.workStatus!!,
-                    workingCategory1 = pe.workType1!!,
-                    workingCategory3 = pe.workType3!!,
+                    workingType = WorkingType.fromDisplayName(pe.workStatus!!),
+                    workingCategory1 = WorkingCategory1.fromDisplayName(pe.workType1!!),
+                    workingCategory3 = WorkingCategory3.fromDisplayName(pe.workType3!!),
                     workingCategory4 = null,
                     promotionEmployee = pe
                 )
@@ -193,7 +196,7 @@ class AdminPromotionConfirmService(
         val existingCounts = mutableMapOf<EmpDateKey, MutableMap<String, Int>>()
         for (teamMemberSchedule in externalTeamMemberSchedules) {
             val key = EmpDateKey(teamMemberSchedule.employee?.id ?: continue, teamMemberSchedule.workingDate ?: continue)
-            val type3 = teamMemberSchedule.workingCategory3 ?: continue
+            val type3 = teamMemberSchedule.workingCategory3?.displayName ?: continue
             existingCounts.getOrPut(key) { mutableMapOf() }
                 .merge(type3, 1) { a, b -> a + b }
         }
@@ -261,14 +264,14 @@ class AdminPromotionConfirmService(
             val name = resolveEmployeeName(pe.employeeId!!, userByIdMap)
 
             // 기존에 연차/대휴가 있으면 충돌
-            val hasLeave = existing.any { it.workingType == "연차" || it.workingType == "대휴" }
+            val hasLeave = existing.any { it.workingType == WorkingType.ANNUAL_LEAVE || it.workingType == WorkingType.ALT_HOLIDAY }
             if (hasLeave) {
                 throw LeaveConflictException("${name}의 ${pe.scheduleDate}에 예정된 연차/대휴가 존재합니다")
             }
 
             // PE가 연차/대휴인데 기존에 근무 스케줄이 있으면 충돌
             if (pe.workStatus == "연차" || pe.workStatus == "대휴") {
-                val hasWork = existing.any { it.workingType != "연차" && it.workingType != "대휴" }
+                val hasWork = existing.any { it.workingType != WorkingType.ANNUAL_LEAVE && it.workingType != WorkingType.ALT_HOLIDAY }
                 if (hasWork) {
                     throw LeaveConflictException("${name}의 ${pe.scheduleDate}에 예정된 연차/대휴가 존재합니다")
                 }

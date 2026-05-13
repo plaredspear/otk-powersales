@@ -42,7 +42,7 @@ class AdminAnnualLeaveService(
                     .map { schedule ->
                         AnnualLeaveDayDto(
                             date = schedule.workingDate?.format(DateTimeFormatter.ISO_LOCAL_DATE) ?: "",
-                            attendTypeName = schedule.workingType ?: "연차"
+                            attendTypeName = schedule.workingType?.displayName ?: "연차"
                         )
                     }
                 EmployeeAnnualLeaveDto(

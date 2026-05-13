@@ -1,5 +1,9 @@
 package com.otoki.powersales.schedule.repository
 
+import com.otoki.powersales.common.entity.WorkingCategory1
+import com.otoki.powersales.common.entity.WorkingCategory2
+import com.otoki.powersales.common.entity.WorkingCategory3
+import com.otoki.powersales.common.entity.WorkingType
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.employee.entity.Employee
 import org.assertj.core.api.Assertions.assertThat
@@ -50,12 +54,12 @@ class TeamMemberScheduleRepositoryTest {
         val teamMemberSchedule1 = TeamMemberSchedule(
             employee = testEmployee,
             workingDate = today,
-            workingType = "순회"
+            workingType = WorkingType.WORK
         )
         val teamMemberSchedule2 = TeamMemberSchedule(
             employee = testEmployee,
             workingDate = today,
-            workingType = "격고"
+            workingType = WorkingType.WORK
         )
         testEntityManager.persistAndFlush(teamMemberSchedule1)
         testEntityManager.persistAndFlush(teamMemberSchedule2)
@@ -66,7 +70,7 @@ class TeamMemberScheduleRepositoryTest {
 
         // Then
         assertThat(result).hasSize(2)
-        assertThat(result.map { it.workingType }).containsExactlyInAnyOrder("순회", "격고")
+        assertThat(result.map { it.workingType }).containsExactlyInAnyOrder(WorkingType.WORK, WorkingType.WORK)
     }
 
     @Test
@@ -78,7 +82,7 @@ class TeamMemberScheduleRepositoryTest {
         val teamMemberSchedule = TeamMemberSchedule(
             employee = testEmployee,
             workingDate = tomorrow,
-            workingType = "순회"
+            workingType = WorkingType.WORK
         )
         testEntityManager.persistAndFlush(teamMemberSchedule)
         testEntityManager.clear()
@@ -101,7 +105,7 @@ class TeamMemberScheduleRepositoryTest {
         val teamMemberSchedule = TeamMemberSchedule(
             employee = otherEmployee,
             workingDate = today,
-            workingType = "순회"
+            workingType = WorkingType.WORK
         )
         testEntityManager.persistAndFlush(teamMemberSchedule)
         testEntityManager.clear()
@@ -139,17 +143,17 @@ class TeamMemberScheduleRepositoryTest {
             val teamMemberSchedule1 = TeamMemberSchedule(
                 employee = employee1,
                 workingDate = today,
-                workingType = "순회"
+                workingType = WorkingType.WORK
             )
             val teamMemberSchedule2 = TeamMemberSchedule(
                 employee = employee2,
                 workingDate = today,
-                workingType = "격고"
+                workingType = WorkingType.WORK
             )
             val teamMemberSchedule3 = TeamMemberSchedule(
                 employee = employee3,
                 workingDate = today,
-                workingType = "휴가"
+                workingType = WorkingType.ANNUAL_LEAVE
             )
             testEntityManager.persistAndFlush(teamMemberSchedule1)
             testEntityManager.persistAndFlush(teamMemberSchedule2)
@@ -181,7 +185,7 @@ class TeamMemberScheduleRepositoryTest {
             val teamMemberSchedule = TeamMemberSchedule(
                 employee = otherEmployee,
                 workingDate = today,
-                workingType = "순회"
+                workingType = WorkingType.WORK
             )
             testEntityManager.persistAndFlush(teamMemberSchedule)
             testEntityManager.clear()
@@ -209,7 +213,7 @@ class TeamMemberScheduleRepositoryTest {
                 sfid = "SF001",
                 employee = testEmployee,
                 workingDate = LocalDate.now(),
-                workingType = "순회"
+                workingType = WorkingType.WORK
             )
             testEntityManager.persistAndFlush(teamMemberSchedule)
             testEntityManager.clear()
