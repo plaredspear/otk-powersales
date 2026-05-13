@@ -1,0 +1,20 @@
+SELECT
+  Id, Name,
+  DKRetail__ProductCode__c, DKRetail__ProductType__c, DKRetail__ProductStatus__c,
+  DKRetail__StoreCondition__c, DKRetail__ShelfLife__c, DKRetail__ShelfLifeUnit__c,
+  ShelfLifeFull__c,
+  DKRetail__Category1__c, DKRetail__Category2__c, DKRetail__Category3__c,
+  DKRetail__CategoryCode1__c, DKRetail__CategoryCode2__c, DKRetail__CategoryCode3__c,
+  DKRetail__Unit__c, DKRetail__OrderingUnit__c,
+  DKRetail__ConversionQuantity__c, DKRetail__BoxReceivingQuantity__c,
+  DKRetail__StandardUnitPrice__c, SuperTax__c,
+  DKRetail__LaunchDate__c, DKRetail__LogisticsBarCode__c,
+  TasteGift__c, ProductFeatures__c, SellingPoint__c, Purpose__c,
+  TargetAccountType__c, Allergen__c, CrossContamination__c,
+  ImgRefPath__c, ImgRefPath_front__c, ImgRefPath_back__c, ImgRefPathTXT__c,
+  Pallet__c,
+  DKRetail__Barcode__c, manufacture__c, manufacture_detail__c,
+  Claim_Management__c, New_Product__c, StoreCondition__c,
+  OwnerId, CreatedById, LastModifiedById,
+  CreatedDate, LastModifiedDate
+FROM DKRetail__Product__c

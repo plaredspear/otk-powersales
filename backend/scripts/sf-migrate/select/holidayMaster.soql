@@ -1,0 +1,6 @@
+SELECT
+  Id,
+  HolidayDate__c, Name, Type__c,
+  OwnerId, CreatedById, LastModifiedById,
+  CreatedDate, LastModifiedDate
+FROM HolidayMaster__c

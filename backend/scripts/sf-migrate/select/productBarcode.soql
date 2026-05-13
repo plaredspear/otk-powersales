@@ -1,0 +1,8 @@
+SELECT
+  Id, Name,
+  ProductName__c, ProductBarcode__c, ProductUnit__c, ProductSequence__c,
+  Product__c, ProductCode__c, CustomKey__c,
+  IsDeleted,
+  OwnerId, CreatedById, LastModifiedById,
+  CreatedDate, LastModifiedDate
+FROM ProductBarcode__c

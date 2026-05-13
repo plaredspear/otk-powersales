@@ -1,0 +1,10 @@
+sf_field	db_column
+Id	sfid
+HolidayDate__c	holiday_date
+Name	name
+Type__c	type
+OwnerId	owner_sfid
+CreatedById	created_by_sfid
+LastModifiedById	last_modified_by_sfid
+CreatedDate	created_at
+LastModifiedDate	updated_at

@@ -1,0 +1,13 @@
+# SF Object 마이그레이션 대상 목록 (의존성 순서)
+#
+# 형식: entity명|SF api name|DB 테이블명|FK 매핑
+#
+# FK 매핑 형식: <src_sfid>-><target>.sfid-><src_fk>
+#   여러 FK 는 ';' 로 구분. 없으면 빈칸.
+#
+# 본 목록 순서가 Phase 1 적재 순서. FK 의존 entity 는 뒤로 배치.
+#
+organization|Org__c|organization|
+holidayMaster|HolidayMaster__c|holiday_master|
+product|DKRetail__Product__c|product|
+productBarcode|ProductBarcode__c|product_barcode|product_sfid->product.sfid->product_id

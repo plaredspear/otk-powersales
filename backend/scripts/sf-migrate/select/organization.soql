@@ -1,0 +1,10 @@
+SELECT
+  Id,
+  CostCenterLevel2__c, OrgCodeLevel2__c, OrgNameLevel2__c,
+  CostCenterLevel3__c, OrgCodeLevel3__c, OrgNameLevel3__c,
+  CostCenterLevel4__c, OrgCodeLevel4__c, OrgNameLevel4__c,
+  CostCenterLevel5__c, OrgCodeLevel5__c, OrgNameLevel5__c,
+  ExternalKey__c,
+  OwnerId, CreatedById, LastModifiedById,
+  CreatedDate, LastModifiedDate
+FROM Org__c
