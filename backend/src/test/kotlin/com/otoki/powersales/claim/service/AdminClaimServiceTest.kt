@@ -173,31 +173,12 @@ class AdminClaimServiceTest {
         id = id
     )
 
-    private fun createCategory(
-        id: Long = 1L,
-        name: String = "품질불량"
-    ): ClaimCategory = ClaimCategory(
-        id = id,
-        name = name
-    )
-
-    private fun createSubcategory(
-        id: Long = 1L,
-        category: ClaimCategory = createCategory(),
-        name: String = "변질"
-    ): ClaimSubcategory = ClaimSubcategory(
-        id = id,
-        category = category,
-        name = name
-    )
-
     private fun createClaim(
         id: Long = 1L,
         employee: Employee = createEmployee(),
         account: Account = createAccount(),
         status: ClaimStatus = ClaimStatus.DRAFT
     ): Claim {
-        val category = createCategory()
         return Claim(
             id = id,
             employee = employee,
@@ -207,8 +188,8 @@ class AdminClaimServiceTest {
             productName = "오뚜기 진라면 순한맛",
             dateType = ClaimDateType.EXPIRY_DATE,
             date = LocalDate.of(2026, 6, 30),
-            category = category,
-            subcategory = createSubcategory(category = category),
+            claimType1 = ClaimType1.C,
+            claimType2 = ClaimType2.CA,
             defectDescription = "제품 개봉 시 이물질 발견",
             defectQuantity = 5,
             purchaseAmount = 4500,

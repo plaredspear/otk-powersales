@@ -2,6 +2,8 @@ package com.otoki.powersales.claim.entity
 
 import com.otoki.powersales.claim.entity.converter.ClaimChannelConverter
 import com.otoki.powersales.claim.entity.converter.ClaimStatusConverter
+import com.otoki.powersales.claim.entity.converter.ClaimType1Converter
+import com.otoki.powersales.claim.entity.converter.ClaimType2Converter
 import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
@@ -15,19 +17,20 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 /**
- * Spec #606 / #705 — Claim ↔ Salesforce `DKRetail__Claim__c` 어노테이션 부착 검증.
+ * Spec #606 / #705 / #743 — Claim ↔ Salesforce `DKRetail__Claim__c` 어노테이션 부착 검증.
  *
  * 단일 권위: docs/plan/old_source_260408/sf-object-meta/DKRetail__Claim__c.md
  *
  * 검증 분류:
  *   - AC1: 클래스 `@SFObject` 무변경
- *   - AC2: `@SFField` 매핑 키셋 (#705: 33 + IsDeleted + OwnerId + CreatedById + LastModifiedById + BaseEntity 2 = 38)
+ *   - AC2: `@SFField` 매핑 키셋 (#705 39개 + #743 ClaimType1/ClaimType2 2개 = 41)
  *   - AC3: PK / FK 미부착
  *   - AC5: ClaimStatus enum SF 정합 (DRAFT/SENT/SEND_FAILED + Converter) — #705 §6 Q4
  *   - AC6: ClaimChannel enum + Converter
  *   - AC7: Reference R-2 FK relation 검증 (owner / createdBy / lastModifiedBy / product) — #705 §4
+ *   - AC8: ClaimType1/ClaimType2 enum 정합 + Converter — #743 (#741 옵션 C 적용)
  */
-@DisplayName("Claim SF 어노테이션 검증 (Spec #606 / #705)")
+@DisplayName("Claim SF 어노테이션 검증 (Spec #606 / #705 / #743)")
 class ClaimSFAnnotationTest {
 
     @Nested
@@ -50,9 +53,16 @@ class ClaimSFAnnotationTest {
         private val mapping = SFSchemaUtils.getSFMapping(Claim::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 39 (11 기존 + 6 SAP inbound + 16 신규 + #705: IsDeleted + Owner + Created + LastModified + BaseEntity 2)")
+        @DisplayName("매핑 키 수 = 41 (#705 39개 + #743 ClaimType1/ClaimType2 2개)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(39)
+            assertThat(mapping).hasSize(41)
+        }
+
+        @Test
+        @DisplayName("#743 ClaimType1 / ClaimType2 매핑 (2개)")
+        fun spec743ClaimTypes() {
+            assertThat(mapping["DKRetail__ClaimType1__c"]).isEqualTo("claim_type1")
+            assertThat(mapping["DKRetail__ClaimType2__c"]).isEqualTo("claim_type2")
         }
 
         @Test
@@ -132,9 +142,9 @@ class ClaimSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("FK 필드(category, subcategory, employee, account, owner, createdBy, lastModifiedBy, product)에 @SFField 미부착")
+        @DisplayName("FK 필드(employee, account, owner, createdBy, lastModifiedBy, product)에 @SFField 미부착")
         fun fkHasNoSfField() {
-            listOf("category", "subcategory", "employee", "account", "owner", "createdBy", "lastModifiedBy", "product").forEach { name ->
+            listOf("employee", "account", "owner", "createdBy", "lastModifiedBy", "product").forEach { name ->
                 val field = Claim::class.java.getDeclaredField(name)
                 assertThat(field.isAnnotationPresent(SFField::class.java))
                     .withFailMessage("FK 필드 $name 에 @SFField 부착되어 있음 — §2.4/§6.6 정책 위반")
@@ -148,8 +158,6 @@ class ClaimSFAnnotationTest {
             val mapping = SFSchemaUtils.getSFMapping(Claim::class.java)
             assertThat(mapping.values).doesNotContain(
                 "claim_id",
-                "category_id",
-                "subcategory_id",
                 "employee_id",
                 "account_id",
                 "owner_id",
@@ -241,6 +249,79 @@ class ClaimSFAnnotationTest {
                 assertThat(hcColumn).withFailMessage("$fieldName 에 @HCColumn 미부착").isNotNull
                 assertThat(hcColumn.value).isEqualTo(hcName)
             }
+        }
+    }
+
+    @Nested
+    @DisplayName("AC8 — ClaimType1 / ClaimType2 enum + Converter (#743)")
+    inner class ClaimTypeEnums {
+
+        @Test
+        @DisplayName("ClaimType1.entries = 3개 (A/B/C) — SF picklist 옵션값 정합")
+        fun claimType1Members() {
+            assertThat(ClaimType1.entries).hasSize(3)
+            assertThat(ClaimType1.entries.map { it.value }).containsExactly("A", "B", "C")
+            assertThat(ClaimType1.A.label).isEqualTo("포장불량")
+            assertThat(ClaimType1.B.label).isEqualTo("이물혼입")
+            assertThat(ClaimType1.C.label).isEqualTo("내용물이상")
+        }
+
+        @Test
+        @DisplayName("ClaimType2.entries = 25개 (A/B/C 별 12/7/6) — SF dependent picklist 정합")
+        fun claimType2Members() {
+            assertThat(ClaimType2.entries).hasSize(25)
+            assertThat(ClaimType2.entries.count { it.parent == ClaimType1.A }).isEqualTo(12)
+            assertThat(ClaimType2.entries.count { it.parent == ClaimType1.B }).isEqualTo(7)
+            assertThat(ClaimType2.entries.count { it.parent == ClaimType1.C }).isEqualTo(6)
+        }
+
+        @Test
+        @DisplayName("ClaimType2 옵션값 = enum constant name 동일 (AA/AB/.../CF/AL)")
+        fun claimType2ValuesMatchNames() {
+            ClaimType2.entries.forEach { entry ->
+                assertThat(entry.value).isEqualTo(entry.name)
+            }
+        }
+
+        @Test
+        @DisplayName("ClaimType1Converter — enum ↔ DB String 양방향")
+        fun claimType1Converter() {
+            val converter = ClaimType1Converter()
+            assertThat(converter.convertToDatabaseColumn(ClaimType1.A)).isEqualTo("A")
+            assertThat(converter.convertToDatabaseColumn(null)).isNull()
+            assertThat(converter.convertToEntityAttribute("A")).isEqualTo(ClaimType1.A)
+            assertThat(converter.convertToEntityAttribute("B")).isEqualTo(ClaimType1.B)
+            assertThat(converter.convertToEntityAttribute(null)).isNull()
+            assertThat(converter.convertToEntityAttribute("UNKNOWN")).isNull()
+        }
+
+        @Test
+        @DisplayName("ClaimType2Converter — enum ↔ DB String 양방향")
+        fun claimType2Converter() {
+            val converter = ClaimType2Converter()
+            assertThat(converter.convertToDatabaseColumn(ClaimType2.AA)).isEqualTo("AA")
+            assertThat(converter.convertToDatabaseColumn(ClaimType2.AL)).isEqualTo("AL")
+            assertThat(converter.convertToDatabaseColumn(null)).isNull()
+            assertThat(converter.convertToEntityAttribute("AA")).isEqualTo(ClaimType2.AA)
+            assertThat(converter.convertToEntityAttribute("CF")).isEqualTo(ClaimType2.CF)
+            assertThat(converter.convertToEntityAttribute(null)).isNull()
+            assertThat(converter.convertToEntityAttribute("UNKNOWN")).isNull()
+        }
+
+        @Test
+        @DisplayName("Claim.claimType1 / claimType2 필드 = @Convert + 적절한 타입")
+        fun claimTypeFieldsHaveConvert() {
+            val field1 = Claim::class.java.getDeclaredField("claimType1")
+            assertThat(field1.type).isEqualTo(ClaimType1::class.java)
+            val convert1 = field1.getAnnotation(Convert::class.java)
+            assertThat(convert1).isNotNull
+            assertThat(convert1.converter.java).isEqualTo(ClaimType1Converter::class.java)
+
+            val field2 = Claim::class.java.getDeclaredField("claimType2")
+            assertThat(field2.type).isEqualTo(ClaimType2::class.java)
+            val convert2 = field2.getAnnotation(Convert::class.java)
+            assertThat(convert2).isNotNull
+            assertThat(convert2.converter.java).isEqualTo(ClaimType2Converter::class.java)
         }
     }
 

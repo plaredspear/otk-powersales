@@ -6,21 +6,33 @@ import com.otoki.powersales.common.exception.BusinessException
 import org.springframework.http.HttpStatus
 
 / **
- * 클레임 종류1을 찾을 수 없음
+ * 유효하지 않은 클레임 대분류 (ClaimType1)
  * /
-class ClaimCategoryNotFoundException : BusinessException(
-    errorCode = "CATEGORY_NOT_FOUND",
-    message = "클레임 종류를 찾을 수 없습니다",
-    httpStatus = HttpStatus.NOT_FOUND
+class InvalidClaimType1Exception : BusinessException(
+    errorCode = "INVALID_CLAIM_TYPE1",
+    message = "유효하지 않은 클레임 대분류입니다",
+    httpStatus = HttpStatus.BAD_REQUEST
 )
 
 / **
- * 클레임 종류2를 찾을 수 없음
+ * 유효하지 않은 클레임 소분류 (ClaimType2)
  * /
-class ClaimSubcategoryNotFoundException : BusinessException(
-    errorCode = "SUBCATEGORY_NOT_FOUND",
-    message = "클레임 세부 종류를 찾을 수 없습니다",
-    httpStatus = HttpStatus.NOT_FOUND
+class InvalidClaimType2Exception : BusinessException(
+    errorCode = "INVALID_CLAIM_TYPE2",
+    message = "유효하지 않은 클레임 소분류입니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+/ **
+ * 클레임 대분류-소분류 계층 불일치
+ *
+ * SF dependent picklist (`DKRetail__ClaimType2__c.controllerName == "DKRetail__ClaimType1__c"`) 의
+ * validFor 비트맵 기반 매핑 위반 (예: claimType1=A + claimType2=BA).
+ * /
+class ClaimTypeHierarchyMismatchException : BusinessException(
+    errorCode = "CLAIM_TYPE_HIERARCHY_MISMATCH",
+    message = "클레임 소분류가 선택한 대분류에 속하지 않습니다",
+    httpStatus = HttpStatus.BAD_REQUEST
 )
 
 / **

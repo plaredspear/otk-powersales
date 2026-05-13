@@ -181,14 +181,6 @@ class ClaimQueryServiceTest {
         )
     }
 
-    private fun createCategory(): ClaimCategory {
-        return ClaimCategory(id = 1L, name = "포장불량")
-    }
-
-    private fun createSubcategory(): ClaimSubcategory {
-        return ClaimSubcategory(id = 1L, category = createCategory(), name = "누수/누유")
-    }
-
     private fun createClaim(
         id: Long = 1L,
         employeeId: Long = 1L,
@@ -205,8 +197,8 @@ class ClaimQueryServiceTest {
             productName = "진라면(매운맛)멀티",
             dateType = ClaimDateType.EXPIRY_DATE,
             date = LocalDate.of(2026, 8, 19),
-            category = createCategory(),
-            subcategory = createSubcategory(),
+            claimType1 = ClaimType1.A,
+            claimType2 = ClaimType2.AB,
             defectDescription = "포장 파손으로 내용물 누유 확인",
             defectQuantity = 3,
             purchaseAmount = purchaseAmount,
