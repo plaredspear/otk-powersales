@@ -23,6 +23,11 @@ class PromotionEmployee(
     @Column(name = "sfid", length = 18)
     val sfid: String? = null,
 
+    @SFField("Name")
+    @HCColumn("name")
+    @Column(name = "name", length = 80)
+    var name: String? = null,
+
     @Column(name = "promotion_id", nullable = false)
     val promotionId: Long,
 
@@ -33,6 +38,11 @@ class PromotionEmployee(
 
     @Column(name = "employee_id")
     var employeeId: Long? = null,
+
+    @SFField("DKRetail__EmployeeId__c")
+    @HCColumn("dkretail__employeeid__c")
+    @Column(name = "employee_sfid", length = 18)
+    var employeeSfid: String? = null,
 
     @SFField("DKRetail__ScheduleDate__c")
     @HCColumn("dkretail__scheduledate__c")
@@ -123,6 +133,11 @@ class PromotionEmployee(
     @Column(name = "work_type2", length = 255)
     var workType2: String? = null,
 
+    @SFField("DKRetail__WorkType2__c")
+    @HCColumn("dkretail__worktype2__c")
+    @Column(name = "dk_work_type2", length = 255)
+    var dkWorkType2: String? = null,
+
     @SFField("OwnerId")
     @HCColumn("ownerid")
     @Column(name = "owner_sfid", length = 18)
@@ -137,6 +152,11 @@ class PromotionEmployee(
     @HCColumn("lastmodifiedbyid")
     @Column(name = "last_modified_by_sfid", length = 18)
     var lastModifiedBySfid: String? = null,
+
+    @SFField("IsDeleted")
+    @HCColumn("isdeleted")
+    @Column(name = "is_deleted")
+    var isDeleted: Boolean? = null,
 
 ) : BaseEntity() {
 

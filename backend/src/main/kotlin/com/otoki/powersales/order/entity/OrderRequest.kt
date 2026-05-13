@@ -74,6 +74,11 @@ class OrderRequest(
     @Column(name = "order_date", nullable = false)
     val orderDate: LocalDateTime,
 
+    @SFField("DKRetail__OrderDate__c")
+    @HCColumn("dkretail__orderdate__c")
+    @Column(name = "dk_order_date")
+    var dkOrderDate: LocalDate? = null,
+
     @SFField("DKRetail__RequestDate__c")
     @HCColumn("dkretail__requestdate__c")
     @Column(name = "delivery_date", nullable = false)
@@ -127,6 +132,11 @@ class OrderRequest(
     @HCColumn("lastmodifiedbyid")
     @Column(name = "last_modified_by_sfid", length = 18)
     var lastModifiedBySfid: String? = null,
+
+    @SFField("IsDeleted")
+    @HCColumn("isdeleted")
+    @Column(name = "is_deleted")
+    var isDeleted: Boolean? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id")

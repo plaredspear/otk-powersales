@@ -43,7 +43,7 @@ class ProductSFAnnotationTest {
         @Test
         @DisplayName("매핑 키 수 = 44 (Spec #740: ShelfLifeFull Formula 제거)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(44)
+            assertThat(mapping).hasSize(45)
         }
 
         @Test

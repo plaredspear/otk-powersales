@@ -82,6 +82,7 @@ class MonthlySalesHistory(
     @Column(name = "fridge_purpose")
     val fridgePurpose: Double? = null,
 
+    @SFField("IsDeleted")
     @HCColumn("isdeleted")
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,

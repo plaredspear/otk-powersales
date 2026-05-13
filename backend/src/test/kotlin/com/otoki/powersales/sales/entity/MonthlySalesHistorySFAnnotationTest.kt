@@ -44,7 +44,7 @@ class MonthlySalesHistorySFAnnotationTest {
         @Test
         @DisplayName("매핑 키 수 = 34 (Spec #740: Formula 8건 제거. 29 + R-2 3 + CreatedDate/LastModifiedDate 2)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(34)
+            assertThat(mapping).hasSize(35)
         }
 
         @Test

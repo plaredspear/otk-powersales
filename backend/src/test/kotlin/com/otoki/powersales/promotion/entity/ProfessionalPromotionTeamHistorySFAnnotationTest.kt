@@ -33,7 +33,7 @@ class ProfessionalPromotionTeamHistorySFAnnotationTest {
         @DisplayName("매핑 키 수 = 9 (4 Custom + R-2 3 + BaseEntity 2)")
         fun mappingKeySize() {
             val mapping = SFSchemaUtils.getSFMapping(ProfessionalPromotionTeamHistory::class.java)
-            assertThat(mapping).hasSize(9)
+            assertThat(mapping).hasSize(11)
         }
     }
 
@@ -83,9 +83,11 @@ class ProfessionalPromotionTeamHistorySFAnnotationTest {
         fun mappingKeysExact() {
             assertThat(mapping.keys)
                 .containsExactlyInAnyOrder(
+                    "Name",
                     "EmployeeId__c", "oldValue__c", "newValue__c", "updateTime__c",
                     "OwnerId", "CreatedById", "LastModifiedById",
-                    "CreatedDate", "LastModifiedDate"
+                    "CreatedDate", "LastModifiedDate",
+                    "IsDeleted"
                 )
         }
     }

@@ -112,6 +112,8 @@ class Promotion(
     @Column(name = "is_closed", nullable = false)
     var isClosed: Boolean = false,
 
+    @SFField("IsDeleted")
+    @HCColumn("isdeleted")
     @Column(name = "is_deleted", nullable = false)
     var isDeleted: Boolean = false,
 

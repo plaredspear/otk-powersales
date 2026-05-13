@@ -51,7 +51,7 @@ class AccountCategoryMasterSFAnnotationTest {
         @Test
         @DisplayName("매핑 키 수 = 8 (3 + BaseEntity 2 + Spec #704 3)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(8)
+            assertThat(mapping).hasSize(9)
         }
 
         @Test
@@ -74,7 +74,8 @@ class AccountCategoryMasterSFAnnotationTest {
                     "LastModifiedDate",
                     "OwnerId",
                     "CreatedById",
-                    "LastModifiedById"
+                    "LastModifiedById",
+                    "IsDeleted"
                 )
         }
     }

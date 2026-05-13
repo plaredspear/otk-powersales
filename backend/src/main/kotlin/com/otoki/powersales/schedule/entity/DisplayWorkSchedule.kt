@@ -104,6 +104,7 @@ class DisplayWorkSchedule(
     @Column(name = "last_month_revenue")
     val lastMonthRevenue: Long? = null,
 
+    @SFField("IsDeleted")
     @HCColumn("isdeleted")
     @Column(name = "is_deleted")
     var isDeleted: Boolean? = null,

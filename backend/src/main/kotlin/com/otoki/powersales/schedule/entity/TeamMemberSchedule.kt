@@ -206,6 +206,7 @@ class TeamMemberSchedule(
     @Column(name = "complete_time")
     val completeTime: LocalDateTime? = null,
 
+    @SFField("IsDeleted")
     @HCColumn("isdeleted")
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,

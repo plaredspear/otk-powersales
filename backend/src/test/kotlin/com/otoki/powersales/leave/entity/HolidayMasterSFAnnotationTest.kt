@@ -46,9 +46,9 @@ class HolidayMasterSFAnnotationTest {
         private val mapping = SFSchemaUtils.getSFMapping(HolidayMaster::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 8 (도메인 3 + BaseEntity 2 + Group A R-2 sfid 3)")
+        @DisplayName("매핑 키 수 = 9 (도메인 3 + BaseEntity 2 + Group A R-2 sfid 3 + IsDeleted)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(8)
+            assertThat(mapping).hasSize(9)
         }
 
         @Test
@@ -65,7 +65,8 @@ class HolidayMasterSFAnnotationTest {
             assertThat(mapping.keys).containsExactlyInAnyOrder(
                 "Name", "HolidayDate__c", "Type__c",
                 "CreatedDate", "LastModifiedDate",
-                "OwnerId", "CreatedById", "LastModifiedById"
+                "OwnerId", "CreatedById", "LastModifiedById",
+                "IsDeleted"
             )
         }
     }

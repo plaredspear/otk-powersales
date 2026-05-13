@@ -150,6 +150,8 @@ class MonthlyFemaleEmployeeIntegrationSchedule(
     @Column(name = "last_modified_by_sfid", length = 18)
     var lastModifiedBySfid: String? = null,
 
+    @SFField("IsDeleted")
+    @HCColumn("isdeleted")
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 

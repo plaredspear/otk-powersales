@@ -189,6 +189,7 @@ class Product(
     @Column(name = "img_ref_path_txt", length = 255)
     val imgRefPathTxt: String? = null,
 
+    @SFField("IsDeleted")
     @HCColumn("isdeleted")
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,

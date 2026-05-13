@@ -36,6 +36,11 @@ class Appointment(
     @Column(name = "sfid", length = 18, unique = true)
     val sfid: String? = null,
 
+    @SFField("Name")
+    @HCColumn("name")
+    @Column(name = "name", length = 80)
+    var name: String? = null,
+
     @SFField("EmployeeCode__c")
     @HCColumn("employeecode__c")
     @Column(name = "employee_code", nullable = false, length = 100)

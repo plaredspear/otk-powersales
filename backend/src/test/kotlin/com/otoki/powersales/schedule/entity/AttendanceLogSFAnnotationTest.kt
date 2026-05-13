@@ -29,7 +29,7 @@ class AttendanceLogSFAnnotationTest {
         @DisplayName("매핑 키 수 = 8 (6 + BaseEntity 2)")
         fun mappingKeySize() {
             val mapping = SFSchemaUtils.getSFMapping(AttendanceLog::class.java)
-            assertThat(mapping).hasSize(11)
+            assertThat(mapping).hasSize(12)
         }
     }
 
@@ -101,7 +101,8 @@ class AttendanceLogSFAnnotationTest {
                     "Name", "DKRetail__EmployeeId__c", "DKRetail__CommuteDate__c",
                     "DKRetail__AccId__c", "DKRetail__SecondWorkType__c", "DKRetail__Reason__c",
                     "CreatedDate", "LastModifiedDate",
-                    "OwnerId", "CreatedById", "LastModifiedById"
+                    "OwnerId", "CreatedById", "LastModifiedById",
+                    "IsDeleted"
                 )
         }
     }

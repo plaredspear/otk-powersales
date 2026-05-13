@@ -22,11 +22,23 @@ class ErpOrderProduct(
     @Column(name = "sfid", length = 18)
     val sfid: String? = null,
 
+    @SFField("Name")
+    @HCColumn("name")
+    @Column(name = "name", length = 80)
+    var name: String? = null,
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "erp_order_id", nullable = false)
     var erpOrder: ErpOrder,
 
-    @Column(name = "sap_order_number", nullable = false, length = 20)
+    @SFField("ERPOrderId__c")
+    @HCColumn("erporderid__c")
+    @Column(name = "erp_order_sfid", length = 18)
+    var erpOrderSfid: String? = null,
+
+    @SFField("SAPOrderNumber__c")
+    @HCColumn("sapordernumber__c")
+    @Column(name = "sap_order_number", nullable = false, length = 255)
     val sapOrderNumber: String,
 
     @SFField("LineNumber__c")
@@ -149,6 +161,11 @@ class ErpOrderProduct(
     @HCColumn("lastmodifiedbyid")
     @Column(name = "last_modified_by_sfid", length = 18)
     var lastModifiedBySfid: String? = null,
+
+    @SFField("IsDeleted")
+    @HCColumn("isdeleted")
+    @Column(name = "is_deleted")
+    var isDeleted: Boolean? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id")

@@ -29,7 +29,7 @@ class MonthlyFemaleEmployeeIntegrationScheduleSFAnnotationTest {
         @DisplayName("매핑 키 수 = 26 (21 + BaseEntity 2 + Spec #734 R-2 Owner/CreatedBy/LastModifiedBy 3)")
         fun mappingKeySize() {
             val mapping = SFSchemaUtils.getSFMapping(MonthlyFemaleEmployeeIntegrationSchedule::class.java)
-            assertThat(mapping).hasSize(26)
+            assertThat(mapping).hasSize(27)
         }
     }
 
@@ -109,7 +109,8 @@ class MonthlyFemaleEmployeeIntegrationScheduleSFAnnotationTest {
                     "EDI_POS__c", "ThisMonthAmount__c",
                     "AccountConvertedHeadcount__c", "EmployeeInputCriteriaMaster__c",
                     "OwnerId", "CreatedById", "LastModifiedById",
-                    "CreatedDate", "LastModifiedDate"
+                    "CreatedDate", "LastModifiedDate",
+                    "IsDeleted"
                 )
         }
     }

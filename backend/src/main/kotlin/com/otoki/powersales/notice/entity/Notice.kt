@@ -69,6 +69,7 @@ class Notice(
     @Column(name = "branch_code", length = 255)
     var branchCode: String? = null,
 
+    @SFField("IsDeleted")
     @HCColumn("isdeleted")
     @Column(name = "is_deleted")
     var isDeleted: Boolean? = null,

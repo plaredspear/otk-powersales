@@ -25,6 +25,11 @@ class ProfessionalPromotionTeamMaster(
     @Column(name = "sfid", length = 18)
     val sfid: String? = null,
 
+    @SFField("Name")
+    @HCColumn("name")
+    @Column(name = "name", length = 80)
+    var name: String? = null,
+
     @Column(name = "employee_id", nullable = false)
     val employeeId: Long,
 
@@ -81,6 +86,11 @@ class ProfessionalPromotionTeamMaster(
     @HCColumn("lastmodifiedbyid")
     @Column(name = "last_modified_by_sfid", length = 18)
     var lastModifiedBySfid: String? = null,
+
+    @SFField("IsDeleted")
+    @HCColumn("isdeleted")
+    @Column(name = "is_deleted")
+    var isDeleted: Boolean? = null,
 
     // -- Relations --
 

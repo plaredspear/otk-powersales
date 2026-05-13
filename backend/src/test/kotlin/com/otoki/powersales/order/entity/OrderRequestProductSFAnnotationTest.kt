@@ -38,7 +38,7 @@ class OrderRequestProductSFAnnotationTest {
         @Test
         @DisplayName("매핑 키 수 = 14 (기존 7 + 신규 5 + BaseEntity 2)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(17)
+            assertThat(mapping).hasSize(23)
         }
 
         @Test

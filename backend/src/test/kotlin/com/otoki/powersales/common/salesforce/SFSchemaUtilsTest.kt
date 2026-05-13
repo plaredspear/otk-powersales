@@ -54,11 +54,11 @@ class SFSchemaUtilsTest {
         }
 
         @Test
-        @DisplayName("TeamMemberSchedule 엔티티 - 47개 SF Field 매핑 반환 (Spec #733: 43 + R-2 3 + CostCenterCode 1)")
+        @DisplayName("TeamMemberSchedule 엔티티 - 48개 SF Field 매핑 반환 (Spec #733: 43 + R-2 3 + CostCenterCode 1 + IsDeleted)")
         fun getSFMapping_teamMemberSchedule() {
             val mapping = SFSchemaUtils.getSFMapping(TeamMemberSchedule::class.java)
 
-            assertThat(mapping).hasSize(47)
+            assertThat(mapping).hasSize(48)
             assertThat(mapping["DisplayWorkScheduleMaster__c"]).isEqualTo("display_work_schedule_sfid")
             assertThat(mapping["DKRetail__EmployeeId__c"]).isEqualTo("employee_sfid")
             assertThat(mapping["Name"]).isEqualTo("name")
@@ -95,11 +95,11 @@ class SFSchemaUtilsTest {
         }
 
         @Test
-        @DisplayName("DisplayWorkSchedule 엔티티 - 17개 SF Field 매핑 반환 (Spec #732: 누락 매핑 1개 + BaseEntity 2 + R-2 CreatedBy/LastModifiedBy 2)")
+        @DisplayName("DisplayWorkSchedule 엔티티 - 18개 SF Field 매핑 반환 (Spec #732 + IsDeleted)")
         fun getSFMapping_displayWorkSchedule() {
             val mapping = SFSchemaUtils.getSFMapping(DisplayWorkSchedule::class.java)
 
-            assertThat(mapping).hasSize(17)
+            assertThat(mapping).hasSize(18)
             assertThat(mapping["Account__c"]).isEqualTo("account_sfid")
             assertThat(mapping["FullName__c"]).isEqualTo("employee_sfid")
             assertThat(mapping["StartDate__c"]).isEqualTo("start_date")
@@ -115,11 +115,11 @@ class SFSchemaUtilsTest {
         }
 
         @Test
-        @DisplayName("Product 엔티티 - 44개 SF Field 매핑 반환 (Spec #740: ShelfLifeFull Formula 제거)")
+        @DisplayName("Product 엔티티 - 45개 SF Field 매핑 반환 (Spec #740: ShelfLifeFull Formula 제거 + IsDeleted)")
         fun getSFMapping_product() {
             val mapping = SFSchemaUtils.getSFMapping(Product::class.java)
 
-            assertThat(mapping).hasSize(44)
+            assertThat(mapping).hasSize(45)
             assertThat(mapping["Name"]).isEqualTo("name")
             assertThat(mapping["DKRetail__ProductCode__c"]).isEqualTo("product_code")
             assertThat(mapping["DKRetail__StoreCondition__c"]).isEqualTo("storage_condition")

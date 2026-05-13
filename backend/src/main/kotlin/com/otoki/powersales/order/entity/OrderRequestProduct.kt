@@ -43,14 +43,25 @@ class OrderRequestProduct(
     @Column(name = "order_request_product_id")
     val id: Long = 0,
 
+    @SFField("DKRetail__RequestNumber__c")
     @HCColumn("dkretail__requestnumber__c")
     @Column(name = "order_request_sfid", length = 18)
     val orderRequestSfid: String? = null,
+
+    @SFField("Name")
+    @HCColumn("name")
+    @Column(name = "name", length = 80)
+    var name: String? = null,
 
     @SFField("LineNumber__c")
     @HCColumn("linenumber__c")
     @Column(name = "line_number", nullable = false)
     val lineNumber: Int,
+
+    @SFField("DKRetail__LineNumber__c")
+    @HCColumn("dkretail__linenumber__c")
+    @Column(name = "dk_line_number", length = 30)
+    var dkLineNumber: String? = null,
 
     @SFField("ProductCode__c")
     @HCColumn("productcode__c")
@@ -126,6 +137,16 @@ class OrderRequestProduct(
     @Column(name = "box_quantity", precision = 15, scale = 3)
     val boxQuantity: BigDecimal? = null,
 
+    @SFField("DKRetail__TotalCount__c")
+    @HCColumn("dkretail__totalcount__c")
+    @Column(name = "dk_total_count")
+    var dkTotalCount: Double? = null,
+
+    @SFField("TotalCount__c")
+    @HCColumn("totalcount__c")
+    @Column(name = "total_count")
+    var totalCount: Double? = null,
+
     @HCColumn("sfid")
     @Column(name = "sfid", length = 18)
     val sfid: String? = null,
@@ -150,6 +171,11 @@ class OrderRequestProduct(
     @HCColumn("lastmodifiedbyid")
     @Column(name = "last_modified_by_sfid", length = 18)
     var lastModifiedBySfid: String? = null,
+
+    @SFField("IsDeleted")
+    @HCColumn("isdeleted")
+    @Column(name = "is_deleted")
+    var isDeleted: Boolean? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id")
