@@ -99,12 +99,21 @@ done
 : "${SF_TARGET_ORG:?환경변수 SF_TARGET_ORG 가 설정되어 있지 않습니다.}"
 : "${DEV_OTK_PWRS_DB_PASSWORD:?환경변수 DEV_OTK_PWRS_DB_PASSWORD 가 설정되어 있지 않습니다.}"
 
-export PGHOST="${PGHOST:-localhost}"
+# PGHOST 는 macOS 의 IPv6 ::1 resolve 회피 위해 IPv4 직접 지정 (SSM 터널은 IPv4 만 listen)
+export PGHOST="${PGHOST:-127.0.0.1}"
 export PGPORT="${PGPORT:-15432}"
 export PGUSER="${PGUSER:-otoki_admin}"
 export PGDATABASE="${PGDATABASE:-otoki}"
 export PGPASSWORD="$DEV_OTK_PWRS_DB_PASSWORD"
+# powersales 는 schema, DB 명은 otoki — PGDATABASE 와 혼동 주의
 export PGOPTIONS="--search_path=powersales,public"
+
+# 환경 충돌 진단 — 외부에서 PGDATABASE 를 schema 명으로 잘못 설정한 케이스 회피
+if [[ "$PGDATABASE" == "powersales" ]]; then
+  echo "ERROR: PGDATABASE='powersales' 는 schema 명입니다. DB 명은 'otoki'." >&2
+  echo "       unset PGDATABASE 또는 export PGDATABASE=otoki 후 재실행하세요." >&2
+  exit 1
+fi
 
 # ── SObject 목록 결정 ──
 if $LIST_ALL; then
