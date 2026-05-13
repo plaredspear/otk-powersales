@@ -319,6 +319,11 @@ class TeamMemberSchedule(
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: Employee? = null,
 
+    // -- Spec #746 R-2 (MonthlyFemaleEmployeeIntegrationSchedule__c FK 신설) --
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "monthly_female_employee_integration_schedule_id")
+    var monthlyFemaleEmployeeIntegrationSchedule: com.otoki.powersales.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule? = null,
+
 ) : BaseEntity() {
     fun updateForPromotion(
         employee: Employee,

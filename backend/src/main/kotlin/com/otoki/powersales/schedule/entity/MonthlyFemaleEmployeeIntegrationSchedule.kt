@@ -177,4 +177,9 @@ class MonthlyFemaleEmployeeIntegrationSchedule(
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: Employee? = null,
 
+    // -- Spec #746 R-2 (EmployeeInputCriteriaMaster__c FK 신설) --
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employee_input_criteria_master_id")
+    var employeeInputCriteriaMaster: com.otoki.powersales.schedule.entity.EmployeeInputCriteriaMaster? = null,
+
 ) : BaseEntity()

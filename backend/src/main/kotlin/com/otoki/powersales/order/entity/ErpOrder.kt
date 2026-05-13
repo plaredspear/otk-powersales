@@ -105,4 +105,9 @@ class ErpOrder(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: Employee? = null,
+
+    // -- Spec #746 R-2 (AccountId__c FK 신설) --
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id")
+    var account: com.otoki.powersales.account.entity.Account? = null,
 ) : BaseEntity()

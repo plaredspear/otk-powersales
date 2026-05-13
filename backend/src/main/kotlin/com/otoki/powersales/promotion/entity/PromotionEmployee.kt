@@ -180,6 +180,11 @@ class PromotionEmployee(
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: Employee? = null
 
+    // -- Spec #746 R-2 (DKRetail__ScheduleId__c FK 신설, 기존 team_member_schedule_id 컬럼 재사용) --
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "team_member_schedule_id", insertable = false, updatable = false)
+    var teamMemberSchedule: com.otoki.powersales.schedule.entity.TeamMemberSchedule? = null
+
     fun update(
         employeeId: Long?,
         scheduleDate: LocalDate?,
