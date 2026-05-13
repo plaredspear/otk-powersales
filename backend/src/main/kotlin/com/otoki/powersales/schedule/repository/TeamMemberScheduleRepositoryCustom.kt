@@ -7,7 +7,7 @@ import java.time.LocalDateTime
 
 interface TeamMemberScheduleRepositoryCustom {
 
-    fun updateCommuteLogId(id: Long, commuteLogId: String)
+    fun updateCommuteLogId(id: Long, commuteLogSfid: String)
 
     fun updateSafetyCheckData(
         id: Long,
@@ -55,7 +55,7 @@ interface TeamMemberScheduleRepositoryCustom {
 
     /**
      * 일반 출근(REGULAR) SAP daily batch 용 페이지 조회.
-     * `team_member_schedule` ⋈ `attendance_log` (commuteLogId = al.sfid OR al.id 의 문자열) + employee + account.
+     * `team_member_schedule` ⋈ `attendance_log` (commuteLogSfid = al.sfid OR al.id 의 문자열) + employee + account.
      * 필터: attendanceType=REGULAR, workingType='근무', workingDate ∈ {today, yesterday}.
      */
     fun findRegularAttendancesForSapPaged(

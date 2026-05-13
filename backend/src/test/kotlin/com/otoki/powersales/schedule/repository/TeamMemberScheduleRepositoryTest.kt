@@ -198,11 +198,11 @@ class TeamMemberScheduleRepositoryTest {
     }
 
     @Nested
-    @DisplayName("updateCommuteLogId - commuteLogId 업데이트")
+    @DisplayName("updateCommuteLogId - commuteLogSfid 업데이트")
     inner class UpdateCommuteLogIdTests {
 
         @Test
-        @DisplayName("정상 업데이트 - id 일치 시 commuteLogId 변경")
+        @DisplayName("정상 업데이트 - id 일치 시 commuteLogSfid 변경")
         fun updateCommuteLogId_success() {
             // Given
             val teamMemberSchedule = TeamMemberSchedule(
@@ -221,7 +221,7 @@ class TeamMemberScheduleRepositoryTest {
             // Then
             val updated = teamMemberScheduleRepository.findById(teamMemberSchedule.id)
             assertThat(updated).isPresent
-            assertThat(updated.get().commuteLogId).isEqualTo("OK")
+            assertThat(updated.get().commuteLogSfid).isEqualTo("OK")
         }
 
         @Test

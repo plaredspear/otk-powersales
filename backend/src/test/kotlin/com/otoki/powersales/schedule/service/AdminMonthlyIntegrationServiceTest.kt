@@ -503,7 +503,7 @@ class AdminMonthlyIntegrationServiceTest {
             workingCategory1 = workingCategory1,
             workingCategory3 = workingCategory3,
             workingCategory4 = workingCategory4,
-            commuteLogId = "CL001"
+            commuteLogSfid = "CL001"
         )
     }
 

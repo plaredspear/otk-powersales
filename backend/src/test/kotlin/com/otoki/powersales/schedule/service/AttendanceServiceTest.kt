@@ -374,7 +374,7 @@ class AttendanceServiceTest {
         }
 
         @Test
-        @DisplayName("일부 출근 등록 완료(commuteLogId 존재) -> registeredCount 반영")
+        @DisplayName("일부 출근 등록 완료(commuteLogSfid 존재) -> registeredCount 반영")
         fun getAccountList_withPartialRegistrations_returnsCorrectCount() {
             // Given
             val userId = 1L
@@ -382,8 +382,8 @@ class AttendanceServiceTest {
             val today = LocalDate.now()
 
             val teamMemberSchedules = listOf(
-                createTeamMemberSchedule(sfid = "SCH001", employeeId = userId, accountId = 8938, commuteLogId = "OK", accountName = "이마트 강남점"),
-                createTeamMemberSchedule(sfid = "SCH002", employeeId = userId, accountId = 8939, commuteLogId = null, accountName = "홈플러스 서초점")
+                createTeamMemberSchedule(sfid = "SCH001", employeeId = userId, accountId = 8938, commuteLogSfid = "OK", accountName = "이마트 강남점"),
+                createTeamMemberSchedule(sfid = "SCH002", employeeId = userId, accountId = 8939, commuteLogSfid = null, accountName = "홈플러스 서초점")
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
@@ -585,7 +585,7 @@ class AttendanceServiceTest {
                     accountName = "일반거래처", workingCategory1 = "진열", workingCategory2 = "전담"),
                 createTeamMemberSchedule(id = 2L, sfid = "SCH002", employeeId = userId, accountId = 9002,
                     accountName = "등록완료거래처", workingCategory1 = "진열", workingCategory2 = "전담",
-                    commuteLogId = "LOG001"),
+                    commuteLogSfid = "LOG001"),
                 createTeamMemberSchedule(id = 3L, sfid = "SCH003", employeeId = userId, accountId = 9003,
                     accountName = "임시거래처", workingCategory1 = "진열", workingCategory2 = "임시")
             )
@@ -738,7 +738,7 @@ class AttendanceServiceTest {
 
             val teamMemberSchedule = createTeamMemberSchedule(
                 id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
-                workingType = "상온", commuteLogId = null,
+                workingType = "상온", commuteLogSfid = null,
                 accountName = "이마트 강남점", accountAbcTypeCode = "2110",
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
@@ -792,7 +792,7 @@ class AttendanceServiceTest {
 
             val teamMemberSchedule = createTeamMemberSchedule(
                 id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
-                commuteLogId = null,
+                commuteLogSfid = null,
                 accountName = "이마트 강남점", accountAbcTypeCode = "2110",
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
@@ -818,7 +818,7 @@ class AttendanceServiceTest {
 
             val teamMemberSchedule = createTeamMemberSchedule(
                 id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
-                workingType = "상온", commuteLogId = null,
+                workingType = "상온", commuteLogSfid = null,
                 accountName = "대리점A", accountAbcTypeCode = "1110",
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
@@ -859,7 +859,7 @@ class AttendanceServiceTest {
 
             val teamMemberSchedule = createTeamMemberSchedule(
                 id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
-                workingType = "냉장", commuteLogId = null,
+                workingType = "냉장", commuteLogSfid = null,
                 accountName = "특수거래처B", accountAbcTypeCode = "1900",
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
@@ -900,7 +900,7 @@ class AttendanceServiceTest {
 
             val teamMemberSchedule = createTeamMemberSchedule(
                 id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
-                workingType = "상온", commuteLogId = null,
+                workingType = "상온", commuteLogSfid = null,
                 accountName = "대리점A", accountAbcTypeCode = "1110",
                 accountLatitude = null, accountLongitude = null
             )
@@ -934,7 +934,7 @@ class AttendanceServiceTest {
 
             val teamMemberSchedule = createTeamMemberSchedule(
                 id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
-                workingType = "냉장", commuteLogId = null,
+                workingType = "냉장", commuteLogSfid = null,
                 accountName = "특수거래처B", accountAbcTypeCode = "1900",
                 accountLatitude = "invalid", accountLongitude = "invalid"
             )
@@ -967,7 +967,7 @@ class AttendanceServiceTest {
 
             val teamMemberSchedule = createTeamMemberSchedule(
                 id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
-                workingType = "상온", commuteLogId = null,
+                workingType = "상온", commuteLogSfid = null,
                 accountName = "이마트 강남점", accountAbcTypeCode = "9999",
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
@@ -1000,7 +1000,7 @@ class AttendanceServiceTest {
 
             val teamMemberSchedule = createTeamMemberSchedule(
                 id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
-                commuteLogId = null,
+                commuteLogSfid = null,
                 accountName = "일반매장", accountAbcTypeCode = "9999",
                 accountLatitude = null, accountLongitude = null
             )
@@ -1026,7 +1026,7 @@ class AttendanceServiceTest {
 
             val teamMemberSchedule = createTeamMemberSchedule(
                 id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
-                commuteLogId = null,
+                commuteLogSfid = null,
                 accountName = "일반매장", accountAbcTypeCode = "2110",
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
@@ -1042,7 +1042,7 @@ class AttendanceServiceTest {
         }
 
         @Test
-        @DisplayName("중복 출근 등록(commuteLogId='OK') -> AlreadyRegisteredException")
+        @DisplayName("중복 출근 등록(commuteLogSfid='OK') -> AlreadyRegisteredException")
         fun register_alreadyRegistered_throwsException() {
             // Given
             val userId = 1L
@@ -1052,7 +1052,7 @@ class AttendanceServiceTest {
 
             val teamMemberSchedule = createTeamMemberSchedule(
                 id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
-                commuteLogId = "OK"
+                commuteLogSfid = "OK"
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
@@ -1129,7 +1129,7 @@ class AttendanceServiceTest {
 
             val teamMemberSchedule = createTeamMemberSchedule(
                 id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
-                workingType = "상온", commuteLogId = null,
+                workingType = "상온", commuteLogSfid = null,
                 accountName = "이마트 강남점", accountAbcTypeCode = "2110",
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
@@ -1163,7 +1163,7 @@ class AttendanceServiceTest {
 
             val teamMemberSchedule = createTeamMemberSchedule(
                 id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
-                workingType = "상온", commuteLogId = null,
+                workingType = "상온", commuteLogSfid = null,
                 accountName = "이마트 강남점", accountAbcTypeCode = "2110",
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
@@ -1195,7 +1195,7 @@ class AttendanceServiceTest {
 
             val targetTeamMemberSchedule = createTeamMemberSchedule(
                 id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
-                workingType = "상온", commuteLogId = null,
+                workingType = "상온", commuteLogSfid = null,
                 accountName = "이마트 강남점", accountAbcTypeCode = "2110",
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
@@ -1203,8 +1203,8 @@ class AttendanceServiceTest {
             // 오늘 전체 스케줄 3건 (1건 이미 등록, 1건 지금 등록, 1건 미등록)
             val allTeamMemberSchedules = listOf(
                 targetTeamMemberSchedule,
-                createTeamMemberSchedule(id = 20L, sfid = "SCH002", employeeId = userId, accountId = 8939, commuteLogId = "OK"),
-                createTeamMemberSchedule(id = 30L, sfid = "SCH003", employeeId = userId, accountId = 8940, commuteLogId = null)
+                createTeamMemberSchedule(id = 20L, sfid = "SCH002", employeeId = userId, accountId = 8939, commuteLogSfid = "OK"),
+                createTeamMemberSchedule(id = 30L, sfid = "SCH003", employeeId = userId, accountId = 8940, commuteLogSfid = null)
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
@@ -1221,7 +1221,7 @@ class AttendanceServiceTest {
 
             // Then
             assertThat(result.totalCount).isEqualTo(3)
-            // id=20 has commuteLogId="OK", id=10 matches scheduleId => 2 registered
+            // id=20 has commuteLogSfid="OK", id=10 matches scheduleId => 2 registered
             assertThat(result.registeredCount).isEqualTo(2)
         }
 
@@ -1293,7 +1293,7 @@ class AttendanceServiceTest {
 
             val teamMemberSchedule = createTeamMemberSchedule(
                 id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
-                commuteLogId = null,
+                commuteLogSfid = null,
                 accountName = "이마트 강남점", accountAbcTypeCode = "2110",
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
@@ -1323,7 +1323,7 @@ class AttendanceServiceTest {
 
             val teamMemberSchedule = createTeamMemberSchedule(
                 id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
-                workingType = "상온", commuteLogId = null,
+                workingType = "상온", commuteLogSfid = null,
                 accountName = "이마트 강남점", accountAbcTypeCode = "2110",
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
@@ -1356,7 +1356,7 @@ class AttendanceServiceTest {
 
             val teamMemberSchedule = createTeamMemberSchedule(
                 id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
-                commuteLogId = null,
+                commuteLogSfid = null,
                 accountName = "이마트 강남점", accountAbcTypeCode = "2110",
                 accountLatitude = null, accountLongitude = accountLon.toString()
             )
@@ -1382,7 +1382,7 @@ class AttendanceServiceTest {
 
             val teamMemberSchedule = createTeamMemberSchedule(
                 id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
-                commuteLogId = null,
+                commuteLogSfid = null,
                 accountName = "이마트 강남점", accountAbcTypeCode = "2110",
                 accountLatitude = "   ", accountLongitude = accountLon.toString()
             )
@@ -1408,7 +1408,7 @@ class AttendanceServiceTest {
 
             val teamMemberSchedule = createTeamMemberSchedule(
                 id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
-                commuteLogId = null,
+                commuteLogSfid = null,
                 accountName = "이마트 강남점", accountAbcTypeCode = "2110",
                 accountLatitude = "abc", accountLongitude = accountLon.toString()
             )
@@ -1434,7 +1434,7 @@ class AttendanceServiceTest {
 
             val teamMemberSchedule = createTeamMemberSchedule(
                 id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
-                commuteLogId = null,
+                commuteLogSfid = null,
                 accountName = "이마트 강남점", accountAbcTypeCode = "2110",
                 accountLatitude = "91.0", accountLongitude = accountLon.toString()
             )
@@ -1460,7 +1460,7 @@ class AttendanceServiceTest {
 
             val teamMemberSchedule = createTeamMemberSchedule(
                 id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
-                commuteLogId = null,
+                commuteLogSfid = null,
                 accountName = "이마트 강남점", accountAbcTypeCode = "2110",
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
@@ -1488,7 +1488,7 @@ class AttendanceServiceTest {
 
             val teamMemberSchedule = createTeamMemberSchedule(
                 id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
-                workingType = "상온", commuteLogId = null,
+                workingType = "상온", commuteLogSfid = null,
                 accountName = "이마트 강남점", accountAbcTypeCode = "2110",
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
@@ -1560,7 +1560,7 @@ class AttendanceServiceTest {
             // 신규 생성될 TMS
             val newTms = createTeamMemberSchedule(
                 id = 50L, sfid = null, employeeId = userId, accountId = 8938,
-                workingType = "근무", workingCategory1 = "진열", commuteLogId = null,
+                workingType = "근무", workingCategory1 = "진열", commuteLogSfid = null,
                 accountName = "테스트 거래처", accountAbcTypeCode = "2110",
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
@@ -1626,7 +1626,7 @@ class AttendanceServiceTest {
             // 기존 TMS가 이미 존재
             val existingTms = createTeamMemberSchedule(
                 id = 50L, sfid = "SCH050", employeeId = userId, accountId = 8938,
-                workingType = "근무", workingCategory1 = "진열", commuteLogId = null,
+                workingType = "근무", workingCategory1 = "진열", commuteLogSfid = null,
                 accountName = "테스트 거래처", accountAbcTypeCode = "2110",
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
@@ -1924,7 +1924,7 @@ class AttendanceServiceTest {
             val employee = createEmployee(id = userId, sfid = "USR001")
             val tms = createTeamMemberSchedule(
                 id = eventScheduleId, sfid = "SCH789", employeeId = userId, accountId = 8938,
-                workingDate = today, commuteLogId = null, accountAbcTypeCode = "2110",
+                workingDate = today, commuteLogSfid = null, accountAbcTypeCode = "2110",
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
 
@@ -2014,7 +2014,7 @@ class AttendanceServiceTest {
         }
 
         @Test
-        @DisplayName("Spec #587 P2-B T5 — 이미 출근 등록: TMS.commuteLogId NOT NULL -> EventAttendanceDuplicateException")
+        @DisplayName("Spec #587 P2-B T5 — 이미 출근 등록: TMS.commuteLogSfid NOT NULL -> EventAttendanceDuplicateException")
         fun register_byEventSchedule_alreadyRegistered_throwsException() {
             // Given
             val userId = 1L
@@ -2023,7 +2023,7 @@ class AttendanceServiceTest {
             val employee = createEmployee(id = userId, sfid = "USR001")
             val tms = createTeamMemberSchedule(
                 id = eventScheduleId, employeeId = userId, accountId = 8938,
-                workingDate = today, commuteLogId = "OK"
+                workingDate = today, commuteLogSfid = "OK"
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
@@ -2082,7 +2082,7 @@ class AttendanceServiceTest {
 
             val teamMemberSchedule = createTeamMemberSchedule(
                 id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
-                commuteLogId = null, accountName = "이마트 강남점", accountAbcTypeCode = "2110",
+                commuteLogSfid = null, accountName = "이마트 강남점", accountAbcTypeCode = "2110",
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
 
@@ -2136,7 +2136,7 @@ class AttendanceServiceTest {
 
             val teamMemberSchedule = createTeamMemberSchedule(
                 id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
-                commuteLogId = null, accountName = "이마트 강남점", accountAbcTypeCode = "2110",
+                commuteLogSfid = null, accountName = "이마트 강남점", accountAbcTypeCode = "2110",
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
 
@@ -2183,7 +2183,7 @@ class AttendanceServiceTest {
 
             val teamMemberSchedule = createTeamMemberSchedule(
                 id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
-                commuteLogId = null, accountName = "이마트 강남점", accountAbcTypeCode = "2110",
+                commuteLogSfid = null, accountName = "이마트 강남점", accountAbcTypeCode = "2110",
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
 
@@ -2244,7 +2244,7 @@ class AttendanceServiceTest {
 
             val teamMemberSchedule = createTeamMemberSchedule(
                 id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
-                commuteLogId = null, accountName = "이마트 강남점", accountAbcTypeCode = "2110",
+                commuteLogSfid = null, accountName = "이마트 강남점", accountAbcTypeCode = "2110",
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
 
@@ -2299,11 +2299,11 @@ class AttendanceServiceTest {
             val today = LocalDate.now()
 
             val teamMemberSchedules = listOf(
-                createTeamMemberSchedule(id = 1L, sfid = "SCH001", employeeId = userId, accountId = 8938, commuteLogId = "OK", workingCategory1 = "진열",
+                createTeamMemberSchedule(id = 1L, sfid = "SCH001", employeeId = userId, accountId = 8938, commuteLogSfid = "OK", workingCategory1 = "진열",
                     accountName = "이마트 강남점"),
-                createTeamMemberSchedule(id = 2L, sfid = "SCH002", employeeId = userId, accountId = 8939, commuteLogId = "OK", workingCategory1 = "납품",
+                createTeamMemberSchedule(id = 2L, sfid = "SCH002", employeeId = userId, accountId = 8939, commuteLogSfid = "OK", workingCategory1 = "납품",
                     accountName = "홈플러스 서초점"),
-                createTeamMemberSchedule(id = 3L, sfid = "SCH003", employeeId = userId, accountId = 8940, commuteLogId = null, workingCategory1 = "진열",
+                createTeamMemberSchedule(id = 3L, sfid = "SCH003", employeeId = userId, accountId = 8940, commuteLogSfid = null, workingCategory1 = "진열",
                     accountName = "롯데마트 송파점")
             )
 
@@ -2343,8 +2343,8 @@ class AttendanceServiceTest {
             val today = LocalDate.now()
 
             val teamMemberSchedules = listOf(
-                createTeamMemberSchedule(sfid = "SCH001", employeeId = userId, accountId = 8938, commuteLogId = "OK", accountName = "이마트 강남점"),
-                createTeamMemberSchedule(sfid = "SCH002", employeeId = userId, accountId = 8939, commuteLogId = "OK", accountName = "홈플러스 서초점")
+                createTeamMemberSchedule(sfid = "SCH001", employeeId = userId, accountId = 8938, commuteLogSfid = "OK", accountName = "이마트 강남점"),
+                createTeamMemberSchedule(sfid = "SCH002", employeeId = userId, accountId = 8939, commuteLogSfid = "OK", accountName = "홈플러스 서초점")
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
@@ -2368,8 +2368,8 @@ class AttendanceServiceTest {
             val today = LocalDate.now()
 
             val teamMemberSchedules = listOf(
-                createTeamMemberSchedule(sfid = "SCH001", employeeId = userId, accountId = 8938, commuteLogId = null, accountName = "이마트 강남점"),
-                createTeamMemberSchedule(sfid = "SCH002", employeeId = userId, accountId = 8939, commuteLogId = null, accountName = "홈플러스 서초점")
+                createTeamMemberSchedule(sfid = "SCH001", employeeId = userId, accountId = 8938, commuteLogSfid = null, accountName = "이마트 강남점"),
+                createTeamMemberSchedule(sfid = "SCH002", employeeId = userId, accountId = 8939, commuteLogSfid = null, accountName = "홈플러스 서초점")
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
@@ -2502,7 +2502,7 @@ class AttendanceServiceTest {
         accountAbcTypeCode: String? = null,
         accountLatitude: String? = null,
         accountLongitude: String? = null,
-        commuteLogId: String? = null
+        commuteLogSfid: String? = null
     ): TeamMemberSchedule {
         return TeamMemberSchedule(
             id = id,
@@ -2523,7 +2523,7 @@ class AttendanceServiceTest {
                     longitude = accountLongitude
                 )
             },
-            commuteLogId = commuteLogId
+            commuteLogSfid = commuteLogSfid
         )
     }
 

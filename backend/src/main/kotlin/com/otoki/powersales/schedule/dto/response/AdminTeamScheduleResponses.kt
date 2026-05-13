@@ -60,7 +60,7 @@ data class TeamScheduleDto(
                 accountId = schedule.account?.id,
                 accountName = schedule.account?.name,
                 accountExternalKey = schedule.account?.externalKey,
-                isClockIn = schedule.commuteLogId != null
+                isClockIn = schedule.commuteLogSfid != null
             )
         }
     }
