@@ -7,6 +7,7 @@ import com.otoki.powersales.common.entity.UploadFile
 import com.otoki.powersales.leave.entity.AlternativeHoliday
 import com.otoki.powersales.leave.entity.HolidayMaster
 import com.otoki.powersales.notice.entity.Notice
+import com.otoki.powersales.product.entity.NewProduct
 import com.otoki.powersales.product.entity.Product
 import com.otoki.powersales.order.entity.ErpOrder
 import com.otoki.powersales.order.entity.ErpOrderProduct
@@ -64,6 +65,7 @@ object SalesforceMigrationTool {
         EntityRegistration("holidayMaster", HolidayMaster::class.java),
         EntityRegistration("product", Product::class.java),
         EntityRegistration("productBarcode", ProductBarcode::class.java),
+        EntityRegistration("newProduct", NewProduct::class.java),
 
         // ── Employee 참조 ──
         EntityRegistration("attendInfo", AttendInfo::class.java),

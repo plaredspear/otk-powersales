@@ -267,7 +267,14 @@ class Product(
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
-    var lastModifiedBy: com.otoki.powersales.employee.entity.Employee? = null
+    var lastModifiedBy: com.otoki.powersales.employee.entity.Employee? = null,
+
+    // -- Spec #737: New_Product__c reference (R-2 패턴 FK 후처리) --
+    // new_product_sfid 는 #613/V40 시점에 sfid 컨벤션으로 추가됨. 본 FK 는 그 sfid → new_product_id 매핑.
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "new_product_id")
+    var newProduct: NewProduct? = null
 
     /* --- 주석 처리: V1에 없는 기존 필드 ---
     productId: V1에 없음 (sfid로 대체)
