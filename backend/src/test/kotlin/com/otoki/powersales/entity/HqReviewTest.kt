@@ -1,5 +1,7 @@
 package com.otoki.powersales.entity
 
+import com.otoki.powersales.common.entity.EvaluationType
+import com.otoki.powersales.common.entity.HqReview
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -10,7 +12,6 @@ import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.ActiveProfiles
 import com.otoki.powersales.common.config.QueryDslConfig
-import com.otoki.powersales.common.entity.HqReview
 import java.time.LocalDate
 
 @DataJpaTest
@@ -31,7 +32,7 @@ class HqReviewTest {
             branchCode = "B001",
             branchName = "서울지점",
             firstDayOfMonth = LocalDate.of(2026, 2, 1),
-            evaluationType = "월간평가",
+            evaluationType = EvaluationType.FIRST_DIVISION,
             abcTypeCode = "A",
             hrCode = "HR001"
         )
@@ -46,7 +47,7 @@ class HqReviewTest {
         assertThat(found.branchCode).isEqualTo("B001")
         assertThat(found.branchName).isEqualTo("서울지점")
         assertThat(found.firstDayOfMonth).isEqualTo(LocalDate.of(2026, 2, 1))
-        assertThat(found.evaluationType).isEqualTo("월간평가")
+        assertThat(found.evaluationType).isEqualTo(EvaluationType.FIRST_DIVISION)
         assertThat(found.abcTypeCode).isEqualTo("A")
         assertThat(found.hrCode).isEqualTo("HR001")
     }
@@ -100,5 +101,21 @@ class HqReviewTest {
         assertThat(found.isDeleted).isFalse()
         assertThat(found.createdAt).isNotNull()
         assertThat(found.updatedAt).isNotNull()
+    }
+
+    @Test
+    @DisplayName("HqReview evaluationType Converter — DB 한국어 원본 저장 확인")
+    fun createHqReview_evaluationTypeConverter() {
+        // Given
+        val hqReview = HqReview(evaluationType = EvaluationType.DISTRIBUTION_HQ)
+
+        // When
+        val persisted = testEntityManager.persistAndFlush(hqReview)
+        testEntityManager.clear()
+        val found = testEntityManager.find(HqReview::class.java, persisted.id)!!
+
+        // Then — EvaluationTypeConverter 가 한국어 displayName 으로 저장/역직렬화
+        assertThat(found.evaluationType).isEqualTo(EvaluationType.DISTRIBUTION_HQ)
+        assertThat(found.evaluationType?.displayName).isEqualTo("유통총괄실")
     }
 }

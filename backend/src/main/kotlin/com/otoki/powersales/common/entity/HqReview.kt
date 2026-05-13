@@ -1,17 +1,17 @@
 package com.otoki.powersales.common.entity
 
+import com.otoki.powersales.common.entity.converter.EvaluationTypeConverter
 import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
+import com.otoki.powersales.employee.entity.Employee
 import jakarta.persistence.*
-import org.springframework.data.annotation.CreatedDate
-import org.springframework.data.annotation.LastModifiedDate
 import java.time.LocalDate
-import java.time.LocalDateTime
+
 /**
  * 본사 평가 Entity
- * V1 스키마: hqreview__c (Heroku Connect 동기화)
+ * Salesforce HQReview__c (본부평가) — Spec #708 SF Object 정합 (Group A + Reference R-2).
  */
 @Entity
 @Table(name = "hq_review")
@@ -28,52 +28,79 @@ class HqReview(
     @Column(name = "sfid", length = 18)
     val sfid: String? = null,
 
-    @HCColumn("name")
     @SFField("Name")
+    @HCColumn("name")
     @Column(name = "name", length = 80)
-    val name: String? = null,
+    var name: String? = null,
 
-    @HCColumn("branchcode__c")
     @SFField("BranchCode__c")
+    @HCColumn("branchcode__c")
     @Column(name = "branch_code", length = 100)
-    val branchCode: String? = null,
+    var branchCode: String? = null,
 
-    @HCColumn("branchname__c")
     @SFField("BranchName__c")
+    @HCColumn("branchname__c")
     @Column(name = "branch_name", length = 100)
-    val branchName: String? = null,
+    var branchName: String? = null,
 
-    @HCColumn("firstdayofmonth__c")
     @SFField("FirstDayofMonth__c")
+    @HCColumn("firstdayofmonth__c")
     @Column(name = "first_day_of_month")
-    val firstDayOfMonth: LocalDate? = null,
+    var firstDayOfMonth: LocalDate? = null,
 
-    @HCColumn("evaluationytype__c")
     @SFField("EvaluationyType__c")
+    @HCColumn("evaluationytype__c")
+    @Convert(converter = EvaluationTypeConverter::class)
     @Column(name = "evaluation_type", length = 255)
-    val evaluationType: String? = null,
+    var evaluationType: EvaluationType? = null,
 
-    @HCColumn("abctypecode__c")
     @SFField("ABCTypeCode__c")
+    @HCColumn("abctypecode__c")
     @Column(name = "abc_type_code", length = 255)
-    val abcTypeCode: String? = null,
+    var abcTypeCode: String? = null,
 
-    @HCColumn("hr_code_c__c")
     @SFField("HR_Code_c__c")
+    @HCColumn("hr_code_c__c")
     @Column(name = "hr_code", length = 255)
-    val hrCode: String? = null,
+    var hrCode: String? = null,
 
+    // -- Spec #708: Group A — IsDeleted --
+    @SFField("IsDeleted")
     @HCColumn("isdeleted")
     @Column(name = "is_deleted")
-    val isDeleted: Boolean? = null,
+    var isDeleted: Boolean? = null,
 
-    @HCColumn("createddate")
-    @CreatedDate
-    @Column(name = "created_at", nullable = false, updatable = false)
-    var createdAt: LocalDateTime = LocalDateTime.now(),
+    // -- Spec #708: Group A — OwnerId / CreatedById / LastModifiedById (R-2 패턴) --
+    // *_sfid: SF User Id buffer (Heroku Connect / SalesforceMigrationTool 이 채움).
+    // *_id: SF User → Employee 매핑 결과 FK.
 
-    @HCColumn("systemmodstamp")
-    @LastModifiedDate
-    @Column(name = "updated_at", nullable = false)
-    var updatedAt: LocalDateTime = LocalDateTime.now()
-) : AuditedEntity()
+    @SFField("OwnerId")
+    @HCColumn("ownerid")
+    @Column(name = "owner_sfid", length = 18)
+    var ownerSfid: String? = null,
+
+    @SFField("CreatedById")
+    @HCColumn("createdbyid")
+    @Column(name = "created_by_sfid", length = 18)
+    var createdBySfid: String? = null,
+
+    @SFField("LastModifiedById")
+    @HCColumn("lastmodifiedbyid")
+    @Column(name = "last_modified_by_sfid", length = 18)
+    var lastModifiedBySfid: String? = null,
+
+    // -- Relations --
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id")
+    var owner: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_id")
+    var createdBy: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "last_modified_by_id")
+    var lastModifiedBy: Employee? = null
+
+) : BaseEntity()
