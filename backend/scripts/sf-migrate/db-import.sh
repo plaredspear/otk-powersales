@@ -86,7 +86,15 @@ if [[ "$PGDATABASE" == "powersales" ]]; then
   exit 1
 fi
 
+START_TIME=$SECONDS
+TOTAL_STEPS=7
+step() {
+  local n="$1" msg="$2"
+  printf '[STEP %d/%d] (%ds) %s\n' "$n" "$TOTAL_STEPS" "$((SECONDS - START_TIME))" "$msg"
+}
+
 # ── 1) 메타 추출 ──
+step 1 "메타 추출"
 META=$(python3 "$SCRIPT_DIR/lib/entity-meta.py" "$SOBJECT")
 ENTITY_CLASS=$(echo "$META" | jq -r '.entity_class')
 TABLE=$(echo "$META" | jq -r '.table')
@@ -97,6 +105,8 @@ echo " DB Import  csv=$CSV_PATH  → ${SCHEMA}.${TABLE} ($ENTITY_CLASS)"
 echo "==============================================="
 
 # ── 2) constraint 백업 + DROP ──
+step 2 "constraint 백업 + DROP"
+SUB_START=$SECONDS
 RESTORE_SQL=$(mktemp -t sf-migrate-restore.XXXXXX.sql)
 trap "rm -f $RESTORE_SQL" EXIT
 
@@ -123,7 +133,7 @@ psql -At -c "
 
 FK_COUNT=$(grep -c 'ADD CONSTRAINT' "$RESTORE_SQL" || true)
 NN_COUNT=$(grep -c 'SET NOT NULL' "$RESTORE_SQL" || true)
-echo "[db-import:$ENTITY_CLASS] constraint backup — FK=$FK_COUNT, NN=$NN_COUNT"
+echo "  backup — FK=$FK_COUNT, NN=$NN_COUNT"
 
 # 2-3) DROP
 psql -At -c "
@@ -141,27 +151,36 @@ psql -At -c "
   WHERE table_schema = '${SCHEMA}' AND table_name = '${TABLE}'
     AND is_nullable = 'NO' AND column_default IS NULL;
 " | psql -v ON_ERROR_STOP=1 -q
+echo "  DROP 완료 ($((SECONDS - SUB_START))s)"
 
 # ── 3) TRUNCATE → COPY → post-load ──
+step 3 "TRUNCATE → COPY → post-load"
 DB_COLS=$(head -n 1 "$CSV_PATH")
 if [[ -z "$DB_COLS" ]]; then
   echo "ERROR: CSV 헤더가 비어 있습니다." >&2
   exit 1
 fi
 
+CSV_ROWS=$(($(wc -l < "$CSV_PATH") - 1))
+echo "  TRUNCATE → COPY (CSV rows=${CSV_ROWS})"
+SUB_START=$SECONDS
 psql -v ON_ERROR_STOP=1 -q -c "TRUNCATE TABLE ${SCHEMA}.${TABLE} RESTART IDENTITY CASCADE;"
-psql -v ON_ERROR_STOP=1 -q -c "\copy ${SCHEMA}.${TABLE}(${DB_COLS}) FROM '${CSV_PATH}' WITH (FORMAT csv, HEADER true)"
+psql -v ON_ERROR_STOP=1 -c "\copy ${SCHEMA}.${TABLE}(${DB_COLS}) FROM '${CSV_PATH}' WITH (FORMAT csv, HEADER true)"
+echo "  COPY 완료 ($((SECONDS - SUB_START))s)"
 
 POST_SQL="${SCRIPT_DIR}/post-load/${ENTITY_CLASS}.sql"
 if [[ -f "$POST_SQL" ]]; then
+  SUB_START=$SECONDS
+  echo "  post-load 적용 ($(basename "$POST_SQL"))"
   psql -v ON_ERROR_STOP=1 -q -f "$POST_SQL"
-  echo "[db-import:$ENTITY_CLASS] post-load 적용 ($(basename "$POST_SQL"))"
+  echo "  post-load 완료 ($((SECONDS - SUB_START))s)"
 fi
 
 LOADED=$(psql -At -c "SELECT COUNT(*) FROM ${SCHEMA}.${TABLE};")
-echo "[db-import:$ENTITY_CLASS] loaded=$LOADED"
+echo "  loaded=$LOADED"
 
 # ── 4) FK UPDATE (target 이 DB 에 데이터를 보유한 경우만) ──
+step 4 "FK UPDATE"
 UPDATE_COUNT=0
 SKIP_COUNT=0
 while IFS=$'\t' read -r SRC_SFID SRC_FK TARGET_TABLE; do
@@ -169,7 +188,7 @@ while IFS=$'\t' read -r SRC_SFID SRC_FK TARGET_TABLE; do
 
   TARGET_ROWS=$(psql -At -c "SELECT COUNT(*) FROM ${SCHEMA}.${TARGET_TABLE};" 2>/dev/null || echo 0)
   if [[ "$TARGET_ROWS" -eq 0 ]]; then
-    echo "[db-import:$ENTITY_CLASS] skip FK ${SRC_FK} ← ${TARGET_TABLE} (target 비어 있음)"
+    echo "  skip FK ${SRC_FK} ← ${TARGET_TABLE} (target 비어 있음)"
     SKIP_COUNT=$((SKIP_COUNT + 1))
     continue
   fi
@@ -183,36 +202,43 @@ while IFS=$'\t' read -r SRC_SFID SRC_FK TARGET_TABLE; do
     WHERE i.indisprimary AND n.nspname = '${SCHEMA}' AND c.relname = '${TARGET_TABLE}';
   ")
   if [[ -z "$TARGET_PK" ]]; then
-    echo "WARN: target ${TARGET_TABLE} 의 PK 미확인 — skip" >&2
+    echo "  WARN: target ${TARGET_TABLE} 의 PK 미확인 — skip" >&2
     SKIP_COUNT=$((SKIP_COUNT + 1))
     continue
   fi
 
-  echo "[db-import:$ENTITY_CLASS] FK ${TABLE}.${SRC_FK} ← ${TARGET_TABLE}.${TARGET_PK} (via ${SRC_SFID})"
+  echo "  FK ${TABLE}.${SRC_FK} ← ${TARGET_TABLE}.${TARGET_PK} (via ${SRC_SFID})"
+  SUB_START=$SECONDS
   psql -v ON_ERROR_STOP=1 -q -c "
     UPDATE ${SCHEMA}.${TABLE} AS src
     SET ${SRC_FK} = tgt.${TARGET_PK}
     FROM ${SCHEMA}.${TARGET_TABLE} AS tgt
     WHERE src.${SRC_SFID} = tgt.sfid;
   "
+  echo "    완료 ($((SECONDS - SUB_START))s)"
   UPDATE_COUNT=$((UPDATE_COUNT + 1))
 done < <(echo "$META" | jq -r '.fk_mappings[] | [.src_sfid, .src_fk, .target_table] | @tsv')
 
-echo "[db-import:$ENTITY_CLASS] FK UPDATE: $UPDATE_COUNT 건 실행, $SKIP_COUNT 건 skip"
+echo "  FK UPDATE 결과: $UPDATE_COUNT 건 실행, $SKIP_COUNT 건 skip"
 
 # ── 5) constraint 복원 ──
+step 5 "constraint 복원 (FK validation 포함 — 대용량 시 시간 소요)"
+SUB_START=$SECONDS
 psql -v ON_ERROR_STOP=1 -q -f "$RESTORE_SQL"
-echo "[db-import:$ENTITY_CLASS] constraint 복원 완료"
+echo "  복원 완료 ($((SECONDS - SUB_START))s)"
 
 # ── 6) sfid NULL 검증 ──
+step 6 "sfid NULL 검증"
 SFID_NULL=$(psql -At -c "SELECT COUNT(*) FROM ${SCHEMA}.${TABLE} WHERE sfid IS NULL;")
-echo "[db-import:$ENTITY_CLASS] sfid_null=$SFID_NULL"
+echo "  sfid_null=$SFID_NULL"
 if [[ "$SFID_NULL" -ne 0 ]]; then
   echo "[FAIL] sfid NULL > 0" >&2
   exit 1
 fi
 
 # ── 7) 빈 문자열 검증 (NULL 통일 정책 — 발견 시 WARN, FAIL 아님) ──
+step 7 "빈 문자열 검증 (text 컬럼 sequential scan)"
+SUB_START=$SECONDS
 psql -v ON_ERROR_STOP=1 -q <<SQL
 DO \$\$
 DECLARE
@@ -231,5 +257,8 @@ BEGIN
   END LOOP;
 END \$\$;
 SQL
+echo "  검증 완료 ($((SECONDS - SUB_START))s)"
 
-echo "[OK] db-import 완료 — ${SCHEMA}.${TABLE} rows=$LOADED"
+echo "==============================================="
+echo "[OK] db-import 완료 (총 $((SECONDS - START_TIME))s) — ${SCHEMA}.${TABLE} rows=$LOADED"
+echo "==============================================="
