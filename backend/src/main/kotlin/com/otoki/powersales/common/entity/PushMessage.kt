@@ -1,16 +1,18 @@
 package com.otoki.powersales.common.entity
 
+import com.otoki.powersales.common.entity.converter.PushMessageBranchCodeConverter
+import com.otoki.powersales.common.entity.converter.PushMessageBranchConverter
 import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
+import com.otoki.powersales.employee.entity.Employee
 import jakarta.persistence.*
-import org.springframework.data.annotation.CreatedDate
-import org.springframework.data.annotation.LastModifiedDate
 import java.time.LocalDateTime
+
 /**
  * 푸시 메시지 Entity
- * V1 스키마: pushmessage__c (Heroku Connect 동기화)
+ * Salesforce PushMessage__c (메시지) — Spec #709 SF Object 정합 (Group A + Reference R-2).
  */
 @Entity
 @Table(name = "push_message")
@@ -27,18 +29,18 @@ class PushMessage(
     @Column(name = "sfid", length = 18)
     val sfid: String? = null,
 
-    @HCColumn("name")
     @SFField("Name")
+    @HCColumn("name")
     @Column(name = "name", length = 80)
     val name: String? = null,
 
-    @HCColumn("message__c")
     @SFField("Message__c")
+    @HCColumn("message__c")
     @Column(name = "message", length = 500)
     val message: String? = null,
 
-    @HCColumn("scheduledate__c")
     @SFField("ScheduleDate__c")
+    @HCColumn("scheduledate__c")
     @Column(name = "schedule_date")
     val scheduleDate: LocalDateTime? = null,
 
@@ -51,30 +53,62 @@ class PushMessage(
 
     @SFField("Branch__c")
     @HCColumn("branch__c")
+    @Convert(converter = PushMessageBranchConverter::class)
     @Column(name = "branch", length = 100)
-    val branch: String? = null,
+    val branch: PushMessageBranch? = null,
 
     @SFField("BranchCode__c")
     @HCColumn("branchcode__c")
+    @Convert(converter = PushMessageBranchCodeConverter::class)
     @Column(name = "branch_code", length = 40)
-    val branchCode: String? = null,
+    val branchCode: PushMessageBranchCode? = null,
 
     @SFField("SObjectRecordId__c")
     @HCColumn("sobjectrecordid__c")
     @Column(name = "s_object_record_id", length = 50)
     val sObjectRecordId: String? = null,
 
+    // -- Spec #709: Group A — IsDeleted --
+    @SFField("IsDeleted")
     @HCColumn("isdeleted")
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 
-    @HCColumn("createddate")
-    @CreatedDate
-    @Column(name = "created_at", nullable = false, updatable = false)
-    var createdAt: LocalDateTime = LocalDateTime.now(),
+    // -- Spec #709: Group A — OwnerId / CreatedById / LastModifiedById (R-2 패턴) --
+    // *_sfid: SF User Id buffer (Heroku Connect / SalesforceMigrationTool 이 채움).
+    // *_id: SF User → Employee 매핑 결과 FK.
 
-    @HCColumn("systemmodstamp")
-    @LastModifiedDate
-    @Column(name = "updated_at", nullable = false)
-    var updatedAt: LocalDateTime = LocalDateTime.now()
-) : AuditedEntity()
+    @SFField("OwnerId")
+    @HCColumn("ownerid")
+    @Column(name = "owner_sfid", length = 18)
+    var ownerSfid: String? = null,
+
+    @SFField("CreatedById")
+    @HCColumn("createdbyid")
+    @Column(name = "created_by_sfid", length = 18)
+    var createdBySfid: String? = null,
+
+    @SFField("LastModifiedById")
+    @HCColumn("lastmodifiedbyid")
+    @Column(name = "last_modified_by_sfid", length = 18)
+    var lastModifiedBySfid: String? = null,
+
+    // -- Relations --
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employee_id")
+    var employee: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id")
+    var owner: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_id")
+    var createdBy: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "last_modified_by_id")
+    var lastModifiedBy: Employee? = null
+
+) : BaseEntity()
