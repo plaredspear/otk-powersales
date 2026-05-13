@@ -20,7 +20,6 @@ data class PPTMasterResponse(
     val endDate: LocalDate?,
     val isConfirmed: Boolean,
     val branchCode: String?,
-    val branchName: String?,
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime
 ) {
@@ -40,7 +39,6 @@ data class PPTMasterResponse(
                 endDate = m.endDate,
                 isConfirmed = m.isConfirmed,
                 branchCode = m.branchCode,
-                branchName = m.branchName,
                 createdAt = m.createdAt,
                 updatedAt = m.updatedAt
             )
@@ -66,7 +64,6 @@ data class PPTMasterResponse(
                 endDate = master.endDate,
                 isConfirmed = master.isConfirmed,
                 branchCode = master.branchCode,
-                branchName = master.branchName,
                 createdAt = master.createdAt,
                 updatedAt = master.updatedAt
             )

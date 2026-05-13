@@ -41,9 +41,9 @@ class ProductSFAnnotationTest {
         private val mapping = SFSchemaUtils.getSFMapping(Product::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 45 (42 + Spec #723 R-2 Owner/CreatedBy/LastModifiedBy 3)")
+        @DisplayName("매핑 키 수 = 44 (Spec #740: ShelfLifeFull Formula 제거)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(45)
+            assertThat(mapping).hasSize(44)
         }
 
         @Test

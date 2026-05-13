@@ -71,7 +71,6 @@ class AdminPromotionScheduleControllerTest {
         fun getSchedules_success() {
             val response = PromotionScheduleListResponse(
                 promotionId = promotionId,
-                promotionName = "5월 라면 행사",
                 schedulePeriod = SchedulePeriod(LocalDate.of(2026, 5, 1), LocalDate.of(2026, 5, 7)),
                 members = listOf(
                     PromotionScheduleMember(
@@ -79,7 +78,6 @@ class AdminPromotionScheduleControllerTest {
                         employeeId = 50L,
                         employeeNumber = "20030001",
                         employeeName = "홍길동",
-                        professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE,
                         schedules = listOf(
                             PromotionScheduleItem(
                                 scheduleId = 1001L,
@@ -104,7 +102,6 @@ class AdminPromotionScheduleControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.promotionId").value(100))
-                .andExpect(jsonPath("$.data.promotionName").value("5월 라면 행사"))
                 .andExpect(jsonPath("$.data.totalMemberCount").value(1))
                 .andExpect(jsonPath("$.data.totalScheduleCount").value(1))
                 .andExpect(jsonPath("$.data.members[0].employeeNumber").value("20030001"))

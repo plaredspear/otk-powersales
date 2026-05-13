@@ -32,11 +32,6 @@ class AlternativeHoliday(
     @Column(name = "employee_sfid", length = 18)
     val employeeSfid: String? = null,
 
-    @SFField("DKRetail__EmpName__c")
-    @HCColumn("dkretail__empname__c")
-    @Column(name = "employee_name", nullable = false, length = 1300)
-    val employeeName: String,
-
     @SFField("DKRetail__ActualWorkDate__c")
     @HCColumn("dkretail__actualworkdate__c")
     @Column(name = "actual_work_date", nullable = false)

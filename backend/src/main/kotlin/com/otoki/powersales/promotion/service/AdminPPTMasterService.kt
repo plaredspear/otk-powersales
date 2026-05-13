@@ -103,8 +103,7 @@ class AdminPPTMasterService(
                 startDate = request.startDate,
                 endDate = request.endDate,
                 isConfirmed = request.isConfirmed,
-                branchCode = employee.costCenterCode,
-                branchName = employee.orgName
+                branchCode = employee.costCenterCode
             )
         )
 
@@ -276,8 +275,7 @@ class AdminPPTMasterService(
                     startDate = item.startDate,
                     endDate = item.endDate,
                     isConfirmed = false,
-                    branchCode = employee.costCenterCode,
-                    branchName = employee.orgName
+                    branchCode = employee.costCenterCode
                 )
             )
 

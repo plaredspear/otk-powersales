@@ -6,7 +6,6 @@ import com.otoki.powersales.schedule.dto.request.PromotionScheduleBulkDeleteRequ
 import com.otoki.powersales.schedule.dto.request.PromotionScheduleBulkUpdateItem
 import com.otoki.powersales.schedule.dto.request.PromotionScheduleBulkUpdateRequest
 import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.entity.PromotionEmployee
 import com.otoki.powersales.promotion.exception.PromotionNotFoundException
@@ -110,7 +109,6 @@ class AdminPromotionScheduleServiceTest {
 
             // Then
             assertThat(result.promotionId).isEqualTo(promotionId)
-            assertThat(result.promotionName).isEqualTo("5월 라면 행사")
             assertThat(result.schedulePeriod.startDate).isEqualTo(startDate)
             assertThat(result.totalMemberCount).isEqualTo(1)
             assertThat(result.totalScheduleCount).isEqualTo(1)
@@ -506,13 +504,11 @@ class AdminPromotionScheduleServiceTest {
 
     private fun createPromotion(
         id: Long = promotionId,
-        promotionName: String = "5월 라면 행사",
         startDate: LocalDate = this.startDate,
         endDate: LocalDate = this.endDate
     ): Promotion = Promotion(
         id = id,
         promotionNumber = "P${id}",
-        promotionName = promotionName,
         startDate = startDate,
         endDate = endDate,
         account = createAccount(id = 1)
@@ -537,14 +533,12 @@ class AdminPromotionScheduleServiceTest {
     private fun createPromotionEmployee(
         id: Long = 200L,
         promotionId: Long = this.promotionId,
-        employee: Employee = createEmployee(),
-        professionalPromotionTeam: ProfessionalPromotionTeamType? = ProfessionalPromotionTeamType.RAMEN_SALE
+        employee: Employee = createEmployee()
     ): PromotionEmployee {
         val pe = PromotionEmployee(
             id = id,
             promotionId = promotionId,
-            employeeId = employee.id,
-            professionalPromotionTeam = professionalPromotionTeam
+            employeeId = employee.id
         )
         pe.employee = employee
         return pe

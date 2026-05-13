@@ -11,7 +11,6 @@ interface PromotionRepositoryCustom {
     fun searchForAdmin(
         keyword: String?,
         promotionTypeId: Long?,
-        category: String?,
         startDate: String?,
         endDate: String?,
         branchCodes: List<String>?,

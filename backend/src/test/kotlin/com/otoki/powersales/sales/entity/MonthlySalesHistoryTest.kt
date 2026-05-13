@@ -28,17 +28,9 @@ class MonthlySalesHistoryTest {
         // Given
         val history = MonthlySalesHistory(
             name = "MSH-2026-01",
-            accountExternalKey = "ACC-001",
-            accountBranchName = "서울지점",
-            accountType = "일반",
             salesYear = "2026",
             salesMonth = "01",
-            fmYear = 2026.0,
-            fmMonth = 1.0,
-            targetMonthResults = 1500.0,
             lastMonthResults = 1200.0,
-            lastMonthTargetFormula = 1300.0,
-            lastMonthTargetAchievedRatio = 92.3,
             shipClosingAmount = 800.0,
             abcClosingAmount1 = 100.0,
             abcClosingAmount2 = 200.0,
@@ -55,17 +47,9 @@ class MonthlySalesHistoryTest {
         // Then
         assertThat(found).isNotNull
         assertThat(found.name).isEqualTo("MSH-2026-01")
-        assertThat(found.accountExternalKey).isEqualTo("ACC-001")
-        assertThat(found.accountBranchName).isEqualTo("서울지점")
-        assertThat(found.accountType).isEqualTo("일반")
         assertThat(found.salesYear).isEqualTo("2026")
         assertThat(found.salesMonth).isEqualTo("01")
-        assertThat(found.fmYear).isEqualTo(2026.0)
-        assertThat(found.fmMonth).isEqualTo(1.0)
-        assertThat(found.targetMonthResults).isEqualTo(1500.0)
         assertThat(found.lastMonthResults).isEqualTo(1200.0)
-        assertThat(found.lastMonthTargetFormula).isEqualTo(1300.0)
-        assertThat(found.lastMonthTargetAchievedRatio).isEqualTo(92.3)
         assertThat(found.shipClosingAmount).isEqualTo(800.0)
         assertThat(found.abcClosingAmount1).isEqualTo(100.0)
         assertThat(found.abcClosingAmount2).isEqualTo(200.0)
@@ -75,45 +59,17 @@ class MonthlySalesHistoryTest {
     }
 
     @Test
-    @DisplayName("MonthlySalesHistory FLOAT8 필드 - Double 값 저장 및 null 허용 확인")
-    fun createMonthlySalesHistory_float8Fields() {
-        // Given - Double 값 저장
-        val historyWithValues = MonthlySalesHistory(
-            targetMonthResults = 1500.0
-        )
-
-        // When
-        val persisted = testEntityManager.persistAndFlush(historyWithValues)
-        testEntityManager.clear()
-        val found = testEntityManager.find(MonthlySalesHistory::class.java, persisted.id)!!
-
-        // Then
-        assertThat(found).isNotNull
-        assertThat(found.targetMonthResults).isEqualTo(1500.0)
-
-        // Given - null 저장
-        val historyWithNull = MonthlySalesHistory(
-            targetMonthResults = null
-        )
-
-        // When
-        val persistedNull = testEntityManager.persistAndFlush(historyWithNull)
-        testEntityManager.clear()
-        val foundNull = testEntityManager.find(MonthlySalesHistory::class.java, persistedNull.id)!!
-
-        // Then
-        assertThat(foundNull).isNotNull
-        assertThat(foundNull.targetMonthResults).isNull()
-    }
-
-    @Test
-    @DisplayName("MonthlySalesHistory 기존 필드 제거 - V1 스키마에서 제거된 필드 미존재 확인")
+    @DisplayName("MonthlySalesHistory 기존 필드 제거 - V1 스키마 / Spec #740 에서 제거된 필드 미존재 확인")
     fun monthlySalesHistory_removedFieldsNotExist() {
-        // Given - V1 스키마에서 제거된 필드 목록
-        val removedFields = listOf("customerId", "yearMonth", "category", "targetAmount", "achievedAmount")
+        // Spec #740 Track A: SF Formula 정합 제거 8건
+        val removedFields = listOf(
+            "customerId", "yearMonth", "category", "achievedAmount",
+            "accountExternalKey", "accountBranchName", "accountType",
+            "fmYear", "fmMonth", "targetMonthResults",
+            "lastMonthTargetFormula", "lastMonthTargetAchievedRatio"
+        )
         val entityFields = MonthlySalesHistory::class.java.declaredFields.map { it.name }
 
-        // Then - 제거된 필드가 엔티티에 존재하지 않는지 확인
         removedFields.forEach { fieldName ->
             assertThat(entityFields).doesNotContain(fieldName)
         }
@@ -133,17 +89,9 @@ class MonthlySalesHistoryTest {
         // Then
         assertThat(found).isNotNull
         assertThat(found.name).isNull()
-        assertThat(found.accountExternalKey).isNull()
-        assertThat(found.accountBranchName).isNull()
-        assertThat(found.accountType).isNull()
         assertThat(found.salesYear).isNull()
         assertThat(found.salesMonth).isNull()
-        assertThat(found.fmYear).isNull()
-        assertThat(found.fmMonth).isNull()
-        assertThat(found.targetMonthResults).isNull()
         assertThat(found.lastMonthResults).isNull()
-        assertThat(found.lastMonthTargetFormula).isNull()
-        assertThat(found.lastMonthTargetAchievedRatio).isNull()
         assertThat(found.shipClosingAmount).isNull()
         assertThat(found.abcClosingAmount1).isNull()
         assertThat(found.abcClosingAmount2).isNull()

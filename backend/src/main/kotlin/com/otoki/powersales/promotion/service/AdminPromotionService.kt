@@ -50,7 +50,6 @@ class AdminPromotionService(
     fun getPromotions(
         keyword: String?,
         promotionTypeId: Long?,
-        category: String?,
         startDate: String?,
         endDate: String?,
         page: Int,
@@ -68,7 +67,6 @@ class AdminPromotionService(
         val promotionPage = promotionRepository.searchForAdmin(
             keyword = keyword,
             promotionTypeId = promotionTypeId,
-            category = category,
             startDate = startDate,
             endDate = endDate,
             branchCodes = effectiveBranchCodes,
@@ -133,7 +131,6 @@ class AdminPromotionService(
         val promotion = promotionRepository.save(
             Promotion(
                 promotionNumber = promotionNumber,
-                promotionName = product.name,
                 promotionTypeId = request.promotionTypeId,
                 account = account,
                 startDate = request.startDate,
@@ -142,12 +139,8 @@ class AdminPromotionService(
                 otherProduct = request.otherProduct,
                 message = request.message,
                 standLocation = request.standLocation,
-                targetAmount = 0,
-                actualAmount = 0,
                 costCenterCode = costCenterCode,
-                category = request.category,
                 productType = request.productType,
-                branchName = account.branchName,
                 remark = request.remark
             )
         )
@@ -208,7 +201,6 @@ class AdminPromotionService(
             .orElseThrow { ProductNotFoundException() }
 
         promotion.update(
-            promotionName = product.name,
             promotionTypeId = request.promotionTypeId,
             account = account,
             startDate = request.startDate,
@@ -217,9 +209,7 @@ class AdminPromotionService(
             otherProduct = request.otherProduct,
             message = request.message,
             standLocation = request.standLocation,
-            category = request.category,
             productType = request.productType,
-            branchName = account.branchName,
             remark = request.remark
         )
 

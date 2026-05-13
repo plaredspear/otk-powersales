@@ -97,17 +97,12 @@ class AdminPromotionControllerTest {
                     PromotionListItem(
                         id = 1L,
                         promotionNumber = "PM00000001",
-                        promotionName = "GS25 역삼점 3월 라면 행사",
                         promotionTypeId = 1L,
                         promotionTypeName = "시식",
                         accountName = "GS25 역삼점",
                         startDate = LocalDate.of(2026, 3, 10),
                         endDate = LocalDate.of(2026, 3, 20),
-                        targetAmount = 5000000,
-                        actualAmount = 3200000,
-                        category = "라면",
                         productType = "냉장/냉동",
-                        branchName = "강남지점",
                         isClosed = false,
                         costCenterCode = "1101",
                         isDeleted = false,
@@ -117,7 +112,7 @@ class AdminPromotionControllerTest {
                 page = 0, size = 20, totalElements = 1, totalPages = 1
             )
             whenever(adminPromotionService.getPromotions(
-                anyOrNull(), anyOrNull(), anyOrNull(),
+                anyOrNull(), anyOrNull(),
                 anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull()
             )).thenReturn(response)
 
@@ -127,9 +122,6 @@ class AdminPromotionControllerTest {
                 .andExpect(jsonPath("$.data.content[0].promotionNumber").value("PM00000001"))
                 .andExpect(jsonPath("$.data.content[0].promotionTypeId").value(1))
                 .andExpect(jsonPath("$.data.content[0].promotionTypeName").value("시식"))
-                .andExpect(jsonPath("$.data.content[0].actualAmount").value(3200000))
-                .andExpect(jsonPath("$.data.content[0].category").value("라면"))
-                .andExpect(jsonPath("$.data.content[0].branchName").value("강남지점"))
                 .andExpect(jsonPath("$.data.content[0].isClosed").value(false))
                 .andExpect(jsonPath("$.data.totalElements").value(1))
         }
@@ -141,7 +133,7 @@ class AdminPromotionControllerTest {
                 content = emptyList(), page = 0, size = 20, totalElements = 0, totalPages = 0
             )
             whenever(adminPromotionService.getPromotions(
-                anyOrNull(), anyOrNull(), anyOrNull(),
+                anyOrNull(), anyOrNull(),
                 anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull()
             )).thenReturn(response)
 
@@ -170,8 +162,6 @@ class AdminPromotionControllerTest {
                 .andExpect(jsonPath("$.data.promotionTypeName").value("시식"))
                 .andExpect(jsonPath("$.data.accountName").value("GS25 역삼점"))
                 .andExpect(jsonPath("$.data.primaryProductName").value("진라면 매운맛 120g"))
-                .andExpect(jsonPath("$.data.actualAmount").value(3200000))
-                .andExpect(jsonPath("$.data.category").value("라면"))
         }
 
         @Test
@@ -402,7 +392,7 @@ class AdminPromotionControllerTest {
         @Test
         @DisplayName("성공 - 행사마스터 수정")
         fun updatePromotion_success() {
-            val response = createDetailResponse(promotionName = "수정된 행사명")
+            val response = createDetailResponse()
             whenever(adminPromotionService.updatePromotion(eq(1L), eq(1L), any())).thenReturn(response)
 
             mockMvc.perform(
@@ -412,7 +402,6 @@ class AdminPromotionControllerTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.promotionName").value("수정된 행사명"))
         }
 
         @Test
@@ -534,12 +523,10 @@ class AdminPromotionControllerTest {
 
     // Helpers
     private fun createDetailResponse(
-        promotionName: String? = "GS25 역삼점 3월 라면 행사",
         remark: String? = null
     ) = PromotionDetailResponse(
         id = 1L,
         promotionNumber = "PM00000001",
-        promotionName = promotionName,
         promotionTypeId = 1L,
         promotionTypeName = "시식",
         accountId = 100,
@@ -551,12 +538,8 @@ class AdminPromotionControllerTest {
         otherProduct = "너구리, 진짬뽕",
         message = "3월 라면 프로모션 진행",
         standLocation = "매장 입구 좌측",
-        targetAmount = 5000000,
-        actualAmount = 3200000,
         costCenterCode = "1101",
-        category = "라면",
         productType = "냉장/냉동",
-        branchName = "강남지점",
         isClosed = false,
         isDeleted = false,
         createdAt = LocalDateTime.of(2026, 3, 8, 10, 0, 0),
@@ -573,7 +556,6 @@ class AdminPromotionControllerTest {
         otherProduct = "너구리, 진짬뽕",
         message = "3월 라면 프로모션 진행",
         standLocation = "매장 입구 좌측",
-        category = "라면",
         remark = null
     )
 }

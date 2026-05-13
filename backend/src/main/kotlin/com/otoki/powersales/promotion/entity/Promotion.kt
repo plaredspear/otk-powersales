@@ -30,10 +30,6 @@ class Promotion(
     @Column(name = "promotion_number", nullable = false, unique = true, length = 20)
     val promotionNumber: String,
 
-    @SFField("DKRetail__PromotionName__c")
-    @HCColumn("dkretail__promotionname__c")
-    @Column(name = "promotion_name", nullable = true, length = 1300)
-    var promotionName: String? = null,
 
     @SFField("DKRetail__PromotionType__c")
     @HCColumn("dkretail__promotiontype__c")
@@ -78,16 +74,6 @@ class Promotion(
     @Column(name = "stand_location", length = 255)
     var standLocation: String? = null,
 
-    @SFField("DKRetail__TargetAmount__c")
-    @HCColumn("dkretail__targetamount__c")
-    @Column(name = "target_amount")
-    var targetAmount: Long? = null,
-
-    @SFField("DKRetail__ActualAmount__c")
-    @HCColumn("dkretail__actualamount__c")
-    @Column(name = "actual_amount")
-    var actualAmount: Long? = 0,
-
     @SFField("CostCenterCode__c")
     @HCColumn("costcentercode__c")
     @Column(name = "cost_center_code", length = 100)
@@ -98,16 +84,6 @@ class Promotion(
     @Column(name = "remark", length = 200)
     var remark: String? = null,
 
-    @SFField("BranchName__c")
-    @HCColumn("branchname__c")
-    @Column(name = "branch_name", length = 1300)
-    var branchName: String? = null,
-
-    @SFField("Category1__c")
-    @HCColumn("category1__c")
-    @Column(name = "category", length = 1300)
-    var category: String? = null,
-
     @SFField("DKRetail__ProductType__c")
     @HCColumn("dkretail__producttype__c")
     @Column(name = "product_type", length = 255)
@@ -117,21 +93,6 @@ class Promotion(
     @HCColumn("dkretail__accid__c")
     @Column(name = "deprecated_acc_sfid", length = 18)
     var deprecatedAccSfid: String? = null,
-
-    @SFField("AccCode__c")
-    @HCColumn("acccode__c")
-    @Column(name = "account_code", length = 1300)
-    var accountCode: String? = null,
-
-    @SFField("ActualAmount__c")
-    @HCColumn("actualamount__c")
-    @Column(name = "actual_amount_won")
-    var actualAmountWon: Long? = null,
-
-    @SFField("ProductCode__c")
-    @HCColumn("productcode__c")
-    @Column(name = "product_code", length = 1300)
-    var productCode: String? = null,
 
     @SFField("OwnerId")
     @HCColumn("ownerid")
@@ -182,7 +143,6 @@ class Promotion(
     var primaryProduct: Product? = null
 
     fun update(
-        promotionName: String?,
         promotionTypeId: Long?,
         account: Account,
         startDate: LocalDate,
@@ -191,12 +151,9 @@ class Promotion(
         otherProduct: String?,
         message: String?,
         standLocation: String?,
-        category: String?,
         productType: String?,
-        branchName: String?,
         remark: String?
     ) {
-        this.promotionName = promotionName
         this.promotionTypeId = promotionTypeId
         this.account = account
         this.startDate = startDate
@@ -205,16 +162,8 @@ class Promotion(
         this.otherProduct = otherProduct
         this.message = message
         this.standLocation = standLocation
-        this.category = category
         this.productType = productType
-        this.branchName = branchName
         this.remark = remark
-
-    }
-
-    fun updateAmounts(targetAmount: Long, actualAmount: Long) {
-        this.targetAmount = targetAmount
-        this.actualAmount = actualAmount
 
     }
 

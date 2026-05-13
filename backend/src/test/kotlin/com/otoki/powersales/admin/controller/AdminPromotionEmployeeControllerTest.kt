@@ -262,8 +262,6 @@ class AdminPromotionEmployeeControllerTest {
         workStatus = "근무",
         workType1 = "시식",
         workType3 = "고정",
-        workType4 = "냉장",
-        professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE,
         teamMemberScheduleId = null,
         promoCloseByTm = false,
         basePrice = 1500,
@@ -288,8 +286,6 @@ class AdminPromotionEmployeeControllerTest {
         workStatus = "근무",
         workType1 = "시식",
         workType3 = "고정",
-        workType4 = "냉장",
-        professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE,
         teamMemberScheduleId = null,
         promoCloseByTm = false,
         basePrice = 1500,
@@ -312,8 +308,6 @@ class AdminPromotionEmployeeControllerTest {
         workStatus = "근무",
         workType1 = "시식",
         workType3 = "고정",
-        workType4 = "냉장",
-        professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE,
         basePrice = 1500,
         dailyTargetCount = 100
     )

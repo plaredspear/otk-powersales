@@ -67,7 +67,6 @@ class AdminPPTMasterControllerTest {
         endDate = null,
         isConfirmed = true,
         branchCode = "1100",
-        branchName = "서울지점",
         createdAt = LocalDateTime.of(2026, 3, 22, 9, 0),
         updatedAt = LocalDateTime.of(2026, 3, 22, 9, 0)
     )

@@ -31,7 +31,7 @@ class AlternativeHolidayRepositoryCustomImpl(
                     AlternativeHolidayListItem::class.java,
                     alternativeHoliday.id,
                     employee.employeeCode,
-                    alternativeHoliday.employeeName,
+                    employee.name,
                     employee.orgName,
                     alternativeHoliday.actualWorkDate,
                     alternativeHoliday.targetAltHolidayDate,

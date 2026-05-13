@@ -42,26 +42,18 @@ class MonthlySalesHistorySFAnnotationTest {
         private val mapping = SFSchemaUtils.getSFMapping(MonthlySalesHistory::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 42 (Spec #729: 37 + R-2 Owner/CreatedBy/LastModifiedBy 3 + CreatedDate/LastModifiedDate 2)")
+        @DisplayName("매핑 키 수 = 34 (Spec #740: Formula 8건 제거. 29 + R-2 3 + CreatedDate/LastModifiedDate 2)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(42)
+            assertThat(mapping).hasSize(34)
         }
 
         @Test
-        @DisplayName("§6.2 — 기존 18개 매칭 필드 SF API Name → 컬럼명 1:1")
+        @DisplayName("§6.2 — 기존 10개 매칭 필드 SF API Name → 컬럼명 1:1 (Spec #740: Formula 8건 제거)")
         fun section62Existing() {
             assertThat(mapping["Name"]).isEqualTo("name")
-            assertThat(mapping["Account_ExternalKey__c"]).isEqualTo("account_external_key")
-            assertThat(mapping["Account_BranchName__c"]).isEqualTo("account_branch_name")
-            assertThat(mapping["Account_Type__c"]).isEqualTo("account_type")
             assertThat(mapping["SalesYear__c"]).isEqualTo("sales_year")
             assertThat(mapping["SalesMonth__c"]).isEqualTo("sales_month")
-            assertThat(mapping["fm_year__c"]).isEqualTo("fm_year")
-            assertThat(mapping["fm_month__c"]).isEqualTo("fm_month")
-            assertThat(mapping["TargetMonthResults__c"]).isEqualTo("target_month_results")
             assertThat(mapping["LastMonthResults__c"]).isEqualTo("last_month_results")
-            assertThat(mapping["LastMonthTargetFomula__c"]).isEqualTo("last_month_target_formula")
-            assertThat(mapping["LastMonthTargetAchievedRatio__c"]).isEqualTo("last_month_target_achieved_ratio")
             assertThat(mapping["ShipClosingAmount__c"]).isEqualTo("ship_closing_amount")
             assertThat(mapping["ABCClosingAmount1__c"]).isEqualTo("abc_closing_amount1")
             assertThat(mapping["ABCClosingAmount2__c"]).isEqualTo("abc_closing_amount2")
@@ -136,11 +128,10 @@ class MonthlySalesHistorySFAnnotationTest {
         private val hcMapping = SFSchemaUtils.getHCMapping(MonthlySalesHistory::class.java)
 
         @Test
-        @DisplayName("Spec #729 — HC 매핑 lastmodifieddate / lastmodifiedbyid 채택 (systemmodstamp 폐기)")
+        @DisplayName("Spec #729 — HC 매핑 lastmodifieddate / lastmodifiedbyid 채택 (systemmodstamp 폐기). Spec #740: account_externalkey HC 제거")
         fun hcMappingUnchanged() {
             assertThat(hcMapping["sfid"]).isEqualTo("sfid")
             assertThat(hcMapping["name"]).isEqualTo("name")
-            assertThat(hcMapping["account_externalkey__c"]).isEqualTo("account_external_key")
             assertThat(hcMapping["salesyear__c"]).isEqualTo("sales_year")
             assertThat(hcMapping["salesmonth__c"]).isEqualTo("sales_month")
             assertThat(hcMapping["isdeleted"]).isEqualTo("is_deleted")

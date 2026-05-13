@@ -1,6 +1,5 @@
 package com.otoki.powersales.schedule.dto.response
 
-import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
 import java.time.LocalDate
 
 /**
@@ -8,7 +7,6 @@ import java.time.LocalDate
  */
 data class PromotionScheduleListResponse(
     val promotionId: Long,
-    val promotionName: String?,
     val schedulePeriod: SchedulePeriod,
     val members: List<PromotionScheduleMember>,
     val totalMemberCount: Int,
@@ -25,7 +23,6 @@ data class PromotionScheduleMember(
     val employeeId: Long,
     val employeeNumber: String,
     val employeeName: String,
-    val professionalPromotionTeam: ProfessionalPromotionTeamType?,
     val schedules: List<PromotionScheduleItem>
 )
 

@@ -515,7 +515,6 @@ class AdminPromotionConfirmServiceTest {
     ): Promotion = Promotion(
         id = id,
         promotionNumber = "PRO-0001",
-        promotionName = "테스트행사",
         account = account,
         startDate = startDate,
         endDate = endDate,
@@ -529,8 +528,7 @@ class AdminPromotionConfirmServiceTest {
         scheduleDate: LocalDate = startDate,
         workStatus: String? = "근무",
         workType1: String? = "행사",
-        workType3: String = "고정",
-        workType4: String? = null
+        workType3: String = "고정"
     ): PromotionEmployee = PromotionEmployee(
         id = id,
         promotionId = promotionId,
@@ -538,8 +536,7 @@ class AdminPromotionConfirmServiceTest {
         scheduleDate = scheduleDate,
         workStatus = workStatus,
         workType1 = workType1,
-        workType3 = workType3,
-        workType4 = workType4
+        workType3 = workType3
     )
 
     private fun createAccount(

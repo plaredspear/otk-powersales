@@ -96,7 +96,7 @@ class AdminPromotionConfirmService(
                     workingType = pe.workStatus!!,
                     workingCategory1 = pe.workType1!!,
                     workingCategory3 = pe.workType3!!,
-                    workingCategory4 = pe.workType4,
+                    workingCategory4 = null,
                     promotionEmployee = pe
                 )
                 teamMemberSchedulesToSave.add(existing)
@@ -108,7 +108,7 @@ class AdminPromotionConfirmService(
                     workingType = pe.workStatus!!,
                     workingCategory1 = pe.workType1!!,
                     workingCategory3 = pe.workType3!!,
-                    workingCategory4 = pe.workType4,
+                    workingCategory4 = null,
                     promotionEmployee = pe
                 )
                 teamMemberSchedulesToSave.add(newTeamMemberSchedule)

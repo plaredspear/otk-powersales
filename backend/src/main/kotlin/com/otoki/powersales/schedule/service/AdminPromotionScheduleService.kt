@@ -99,7 +99,6 @@ class AdminPromotionScheduleService(
                 employeeId = employee.id,
                 employeeNumber = employee.employeeCode,
                 employeeName = employee.name,
-                professionalPromotionTeam = pe.professionalPromotionTeam,
                 schedules = items
             )
         }
@@ -108,7 +107,6 @@ class AdminPromotionScheduleService(
 
         return PromotionScheduleListResponse(
             promotionId = promotion.id,
-            promotionName = promotion.promotionName,
             schedulePeriod = SchedulePeriod(startDate = effectiveStart, endDate = effectiveEnd),
             members = members,
             totalMemberCount = members.size,

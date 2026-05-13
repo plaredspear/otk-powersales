@@ -29,10 +29,10 @@ class ProfessionalPromotionTeamMasterSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("매핑 키 수 = 14 (8 + BaseEntity 2 + Spec #728 FullName + R-2 3 = 4)")
+        @DisplayName("매핑 키 수 = 12 (Spec #740: EmployeeNumber + BranchName Formula 2건 제거. 6 + BaseEntity 2 + FullName + R-2 3)")
         fun mappingKeySize() {
             val mapping = SFSchemaUtils.getSFMapping(ProfessionalPromotionTeamMaster::class.java)
-            assertThat(mapping).hasSize(14)
+            assertThat(mapping).hasSize(12)
         }
     }
 
@@ -70,22 +70,20 @@ class ProfessionalPromotionTeamMasterSFAnnotationTest {
     }
 
     @Nested
-    @DisplayName("AC1 — @SFField 매핑 키셋 (8개)")
+    @DisplayName("AC1 — @SFField 매핑 키셋 (6개, Spec #740: EmployeeNumber + BranchName Formula 제거)")
     inner class SfFieldMapping {
 
         private val mapping = SFSchemaUtils.getSFMapping(ProfessionalPromotionTeamMaster::class.java)
 
         @Test
-        @DisplayName("8개 SF API Name → 컬럼명 1:1")
+        @DisplayName("6개 SF API Name → 컬럼명 1:1")
         fun mappingValues() {
-            assertThat(mapping["EmployeeNumber__c"]).isEqualTo("employee_number")
             assertThat(mapping["Account__c"]).isEqualTo("account_sfid")
             assertThat(mapping["ProfessionalPromotionTeam__c"]).isEqualTo("team_type")
             assertThat(mapping["StartDate__c"]).isEqualTo("start_date")
             assertThat(mapping["EndDate__c"]).isEqualTo("end_date")
             assertThat(mapping["Confirmed__c"]).isEqualTo("is_confirmed")
             assertThat(mapping["CostCenterCode__c"]).isEqualTo("branch_code")
-            assertThat(mapping["BranchName__c"]).isEqualTo("branch_name")
         }
     }
 }
