@@ -173,6 +173,13 @@ class StaffReview(
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
-    var lastModifiedBy: Employee? = null
+    var lastModifiedBy: Employee? = null,
+
+    // -- Spec #735: BranchReview FK (R-2 후처리) --
+    // branch_review_sfid 는 #711 에서 SF buffer 로 추가됨. 본 FK 는 그 sfid → branch_review_id 매핑.
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "branch_review_id")
+    var branchReview: BranchReview? = null
 
 ) : BaseEntity()
