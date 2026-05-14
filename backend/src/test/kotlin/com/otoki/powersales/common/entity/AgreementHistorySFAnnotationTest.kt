@@ -3,17 +3,22 @@ package com.otoki.powersales.common.entity
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.common.salesforce.SFSchemaUtils
+import com.otoki.powersales.employee.entity.Group
+import com.otoki.powersales.user.entity.User
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 /**
- * Spec #629/#706 — AgreementHistory ↔ Salesforce `AgreementHistory__c` 어노테이션 검증.
+ * AgreementHistory ↔ Salesforce `AgreementHistory__c` 어노테이션 검증.
+ *
+ * - Spec #629/#706 — 기본 매핑 + Group A audit R-2
+ * - sf-meta-diff 후속 — OwnerId polymorphic R-2 (User / Group XOR) + audit FK Employee → User 전환
  *
  * 단일 권위: Salesforce Object 메타 (`AgreementHistory__c`)
  */
-@DisplayName("AgreementHistory SF 어노테이션 검증 (Spec #629/#706)")
+@DisplayName("AgreementHistory SF 어노테이션 검증")
 class AgreementHistorySFAnnotationTest {
 
     @Nested
@@ -105,6 +110,41 @@ class AgreementHistorySFAnnotationTest {
             val field = AgreementHistory::class.java.getDeclaredField("isDeleted")
             assertThat(field.isAnnotationPresent(SFField::class.java)).isTrue()
             assertThat(field.getAnnotation(SFField::class.java).value).isEqualTo("IsDeleted")
+        }
+    }
+
+    @Nested
+    @DisplayName("sf-meta-diff 후속 — OwnerId polymorphic + audit FK User")
+    inner class PolymorphicOwnerAndUserAudit {
+
+        @Test
+        @DisplayName("ownerUser FK 타입 = User (polymorphic User 분기)")
+        fun ownerUserIsUserType() {
+            val field = AgreementHistory::class.java.getDeclaredField("ownerUser")
+            assertThat(field.type).isEqualTo(User::class.java)
+        }
+
+        @Test
+        @DisplayName("ownerGroup FK 타입 = Group (polymorphic Group 분기)")
+        fun ownerGroupIsGroupType() {
+            val field = AgreementHistory::class.java.getDeclaredField("ownerGroup")
+            assertThat(field.type).isEqualTo(Group::class.java)
+        }
+
+        @Test
+        @DisplayName("createdBy / lastModifiedBy FK 타입 = User (Employee → User 전환)")
+        fun auditFkIsUserType() {
+            val createdBy = AgreementHistory::class.java.getDeclaredField("createdBy")
+            val lastModifiedBy = AgreementHistory::class.java.getDeclaredField("lastModifiedBy")
+            assertThat(createdBy.type).isEqualTo(User::class.java)
+            assertThat(lastModifiedBy.type).isEqualTo(User::class.java)
+        }
+
+        @Test
+        @DisplayName("기존 owner: Employee? FK 제거 — 필드 부재")
+        fun legacyOwnerFieldRemoved() {
+            val declared = AgreementHistory::class.java.declaredFields.map { it.name }
+            assertThat(declared).doesNotContain("owner")
         }
     }
 }
