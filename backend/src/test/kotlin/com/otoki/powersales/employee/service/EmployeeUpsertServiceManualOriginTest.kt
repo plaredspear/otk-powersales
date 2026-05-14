@@ -5,6 +5,7 @@ import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.entity.EmployeeOrigin
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.employee.service.dto.EmployeeUpsertCommand
+import com.otoki.powersales.user.repository.UserRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -13,11 +14,14 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import org.mockito.quality.Strictness
+import org.springframework.security.crypto.password.PasswordEncoder
 
 /**
  * Spec #579 — EmployeeUpsertService 가 origin=MANUAL 직원을 보호하는지 검증.
@@ -26,6 +30,7 @@ import org.mockito.kotlin.whenever
  * [com.otoki.powersales.sap.inbound.service.SapEmployeeMasterServiceTest] 의 `manualOriginProtected_extraAudit` 케이스 참조.
  */
 @ExtendWith(MockitoExtension::class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("EmployeeUpsertService - MANUAL 보호 테스트")
 class EmployeeUpsertServiceManualOriginTest {
 
@@ -34,6 +39,12 @@ class EmployeeUpsertServiceManualOriginTest {
 
     @Mock
     private lateinit var systemCodeMasterRepository: SystemCodeMasterRepository
+
+    @Mock
+    private lateinit var userRepository: UserRepository
+
+    @Mock
+    private lateinit var passwordEncoder: PasswordEncoder
 
     @InjectMocks
     private lateinit var service: EmployeeUpsertService
@@ -57,6 +68,12 @@ class EmployeeUpsertServiceManualOriginTest {
         orgCode = null,
         lockingFlag = lockingFlag
     )
+
+    @org.junit.jupiter.api.BeforeEach
+    fun setUp() {
+        // EmployeeUpsertService 의 신규 Employee 인입 시 User 자동 생성 경로에서 호출됨 (#758).
+        whenever(passwordEncoder.encode(any<CharSequence>())).thenAnswer { it.arguments[0].toString() + ":encoded" }
+    }
 
     @Nested
     @DisplayName("origin=MANUAL 직원 보호")

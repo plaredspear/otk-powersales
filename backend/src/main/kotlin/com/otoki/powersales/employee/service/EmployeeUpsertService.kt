@@ -8,6 +8,9 @@ import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.employee.service.dto.EmployeeUpsertCommand
 import com.otoki.powersales.employee.service.dto.EmployeeUpsertFailedRow
 import com.otoki.powersales.employee.service.dto.EmployeeUpsertResult
+import com.otoki.powersales.user.entity.User
+import com.otoki.powersales.user.repository.UserRepository
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -41,7 +44,9 @@ import java.time.format.DateTimeParseException
 @Service
 class EmployeeUpsertService(
     private val employeeRepository: EmployeeRepository,
-    private val systemCodeMasterRepository: SystemCodeMasterRepository
+    private val systemCodeMasterRepository: SystemCodeMasterRepository,
+    private val userRepository: UserRepository,
+    private val passwordEncoder: PasswordEncoder
 ) {
 
     @Transactional
@@ -67,6 +72,7 @@ class EmployeeUpsertService(
 
         val failures = mutableListOf<EmployeeUpsertFailedRow>()
         val toSave = mutableListOf<Employee>()
+        val newUsers = mutableListOf<User>()
         val protectedManualCodes = mutableListOf<String>()
 
         commands.forEach { command ->
@@ -96,6 +102,9 @@ class EmployeeUpsertService(
                 } ?: Employee(employeeCode = employeeCode, name = employeeName).also {
                     applyMutableFields(it, command, employeeName, convertedGender, startDate, endDate, birthDate, resolvedStatus, appLoginActive)
                     cache[employeeCode] = it
+                    // Spec #758: Employee 신규 생성 시 같은 Transaction 으로 User 도 생성.
+                    // User 매칭 키 (audit FK 풀): User.employee_number == Employee.employee_code.
+                    newUsers += buildUserForEmployee(it)
                 }
                 toSave += entity
             } catch (ex: IllegalArgumentException) {
@@ -105,6 +114,9 @@ class EmployeeUpsertService(
 
         if (toSave.isNotEmpty()) {
             employeeRepository.saveAll(toSave)
+        }
+        if (newUsers.isNotEmpty()) {
+            userRepository.saveAll(newUsers)
         }
 
         return EmployeeUpsertResult(
@@ -156,11 +168,33 @@ class EmployeeUpsertService(
         return raw
     }
 
+    private fun buildUserForEmployee(employee: Employee): User {
+        // Spec #757 Q5 정책: 임시 비밀번호 = 사번 + 생년월일 4자리 (MMdd). birthDate 부재 시 "0000".
+        // Spec #757 §97-99: Username UNIQUE 정합. SAP 인바운드 단계에서 email 부재 가능 → 사번 fallback placeholder.
+        val email = employee.workEmail?.takeIf { it.isNotBlank() }
+            ?: employee.email?.takeIf { it.isNotBlank() }
+        val username = email ?: "${employee.employeeCode}${USERNAME_FALLBACK_SUFFIX}"
+        val tempPassword = "${employee.employeeCode}${employee.birthDate?.takeLast(BIRTH_SUFFIX_LENGTH) ?: BIRTH_SUFFIX_FALLBACK}"
+        return User(
+            username = username,
+            email = email,
+            employeeNumber = employee.employeeCode,
+            name = employee.name,
+            password = passwordEncoder.encode(tempPassword)!!,
+            passwordChangeRequired = true,
+            isActive = employee.appLoginActive ?: true,
+            isDeleted = false
+        )
+    }
+
     companion object {
         private const val STATUS_GROUP_CODE = "H10010"
         // 어댑터 측 SapConstants.OTOKI_COMPANY_CODE 와 동일 값. 도메인이 sap 패키지 의존 0건 정합 위해 자체 박음.
         private const val OTOKI_COMPANY_CODE = "1000"
         private const val EMPTY_DATE = "00000000"
         private val DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
+        private const val USERNAME_FALLBACK_SUFFIX = "@otoki.placeholder"
+        private const val BIRTH_SUFFIX_LENGTH = 4
+        private const val BIRTH_SUFFIX_FALLBACK = "0000"
     }
 }

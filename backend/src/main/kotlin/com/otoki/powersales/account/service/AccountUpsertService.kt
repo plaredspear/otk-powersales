@@ -8,6 +8,8 @@ import com.otoki.powersales.account.service.dto.AccountUpsertResult
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.organization.repository.OrganizationRepository
+import com.otoki.powersales.user.entity.User
+import com.otoki.powersales.user.repository.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -34,6 +36,7 @@ class AccountUpsertService(
     private val accountRepository: AccountRepository,
     private val employeeRepository: EmployeeRepository,
     private val organizationRepository: OrganizationRepository,
+    private val userRepository: UserRepository,
     private val mapper: AccountUpsertMapper
 ) {
 
@@ -54,6 +57,16 @@ class AccountUpsertService(
         } else {
             employeeRepository.findByEmployeeCodeIn(employeeCodes.distinct())
                 .associateBy { it.employeeCode }
+        }
+
+        // Spec #758: owner FK 가 User 로 전환됨. Employee 매칭은 존재 검증용으로 유지하고
+        // owner 적재는 User.employee_number 매칭 결과를 사용한다.
+        // invariant: Employee 신규 생성 시 같은 Transaction 으로 User 도 생성됨 (EmployeeUpsertService).
+        val userByEmployeeNumber: Map<String, User> = if (employeeCodes.isEmpty()) {
+            emptyMap()
+        } else {
+            userRepository.findByEmployeeNumberIn(employeeCodes.distinct())
+                .associateBy { it.employeeNumber }
         }
 
         val orgLookup = OrganizationLookup.build(organizationRepository)
@@ -79,9 +92,9 @@ class AccountUpsertService(
                 }
 
                 val matchedOrg = orgLookup.match(command)
-                val matchedEmployee = command.employeeCode?.let { employeeByCode[it] }
-                val account = accountCache[externalKey]?.also { mapper.update(it, name, command, matchedOrg, matchedEmployee) }
-                    ?: mapper.newAccount(externalKey, name, command, matchedOrg, matchedEmployee)
+                val matchedUser = command.employeeCode?.let { userByEmployeeNumber[it] }
+                val account = accountCache[externalKey]?.also { mapper.update(it, name, command, matchedOrg, matchedUser) }
+                    ?: mapper.newAccount(externalKey, name, command, matchedOrg, matchedUser)
                         .also { accountCache[externalKey] = it }
                 toSave += account
             } catch (ex: IllegalArgumentException) {

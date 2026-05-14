@@ -7,6 +7,8 @@ import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.organization.entity.Organization
 import com.otoki.powersales.organization.repository.OrganizationRepository
+import com.otoki.powersales.user.entity.User
+import com.otoki.powersales.user.repository.UserRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -34,6 +36,9 @@ class AccountUpsertServiceTest {
 
     @Mock
     private lateinit var organizationRepository: OrganizationRepository
+
+    @Mock
+    private lateinit var userRepository: UserRepository
 
     @Spy
     private val mapper: AccountUpsertMapper = AccountUpsertMapper()
@@ -543,15 +548,20 @@ class AccountUpsertServiceTest {
     }
 
     @Nested
-    @DisplayName("Spec #644 - Owner FK 매핑")
+    @DisplayName("Spec #758 - Owner FK 매핑 (User)")
     inner class UpsertOwnerFk {
 
+        private fun user(employeeNumber: String, username: String = "$employeeNumber@otoki.local"): User =
+            User(username = username, employeeNumber = employeeNumber, password = "encoded")
+
         @Test
-        @DisplayName("O1 정상 owner 매핑 - account.owner = 매칭 Employee")
+        @DisplayName("O1 정상 owner 매핑 - account.owner = 매칭 User (employee_number 매칭)")
         fun upsert_ownerMapped() {
             val employee = Employee(employeeCode = "12345", name = "홍길동")
+            val matchedUser = user("12345")
             whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
             whenever(employeeRepository.findByEmployeeCodeIn(listOf("12345"))).thenReturn(listOf(employee))
+            whenever(userRepository.findByEmployeeNumberIn(listOf("12345"))).thenReturn(listOf(matchedUser))
             whenever(organizationRepository.findAll()).thenReturn(emptyList())
 
             val result = service.upsert(listOf(command(employeeCode = "12345")))
@@ -560,7 +570,7 @@ class AccountUpsertServiceTest {
             assertThat(result.failureCount).isEqualTo(0)
             val captor = argumentCaptor<List<Account>>()
             verify(accountRepository).saveAll(captor.capture())
-            assertThat(captor.firstValue.single().owner).isSameAs(employee)
+            assertThat(captor.firstValue.single().owner).isSameAs(matchedUser)
         }
 
         @Test
@@ -568,6 +578,7 @@ class AccountUpsertServiceTest {
         fun upsert_employeeMissing_blocksRow() {
             whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
             whenever(employeeRepository.findByEmployeeCodeIn(listOf("99999"))).thenReturn(emptyList())
+            whenever(userRepository.findByEmployeeNumberIn(listOf("99999"))).thenReturn(emptyList())
             whenever(organizationRepository.findAll()).thenReturn(emptyList())
 
             val result = service.upsert(listOf(command(employeeCode = "99999")))
@@ -594,11 +605,12 @@ class AccountUpsertServiceTest {
         }
 
         @Test
-        @DisplayName("O4 비활성 Employee - 활성 필터 미적용, owner 매핑 통과")
-        fun upsert_inactiveEmployee_stillMapped() {
-            val inactive = Employee(employeeCode = "12345", name = "홍길동", isDeleted = true)
+        @DisplayName("O4 Employee 존재 but User 미존재 - account.owner = null (Employee invariant 미적재 케이스)")
+        fun upsert_userMissing_ownerNull() {
+            val employee = Employee(employeeCode = "12345", name = "홍길동")
             whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
-            whenever(employeeRepository.findByEmployeeCodeIn(listOf("12345"))).thenReturn(listOf(inactive))
+            whenever(employeeRepository.findByEmployeeCodeIn(listOf("12345"))).thenReturn(listOf(employee))
+            whenever(userRepository.findByEmployeeNumberIn(listOf("12345"))).thenReturn(emptyList())
             whenever(organizationRepository.findAll()).thenReturn(emptyList())
 
             val result = service.upsert(listOf(command(employeeCode = "12345")))
@@ -606,16 +618,19 @@ class AccountUpsertServiceTest {
             assertThat(result.successCount).isEqualTo(1)
             val captor = argumentCaptor<List<Account>>()
             verify(accountRepository).saveAll(captor.capture())
-            assertThat(captor.firstValue.single().owner).isSameAs(inactive)
+            assertThat(captor.firstValue.single().owner).isNull()
         }
 
         @Test
         @DisplayName("O5 다건 + 일부 owner miss - 통과 행만 owner set, 실패 행 failures 누적")
         fun upsert_partialOwnerMiss() {
             val employee = Employee(employeeCode = "12345", name = "홍길동")
+            val matchedUser = user("12345")
             whenever(accountRepository.findByExternalKeyIn(listOf("A", "B", "C"))).thenReturn(emptyList())
             whenever(employeeRepository.findByEmployeeCodeIn(listOf("12345", "99999")))
                 .thenReturn(listOf(employee))
+            whenever(userRepository.findByEmployeeNumberIn(listOf("12345", "99999")))
+                .thenReturn(listOf(matchedUser))
             whenever(organizationRepository.findAll()).thenReturn(emptyList())
 
             val result = service.upsert(
@@ -633,7 +648,7 @@ class AccountUpsertServiceTest {
             verify(accountRepository).saveAll(captor.capture())
             val saved = captor.firstValue
             assertThat(saved).hasSize(2)
-            assertThat(saved.first { it.externalKey == "A" }.owner).isSameAs(employee)
+            assertThat(saved.first { it.externalKey == "A" }.owner).isSameAs(matchedUser)
             assertThat(saved.first { it.externalKey == "C" }.owner).isNull()
         }
     }

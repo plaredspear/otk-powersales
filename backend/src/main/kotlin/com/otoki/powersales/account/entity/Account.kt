@@ -11,7 +11,7 @@ import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.common.entity.BaseEntity
-import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -323,18 +323,13 @@ class Account(
     @Column(name = "is_priority_record")
     var isPriorityRecord: Boolean? = null,
 
-    // -- Spec #644: Owner 차원 — DisplayWorkSchedule 풀 패턴 정합 --
-    // owner_sfid: Heroku Connect sync buffer 컬럼 (application 미적재).
-    // owner: application 이 SAP 인바운드 시 set 하는 Employee FK.
+    // -- Spec #758: Audit FK 타입 Employee → User 전환 (Account 단독 구현분) --
+    // SF sobject 메타 정합 (referenceTo == User). application 코드는 FK 컬럼만 사용, sfid 직접 JOIN 금지.
 
     @SFField("OwnerId")
     @HCColumn("ownerid")
     @Column(name = "owner_sfid", length = 18)
     var ownerSfid: String? = null,
-
-    // -- Spec #703: Group A (CreatedById / LastModifiedById) sfid + Employee FK --
-    // *_sfid: Heroku Connect sync 가 채우는 buffer (SF User Id).
-    // *_by: SalesforceMigrationTool 이 SF User → Employee 매핑으로 채우는 FK.
 
     @SFField("CreatedById")
     @HCColumn("createdbyid")
@@ -350,15 +345,15 @@ class Account(
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id")
-    var owner: Employee? = null,
+    var owner: User? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
-    var createdBy: Employee? = null,
+    var createdBy: User? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
-    var lastModifiedBy: Employee? = null,
+    var lastModifiedBy: User? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id")
