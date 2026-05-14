@@ -1,6 +1,10 @@
 package com.otoki.powersales.product.service
 
 import com.otoki.powersales.product.entity.Product
+import com.otoki.powersales.product.entity.ProductCategory1
+import com.otoki.powersales.product.entity.ProductCategory2
+import com.otoki.powersales.product.entity.ProductCategory3
+import com.otoki.powersales.product.entity.ProductStatus
 import com.otoki.powersales.product.entity.ProductType
 import com.otoki.powersales.product.entity.StorageCondition
 import com.otoki.powersales.product.repository.ProductRepository
@@ -150,11 +154,11 @@ class ProductUpsertService(
         launchDate: LocalDate?,
         pallet: Double?
     ) {
-        product.productStatus = command.productStatus
+        product.productStatus = ProductStatus.fromDisplayNameOrNull(command.productStatus)
         product.productType = ProductType.fromDisplayNameOrNull(command.productType)
-        product.category1 = command.category1
-        product.category2 = command.category2
-        product.category3 = command.category3
+        product.productCategory1 = ProductCategory1.fromDisplayNameOrNull(command.category1)
+        product.productCategory2 = ProductCategory2.fromDisplayNameOrNull(command.category2)
+        product.productCategory3 = ProductCategory3.fromDisplayNameOrNull(command.category3)
         product.categoryCode1 = command.categoryCode1
         product.categoryCode2 = command.categoryCode2
         product.categoryCode3 = command.categoryCode3
@@ -164,9 +168,9 @@ class ProductUpsertService(
         product.tasteGift = command.tasteGift
         product.logisticsBarcode = command.logisticsBarCode
         product.storageCondition = StorageCondition.fromDisplayNameOrNull(command.storeCondition)
-        product.standardUnitPrice = standardPrice
-        product.boxReceivingQuantity = boxQty
-        product.superTax = superTax ?: 0.0
+        product.standardUnitPrice = standardPrice?.let { BigDecimal.valueOf(it) }
+        product.boxReceivingQuantity = boxQty?.let { BigDecimal.valueOf(it) }
+        product.superTax = BigDecimal.valueOf(superTax ?: 0.0)
         product.launchDate = launchDate
         // Spec #575
         product.productBarcode = command.productBarcode

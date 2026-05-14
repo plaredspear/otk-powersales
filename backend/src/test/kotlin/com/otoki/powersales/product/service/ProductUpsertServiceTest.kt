@@ -84,9 +84,9 @@ class ProductUpsertServiceTest {
             val saved = captor.firstValue.single()
             assertThat(saved.productCode).isEqualTo("100100")
             assertThat(saved.name).isEqualTo("진라면 매운맛 5입")
-            assertThat(saved.standardUnitPrice).isEqualTo(4500.0)
+            assertThat(saved.standardUnitPrice).isEqualByComparingTo(java.math.BigDecimal("4500"))
             assertThat(saved.launchDate).isEqualTo(LocalDate.of(2020, 1, 1))
-            assertThat(saved.superTax).isEqualTo(0.0)
+            assertThat(saved.superTax).isEqualByComparingTo(java.math.BigDecimal.ZERO)
             assertThat(result.successCount).isEqualTo(1)
             assertThat(result.failureCount).isEqualTo(0)
         }
@@ -95,7 +95,7 @@ class ProductUpsertServiceTest {
         @DisplayName("기존 갱신 - 동일 productCode, mutable 필드만 갱신")
         fun upsert_updateExisting() {
             val existing = Product(productCode = "100100", name = "기존명")
-            existing.standardUnitPrice = 1000.0
+            existing.standardUnitPrice = java.math.BigDecimal("1000")
             whenever(productRepository.findByProductCodeIn(listOf("100100"))).thenReturn(listOf(existing))
 
             service.upsert(listOf(command(productName = "신규명", standardPrice = "5000")))
@@ -105,7 +105,7 @@ class ProductUpsertServiceTest {
             val saved = captor.firstValue.single()
             assertThat(saved).isSameAs(existing)
             assertThat(saved.name).isEqualTo("신규명")
-            assertThat(saved.standardUnitPrice).isEqualTo(5000.0)
+            assertThat(saved.standardUnitPrice).isEqualByComparingTo(java.math.BigDecimal("5000"))
         }
 
         @Test

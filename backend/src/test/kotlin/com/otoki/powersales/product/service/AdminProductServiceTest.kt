@@ -223,13 +223,13 @@ class AdminProductServiceTest {
         id = id,
         name = name,
         productCode = productCode,
-        category1 = category1,
-        category2 = category2,
-        category3 = category3,
-        standardUnitPrice = standardUnitPrice,
+        productCategory1 = com.otoki.powersales.product.entity.ProductCategory1.fromDisplayNameOrNull(category1),
+        productCategory2 = com.otoki.powersales.product.entity.ProductCategory2.fromDisplayNameOrNull(category2),
+        productCategory3 = com.otoki.powersales.product.entity.ProductCategory3.fromDisplayNameOrNull(category3),
+        standardUnitPrice = standardUnitPrice?.let { java.math.BigDecimal.valueOf(it) },
         unit = unit,
         storageCondition = com.otoki.powersales.product.entity.StorageCondition.fromDisplayNameOrNull(storageCondition),
-        productStatus = productStatus,
+        productStatus = com.otoki.powersales.product.entity.ProductStatus.fromDisplayNameOrNull(productStatus),
         launchDate = launchDate
     )
 }

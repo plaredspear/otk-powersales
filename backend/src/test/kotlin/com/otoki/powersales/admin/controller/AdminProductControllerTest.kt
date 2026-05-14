@@ -81,7 +81,7 @@ class AdminProductControllerTest {
                         category1 = "면류",
                         category2 = "라면",
                         category3 = "봉지면",
-                        standardUnitPrice = 850.0,
+                        standardUnitPrice = java.math.BigDecimal("850.00"),
                         unit = "EA",
                         storageCondition = "실온",
                         productStatus = "판매중",

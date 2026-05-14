@@ -22,8 +22,8 @@ data class ProductDto(
                 logisticsBarcode = product.logisticsBarcode,
                 storageCondition = product.storageCondition?.displayName,
                 shelfLife = product.shelfLife,
-                category1 = product.category1,
-                category2 = product.category2
+                category1 = product.productCategory1?.displayName,
+                category2 = product.productCategory2?.displayName
             )
         }
     }

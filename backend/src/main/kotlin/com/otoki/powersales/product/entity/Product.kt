@@ -6,6 +6,10 @@ import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Group
+import com.otoki.powersales.product.entity.converter.ProductCategory1Converter
+import com.otoki.powersales.product.entity.converter.ProductCategory2Converter
+import com.otoki.powersales.product.entity.converter.ProductCategory3Converter
+import com.otoki.powersales.product.entity.converter.ProductStatusConverter
 import com.otoki.powersales.product.entity.converter.ProductTypeConverter
 import com.otoki.powersales.product.entity.converter.StorageConditionConverter
 import com.otoki.powersales.user.entity.User
@@ -51,8 +55,9 @@ class Product(
 
     @SFField("DKRetail__ProductStatus__c")
     @HCColumn("dkretail__productstatus__c")
+    @Convert(converter = ProductStatusConverter::class)
     @Column(name = "product_status", length = 255)
-    var productStatus: String? = null,
+    var productStatus: ProductStatus? = null,
 
     @SFField("DKRetail__StoreCondition__c")
     @HCColumn("dkretail__storecondition__c")
@@ -72,18 +77,21 @@ class Product(
 
     @SFField("DKRetail__Category1__c")
     @HCColumn("dkretail__category1__c")
+    @Convert(converter = ProductCategory1Converter::class)
     @Column(name = "category1", length = 255)
-    var category1: String? = null,
+    var productCategory1: ProductCategory1? = null,
 
     @SFField("DKRetail__Category2__c")
     @HCColumn("dkretail__category2__c")
+    @Convert(converter = ProductCategory2Converter::class)
     @Column(name = "category2", length = 255)
-    var category2: String? = null,
+    var productCategory2: ProductCategory2? = null,
 
     @SFField("DKRetail__Category3__c")
     @HCColumn("dkretail__category3__c")
+    @Convert(converter = ProductCategory3Converter::class)
     @Column(name = "category3", length = 255)
-    var category3: String? = null,
+    var productCategory3: ProductCategory3? = null,
 
     @SFField("DKRetail__CategoryCode1__c")
     @HCColumn("dkretail__categorycode1__c")
@@ -117,18 +125,18 @@ class Product(
 
     @SFField("DKRetail__BoxReceivingQuantity__c")
     @HCColumn("dkretail__boxreceivingquantity__c")
-    @Column(name = "box_receiving_quantity")
-    var boxReceivingQuantity: Double? = null,
+    @Column(name = "box_receiving_quantity", precision = 18, scale = 4)
+    var boxReceivingQuantity: BigDecimal? = null,
 
     @SFField("DKRetail__StandardUnitPrice__c")
     @HCColumn("dkretail__standardunitprice__c")
-    @Column(name = "standard_unit_price")
-    var standardUnitPrice: Double? = null,
+    @Column(name = "standard_unit_price", precision = 18, scale = 2)
+    var standardUnitPrice: BigDecimal? = null,
 
     @SFField("SuperTax__c")
     @HCColumn("supertax__c")
-    @Column(name = "super_tax")
-    var superTax: Double? = null,
+    @Column(name = "super_tax", precision = 18, scale = 0)
+    var superTax: BigDecimal? = null,
 
     @SFField("DKRetail__LaunchDate__c")
     @HCColumn("dkretail__launchdate__c")
@@ -219,17 +227,17 @@ class Product(
 
     @SFField("manufacture__c")
     @HCColumn("manufacture__c")
-    @Column(name = "manufacture", length = 100)
+    @Column(name = "manufacture", length = 30)
     var manufacture: String? = null,
 
     @SFField("manufacture_detail__c")
     @HCColumn("manufacture_detail__c")
-    @Column(name = "manufacture_detail", length = 255)
+    @Column(name = "manufacture_detail", length = 30)
     var manufactureDetail: String? = null,
 
     @SFField("Claim_Management__c")
     @HCColumn("claim_management__c")
-    @Column(name = "claim_management", length = 100)
+    @Column(name = "claim_management", length = 50)
     var claimManagement: String? = null,
 
     @SFField("New_Product__c")

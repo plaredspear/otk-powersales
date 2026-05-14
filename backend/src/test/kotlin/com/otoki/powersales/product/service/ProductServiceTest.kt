@@ -267,8 +267,8 @@ class ProductServiceTest {
             logisticsBarcode = barcode,
             storageCondition = com.otoki.powersales.product.entity.StorageCondition.fromDisplayNameOrNull(storageCondition),
             shelfLife = shelfLife,
-            category1 = category1,
-            category2 = category2
+            productCategory1 = com.otoki.powersales.product.entity.ProductCategory1.fromDisplayNameOrNull(category1),
+            productCategory2 = com.otoki.powersales.product.entity.ProductCategory2.fromDisplayNameOrNull(category2)
         )
     }
 }

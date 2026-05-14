@@ -811,7 +811,9 @@ class AdminPromotionServiceTest {
         id: Long = 200L,
         name: String = "진라면 매운맛 120g",
         category1: String = "라면"
-    ) = Product(id = id, name = name).also { it.category1 = category1 }
+    ) = Product(id = id, name = name).also {
+        it.productCategory1 = com.otoki.powersales.product.entity.ProductCategory1.fromDisplayNameOrNull(category1)
+    }
 
     private fun createEmployee(
         id: Long = 1L,

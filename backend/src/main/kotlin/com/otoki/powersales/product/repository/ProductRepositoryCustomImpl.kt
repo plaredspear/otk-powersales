@@ -1,6 +1,10 @@
 package com.otoki.powersales.product.repository
 
 import com.otoki.powersales.product.entity.Product
+import com.otoki.powersales.product.entity.ProductCategory1
+import com.otoki.powersales.product.entity.ProductCategory2
+import com.otoki.powersales.product.entity.ProductCategory3
+import com.otoki.powersales.product.entity.ProductStatus
 import com.otoki.powersales.product.entity.QProduct.Companion.product
 import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.data.domain.Page
@@ -34,16 +38,24 @@ class ProductRepositoryCustomImpl(
         }
 
         if (!category1.isNullOrBlank()) {
-            builder.and(product.category1.eq(category1))
+            ProductCategory1.fromDisplayNameOrNull(category1)?.let {
+                builder.and(product.productCategory1.eq(it))
+            }
         }
         if (!category2.isNullOrBlank()) {
-            builder.and(product.category2.eq(category2))
+            ProductCategory2.fromDisplayNameOrNull(category2)?.let {
+                builder.and(product.productCategory2.eq(it))
+            }
         }
         if (!category3.isNullOrBlank()) {
-            builder.and(product.category3.eq(category3))
+            ProductCategory3.fromDisplayNameOrNull(category3)?.let {
+                builder.and(product.productCategory3.eq(it))
+            }
         }
         if (!productStatus.isNullOrBlank()) {
-            builder.and(product.productStatus.eq(productStatus))
+            ProductStatus.fromDisplayNameOrNull(productStatus)?.let {
+                builder.and(product.productStatus.eq(it))
+            }
         }
 
         val content = queryFactory
@@ -66,23 +78,23 @@ class ProductRepositoryCustomImpl(
 
     override fun findDistinctCategories(): List<CategoryRow> {
         val results = queryFactory
-            .select(product.category1, product.category2, product.category3)
+            .select(product.productCategory1, product.productCategory2, product.productCategory3)
             .from(product)
             .where(
                 product.isDeleted.isNull.or(product.isDeleted.eq(false)),
-                product.category1.isNotNull,
-                product.category2.isNotNull,
-                product.category3.isNotNull
+                product.productCategory1.isNotNull,
+                product.productCategory2.isNotNull,
+                product.productCategory3.isNotNull
             )
             .distinct()
-            .orderBy(product.category1.asc(), product.category2.asc(), product.category3.asc())
+            .orderBy(product.productCategory1.asc(), product.productCategory2.asc(), product.productCategory3.asc())
             .fetch()
 
         return results.map { tuple ->
             CategoryRow(
-                category1 = tuple.get(product.category1)!!,
-                category2 = tuple.get(product.category2)!!,
-                category3 = tuple.get(product.category3)!!
+                category1 = tuple.get(product.productCategory1)!!.displayName,
+                category2 = tuple.get(product.productCategory2)!!.displayName,
+                category3 = tuple.get(product.productCategory3)!!.displayName
             )
         }
     }

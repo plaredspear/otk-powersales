@@ -17,7 +17,7 @@ data class ProductListItem(
     val category1: String?,
     val category2: String?,
     val category3: String?,
-    val standardUnitPrice: Double?,
+    val standardUnitPrice: java.math.BigDecimal?,
     val unit: String?,
     val storageCondition: String?,
     val productStatus: String?,
@@ -28,13 +28,13 @@ data class ProductListItem(
             id = product.id,
             productCode = product.productCode,
             name = product.name,
-            category1 = product.category1,
-            category2 = product.category2,
-            category3 = product.category3,
+            category1 = product.productCategory1?.displayName,
+            category2 = product.productCategory2?.displayName,
+            category3 = product.productCategory3?.displayName,
             standardUnitPrice = product.standardUnitPrice,
             unit = product.unit,
             storageCondition = product.storageCondition?.displayName,
-            productStatus = product.productStatus,
+            productStatus = product.productStatus?.displayName,
             launchDate = product.launchDate?.toString()
         )
     }

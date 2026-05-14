@@ -257,8 +257,8 @@ class ProductRepositoryTest {
             logisticsBarcode = logisticsBarcode,
             storageCondition = com.otoki.powersales.product.entity.StorageCondition.ROOM_TEMP,
             shelfLife = "7개월",
-            category1 = category1,
-            category2 = category2
+            productCategory1 = com.otoki.powersales.product.entity.ProductCategory1.fromDisplayNameOrNull(category1),
+            productCategory2 = com.otoki.powersales.product.entity.ProductCategory2.fromDisplayNameOrNull(category2)
         )
     }
 }
