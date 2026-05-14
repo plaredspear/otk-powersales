@@ -76,14 +76,14 @@ class OrderCancelService(
         orderProductIds: List<Long>,
     ): List<OrderRequestProduct> {
         if (orderProductIds.isEmpty()) {
-            return allLines.filter { !it.isCancelled }
+            return allLines.filter { !it.isCancelled() }
         }
         val byId = allLines.associateBy { it.id }
         val invalid = orderProductIds.filter { it !in byId }
         if (invalid.isNotEmpty()) {
             throw OrderCancelLineNotFoundException(invalid)
         }
-        return orderProductIds.mapNotNull { byId[it] }.filter { !it.isCancelled }
+        return orderProductIds.mapNotNull { byId[it] }.filter { !it.isCancelled() }
     }
 
     companion object {

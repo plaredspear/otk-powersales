@@ -192,7 +192,7 @@ class OrderRequestControllerTest {
                         productCode = "1000023",
                         productName = "진라면 매운맛",
                         totalQuantityBoxes = BigDecimal("10"),
-                        totalQuantityPieces = 300,
+                        totalQuantityPieces = 300L,
                         isCancelled = false,
                     ),
                 ),

@@ -111,11 +111,11 @@ class OrderRequestCreateService(
         val savedLines = request.lines.map { line ->
             val info = inventoryMap.getValue(line.productCode)
             OrderRequestProduct(
-                lineNumber = line.lineNumber,
+                lineNumber = line.lineNumber.toLong(),
                 productCode = line.productCode,
                 productName = info.productName,
                 quantityBoxes = line.quantityBoxes,
-                quantityPieces = line.quantityPieces,
+                quantityPieces = line.quantityPieces.toLong(),
                 unit = line.unit,
                 unitPrice = info.unitPrice,
                 amount = info.unitPrice.multiply(BigDecimal.valueOf(line.quantityPieces.toLong())),
@@ -123,7 +123,6 @@ class OrderRequestCreateService(
                 minOrderUnit = 1,
                 supplyQuantity = info.supplyLimitQuantity,
                 dcQuantity = 0,
-                isCancelled = false,
                 orderRequest = savedHeader,
             )
         }

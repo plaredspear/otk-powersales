@@ -28,7 +28,7 @@ data class OrderCancelResponse(
 
 data class CancelledLineResponse(
     val orderProductId: Long,
-    val lineNumber: Int,
+    val lineNumber: Long,
     val productCode: String,
     val cancelledAt: LocalDateTime?,
 ) {
