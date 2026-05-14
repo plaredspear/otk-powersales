@@ -1,12 +1,14 @@
 package com.otoki.powersales.order.entity
 
 import com.otoki.powersales.common.entity.BaseEntity
-import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.HCTable
+import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
-import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.employee.entity.Group
+import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
+import java.math.BigDecimal
 
 @Entity
 @Table(name = "erp_order_product")
@@ -42,15 +44,15 @@ class ErpOrderProduct(
     val sapOrderNumber: String,
 
     @SFField("LineNumber__c")
-    @Column(name = "line_number", nullable = false, length = 10)
+    @Column(name = "line_number", nullable = false, length = 255)
     val lineNumber: String,
 
     @SFField("ExternalKey__c")
-    @Column(name = "external_key", nullable = false, length = 50)
+    @Column(name = "external_key", nullable = false, length = 255)
     val externalKey: String,
 
     @SFField("ProductCode__c")
-    @Column(name = "product_code", length = 20)
+    @Column(name = "product_code", length = 100)
     var productCode: String? = null,
 
     @SFField("ProductName__c")
@@ -59,98 +61,95 @@ class ErpOrderProduct(
 
     @SFField("OrderQuantity__c")
     @Column(name = "order_quantity")
-    var orderQuantity: Double? = null,
+    var orderQuantity: Long? = null,
 
     @SFField("Unit__c")
     @Column(name = "unit", length = 10)
     var unit: String? = null,
 
     @SFField("ConfirmQuantity_Box__c")
-    @Column(name = "confirm_quantity_box")
-    var confirmQuantityBox: Double? = null,
+    @Column(name = "confirm_quantity_box", precision = 18, scale = 4)
+    var confirmQuantityBox: BigDecimal? = null,
 
     @SFField("ConfirmQuantity__c")
-    @Column(name = "confirm_quantity")
-    var confirmQuantity: Double? = null,
+    @Column(name = "confirm_quantity", precision = 18, scale = 3)
+    var confirmQuantity: BigDecimal? = null,
 
     @SFField("Confirm_Unit__c")
-    @Column(name = "confirm_unit", length = 10)
+    @Column(name = "confirm_unit", length = 255)
     var confirmUnit: String? = null,
 
     @SFField("DefaultReason__c")
-    @Column(name = "default_reason", length = 100)
+    @Column(name = "default_reason", length = 50)
     var defaultReason: String? = null,
 
     @SFField("LineItemStatus__c")
-    @Column(name = "line_item_status", length = 20)
+    @Column(name = "line_item_status", length = 40)
     var lineItemStatus: String? = null,
 
     @SFField("OrderStatus__c")
-    @Column(name = "delivery_status", length = 10)
+    @Column(name = "delivery_status", length = 30)
     var deliveryStatus: String? = null,
 
     @SFField("ShippingDriverName__c")
-    @Column(name = "shipping_driver_name", length = 50)
+    @Column(name = "shipping_driver_name", length = 30)
     var shippingDriverName: String? = null,
 
     @SFField("ShippingVehicle__c")
-    @Column(name = "shipping_vehicle", length = 20)
+    @Column(name = "shipping_vehicle", length = 30)
     var shippingVehicle: String? = null,
 
     @SFField("ShippingDriverPhone__c")
-    @Column(name = "shipping_driver_phone", length = 20)
+    @Column(name = "shipping_driver_phone", length = 40)
     var shippingDriverPhone: String? = null,
 
     @SFField("ShippingScheduleTime__c")
-    @Column(name = "shipping_schedule_time", length = 20)
+    @Column(name = "shipping_schedule_time", length = 30)
     var shippingScheduleTime: String? = null,
 
     @SFField("ShippingCompleteTime__c")
-    @Column(name = "shipping_complete_time", length = 20)
+    @Column(name = "shipping_complete_time", length = 30)
     var shippingCompleteTime: String? = null,
 
     @SFField("ShippingQuantity_Box__c")
-    @Column(name = "shipping_quantity_box")
-    var shippingQuantityBox: Double? = null,
+    @Column(name = "shipping_quantity_box", precision = 18, scale = 2)
+    var shippingQuantityBox: BigDecimal? = null,
 
     @SFField("ShippingQuantity__c")
     @Column(name = "shipping_quantity")
-    var shippingQuantity: Double? = null,
+    var shippingQuantity: Long? = null,
 
     @SFField("OrderSalesLineAmount__c")
     @Column(name = "order_sales_line_amount")
-    var orderSalesLineAmount: Double? = null,
+    var orderSalesLineAmount: Long? = null,
 
     @SFField("ShippingAmount__c")
     @Column(name = "shipping_amount")
-    var shippingAmount: Double? = null,
+    var shippingAmount: Long? = null,
 
     @SFField("Plant__c")
-    @Column(name = "plant", length = 10)
+    @Column(name = "plant", length = 4)
     var plant: String? = null,
 
     @SFField("Plant_NM__c")
-    @Column(name = "plant_nm", length = 50)
+    @Column(name = "plant_nm", length = 30)
     var plantNm: String? = null,
 
     @SFField("ReleaseQuantity__c")
     @Column(name = "release_quantity")
-    var releaseQuantity: Double? = null,
+    var releaseQuantity: Long? = null,
 
     @SFField("ReleaseAmount__c")
     @Column(name = "release_amount")
-    var releaseAmount: Double? = null,
-
-    // -- Spec #611: SF 누락 컬럼 신규 도입 (Q1 옵션 1) --
+    var releaseAmount: Long? = null,
 
     @SFField("BoxQuantity__c")
-    @Column(name = "box_quantity", precision = 18, scale = 0)
-    var boxQuantity: java.math.BigDecimal? = null,
+    @Column(name = "box_quantity", precision = 18, scale = 4)
+    var boxQuantity: BigDecimal? = null,
 
-    // -- Spec #747 카테고리 A — D 분류 누락 --
-    @SFField("OrderDate__c")
-    @Column(name = "order_date")
-    var orderDate: java.time.LocalDate? = null,
+    // -- sf-meta-diff Q1~Q3: OwnerId polymorphic R-2 + audit FK Employee → User --
+    // owner_sfid 단일 컬럼이 SF 원본 식별자 보존. owner_user_id / owner_group_id 둘 중
+    // 하나만 채워지며 XOR CHECK 제약으로 enforce. sfid prefix `005` = User / `00G` = Group.
 
     @SFField("OwnerId")
     @HCColumn("ownerid")
@@ -173,14 +172,18 @@ class ErpOrderProduct(
     var isDeleted: Boolean? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id")
-    var owner: Employee? = null,
+    @JoinColumn(name = "owner_user_id")
+    var ownerUser: User? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_group_id")
+    var ownerGroup: Group? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
-    var createdBy: Employee? = null,
+    var createdBy: User? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
-    var lastModifiedBy: Employee? = null,
+    var lastModifiedBy: User? = null,
 ) : BaseEntity()

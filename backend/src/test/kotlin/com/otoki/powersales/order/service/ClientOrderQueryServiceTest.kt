@@ -20,6 +20,7 @@ import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.whenever
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.util.Optional
 
@@ -45,8 +46,8 @@ class ClientOrderQueryServiceTest {
         fun success() {
             val order = createOrder(employeeCode = employeeCode)
             val products = listOf(
-                createProduct(lineNumber = "10", deliveryStatus = "배송중", productCode = "P001", productName = "예시1", shippingQuantityBox = 5.0, unit = "BOX"),
-                createProduct(lineNumber = "20", deliveryStatus = "배송 완료", productCode = "P002", productName = "예시2", shippingQuantityBox = 10.0, unit = "BOX"),
+                createProduct(lineNumber = "10", deliveryStatus = "배송중", productCode = "P001", productName = "예시1", shippingQuantityBox = BigDecimal("5"), unit = "BOX"),
+                createProduct(lineNumber = "20", deliveryStatus = "배송 완료", productCode = "P002", productName = "예시2", shippingQuantityBox = BigDecimal("10"), unit = "BOX"),
             )
             whenever(erpOrderRepository.findBySapOrderNumber(sapOrderNumber)).thenReturn(order)
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee()))
@@ -202,7 +203,7 @@ class ClientOrderQueryServiceTest {
         deliveryStatus: String?,
         productCode: String? = "P001",
         productName: String? = "예시 상품",
-        shippingQuantityBox: Double? = 0.0,
+        shippingQuantityBox: BigDecimal? = BigDecimal.ZERO,
         unit: String? = "BOX",
     ): ErpOrderProduct {
         val order = createOrder(employeeCode = employeeCode)

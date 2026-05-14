@@ -3,6 +3,7 @@ package com.otoki.powersales.order.dto.response
 import com.otoki.powersales.order.entity.DeliveryStatus
 import com.otoki.powersales.order.entity.ErpOrder
 import com.otoki.powersales.order.entity.ErpOrderProduct
+import java.math.BigDecimal
 import java.time.LocalDate
 
 /**
@@ -71,9 +72,10 @@ data class ClientOrderItemResponse(
             )
         }
 
-        private fun formatDeliveredQuantity(quantityBox: Double?, unit: String?): String {
-            val qty = quantityBox ?: 0.0
-            val qtyStr = if (qty % 1.0 == 0.0) qty.toLong().toString() else qty.toString()
+        private fun formatDeliveredQuantity(quantityBox: BigDecimal?, unit: String?): String {
+            val qty = quantityBox ?: BigDecimal.ZERO
+            val stripped = qty.stripTrailingZeros()
+            val qtyStr = if (stripped.scale() <= 0) stripped.toBigInteger().toString() else stripped.toPlainString()
             return if (unit.isNullOrBlank()) qtyStr else "$qtyStr $unit"
         }
     }

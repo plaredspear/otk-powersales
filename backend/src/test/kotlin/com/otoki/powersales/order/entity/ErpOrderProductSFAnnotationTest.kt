@@ -42,9 +42,9 @@ class ErpOrderProductSFAnnotationTest {
         private val mapping = SFSchemaUtils.getSFMapping(ErpOrderProduct::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 28 (22 기존 + 3 누락 보강 + 1 신규 + BaseEntity 2)")
+        @DisplayName("매핑 키 수 = 35 (28 Custom + 1 SF 표준 Name + 4 Group A audit/owner/IsDeleted + BaseEntity 2 CreatedDate/LastModifiedDate)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(36)
+            assertThat(mapping).hasSize(35)
         }
 
         @Test

@@ -11,6 +11,8 @@ import com.otoki.powersales.order.service.dto.ErpOrderUpsertFailedRow
 import com.otoki.powersales.order.service.dto.ErpOrderUpsertResult
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -152,10 +154,10 @@ class ErpOrderUpsertService(
     private fun applyLineFields(entity: ErpOrderProduct, line: ErpOrderLineCommand) {
         entity.productCode = line.productCode
         entity.productName = line.productName
-        entity.orderQuantity = parseAmount(line.orderQuantity)
+        entity.orderQuantity = parseAmountLong(line.orderQuantity)
         entity.unit = line.unit
-        entity.confirmQuantityBox = parseAmount(line.confirmQuantityBox)
-        entity.confirmQuantity = parseAmount(line.confirmQuantity)
+        entity.confirmQuantityBox = parseDecimal(line.confirmQuantityBox, scale = 4)
+        entity.confirmQuantity = parseDecimal(line.confirmQuantity, scale = 3)
         entity.confirmUnit = line.confirmUnit
         entity.defaultReason = line.defaultReason
         entity.lineItemStatus = line.lineItemStatus
@@ -167,14 +169,14 @@ class ErpOrderUpsertService(
         entity.shippingDriverPhone = line.shippingDriverPhone
         entity.shippingScheduleTime = sanitizeTime(line.shippingScheduleTime)
         entity.shippingCompleteTime = sanitizeTime(line.shippingCompleteTime)
-        entity.shippingQuantityBox = parseAmount(line.shippingQuantityBox)
-        entity.shippingQuantity = parseAmount(line.shippingQuantity)
-        entity.orderSalesLineAmount = parseAmount(line.orderSalesLineAmount)
-        entity.shippingAmount = parseAmount(line.shippingAmount)
+        entity.shippingQuantityBox = parseDecimal(line.shippingQuantityBox, scale = 2)
+        entity.shippingQuantity = parseAmountLong(line.shippingQuantity)
+        entity.orderSalesLineAmount = parseAmountLong(line.orderSalesLineAmount)
+        entity.shippingAmount = parseAmountLong(line.shippingAmount)
         entity.plant = line.plant ?: ""
         entity.plantNm = line.plantNm ?: ""
-        entity.releaseQuantity = parseAmount(line.releaseQuantity)
-        entity.releaseAmount = parseAmount(line.releaseAmount)
+        entity.releaseQuantity = parseAmountLong(line.releaseQuantity)
+        entity.releaseAmount = parseAmountLong(line.releaseAmount)
     }
 
     private fun computeExternalKey(line: ErpOrderLineCommand): String? {
@@ -223,13 +225,29 @@ class ErpOrderUpsertService(
             }
         }
 
+        /**
+         * SF `double` scale=0 정수 도메인 컬럼용. 빈 입력 → 0, 소수점 잔존값은 반올림 (HALF_UP).
+         */
         fun parseAmountLong(value: String?): Long? {
             val trimmed = value?.trim()
             if (trimmed.isNullOrEmpty()) return 0L
             return try {
-                trimmed.toDouble().toLong()
+                BigDecimal(trimmed).setScale(0, RoundingMode.HALF_UP).toLong()
             } catch (_: NumberFormatException) {
                 0L
+            }
+        }
+
+        /**
+         * SF `double` scale>0 소수점 정밀도 컬럼용. 빈 입력 → 0, 지정 scale 로 반올림 (HALF_UP).
+         */
+        fun parseDecimal(value: String?, scale: Int): BigDecimal? {
+            val trimmed = value?.trim()
+            if (trimmed.isNullOrEmpty()) return BigDecimal.ZERO.setScale(scale)
+            return try {
+                BigDecimal(trimmed).setScale(scale, RoundingMode.HALF_UP)
+            } catch (_: NumberFormatException) {
+                BigDecimal.ZERO.setScale(scale)
             }
         }
 
