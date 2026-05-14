@@ -8,6 +8,7 @@ import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.common.salesforce.SFSchemaUtils
+import jakarta.persistence.Column
 import jakarta.persistence.Convert
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
@@ -17,17 +18,17 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 /**
- * Spec #606 / #705 / #743 — Claim ↔ Salesforce `DKRetail__Claim__c` 어노테이션 부착 검증.
+ * Spec #606 / #705 / #743 / sf-meta-diff Q2~Q8 — Claim ↔ Salesforce `DKRetail__Claim__c` 어노테이션 부착 검증.
  *
  * 단일 권위: Salesforce Object 메타 (`DKRetail__Claim__c`)
  *
  * 검증 분류:
  *   - AC1: 클래스 `@SFObject` 무변경
- *   - AC2: `@SFField` 매핑 키셋 (#705 39개 + #743 ClaimType1/ClaimType2 2개 = 41)
- *   - AC3: PK / FK 미부착
+ *   - AC2: `@SFField` 매핑 키셋 — Formula `@SFField` 4건 제거 (`product_code`/`barcode`/`phone`/`product_status`) 반영
+ *   - AC3: PK / FK 미부착 — owner polymorphic 분리 (ownerUser/ownerGroup) 반영
  *   - AC5: ClaimStatus enum SF 정합 (DRAFT/SENT/SEND_FAILED + Converter) — #705 §6 Q4
  *   - AC6: ClaimChannel enum + Converter
- *   - AC7: Reference R-2 FK relation 검증 (owner / createdBy / lastModifiedBy / product) — #705 §4
+ *   - AC7: Reference R-2 FK relation 검증 — Q2 polymorphic owner (ownerUser/ownerGroup → User?/Group?) + Q3/Q4 audit FK User 타입 전환
  *   - AC8: ClaimType1/ClaimType2 enum 정합 + Converter — #743 (#741 옵션 C 적용)
  */
 @DisplayName("Claim SF 어노테이션 검증 (Spec #606 / #705 / #743)")
@@ -53,9 +54,9 @@ class ClaimSFAnnotationTest {
         private val mapping = SFSchemaUtils.getSFMapping(Claim::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 41 (#705 39개 + #743 ClaimType1/ClaimType2 2개)")
+        @DisplayName("매핑 키 수 = 40 (#705 + #743 = 44 → Q1/Q8 Formula @SFField 4건 제거)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(44)
+            assertThat(mapping).hasSize(40)
         }
 
         @Test
@@ -82,12 +83,13 @@ class ClaimSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("§6.1 — 기존 OK 11개 매핑 (FK 2개 제외)")
+        @DisplayName("§6.1 — 기존 OK 10개 매핑 (FK 2개 제외, Q1 Formula `DKRetail__ProductCode__c` 제거)")
         fun section61Existing() {
             assertThat(mapping["Name"]).isEqualTo("name")
             assertThat(mapping["DKRetail__EmployeeId__c"]).isEqualTo("employee_sfid")
             assertThat(mapping["DKRetail__AccountId__c"]).isEqualTo("account_sfid")
-            assertThat(mapping["DKRetail__ProductCode__c"]).isEqualTo("product_code")
+            // Q1: SF Formula 필드 — entity 컬럼은 application 입력값 캐시로 유지, `@SFField` 만 제거
+            assertThat(mapping["DKRetail__ProductCode__c"]).isNull()
             assertThat(mapping["DKRetail__ClaimDate__c"]).isEqualTo("date")
             assertThat(mapping["DKRetail__Description__c"]).isEqualTo("defect_description")
             assertThat(mapping["DKRetail__Quantity__c"]).isEqualTo("defect_quantity")
@@ -95,6 +97,14 @@ class ClaimSFAnnotationTest {
             assertThat(mapping["DKRetail__PurchaseMethod__c"]).isEqualTo("purchase_method_code")
             assertThat(mapping["DKRetail__RequestType__c"]).isEqualTo("request_type_code")
             assertThat(mapping["DKRetail__Status__c"]).isEqualTo("status")
+        }
+
+        @Test
+        @DisplayName("Q8 — Formula `Barcode` / `Phone` / `ProductStatus` 의 @SFField 제거")
+        fun q8FormulaUnmapped() {
+            assertThat(mapping["DKRetail__Barcode__c"]).isNull()
+            assertThat(mapping["DKRetail__Phone__c"]).isNull()
+            assertThat(mapping["DKRetail__ProductStatus__c"]).isNull()
         }
 
         @Test
@@ -142,9 +152,9 @@ class ClaimSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("FK 필드(employee, account, owner, createdBy, lastModifiedBy, product)에 @SFField 미부착")
+        @DisplayName("FK 필드(employee, account, ownerUser, ownerGroup, createdBy, lastModifiedBy, product)에 @SFField 미부착")
         fun fkHasNoSfField() {
-            listOf("employee", "account", "owner", "createdBy", "lastModifiedBy", "product").forEach { name ->
+            listOf("employee", "account", "ownerUser", "ownerGroup", "createdBy", "lastModifiedBy", "product").forEach { name ->
                 val field = Claim::class.java.getDeclaredField(name)
                 assertThat(field.isAnnotationPresent(SFField::class.java))
                     .withFailMessage("FK 필드 $name 에 @SFField 부착되어 있음 — §2.4/§6.6 정책 위반")
@@ -160,7 +170,8 @@ class ClaimSFAnnotationTest {
                 "claim_id",
                 "employee_id",
                 "account_id",
-                "owner_id",
+                "owner_user_id",
+                "owner_group_id",
                 "created_by_id",
                 "last_modified_by_id",
                 "product_id",
@@ -211,24 +222,46 @@ class ClaimSFAnnotationTest {
     }
 
     @Nested
-    @DisplayName("AC7 — Reference R-2 FK 검증 (#705 §4)")
+    @DisplayName("AC7 — Reference R-2 FK 검증 (#705 §4 + sf-meta-diff Q2/Q3/Q4)")
     inner class ReferenceR2 {
 
         @Test
-        @DisplayName("owner / createdBy / lastModifiedBy / product 4개 FK 필드 + @ManyToOne + @JoinColumn")
+        @DisplayName("ownerUser / ownerGroup / createdBy / lastModifiedBy / product 5개 FK 필드 + @ManyToOne + @JoinColumn")
         fun referenceFks() {
             mapOf(
-                "owner" to "owner_id",
-                "createdBy" to "created_by_id",
-                "lastModifiedBy" to "last_modified_by_id",
-                "product" to "product_id"
-            ).forEach { (fieldName, expectedColumn) ->
+                "ownerUser" to ("owner_user_id" to com.otoki.powersales.user.entity.User::class.java),
+                "ownerGroup" to ("owner_group_id" to com.otoki.powersales.employee.entity.Group::class.java),
+                "createdBy" to ("created_by_id" to com.otoki.powersales.user.entity.User::class.java),
+                "lastModifiedBy" to ("last_modified_by_id" to com.otoki.powersales.user.entity.User::class.java),
+                "product" to ("product_id" to com.otoki.powersales.product.entity.Product::class.java)
+            ).forEach { (fieldName, expected) ->
+                val (expectedColumn, expectedType) = expected
                 val field = Claim::class.java.getDeclaredField(fieldName)
                 assertThat(field.isAnnotationPresent(ManyToOne::class.java))
                     .withFailMessage("$fieldName 에 @ManyToOne 미부착").isTrue()
                 val joinColumn = field.getAnnotation(JoinColumn::class.java)
                 assertThat(joinColumn).withFailMessage("$fieldName 에 @JoinColumn 미부착").isNotNull
                 assertThat(joinColumn.name).isEqualTo(expectedColumn)
+                assertThat(field.type)
+                    .withFailMessage("$fieldName 의 FK 타입 불일치 (기대: ${expectedType.simpleName}, 실제: ${field.type.simpleName})")
+                    .isEqualTo(expectedType)
+            }
+        }
+
+        @Test
+        @DisplayName("Q5/Q6/Q7 — SF 절단 위험 정합 (name=80, action_code=40, counsel_number=40)")
+        fun sfLengthAlignment() {
+            mapOf(
+                "name" to 80,
+                "actionCode" to 40,
+                "counselNumber" to 40
+            ).forEach { (fieldName, expectedLength) ->
+                val field = Claim::class.java.getDeclaredField(fieldName)
+                val column = field.getAnnotation(Column::class.java)
+                assertThat(column).withFailMessage("$fieldName 에 @Column 미부착").isNotNull
+                assertThat(column.length)
+                    .withFailMessage("$fieldName length=${column.length} (기대=$expectedLength) — SF 정합 깨짐")
+                    .isEqualTo(expectedLength)
             }
         }
 

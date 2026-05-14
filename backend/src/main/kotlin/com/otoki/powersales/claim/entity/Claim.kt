@@ -14,7 +14,9 @@ import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.employee.entity.Group
 import com.otoki.powersales.product.entity.Product
+import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -63,7 +65,9 @@ class Claim(
     @Column(name = "store_name", nullable = false, length = 100)
     val accountName: String,
 
-    @SFField("DKRetail__ProductCode__c")
+    // Spec sf-meta-diff Q1 옵션 (a): SF Formula 필드 (`DKRetail__ProductId__r.DKRetail__ProductCode__c`).
+    // §6.7 정책상 DB 컬럼 추가 금지 대상이나 application 신규 작성 시 product FK 미연결 (SAP 코드만 있는)
+    // 케이스 회피용 입력값 캐시로 컬럼 유지. SF API 마이그레이션 대상에서는 제외 — `@SFField` 제거.
     @Column(name = "product_code", nullable = false, length = 1300)
     val productCode: String,
 
@@ -128,16 +132,19 @@ class Claim(
 
     // -- SAP 인바운드 갱신 컬럼 (Spec #561) --
 
+    // Q5: SF Name (string 80) 정합 — 절단 위험 회피 (was VARCHAR(50)).
     @SFField("Name")
-    @Column(name = "name", length = 50)
+    @Column(name = "name", length = 80)
     var name: String? = null,
 
+    // Q7: SF DKRetail__counselNumber__c (string 40) 정합 — 절단 위험 회피 (was VARCHAR(30)).
     @SFField("DKRetail__counselNumber__c")
-    @Column(name = "counsel_number", length = 30)
+    @Column(name = "counsel_number", length = 40)
     var counselNumber: String? = null,
 
+    // Q6: SF DKRetail__ActionCode__c (string 40) 정합 — 절단 위험 회피 (was VARCHAR(20)).
     @SFField("DKRetail__ActionCode__c")
-    @Column(name = "action_code", length = 20)
+    @Column(name = "action_code", length = 40)
     var actionCode: String? = null,
 
     @SFField("DKRetail__ActionStatus__c")
@@ -163,16 +170,16 @@ class Claim(
     var productSfid: String? = null,
 
     // -- Spec #747 카테고리 A — 도메인 핵심 누락 D 분류 (SF len=1300 캐시) --
+    // Spec sf-meta-diff Q8 옵션 (b): SF Formula 필드 (Barcode/Phone/ProductStatus 는 product/employee 의 미러).
+    // §6.7 정책상 DB 컬럼 추가 금지 대상이나 product/employee 미연결 케이스 회피용 application 입력값 캐시로
+    // 컬럼 유지. SF API 마이그레이션 대상에서는 제외 — `@SFField` 제거.
 
-    @SFField("DKRetail__Barcode__c")
     @Column(name = "barcode", length = 1300)
     var barcode: String? = null,
 
-    @SFField("DKRetail__Phone__c")
     @Column(name = "phone", length = 1300)
     var phone: String? = null,
 
-    @SFField("DKRetail__ProductStatus__c")
     @Column(name = "product_status", length = 1300)
     var productStatus: String? = null,
 
@@ -244,9 +251,10 @@ class Claim(
     @Column(name = "is_deleted", nullable = false)
     var isDeleted: Boolean = false,
 
-    // -- Spec #705: Reference R-2 (OwnerId / CreatedById / LastModifiedById sfid + Employee FK) --
-    // *_sfid: Heroku Connect sync / SalesforceMigrationTool 이 채우는 buffer (SF User Id).
-    // *_by / owner: SF User → Employee 매핑 결과 FK.
+    // -- Spec sf-meta-diff Q2/Q3/Q4: Reference R-2 정합 --
+    // Q2: OwnerId (`referenceTo = [Group, User]` polymorphic) → owner_sfid + owner_user (User?) + owner_group (Group?) + CHECK XOR.
+    // Q3/Q4: CreatedById/LastModifiedById (`referenceTo = [User]`) → audit FK 타입 Employee → User 전환.
+    // *_sfid: sync buffer (SF Id). sf-migrate Phase 2 가 `<관계>_sfid` → `user.sfid` / `group.sfid` lookup 으로 FK 채움.
 
     @SFField("OwnerId")
     @HCColumn("ownerid")
@@ -264,16 +272,20 @@ class Claim(
     var lastModifiedBySfid: String? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id")
-    var owner: Employee? = null,
+    @JoinColumn(name = "owner_user_id")
+    var ownerUser: User? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_group_id")
+    var ownerGroup: Group? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
-    var createdBy: Employee? = null,
+    var createdBy: User? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
-    var lastModifiedBy: Employee? = null,
+    var lastModifiedBy: User? = null,
 
     // -- Spec #705: Reference R-2 (ProductId FK 신규 추가) --
     // 기존 product_sfid 는 유지 (SF 식별자 buffer). product_code 는 SAP 제품 코드 (별도 식별자).
