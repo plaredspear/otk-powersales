@@ -23,6 +23,8 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.http.HttpStatus
+import com.otoki.powersales.sales.enums.SalesMonth
+import com.otoki.powersales.sales.enums.SalesYear
 import com.otoki.powersales.sales.repository.MonthlySalesHistoryRepository
 import com.otoki.powersales.user.repository.UserRepository
 import org.springframework.stereotype.Service
@@ -209,10 +211,10 @@ class AdminScheduleService(
         // 전월 매출 일괄 조회
         val today = LocalDate.now()
         val lastMonth = today.minusMonths(1)
-        val salesYear = lastMonth.year.toString()
-        val salesMonth = String.format("%02d", lastMonth.monthValue)
+        val salesYear = SalesYear.fromValueOrNull(lastMonth.year.toString())
+        val salesMonth = SalesMonth.fromValueOrNull(String.format("%02d", lastMonth.monthValue))
         val accountsForRevenue = accountMap.values.toList()
-        val revenueByAccountId = if (accountsForRevenue.isNotEmpty()) {
+        val revenueByAccountId = if (accountsForRevenue.isNotEmpty() && salesYear != null && salesMonth != null) {
             monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(
                 salesYear, salesMonth, accountsForRevenue
             ).filter { it.account != null }.associateBy { it.account!!.id }
@@ -231,7 +233,7 @@ class AdminScheduleService(
                 null
             }
             val lastMonthRevenue = revenueByAccountId[row.accountId]?.lastMonthResults
-                ?.let { BigDecimal.valueOf(it).setScale(0, java.math.RoundingMode.HALF_UP) }
+                ?.setScale(0, java.math.RoundingMode.HALF_UP)
 
             DisplayWorkSchedule(
                 employee = employeeMap[row.userId],

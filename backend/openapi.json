@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:63504",
+    "url" : "http://localhost:50715",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -6406,7 +6406,7 @@
           },
           "teamType" : {
             "type" : "string",
-            "enum" : [ "일반", "라면세일조", "프레시세일조_냉장", "프레시세일조_냉동", "프레시세일조_만두", "카레행사조" ]
+            "enum" : [ "라면세일조", "프레시세일조_냉장", "프레시세일조_냉동", "프레시세일조_만두", "카레행사조" ]
           },
           "startDate" : {
             "type" : "string",
@@ -6480,7 +6480,7 @@
           },
           "teamType" : {
             "type" : "string",
-            "enum" : [ "일반", "라면세일조", "프레시세일조_냉장", "프레시세일조_냉동", "프레시세일조_만두", "카레행사조" ]
+            "enum" : [ "라면세일조", "프레시세일조_냉장", "프레시세일조_냉동", "프레시세일조_만두", "카레행사조" ]
           },
           "startDate" : {
             "type" : "string",
@@ -9917,7 +9917,7 @@
           },
           "teamType" : {
             "type" : "string",
-            "enum" : [ "일반", "라면세일조", "프레시세일조_냉장", "프레시세일조_냉동", "프레시세일조_만두", "카레행사조" ]
+            "enum" : [ "라면세일조", "프레시세일조_냉장", "프레시세일조_냉동", "프레시세일조_만두", "카레행사조" ]
           },
           "startDate" : {
             "type" : "string",
@@ -9946,7 +9946,7 @@
           },
           "teamType" : {
             "type" : "string",
-            "enum" : [ "일반", "라면세일조", "프레시세일조_냉장", "프레시세일조_냉동", "프레시세일조_만두", "카레행사조" ]
+            "enum" : [ "라면세일조", "프레시세일조_냉장", "프레시세일조_냉동", "프레시세일조_만두", "카레행사조" ]
           },
           "startDate" : {
             "type" : "string",
@@ -10995,9 +10995,6 @@
             "minLength" : 1,
             "pattern" : "^\\d{6}$"
           },
-          "previousYearMonth" : {
-            "type" : "string"
-          },
           "year" : {
             "type" : "integer",
             "format" : "int32"
@@ -11005,6 +11002,9 @@
           "month" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "previousYearMonth" : {
+            "type" : "string"
           }
         },
         "required" : [ "yearMonth" ]
@@ -11627,7 +11627,17 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "numberOfElements" : {
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ProductDto"
+            }
+          },
+          "number" : {
             "type" : "integer",
             "format" : "int32"
           },
@@ -11643,17 +11653,7 @@
           "last" : {
             "type" : "boolean"
           },
-          "size" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "content" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/ProductDto"
-            }
-          },
-          "number" : {
+          "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
           },
@@ -11665,12 +11665,9 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
-          "pageNumber" : {
+          "offset" : {
             "type" : "integer",
-            "format" : "int32"
-          },
-          "unpaged" : {
-            "type" : "boolean"
+            "format" : "int64"
           },
           "pageSize" : {
             "type" : "integer",
@@ -11682,9 +11679,12 @@
           "paged" : {
             "type" : "boolean"
           },
-          "offset" : {
+          "pageNumber" : {
             "type" : "integer",
-            "format" : "int64"
+            "format" : "int32"
+          },
+          "unpaged" : {
+            "type" : "boolean"
           }
         }
       },
@@ -11717,13 +11717,13 @@
       "SortObject" : {
         "type" : "object",
         "properties" : {
+          "empty" : {
+            "type" : "boolean"
+          },
           "unsorted" : {
             "type" : "boolean"
           },
           "sorted" : {
-            "type" : "boolean"
-          },
-          "empty" : {
             "type" : "boolean"
           }
         }
@@ -14076,7 +14076,17 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "numberOfElements" : {
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ScheduleListItemDto"
+            }
+          },
+          "number" : {
             "type" : "integer",
             "format" : "int32"
           },
@@ -14092,17 +14102,7 @@
           "last" : {
             "type" : "boolean"
           },
-          "size" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "content" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/ScheduleListItemDto"
-            }
-          },
-          "number" : {
+          "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
           },
@@ -14900,11 +14900,11 @@
           },
           "oldValue" : {
             "type" : [ "string", "null" ],
-            "enum" : [ "일반", "라면세일조", "프레시세일조_냉장", "프레시세일조_냉동", "프레시세일조_만두", "카레행사조" ]
+            "enum" : [ "라면세일조", "프레시세일조_냉장", "프레시세일조_냉동", "프레시세일조_만두", "카레행사조" ]
           },
           "newValue" : {
             "type" : "string",
-            "enum" : [ "일반", "라면세일조", "프레시세일조_냉장", "프레시세일조_냉동", "프레시세일조_만두", "카레행사조" ]
+            "enum" : [ "라면세일조", "프레시세일조_냉장", "프레시세일조_냉동", "프레시세일조_만두", "카레행사조" ]
           },
           "changedAt" : {
             "type" : "string",

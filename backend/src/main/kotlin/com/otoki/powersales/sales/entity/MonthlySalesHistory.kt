@@ -1,18 +1,21 @@
 package com.otoki.powersales.sales.entity
 
+import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
+import com.otoki.powersales.employee.entity.Group
+import com.otoki.powersales.sales.entity.converter.SalesMonthConverter
+import com.otoki.powersales.sales.entity.converter.SalesYearConverter
+import com.otoki.powersales.sales.enums.SalesMonth
+import com.otoki.powersales.sales.enums.SalesYear
+import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
-import org.springframework.data.annotation.CreatedDate
-import org.springframework.data.annotation.LastModifiedDate
 import java.math.BigDecimal
 import java.time.LocalDate
-import java.time.LocalDateTime
-import com.otoki.powersales.common.entity.AuditedEntity
-import com.otoki.powersales.account.entity.Account
-import com.otoki.powersales.employee.entity.Employee
+
 /**
  * 월매출 이력 Entity
  * V1 스키마: monthlysaleshistory__c (Heroku Connect 동기화)
@@ -39,18 +42,20 @@ class MonthlySalesHistory(
 
     @SFField("SalesYear__c")
     @HCColumn("salesyear__c")
-    @Column(name = "sales_year", length = 255)
-    var salesYear: String? = null,
+    @Convert(converter = SalesYearConverter::class)
+    @Column(name = "sales_year", length = 4)
+    var salesYear: SalesYear? = null,
 
     @SFField("SalesMonth__c")
     @HCColumn("salesmonth__c")
-    @Column(name = "sales_month", length = 255)
-    var salesMonth: String? = null,
+    @Convert(converter = SalesMonthConverter::class)
+    @Column(name = "sales_month", length = 2)
+    var salesMonth: SalesMonth? = null,
 
     @SFField("LastMonthResults__c")
     @HCColumn("lastmonthresults__c")
-    @Column(name = "last_month_results")
-    val lastMonthResults: Double? = null,
+    @Column(name = "last_month_results", precision = 18, scale = 0)
+    val lastMonthResults: BigDecimal? = null,
 
     @SFField("ShipClosingAmount__c")
     @HCColumn("shipclosingamount__c")
@@ -96,13 +101,11 @@ class MonthlySalesHistory(
     @Column(name = "rl_sales")
     var rlsalesC: Double? = null,
 
-    // Spec #575: SAP TotalLedgerAmount 보존 (누적 합산 로직은 D1 결정으로 별도 스펙 분리)
+    // SF 메타 정합: type=double precision=18 scale=0
     @SFField("TotalLedgerAmount__c")
     @HCColumn("totalledgeramount__c")
-    @Column(name = "total_ledger_amount", precision = 18, scale = 4)
+    @Column(name = "total_ledger_amount", precision = 18, scale = 0)
     var totalLedgerAmount: BigDecimal? = null,
-
-    // -- Spec #601: SF 누락 컬럼 신규 도입 --
 
     @SFField("AccountId__c")
     @HCColumn("accountid__c")
@@ -181,27 +184,15 @@ class MonthlySalesHistory(
 
     @SFField("LastMonthTargetByHand__c")
     @HCColumn("lastmonthtargetbyhand__c")
-    @Column(name = "last_month_target_by_hand")
-    var lastMonthTargetByHand: Double? = null,
+    @Column(name = "last_month_target_by_hand", precision = 18, scale = 0)
+    var lastMonthTargetByHand: BigDecimal? = null,
 
     @SFField("ThisMonthTarget__c")
     @HCColumn("thismonthtarget__c")
-    @Column(name = "this_month_target")
-    var thisMonthTarget: Double? = null,
+    @Column(name = "this_month_target", precision = 18, scale = 0)
+    var thisMonthTarget: BigDecimal? = null,
 
-    // -- Group A: System timestamps (Spec #729 R-2 정합) --
-
-    @SFField("CreatedDate")
-    @HCColumn("createddate")
-    @CreatedDate
-    @Column(name = "created_at", nullable = false, updatable = false)
-    var createdAt: LocalDateTime = LocalDateTime.now(),
-
-    @SFField("LastModifiedDate")
-    @HCColumn("lastmodifieddate")
-    @LastModifiedDate
-    @Column(name = "updated_at", nullable = false)
-    var updatedAt: LocalDateTime = LocalDateTime.now(),
+    // -- Group A audit/owner (OwnerId polymorphic R-2 + Audit FK Employee→User 전환) --
 
     @SFField("OwnerId")
     @HCColumn("ownerid")
@@ -224,25 +215,28 @@ class MonthlySalesHistory(
     @JoinColumn(name = "account_id")
     var account: Account? = null,
 
+    // OwnerId polymorphic R-2 (referenceTo = [Group, User]) — owner_user / owner_group XOR
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id")
-    var owner: Employee? = null,
+    @JoinColumn(name = "owner_user_id")
+    var ownerUser: User? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_group_id")
+    var ownerGroup: Group? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
-    var createdBy: Employee? = null,
+    var createdBy: User? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
-    var lastModifiedBy: Employee? = null,
+    var lastModifiedBy: User? = null,
 
-    // -- Spec #746 R-2 (HQReviews__c FK 신설) --
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "hq_review_id")
     var hqReview: com.otoki.powersales.common.entity.HqReview? = null,
 
-    // -- Spec #746 R-2 (LastMonthlySalesHistory__c self-reference FK 신설) --
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_monthly_sales_history_id")
     var lastMonthlySalesHistory: MonthlySalesHistory? = null,
-) : AuditedEntity()
+) : BaseEntity()

@@ -564,7 +564,7 @@ class AdminScheduleServiceTest {
             val salesHistory = MonthlySalesHistory(
                 id = 1,
                 account = account,
-                lastMonthResults = 5000000.0
+                lastMonthResults = BigDecimal("5000000")
             )
 
             whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
