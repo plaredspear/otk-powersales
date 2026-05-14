@@ -5,7 +5,7 @@
 -- → NULL 초기화 후 SalesforceMigrationTool Phase 2 lookup
 -- (`<관계>_sfid` → `user.sfid` → `user.user_id`) 으로 자동 재채움.
 --
--- 관련: V92__sf_align_appointment.sql (#736, Employee FK 도입), V113 (AccountCategoryMaster 동일 패턴 선례).
+-- 관련: V92__sf_align_appointment.sql (#736, Employee FK 도입), V116 (AccountCategoryMaster 동일 패턴 선례).
 
 ALTER TABLE powersales.appointment
     DROP CONSTRAINT fk_appointment_created_by,
