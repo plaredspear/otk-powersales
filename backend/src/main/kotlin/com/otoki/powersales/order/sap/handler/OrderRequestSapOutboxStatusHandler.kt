@@ -1,6 +1,6 @@
 package com.otoki.powersales.order.sap.handler
 
-import com.otoki.powersales.order.entity.OrderRequestStatus
+import com.otoki.powersales.order.enums.OrderRequestStatus
 import com.otoki.powersales.order.repository.OrderRequestRepository
 import com.otoki.powersales.sap.SapConstants
 import com.otoki.powersales.sap.outbox.SapOutbox

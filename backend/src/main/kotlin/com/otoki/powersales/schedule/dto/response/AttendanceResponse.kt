@@ -1,6 +1,6 @@
 package com.otoki.powersales.schedule.dto.response
 
-import com.otoki.powersales.schedule.entity.AttendanceType
+import com.otoki.powersales.schedule.enums.AttendanceType
 import java.time.LocalDate
 
 /**

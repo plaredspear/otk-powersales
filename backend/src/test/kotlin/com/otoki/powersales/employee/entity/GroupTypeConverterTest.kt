@@ -1,6 +1,7 @@
 package com.otoki.powersales.employee.entity
 
 import com.otoki.powersales.employee.entity.converter.GroupTypeConverter
+import com.otoki.powersales.employee.enums.GroupType
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested

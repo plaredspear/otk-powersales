@@ -2,7 +2,7 @@ package com.otoki.powersales.order.service
 
 import com.otoki.powersales.order.entity.OrderRequest
 import com.otoki.powersales.order.entity.OrderRequestProduct
-import com.otoki.powersales.order.entity.OrderRequestStatus
+import com.otoki.powersales.order.enums.OrderRequestStatus
 import com.otoki.powersales.order.exception.OrderNotFoundException
 import com.otoki.powersales.order.repository.OrderRequestProductRepository
 import com.otoki.powersales.order.repository.OrderRequestRepository

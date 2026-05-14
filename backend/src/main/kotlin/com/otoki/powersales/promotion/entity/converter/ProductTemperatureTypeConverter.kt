@@ -1,6 +1,6 @@
 package com.otoki.powersales.promotion.entity.converter
 
-import com.otoki.powersales.promotion.entity.ProductTemperatureType
+import com.otoki.powersales.promotion.enums.ProductTemperatureType
 import jakarta.persistence.AttributeConverter
 import jakarta.persistence.Converter
 

@@ -1,6 +1,6 @@
 package com.otoki.powersales.leave.entity.converter
 
-import com.otoki.powersales.leave.entity.HolidayType
+import com.otoki.powersales.leave.enums.HolidayType
 import jakarta.persistence.AttributeConverter
 import jakarta.persistence.Converter
 

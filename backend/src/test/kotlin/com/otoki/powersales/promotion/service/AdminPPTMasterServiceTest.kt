@@ -5,7 +5,7 @@ import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.promotion.dto.request.PPTMasterUpdateRequest
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamHistory
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamMaster
-import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
+import com.otoki.powersales.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.promotion.exception.*
 import com.otoki.powersales.promotion.repository.PPTHistoryRepository
 import com.otoki.powersales.promotion.repository.PPTMasterRepository
@@ -14,7 +14,6 @@ import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
-import com.otoki.powersales.promotion.service.AdminPPTMasterService
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy

@@ -1,13 +1,12 @@
 package com.otoki.powersales.promotion.service
 
-import com.otoki.powersales.common.entity.WorkingCategory1
-import com.otoki.powersales.common.entity.WorkingCategory3
-import com.otoki.powersales.common.entity.WorkingType
+import com.otoki.powersales.common.enums.WorkingCategory1
+import com.otoki.powersales.common.enums.WorkingCategory3
+import com.otoki.powersales.common.enums.WorkingType
 import com.otoki.powersales.promotion.dto.request.BatchUpdatePromotionEmployeeItem
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.promotion.dto.request.BatchUpdatePromotionEmployeeRequest
 import com.otoki.powersales.promotion.dto.request.PromotionEmployeeRequest
-import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.entity.PromotionEmployee
 import com.otoki.powersales.account.entity.Account

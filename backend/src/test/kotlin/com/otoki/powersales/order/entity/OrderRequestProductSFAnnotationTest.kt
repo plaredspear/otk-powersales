@@ -3,6 +3,7 @@ package com.otoki.powersales.order.entity
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.common.salesforce.SFSchemaUtils
+import com.otoki.powersales.order.enums.OrderRequestStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested

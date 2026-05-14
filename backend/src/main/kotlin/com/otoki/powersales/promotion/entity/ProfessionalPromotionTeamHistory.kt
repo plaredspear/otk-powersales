@@ -8,6 +8,7 @@ import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.entity.Group
 import com.otoki.powersales.promotion.entity.converter.ProfessionalPromotionTeamTypeConverter
+import com.otoki.powersales.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.time.LocalDateTime

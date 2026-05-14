@@ -6,10 +6,9 @@ import com.otoki.powersales.leave.dto.request.AlternativeHolidayRejectRequest
 import com.otoki.powersales.leave.entity.AlternativeHoliday
 import com.otoki.powersales.leave.exception.*
 import com.otoki.powersales.leave.repository.AlternativeHolidayRepository
-import com.otoki.powersales.leave.service.AlternativeHolidayValidator
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
-import com.otoki.powersales.leave.service.AdminAlternativeHolidayService
+import com.otoki.powersales.leave.enums.AltHolidayStatus
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
@@ -22,7 +21,6 @@ import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
-import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -311,7 +309,7 @@ class AdminAlternativeHolidayServiceTest {
         employeeId = 10L,
         actualWorkDate = saturday,
         targetAltHolidayDate = monday,
-        status = com.otoki.powersales.leave.entity.AltHolidayStatus.fromDisplayName(status),
+        status = AltHolidayStatus.fromDisplayName(status),
         createdByEmpNo = "admin001"
     )
 }

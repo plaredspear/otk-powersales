@@ -17,7 +17,7 @@ import com.otoki.powersales.notice.dto.response.NoticePostDetailResponse
 import com.otoki.powersales.notice.dto.response.NoticePostListResponse
 import com.otoki.powersales.notice.dto.response.NoticePostSummaryResponse
 import com.otoki.powersales.notice.entity.Notice
-import com.otoki.powersales.notice.entity.NoticeCategory
+import com.otoki.powersales.notice.enums.NoticeCategory
 import com.otoki.powersales.notice.exception.BranchRequiredException
 import com.otoki.powersales.notice.exception.InvalidImageIdException
 import com.otoki.powersales.notice.exception.InvalidNoticeCategoryException

@@ -3,6 +3,7 @@ package com.otoki.powersales.leave.repository
 import com.otoki.powersales.leave.dto.response.AlternativeHolidayListItem
 import com.otoki.powersales.leave.entity.QAlternativeHoliday.Companion.alternativeHoliday
 import com.otoki.powersales.employee.entity.QEmployee.Companion.employee
+import com.otoki.powersales.leave.enums.AltHolidayStatus
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.Projections
 import com.querydsl.jpa.impl.JPAQueryFactory
@@ -51,7 +52,7 @@ class AlternativeHolidayRepositoryCustomImpl(
 
     private fun buildStatusCondition(status: String?) =
         status?.let {
-            com.otoki.powersales.leave.entity.AltHolidayStatus.fromDisplayNameOrNull(it)
+            AltHolidayStatus.fromDisplayNameOrNull(it)
                 ?.let { altStatus -> alternativeHoliday.status.eq(altStatus) }
         }
 

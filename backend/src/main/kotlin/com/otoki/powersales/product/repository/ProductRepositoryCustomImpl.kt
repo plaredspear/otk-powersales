@@ -1,10 +1,10 @@
 package com.otoki.powersales.product.repository
 
 import com.otoki.powersales.product.entity.Product
-import com.otoki.powersales.product.entity.ProductCategory1
-import com.otoki.powersales.product.entity.ProductCategory2
-import com.otoki.powersales.product.entity.ProductCategory3
-import com.otoki.powersales.product.entity.ProductStatus
+import com.otoki.powersales.product.enums.ProductCategory1
+import com.otoki.powersales.product.enums.ProductCategory2
+import com.otoki.powersales.product.enums.ProductCategory3
+import com.otoki.powersales.product.enums.ProductStatus
 import com.otoki.powersales.product.entity.QProduct.Companion.product
 import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.data.domain.Page

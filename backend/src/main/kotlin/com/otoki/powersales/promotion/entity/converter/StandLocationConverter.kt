@@ -1,6 +1,6 @@
 package com.otoki.powersales.promotion.entity.converter
 
-import com.otoki.powersales.promotion.entity.StandLocation
+import com.otoki.powersales.promotion.enums.StandLocation
 import jakarta.persistence.AttributeConverter
 import jakarta.persistence.Converter
 

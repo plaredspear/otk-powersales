@@ -1,6 +1,6 @@
 package com.otoki.powersales.leave.dto.response
 
-import com.otoki.powersales.leave.entity.AltHolidayStatus
+import com.otoki.powersales.leave.enums.AltHolidayStatus
 import com.otoki.powersales.leave.entity.AlternativeHoliday
 import java.time.LocalDate
 import java.time.LocalDateTime

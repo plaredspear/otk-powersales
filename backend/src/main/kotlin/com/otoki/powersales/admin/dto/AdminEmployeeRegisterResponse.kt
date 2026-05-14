@@ -2,7 +2,7 @@ package com.otoki.powersales.admin.dto
 
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.employee.entity.EmployeeOrigin
+import com.otoki.powersales.employee.enums.EmployeeOrigin
 import java.time.LocalDateTime
 
 /**

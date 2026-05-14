@@ -7,7 +7,7 @@ import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.order.entity.OrderRequest
 import com.otoki.powersales.order.entity.OrderRequestProduct
-import com.otoki.powersales.order.entity.OrderRequestStatus
+import com.otoki.powersales.order.enums.OrderRequestStatus
 import com.otoki.powersales.order.exception.ForbiddenOrderAccessException
 import com.otoki.powersales.order.exception.OrderCancelDeadlinePassedException
 import com.otoki.powersales.order.exception.OrderCancelInvalidStatusException

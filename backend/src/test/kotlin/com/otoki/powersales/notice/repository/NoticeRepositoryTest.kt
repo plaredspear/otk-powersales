@@ -2,7 +2,7 @@ package com.otoki.powersales.notice.repository
 
 import com.otoki.powersales.common.config.QueryDslConfig
 import com.otoki.powersales.notice.entity.Notice
-import com.otoki.powersales.notice.entity.NoticeCategory
+import com.otoki.powersales.notice.enums.NoticeCategory
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName

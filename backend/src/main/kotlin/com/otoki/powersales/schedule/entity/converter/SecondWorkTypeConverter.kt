@@ -1,6 +1,6 @@
 package com.otoki.powersales.schedule.entity.converter
 
-import com.otoki.powersales.schedule.entity.SecondWorkType
+import com.otoki.powersales.schedule.enums.SecondWorkType
 import jakarta.persistence.AttributeConverter
 import jakarta.persistence.Converter
 

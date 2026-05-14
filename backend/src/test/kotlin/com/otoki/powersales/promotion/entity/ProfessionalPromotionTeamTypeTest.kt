@@ -1,6 +1,7 @@
 package com.otoki.powersales.promotion.entity
 
 import com.otoki.powersales.promotion.entity.converter.ProfessionalPromotionTeamTypeConverter
+import com.otoki.powersales.promotion.enums.ProfessionalPromotionTeamType
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName

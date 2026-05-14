@@ -1,6 +1,6 @@
 package com.otoki.powersales.leave.service
 
-import com.otoki.powersales.common.entity.WorkingType
+import com.otoki.powersales.common.enums.WorkingType
 import com.otoki.powersales.leave.dto.request.AlternativeHolidayApproveRequest
 import com.otoki.powersales.leave.dto.request.AlternativeHolidayCreateRequest
 import com.otoki.powersales.leave.dto.request.AlternativeHolidayRejectRequest
@@ -10,6 +10,7 @@ import com.otoki.powersales.leave.dto.response.AlternativeHolidayListItem
 import com.otoki.powersales.leave.dto.response.AlternativeHolidayRejectResponse
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.leave.entity.AlternativeHoliday
+import com.otoki.powersales.leave.enums.AltHolidayStatus
 import com.otoki.powersales.leave.exception.AltHolidayInvalidStatusException
 import com.otoki.powersales.leave.exception.AltHolidayNotFoundException
 import com.otoki.powersales.leave.exception.ChangeReasonRequiredException
@@ -61,7 +62,7 @@ class AdminAlternativeHolidayService(
                 employeeId = employee.id,
                 actualWorkDate = request.actualWorkDate,
                 targetAltHolidayDate = request.targetAltHolidayDate,
-                status = com.otoki.powersales.leave.entity.AltHolidayStatus.NEW,
+                status = AltHolidayStatus.NEW,
                 createdByEmpNo = admin.employeeCode
             )
         )

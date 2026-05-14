@@ -9,6 +9,8 @@ import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.entity.Group
 import com.otoki.powersales.schedule.entity.converter.SecondWorkTypeConverter
+import com.otoki.powersales.schedule.enums.AttendanceType
+import com.otoki.powersales.schedule.enums.SecondWorkType
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.time.LocalDateTime
@@ -123,4 +125,4 @@ class AttendanceLog(
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: User? = null,
 
-) : BaseEntity()
+    ) : BaseEntity()

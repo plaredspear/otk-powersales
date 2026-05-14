@@ -1,7 +1,7 @@
 package com.otoki.powersales.promotion.repository
 
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamMaster
-import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
+import com.otoki.powersales.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.promotion.entity.QProfessionalPromotionTeamMaster.Companion.professionalPromotionTeamMaster
 import com.otoki.powersales.account.entity.QAccount.Companion.account
 import com.otoki.powersales.employee.entity.QEmployee.Companion.employee

@@ -1,6 +1,6 @@
 package com.otoki.powersales.leave.repository
 
-import com.otoki.powersales.leave.entity.AltHolidayStatus
+import com.otoki.powersales.leave.enums.AltHolidayStatus
 import com.otoki.powersales.leave.entity.AlternativeHoliday
 import org.springframework.data.jpa.repository.JpaRepository
 import java.time.LocalDate

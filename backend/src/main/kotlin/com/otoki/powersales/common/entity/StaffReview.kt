@@ -3,6 +3,9 @@ package com.otoki.powersales.common.entity
 import com.otoki.powersales.common.entity.converter.WorkingCategory1Converter
 import com.otoki.powersales.common.entity.converter.WorkingCategory2Converter
 import com.otoki.powersales.common.entity.converter.WorkingCategory3Converter
+import com.otoki.powersales.common.enums.WorkingCategory1
+import com.otoki.powersales.common.enums.WorkingCategory2
+import com.otoki.powersales.common.enums.WorkingCategory3
 import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
@@ -198,4 +201,4 @@ class StaffReview(
     @Column(name = "jikwee", length = 1300)
     var jikwee: String? = null,
 
-) : BaseEntity()
+    ) : BaseEntity()

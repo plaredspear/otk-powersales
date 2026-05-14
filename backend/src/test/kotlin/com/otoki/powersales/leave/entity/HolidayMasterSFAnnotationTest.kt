@@ -3,7 +3,7 @@ package com.otoki.powersales.leave.entity
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.common.salesforce.SFSchemaUtils
-import com.otoki.powersales.leave.entity.HolidayType
+import com.otoki.powersales.leave.enums.HolidayType
 import jakarta.persistence.Column
 import jakarta.persistence.Id
 import org.assertj.core.api.Assertions.assertThat

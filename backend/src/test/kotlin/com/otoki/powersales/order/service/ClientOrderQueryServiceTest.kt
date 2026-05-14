@@ -2,7 +2,7 @@ package com.otoki.powersales.order.service
 
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
-import com.otoki.powersales.order.entity.DeliveryStatus
+import com.otoki.powersales.order.enums.DeliveryStatus
 import com.otoki.powersales.order.entity.ErpOrder
 import com.otoki.powersales.order.entity.ErpOrderProduct
 import com.otoki.powersales.order.exception.ClientOrderForbiddenException

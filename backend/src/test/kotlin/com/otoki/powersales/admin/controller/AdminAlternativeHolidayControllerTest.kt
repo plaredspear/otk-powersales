@@ -15,6 +15,7 @@ import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.common.security.UserPrincipal
 import com.otoki.powersales.leave.exception.*
 import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.leave.enums.AltHolidayStatus
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -68,7 +69,7 @@ class AdminAlternativeHolidayControllerTest {
                     id = 1, employeeCode = "12345678", employeeName = "홍길동", orgName = "서울1팀",
                     actualWorkDate = LocalDate.of(2026, 3, 7),
                     targetAltHolidayDate = LocalDate.of(2026, 3, 9),
-                    confirmAltHolidayDate = null, status = com.otoki.powersales.leave.entity.AltHolidayStatus.NEW, changeReason = null,
+                    confirmAltHolidayDate = null, status = AltHolidayStatus.NEW, changeReason = null,
                     createdByEmpNo = "admin01", createdAt = LocalDateTime.of(2026, 3, 8, 10, 0)
                 )
             )

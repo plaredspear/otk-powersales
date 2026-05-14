@@ -9,7 +9,7 @@ import com.otoki.powersales.admin.exception.PasswordConfirmMismatchException
 import com.otoki.powersales.admin.scope.AdminEmployeeHolder
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.employee.entity.EmployeeOrigin
+import com.otoki.powersales.employee.enums.EmployeeOrigin
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy

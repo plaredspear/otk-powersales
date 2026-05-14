@@ -4,7 +4,7 @@ import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.common.entity.AgreementWord
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.employee.entity.EmployeeOrigin
+import com.otoki.powersales.employee.enums.EmployeeOrigin
 import com.otoki.powersales.common.repository.AgreementWordRepository
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository

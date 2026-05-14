@@ -1,6 +1,7 @@
 package com.otoki.powersales.common.entity
 
 import com.otoki.powersales.common.entity.converter.EvaluationTypeConverter
+import com.otoki.powersales.common.enums.EvaluationType
 import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField

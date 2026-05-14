@@ -1,8 +1,8 @@
 package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.account.repository.AccountRepository
-import com.otoki.powersales.common.entity.WorkingCategory1
-import com.otoki.powersales.common.entity.WorkingCategory3
+import com.otoki.powersales.common.enums.WorkingCategory1
+import com.otoki.powersales.common.enums.WorkingCategory3
 import com.otoki.powersales.schedule.dto.request.PromotionScheduleBulkDeleteRequest
 import com.otoki.powersales.schedule.dto.request.PromotionScheduleBulkUpdateItem
 import com.otoki.powersales.schedule.dto.request.PromotionScheduleBulkUpdateRequest

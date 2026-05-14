@@ -5,7 +5,7 @@ import com.otoki.powersales.order.dto.response.OrderRequestDetailResponse
 import com.otoki.powersales.order.dto.response.OrderRequestListResponse
 import com.otoki.powersales.order.dto.response.OrderRequestSummaryResponse
 import com.otoki.powersales.order.dto.response.OrderedItemResponse
-import com.otoki.powersales.order.entity.OrderRequestStatus
+import com.otoki.powersales.order.enums.OrderRequestStatus
 import com.otoki.powersales.order.exception.ForbiddenOrderAccessException
 import com.otoki.powersales.order.exception.InvalidDateRangeException
 import com.otoki.powersales.order.exception.InvalidOrderParameterException

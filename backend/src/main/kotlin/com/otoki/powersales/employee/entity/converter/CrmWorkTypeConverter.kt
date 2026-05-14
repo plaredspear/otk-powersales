@@ -1,6 +1,6 @@
 package com.otoki.powersales.employee.entity.converter
 
-import com.otoki.powersales.employee.entity.CrmWorkType
+import com.otoki.powersales.employee.enums.CrmWorkType
 import jakarta.persistence.AttributeConverter
 import jakarta.persistence.Converter
 

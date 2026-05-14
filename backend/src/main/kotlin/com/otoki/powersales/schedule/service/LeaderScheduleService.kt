@@ -2,10 +2,10 @@ package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.account.repository.AccountRepository
-import com.otoki.powersales.common.entity.WorkingCategory1
-import com.otoki.powersales.common.entity.WorkingCategory2
-import com.otoki.powersales.common.entity.WorkingCategory3
-import com.otoki.powersales.common.entity.WorkingType
+import com.otoki.powersales.common.enums.WorkingCategory1
+import com.otoki.powersales.common.enums.WorkingCategory2
+import com.otoki.powersales.common.enums.WorkingCategory3
+import com.otoki.powersales.common.enums.WorkingType
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.employee.entity.Employee

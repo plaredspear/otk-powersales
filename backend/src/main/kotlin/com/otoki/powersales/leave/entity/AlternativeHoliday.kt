@@ -8,6 +8,7 @@ import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.entity.Group
 import com.otoki.powersales.leave.entity.converter.AltHolidayStatusConverter
+import com.otoki.powersales.leave.enums.AltHolidayStatus
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.time.LocalDate

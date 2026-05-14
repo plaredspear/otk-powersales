@@ -10,7 +10,8 @@ import com.otoki.powersales.order.dto.response.CancelledLineResponse
 import com.otoki.powersales.order.dto.response.OrderCancelResponse
 import com.otoki.powersales.order.dto.response.OrderRequestListResponse
 import com.otoki.powersales.order.dto.response.OrderRequestSummaryResponse
-import com.otoki.powersales.order.entity.OrderRequestStatus
+import com.otoki.powersales.order.enums.DeliveryStatus
+import com.otoki.powersales.order.enums.OrderRequestStatus
 import com.otoki.powersales.order.exception.InvalidOrderParameterException
 import com.otoki.powersales.order.exception.OrderCancelDeadlinePassedException
 import com.otoki.powersales.order.exception.OrderCancelInvalidStatusException
@@ -184,7 +185,7 @@ class OrderRequestControllerTest {
                 deliveryDate = LocalDate.of(2026, 5, 6),
                 totalAmount = BigDecimal("1234567.00"),
                 totalApprovedAmount = BigDecimal("1200000.00"),
-                orderRequestStatus = com.otoki.powersales.order.entity.OrderRequestStatus.APPROVED,
+                orderRequestStatus = OrderRequestStatus.APPROVED,
                 isClosed = true,
                 orderedItemCount = 1,
                 orderedItems = listOf(
@@ -204,7 +205,7 @@ class OrderRequestControllerTest {
                                 productCode = "1000023",
                                 productName = "진라면 매운맛",
                                 deliveredQuantity = "10 BOX (300 EA)",
-                                deliveryStatus = com.otoki.powersales.order.entity.DeliveryStatus.DELIVERED,
+                                deliveryStatus = DeliveryStatus.DELIVERED,
                                 driverName = "홍길동",
                                 vehicle = "12가3456",
                                 driverPhone = "010-1234-5678",

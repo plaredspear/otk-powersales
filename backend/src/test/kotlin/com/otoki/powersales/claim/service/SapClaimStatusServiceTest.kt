@@ -2,9 +2,9 @@ package com.otoki.powersales.claim.service
 
 import com.otoki.powersales.claim.dto.sap.ClaimStatusRequestItem
 import com.otoki.powersales.claim.entity.Claim
-import com.otoki.powersales.claim.entity.ClaimDateType
-import com.otoki.powersales.claim.entity.ClaimType1
-import com.otoki.powersales.claim.entity.ClaimType2
+import com.otoki.powersales.claim.enums.ClaimDateType
+import com.otoki.powersales.claim.enums.ClaimType1
+import com.otoki.powersales.claim.enums.ClaimType2
 import com.otoki.powersales.claim.repository.ClaimRepository
 import com.otoki.powersales.sap.auth.audit.SapInboundAudit
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService

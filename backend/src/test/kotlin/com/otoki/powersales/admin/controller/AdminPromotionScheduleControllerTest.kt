@@ -12,7 +12,6 @@ import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
 import com.otoki.powersales.common.security.UserPrincipal
-import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.schedule.exception.PromotionScheduleNotFoundPartialException
 import com.otoki.powersales.schedule.exception.PromotionScheduleNotInPromotionException

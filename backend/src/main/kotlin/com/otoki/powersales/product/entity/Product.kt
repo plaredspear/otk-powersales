@@ -12,6 +12,12 @@ import com.otoki.powersales.product.entity.converter.ProductCategory3Converter
 import com.otoki.powersales.product.entity.converter.ProductStatusConverter
 import com.otoki.powersales.product.entity.converter.ProductTypeConverter
 import com.otoki.powersales.product.entity.converter.StorageConditionConverter
+import com.otoki.powersales.product.enums.ProductCategory1
+import com.otoki.powersales.product.enums.ProductCategory2
+import com.otoki.powersales.product.enums.ProductCategory3
+import com.otoki.powersales.product.enums.ProductStatus
+import com.otoki.powersales.product.enums.ProductType
+import com.otoki.powersales.product.enums.StorageCondition
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.math.BigDecimal

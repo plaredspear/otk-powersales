@@ -1,12 +1,8 @@
 package com.otoki.powersales.leave.service
 
-import com.otoki.powersales.common.entity.WorkingCategory1
-import com.otoki.powersales.common.entity.WorkingCategory2
-import com.otoki.powersales.common.entity.WorkingCategory3
-import com.otoki.powersales.common.entity.WorkingType
+import com.otoki.powersales.common.enums.WorkingType
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
-import com.otoki.powersales.leave.service.AdminAnnualLeaveService
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
@@ -17,7 +13,6 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
 import java.time.LocalDate

@@ -2,7 +2,7 @@ package com.otoki.powersales.order.dto.response
 
 import com.otoki.powersales.order.entity.OrderRequest
 import com.otoki.powersales.order.entity.OrderRequestProduct
-import com.otoki.powersales.order.entity.OrderRequestStatus
+import com.otoki.powersales.order.enums.OrderRequestStatus
 import java.time.LocalDateTime
 
 /**

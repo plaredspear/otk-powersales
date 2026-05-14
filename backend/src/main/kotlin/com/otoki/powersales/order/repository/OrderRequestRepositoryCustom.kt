@@ -1,7 +1,7 @@
 package com.otoki.powersales.order.repository
 
 import com.otoki.powersales.order.entity.OrderRequest
-import com.otoki.powersales.order.entity.OrderRequestStatus
+import com.otoki.powersales.order.enums.OrderRequestStatus
 import java.time.LocalDate
 
 /**

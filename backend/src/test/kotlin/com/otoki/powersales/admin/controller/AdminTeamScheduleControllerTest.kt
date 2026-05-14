@@ -1,8 +1,8 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.common.entity.WorkingCategory1
-import com.otoki.powersales.common.entity.WorkingCategory2
-import com.otoki.powersales.common.entity.WorkingType
+import com.otoki.powersales.common.enums.WorkingCategory1
+import com.otoki.powersales.common.enums.WorkingCategory2
+import com.otoki.powersales.common.enums.WorkingType
 import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.schedule.dto.request.TeamScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.request.TeamScheduleUpdateRequest

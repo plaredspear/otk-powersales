@@ -1,7 +1,6 @@
 package com.otoki.powersales.product.repository
 
 import com.otoki.powersales.product.entity.Product
-import com.otoki.powersales.product.repository.ProductRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -15,6 +14,9 @@ import org.springframework.context.annotation.Import
 import org.springframework.data.domain.PageRequest
 import org.springframework.test.context.ActiveProfiles
 import com.otoki.powersales.common.config.QueryDslConfig
+import com.otoki.powersales.product.enums.ProductCategory1
+import com.otoki.powersales.product.enums.ProductCategory2
+import com.otoki.powersales.product.enums.StorageCondition
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
@@ -255,10 +257,10 @@ class ProductRepositoryTest {
             name = productName,
             productCode = productCode,
             logisticsBarcode = logisticsBarcode,
-            storageCondition = com.otoki.powersales.product.entity.StorageCondition.ROOM_TEMP,
+            storageCondition = StorageCondition.ROOM_TEMP,
             shelfLife = "7개월",
-            productCategory1 = com.otoki.powersales.product.entity.ProductCategory1.fromDisplayNameOrNull(category1),
-            productCategory2 = com.otoki.powersales.product.entity.ProductCategory2.fromDisplayNameOrNull(category2)
+            productCategory1 = ProductCategory1.fromDisplayNameOrNull(category1),
+            productCategory2 = ProductCategory2.fromDisplayNameOrNull(category2)
         )
     }
 }

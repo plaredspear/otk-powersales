@@ -13,10 +13,10 @@ import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.organization.repository.OrganizationRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
-import com.otoki.powersales.schedule.entity.SecondWorkType
-import com.otoki.powersales.schedule.entity.TypeOfWork1
-import com.otoki.powersales.schedule.entity.TypeOfWork3
-import com.otoki.powersales.schedule.entity.TypeOfWork5
+import com.otoki.powersales.schedule.enums.SecondWorkType
+import com.otoki.powersales.schedule.enums.TypeOfWork1
+import com.otoki.powersales.schedule.enums.TypeOfWork3
+import com.otoki.powersales.schedule.enums.TypeOfWork5
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import org.springframework.data.domain.Page

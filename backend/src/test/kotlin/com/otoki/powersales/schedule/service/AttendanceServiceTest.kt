@@ -1,10 +1,10 @@
 package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
-import com.otoki.powersales.common.entity.WorkingCategory1
-import com.otoki.powersales.common.entity.WorkingCategory2
-import com.otoki.powersales.common.entity.WorkingCategory3
-import com.otoki.powersales.common.entity.WorkingType
+import com.otoki.powersales.common.enums.WorkingCategory1
+import com.otoki.powersales.common.enums.WorkingCategory2
+import com.otoki.powersales.common.enums.WorkingCategory3
+import com.otoki.powersales.common.enums.WorkingType
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
@@ -13,8 +13,8 @@ import com.otoki.powersales.safetycheck.entity.SafetyCheckSubmission
 import com.otoki.powersales.safetycheck.repository.SafetyCheckSubmissionRepository
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
-import com.otoki.powersales.schedule.entity.TypeOfWork3
-import com.otoki.powersales.schedule.entity.TypeOfWork5
+import com.otoki.powersales.schedule.enums.TypeOfWork3
+import com.otoki.powersales.schedule.enums.TypeOfWork5
 import com.otoki.powersales.schedule.config.AttendanceProperties
 import com.otoki.powersales.schedule.exception.AccountCoordsMissingException
 import com.otoki.powersales.schedule.exception.AttendanceDayOffConflictException
@@ -22,7 +22,7 @@ import com.otoki.powersales.schedule.exception.AttendanceTimeExceededException
 import com.otoki.powersales.schedule.exception.AlreadyRegisteredException
 import com.otoki.powersales.schedule.exception.AttendanceTargetConflictException
 import com.otoki.powersales.schedule.exception.AttendanceTargetRequiredException
-import com.otoki.powersales.schedule.entity.AttendanceType
+import com.otoki.powersales.schedule.enums.AttendanceType
 import com.otoki.powersales.schedule.exception.AttendanceDualBranchException
 import com.otoki.powersales.schedule.exception.DisplayAttendanceDuplicateException
 import com.otoki.powersales.schedule.exception.DisplayScheduleNotAssignedException

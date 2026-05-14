@@ -3,7 +3,6 @@ package com.otoki.powersales.schedule.service
 import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.auth.entity.UserRole
 import tools.jackson.databind.json.JsonMapper
-import com.otoki.powersales.schedule.dto.response.RowError
 import com.otoki.powersales.schedule.dto.response.RowPreview
 import com.otoki.powersales.schedule.exception.*
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
@@ -16,9 +15,9 @@ import com.otoki.powersales.sales.repository.MonthlySalesHistoryRepository
 import com.otoki.powersales.organization.repository.OrganizationRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
-import com.otoki.powersales.schedule.entity.TypeOfWork1
-import com.otoki.powersales.schedule.entity.TypeOfWork3
-import com.otoki.powersales.schedule.entity.TypeOfWork5
+import com.otoki.powersales.schedule.enums.TypeOfWork1
+import com.otoki.powersales.schedule.enums.TypeOfWork3
+import com.otoki.powersales.schedule.enums.TypeOfWork5
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.user.entity.User

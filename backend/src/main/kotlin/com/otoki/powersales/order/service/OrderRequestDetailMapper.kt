@@ -3,7 +3,7 @@ package com.otoki.powersales.order.service
 import com.otoki.powersales.order.dto.response.OrderProcessingStatusResponse
 import com.otoki.powersales.order.dto.response.ProcessingItemResponse
 import com.otoki.powersales.order.dto.response.RejectedItemResponse
-import com.otoki.powersales.order.entity.DeliveryStatus
+import com.otoki.powersales.order.enums.DeliveryStatus
 import com.otoki.powersales.order.entity.OrderRequestProduct
 import com.otoki.powersales.sap.outbound.sender.SapOrderRequestDetailLine
 import org.slf4j.LoggerFactory

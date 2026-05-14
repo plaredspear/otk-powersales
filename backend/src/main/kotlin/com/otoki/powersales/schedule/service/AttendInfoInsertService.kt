@@ -1,7 +1,7 @@
 package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.schedule.entity.AttendInfo
-import com.otoki.powersales.schedule.entity.AttendType
+import com.otoki.powersales.schedule.enums.AttendType
 import com.otoki.powersales.schedule.repository.AttendInfoRepository
 import com.otoki.powersales.schedule.service.dto.AttendInfoInsertCommand
 import com.otoki.powersales.schedule.service.dto.AttendInfoInsertFailedRow

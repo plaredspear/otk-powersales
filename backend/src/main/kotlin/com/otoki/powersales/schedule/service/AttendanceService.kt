@@ -3,10 +3,10 @@ package com.otoki.powersales.schedule.service
 import com.otoki.powersales.common.dto.response.AccountInfo
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.common.dto.response.AccountListResponse
-import com.otoki.powersales.common.entity.WorkingCategory1
-import com.otoki.powersales.common.entity.WorkingCategory2
-import com.otoki.powersales.common.entity.WorkingCategory3
-import com.otoki.powersales.common.entity.WorkingType
+import com.otoki.powersales.common.enums.WorkingCategory1
+import com.otoki.powersales.common.enums.WorkingCategory2
+import com.otoki.powersales.common.enums.WorkingCategory3
+import com.otoki.powersales.common.enums.WorkingType
 import com.otoki.powersales.common.util.GeoUtils
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
@@ -15,7 +15,7 @@ import com.otoki.powersales.schedule.config.AttendanceProperties
 import com.otoki.powersales.schedule.dto.response.AttendanceRegisterResponse
 import com.otoki.powersales.schedule.dto.response.AttendanceStatusItem
 import com.otoki.powersales.schedule.dto.response.AttendanceStatusResponse
-import com.otoki.powersales.schedule.entity.AttendanceType
+import com.otoki.powersales.schedule.enums.AttendanceType
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.schedule.exception.*

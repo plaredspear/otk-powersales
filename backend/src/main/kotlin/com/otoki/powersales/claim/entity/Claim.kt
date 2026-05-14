@@ -9,6 +9,11 @@ import com.otoki.powersales.claim.entity.converter.PurchaseMethodConverter
 import com.otoki.powersales.claim.entity.converter.RequestTypeSetConverter
 import com.otoki.powersales.claim.entity.sfpicklist.PurchaseMethod
 import com.otoki.powersales.claim.entity.sfpicklist.RequestType
+import com.otoki.powersales.claim.enums.ClaimChannel
+import com.otoki.powersales.claim.enums.ClaimDateType
+import com.otoki.powersales.claim.enums.ClaimStatus
+import com.otoki.powersales.claim.enums.ClaimType1
+import com.otoki.powersales.claim.enums.ClaimType2
 import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.SFField

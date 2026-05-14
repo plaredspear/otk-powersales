@@ -2,10 +2,8 @@ package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.admin.scope.AdminEmployeeHolder
 import com.otoki.powersales.auth.entity.UserRole
-import com.otoki.powersales.common.entity.WorkingCategory1
-import com.otoki.powersales.common.entity.WorkingCategory2
-import com.otoki.powersales.common.entity.WorkingCategory3
-import com.otoki.powersales.common.entity.WorkingType
+import com.otoki.powersales.common.enums.WorkingCategory1
+import com.otoki.powersales.common.enums.WorkingType
 import com.otoki.powersales.schedule.dto.request.TeamScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.request.TeamScheduleUpdateRequest
 import com.otoki.powersales.schedule.dto.response.*

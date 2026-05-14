@@ -1,6 +1,6 @@
 package com.otoki.powersales.schedule.sap
 
-import com.otoki.powersales.schedule.entity.SecondWorkType
+import com.otoki.powersales.schedule.enums.SecondWorkType
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test

@@ -7,6 +7,7 @@ import com.otoki.powersales.leave.exception.EmployeeNotFoundException
 import com.otoki.powersales.leave.repository.AlternativeHolidayRepository
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.leave.enums.AltHolidayStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
@@ -148,7 +149,7 @@ class AlternativeHolidayServiceTest {
         employeeId = 1L,
         actualWorkDate = saturday,
         targetAltHolidayDate = monday,
-        status = com.otoki.powersales.leave.entity.AltHolidayStatus.fromDisplayName(status),
+        status = AltHolidayStatus.fromDisplayName(status),
         createdByEmpNo = "12345678"
     )
 }

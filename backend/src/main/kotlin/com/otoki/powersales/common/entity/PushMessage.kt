@@ -2,6 +2,8 @@ package com.otoki.powersales.common.entity
 
 import com.otoki.powersales.common.entity.converter.PushMessageBranchCodeConverter
 import com.otoki.powersales.common.entity.converter.PushMessageBranchConverter
+import com.otoki.powersales.common.enums.PushMessageBranch
+import com.otoki.powersales.common.enums.PushMessageBranchCode
 import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField

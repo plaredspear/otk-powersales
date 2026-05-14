@@ -1,6 +1,6 @@
 package com.otoki.powersales.employee.entity.converter
 
-import com.otoki.powersales.employee.entity.GroupType
+import com.otoki.powersales.employee.enums.GroupType
 import jakarta.persistence.AttributeConverter
 import jakarta.persistence.Converter
 import org.slf4j.LoggerFactory

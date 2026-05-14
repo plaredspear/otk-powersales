@@ -1,5 +1,6 @@
 package com.otoki.powersales.promotion.entity
 
+import com.otoki.powersales.promotion.enums.StandLocation
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested

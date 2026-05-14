@@ -14,7 +14,10 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import com.otoki.powersales.auth.converter.UserRoleConverter
 import com.otoki.powersales.auth.entity.UserRole
-import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
+import com.otoki.powersales.employee.enums.CrmWorkType
+import com.otoki.powersales.employee.enums.EmployeeOrigin
+import com.otoki.powersales.employee.enums.Gender
+import com.otoki.powersales.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.promotion.entity.converter.ProfessionalPromotionTeamTypeConverter
 import com.otoki.powersales.user.entity.User
 

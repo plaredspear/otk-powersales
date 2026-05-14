@@ -1,6 +1,6 @@
 package com.otoki.powersales.common.entity.converter
 
-import com.otoki.powersales.common.entity.PushMessageBranchCode
+import com.otoki.powersales.common.enums.PushMessageBranchCode
 import jakarta.persistence.AttributeConverter
 import jakarta.persistence.Converter
 

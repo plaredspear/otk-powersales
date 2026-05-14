@@ -1,6 +1,6 @@
 package com.otoki.powersales.product.entity.converter
 
-import com.otoki.powersales.product.entity.ProductCategory3
+import com.otoki.powersales.product.enums.ProductCategory3
 import jakarta.persistence.AttributeConverter
 import jakarta.persistence.Converter
 

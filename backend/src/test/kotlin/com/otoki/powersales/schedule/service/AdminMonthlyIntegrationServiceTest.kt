@@ -1,10 +1,10 @@
 package com.otoki.powersales.schedule.service
 
-import com.otoki.powersales.common.entity.WorkingCategory1
-import com.otoki.powersales.common.entity.WorkingCategory3
-import com.otoki.powersales.common.entity.WorkingType
+import com.otoki.powersales.common.enums.WorkingCategory1
+import com.otoki.powersales.common.enums.WorkingCategory3
+import com.otoki.powersales.common.enums.WorkingType
 import com.otoki.powersales.leave.entity.HolidayMaster
-import com.otoki.powersales.leave.entity.HolidayType
+import com.otoki.powersales.leave.enums.HolidayType
 import com.otoki.powersales.leave.repository.HolidayMasterRepository
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee

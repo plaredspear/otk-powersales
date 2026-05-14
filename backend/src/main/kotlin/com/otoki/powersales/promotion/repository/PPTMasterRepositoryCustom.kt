@@ -1,7 +1,7 @@
 package com.otoki.powersales.promotion.repository
 
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamMaster
-import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
+import com.otoki.powersales.promotion.enums.ProfessionalPromotionTeamType
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import java.time.LocalDate

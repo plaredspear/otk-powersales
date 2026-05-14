@@ -8,7 +8,7 @@ import com.otoki.powersales.common.security.JwtTokenProvider
 import com.otoki.powersales.common.security.UserPrincipal
 import com.otoki.powersales.order.dto.response.ClientOrderDetailResponse
 import com.otoki.powersales.order.dto.response.ClientOrderItemResponse
-import com.otoki.powersales.order.entity.DeliveryStatus
+import com.otoki.powersales.order.enums.DeliveryStatus
 import com.otoki.powersales.order.exception.ClientOrderForbiddenException
 import com.otoki.powersales.order.exception.InvalidSapOrderNumberException
 import com.otoki.powersales.order.exception.SapOrderNotFoundException

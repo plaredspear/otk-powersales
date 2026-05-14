@@ -7,6 +7,8 @@ import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.entity.Group
+import com.otoki.powersales.notice.enums.NoticeCategory
+import com.otoki.powersales.notice.enums.NoticeScope
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 

@@ -1,6 +1,6 @@
 package com.otoki.powersales.promotion.dto.request
 
-import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
+import com.otoki.powersales.promotion.enums.ProfessionalPromotionTeamType
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull

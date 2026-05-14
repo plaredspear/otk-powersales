@@ -1,7 +1,7 @@
 package com.otoki.powersales.notice.repository
 
 import com.otoki.powersales.notice.entity.Notice
-import com.otoki.powersales.notice.entity.NoticeCategory
+import com.otoki.powersales.notice.enums.NoticeCategory
 import com.otoki.powersales.notice.entity.QNotice.Companion.notice
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.Predicate

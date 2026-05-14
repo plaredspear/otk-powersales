@@ -1,6 +1,6 @@
 package com.otoki.powersales.schedule.sap
 
-import com.otoki.powersales.schedule.entity.SecondWorkType
+import com.otoki.powersales.schedule.enums.SecondWorkType
 import java.time.LocalDate
 
 /**

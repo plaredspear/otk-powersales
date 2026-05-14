@@ -1,6 +1,6 @@
 package com.otoki.powersales.leave.entity.converter
 
-import com.otoki.powersales.leave.entity.AltHolidayStatus
+import com.otoki.powersales.leave.enums.AltHolidayStatus
 import jakarta.persistence.AttributeConverter
 import jakarta.persistence.Converter
 

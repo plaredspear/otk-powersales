@@ -1,12 +1,11 @@
 package com.otoki.powersales.safetycheck.service
 
 import com.otoki.powersales.auth.entity.UserRole
-import com.otoki.powersales.common.entity.WorkingType
+import com.otoki.powersales.common.enums.WorkingType
 import com.otoki.powersales.safetycheck.dto.response.EquipmentStatus
 import com.otoki.powersales.safetycheck.dto.response.MemberStatus
 import com.otoki.powersales.safetycheck.dto.response.SafetyCheckStatusResponse
 import com.otoki.powersales.schedule.exception.TeamScheduleEmployeeNotFoundException
-import com.otoki.powersales.safetycheck.entity.SafetyCheckItem
 import com.otoki.powersales.safetycheck.entity.SafetyCheckSubmission
 import com.otoki.powersales.safetycheck.repository.SafetyCheckItemRepository
 import com.otoki.powersales.safetycheck.repository.SafetyCheckSubmissionRepository

@@ -1,9 +1,10 @@
 package com.otoki.powersales.leave.service
 
-import com.otoki.powersales.common.entity.WorkingType
+import com.otoki.powersales.common.enums.WorkingType
 import com.otoki.powersales.leave.exception.*
 import com.otoki.powersales.leave.repository.AlternativeHolidayRepository
 import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.leave.enums.AltHolidayStatus
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import org.springframework.stereotype.Component
 import java.time.DayOfWeek
@@ -44,7 +45,7 @@ class AlternativeHolidayValidator(
 
     fun validateNoDuplicate(employeeId: Long, actualWorkDate: LocalDate) {
         if (alternativeHolidayRepository.existsByEmployeeIdAndActualWorkDateAndStatusNot(
-                employeeId, actualWorkDate, com.otoki.powersales.leave.entity.AltHolidayStatus.REJECTED
+                employeeId, actualWorkDate, AltHolidayStatus.REJECTED
             )
         ) {
             throw AltHolidayDuplicateException()

@@ -1,6 +1,6 @@
 package com.otoki.powersales.claim.entity.converter
 
-import com.otoki.powersales.claim.entity.ClaimStatus
+import com.otoki.powersales.claim.enums.ClaimStatus
 import jakarta.persistence.AttributeConverter
 import jakarta.persistence.Converter
 

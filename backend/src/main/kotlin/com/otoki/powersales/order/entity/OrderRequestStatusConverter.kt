@@ -1,5 +1,6 @@
 package com.otoki.powersales.order.entity
 
+import com.otoki.powersales.order.enums.OrderRequestStatus
 import jakarta.persistence.AttributeConverter
 import jakarta.persistence.Converter
 

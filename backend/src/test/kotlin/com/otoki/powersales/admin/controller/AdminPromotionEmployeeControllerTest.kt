@@ -4,7 +4,6 @@ import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.promotion.dto.request.PromotionEmployeeRequest
 import com.otoki.powersales.promotion.dto.response.PromotionEmployeeDetailResponse
 import com.otoki.powersales.promotion.dto.response.PromotionEmployeeListResponse
-import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
 import com.otoki.powersales.admin.scope.DataScopeHolder
 import com.otoki.powersales.admin.security.AdminAuthorityFilter
 import com.otoki.powersales.promotion.service.AdminPromotionConfirmService

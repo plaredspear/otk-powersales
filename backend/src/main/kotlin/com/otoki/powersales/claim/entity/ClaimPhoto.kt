@@ -1,5 +1,6 @@
 package com.otoki.powersales.claim.entity
 
+import com.otoki.powersales.claim.enums.ClaimPhotoType
 import jakarta.persistence.*
 import java.time.LocalDateTime
 

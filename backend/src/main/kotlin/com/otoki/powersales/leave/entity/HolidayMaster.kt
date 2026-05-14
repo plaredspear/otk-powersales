@@ -7,6 +7,7 @@ import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.leave.entity.converter.HolidayTypeConverter
+import com.otoki.powersales.leave.enums.HolidayType
 import jakarta.persistence.*
 import java.time.LocalDate
 

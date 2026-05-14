@@ -1,5 +1,7 @@
 package com.otoki.powersales.common.entity
 
+import com.otoki.powersales.common.enums.PushMessageBranch
+import com.otoki.powersales.common.enums.PushMessageBranchCode
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.common.salesforce.SFSchemaUtils

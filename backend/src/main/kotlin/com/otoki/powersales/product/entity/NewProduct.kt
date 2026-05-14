@@ -9,6 +9,9 @@ import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.product.entity.converter.InitiatorConverter
 import com.otoki.powersales.product.entity.converter.ManagementTypeConverter
 import com.otoki.powersales.product.entity.converter.NewProductStatusConverter
+import com.otoki.powersales.product.enums.Initiator
+import com.otoki.powersales.product.enums.ManagementType
+import com.otoki.powersales.product.enums.NewProductStatus
 import jakarta.persistence.*
 import java.time.LocalDate
 
@@ -170,4 +173,4 @@ class NewProduct(
     @JoinColumn(name = "product_code_id")
     var productCode: Product? = null,
 
-) : BaseEntity()
+    ) : BaseEntity()

@@ -1,6 +1,6 @@
 package com.otoki.powersales.employee.entity.converter
 
-import com.otoki.powersales.employee.entity.Gender
+import com.otoki.powersales.employee.enums.Gender
 import jakarta.persistence.AttributeConverter
 import jakarta.persistence.Converter
 import org.slf4j.LoggerFactory

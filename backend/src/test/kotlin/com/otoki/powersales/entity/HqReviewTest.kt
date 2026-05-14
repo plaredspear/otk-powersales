@@ -1,6 +1,6 @@
 package com.otoki.powersales.entity
 
-import com.otoki.powersales.common.entity.EvaluationType
+import com.otoki.powersales.common.enums.EvaluationType
 import com.otoki.powersales.common.entity.HqReview
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName

@@ -4,9 +4,9 @@ import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.promotion.dto.request.PromotionCreateRequest
 import com.otoki.powersales.promotion.dto.response.*
 import com.otoki.powersales.admin.scope.DataScopeHolder
-import com.otoki.powersales.promotion.entity.ProductTemperatureType
+import com.otoki.powersales.promotion.enums.ProductTemperatureType
 import com.otoki.powersales.promotion.entity.Promotion
-import com.otoki.powersales.promotion.entity.StandLocation
+import com.otoki.powersales.promotion.enums.StandLocation
 import com.otoki.powersales.promotion.exception.*
 import com.otoki.powersales.promotion.repository.PromotionEmployeeRepository
 import com.otoki.powersales.promotion.repository.PromotionRepository

@@ -1,6 +1,6 @@
 package com.otoki.powersales.order.dto.response
 
-import com.otoki.powersales.order.entity.DeliveryStatus
+import com.otoki.powersales.order.enums.DeliveryStatus
 
 /**
  * 본인 주문요청 상세 — SAP 처리 라인 (Spec #595).

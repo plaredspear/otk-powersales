@@ -3,6 +3,9 @@ package com.otoki.powersales.product.entity
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.common.salesforce.SFSchemaUtils
+import com.otoki.powersales.product.enums.Initiator
+import com.otoki.powersales.product.enums.ManagementType
+import com.otoki.powersales.product.enums.NewProductStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested

@@ -2,7 +2,7 @@ package com.otoki.powersales.promotion.dto.response
 
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamHistory
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamMaster
-import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
+import com.otoki.powersales.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.promotion.repository.PPTMasterSearchResult
 import java.time.LocalDate
 import java.time.LocalDateTime

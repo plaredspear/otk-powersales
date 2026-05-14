@@ -1,10 +1,9 @@
 package com.otoki.powersales.schedule.repository
 
-import com.otoki.powersales.account.entity.QAccount.Companion.account
-import com.otoki.powersales.employee.`enum`.EmploymentStatus
+import com.otoki.powersales.employee.enums.EmploymentStatus
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.entity.QDisplayWorkSchedule.Companion.displayWorkSchedule
-import com.otoki.powersales.schedule.entity.TypeOfWork3
+import com.otoki.powersales.schedule.enums.TypeOfWork3
 import com.otoki.powersales.employee.entity.QEmployee.Companion.employee
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.dsl.BooleanExpression

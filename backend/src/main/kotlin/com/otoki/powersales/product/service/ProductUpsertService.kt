@@ -1,12 +1,12 @@
 package com.otoki.powersales.product.service
 
 import com.otoki.powersales.product.entity.Product
-import com.otoki.powersales.product.entity.ProductCategory1
-import com.otoki.powersales.product.entity.ProductCategory2
-import com.otoki.powersales.product.entity.ProductCategory3
-import com.otoki.powersales.product.entity.ProductStatus
-import com.otoki.powersales.product.entity.ProductType
-import com.otoki.powersales.product.entity.StorageCondition
+import com.otoki.powersales.product.enums.ProductCategory1
+import com.otoki.powersales.product.enums.ProductCategory2
+import com.otoki.powersales.product.enums.ProductCategory3
+import com.otoki.powersales.product.enums.ProductStatus
+import com.otoki.powersales.product.enums.ProductType
+import com.otoki.powersales.product.enums.StorageCondition
 import com.otoki.powersales.product.repository.ProductRepository
 import com.otoki.powersales.product.service.dto.ParseResult
 import com.otoki.powersales.product.service.dto.ProductUpsertCommand

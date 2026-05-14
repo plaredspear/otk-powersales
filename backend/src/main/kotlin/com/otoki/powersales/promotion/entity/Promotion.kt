@@ -10,6 +10,8 @@ import com.otoki.powersales.employee.entity.Group
 import com.otoki.powersales.product.entity.Product
 import com.otoki.powersales.promotion.entity.converter.ProductTemperatureTypeConverter
 import com.otoki.powersales.promotion.entity.converter.StandLocationConverter
+import com.otoki.powersales.promotion.enums.ProductTemperatureType
+import com.otoki.powersales.promotion.enums.StandLocation
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.time.LocalDate

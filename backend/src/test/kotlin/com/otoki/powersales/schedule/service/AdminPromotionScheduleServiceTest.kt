@@ -1,10 +1,9 @@
 package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.account.entity.Account
-import com.otoki.powersales.common.entity.WorkingCategory1
-import com.otoki.powersales.common.entity.WorkingCategory2
-import com.otoki.powersales.common.entity.WorkingType
-import com.otoki.powersales.common.entity.WorkingCategory3
+import com.otoki.powersales.common.enums.WorkingCategory1
+import com.otoki.powersales.common.enums.WorkingType
+import com.otoki.powersales.common.enums.WorkingCategory3
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.schedule.dto.request.PromotionScheduleBulkDeleteRequest
 import com.otoki.powersales.schedule.dto.request.PromotionScheduleBulkUpdateItem
@@ -28,8 +27,6 @@ import com.otoki.powersales.schedule.exception.TeamScheduleConflictException
 import com.otoki.powersales.schedule.exception.TeamScheduleNotFoundException
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
-import com.otoki.powersales.schedule.service.AdminPromotionScheduleService
-import com.otoki.powersales.schedule.service.TeamScheduleValidator
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach

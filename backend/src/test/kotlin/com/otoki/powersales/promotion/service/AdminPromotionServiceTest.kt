@@ -1,8 +1,8 @@
 package com.otoki.powersales.promotion.service
 
-import com.otoki.powersales.common.entity.WorkingCategory1
-import com.otoki.powersales.common.entity.WorkingCategory3
-import com.otoki.powersales.common.entity.WorkingType
+import com.otoki.powersales.common.enums.WorkingCategory1
+import com.otoki.powersales.common.enums.WorkingCategory3
+import com.otoki.powersales.common.enums.WorkingType
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.admin.scope.DataScopeHolder
@@ -10,7 +10,7 @@ import com.otoki.powersales.promotion.dto.request.PromotionCreateRequest
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.entity.PromotionEmployee
 import com.otoki.powersales.promotion.entity.PromotionType
-import com.otoki.powersales.promotion.entity.StandLocation
+import com.otoki.powersales.promotion.enums.StandLocation
 import com.otoki.powersales.promotion.exception.*
 import com.otoki.powersales.promotion.repository.PromotionEmployeeRepository
 import com.otoki.powersales.promotion.repository.PromotionRepository
@@ -21,6 +21,7 @@ import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.product.repository.ProductRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.product.enums.ProductCategory1
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -812,7 +813,7 @@ class AdminPromotionServiceTest {
         name: String = "진라면 매운맛 120g",
         category1: String = "라면"
     ) = Product(id = id, name = name).also {
-        it.productCategory1 = com.otoki.powersales.product.entity.ProductCategory1.fromDisplayNameOrNull(category1)
+        it.productCategory1 = ProductCategory1.fromDisplayNameOrNull(category1)
     }
 
     private fun createEmployee(

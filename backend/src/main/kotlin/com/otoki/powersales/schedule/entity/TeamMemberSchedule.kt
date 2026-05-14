@@ -1,11 +1,11 @@
 package com.otoki.powersales.schedule.entity
 
 import com.otoki.powersales.common.entity.BaseEntity
-import com.otoki.powersales.common.entity.WorkingCategory1
-import com.otoki.powersales.common.entity.WorkingCategory2
-import com.otoki.powersales.common.entity.WorkingCategory3
-import com.otoki.powersales.common.entity.WorkingCategory5
-import com.otoki.powersales.common.entity.WorkingType
+import com.otoki.powersales.common.enums.WorkingCategory1
+import com.otoki.powersales.common.enums.WorkingCategory2
+import com.otoki.powersales.common.enums.WorkingCategory3
+import com.otoki.powersales.common.enums.WorkingCategory5
+import com.otoki.powersales.common.enums.WorkingType
 import com.otoki.powersales.common.entity.converter.WorkingCategory1Converter
 import com.otoki.powersales.common.entity.converter.WorkingCategory2Converter
 import com.otoki.powersales.common.entity.converter.WorkingCategory3Converter
@@ -20,6 +20,7 @@ import com.otoki.powersales.promotion.entity.PromotionEmployee
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.schedule.entity.converter.SecondWorkTypeConverter
+import com.otoki.powersales.schedule.enums.SecondWorkType
 import jakarta.persistence.*
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -377,7 +378,7 @@ class TeamMemberSchedule(
     @Column(name = "second_work_type_text", length = 1300)
     var secondWorkTypeText: String? = null,
 
-) : BaseEntity() {
+    ) : BaseEntity() {
     fun updateForPromotion(
         employee: Employee,
         account: Account,

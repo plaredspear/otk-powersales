@@ -1,6 +1,6 @@
 package com.otoki.powersales.common.entity.converter
 
-import com.otoki.powersales.common.entity.WorkingCategory3
+import com.otoki.powersales.common.enums.WorkingCategory3
 import jakarta.persistence.AttributeConverter
 import jakarta.persistence.Converter
 

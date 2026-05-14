@@ -7,7 +7,7 @@ import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
+import com.otoki.powersales.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.promotion.entity.converter.ProfessionalPromotionTeamTypeConverter
 import jakarta.persistence.*
 import java.math.BigDecimal

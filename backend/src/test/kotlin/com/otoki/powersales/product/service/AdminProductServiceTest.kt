@@ -1,6 +1,11 @@
 package com.otoki.powersales.product.service
 
 import com.otoki.powersales.product.entity.Product
+import com.otoki.powersales.product.enums.ProductCategory1
+import com.otoki.powersales.product.enums.ProductCategory2
+import com.otoki.powersales.product.enums.ProductCategory3
+import com.otoki.powersales.product.enums.ProductStatus
+import com.otoki.powersales.product.enums.StorageCondition
 import com.otoki.powersales.product.repository.CategoryRow
 import com.otoki.powersales.product.repository.ProductRepository
 import org.assertj.core.api.Assertions.assertThat
@@ -223,13 +228,13 @@ class AdminProductServiceTest {
         id = id,
         name = name,
         productCode = productCode,
-        productCategory1 = com.otoki.powersales.product.entity.ProductCategory1.fromDisplayNameOrNull(category1),
-        productCategory2 = com.otoki.powersales.product.entity.ProductCategory2.fromDisplayNameOrNull(category2),
-        productCategory3 = com.otoki.powersales.product.entity.ProductCategory3.fromDisplayNameOrNull(category3),
+        productCategory1 = ProductCategory1.fromDisplayNameOrNull(category1),
+        productCategory2 = ProductCategory2.fromDisplayNameOrNull(category2),
+        productCategory3 = ProductCategory3.fromDisplayNameOrNull(category3),
         standardUnitPrice = standardUnitPrice?.let { java.math.BigDecimal.valueOf(it) },
         unit = unit,
-        storageCondition = com.otoki.powersales.product.entity.StorageCondition.fromDisplayNameOrNull(storageCondition),
-        productStatus = com.otoki.powersales.product.entity.ProductStatus.fromDisplayNameOrNull(productStatus),
+        storageCondition = StorageCondition.fromDisplayNameOrNull(storageCondition),
+        productStatus = ProductStatus.fromDisplayNameOrNull(productStatus),
         launchDate = launchDate
     )
 }

@@ -1,6 +1,6 @@
 package com.otoki.powersales.order.dto.response
 
-import com.otoki.powersales.order.entity.DeliveryStatus
+import com.otoki.powersales.order.enums.DeliveryStatus
 import com.otoki.powersales.order.entity.ErpOrder
 import com.otoki.powersales.order.entity.ErpOrderProduct
 import java.math.BigDecimal

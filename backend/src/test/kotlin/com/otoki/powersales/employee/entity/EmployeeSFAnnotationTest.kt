@@ -6,6 +6,8 @@ import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.common.salesforce.SFSchemaUtils
 import com.otoki.powersales.employee.entity.converter.CrmWorkTypeConverter
 import com.otoki.powersales.employee.entity.converter.GenderConverter
+import com.otoki.powersales.employee.enums.CrmWorkType
+import com.otoki.powersales.employee.enums.Gender
 import jakarta.persistence.Convert
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName

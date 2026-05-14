@@ -6,7 +6,7 @@ import com.otoki.powersales.order.dto.request.OrderRequestCreateRequest
 import com.otoki.powersales.order.dto.response.OrderRequestCreateResponse
 import com.otoki.powersales.order.entity.OrderRequest
 import com.otoki.powersales.order.entity.OrderRequestProduct
-import com.otoki.powersales.order.entity.OrderRequestStatus
+import com.otoki.powersales.order.enums.OrderRequestStatus
 import com.otoki.powersales.order.exception.OrderAccountForbiddenException
 import com.otoki.powersales.order.exception.OrderInvalidRequestException
 import com.otoki.powersales.order.exception.OrderInvalidUnitException

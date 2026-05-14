@@ -2,10 +2,10 @@ package com.otoki.powersales.order.service
 
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.order.entity.DeliveryStatus
+import com.otoki.powersales.order.enums.DeliveryStatus
 import com.otoki.powersales.order.entity.OrderRequest
 import com.otoki.powersales.order.entity.OrderRequestProduct
-import com.otoki.powersales.order.entity.OrderRequestStatus
+import com.otoki.powersales.order.enums.OrderRequestStatus
 import com.otoki.powersales.sap.outbound.sender.SapOrderRequestDetailLine
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName

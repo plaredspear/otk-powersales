@@ -1,7 +1,7 @@
 package com.otoki.powersales.claim.repository
 
 import com.otoki.powersales.claim.entity.Claim
-import com.otoki.powersales.claim.entity.ClaimStatus
+import com.otoki.powersales.claim.enums.ClaimStatus
 import com.otoki.powersales.claim.entity.QClaim.Companion.claim
 import com.otoki.powersales.employee.entity.QEmployee.Companion.employee
 import com.querydsl.core.BooleanBuilder

@@ -1,10 +1,10 @@
 package com.otoki.powersales.sap.inbound.service
 
-import com.otoki.powersales.common.entity.WorkingType
+import com.otoki.powersales.common.enums.WorkingType
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.sap.inbound.dto.attendance.ScheduleConversionSummary
 import com.otoki.powersales.schedule.entity.AttendInfo
-import com.otoki.powersales.schedule.entity.AttendType
+import com.otoki.powersales.schedule.enums.AttendType
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import org.slf4j.LoggerFactory

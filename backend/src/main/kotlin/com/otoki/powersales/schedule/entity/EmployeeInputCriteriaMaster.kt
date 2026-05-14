@@ -8,6 +8,7 @@ import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Group
 import com.otoki.powersales.schedule.entity.converter.TypeOfWork1Converter
+import com.otoki.powersales.schedule.enums.TypeOfWork1
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.math.BigDecimal

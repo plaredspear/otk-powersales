@@ -1,6 +1,7 @@
 package com.otoki.powersales.product.service
 
 import com.otoki.powersales.product.entity.Product
+import com.otoki.powersales.product.enums.StorageCondition
 import com.otoki.powersales.product.repository.ProductRepository
 import com.otoki.powersales.product.service.dto.ProductUpsertCommand
 import org.assertj.core.api.Assertions.assertThat
@@ -131,7 +132,7 @@ class ProductUpsertServiceTest {
             val captor = argumentCaptor<List<Product>>()
             verify(productRepository).saveAll(captor.capture())
             assertThat(captor.firstValue.single().storageCondition)
-                .isEqualTo(com.otoki.powersales.product.entity.StorageCondition.REFRIGERATED)
+                .isEqualTo(StorageCondition.REFRIGERATED)
         }
 
         @Test

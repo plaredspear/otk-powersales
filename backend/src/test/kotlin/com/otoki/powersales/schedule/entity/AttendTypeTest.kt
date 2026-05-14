@@ -1,5 +1,6 @@
 package com.otoki.powersales.schedule.entity
 
+import com.otoki.powersales.schedule.enums.AttendType
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested

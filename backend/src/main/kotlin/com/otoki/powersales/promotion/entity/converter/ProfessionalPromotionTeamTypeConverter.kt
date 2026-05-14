@@ -1,6 +1,6 @@
 package com.otoki.powersales.promotion.entity.converter
 
-import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
+import com.otoki.powersales.promotion.enums.ProfessionalPromotionTeamType
 import jakarta.persistence.AttributeConverter
 import jakarta.persistence.Converter
 

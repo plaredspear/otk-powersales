@@ -1,5 +1,6 @@
 package com.otoki.powersales.notice.entity
 
+import com.otoki.powersales.notice.enums.NoticeScope
 import jakarta.persistence.AttributeConverter
 import jakarta.persistence.Converter
 

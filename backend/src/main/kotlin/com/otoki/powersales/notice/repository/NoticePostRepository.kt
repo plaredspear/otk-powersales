@@ -1,7 +1,7 @@
 /*
 package com.otoki.powersales.notice.repository
 
-import com.otoki.powersales.notice.entity.NoticeCategory
+import com.otoki.powersales.notice.enums.NoticeCategory
 import com.otoki.powersales.notice.entity.NoticePost
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable

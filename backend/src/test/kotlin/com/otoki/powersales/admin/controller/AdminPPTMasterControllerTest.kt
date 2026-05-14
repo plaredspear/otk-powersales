@@ -9,7 +9,7 @@ import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.common.security.UserPrincipal
-import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
+import com.otoki.powersales.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.promotion.exception.PPTMasterDuplicateException
 import com.otoki.powersales.promotion.exception.PPTMasterNotFoundException
 import com.otoki.powersales.auth.entity.UserRole

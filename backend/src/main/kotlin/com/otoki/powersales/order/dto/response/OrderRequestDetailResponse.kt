@@ -1,7 +1,7 @@
 package com.otoki.powersales.order.dto.response
 
 import com.otoki.powersales.order.entity.OrderRequest
-import com.otoki.powersales.order.entity.OrderRequestStatus
+import com.otoki.powersales.order.enums.OrderRequestStatus
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime

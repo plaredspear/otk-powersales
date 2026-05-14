@@ -3,8 +3,8 @@ package com.otoki.powersales.employee.service
 import com.otoki.powersales.common.entity.SystemCodeMaster
 import com.otoki.powersales.common.repository.SystemCodeMasterRepository
 import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.employee.entity.EmployeeOrigin
-import com.otoki.powersales.employee.entity.Gender
+import com.otoki.powersales.employee.enums.EmployeeOrigin
+import com.otoki.powersales.employee.enums.Gender
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.employee.service.dto.EmployeeUpsertCommand
 import com.otoki.powersales.user.entity.User

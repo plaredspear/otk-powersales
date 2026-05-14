@@ -12,6 +12,10 @@ import com.otoki.powersales.schedule.entity.converter.SecondWorkTypeConverter
 import com.otoki.powersales.schedule.entity.converter.TypeOfWork1Converter
 import com.otoki.powersales.schedule.entity.converter.TypeOfWork3Converter
 import com.otoki.powersales.schedule.entity.converter.TypeOfWork5Converter
+import com.otoki.powersales.schedule.enums.SecondWorkType
+import com.otoki.powersales.schedule.enums.TypeOfWork1
+import com.otoki.powersales.schedule.enums.TypeOfWork3
+import com.otoki.powersales.schedule.enums.TypeOfWork5
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.math.BigDecimal
@@ -157,4 +161,4 @@ class DisplayWorkSchedule(
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: User? = null,
 
-) : BaseEntity()
+    ) : BaseEntity()

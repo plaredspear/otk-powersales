@@ -1,6 +1,6 @@
 package com.otoki.powersales.safetycheck.service
 
-import com.otoki.powersales.common.entity.WorkingType
+import com.otoki.powersales.common.enums.WorkingType
 import com.otoki.powersales.schedule.exception.TeamScheduleEmployeeNotFoundException
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.safetycheck.entity.SafetyCheckItem

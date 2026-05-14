@@ -3,6 +3,7 @@ package com.otoki.powersales.leave.service
 import com.otoki.powersales.leave.exception.*
 import com.otoki.powersales.leave.repository.AlternativeHolidayRepository
 import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.leave.enums.AltHolidayStatus
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import org.assertj.core.api.Assertions.assertThatCode
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -129,7 +130,7 @@ class AlternativeHolidayValidatorTest {
         @DisplayName("중복 없음 -> 통과")
         fun noDuplicate() {
             whenever(alternativeHolidayRepository.existsByEmployeeIdAndActualWorkDateAndStatusNot(
-                1L, saturday, com.otoki.powersales.leave.entity.AltHolidayStatus.REJECTED
+                1L, saturday, AltHolidayStatus.REJECTED
             )).thenReturn(false)
             assertThatCode { validator.validateNoDuplicate(1L, saturday) }
                 .doesNotThrowAnyException()
@@ -139,7 +140,7 @@ class AlternativeHolidayValidatorTest {
         @DisplayName("중복 존재 -> AltHolidayDuplicateException")
         fun duplicate() {
             whenever(alternativeHolidayRepository.existsByEmployeeIdAndActualWorkDateAndStatusNot(
-                1L, saturday, com.otoki.powersales.leave.entity.AltHolidayStatus.REJECTED
+                1L, saturday, AltHolidayStatus.REJECTED
             )).thenReturn(true)
             assertThatThrownBy { validator.validateNoDuplicate(1L, saturday) }
                 .isInstanceOf(AltHolidayDuplicateException::class.java)

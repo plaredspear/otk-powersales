@@ -4,6 +4,10 @@ import com.otoki.powersales.claim.entity.converter.ClaimChannelConverter
 import com.otoki.powersales.claim.entity.converter.ClaimStatusConverter
 import com.otoki.powersales.claim.entity.converter.ClaimType1Converter
 import com.otoki.powersales.claim.entity.converter.ClaimType2Converter
+import com.otoki.powersales.claim.enums.ClaimChannel
+import com.otoki.powersales.claim.enums.ClaimStatus
+import com.otoki.powersales.claim.enums.ClaimType1
+import com.otoki.powersales.claim.enums.ClaimType2
 import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject

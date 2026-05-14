@@ -3,7 +3,7 @@ package com.otoki.powersales.order.service
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.order.entity.OrderRequest
-import com.otoki.powersales.order.entity.OrderRequestStatus
+import com.otoki.powersales.order.enums.OrderRequestStatus
 import com.otoki.powersales.order.exception.InvalidDateRangeException
 import com.otoki.powersales.order.exception.InvalidOrderParameterException
 import com.otoki.powersales.order.exception.OrderDateRangeTooWideException
@@ -14,7 +14,6 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any

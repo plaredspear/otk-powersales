@@ -3,8 +3,8 @@ package com.otoki.powersales.schedule.service
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
-import com.otoki.powersales.schedule.entity.TypeOfWork3
-import com.otoki.powersales.schedule.entity.TypeOfWork5
+import com.otoki.powersales.schedule.enums.TypeOfWork3
+import com.otoki.powersales.schedule.enums.TypeOfWork5
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested

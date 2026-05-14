@@ -11,7 +11,7 @@ import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
 import com.otoki.powersales.common.security.UserPrincipal
-import com.otoki.powersales.employee.entity.EmployeeOrigin
+import com.otoki.powersales.employee.enums.EmployeeOrigin
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName

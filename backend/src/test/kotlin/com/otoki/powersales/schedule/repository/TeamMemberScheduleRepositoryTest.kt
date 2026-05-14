@@ -1,9 +1,6 @@
 package com.otoki.powersales.schedule.repository
 
-import com.otoki.powersales.common.entity.WorkingCategory1
-import com.otoki.powersales.common.entity.WorkingCategory2
-import com.otoki.powersales.common.entity.WorkingCategory3
-import com.otoki.powersales.common.entity.WorkingType
+import com.otoki.powersales.common.enums.WorkingType
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.employee.entity.Employee
 import org.assertj.core.api.Assertions.assertThat

@@ -3,7 +3,7 @@ package com.otoki.powersales.sap.inbound.service
 import com.otoki.powersales.schedule.entity.Appointment
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
+import com.otoki.powersales.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.common.entity.SystemCodeMaster
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.organization.repository.OrganizationRepository

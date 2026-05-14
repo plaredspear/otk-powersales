@@ -6,6 +6,7 @@ import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.converter.GroupTypeConverter
+import com.otoki.powersales.employee.enums.GroupType
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.Column
 import jakarta.persistence.Convert
@@ -128,4 +129,4 @@ class Group(
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: User? = null,
 
-) : BaseEntity()
+    ) : BaseEntity()

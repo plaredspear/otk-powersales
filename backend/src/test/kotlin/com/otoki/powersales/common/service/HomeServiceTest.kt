@@ -1,22 +1,21 @@
 package com.otoki.powersales.common.service
 
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
-import com.otoki.powersales.common.entity.WorkingCategory1
-import com.otoki.powersales.common.entity.WorkingCategory2
-import com.otoki.powersales.common.entity.WorkingType
+import com.otoki.powersales.common.enums.WorkingCategory1
+import com.otoki.powersales.common.enums.WorkingCategory2
+import com.otoki.powersales.common.enums.WorkingType
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.account.entity.Account
-import com.otoki.powersales.notice.entity.Notice
 import com.otoki.powersales.notice.repository.NoticeRepository
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.safetycheck.dto.response.SafetyCheckTodayResponse
 import com.otoki.powersales.safetycheck.service.SafetyCheckService
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
-import com.otoki.powersales.schedule.entity.TypeOfWork1
-import com.otoki.powersales.schedule.entity.TypeOfWork3
+import com.otoki.powersales.schedule.enums.TypeOfWork1
+import com.otoki.powersales.schedule.enums.TypeOfWork3
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.productexpiration.repository.ProductExpirationRepository

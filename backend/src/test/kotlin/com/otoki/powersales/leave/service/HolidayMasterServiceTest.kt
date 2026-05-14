@@ -1,7 +1,7 @@
 package com.otoki.powersales.leave.service
 
 import com.otoki.powersales.leave.entity.HolidayMaster
-import com.otoki.powersales.leave.entity.HolidayType
+import com.otoki.powersales.leave.enums.HolidayType
 import com.otoki.powersales.leave.repository.HolidayMasterRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName

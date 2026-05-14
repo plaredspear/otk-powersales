@@ -9,7 +9,7 @@ import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.notice.dto.request.NoticeCreateRequest
 import com.otoki.powersales.notice.dto.request.NoticeUpdateRequest
 import com.otoki.powersales.notice.entity.Notice
-import com.otoki.powersales.notice.entity.NoticeCategory
+import com.otoki.powersales.notice.enums.NoticeCategory
 import com.otoki.powersales.notice.exception.BranchRequiredException
 import com.otoki.powersales.notice.exception.InvalidImageIdException
 import com.otoki.powersales.notice.exception.InvalidNoticeCategoryException
