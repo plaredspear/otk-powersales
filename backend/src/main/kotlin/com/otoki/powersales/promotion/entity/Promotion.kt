@@ -6,10 +6,11 @@ import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.account.entity.Account
-import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.employee.entity.Group
 import com.otoki.powersales.product.entity.Product
 import com.otoki.powersales.promotion.entity.converter.ProductTemperatureTypeConverter
 import com.otoki.powersales.promotion.entity.converter.StandLocationConverter
+import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.time.LocalDate
 
@@ -93,11 +94,6 @@ class Promotion(
     @Convert(converter = ProductTemperatureTypeConverter::class)
     var productType: ProductTemperatureType? = null,
 
-    @SFField("DKRetail__AccId__c")
-    @HCColumn("dkretail__accid__c")
-    @Column(name = "deprecated_acc_sfid", length = 18)
-    var deprecatedAccSfid: String? = null,
-
     @SFField("OwnerId")
     @HCColumn("ownerid")
     @Column(name = "owner_sfid", length = 18)
@@ -128,22 +124,20 @@ class Promotion(
     var account: Account,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id")
-    var owner: Employee? = null,
+    @JoinColumn(name = "owner_user_id")
+    var ownerUser: User? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_group_id")
+    var ownerGroup: Group? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
-    var createdBy: Employee? = null,
+    var createdBy: User? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
-    var lastModifiedBy: Employee? = null,
-
-    // -- Spec #747 카테고리 A — D 분류 누락 + Q5 ActualAmount 동명 둘 다 추가 --
-    @SFField("DKRetail__PromotionName__c")
-    @HCColumn("dkretail__promotionname__c")
-    @Column(name = "promotion_name", length = 1300)
-    var promotionName: String? = null,
+    var lastModifiedBy: User? = null,
 
     @SFField("DKRetail__ActualAmount__c")
     @HCColumn("dkretail__actualamount__c")
@@ -154,11 +148,6 @@ class Promotion(
     @HCColumn("dkretail__targetamount__c")
     @Column(name = "dk_target_amount")
     var dkTargetAmount: Double? = null,
-
-    @SFField("ActualAmount__c")
-    @HCColumn("actualamount__c")
-    @Column(name = "actual_amount")
-    var actualAmount: Double? = null,
 ) : BaseEntity() {
 
     @ManyToOne(fetch = FetchType.LAZY)

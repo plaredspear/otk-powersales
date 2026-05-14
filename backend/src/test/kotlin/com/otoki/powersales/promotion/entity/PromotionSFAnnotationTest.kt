@@ -30,10 +30,10 @@ class PromotionSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("매핑 키 수 = 18 (Spec #740: Formula 8건 제거. 도메인 13 + SF 표준 시스템 3 + BaseEntity 2)")
+        @DisplayName("매핑 키 수 = 20 (sf-meta-diff Q2/Q4/Q5 제거. 도메인 12 + Q3 Formula 잔존 2 + SF 표준 시스템 3 + IsDeleted 1 + BaseEntity 2)")
         fun mappingKeySize() {
             val mapping = SFSchemaUtils.getSFMapping(Promotion::class.java)
-            assertThat(mapping).hasSize(23)
+            assertThat(mapping).hasSize(20)
         }
     }
 
@@ -57,13 +57,13 @@ class PromotionSFAnnotationTest {
     }
 
     @Nested
-    @DisplayName("AC1 — @SFField 매핑 키셋 (도메인 13개, Spec #740: Formula 8건 제거)")
+    @DisplayName("AC1 — @SFField 매핑 키셋 (도메인 12개, sf-meta-diff Q5 deprecated_acc_sfid 제거)")
     inner class DomainSfFieldMapping {
 
         private val mapping = SFSchemaUtils.getSFMapping(Promotion::class.java)
 
         @Test
-        @DisplayName("도메인 13개 SF API Name → 컬럼명 1:1")
+        @DisplayName("도메인 12개 SF API Name → 컬럼명 1:1")
         fun domainMappingValues() {
             assertThat(mapping["Name"]).isEqualTo("promotion_number")
             assertThat(mapping["DKRetail__PromotionType__c"]).isEqualTo("promotion_type_id")
@@ -77,7 +77,9 @@ class PromotionSFAnnotationTest {
             assertThat(mapping["CostCenterCode__c"]).isEqualTo("cost_center_code")
             assertThat(mapping["DKRetail__Remark__c"]).isEqualTo("remark")
             assertThat(mapping["DKRetail__ProductType__c"]).isEqualTo("product_type")
-            assertThat(mapping["DKRetail__AccId__c"]).isEqualTo("deprecated_acc_sfid")
+
+            // Q5 (sf-meta-diff): DKRetail__AccId__c (Label="사용안함", E 분류) 매핑 제거
+            assertThat(mapping).doesNotContainKey("DKRetail__AccId__c")
         }
     }
 
