@@ -38,13 +38,18 @@ class HomeService(
     companion object {
         private val DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
-        /** 정렬 우선순위: 출근완료(0) → 임시배정(1) → 행사(2) → 진열(3) */
+        /**
+         * 정렬 우선순위: 출근완료(0) → 행사(1) → 진열(2).
+         *
+         * SF 레거시(`FullCalendarComponentController`) 는 이름순 정렬만 적용하므로 4단계 정렬은 신규 도입 정책.
+         * 기존 "임시배정" 분기는 `WorkingCategory2.TEMPORARY` 옵션을 SF picklist 정합으로 제거하면서 함께 제거
+         * (sf-align-teammemberschedule #762 — SF 레거시 동등 분기 부재 확인 완료).
+         */
         private fun sortPriority(teamMemberSchedule: TeamMemberSchedule): Int {
             return when {
                 teamMemberSchedule.commuteLogSfid != null -> 0
-                teamMemberSchedule.workingCategory2?.displayName?.contains("임시") == true -> 1
-                teamMemberSchedule.workingCategory1 != WorkingCategory1.DISPLAY -> 2
-                else -> 3
+                teamMemberSchedule.workingCategory1 != WorkingCategory1.DISPLAY -> 1
+                else -> 2
             }
         }
     }

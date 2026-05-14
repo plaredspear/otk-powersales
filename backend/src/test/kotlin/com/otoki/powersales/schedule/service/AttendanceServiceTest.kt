@@ -548,7 +548,7 @@ class AttendanceServiceTest {
     inner class GetAccountListTempWorkerPriorityTests {
 
         @Test
-        @DisplayName("임시+일반 혼합 정렬 - 임시(미등록) 1건 + 일반(미등록) 2건 -> 임시가 먼저")
+        @DisplayName("임시+일반 혼합 정렬 - master 임시(미등록) 1건 + schedule 일반(미등록) 2건 -> 임시(master) 가 먼저")
         fun getAccountList_tempAndNormal_tempFirst() {
             // Given
             val userId = 1L
@@ -558,16 +558,19 @@ class AttendanceServiceTest {
             val teamMemberSchedules = listOf(
                 createTeamMemberSchedule(id = 1L, sfid = "SCH001", employeeId = userId, accountId = 9001,
                     accountName = "일반거래처A", workingCategory1 = WorkingCategory1.DISPLAY, workingCategory2 = WorkingCategory2.DEDICATED),
-                createTeamMemberSchedule(id = 2L, sfid = "SCH002", employeeId = userId, accountId = 9002,
-                    accountName = "임시거래처", workingCategory1 = WorkingCategory1.DISPLAY, workingCategory2 = WorkingCategory2.TEMPORARY),
                 createTeamMemberSchedule(id = 3L, sfid = "SCH003", employeeId = userId, accountId = 9003,
                     accountName = "일반거래처B", workingCategory1 = WorkingCategory1.DISPLAY, workingCategory2 = WorkingCategory2.DEDICATED)
+            )
+            val masters = listOf(
+                createDisplayWorkSchedule(id = 100L, confirmed = true,
+                    startDate = today.minusDays(10), endDate = today.plusDays(10),
+                    employeeId = userId, accountId = 9002, accountName = "임시거래처", typeOfWork5 = TypeOfWork5.TEMPORARY)
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
-            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(emptyList())
+            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(masters)
 
             // When
             val result = attendanceService.getAccountList(userId, null)
@@ -579,7 +582,7 @@ class AttendanceServiceTest {
         }
 
         @Test
-        @DisplayName("등록완료+임시+일반 정렬 - 등록완료 → 임시 → 일반 순서")
+        @DisplayName("등록완료+임시(master)+일반 정렬 - 등록완료 → 임시(master) → 일반(schedule) 순서")
         fun getAccountList_registeredTempNormal_correctOrder() {
             // Given
             val userId = 1L
@@ -591,20 +594,23 @@ class AttendanceServiceTest {
                     accountName = "일반거래처", workingCategory1 = WorkingCategory1.DISPLAY, workingCategory2 = WorkingCategory2.DEDICATED),
                 createTeamMemberSchedule(id = 2L, sfid = "SCH002", employeeId = userId, accountId = 9002,
                     accountName = "등록완료거래처", workingCategory1 = WorkingCategory1.DISPLAY, workingCategory2 = WorkingCategory2.DEDICATED,
-                    commuteLogSfid = "LOG001"),
-                createTeamMemberSchedule(id = 3L, sfid = "SCH003", employeeId = userId, accountId = 9003,
-                    accountName = "임시거래처", workingCategory1 = WorkingCategory1.DISPLAY, workingCategory2 = WorkingCategory2.TEMPORARY)
+                    commuteLogSfid = "LOG001")
+            )
+            val masters = listOf(
+                createDisplayWorkSchedule(id = 100L, confirmed = true,
+                    startDate = today.minusDays(10), endDate = today.plusDays(10),
+                    employeeId = userId, accountId = 9003, accountName = "임시거래처", typeOfWork5 = TypeOfWork5.TEMPORARY)
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
-            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(emptyList())
+            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(masters)
 
             // When
             val result = attendanceService.getAccountList(userId, null)
 
-            // Then - 등록완료 → 임시 → 일반
+            // Then - 등록완료 → 임시(master) → 일반(schedule)
             assertThat(result.accounts).hasSize(3)
             assertThat(result.accounts[0].accountName).isEqualTo("등록완료거래처")
             assertThat(result.accounts[0].isRegistered).isTrue()
@@ -684,7 +690,7 @@ class AttendanceServiceTest {
         }
 
         @Test
-        @DisplayName("workCategory2 null - 임시가 아닌 일반 그룹으로 정렬")
+        @DisplayName("workCategory2 null (schedule) + 임시(master) 혼합 - master 임시가 먼저, null 은 일반으로 취급")
         fun getAccountList_nullWorkCategory2_treatedAsNormal() {
             // Given
             val userId = 1L
@@ -693,20 +699,23 @@ class AttendanceServiceTest {
 
             val teamMemberSchedules = listOf(
                 createTeamMemberSchedule(id = 1L, sfid = "SCH001", employeeId = userId, accountId = 9001,
-                    accountName = "null카테고리거래처", workingCategory1 = WorkingCategory1.DISPLAY, workingCategory2 = null),
-                createTeamMemberSchedule(id = 2L, sfid = "SCH002", employeeId = userId, accountId = 9002,
-                    accountName = "임시거래처", workingCategory1 = WorkingCategory1.DISPLAY, workingCategory2 = WorkingCategory2.TEMPORARY)
+                    accountName = "null카테고리거래처", workingCategory1 = WorkingCategory1.DISPLAY, workingCategory2 = null)
+            )
+            val masters = listOf(
+                createDisplayWorkSchedule(id = 100L, confirmed = true,
+                    startDate = today.minusDays(10), endDate = today.plusDays(10),
+                    employeeId = userId, accountId = 9002, accountName = "임시거래처", typeOfWork5 = TypeOfWork5.TEMPORARY)
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
-            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(emptyList())
+            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(masters)
 
             // When
             val result = attendanceService.getAccountList(userId, null)
 
-            // Then - 임시가 먼저, null은 일반으로 취급
+            // Then - 임시(master) 가 먼저, null(schedule) 은 일반으로 취급
             assertThat(result.accounts).hasSize(2)
             assertThat(result.accounts[0].accountName).isEqualTo("임시거래처")
             assertThat(result.accounts[0].workCategory2).isEqualTo("임시")

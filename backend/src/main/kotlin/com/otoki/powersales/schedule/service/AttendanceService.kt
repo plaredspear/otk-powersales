@@ -487,12 +487,12 @@ class AttendanceService(
 
     /**
      * typeOfWork5 → workingCategory2 매핑
-     * "상시" → "전담", "임시" → "임시"
+     * "상시" → "전담". "임시" 는 SF picklist `DKRetail__WorkingCategory2__c` 옵션 미정의 도메인 (sf-align-teammemberschedule #762) — NULL 반환.
      */
     private fun mapTypeOfWork5ToCategory2(typeOfWork5: String?): String? {
         return when (typeOfWork5) {
             "상시" -> "전담"
-            "임시" -> "임시"
+            "임시" -> null
             else -> typeOfWork5
         }
     }
