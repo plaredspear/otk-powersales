@@ -6,8 +6,9 @@ import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
-import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.employee.entity.Group
 import com.otoki.powersales.schedule.entity.converter.TypeOfWork1Converter
+import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -51,11 +52,6 @@ class EmployeeInputCriteriaMaster(
     @Column(name = "category_sfid", length = 18)
     var categorySfid: String? = null,
 
-    @SFField("ConfirmAlert__c")
-    @HCColumn("confirmalert__c")
-    @Column(name = "confirm_alert", length = 1300)
-    var confirmAlert: String? = null,
-
     @SFField("Confirmed__c")
     @HCColumn("confirmed__c")
     @Column(name = "confirmed", nullable = false)
@@ -81,31 +77,6 @@ class EmployeeInputCriteriaMaster(
     @Convert(converter = TypeOfWork1Converter::class)
     @Column(name = "type_of_work_1", length = 255)
     var typeOfWork1: TypeOfWork1? = null,
-
-    @SFField("AccountCategorizedCode__c")
-    @HCColumn("accountcategorizedcode__c")
-    @Column(name = "account_categorized_code", length = 1300)
-    var accountCategorizedCode: String? = null,
-
-    @SFField("BifurcationHalfPersonMinAmountInRealmRan__c")
-    @HCColumn("bifurcationhalfpersonminamountinrealmran__c")
-    @Column(name = "bifurcation_half_person_min_amount_in_realm_ran", precision = 18, scale = 0)
-    var bifurcationHalfPersonMinAmountInRealmRan: BigDecimal? = null,
-
-    @SFField("Fixed1PersonMinAmountInRealmRange__c")
-    @HCColumn("fixed1personminamountinrealmrange__c")
-    @Column(name = "fixed_1_person_min_amount_in_realm_range", precision = 18, scale = 0)
-    var fixed1PersonMinAmountInRealmRange: BigDecimal? = null,
-
-    @SFField("ValidData__c")
-    @HCColumn("validdata__c")
-    @Column(name = "valid_data", length = 1300)
-    var validData: String? = null,
-
-    @SFField("Valid__c")
-    @HCColumn("valid__c")
-    @Column(name = "valid", length = 1300)
-    var valid: String? = null,
 
     @SFField("OwnerId")
     @HCColumn("ownerid")
@@ -134,14 +105,66 @@ class EmployeeInputCriteriaMaster(
     var category: AccountCategoryMaster? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id")
-    var owner: Employee? = null,
+    @JoinColumn(name = "owner_user_id")
+    var ownerUser: User? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_group_id")
+    var ownerGroup: Group? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
-    var createdBy: Employee? = null,
+    var createdBy: User? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
-    var lastModifiedBy: Employee? = null,
-) : BaseEntity()
+    var lastModifiedBy: User? = null,
+) : BaseEntity() {
+
+    /**
+     * SF Formula 재현 — `Category__r.AccountCode__c`.
+     * (sf-meta-diff Q4 — §6.7 위반 컬럼 제거 후 application 재현)
+     */
+    val accountCategorizedCode: String?
+        get() = category?.accountCode
+
+    /**
+     * SF Formula 재현 — `BifurcationHalfPersonStandard__c - (BifurcationHalfPersonStandard__c * Boundary__c)`.
+     * (sf-meta-diff Q4)
+     */
+    val bifurcationHalfPersonMinAmountInRealmRange: BigDecimal?
+        get() {
+            val standard = bifurcationHalfPersonStandard ?: return null
+            val rate = boundary ?: return null
+            return standard.subtract(standard.multiply(rate))
+        }
+
+    /**
+     * SF Formula 재현 — `Fixed1PersonStandardAmount__c - (Fixed1PersonStandardAmount__c * Boundary__c)`.
+     * (sf-meta-diff Q4)
+     */
+    val fixed1PersonMinAmountInRealmRange: BigDecimal?
+        get() {
+            val standard = fixed1PersonStandardAmount ?: return null
+            val rate = boundary ?: return null
+            return standard.subtract(standard.multiply(rate))
+        }
+
+    /**
+     * SF Formula 재현 — TODAY() 와 start/end 비교로 "유효" / "예정" / "종료" 산출.
+     * SF 측이 사용자 세션의 TODAY() 기반이라 호출 시점 java.time.LocalDate.now() 사용.
+     * (sf-meta-diff Q4)
+     */
+    val validData: String?
+        get() {
+            val start = startDate ?: return null
+            val today = LocalDate.now()
+            val endOpenOrInRange = (today.isEqual(start) || today.isAfter(start)) &&
+                (endDate == null || today.isEqual(endDate) || today.isBefore(endDate))
+            return when {
+                endOpenOrInRange -> "유효"
+                start.isAfter(today) -> "예정"
+                else -> "종료"
+            }
+        }
+}
