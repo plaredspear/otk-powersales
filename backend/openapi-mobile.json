@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:54140",
+    "url" : "http://localhost:60328",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -1917,7 +1917,7 @@
           },
           "status" : {
             "type" : "string",
-            "enum" : [ "DRAFT", "SENT", "APPROVED", "SEND_FAILED", "CANCELED" ]
+            "enum" : [ "임시저장", "전송", "승인완료", "전송실패", "주문취소" ]
           },
           "totalAmount" : {
             "type" : "number"
@@ -1997,7 +1997,7 @@
           },
           "orderRequestStatus" : {
             "type" : "string",
-            "enum" : [ "DRAFT", "SENT", "APPROVED", "SEND_FAILED", "CANCELED" ]
+            "enum" : [ "임시저장", "전송", "승인완료", "전송실패", "주문취소" ]
           },
           "cancelledLines" : {
             "type" : "array",
@@ -3014,9 +3014,6 @@
           "promotionNumber" : {
             "type" : "string"
           },
-          "promotionName" : {
-            "type" : [ "string", "null" ]
-          },
           "promotionTypeName" : {
             "type" : [ "string", "null" ]
           },
@@ -3031,19 +3028,8 @@
             "type" : "string",
             "format" : "date"
           },
-          "category" : {
-            "type" : [ "string", "null" ]
-          },
           "standLocation" : {
             "type" : [ "string", "null" ]
-          },
-          "targetAmount" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
-          },
-          "actualAmount" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
           },
           "myScheduleDate" : {
             "type" : [ "string", "null" ],
@@ -3120,9 +3106,6 @@
           "promotionNumber" : {
             "type" : "string"
           },
-          "promotionName" : {
-            "type" : [ "string", "null" ]
-          },
           "promotionTypeName" : {
             "type" : [ "string", "null" ]
           },
@@ -3153,19 +3136,8 @@
           "standLocation" : {
             "type" : [ "string", "null" ]
           },
-          "category" : {
-            "type" : [ "string", "null" ]
-          },
           "productType" : {
             "type" : [ "string", "null" ]
-          },
-          "targetAmount" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
-          },
-          "actualAmount" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
           },
           "remark" : {
             "type" : [ "string", "null" ]
@@ -3200,10 +3172,6 @@
           },
           "workType3" : {
             "type" : [ "string", "null" ]
-          },
-          "professionalPromotionTeam" : {
-            "type" : [ "string", "null" ],
-            "enum" : [ "일반", "라면세일조", "프레시세일조_냉장", "프레시세일조_냉동", "프레시세일조_만두", "카레행사조" ]
           },
           "targetAmount" : {
             "type" : [ "integer", "null" ],
@@ -3255,15 +3223,15 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
-          },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
           },
           "pageable" : {
             "$ref" : "#/components/schemas/PageableObject"
@@ -3293,15 +3261,15 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
-          "pageSize" : {
-            "type" : "integer",
-            "format" : "int32"
+          "paged" : {
+            "type" : "boolean"
           },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "paged" : {
-            "type" : "boolean"
+          "pageSize" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "pageNumber" : {
             "type" : "integer",
@@ -3345,10 +3313,10 @@
       "SortObject" : {
         "type" : "object",
         "properties" : {
-          "sorted" : {
+          "unsorted" : {
             "type" : "boolean"
           },
-          "unsorted" : {
+          "sorted" : {
             "type" : "boolean"
           },
           "empty" : {
@@ -3972,7 +3940,7 @@
           },
           "orderRequestStatus" : {
             "type" : "string",
-            "enum" : [ "DRAFT", "SENT", "APPROVED", "SEND_FAILED", "CANCELED" ]
+            "enum" : [ "임시저장", "전송", "승인완료", "전송실패", "주문취소" ]
           },
           "orderedItemCount" : {
             "type" : "integer",
@@ -4696,15 +4664,21 @@
           "productCode" : {
             "type" : [ "string", "null" ]
           },
-          "categoryName" : {
+          "categoryValue" : {
             "type" : [ "string", "null" ]
           },
-          "subcategoryName" : {
+          "categoryLabel" : {
+            "type" : [ "string", "null" ]
+          },
+          "subcategoryValue" : {
+            "type" : [ "string", "null" ]
+          },
+          "subcategoryLabel" : {
             "type" : [ "string", "null" ]
           },
           "defectQuantity" : {
             "type" : [ "integer", "null" ],
-            "format" : "int32"
+            "format" : "int64"
           },
           "status" : {
             "type" : "string"
@@ -4773,10 +4747,16 @@
             "type" : [ "string", "null" ],
             "format" : "date"
           },
-          "categoryName" : {
+          "categoryValue" : {
             "type" : [ "string", "null" ]
           },
-          "subcategoryName" : {
+          "categoryLabel" : {
+            "type" : [ "string", "null" ]
+          },
+          "subcategoryValue" : {
+            "type" : [ "string", "null" ]
+          },
+          "subcategoryLabel" : {
             "type" : [ "string", "null" ]
           },
           "defectDescription" : {
@@ -4784,11 +4764,11 @@
           },
           "defectQuantity" : {
             "type" : [ "integer", "null" ],
-            "format" : "int32"
+            "format" : "int64"
           },
           "purchaseAmount" : {
             "type" : [ "integer", "null" ],
-            "format" : "int32"
+            "format" : "int64"
           },
           "purchaseMethodName" : {
             "type" : [ "string", "null" ]

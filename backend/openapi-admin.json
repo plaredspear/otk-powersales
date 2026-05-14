@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:54140",
+    "url" : "http://localhost:60328",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -597,7 +597,7 @@
           "required" : true,
           "schema" : {
             "type" : "string",
-            "enum" : [ "WOMAN", "LEADER", "BRANCH_MANAGER", "SALES_MANAGER", "BUSINESS_MANAGER", "HEADQUARTERS_MANAGER", "SALES_SUPPORT", "SYSTEM_ADMIN", "UNKNOWN" ]
+            "enum" : [ "WOMAN", "LEADER", "BRANCH_MANAGER", "SALES_MANAGER", "BUSINESS_MANAGER", "HEADQUARTERS_MANAGER", "SALES_SUPPORT", "SYSTEM_ADMIN", "ACCOUNT_VIEW_ALL", "UNKNOWN" ]
           }
         } ],
         "requestBody" : {
@@ -1232,13 +1232,6 @@
           "schema" : {
             "type" : "integer",
             "format" : "int64"
-          }
-        }, {
-          "name" : "category",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
           }
         }, {
           "name" : "startDate",
@@ -1964,7 +1957,7 @@
           "required" : false,
           "schema" : {
             "type" : "string",
-            "enum" : [ "WOMAN", "LEADER", "BRANCH_MANAGER", "SALES_MANAGER", "BUSINESS_MANAGER", "HEADQUARTERS_MANAGER", "SALES_SUPPORT", "SYSTEM_ADMIN", "UNKNOWN" ]
+            "enum" : [ "WOMAN", "LEADER", "BRANCH_MANAGER", "SALES_MANAGER", "BUSINESS_MANAGER", "HEADQUARTERS_MANAGER", "SALES_SUPPORT", "SYSTEM_ADMIN", "ACCOUNT_VIEW_ALL", "UNKNOWN" ]
           }
         }, {
           "name" : "page",
@@ -2181,13 +2174,13 @@
     },
     "/api/v1/admin/auth/refresh" : {
       "post" : {
-        "tags" : [ "admin-auth-controller" ],
+        "tags" : [ "web-authentication-controller" ],
         "operationId" : "refresh",
         "requestBody" : {
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/RefreshTokenRequest"
+                "$ref" : "#/components/schemas/WebRefreshTokenRequest"
               }
             }
           },
@@ -2199,7 +2192,35 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseTokenResponse"
+                  "$ref" : "#/components/schemas/ApiResponseWebTokenResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/auth/password" : {
+      "post" : {
+        "tags" : [ "web-authentication-controller" ],
+        "operationId" : "changePassword",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/WebChangePasswordRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseWebChangePasswordResponse"
                 }
               }
             }
@@ -2209,13 +2230,13 @@
     },
     "/api/v1/admin/auth/login" : {
       "post" : {
-        "tags" : [ "admin-auth-controller" ],
+        "tags" : [ "web-authentication-controller" ],
         "operationId" : "login",
         "requestBody" : {
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/LoginRequest"
+                "$ref" : "#/components/schemas/WebLoginRequest"
               }
             }
           },
@@ -2227,7 +2248,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseAdminLoginResponse"
+                  "$ref" : "#/components/schemas/ApiResponseWebLoginResponse"
                 }
               }
             }
@@ -3525,16 +3546,19 @@
           },
           "workingType" : {
             "type" : "string",
-            "minLength" : 1
+            "enum" : [ "근무", "연차", "대휴" ]
           },
           "workingCategory1" : {
-            "type" : [ "string", "null" ]
+            "type" : [ "string", "null" ],
+            "enum" : [ "진열", "행사" ]
           },
           "workingCategory2" : {
-            "type" : [ "string", "null" ]
+            "type" : [ "string", "null" ],
+            "enum" : [ "전담", "진열겸임", "임시" ]
           },
           "workingCategory3" : {
-            "type" : [ "string", "null" ]
+            "type" : [ "string", "null" ],
+            "enum" : [ "고정", "격고", "순회" ]
           },
           "accountId" : {
             "type" : [ "integer", "null" ],
@@ -3696,15 +3720,6 @@
           "workType3" : {
             "type" : [ "string", "null" ]
           },
-          "workType4" : {
-            "type" : [ "string", "null" ],
-            "maxLength" : 100,
-            "minLength" : 0
-          },
-          "professionalPromotionTeam" : {
-            "type" : [ "string", "null" ],
-            "enum" : [ "일반", "라면세일조", "프레시세일조_냉장", "프레시세일조_냉동", "프레시세일조_만두", "카레행사조" ]
-          },
           "basePrice" : {
             "type" : [ "integer", "null" ],
             "format" : "int64",
@@ -3849,13 +3864,6 @@
           "workType3" : {
             "type" : [ "string", "null" ]
           },
-          "workType4" : {
-            "type" : [ "string", "null" ]
-          },
-          "professionalPromotionTeam" : {
-            "type" : [ "string", "null" ],
-            "enum" : [ "일반", "라면세일조", "프레시세일조_냉장", "프레시세일조_냉동", "프레시세일조_만두", "카레행사조" ]
-          },
           "teamMemberScheduleId" : {
             "type" : [ "integer", "null" ],
             "format" : "int64"
@@ -3942,11 +3950,6 @@
             "maxLength" : 200,
             "minLength" : 0
           },
-          "category" : {
-            "type" : [ "string", "null" ],
-            "maxLength" : 50,
-            "minLength" : 0
-          },
           "productType" : {
             "type" : [ "string", "null" ],
             "maxLength" : 50,
@@ -3999,9 +4002,6 @@
           "promotionNumber" : {
             "type" : "string"
           },
-          "promotionName" : {
-            "type" : [ "string", "null" ]
-          },
           "promotionTypeId" : {
             "type" : [ "integer", "null" ],
             "format" : "int64"
@@ -4040,24 +4040,10 @@
           "standLocation" : {
             "type" : [ "string", "null" ]
           },
-          "targetAmount" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
-          },
-          "actualAmount" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
-          },
           "costCenterCode" : {
             "type" : [ "string", "null" ]
           },
-          "category" : {
-            "type" : [ "string", "null" ]
-          },
           "productType" : {
-            "type" : [ "string", "null" ]
-          },
-          "branchName" : {
             "type" : [ "string", "null" ]
           },
           "createdAt" : {
@@ -4165,15 +4151,6 @@
           },
           "workType3" : {
             "type" : [ "string", "null" ]
-          },
-          "workType4" : {
-            "type" : [ "string", "null" ],
-            "maxLength" : 100,
-            "minLength" : 0
-          },
-          "professionalPromotionTeam" : {
-            "type" : [ "string", "null" ],
-            "enum" : [ "일반", "라면세일조", "프레시세일조_냉장", "프레시세일조_냉동", "프레시세일조_만두", "카레행사조" ]
           },
           "basePrice" : {
             "type" : [ "integer", "null" ],
@@ -4289,13 +4266,6 @@
           },
           "workType3" : {
             "type" : [ "string", "null" ]
-          },
-          "workType4" : {
-            "type" : [ "string", "null" ]
-          },
-          "professionalPromotionTeam" : {
-            "type" : [ "string", "null" ],
-            "enum" : [ "일반", "라면세일조", "프레시세일조_냉장", "프레시세일조_냉동", "프레시세일조_만두", "카레행사조" ]
           },
           "teamMemberScheduleId" : {
             "type" : [ "integer", "null" ],
@@ -4554,9 +4524,6 @@
             "format" : "date"
           },
           "branchCode" : {
-            "type" : [ "string", "null" ]
-          },
-          "branchName" : {
             "type" : [ "string", "null" ]
           },
           "createdAt" : {
@@ -4877,7 +4844,7 @@
         "properties" : {
           "role" : {
             "type" : "string",
-            "enum" : [ "WOMAN", "LEADER", "BRANCH_MANAGER", "SALES_MANAGER", "BUSINESS_MANAGER", "HEADQUARTERS_MANAGER", "SALES_SUPPORT", "SYSTEM_ADMIN", "UNKNOWN" ]
+            "enum" : [ "WOMAN", "LEADER", "BRANCH_MANAGER", "SALES_MANAGER", "BUSINESS_MANAGER", "HEADQUARTERS_MANAGER", "SALES_SUPPORT", "SYSTEM_ADMIN", "ACCOUNT_VIEW_ALL", "UNKNOWN" ]
           }
         },
         "required" : [ "role" ]
@@ -5415,16 +5382,19 @@
           },
           "workingType" : {
             "type" : "string",
-            "minLength" : 1
+            "enum" : [ "근무", "연차", "대휴" ]
           },
           "workingCategory1" : {
-            "type" : [ "string", "null" ]
+            "type" : [ "string", "null" ],
+            "enum" : [ "진열", "행사" ]
           },
           "workingCategory2" : {
-            "type" : [ "string", "null" ]
+            "type" : [ "string", "null" ],
+            "enum" : [ "전담", "진열겸임", "임시" ]
           },
           "workingCategory3" : {
-            "type" : [ "string", "null" ]
+            "type" : [ "string", "null" ],
+            "enum" : [ "고정", "격고", "순회" ]
           },
           "accountId" : {
             "type" : [ "integer", "null" ],
@@ -6169,7 +6139,7 @@
           },
           "role" : {
             "type" : "string",
-            "enum" : [ "WOMAN", "LEADER", "BRANCH_MANAGER", "SALES_MANAGER", "BUSINESS_MANAGER", "HEADQUARTERS_MANAGER", "SALES_SUPPORT", "SYSTEM_ADMIN", "UNKNOWN" ]
+            "enum" : [ "WOMAN", "LEADER", "BRANCH_MANAGER", "SALES_MANAGER", "BUSINESS_MANAGER", "HEADQUARTERS_MANAGER", "SALES_SUPPORT", "SYSTEM_ADMIN", "ACCOUNT_VIEW_ALL", "UNKNOWN" ]
           },
           "origin" : {
             "type" : "string",
@@ -6321,7 +6291,7 @@
           }
         }
       },
-      "RefreshTokenRequest" : {
+      "WebRefreshTokenRequest" : {
         "type" : "object",
         "properties" : {
           "refreshToken" : {
@@ -6331,7 +6301,7 @@
         },
         "required" : [ "refreshToken" ]
       },
-      "ApiResponseTokenResponse" : {
+      "ApiResponseWebTokenResponse" : {
         "type" : "object",
         "properties" : {
           "success" : {
@@ -6339,7 +6309,7 @@
           },
           "data" : {
             "oneOf" : [ {
-              "$ref" : "#/components/schemas/TokenResponse"
+              "$ref" : "#/components/schemas/WebTokenResponse"
             }, {
               "type" : "null"
             } ]
@@ -6360,7 +6330,7 @@
           }
         }
       },
-      "TokenResponse" : {
+      "WebTokenResponse" : {
         "type" : "object",
         "properties" : {
           "accessToken" : {
@@ -6375,85 +6345,74 @@
           }
         }
       },
-      "LoginRequest" : {
+      "WebChangePasswordRequest" : {
         "type" : "object",
         "properties" : {
-          "employeeCode" : {
+          "currentPassword" : {
+            "type" : [ "string", "null" ]
+          },
+          "newPassword" : {
             "type" : "string",
-            "minLength" : 1,
-            "pattern" : "^(\\d{8}|ADMIN-[A-Za-z0-9_-]{1,30})$"
+            "maxLength" : 2147483647,
+            "minLength" : 4
+          }
+        },
+        "required" : [ "newPassword" ]
+      },
+      "ApiResponseWebChangePasswordResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/WebChangePasswordResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "WebChangePasswordResponse" : {
+        "type" : "object",
+        "properties" : {
+          "passwordChangeRequired" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "WebLoginRequest" : {
+        "type" : "object",
+        "properties" : {
+          "username" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0
           },
           "password" : {
             "type" : "string",
             "maxLength" : 2147483647,
             "minLength" : 4
-          },
-          "deviceId" : {
-            "type" : [ "string", "null" ]
           }
         },
-        "required" : [ "employeeCode", "password" ]
+        "required" : [ "password", "username" ]
       },
-      "AdminLoginResponse" : {
-        "type" : "object",
-        "properties" : {
-          "user" : {
-            "$ref" : "#/components/schemas/AdminUserInfo"
-          },
-          "token" : {
-            "$ref" : "#/components/schemas/AdminTokenInfo"
-          }
-        }
-      },
-      "AdminTokenInfo" : {
-        "type" : "object",
-        "properties" : {
-          "accessToken" : {
-            "type" : "string"
-          },
-          "refreshToken" : {
-            "type" : "string"
-          },
-          "expiresIn" : {
-            "type" : "integer",
-            "format" : "int32"
-          }
-        }
-      },
-      "AdminUserInfo" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "employeeCode" : {
-            "type" : "string"
-          },
-          "name" : {
-            "type" : "string"
-          },
-          "orgName" : {
-            "type" : [ "string", "null" ]
-          },
-          "role" : {
-            "type" : [ "string", "null" ]
-          },
-          "roleLabel" : {
-            "type" : [ "string", "null" ]
-          },
-          "costCenterCode" : {
-            "type" : [ "string", "null" ]
-          },
-          "permissions" : {
-            "type" : "array",
-            "items" : {
-              "type" : "string"
-            }
-          }
-        }
-      },
-      "ApiResponseAdminLoginResponse" : {
+      "ApiResponseWebLoginResponse" : {
         "type" : "object",
         "properties" : {
           "success" : {
@@ -6461,7 +6420,7 @@
           },
           "data" : {
             "oneOf" : [ {
-              "$ref" : "#/components/schemas/AdminLoginResponse"
+              "$ref" : "#/components/schemas/WebLoginResponse"
             }, {
               "type" : "null"
             } ]
@@ -6479,6 +6438,52 @@
           "timestamp" : {
             "type" : "string",
             "format" : "date-time"
+          }
+        }
+      },
+      "WebLoginResponse" : {
+        "type" : "object",
+        "properties" : {
+          "accessToken" : {
+            "type" : "string"
+          },
+          "refreshToken" : {
+            "type" : "string"
+          },
+          "expiresIn" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "passwordChangeRequired" : {
+            "type" : "boolean"
+          },
+          "user" : {
+            "$ref" : "#/components/schemas/WebUserSummary"
+          }
+        }
+      },
+      "WebUserSummary" : {
+        "type" : "object",
+        "properties" : {
+          "userId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "username" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeNumber" : {
+            "type" : "string"
+          },
+          "profileType" : {
+            "type" : "string",
+            "enum" : [ "MARKETING", "STAFF", "TEAM_LEADER", "BRANCH_MANAGER", "SALES_MANAGER", "BUSINESS_DIRECTOR", "DIVISION_HEAD", "SALES_REP", "SYSTEM_ADMIN" ]
+          },
+          "salesSupport" : {
+            "type" : "boolean"
           }
         }
       },
@@ -7341,15 +7346,15 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
-          },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
           },
           "pageable" : {
             "$ref" : "#/components/schemas/PageableObject"
@@ -7379,15 +7384,15 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
-          "pageSize" : {
-            "type" : "integer",
-            "format" : "int32"
+          "paged" : {
+            "type" : "boolean"
           },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "paged" : {
-            "type" : "boolean"
+          "pageSize" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "pageNumber" : {
             "type" : "integer",
@@ -7453,10 +7458,10 @@
       "SortObject" : {
         "type" : "object",
         "properties" : {
-          "sorted" : {
+          "unsorted" : {
             "type" : "boolean"
           },
-          "unsorted" : {
+          "sorted" : {
             "type" : "boolean"
           },
           "empty" : {
@@ -7629,9 +7634,6 @@
           "promotionNumber" : {
             "type" : "string"
           },
-          "promotionName" : {
-            "type" : [ "string", "null" ]
-          },
           "promotionTypeId" : {
             "type" : [ "integer", "null" ],
             "format" : "int64"
@@ -7650,21 +7652,7 @@
             "type" : "string",
             "format" : "date"
           },
-          "targetAmount" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
-          },
-          "actualAmount" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
-          },
-          "category" : {
-            "type" : [ "string", "null" ]
-          },
           "productType" : {
-            "type" : [ "string", "null" ]
-          },
-          "branchName" : {
             "type" : [ "string", "null" ]
           },
           "costCenterCode" : {
@@ -7780,9 +7768,6 @@
             "type" : "integer",
             "format" : "int64"
           },
-          "promotionName" : {
-            "type" : [ "string", "null" ]
-          },
           "schedulePeriod" : {
             "$ref" : "#/components/schemas/SchedulePeriod"
           },
@@ -7818,10 +7803,6 @@
           },
           "employeeName" : {
             "type" : "string"
-          },
-          "professionalPromotionTeam" : {
-            "type" : [ "string", "null" ],
-            "enum" : [ "일반", "라면세일조", "프레시세일조_냉장", "프레시세일조_냉동", "프레시세일조_만두", "카레행사조" ]
           },
           "schedules" : {
             "type" : "array",
@@ -9394,15 +9375,21 @@
           "productCode" : {
             "type" : [ "string", "null" ]
           },
-          "categoryName" : {
+          "categoryValue" : {
             "type" : [ "string", "null" ]
           },
-          "subcategoryName" : {
+          "categoryLabel" : {
+            "type" : [ "string", "null" ]
+          },
+          "subcategoryValue" : {
+            "type" : [ "string", "null" ]
+          },
+          "subcategoryLabel" : {
             "type" : [ "string", "null" ]
           },
           "defectQuantity" : {
             "type" : [ "integer", "null" ],
-            "format" : "int32"
+            "format" : "int64"
           },
           "status" : {
             "type" : "string"
@@ -9498,10 +9485,16 @@
             "type" : [ "string", "null" ],
             "format" : "date"
           },
-          "categoryName" : {
+          "categoryValue" : {
             "type" : [ "string", "null" ]
           },
-          "subcategoryName" : {
+          "categoryLabel" : {
+            "type" : [ "string", "null" ]
+          },
+          "subcategoryValue" : {
+            "type" : [ "string", "null" ]
+          },
+          "subcategoryLabel" : {
             "type" : [ "string", "null" ]
           },
           "defectDescription" : {
@@ -9509,11 +9502,11 @@
           },
           "defectQuantity" : {
             "type" : [ "integer", "null" ],
-            "format" : "int32"
+            "format" : "int64"
           },
           "purchaseAmount" : {
             "type" : [ "integer", "null" ],
-            "format" : "int32"
+            "format" : "int64"
           },
           "purchaseMethodName" : {
             "type" : [ "string", "null" ]
@@ -9675,7 +9668,8 @@
             "format" : "date"
           },
           "status" : {
-            "type" : "string"
+            "type" : "string",
+            "enum" : [ "신규", "승인", "조정", "반려" ]
           },
           "changeReason" : {
             "type" : [ "string", "null" ]
