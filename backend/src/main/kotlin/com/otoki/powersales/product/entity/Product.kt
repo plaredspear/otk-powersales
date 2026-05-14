@@ -5,8 +5,10 @@ import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
+import com.otoki.powersales.employee.entity.Group
 import com.otoki.powersales.product.entity.converter.ProductTypeConverter
 import com.otoki.powersales.product.entity.converter.StorageConditionConverter
+import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -240,7 +242,10 @@ class Product(
     @Column(name = "store_condition_text", length = 255)
     var storeConditionText: String? = null,
 
-    // -- Group A R-2: Owner / CreatedBy / LastModifiedBy --
+    // -- sf-meta-diff Q1/Q2/Q3: Reference R-2 정합 --
+    // Q1: OwnerId (`referenceTo = [Group, User]` polymorphic) → owner_sfid + owner_user (User?) + owner_group (Group?) + CHECK XOR.
+    // Q2/Q3: CreatedById/LastModifiedById (`referenceTo = [User]`) → audit FK 타입 Employee → User 전환.
+    // *_sfid: sync buffer (SF Id). sf-migrate Phase 2 가 `<관계>_sfid` → `user.sfid` / `group.sfid` lookup 으로 FK 채움.
 
     @SFField("OwnerId")
     @HCColumn("ownerid")
@@ -258,16 +263,20 @@ class Product(
     var lastModifiedBySfid: String? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id")
-    var owner: com.otoki.powersales.employee.entity.Employee? = null,
+    @JoinColumn(name = "owner_user_id")
+    var ownerUser: User? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_group_id")
+    var ownerGroup: Group? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
-    var createdBy: com.otoki.powersales.employee.entity.Employee? = null,
+    var createdBy: User? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
-    var lastModifiedBy: com.otoki.powersales.employee.entity.Employee? = null,
+    var lastModifiedBy: User? = null,
 
     // -- Spec #737: New_Product__c reference (R-2 패턴 FK 후처리) --
     // new_product_sfid 는 #613/V40 시점에 sfid 컨벤션으로 추가됨. 본 FK 는 그 sfid → new_product_id 매핑.
@@ -276,17 +285,6 @@ class Product(
     @JoinColumn(name = "new_product_id")
     var newProduct: NewProduct? = null,
 
-    // -- Spec #747 카테고리 A — D 분류 누락 --
-    @SFField("StandardPrice__c")
-    @HCColumn("standardprice__c")
-    @Column(name = "standard_price")
-    var standardPrice: Double? = null,
-
-    @SFField("BoxReceivingQuantity__c")
-    @HCColumn("boxreceivingquantity__c")
-    @Column(name = "legacy_box_receiving_quantity")
-    var legacyBoxReceivingQuantity: Double? = null,
-
     /* --- 주석 처리: V1에 없는 기존 필드 ---
     productId: V1에 없음 (sfid로 대체)
     piecesPerBox: V1에 없음 (boxReceivingQuantity로 대체)
@@ -294,5 +292,10 @@ class Product(
     supplyQuantity: V1에 없음
     dcQuantity: V1에 없음
     unitPrice: V1에 없음 (standardUnitPrice로 대체)
+
+    --- sf-meta-diff Q15: Formula 컬럼 제거 (§6.7 — calculated == true) ---
+    standardPrice (StandardPrice__c — Formula: DKRetail__StandardUnitPrice__c)
+    legacyBoxReceivingQuantity (BoxReceivingQuantity__c — Formula: DKRetail__BoxReceivingQuantity__c)
+    필요 시 application 측 computed property 로 재현 (val standardPrice get() = standardUnitPrice 등).
     */
 ) : BaseEntity()

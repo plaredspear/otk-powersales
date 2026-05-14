@@ -35,15 +35,15 @@ class ProductSFAnnotationTest {
     }
 
     @Nested
-    @DisplayName("AC2 — @SFField 매핑 키셋 (40개)")
+    @DisplayName("AC2 — @SFField 매핑 키셋 (45개)")
     inner class SfFieldMapping {
 
         private val mapping = SFSchemaUtils.getSFMapping(Product::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 44 (Spec #740: ShelfLifeFull Formula 제거)")
+        @DisplayName("매핑 키 수 = 45 (sf-meta-diff Q15: StandardPrice__c / BoxReceivingQuantity__c Formula 제거)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(47)
+            assertThat(mapping).hasSize(45)
         }
 
         @Test
@@ -71,6 +71,13 @@ class ProductSFAnnotationTest {
             assertThat(mapping["DKRetail__StoreCondition__c"]).isEqualTo("storage_condition")
             assertThat(mapping["DKRetail__LogisticsBarCode__c"]).isEqualTo("logistics_barcode")
             assertThat(mapping["DKRetail__BoxReceivingQuantity__c"]).isEqualTo("box_receiving_quantity")
+        }
+
+        @Test
+        @DisplayName("sf-meta-diff Q15 — Formula 필드 매핑 제거")
+        fun formulaFieldsExcluded() {
+            assertThat(mapping).doesNotContainKey("StandardPrice__c")
+            assertThat(mapping).doesNotContainKey("BoxReceivingQuantity__c")
         }
 
         @Test
