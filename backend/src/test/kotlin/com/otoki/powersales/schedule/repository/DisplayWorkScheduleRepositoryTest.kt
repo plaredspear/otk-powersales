@@ -301,7 +301,173 @@ class DisplayWorkScheduleRepositoryTest {
         assertThat(result).isEmpty()
     }
 
+    // ========== findValidForDisplayMasterSapPaged (Spec #669 Q2 재결정) ==========
+
+    @org.junit.jupiter.api.Nested
+    @DisplayName("findValidForDisplayMasterSapPaged — ValidData '유효' 동치 WHERE 절")
+    inner class FindValidForDisplayMasterSapPagedTests {
+
+        @Test
+        @DisplayName("재직 사원 + 확정 + 기간 안 + 미삭제 → 조회됨")
+        fun activeEmployeeInRangeConfirmed_returns() {
+            val activeEmp = persistEmployee("ACT001", status = "재직")
+            testEntityManager.persistAndFlush(createSapDws(employee = activeEmp))
+            testEntityManager.clear()
+
+            val result = displayWorkScheduleRepository.findValidForDisplayMasterSapPaged(today, 100, 0)
+
+            assertThat(result).hasSize(1)
+            assertThat(result[0].employee?.id).isEqualTo(activeEmp.id)
+        }
+
+        @Test
+        @DisplayName("퇴직 + Employee.endDate >= today → 조회됨 (SF formula '유효' 분기 B)")
+        fun resignedButEmployeeEndDateFuture_returns() {
+            val resignedFuture = persistEmployee(
+                "RES001", status = "퇴직", endDate = today.plusDays(1)
+            )
+            testEntityManager.persistAndFlush(createSapDws(employee = resignedFuture))
+            testEntityManager.clear()
+
+            val result = displayWorkScheduleRepository.findValidForDisplayMasterSapPaged(today, 100, 0)
+
+            assertThat(result).hasSize(1)
+            assertThat(result[0].employee?.id).isEqualTo(resignedFuture.id)
+        }
+
+        @Test
+        @DisplayName("퇴직 + Employee.endDate < today → 제외됨 ('종료' 분기)")
+        fun resignedAndEmployeeEndDatePast_excluded() {
+            val resignedPast = persistEmployee(
+                "RES002", status = "퇴직", endDate = today.minusDays(1)
+            )
+            testEntityManager.persistAndFlush(createSapDws(employee = resignedPast))
+            testEntityManager.clear()
+
+            val result = displayWorkScheduleRepository.findValidForDisplayMasterSapPaged(today, 100, 0)
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        @DisplayName("휴직 + 기간 안 → 제외됨 ('예정' 분기 — SAP 미송신)")
+        fun onLeave_excluded() {
+            val onLeave = persistEmployee("LEA001", status = "휴직")
+            testEntityManager.persistAndFlush(createSapDws(employee = onLeave))
+            testEntityManager.clear()
+
+            val result = displayWorkScheduleRepository.findValidForDisplayMasterSapPaged(today, 100, 0)
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        @DisplayName("appLoginActive=false + Employee.endDate >= today → 조회됨")
+        fun appLoginInactiveButEmployeeEndDateFuture_returns() {
+            val inactive = persistEmployee(
+                "INA001", status = "재직", appLoginActive = false, endDate = today.plusDays(7)
+            )
+            testEntityManager.persistAndFlush(createSapDws(employee = inactive))
+            testEntityManager.clear()
+
+            val result = displayWorkScheduleRepository.findValidForDisplayMasterSapPaged(today, 100, 0)
+
+            assertThat(result).hasSize(1)
+            assertThat(result[0].employee?.id).isEqualTo(inactive.id)
+        }
+
+        @Test
+        @DisplayName("기간 밖 (StartDate > today) → 제외됨")
+        fun startDateFuture_excluded() {
+            val activeEmp = persistEmployee("ACT002", status = "재직")
+            testEntityManager.persistAndFlush(
+                createSapDws(employee = activeEmp, startDate = today.plusDays(1))
+            )
+            testEntityManager.clear()
+
+            val result = displayWorkScheduleRepository.findValidForDisplayMasterSapPaged(today, 100, 0)
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        @DisplayName("재직 + 확정 false → 제외됨")
+        fun activeButNotConfirmed_excluded() {
+            val activeEmp = persistEmployee("ACT003", status = "재직")
+            testEntityManager.persistAndFlush(
+                createSapDws(employee = activeEmp, confirmed = false)
+            )
+            testEntityManager.clear()
+
+            val result = displayWorkScheduleRepository.findValidForDisplayMasterSapPaged(today, 100, 0)
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        @DisplayName("재직 + is_deleted=true → 제외됨")
+        fun activeButDeleted_excluded() {
+            val activeEmp = persistEmployee("ACT004", status = "재직")
+            testEntityManager.persistAndFlush(
+                createSapDws(employee = activeEmp, isDeleted = true)
+            )
+            testEntityManager.clear()
+
+            val result = displayWorkScheduleRepository.findValidForDisplayMasterSapPaged(today, 100, 0)
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        @DisplayName("재직 + endDate IS NULL → 조회됨 (장기 확정)")
+        fun activeWithNullEndDate_returns() {
+            val activeEmp = persistEmployee("ACT005", status = "재직")
+            testEntityManager.persistAndFlush(
+                createSapDws(employee = activeEmp, endDate = null)
+            )
+            testEntityManager.clear()
+
+            val result = displayWorkScheduleRepository.findValidForDisplayMasterSapPaged(today, 100, 0)
+
+            assertThat(result).hasSize(1)
+        }
+    }
+
     // ========== Helpers ==========
+
+    private fun persistEmployee(
+        employeeCode: String,
+        status: String,
+        appLoginActive: Boolean? = null,
+        endDate: LocalDate? = null
+    ): Employee {
+        val employee = Employee(employeeCode = employeeCode, name = "테스트-$employeeCode").apply {
+            this.status = status
+            this.appLoginActive = appLoginActive
+            this.endDate = endDate
+        }
+        return testEntityManager.persistAndFlush(employee)
+    }
+
+    private fun createSapDws(
+        employee: Employee,
+        account: Account = testAccount1,
+        startDate: LocalDate = today,
+        endDate: LocalDate? = today,
+        confirmed: Boolean = true,
+        isDeleted: Boolean? = null
+    ): DisplayWorkSchedule {
+        return DisplayWorkSchedule(
+            employee = employee,
+            account = account,
+            startDate = startDate,
+            endDate = endDate,
+            typeOfWork1 = TypeOfWork1.DISPLAY,
+        ).apply {
+            this.confirmed = confirmed
+            this.isDeleted = isDeleted
+        }
+    }
 
     private fun createDisplayWorkSchedule(
         account: Account = testAccount1,
