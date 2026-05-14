@@ -142,7 +142,8 @@ class BranchReviewSFAnnotationTest {
             val mapping = SFSchemaUtils.getSFMapping(BranchReview::class.java)
             assertThat(mapping.values).doesNotContain(
                 "branch_review_id",
-                "owner_id",
+                "owner_user_id",
+                "owner_group_id",
                 "created_by_id",
                 "last_modified_by_id"
             )
