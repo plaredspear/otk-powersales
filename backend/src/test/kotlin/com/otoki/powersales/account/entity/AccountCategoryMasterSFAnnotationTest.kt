@@ -4,7 +4,8 @@ import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.common.salesforce.SFSchemaUtils
-import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.employee.entity.Group
+import com.otoki.powersales.user.entity.User
 import jakarta.persistence.Column
 import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
@@ -15,18 +16,20 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 /**
- * Spec #605 — AccountCategoryMaster ↔ Salesforce `AccountCategoryMaster__c` 어노테이션 부착 검증.
+ * AccountCategoryMaster ↔ Salesforce `AccountCategoryMaster__c` 어노테이션 부착 검증.
  *
  * 단일 권위: Salesforce Object (`AccountCategoryMaster__c`)
  *
  * 검증 분류:
- *   - AC1: 클래스 `@SFObject("AccountCategoryMaster__c")` 신규 부착
- *   - AC2: `@SFField` 매핑 키셋 (3개 — Name / AccountCode__c / useSearch__c)
+ *   - AC1: 클래스 `@SFObject("AccountCategoryMaster__c")` 부착 (Spec #605)
+ *   - AC2: `@SFField` 매핑 키셋 (3 본문 + BaseEntity 2 + Group A R-2 4)
  *   - AC3: PK 컨벤션 정합 (`@Column(name = "account_category_master_id")`)
- *   - AC4: sfid + use_search 필드 존재
- *   - AC10 (#704): Group A 신규 어노테이션 + Reference FK 검증 (Owner / CreatedBy / LastModifiedBy)
+ *   - AC4: sfid + use_search 필드 (Spec #605)
+ *   - AC10 (#704 + #755 + #758): Group A 어노테이션 + Reference R-2 polymorphic + User FK 전환 검증
+ *     - OwnerId polymorphic (User + Group + CHECK XOR) — Spec #755
+ *     - createdBy / lastModifiedBy FK 타입 User — Spec #758
  */
-@DisplayName("AccountCategoryMaster SF 어노테이션 검증 (Spec #605 + #704)")
+@DisplayName("AccountCategoryMaster SF 어노테이션 검증 (Spec #605 + #704 + #755 + #758)")
 class AccountCategoryMasterSFAnnotationTest {
 
     @Nested
@@ -43,13 +46,13 @@ class AccountCategoryMasterSFAnnotationTest {
     }
 
     @Nested
-    @DisplayName("AC2 — @SFField 매핑 키셋 (8개: 3개 + BaseEntity 2 + Spec #704 Group A/Reference 3)")
+    @DisplayName("AC2 — @SFField 매핑 키셋 (9개: 3 본문 + BaseEntity 2 + Group A R-2 4)")
     inner class SfFieldMapping {
 
         private val mapping = SFSchemaUtils.getSFMapping(AccountCategoryMaster::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 8 (3 + BaseEntity 2 + Spec #704 3)")
+        @DisplayName("매핑 키 수 = 9")
         fun mappingKeySize() {
             assertThat(mapping).hasSize(9)
         }
@@ -63,7 +66,7 @@ class AccountCategoryMasterSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("매핑 키셋 정확히 일치 (Spec #703 BaseEntity + Spec #704 Group A/Reference 포함)")
+        @DisplayName("매핑 키셋 정확히 일치 (Spec #703 BaseEntity + Spec #704 Group A R-2 포함)")
         fun mappingKeysExact() {
             assertThat(mapping.keys)
                 .containsExactlyInAnyOrder(
@@ -153,8 +156,8 @@ class AccountCategoryMasterSFAnnotationTest {
     }
 
     @Nested
-    @DisplayName("AC10 (#704) — Group A 신규 어노테이션 + Reference FK")
-    inner class Spec704GroupAAndReference {
+    @DisplayName("AC10 (#704 + #755 + #758) — Group A R-2 + Owner polymorphic + User FK 전환")
+    inner class Spec704_755_758 {
 
         @Test
         @DisplayName("owner_sfid 필드 + @SFField(\"OwnerId\") + @HCColumn(\"ownerid\") + length 18")
@@ -193,30 +196,40 @@ class AccountCategoryMasterSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("owner FK (@ManyToOne + @JoinColumn(\"owner_id\") → Employee)")
-        fun ownerFk() {
-            val field = AccountCategoryMaster::class.java.getDeclaredField("owner")
-            assertThat(field.type).isEqualTo(Employee::class.java)
+        @DisplayName("Spec #755 — ownerUser FK (@ManyToOne + @JoinColumn(\"owner_user_id\") → User)")
+        fun ownerUserFk() {
+            val field = AccountCategoryMaster::class.java.getDeclaredField("ownerUser")
+            assertThat(field.type).isEqualTo(User::class.java)
             assertThat(field.isAnnotationPresent(ManyToOne::class.java)).isTrue()
-            assertThat(field.getAnnotation(JoinColumn::class.java).name).isEqualTo("owner_id")
+            assertThat(field.getAnnotation(JoinColumn::class.java).name).isEqualTo("owner_user_id")
             assertThat(field.isAnnotationPresent(SFField::class.java)).isFalse()
         }
 
         @Test
-        @DisplayName("createdBy FK (@ManyToOne + @JoinColumn(\"created_by_id\") → Employee)")
+        @DisplayName("Spec #755 — ownerGroup FK (@ManyToOne + @JoinColumn(\"owner_group_id\") → Group)")
+        fun ownerGroupFk() {
+            val field = AccountCategoryMaster::class.java.getDeclaredField("ownerGroup")
+            assertThat(field.type).isEqualTo(Group::class.java)
+            assertThat(field.isAnnotationPresent(ManyToOne::class.java)).isTrue()
+            assertThat(field.getAnnotation(JoinColumn::class.java).name).isEqualTo("owner_group_id")
+            assertThat(field.isAnnotationPresent(SFField::class.java)).isFalse()
+        }
+
+        @Test
+        @DisplayName("Spec #758 — createdBy FK 타입 User (@ManyToOne + @JoinColumn(\"created_by_id\"))")
         fun createdByFk() {
             val field = AccountCategoryMaster::class.java.getDeclaredField("createdBy")
-            assertThat(field.type).isEqualTo(Employee::class.java)
+            assertThat(field.type).isEqualTo(User::class.java)
             assertThat(field.isAnnotationPresent(ManyToOne::class.java)).isTrue()
             assertThat(field.getAnnotation(JoinColumn::class.java).name).isEqualTo("created_by_id")
             assertThat(field.isAnnotationPresent(SFField::class.java)).isFalse()
         }
 
         @Test
-        @DisplayName("lastModifiedBy FK (@ManyToOne + @JoinColumn(\"last_modified_by_id\") → Employee)")
+        @DisplayName("Spec #758 — lastModifiedBy FK 타입 User (@ManyToOne + @JoinColumn(\"last_modified_by_id\"))")
         fun lastModifiedByFk() {
             val field = AccountCategoryMaster::class.java.getDeclaredField("lastModifiedBy")
-            assertThat(field.type).isEqualTo(Employee::class.java)
+            assertThat(field.type).isEqualTo(User::class.java)
             assertThat(field.isAnnotationPresent(ManyToOne::class.java)).isTrue()
             assertThat(field.getAnnotation(JoinColumn::class.java).name).isEqualTo("last_modified_by_id")
         }

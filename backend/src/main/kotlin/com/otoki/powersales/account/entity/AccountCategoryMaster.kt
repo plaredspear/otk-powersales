@@ -4,11 +4,32 @@ import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
-import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.employee.entity.Group
+import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 
+/**
+ * 거래처유형마스터 Entity
+ *
+ * Salesforce `AccountCategoryMaster__c` 매핑.
+ *
+ * - Spec #605: 초기 SF 어노테이션 부착 (3 SFField + sfid + use_search)
+ * - Spec #704: Group A R-2 (CreatedById / LastModifiedById / OwnerId) sfid + Employee FK
+ * - Spec #755: OwnerId polymorphic R-2 정합 — SF `referenceTo = [Group, User]`.
+ *   `owner_sfid` (sync buffer) + `owner_user` (User?) + `owner_group` (Group?) + CHECK XOR.
+ *   sfid prefix `005` = User / `00G` = Group 분기.
+ * - Spec #758: audit FK (createdBy / lastModifiedBy) Employee → User 일괄 전환.
+ */
 @Entity
-@Table(name = "account_category_master")
+@Table(
+    name = "account_category_master",
+    indexes = [
+        Index(name = "idx_account_category_master_owner_user_id", columnList = "owner_user_id"),
+        Index(name = "idx_account_category_master_owner_group_id", columnList = "owner_group_id"),
+        Index(name = "idx_account_category_master_created_by_id", columnList = "created_by_id"),
+        Index(name = "idx_account_category_master_last_modified_by_id", columnList = "last_modified_by_id")
+    ]
+)
 @SFObject("AccountCategoryMaster__c")
 class AccountCategoryMaster(
     @Id
@@ -31,16 +52,16 @@ class AccountCategoryMaster(
     @Column(name = "use_search", nullable = false)
     var useSearch: Boolean = false,
 
-    // -- Spec #704: Reference R-2 (OwnerId) — sfid buffer + Employee FK --
-    // owner_sfid: Heroku Connect sync 가 채우는 buffer (SF User Id).
-    // owner: SalesforceMigrationTool 이 SF User → Employee 매핑으로 채우는 FK.
+    // -- Spec #755: OwnerId polymorphic R-2 (referenceTo = [Group, User]) --
+    // owner_sfid 단일 컬럼이 SF 원본 식별자 보존. owner_user_id / owner_group_id 둘 중
+    // 하나만 채워지며 XOR CHECK 제약으로 enforce. sfid prefix `005` = User / `00G` = Group.
 
     @SFField("OwnerId")
     @HCColumn("ownerid")
     @Column(name = "owner_sfid", length = 18)
     var ownerSfid: String? = null,
 
-    // -- Spec #704: Group A (CreatedById / LastModifiedById) sfid + Employee FK --
+    // -- Spec #704 + #758: Group A (CreatedById / LastModifiedById) sfid + User FK --
 
     @SFField("CreatedById")
     @HCColumn("createdbyid")
@@ -60,14 +81,18 @@ class AccountCategoryMaster(
     // -- Relations --
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id")
-    var owner: Employee? = null,
+    @JoinColumn(name = "owner_user_id")
+    var ownerUser: User? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_group_id")
+    var ownerGroup: Group? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
-    var createdBy: Employee? = null,
+    var createdBy: User? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
-    var lastModifiedBy: Employee? = null
+    var lastModifiedBy: User? = null
 ) : BaseEntity()
