@@ -38,7 +38,7 @@ class AlternativeHolidayRepositoryCustomImpl(
                     alternativeHoliday.confirmAltHolidayDate,
                     alternativeHoliday.status,
                     alternativeHoliday.changeReason,
-                    alternativeHoliday.createdBy,
+                    alternativeHoliday.createdByEmpNo,
                     alternativeHoliday.createdAt
                 )
             )

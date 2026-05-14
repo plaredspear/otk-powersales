@@ -6,7 +6,9 @@ import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.employee.entity.Group
 import com.otoki.powersales.leave.entity.converter.AltHolidayStatusConverter
+import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.time.LocalDate
 
@@ -61,11 +63,11 @@ class AlternativeHoliday(
 
     @SFField("DKRetail__ChangeReason__c")
     @HCColumn("dkretail__changereason__c")
-    @Column(name = "change_reason", length = 500)
+    @Column(name = "change_reason", length = 255)
     var changeReason: String? = null,
 
-    @Column(name = "created_by", nullable = false, length = 20)
-    val createdBy: String,
+    @Column(name = "created_by_emp_no", nullable = false, length = 20)
+    val createdByEmpNo: String,
 
     @SFField("OwnerId")
     @HCColumn("ownerid")
@@ -92,23 +94,22 @@ class AlternativeHoliday(
     @JoinColumn(name = "employee_id", insertable = false, updatable = false)
     val employee: Employee? = null,
 
+    // OwnerId polymorphic [Group, User] — XOR (둘 중 하나만 NOT NULL)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id")
-    var owner: Employee? = null,
+    @JoinColumn(name = "owner_user_id")
+    var ownerUser: User? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_group_id")
+    var ownerGroup: Group? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
-    var createdByEmployee: Employee? = null,
+    var createdBy: User? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
-    var lastModifiedBy: Employee? = null,
-
-    // -- Spec #747 카테고리 A Q2 — history 보존 의미의 사원명 캐시 --
-    @SFField("DKRetail__EmpName__c")
-    @HCColumn("dkretail__empname__c")
-    @Column(name = "emp_name", length = 1300)
-    var empName: String? = null,
+    var lastModifiedBy: User? = null,
 ) : BaseEntity() {
     fun approve(confirmDate: LocalDate, changeReason: String?) {
         this.confirmAltHolidayDate = confirmDate

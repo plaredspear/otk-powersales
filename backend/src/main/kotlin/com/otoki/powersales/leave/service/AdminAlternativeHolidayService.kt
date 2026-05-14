@@ -62,7 +62,7 @@ class AdminAlternativeHolidayService(
                 actualWorkDate = request.actualWorkDate,
                 targetAltHolidayDate = request.targetAltHolidayDate,
                 status = com.otoki.powersales.leave.entity.AltHolidayStatus.NEW,
-                createdBy = admin.employeeCode
+                createdByEmpNo = admin.employeeCode
             )
         )
 

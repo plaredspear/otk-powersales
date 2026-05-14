@@ -15,7 +15,7 @@ data class AlternativeHolidayListItem(
     val confirmAltHolidayDate: LocalDate?,
     val status: AltHolidayStatus,
     val changeReason: String?,
-    val createdBy: String,
+    val createdByEmpNo: String,
     val createdAt: LocalDateTime
 )
 

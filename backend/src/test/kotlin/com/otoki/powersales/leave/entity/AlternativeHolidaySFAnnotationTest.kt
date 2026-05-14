@@ -26,10 +26,10 @@ class AlternativeHolidaySFAnnotationTest {
         }
 
         @Test
-        @DisplayName("매핑 키 수 = 11 (Spec #740 EmpName 제거: 6 + BaseEntity 2 + R-2 3)")
+        @DisplayName("매핑 키 수 = 13 (Name + SF custom 6 + BaseEntity 2 + R-2 3 + IsDeleted)")
         fun mappingKeySize() {
             val mapping = SFSchemaUtils.getSFMapping(AlternativeHoliday::class.java)
-            assertThat(mapping).hasSize(14)
+            assertThat(mapping).hasSize(13)
         }
     }
 
@@ -62,9 +62,9 @@ class AlternativeHolidaySFAnnotationTest {
         }
 
         @Test
-        @DisplayName("createdBy 감사 필드에 @SFField 미부착")
-        fun createdByHasNoSfField() {
-            val field = AlternativeHoliday::class.java.getDeclaredField("createdBy")
+        @DisplayName("createdByEmpNo 감사 필드에 @SFField 미부착")
+        fun createdByEmpNoHasNoSfField() {
+            val field = AlternativeHoliday::class.java.getDeclaredField("createdByEmpNo")
             assertThat(field.isAnnotationPresent(SFField::class.java)).isFalse()
         }
 
@@ -94,7 +94,7 @@ class AlternativeHolidaySFAnnotationTest {
         }
 
         @Test
-        @DisplayName("매핑 키셋 정확히 일치 (Spec #703 — BaseEntity CreatedDate/LastModifiedDate 포함)")
+        @DisplayName("매핑 키셋 정확히 일치 (EmpName Formula 제거 + BaseEntity 2 + R-2 3 포함)")
         fun mappingKeysExact() {
             assertThat(mapping.keys)
                 .containsExactlyInAnyOrder(
@@ -103,7 +103,6 @@ class AlternativeHolidaySFAnnotationTest {
                     "DKRetail__ActualWorkDate__c", "DKRetail__TargetAltHolidayDate__c",
                     "DKRetail__ConfirmAltHolidayDate__c", "DKRetail__Status__c",
                     "DKRetail__ChangeReason__c",
-                    "DKRetail__EmpName__c",
                     "CreatedDate", "LastModifiedDate",
                     "OwnerId", "CreatedById", "LastModifiedById",
                     "IsDeleted"

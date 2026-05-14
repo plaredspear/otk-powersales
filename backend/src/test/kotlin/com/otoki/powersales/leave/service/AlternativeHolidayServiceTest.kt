@@ -149,6 +149,6 @@ class AlternativeHolidayServiceTest {
         actualWorkDate = saturday,
         targetAltHolidayDate = monday,
         status = com.otoki.powersales.leave.entity.AltHolidayStatus.fromDisplayName(status),
-        createdBy = "12345678"
+        createdByEmpNo = "12345678"
     )
 }

@@ -69,7 +69,7 @@ class AdminAlternativeHolidayControllerTest {
                     actualWorkDate = LocalDate.of(2026, 3, 7),
                     targetAltHolidayDate = LocalDate.of(2026, 3, 9),
                     confirmAltHolidayDate = null, status = com.otoki.powersales.leave.entity.AltHolidayStatus.NEW, changeReason = null,
-                    createdBy = "admin01", createdAt = LocalDateTime.of(2026, 3, 8, 10, 0)
+                    createdByEmpNo = "admin01", createdAt = LocalDateTime.of(2026, 3, 8, 10, 0)
                 )
             )
             whenever(adminAlternativeHolidayService.getAlternativeHolidays(
