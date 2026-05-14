@@ -5,7 +5,6 @@ import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
-import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.entity.Group
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
@@ -22,6 +21,8 @@ import java.time.LocalDate
  * (`owner_user_id` → backend User, `owner_group_id` → Group). XOR CHECK 제약 `chk_appointment_owner_xor` 으로
  * 둘 다 채움 금지. SF `Appointment__c.OwnerId.referenceTo = [Group, User]` 의 SF 메타 권위 정합.
  * Spec #736 §3 의 "OwnerId 제외" 결정은 본 스펙에서 번복.
+ *
+ * Spec #758: audit FK (createdBy / lastModifiedBy) 타입 Employee → User 일괄 전환.
  */
 @Entity
 @Table(
@@ -140,6 +141,7 @@ class Appointment(
 
     // -- Spec #736: Group A — CreatedById / LastModifiedById (R-2 패턴) --
     // OwnerId 는 Spec #755 에서 polymorphic R-2 (Group + User) 로 정합.
+    // FK 타입은 Spec #758 에서 Employee → User 로 일괄 전환.
 
     @SFField("CreatedById")
     @HCColumn("createdbyid")
@@ -164,11 +166,11 @@ class Appointment(
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
-    var createdBy: Employee? = null,
+    var createdBy: User? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
-    var lastModifiedBy: Employee? = null,
+    var lastModifiedBy: User? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_user_id")
