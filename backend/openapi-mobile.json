@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:63504",
+    "url" : "http://localhost:50715",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -2591,9 +2591,6 @@
             "minLength" : 1,
             "pattern" : "^\\d{6}$"
           },
-          "previousYearMonth" : {
-            "type" : "string"
-          },
           "year" : {
             "type" : "integer",
             "format" : "int32"
@@ -2601,6 +2598,9 @@
           "month" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "previousYearMonth" : {
+            "type" : "string"
           }
         },
         "required" : [ "yearMonth" ]
@@ -3223,7 +3223,17 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "numberOfElements" : {
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ProductDto"
+            }
+          },
+          "number" : {
             "type" : "integer",
             "format" : "int32"
           },
@@ -3239,17 +3249,7 @@
           "last" : {
             "type" : "boolean"
           },
-          "size" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "content" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/ProductDto"
-            }
-          },
-          "number" : {
+          "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
           },
@@ -3261,12 +3261,9 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
-          "pageNumber" : {
+          "offset" : {
             "type" : "integer",
-            "format" : "int32"
-          },
-          "unpaged" : {
-            "type" : "boolean"
+            "format" : "int64"
           },
           "pageSize" : {
             "type" : "integer",
@@ -3278,9 +3275,12 @@
           "paged" : {
             "type" : "boolean"
           },
-          "offset" : {
+          "pageNumber" : {
             "type" : "integer",
-            "format" : "int64"
+            "format" : "int32"
+          },
+          "unpaged" : {
+            "type" : "boolean"
           }
         }
       },
@@ -3313,13 +3313,13 @@
       "SortObject" : {
         "type" : "object",
         "properties" : {
+          "empty" : {
+            "type" : "boolean"
+          },
           "unsorted" : {
             "type" : "boolean"
           },
           "sorted" : {
-            "type" : "boolean"
-          },
-          "empty" : {
             "type" : "boolean"
           }
         }

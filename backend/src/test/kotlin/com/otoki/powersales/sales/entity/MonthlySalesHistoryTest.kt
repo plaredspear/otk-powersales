@@ -1,9 +1,12 @@
 package com.otoki.powersales.sales.entity
 
 import com.otoki.powersales.sales.entity.MonthlySalesHistory
+import com.otoki.powersales.sales.enums.SalesMonth
+import com.otoki.powersales.sales.enums.SalesYear
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import java.math.BigDecimal
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest
@@ -28,9 +31,9 @@ class MonthlySalesHistoryTest {
         // Given
         val history = MonthlySalesHistory(
             name = "MSH-2026-01",
-            salesYear = "2026",
-            salesMonth = "01",
-            lastMonthResults = 1200.0,
+            salesYear = SalesYear.Y2026,
+            salesMonth = SalesMonth.M01,
+            lastMonthResults = BigDecimal("1200"),
             shipClosingAmount = 800.0,
             abcClosingAmount1 = 100.0,
             abcClosingAmount2 = 200.0,
@@ -47,9 +50,9 @@ class MonthlySalesHistoryTest {
         // Then
         assertThat(found).isNotNull
         assertThat(found.name).isEqualTo("MSH-2026-01")
-        assertThat(found.salesYear).isEqualTo("2026")
-        assertThat(found.salesMonth).isEqualTo("01")
-        assertThat(found.lastMonthResults).isEqualTo(1200.0)
+        assertThat(found.salesYear).isEqualTo(SalesYear.Y2026)
+        assertThat(found.salesMonth).isEqualTo(SalesMonth.M01)
+        assertThat(found.lastMonthResults).isEqualByComparingTo(BigDecimal("1200"))
         assertThat(found.shipClosingAmount).isEqualTo(800.0)
         assertThat(found.abcClosingAmount1).isEqualTo(100.0)
         assertThat(found.abcClosingAmount2).isEqualTo(200.0)

@@ -2,6 +2,8 @@ package com.otoki.powersales.sales.repository
 
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.sales.entity.MonthlySalesHistory
+import com.otoki.powersales.sales.enums.SalesMonth
+import com.otoki.powersales.sales.enums.SalesYear
 import org.springframework.data.jpa.repository.JpaRepository
 
 /**
@@ -9,11 +11,11 @@ import org.springframework.data.jpa.repository.JpaRepository
  */
 interface MonthlySalesHistoryRepository : JpaRepository<MonthlySalesHistory, Long> {
 
-    fun findBySalesYearAndSalesMonth(salesYear: String, salesMonth: String): List<MonthlySalesHistory>
+    fun findBySalesYearAndSalesMonth(salesYear: SalesYear, salesMonth: SalesMonth): List<MonthlySalesHistory>
 
     fun findBySalesYearAndSalesMonthAndAccountIn(
-        salesYear: String,
-        salesMonth: String,
+        salesYear: SalesYear,
+        salesMonth: SalesMonth,
         accounts: List<Account>
     ): List<MonthlySalesHistory>
 
@@ -23,6 +25,6 @@ interface MonthlySalesHistoryRepository : JpaRepository<MonthlySalesHistory, Lon
 
     fun findByAccountInAndSalesYearIn(
         accounts: List<Account>,
-        salesYears: List<String>
+        salesYears: List<SalesYear>
     ): List<MonthlySalesHistory>
 }

@@ -4,6 +4,8 @@ import com.otoki.powersales.common.enums.WorkingCategory3
 import com.otoki.powersales.schedule.dto.response.*
 import com.otoki.powersales.common.exception.BusinessException
 import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.sales.enums.SalesMonth
+import com.otoki.powersales.sales.enums.SalesYear
 import com.otoki.powersales.leave.repository.HolidayMasterRepository
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
@@ -499,19 +501,28 @@ class AdminMonthlyIntegrationService(
             current = current.plusMonths(1)
         }
 
-        val salesYears = yearMonthPairs.map { it.year.toString() }.distinct()
-        val allHistory = monthlySalesHistoryRepository.findByAccountInAndSalesYearIn(
-            accounts, salesYears
-        )
+        val salesYears = yearMonthPairs
+            .mapNotNull { SalesYear.fromValueOrNull(it.year.toString()) }
+            .distinct()
+        val allHistory = if (salesYears.isEmpty()) {
+            emptyList()
+        } else {
+            monthlySalesHistoryRepository.findByAccountInAndSalesYearIn(accounts, salesYears)
+        }
 
-        // Filter to valid year-month range
-        val validYmStrings = yearMonthPairs.map {
-            "${it.year}" to String.format("%02d", it.monthValue)
-        }.toSet()
+        // Filter to valid year-month range (enum 페어 집합)
+        val validYmPairs: Set<Pair<SalesYear, SalesMonth>> = yearMonthPairs
+            .mapNotNull { ym ->
+                val sy = SalesYear.fromValueOrNull(ym.year.toString()) ?: return@mapNotNull null
+                val sm = SalesMonth.fromValueOrNull(String.format("%02d", ym.monthValue)) ?: return@mapNotNull null
+                sy to sm
+            }
+            .toSet()
 
         val filtered = allHistory.filter { h ->
-            h.salesYear != null && h.salesMonth != null &&
-                (h.salesYear!! to h.salesMonth!!) in validYmStrings
+            val sy = h.salesYear
+            val sm = h.salesMonth
+            sy != null && sm != null && (sy to sm) in validYmPairs
         }
 
         // Group by account ID and calculate average

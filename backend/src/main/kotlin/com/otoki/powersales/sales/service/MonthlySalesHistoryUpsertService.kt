@@ -1,12 +1,15 @@
 package com.otoki.powersales.sales.service
 
 import com.otoki.powersales.sales.entity.MonthlySalesHistory
+import com.otoki.powersales.sales.enums.SalesMonth
+import com.otoki.powersales.sales.enums.SalesYear
 import com.otoki.powersales.sales.repository.MonthlySalesHistoryRepository
 import com.otoki.powersales.sales.service.dto.MonthlySalesHistoryUpsertCommand
 import com.otoki.powersales.sales.service.dto.MonthlySalesHistoryUpsertFailedRow
 import com.otoki.powersales.sales.service.dto.MonthlySalesHistoryUpsertResult
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
+import java.math.RoundingMode
 
 /**
  * 월 매출 이력 UPSERT 도메인 서비스 (단일 청크 단위).
@@ -88,8 +91,15 @@ class MonthlySalesHistoryUpsertService(
             }
 
             val key = sapAccountCode + salesYearMonth
-            val salesYear = salesYearMonth.substring(0, 4)
-            val salesMonth = salesYearMonth.substring(4, 6)
+            val salesYear = SalesYear.fromValueOrNull(salesYearMonth.substring(0, 4))
+            val salesMonth = SalesMonth.fromValueOrNull(salesYearMonth.substring(4, 6))
+            if (salesYear == null || salesMonth == null) {
+                failures += MonthlySalesHistoryUpsertFailedRow(
+                    sapAccountCode + salesYearMonth,
+                    "SalesYearMonth 옵션 미지원: $salesYearMonth"
+                )
+                return@forEach
+            }
 
             val entity = cache[key]?.also { applyFields(it, salesYear, salesMonth, parsed) }
                 ?: MonthlySalesHistory(externalkeyC = key).also {
@@ -110,13 +120,14 @@ class MonthlySalesHistoryUpsertService(
         )
     }
 
-    private fun applyFields(entity: MonthlySalesHistory, salesYear: String, salesMonth: String, amounts: Array<Double>) {
+    private fun applyFields(entity: MonthlySalesHistory, salesYear: SalesYear, salesMonth: SalesMonth, amounts: Array<Double>) {
         entity.salesYear = salesYear
         entity.salesMonth = salesMonth
         entity.abcClosingAmount1 = amounts[0]
         entity.abcClosingAmount2 = amounts[1]
         entity.abcClosingAmount3 = amounts[2]
-        entity.totalLedgerAmount = BigDecimal.valueOf(amounts[3]) // Spec #575: SAP TotalLedgerAmount 보존
+        // SAP TotalLedgerAmount 보존. SF prod 메타 정합: NUMERIC(18, 0) — 소수 절사 (HALF_UP).
+        entity.totalLedgerAmount = BigDecimal.valueOf(amounts[3]).setScale(0, RoundingMode.HALF_UP)
         entity.shipClosingAmount = amounts[4]
         entity.rlsalesC = amounts[5]
     }

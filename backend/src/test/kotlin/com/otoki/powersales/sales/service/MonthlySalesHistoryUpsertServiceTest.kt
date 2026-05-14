@@ -1,6 +1,8 @@
 package com.otoki.powersales.sales.service
 
 import com.otoki.powersales.sales.entity.MonthlySalesHistory
+import com.otoki.powersales.sales.enums.SalesMonth
+import com.otoki.powersales.sales.enums.SalesYear
 import com.otoki.powersales.sales.repository.MonthlySalesHistoryRepository
 import com.otoki.powersales.sales.service.dto.MonthlySalesHistoryUpsertCommand
 import org.assertj.core.api.Assertions.assertThat
@@ -63,8 +65,8 @@ class MonthlySalesHistoryUpsertServiceTest {
             verify(monthlySalesHistoryRepository).saveAll(captor.capture())
             val saved = captor.firstValue.single()
             assertThat(saved.externalkeyC).isEqualTo("1032619202604")
-            assertThat(saved.salesYear).isEqualTo("2026")
-            assertThat(saved.salesMonth).isEqualTo("04")
+            assertThat(saved.salesYear).isEqualTo(SalesYear.Y2026)
+            assertThat(saved.salesMonth).isEqualTo(SalesMonth.M04)
             assertThat(saved.abcClosingAmount1).isEqualTo(5000000.0)
             assertThat(saved.shipClosingAmount).isEqualTo(4800000.0)
             assertThat(saved.rlsalesC).isEqualTo(0.0)
