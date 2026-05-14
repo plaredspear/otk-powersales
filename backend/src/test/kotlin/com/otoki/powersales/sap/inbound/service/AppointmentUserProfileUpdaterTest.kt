@@ -8,6 +8,9 @@ import com.otoki.powersales.common.entity.SystemCodeMaster
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.organization.repository.OrganizationRepository
 import com.otoki.powersales.common.repository.SystemCodeMasterRepository
+import com.otoki.powersales.user.repository.UserRepository
+import com.otoki.powersales.user.service.EmployeeProfileResolver
+import com.otoki.powersales.user.service.UserRoleResolver
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -33,6 +36,15 @@ class AppointmentUserProfileUpdaterTest {
 
     @Mock
     private lateinit var systemCodeMasterRepository: SystemCodeMasterRepository
+
+    @Mock
+    private lateinit var userRepository: UserRepository
+
+    @Mock
+    private lateinit var employeeProfileResolver: EmployeeProfileResolver
+
+    @Mock
+    private lateinit var userRoleResolver: UserRoleResolver
 
     @InjectMocks
     private lateinit var updater: AppointmentUserProfileUpdater
