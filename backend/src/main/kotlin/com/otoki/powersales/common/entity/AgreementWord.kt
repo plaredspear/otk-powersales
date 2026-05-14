@@ -4,12 +4,21 @@ import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
-import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.employee.entity.Group
+import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
 import java.time.LocalDate
 import java.time.LocalDateTime
+
+/**
+ * 동의문구 Entity (Salesforce `AgreementWord__c`) — Spec #707 + sf-meta-diff 후속 (OwnerId polymorphic + audit FK User 전환).
+ *
+ * - OwnerId (`[Group, User]` polymorphic) 는 spec #755 패턴: `owner_sfid` sync buffer +
+ *   `owner_user_id` (User FK) + `owner_group_id` (Group FK) + XOR CHECK 제약.
+ * - audit (CreatedById / LastModifiedById) FK 는 SF `referenceTo = [User]` 정합 — `User` entity 참조 (spec #757).
+ */
 @Entity
 @Table(name = "agreement_word")
 @HCTable("agreementword__c")
@@ -85,18 +94,24 @@ class AgreementWord(
     @Column(name = "last_modified_by_sfid", length = 18)
     var lastModifiedBySfid: String? = null,
 
-    // -- Relations --
+    // -- OwnerId polymorphic R-2 (referenceTo = [Group, User]) --
+    // sfid prefix `005` = User / `00G` = Group. XOR CHECK 제약 chk_agreement_word_owner_xor.
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id")
-    var owner: Employee? = null,
+    @JoinColumn(name = "owner_user_id")
+    var ownerUser: User? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_group_id")
+    var ownerGroup: Group? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
-    var createdBy: Employee? = null,
+    var createdBy: User? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
-    var lastModifiedBy: Employee? = null
+    var lastModifiedBy: User? = null
 
 ) : AuditedEntity() {
 
