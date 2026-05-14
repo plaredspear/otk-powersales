@@ -123,10 +123,22 @@ class AppLoginNotActiveException : BusinessException(
 )
 
 /**
- * 웹 관리자 로그인 권한 없음 (WEB)
+ * 웹 관리자 로그인 권한 없음 (WEB) — 레거시 호환.
+ *
+ * Spec #760 시점부터 신규 Web 로그인은 `WebAuthenticationService` (User 기반) 사용 — 본 예외는
+ * AuthService.login(deviceId=null) 의 레거시 호환 분기 전용.
  */
 class WebLoginNotAllowedException : BusinessException(
     errorCode = "WEB_LOGIN_NOT_ALLOWED",
     message = "웹 관리자 로그인 권한이 없습니다",
+    httpStatus = HttpStatus.FORBIDDEN
+)
+
+/**
+ * 비활성 사용자 로그인 시도 (Spec #760 — User.is_active == false).
+ */
+class UserInactiveException : BusinessException(
+    errorCode = "USER_INACTIVE",
+    message = "비활성화된 계정입니다. 관리자에게 문의하세요",
     httpStatus = HttpStatus.FORBIDDEN
 )

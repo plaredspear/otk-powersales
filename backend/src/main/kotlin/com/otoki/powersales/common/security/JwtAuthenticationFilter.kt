@@ -28,7 +28,11 @@ class JwtAuthenticationFilter(
         if (token != null) {
             if (jwtTokenProvider.validateToken(token)) {
                 val tokenType = jwtTokenProvider.getTokenType(token)
-                if (tokenType == "access") {
+                val audience = jwtTokenProvider.getAudienceFromToken(token)
+                // Spec #760 — Mobile FilterChain 은 audience="web" 토큰을 거부 (cross-platform 차단)
+                if (audience == JwtTokenProvider.AUDIENCE_WEB) {
+                    request.setAttribute("jwt.audienceMismatch", true)
+                } else if (tokenType == "access") {
                     val userId = jwtTokenProvider.getUserIdFromToken(token)
                     val role = jwtTokenProvider.getRoleFromToken(token)
                     if (role == null) {

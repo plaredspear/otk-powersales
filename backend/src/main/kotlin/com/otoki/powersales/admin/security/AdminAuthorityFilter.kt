@@ -13,12 +13,20 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.http.MediaType
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
 import org.springframework.web.method.HandlerMethod
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping
 
-@Component
+/**
+ * Admin 권한 매트릭스 필터 (Spec #760 시점부터 미사용 — 보존).
+ *
+ * Spec #760 에서 Web 인증이 [com.otoki.powersales.user.entity.User] 기반으로 전환되며
+ * 본 필터는 Employee 기반 `UserPrincipal` 에 의존하므로 SecurityFilterChain 등록 해제 (미작동).
+ * @Component 어노테이션 제거 — Spring Boot 의 servlet filter 자동 등록 회피.
+ *
+ * 후속 spec (Web 화면 권한 분기 / @RequiresPermission 재도입) 에서 신규 Web principal 정합
+ * 로직으로 재작성될 예정.
+ */
 class AdminAuthorityFilter(
     private val employeeRepository: EmployeeRepository,
     private val objectMapper: ObjectMapper,

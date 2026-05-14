@@ -1,0 +1,208 @@
+package com.otoki.powersales.auth.web.service
+
+import com.otoki.powersales.auth.exception.CurrentPasswordRequiredException
+import com.otoki.powersales.auth.exception.InvalidCredentialsException
+import com.otoki.powersales.auth.exception.InvalidCurrentPasswordException
+import com.otoki.powersales.auth.exception.InvalidTokenException
+import com.otoki.powersales.auth.exception.TokenReuseDetectedException
+import com.otoki.powersales.auth.exception.UserInactiveException
+import com.otoki.powersales.auth.policy.PasswordPolicyValidator
+import com.otoki.powersales.auth.web.WebJwtService
+import com.otoki.powersales.auth.web.WebRefreshTokenStore
+import com.otoki.powersales.auth.web.WebUserDetailsService
+import com.otoki.powersales.auth.web.WebUserPrincipal
+import com.otoki.powersales.auth.web.dto.WebChangePasswordRequest
+import com.otoki.powersales.auth.web.dto.WebChangePasswordResponse
+import com.otoki.powersales.auth.web.dto.WebLoginRequest
+import com.otoki.powersales.auth.web.dto.WebLoginResponse
+import com.otoki.powersales.auth.web.dto.WebRefreshTokenRequest
+import com.otoki.powersales.auth.web.dto.WebTokenResponse
+import com.otoki.powersales.auth.web.dto.WebUserSummary
+import com.otoki.powersales.user.entity.User
+import com.otoki.powersales.user.repository.UserRepository
+import org.springframework.security.crypto.password.PasswordEncoder
+import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
+import java.util.UUID
+
+/**
+ * Web 로그인 / 토큰 갱신 / 비밀번호 변경 서비스 (Spec #760).
+ *
+ * ## 레거시 매핑
+ * - SF Apex: SF 플랫폼 표준 로그인 (SF org login) — backend 외부
+ * - origin spec: #760
+ *
+ * ## 레거시 동작 요약
+ * 1. 입력: SF Username (`DKRetail__Email__c`) + 비밀번호 (`System.resetPassword(...)` 으로 발급된 SF 비밀번호)
+ * 2. SF 플랫폼이 자체 인증 처리 — backend 비참여
+ * 3. 인증 성공 시 SF Session 발급
+ * 4. 비밀번호 변경: SF 자체 화면 (`/secur/setpassword`)
+ *
+ * ## 신규 차이
+ * - 인증 entity: SF User → backend `user` 테이블 + BCrypt. 참조: legacy-deviation.md §"인증·세션"
+ * - 세션 모델: SF Session → JWT Access + Refresh (Rotation). 참조: legacy-deviation.md §"인증·세션"
+ * - 비밀번호 초기화: SF `System.resetPassword` → 임시 비밀번호 + `password_change_required` 강제 변경 화면 (Q5 옵션 1).
+ * - JWT audience claim 분리: `"web"` (본 service) / `"mobile"` ([com.otoki.powersales.auth.service.AuthService]) — cross-platform 토큰 사용 차단.
+ */
+@Service
+@Transactional(readOnly = true)
+class WebAuthenticationService(
+    private val userRepository: UserRepository,
+    private val webUserDetailsService: WebUserDetailsService,
+    private val webJwtService: WebJwtService,
+    private val webRefreshTokenStore: WebRefreshTokenStore,
+    private val passwordEncoder: PasswordEncoder,
+    private val passwordPolicyValidator: PasswordPolicyValidator,
+) {
+
+    /**
+     * Web 로그인.
+     *
+     * 분기:
+     * 1. Username 으로 User 조회 (없으면 `INVALID_CREDENTIALS`)
+     * 2. `is_active == false` 면 `USER_INACTIVE` (계정 비활성)
+     * 3. BCrypt 비밀번호 비교 (불일치 시 `INVALID_CREDENTIALS`)
+     * 4. Access + Refresh Token 발급 (audience="web") + Redis 저장
+     * 5. `User.last_login_at` 갱신 (audit)
+     */
+    @Transactional
+    fun login(request: WebLoginRequest): WebLoginResponse {
+        val user = userRepository.findByUsername(request.username)
+            ?: throw InvalidCredentialsException()
+
+        if (!user.isActive) {
+            throw UserInactiveException()
+        }
+
+        if (!passwordEncoder.matches(request.password, user.password)) {
+            throw InvalidCredentialsException()
+        }
+
+        user.recordLogin(LocalDateTime.now())
+
+        val principal = principalFor(user)
+        val familyId = UUID.randomUUID().toString()
+        val tokenId = UUID.randomUUID().toString()
+
+        val accessToken = webJwtService.createAccessToken(principal)
+        val refreshToken = webJwtService.createRefreshToken(
+            username = user.username,
+            userId = user.id,
+            familyId = familyId,
+            tokenId = tokenId
+        )
+        webRefreshTokenStore.store(tokenId, user.id, familyId, webJwtService.getRefreshExpirationMillis())
+
+        return WebLoginResponse(
+            accessToken = accessToken,
+            refreshToken = refreshToken,
+            expiresIn = webJwtService.getAccessTokenExpirationSeconds(),
+            passwordChangeRequired = user.passwordChangeRequired,
+            user = WebUserSummary(
+                userId = user.id,
+                username = user.username,
+                name = user.name,
+                employeeNumber = user.employeeNumber,
+                profileType = user.profileType,
+                isSalesSupport = user.isSalesSupport
+            )
+        )
+    }
+
+    /**
+     * Refresh Token Rotation.
+     *
+     * 분기:
+     * 1. Refresh Token 검증 (audience="web" + type="refresh" + 서명 + 만료)
+     * 2. Family 무효화 여부 — revoked 면 `TOKEN_REUSE_DETECTED`
+     * 3. Redis 메타 존재 여부 — 부재면 재사용 감지 → family revoke + `TOKEN_REUSE_DETECTED`
+     * 4. 이전 token 삭제 → 새 tokenId 발급 → 새 access + refresh token 발급 + Redis 저장
+     */
+    @Transactional
+    fun refresh(request: WebRefreshTokenRequest): WebTokenResponse {
+        val token = request.refreshToken
+        if (!webJwtService.validateRefreshToken(token)) {
+            throw InvalidTokenException()
+        }
+
+        val familyId = webJwtService.getFamilyIdFromToken(token)
+        val tokenId = webJwtService.getTokenIdFromToken(token)
+        val userId = webJwtService.getUserIdFromToken(token)
+
+        if (webRefreshTokenStore.isFamilyRevoked(familyId)) {
+            throw TokenReuseDetectedException()
+        }
+
+        if (!webRefreshTokenStore.exists(tokenId)) {
+            webRefreshTokenStore.revokeFamily(familyId, webJwtService.getRefreshExpirationMillis())
+            throw TokenReuseDetectedException()
+        }
+
+        webRefreshTokenStore.delete(tokenId)
+
+        val user = userRepository.findById(userId).orElseThrow { InvalidTokenException() }
+        val principal = principalFor(user)
+
+        val newTokenId = UUID.randomUUID().toString()
+        val newAccessToken = webJwtService.createAccessToken(principal)
+        val newRefreshToken = webJwtService.createRefreshToken(
+            username = user.username,
+            userId = user.id,
+            familyId = familyId,
+            tokenId = newTokenId
+        )
+        webRefreshTokenStore.store(newTokenId, user.id, familyId, webJwtService.getRefreshExpirationMillis())
+
+        return WebTokenResponse(
+            accessToken = newAccessToken,
+            refreshToken = newRefreshToken,
+            expiresIn = webJwtService.getAccessTokenExpirationSeconds()
+        )
+    }
+
+    /**
+     * Web 비밀번호 변경 (강제 / 자발 통합).
+     *
+     * 분기 (principal.passwordChangeRequired 기반):
+     * - true (강제): `currentPassword` 미검증
+     * - false (자발): `currentPassword` 누락 시 `AUTH_CURRENT_PASSWORD_REQUIRED`, 불일치 시 `AUTH_CURRENT_PASSWORD_MISMATCH`
+     *
+     * 처리: 새 비밀번호 정책 검증 → BCrypt 해시 → `User.changePassword(...)`.
+     * 토큰 재발급은 본 spec 범위 외 (frontend 가 다음 호출 전 재로그인 또는 별도 endpoint 사용).
+     */
+    @Transactional
+    fun changePassword(
+        principal: WebUserPrincipal,
+        request: WebChangePasswordRequest
+    ): WebChangePasswordResponse {
+        val user = userRepository.findById(principal.userId).orElseThrow { InvalidCredentialsException() }
+
+        if (!principal.passwordChangeRequired) {
+            val currentPassword = request.currentPassword?.takeIf { it.isNotBlank() }
+                ?: throw CurrentPasswordRequiredException()
+            if (!passwordEncoder.matches(currentPassword, user.password)) {
+                throw InvalidCurrentPasswordException()
+            }
+        }
+
+        passwordPolicyValidator.validate(request.newPassword)
+
+        val encoded = passwordEncoder.encode(request.newPassword)!!
+        user.changePassword(encoded)
+
+        return WebChangePasswordResponse(passwordChangeRequired = false)
+    }
+
+    private fun principalFor(user: User): WebUserPrincipal = WebUserPrincipal(
+        userId = user.id,
+        usernameValue = user.username,
+        employeeNumber = user.employeeNumber,
+        profileType = user.profileType,
+        isSalesSupport = user.isSalesSupport,
+        passwordChangeRequired = user.passwordChangeRequired,
+        encodedPassword = user.password,
+        grantedAuthorities = WebUserDetailsService.resolveAuthorities(user.profileType, user.isSalesSupport),
+        active = user.isActive
+    )
+}

@@ -6,9 +6,6 @@ import com.otoki.powersales.common.dto.request.GpsConsentRequest
 import com.otoki.powersales.auth.dto.request.LoginRequest
 import com.otoki.powersales.auth.dto.request.RefreshTokenRequest
 import com.otoki.powersales.auth.dto.request.VerifyPasswordRequest
-import com.otoki.powersales.admin.dto.response.AdminLoginResponse
-import com.otoki.powersales.admin.dto.response.AdminTokenInfo
-import com.otoki.powersales.admin.dto.response.AdminUserInfo
 import com.otoki.powersales.admin.service.AdminPermissionResolver
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.auth.dto.response.*
@@ -111,52 +108,6 @@ class AuthService(
     }
 
     /**
-     * 관리자 로그인
-     * 1. 사번으로 사용자 조회
-     * 2. BCrypt 비밀번호 검증
-     * 3. role 검증 (UserRole.ALLOWED_FOR_ADMIN_LOGIN)
-     * 4. 로그인 이력 기록
-     * 5. Access Token + Refresh Token 생성
-     * 6. AdminLoginResponse 반환
-     */
-    @Transactional
-    fun adminLogin(request: LoginRequest): AdminLoginResponse {
-        val employee = employeeRepository.findWithEmployeeInfoByEmployeeCode(request.employeeCode)
-            ?: throw InvalidCredentialsException()
-
-        if (!passwordEncoder.matches(request.password, employee.password)) {
-            throw InvalidCredentialsException()
-        }
-
-        if (adminPermissionResolver.resolve(employee).isEmpty()) {
-            throw WebLoginNotAllowedException()
-        }
-
-        try {
-            loginHistoryRepository.save(LoginHistory(empCode = employee.employeeCode))
-        } catch (e: Exception) {
-            log.warn("로그인 이력 기록 실패: employeeCode={}", employee.employeeCode, e)
-        }
-
-        val accessToken = jwtTokenProvider.createAccessToken(employee.id, employee.role ?: UserRole.WOMAN, employee.agreementFlag == true)
-
-        val familyId = UUID.randomUUID().toString()
-        val tokenId = UUID.randomUUID().toString()
-        val refreshToken = jwtTokenProvider.createRefreshToken(employee.id, familyId, tokenId)
-
-        jwtTokenProvider.storeRefreshToken(tokenId, employee.id, familyId)
-
-        return AdminLoginResponse(
-            user = AdminUserInfo.from(employee, adminPermissionResolver),
-            token = AdminTokenInfo(
-                accessToken = accessToken,
-                refreshToken = refreshToken,
-                expiresIn = jwtTokenProvider.getAccessTokenExpirationSeconds()
-            )
-        )
-    }
-
-    /**
      * 단말기 바인딩 검증
      * 1. device_id 미전달 → 검증 스킵 (웹 브라우저)
      * 2. 바인딩 비활성화 → 검증 스킵
@@ -185,10 +136,13 @@ class AuthService(
      * 로그인 권한 검증
      * - WEB (deviceId 미전달): role이 허용 목록에 포함되어야 함
      * - Mobile (deviceId 전달): appLoginActive가 true여야 함
+     *
+     * Spec #760: 신규 Web 로그인은 `/api/v1/admin/auth/login` + WebAuthenticationService 경로(User 기반)로 분리됨.
+     * 본 메서드의 WEB 분기는 레거시 호환 (Mobile API 의 deviceId 미전달 케이스) 만 다룬다.
      */
     private fun validateLoginAuthority(employee: Employee, deviceId: String?) {
         if (deviceId.isNullOrBlank()) {
-            // WEB 로그인
+            // WEB 로그인 — 레거시 호환 분기 (신규 Web 로그인은 WebAuthenticationService 사용)
             if (adminPermissionResolver.resolve(employee).isEmpty()) {
                 throw WebLoginNotAllowedException()
             }

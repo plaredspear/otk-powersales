@@ -34,10 +34,11 @@ class JwtTokenProvider(
     private val blacklist = ConcurrentHashMap<String, Date>()
 
     /**
-     * Access Token 생성.
+     * Mobile (Employee 기반) Access Token 생성.
      *
      * @param passwordChangeRequired 강제 변경 미완료 사원 여부 (Spec #584). `true` 면 가드 필터가
      *  화이트리스트(change-password/logout/refresh) 외 호출을 차단한다.
+     * @return audience="mobile" claim 이 박힌 access JWT — Web FilterChain 은 거부 (Spec #760).
      */
     fun createAccessToken(
         userId: Long,
@@ -52,6 +53,7 @@ class JwtTokenProvider(
             .subject(userId.toString())
             .claim("role", role.name)
             .claim("type", "access")
+            .claim("audience", AUDIENCE_MOBILE)
             .claim("agreement_flag", agreementFlag)
             .claim("password_change_required", passwordChangeRequired)
             .issuedAt(now)
@@ -61,9 +63,11 @@ class JwtTokenProvider(
     }
 
     /**
-     * Refresh Token 생성 (Rotation 지원)
+     * Mobile Refresh Token 생성 (Rotation 지원).
+     *
      * family_id: Token Family ID (최초 로그인 시 생성, UUID)
      * token_id: 개별 Token ID (매 갱신 시 새로 생성, UUID)
+     * @return audience="mobile" claim 이 박힌 refresh JWT (Spec #760).
      */
     fun createRefreshToken(userId: Long, familyId: String, tokenId: String): String {
         val now = Date()
@@ -72,6 +76,7 @@ class JwtTokenProvider(
         return Jwts.builder()
             .subject(userId.toString())
             .claim("type", "refresh")
+            .claim("audience", AUDIENCE_MOBILE)
             .claim("family_id", familyId)
             .claim("token_id", tokenId)
             .issuedAt(now)
@@ -151,6 +156,21 @@ class JwtTokenProvider(
      */
     fun getTokenIdFromToken(token: String): String {
         return parseClaims(token).get("token_id", String::class.java)
+    }
+
+    /**
+     * 토큰의 audience claim 추출 — "web" / "mobile" / null (구 토큰).
+     *
+     * Spec #760 — Mobile JWT 로 Web 호출 / Web JWT 로 Mobile 호출 차단을 위해
+     * 각 SecurityFilterChain 이 자신의 audience 만 수용하도록 분기.
+     * 본 spec 배포 이전 발급된 토큰은 audience claim 부재 → `null` 반환.
+     */
+    fun getAudienceFromToken(token: String): String? {
+        return try {
+            parseClaims(token).get("audience", String::class.java)
+        } catch (_: Exception) {
+            null
+        }
     }
 
     /**
@@ -262,5 +282,13 @@ class JwtTokenProvider(
     private fun cleanExpiredBlacklist() {
         val now = Date()
         blacklist.entries.removeIf { it.value.before(now) }
+    }
+
+    companion object {
+        /** Spec #760 — Web 토큰 audience claim 값. */
+        const val AUDIENCE_WEB = "web"
+
+        /** Spec #760 — Mobile 토큰 audience claim 값. */
+        const val AUDIENCE_MOBILE = "mobile"
     }
 }

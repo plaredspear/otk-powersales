@@ -165,4 +165,25 @@ class User(
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: User? = null,
 
-) : BaseEntity()
+) : BaseEntity() {
+
+    /**
+     * 비밀번호 변경 (Spec #760).
+     *
+     * BCrypt 해시 갱신 + `password_change_required = false` 처리.
+     * 임시 비밀번호 → 자체 설정 비밀번호 전환 시 호출.
+     */
+    fun changePassword(encodedPassword: String) {
+        this.password = encodedPassword
+        this.passwordChangeRequired = false
+    }
+
+    /**
+     * 마지막 로그인 시각 기록 (Spec #760).
+     *
+     * Web 로그인 성공 시 `last_login_at` 을 현재 UTC wall clock 으로 갱신.
+     */
+    fun recordLogin(at: java.time.LocalDateTime) {
+        this.lastLoginAt = at
+    }
+}
