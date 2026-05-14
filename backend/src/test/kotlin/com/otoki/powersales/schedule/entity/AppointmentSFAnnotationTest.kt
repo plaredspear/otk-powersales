@@ -44,9 +44,9 @@ class AppointmentSFAnnotationTest {
         private val mapping = SFSchemaUtils.getSFMapping(Appointment::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 21 (Custom 16 + Group A 3 + BaseEntity 2)")
+        @DisplayName("매핑 키 수 = 23 (Custom 16 + Group A 3 + OwnerId 1 (Spec #755) + BaseEntity 2 + Name)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(22)
+            assertThat(mapping).hasSize(23)
         }
     }
 
@@ -108,9 +108,9 @@ class AppointmentSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("OwnerId 매핑 미포함 (Group/User — 신규 시스템 Group 부재)")
-        fun ownerIdNotMapped() {
-            assertThat(mapping).doesNotContainKey("OwnerId")
+        @DisplayName("OwnerId → owner_sfid (Spec #755 — polymorphic R-2 [Group, User] 정합)")
+        fun ownerIdMapped() {
+            assertThat(mapping["OwnerId"]).isEqualTo("owner_sfid")
         }
     }
 
