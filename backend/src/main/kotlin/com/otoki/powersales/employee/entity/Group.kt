@@ -110,6 +110,16 @@ class Group(
 
     // -- Relations --
 
+    // RelatedId polymorphic [User, UserRole] — User 분기만 FK (UserRole 미매핑)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "related_user_id")
+    var relatedUser: User? = null,
+
+    // OwnerId polymorphic [Organization, User] — User 분기만 FK (Organization 미매핑)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_user_id")
+    var ownerUser: User? = null,
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
     var createdBy: User? = null,
