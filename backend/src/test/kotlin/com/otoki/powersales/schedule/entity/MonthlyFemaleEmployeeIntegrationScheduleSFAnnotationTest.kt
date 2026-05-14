@@ -26,10 +26,10 @@ class MonthlyFemaleEmployeeIntegrationScheduleSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("매핑 키 수 = 26 (21 + BaseEntity 2 + Spec #734 R-2 Owner/CreatedBy/LastModifiedBy 3)")
+        @DisplayName("매핑 키 수 = 27 (21 Custom + BaseEntity 2 + R-2 Owner/CreatedBy/LastModifiedBy 3 + IsDeleted 1)")
         fun mappingKeySize() {
             val mapping = SFSchemaUtils.getSFMapping(MonthlyFemaleEmployeeIntegrationSchedule::class.java)
-            assertThat(mapping).hasSize(28)
+            assertThat(mapping).hasSize(27)
         }
     }
 
@@ -95,7 +95,7 @@ class MonthlyFemaleEmployeeIntegrationScheduleSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("매핑 키셋 정확히 일치 (Spec #734 — Group A R-2 Owner/CreatedBy/LastModifiedBy 포함)")
+        @DisplayName("매핑 키셋 정확히 일치 (DateForReport__c Formula 컬럼 제거 — sf-meta-diff Q4)")
         fun mappingKeysExact() {
             assertThat(mapping.keys)
                 .containsExactlyInAnyOrder(
@@ -108,7 +108,6 @@ class MonthlyFemaleEmployeeIntegrationScheduleSFAnnotationTest {
                     "EquivalentNumberOfWorkingDays__c", "ConvertedHeadcount__c",
                     "EDI_POS__c", "ThisMonthAmount__c",
                     "AccountConvertedHeadcount__c", "EmployeeInputCriteriaMaster__c",
-                    "DateForReport__c",
                     "OwnerId", "CreatedById", "LastModifiedById",
                     "CreatedDate", "LastModifiedDate",
                     "IsDeleted"

@@ -7,8 +7,10 @@ import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.employee.entity.Group
 import com.otoki.powersales.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.promotion.entity.converter.ProfessionalPromotionTeamTypeConverter
+import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.math.BigDecimal
 
@@ -97,7 +99,7 @@ class MonthlyFemaleEmployeeIntegrationSchedule(
 
     @SFField("WorkingDaysMonth__c")
     @HCColumn("workingdaysmonth__c")
-    @Column(name = "working_days_month", precision = 14, scale = 4)
+    @Column(name = "working_days_month", precision = 18, scale = 4)
     val workingDaysMonth: BigDecimal? = null,
 
     @SFField("NumberOfInputs__c")
@@ -107,12 +109,12 @@ class MonthlyFemaleEmployeeIntegrationSchedule(
 
     @SFField("EquivalentNumberOfWorkingDays__c")
     @HCColumn("equivalentnumberofworkingdays__c")
-    @Column(name = "equivalent_number_of_working_days", precision = 14, scale = 4)
+    @Column(name = "equivalent_number_of_working_days", precision = 18, scale = 4)
     val equivalentNumberOfWorkingDays: BigDecimal? = null,
 
     @SFField("ConvertedHeadcount__c")
     @HCColumn("convertedheadcount__c")
-    @Column(name = "converted_headcount", precision = 14, scale = 4)
+    @Column(name = "converted_headcount", precision = 18, scale = 4)
     val convertedHeadcount: BigDecimal? = null,
 
     @SFField("EDI_POS__c")
@@ -127,7 +129,7 @@ class MonthlyFemaleEmployeeIntegrationSchedule(
 
     @SFField("AccountConvertedHeadcount__c")
     @HCColumn("accountconvertedheadcount__c")
-    @Column(name = "account_converted_headcount", precision = 14, scale = 4)
+    @Column(name = "account_converted_headcount", precision = 18, scale = 4)
     val accountConvertedHeadcount: BigDecimal? = null,
 
     @SFField("EmployeeInputCriteriaMaster__c")
@@ -165,30 +167,25 @@ class MonthlyFemaleEmployeeIntegrationSchedule(
     @JoinColumn(name = "account_id")
     val account: Account? = null,
 
+    // OwnerId polymorphic [Group, User] — owner_sfid sync buffer + (owner_user XOR owner_group) FK
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id")
-    var owner: Employee? = null,
+    @JoinColumn(name = "owner_user_id")
+    var ownerUser: User? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_group_id")
+    var ownerGroup: Group? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
-    var createdBy: Employee? = null,
+    var createdBy: User? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
-    var lastModifiedBy: Employee? = null,
+    var lastModifiedBy: User? = null,
 
-    // -- Spec #746 R-2 (EmployeeInputCriteriaMaster__c FK 신설) --
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "employee_input_criteria_master_id")
     var employeeInputCriteriaMaster: com.otoki.powersales.schedule.entity.EmployeeInputCriteriaMaster? = null,
-
-    // -- Spec #747 카테고리 A — D 분류 누락 --
-    @SFField("DateForReport__c")
-    @HCColumn("dateforreport__c")
-    @Column(name = "date_for_report")
-    var dateForReport: java.time.LocalDate? = null,
-
-    // Spec #747: Year_Month__c (SF len=1300) — 기존 entity 의 `month` 컬럼이 H2 reserved word 와 schema 재검증 시 충돌
-    // 발생 → 본 batch 보류. #750+ follow-up 으로 분리 검토 (기존 month 컬럼 quote 처리 + 신규 컬럼 추가).
 
 ) : BaseEntity()
