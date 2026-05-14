@@ -15,7 +15,7 @@ class ProfessionalPromotionTeamTypeTest {
     inner class DisplayNameTests {
 
         @Test
-        @DisplayName("5개 값 모두 한글 displayName 보유 (V137: GENERAL 제거 — null 의미 매핑)")
+        @DisplayName("5개 값 모두 한글 displayName 보유 (V139: GENERAL 제거 — null 의미 매핑)")
         fun allValuesHaveDisplayName() {
             assertThat(ProfessionalPromotionTeamType.RAMEN_SALE.displayName).isEqualTo("라면세일조")
             assertThat(ProfessionalPromotionTeamType.FRESH_SALE_REFRIGERATED.displayName).isEqualTo("프레시세일조_냉장")
