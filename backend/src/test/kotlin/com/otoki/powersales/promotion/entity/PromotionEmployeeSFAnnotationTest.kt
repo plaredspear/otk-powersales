@@ -29,10 +29,10 @@ class PromotionEmployeeSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("매핑 키 수 = 22 (Spec #740: WorkType4 + ProfessionalPromotionTeam Formula 2건 제거. 기존 15 + 신규 2 + BaseEntity 2 + R-2 3)")
+        @DisplayName("매핑 키 수 = 25 (sf-meta-diff Q7: WorkType2__c Formula 컬럼 제거)")
         fun mappingKeySize() {
             val mapping = SFSchemaUtils.getSFMapping(PromotionEmployee::class.java)
-            assertThat(mapping).hasSize(26)
+            assertThat(mapping).hasSize(25)
         }
     }
 
@@ -83,16 +83,64 @@ class PromotionEmployeeSFAnnotationTest {
     }
 
     @Nested
-    @DisplayName("AC1 — @SFField 매핑 키셋 (신규 2개)")
+    @DisplayName("AC1 — @SFField 매핑 키셋 (신규 — sf-meta-diff Q7 WorkType2__c 제거 후)")
     inner class NewSfFieldMapping {
 
         private val mapping = SFSchemaUtils.getSFMapping(PromotionEmployee::class.java)
 
         @Test
-        @DisplayName("신규 2개 SF API Name → 컬럼명 1:1")
+        @DisplayName("Description__c → description 1:1")
         fun newMappingValues() {
             assertThat(mapping["Description__c"]).isEqualTo("description")
-            assertThat(mapping["WorkType2__c"]).isEqualTo("work_type2")
         }
+
+        @Test
+        @DisplayName("WorkType2__c (SF Formula) 매핑 제거 확인")
+        fun workType2FormulaMappingRemoved() {
+            assertThat(mapping).doesNotContainKey("WorkType2__c")
+        }
+    }
+
+    @Nested
+    @DisplayName("sf-meta-diff Q8 — DKRetail__DailyActualSalesAmount__c Formula 재현 (의미 오류 포함 그대로)")
+    inner class DkDailyActualSalesAmountFormula {
+
+        @Test
+        @DisplayName("SF 원본 공식: (price × primaryQty) + (otherQty × otherQty)")
+        fun originalFormulaIncludingSemanticError() {
+            val pe = newPe(price = 1000, primaryQty = 5, otherQty = 3)
+            // (1000 × 5) + (3 × 3) = 5000 + 9 = 5009 — otherQty 를 두 번 곱하는 의미 오류 그대로 보존
+            assertThat(pe.dkDailyActualSalesAmount).isEqualTo(5009L)
+        }
+
+        @Test
+        @DisplayName("모든 입력이 null 이면 결과도 null")
+        fun allNullReturnsNull() {
+            val pe = newPe(price = null, primaryQty = null, otherQty = null)
+            assertThat(pe.dkDailyActualSalesAmount).isNull()
+        }
+
+        @Test
+        @DisplayName("일부 입력이 null 이면 null 항은 0 으로 계산")
+        fun partialNullTreatedAsZero() {
+            val pe = newPe(price = 1000, primaryQty = 5, otherQty = null)
+            // (1000 × 5) + (0 × 0) = 5000
+            assertThat(pe.dkDailyActualSalesAmount).isEqualTo(5000L)
+        }
+
+        @Test
+        @DisplayName("otherQty 만 있으면 otherQty² 결과")
+        fun otherQuantityOnly() {
+            val pe = newPe(price = null, primaryQty = null, otherQty = 7)
+            // (0 × 0) + (7 × 7) = 49 — 의미 오류 (수량 제곱)
+            assertThat(pe.dkDailyActualSalesAmount).isEqualTo(49L)
+        }
+
+        private fun newPe(price: Long?, primaryQty: Long?, otherQty: Long?) = PromotionEmployee(
+            promotionId = 1L,
+            primarySalesPrice = price,
+            primarySalesQuantity = primaryQty,
+            otherSalesQuantity = otherQty
+        )
     }
 }

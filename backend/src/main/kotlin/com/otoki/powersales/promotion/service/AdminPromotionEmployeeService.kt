@@ -258,7 +258,7 @@ class AdminPromotionEmployeeService(
         return ResolvedEmployee(id = employee.id, name = employee.name, employeeCode = employee.employeeCode)
     }
 
-    private fun calculateTargetAmount(basePrice: Long?, dailyTargetCount: Int?): Long? {
+    private fun calculateTargetAmount(basePrice: Long?, dailyTargetCount: Long?): Long? {
         return if (basePrice != null && dailyTargetCount != null) basePrice * dailyTargetCount else null
     }
 
@@ -364,7 +364,7 @@ class AdminPromotionEmployeeService(
         scheduleDate: java.time.LocalDate?,
         workType3: String?,
         basePrice: Long?,
-        dailyTargetCount: Int?,
+        dailyTargetCount: Long?,
         isAdmin: Boolean
     ) {
         if (pe.teamMemberScheduleId == null || !pe.promoCloseByTm) return

@@ -21,7 +21,7 @@ data class PromotionEmployeeRequest(
     val basePrice: Long? = null,
 
     @field:Min(value = 0, message = "일일 목표수량은 0 이상이어야 합니다")
-    val dailyTargetCount: Int? = null,
+    val dailyTargetCount: Long? = null,
 
     @field:Min(value = 0, message = "목표금액은 0 이상이어야 합니다")
     val targetAmount: Long? = 0,
@@ -33,7 +33,7 @@ data class PromotionEmployeeRequest(
     val primaryProductAmount: Long? = null,
 
     @field:Min(value = 0, message = "대표품목 판매수량은 0 이상이어야 합니다")
-    val primarySalesQuantity: Int? = null,
+    val primarySalesQuantity: Long? = null,
 
     @field:Min(value = 0, message = "대표품목 판매단가는 0 이상이어야 합니다")
     val primarySalesPrice: Long? = null,
@@ -42,7 +42,7 @@ data class PromotionEmployeeRequest(
     val otherSalesAmount: Long? = null,
 
     @field:Min(value = 0, message = "기타 판매수량은 0 이상이어야 합니다")
-    val otherSalesQuantity: Int? = null,
+    val otherSalesQuantity: Long? = null,
 
     @field:Size(max = 255, message = "현장사진 S3 키는 최대 255자입니다")
     val s3ImageUniqueKey: String? = null

@@ -14,6 +14,7 @@ import com.otoki.powersales.common.entity.converter.WorkingCategory2Converter
 import com.otoki.powersales.common.entity.converter.WorkingCategory3Converter
 import com.otoki.powersales.common.entity.converter.WorkingTypeConverter
 import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.time.LocalDate
 
@@ -96,7 +97,7 @@ class PromotionEmployee(
     @SFField("DKRetail__DailyTargetCount__c")
     @HCColumn("dkretail__dailytargetcount__c")
     @Column(name = "daily_target_count")
-    var dailyTargetCount: Int? = null,
+    var dailyTargetCount: Long? = null,
 
     @Column(name = "target_amount")
     var targetAmount: Long? = 0,
@@ -112,7 +113,7 @@ class PromotionEmployee(
     @SFField("DKRetail__PrimarySalesQuantity__c")
     @HCColumn("dkretail__primarysalesquantity__c")
     @Column(name = "primary_sales_quantity")
-    var primarySalesQuantity: Int? = null,
+    var primarySalesQuantity: Long? = null,
 
     @SFField("DKRetail__PrimarySalesPrice__c")
     @HCColumn("dkretail__primarysalesprice__c")
@@ -127,7 +128,7 @@ class PromotionEmployee(
     @SFField("DKRetail__OtherSalesQuantity__c")
     @HCColumn("dkretail__othersalesquantity__c")
     @Column(name = "other_sales_quantity")
-    var otherSalesQuantity: Int? = null,
+    var otherSalesQuantity: Long? = null,
 
     @SFField("S3ImageUniqueKey__c")
     @HCColumn("s3imageuniquekey__c")
@@ -139,16 +140,11 @@ class PromotionEmployee(
     @Column(name = "description", length = 50)
     var description: String? = null,
 
-    @SFField("WorkType2__c")
-    @HCColumn("worktype2__c")
-    @Column(name = "work_type2", length = 255)
-    @Convert(converter = WorkingCategory2Converter::class)
-    var workType2: WorkingCategory2? = null,
-
     @SFField("DKRetail__WorkType2__c")
     @HCColumn("dkretail__worktype2__c")
     @Column(name = "dk_work_type2", length = 255)
-    var dkWorkType2: String? = null,
+    @Convert(converter = WorkingCategory2Converter::class)
+    var dkWorkType2: WorkingCategory2? = null,
 
     @SFField("OwnerId")
     @HCColumn("ownerid")
@@ -186,16 +182,29 @@ class PromotionEmployee(
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
-    var createdBy: Employee? = null
+    var createdBy: User? = null
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
-    var lastModifiedBy: Employee? = null
+    var lastModifiedBy: User? = null
 
     // -- Spec #746 R-2 (DKRetail__ScheduleId__c FK 신설, 기존 team_member_schedule_id 컬럼 재사용) --
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "team_member_schedule_id", insertable = false, updatable = false)
     var teamMemberSchedule: com.otoki.powersales.schedule.entity.TeamMemberSchedule? = null
+
+    // SF Formula `DKRetail__DailyActualSalesAmount__c` 원본 공식 재현 (sf-meta-diff Q8 — 의미 오류 포함 그대로 보존, SF UI/리포트 동등성 목적).
+    // 공식: (DKRetail__PrimarySalesPrice__c * DKRetail__PrimarySalesQuantity__c) + (DKRetail__OtherSalesQuantity__c * DKRetail__OtherSalesQuantity__c)
+    val dkDailyActualSalesAmount: Long?
+        get() {
+            val price = primarySalesPrice
+            val primaryQty = primarySalesQuantity
+            val otherQty = otherSalesQuantity
+            if (price == null && primaryQty == null && otherQty == null) return null
+            val primaryTerm = (price ?: 0) * (primaryQty ?: 0)
+            val otherTerm = (otherQty ?: 0) * (otherQty ?: 0)
+            return primaryTerm + otherTerm
+        }
 
     fun update(
         employeeId: Long?,
@@ -204,14 +213,14 @@ class PromotionEmployee(
         workType1: WorkingCategory1?,
         workType3: WorkingCategory3?,
         basePrice: Long?,
-        dailyTargetCount: Int?,
+        dailyTargetCount: Long?,
         targetAmount: Long?,
         actualAmount: Long?,
         primaryProductAmount: Long? = null,
-        primarySalesQuantity: Int? = null,
+        primarySalesQuantity: Long? = null,
         primarySalesPrice: Long? = null,
         otherSalesAmount: Long? = null,
-        otherSalesQuantity: Int? = null,
+        otherSalesQuantity: Long? = null,
         s3ImageUniqueKey: String? = null
     ) {
         this.employeeId = employeeId
