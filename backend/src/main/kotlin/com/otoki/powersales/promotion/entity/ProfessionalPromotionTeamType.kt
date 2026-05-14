@@ -6,7 +6,6 @@ import com.fasterxml.jackson.annotation.JsonValue
 enum class ProfessionalPromotionTeamType(
     val displayName: String
 ) {
-    GENERAL("일반"),
     RAMEN_SALE("라면세일조"),
     FRESH_SALE_REFRIGERATED("프레시세일조_냉장"),
     FRESH_SALE_FROZEN("프레시세일조_냉동"),

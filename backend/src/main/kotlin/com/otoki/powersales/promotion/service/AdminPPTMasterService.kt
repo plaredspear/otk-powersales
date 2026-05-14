@@ -23,7 +23,6 @@ import com.otoki.powersales.promotion.exception.PPTMasterAccountNotFoundExceptio
 import com.otoki.powersales.promotion.exception.PPTMasterBulkValidationFailedException
 import com.otoki.powersales.promotion.exception.PPTMasterDuplicateException
 import com.otoki.powersales.promotion.exception.PPTMasterEmployeeNotFoundException
-import com.otoki.powersales.promotion.exception.PPTMasterGeneralNotAllowedException
 import com.otoki.powersales.promotion.exception.PPTMasterInvalidDateRangeException
 import com.otoki.powersales.promotion.exception.PPTMasterNotFoundException
 import com.otoki.powersales.promotion.repository.PPTHistoryRepository
@@ -48,7 +47,6 @@ class AdminPPTMasterService(
 
     companion object {
         private const val BULK_MAX_SIZE = 450
-        private val DEFAULT_TEAM = ProfessionalPromotionTeamType.GENERAL
     }
 
     fun getMasters(
@@ -84,8 +82,6 @@ class AdminPPTMasterService(
 
     @Transactional
     fun createMaster(request: PPTMasterCreateRequest): PPTMasterResponse {
-        validateNotGeneral(request.teamType)
-
         val employee = findEmployeeById(request.employeeId)
         val account = findAccountById(request.accountId)
 
@@ -120,8 +116,6 @@ class AdminPPTMasterService(
 
     @Transactional
     fun updateMaster(id: Long, request: PPTMasterUpdateRequest): PPTMasterResponse {
-        validateNotGeneral(request.teamType)
-
         val master = findMasterById(id)
         val employee = findEmployeeById(request.employeeId)
         val account = findAccountById(request.accountId)
@@ -167,12 +161,12 @@ class AdminPPTMasterService(
 
         pptMasterRepository.delete(master)
 
-        // 다른 유효 마스터가 없으면 일반으로 복귀
+        // 다른 유효 마스터가 없으면 미배정(null)으로 복귀
         val remainingValid = pptMasterRepository.findValidMastersByEmployeeId(employeeId, LocalDate.now())
         if (remainingValid.isEmpty()) {
             val employee = employeeRepository.findById(employeeId).orElse(null)
             if (employee != null) {
-                updateEmployeeTeam(employee, DEFAULT_TEAM)
+                updateEmployeeTeam(employee, null)
             }
         }
     }
@@ -300,10 +294,6 @@ class AdminPPTMasterService(
         return accountRepository.findById(accountId).orElseThrow { PPTMasterAccountNotFoundException() }
     }
 
-    private fun validateNotGeneral(teamType: ProfessionalPromotionTeamType) {
-        if (teamType == ProfessionalPromotionTeamType.GENERAL) throw PPTMasterGeneralNotAllowedException()
-    }
-
     private fun validateDateRange(startDate: LocalDate, endDate: LocalDate?) {
         if (endDate != null && startDate.isAfter(endDate)) throw PPTMasterInvalidDateRangeException()
     }
@@ -325,7 +315,7 @@ class AdminPPTMasterService(
         }
     }
 
-    internal fun updateEmployeeTeam(employee: Employee, newTeamType: ProfessionalPromotionTeamType) {
+    internal fun updateEmployeeTeam(employee: Employee, newTeamType: ProfessionalPromotionTeamType?) {
         val oldValue = employee.professionalPromotionTeam
         employee.professionalPromotionTeam = newTeamType
         employeeRepository.save(employee)
@@ -336,13 +326,15 @@ class AdminPPTMasterService(
             )
         }
 
-        pptHistoryRepository.save(
-            ProfessionalPromotionTeamHistory(
-                employeeId = employee.id,
-                oldValue = oldValue,
-                newValue = newTeamType
+        if (newTeamType != null) {
+            pptHistoryRepository.save(
+                ProfessionalPromotionTeamHistory(
+                    employeeId = employee.id,
+                    oldValue = oldValue,
+                    newValue = newTeamType
+                )
             )
-        )
+        }
     }
 
     private fun validateBulkItem(
@@ -362,11 +354,6 @@ class AdminPPTMasterService(
         // 거래처 검증
         if (accountMap[item.accountCode] == null) {
             return "거래처코드 ${item.accountCode}에 해당하는 거래처가 존재하지 않습니다"
-        }
-
-        // teamType 검증 - GENERAL은 마스터 등록 불가
-        if (item.teamType == ProfessionalPromotionTeamType.GENERAL) {
-            return "마스터 등록 시 '일반'은 사용할 수 없습니다"
         }
 
         // 날짜 검증

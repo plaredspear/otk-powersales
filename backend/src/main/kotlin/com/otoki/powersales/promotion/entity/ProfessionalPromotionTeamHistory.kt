@@ -6,7 +6,9 @@ import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.employee.entity.Group
 import com.otoki.powersales.promotion.entity.converter.ProfessionalPromotionTeamTypeConverter
+import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
@@ -81,16 +83,20 @@ class ProfessionalPromotionTeamHistory(
     val employee: Employee? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id")
-    var owner: Employee? = null,
+    @JoinColumn(name = "owner_user_id")
+    var ownerUser: User? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_group_id")
+    var ownerGroup: Group? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
-    var createdBy: Employee? = null,
+    var createdBy: User? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
-    var lastModifiedBy: Employee? = null,
+    var lastModifiedBy: User? = null,
 
     // -- Spec #747 카테고리 A Q2 — history 보존 의미의 사원코드 캐시 --
     @SFField("empCode__c")

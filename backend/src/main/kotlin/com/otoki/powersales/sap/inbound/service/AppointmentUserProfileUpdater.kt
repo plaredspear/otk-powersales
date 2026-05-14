@@ -4,7 +4,6 @@ import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.schedule.entity.Appointment
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.common.entity.SystemCodeMaster
-import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.organization.repository.OrganizationRepository
 import com.otoki.powersales.common.repository.SystemCodeMasterRepository
@@ -144,7 +143,7 @@ class AppointmentUserProfileUpdater(
     internal fun applyProfessionalPromotionTeamReset(employee: Employee, ordDetailNode: String?) {
         if (employee.role != UserRole.WOMAN) return
         if (ordDetailNode != "승진") {
-            employee.professionalPromotionTeam = ProfessionalPromotionTeamType.GENERAL
+            employee.professionalPromotionTeam = null
         }
     }
 

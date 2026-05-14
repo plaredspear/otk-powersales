@@ -2,7 +2,6 @@ package com.otoki.powersales.promotion.service
 
 import com.otoki.powersales.common.jobrun.ScheduledJobRunContext
 import com.otoki.powersales.employee.repository.EmployeeRepository
-import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
 import com.otoki.powersales.promotion.repository.PPTMasterRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -14,10 +13,6 @@ class PPTMasterBatchService(
     private val employeeRepository: EmployeeRepository,
     private val adminPPTMasterService: AdminPPTMasterService,
 ) {
-
-    companion object {
-        private val DEFAULT_TEAM = ProfessionalPromotionTeamType.GENERAL
-    }
 
     @Transactional
     fun syncValidMasters(context: ScheduledJobRunContext? = null) {
@@ -51,8 +46,8 @@ class PPTMasterBatchService(
                 .filter { it.endDate == null || it.endDate!! > today }
             if (remainingValid.isEmpty()) {
                 val employee = employeeRepository.findById(employeeId).orElse(null) ?: continue
-                if (employee.professionalPromotionTeam != DEFAULT_TEAM && employee.professionalPromotionTeam != null) {
-                    adminPPTMasterService.updateEmployeeTeam(employee, DEFAULT_TEAM)
+                if (employee.professionalPromotionTeam != null) {
+                    adminPPTMasterService.updateEmployeeTeam(employee, null)
                     reverted++
                 }
             }

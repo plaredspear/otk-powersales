@@ -50,9 +50,3 @@ class PPTMasterBulkValidationFailedException : BusinessException(
     message = "검증 실패 항목이 존재합니다",
     httpStatus = HttpStatus.BAD_REQUEST
 )
-
-class PPTMasterGeneralNotAllowedException : BusinessException(
-    errorCode = "GENERAL_NOT_ALLOWED_FOR_MASTER",
-    message = "마스터 등록 시 '일반'은 사용할 수 없습니다",
-    httpStatus = HttpStatus.BAD_REQUEST
-)

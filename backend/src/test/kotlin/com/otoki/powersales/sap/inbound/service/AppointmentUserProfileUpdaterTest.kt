@@ -124,7 +124,7 @@ class AppointmentUserProfileUpdaterTest {
 
             assertThat(employee.role).isEqualTo(UserRole.WOMAN)
             assertThat(employee.appLoginActive).isTrue()
-            assertThat(employee.professionalPromotionTeam).isEqualTo(ProfessionalPromotionTeamType.GENERAL)
+            assertThat(employee.professionalPromotionTeam).isNull()
         }
 
         @Test
@@ -299,11 +299,11 @@ class AppointmentUserProfileUpdaterTest {
     inner class PPTResetTests {
 
         @Test
-        @DisplayName("여사원 + 전보 -> 일반으로 초기화")
+        @DisplayName("여사원 + 전보 -> 미배정(null)으로 초기화")
         fun resetToGeneral() {
             val employee = createEmployee(role = UserRole.WOMAN, professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE)
             updater.applyProfessionalPromotionTeamReset(employee, "전보")
-            assertThat(employee.professionalPromotionTeam).isEqualTo(ProfessionalPromotionTeamType.GENERAL)
+            assertThat(employee.professionalPromotionTeam).isNull()
         }
 
         @Test

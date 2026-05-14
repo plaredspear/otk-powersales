@@ -7,7 +7,9 @@ import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.employee.entity.Group
 import com.otoki.powersales.promotion.entity.converter.ProfessionalPromotionTeamTypeConverter
+import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.time.LocalDate
 
@@ -107,22 +109,20 @@ class ProfessionalPromotionTeamMaster(
     var fullNameEmployee: Employee? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id")
-    var owner: Employee? = null,
+    @JoinColumn(name = "owner_user_id")
+    var ownerUser: User? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_group_id")
+    var ownerGroup: Group? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
-    var createdBy: Employee? = null,
+    var createdBy: User? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
-    var lastModifiedBy: Employee? = null,
-
-    // -- Spec #747 카테고리 A — D 분류 누락 (퇴직일) --
-    @SFField("QuitDate__c")
-    @HCColumn("quitdate__c")
-    @Column(name = "quit_date")
-    var quitDate: java.time.LocalDate? = null,
+    var lastModifiedBy: User? = null,
 
 ) : BaseEntity() {
 

@@ -257,7 +257,7 @@ class AdminPPTMasterControllerTest {
                 content = listOf(
                     PPTMasterHistoryResponse(
                         id = 1L, employeeId = 1L, employeeName = "홍길동",
-                        oldValue = ProfessionalPromotionTeamType.GENERAL, newValue = ProfessionalPromotionTeamType.RAMEN_SALE,
+                        oldValue = null, newValue = ProfessionalPromotionTeamType.RAMEN_SALE,
                         changedAt = LocalDateTime.of(2026, 3, 22, 9, 0)
                     )
                 ),
@@ -267,7 +267,7 @@ class AdminPPTMasterControllerTest {
 
             mockMvc.perform(get("/api/v1/admin/ppt-masters/1/history"))
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.data.content[0].oldValue").value("일반"))
+                .andExpect(jsonPath("$.data.content[0].oldValue").doesNotExist())
                 .andExpect(jsonPath("$.data.content[0].newValue").value("라면세일조"))
         }
     }
