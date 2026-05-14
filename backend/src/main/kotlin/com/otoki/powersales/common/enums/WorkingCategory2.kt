@@ -13,9 +13,8 @@ enum class WorkingCategory2(
     val displayName: String
 ) {
     DEDICATED("전담"),
-    DISPLAY_CONCURRENT("진열겸임"),
-    // SF picklist 옵션 외 — 레거시 운영 데이터(WorkingCategory5.TEMPORARY 매핑 — `mapTypeOfWork5ToCategory2`) 호환을 위해 enum 에 포함. SF org picklist 정비 필요.
-    TEMPORARY("임시");
+    DISPLAY_CONCURRENT("진열겸임");
+    // TEMPORARY("임시") 옵션 제거 — SF picklist 정합. 레거시 Apex/Aura 모든 차원에서 사용 0건 확인 (sf-align-teammemberschedule #762). 본 entity 측 `mapTypeOfWork5ToCategory2("임시")` 는 NULL 반환으로 변경.
 
     @JsonValue
     fun toJson(): String = displayName

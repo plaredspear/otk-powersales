@@ -12,7 +12,7 @@ enum class WorkingType(
 ) {
     WORK("근무"),
     ANNUAL_LEAVE("연차"),
-    // SF picklist 옵션 외 — 레거시 운영 데이터(대휴 일정) 호환을 위해 enum 에 포함. SF org picklist 정비 필요.
+    // SF picklist 메타에는 미정의이나, 레거시 Apex 비즈니스 로직 (AltHolidayToScheduleController, TeamMemberScheduleTriggerHandler, FullCalendarComponentController) 에서 핵심 도메인 값으로 활발히 사용 — sf-align-teammemberschedule (#762) 검증 완료. SF org picklist 메타 정비 (옵션 추가) 는 SF org 운영자 책임 / 별도 작업.
     ALT_HOLIDAY("대휴");
 
     @JsonValue

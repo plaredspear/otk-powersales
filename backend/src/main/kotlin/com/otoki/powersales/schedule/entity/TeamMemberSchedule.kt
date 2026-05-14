@@ -15,12 +15,12 @@ import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
+import com.otoki.powersales.employee.entity.Group
 import com.otoki.powersales.leave.entity.AlternativeHoliday
 import com.otoki.powersales.promotion.entity.PromotionEmployee
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.schedule.entity.converter.SecondWorkTypeConverter
-import com.otoki.powersales.schedule.enums.SecondWorkType
+import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -134,13 +134,8 @@ class TeamMemberSchedule(
 
     @SFField("TraversalFlag__c")
     @HCColumn("traversalflag__c")
-    @Column(name = "traversal_flag", length = 255)
+    @Column(name = "traversal_flag", length = 10)
     val traversalFlag: String? = null,
-
-    @SFField("isworkreport__c")
-    @HCColumn("isworkreport__c")
-    @Column(name = "is_work_report", length = 1300)
-    val isWorkReport: String? = null,
 
     @SFField("Equipment1__c")
     @HCColumn("equipment1__c")
@@ -231,19 +226,23 @@ class TeamMemberSchedule(
 
     @SFField("HRCode__c")
     @HCColumn("hrcode__c")
-    @Column(name = "hr_code", length = 40)
+    @Column(name = "hr_code", length = 255)
     var hrCode: String? = null,
 
     @SFField("DKRetail__PromotionEmpIdExt__c")
     @HCColumn("dkretail__promotionempidext__c")
-    @Column(name = "promotion_emp_id_ext", length = 40)
+    @Column(name = "promotion_emp_id_ext", length = 30)
     var promotionEmpIdExt: String? = null,
 
+    /**
+     * SF `SecondWorkType__c` 는 type=string(255) free-form (picklist 아님) — Spec #762.
+     * 다른 entity (AttendanceLog / DisplayWorkSchedule) 의 동명 enum 필드 (`DKRetail__SecondWorkType__c`, picklist) 와 SF API Name 이 다른 별개 필드.
+     * 본 entity 한정으로 enum 매핑 환원 — Converter 부착 금지.
+     */
     @SFField("SecondWorkType__c")
     @HCColumn("secondworktype__c")
     @Column(name = "second_work_type", length = 255)
-    @Convert(converter = SecondWorkTypeConverter::class)
-    var secondWorkType: SecondWorkType? = null,
+    var secondWorkType: String? = null,
 
     @SFField("WorkingCategory5__c")
     @HCColumn("workingcategory5__c")
@@ -278,7 +277,7 @@ class TeamMemberSchedule(
     @Column(name = "proxy_registered_by")
     val proxyRegisteredBy: Long? = null,
 
-    // -- Group A R-2: Owner / CreatedBy / LastModifiedBy --
+    // -- Group A R-2: Owner polymorphic [Group, User] / CreatedBy User / LastModifiedBy User --
 
     @SFField("OwnerId")
     @HCColumn("ownerid")
@@ -326,16 +325,20 @@ class TeamMemberSchedule(
     var displayWorkSchedule: DisplayWorkSchedule? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id")
-    var owner: Employee? = null,
+    @JoinColumn(name = "owner_user_id")
+    var ownerUser: User? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_group_id")
+    var ownerGroup: Group? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
-    var createdBy: Employee? = null,
+    var createdBy: User? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
-    var lastModifiedBy: Employee? = null,
+    var lastModifiedBy: User? = null,
 
     // -- Spec #746 R-2 (MonthlyFemaleEmployeeIntegrationSchedule__c FK 신설) --
     @ManyToOne(fetch = FetchType.LAZY)
@@ -347,38 +350,38 @@ class TeamMemberSchedule(
     @JoinColumn(name = "attendance_log_id")
     var attendanceLog: AttendanceLog? = null,
 
-    // -- Spec #747 카테고리 A — D 분류 누락 (6건) --
-    @SFField("DKRetail__ActualWorkDate__c")
-    @HCColumn("dkretail__actualworkdate__c")
-    @Column(name = "actual_work_date")
-    var actualWorkDate: java.time.LocalDate? = null,
+) : BaseEntity() {
 
-    @SFField("DKRetail__CommuteDate__c")
-    @HCColumn("dkretail__commutedate__c")
-    @Column(name = "commute_date")
-    var commuteDate: java.time.LocalDateTime? = null,
+    // -- Spec #762 Formula 컬럼 7건 computed property 재현 (§6.7 entity 컬럼 추가 금지 정책 정합) --
 
-    @SFField("DKRetail__ConfirmAltHolidayDate__c")
-    @HCColumn("dkretail__confirmaltholidaydate__c")
-    @Column(name = "confirm_alt_holiday_date")
-    var confirmAltHolidayDate: java.time.LocalDate? = null,
+    /** SF formula `DKRetail__ActualWorkDate__c` 동등 — 대휴 원본 근무일자. */
+    val actualWorkDate: LocalDate?
+        get() = altHoliday?.actualWorkDate
 
-    @SFField("DKRetail__Day__c")
-    @HCColumn("dkretail__day__c")
-    @Column(name = "dk_day")
-    var dkDay: Double? = null,
+    /** SF formula `DKRetail__CommuteDate__c` 동등 — 출퇴근 로그의 출근일시. */
+    val commuteDate: LocalDateTime?
+        get() = attendanceLog?.attendanceDate
 
-    @SFField("DKRetail__Reason__c")
-    @HCColumn("dkretail__reason__c")
-    @Column(name = "reason", length = 1300)
-    var reason: String? = null,
+    /** SF formula `DKRetail__ConfirmAltHolidayDate__c` 동등 — 대휴 확정일자. */
+    val confirmAltHolidayDate: LocalDate?
+        get() = altHoliday?.confirmAltHolidayDate
 
-    @SFField("DKRetail__SecondWorkType__c")
-    @HCColumn("dkretail__secondworktype__c")
-    @Column(name = "second_work_type_text", length = 1300)
-    var secondWorkTypeText: String? = null,
+    /** SF formula `DKRetail__Day__c` 동등 — 근무일자의 일 (1~31). */
+    val dkDay: Int?
+        get() = workingDate?.dayOfMonth
 
-    ) : BaseEntity() {
+    /** SF formula `DKRetail__Reason__c` 동등 — 출퇴근 로그의 사유. */
+    val reason: String?
+        get() = attendanceLog?.reason
+
+    /** SF formula `DKRetail__SecondWorkType__c` (TEXT(picklist)) 동등 — 출퇴근 로그의 부가 근무유형 표시값. */
+    val secondWorkTypeText: String?
+        get() = attendanceLog?.secondWorkType?.displayName
+
+    /** SF formula `isworkreport__c` 동등 — 출퇴근 로그 존재 시 "근무등록", 부재 시 빈 문자열. */
+    val isWorkReport: String
+        get() = if (attendanceLog != null) "근무등록" else ""
+
     fun updateForPromotion(
         employee: Employee,
         account: Account,

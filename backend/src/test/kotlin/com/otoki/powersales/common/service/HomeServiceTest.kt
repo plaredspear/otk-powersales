@@ -340,37 +340,28 @@ class HomeServiceTest {
         // ========== 정렬 ==========
 
         @Test
-        @DisplayName("4단계 정렬 - 출근완료(0) -> 임시배정(1) -> 행사(2) -> 진열(3) 순서로 정렬")
+        @DisplayName("3단계 정렬 - 출근완료(0) -> 행사(1) -> 진열(2) 순서로 정렬")
         fun schedules_sortedByPriority() {
             // Given
             val userId = 1L
             val employee = createEmployee(id = userId, role = null)
 
-            // 진열 (priority 3)
+            // 진열 (priority 2)
             val displaySchedule = createTeamMemberSchedule(
-                id = 4L,
+                id = 3L,
                 employeeId = userId,
                 accountId = 8938,
                 workingCategory1 = WorkingCategory1.DISPLAY,
                 workingCategory2 = null,
                 commuteLogSfid = null
             )
-            // 행사 (priority 2)
+            // 행사 (priority 1)
             val eventSchedule = createTeamMemberSchedule(
-                id = 3L,
+                id = 2L,
                 employeeId = userId,
                 accountId = 8939,
                 workingCategory1 = WorkingCategory1.EVENT,
                 workingCategory2 = null,
-                commuteLogSfid = null
-            )
-            // 임시배정 (priority 1)
-            val tempSchedule = createTeamMemberSchedule(
-                id = 2L,
-                employeeId = userId,
-                accountId = 8940,
-                workingCategory1 = WorkingCategory1.DISPLAY,
-                workingCategory2 = WorkingCategory2.TEMPORARY,
                 commuteLogSfid = null
             )
             // 출근완료 (priority 0)
@@ -383,8 +374,8 @@ class HomeServiceTest {
                 commuteLogSfid = "CLG001"
             )
 
-            // 의도적으로 역순 전달 (진열 -> 행사 -> 임시 -> 출근완료)
-            val teamMemberSchedules = listOf(displaySchedule, eventSchedule, tempSchedule, commuteSchedule)
+            // 의도적으로 역순 전달 (진열 -> 행사 -> 출근완료)
+            val teamMemberSchedules = listOf(displaySchedule, eventSchedule, commuteSchedule)
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(eq(userId), any()))
@@ -401,11 +392,10 @@ class HomeServiceTest {
             val result = homeService.getHomeData(userId)
 
             // Then
-            assertThat(result.todaySchedules).hasSize(4)
+            assertThat(result.todaySchedules).hasSize(3)
             assertThat(result.todaySchedules[0].scheduleId).isEqualTo(1L)
             assertThat(result.todaySchedules[1].scheduleId).isEqualTo(2L)
             assertThat(result.todaySchedules[2].scheduleId).isEqualTo(3L)
-            assertThat(result.todaySchedules[3].scheduleId).isEqualTo(4L)
         }
 
         // ========== 중복 제거 ==========

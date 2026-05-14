@@ -54,11 +54,11 @@ class SFSchemaUtilsTest {
         }
 
         @Test
-        @DisplayName("TeamMemberSchedule 엔티티 - 54개 SF Field 매핑 반환 (Spec #747 카테고리 A 6건 +)")
+        @DisplayName("TeamMemberSchedule 엔티티 - 47개 SF Field 매핑 반환 (Spec #762: Formula 컬럼 7건 제거)")
         fun getSFMapping_teamMemberSchedule() {
             val mapping = SFSchemaUtils.getSFMapping(TeamMemberSchedule::class.java)
 
-            assertThat(mapping).hasSize(54)
+            assertThat(mapping).hasSize(47)
             assertThat(mapping["DisplayWorkScheduleMaster__c"]).isEqualTo("display_work_schedule_sfid")
             assertThat(mapping["DKRetail__EmployeeId__c"]).isEqualTo("employee_sfid")
             assertThat(mapping["Name"]).isEqualTo("name")
@@ -182,11 +182,11 @@ class SFSchemaUtilsTest {
         }
 
         @Test
-        @DisplayName("TeamMemberSchedule 엔티티 - 55개 HC Column 매핑 반환 (Spec #747 카테고리 A 6건 +)")
+        @DisplayName("TeamMemberSchedule 엔티티 - 48개 HC Column 매핑 반환 (Spec #762: Formula 컬럼 7건 제거)")
         fun getHCMapping_teamMemberSchedule() {
             val mapping = SFSchemaUtils.getHCMapping(TeamMemberSchedule::class.java)
 
-            assertThat(mapping).hasSize(55)
+            assertThat(mapping).hasSize(48)
             assertThat(mapping["displayworkschedulemaster__c"]).isEqualTo("display_work_schedule_sfid")
             assertThat(mapping["id"]).isNull()
             assertThat(mapping["sfid"]).isEqualTo("sfid")
@@ -206,7 +206,6 @@ class SFSchemaUtilsTest {
             assertThat(mapping["commutereportdatetime__c"]).isEqualTo("commute_report_datetime")
             assertThat(mapping["id__c"]).isEqualTo("id_field")
             assertThat(mapping["traversalflag__c"]).isEqualTo("traversal_flag")
-            assertThat(mapping["isworkreport__c"]).isEqualTo("is_work_report")
             assertThat(mapping["equipment1__c"]).isEqualTo("equipment1")
             assertThat(mapping["equipment10__c"]).isEqualTo("equipment10")
             assertThat(mapping["yes_chkcnt__c"]).isEqualTo("yes_chk_cnt")

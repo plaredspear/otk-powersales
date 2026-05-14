@@ -35,25 +35,19 @@ class TeamMemberScheduleSFAnnotationTest {
     }
 
     @Nested
-    @DisplayName("AC2 — @SFField 매핑 키셋 (41개)")
+    @DisplayName("AC2 — @SFField 매핑 키셋")
     inner class SfFieldMapping {
 
         private val mapping = SFSchemaUtils.getSFMapping(TeamMemberSchedule::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 47 (Spec #733: 43 + R-2 Owner/CreatedBy/LastModifiedBy 3 + CostCenterCode 1)")
+        @DisplayName("매핑 키 수 = 47 (Spec #762: 54 - Formula 컬럼 7건 제거)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(54)
+            assertThat(mapping).hasSize(47)
         }
 
         @Test
-        @DisplayName("§6.2 — 누락 매핑 1개 신규 부착: isworkreport__c → is_work_report")
-        fun section62MissingMapping() {
-            assertThat(mapping["isworkreport__c"]).isEqualTo("is_work_report")
-        }
-
-        @Test
-        @DisplayName("§6.3 — 신규 7개 필드 매핑 (Q1 옵션 1)")
+        @DisplayName("§6.3 — 신규 6개 필드 매핑 (Q1 옵션 1) — SecondWorkType__c 는 #762 환원으로 유지")
         fun section63NewFields() {
             assertThat(mapping["HRCode__c"]).isEqualTo("hr_code")
             assertThat(mapping["DKRetail__PromotionEmpIdExt__c"]).isEqualTo("promotion_emp_id_ext")
@@ -63,6 +57,20 @@ class TeamMemberScheduleSFAnnotationTest {
             assertThat(mapping["MonthlyFemaleEmployeeIntegrationSchedule__c"])
                 .isEqualTo("monthly_female_employee_integration_schedule_sfid")
             assertThat(mapping["ProfessionalPromotionTeam__c"]).isEqualTo("professional_promotion_team")
+        }
+
+        @Test
+        @DisplayName("Spec #762 — Formula 컬럼 7건 매핑 제거 (§6.7 entity 컬럼 추가 금지 정합)")
+        fun spec762FormulaColumnsRemoved() {
+            assertThat(mapping).doesNotContainKeys(
+                "isworkreport__c",
+                "DKRetail__ActualWorkDate__c",
+                "DKRetail__CommuteDate__c",
+                "DKRetail__ConfirmAltHolidayDate__c",
+                "DKRetail__Day__c",
+                "DKRetail__Reason__c",
+                "DKRetail__SecondWorkType__c",
+            )
         }
 
         @Test
