@@ -95,11 +95,11 @@ class SFSchemaUtilsTest {
         }
 
         @Test
-        @DisplayName("DisplayWorkSchedule 엔티티 - 19개 SF Field 매핑 반환 (Spec #747 ConfirmationAlert +)")
+        @DisplayName("DisplayWorkSchedule 엔티티 - 18개 SF Field 매핑 반환 (sf-meta-diff — ConfirmationAlert__c Formula 컬럼 제거)")
         fun getSFMapping_displayWorkSchedule() {
             val mapping = SFSchemaUtils.getSFMapping(DisplayWorkSchedule::class.java)
 
-            assertThat(mapping).hasSize(19)
+            assertThat(mapping).hasSize(18)
             assertThat(mapping["Account__c"]).isEqualTo("account_sfid")
             assertThat(mapping["FullName__c"]).isEqualTo("employee_sfid")
             assertThat(mapping["StartDate__c"]).isEqualTo("start_date")
@@ -219,11 +219,11 @@ class SFSchemaUtilsTest {
         }
 
         @Test
-        @DisplayName("DisplayWorkSchedule 엔티티 - 20개 HC Column 매핑 반환 (Spec #747 ConfirmationAlert +)")
+        @DisplayName("DisplayWorkSchedule 엔티티 - 19개 HC Column 매핑 반환 (sf-meta-diff — confirmationalert__c Formula 컬럼 제거)")
         fun getHCMapping_displayWorkSchedule() {
             val mapping = SFSchemaUtils.getHCMapping(DisplayWorkSchedule::class.java)
 
-            assertThat(mapping).hasSize(20)
+            assertThat(mapping).hasSize(19)
             assertThat(mapping["sfid"]).isEqualTo("sfid")
             assertThat(mapping["name"]).isEqualTo("name")
             assertThat(mapping["account__c"]).isEqualTo("account_sfid")

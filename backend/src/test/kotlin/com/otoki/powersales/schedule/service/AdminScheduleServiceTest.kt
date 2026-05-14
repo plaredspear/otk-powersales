@@ -21,6 +21,8 @@ import com.otoki.powersales.schedule.entity.TypeOfWork3
 import com.otoki.powersales.schedule.entity.TypeOfWork5
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
+import com.otoki.powersales.user.entity.User
+import com.otoki.powersales.user.repository.UserRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
@@ -37,6 +39,7 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.ValueOperations
 import org.springframework.mock.web.MockMultipartFile
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.util.*
 
@@ -70,6 +73,9 @@ class AdminScheduleServiceTest {
 
     @Mock
     private lateinit var monthlySalesHistoryRepository: MonthlySalesHistoryRepository
+
+    @Mock
+    private lateinit var userRepository: UserRepository
 
     @Mock
     private lateinit var redisTemplate: RedisTemplate<String, String>
@@ -489,6 +495,7 @@ class AdminScheduleServiceTest {
             )
             val json = objectMapper.writeValueAsString(cacheData)
             val manager = createEmployee(employeeCode = "20030099", name = "조장사원", costCenterCode = "A10010", role = UserRole.LEADER)
+            val leaderUser = createUser(id = 1099L, employeeNumber = "20030099")
 
             whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
             whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
@@ -496,13 +503,14 @@ class AdminScheduleServiceTest {
             whenever(accountRepository.findByIdIn(listOf(1))).thenReturn(listOf(createAccount(id = 1)))
             whenever(employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRole.LEADER))
                 .thenReturn(listOf(manager))
+            whenever(userRepository.findByEmployeeNumberIn(listOf("20030099"))).thenReturn(listOf(leaderUser))
             whenever(scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>())).thenAnswer { it.getArgument<List<DisplayWorkSchedule>>(0) }
             whenever(redisTemplate.delete(any<String>())).thenReturn(true)
 
             adminScheduleService.confirmUpload(uploadId)
 
             verify(scheduleRepository).saveAll(argThat<List<DisplayWorkSchedule>> { list ->
-                list.size == 1 && list[0].owner?.id == manager.id
+                list.size == 1 && list[0].ownerUser?.id == leaderUser.id
             })
         }
 
@@ -534,12 +542,12 @@ class AdminScheduleServiceTest {
             adminScheduleService.confirmUpload(uploadId)
 
             verify(scheduleRepository).saveAll(argThat<List<DisplayWorkSchedule>> { list ->
-                list.size == 1 && list[0].owner == null
+                list.size == 1 && list[0].ownerUser == null
             })
         }
 
         @Test
-        @DisplayName("lastMonthRevenue 자동 설정 - 전월 매출 존재 시 Long 변환 저장")
+        @DisplayName("lastMonthRevenue 자동 설정 - 전월 매출 존재 시 BigDecimal 변환 저장")
         fun confirmUpload_lastMonthRevenue() {
             val uploadId = "test-revenue"
             val cacheData = AdminScheduleService.UploadCacheData(
@@ -574,7 +582,7 @@ class AdminScheduleServiceTest {
             adminScheduleService.confirmUpload(uploadId)
 
             verify(scheduleRepository).saveAll(argThat<List<DisplayWorkSchedule>> { list ->
-                list.size == 1 && list[0].lastMonthRevenue == 5000000L
+                list.size == 1 && list[0].lastMonthRevenue?.compareTo(BigDecimal("5000000")) == 0
             })
         }
 
@@ -636,7 +644,7 @@ class AdminScheduleServiceTest {
             adminScheduleService.confirmUpload(uploadId)
 
             verify(scheduleRepository).saveAll(argThat<List<DisplayWorkSchedule>> { list ->
-                list.size == 1 && list[0].owner == null && list[0].costCenterCode == null
+                list.size == 1 && list[0].ownerUser == null && list[0].costCenterCode == null
             })
         }
     }
@@ -1006,5 +1014,17 @@ class AdminScheduleServiceTest {
         externalKey = externalKey,
         sfid = sfid,
         name = name
+    )
+
+    private fun createUser(
+        id: Long = 1L,
+        employeeNumber: String = "20030001",
+        username: String = "user-$employeeNumber",
+        password: String = "pwd"
+    ): User = User(
+        id = id,
+        username = username,
+        employeeNumber = employeeNumber,
+        password = password
     )
 }

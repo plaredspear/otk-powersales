@@ -7,16 +7,27 @@ import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.employee.entity.Group
 import com.otoki.powersales.schedule.entity.converter.SecondWorkTypeConverter
 import com.otoki.powersales.schedule.entity.converter.TypeOfWork1Converter
 import com.otoki.powersales.schedule.entity.converter.TypeOfWork3Converter
 import com.otoki.powersales.schedule.entity.converter.TypeOfWork5Converter
+import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
+import java.math.BigDecimal
 import java.time.LocalDate
 
 /**
  * 거래처 일정 Entity (진열마스터 확정 스케줄)
  * V1 스키마: displayworkschedulemaster__c
+ *
+ * sf-meta-diff 후속:
+ * - OwnerId (`referenceTo = [Group, User]` polymorphic) 는 `owner_sfid` sync buffer +
+ *   `owner_user_id` (User FK) + `owner_group_id` (Group FK) + XOR CHECK 제약
+ *   `chk_display_work_schedule_owner_xor`.
+ * - audit (CreatedById / LastModifiedById, `referenceTo = [User]`) FK 는 `User` 참조.
+ * - ConfirmationAlert__c 는 SF Formula (`calculated=true`) — DB 컬럼 부재.
+ * - LastMonthRevenue__c 는 SF `double precision=18 scale=0` — `BigDecimal` 매핑.
  */
 @Entity
 @Table(name = "display_work_schedule")
@@ -109,8 +120,8 @@ class DisplayWorkSchedule(
 
     @SFField("LastMonthRevenue__c")
     @HCColumn("lastmonthrevenue__c")
-    @Column(name = "last_month_revenue")
-    val lastMonthRevenue: Long? = null,
+    @Column(name = "last_month_revenue", precision = 18, scale = 0)
+    val lastMonthRevenue: BigDecimal? = null,
 
     @SFField("IsDeleted")
     @HCColumn("isdeleted")
@@ -127,22 +138,23 @@ class DisplayWorkSchedule(
     @JoinColumn(name = "employee_id")
     val employee: Employee? = null,
 
+    // OwnerId polymorphic R-2 (referenceTo = [Group, User]) — sfid prefix `005` = User / `00G` = Group.
+    // XOR CHECK 제약 chk_display_work_schedule_owner_xor.
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id")
-    val owner: Employee? = null,
+    @JoinColumn(name = "owner_user_id")
+    var ownerUser: User? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_group_id")
+    var ownerGroup: Group? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
-    var createdBy: Employee? = null,
+    var createdBy: User? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
-    var lastModifiedBy: Employee? = null,
-
-    // -- Spec #747 카테고리 A — D 분류 누락 (확인 알림) --
-    @SFField("ConfirmationAlert__c")
-    @HCColumn("confirmationalert__c")
-    @Column(name = "confirmation_alert", length = 1300)
-    var confirmationAlert: String? = null,
+    var lastModifiedBy: User? = null,
 
 ) : BaseEntity()

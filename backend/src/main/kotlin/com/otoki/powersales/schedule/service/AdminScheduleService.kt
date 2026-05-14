@@ -24,9 +24,11 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.http.HttpStatus
 import com.otoki.powersales.sales.repository.MonthlySalesHistoryRepository
+import com.otoki.powersales.user.repository.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -45,6 +47,7 @@ class AdminScheduleService(
     private val scheduleRepository: DisplayWorkScheduleRepository,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
     private val monthlySalesHistoryRepository: MonthlySalesHistoryRepository,
+    private val userRepository: UserRepository,
     private val redisTemplate: RedisTemplate<String, String>,
     private val objectMapper: ObjectMapper
 ) {
@@ -183,11 +186,22 @@ class AdminScheduleService(
             emptyMap()
         }
 
-        // 조장 일괄 조회: costCenterCode 목록 → role=LEADER 사원
+        // 조장 일괄 조회: costCenterCode 목록 → role=LEADER 사원 → User 매핑.
+        // 레거시 SF DisplayWorkScheduleMasterTriggerHandler.setOwner() 와 동등한 chain:
+        // 여사원(FullName__c) → CostCenterCode → 조장 Employee → Employee.employeeCode == User.employeeNumber → User.
         val costCenterCodes = cacheData.validRows.mapNotNull { it.costCenterCode }.distinct()
-        val managersByCostCenter = if (costCenterCodes.isNotEmpty()) {
+        val leadersByCostCenter = if (costCenterCodes.isNotEmpty()) {
             employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(costCenterCodes, UserRole.LEADER)
                 .groupBy { it.costCenterCode }
+        } else {
+            emptyMap()
+        }
+        val leaderEmployeeCodes = leadersByCostCenter.values
+            .flatten()
+            .mapNotNull { it.employeeCode }
+            .distinct()
+        val userByEmployeeNumber = if (leaderEmployeeCodes.isNotEmpty()) {
+            userRepository.findByEmployeeNumberIn(leaderEmployeeCodes).associateBy { it.employeeNumber }
         } else {
             emptyMap()
         }
@@ -208,12 +222,16 @@ class AdminScheduleService(
 
         val entities = cacheData.validRows.map { row ->
             val costCenterCode = row.costCenterCode
-            val owner = if (!costCenterCode.isNullOrBlank()) {
-                managersByCostCenter[costCenterCode]?.firstOrNull()
+            val ownerUser = if (!costCenterCode.isNullOrBlank()) {
+                leadersByCostCenter[costCenterCode]
+                    ?.firstOrNull()
+                    ?.employeeCode
+                    ?.let { userByEmployeeNumber[it] }
             } else {
                 null
             }
-            val lastMonthRevenue = revenueByAccountId[row.accountId]?.lastMonthResults?.toLong()
+            val lastMonthRevenue = revenueByAccountId[row.accountId]?.lastMonthResults
+                ?.let { BigDecimal.valueOf(it).setScale(0, java.math.RoundingMode.HALF_UP) }
 
             DisplayWorkSchedule(
                 employee = employeeMap[row.userId],
@@ -227,7 +245,7 @@ class AdminScheduleService(
                 confirmed = false,
                 costCenterCode = costCenterCode,
                 lastMonthRevenue = lastMonthRevenue,
-                owner = owner
+                ownerUser = ownerUser
             )
         }
 
@@ -274,7 +292,7 @@ class AdminScheduleService(
                 endDate = schedule.endDate,
                 confirmed = schedule.confirmed,
                 costCenterCode = schedule.costCenterCode,
-                lastMonthRevenue = schedule.lastMonthRevenue
+                lastMonthRevenue = schedule.lastMonthRevenue?.toLong()
             )
         }
     }
