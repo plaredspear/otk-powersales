@@ -6,6 +6,7 @@ import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 
 @Entity
@@ -67,12 +68,6 @@ class Notice(
     @Column(name = "branch_code", length = 255)
     var branchCode: String? = null,
 
-    // -- Spec #747 카테고리 A — Notice 작성일 (도메인 핵심) --
-    @SFField("DKRetail__Date__c")
-    @HCColumn("dkretail__date__c")
-    @Column(name = "notice_date")
-    var noticeDate: java.time.LocalDate? = null,
-
     @SFField("IsDeleted")
     @HCColumn("isdeleted")
     @Column(name = "is_deleted")
@@ -102,13 +97,13 @@ class Notice(
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id")
-    var owner: Employee? = null,
+    var owner: User? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
-    var createdBy: Employee? = null,
+    var createdBy: User? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
-    var lastModifiedBy: Employee? = null,
+    var lastModifiedBy: User? = null,
 ) : BaseEntity()
