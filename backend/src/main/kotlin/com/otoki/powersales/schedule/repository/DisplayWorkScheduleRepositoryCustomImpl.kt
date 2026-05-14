@@ -1,6 +1,7 @@
 package com.otoki.powersales.schedule.repository
 
 import com.otoki.powersales.account.entity.QAccount.Companion.account
+import com.otoki.powersales.employee.`enum`.EmploymentStatus
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.entity.QDisplayWorkSchedule.Companion.displayWorkSchedule
 import com.otoki.powersales.schedule.entity.TypeOfWork3
@@ -266,13 +267,37 @@ class DisplayWorkScheduleRepositoryCustomImpl(
                 displayWorkSchedule.confirmed.eq(true),
                 displayWorkSchedule.startDate.loe(date),
                 displayWorkSchedule.endDate.goe(date)
-                    .or(displayWorkSchedule.endDate.isNull)
+                    .or(displayWorkSchedule.endDate.isNull),
+                validDataEqualsValid(date)
             )
             .orderBy(displayWorkSchedule.id.asc())
             .offset(offset.toLong())
             .limit(limit.toLong())
             .fetch()
     }
+
+    /**
+     * SF Formula `ValidData__c = '유효'` 분기의 Employee 측 동치 절 (Spec #669 Q2 재결정, 2026-05-14).
+     *
+     * SF formula 원본 (`_DisplayWorkScheduleMaster__c.md:116-128`) 의 '유효' 분기를 풀이하면:
+     * - (status='재직') OR ((status='퇴직' OR appLoginActive=false) AND endDate>=TODAY)
+     *
+     * 기간 조건 (StartDate<=TODAY AND (EndDate IS NULL OR TODAY<=EndDate)) 은 호출 측 where 절의 기존
+     * `startDate.loe / endDate.goe.or(isNull)` 와 중복되어 본 절에서는 제외.
+     *
+     * Employee.status 의 한글 값 (`재직`/`퇴직`) 비교는 [EmploymentStatus.code] 인용.
+     * Employee.endDate / .appLoginActive NULL 은 `.goe(date)` / `.eq(false)` 가 자연스럽게 false 처리.
+     */
+    private fun validDataEqualsValid(date: LocalDate) = BooleanBuilder()
+        .or(displayWorkSchedule.employee.status.eq(EmploymentStatus.ACTIVE.code))
+        .or(
+            BooleanBuilder()
+                .and(
+                    displayWorkSchedule.employee.status.eq(EmploymentStatus.RESIGNED.code)
+                        .or(displayWorkSchedule.employee.appLoginActive.eq(false))
+                )
+                .and(displayWorkSchedule.employee.endDate.goe(date))
+        )
 
     private fun buildEmployeeCodeCondition(employeeCode: String?): BooleanExpression? {
         if (employeeCode.isNullOrBlank()) return null
