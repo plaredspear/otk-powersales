@@ -5,8 +5,9 @@ import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFObject
-import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
+import java.time.LocalDate
 
 @Entity
 @Table(name = "erp_order")
@@ -23,11 +24,11 @@ class ErpOrder(
     val sfid: String? = null,
 
     @SFField("Name")
-    @Column(name = "sap_order_number", nullable = false, unique = true, length = 20)
+    @Column(name = "sap_order_number", nullable = false, unique = true, length = 80)
     val sapOrderNumber: String,
 
     @SFField("SAPAccountCode__c")
-    @Column(name = "sap_account_code", length = 20)
+    @Column(name = "sap_account_code", length = 100)
     var sapAccountCode: String? = null,
 
     @SFField("SAPAccountName__c")
@@ -35,24 +36,24 @@ class ErpOrder(
     var sapAccountName: String? = null,
 
     @SFField("DeliveryRequestDate__c")
-    @Column(name = "delivery_request_date", length = 8)
-    var deliveryRequestDate: String? = null,
+    @Column(name = "delivery_request_date")
+    var deliveryRequestDate: LocalDate? = null,
 
     @SFField("OrderDate__c")
-    @Column(name = "order_date", length = 8)
-    var orderDate: String? = null,
+    @Column(name = "order_date")
+    var orderDate: LocalDate? = null,
 
     @SFField("EmployeeCode__c")
-    @Column(name = "employee_code", length = 20)
+    @Column(name = "employee_code", length = 50)
     var employeeCode: String? = null,
 
     @SFField("EmployeeName__c")
-    @Column(name = "employee_name", length = 50)
+    @Column(name = "employee_name", length = 100)
     var employeeName: String? = null,
 
     @SFField("TotalOrderAmount__c")
     @Column(name = "order_sales_amount")
-    var orderSalesAmount: Double? = null,
+    var orderSalesAmount: Long? = null,
 
     @SFField("OrderChannel__c")
     @Column(name = "order_channel", length = 10)
@@ -91,13 +92,12 @@ class ErpOrder(
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
-    var createdBy: Employee? = null,
+    var createdBy: User? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
-    var lastModifiedBy: Employee? = null,
+    var lastModifiedBy: User? = null,
 
-    // -- Spec #746 R-2 (AccountId__c FK 신설) --
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "account_id")
     var account: com.otoki.powersales.account.entity.Account? = null,

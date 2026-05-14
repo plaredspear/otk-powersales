@@ -190,11 +190,11 @@ class ClientOrderQueryServiceTest {
         sapOrderNumber = sapOrderNumber,
         sapAccountCode = "0001234567",
         sapAccountName = "홍길동마트",
-        deliveryRequestDate = "20260506",
-        orderDate = "20260504",
+        deliveryRequestDate = java.time.LocalDate.of(2026, 5, 6),
+        orderDate = java.time.LocalDate.of(2026, 5, 4),
         employeeCode = employeeCode,
         employeeName = "사원1",
-        orderSalesAmount = 1_250_000.0,
+        orderSalesAmount = 1_250_000L,
     )
 
     private fun createProduct(

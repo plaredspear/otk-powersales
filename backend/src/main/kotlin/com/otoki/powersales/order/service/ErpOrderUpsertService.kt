@@ -11,6 +11,8 @@ import com.otoki.powersales.order.service.dto.ErpOrderUpsertFailedRow
 import com.otoki.powersales.order.service.dto.ErpOrderUpsertResult
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 /**
  * ERP 주문 UPSERT 도메인 서비스 (헤더 + 라인 다단 saveAll).
@@ -120,11 +122,11 @@ class ErpOrderUpsertService(
     private fun applyHeaderFields(entity: ErpOrder, command: ErpOrderUpsertCommand) {
         entity.sapAccountCode = command.sapAccountCode
         entity.sapAccountName = command.sapAccountName
-        entity.deliveryRequestDate = command.deliveryRequestDate
-        entity.orderDate = command.orderDate
+        entity.deliveryRequestDate = parseDate(command.deliveryRequestDate)
+        entity.orderDate = parseDate(command.orderDate)
         entity.employeeCode = command.employeeCode
         entity.employeeName = command.employeeName
-        entity.orderSalesAmount = parseAmount(command.orderSalesAmount)
+        entity.orderSalesAmount = parseAmountLong(command.orderSalesAmount)
         entity.orderChannel = command.orderChannel ?: ""
         entity.orderChannelNm = command.orderChannelNm ?: ""
         entity.orderType = command.orderType ?: ""
@@ -209,6 +211,7 @@ class ErpOrderUpsertService(
         const val STATUS_SHIPPING: String = "배송중"
         const val STATUS_PENDING: String = "대기"
         private const val EMPTY_TIME = "000000"
+        private val YYYYMMDD = DateTimeFormatter.ofPattern("yyyyMMdd")
 
         fun parseAmount(value: String?): Double? {
             val trimmed = value?.trim()
@@ -217,6 +220,26 @@ class ErpOrderUpsertService(
                 trimmed.toDouble()
             } catch (_: NumberFormatException) {
                 0.0
+            }
+        }
+
+        fun parseAmountLong(value: String?): Long? {
+            val trimmed = value?.trim()
+            if (trimmed.isNullOrEmpty()) return 0L
+            return try {
+                trimmed.toDouble().toLong()
+            } catch (_: NumberFormatException) {
+                0L
+            }
+        }
+
+        fun parseDate(value: String?): LocalDate? {
+            val trimmed = value?.trim()
+            if (trimmed.isNullOrEmpty()) return null
+            return try {
+                LocalDate.parse(trimmed, YYYYMMDD)
+            } catch (_: Exception) {
+                null
             }
         }
     }

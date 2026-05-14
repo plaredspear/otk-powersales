@@ -4,7 +4,6 @@ import com.otoki.powersales.order.entity.DeliveryStatus
 import com.otoki.powersales.order.entity.ErpOrder
 import com.otoki.powersales.order.entity.ErpOrderProduct
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 
 /**
  * 거래처별 출하 주문 상세 응답 (Spec #593).
@@ -27,8 +26,6 @@ data class ClientOrderDetailResponse(
     val orderedItems: List<ClientOrderItemResponse>
 ) {
     companion object {
-        private val YYYYMMDD = DateTimeFormatter.ofPattern("yyyyMMdd")
-
         /**
          * 모바일 `ClientOrderInfoHeader` 가 표시하는 정적 마감 시각 라벨.
          * 레거시 JSP `view.jsp:58` 의 정적 문자열과 동등 (Q1 옵션 3 정합).
@@ -42,21 +39,12 @@ data class ClientOrderDetailResponse(
                 sapAccountCode = order.sapAccountCode,
                 sapAccountName = order.sapAccountName,
                 clientDeadlineTime = CLIENT_DEADLINE_TIME,
-                orderDate = parseDate(order.orderDate),
-                deliveryDate = parseDate(order.deliveryRequestDate),
-                totalApprovedAmount = order.orderSalesAmount?.toLong(),
+                orderDate = order.orderDate,
+                deliveryDate = order.deliveryRequestDate,
+                totalApprovedAmount = order.orderSalesAmount,
                 orderedItemCount = items.size,
                 orderedItems = items
             )
-        }
-
-        private fun parseDate(yyyymmdd: String?): LocalDate? {
-            if (yyyymmdd.isNullOrBlank()) return null
-            return try {
-                LocalDate.parse(yyyymmdd, YYYYMMDD)
-            } catch (_: Exception) {
-                null
-            }
         }
     }
 }
