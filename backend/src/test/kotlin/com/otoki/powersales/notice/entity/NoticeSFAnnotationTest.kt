@@ -41,9 +41,9 @@ class NoticeSFAnnotationTest {
         private val mapping = SFSchemaUtils.getSFMapping(Notice::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 14 (EduCategory 제거 — Spec #745 Q2: E분류 컬럼 제거)")
+        @DisplayName("매핑 키 수 = 14 (EduCategory E분류 + Date Formula 컬럼 제거)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(15)
+            assertThat(mapping).hasSize(14)
         }
 
         @Test
