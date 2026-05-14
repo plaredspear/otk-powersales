@@ -6,6 +6,8 @@ import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.employee.entity.Group
+import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.time.LocalDate
 
@@ -15,13 +17,20 @@ import java.time.LocalDate
  *
  * 컬럼명 mismatch (after_org_code ↔ OrgCode__c 등) 는 어노테이션만 매핑하고 컬럼명은 유지 (Q2 결정).
  * appoint_date 는 SF `date` 타입과 자연 정합되도록 `LocalDate` + DB `DATE` 로 매핑 (Spec #736 Q3 결정 번복 — sf-meta-diff/Appointment__c.md §9 Q2 후속).
+ *
+ * Spec #755: OwnerId R-2 정합 — `owner_sfid` (varchar 18) sync buffer + polymorphic FK 분기
+ * (`owner_user_id` → backend User, `owner_group_id` → Group). XOR CHECK 제약 `chk_appointment_owner_xor` 으로
+ * 둘 다 채움 금지. SF `Appointment__c.OwnerId.referenceTo = [Group, User]` 의 SF 메타 권위 정합.
+ * Spec #736 §3 의 "OwnerId 제외" 결정은 본 스펙에서 번복.
  */
 @Entity
 @Table(
     name = "appointment",
     indexes = [
         Index(name = "idx_appointment_employee", columnList = "employee_code"),
-        Index(name = "idx_appointment_date", columnList = "appoint_date")
+        Index(name = "idx_appointment_date", columnList = "appoint_date"),
+        Index(name = "idx_appointment_owner_user_id", columnList = "owner_user_id"),
+        Index(name = "idx_appointment_owner_group_id", columnList = "owner_group_id")
     ]
 )
 @SFObject("Appointment__c")
@@ -130,7 +139,7 @@ class Appointment(
     val isDeleted: Boolean? = null,
 
     // -- Spec #736: Group A — CreatedById / LastModifiedById (R-2 패턴) --
-    // OwnerId 는 신규 시스템에 Group 개념 부재로 제외 (§3 결정).
+    // OwnerId 는 Spec #755 에서 polymorphic R-2 (Group + User) 로 정합.
 
     @SFField("CreatedById")
     @HCColumn("createdbyid")
@@ -142,6 +151,15 @@ class Appointment(
     @Column(name = "last_modified_by_sfid", length = 18)
     var lastModifiedBySfid: String? = null,
 
+    // -- Spec #755: OwnerId polymorphic R-2 (referenceTo = [Group, User]) --
+    // owner_sfid 단일 컬럼이 SF 원본 식별자 보존. owner_user_id / owner_group_id 둘 중
+    // 하나만 채워지며 XOR CHECK 제약으로 enforce. sfid prefix `005` = User / `00G` = Group.
+
+    @SFField("OwnerId")
+    @HCColumn("ownerid")
+    @Column(name = "owner_sfid", length = 18)
+    var ownerSfid: String? = null,
+
     // -- Relations --
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -151,5 +169,13 @@ class Appointment(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_user_id")
+    var ownerUser: User? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_group_id")
+    var ownerGroup: Group? = null,
 
 ) : BaseEntity()

@@ -1,0 +1,121 @@
+package com.otoki.powersales.employee.entity
+
+import com.otoki.powersales.common.entity.BaseEntity
+import com.otoki.powersales.common.salesforce.HCColumn
+import com.otoki.powersales.common.salesforce.HCTable
+import com.otoki.powersales.common.salesforce.SFField
+import com.otoki.powersales.common.salesforce.SFObject
+import com.otoki.powersales.employee.entity.converter.GroupTypeConverter
+import com.otoki.powersales.user.entity.User
+import jakarta.persistence.Column
+import jakarta.persistence.Convert
+import jakarta.persistence.Entity
+import jakarta.persistence.FetchType
+import jakarta.persistence.GeneratedValue
+import jakarta.persistence.GenerationType
+import jakarta.persistence.Id
+import jakarta.persistence.JoinColumn
+import jakarta.persistence.ManyToOne
+import jakarta.persistence.Table
+
+/**
+ * Salesforce `Group` 표준 sobject 매핑 entity (Spec #755).
+ *
+ * SF Group 의 15 필드를 전수 보존 (Q3 옵션 1 — SF prod raw JSON `Group.json`).
+ * Queue / Regular / Role / Manager / Territory 등 17 Type 의 다목적 그룹.
+ *
+ * 본 시스템에서의 책임:
+ * - SF 원본 식별자 보존 (sfid 매칭 마이그레이션 대상)
+ * - Appointment.OwnerId polymorphic FK 의 Group 분기 참조 대상 (Spec #755 Q1)
+ *
+ * 비범위:
+ * - GroupMember 멤버십 N:M (production 0건 분석 — Spec #755 §1)
+ * - Group 데이터의 application 신규/수정 UI (Q4 — SF → backend 단방향)
+ *
+ * polymorphic reference (RelatedId / OwnerId) 는 sfid only 보존 (Q5 옵션 1).
+ * audit (createdBy / lastModifiedBy) 는 backend `User` entity self-reference R-2 — Spec #757 정합.
+ */
+@Entity
+@Table(name = "\"group\"")
+@SFObject("Group")
+@HCTable("group")
+class Group(
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "group_id")
+    val id: Long = 0,
+
+    @HCColumn("sfid")
+    @Column(name = "sfid", length = 18, unique = true)
+    var sfid: String? = null,
+
+    @SFField("Name")
+    @HCColumn("name")
+    @Column(name = "name", nullable = false, length = 40)
+    var name: String,
+
+    @SFField("DeveloperName")
+    @HCColumn("developername")
+    @Column(name = "developer_name", length = 80)
+    var developerName: String? = null,
+
+    @SFField("Type")
+    @HCColumn("type")
+    @Convert(converter = GroupTypeConverter::class)
+    @Column(name = "type", nullable = false, length = 40)
+    var type: GroupType,
+
+    @SFField("RelatedId")
+    @HCColumn("relatedid")
+    @Column(name = "related_sfid", length = 18)
+    var relatedSfid: String? = null,
+
+    @SFField("OwnerId")
+    @HCColumn("ownerid")
+    @Column(name = "owner_sfid", length = 18)
+    var ownerSfid: String? = null,
+
+    @SFField("Email")
+    @HCColumn("email")
+    @Column(name = "email", length = 255)
+    var email: String? = null,
+
+    @SFField("DoesSendEmailToMembers")
+    @HCColumn("doessendemailtomembers")
+    @Column(name = "does_send_email_to_members", nullable = false)
+    var doesSendEmailToMembers: Boolean = false,
+
+    @SFField("DoesIncludeBosses")
+    @HCColumn("doesincludebosses")
+    @Column(name = "does_include_bosses", nullable = false)
+    var doesIncludeBosses: Boolean = false,
+
+    @SFField("Description")
+    @HCColumn("description")
+    @Column(name = "description", columnDefinition = "TEXT")
+    var description: String? = null,
+
+    // -- Group A R-2 audit (User FK — Spec #757) --
+
+    @SFField("CreatedById")
+    @HCColumn("createdbyid")
+    @Column(name = "created_by_sfid", length = 18)
+    var createdBySfid: String? = null,
+
+    @SFField("LastModifiedById")
+    @HCColumn("lastmodifiedbyid")
+    @Column(name = "last_modified_by_sfid", length = 18)
+    var lastModifiedBySfid: String? = null,
+
+    // -- Relations --
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_id")
+    var createdBy: User? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "last_modified_by_id")
+    var lastModifiedBy: User? = null,
+
+) : BaseEntity()
