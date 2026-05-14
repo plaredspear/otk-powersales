@@ -23,8 +23,8 @@ class OrderRequestCancelPayloadFactoryTest {
     fun payloadStructure() {
         val orderRequest = orderRequest()
         val products = listOf(
-            product(id = 101, lineNumber = 10, productCode = "P001", orderRequest = orderRequest),
-            product(id = 102, lineNumber = 20, productCode = "P002", orderRequest = orderRequest),
+            product(id = 101, lineNumber = 10L, productCode = "P001", orderRequest = orderRequest),
+            product(id = 102, lineNumber = 20L, productCode = "P002", orderRequest = orderRequest),
         )
 
         val payload = factory.build(orderRequest, products)
@@ -66,7 +66,7 @@ class OrderRequestCancelPayloadFactoryTest {
 
     private fun product(
         id: Long,
-        lineNumber: Int,
+        lineNumber: Long,
         productCode: String,
         orderRequest: OrderRequest,
     ) = OrderRequestProduct(

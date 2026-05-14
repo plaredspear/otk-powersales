@@ -5,7 +5,8 @@ import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
-import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.employee.entity.Group
+import com.otoki.powersales.user.entity.User
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
@@ -23,6 +24,13 @@ import java.time.LocalDateTime
 /**
  * 주문요청 라인 Entity (DKRetail__OrderRequestProduct__c).
  * 주문요청 1건에 포함된 개별 제품 라인.
+ *
+ * Spec #761:
+ * - OwnerId polymorphic R-2 (`referenceTo = [Group, User]`) — owner_user_id / owner_group_id XOR.
+ * - audit FK (createdBy / lastModifiedBy) 타입 Employee → User 전환.
+ * - LineChangeType free-form string 보존 (`is_cancelled: Boolean` 우회 폐기) — SF 운영값 `{null, "X"}` 2-상태.
+ *   cancel 도메인 메서드는 `LINE_CHANGE_TYPE_CANCEL` 상수로 set + `isCancelled()` 함수로 boolean 판정 제공.
+ * - 타입·길이 정합 (§4) — unit/product_code/box_quantity/amount/quantity_boxes/line_number/quantity_pieces/dk_total_count/total_count.
  */
 @Entity
 @Table(
@@ -56,7 +64,7 @@ class OrderRequestProduct(
     @SFField("LineNumber__c")
     @HCColumn("linenumber__c")
     @Column(name = "line_number", nullable = false)
-    val lineNumber: Int,
+    val lineNumber: Long,
 
     @SFField("DKRetail__LineNumber__c")
     @HCColumn("dkretail__linenumber__c")
@@ -65,7 +73,7 @@ class OrderRequestProduct(
 
     @SFField("ProductCode__c")
     @HCColumn("productcode__c")
-    @Column(name = "product_code", nullable = false, length = 20)
+    @Column(name = "product_code", nullable = false, length = 255)
     val productCode: String,
 
     @Column(name = "product_name", nullable = false, length = 100)
@@ -73,17 +81,17 @@ class OrderRequestProduct(
 
     @SFField("TotalQuantity_Box__c")
     @HCColumn("totalquantity_box__c")
-    @Column(name = "quantity_boxes", nullable = false, precision = 16, scale = 2)
+    @Column(name = "quantity_boxes", nullable = false, precision = 18, scale = 2)
     val quantityBoxes: BigDecimal = BigDecimal.ZERO,
 
     @SFField("TotalQuantity_Each__c")
     @HCColumn("totalquantity_each__c")
     @Column(name = "quantity_pieces", nullable = false)
-    val quantityPieces: Int = 0,
+    val quantityPieces: Long = 0,
 
     @SFField("DKRetail__OrderingUnit__c")
     @HCColumn("dkretail__orderingunit__c")
-    @Column(name = "unit", nullable = false, length = 10)
+    @Column(name = "unit", nullable = false, length = 40)
     val unit: String,
 
     @Column(name = "unit_price", nullable = false, precision = 16, scale = 2)
@@ -91,7 +99,7 @@ class OrderRequestProduct(
 
     @SFField("DKRetail__TotalAmount__c")
     @HCColumn("dkretail__totalamount__c")
-    @Column(name = "amount", nullable = false, precision = 16, scale = 2)
+    @Column(name = "amount", nullable = false, precision = 18, scale = 2)
     val amount: BigDecimal = BigDecimal.ZERO,
 
     @Column(name = "pieces_per_box", nullable = false)
@@ -108,8 +116,8 @@ class OrderRequestProduct(
 
     @SFField("DKRetail__LineChangeType__c")
     @HCColumn("dkretail__linechangetype__c")
-    @Column(name = "is_cancelled", nullable = false)
-    var isCancelled: Boolean = false,
+    @Column(name = "line_change_type", length = 10)
+    var lineChangeType: String? = null,
 
     @Column(name = "cancelled_at")
     var cancelledAt: LocalDateTime? = null,
@@ -134,18 +142,18 @@ class OrderRequestProduct(
     val piece: BigDecimal? = null,
 
     @SFField("DKRetail__BoxQuantity__c")
-    @Column(name = "box_quantity", precision = 15, scale = 3)
+    @Column(name = "box_quantity", precision = 18, scale = 3)
     val boxQuantity: BigDecimal? = null,
 
     @SFField("DKRetail__TotalCount__c")
     @HCColumn("dkretail__totalcount__c")
-    @Column(name = "dk_total_count")
-    var dkTotalCount: Double? = null,
+    @Column(name = "dk_total_count", precision = 18, scale = 0)
+    var dkTotalCount: BigDecimal? = null,
 
     @SFField("TotalCount__c")
     @HCColumn("totalcount__c")
-    @Column(name = "total_count")
-    var totalCount: Double? = null,
+    @Column(name = "total_count", precision = 18, scale = 0)
+    var totalCount: BigDecimal? = null,
 
     @HCColumn("sfid")
     @Column(name = "sfid", length = 18)
@@ -156,6 +164,10 @@ class OrderRequestProduct(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_request_id", nullable = false)
     val orderRequest: OrderRequest,
+
+    // -- Spec #761: OwnerId polymorphic R-2 (referenceTo = [Group, User]) --
+    // owner_sfid 단일 컬럼이 SF 원본 식별자 보존. owner_user_id / owner_group_id 둘 중
+    // 하나만 채워지며 XOR CHECK 제약으로 enforce. sfid prefix `005` = User / `00G` = Group.
 
     @SFField("OwnerId")
     @HCColumn("ownerid")
@@ -178,16 +190,20 @@ class OrderRequestProduct(
     var isDeleted: Boolean? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id")
-    var owner: Employee? = null,
+    @JoinColumn(name = "owner_user_id")
+    var ownerUser: User? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_group_id")
+    var ownerGroup: Group? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
-    var createdBy: Employee? = null,
+    var createdBy: User? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
-    var lastModifiedBy: Employee? = null,
+    var lastModifiedBy: User? = null,
 
     // -- Spec #746 R-2 (DKRetail__ProductId__c FK 신설) --
     @ManyToOne(fetch = FetchType.LAZY)
@@ -195,9 +211,27 @@ class OrderRequestProduct(
     var product: com.otoki.powersales.product.entity.Product? = null,
 ) : BaseEntity() {
 
+    /**
+     * 라인 취소 처리.
+     *
+     * SF 레거시 (`IF_REST_MOBILE_OrderCancelRequest.cls:92`) 패턴 — `lineChangeType` 을 취소 마커 `"X"` 로 set.
+     * audit 컬럼 (`cancelled_at` / `cancelled_by`) 은 backend 신규 도입 (SF 메타 미존재).
+     */
     fun cancel(employeeId: String) {
-        this.isCancelled = true
+        this.lineChangeType = LINE_CHANGE_TYPE_CANCEL
         this.cancelledAt = LocalDateTime.now()
         this.cancelledBy = employeeId
+    }
+
+    /**
+     * 라인 취소 여부 판정.
+     *
+     * SF 운영 도메인 `{null, "X"}` 2-상태 — `"X"` 마커이면 취소.
+     */
+    fun isCancelled(): Boolean = lineChangeType == LINE_CHANGE_TYPE_CANCEL
+
+    companion object {
+        /** SF 레거시 `DKRetail__LineChangeType__c` 취소 마커 (SAP outbound payload 호환). */
+        const val LINE_CHANGE_TYPE_CANCEL = "X"
     }
 }

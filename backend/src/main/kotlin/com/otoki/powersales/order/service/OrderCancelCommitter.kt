@@ -32,10 +32,10 @@ class OrderCancelCommitter(
         val lines = orderRequestProductRepository
             .findByOrderRequest_IdOrderByLineNumberAsc(orderRequestId)
         val targetIdSet = lineIds.toSet()
-        val newlyCancelled = lines.filter { it.id in targetIdSet && !it.isCancelled }
+        val newlyCancelled = lines.filter { it.id in targetIdSet && !it.isCancelled() }
         newlyCancelled.forEach { it.cancel(employeeCode) }
 
-        if (lines.all { it.isCancelled }) {
+        if (lines.all { it.isCancelled() }) {
             orderRequest.orderRequestStatus = OrderRequestStatus.CANCELED
         }
         log.info(

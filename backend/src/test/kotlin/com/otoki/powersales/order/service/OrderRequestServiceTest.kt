@@ -395,11 +395,11 @@ class OrderRequestServiceTest {
     ): com.otoki.powersales.order.entity.OrderRequestProduct =
         com.otoki.powersales.order.entity.OrderRequestProduct(
             id = 1L,
-            lineNumber = 1,
+            lineNumber = 1L,
             productCode = productCode,
             productName = productName,
             quantityBoxes = BigDecimal("10"),
-            quantityPieces = 0,
+            quantityPieces = 0L,
             unit = "BOX",
             unitPrice = BigDecimal.ZERO,
             amount = BigDecimal.ZERO,
