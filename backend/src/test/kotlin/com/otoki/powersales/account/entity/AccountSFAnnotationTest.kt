@@ -56,9 +56,9 @@ class AccountSFAnnotationTest {
         private val mapping = SFSchemaUtils.getSFMapping(Account::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 68 (22 기존 + 17 SAP 보존 + 23 신규 + 1 Spec #644 OwnerId + 3 Spec #703 Group A + 2 BaseEntity)")
+        @DisplayName("매핑 키 수 = 69 (22 기존 + 17 SAP 보존 + 23 신규 + 1 Spec #644 OwnerId + 3 Spec #703 Group A + 2 BaseEntity + 1 SF prod 정합 IsPriorityRecord)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(68)
+            assertThat(mapping).hasSize(69)
         }
 
         @Test

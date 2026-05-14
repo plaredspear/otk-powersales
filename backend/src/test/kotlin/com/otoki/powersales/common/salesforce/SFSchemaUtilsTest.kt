@@ -19,11 +19,11 @@ class SFSchemaUtilsTest {
     inner class GetSFMappingTests {
 
         @Test
-        @DisplayName("Account 엔티티 - 68개 SF Field 매핑 반환 (Spec #602/#703: 22 기존 + 17 SAP 보존 + 23 신규 + #644 OwnerId + #703 Group A 3 + BaseEntity 2)")
+        @DisplayName("Account 엔티티 - 69개 SF Field 매핑 반환 (Spec #602/#703: 22 기존 + 17 SAP 보존 + 23 신규 + #644 OwnerId + #703 Group A 3 + BaseEntity 2 + SF prod 정합 IsPriorityRecord 1)")
         fun getSFMapping_account() {
             val mapping = SFSchemaUtils.getSFMapping(Account::class.java)
 
-            assertThat(mapping).hasSize(68)
+            assertThat(mapping).hasSize(69)
             assertThat(mapping["ABCType__c"]).isEqualTo("abc_type")
             assertThat(mapping["Name"]).isEqualTo("name")
             assertThat(mapping["Industry"]).isEqualTo("industry")
@@ -33,11 +33,11 @@ class SFSchemaUtilsTest {
         }
 
         @Test
-        @DisplayName("Employee 엔티티 - 44개 SF Field 매핑 반환 (Spec #607 38 + Spec #713 신규 6)")
+        @DisplayName("Employee 엔티티 - 43개 SF Field 매핑 반환 (Spec #607 38 + Spec #713 신규 6 − SF prod 부재 prn_flag 1)")
         fun getSFMapping_user() {
             val mapping = SFSchemaUtils.getSFMapping(Employee::class.java)
 
-            assertThat(mapping).hasSize(44)
+            assertThat(mapping).hasSize(43)
             assertThat(mapping["DKRetail__EmpCode__c"]).isEqualTo("employee_code")
             assertThat(mapping["Name"]).isEqualTo("name")
             assertThat(mapping["DKRetail__Birthdate__c"]).isEqualTo("birth_date")
