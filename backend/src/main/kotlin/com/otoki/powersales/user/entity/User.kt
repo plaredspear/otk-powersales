@@ -3,7 +3,9 @@ package com.otoki.powersales.user.entity
 import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
+import com.otoki.powersales.user.entity.converter.ProfileTypeConverter
 import jakarta.persistence.Column
+import jakarta.persistence.Convert
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
 import jakarta.persistence.GeneratedValue
@@ -117,6 +119,15 @@ class User(
     @SFField("UserRoleId")
     @Column(name = "user_role_sfid", length = 18)
     var userRoleSfid: String? = null,
+
+    // -- Spec #759: EmployeeProfileResolver 산출 캐시 컬럼 --
+
+    @Convert(converter = ProfileTypeConverter::class)
+    @Column(name = "profile_type", nullable = false, length = 40)
+    var profileType: ProfileType = ProfileType.STAFF,
+
+    @Column(name = "is_sales_support", nullable = false)
+    var isSalesSupport: Boolean = false,
 
     // -- Web 인증 (Mobile 은 Employee.password 별도 운영) --
 

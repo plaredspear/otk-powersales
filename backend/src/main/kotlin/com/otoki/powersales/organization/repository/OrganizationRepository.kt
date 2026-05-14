@@ -11,4 +11,9 @@ interface OrganizationRepository : JpaRepository<Organization, Long>, Organizati
      * Level3 코스트센터 기준 하위 Level5 조직 목록 조회 (영업지원실 다중 지점)
      */
     fun findByCostCenterLevel3(costCenterLevel3: String): List<Organization>
+
+    /** Spec #759: SF cascade lookup primitives — `EmployeeProfileResolver` / `UserRoleResolver` 가 5→4→3 순서로 직접 호출 */
+    fun findFirstByOrgCodeLevel5(orgCodeLevel5: String): Organization?
+    fun findFirstByOrgCodeLevel4(orgCodeLevel4: String): Organization?
+    fun findFirstByOrgCodeLevel3(orgCodeLevel3: String): Organization?
 }

@@ -3,8 +3,8 @@ package com.otoki.powersales.account.service
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.account.entity.AccountType
 import com.otoki.powersales.account.service.dto.AccountUpsertCommand
-import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.organization.entity.Organization
+import com.otoki.powersales.user.entity.User
 import org.springframework.stereotype.Component
 
 /**
@@ -25,10 +25,10 @@ class AccountUpsertMapper {
         name: String,
         command: AccountUpsertCommand,
         matchedOrg: Organization?,
-        matchedEmployee: Employee?
+        matchedUser: User?
     ): Account {
         val account = Account(externalKey = externalKey, name = name)
-        applyMutableFields(account, command, matchedOrg, matchedEmployee)
+        applyMutableFields(account, command, matchedOrg, matchedUser)
         return account
     }
 
@@ -40,17 +40,17 @@ class AccountUpsertMapper {
         name: String,
         command: AccountUpsertCommand,
         matchedOrg: Organization?,
-        matchedEmployee: Employee?
+        matchedUser: User?
     ) {
         account.name = name
-        applyMutableFields(account, command, matchedOrg, matchedEmployee)
+        applyMutableFields(account, command, matchedOrg, matchedUser)
     }
 
     private fun applyMutableFields(
         account: Account,
         command: AccountUpsertCommand,
         matchedOrg: Organization?,
-        matchedEmployee: Employee?
+        matchedUser: User?
     ) {
         applyTypeAndStatus(account, command)
         applyBusinessInfo(account, command)
@@ -58,8 +58,9 @@ class AccountUpsertMapper {
         applyAddressAndSchedule(account, command)
         applyWerkFields(account, command)
         applyOrganizationAndCostCenter(account, command, matchedOrg)
-        // Spec #644: Owner FK — application 적재. owner_sfid 는 HC sync buffer 컬럼 (application 미적재).
-        account.owner = matchedEmployee
+        // Spec #758: Owner FK = User (referenceTo == User 정합).
+        // owner_sfid 는 HC sync buffer 컬럼 (application 미적재).
+        account.owner = matchedUser
     }
 
     private fun applyTypeAndStatus(account: Account, command: AccountUpsertCommand) {

@@ -298,20 +298,20 @@ class AccountSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("createdBy FK (@ManyToOne + @JoinColumn(\"created_by_id\") → Employee)")
+        @DisplayName("createdBy FK (@ManyToOne + @JoinColumn(\"created_by_id\") → User) — Spec #758 Account 단독 전환")
         fun createdByFk() {
             val field = Account::class.java.getDeclaredField("createdBy")
-            assertThat(field.type).isEqualTo(com.otoki.powersales.employee.entity.Employee::class.java)
+            assertThat(field.type).isEqualTo(com.otoki.powersales.user.entity.User::class.java)
             assertThat(field.isAnnotationPresent(jakarta.persistence.ManyToOne::class.java)).isTrue()
             assertThat(field.getAnnotation(jakarta.persistence.JoinColumn::class.java).name).isEqualTo("created_by_id")
             assertThat(field.isAnnotationPresent(SFField::class.java)).isFalse()
         }
 
         @Test
-        @DisplayName("lastModifiedBy FK (@ManyToOne + @JoinColumn(\"last_modified_by_id\") → Employee)")
+        @DisplayName("lastModifiedBy FK (@ManyToOne + @JoinColumn(\"last_modified_by_id\") → User) — Spec #758 Account 단독 전환")
         fun lastModifiedByFk() {
             val field = Account::class.java.getDeclaredField("lastModifiedBy")
-            assertThat(field.type).isEqualTo(com.otoki.powersales.employee.entity.Employee::class.java)
+            assertThat(field.type).isEqualTo(com.otoki.powersales.user.entity.User::class.java)
             assertThat(field.isAnnotationPresent(jakarta.persistence.ManyToOne::class.java)).isTrue()
             assertThat(field.getAnnotation(jakarta.persistence.JoinColumn::class.java).name).isEqualTo("last_modified_by_id")
         }
