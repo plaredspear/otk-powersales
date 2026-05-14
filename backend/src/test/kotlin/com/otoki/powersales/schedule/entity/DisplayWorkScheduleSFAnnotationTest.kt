@@ -41,9 +41,9 @@ class DisplayWorkScheduleSFAnnotationTest {
         private val mapping = SFSchemaUtils.getSFMapping(DisplayWorkSchedule::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 17 (12 기존 + 1 누락 매핑 + BaseEntity 2 + Spec #732 R-2 CreatedBy/LastModifiedBy 2)")
+        @DisplayName("매핑 키 수 = 18 (sf-meta-diff 후속 — ConfirmationAlert__c Formula 컬럼 제거로 19 → 18)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(19)
+            assertThat(mapping).hasSize(18)
         }
 
         @Test
