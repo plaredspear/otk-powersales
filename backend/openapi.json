@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:60328",
+    "url" : "http://localhost:63504",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -5510,12 +5510,12 @@
           "description" : {
             "type" : [ "string", "null" ]
           },
-          "expired" : {
-            "type" : "boolean"
-          },
           "dday" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "expired" : {
+            "type" : "boolean"
           }
         }
       },
@@ -5694,7 +5694,7 @@
           },
           "dailyTargetCount" : {
             "type" : [ "integer", "null" ],
-            "format" : "int32",
+            "format" : "int64",
             "minimum" : 0
           },
           "targetAmount" : {
@@ -5714,7 +5714,7 @@
           },
           "primarySalesQuantity" : {
             "type" : [ "integer", "null" ],
-            "format" : "int32",
+            "format" : "int64",
             "minimum" : 0
           },
           "primarySalesPrice" : {
@@ -5729,7 +5729,7 @@
           },
           "otherSalesQuantity" : {
             "type" : [ "integer", "null" ],
-            "format" : "int32",
+            "format" : "int64",
             "minimum" : 0
           },
           "s3ImageUniqueKey" : {
@@ -5844,7 +5844,7 @@
           },
           "dailyTargetCount" : {
             "type" : [ "integer", "null" ],
-            "format" : "int32"
+            "format" : "int64"
           },
           "targetAmount" : {
             "type" : [ "integer", "null" ],
@@ -5860,7 +5860,7 @@
           },
           "primarySalesQuantity" : {
             "type" : [ "integer", "null" ],
-            "format" : "int32"
+            "format" : "int64"
           },
           "primarySalesPrice" : {
             "type" : [ "integer", "null" ],
@@ -5872,7 +5872,7 @@
           },
           "otherSalesQuantity" : {
             "type" : [ "integer", "null" ],
-            "format" : "int32"
+            "format" : "int64"
           },
           "s3ImageUniqueKey" : {
             "type" : [ "string", "null" ]
@@ -6024,10 +6024,10 @@
           "remark" : {
             "type" : [ "string", "null" ]
           },
-          "closed" : {
+          "deleted" : {
             "type" : "boolean"
           },
-          "deleted" : {
+          "closed" : {
             "type" : "boolean"
           }
         }
@@ -6126,7 +6126,7 @@
           },
           "dailyTargetCount" : {
             "type" : [ "integer", "null" ],
-            "format" : "int32",
+            "format" : "int64",
             "minimum" : 0
           },
           "targetAmount" : {
@@ -6146,7 +6146,7 @@
           },
           "primarySalesQuantity" : {
             "type" : [ "integer", "null" ],
-            "format" : "int32",
+            "format" : "int64",
             "minimum" : 0
           },
           "primarySalesPrice" : {
@@ -6161,7 +6161,7 @@
           },
           "otherSalesQuantity" : {
             "type" : [ "integer", "null" ],
-            "format" : "int32",
+            "format" : "int64",
             "minimum" : 0
           },
           "s3ImageUniqueKey" : {
@@ -6247,7 +6247,7 @@
           },
           "dailyTargetCount" : {
             "type" : [ "integer", "null" ],
-            "format" : "int32"
+            "format" : "int64"
           },
           "targetAmount" : {
             "type" : [ "integer", "null" ],
@@ -6263,7 +6263,7 @@
           },
           "primarySalesQuantity" : {
             "type" : [ "integer", "null" ],
-            "format" : "int32"
+            "format" : "int64"
           },
           "primarySalesPrice" : {
             "type" : [ "integer", "null" ],
@@ -6275,7 +6275,7 @@
           },
           "otherSalesQuantity" : {
             "type" : [ "integer", "null" ],
-            "format" : "int32"
+            "format" : "int64"
           },
           "s3ImageUniqueKey" : {
             "type" : [ "string", "null" ]
@@ -8970,7 +8970,7 @@
           },
           "lineNumber" : {
             "type" : "integer",
-            "format" : "int32"
+            "format" : "int64"
           },
           "productCode" : {
             "type" : "string"
@@ -11631,17 +11631,17 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "pageable" : {
             "$ref" : "#/components/schemas/PageableObject"
           },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "size" : {
             "type" : "integer",
@@ -11665,21 +11665,21 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
-          "paged" : {
-            "type" : "boolean"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
-          "pageSize" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
           },
           "unpaged" : {
+            "type" : "boolean"
+          },
+          "pageSize" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
+          },
+          "paged" : {
             "type" : "boolean"
           },
           "offset" : {
@@ -12371,7 +12371,7 @@
           },
           "totalQuantityPieces" : {
             "type" : "integer",
-            "format" : "int32"
+            "format" : "int64"
           },
           "cancelled" : {
             "type" : "boolean"
@@ -14080,17 +14080,17 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "pageable" : {
             "$ref" : "#/components/schemas/PageableObject"
           },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "size" : {
             "type" : "integer",
@@ -14229,10 +14229,10 @@
           "remark" : {
             "type" : [ "string", "null" ]
           },
-          "closed" : {
+          "deleted" : {
             "type" : "boolean"
           },
-          "deleted" : {
+          "closed" : {
             "type" : "boolean"
           }
         }
@@ -16016,7 +16016,7 @@
           "changeReason" : {
             "type" : [ "string", "null" ]
           },
-          "createdBy" : {
+          "createdByEmpNo" : {
             "type" : "string"
           },
           "createdAt" : {
