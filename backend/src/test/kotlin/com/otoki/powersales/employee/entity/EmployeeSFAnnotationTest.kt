@@ -122,17 +122,12 @@ class EmployeeSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("UserRole.fromKorean 이 SF AppAuthority 4값 중 3개를 운영 enum 매핑 (조장/여사원/지점장)")
-        fun userRoleSfMappingOperational() {
+        @DisplayName("UserRole.fromKorean 이 SF AppAuthority 4값 전체를 enum 매핑 (조장/여사원/지점장/AccountViewAll)")
+        fun userRoleSfMappingAll() {
             assertThat(UserRole.fromKorean("조장")).isEqualTo(UserRole.LEADER)
             assertThat(UserRole.fromKorean("여사원")).isEqualTo(UserRole.WOMAN)
             assertThat(UserRole.fromKorean("지점장")).isEqualTo(UserRole.BRANCH_MANAGER)
-        }
-
-        @Test
-        @DisplayName("UserRole.fromKorean(\"AccountViewAll\") → UNKNOWN (운영 enum 미매핑 — 후속 별도 스펙)")
-        fun userRoleAccountViewAllNotMapped() {
-            assertThat(UserRole.fromKorean("AccountViewAll")).isEqualTo(UserRole.UNKNOWN)
+            assertThat(UserRole.fromKorean("AccountViewAll")).isEqualTo(UserRole.ACCOUNT_VIEW_ALL)
         }
     }
 
@@ -186,29 +181,39 @@ class EmployeeSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("owner FK (@ManyToOne + @JoinColumn(\"owner_id\") → Employee self, @SFField 미부착)")
-        fun ownerFk() {
-            val field = Employee::class.java.getDeclaredField("owner")
-            assertThat(field.type).isEqualTo(Employee::class.java)
+        @DisplayName("ownerUser FK (@ManyToOne + @JoinColumn(\"owner_user_id\") → User, polymorphic 분기, @SFField 미부착)")
+        fun ownerUserFk() {
+            val field = Employee::class.java.getDeclaredField("ownerUser")
+            assertThat(field.type).isEqualTo(com.otoki.powersales.user.entity.User::class.java)
             assertThat(field.isAnnotationPresent(jakarta.persistence.ManyToOne::class.java)).isTrue()
-            assertThat(field.getAnnotation(jakarta.persistence.JoinColumn::class.java).name).isEqualTo("owner_id")
+            assertThat(field.getAnnotation(jakarta.persistence.JoinColumn::class.java).name).isEqualTo("owner_user_id")
             assertThat(field.isAnnotationPresent(SFField::class.java)).isFalse()
         }
 
         @Test
-        @DisplayName("createdBy FK (@ManyToOne + @JoinColumn(\"created_by_id\") → Employee)")
+        @DisplayName("ownerGroup FK (@ManyToOne + @JoinColumn(\"owner_group_id\") → Group, polymorphic 분기, @SFField 미부착)")
+        fun ownerGroupFk() {
+            val field = Employee::class.java.getDeclaredField("ownerGroup")
+            assertThat(field.type).isEqualTo(Group::class.java)
+            assertThat(field.isAnnotationPresent(jakarta.persistence.ManyToOne::class.java)).isTrue()
+            assertThat(field.getAnnotation(jakarta.persistence.JoinColumn::class.java).name).isEqualTo("owner_group_id")
+            assertThat(field.isAnnotationPresent(SFField::class.java)).isFalse()
+        }
+
+        @Test
+        @DisplayName("createdBy FK (@ManyToOne + @JoinColumn(\"created_by_id\") → User)")
         fun createdByFk() {
             val field = Employee::class.java.getDeclaredField("createdBy")
-            assertThat(field.type).isEqualTo(Employee::class.java)
+            assertThat(field.type).isEqualTo(com.otoki.powersales.user.entity.User::class.java)
             assertThat(field.isAnnotationPresent(jakarta.persistence.ManyToOne::class.java)).isTrue()
             assertThat(field.getAnnotation(jakarta.persistence.JoinColumn::class.java).name).isEqualTo("created_by_id")
         }
 
         @Test
-        @DisplayName("lastModifiedBy FK (@ManyToOne + @JoinColumn(\"last_modified_by_id\") → Employee)")
+        @DisplayName("lastModifiedBy FK (@ManyToOne + @JoinColumn(\"last_modified_by_id\") → User)")
         fun lastModifiedByFk() {
             val field = Employee::class.java.getDeclaredField("lastModifiedBy")
-            assertThat(field.type).isEqualTo(Employee::class.java)
+            assertThat(field.type).isEqualTo(com.otoki.powersales.user.entity.User::class.java)
             assertThat(field.isAnnotationPresent(jakarta.persistence.ManyToOne::class.java)).isTrue()
             assertThat(field.getAnnotation(jakarta.persistence.JoinColumn::class.java).name).isEqualTo("last_modified_by_id")
         }

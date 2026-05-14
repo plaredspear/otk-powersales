@@ -8,23 +8,19 @@ import org.slf4j.LoggerFactory
 /**
  * Employee.role 컬럼용 JPA AttributeConverter.
  *
- * DB 에는 `enum.name`(영문, 예: `LEADER`) 으로 저장한다.
- * Read 시 미정의 값(예: 마이그레이션 누락)은 [UserRole.UNKNOWN] 으로 fallback 한다.
+ * DB 에는 SF picklist 원본 옵션값 (`UserRole.korean`, 예: `조장` / `AccountViewAll`) 으로 저장한다.
+ * SF Object 정합 정책 (`sf-object-meta/sandbox/README.md` §6.6 v2.2) — picklist DB 저장은 SF 원본 보존.
+ * Read 시 미정의 값은 [UserRole.UNKNOWN] 으로 fallback 한다.
  */
 @Converter(autoApply = false)
 class UserRoleConverter : AttributeConverter<UserRole, String> {
 
     private val logger = LoggerFactory.getLogger(UserRoleConverter::class.java)
 
-    override fun convertToDatabaseColumn(attribute: UserRole?): String? = attribute?.name
+    override fun convertToDatabaseColumn(attribute: UserRole?): String? = attribute?.korean
 
     override fun convertToEntityAttribute(dbData: String?): UserRole? {
         if (dbData.isNullOrEmpty()) return null
-        return try {
-            UserRole.valueOf(dbData)
-        } catch (_: IllegalArgumentException) {
-            logger.warn("Unknown UserRole DB value: {} — falling back to UNKNOWN", dbData)
-            UserRole.UNKNOWN
-        }
+        return UserRole.fromKorean(dbData)
     }
 }

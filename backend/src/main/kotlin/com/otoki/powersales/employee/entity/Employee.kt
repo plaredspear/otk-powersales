@@ -16,6 +16,7 @@ import com.otoki.powersales.auth.converter.UserRoleConverter
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamType
 import com.otoki.powersales.promotion.entity.converter.ProfessionalPromotionTeamTypeConverter
+import com.otoki.powersales.user.entity.User
 
 /**
  * 사원 Entity
@@ -227,15 +228,15 @@ class Employee(
     @Column(name = "crm_work_type", length = 255)
     var crmWorkType: CrmWorkType? = null,
 
-    // Group A: OwnerId (→ Employee R-2)
-    // owner_sfid: sync buffer 컬럼 (SF User Id). owner: SalesforceMigrationTool 이 SF User → Employee 매핑으로 채우는 FK.
+    // OwnerId: SF `referenceTo = [Group, User]` polymorphic.
+    // owner_sfid 는 SF 원본 식별자 보존 (sync buffer). owner_user_id / owner_group_id 둘 중
+    // 하나만 채워지며 DB CHECK XOR 제약으로 enforce. sfid prefix `005` = User / `00G` = Group.
     @SFField("OwnerId")
     @HCColumn("ownerid")
     @Column(name = "owner_sfid", length = 18)
     var ownerSfid: String? = null,
 
-    // Group A: CreatedById / LastModifiedById (→ Employee R-2)
-    // *_sfid: sync buffer 컬럼 (SF User Id). *_by: SalesforceMigrationTool 이 SF User → Employee 매핑.
+    // CreatedById / LastModifiedById: SF `referenceTo = [User]`. FK 타입은 backend User entity.
     @SFField("CreatedById")
     @HCColumn("createdbyid")
     @Column(name = "created_by_sfid", length = 18)
@@ -249,16 +250,20 @@ class Employee(
     // -- Relations --
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id")
-    var owner: Employee? = null,
+    @JoinColumn(name = "owner_user_id")
+    var ownerUser: User? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_group_id")
+    var ownerGroup: Group? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
-    var createdBy: Employee? = null,
+    var createdBy: User? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
-    var lastModifiedBy: Employee? = null,
+    var lastModifiedBy: User? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "manager_id")

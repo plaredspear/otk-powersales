@@ -5,8 +5,9 @@ import org.slf4j.LoggerFactory
 /**
  * 사용자 권한 Enum.
  *
- * Salesforce/SAP 의 한글 직위(`appAuthority`) 와 1:1 매핑되는 단일 모델.
- * `UNKNOWN` 은 SF/SAP 동기화 시 매핑 실패한 한글 값 또는 DB 의 미정의 값에 대한 fallback 이며,
+ * Salesforce `DKRetail__Employee__c.DKRetail__AppAuthority__c` picklist 의 4 옵션값과 SAP 직위명을
+ * 함께 표현. `korean` 필드는 SF 원본 옵션값을 그대로 보존 (한글 또는 영문, e.g. `AccountViewAll`).
+ * `UNKNOWN` 은 SF/SAP 동기화 시 매핑 실패한 값 또는 DB 의 미정의 값에 대한 fallback 이며,
  * 어떤 운영 그룹 상수에도 포함되지 않아 모든 권한 판정에서 false 가 된다.
  */
 enum class UserRole(val korean: String) {
@@ -18,6 +19,7 @@ enum class UserRole(val korean: String) {
     HEADQUARTERS_MANAGER("영업본부장"),
     SALES_SUPPORT("영업지원실"),
     SYSTEM_ADMIN("시스템관리자"),
+    ACCOUNT_VIEW_ALL("AccountViewAll"),
     UNKNOWN("(미인지)");
 
     fun toKorean(): String = korean

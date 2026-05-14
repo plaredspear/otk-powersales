@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:59788",
+    "url" : "http://localhost:60328",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -597,7 +597,7 @@
           "required" : true,
           "schema" : {
             "type" : "string",
-            "enum" : [ "WOMAN", "LEADER", "BRANCH_MANAGER", "SALES_MANAGER", "BUSINESS_MANAGER", "HEADQUARTERS_MANAGER", "SALES_SUPPORT", "SYSTEM_ADMIN", "UNKNOWN" ]
+            "enum" : [ "WOMAN", "LEADER", "BRANCH_MANAGER", "SALES_MANAGER", "BUSINESS_MANAGER", "HEADQUARTERS_MANAGER", "SALES_SUPPORT", "SYSTEM_ADMIN", "ACCOUNT_VIEW_ALL", "UNKNOWN" ]
           }
         } ],
         "requestBody" : {
@@ -1957,7 +1957,7 @@
           "required" : false,
           "schema" : {
             "type" : "string",
-            "enum" : [ "WOMAN", "LEADER", "BRANCH_MANAGER", "SALES_MANAGER", "BUSINESS_MANAGER", "HEADQUARTERS_MANAGER", "SALES_SUPPORT", "SYSTEM_ADMIN", "UNKNOWN" ]
+            "enum" : [ "WOMAN", "LEADER", "BRANCH_MANAGER", "SALES_MANAGER", "BUSINESS_MANAGER", "HEADQUARTERS_MANAGER", "SALES_SUPPORT", "SYSTEM_ADMIN", "ACCOUNT_VIEW_ALL", "UNKNOWN" ]
           }
         }, {
           "name" : "page",
@@ -4844,7 +4844,7 @@
         "properties" : {
           "role" : {
             "type" : "string",
-            "enum" : [ "WOMAN", "LEADER", "BRANCH_MANAGER", "SALES_MANAGER", "BUSINESS_MANAGER", "HEADQUARTERS_MANAGER", "SALES_SUPPORT", "SYSTEM_ADMIN", "UNKNOWN" ]
+            "enum" : [ "WOMAN", "LEADER", "BRANCH_MANAGER", "SALES_MANAGER", "BUSINESS_MANAGER", "HEADQUARTERS_MANAGER", "SALES_SUPPORT", "SYSTEM_ADMIN", "ACCOUNT_VIEW_ALL", "UNKNOWN" ]
           }
         },
         "required" : [ "role" ]
@@ -6139,7 +6139,7 @@
           },
           "role" : {
             "type" : "string",
-            "enum" : [ "WOMAN", "LEADER", "BRANCH_MANAGER", "SALES_MANAGER", "BUSINESS_MANAGER", "HEADQUARTERS_MANAGER", "SALES_SUPPORT", "SYSTEM_ADMIN", "UNKNOWN" ]
+            "enum" : [ "WOMAN", "LEADER", "BRANCH_MANAGER", "SALES_MANAGER", "BUSINESS_MANAGER", "HEADQUARTERS_MANAGER", "SALES_SUPPORT", "SYSTEM_ADMIN", "ACCOUNT_VIEW_ALL", "UNKNOWN" ]
           },
           "origin" : {
             "type" : "string",
@@ -7384,22 +7384,22 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
-          "unpaged" : {
+          "paged" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "pageSize" : {
             "type" : "integer",
             "format" : "int32"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
-          "paged" : {
-            "type" : "boolean"
-          },
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "unpaged" : {
+            "type" : "boolean"
           },
           "offset" : {
             "type" : "integer",
@@ -7458,10 +7458,10 @@
       "SortObject" : {
         "type" : "object",
         "properties" : {
-          "sorted" : {
+          "unsorted" : {
             "type" : "boolean"
           },
-          "unsorted" : {
+          "sorted" : {
             "type" : "boolean"
           },
           "empty" : {
