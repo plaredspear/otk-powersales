@@ -45,7 +45,7 @@ class AccountCategoryMaster(
     val accountCode: String,
 
     @SFField("Name")
-    @Column(name = "name", nullable = false, length = 100)
+    @Column(name = "name", nullable = false, length = 80)
     var name: String,
 
     @SFField("useSearch__c")

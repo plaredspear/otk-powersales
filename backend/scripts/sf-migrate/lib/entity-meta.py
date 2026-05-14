@@ -44,7 +44,8 @@ BACKEND_ROOT = SCRIPT_DIR.parents[2]  # /backend
 KOTLIN_ROOT = BACKEND_ROOT / "src" / "main" / "kotlin"
 
 RE_SFOBJECT = re.compile(r'@SFObject\(\s*"([^"]+)"\s*\)')
-RE_TABLE = re.compile(r'@Table\(\s*name\s*=\s*"([^"]+)"')
+# @Table(name = "...") — Kotlin escaped 케이스 (`"\"user\""`) + plain 케이스 둘 다 매칭
+RE_TABLE = re.compile(r'@Table\(\s*name\s*=\s*"((?:\\.|[^"])+)"')
 RE_CLASS = re.compile(r'class\s+([A-Z][A-Za-z0-9_]*)\s*\(')
 RE_EXTENDS_BASE = re.compile(r'\)\s*:\s*BaseEntity\s*\(')
 RE_SFID_COLUMN = re.compile(r'@Column\(\s*name\s*=\s*"sfid"')
@@ -71,6 +72,13 @@ BASE_ENTITY_FIELDS = [
 _class_to_table_cache: dict[str, str | None] = {}
 
 
+def _unescape_table_name(raw: str) -> str:
+    """Kotlin string literal 의 escaped quote 제거 — `\"user\"` → `user`."""
+    if raw.startswith('\\"') and raw.endswith('\\"'):
+        return raw[2:-2]
+    return raw
+
+
 def find_table_for_class(class_name: str) -> str | None:
     """다른 .kt 파일에서 `class <Name>` 정의를 찾아 @Table(name=...) 추출."""
     if class_name in _class_to_table_cache:
@@ -80,7 +88,7 @@ def find_table_for_class(class_name: str) -> str | None:
         text = kt_file.read_text(encoding="utf-8")
         if pattern.search(text):
             table_m = RE_TABLE.search(text)
-            table = table_m.group(1) if table_m else None
+            table = _unescape_table_name(table_m.group(1)) if table_m else None
             _class_to_table_cache[class_name] = table
             return table
     _class_to_table_cache[class_name] = None
@@ -95,6 +103,7 @@ def parse_entity_file(path: Path) -> dict | None:
     class_m = RE_CLASS.search(text)
     if not (sobject_m and table_m and class_m):
         return None
+    table_name = _unescape_table_name(table_m.group(1))
 
     fields: list[dict[str, str]] = []
 
@@ -119,21 +128,43 @@ def parse_entity_file(path: Path) -> dict | None:
                 seen_db_cols.add(bf["db"])
 
     # FK 매핑 추정: *_sfid 컬럼의 prefix 와 @JoinColumn 매칭
+    # 단일 케이스 — <prefix>_sfid ↔ <prefix>_id
+    # polymorphic 케이스 — <prefix>_sfid ↔ <prefix>_user_id (sfid prefix 005) + <prefix>_group_id (sfid prefix 00G)
     join_columns = {m.group(1): m.group(2) for m in RE_JOINCOLUMN.finditer(text)}
-    fk_mappings: list[dict[str, str]] = []
+    fk_mappings: list[dict[str, object]] = []
     sfid_cols = [f["db"] for f in fields if f["db"].endswith("_sfid") and f["db"] != "sfid"]
     for src_sfid in sfid_cols:
         prefix = src_sfid[: -len("_sfid")]
-        fk_col = f"{prefix}_id"
-        if fk_col not in join_columns:
+        single_fk = f"{prefix}_id"
+        user_fk = f"{prefix}_user_id"
+        group_fk = f"{prefix}_group_id"
+
+        # polymorphic 분기 우선 — owner_user_id + owner_group_id 둘 다 존재 시
+        if user_fk in join_columns and group_fk in join_columns:
+            for variant_fk, sfid_prefix in [(user_fk, "005"), (group_fk, "00G")]:
+                target_class = join_columns[variant_fk]
+                target_table = find_table_for_class(target_class)
+                if not target_table:
+                    continue
+                fk_mappings.append({
+                    "src_sfid": src_sfid,
+                    "src_fk": variant_fk,
+                    "target_class": target_class,
+                    "target_table": target_table,
+                    "sfid_prefix": sfid_prefix,
+                })
             continue
-        target_class = join_columns[fk_col]
+
+        # 단일 FK
+        if single_fk not in join_columns:
+            continue
+        target_class = join_columns[single_fk]
         target_table = find_table_for_class(target_class)
         if not target_table:
             continue
         fk_mappings.append({
             "src_sfid": src_sfid,
-            "src_fk": fk_col,
+            "src_fk": single_fk,
             "target_class": target_class,
             "target_table": target_table,
         })
@@ -143,7 +174,7 @@ def parse_entity_file(path: Path) -> dict | None:
         "kotlin_file": str(path),
         "sobject": sobject_m.group(1),
         "schema": "powersales",
-        "table": table_m.group(1),
+        "table": table_name,
         "fields": fields,
         "fk_mappings": fk_mappings,
     }
