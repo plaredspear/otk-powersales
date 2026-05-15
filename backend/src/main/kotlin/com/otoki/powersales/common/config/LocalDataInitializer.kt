@@ -70,7 +70,9 @@ class LocalDataInitializer(
         )
 
         val seeds = listOf(
-            SeedEmployee("99990001", "개발테스트", UserRole.SALES_SUPPORT, "테스트지점", "1111", "19850315", "02-1234-5678", "02-9876-5432", LocalDate.of(2015, 3, 1), "dev-test@otoki.local"),
+            // 로컬 개발 만능 계정 — 모든 권한(MANAGE_PERMISSIONS / ADMIN_GRADE / ALL_BRANCHES /
+            // ALLOWED_FOR_ADMIN_LOGIN / Account 검증 우회 등) 분기가 SYSTEM_ADMIN 기준이라 단일 role 로 충족.
+            SeedEmployee("99990001", "개발테스트", UserRole.SYSTEM_ADMIN, "테스트지점", "1111", "19850315", "02-1234-5678", "02-9876-5432", LocalDate.of(2015, 3, 1), "dev-test@otoki.local"),
             SeedEmployee("99990002", "여사원테스트", UserRole.WOMAN, "테스트지점", "1111", "19920820", "02-2345-6789", "02-8765-4321", LocalDate.of(2018, 7, 1), "woman-test@otoki.local"),
             SeedEmployee("99990003", "지점장테스트", UserRole.BRANCH_MANAGER, "테스트지점", "1111", "19780105", "02-3456-7890", "02-7654-3210", LocalDate.of(2010, 1, 15), "manager-test@otoki.local"),
             SeedEmployee("99990004", "강남조장", UserRole.LEADER, "테스트지점", "1111", "19880510", "02-4567-8901", "02-6543-2109", LocalDate.of(2016, 5, 1), "leader-test@otoki.local"),

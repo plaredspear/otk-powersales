@@ -137,11 +137,11 @@ class LocalDataInitializerTest {
     }
 
     @Nested
-    @DisplayName("seedUser - 영업지원실 사용자 생성")
+    @DisplayName("seedUser - 만능 개발 계정 생성")
     inner class LeaderUserTests {
 
         @Test
-        @DisplayName("정상 생성 - DB에 00000001 없음 -> 영업지원실 사용자 필드 검증")
+        @DisplayName("정상 생성 - DB에 00000001 없음 -> 만능 개발 계정 필드 검증")
         fun createsLeaderUser_whenNotExists() {
             // Given
             stubAllUsersNotExist()
@@ -157,13 +157,13 @@ class LocalDataInitializerTest {
             assertThat(leader.status).isEqualTo("재직")
             assertThat(leader.appLoginActive).isTrue()
             assertThat(leader.orgName).isEqualTo("테스트지점")
-            assertThat(leader.role).isEqualTo(UserRole.SALES_SUPPORT)
+            assertThat(leader.role).isEqualTo(UserRole.SYSTEM_ADMIN)
             assertThat(leader.password).isEqualTo("encoded_password")
             assertThat(leader.passwordChangeRequired).isFalse()
         }
 
         @Test
-        @DisplayName("역할 검증 - 영업지원실 사용자 -> UserRole.SALES_SUPPORT")
+        @DisplayName("역할 검증 - 만능 개발 계정 -> UserRole.SYSTEM_ADMIN")
         fun leaderUser_hasSalesSupportRole() {
             // Given
             stubAllUsersNotExist()
@@ -175,7 +175,7 @@ class LocalDataInitializerTest {
             // Then
             val employees = captureAllSavedEmployees()
             val leader = employees.find { it.employeeCode == "99990001" }!!
-            assertThat(leader.role).isEqualTo(UserRole.SALES_SUPPORT)
+            assertThat(leader.role).isEqualTo(UserRole.SYSTEM_ADMIN)
         }
 
         @Test
