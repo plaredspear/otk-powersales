@@ -47,6 +47,7 @@ class WebJwtService(
             .claim("type", "access")
             .claim("audience", JwtTokenProvider.AUDIENCE_WEB)
             .claim("user_id", principal.userId)
+            .claim("employee_id", principal.employeeId)
             .claim("employee_number", principal.employeeNumber)
             .claim("profile_type", principal.profileType.name)
             .claim("is_sales_support", principal.isSalesSupport)
@@ -130,6 +131,10 @@ class WebJwtService(
 
     /** user_id claim 추출 (User PK). */
     fun getUserIdFromToken(token: String): Long = parseClaims(token).get("user_id", java.lang.Long::class.java).toLong()
+
+    /** employee_id claim 추출 (Employee PK) — Employee 미존재 시 null. */
+    fun getEmployeeIdFromToken(token: String): Long? =
+        parseClaims(token).get("employee_id", java.lang.Long::class.java)?.toLong()
 
     /** profile_type claim 추출. */
     fun getProfileTypeFromToken(token: String): String =

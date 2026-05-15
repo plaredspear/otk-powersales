@@ -11,7 +11,8 @@ import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.auth.web.WebUserPrincipal
+import com.otoki.powersales.user.entity.ProfileType
 import com.otoki.powersales.productexpiration.exception.InvalidAlertDateException
 import com.otoki.powersales.productexpiration.exception.ProductExpirationForbiddenException
 import com.otoki.powersales.productexpiration.exception.ProductExpirationNotFoundException
@@ -67,7 +68,19 @@ class AdminProductExpirationControllerTest {
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
     private fun setUpPrincipal(userId: Long = 1L, role: UserRole = UserRole.WOMAN) {
-        val principal = UserPrincipal(userId = userId, role = role)
+        val principal = WebUserPrincipal(
+            userId = 100L,
+            usernameValue = "test@otokims.co.kr",
+            employeeNumber = "S001",
+            employeeId = userId,
+            role = role,
+            profileType = ProfileType.STAFF,
+            isSalesSupport = false,
+            passwordChangeRequired = false,
+            encodedPassword = "",
+            grantedAuthorities = emptyList(),
+            active = true
+        )
         SecurityContextHolder.getContext().authentication =
             UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
     }

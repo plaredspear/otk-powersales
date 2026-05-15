@@ -12,7 +12,7 @@ import com.otoki.powersales.account.service.AdminAccountService
 import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
@@ -44,7 +44,7 @@ class AdminAccountController(
     @GetMapping
     @RequiresPermission(AdminPermission.ACCOUNT_READ)
     fun getAccounts(
-        @AuthenticationPrincipal principal: UserPrincipal,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @RequestParam(required = false) @Size(min = 1, max = 50) keyword: String?,
         @RequestParam(required = false) abcType: String?,
         @RequestParam(required = false) branchCode: String?,
@@ -66,7 +66,7 @@ class AdminAccountController(
     @PostMapping
     @RequiresPermission(AdminPermission.ACCOUNT_WRITE)
     fun createAccount(
-        @AuthenticationPrincipal principal: UserPrincipal,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @Valid @RequestBody request: AdminAccountCreateRequest
     ): ResponseEntity<ApiResponse<AdminAccountCreateResponse>> {
         val response = accountCreateService.create(request)
@@ -77,7 +77,7 @@ class AdminAccountController(
     @PutMapping("/{id}")
     @RequiresPermission(AdminPermission.ACCOUNT_WRITE)
     fun updateAccount(
-        @AuthenticationPrincipal principal: UserPrincipal,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable id: Int,
         @Valid @RequestBody request: AdminAccountUpdateRequest
     ): ResponseEntity<ApiResponse<AdminAccountUpdateResponse>> {
@@ -88,7 +88,7 @@ class AdminAccountController(
     @DeleteMapping("/{id}")
     @RequiresPermission(AdminPermission.ACCOUNT_DELETE)
     fun deleteAccount(
-        @AuthenticationPrincipal principal: UserPrincipal,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable id: Int
     ): ResponseEntity<ApiResponse<Any?>> {
         accountDeleteService.delete(id)

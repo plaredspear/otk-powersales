@@ -6,7 +6,7 @@ import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.safetycheck.service.AdminSafetyCheckService
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.admin.exception.InvalidDateFormatException
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.auth.web.WebUserPrincipal
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
@@ -26,7 +26,7 @@ class AdminSafetyCheckController(
     @GetMapping("/status")
     @RequiresPermission(AdminPermission.SAFETY_CHECK_READ)
     fun getStatus(
-        @AuthenticationPrincipal principal: UserPrincipal,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @RequestParam(required = false) date: String?
     ): ResponseEntity<ApiResponse<SafetyCheckStatusResponse>> {
         val targetDate = if (date != null) {
@@ -39,7 +39,7 @@ class AdminSafetyCheckController(
             LocalDate.now()
         }
 
-        val result = adminSafetyCheckService.getStatus(principal.userId, targetDate)
+        val result = adminSafetyCheckService.getStatus(principal.requireEmployeeId(), targetDate)
         return ResponseEntity.ok(ApiResponse.success(result))
     }
 }

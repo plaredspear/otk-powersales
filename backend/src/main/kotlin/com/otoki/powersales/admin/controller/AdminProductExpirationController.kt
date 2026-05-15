@@ -11,7 +11,7 @@ import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.productexpiration.service.AdminProductExpirationService
 import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
 import org.springframework.data.domain.PageRequest
 import org.springframework.http.HttpStatus
@@ -28,7 +28,7 @@ class AdminProductExpirationController(
     @GetMapping("/api/v1/admin/product-expiration")
     @RequiresPermission(AdminPermission.PRODUCT_EXPIRATION_READ)
     fun getList(
-        @AuthenticationPrincipal principal: UserPrincipal,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @RequestParam(required = false) fromDate: LocalDate?,
         @RequestParam(required = false) toDate: LocalDate?,
         @RequestParam(required = false) employeeKeyword: String?,
@@ -39,7 +39,7 @@ class AdminProductExpirationController(
     ): ResponseEntity<ApiResponse<AdminProductExpirationListResponse>> {
         val effectiveSize = size.coerceAtMost(100)
         val response = adminProductExpirationService.getList(
-            principal.userId, fromDate, toDate, employeeKeyword, accountKeyword, status,
+            principal.requireEmployeeId(), fromDate, toDate, employeeKeyword, accountKeyword, status,
             PageRequest.of(page, effectiveSize)
         )
         return ResponseEntity.ok(ApiResponse.success(response))
@@ -48,60 +48,60 @@ class AdminProductExpirationController(
     @GetMapping("/api/v1/admin/product-expiration/{id}")
     @RequiresPermission(AdminPermission.PRODUCT_EXPIRATION_READ)
     fun getDetail(
-        @AuthenticationPrincipal principal: UserPrincipal,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable id: Int
     ): ResponseEntity<ApiResponse<AdminProductExpirationResponse>> {
-        val response = adminProductExpirationService.getDetail(principal.userId, id)
+        val response = adminProductExpirationService.getDetail(principal.requireEmployeeId(), id)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
     @PostMapping("/api/v1/admin/product-expiration")
     @RequiresPermission(AdminPermission.PRODUCT_EXPIRATION_WRITE)
     fun create(
-        @AuthenticationPrincipal principal: UserPrincipal,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @Valid @RequestBody request: AdminProductExpirationCreateRequest
     ): ResponseEntity<ApiResponse<AdminProductExpirationResponse>> {
-        val response = adminProductExpirationService.create(principal.userId, request)
+        val response = adminProductExpirationService.create(principal.requireEmployeeId(), request)
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response))
     }
 
     @PutMapping("/api/v1/admin/product-expiration/{id}")
     @RequiresPermission(AdminPermission.PRODUCT_EXPIRATION_WRITE)
     fun update(
-        @AuthenticationPrincipal principal: UserPrincipal,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable id: Int,
         @Valid @RequestBody request: AdminProductExpirationUpdateRequest
     ): ResponseEntity<ApiResponse<AdminProductExpirationResponse>> {
-        val response = adminProductExpirationService.update(principal.userId, id, request)
+        val response = adminProductExpirationService.update(principal.requireEmployeeId(), id, request)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
     @DeleteMapping("/api/v1/admin/product-expiration/{id}")
     @RequiresPermission(AdminPermission.PRODUCT_EXPIRATION_WRITE)
     fun delete(
-        @AuthenticationPrincipal principal: UserPrincipal,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable id: Int
     ): ResponseEntity<ApiResponse<Any?>> {
-        adminProductExpirationService.delete(principal.userId, id)
+        adminProductExpirationService.delete(principal.requireEmployeeId(), id)
         return ResponseEntity.ok(ApiResponse.success(null as Any?))
     }
 
     @PostMapping("/api/v1/admin/product-expiration/batch-delete")
     @RequiresPermission(AdminPermission.PRODUCT_EXPIRATION_WRITE)
     fun batchDelete(
-        @AuthenticationPrincipal principal: UserPrincipal,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @Valid @RequestBody request: AdminProductExpirationBatchDeleteRequest
     ): ResponseEntity<ApiResponse<AdminProductExpirationBatchDeleteResponse>> {
-        val response = adminProductExpirationService.batchDelete(principal.userId, request)
+        val response = adminProductExpirationService.batchDelete(principal.requireEmployeeId(), request)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
     @GetMapping("/api/v1/admin/product-expiration/summary")
     @RequiresPermission(AdminPermission.PRODUCT_EXPIRATION_READ)
     fun getSummary(
-        @AuthenticationPrincipal principal: UserPrincipal
+        @AuthenticationPrincipal principal: WebUserPrincipal
     ): ResponseEntity<ApiResponse<AdminProductExpirationSummaryResponse>> {
-        val response = adminProductExpirationService.getSummary(principal.userId)
+        val response = adminProductExpirationService.getSummary(principal.requireEmployeeId())
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 }

@@ -9,7 +9,7 @@ import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.schedule.service.AdminPromotionScheduleService
 import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.ResponseEntity
@@ -36,7 +36,7 @@ class AdminPromotionScheduleController(
     @GetMapping("/{promotionId}/schedules")
     @RequiresPermission(AdminPermission.PROMOTION_READ)
     fun getSchedules(
-        @AuthenticationPrincipal principal: UserPrincipal,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable promotionId: Long,
         @RequestParam(required = false)
         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) startDate: LocalDate?,
@@ -50,7 +50,7 @@ class AdminPromotionScheduleController(
     @PutMapping("/{promotionId}/schedules/bulk")
     @RequiresPermission(AdminPermission.PROMOTION_WRITE)
     fun bulkUpdate(
-        @AuthenticationPrincipal principal: UserPrincipal,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable promotionId: Long,
         @Valid @RequestBody request: PromotionScheduleBulkUpdateRequest
     ): ResponseEntity<ApiResponse<PromotionScheduleBulkUpdateResponse>> {
@@ -61,7 +61,7 @@ class AdminPromotionScheduleController(
     @DeleteMapping("/{promotionId}/schedules/bulk")
     @RequiresPermission(AdminPermission.PROMOTION_WRITE)
     fun bulkDelete(
-        @AuthenticationPrincipal principal: UserPrincipal,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable promotionId: Long,
         @Valid @RequestBody request: PromotionScheduleBulkDeleteRequest
     ): ResponseEntity<ApiResponse<PromotionScheduleBulkDeleteResponse>> {

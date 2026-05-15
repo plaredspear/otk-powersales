@@ -53,6 +53,8 @@ class WebUserDetailsService(
             userId = user.id,
             usernameValue = user.username,
             employeeNumber = user.employeeNumber,
+            employeeId = null,
+            role = null,
             profileType = user.profileType,
             isSalesSupport = user.isSalesSupport,
             passwordChangeRequired = user.passwordChangeRequired,

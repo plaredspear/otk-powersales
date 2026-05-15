@@ -7,7 +7,7 @@ import com.otoki.powersales.admin.service.AdminDashboardService
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.admin.exception.InvalidYearMonthException
 
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.auth.web.WebUserPrincipal
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
@@ -24,7 +24,7 @@ class AdminDashboardController(
     @GetMapping
     @RequiresPermission(AdminPermission.DASHBOARD_READ)
     fun getDashboard(
-        @AuthenticationPrincipal principal: UserPrincipal,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @RequestParam(required = false) yearMonth: String?,
         @RequestParam(required = false) branchCode: String?
     ): ResponseEntity<ApiResponse<DashboardResponse>> {

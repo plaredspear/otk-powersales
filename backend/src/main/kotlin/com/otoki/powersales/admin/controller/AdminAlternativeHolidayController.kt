@@ -9,7 +9,7 @@ import com.otoki.powersales.leave.dto.response.AlternativeHolidayListItem
 import com.otoki.powersales.leave.dto.response.AlternativeHolidayRejectResponse
 import com.otoki.powersales.leave.service.AdminAlternativeHolidayService
 import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.HttpStatus
@@ -40,11 +40,11 @@ class AdminAlternativeHolidayController(
 
     @PostMapping
     fun createAlternativeHoliday(
-        @AuthenticationPrincipal principal: UserPrincipal,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @Valid @RequestBody request: AlternativeHolidayCreateRequest
     ): ResponseEntity<ApiResponse<AlternativeHolidayCreateResponse>> {
         val response = adminAlternativeHolidayService.createAlternativeHoliday(
-            request, principal.userId
+            request, principal.requireEmployeeId()
         )
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response))
     }

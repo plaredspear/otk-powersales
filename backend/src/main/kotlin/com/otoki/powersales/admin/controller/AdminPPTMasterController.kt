@@ -8,7 +8,7 @@ import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.promotion.service.AdminPPTMasterService
 import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
 import org.springframework.data.domain.PageRequest
 import org.springframework.http.HttpHeaders
@@ -28,7 +28,7 @@ class AdminPPTMasterController(
     @GetMapping("/api/v1/admin/ppt-masters")
     @RequiresPermission(AdminPermission.PROMOTION_READ)
     fun getMasters(
-        @AuthenticationPrincipal principal: UserPrincipal,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "20") size: Int,
         @RequestParam(required = false) employeeName: String?,
@@ -47,7 +47,7 @@ class AdminPPTMasterController(
     @GetMapping("/api/v1/admin/ppt-masters/{id}")
     @RequiresPermission(AdminPermission.PROMOTION_READ)
     fun getMaster(
-        @AuthenticationPrincipal principal: UserPrincipal,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable id: Long
     ): ResponseEntity<ApiResponse<PPTMasterResponse>> {
         val response = adminPPTMasterService.getMaster(id)
@@ -57,7 +57,7 @@ class AdminPPTMasterController(
     @PostMapping("/api/v1/admin/ppt-masters")
     @RequiresPermission(AdminPermission.PROMOTION_WRITE)
     fun createMaster(
-        @AuthenticationPrincipal principal: UserPrincipal,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @Valid @RequestBody request: PPTMasterCreateRequest
     ): ResponseEntity<ApiResponse<PPTMasterResponse>> {
         val response = adminPPTMasterService.createMaster(request)
@@ -67,7 +67,7 @@ class AdminPPTMasterController(
     @PutMapping("/api/v1/admin/ppt-masters/{id}")
     @RequiresPermission(AdminPermission.PROMOTION_WRITE)
     fun updateMaster(
-        @AuthenticationPrincipal principal: UserPrincipal,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable id: Long,
         @Valid @RequestBody request: PPTMasterUpdateRequest
     ): ResponseEntity<ApiResponse<PPTMasterResponse>> {
@@ -78,7 +78,7 @@ class AdminPPTMasterController(
     @DeleteMapping("/api/v1/admin/ppt-masters/{id}")
     @RequiresPermission(AdminPermission.PROMOTION_WRITE)
     fun deleteMaster(
-        @AuthenticationPrincipal principal: UserPrincipal,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable id: Long
     ): ResponseEntity<Void> {
         adminPPTMasterService.deleteMaster(id)
@@ -88,7 +88,7 @@ class AdminPPTMasterController(
     @GetMapping("/api/v1/admin/ppt-masters/excel-template")
     @RequiresPermission(AdminPermission.PROMOTION_READ)
     fun downloadExcelTemplate(
-        @AuthenticationPrincipal principal: UserPrincipal
+        @AuthenticationPrincipal principal: WebUserPrincipal
     ): ResponseEntity<ByteArray> {
         val bytes = adminPPTMasterService.generateExcelTemplate()
         val filename = "전문행사조마스터_템플릿_${LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE)}.xlsx"
@@ -101,7 +101,7 @@ class AdminPPTMasterController(
     @PostMapping("/api/v1/admin/ppt-masters/bulk")
     @RequiresPermission(AdminPermission.PROMOTION_WRITE)
     fun validateBulk(
-        @AuthenticationPrincipal principal: UserPrincipal,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @Valid @RequestBody request: PPTMasterBulkValidateRequest
     ): ResponseEntity<ApiResponse<BulkValidationResponse>> {
         val response = adminPPTMasterService.validateBulk(request)
@@ -111,7 +111,7 @@ class AdminPPTMasterController(
     @PostMapping("/api/v1/admin/ppt-masters/bulk/confirm")
     @RequiresPermission(AdminPermission.PROMOTION_WRITE)
     fun confirmBulk(
-        @AuthenticationPrincipal principal: UserPrincipal,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @Valid @RequestBody request: PPTMasterBulkValidateRequest
     ): ResponseEntity<ApiResponse<BulkConfirmResponse>> {
         val response = adminPPTMasterService.confirmBulk(request)
@@ -121,7 +121,7 @@ class AdminPPTMasterController(
     @GetMapping("/api/v1/admin/ppt-masters/{masterId}/history")
     @RequiresPermission(AdminPermission.PROMOTION_READ)
     fun getHistory(
-        @AuthenticationPrincipal principal: UserPrincipal,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable masterId: Long,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "20") size: Int

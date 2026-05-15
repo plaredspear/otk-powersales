@@ -1,5 +1,6 @@
 package com.otoki.powersales.auth.web
 
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.user.entity.ProfileType
 import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
@@ -20,6 +21,8 @@ data class WebUserPrincipal(
     val userId: Long,
     val usernameValue: String,
     val employeeNumber: String,
+    val employeeId: Long?,
+    val role: UserRole?,
     val profileType: ProfileType,
     val isSalesSupport: Boolean,
     val passwordChangeRequired: Boolean,
@@ -41,4 +44,12 @@ data class WebUserPrincipal(
     override fun isCredentialsNonExpired(): Boolean = true
 
     override fun isEnabled(): Boolean = active
+
+    /**
+     * Employee.id 강제 추출. ADMIN- 부트스트랩 등 Employee 미존재 사용자는 예외.
+     *
+     * admin 패키지 controller 들이 service 에 employeeId 를 넘기는 표준 경로.
+     */
+    fun requireEmployeeId(): Long = employeeId
+        ?: throw IllegalStateException("Web Admin 사용자에 매칭되는 Employee 가 없습니다 (employeeNumber=$employeeNumber)")
 }

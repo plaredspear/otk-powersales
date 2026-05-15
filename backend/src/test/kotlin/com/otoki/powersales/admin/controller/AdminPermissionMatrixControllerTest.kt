@@ -3,11 +3,12 @@ package com.otoki.powersales.admin.controller
 import com.otoki.powersales.admin.dto.response.*
 import com.otoki.powersales.admin.security.AdminAuthorityFilter
 import com.otoki.powersales.admin.service.AdminPermissionMatrixService
+import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
-import com.otoki.powersales.common.security.UserPrincipal
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.user.entity.ProfileType
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -52,7 +53,19 @@ class AdminPermissionMatrixControllerTest {
 
     @BeforeEach
     fun setUp() {
-        val principal = UserPrincipal(userId = 1L, role = UserRole.LEADER)
+        val principal = WebUserPrincipal(
+            userId = 100L,
+            usernameValue = "leader@otokims.co.kr",
+            employeeNumber = "S001",
+            employeeId = 1L,
+            role = UserRole.LEADER,
+            profileType = ProfileType.TEAM_LEADER,
+            isSalesSupport = false,
+            passwordChangeRequired = false,
+            encodedPassword = "",
+            grantedAuthorities = emptyList(),
+            active = true
+        )
         SecurityContextHolder.getContext().authentication =
             UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
     }

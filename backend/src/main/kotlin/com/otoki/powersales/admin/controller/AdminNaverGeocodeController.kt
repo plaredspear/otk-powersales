@@ -6,7 +6,7 @@ import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.admin.service.AdminNaverGeocodeService
 import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -22,10 +22,10 @@ class AdminNaverGeocodeController(
     @PostMapping("/api/v1/admin/naver-geocode/test")
     @RequiresPermission(AdminPermission.NAVER_GEOCODE_TEST)
     fun test(
-        @AuthenticationPrincipal principal: UserPrincipal,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @Valid @RequestBody request: NaverGeocodeTestRequest
     ): ResponseEntity<ApiResponse<NaverGeocodeTestResponse>> {
-        val response = adminNaverGeocodeService.test(principal.userId, request)
+        val response = adminNaverGeocodeService.test(principal.requireEmployeeId(), request)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 }

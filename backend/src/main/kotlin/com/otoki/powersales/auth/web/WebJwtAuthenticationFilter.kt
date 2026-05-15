@@ -1,5 +1,6 @@
 package com.otoki.powersales.auth.web
 
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.user.entity.ProfileType
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
@@ -35,9 +36,13 @@ class WebJwtAuthenticationFilter(
                     val userId = webJwtService.getUserIdFromToken(token)
                     val username = webJwtService.getUsernameFromToken(token)
                     val employeeNumber = webJwtService.getEmployeeNumberFromToken(token)
+                    val employeeId = webJwtService.getEmployeeIdFromToken(token)
                     val profileType = ProfileType.fromValue(webJwtService.getProfileTypeFromToken(token))
                     val isSalesSupport = webJwtService.getIsSalesSupportFromToken(token)
                     val passwordChangeRequired = webJwtService.getPasswordChangeRequiredFromToken(token)
+                    val role: UserRole? = webJwtService.getRoleFromToken(token)?.let {
+                        runCatching { UserRole.valueOf(it) }.getOrNull()
+                    }
 
                     if (profileType == null) {
                         request.setAttribute("jwt.invalidRole", true)
@@ -47,6 +52,8 @@ class WebJwtAuthenticationFilter(
                             userId = userId,
                             usernameValue = username,
                             employeeNumber = employeeNumber,
+                            employeeId = employeeId,
+                            role = role,
                             profileType = profileType,
                             isSalesSupport = isSalesSupport,
                             passwordChangeRequired = passwordChangeRequired,

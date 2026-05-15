@@ -11,7 +11,7 @@ import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.promotion.service.AdminPromotionConfirmService
 import com.otoki.powersales.promotion.service.AdminPromotionEmployeeService
 import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -27,7 +27,7 @@ class AdminPromotionEmployeeController(
     @GetMapping("/api/v1/admin/promotions/{promotionId}/employees")
     @RequiresPermission(AdminPermission.PROMOTION_READ)
     fun getEmployees(
-        @AuthenticationPrincipal principal: UserPrincipal,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable promotionId: Long
     ): ResponseEntity<ApiResponse<List<PromotionEmployeeListResponse>>> {
         val response = adminPromotionEmployeeService.getEmployees(promotionId)
@@ -37,7 +37,7 @@ class AdminPromotionEmployeeController(
     @GetMapping("/api/v1/admin/promotion-employees/{id}")
     @RequiresPermission(AdminPermission.PROMOTION_READ)
     fun getEmployee(
-        @AuthenticationPrincipal principal: UserPrincipal,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable id: Long
     ): ResponseEntity<ApiResponse<PromotionEmployeeDetailResponse>> {
         val response = adminPromotionEmployeeService.getEmployee(id)
@@ -47,7 +47,7 @@ class AdminPromotionEmployeeController(
     @PostMapping("/api/v1/admin/promotions/{promotionId}/employees")
     @RequiresPermission(AdminPermission.PROMOTION_WRITE)
     fun createEmployee(
-        @AuthenticationPrincipal principal: UserPrincipal,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable promotionId: Long,
         @Valid @RequestBody request: PromotionEmployeeRequest
     ): ResponseEntity<ApiResponse<PromotionEmployeeDetailResponse>> {
@@ -58,29 +58,29 @@ class AdminPromotionEmployeeController(
     @PutMapping("/api/v1/admin/promotions/{promotionId}/employees/batch")
     @RequiresPermission(AdminPermission.PROMOTION_WRITE)
     fun batchUpdateEmployees(
-        @AuthenticationPrincipal principal: UserPrincipal,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable promotionId: Long,
         @Valid @RequestBody request: BatchUpdatePromotionEmployeeRequest
     ): ResponseEntity<ApiResponse<BatchUpdatePromotionEmployeeResponse>> {
-        val response = adminPromotionEmployeeService.batchUpdateEmployees(promotionId, principal.userId, request)
+        val response = adminPromotionEmployeeService.batchUpdateEmployees(promotionId, principal.requireEmployeeId(), request)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
     @PutMapping("/api/v1/admin/promotion-employees/{id}")
     @RequiresPermission(AdminPermission.PROMOTION_WRITE)
     fun updateEmployee(
-        @AuthenticationPrincipal principal: UserPrincipal,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable id: Long,
         @Valid @RequestBody request: PromotionEmployeeRequest
     ): ResponseEntity<ApiResponse<PromotionEmployeeDetailResponse>> {
-        val response = adminPromotionEmployeeService.updateEmployee(id, principal.userId, request)
+        val response = adminPromotionEmployeeService.updateEmployee(id, principal.requireEmployeeId(), request)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
     @DeleteMapping("/api/v1/admin/promotion-employees/{id}")
     @RequiresPermission(AdminPermission.PROMOTION_WRITE)
     fun deleteEmployee(
-        @AuthenticationPrincipal principal: UserPrincipal,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable id: Long
     ): ResponseEntity<ApiResponse<Any?>> {
         adminPromotionEmployeeService.deleteEmployee(id)
@@ -90,7 +90,7 @@ class AdminPromotionEmployeeController(
     @PostMapping("/api/v1/admin/promotions/{promotionId}/confirm")
     @RequiresPermission(AdminPermission.PROMOTION_WRITE)
     fun confirmPromotion(
-        @AuthenticationPrincipal principal: UserPrincipal,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable promotionId: Long
     ): ResponseEntity<ApiResponse<PromotionConfirmResponse>> {
         val response = adminPromotionConfirmService.confirmPromotion(promotionId)

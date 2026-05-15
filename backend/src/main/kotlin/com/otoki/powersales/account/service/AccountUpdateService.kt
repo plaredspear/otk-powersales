@@ -11,7 +11,7 @@ import com.otoki.powersales.account.exception.EmployeeNotFoundException
 import com.otoki.powersales.account.policy.AccountNamePrefix
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.auth.entity.UserRole
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -70,7 +70,7 @@ class AccountUpdateService(
     @Transactional
     fun update(
         id: Int,
-        principal: UserPrincipal,
+        principal: WebUserPrincipal,
         request: AdminAccountUpdateRequest
     ): AdminAccountUpdateResponse {
         val account = accountRepository.findActiveById(id)
@@ -83,7 +83,7 @@ class AccountUpdateService(
         return AdminAccountUpdateResponse.from(account)
     }
 
-    private fun validateAndApplyName(account: Account, requestName: String?, principal: UserPrincipal) {
+    private fun validateAndApplyName(account: Account, requestName: String?, principal: WebUserPrincipal) {
         if (requestName == null) return // PUT 부분 갱신 — 미포함 시 검증/갱신 skip
 
         val name = requestName.trim()

@@ -1,7 +1,7 @@
 package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.education.dto.response.AdminEducationListResponse
 import com.otoki.powersales.education.dto.response.EducationCategoryResponse
 import com.otoki.powersales.education.dto.response.EducationMutationResponse
@@ -40,13 +40,13 @@ class AdminEducationController(
 
     @PostMapping("/posts")
     fun createPost(
-        @AuthenticationPrincipal principal: UserPrincipal,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @RequestParam title: String,
         @RequestParam content: String,
         @RequestParam category: String,
         @RequestParam(required = false) files: List<MultipartFile>?
     ): ResponseEntity<ApiResponse<EducationMutationResponse>> {
-        val response = educationService.createPost(principal.userId, title, content, category, files)
+        val response = educationService.createPost(principal.requireEmployeeId(), title, content, category, files)
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response))
     }
 

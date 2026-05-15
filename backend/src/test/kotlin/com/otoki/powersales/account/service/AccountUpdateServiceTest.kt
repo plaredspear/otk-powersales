@@ -9,8 +9,9 @@ import com.otoki.powersales.account.exception.AccountNotFoundException
 import com.otoki.powersales.account.exception.EmployeeNotFoundException
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.auth.entity.UserRole
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.user.entity.ProfileType
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -45,8 +46,22 @@ class AccountUpdateServiceTest {
     private lateinit var service: AccountUpdateService
 
     private val accountId = 1234
-    private val branchManagerPrincipal = UserPrincipal(userId = 1L, role = UserRole.BRANCH_MANAGER)
-    private val systemAdminPrincipal = UserPrincipal(userId = 9L, role = UserRole.SYSTEM_ADMIN)
+    private fun webPrincipal(userId: Long, role: UserRole) = WebUserPrincipal(
+        userId = userId,
+        usernameValue = "u$userId@otokims.co.kr",
+        employeeNumber = "S$userId",
+        employeeId = userId,
+        role = role,
+        profileType = ProfileType.STAFF,
+        isSalesSupport = false,
+        passwordChangeRequired = false,
+        encodedPassword = "",
+        grantedAuthorities = emptyList(),
+        active = true
+    )
+
+    private val branchManagerPrincipal = webPrincipal(1L, UserRole.BRANCH_MANAGER)
+    private val systemAdminPrincipal = webPrincipal(9L, UserRole.SYSTEM_ADMIN)
 
     private fun nativeAccount(
         id: Int = accountId,

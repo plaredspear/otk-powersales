@@ -9,7 +9,7 @@ import com.otoki.powersales.employee.dto.response.ResetPasswordResponse
 import com.otoki.powersales.employee.service.AdminEmployeeCredentialService
 import com.otoki.powersales.employee.service.AdminEmployeeService
 import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.auth.web.WebUserPrincipal
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
@@ -29,7 +29,7 @@ class AdminEmployeeController(
     @GetMapping
     @RequiresPermission(AdminPermission.EMPLOYEE_READ)
     fun getEmployees(
-        @AuthenticationPrincipal principal: UserPrincipal,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @RequestParam(required = false) status: String?,
         @RequestParam(required = false) costCenterCode: String?,
         @RequestParam(required = false) keyword: String?,

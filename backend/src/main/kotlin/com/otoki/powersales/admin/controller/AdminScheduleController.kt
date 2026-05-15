@@ -11,7 +11,7 @@ import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.schedule.service.AdminScheduleService
 import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
 import org.springframework.data.domain.Page
 import org.springframework.http.HttpHeaders
@@ -67,19 +67,19 @@ class AdminScheduleController(
     @RequiresPermission(AdminPermission.SCHEDULE_WRITE)
     @DeleteMapping("/{id}")
     fun deleteSchedule(
-        @AuthenticationPrincipal principal: UserPrincipal,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable id: Long
     ): ResponseEntity<ApiResponse<Any?>> {
-        adminScheduleService.deleteSchedule(principal.userId, id)
+        adminScheduleService.deleteSchedule(principal.requireEmployeeId(), id)
         return ResponseEntity.ok(ApiResponse.success(null as Any?, "스케줄이 삭제되었습니다"))
     }
 
     @RequiresPermission(AdminPermission.SCHEDULE_READ)
     @GetMapping("/template")
     fun downloadTemplate(
-        @AuthenticationPrincipal principal: UserPrincipal
+        @AuthenticationPrincipal principal: WebUserPrincipal
     ): ResponseEntity<ByteArray> {
-        val result = adminScheduleService.generateTemplate(principal.userId)
+        val result = adminScheduleService.generateTemplate(principal.requireEmployeeId())
 
         val headers = HttpHeaders()
         headers.contentType = MediaType.parseMediaType(

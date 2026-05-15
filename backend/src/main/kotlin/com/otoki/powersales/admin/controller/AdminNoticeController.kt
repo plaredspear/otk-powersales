@@ -9,7 +9,7 @@ import com.otoki.powersales.notice.dto.response.NoticeMutationResponse
 import com.otoki.powersales.notice.dto.response.NoticePostDetailResponse
 import com.otoki.powersales.notice.dto.response.NoticePostListResponse
 import com.otoki.powersales.notice.exception.InvalidNoticeIdException
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.notice.service.NoticeService
 import jakarta.validation.Valid
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -52,10 +52,10 @@ class AdminNoticeController(
 
     @PostMapping
     fun createNotice(
-        @AuthenticationPrincipal principal: UserPrincipal,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @Valid @RequestBody request: NoticeCreateRequest
     ): ResponseEntity<ApiResponse<NoticeMutationResponse>> {
-        val response = noticeService.createNotice(request, principal.userId)
+        val response = noticeService.createNotice(request, principal.requireEmployeeId())
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response))
     }
 

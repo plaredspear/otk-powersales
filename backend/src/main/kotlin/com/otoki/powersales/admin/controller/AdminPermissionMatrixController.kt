@@ -7,7 +7,7 @@ import com.otoki.powersales.admin.service.AdminEmployeePermissionService
 import com.otoki.powersales.admin.service.AdminPermissionMatrixService
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -22,9 +22,9 @@ class AdminPermissionMatrixController(
 
     @GetMapping("/matrix")
     fun getMatrix(
-        @AuthenticationPrincipal principal: UserPrincipal
+        @AuthenticationPrincipal principal: WebUserPrincipal
     ): ResponseEntity<ApiResponse<PermissionMatrixResponse>> {
-        val response = adminPermissionMatrixService.getMatrix(principal.userId)
+        val response = adminPermissionMatrixService.getMatrix(principal.requireEmployeeId())
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 

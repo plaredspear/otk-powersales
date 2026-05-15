@@ -7,7 +7,7 @@ import com.otoki.powersales.agreement.dto.response.AdminAgreementWordActiveRespo
 import com.otoki.powersales.agreement.dto.response.AdminAgreementWordCreateResponse
 import com.otoki.powersales.agreement.service.AdminAgreementWordService
 import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -29,7 +29,7 @@ class AdminAgreementWordController(
     @PostMapping
     @RequiresPermission(AdminPermission.AGREEMENT_WRITE)
     fun createAgreementWord(
-        @AuthenticationPrincipal principal: UserPrincipal,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @Valid @RequestBody request: AdminAgreementWordCreateRequest
     ): ResponseEntity<ApiResponse<AdminAgreementWordCreateResponse>> {
         val response = adminAgreementWordService.createAgreementWord(request)
@@ -40,7 +40,7 @@ class AdminAgreementWordController(
     @GetMapping("/active")
     @RequiresPermission(AdminPermission.AGREEMENT_READ)
     fun getActiveAgreementWord(
-        @AuthenticationPrincipal principal: UserPrincipal
+        @AuthenticationPrincipal principal: WebUserPrincipal
     ): ResponseEntity<ApiResponse<AdminAgreementWordActiveResponse?>> {
         val response = adminAgreementWordService.getActiveAgreementWord()
         val message = if (response == null) "활성 약관 없음" else null

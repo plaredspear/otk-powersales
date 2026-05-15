@@ -9,7 +9,8 @@ import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.auth.web.WebUserPrincipal
+import com.otoki.powersales.user.entity.ProfileType
 import com.otoki.powersales.auth.entity.UserRole
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -45,7 +46,19 @@ class AdminSafetyCheckControllerTest {
 
     @BeforeEach
     fun setUp() {
-        val principal = UserPrincipal(userId = 1L, role = UserRole.LEADER)
+        val principal = WebUserPrincipal(
+            userId = 100L,
+            usernameValue = "test@otokims.co.kr",
+            employeeNumber = "S001",
+            employeeId = 1L,
+            role = UserRole.LEADER,
+            profileType = ProfileType.STAFF,
+            isSalesSupport = false,
+            passwordChangeRequired = false,
+            encodedPassword = "",
+            grantedAuthorities = emptyList(),
+            active = true
+        )
         SecurityContextHolder.getContext().authentication =
             UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
     }
