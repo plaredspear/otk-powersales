@@ -12,7 +12,7 @@
 --
 -- application 코드 영향 (본 PR 동반):
 -- - Account.kt FK 타입 Employee? → User?
--- - AccountUpsertService: employeeByCode 존재 검증 유지 + userByEmployeeCode 추가 매칭
+-- - AccountUpsertService: employeeByCode 존재 검증 유지 + userByEmployeeNumber 추가 매칭
 -- - AccountUpsertMapper: matchedEmployee → matchedUser 시그니처
 -- - EmployeeUpsertService: Employee 신규 생성 시 같은 Transaction 으로 User 도 생성 (invariant 보장)
 
