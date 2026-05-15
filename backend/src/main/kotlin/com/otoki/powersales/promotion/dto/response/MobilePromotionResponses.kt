@@ -15,7 +15,7 @@ data class MobilePromotionListResponse(
 data class MobilePromotionListItem(
     val id: Long,
     val promotionNumber: String,
-    val promotionTypeName: String?,
+    val promotionType: String?,
     val accountName: String?,
     val startDate: LocalDate,
     val endDate: LocalDate,
@@ -27,12 +27,11 @@ data class MobilePromotionListItem(
         fun from(
             promotion: Promotion,
             accountName: String?,
-            promotionTypeName: String?,
             myScheduleDate: LocalDate?
         ): MobilePromotionListItem = MobilePromotionListItem(
             id = promotion.id,
             promotionNumber = promotion.promotionNumber,
-            promotionTypeName = promotionTypeName,
+            promotionType = promotion.promotionType?.displayName,
             accountName = accountName,
             startDate = promotion.startDate,
             endDate = promotion.endDate,
@@ -46,7 +45,7 @@ data class MobilePromotionListItem(
 data class MobilePromotionDetailResponse(
     val id: Long,
     val promotionNumber: String,
-    val promotionTypeName: String?,
+    val promotionType: String?,
     val accountId: Int,
     val accountName: String?,
     val startDate: LocalDate,
@@ -65,12 +64,11 @@ data class MobilePromotionDetailResponse(
             promotion: Promotion,
             accountName: String?,
             primaryProductName: String?,
-            promotionTypeName: String?,
             employees: List<MobilePromotionEmployeeItem>
         ): MobilePromotionDetailResponse = MobilePromotionDetailResponse(
             id = promotion.id,
             promotionNumber = promotion.promotionNumber,
-            promotionTypeName = promotionTypeName,
+            promotionType = promotion.promotionType?.displayName,
             accountId = promotion.account.id,
             accountName = accountName,
             startDate = promotion.startDate,

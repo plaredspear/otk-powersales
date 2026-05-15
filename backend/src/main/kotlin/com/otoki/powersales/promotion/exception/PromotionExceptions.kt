@@ -45,24 +45,6 @@ class PromotionInvalidParameterException : BusinessException(
     httpStatus = HttpStatus.BAD_REQUEST
 )
 
-class PromotionTypeDuplicateException : BusinessException(
-    errorCode = "PROMOTION_TYPE_DUPLICATE",
-    message = "이미 존재하는 행사유형입니다",
-    httpStatus = HttpStatus.CONFLICT
-)
-
-class PromotionTypeNotFoundException : BusinessException(
-    errorCode = "NOT_FOUND",
-    message = "행사유형을 찾을 수 없습니다",
-    httpStatus = HttpStatus.NOT_FOUND
-)
-
-class InvalidPromotionTypeException : BusinessException(
-    errorCode = "INVALID_PROMOTION_TYPE",
-    message = "유효하지 않은 행사유형입니다",
-    httpStatus = HttpStatus.BAD_REQUEST
-)
-
 class InvalidStandLocationException : BusinessException(
     errorCode = "INVALID_STAND_LOCATION",
     message = "유효하지 않은 매대위치입니다",

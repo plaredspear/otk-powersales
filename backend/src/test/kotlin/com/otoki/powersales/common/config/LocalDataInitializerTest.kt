@@ -10,7 +10,6 @@ import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.organization.entity.Organization
 import com.otoki.powersales.organization.repository.OrganizationRepository
-import com.otoki.powersales.promotion.repository.PromotionTypeRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -55,9 +54,6 @@ class LocalDataInitializerTest {
 
     @Mock
     private lateinit var organizationRepository: OrganizationRepository
-
-    @Mock
-    private lateinit var promotionTypeRepository: PromotionTypeRepository
 
     @Mock
     private lateinit var transactionTemplate: TransactionTemplate
@@ -128,7 +124,6 @@ class LocalDataInitializerTest {
             .thenReturn(Optional.of(AgreementWord(name = "AGR-STUB-001")))
         whenever(organizationRepository.count()).thenReturn(1L)
         stubAllAccountsExist()
-        whenever(promotionTypeRepository.count()).thenReturn(1L)
     }
 
     private fun captureAllSavedEmployees(): List<Employee> {

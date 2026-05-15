@@ -9,8 +9,10 @@ import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.employee.entity.Group
 import com.otoki.powersales.product.entity.Product
 import com.otoki.powersales.promotion.entity.converter.ProductTemperatureTypeConverter
+import com.otoki.powersales.promotion.entity.converter.PromotionTypeConverter
 import com.otoki.powersales.promotion.entity.converter.StandLocationConverter
 import com.otoki.powersales.promotion.enums.ProductTemperatureType
+import com.otoki.powersales.promotion.enums.PromotionType
 import com.otoki.powersales.promotion.enums.StandLocation
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
@@ -38,8 +40,9 @@ class Promotion(
 
     @SFField("DKRetail__PromotionType__c")
     @HCColumn("dkretail__promotiontype__c")
-    @Column(name = "promotion_type_id")
-    var promotionTypeId: Long? = null,
+    @Column(name = "promotion_type", length = 255)
+    @Convert(converter = PromotionTypeConverter::class)
+    var promotionType: PromotionType? = null,
 
     @SFField("AccId__c")
     @HCColumn("accid__c")
@@ -153,15 +156,11 @@ class Promotion(
 ) : BaseEntity() {
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "promotion_type_id", insertable = false, updatable = false)
-    var promotionType: PromotionType? = null
-
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "primary_product_id", insertable = false, updatable = false)
     var primaryProduct: Product? = null
 
     fun update(
-        promotionTypeId: Long?,
+        promotionType: PromotionType?,
         account: Account,
         startDate: LocalDate,
         endDate: LocalDate,
@@ -172,7 +171,7 @@ class Promotion(
         productType: ProductTemperatureType?,
         remark: String?
     ) {
-        this.promotionTypeId = promotionTypeId
+        this.promotionType = promotionType
         this.account = account
         this.startDate = startDate
         this.endDate = endDate

@@ -6,7 +6,7 @@ data class PromotionFormMetaResponse(
 )
 
 data class PromotionTypeOption(
-    val id: Long,
+    val value: String,
     val name: String
 )
 

@@ -1,6 +1,7 @@
 package com.otoki.powersales.promotion.repository
 
 import com.otoki.powersales.promotion.entity.Promotion
+import com.otoki.powersales.promotion.enums.PromotionType
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 
@@ -10,7 +11,7 @@ interface PromotionRepositoryCustom {
 
     fun searchForAdmin(
         keyword: String?,
-        promotionTypeId: Long?,
+        promotionType: PromotionType?,
         startDate: String?,
         endDate: String?,
         branchCodes: List<String>?,

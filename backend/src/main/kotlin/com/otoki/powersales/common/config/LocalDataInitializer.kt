@@ -10,8 +10,6 @@ import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.organization.entity.Organization
 import com.otoki.powersales.organization.repository.OrganizationRepository
-import com.otoki.powersales.promotion.entity.PromotionType
-import com.otoki.powersales.promotion.repository.PromotionTypeRepository
 import jakarta.persistence.EntityManager
 import org.slf4j.LoggerFactory
 import org.springframework.boot.ApplicationArguments
@@ -30,7 +28,6 @@ class LocalDataInitializer(
     private val agreementWordRepository: AgreementWordRepository,
     private val accountRepository: AccountRepository,
     private val organizationRepository: OrganizationRepository,
-    private val promotionTypeRepository: PromotionTypeRepository,
     private val transactionTemplate: TransactionTemplate,
     private val entityManager: EntityManager,
 ) : ApplicationRunner {
@@ -43,7 +40,6 @@ class LocalDataInitializer(
         runSafely("seedAgreementWord") { seedAgreementWord() }
         runSafely("seedOrg") { seedOrg() }
         runSafely("seedAccount") { seedAccount() }
-        runSafely("seedPromotionType") { seedPromotionType() }
     }
 
     private fun runSafely(name: String, block: () -> Unit) {
@@ -239,17 +235,4 @@ class LocalDataInitializer(
         }
     }
 
-    private fun seedPromotionType() {
-        if (promotionTypeRepository.count() > 0) {
-            log.info("행사유형이 이미 존재합니다 — skip")
-            return
-        }
-
-        val types = listOf(
-            PromotionType(name = "시식", displayOrder = 1)
-        )
-
-        promotionTypeRepository.saveAll(types)
-        log.info("행사유형 시드 데이터 생성 완료: {}건", types.size)
-    }
 }

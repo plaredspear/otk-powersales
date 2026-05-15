@@ -66,7 +66,7 @@ class PromotionSFAnnotationTest {
         @DisplayName("도메인 12개 SF API Name → 컬럼명 1:1")
         fun domainMappingValues() {
             assertThat(mapping["Name"]).isEqualTo("promotion_number")
-            assertThat(mapping["DKRetail__PromotionType__c"]).isEqualTo("promotion_type_id")
+            assertThat(mapping["DKRetail__PromotionType__c"]).isEqualTo("promotion_type")
             assertThat(mapping["AccId__c"]).isEqualTo("account_sfid")
             assertThat(mapping["DKRetail__StartDate__c"]).isEqualTo("start_date")
             assertThat(mapping["DKRetail__EndDate__c"]).isEqualTo("end_date")

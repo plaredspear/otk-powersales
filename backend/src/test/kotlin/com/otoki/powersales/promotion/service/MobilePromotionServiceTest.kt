@@ -5,14 +5,13 @@ import com.otoki.powersales.common.enums.WorkingType
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.entity.PromotionEmployee
-import com.otoki.powersales.promotion.entity.PromotionType
+import com.otoki.powersales.promotion.enums.PromotionType
 import com.otoki.powersales.promotion.enums.StandLocation
 import com.otoki.powersales.promotion.exception.PromotionForbiddenException
 import com.otoki.powersales.promotion.exception.PromotionInvalidParameterException
 import com.otoki.powersales.promotion.exception.PromotionNotFoundException
 import com.otoki.powersales.promotion.repository.PromotionEmployeeRepository
 import com.otoki.powersales.promotion.repository.PromotionRepository
-import com.otoki.powersales.promotion.repository.PromotionTypeRepository
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.product.entity.Product
 import com.otoki.powersales.employee.entity.Employee
@@ -43,9 +42,6 @@ class MobilePromotionServiceTest {
 
     @Mock
     private lateinit var promotionEmployeeRepository: PromotionEmployeeRepository
-
-    @Mock
-    private lateinit var promotionTypeRepository: PromotionTypeRepository
 
     @Mock
     private lateinit var accountRepository: AccountRepository
@@ -82,7 +78,7 @@ class MobilePromotionServiceTest {
     private fun createPromotion(
         id: Long = 1L,
         promotionNumber: String = "PM00000001",
-        promotionTypeId: Long? = 1L,
+        promotionType: PromotionType? = PromotionType.SAMPLING,
         account: Account = createAccount(),
         startDate: LocalDate = LocalDate.of(2026, 3, 1),
         endDate: LocalDate = LocalDate.of(2026, 3, 15),
@@ -97,7 +93,7 @@ class MobilePromotionServiceTest {
     ): Promotion = Promotion(
         id = id,
         promotionNumber = promotionNumber,
-        promotionTypeId = promotionTypeId,
+        promotionType = promotionType,
         account = account,
         startDate = startDate,
         endDate = endDate,
@@ -149,18 +145,6 @@ class MobilePromotionServiceTest {
         name = name
     )
 
-    private fun createPromotionType(
-        id: Long = 1L,
-        name: String = "시식",
-        displayOrder: Int = 1,
-        isActive: Boolean = true
-    ): PromotionType = PromotionType(
-        id = id,
-        name = name,
-        displayOrder = displayOrder,
-        isActive = isActive
-    )
-
     // ========== getPromotions ==========
 
     @Nested
@@ -172,9 +156,8 @@ class MobilePromotionServiceTest {
         fun getPromotions_leader_returnsPromotionsWithNullMyScheduleDate() {
             // Given
             val leader = createEmployee(id = 10L, employeeCode = "20030001", role = UserRole.LEADER, costCenterCode = "1234")
-            val promotion = createPromotion(id = 1L, account = createAccount(id = 100), promotionTypeId = 1L)
+            val promotion = createPromotion(id = 1L, account = createAccount(id = 100), promotionType = PromotionType.SAMPLING)
             val account = createAccount(id = 100, name = "이마트 성수점")
-            val promotionType = createPromotionType(id = 1L, name = "시식")
             val pageable = PageRequest.of(0, 20)
             val page = PageImpl(listOf(promotion), pageable, 1)
 
@@ -189,7 +172,6 @@ class MobilePromotionServiceTest {
                 pageable = any()
             )).thenReturn(page)
             whenever(accountRepository.findByIdIn(listOf(100))).thenReturn(listOf(account))
-            whenever(promotionTypeRepository.findAllById(listOf(1L))).thenReturn(listOf(promotionType))
 
             // When
             val result = service.getPromotions(userId = 10L, startDate = null, endDate = null, keyword = null, page = 0, size = 20)
@@ -198,7 +180,7 @@ class MobilePromotionServiceTest {
             assertThat(result.content).hasSize(1)
             assertThat(result.content[0].id).isEqualTo(1L)
             assertThat(result.content[0].accountName).isEqualTo("이마트 성수점")
-            assertThat(result.content[0].promotionTypeName).isEqualTo("시식")
+            assertThat(result.content[0].promotionType).isEqualTo("시식")
             assertThat(result.content[0].myScheduleDate).isNull()
             assertThat(result.totalElements).isEqualTo(1)
             assertThat(result.totalPages).isEqualTo(1)
@@ -211,9 +193,8 @@ class MobilePromotionServiceTest {
         fun getPromotions_woman_returnsPromotionsWithMyScheduleDate() {
             // Given
             val woman = createEmployee(id = 20L, employeeCode = "20030002", role = UserRole.WOMAN, costCenterCode = "1234")
-            val promotion = createPromotion(id = 1L, account = createAccount(id = 100), promotionTypeId = 1L)
+            val promotion = createPromotion(id = 1L, account = createAccount(id = 100), promotionType = PromotionType.SAMPLING)
             val account = createAccount(id = 100)
-            val promotionType = createPromotionType(id = 1L)
             val pageable = PageRequest.of(0, 20)
             val page = PageImpl(listOf(promotion), pageable, 1)
             val myScheduleDate = LocalDate.of(2026, 3, 5)
@@ -229,7 +210,6 @@ class MobilePromotionServiceTest {
                 pageable = any()
             )).thenReturn(page)
             whenever(accountRepository.findByIdIn(listOf(100))).thenReturn(listOf(account))
-            whenever(promotionTypeRepository.findAllById(listOf(1L))).thenReturn(listOf(promotionType))
             whenever(promotionEmployeeRepository.findMinScheduleDateByPromotionIdAndEmployeeId(1L, 20L))
                 .thenReturn(myScheduleDate)
 
@@ -383,11 +363,10 @@ class MobilePromotionServiceTest {
                 id = 1L,
                 costCenterCode = "1234",
                 account = account,
-                promotionTypeId = 1L,
+                promotionType = PromotionType.SAMPLING,
                 primaryProductId = 5L
             )
             val product = createProduct(id = 5L, name = "진라면")
-            val promotionType = createPromotionType(id = 1L, name = "시식")
             val employee1 = createPromotionEmployee(
                 id = 10L,
                 promotionId = 1L,
@@ -406,7 +385,6 @@ class MobilePromotionServiceTest {
             whenever(employeeRepository.findById(10L)).thenReturn(Optional.of(leader))
             whenever(promotionRepository.findById(1L)).thenReturn(Optional.of(promotion))
             whenever(productRepository.findById(5L)).thenReturn(Optional.of(product))
-            whenever(promotionTypeRepository.findById(1L)).thenReturn(Optional.of(promotionType))
             employee1.employee = empUser1
             employee2.employee = empUser2
             whenever(promotionEmployeeRepository.findWithEmployeeByPromotionId(1L))
@@ -419,7 +397,7 @@ class MobilePromotionServiceTest {
             assertThat(result.id).isEqualTo(1L)
             assertThat(result.accountName).isEqualTo("이마트 성수점")
             assertThat(result.primaryProductName).isEqualTo("진라면")
-            assertThat(result.promotionTypeName).isEqualTo("시식")
+            assertThat(result.promotionType).isEqualTo("시식")
             assertThat(result.employees).hasSize(2)
             assertThat(result.employees[0].employeeName).isEqualTo("김영희")
             assertThat(result.employees[1].employeeName).isEqualTo("이수진")

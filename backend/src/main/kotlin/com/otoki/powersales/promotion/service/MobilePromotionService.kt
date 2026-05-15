@@ -7,7 +7,6 @@ import com.otoki.powersales.promotion.exception.PromotionInvalidParameterExcepti
 import com.otoki.powersales.promotion.exception.PromotionNotFoundException
 import com.otoki.powersales.promotion.repository.PromotionEmployeeRepository
 import com.otoki.powersales.promotion.repository.PromotionRepository
-import com.otoki.powersales.promotion.repository.PromotionTypeRepository
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.product.repository.ProductRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
@@ -22,7 +21,6 @@ import java.time.format.DateTimeParseException
 class MobilePromotionService(
     private val promotionRepository: PromotionRepository,
     private val promotionEmployeeRepository: PromotionEmployeeRepository,
-    private val promotionTypeRepository: PromotionTypeRepository,
     private val accountRepository: AccountRepository,
     private val productRepository: ProductRepository,
     private val employeeRepository: EmployeeRepository
@@ -63,15 +61,9 @@ class MobilePromotionService(
             accountRepository.findByIdIn(accountIds).associateBy { it.id }
         } else emptyMap()
 
-        val typeIds = promotionPage.content.mapNotNull { it.promotionTypeId }.distinct()
-        val typeMap = if (typeIds.isNotEmpty()) {
-            promotionTypeRepository.findAllById(typeIds).associateBy { it.id }
-        } else emptyMap()
-
         return MobilePromotionListResponse(
             content = promotionPage.content.map { promotion ->
                 val accountName = accountMap[promotion.account.id]?.name
-                val typeName = promotion.promotionTypeId?.let { typeMap[it]?.name }
                 val myScheduleDate = if (isWoman) {
                     promotionEmployeeRepository.findMinScheduleDateByPromotionIdAndEmployeeId(
                         promotion.id, employee.id
@@ -81,7 +73,6 @@ class MobilePromotionService(
                 MobilePromotionListItem.from(
                     promotion = promotion,
                     accountName = accountName,
-                    promotionTypeName = typeName,
                     myScheduleDate = myScheduleDate
                 )
             },
@@ -115,9 +106,6 @@ class MobilePromotionService(
 
         val account = promotion.account
         val product = promotion.primaryProductId?.let { productRepository.findById(it).orElse(null) }
-        val typeName = promotion.promotionTypeId?.let {
-            promotionTypeRepository.findById(it).orElse(null)?.name
-        }
 
         // 조원 목록 + 사원명 매핑 (fetchJoin으로 N+1 방지)
         val employees = promotionEmployeeRepository.findWithEmployeeByPromotionId(promotionId)
@@ -130,7 +118,6 @@ class MobilePromotionService(
             promotion = promotion,
             accountName = account?.name,
             primaryProductName = product?.name,
-            promotionTypeName = typeName,
             employees = employeeItems
         )
     }

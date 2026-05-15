@@ -38,7 +38,7 @@ class AdminPromotionController(
     fun getPromotions(
         @AuthenticationPrincipal principal: UserPrincipal,
         @RequestParam(required = false) @Size(min = 1, max = 100) keyword: String?,
-        @RequestParam(required = false) promotionTypeId: Long?,
+        @RequestParam(required = false) promotionType: String?,
         @RequestParam(required = false) startDate: String?,
         @RequestParam(required = false) endDate: String?,
         @RequestParam(required = false, defaultValue = "0") @Min(0) page: Int,
@@ -46,7 +46,7 @@ class AdminPromotionController(
     ): ResponseEntity<ApiResponse<PromotionListResponse>> {
         val response = adminPromotionService.getPromotions(
             keyword = keyword,
-            promotionTypeId = promotionTypeId,
+            promotionType = promotionType,
             startDate = startDate,
             endDate = endDate,
             page = page,

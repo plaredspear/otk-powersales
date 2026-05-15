@@ -9,12 +9,11 @@ import com.otoki.powersales.admin.scope.DataScopeHolder
 import com.otoki.powersales.promotion.dto.request.PromotionCreateRequest
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.entity.PromotionEmployee
-import com.otoki.powersales.promotion.entity.PromotionType
+import com.otoki.powersales.promotion.enums.PromotionType
 import com.otoki.powersales.promotion.enums.StandLocation
 import com.otoki.powersales.promotion.exception.*
 import com.otoki.powersales.promotion.repository.PromotionEmployeeRepository
 import com.otoki.powersales.promotion.repository.PromotionRepository
-import com.otoki.powersales.promotion.repository.PromotionTypeRepository
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.product.entity.Product
 import com.otoki.powersales.employee.entity.Employee
@@ -44,7 +43,6 @@ import java.util.*
 class AdminPromotionServiceTest {
 
     @Mock private lateinit var promotionRepository: PromotionRepository
-    @Mock private lateinit var promotionTypeRepository: PromotionTypeRepository
     @Mock private lateinit var promotionEmployeeRepository: PromotionEmployeeRepository
     @Mock private lateinit var accountRepository: AccountRepository
     @Mock private lateinit var productRepository: ProductRepository
@@ -61,19 +59,15 @@ class AdminPromotionServiceTest {
     inner class GetPromotionFormMetaTests {
 
         @Test
-        @DisplayName("정상 조회 - 활성 행사유형 + 매대위치 Enum 반환")
+        @DisplayName("정상 조회 - PromotionType enum 3개 + StandLocation enum 6개 반환")
         fun getPromotionFormMeta_success() {
-            val types = listOf(
-                createPromotionType(id = 1L, name = "시식", displayOrder = 1),
-                createPromotionType(id = 2L, name = "시음", displayOrder = 2)
-            )
-            whenever(promotionTypeRepository.findByIsActiveTrueOrderByDisplayOrderAsc()).thenReturn(types)
-
             val result = adminPromotionService.getPromotionFormMeta()
 
-            assertThat(result.promotionTypes).hasSize(2)
-            assertThat(result.promotionTypes[0].id).isEqualTo(1L)
+            assertThat(result.promotionTypes).hasSize(3)
+            assertThat(result.promotionTypes[0].value).isEqualTo("SAMPLING")
             assertThat(result.promotionTypes[0].name).isEqualTo("시식")
+            assertThat(result.promotionTypes[2].value).isEqualTo("COLLECTION")
+            assertThat(result.promotionTypes[2].name).isEqualTo("모음전")
 
             assertThat(result.standLocations).hasSize(6)
             assertThat(result.standLocations[0].value).isEqualTo("FROZEN_EVENT")
@@ -93,26 +87,25 @@ class AdminPromotionServiceTest {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
-            val promotion = createPromotion(promotionTypeId = 1L).apply {
+            val promotion = createPromotion(promotionType = PromotionType.SAMPLING).apply {
                 account = createAccount()
-                promotionType = createPromotionType()
             }
             val pageable = PageRequest.of(0, 20, Sort.by("createdAt").descending())
             val page = PageImpl(listOf(promotion), pageable, 1)
             whenever(promotionRepository.searchForAdmin(
-                keyword = null, promotionTypeId = null,
+                keyword = null, promotionType = null,
                 startDate = null, endDate = null, branchCodes = null, pageable = pageable
             )).thenReturn(page)
 
             val result = adminPromotionService.getPromotions(
-                keyword = null, promotionTypeId = null,
+                keyword = null, promotionType = null,
                 startDate = null, endDate = null, page = 0, size = 20
             )
 
             assertThat(result.content).hasSize(1)
             assertThat(result.content[0].promotionNumber).isEqualTo("PM00000001")
             assertThat(result.content[0].accountName).isEqualTo("GS25 역삼점")
-            assertThat(result.content[0].promotionTypeName).isEqualTo("시식")
+            assertThat(result.content[0].promotionType).isEqualTo("시식")
             assertThat(result.totalElements).isEqualTo(1)
         }
 
@@ -123,7 +116,7 @@ class AdminPromotionServiceTest {
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
             val result = adminPromotionService.getPromotions(
-                keyword = null, promotionTypeId = null,
+                keyword = null, promotionType = null,
                 startDate = null, endDate = null, page = 0, size = 20
             )
 
@@ -142,10 +135,9 @@ class AdminPromotionServiceTest {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
-            val promotion = createPromotion(promotionTypeId = 1L).apply {
+            val promotion = createPromotion(promotionType = PromotionType.SAMPLING).apply {
                 account = createAccount()
                 primaryProduct = createProduct()
-                promotionType = createPromotionType()
             }
             whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
 
@@ -154,7 +146,7 @@ class AdminPromotionServiceTest {
             assertThat(result.promotionNumber).isEqualTo("PM00000001")
             assertThat(result.accountName).isEqualTo("GS25 역삼점")
             assertThat(result.primaryProductName).isEqualTo("진라면 매운맛 120g")
-            assertThat(result.promotionTypeName).isEqualTo("시식")
+            assertThat(result.promotionType).isEqualTo("시식")
         }
 
         @Test
@@ -202,15 +194,13 @@ class AdminPromotionServiceTest {
     inner class CreatePromotionTests {
 
         @Test
-        @DisplayName("정상 생성 - 대표제품 지정 -> promotion_name 자동 설정")
+        @DisplayName("정상 생성 - 대표제품 지정")
         fun createPromotion_success() {
-            val request = createRequest(promotionTypeId = 1L)
+            val request = createRequest(promotionType = "시식")
             val account = createAccount()
             val product = createProduct(name = "꿀배청 680G")
             val employee = createEmployee(costCenterCode = "1101")
-            val promotionType = createPromotionType()
 
-            whenever(promotionTypeRepository.findById(1L)).thenReturn(Optional.of(promotionType))
             whenever(accountRepository.findById(100)).thenReturn(Optional.of(account))
             whenever(productRepository.findById(200L)).thenReturn(Optional.of(product))
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
@@ -222,20 +212,18 @@ class AdminPromotionServiceTest {
 
             assertThat(result.promotionNumber).isEqualTo("PM00000001")
             assertThat(result.costCenterCode).isEqualTo("1101")
-            assertThat(result.promotionTypeName).isEqualTo("시식")
+            assertThat(result.promotionType).isEqualTo("시식")
 
         }
 
         @Test
         @DisplayName("거래처 branchName null -> 정상 생성")
         fun createPromotion_nullBranchName() {
-            val request = createRequest(promotionTypeId = 1L)
+            val request = createRequest(promotionType = "시식")
             val account = createAccount(branchName = null)
             val product = createProduct(name = "진라면")
             val employee = createEmployee(costCenterCode = "1101")
-            val promotionType = createPromotionType()
 
-            whenever(promotionTypeRepository.findById(1L)).thenReturn(Optional.of(promotionType))
             whenever(accountRepository.findById(100)).thenReturn(Optional.of(account))
             whenever(productRepository.findById(200L)).thenReturn(Optional.of(product))
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
@@ -294,24 +282,12 @@ class AdminPromotionServiceTest {
         }
 
         @Test
-        @DisplayName("미존재 행사유형 - promotionTypeId=999 -> InvalidPromotionTypeException")
+        @DisplayName("유효하지 않은 행사유형 - promotionType='없는유형' -> PromotionInvalidParameterException")
         fun createPromotion_invalidPromotionType() {
-            val request = createRequest(promotionTypeId = 999L)
-            whenever(promotionTypeRepository.findById(999L)).thenReturn(Optional.empty())
+            val request = createRequest(promotionType = "없는유형")
 
             assertThatThrownBy { adminPromotionService.createPromotion(userId, request) }
-                .isInstanceOf(InvalidPromotionTypeException::class.java)
-        }
-
-        @Test
-        @DisplayName("비활성 행사유형 -> InvalidPromotionTypeException")
-        fun createPromotion_inactivePromotionType() {
-            val request = createRequest(promotionTypeId = 5L)
-            val inactiveType = createPromotionType(id = 5L, name = "기타", isActive = false)
-            whenever(promotionTypeRepository.findById(5L)).thenReturn(Optional.of(inactiveType))
-
-            assertThatThrownBy { adminPromotionService.createPromotion(userId, request) }
-                .isInstanceOf(InvalidPromotionTypeException::class.java)
+                .isInstanceOf(PromotionInvalidParameterException::class.java)
         }
 
         @Test
@@ -355,13 +331,11 @@ class AdminPromotionServiceTest {
         @Test
         @DisplayName("기타상품 null -> 정상 생성")
         fun createPromotion_nullOtherProduct() {
-            val request = createRequest(otherProduct = null, promotionTypeId = 1L)
+            val request = createRequest(otherProduct = null, promotionType = "시식")
             val account = createAccount()
             val product = createProduct()
             val employee = createEmployee(costCenterCode = "1101")
-            val promotionType = createPromotionType()
 
-            whenever(promotionTypeRepository.findById(1L)).thenReturn(Optional.of(promotionType))
             whenever(accountRepository.findById(100)).thenReturn(Optional.of(account))
             whenever(productRepository.findById(200L)).thenReturn(Optional.of(product))
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
@@ -377,13 +351,11 @@ class AdminPromotionServiceTest {
         @Test
         @DisplayName("기타상품 쌍따옴표 포함 -> 정상 생성")
         fun createPromotion_otherProductWithDoubleQuote() {
-            val request = createRequest(otherProduct = "참깨라면 \"대용량\"", promotionTypeId = 1L)
+            val request = createRequest(otherProduct = "참깨라면 \"대용량\"", promotionType = "시식")
             val account = createAccount()
             val product = createProduct()
             val employee = createEmployee(costCenterCode = "1101")
-            val promotionType = createPromotionType()
 
-            whenever(promotionTypeRepository.findById(1L)).thenReturn(Optional.of(promotionType))
             whenever(accountRepository.findById(100)).thenReturn(Optional.of(account))
             whenever(productRepository.findById(200L)).thenReturn(Optional.of(product))
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
@@ -422,7 +394,7 @@ class AdminPromotionServiceTest {
     inner class UpdatePromotionTests {
 
         @Test
-        @DisplayName("정상 수정 - 대표제품 유지 -> promotionName 자동 설정")
+        @DisplayName("정상 수정 - 대표제품 유지")
         fun updatePromotion_success() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
             whenever(dataScopeHolder.require()).thenReturn(scope)
@@ -458,7 +430,7 @@ class AdminPromotionServiceTest {
         }
 
         @Test
-        @DisplayName("대표제품 변경 수정 - 새 제품으로 변경 -> promotionName 갱신")
+        @DisplayName("대표제품 변경 수정 - 새 제품으로 변경")
         fun updatePromotion_changeProduct_promotionNameUpdated() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
             whenever(dataScopeHolder.require()).thenReturn(scope)
@@ -521,21 +493,18 @@ class AdminPromotionServiceTest {
         }
 
         @Test
-        @DisplayName("비활성 유형으로 수정 -> InvalidPromotionTypeException")
-        fun updatePromotion_inactivePromotionType() {
+        @DisplayName("유효하지 않은 행사유형으로 수정 -> PromotionInvalidParameterException")
+        fun updatePromotion_invalidPromotionType() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
             whenever(dataScopeHolder.require()).thenReturn(scope)
 
             val promotion = createPromotion()
             whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
 
-            val inactiveType = createPromotionType(id = 5L, name = "기타", isActive = false)
-            whenever(promotionTypeRepository.findById(5L)).thenReturn(Optional.of(inactiveType))
-
-            val request = createRequest(promotionTypeId = 5L)
+            val request = createRequest(promotionType = "없는유형")
 
             assertThatThrownBy { adminPromotionService.updatePromotion(1L, userId, request) }
-                .isInstanceOf(InvalidPromotionTypeException::class.java)
+                .isInstanceOf(PromotionInvalidParameterException::class.java)
         }
 
         @Test
@@ -769,7 +738,7 @@ class AdminPromotionServiceTest {
     private fun createPromotion(
         id: Long = 1L,
         promotionNumber: String = "PM00000001",
-        promotionTypeId: Long? = null,
+        promotionType: PromotionType? = null,
         account: Account = createAccount(),
         primaryProductId: Long? = 200L,
         costCenterCode: String? = "1101",
@@ -778,7 +747,7 @@ class AdminPromotionServiceTest {
     ) = Promotion(
         id = id,
         promotionNumber = promotionNumber,
-        promotionTypeId = promotionTypeId,
+        promotionType = promotionType,
         account = account,
         startDate = LocalDate.of(2026, 3, 10),
         endDate = LocalDate.of(2026, 3, 20),
@@ -789,18 +758,6 @@ class AdminPromotionServiceTest {
         costCenterCode = costCenterCode,
         isDeleted = isDeleted,
         remark = remark
-    )
-
-    private fun createPromotionType(
-        id: Long = 1L,
-        name: String = "시식",
-        displayOrder: Int = 1,
-        isActive: Boolean = true
-    ) = PromotionType(
-        id = id,
-        name = name,
-        displayOrder = displayOrder,
-        isActive = isActive
     )
 
     private fun createAccount(id: Int = 100, name: String = "GS25 역삼점", branchName: String? = "강남53지점") = Account(
@@ -827,7 +784,7 @@ class AdminPromotionServiceTest {
     }
 
     private fun createRequest(
-        promotionTypeId: Long? = null,
+        promotionType: String? = null,
         accountId: Int = 100,
         startDate: LocalDate = LocalDate.of(2026, 3, 10),
         endDate: LocalDate = LocalDate.of(2026, 3, 20),
@@ -836,7 +793,7 @@ class AdminPromotionServiceTest {
         otherProduct: String? = "너구리, 진짬뽕",
         remark: String? = null
     ) = PromotionCreateRequest(
-        promotionTypeId = promotionTypeId,
+        promotionType = promotionType,
         accountId = accountId,
         startDate = startDate,
         endDate = endDate,

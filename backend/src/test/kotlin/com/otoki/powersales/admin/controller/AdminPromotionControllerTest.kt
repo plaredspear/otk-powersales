@@ -64,8 +64,8 @@ class AdminPromotionControllerTest {
         fun getFormMeta_success() {
             val response = PromotionFormMetaResponse(
                 promotionTypes = listOf(
-                    PromotionTypeOption(id = 1L, name = "시식"),
-                    PromotionTypeOption(id = 2L, name = "시음")
+                    PromotionTypeOption(value = "SAMPLING", name = "시식"),
+                    PromotionTypeOption(value = "RECOMMENDATION", name = "권장")
                 ),
                 standLocations = listOf(
                     StandLocationOption(value = "FROZEN_EVENT", name = "냉동행사장"),
@@ -77,7 +77,7 @@ class AdminPromotionControllerTest {
             mockMvc.perform(get("/api/v1/admin/promotions/form-meta"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.promotionTypes[0].id").value(1))
+                .andExpect(jsonPath("$.data.promotionTypes[0].value").value("SAMPLING"))
                 .andExpect(jsonPath("$.data.promotionTypes[0].name").value("시식"))
                 .andExpect(jsonPath("$.data.standLocations[0].value").value("FROZEN_EVENT"))
                 .andExpect(jsonPath("$.data.standLocations[0].name").value("냉동행사장"))
@@ -97,8 +97,7 @@ class AdminPromotionControllerTest {
                     PromotionListItem(
                         id = 1L,
                         promotionNumber = "PM00000001",
-                        promotionTypeId = 1L,
-                        promotionTypeName = "시식",
+                        promotionType = "시식",
                         accountName = "GS25 역삼점",
                         startDate = LocalDate.of(2026, 3, 10),
                         endDate = LocalDate.of(2026, 3, 20),
@@ -120,8 +119,7 @@ class AdminPromotionControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content[0].promotionNumber").value("PM00000001"))
-                .andExpect(jsonPath("$.data.content[0].promotionTypeId").value(1))
-                .andExpect(jsonPath("$.data.content[0].promotionTypeName").value("시식"))
+                .andExpect(jsonPath("$.data.content[0].promotionType").value("시식"))
                 .andExpect(jsonPath("$.data.content[0].isClosed").value(false))
                 .andExpect(jsonPath("$.data.totalElements").value(1))
         }
@@ -158,8 +156,7 @@ class AdminPromotionControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.promotionNumber").value("PM00000001"))
-                .andExpect(jsonPath("$.data.promotionTypeId").value(1))
-                .andExpect(jsonPath("$.data.promotionTypeName").value("시식"))
+                .andExpect(jsonPath("$.data.promotionType").value("시식"))
                 .andExpect(jsonPath("$.data.accountName").value("GS25 역삼점"))
                 .andExpect(jsonPath("$.data.primaryProductName").value("진라면 매운맛 120g"))
         }
@@ -213,7 +210,7 @@ class AdminPromotionControllerTest {
         fun createPromotion_missingPrimaryProductId() {
             val json = """
                 {
-                    "promotionTypeId": 1,
+                    "promotionType": "시식",
                     "accountId": 100,
                     "startDate": "2026-03-10",
                     "endDate": "2026-03-20",
@@ -235,7 +232,7 @@ class AdminPromotionControllerTest {
         fun createPromotion_nullPrimaryProductId() {
             val json = """
                 {
-                    "promotionTypeId": 1,
+                    "promotionType": "시식",
                     "accountId": 100,
                     "startDate": "2026-03-10",
                     "endDate": "2026-03-20",
@@ -255,7 +252,7 @@ class AdminPromotionControllerTest {
 
         @Test
         @DisplayName("실패 - 행사유형 누락")
-        fun createPromotion_missingPromotionTypeId() {
+        fun createPromotion_missingPromotionType() {
             val json = """
                 {
                     "accountId": 100,
@@ -279,7 +276,7 @@ class AdminPromotionControllerTest {
         fun createPromotion_missingStandLocation() {
             val json = """
                 {
-                    "promotionTypeId": 1,
+                    "promotionType": "시식",
                     "accountId": 100,
                     "startDate": "2026-03-10",
                     "endDate": "2026-03-20"
@@ -300,7 +297,7 @@ class AdminPromotionControllerTest {
         fun createPromotion_emptyStandLocation() {
             val json = """
                 {
-                    "promotionTypeId": 1,
+                    "promotionType": "시식",
                     "accountId": 100,
                     "startDate": "2026-03-10",
                     "endDate": "2026-03-20",
@@ -322,7 +319,7 @@ class AdminPromotionControllerTest {
         fun createPromotion_blankStandLocation() {
             val json = """
                 {
-                    "promotionTypeId": 1,
+                    "promotionType": "시식",
                     "accountId": 100,
                     "startDate": "2026-03-10",
                     "endDate": "2026-03-20",
@@ -409,7 +406,7 @@ class AdminPromotionControllerTest {
         fun updatePromotion_missingPrimaryProductId() {
             val json = """
                 {
-                    "promotionTypeId": 1,
+                    "promotionType": "시식",
                     "accountId": 100,
                     "startDate": "2026-03-10",
                     "endDate": "2026-03-20",
@@ -428,7 +425,7 @@ class AdminPromotionControllerTest {
 
         @Test
         @DisplayName("실패 - 행사유형 누락 (수정)")
-        fun updatePromotion_missingPromotionTypeId() {
+        fun updatePromotion_missingPromotionType() {
             val json = """
                 {
                     "accountId": 100,
@@ -452,7 +449,7 @@ class AdminPromotionControllerTest {
         fun updatePromotion_missingStandLocation() {
             val json = """
                 {
-                    "promotionTypeId": 1,
+                    "promotionType": "시식",
                     "accountId": 100,
                     "startDate": "2026-03-10",
                     "endDate": "2026-03-20"
@@ -527,8 +524,7 @@ class AdminPromotionControllerTest {
     ) = PromotionDetailResponse(
         id = 1L,
         promotionNumber = "PM00000001",
-        promotionTypeId = 1L,
-        promotionTypeName = "시식",
+        promotionType = "시식",
         accountId = 100,
         accountName = "GS25 역삼점",
         startDate = LocalDate.of(2026, 3, 10),
@@ -548,7 +544,7 @@ class AdminPromotionControllerTest {
     )
 
     private fun createRequest() = PromotionCreateRequest(
-        promotionTypeId = 1L,
+        promotionType = "시식",
         accountId = 100,
         startDate = LocalDate.of(2026, 3, 10),
         endDate = LocalDate.of(2026, 3, 20),

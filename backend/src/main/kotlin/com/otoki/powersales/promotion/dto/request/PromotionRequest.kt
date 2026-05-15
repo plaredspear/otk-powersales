@@ -6,8 +6,8 @@ import jakarta.validation.constraints.Size
 import java.time.LocalDate
 
 data class PromotionCreateRequest(
-    @field:NotNull(message = "행사유형은 필수 항목입니다")
-    val promotionTypeId: Long? = null,
+    @field:NotBlank(message = "행사유형은 필수 항목입니다")
+    val promotionType: String? = null,
 
     @field:NotNull(message = "거래처 ID는 필수입니다")
     val accountId: Int,

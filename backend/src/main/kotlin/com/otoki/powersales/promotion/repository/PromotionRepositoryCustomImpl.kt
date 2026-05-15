@@ -3,7 +3,7 @@ package com.otoki.powersales.promotion.repository
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.entity.QPromotion.Companion.promotion
 import com.otoki.powersales.promotion.entity.QPromotionEmployee.Companion.promotionEmployee
-import com.otoki.powersales.promotion.entity.QPromotionType.Companion.promotionType
+import com.otoki.powersales.promotion.enums.PromotionType
 import com.otoki.powersales.account.entity.QAccount.Companion.account
 import com.otoki.powersales.product.entity.QProduct.Companion.product
 import com.querydsl.core.BooleanBuilder
@@ -21,7 +21,6 @@ class PromotionRepositoryCustomImpl(
     override fun findByIdWithRelations(id: Long): Promotion? {
         return queryFactory
             .selectFrom(promotion)
-            .leftJoin(promotion.promotionType, promotionType).fetchJoin()
             .leftJoin(promotion.account, account).fetchJoin()
             .leftJoin(promotion.primaryProduct, product).fetchJoin()
             .where(promotion.id.eq(id))
@@ -30,7 +29,7 @@ class PromotionRepositoryCustomImpl(
 
     override fun searchForAdmin(
         keyword: String?,
-        promotionTypeId: Long?,
+        promotionType: PromotionType?,
         startDate: String?,
         endDate: String?,
         branchCodes: List<String>?,
@@ -47,8 +46,8 @@ class PromotionRepositoryCustomImpl(
             )
         }
 
-        if (promotionTypeId != null) {
-            builder.and(promotion.promotionTypeId.eq(promotionTypeId))
+        if (promotionType != null) {
+            builder.and(promotion.promotionType.eq(promotionType))
         }
 
         if (!startDate.isNullOrBlank()) {
@@ -67,7 +66,6 @@ class PromotionRepositoryCustomImpl(
 
         val content = queryFactory
             .selectFrom(promotion)
-            .leftJoin(promotion.promotionType, promotionType).fetchJoin()
             .leftJoin(promotion.account, account).fetchJoin()
             .where(builder)
             .orderBy(promotion.createdAt.desc())

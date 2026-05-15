@@ -6,11 +6,11 @@ import com.otoki.powersales.promotion.dto.response.*
 import com.otoki.powersales.admin.scope.DataScopeHolder
 import com.otoki.powersales.promotion.enums.ProductTemperatureType
 import com.otoki.powersales.promotion.entity.Promotion
+import com.otoki.powersales.promotion.enums.PromotionType
 import com.otoki.powersales.promotion.enums.StandLocation
 import com.otoki.powersales.promotion.exception.*
 import com.otoki.powersales.promotion.repository.PromotionEmployeeRepository
 import com.otoki.powersales.promotion.repository.PromotionRepository
-import com.otoki.powersales.promotion.repository.PromotionTypeRepository
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.product.repository.ProductRepository
@@ -25,7 +25,6 @@ import org.springframework.transaction.annotation.Transactional
 @Transactional(readOnly = true)
 class AdminPromotionService(
     private val promotionRepository: PromotionRepository,
-    private val promotionTypeRepository: PromotionTypeRepository,
     private val promotionEmployeeRepository: PromotionEmployeeRepository,
     private val accountRepository: AccountRepository,
     private val productRepository: ProductRepository,
@@ -35,8 +34,9 @@ class AdminPromotionService(
 ) {
 
     fun getPromotionFormMeta(): PromotionFormMetaResponse {
-        val promotionTypes = promotionTypeRepository.findByIsActiveTrueOrderByDisplayOrderAsc()
-            .map { PromotionTypeOption(id = it.id, name = it.name) }
+        val promotionTypes = PromotionType.entries
+            .sortedBy { it.displayOrder }
+            .map { PromotionTypeOption(value = it.name, name = it.displayName) }
 
         val standLocations = StandLocation.entries
             .sortedBy { it.displayOrder }
@@ -50,7 +50,7 @@ class AdminPromotionService(
 
     fun getPromotions(
         keyword: String?,
-        promotionTypeId: Long?,
+        promotionType: String?,
         startDate: String?,
         endDate: String?,
         page: Int,
@@ -67,7 +67,7 @@ class AdminPromotionService(
         val pageable = PageRequest.of(page, size, Sort.by("createdAt").descending())
         val promotionPage = promotionRepository.searchForAdmin(
             keyword = keyword,
-            promotionTypeId = promotionTypeId,
+            promotionType = PromotionType.fromDisplayNameOrNull(promotionType),
             startDate = startDate,
             endDate = endDate,
             branchCodes = effectiveBranchCodes,
@@ -78,8 +78,7 @@ class AdminPromotionService(
             content = promotionPage.content.map { promotion ->
                 PromotionListItem.from(
                     promotion = promotion,
-                    accountName = promotion.account?.name,
-                    promotionTypeName = promotion.promotionType?.name
+                    accountName = promotion.account?.name
                 )
             },
             page = page,
@@ -98,15 +97,14 @@ class AdminPromotionService(
         return PromotionDetailResponse.from(
             promotion = promotion,
             accountName = promotion.account?.name,
-            primaryProductName = promotion.primaryProduct?.name,
-            promotionTypeName = promotion.promotionType?.name
+            primaryProductName = promotion.primaryProduct?.name
         )
     }
 
     @Transactional
     fun createPromotion(userId: Long, request: PromotionCreateRequest): PromotionDetailResponse {
         validateDateRange(request.startDate, request.endDate)
-        validatePromotionType(request.promotionTypeId)
+        val promotionType = parsePromotionType(request.promotionType)
         validateStandLocation(request.standLocation)
         validateOtherProduct(request.otherProduct)
 
@@ -125,14 +123,10 @@ class AdminPromotionService(
         val seq = promotionRepository.getNextPromotionNumberSeq()
         val promotionNumber = "PM" + String.format("%08d", seq)
 
-        val typeName = request.promotionTypeId?.let {
-            promotionTypeRepository.findById(it).orElse(null)?.name
-        }
-
         val promotion = promotionRepository.save(
             Promotion(
                 promotionNumber = promotionNumber,
-                promotionTypeId = request.promotionTypeId,
+                promotionType = promotionType,
                 account = account,
                 startDate = request.startDate,
                 endDate = request.endDate,
@@ -149,8 +143,7 @@ class AdminPromotionService(
         return PromotionDetailResponse.from(
             promotion = promotion,
             accountName = account.name,
-            primaryProductName = product.name,
-            promotionTypeName = typeName
+            primaryProductName = product.name
         )
     }
 
@@ -161,7 +154,7 @@ class AdminPromotionService(
         val promotion = findActivePromotion(id)
         validateDataScope(promotion)
         validateDateRange(request.startDate, request.endDate)
-        validatePromotionType(request.promotionTypeId)
+        val promotionType = parsePromotionType(request.promotionType)
         validateStandLocation(request.standLocation)
         validateOtherProduct(request.otherProduct)
 
@@ -202,7 +195,7 @@ class AdminPromotionService(
             .orElseThrow { ProductNotFoundException() }
 
         promotion.update(
-            promotionTypeId = request.promotionTypeId,
+            promotionType = promotionType,
             account = account,
             startDate = request.startDate,
             endDate = request.endDate,
@@ -216,15 +209,10 @@ class AdminPromotionService(
 
         promotionRepository.save(promotion)
 
-        val typeName = promotion.promotionTypeId?.let {
-            promotionTypeRepository.findById(it).orElse(null)?.name
-        }
-
         return PromotionDetailResponse.from(
             promotion = promotion,
             accountName = account?.name,
-            primaryProductName = product.name,
-            promotionTypeName = typeName
+            primaryProductName = product.name
         )
     }
 
@@ -266,13 +254,10 @@ class AdminPromotionService(
         }
     }
 
-    private fun validatePromotionType(promotionTypeId: Long?) {
-        if (promotionTypeId != null) {
-            val type = promotionTypeRepository.findById(promotionTypeId).orElse(null)
-            if (type == null || !type.isActive) {
-                throw InvalidPromotionTypeException()
-            }
-        }
+    private fun parsePromotionType(value: String?): PromotionType? {
+        if (value.isNullOrBlank()) return null
+        return PromotionType.fromDisplayNameOrNull(value)
+            ?: throw PromotionInvalidParameterException()
     }
 
     private fun findActivePromotion(id: Long): Promotion {

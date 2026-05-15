@@ -82,7 +82,7 @@ class PromotionControllerTest {
                 MobilePromotionListItem(
                     id = 1L,
                     promotionNumber = "PM-2026-001",
-                    promotionTypeName = "시식",
+                    promotionType = "시식",
                     accountName = "이마트 강남점",
                     startDate = LocalDate.of(2026, 3, 1),
                     endDate = LocalDate.of(2026, 3, 31),
@@ -93,7 +93,7 @@ class PromotionControllerTest {
                 MobilePromotionListItem(
                     id = 2L,
                     promotionNumber = "PM-2026-002",
-                    promotionTypeName = "진열",
+                    promotionType = "진열",
                     accountName = "홈플러스 잠실점",
                     startDate = LocalDate.of(2026, 3, 10),
                     endDate = LocalDate.of(2026, 3, 20),
@@ -122,7 +122,7 @@ class PromotionControllerTest {
                 .andExpect(jsonPath("$.data.content.length()").value(2))
                 .andExpect(jsonPath("$.data.content[0].id").value(1))
                 .andExpect(jsonPath("$.data.content[0].promotionNumber").value("PM-2026-001"))
-                .andExpect(jsonPath("$.data.content[0].promotionTypeName").value("시식"))
+                .andExpect(jsonPath("$.data.content[0].promotionType").value("시식"))
                 .andExpect(jsonPath("$.data.content[0].accountName").value("이마트 강남점"))
                 .andExpect(jsonPath("$.data.content[0].startDate").value("2026-03-01"))
                 .andExpect(jsonPath("$.data.content[0].endDate").value("2026-03-31"))
@@ -170,7 +170,7 @@ class PromotionControllerTest {
                 MobilePromotionListItem(
                     id = 1L,
                     promotionNumber = "PM-2026-001",
-                    promotionTypeName = "시식",
+                    promotionType = "시식",
                     accountName = "이마트 강남점",
                     startDate = LocalDate.of(2026, 3, 1),
                     endDate = LocalDate.of(2026, 3, 31),
@@ -250,7 +250,7 @@ class PromotionControllerTest {
             val detail = MobilePromotionDetailResponse(
                 id = 1L,
                 promotionNumber = "PM-2026-001",
-                promotionTypeName = "시식",
+                promotionType = "시식",
                 accountId = 100,
                 accountName = "이마트 강남점",
                 startDate = LocalDate.of(2026, 3, 1),
@@ -271,7 +271,7 @@ class PromotionControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1))
                 .andExpect(jsonPath("$.data.promotionNumber").value("PM-2026-001"))
-                .andExpect(jsonPath("$.data.promotionTypeName").value("시식"))
+                .andExpect(jsonPath("$.data.promotionType").value("시식"))
                 .andExpect(jsonPath("$.data.accountId").value(100))
                 .andExpect(jsonPath("$.data.accountName").value("이마트 강남점"))
                 .andExpect(jsonPath("$.data.startDate").value("2026-03-01"))
