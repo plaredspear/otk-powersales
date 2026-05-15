@@ -17,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional
  * - 비밀번호 임시 리셋: 임시 비밀번호 `"1234"` 를 BCrypt 해시화하여 저장 + `passwordChangeRequired = true`
  *
  * 권한 검증은 컨트롤러 단의 `@RequiresPermission(EMPLOYEE_RESET_CREDENTIALS)` 가
- * `AdminAuthorityFilter` 에서 처리하며, 본 서비스는 진입 시점에 SYSTEM_ADMIN 권한 보유를 가정한다.
+ * `WebAdminContextFilter` 에서 처리하며, 본 서비스는 진입 시점에 SYSTEM_ADMIN 권한 보유를 가정한다.
  */
 @Service
 @Transactional(readOnly = true)

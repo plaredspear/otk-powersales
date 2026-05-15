@@ -18,14 +18,17 @@ import org.springframework.web.method.HandlerMethod
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping
 
 /**
- * Admin 권한 매트릭스 필터 (Spec #760 시점부터 미사용 — 보존).
+ * Admin 권한 매트릭스 필터 — Mobile (`UserPrincipal`) 기반 구버전.
  *
- * Spec #760 에서 Web 인증이 [com.otoki.powersales.user.entity.User] 기반으로 전환되며
- * 본 필터는 Employee 기반 `UserPrincipal` 에 의존하므로 SecurityFilterChain 등록 해제 (미작동).
- * @Component 어노테이션 제거 — Spring Boot 의 servlet filter 자동 등록 회피.
+ * 본 필터는 더 이상 활성 동작하지 않는다. Web 인증이 `User` 기반 [WebUserPrincipal] 로 전환된
+ * 이후 동일 책임(Employee/DataScope/Permission holder 세팅 + @RequiresPermission 검사)은
+ * [WebAdminContextFilter] 가 수행한다.
  *
- * 후속 spec (Web 화면 권한 분기 / @RequiresPermission 재도입) 에서 신규 Web principal 정합
- * 로직으로 재작성될 예정.
+ * 파일 자체는 다수 controller 테스트가 `@MockitoBean` 으로 mock 하기 위해 import 하고 있어
+ * 즉시 삭제 시 광범위한 테스트 손상이 발생하므로 보존. 컴파일만 되고 어디에도 빈 등록되지
+ * 않는다 (@Component 부재 + SecurityFilterChain 미등록).
+ *
+ * 후속 정리 작업에서 테스트 측 mock 선언 제거 + 본 파일 삭제 예정.
  */
 class AdminAuthorityFilter(
     private val employeeRepository: EmployeeRepository,

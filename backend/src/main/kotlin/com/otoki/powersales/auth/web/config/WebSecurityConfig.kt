@@ -1,9 +1,16 @@
 package com.otoki.powersales.auth.web.config
 
+import com.otoki.powersales.admin.scope.AdminEmployeeHolder
+import com.otoki.powersales.admin.scope.AdminPermissionHolder
+import com.otoki.powersales.admin.scope.DataScopeHolder
+import com.otoki.powersales.admin.security.WebAdminContextFilter
+import com.otoki.powersales.admin.service.AdminDataScopeService
+import com.otoki.powersales.admin.service.AdminPermissionResolver
 import com.otoki.powersales.auth.web.WebJwtAuthenticationFilter
 import com.otoki.powersales.auth.web.WebJwtService
 import com.otoki.powersales.auth.web.WebRefreshTokenStore
 import com.otoki.powersales.common.security.JwtAuthenticationEntryPoint
+import com.otoki.powersales.employee.repository.EmployeeRepository
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -13,6 +20,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
+import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping
 import tools.jackson.databind.ObjectMapper
 
 /**
@@ -52,10 +60,32 @@ class WebSecurityConfig(
         WebJwtAuthenticationFilter(webJwtService)
 
     @Bean
+    fun webAdminContextFilter(
+        employeeRepository: EmployeeRepository,
+        adminDataScopeService: AdminDataScopeService,
+        adminPermissionResolver: AdminPermissionResolver,
+        adminEmployeeHolder: AdminEmployeeHolder,
+        dataScopeHolder: DataScopeHolder,
+        adminPermissionHolder: AdminPermissionHolder,
+        requestMappingHandlerMapping: RequestMappingHandlerMapping,
+        objectMapper: ObjectMapper,
+    ): WebAdminContextFilter = WebAdminContextFilter(
+        employeeRepository = employeeRepository,
+        adminDataScopeService = adminDataScopeService,
+        adminPermissionResolver = adminPermissionResolver,
+        adminEmployeeHolder = adminEmployeeHolder,
+        dataScopeHolder = dataScopeHolder,
+        adminPermissionHolder = adminPermissionHolder,
+        requestMappingHandlerMapping = requestMappingHandlerMapping,
+        objectMapper = objectMapper,
+    )
+
+    @Bean
     @Order(1)
     fun webSecurityFilterChain(
         http: HttpSecurity,
         webJwtAuthenticationFilter: WebJwtAuthenticationFilter,
+        webAdminContextFilter: WebAdminContextFilter,
         jwtAuthenticationEntryPoint: JwtAuthenticationEntryPoint,
     ): SecurityFilterChain {
         http
@@ -75,6 +105,7 @@ class WebSecurityConfig(
             }
             .exceptionHandling { it.authenticationEntryPoint(jwtAuthenticationEntryPoint) }
             .addFilterBefore(webJwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
+            .addFilterAfter(webAdminContextFilter, WebJwtAuthenticationFilter::class.java)
 
         return http.build()
     }
