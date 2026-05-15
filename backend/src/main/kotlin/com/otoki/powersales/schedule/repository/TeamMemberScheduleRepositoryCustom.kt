@@ -31,9 +31,24 @@ interface TeamMemberScheduleRepositoryCustom {
 
     fun findByEmployeeIdAndWorkingDate(employeeId: Long, workingDate: LocalDate): List<TeamMemberSchedule>
 
-    fun findMonthlyByEmployeeIds(employeeIds: List<Long>, from: LocalDate, to: LocalDate): List<TeamMemberSchedule>
+    fun findMonthlyByEmployeeIds(
+        employeeIds: List<Long>,
+        from: LocalDate,
+        to: LocalDate,
+        promotionTeams: List<String>? = null
+    ): List<TeamMemberSchedule>
 
-    fun findMonthlyByAccountIds(accountIds: List<Int>, from: LocalDate, to: LocalDate): List<TeamMemberSchedule>
+    fun findMonthlyByAccountIds(
+        accountIds: List<Int>,
+        from: LocalDate,
+        to: LocalDate,
+        promotionTeams: List<String>? = null
+    ): List<TeamMemberSchedule>
+
+    /**
+     * 여사원 일정관리 필터용 — 적재된 전문행사조 distinct 값 (정렬, null/blank 제외).
+     */
+    fun findDistinctProfessionalPromotionTeams(): List<String>
 
     fun findActiveByEmployeeIdAndDate(employeeId: Long, workingDate: LocalDate): List<TeamMemberSchedule>
 

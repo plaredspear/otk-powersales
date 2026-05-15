@@ -27,11 +27,13 @@ export default function SchedulePage() {
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<number[]>([]);
   const [selectedAccountIds, setSelectedAccountIds] = useState<number[]>([]);
   const [selectedBranchCode, setSelectedBranchCode] = useState<string>('');
+  const [selectedPromotionTeams, setSelectedPromotionTeams] = useState<string[]>([]);
 
   // Debounce filter values
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [debouncedEmployeeIds, setDebouncedEmployeeIds] = useState<number[]>([]);
   const [debouncedAccountIds, setDebouncedAccountIds] = useState<number[]>([]);
+  const [debouncedPromotionTeams, setDebouncedPromotionTeams] = useState<string[]>([]);
 
   const handleEmployeeIdsChange = useCallback((ids: number[]) => {
     setSelectedEmployeeIds(ids);
@@ -43,6 +45,12 @@ export default function SchedulePage() {
     setSelectedAccountIds(ids);
     clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(() => setDebouncedAccountIds(ids), 300);
+  }, []);
+
+  const handlePromotionTeamsChange = useCallback((teams: string[]) => {
+    setSelectedPromotionTeams(teams);
+    clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => setDebouncedPromotionTeams(teams), 300);
   }, []);
 
   // Modal state
@@ -65,8 +73,17 @@ export default function SchedulePage() {
       to,
       employeeIds: filterTab === 'member' ? debouncedEmployeeIds : [],
       accountIds: filterTab === 'account' ? debouncedAccountIds : [],
+      promotionTeams: debouncedPromotionTeams,
     };
-  }, [currentDate, viewType, listRange, filterTab, debouncedEmployeeIds, debouncedAccountIds]);
+  }, [
+    currentDate,
+    viewType,
+    listRange,
+    filterTab,
+    debouncedEmployeeIds,
+    debouncedAccountIds,
+    debouncedPromotionTeams,
+  ]);
 
   const { data, isLoading: schedulesLoading } = useTeamSchedules(queryParams);
   const schedules = data?.schedules ?? [];
@@ -100,6 +117,8 @@ export default function SchedulePage() {
           onSelectedAccountIdsChange={handleAccountIdsChange}
           selectedBranchCode={selectedBranchCode}
           onSelectedBranchCodeChange={setSelectedBranchCode}
+          selectedPromotionTeams={selectedPromotionTeams}
+          onSelectedPromotionTeamsChange={handlePromotionTeamsChange}
         />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>

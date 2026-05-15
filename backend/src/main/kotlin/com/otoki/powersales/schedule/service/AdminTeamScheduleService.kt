@@ -102,6 +102,16 @@ class AdminTeamScheduleService(
     }
 
     /**
+     * 여사원 일정관리 "전문행사조" 필터 옵션. team_member_schedule.professional_promotion_team distinct.
+     * SF `ProfessionalPromotionTeamMaster__c.ProfessionalPromotionTeam__c` picklist 5값
+     * (라면세일조 / 프레시세일조_냉동 / 프레시세일조_냉장 / 프레시세일조_만두 / 카레행사조) 기준이나,
+     * 운영 적재 실데이터를 출처로 — 신규 조 picklist 확장 시 코드 변경 없이 자동 반영.
+     */
+    fun getProfessionalPromotionTeams(employeeId: Long): List<String> {
+        return teamMemberScheduleRepository.findDistinctProfessionalPromotionTeams()
+    }
+
+    /**
      * 일정 조회.
      *
      * SF 레거시 `FullCalendarComponentController.fetchAllShcedule()` 정합 — **XOR 분기**:
@@ -118,7 +128,8 @@ class AdminTeamScheduleService(
         from: LocalDate,
         to: LocalDate,
         employeeIds: List<Long>?,
-        accountIds: List<Int>?
+        accountIds: List<Int>?,
+        promotionTeams: List<String>? = null
     ): MonthlyScheduleWithSummaryDto {
         if (from.isAfter(to)) throw TeamScheduleInvalidRangeException()
         if (java.time.temporal.ChronoUnit.DAYS.between(from, to) > MAX_RANGE_DAYS) {
@@ -132,11 +143,14 @@ class AdminTeamScheduleService(
             return MonthlyScheduleWithSummaryDto(schedules = emptyList(), dailySummary = emptyList())
         }
 
+        val effectivePromotionTeams = promotionTeams?.filter { it.isNotBlank() }?.takeIf { it.isNotEmpty() }
+
         // SF XOR: 여사원 우선, 없으면 거래처. 두 IN 절을 동시에 합치지 않는다.
+        // 전문행사조(`professional_promotion_team`) 가 지정되면 AND 로 추가 — 데이터 행에 메타 컬럼으로 적재된 조 분류 기준 정밀 필터.
         val rawSchedules: List<TeamMemberSchedule> = if (hasEmployeeFilter) {
-            teamMemberScheduleRepository.findMonthlyByEmployeeIds(employeeIds!!, from, to)
+            teamMemberScheduleRepository.findMonthlyByEmployeeIds(employeeIds!!, from, to, effectivePromotionTeams)
         } else {
-            teamMemberScheduleRepository.findMonthlyByAccountIds(accountIds!!, from, to)
+            teamMemberScheduleRepository.findMonthlyByAccountIds(accountIds!!, from, to, effectivePromotionTeams)
         }
 
         val uniqueSchedules = rawSchedules.distinctBy { it.id }

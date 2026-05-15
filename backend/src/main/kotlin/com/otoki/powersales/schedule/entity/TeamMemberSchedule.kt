@@ -267,7 +267,7 @@ class TeamMemberSchedule(
 
     @SFField("ProfessionalPromotionTeam__c")
     @HCColumn("professionalpromotionteam__c")
-    @Column(name = "professional_promotion_team", length = 100)
+    @Column(name = "professional_promotion_team", length = 255)
     var professionalPromotionTeam: String? = null,
 
     @SFField("CostCenterCode__c")

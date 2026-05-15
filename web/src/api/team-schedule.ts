@@ -93,11 +93,22 @@ export async function fetchTeamScheduleBranches(): Promise<Branch[]> {
   return res.data.data;
 }
 
+export async function fetchProfessionalPromotionTeams(): Promise<string[]> {
+  const res = await client.get<ApiResponse<string[]>>(
+    '/api/v1/admin/team-schedule/professional-promotion-teams',
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '전문행사조 목록 조회에 실패했습니다');
+  }
+  return res.data.data;
+}
+
 export async function fetchTeamSchedules(params: {
   from: string;
   to: string;
   employeeIds: number[];
   accountIds: number[];
+  promotionTeams?: string[];
 }): Promise<MonthlyScheduleWithSummary> {
   const res = await client.get<ApiResponse<MonthlyScheduleWithSummary>>(
     '/api/v1/admin/team-schedule',
@@ -107,6 +118,9 @@ export async function fetchTeamSchedules(params: {
         to: params.to,
         employeeIds: params.employeeIds.join(','),
         accountIds: params.accountIds.join(','),
+        ...(params.promotionTeams && params.promotionTeams.length > 0
+          ? { promotionTeams: params.promotionTeams.join(',') }
+          : {}),
       },
     },
   );

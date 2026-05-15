@@ -377,7 +377,7 @@ class AdminTeamScheduleServiceTest {
 
             val allSchedules = listOf(displaySchedule, displayWithCommute, promotionSchedule, promotionWithCommute, annualLeave, compensatoryLeave)
 
-            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(eq(listOf(1L)), eq(from), eq(to)))
+            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(eq(listOf(1L)), eq(from), eq(to), eq(null)))
                 .thenReturn(allSchedules)
 
             val result = service.getSchedulesWithSummary(1L, from, to, listOf(1L), null)
@@ -404,7 +404,7 @@ class AdminTeamScheduleServiceTest {
             val to = LocalDate.of(2026, 4, 30)
             val schedule = createSchedule(id = 1L, accountId = 10)
 
-            whenever(teamMemberScheduleRepository.findMonthlyByAccountIds(eq(listOf(10)), eq(from), eq(to)))
+            whenever(teamMemberScheduleRepository.findMonthlyByAccountIds(eq(listOf(10)), eq(from), eq(to), eq(null)))
                 .thenReturn(listOf(schedule))
 
             val result = service.getSchedulesWithSummary(1L, from, to, null, listOf(10))
@@ -412,6 +412,44 @@ class AdminTeamScheduleServiceTest {
             assertThat(result.schedules).hasSize(1)
             assertThat(result.schedules[0].accountId).isEqualTo(10)
             assertThat(result.dailySummary).hasSize(1)
+        }
+
+        @Test
+        @DisplayName("전문행사조 필터 - 비어있지 않은 리스트가 그대로 repository 에 전달")
+        fun getSchedulesWithSummary_withPromotionTeams() {
+            val from = LocalDate.of(2026, 4, 1)
+            val to = LocalDate.of(2026, 4, 30)
+            val teams = listOf("라면세일조", "카레행사조")
+            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(eq(listOf(1L)), eq(from), eq(to), eq(teams)))
+                .thenReturn(emptyList())
+
+            service.getSchedulesWithSummary(1L, from, to, listOf(1L), null, teams)
+
+            verify(teamMemberScheduleRepository).findMonthlyByEmployeeIds(listOf(1L), from, to, teams)
+        }
+
+        @Test
+        @DisplayName("전문행사조 필터 - blank/빈 값은 정리 후 전달 (전부 blank 면 null)")
+        fun getSchedulesWithSummary_promotionTeamsBlankFiltered() {
+            val from = LocalDate.of(2026, 4, 1)
+            val to = LocalDate.of(2026, 4, 30)
+            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(eq(listOf(1L)), eq(from), eq(to), eq(null)))
+                .thenReturn(emptyList())
+
+            service.getSchedulesWithSummary(1L, from, to, listOf(1L), null, listOf("", "  "))
+
+            verify(teamMemberScheduleRepository).findMonthlyByEmployeeIds(listOf(1L), from, to, null)
+        }
+
+        @Test
+        @DisplayName("getProfessionalPromotionTeams - repository 결과 그대로 반환")
+        fun getProfessionalPromotionTeams_returnsRepoResult() {
+            whenever(teamMemberScheduleRepository.findDistinctProfessionalPromotionTeams())
+                .thenReturn(listOf("라면세일조", "카레행사조"))
+
+            val result = service.getProfessionalPromotionTeams(1L)
+
+            assertThat(result).containsExactly("라면세일조", "카레행사조")
         }
 
         @Test
@@ -429,13 +467,13 @@ class AdminTeamScheduleServiceTest {
         fun getSchedulesWithSummary_xor_employeePrefers() {
             val from = LocalDate.of(2026, 4, 1)
             val to = LocalDate.of(2026, 4, 30)
-            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(listOf(1L), from, to))
+            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(listOf(1L), from, to, null))
                 .thenReturn(emptyList())
 
             service.getSchedulesWithSummary(1L, from, to, listOf(1L), listOf(10))
 
-            verify(teamMemberScheduleRepository).findMonthlyByEmployeeIds(listOf(1L), from, to)
-            verify(teamMemberScheduleRepository, never()).findMonthlyByAccountIds(any(), any(), any())
+            verify(teamMemberScheduleRepository).findMonthlyByEmployeeIds(listOf(1L), from, to, null)
+            verify(teamMemberScheduleRepository, never()).findMonthlyByAccountIds(any(), any(), any(), anyOrNull())
         }
 
         @Test
@@ -443,12 +481,12 @@ class AdminTeamScheduleServiceTest {
         fun getSchedulesWithSummary_customRange() {
             val from = LocalDate.of(2026, 4, 15)
             val to = LocalDate.of(2026, 7, 14)
-            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(listOf(1L), from, to))
+            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(listOf(1L), from, to, null))
                 .thenReturn(emptyList())
 
             service.getSchedulesWithSummary(1L, from, to, listOf(1L), null)
 
-            verify(teamMemberScheduleRepository).findMonthlyByEmployeeIds(listOf(1L), from, to)
+            verify(teamMemberScheduleRepository).findMonthlyByEmployeeIds(listOf(1L), from, to, null)
         }
 
         @Test
@@ -468,12 +506,12 @@ class AdminTeamScheduleServiceTest {
         fun getSchedulesWithSummary_rangeExactly92Days() {
             val from = LocalDate.of(2026, 5, 1)
             val to = LocalDate.of(2026, 7, 31) // between = 91일 → 92일 분량
-            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(listOf(1L), from, to))
+            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(listOf(1L), from, to, null))
                 .thenReturn(emptyList())
 
             service.getSchedulesWithSummary(1L, from, to, listOf(1L), null)
 
-            verify(teamMemberScheduleRepository).findMonthlyByEmployeeIds(listOf(1L), from, to)
+            verify(teamMemberScheduleRepository).findMonthlyByEmployeeIds(listOf(1L), from, to, null)
         }
 
         @Test

@@ -89,7 +89,8 @@ open class TeamMemberScheduleRepositoryCustomImpl(
     override fun findMonthlyByEmployeeIds(
         employeeIds: List<Long>,
         from: LocalDate,
-        to: LocalDate
+        to: LocalDate,
+        promotionTeams: List<String>?
     ): List<TeamMemberSchedule> {
         return queryFactory
             .selectFrom(teamMemberSchedule)
@@ -99,6 +100,7 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             .where(
                 teamMemberSchedule.employee.id.`in`(employeeIds),
                 teamMemberSchedule.workingDate.between(from, to),
+                professionalPromotionTeamIn(promotionTeams),
                 isNotDeleted()
             )
             .fetch()
@@ -107,7 +109,8 @@ open class TeamMemberScheduleRepositoryCustomImpl(
     override fun findMonthlyByAccountIds(
         accountIds: List<Int>,
         from: LocalDate,
-        to: LocalDate
+        to: LocalDate,
+        promotionTeams: List<String>?
     ): List<TeamMemberSchedule> {
         return queryFactory
             .selectFrom(teamMemberSchedule)
@@ -117,9 +120,29 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             .where(
                 teamMemberSchedule.account.id.`in`(accountIds),
                 teamMemberSchedule.workingDate.between(from, to),
+                professionalPromotionTeamIn(promotionTeams),
                 isNotDeleted()
             )
             .fetch()
+    }
+
+    override fun findDistinctProfessionalPromotionTeams(): List<String> {
+        return queryFactory
+            .select(teamMemberSchedule.professionalPromotionTeam).distinct()
+            .from(teamMemberSchedule)
+            .where(
+                teamMemberSchedule.professionalPromotionTeam.isNotNull,
+                teamMemberSchedule.professionalPromotionTeam.ne(""),
+                isNotDeleted()
+            )
+            .orderBy(teamMemberSchedule.professionalPromotionTeam.asc())
+            .fetch()
+            .filterNotNull()
+    }
+
+    private fun professionalPromotionTeamIn(teams: List<String>?): BooleanExpression? {
+        return if (teams.isNullOrEmpty()) null
+        else teamMemberSchedule.professionalPromotionTeam.`in`(teams)
     }
 
     override fun findActiveByEmployeeIdAndDate(

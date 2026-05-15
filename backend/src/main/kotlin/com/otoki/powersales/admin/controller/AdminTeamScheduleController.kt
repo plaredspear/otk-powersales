@@ -53,18 +53,29 @@ class AdminTeamScheduleController(
     }
 
     @RequiresPermission(AdminPermission.SCHEDULE_READ)
+    @GetMapping("/professional-promotion-teams")
+    fun getProfessionalPromotionTeams(
+        @AuthenticationPrincipal principal: WebUserPrincipal
+    ): ResponseEntity<ApiResponse<List<String>>> {
+        val result = adminTeamScheduleService.getProfessionalPromotionTeams(principal.requireEmployeeId())
+        return ResponseEntity.ok(ApiResponse.success(result))
+    }
+
+    @RequiresPermission(AdminPermission.SCHEDULE_READ)
     @GetMapping
     fun getSchedules(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) from: LocalDate,
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) to: LocalDate,
         @RequestParam(required = false) employeeIds: String?,
-        @RequestParam(required = false) accountIds: String?
+        @RequestParam(required = false) accountIds: String?,
+        @RequestParam(required = false) promotionTeams: String?
     ): ResponseEntity<ApiResponse<MonthlyScheduleWithSummaryDto>> {
         val employeeIdList = employeeIds?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }?.map { it.toLong() }
         val accountIdList = accountIds?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }?.map { it.toInt() }
+        val promotionTeamList = promotionTeams?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }
         val result = adminTeamScheduleService.getSchedulesWithSummary(
-            principal.requireEmployeeId(), from, to, employeeIdList, accountIdList
+            principal.requireEmployeeId(), from, to, employeeIdList, accountIdList, promotionTeamList
         )
         return ResponseEntity.ok(ApiResponse.success(result))
     }
