@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import ProLayout from '@ant-design/pro-layout';
 import { Button, Space, Typography } from 'antd';
+import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
 import { useAuthStore } from '@/stores/authStore';
 import { useForbiddenStore } from '@/stores/forbiddenStore';
 import { menuRoute, type MenuItem } from '@/config/menuConfig';
@@ -61,6 +62,27 @@ export default function AdminLayout() {
         layout="side"
         collapsed={collapsed}
         onCollapse={handleCollapse}
+        collapsedButtonRender={false}
+        menuFooterRender={() => (
+          <div
+            className={`admin-sider-collapse-footer${collapsed ? ' admin-sider-collapse-footer--collapsed' : ''}`}
+            onClick={() => handleCollapse(!collapsed)}
+            role="button"
+            tabIndex={0}
+            aria-label={collapsed ? '사이드 메뉴 펼치기' : '사이드 메뉴 접기'}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleCollapse(!collapsed);
+              }
+            }}
+          >
+            <span className="admin-sider-collapse-footer-icon">
+              {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+            </span>
+            {!collapsed && <span className="admin-sider-collapse-footer-label">메뉴 접기</span>}
+          </div>
+        )}
         token={{
           header: {
             heightLayoutHeader: 0,
