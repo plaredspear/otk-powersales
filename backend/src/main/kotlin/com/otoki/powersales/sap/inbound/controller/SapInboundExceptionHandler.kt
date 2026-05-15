@@ -40,7 +40,7 @@ import org.springframework.web.context.request.ServletRequestAttributes
         SapErpOrderController::class,
         SapAppointmentController::class,
         SapAttendInfoController::class,
-        com.otoki.powersales.claim.controller.SapClaimStatusController::class,
+        SapClaimStatusController::class,
         com.otoki.powersales.sap.auth.controller.SapTokenController::class
     ]
 )

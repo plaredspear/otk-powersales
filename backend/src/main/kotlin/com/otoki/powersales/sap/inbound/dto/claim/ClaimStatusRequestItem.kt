@@ -1,4 +1,4 @@
-package com.otoki.powersales.claim.dto.sap
+package com.otoki.powersales.sap.inbound.dto.claim
 
 import com.fasterxml.jackson.annotation.JsonProperty
 

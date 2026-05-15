@@ -1,15 +1,15 @@
-package com.otoki.powersales.claim.service
+package com.otoki.powersales.sap.inbound.service
 
-import com.otoki.powersales.claim.dto.sap.ClaimStatusRequestItem
+import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.claim.entity.Claim
 import com.otoki.powersales.claim.enums.ClaimDateType
 import com.otoki.powersales.claim.enums.ClaimType1
 import com.otoki.powersales.claim.enums.ClaimType2
 import com.otoki.powersales.claim.repository.ClaimRepository
+import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.sap.auth.audit.SapInboundAudit
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
-import com.otoki.powersales.account.entity.Account
-import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.sap.inbound.dto.claim.ClaimStatusRequestItem
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested

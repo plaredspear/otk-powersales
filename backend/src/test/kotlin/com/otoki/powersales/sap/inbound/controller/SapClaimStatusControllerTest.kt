@@ -1,14 +1,13 @@
-package com.otoki.powersales.claim.controller
+package com.otoki.powersales.sap.inbound.controller
 
 import com.otoki.powersales.admin.security.AdminAuthorityFilter
-import com.otoki.powersales.claim.dto.sap.ClaimStatusDetail
-import com.otoki.powersales.claim.dto.sap.ClaimStatusFailure
-import com.otoki.powersales.claim.service.SapClaimStatusService
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
-import com.otoki.powersales.sap.inbound.controller.SapInboundExceptionHandler
+import com.otoki.powersales.sap.inbound.dto.claim.ClaimStatusDetail
+import com.otoki.powersales.sap.inbound.dto.claim.ClaimStatusFailure
+import com.otoki.powersales.sap.inbound.service.SapClaimStatusService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -129,7 +128,7 @@ class SapClaimStatusControllerTest {
         }
 
         @ParameterizedTest(name = "{0} → status={1}, RESULT_CODE=INVALID_PAYLOAD")
-        @MethodSource("com.otoki.powersales.claim.controller.SapClaimStatusControllerTest#invalidPayloadCases")
+        @MethodSource("com.otoki.powersales.sap.inbound.controller.SapClaimStatusControllerTest#invalidPayloadCases")
         @DisplayName("실패 - INVALID_PAYLOAD 변형들")
         fun update_invalidPayload(case: String, expectedStatus: Int, payload: String) {
             mockMvc.perform(

@@ -1,14 +1,14 @@
-package com.otoki.powersales.claim.service
+package com.otoki.powersales.sap.inbound.service
 
-import com.otoki.powersales.claim.dto.sap.ClaimStatusDetail
-import com.otoki.powersales.claim.dto.sap.ClaimStatusFailure
-import com.otoki.powersales.claim.dto.sap.ClaimStatusRequestItem
 import com.otoki.powersales.claim.entity.Claim
 import com.otoki.powersales.claim.repository.ClaimRepository
 import com.otoki.powersales.sap.auth.audit.SapInboundAudit
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditEventType
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.sap.auth.util.ClientIpResolver
+import com.otoki.powersales.sap.inbound.dto.claim.ClaimStatusDetail
+import com.otoki.powersales.sap.inbound.dto.claim.ClaimStatusFailure
+import com.otoki.powersales.sap.inbound.dto.claim.ClaimStatusRequestItem
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service

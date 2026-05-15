@@ -1,4 +1,4 @@
-package com.otoki.powersales.claim.dto.sap
+package com.otoki.powersales.sap.inbound.dto.claim
 
 import tools.jackson.databind.PropertyNamingStrategies
 import tools.jackson.databind.annotation.JsonNaming
