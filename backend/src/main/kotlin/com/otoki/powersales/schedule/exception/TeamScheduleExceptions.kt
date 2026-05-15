@@ -68,3 +68,15 @@ class TeamScheduleAccountRequiredException : BusinessException(
     message = "근무 유형이 '근무'인 일정에는 거래처를 지정해야 합니다",
     httpStatus = HttpStatus.BAD_REQUEST
 )
+
+class TeamScheduleRangeTooWideException : BusinessException(
+    errorCode = "RANGE_TOO_WIDE",
+    message = "조회 기간은 최대 92일까지 지정할 수 있습니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+class TeamScheduleInvalidRangeException : BusinessException(
+    errorCode = "INVALID_RANGE",
+    message = "종료일은 시작일보다 같거나 뒤 날짜여야 합니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)

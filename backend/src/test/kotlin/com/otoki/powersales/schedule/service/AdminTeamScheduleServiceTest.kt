@@ -442,13 +442,50 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("기간 임의 지정 - from~to 가 그대로 repository 에 전달")
         fun getSchedulesWithSummary_customRange() {
             val from = LocalDate.of(2026, 4, 15)
-            val to = LocalDate.of(2026, 7, 20)
+            val to = LocalDate.of(2026, 7, 14)
             whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(listOf(1L), from, to))
                 .thenReturn(emptyList())
 
             service.getSchedulesWithSummary(1L, from, to, listOf(1L), null)
 
             verify(teamMemberScheduleRepository).findMonthlyByEmployeeIds(listOf(1L), from, to)
+        }
+
+        @Test
+        @DisplayName("기간 92일 초과 시 TeamScheduleRangeTooWideException")
+        fun getSchedulesWithSummary_rangeTooWide() {
+            val from = LocalDate.of(2026, 5, 1)
+            val to = LocalDate.of(2026, 8, 1) // between = 92일 → 92 > 91 위반
+
+            org.junit.jupiter.api.assertThrows<com.otoki.powersales.schedule.exception.TeamScheduleRangeTooWideException> {
+                service.getSchedulesWithSummary(1L, from, to, listOf(1L), null)
+            }
+            verifyNoInteractions(teamMemberScheduleRepository)
+        }
+
+        @Test
+        @DisplayName("기간 정확히 92일 (between=91) 은 통과")
+        fun getSchedulesWithSummary_rangeExactly92Days() {
+            val from = LocalDate.of(2026, 5, 1)
+            val to = LocalDate.of(2026, 7, 31) // between = 91일 → 92일 분량
+            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(listOf(1L), from, to))
+                .thenReturn(emptyList())
+
+            service.getSchedulesWithSummary(1L, from, to, listOf(1L), null)
+
+            verify(teamMemberScheduleRepository).findMonthlyByEmployeeIds(listOf(1L), from, to)
+        }
+
+        @Test
+        @DisplayName("from > to 일 때 TeamScheduleInvalidRangeException")
+        fun getSchedulesWithSummary_invalidRange() {
+            val from = LocalDate.of(2026, 7, 1)
+            val to = LocalDate.of(2026, 5, 1)
+
+            org.junit.jupiter.api.assertThrows<com.otoki.powersales.schedule.exception.TeamScheduleInvalidRangeException> {
+                service.getSchedulesWithSummary(1L, from, to, listOf(1L), null)
+            }
+            verifyNoInteractions(teamMemberScheduleRepository)
         }
     }
 

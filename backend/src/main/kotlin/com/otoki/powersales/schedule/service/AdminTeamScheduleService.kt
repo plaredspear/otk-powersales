@@ -120,6 +120,11 @@ class AdminTeamScheduleService(
         employeeIds: List<Long>?,
         accountIds: List<Int>?
     ): MonthlyScheduleWithSummaryDto {
+        if (from.isAfter(to)) throw TeamScheduleInvalidRangeException()
+        if (java.time.temporal.ChronoUnit.DAYS.between(from, to) > MAX_RANGE_DAYS) {
+            throw TeamScheduleRangeTooWideException()
+        }
+
         val hasEmployeeFilter = !employeeIds.isNullOrEmpty()
         val hasAccountFilter = !accountIds.isNullOrEmpty()
 
@@ -314,5 +319,8 @@ class AdminTeamScheduleService(
 
         /** SF `TeamMemberListController.fetchManagedAccList` 영업지원1·2팀 — 전사 노출 cost center */
         private val SF_FULL_SCOPE_COST_CENTERS = setOf("4888", "4889")
+
+        /** 기간 조회 상한 — 운영 부하 worst case 회피. ChronoUnit.DAYS.between(from, to) 가 이 값을 초과하면 거부 */
+        private const val MAX_RANGE_DAYS = 91L
     }
 }

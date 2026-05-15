@@ -177,16 +177,24 @@ export function ScheduleCalendar({
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {isListView ? (
-            <DatePicker.RangePicker
-              size="small"
-              value={listRange}
-              onChange={(range) => {
-                if (range && range[0] && range[1]) {
-                  onListRangeChange([range[0], range[1]]);
-                }
-              }}
-              allowClear={false}
-            />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <DatePicker.RangePicker
+                size="small"
+                value={listRange}
+                onChange={(range) => {
+                  if (range && range[0] && range[1]) {
+                    onListRangeChange([range[0], range[1]]);
+                  }
+                }}
+                allowClear={false}
+                disabledDate={(current, info) => {
+                  if (!info.from) return false;
+                  // info.from 기준 ±91일 초과면 disable → 최대 92일 (시작일 포함)
+                  return Math.abs(current.diff(info.from, 'day')) > 91;
+                }}
+              />
+              <span style={{ fontSize: 12, color: '#8c8c8c' }}>최대 92일</span>
+            </div>
           ) : (
             <>
               <Button icon={<LeftOutlined />} size="small" onClick={handlePrev} />
